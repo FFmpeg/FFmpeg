@@ -38,6 +38,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_P010,
     AV_PIX_FMT_P016,
     AV_PIX_FMT_YUV444P16,
+    AV_PIX_FMT_0RGB32,
+    AV_PIX_FMT_0BGR32,
 };
 
 static int cuda_frames_get_constraints(AVHWDeviceContext *ctx,
@@ -146,6 +148,10 @@ static int cuda_frames_init(AVHWFramesContext *ctx)
         case AV_PIX_FMT_YUV444P16:
             size = aligned_width * ctx->height * 6;
             break;
+        case AV_PIX_FMT_0RGB32:
+        case AV_PIX_FMT_0BGR32:
+            size = aligned_width * ctx->height * 4;
+            break;
         default:
             av_log(ctx, AV_LOG_ERROR, "BUG: Pixel format missing from size calculation.");
             return AVERROR_BUG;
@@ -200,6 +206,11 @@ static int cuda_get_buffer(AVHWFramesContext *ctx, AVFrame *frame)
         frame->linesize[0] = aligned_width;
         frame->linesize[1] = aligned_width;
         frame->linesize[2] = aligned_width;
+        break;
+    case AV_PIX_FMT_0BGR32:
+    case AV_PIX_FMT_0RGB32:
+        frame->data[0]     = frame->buf[0]->data;
+        frame->linesize[0] = aligned_width * 4;
         break;
     default:
         av_frame_unref(frame);
