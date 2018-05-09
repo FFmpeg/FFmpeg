@@ -412,44 +412,44 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
     offset = 0;
     cur_section_buf = tss->section_buf;
     while (cur_section_buf - tss->section_buf < MAX_SECTION_SIZE && cur_section_buf[0] != 0xff) {
-    /* compute section length if possible */
-    if (tss->section_h_size == -1 && tss->section_index - offset >= 3) {
-        len = (AV_RB16(cur_section_buf + 1) & 0xfff) + 3;
-        if (len > MAX_SECTION_SIZE)
-            return;
-        tss->section_h_size = len;
-    }
+        /* compute section length if possible */
+        if (tss->section_h_size == -1 && tss->section_index - offset >= 3) {
+            len = (AV_RB16(cur_section_buf + 1) & 0xfff) + 3;
+            if (len > MAX_SECTION_SIZE)
+                return;
+            tss->section_h_size = len;
+        }
 
-    if (tss->section_h_size != -1 &&
-        tss->section_index >= offset + tss->section_h_size) {
-        int crc_valid = 1;
-        tss->end_of_section_reached = 1;
+        if (tss->section_h_size != -1 &&
+            tss->section_index >= offset + tss->section_h_size) {
+            int crc_valid = 1;
+            tss->end_of_section_reached = 1;
 
-        if (tss->check_crc) {
-            crc_valid = !av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1, cur_section_buf, tss->section_h_size);
-            if (tss->section_h_size >= 4)
-                tss->crc = AV_RB32(cur_section_buf + tss->section_h_size - 4);
+            if (tss->check_crc) {
+                crc_valid = !av_crc(av_crc_get_table(AV_CRC_32_IEEE), -1, cur_section_buf, tss->section_h_size);
+                if (tss->section_h_size >= 4)
+                    tss->crc = AV_RB32(cur_section_buf + tss->section_h_size - 4);
 
+                if (crc_valid) {
+                    ts->crc_validity[ tss1->pid ] = 100;
+                }else if (ts->crc_validity[ tss1->pid ] > -10) {
+                    ts->crc_validity[ tss1->pid ]--;
+                }else
+                    crc_valid = 2;
+            }
             if (crc_valid) {
-                ts->crc_validity[ tss1->pid ] = 100;
-            }else if (ts->crc_validity[ tss1->pid ] > -10) {
-                ts->crc_validity[ tss1->pid ]--;
-            }else
-                crc_valid = 2;
-        }
-        if (crc_valid) {
-            tss->section_cb(tss1, cur_section_buf, tss->section_h_size);
-            if (crc_valid != 1)
-                tss->last_ver = -1;
-        }
+                tss->section_cb(tss1, cur_section_buf, tss->section_h_size);
+                if (crc_valid != 1)
+                    tss->last_ver = -1;
+            }
 
-        cur_section_buf += tss->section_h_size;
-        offset += tss->section_h_size;
-        tss->section_h_size = -1;
-    } else {
-        tss->end_of_section_reached = 0;
-        break;
-    }
+            cur_section_buf += tss->section_h_size;
+            offset += tss->section_h_size;
+            tss->section_h_size = -1;
+        } else {
+            tss->end_of_section_reached = 0;
+            break;
+        }
     }
 }
 
