@@ -1028,6 +1028,8 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
             va_rt_format = vaapi_format_map[i].rt_format;
     }
 
+    av_assert0(i < FF_ARRAY_ELEMS(vaapi_format_map));
+
     buffer_handle = desc->objects[0].fd;
     buffer_desc.pixel_format = va_fourcc;
     buffer_desc.width        = src_fc->width;
