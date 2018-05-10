@@ -1504,3 +1504,161 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+static int FUNC(sei_mastering_display)(CodedBitstreamContext *ctx, RWContext *rw,
+                                       H265RawSEIMasteringDisplayColourVolume *current)
+{
+    int err, c;
+
+    for (c = 0; c < 3; c++) {
+        us(16, display_primaries_x[c], 0, 50000, 1, c);
+        us(16, display_primaries_y[c], 0, 50000, 1, c);
+    }
+
+    u(16, white_point_x, 0, 50000);
+    u(16, white_point_y, 0, 50000);
+
+    u(32, max_display_mastering_luminance,
+      1, MAX_UINT_BITS(32));
+    u(32, min_display_mastering_luminance,
+      0, current->max_display_mastering_luminance - 1);
+
+    return 0;
+}
+
+static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
+                             H265RawSEIPayload *current)
+{
+    int err, i;
+    int start_position, end_position;
+
+#ifdef READ
+    start_position = get_bits_count(rw);
+#else
+    start_position = put_bits_count(rw);
+#endif
+
+    switch (current->payload_type) {
+    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
+        CHECK(FUNC(sei_mastering_display)
+              (ctx, rw, &current->payload.mastering_display));
+
+        break;
+
+    default:
+        {
+#ifdef READ
+            current->payload.other.data_length = current->payload_size;
+#endif
+            allocate(current->payload.other.data, current->payload.other.data_length);
+
+            for (i = 0; i < current->payload_size; i++)
+                xu(8, payload_byte[i], current->payload.other.data[i], 0, 255,
+                   1, i);
+        }
+    }
+
+    if (byte_alignment(rw)) {
+        fixed(1, bit_equal_to_one, 1);
+        while (byte_alignment(rw))
+            fixed(1, bit_equal_to_zero, 0);
+    }
+
+#ifdef READ
+    end_position = get_bits_count(rw);
+    if (end_position < start_position + 8 * current->payload_size) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Incorrect SEI payload length: "
+               "header %"PRIu32" bits, actually %d bits.\n",
+               8 * current->payload_size,
+               end_position - start_position);
+        return AVERROR_INVALIDDATA;
+    }
+#else
+    end_position = put_bits_count(rw);
+    current->payload_size = (end_position - start_position) >> 3;
+#endif
+
+    return 0;
+}
+
+static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
+                     H265RawSEI *current)
+{
+    int err, k;
+
+    HEADER("Supplemental Enhancement Information");
+
+    CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
+                                HEVC_NAL_SEI_PREFIX));
+
+#ifdef READ
+    for (k = 0; k < H265_MAX_SEI_PAYLOADS; k++) {
+        uint32_t payload_type = 0;
+        uint32_t payload_size = 0;
+        uint32_t tmp;
+
+        while (show_bits(rw, 8) == 0xff) {
+            fixed(8, ff_byte, 0xff);
+            payload_type += 255;
+        }
+        xu(8, last_payload_type_byte, tmp, 0, 254, 0);
+        payload_type += tmp;
+
+        while (show_bits(rw, 8) == 0xff) {
+            fixed(8, ff_byte, 0xff);
+            payload_size += 255;
+        }
+        xu(8, last_payload_size_byte, tmp, 0, 254, 0);
+        payload_size += tmp;
+
+        current->payload[k].payload_type = payload_type;
+        current->payload[k].payload_size = payload_size;
+
+        CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
+
+        if (!cbs_h2645_read_more_rbsp_data(rw))
+            break;
+    }
+    if (k >= H265_MAX_SEI_PAYLOADS) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many payloads in "
+               "SEI message: found %d.\n", k);
+        return AVERROR_INVALIDDATA;
+    }
+    current->payload_count = k + 1;
+#else
+    for (k = 0; k < current->payload_count; k++) {
+        PutBitContext start_state;
+        uint32_t tmp;
+        int need_size, i;
+
+        // Somewhat clumsy: we write the payload twice when
+        // we don't know the size in advance.  This will mess
+        // with trace output, but is otherwise harmless.
+        start_state = *rw;
+        need_size = !current->payload[k].payload_size;
+        for (i = 0; i < 1 + need_size; i++) {
+            *rw = start_state;
+
+            tmp = current->payload[k].payload_type;
+            while (tmp >= 255) {
+                fixed(8, ff_byte, 0xff);
+                tmp -= 255;
+            }
+            xu(8, last_payload_type_byte, tmp, 0, 254, 0);
+
+            tmp = current->payload[k].payload_size;
+            while (tmp >= 255) {
+                fixed(8, ff_byte, 0xff);
+                tmp -= 255;
+            }
+            xu(8, last_payload_size_byte, tmp, 0, 254, 0);
+
+            CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
+        }
+    }
+#endif
+
+    CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
+
+    return 0;
+}

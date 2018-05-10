@@ -25,6 +25,14 @@
 #include "cbs_h2645.h"
 #include "hevc.h"
 
+enum {
+    // This limit is arbitrary - it is sufficient for one message of each
+    // type plus some repeats, and will therefore easily cover all sane
+    // streams.  However, it is possible to make technically-valid streams
+    // for which it will fail (for example, by including a large number of
+    // user-data-unregistered messages).
+    H265_MAX_SEI_PAYLOADS = 64,
+};
 
 typedef struct H265RawNALUnitHeader {
     uint8_t forbidden_zero_bit;
@@ -516,6 +524,34 @@ typedef struct H265RawSlice {
     AVBufferRef *data_ref;
 } H265RawSlice;
 
+typedef struct H265RawSEIMasteringDisplayColourVolume {
+    uint16_t display_primaries_x[3];
+    uint16_t display_primaries_y[3];
+    uint16_t white_point_x;
+    uint16_t white_point_y;
+    uint32_t max_display_mastering_luminance;
+    uint32_t min_display_mastering_luminance;
+} H265RawSEIMasteringDisplayColourVolume;
+
+typedef struct H265RawSEIPayload {
+    uint32_t payload_type;
+    uint32_t payload_size;
+    union {
+        H265RawSEIMasteringDisplayColourVolume mastering_display;
+        struct {
+            uint8_t *data;
+            size_t data_length;
+            AVBufferRef *data_ref;
+        } other;
+    } payload;
+} H265RawSEIPayload;
+
+typedef struct H265RawSEI {
+    H265RawNALUnitHeader nal_unit_header;
+
+    H265RawSEIPayload payload[H265_MAX_SEI_PAYLOADS];
+    uint8_t payload_count;
+} H265RawSEI;
 
 typedef struct CodedBitstreamH265Context {
     // Reader/writer context in common with the H.264 implementation.
