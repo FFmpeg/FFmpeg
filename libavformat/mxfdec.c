@@ -56,6 +56,8 @@
 #include "internal.h"
 #include "mxf.h"
 
+#define MXF_MAX_CHUNK_SIZE (32 << 20)
+
 typedef enum {
     Header,
     BodyPartition,
@@ -278,13 +280,11 @@ typedef struct MXFContext {
     int local_tags_count;
     uint64_t footer_partition;
     KLVPacket current_klv_data;
-    int current_klv_index;
     int run_in;
     MXFPartition *current_partition;
     int parsing_backward;
     int64_t last_forward_tell;
     int last_forward_partition;
-    int64_t current_edit_unit;
     int nb_index_tables;
     MXFIndexTable *index_tables;
 } MXFContext;
@@ -2429,7 +2429,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (ret < 0)
                 return ret;
         }
-        if (st->codecpar->codec_type != AVMEDIA_TYPE_DATA && (*essence_container_ul)[15] > 0x01) {
+        if (st->codecpar->codec_type != AVMEDIA_TYPE_DATA && source_track->wrapping != FrameWrapped) {
             /* TODO: decode timestamps */
             st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
         }
@@ -2851,21 +2851,6 @@ static int is_pcm(enum AVCodecID codec_id)
     return codec_id >= AV_CODEC_ID_PCM_S16LE && codec_id < AV_CODEC_ID_PCM_S24DAUD;
 }
 
-static AVStream* mxf_get_opatom_stream(MXFContext *mxf)
-{
-    int i;
-
-    if (mxf->op != OPAtom)
-        return NULL;
-
-    for (i = 0; i < mxf->fc->nb_streams; i++) {
-        if (mxf->fc->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-            continue;
-        return mxf->fc->streams[i];
-    }
-    return NULL;
-}
-
 static MXFIndexTable *mxf_find_index_table(MXFContext *mxf, int index_sid)
 {
     int i;
@@ -3166,47 +3151,6 @@ static int mxf_get_next_track_edit_unit(MXFContext *mxf, MXFTrack *track, int64_
     return 0;
 }
 
-/**
- * Sets mxf->current_edit_unit based on what offset we're currently at.
- * @return next_ofs if OK, <0 on error
- */
-static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset)
-{
-    int64_t last_ofs = -1, next_ofs = -1;
-    MXFIndexTable *t = &mxf->index_tables[0];
-
-    /* this is called from the OP1a demuxing logic, which means there
-     * may be no index tables */
-    if (mxf->nb_index_tables <= 0)
-        return -1;
-
-    /* find mxf->current_edit_unit so that the next edit unit starts ahead of current_offset */
-    while (mxf->current_edit_unit >= 0) {
-        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, NULL, 0) < 0)
-            return -2;
-
-        if (next_ofs <= last_ofs) {
-            /* large next_ofs didn't change or current_edit_unit wrapped
-             * around this fixes the infinite loop on zzuf3.mxf */
-            av_log(mxf->fc, AV_LOG_ERROR,
-                   "next_ofs didn't change. not deriving packet timestamps\n");
-            return -1;
-        }
-
-        if (next_ofs > current_offset)
-            break;
-
-        last_ofs = next_ofs;
-        mxf->current_edit_unit++;
-    }
-
-    /* not checking mxf->current_edit_unit >= t->nb_ptses here since CBR files may lack IndexEntryArrays */
-    if (mxf->current_edit_unit < 0)
-        return -1;
-
-    return next_ofs;
-}
-
 static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
                                         int64_t edit_unit)
 {
@@ -3250,6 +3194,49 @@ static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
     return sample_count;
 }
 
+/**
+ * Make sure track->sample_count is correct based on what offset we're currently at.
+ * Also determine the next edit unit (or packet) offset.
+ * @return next_ofs if OK, <0 on error
+ */
+static int64_t mxf_set_current_edit_unit(MXFContext *mxf, AVStream *st, int64_t current_offset, int resync)
+{
+    int64_t next_ofs = -1;
+    MXFTrack *track = st->priv_data;
+    int64_t edit_unit = av_rescale_q(track->sample_count, st->time_base, av_inv_q(track->edit_rate));
+    int64_t new_edit_unit;
+    MXFIndexTable *t = mxf_find_index_table(mxf, track->index_sid);
+
+    if (!t || track->wrapping == UnknownWrapped)
+        return -1;
+
+    if (mxf_edit_unit_absolute_offset(mxf, t, edit_unit + track->edit_units_per_packet, NULL, &next_ofs, NULL, 0) < 0 &&
+        (next_ofs = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
+        av_log(mxf->fc, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
+        return -1;
+    }
+
+    /* check if the next edit unit offset (next_ofs) starts ahead of current_offset */
+    if (next_ofs > current_offset)
+        return next_ofs;
+
+    if (!resync) {
+        av_log(mxf->fc, AV_LOG_ERROR, "cannot find current edit unit for stream %d, invalid index?\n", st->index);
+        return -1;
+    }
+
+    if (mxf_get_next_track_edit_unit(mxf, track, current_offset + 1, &new_edit_unit) < 0 || new_edit_unit <= 0) {
+        av_log(mxf->fc, AV_LOG_ERROR, "failed to find next track edit unit in stream %d\n", st->index);
+        return -1;
+    }
+
+    new_edit_unit--;
+    track->sample_count = mxf_compute_sample_count(mxf, st, new_edit_unit);
+    av_log(mxf->fc, AV_LOG_WARNING, "edit unit sync lost on stream %d, jumping from %"PRId64" to %"PRId64"\n", st->index, edit_unit, new_edit_unit);
+
+    return mxf_set_current_edit_unit(mxf, st, current_offset, 0);
+}
+
 static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
                              AVPacket *pkt)
 {
@@ -3269,28 +3256,30 @@ static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
     return 0;
 }
 
-static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt, int64_t next_ofs)
+static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt)
 {
     AVCodecParameters *par = st->codecpar;
     MXFTrack *track = st->priv_data;
 
-    if (par->codec_type == AVMEDIA_TYPE_VIDEO && (next_ofs >= 0 || next_ofs == -2 && st->duration == mxf->current_edit_unit + 1)) {
-        /* mxf->current_edit_unit good - see if we have an
-         * index table to derive timestamps from */
-        MXFIndexTable *t = &mxf->index_tables[0];
+    if (par->codec_type == AVMEDIA_TYPE_VIDEO) {
+        /* see if we have an index table to derive timestamps from */
+        MXFIndexTable *t = mxf_find_index_table(mxf, track->index_sid);
 
-        if (mxf->nb_index_tables >= 1 && mxf->current_edit_unit < t->nb_ptses) {
-            pkt->dts = mxf->current_edit_unit + t->first_dts;
-            pkt->pts = t->ptses[mxf->current_edit_unit];
+        if (t && track->sample_count < t->nb_ptses) {
+            pkt->dts = track->sample_count + t->first_dts;
+            pkt->pts = t->ptses[track->sample_count];
         } else if (track->intra_only) {
             /* intra-only -> PTS = EditUnit.
              * let utils.c figure out DTS since it can be < PTS if low_delay = 0 (Sony IMX30) */
-            pkt->pts = mxf->current_edit_unit;
+            pkt->pts = track->sample_count;
         }
+        track->sample_count++;
     } else if (par->codec_type == AVMEDIA_TYPE_AUDIO) {
         int ret = mxf_set_audio_pts(mxf, par, pkt);
         if (ret < 0)
             return ret;
+    } else if (track) {
+        track->sample_count++;
     }
     return 0;
 }
@@ -3301,7 +3290,17 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
     MXFContext *mxf = s->priv_data;
     int ret;
 
-    while ((ret = klv_read_packet(&klv, s->pb)) == 0) {
+    while (1) {
+        int64_t max_data_size;
+        int64_t pos = avio_tell(s->pb);
+
+        if (pos < mxf->current_klv_data.next_klv - mxf->current_klv_data.length || pos >= mxf->current_klv_data.next_klv) {
+        mxf->current_klv_data = (KLVPacket){{0}};
+        ret = klv_read_packet(&klv, s->pb);
+        if (ret < 0)
+            break;
+        max_data_size = klv.length;
+        pos = klv.next_klv - klv.length;
         PRINT_KEY(s, "read packet", klv.key);
         av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
@@ -3312,6 +3311,10 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             }
             return 0;
         }
+        } else {
+            klv = mxf->current_klv_data;
+            max_data_size = klv.next_klv - pos;
+        }
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_canopus_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
@@ -3319,6 +3322,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             int index = mxf_get_stream_index(s, &klv, body_sid);
             int64_t next_ofs;
             AVStream *st;
+            MXFTrack *track;
 
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR,
@@ -3328,21 +3332,38 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             }
 
             st = s->streams[index];
+            track = st->priv_data;
 
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
 
-            next_ofs = mxf_set_current_edit_unit(mxf, klv.offset);
+            next_ofs = mxf_set_current_edit_unit(mxf, st, pos, 1);
 
-            if (next_ofs >= 0 && klv.next_klv > next_ofs) {
-                /* if this check is hit then it's possible OPAtom was treated as OP1a
-                 * truncate the packet since it's probably very large (>2 GiB is common) */
-                avpriv_request_sample(s,
-                                      "OPAtom misinterpreted as OP1a? "
-                                      "KLV for edit unit %"PRId64" extending into "
-                                      "next edit unit",
-                                      mxf->current_edit_unit);
-                klv.length = next_ofs - avio_tell(s->pb);
+            if (track->wrapping != FrameWrapped) {
+                int64_t size;
+
+                if (next_ofs <= 0) {
+                    // If we have no way to packetize the data, then return it in chunks...
+                    if (klv.next_klv - klv.length == pos && max_data_size > MXF_MAX_CHUNK_SIZE) {
+                        st->need_parsing = AVSTREAM_PARSE_FULL;
+                        avpriv_request_sample(s, "Huge KLV without proper index in non-frame wrapped essence");
+                    }
+                    size = FFMIN(max_data_size, MXF_MAX_CHUNK_SIZE);
+                } else {
+                    if ((size = next_ofs - pos) <= 0) {
+                        av_log(s, AV_LOG_ERROR, "bad size: %"PRId64"\n", size);
+                        ret = AVERROR_INVALIDDATA;
+                        goto skip;
+                    }
+                    // We must not overread, because the next edit unit might be in another KLV
+                    if (size > max_data_size)
+                        size = max_data_size;
+                }
+
+                mxf->current_klv_data = klv;
+                klv.offset = pos;
+                klv.length = size;
+                klv.next_klv = klv.offset + klv.length;
             }
 
             /* check for 8 channels AES3 element */
@@ -3351,91 +3372,36 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                                               pkt, klv.length);
                 if (ret < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
+                    mxf->current_klv_data = (KLVPacket){{0}};
                     return ret;
                 }
             } else {
                 ret = av_get_packet(s->pb, pkt, klv.length);
-                if (ret < 0)
+                if (ret < 0) {
+                    mxf->current_klv_data = (KLVPacket){{0}};
                     return ret;
+                }
             }
             pkt->stream_index = index;
             pkt->pos = klv.offset;
 
-            ret = mxf_set_pts(mxf, st, pkt, next_ofs);
-            if (ret < 0)
+            ret = mxf_set_pts(mxf, st, pkt);
+            if (ret < 0) {
+                mxf->current_klv_data = (KLVPacket){{0}};
                 return ret;
+            }
 
             /* seek for truncated packets */
             avio_seek(s->pb, klv.next_klv, SEEK_SET);
 
             return 0;
-        } else
+        } else {
         skip:
-            avio_skip(s->pb, klv.length);
+            avio_skip(s->pb, max_data_size);
+            mxf->current_klv_data = (KLVPacket){{0}};
+        }
     }
     return avio_feof(s->pb) ? AVERROR_EOF : ret;
-}
-
-static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    MXFContext *mxf = s->priv_data;
-    int ret, size;
-    int64_t ret64, pos, next_pos;
-    AVStream *st;
-    MXFIndexTable *t;
-    MXFTrack *track;
-    int edit_units;
-
-    if (mxf->op != OPAtom)
-        return mxf_read_packet_old(s, pkt);
-
-    // If we have no streams then we basically are at EOF
-    st = mxf_get_opatom_stream(mxf);
-    if (!st)
-        return AVERROR_EOF;
-
-    track = st->priv_data;
-
-    /* OPAtom - clip wrapped demuxing */
-    /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
-    t = &mxf->index_tables[0];
-
-    if (mxf->current_edit_unit >= track->original_duration)
-        return AVERROR_EOF;
-
-    edit_units = FFMIN(track->edit_units_per_packet, track->original_duration - mxf->current_edit_unit);
-
-    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, NULL, 1)) < 0)
-        return ret;
-
-    /* compute size by finding the next edit unit or the end of the essence container
-     * not pretty, but it works */
-    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + edit_units, NULL, &next_pos, NULL, 0)) < 0 &&
-        (next_pos = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
-        av_log(s, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    if ((size = next_pos - pos) <= 0) {
-        av_log(s, AV_LOG_ERROR, "bad size: %i\n", size);
-        return AVERROR_INVALIDDATA;
-    }
-
-    if ((ret64 = avio_seek(s->pb, pos, SEEK_SET)) < 0)
-        return ret64;
-
-    if ((size = av_get_packet(s->pb, pkt, size)) < 0)
-        return size;
-
-    pkt->stream_index = st->index;
-
-    ret = mxf_set_pts(mxf, st, pkt, next_pos);
-    if (ret < 0)
-        return ret;
-
-    mxf->current_edit_unit += edit_units;
-
-    return 0;
 }
 
 static int mxf_read_close(AVFormatContext *s)
@@ -3527,8 +3493,10 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             return seekpos;
 
         ff_update_cur_dts(s, st, sample_time);
-        mxf->current_edit_unit = sample_time;
+        mxf->current_klv_data = (KLVPacket){{0}};
     } else {
+        MXFPartition *partition;
+
         t = &mxf->index_tables[0];
         if (t->index_sid != source_track->index_sid) {
             /* If the first index table does not belong to the stream, then find a stream which does belong to the index table */
@@ -3571,11 +3539,23 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             sample_time = FFMIN(sample_time, source_track->original_duration - 1);
         }
 
-        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, NULL, 1)) < 0)
+        if (source_track->wrapping == UnknownWrapped)
+            av_log(mxf->fc, AV_LOG_WARNING, "attempted seek in an UnknownWrapped essence\n");
+
+        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, &partition, 1)) < 0)
             return ret;
 
         ff_update_cur_dts(s, st, sample_time);
-        mxf->current_edit_unit = sample_time;
+        if (source_track->wrapping == ClipWrapped) {
+            KLVPacket klv = partition->first_essence_klv;
+            if (seekpos < klv.next_klv - klv.length || seekpos >= klv.next_klv) {
+                av_log(mxf->fc, AV_LOG_ERROR, "attempted seek out of clip wrapped KLV\n");
+                return AVERROR_INVALIDDATA;
+            }
+            mxf->current_klv_data = klv;
+        } else {
+            mxf->current_klv_data = (KLVPacket){{0}};
+        }
         avio_seek(s->pb, seekpos, SEEK_SET);
     }
 
@@ -3600,7 +3580,7 @@ AVInputFormat ff_mxf_demuxer = {
     .priv_data_size = sizeof(MXFContext),
     .read_probe     = mxf_probe,
     .read_header    = mxf_read_header,
-    .read_packet    = mxf_read_packet,
+    .read_packet    = mxf_read_packet_old,
     .read_close     = mxf_read_close,
     .read_seek      = mxf_read_seek,
 };
