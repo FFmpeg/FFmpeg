@@ -37,6 +37,7 @@
 
 enum {
     SEI_MASTERING_DISPLAY       = 0x08,
+    SEI_CONTENT_LIGHT_LEVEL     = 0x10,
 };
 
 typedef struct VAAPIEncodeH265Context {
@@ -55,6 +56,7 @@ typedef struct VAAPIEncodeH265Context {
     H265RawSEI sei;
 
     H265RawSEIMasteringDisplayColourVolume mastering_display;
+    H265RawSEIContentLightLevelInfo content_light_level;
 
     int64_t last_idr_frame;
     int pic_order_cnt;
@@ -215,6 +217,12 @@ static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
         if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
             priv->sei.payload[i].payload_type = HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO;
             priv->sei.payload[i].payload.mastering_display = priv->mastering_display;
+            ++i;
+        }
+
+        if (priv->sei_needed & SEI_CONTENT_LIGHT_LEVEL) {
+            priv->sei.payload[i].payload_type = HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
+            priv->sei.payload[i].payload.content_light_level = priv->content_light_level;
             ++i;
         }
 
@@ -706,6 +714,25 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
         }
     }
 
+    if ((opt->sei & SEI_CONTENT_LIGHT_LEVEL) &&
+        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+        if (sd) {
+            AVContentLightMetadata *clm =
+                (AVContentLightMetadata *)sd->data;
+
+            priv->content_light_level.max_content_light_level =
+                FFMIN(clm->MaxCLL, 65535);
+            priv->content_light_level.max_pic_average_light_level =
+                FFMIN(clm->MaxFALL, 65535);
+
+            priv->sei_needed |= SEI_CONTENT_LIGHT_LEVEL;
+        }
+    }
+
     vpic->decoded_curr_pic = (VAPictureHEVC) {
         .picture_id    = pic->recon_surface,
         .pic_order_cnt = priv->pic_order_cnt,
@@ -1127,10 +1154,13 @@ static const AVOption vaapi_encode_h265_options[] = {
 
     { "sei", "Set SEI to include",
       OFFSET(sei), AV_OPT_TYPE_FLAGS,
-      { .i64 = SEI_MASTERING_DISPLAY },
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
       0, INT_MAX, FLAGS, "sei" },
-    { "hdr", "Include HDR metadata for mastering display colour volume",
-      0, AV_OPT_TYPE_CONST, { .i64 = SEI_MASTERING_DISPLAY },
+    { "hdr",
+      "Include HDR metadata for mastering display colour volume "
+      "and content light level information",
+      0, AV_OPT_TYPE_CONST,
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
       INT_MIN, INT_MAX, FLAGS, "sei" },
 
     { NULL },
