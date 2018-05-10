@@ -1526,6 +1526,17 @@ static int FUNC(sei_mastering_display)(CodedBitstreamContext *ctx, RWContext *rw
     return 0;
 }
 
+static int FUNC(sei_content_light_level)(CodedBitstreamContext *ctx, RWContext *rw,
+                                         H265RawSEIContentLightLevelInfo *current)
+{
+    int err;
+
+    u(16, max_content_light_level, 0, MAX_UINT_BITS(16));
+    u(16, max_pic_average_light_level, 0, MAX_UINT_BITS(16));
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H265RawSEIPayload *current)
 {
@@ -1542,6 +1553,12 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
         CHECK(FUNC(sei_mastering_display)
               (ctx, rw, &current->payload.mastering_display));
+
+        break;
+
+    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+        CHECK(FUNC(sei_content_light_level)
+              (ctx, rw, &current->payload.content_light_level));
 
         break;
 

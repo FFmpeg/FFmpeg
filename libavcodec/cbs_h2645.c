@@ -488,6 +488,7 @@ static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
 {
     switch (payload->payload_type) {
     case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
+    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
         break;
     default:
         av_buffer_unref(&payload->payload.other.data_ref);
