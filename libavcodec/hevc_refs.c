@@ -511,12 +511,12 @@ fail:
     return ret;
 }
 
-int ff_hevc_frame_nb_refs(HEVCContext *s)
+int ff_hevc_frame_nb_refs(const HEVCContext *s)
 {
     int ret = 0;
     int i;
     const ShortTermRPS *rps = s->sh.short_term_rps;
-    LongTermRPS *long_rps   = &s->sh.long_term_rps;
+    const LongTermRPS *long_rps = &s->sh.long_term_rps;
 
     if (rps) {
         for (i = 0; i < rps->num_negative_pics; i++)
