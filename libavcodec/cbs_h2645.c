@@ -29,6 +29,7 @@
 #include "h264_sei.h"
 #include "h2645_parse.h"
 #include "hevc.h"
+#include "hevc_sei.h"
 
 
 static int cbs_read_ue_golomb(CodedBitstreamContext *ctx, GetBitContext *gbc,
@@ -424,8 +425,10 @@ static void cbs_h264_free_sei_payload(H264RawSEIPayload *payload)
     switch (payload->payload_type) {
     case H264_SEI_TYPE_BUFFERING_PERIOD:
     case H264_SEI_TYPE_PIC_TIMING:
+    case H264_SEI_TYPE_PAN_SCAN_RECT:
     case H264_SEI_TYPE_RECOVERY_POINT:
     case H264_SEI_TYPE_DISPLAY_ORIENTATION:
+    case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
         break;
     case H264_SEI_TYPE_USER_DATA_REGISTERED:
         av_buffer_unref(&payload->payload.user_data_registered.data_ref);
@@ -480,6 +483,27 @@ static void cbs_h265_free_slice(void *unit, uint8_t *content)
 {
     H265RawSlice *slice = (H265RawSlice*)content;
     av_buffer_unref(&slice->data_ref);
+    av_freep(&content);
+}
+
+static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
+{
+    switch (payload->payload_type) {
+    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
+    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+        break;
+    default:
+        av_buffer_unref(&payload->payload.other.data_ref);
+        break;
+    }
+}
+
+static void cbs_h265_free_sei(void *unit, uint8_t *content)
+{
+    H265RawSEI *sei = (H265RawSEI*)content;
+    int i;
+    for (i = 0; i < sei->payload_count; i++)
+        cbs_h265_free_sei_payload(&sei->payload[i]);
     av_freep(&content);
 }
 
@@ -986,6 +1010,21 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
         }
         break;
 
+    case HEVC_NAL_SEI_PREFIX:
+        {
+            err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(H265RawSEI),
+                                            &cbs_h265_free_sei);
+
+            if (err < 0)
+                return err;
+
+            err = cbs_h265_read_sei(ctx, &gbc, unit->content);
+
+            if (err < 0)
+                return err;
+        }
+        break;
+
     default:
         return AVERROR(ENOSYS);
     }
@@ -1221,6 +1260,15 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
     case HEVC_NAL_AUD:
         {
             err = cbs_h265_write_aud(ctx, pbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case HEVC_NAL_SEI_PREFIX:
+        {
+            err = cbs_h265_write_sei(ctx, pbc, unit->content);
+
             if (err < 0)
                 return err;
         }

@@ -39,6 +39,7 @@ typedef struct NVDECDecoder {
 
     AVBufferRef *hw_device_ref;
     CUcontext    cuda_ctx;
+    CUstream     stream;
 
     CudaFunctions *cudl;
     CuvidFunctions *cvdl;
@@ -189,6 +190,7 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     }
     decoder->cuda_ctx = device_hwctx->cuda_ctx;
     decoder->cudl = device_hwctx->internal->cuda_dl;
+    decoder->stream = device_hwctx->stream;
 
     ret = cuvid_load_functions(&decoder->cvdl, logctx);
     if (ret < 0) {
@@ -308,7 +310,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
     params.CodecType           = cuvid_codec_type;
     params.ChromaFormat        = cuvid_chroma_format;
     params.ulNumDecodeSurfaces = frames_ctx->initial_pool_size;
-    params.ulNumOutputSurfaces = 1;
+    params.ulNumOutputSurfaces = frames_ctx->initial_pool_size;
 
     ret = nvdec_decoder_create(&ctx->decoder_ref, frames_ctx->device_ref, &params, avctx);
     if (ret < 0) {
@@ -354,13 +356,40 @@ static void nvdec_fdd_priv_free(void *priv)
     av_freep(&priv);
 }
 
+static void nvdec_unmap_mapped_frame(void *opaque, uint8_t *data)
+{
+    NVDECFrame *unmap_data = (NVDECFrame*)data;
+    NVDECDecoder *decoder = (NVDECDecoder*)unmap_data->decoder_ref->data;
+    CUdeviceptr devptr = (CUdeviceptr)opaque;
+    CUresult err;
+    CUcontext dummy;
+
+    err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
+    if (err != CUDA_SUCCESS) {
+        av_log(NULL, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
+        goto finish;
+    }
+
+    err = decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr);
+    if (err != CUDA_SUCCESS)
+        av_log(NULL, AV_LOG_ERROR, "cuvidUnmapVideoFrame failed\n");
+
+    decoder->cudl->cuCtxPopCurrent(&dummy);
+
+finish:
+    av_buffer_unref(&unmap_data->idx_ref);
+    av_buffer_unref(&unmap_data->decoder_ref);
+    av_free(unmap_data);
+}
+
 static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
 {
     FrameDecodeData  *fdd = (FrameDecodeData*)frame->private_ref->data;
     NVDECFrame        *cf = (NVDECFrame*)fdd->hwaccel_priv;
     NVDECDecoder *decoder = (NVDECDecoder*)cf->decoder_ref->data;
 
-    CUVIDPROCPARAMS vpp = { .progressive_frame = 1 };
+    CUVIDPROCPARAMS vpp = { 0 };
+    NVDECFrame *unmap_data = NULL;
 
     CUresult err;
     CUcontext dummy;
@@ -369,6 +398,9 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     unsigned int pitch, i;
     unsigned int offset = 0;
     int ret = 0;
+
+    vpp.progressive_frame = 1;
+    vpp.output_stream = decoder->stream;
 
     err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
     if (err != CUDA_SUCCESS)
@@ -383,32 +415,39 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
         goto finish;
     }
 
-    for (i = 0; frame->data[i]; i++) {
-        CUDA_MEMCPY2D cpy = {
-            .srcMemoryType = CU_MEMORYTYPE_DEVICE,
-            .dstMemoryType = CU_MEMORYTYPE_DEVICE,
-            .srcDevice     = devptr,
-            .dstDevice     = (CUdeviceptr)frame->data[i],
-            .srcPitch      = pitch,
-            .dstPitch      = frame->linesize[i],
-            .srcY          = offset,
-            .WidthInBytes  = FFMIN(pitch, frame->linesize[i]),
-            .Height        = frame->height >> (i ? 1 : 0),
-        };
-
-        err = decoder->cudl->cuMemcpy2D(&cpy);
-        if (err != CUDA_SUCCESS) {
-            av_log(logctx, AV_LOG_ERROR, "Error copying decoded frame: %d\n",
-                   err);
-            ret = AVERROR_UNKNOWN;
-            goto copy_fail;
-        }
-
-        offset += cpy.Height;
+    unmap_data = av_mallocz(sizeof(*unmap_data));
+    if (!unmap_data) {
+        ret = AVERROR(ENOMEM);
+        goto copy_fail;
     }
 
+    frame->buf[1] = av_buffer_create((uint8_t *)unmap_data, sizeof(*unmap_data),
+                                     nvdec_unmap_mapped_frame, (void*)devptr,
+                                     AV_BUFFER_FLAG_READONLY);
+    if (!frame->buf[1]) {
+        ret = AVERROR(ENOMEM);
+        goto copy_fail;
+    }
+
+    unmap_data->idx = cf->idx;
+    unmap_data->idx_ref = av_buffer_ref(cf->idx_ref);
+    unmap_data->decoder_ref = av_buffer_ref(cf->decoder_ref);
+
+    for (i = 0; frame->linesize[i]; i++) {
+        frame->data[i] = (uint8_t*)(devptr + offset);
+        frame->linesize[i] = pitch;
+        offset += pitch * (frame->height >> (i ? 1 : 0));
+    }
+
+    goto finish;
+
 copy_fail:
-    decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr);
+    if (!frame->buf[1]) {
+        decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr);
+        av_freep(&unmap_data);
+    } else {
+        av_buffer_unref(&frame->buf[1]);
+    }
 
 finish:
     decoder->cudl->cuCtxPopCurrent(&dummy);
@@ -521,6 +560,16 @@ int ff_nvdec_simple_decode_slice(AVCodecContext *avctx, const uint8_t *buffer,
     return 0;
 }
 
+static void nvdec_free_dummy(struct AVHWFramesContext *ctx)
+{
+    av_buffer_pool_uninit(&ctx->pool);
+}
+
+static AVBufferRef *nvdec_alloc_dummy(int size)
+{
+    return av_buffer_create(NULL, 0, NULL, NULL, 0);
+}
+
 int ff_nvdec_frame_params(AVCodecContext *avctx,
                           AVBufferRef *hw_frames_ctx,
                           int dpb_size)
@@ -549,6 +598,12 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     frames_ctx->width             = (avctx->coded_width + 1) & ~1;
     frames_ctx->height            = (avctx->coded_height + 1) & ~1;
     frames_ctx->initial_pool_size = dpb_size;
+
+    frames_ctx->free = nvdec_free_dummy;
+    frames_ctx->pool = av_buffer_pool_init(0, nvdec_alloc_dummy);
+
+    if (!frames_ctx->pool)
+        return AVERROR(ENOMEM);
 
     switch (sw_desc->comp[0].depth) {
     case 8:

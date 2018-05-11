@@ -87,9 +87,9 @@ int ff_network_wait_fd(int fd, int write);
  * This works similarly to ff_network_wait_fd, but waits up to 'timeout' microseconds
  * Uses ff_network_wait_fd in a loop
  *
- * @fd Socket descriptor
- * @write Set 1 to wait for socket able to be read, 0 to be written
- * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
+ * @param fd Socket descriptor
+ * @param write Set 1 to wait for socket able to be read, 0 to be written
+ * @param timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
  * @param int_cb Interrupt callback, is checked before each ff_network_wait_fd call
  * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
  */
@@ -98,7 +98,7 @@ int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterrupt
 /**
  * Waits for up to 'timeout' microseconds. If the usert's int_cb is set and
  * triggered, return before that.
- * @timeout Timeout in microseconds. Maybe have lower actual precision.
+ * @param timeout Timeout in microseconds. Maybe have lower actual precision.
  * @param int_cb Interrupt callback, is checked regularly.
  * @return AVERROR(ETIMEDOUT) if timeout expirted, AVERROR_EXIT if interrupted by int_cb
  */

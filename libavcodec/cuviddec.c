@@ -550,12 +550,16 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                     .Height        = avctx->height >> (i ? 1 : 0),
                 };
 
-                ret = CHECK_CU(ctx->cudl->cuMemcpy2D(&cpy));
+                ret = CHECK_CU(ctx->cudl->cuMemcpy2DAsync(&cpy, device_hwctx->stream));
                 if (ret < 0)
                     goto error;
 
                 offset += avctx->height;
             }
+
+            ret = CHECK_CU(ctx->cudl->cuStreamSynchronize(device_hwctx->stream));
+            if (ret < 0)
+                goto error;
         } else if (avctx->pix_fmt == AV_PIX_FMT_NV12 ||
                    avctx->pix_fmt == AV_PIX_FMT_P010 ||
                    avctx->pix_fmt == AV_PIX_FMT_P016) {
