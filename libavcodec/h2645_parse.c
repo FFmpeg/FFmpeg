@@ -145,36 +145,77 @@ nsc:
     return si;
 }
 
+static const char *hevc_nal_type_name[64] = {
+    "TRAIL_N", // HEVC_NAL_TRAIL_N
+    "TRAIL_R", // HEVC_NAL_TRAIL_R
+    "TSA_N", // HEVC_NAL_TSA_N
+    "TSA_R", // HEVC_NAL_TSA_R
+    "STSA_N", // HEVC_NAL_STSA_N
+    "STSA_R", // HEVC_NAL_STSA_R
+    "RADL_N", // HEVC_NAL_RADL_N
+    "RADL_R", // HEVC_NAL_RADL_R
+    "RASL_N", // HEVC_NAL_RASL_N
+    "RASL_R", // HEVC_NAL_RASL_R
+    "RSV_VCL_N10", // HEVC_NAL_VCL_N10
+    "RSV_VCL_R11", // HEVC_NAL_VCL_R11
+    "RSV_VCL_N12", // HEVC_NAL_VCL_N12
+    "RSV_VLC_R13", // HEVC_NAL_VCL_R13
+    "RSV_VCL_N14", // HEVC_NAL_VCL_N14
+    "RSV_VCL_R15", // HEVC_NAL_VCL_R15
+    "BLA_W_LP", // HEVC_NAL_BLA_W_LP
+    "BLA_W_RADL", // HEVC_NAL_BLA_W_RADL
+    "BLA_N_LP", // HEVC_NAL_BLA_N_LP
+    "IDR_W_RADL", // HEVC_NAL_IDR_W_RADL
+    "IDR_N_LP", // HEVC_NAL_IDR_N_LP
+    "CRA_NUT", // HEVC_NAL_CRA_NUT
+    "IRAP_IRAP_VCL22", // HEVC_NAL_IRAP_VCL22
+    "IRAP_IRAP_VCL23", // HEVC_NAL_IRAP_VCL23
+    "RSV_VCL24", // HEVC_NAL_RSV_VCL24
+    "RSV_VCL25", // HEVC_NAL_RSV_VCL25
+    "RSV_VCL26", // HEVC_NAL_RSV_VCL26
+    "RSV_VCL27", // HEVC_NAL_RSV_VCL27
+    "RSV_VCL28", // HEVC_NAL_RSV_VCL28
+    "RSV_VCL29", // HEVC_NAL_RSV_VCL29
+    "RSV_VCL30", // HEVC_NAL_RSV_VCL30
+    "RSV_VCL31", // HEVC_NAL_RSV_VCL31
+    "VPS", // HEVC_NAL_VPS
+    "SPS", // HEVC_NAL_SPS
+    "PPS", // HEVC_NAL_PPS
+    "AUD", // HEVC_NAL_AUD
+    "EOS_NUT", // HEVC_NAL_EOS_NUT
+    "EOB_NUT", // HEVC_NAL_EOB_NUT
+    "FD_NUT", // HEVC_NAL_FD_NUT
+    "SEI_PREFIX", // HEVC_NAL_SEI_PREFIX
+    "SEI_SUFFIX", // HEVC_NAL_SEI_SUFFIX
+    "RSV_NVCL41", // HEVC_NAL_RSV_NVCL41
+    "RSV_NVCL42", // HEVC_NAL_RSV_NVCL42
+    "RSV_NVCL43", // HEVC_NAL_RSV_NVCL43
+    "RSV_NVCL44", // HEVC_NAL_RSV_NVCL44
+    "RSV_NVCL45", // HEVC_NAL_RSV_NVCL45
+    "RSV_NVCL46", // HEVC_NAL_RSV_NVCL46
+    "RSV_NVCL47", // HEVC_NAL_RSV_NVCL47
+    "UNSPEC48", // HEVC_NAL_UNSPEC48
+    "UNSPEC49", // HEVC_NAL_UNSPEC49
+    "UNSPEC50", // HEVC_NAL_UNSPEC50
+    "UNSPEC51", // HEVC_NAL_UNSPEC51
+    "UNSPEC52", // HEVC_NAL_UNSPEC52
+    "UNSPEC53", // HEVC_NAL_UNSPEC53
+    "UNSPEC54", // HEVC_NAL_UNSPEC54
+    "UNSPEC55", // HEVC_NAL_UNSPEC55
+    "UNSPEC56", // HEVC_NAL_UNSPEC56
+    "UNSPEC57", // HEVC_NAL_UNSPEC57
+    "UNSPEC58", // HEVC_NAL_UNSPEC58
+    "UNSPEC59", // HEVC_NAL_UNSPEC59
+    "UNSPEC60", // HEVC_NAL_UNSPEC60
+    "UNSPEC61", // HEVC_NAL_UNSPEC61
+    "UNSPEC62", // HEVC_NAL_UNSPEC62
+    "UNSPEC63", // HEVC_NAL_UNSPEC63
+};
+
 static const char *nal_unit_name(int nal_type)
 {
-    switch(nal_type) {
-    case HEVC_NAL_TRAIL_N    : return "TRAIL_N";
-    case HEVC_NAL_TRAIL_R    : return "TRAIL_R";
-    case HEVC_NAL_TSA_N      : return "TSA_N";
-    case HEVC_NAL_TSA_R      : return "TSA_R";
-    case HEVC_NAL_STSA_N     : return "STSA_N";
-    case HEVC_NAL_STSA_R     : return "STSA_R";
-    case HEVC_NAL_RADL_N     : return "RADL_N";
-    case HEVC_NAL_RADL_R     : return "RADL_R";
-    case HEVC_NAL_RASL_N     : return "RASL_N";
-    case HEVC_NAL_RASL_R     : return "RASL_R";
-    case HEVC_NAL_BLA_W_LP   : return "BLA_W_LP";
-    case HEVC_NAL_BLA_W_RADL : return "BLA_W_RADL";
-    case HEVC_NAL_BLA_N_LP   : return "BLA_N_LP";
-    case HEVC_NAL_IDR_W_RADL : return "IDR_W_RADL";
-    case HEVC_NAL_IDR_N_LP   : return "IDR_N_LP";
-    case HEVC_NAL_CRA_NUT    : return "CRA_NUT";
-    case HEVC_NAL_VPS        : return "VPS";
-    case HEVC_NAL_SPS        : return "SPS";
-    case HEVC_NAL_PPS        : return "PPS";
-    case HEVC_NAL_AUD        : return "AUD";
-    case HEVC_NAL_EOS_NUT    : return "EOS_NUT";
-    case HEVC_NAL_EOB_NUT    : return "EOB_NUT";
-    case HEVC_NAL_FD_NUT     : return "FD_NUT";
-    case HEVC_NAL_SEI_PREFIX : return "SEI_PREFIX";
-    case HEVC_NAL_SEI_SUFFIX : return "SEI_SUFFIX";
-    default : return "?";
-    }
+    av_assert0(nal_type >= 0 && nal_type < 64);
+    return hevc_nal_type_name[nal_type];
 }
 
 static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
