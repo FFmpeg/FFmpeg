@@ -28,6 +28,7 @@
 
 #include "bytestream.h"
 #include "hevc.h"
+#include "h264.h"
 #include "h2645_parse.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
@@ -218,6 +219,47 @@ static const char *hevc_nal_unit_name(int nal_type)
     return hevc_nal_type_name[nal_type];
 }
 
+static const char *h264_nal_type_name[32] = {
+    "Unspecified 0", //H264_NAL_UNSPECIFIED
+    "Coded slice of a non-IDR picture", // H264_NAL_SLICE
+    "Coded slice data partition A", // H264_NAL_DPA
+    "Coded slice data partition B", // H264_NAL_DPB
+    "Coded slice data partition C", // H264_NAL_DPC
+    "IDR", // H264_NAL_IDR_SLICE
+    "SEI", // H264_NAL_SEI
+    "SPS", // H264_NAL_SPS
+    "PPS", // H264_NAL_PPS
+    "AUD", // H264_NAL_AUD
+    "End of sequence", // H264_NAL_END_SEQUENCE
+    "End of stream", // H264_NAL_END_STREAM
+    "Filler data", // H264_NAL_FILLER_DATA
+    "SPS extension", // H264_NAL_SPS_EXT
+    "Prefix", // H264_NAL_PREFIX
+    "Subset SPS", // H264_NAL_SUB_SPS
+    "Depth parameter set", // H264_NAL_DPS
+    "Reserved 17", // H264_NAL_RESERVED17
+    "Reserved 18", // H264_NAL_RESERVED18
+    "Auxiliary coded picture without partitioning", // H264_NAL_AUXILIARY_SLICE
+    "Slice extension", // H264_NAL_EXTEN_SLICE
+    "Slice extension for a depth view or a 3D-AVC texture view", // H264_NAL_DEPTH_EXTEN_SLICE
+    "Reserved 22", // H264_NAL_RESERVED22
+    "Reserved 23", // H264_NAL_RESERVED23
+    "Unspecified 24", // H264_NAL_UNSPECIFIED24
+    "Unspecified 25", // H264_NAL_UNSPECIFIED25
+    "Unspecified 26", // H264_NAL_UNSPECIFIED26
+    "Unspecified 27", // H264_NAL_UNSPECIFIED27
+    "Unspecified 28", // H264_NAL_UNSPECIFIED28
+    "Unspecified 29", // H264_NAL_UNSPECIFIED29
+    "Unspecified 30", // H264_NAL_UNSPECIFIED30
+    "Unspecified 31", // H264_NAL_UNSPECIFIED31
+};
+
+static const char *h264_nal_unit_name(int nal_type)
+{
+    av_assert0(nal_type >= 0 && nal_type < 32);
+    return h264_nal_type_name[nal_type];
+}
+
 static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
 {
     int size = nal->size;
@@ -280,8 +322,8 @@ static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
     nal->type    = get_bits(gb, 5);
 
     av_log(logctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nal_ref_idc: %d\n",
-           nal->type, nal->ref_idc);
+           "nal_unit_type: %d(%s), nal_ref_idc: %d\n",
+           nal->type, h264_nal_unit_name(nal->type), nal->ref_idc);
 
     return 1;
 }
