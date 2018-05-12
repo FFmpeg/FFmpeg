@@ -112,7 +112,7 @@ static int mp3_read_probe(AVProbeData *p)
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
                            return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
     else if(first_frames > 1 && whole_used) return 5;
-    else if(max_frames>=1 && p->buf_size < 2*max_framesizes) return 1;
+    else if(max_frames>=1 && p->buf_size < 10*max_framesizes) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
 }
