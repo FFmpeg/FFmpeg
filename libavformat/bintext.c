@@ -163,7 +163,7 @@ static int bin_probe(AVProbeData *p)
 
         if (par.width * par.height * 2 / (8*16) == p->buf_size)
             return AVPROBE_SCORE_MAX / 2;
-        return 1;
+        return 0;
     }
 
     if (sauce)
