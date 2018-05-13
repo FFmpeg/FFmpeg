@@ -16,6 +16,7 @@ version <next>:
 - photosensitivity filter
 - anlms filter
 - arnndn filter
+- bilateral filter
 
 
 version 4.2:
