@@ -211,15 +211,18 @@ int main(int argc, char **argv)
 {
     int ret;
     AVPacket packet;
-    AVFrame *frame = av_frame_alloc();
-    AVFrame *filt_frame = av_frame_alloc();
+    AVFrame *frame;
+    AVFrame *filt_frame;
 
-    if (!frame || !filt_frame) {
-        perror("Could not allocate frame");
-        exit(1);
-    }
     if (argc != 2) {
         fprintf(stderr, "Usage: %s file\n", argv[0]);
+        exit(1);
+    }
+
+    frame = av_frame_alloc();
+    filt_frame = av_frame_alloc();
+    if (!frame || !filt_frame) {
+        perror("Could not allocate frame");
         exit(1);
     }
 
