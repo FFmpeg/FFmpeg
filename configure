@@ -282,7 +282,8 @@ External library support:
   --enable-libxcb-shape    enable X11 grabbing shape rendering [autodetect]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
-  --enable-libxml2         enable XML parsing using the C library libxml2 [no]
+  --enable-libxml2         enable XML parsing using the C library libxml2, needed
+                           for dash demuxing support [no]
   --enable-libzimg         enable z.lib, needed for zscale filter [no]
   --enable-libzmq          enable message passing via libzmq [no]
   --enable-libzvbi         enable teletext support via libzvbi [no]
