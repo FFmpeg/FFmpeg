@@ -585,6 +585,12 @@ adelay=0|500S|700S
 @end example
 @end itemize
 
+@section aderivative, aintegral
+
+Compute derivative/integral of audio stream.
+
+Applying both filters one after another produces original audio.
+
 @section aecho
 
 Apply echoing to the input audio.

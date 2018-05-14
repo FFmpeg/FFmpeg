@@ -6,6 +6,7 @@ version <next>:
 - tmix filter
 - amplify filter
 - fftdnoiz filter
+- aderivative and aintegral audio filters
 
 
 version 4.0:
