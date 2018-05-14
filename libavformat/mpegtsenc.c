@@ -1983,6 +1983,6 @@ AVOutputFormat ff_mpegts_muxer = {
     .write_trailer  = mpegts_write_end,
     .deinit         = mpegts_deinit,
     .check_bitstream = mpegts_check_bitstream,
-    .flags          = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS,
+    .flags          = AVFMT_ALLOW_FLUSH | AVFMT_VARIABLE_FPS | AVFMT_NODIMENSIONS,
     .priv_class     = &mpegts_muxer_class,
 };
