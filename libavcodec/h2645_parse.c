@@ -212,7 +212,7 @@ static const char *hevc_nal_type_name[64] = {
     "UNSPEC63", // HEVC_NAL_UNSPEC63
 };
 
-static const char *nal_unit_name(int nal_type)
+static const char *hevc_nal_unit_name(int nal_type)
 {
     av_assert0(nal_type >= 0 && nal_type < 64);
     return hevc_nal_type_name[nal_type];
@@ -264,7 +264,7 @@ static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
 
     av_log(logctx, AV_LOG_DEBUG,
            "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
-           nal->type, nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
+           nal->type, hevc_nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
 
     return nuh_layer_id == 0;
 }
