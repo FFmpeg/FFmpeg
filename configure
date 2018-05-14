@@ -3988,8 +3988,7 @@ case "$toolchain" in
             cc_default="cl"
             cxx_default="cl"
         else
-            cc_default="c99wrap cl"
-            cxx_default="c99wrap cl"
+            die "Unsupported MSVC version (2013 or newer required)"
         fi
         ld_default="$source_path/compat/windows/mslink"
         nm_default="dumpbin -symbols"
