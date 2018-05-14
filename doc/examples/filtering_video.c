@@ -247,27 +247,25 @@ int main(int argc, char **argv)
                     goto end;
                 }
 
-                if (ret >= 0) {
-                    frame->pts = frame->best_effort_timestamp;
+                frame->pts = frame->best_effort_timestamp;
 
-                    /* push the decoded frame into the filtergraph */
-                    if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
-                        av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
-                        break;
-                    }
-
-                    /* pull filtered frames from the filtergraph */
-                    while (1) {
-                        ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
-                        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
-                            break;
-                        if (ret < 0)
-                            goto end;
-                        display_frame(filt_frame, buffersink_ctx->inputs[0]->time_base);
-                        av_frame_unref(filt_frame);
-                    }
-                    av_frame_unref(frame);
+                /* push the decoded frame into the filtergraph */
+                if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
+                    av_log(NULL, AV_LOG_ERROR, "Error while feeding the filtergraph\n");
+                    break;
                 }
+
+                /* pull filtered frames from the filtergraph */
+                while (1) {
+                    ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
+                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                        break;
+                    if (ret < 0)
+                        goto end;
+                    display_frame(filt_frame, buffersink_ctx->inputs[0]->time_base);
+                    av_frame_unref(filt_frame);
+                }
+                av_frame_unref(frame);
             }
         }
         av_packet_unref(&packet);
