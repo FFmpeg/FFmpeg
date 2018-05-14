@@ -337,6 +337,7 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     AVFrame* out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     ThreadData td;
     ConvThreadData ctd;
+    int nb_threads;
 
     if (!out){
         av_log(context, AV_LOG_ERROR, "could not allocate memory for output frame\n");
@@ -351,20 +352,21 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     td.height = ctd.height = out->height;
     td.width = ctd.width = out->width;
 
-    context->internal->execute(context, uint8_to_double, &td, NULL, FFMIN(td.height, context->graph->nb_threads));
+    nb_threads = ff_filter_get_nb_threads(context);
+    context->internal->execute(context, uint8_to_double, &td, NULL, FFMIN(td.height, nb_threads));
     ctd.conv = &srcnn_context->conv1;
     ctd.input = srcnn_context->input_output_buf;
     ctd.output = srcnn_context->conv1_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, context->graph->nb_threads));
+    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
     ctd.conv = &srcnn_context->conv2;
     ctd.input = srcnn_context->conv1_buf;
     ctd.output = srcnn_context->conv2_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, context->graph->nb_threads));
+    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
     ctd.conv = &srcnn_context->conv3;
     ctd.input = srcnn_context->conv2_buf;
     ctd.output = srcnn_context->input_output_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, context->graph->nb_threads));
-    context->internal->execute(context, double_to_uint8, &td, NULL, FFMIN(td.height, context->graph->nb_threads));
+    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
+    context->internal->execute(context, double_to_uint8, &td, NULL, FFMIN(td.height, nb_threads));
 
     return ff_filter_frame(outlink, out);
 }
