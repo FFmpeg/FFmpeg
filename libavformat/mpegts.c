@@ -490,7 +490,7 @@ static MpegTSFilter *mpegts_open_section_filter(MpegTSContext *ts,
     sec = &filter->u.section_filter;
     sec->section_cb  = section_cb;
     sec->opaque      = opaque;
-    sec->section_buf = av_malloc(MAX_SECTION_SIZE);
+    sec->section_buf = av_mallocz(MAX_SECTION_SIZE);
     sec->check_crc   = check_crc;
     sec->last_ver    = -1;
 
