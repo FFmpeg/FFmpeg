@@ -626,11 +626,17 @@ AVFilter ff_vf_blend = {
 
 static int tblend_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    BlendContext *s = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx = inlink->dst;
+    BlendContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     if (s->prev_frame) {
-        AVFrame *out = blend_frame(inlink->dst, frame, s->prev_frame);
+        AVFrame *out;
+
+        if (ctx->is_disabled)
+            out = av_frame_clone(frame);
+        else
+            out = blend_frame(ctx, frame, s->prev_frame);
         av_frame_free(&s->prev_frame);
         s->prev_frame = frame;
         return ff_filter_frame(outlink, out);
@@ -674,7 +680,7 @@ AVFilter ff_vf_tblend = {
     .uninit        = uninit,
     .inputs        = tblend_inputs,
     .outputs       = tblend_outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif
