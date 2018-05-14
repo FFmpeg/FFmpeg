@@ -627,7 +627,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 goto end;
             }
 
-            bytes = FFALIGN(FF_CEIL_RSHIFT(get_bits_count(&s->gb), 3), 4);
+            bytes = FFALIGN(AV_CEIL_RSHIFT(get_bits_count(&s->gb), 3), 4);
             if (bytes > bytestream2_get_bytes_left(&gb)) {
                 av_log(avctx, AV_LOG_ERROR, "Bitstream overread error\n");
                 ret = AVERROR(EINVAL);

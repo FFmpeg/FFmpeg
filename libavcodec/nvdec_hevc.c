@@ -58,12 +58,13 @@ static void fill_scaling_lists(CUVIDHEVCPICPARAMS *ppc, const HEVCContext *s)
             ppc->ScalingList16x16[i][j] = sl->sl[2][i][pos];
 
             if (i < 2)
-                ppc->ScalingList32x32[i][j] = sl->sl[3][i][pos];
+                ppc->ScalingList32x32[i][j] = sl->sl[3][i * 3][pos];
         }
-    }
 
-    memcpy(ppc->ScalingListDCCoeff16x16, sl->sl_dc[0], sizeof(ppc->ScalingListDCCoeff16x16));
-    memcpy(ppc->ScalingListDCCoeff32x32, sl->sl_dc[1], sizeof(ppc->ScalingListDCCoeff32x32));
+        ppc->ScalingListDCCoeff16x16[i] = sl->sl_dc[0][i];
+        if (i < 2)
+            ppc->ScalingListDCCoeff32x32[i] = sl->sl_dc[1][i * 3];
+    }
 }
 
 static int nvdec_hevc_start_frame(AVCodecContext *avctx,
@@ -166,8 +167,7 @@ static int nvdec_hevc_start_frame(AVCodecContext *avctx,
 
             .NumBitsForShortTermRPSInSlice                = s->sh.short_term_rps ? s->sh.short_term_ref_pic_set_size : 0,
             .NumDeltaPocsOfRefRpsIdx                      = s->sh.short_term_rps ? s->sh.short_term_rps->rps_idx_num_delta_pocs : 0,
-            .NumPocTotalCurr                              = s->rps[ST_CURR_BEF].nb_refs + s->rps[ST_CURR_AFT].nb_refs +
-                                                            s->rps[LT_CURR].nb_refs,
+            .NumPocTotalCurr                              = ff_hevc_frame_nb_refs(s),
             .NumPocStCurrBefore                           = s->rps[ST_CURR_BEF].nb_refs,
             .NumPocStCurrAfter                            = s->rps[ST_CURR_AFT].nb_refs,
             .NumPocLtCurr                                 = s->rps[LT_CURR].nb_refs,

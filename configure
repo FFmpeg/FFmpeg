@@ -303,6 +303,7 @@ External library support:
   --disable-sdl2           disable sdl2 [autodetect]
   --disable-securetransport disable Secure Transport, needed for TLS support
                            on OSX if openssl and gnutls are not used [autodetect]
+  --enable-vapoursynth     enable VapourSynth demuxer [no]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
 
@@ -1724,6 +1725,7 @@ EXTERNAL_LIBRARY_LIST="
     mediacodec
     openal
     opengl
+    vapoursynth
 "
 
 HWACCEL_AUTODETECT_LIBRARY_LIST="
@@ -3091,6 +3093,7 @@ libx265_encoder_deps="libx265"
 libxavs_encoder_deps="libxavs"
 libxvid_encoder_deps="libxvid"
 libzvbi_teletext_decoder_deps="libzvbi"
+vapoursynth_demuxer_deps="vapoursynth"
 videotoolbox_suggest="coreservices"
 videotoolbox_deps="corefoundation coremedia corevideo"
 videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrames"
@@ -3225,8 +3228,7 @@ v4l2_outdev_suggest="libv4l2"
 vfwcap_indev_deps="vfw32 vfwcap_defines"
 xcbgrab_indev_deps="libxcb"
 xcbgrab_indev_suggest="libxcb_shm libxcb_shape libxcb_xfixes"
-xv_outdev_deps="X11_extensions_Xvlib_h XvGetPortAttribute"
-xv_outdev_extralibs="-lXv -lX11 -lXext"
+xv_outdev_deps="xlib"
 
 # protocols
 async_protocol_deps="threads"
@@ -3323,6 +3325,8 @@ elbg_filter_deps="avcodec"
 eq_filter_deps="gpl"
 fftfilt_filter_deps="avcodec"
 fftfilt_filter_select="rdft"
+fftdnoiz_filter_deps="avcodec"
+fftdnoiz_filter_select="fft"
 find_rect_filter_deps="avcodec avformat gpl"
 firequalizer_filter_deps="avcodec"
 firequalizer_filter_select="rdft"
@@ -3387,6 +3391,7 @@ spectrumsynth_filter_deps="avcodec"
 spectrumsynth_filter_select="fft"
 spp_filter_deps="gpl avcodec"
 spp_filter_select="fft idctdsp fdctdsp me_cmp pixblockdsp"
+srcnn_filter_deps="avformat"
 stereo3d_filter_deps="gpl"
 subtitles_filter_deps="avformat avcodec libass"
 super2xsai_filter_deps="gpl"
@@ -5800,7 +5805,7 @@ check_func_headers windows.h Sleep
 check_func_headers windows.h VirtualAlloc
 check_func_headers glob.h glob
 enabled xlib &&
-    check_func_headers "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
+    check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
 check_header direct.h
 check_header dirent.h
@@ -5884,8 +5889,10 @@ check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
 if ! disabled ffnvcodec; then
-    check_pkg_config ffnvcodec "ffnvcodec >= 8.0.14.1" \
-        "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
+    check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.2" \
+          "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" "" || \
+        { test_pkg_config ffnvcodec_tmp "ffnvcodec < 8.1" "" "" && check_pkg_config ffnvcodec "ffnvcodec >= 8.0.14.2" \
+          "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""; }
 fi
 
 check_cpp_condition winrt windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)"
@@ -5930,7 +5937,8 @@ if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     fi
 fi
 
-enabled  zlib && check_lib zlib   zlib.h      zlibVersion    -lz
+enabled  zlib && { check_pkg_config zlib zlib "zlib.h" zlibVersion ||
+                   check_lib zlib   zlib.h      zlibVersion    -lz; }
 enabled bzlib && check_lib bzlib bzlib.h BZ2_bzlibVersion    -lbz2
 enabled  lzma && check_lib lzma   lzma.h lzma_version_number -llzma
 
@@ -5965,7 +5973,7 @@ enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gn
 enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
 enabled ladspa            && require_header ladspa.h
 enabled libaom            && require_pkg_config libaom "aom >= 0.1.0" aom/aom_codec.h aom_codec_version
-enabled lv2               && require_pkg_config lv2 lilv-0 "lilv-0/lilv/lilv.h" lilv_world_new
+enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
 enabled libass            && require_pkg_config libass libass ass/ass.h ass_library_init
 enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bluray.h bd_open
@@ -6133,6 +6141,8 @@ enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/r
                                { enabled libdrm ||
                                  die "ERROR: rkmpp requires --enable-libdrm"; }
                              }
+enabled vapoursynth       && require_pkg_config vapoursynth "vapoursynth-script >= 42" VSScript.h vsscript_init
+
 
 if enabled gcrypt; then
     GCRYPT_CONFIG="${cross_prefix}libgcrypt-config"
@@ -6790,6 +6800,7 @@ enabled signature_filter    && prepend avfilter_deps "avcodec avformat"
 enabled smartblur_filter    && prepend avfilter_deps "swscale"
 enabled spectrumsynth_filter && prepend avfilter_deps "avcodec"
 enabled spp_filter          && prepend avfilter_deps "avcodec"
+enabled srcnn_filter        && prepend avfilter_deps "avformat"
 enabled subtitles_filter    && prepend avfilter_deps "avformat avcodec"
 enabled uspp_filter         && prepend avfilter_deps "avcodec"
 enabled zoompan_filter      && prepend avfilter_deps "swscale"

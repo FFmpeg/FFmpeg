@@ -152,6 +152,8 @@ typedef struct NvencContext
     int64_t initial_pts[2];
     int first_packet_output;
 
+    int support_dyn_bitrate;
+
     void *nvencoder;
 
     int preset;

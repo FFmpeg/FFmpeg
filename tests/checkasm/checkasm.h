@@ -62,6 +62,7 @@ void checkasm_check_huffyuvdsp(void);
 void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_llviddsp(void);
 void checkasm_check_llviddspenc(void);
+void checkasm_check_nlmeans(void);
 void checkasm_check_pixblockdsp(void);
 void checkasm_check_sbrdsp(void);
 void checkasm_check_synth_filter(void);

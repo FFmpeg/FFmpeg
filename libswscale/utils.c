@@ -137,6 +137,8 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GRAY10LE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY12BE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY12LE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY14BE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY14LE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16BE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16LE]    = { 1, 1 },
     [AV_PIX_FMT_YUV440P]     = { 1, 1 },
@@ -1024,6 +1026,8 @@ static int handle_jpeg(enum AVPixelFormat *format)
     case AV_PIX_FMT_GRAY10BE:
     case AV_PIX_FMT_GRAY12LE:
     case AV_PIX_FMT_GRAY12BE:
+    case AV_PIX_FMT_GRAY14LE:
+    case AV_PIX_FMT_GRAY14BE:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_YA16BE:

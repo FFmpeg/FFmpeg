@@ -198,7 +198,7 @@ static int bluray_read(URLContext *h, unsigned char *buf, int size)
 
     len = bd_read(bd->bd, buf, size);
 
-    return len;
+    return len == 0 ? AVERROR_EOF : len;
 }
 
 static int64_t bluray_seek(URLContext *h, int64_t pos, int whence)

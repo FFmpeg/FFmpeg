@@ -369,7 +369,7 @@ typedef struct MpegEncContext {
     uint8_t *mb_info_ptr;
     int mb_info_size;
     int ehc_mode;
-    int rc_strategy;
+    int rc_strategy;                ///< deprecated
 
     /* H.263+ specific */
     int umvplus;                    ///< == H.263+ && unrestricted_mv
@@ -587,12 +587,6 @@ typedef struct MpegEncContext {
 #define FF_MPV_FLAG_NAQ          0x0010
 #define FF_MPV_FLAG_MV0          0x0020
 
-enum rc_strategy {
-    MPV_RC_STRATEGY_FFMPEG,
-    MPV_RC_STRATEGY_XVID,
-    NB_MPV_RC_STRATEGY
-};
-
 #define FF_MPV_OPT_CMP_FUNC \
 { "sad",    "Sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
 { "sse",    "Sum of squared errors", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
@@ -646,9 +640,9 @@ FF_MPV_OPT_CMP_FUNC, \
 {"lmax", "maximum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
 {"ibias", "intra quant bias",                                       FF_MPV_OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
 {"pbias", "inter quant bias",                                       FF_MPV_OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
-{"rc_strategy", "ratecontrol method",                               FF_MPV_OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = MPV_RC_STRATEGY_FFMPEG }, 0, NB_MPV_RC_STRATEGY-1, FF_MPV_OPT_FLAGS, "rc_strategy" },   \
-    { "ffmpeg", "default native rate control", 0, AV_OPT_TYPE_CONST, { .i64 = MPV_RC_STRATEGY_FFMPEG }, 0, 0, FF_MPV_OPT_FLAGS, "rc_strategy" }, \
-    { "xvid",   "libxvid (2 pass only)",       0, AV_OPT_TYPE_CONST, { .i64 = MPV_RC_STRATEGY_XVID },   0, 0, FF_MPV_OPT_FLAGS, "rc_strategy" }, \
+{"rc_strategy", "ratecontrol method",                               FF_MPV_OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" },   \
+    { "ffmpeg", "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
+    { "xvid",   "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
 {"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, "motion_est" },   \
 { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
 { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \

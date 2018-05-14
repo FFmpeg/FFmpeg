@@ -2371,11 +2371,11 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
         goto end;
     }
     while (!av_read_frame(fmt_ctx, &pkt)) {
-        if (ifile->nb_streams > nb_streams) {
+        if (fmt_ctx->nb_streams > nb_streams) {
             REALLOCZ_ARRAY_STREAM(nb_streams_frames,  nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(nb_streams_packets, nb_streams, fmt_ctx->nb_streams);
             REALLOCZ_ARRAY_STREAM(selected_streams,   nb_streams, fmt_ctx->nb_streams);
-            nb_streams = ifile->nb_streams;
+            nb_streams = fmt_ctx->nb_streams;
         }
         if (selected_streams[pkt.stream_index]) {
             AVRational tb = ifile->streams[pkt.stream_index].st->time_base;

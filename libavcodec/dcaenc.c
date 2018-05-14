@@ -152,8 +152,11 @@ static int subband_bufer_alloc(DCAEncContext *c)
 
 static void subband_bufer_free(DCAEncContext *c)
 {
-    int32_t *bufer = c->subband[0][0] - DCA_ADPCM_COEFFS;
-    av_freep(&bufer);
+    if (c->subband[0][0]) {
+        int32_t *bufer = c->subband[0][0] - DCA_ADPCM_COEFFS;
+        av_free(bufer);
+        c->subband[0][0] = NULL;
+    }
 }
 
 static int encode_init(AVCodecContext *avctx)

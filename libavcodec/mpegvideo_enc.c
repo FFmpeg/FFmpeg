@@ -1024,18 +1024,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (ff_rate_control_init(s) < 0)
         return -1;
 
-    if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID) {
-#if CONFIG_LIBXVID
-        ret = ff_xvid_rate_control_init(s);
-#else
-        ret = AVERROR(ENOSYS);
-        av_log(s->avctx, AV_LOG_ERROR,
-               "Xvid ratecontrol requires libavcodec compiled with Xvid support.\n");
-#endif
-        if (ret < 0)
-            return ret;
-    }
-
 #if FF_API_PRIVATE_OPT
     FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->brd_scale)
@@ -1082,10 +1070,6 @@ av_cold int ff_mpv_encode_end(AVCodecContext *avctx)
     int i;
 
     ff_rate_control_uninit(s);
-#if CONFIG_LIBXVID
-    if ((avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID)
-        ff_xvid_rate_control_uninit(s);
-#endif
 
     ff_mpv_common_end(s);
     if (CONFIG_MJPEG_ENCODER &&
@@ -3620,13 +3604,7 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
         s->current_picture.f->quality = s->next_lambda;
         if(!dry_run) s->next_lambda= 0;
     } else if (!s->fixed_qscale) {
-        int quality;
-#if CONFIG_LIBXVID
-        if ((s->avctx->flags & AV_CODEC_FLAG_PASS2) && s->rc_strategy == MPV_RC_STRATEGY_XVID)
-            quality = ff_xvid_rate_estimate_qscale(s, dry_run);
-        else
-#endif
-        quality = ff_rate_estimate_qscale(s, dry_run);
+        int quality = ff_rate_estimate_qscale(s, dry_run);
         s->current_picture_ptr->f->quality =
         s->current_picture.f->quality = quality;
         if (s->current_picture.f->quality < 0)

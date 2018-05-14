@@ -14,7 +14,7 @@ endef
 
 # H.264 read/write
 
-FATE_CBS_H264_SAMPLES =   \
+FATE_CBS_H264_CONFORMANCE_SAMPLES = \
     SVA_Base_B.264        \
     BASQP1_Sony_C.jsv     \
     FM1_BT_B.h264         \
@@ -30,7 +30,11 @@ FATE_CBS_H264_SAMPLES =   \
     CVSE2_Sony_B.jsv      \
     CABACI3_Sony_B.jsv
 
-$(foreach N,$(FATE_CBS_H264_SAMPLES),$(eval $(call FATE_CBS_TEST,h264,$(basename $(N)),h264-conformance/$(N),h264)))
+FATE_CBS_H264_SAMPLES = \
+    sei-1.h264
+
+$(foreach N,$(FATE_CBS_H264_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,h264,$(basename $(N)),h264-conformance/$(N),h264)))
+$(foreach N,$(FATE_CBS_H264_SAMPLES),$(eval $(call FATE_CBS_TEST,h264,$(basename $(N)),h264/$(N),h264)))
 
 FATE_CBS_H264-$(call FATE_CBS_DEPS, H264, H264, H264, H264, H264) = $(FATE_CBS_h264)
 FATE_SAMPLES_AVCONV += $(FATE_CBS_H264-yes)

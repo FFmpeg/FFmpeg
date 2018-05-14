@@ -138,9 +138,9 @@ int main(int argc, char **argv)
     }
 
     if (filter->query_formats)
-        filter->query_formats(filter_ctx);
+        ret = filter->query_formats(filter_ctx);
     else
-        ff_default_query_formats(filter_ctx);
+        ret = ff_default_query_formats(filter_ctx);
 
     print_formats(filter_ctx);
 

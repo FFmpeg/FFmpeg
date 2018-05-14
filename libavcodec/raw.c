@@ -125,6 +125,8 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { AV_PIX_FMT_GRAY10BE,    MKTAG(10 ,  0 , '1', 'Y') },
     { AV_PIX_FMT_GRAY12LE,    MKTAG('Y', '1',  0 , 12 ) },
     { AV_PIX_FMT_GRAY12BE,    MKTAG(12 ,  0 , '1', 'Y') },
+    { AV_PIX_FMT_GRAY14LE,    MKTAG('Y', '1',  0 , 14 ) },
+    { AV_PIX_FMT_GRAY14BE,    MKTAG(14 ,  0 , '1', 'Y') },
     { AV_PIX_FMT_GRAY16LE,    MKTAG('Y', '1',  0 , 16 ) },
     { AV_PIX_FMT_GRAY16BE,    MKTAG(16 ,  0 , '1', 'Y') },
     { AV_PIX_FMT_YUV420P9LE,  MKTAG('Y', '3', 11 ,  9 ) },

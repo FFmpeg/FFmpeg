@@ -1365,6 +1365,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GRAY9LE:
     case AV_PIX_FMT_GRAY10LE:
     case AV_PIX_FMT_GRAY12LE:
+    case AV_PIX_FMT_GRAY14LE:
     case AV_PIX_FMT_GRAY16LE:
 
     case AV_PIX_FMT_P016LE:
@@ -1404,6 +1405,7 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
     case AV_PIX_FMT_GRAY9BE:
     case AV_PIX_FMT_GRAY10BE:
     case AV_PIX_FMT_GRAY12BE:
+    case AV_PIX_FMT_GRAY14BE:
     case AV_PIX_FMT_GRAY16BE:
 
     case AV_PIX_FMT_P016BE:

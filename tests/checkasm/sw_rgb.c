@@ -68,7 +68,7 @@ static void check_shuffle_bytes(void * func, const char * report)
     }
 }
 
-static void check_uyvy_to_422p()
+static void check_uyvy_to_422p(void)
 {
     int i;
 

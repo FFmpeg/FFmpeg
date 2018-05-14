@@ -5,6 +5,7 @@ version <next>:
 - deblock filter
 - tmix filter
 - amplify filter
+- fftdnoiz filter
 
 
 version 4.0:
@@ -60,6 +61,7 @@ version 4.0:
 - Haivision SRT protocol via libsrt
 - segafilm muxer
 - vfrdet filter
+- SRCNN filter
 
 
 version 3.4:

@@ -57,6 +57,10 @@ int main(void)
     uint32_t *ii_start  = ii  + ii_lz_32 + 1; // skip top 0-line and left 0-column
     uint32_t *ii_start2 = ii2 + ii_lz_32 + 1; // skip top 0-line and left 0-column
 
+    NLMeansDSPContext dsp = {0};
+
+    ff_nlmeans_init(&dsp);
+
     if (!ii || !ii2)
         return -1;
 
@@ -64,7 +68,7 @@ int main(void)
         for (xoff = -e; xoff <= e; xoff++) {
             printf("xoff=%d yoff=%d\n", xoff, yoff);
 
-            compute_ssd_integral_image(ii_start, ii_lz_32,
+            compute_ssd_integral_image(&dsp, ii_start, ii_lz_32,
                                        src, lz, xoff, yoff, e, w, h);
             display_integral(ii_start, ii_w, ii_h, ii_lz_32);
 
