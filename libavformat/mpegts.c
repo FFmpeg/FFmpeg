@@ -1683,6 +1683,11 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         mpegts_find_stream_type(st, desc_tag, DESC_types);
 
     switch (desc_tag) {
+    case 0x02: /* video stream descriptor */
+        if (get8(pp, desc_end) & 0x1) {
+            st->disposition |= AV_DISPOSITION_STILL_IMAGE;
+        }
+        break;
     case 0x1E: /* SL descriptor */
         desc_es_id = get16(pp, desc_end);
         if (desc_es_id < 0)
