@@ -1745,10 +1745,10 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                     }
                 }
 
-               if (st->codecpar->extradata_size < language_count * 2)
-                   return AVERROR_INVALIDDATA;
+                if (st->codecpar->extradata_size < language_count * 2)
+                    return AVERROR_INVALIDDATA;
 
-               extradata = st->codecpar->extradata;
+                extradata = st->codecpar->extradata;
 
                 for (i = 0; i < language_count; i++) {
                     language[i * 4 + 0] = get8(pp, desc_end);
