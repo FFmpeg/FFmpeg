@@ -260,12 +260,14 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
  *  @param[in]     avctx     pointer to the AVCodecContext
  *  @return        result code: 0 = OK, negative number = error
  */
-static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
+static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *arg_band,
                            AVCodecContext *avctx)
 {
     int plane, band_num, indx, transform_id, scan_indx;
     int i;
     int quant_mat;
+    IVIBandDesc temp_band, *band = &temp_band;
+    memcpy(&temp_band, arg_band, sizeof(temp_band));
 
     plane    = get_bits(&ctx->gb, 2);
     band_num = get_bits(&ctx->gb, 4);
@@ -395,10 +397,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
         /* decode block huffman codebook */
         if (!get_bits1(&ctx->gb))
-            band->blk_vlc.tab = ctx->blk_vlc.tab;
+            arg_band->blk_vlc.tab = ctx->blk_vlc.tab;
         else
             if (ff_ivi_dec_huff_desc(&ctx->gb, 1, IVI_BLK_HUFF,
-                                     &band->blk_vlc, avctx))
+                                     &arg_band->blk_vlc, avctx))
                 return AVERROR_INVALIDDATA;
 
         /* select appropriate rvmap table for this band */
@@ -438,6 +440,9 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         av_log(avctx, AV_LOG_ERROR, "band->scan not set\n");
         return AVERROR_INVALIDDATA;
     }
+
+    band->blk_vlc = arg_band->blk_vlc;
+    memcpy(arg_band, band, sizeof(*arg_band));
 
     return 0;
 }
