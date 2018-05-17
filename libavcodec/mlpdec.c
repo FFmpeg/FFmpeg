@@ -474,7 +474,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     uint8_t checksum;
     uint8_t lossless_check;
     int start_count = get_bits_count(gbp);
-    int min_channel, max_channel, max_matrix_channel;
+    int min_channel, max_channel, max_matrix_channel, noise_type;
     const int std_max_matrix_channel = m->avctx->codec_id == AV_CODEC_ID_MLP
                                      ? MAX_MATRIX_CHANNEL_MLP
                                      : MAX_MATRIX_CHANNEL_TRUEHD;
@@ -487,9 +487,9 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         return AVERROR_INVALIDDATA;
     }
 
-    s->noise_type = get_bits1(gbp);
+    noise_type = get_bits1(gbp);
 
-    if (m->avctx->codec_id == AV_CODEC_ID_MLP && s->noise_type) {
+    if (m->avctx->codec_id == AV_CODEC_ID_MLP && noise_type) {
         av_log(m->avctx, AV_LOG_ERROR, "MLP must have 0x31ea sync word.\n");
         return AVERROR_INVALIDDATA;
     }
@@ -515,7 +515,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
 
     /* This should happen for TrueHD streams with >6 channels and MLP's noise
      * type. It is not yet known if this is allowed. */
-    if (max_channel > MAX_MATRIX_CHANNEL_MLP && !s->noise_type) {
+    if (max_channel > MAX_MATRIX_CHANNEL_MLP && !noise_type) {
         avpriv_request_sample(m->avctx,
                               "%d channels (more than the "
                               "maximum supported by the decoder)",
@@ -532,6 +532,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     s->min_channel        = min_channel;
     s->max_channel        = max_channel;
     s->max_matrix_channel = max_matrix_channel;
+    s->noise_type         = noise_type;
 
     if (m->avctx->request_channel_layout && (s->ch_layout & m->avctx->request_channel_layout) ==
         m->avctx->request_channel_layout && m->max_decoded_substream > substr) {
