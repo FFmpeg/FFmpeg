@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-05-xx - xxxxxxxxxx - lavf 58.15.100 - avformat.h
+  Add pmt_version field to AVProgram
+  Add program_num, pmt_version, pmt_stream_idx to AVStream
+
 2018-05-xx - xxxxxxxxxx - lavf 58.14.100 - avformat.h
   Add AV_DISPOSITION_STILL_IMAGE
 

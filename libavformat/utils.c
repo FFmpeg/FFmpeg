@@ -4569,6 +4569,7 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
             return NULL;
         dynarray_add(&ac->programs, &ac->nb_programs, program);
         program->discard = AVDISCARD_NONE;
+        program->pmt_version = -1;
     }
     program->id = id;
     program->pts_wrap_reference = AV_NOPTS_VALUE;
