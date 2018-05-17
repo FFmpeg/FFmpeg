@@ -333,12 +333,23 @@ static void set_pmt_found(MpegTSContext *ts, unsigned int programid)
     p->pmt_found = 1;
 }
 
-static void set_pcr_pid(AVFormatContext *s, unsigned int programid, unsigned int pid)
+static void update_av_program_info(AVFormatContext *s, unsigned int programid,
+                                   unsigned int pid, int version)
 {
     int i;
     for (i = 0; i < s->nb_programs; i++) {
-        if (s->programs[i]->id == programid) {
-            s->programs[i]->pcr_pid = pid;
+        AVProgram *program = s->programs[i];
+        if (program->id == programid) {
+            int old_pcr_pid = program->pcr_pid,
+                old_version = program->pmt_version;
+            program->pcr_pid = pid;
+            program->pmt_version = version;
+
+            if (old_version != -1 && old_version != version) {
+                av_log(s, AV_LOG_VERBOSE,
+                       "detected PMT change (program=%d, version=%d/%d, pcr_pid=0x%x/0x%x)\n",
+                       programid, old_version, version, old_pcr_pid, pid);
+            }
             break;
         }
     }
@@ -2041,7 +2052,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         return;
     pcr_pid &= 0x1fff;
     add_pid_to_pmt(ts, h->id, pcr_pid);
-    set_pcr_pid(ts->stream, h->id, pcr_pid);
+    update_av_program_info(ts->stream, h->id, pcr_pid, h->version);
 
     av_log(ts->stream, AV_LOG_TRACE, "pcr_pid=0x%x\n", pcr_pid);
 
@@ -2083,7 +2094,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
     set_pmt_found(ts, h->id);
 
 
-    for (;;) {
+    for (i = 0; ; i++) {
         st = 0;
         pes = NULL;
         stream_type = get8(&p, p_end);
@@ -2104,6 +2115,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (!pes->st)
                     goto out;
                 pes->st->id = pes->pid;
+                pes->st->program_num = h->id;
+                pes->st->pmt_version = h->version;
+                pes->st->pmt_stream_idx = i;
             }
             st = pes->st;
         } else if (is_pes_stream(stream_type, prog_reg_desc)) {
@@ -2115,6 +2129,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (!st)
                     goto out;
                 st->id = pes->pid;
+                st->program_num = h->id;
+                st->pmt_version = h->version;
+                st->pmt_stream_idx = i;
             }
         } else {
             int idx = ff_find_stream_index(ts->stream, pid);
@@ -2125,6 +2142,9 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 if (!st)
                     goto out;
                 st->id = pid;
+                st->program_num = h->id;
+                st->pmt_version = h->version;
+                st->pmt_stream_idx = i;
                 st->codecpar->codec_type = AVMEDIA_TYPE_DATA;
                 if (stream_type == 0x86 && prog_reg_desc == AV_RL32("CUEI")) {
                     mpegts_find_stream_type(st, stream_type, SCTE_types);
