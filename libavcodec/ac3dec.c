@@ -1800,6 +1800,9 @@ dependent_frame:
 
     *got_frame_ptr = 1;
 
+    if (!s->superframe_size)
+        return FFMIN(full_buf_size, s->frame_size);
+
     return FFMIN(full_buf_size, s->superframe_size);
 }
 
