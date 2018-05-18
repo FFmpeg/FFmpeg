@@ -8,6 +8,7 @@ brew install automake fdk-aac git lame libass libtool libvorbis libvpx opus sdl 
 --enable-libass --enable-libfdk-aac --enable-libfreetype \
 --enable-libopus --enable-libtheora --enable-libvorbis \
 --enable-libvpx --enable-libx264 --enable-libxvid --enable-ffplay \
+--enable-libaom \
 --extra-ldflags="-L/usr/local/Cellar/lame/3.99.5/lib \
 -L/usr/local/Cellar/libogg/1.3.2/lib \
 -L/usr/local/Cellar/theora/1.1.1/lib \
@@ -20,5 +21,5 @@ brew install automake fdk-aac git lame libass libtool libvorbis libvpx opus sdl 
 -I/usr/local/Cellar/xvid/1.3.4/include \
 -I/usr/local//Cellar/sdl/1.2.15/include"
 
-make 
+make
 sudo make install
