@@ -1029,7 +1029,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     av_log(v->s.avctx, AV_LOG_ERROR, "first field slice count too large\n");
                     continue;
                 }
-                s->end_mb_y = (i <= n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
+                s->end_mb_y = (i == n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             }
             if (s->end_mb_y <= s->start_mb_y) {
                 av_log(v->s.avctx, AV_LOG_ERROR, "end mb y %d %d invalid\n", s->end_mb_y, s->start_mb_y);
