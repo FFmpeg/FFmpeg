@@ -114,6 +114,8 @@ static int webm_chunk_write_header(AVFormatContext *s)
     int ret;
     int i;
     AVDictionary *options = NULL;
+    char oc_filename[MAX_FILENAME_SIZE];
+    char *oc_url;
 
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
@@ -127,9 +129,13 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     oc = wc->avf;
-    ret = get_chunk_filename(s, 1, oc->url);
+    ret = get_chunk_filename(s, 1, oc_filename);
     if (ret < 0)
         return ret;
+    oc_url = av_strdup(oc_filename);
+    if (!oc_url)
+        return AVERROR(ENOMEM);
+    ff_format_set_url(oc, oc_url);
     if (wc->http_method)
         av_dict_set(&options, "method", wc->http_method, 0);
     ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);

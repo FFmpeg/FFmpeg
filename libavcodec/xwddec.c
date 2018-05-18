@@ -227,7 +227,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
             blue   = bytestream2_get_byteu(&gb);
             bytestream2_skipu(&gb, 3); // skip bitmask flag and padding
 
-            dst[i] = red << 16 | green << 8 | blue;
+            dst[i] = 0xFFU << 24 | red << 16 | green << 8 | blue;
         }
     }
 

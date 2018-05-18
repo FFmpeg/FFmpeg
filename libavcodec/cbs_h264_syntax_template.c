@@ -626,6 +626,30 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   H264RawSEIPanScanRect *current)
+{
+    int err, i;
+
+    ue(pan_scan_rect_id, 0, UINT32_MAX - 1);
+    flag(pan_scan_rect_cancel_flag);
+
+    if (!current->pan_scan_rect_cancel_flag) {
+        ue(pan_scan_cnt_minus1, 0, 2);
+
+        for (i = 0; i <= current->pan_scan_cnt_minus1; i++) {
+            ses(pan_scan_rect_left_offset[i],   INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_right_offset[i],  INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_top_offset[i],    INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_bottom_offset[i], INT32_MIN + 1, INT32_MAX, 1, i);
+        }
+
+        ue(pan_scan_rect_repetition_period, 0, 16384);
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext *rw,
                                           H264RawSEIUserDataRegistered *current,
                                           uint32_t *payload_size)
@@ -716,6 +740,25 @@ static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *
     return 0;
 }
 
+static int FUNC(sei_mastering_display_colour_volume)(CodedBitstreamContext *ctx, RWContext *rw,
+                                                     H264RawSEIMasteringDisplayColourVolume *current)
+{
+    int err, c;
+
+    for (c = 0; c < 3; c++) {
+        us(16, display_primaries_x[c], 0, 50000, 1, c);
+        us(16, display_primaries_y[c], 0, 50000, 1, c);
+    }
+
+    u(16, white_point_x, 0, 50000);
+    u(16, white_point_y, 0, 50000);
+
+    u(32, max_display_mastering_luminance, 1, MAX_UINT_BITS(32));
+    u(32, min_display_mastering_luminance, 0, current->max_display_mastering_luminance - 1);
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H264RawSEIPayload *current)
 {
@@ -736,6 +779,10 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     case H264_SEI_TYPE_PIC_TIMING:
         CHECK(FUNC(sei_pic_timing)
               (ctx, rw, &current->payload.pic_timing));
+        break;
+    case H264_SEI_TYPE_PAN_SCAN_RECT:
+        CHECK(FUNC(sei_pan_scan_rect)
+              (ctx, rw, &current->payload.pan_scan_rect));
         break;
     case H264_SEI_TYPE_FILLER_PAYLOAD:
         {
@@ -759,10 +806,17 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         CHECK(FUNC(sei_display_orientation)
               (ctx, rw, &current->payload.display_orientation));
         break;
+    case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+        CHECK(FUNC(sei_mastering_display_colour_volume)
+              (ctx, rw, &current->payload.mastering_display_colour_volume));
+        break;
     default:
         {
-            allocate(current->payload.other.data, current->payload_size);
-            for (i = 0; i < current->payload_size; i++)
+#ifdef READ
+            current->payload.other.data_length = current->payload_size;
+#endif
+            allocate(current->payload.other.data, current->payload.other.data_length);
+            for (i = 0; i < current->payload.other.data_length; i++)
                 xu(8, payload_byte[i], current->payload.other.data[i], 0, 255, 1, i);
         }
     }

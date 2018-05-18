@@ -125,6 +125,7 @@ typedef struct DASHContext {
     int streaming;
     int64_t timeout;
     int index_correction;
+    char *format_options_str;
 } DASHContext;
 
 static struct codec_string {
@@ -1017,6 +1018,11 @@ static int dash_init(AVFormatContext *s)
         av_dict_free(&opts);
         os->init_start_pos = 0;
 
+        if (c->format_options_str) {
+            ret = av_dict_parse_string(&opts, c->format_options_str, "=", ":", 0);
+            if (ret < 0)
+                return ret;
+        }
         if (!strcmp(os->format_name, "mp4")) {
             if (c->streaming)
                 av_dict_set(&opts, "movflags", "frag_every_frame+dash+delay_moov", 0);
@@ -1538,6 +1544,7 @@ static const AVOption options[] = {
     { "streaming", "Enable/Disable streaming mode of output. Each frame will be moof fragment", OFFSET(streaming), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
     { "index_correction", "Enable/Disable segment index correction logic", OFFSET(index_correction), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "format_options","set list of options for the container format (mp4/webm) used for dash", OFFSET(format_options_str), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, E},
     { NULL },
 };
 

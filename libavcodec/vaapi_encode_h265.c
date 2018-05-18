@@ -24,15 +24,21 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h265.h"
 #include "hevc.h"
+#include "hevc_sei.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"
 
+enum {
+    SEI_MASTERING_DISPLAY       = 0x08,
+    SEI_CONTENT_LIGHT_LEVEL     = 0x10,
+};
 
 typedef struct VAAPIEncodeH265Context {
     unsigned int ctu_width;
@@ -47,6 +53,10 @@ typedef struct VAAPIEncodeH265Context {
     H265RawSPS sps;
     H265RawPPS pps;
     H265RawSlice slice;
+    H265RawSEI sei;
+
+    H265RawSEIMasteringDisplayColourVolume mastering_display;
+    H265RawSEIContentLightLevelInfo content_light_level;
 
     int64_t last_idr_frame;
     int pic_order_cnt;
@@ -58,6 +68,7 @@ typedef struct VAAPIEncodeH265Context {
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
     int aud_needed;
+    int sei_needed;
 } VAAPIEncodeH265Context;
 
 typedef struct VAAPIEncodeH265Options {
@@ -65,6 +76,7 @@ typedef struct VAAPIEncodeH265Options {
     int aud;
     int profile;
     int level;
+    int sei;
 } VAAPIEncodeH265Options;
 
 
@@ -170,6 +182,70 @@ static int vaapi_encode_h265_write_slice_header(AVCodecContext *avctx,
         goto fail;
 
     err = vaapi_encode_h265_write_access_unit(avctx, data, data_len, au);
+fail:
+    ff_cbs_fragment_uninit(priv->cbc, au);
+    return err;
+}
+
+static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
+                                                VAAPIEncodePicture *pic,
+                                                int index, int *type,
+                                                char *data, size_t *data_len)
+{
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    CodedBitstreamFragment   *au = &priv->current_access_unit;
+    int err, i;
+
+    if (priv->sei_needed) {
+        if (priv->aud_needed) {
+            err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+            if (err < 0)
+                goto fail;
+            priv->aud_needed = 0;
+        }
+
+        memset(&priv->sei, 0, sizeof(priv->sei));
+        priv->sei.nal_unit_header  = (H265RawNALUnitHeader) {
+            .nal_unit_type         = HEVC_NAL_SEI_PREFIX,
+            .nuh_layer_id          = 0,
+            .nuh_temporal_id_plus1 = 1,
+        };
+
+        i = 0;
+
+        if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
+            priv->sei.payload[i].payload_type = HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO;
+            priv->sei.payload[i].payload.mastering_display = priv->mastering_display;
+            ++i;
+        }
+
+        if (priv->sei_needed & SEI_CONTENT_LIGHT_LEVEL) {
+            priv->sei.payload[i].payload_type = HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
+            priv->sei.payload[i].payload.content_light_level = priv->content_light_level;
+            ++i;
+        }
+
+        priv->sei.payload_count = i;
+        av_assert0(priv->sei.payload_count > 0);
+
+        err = vaapi_encode_h265_add_nal(avctx, au, &priv->sei);
+        if (err < 0)
+            goto fail;
+        priv->sei_needed = 0;
+
+        err = vaapi_encode_h265_write_access_unit(avctx, data, data_len, au);
+        if (err < 0)
+            goto fail;
+
+        ff_cbs_fragment_uninit(priv->cbc, au);
+
+        *type = VAEncPackedHeaderRawData;
+        return 0;
+    } else {
+        return AVERROR_EOF;
+    }
+
 fail:
     ff_cbs_fragment_uninit(priv->cbc, au);
     return err;
@@ -587,6 +663,76 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
         priv->aud_needed = 0;
     }
 
+    priv->sei_needed = 0;
+
+    // Only look for the metadata on I/IDR frame on the output. We
+    // may force an IDR frame on the output where the medadata gets
+    // changed on the input frame.
+    if ((opt->sei & SEI_MASTERING_DISPLAY) &&
+        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+
+        if (sd) {
+            AVMasteringDisplayMetadata *mdm =
+                (AVMasteringDisplayMetadata *)sd->data;
+
+            // SEI is needed when both the primaries and luminance are set
+            if (mdm->has_primaries && mdm->has_luminance) {
+                const int mapping[3] = {1, 2, 0};
+                const int chroma_den = 50000;
+                const int luma_den   = 10000;
+
+                for (i = 0; i < 3; i++) {
+                    const int j = mapping[i];
+                    priv->mastering_display.display_primaries_x[i] =
+                        FFMIN(lrint(chroma_den *
+                                    av_q2d(mdm->display_primaries[j][0])),
+                              chroma_den);
+                    priv->mastering_display.display_primaries_y[i] =
+                        FFMIN(lrint(chroma_den *
+                                    av_q2d(mdm->display_primaries[j][1])),
+                              chroma_den);
+                }
+
+                priv->mastering_display.white_point_x =
+                    FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[0])),
+                          chroma_den);
+                priv->mastering_display.white_point_y =
+                    FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[1])),
+                          chroma_den);
+
+                priv->mastering_display.max_display_mastering_luminance =
+                    lrint(luma_den * av_q2d(mdm->max_luminance));
+                priv->mastering_display.min_display_mastering_luminance =
+                    FFMIN(lrint(luma_den * av_q2d(mdm->min_luminance)),
+                          priv->mastering_display.max_display_mastering_luminance);
+
+                priv->sei_needed |= SEI_MASTERING_DISPLAY;
+            }
+        }
+    }
+
+    if ((opt->sei & SEI_CONTENT_LIGHT_LEVEL) &&
+        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+        if (sd) {
+            AVContentLightMetadata *clm =
+                (AVContentLightMetadata *)sd->data;
+
+            priv->content_light_level.max_content_light_level =
+                FFMIN(clm->MaxCLL, 65535);
+            priv->content_light_level.max_pic_average_light_level =
+                FFMIN(clm->MaxFALL, 65535);
+
+            priv->sei_needed |= SEI_CONTENT_LIGHT_LEVEL;
+        }
+    }
+
     vpic->decoded_curr_pic = (VAPictureHEVC) {
         .picture_id    = pic->recon_surface,
         .pic_order_cnt = priv->pic_order_cnt,
@@ -895,6 +1041,8 @@ static const VAAPIEncodeType vaapi_encode_type_h265 = {
 
     .slice_header_type     = VAEncPackedHeaderHEVC_Slice,
     .write_slice_header    = &vaapi_encode_h265_write_slice_header,
+
+    .write_extra_header    = &vaapi_encode_h265_write_extra_header,
 };
 
 static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
@@ -943,7 +1091,8 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 
     ctx->va_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
-        VA_ENC_PACKED_HEADER_SLICE;     // Slice headers.
+        VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
+        VA_ENC_PACKED_HEADER_MISC;      // SEI
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);
@@ -1002,6 +1151,17 @@ static const AVOption vaapi_encode_h265_options[] = {
     { LEVEL("6.1", 183) },
     { LEVEL("6.2", 186) },
 #undef LEVEL
+
+    { "sei", "Set SEI to include",
+      OFFSET(sei), AV_OPT_TYPE_FLAGS,
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
+      0, INT_MAX, FLAGS, "sei" },
+    { "hdr",
+      "Include HDR metadata for mastering display colour volume "
+      "and content light level information",
+      0, AV_OPT_TYPE_CONST,
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
+      INT_MIN, INT_MAX, FLAGS, "sei" },
 
     { NULL },
 };

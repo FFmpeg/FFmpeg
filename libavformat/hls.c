@@ -211,16 +211,21 @@ typedef struct HLSContext {
     AVIOContext *playlist_pb;
 } HLSContext;
 
-static void free_segment_list(struct playlist *pls)
+static void free_segment_dynarray(struct segment **segments, int n_segments)
 {
     int i;
-    for (i = 0; i < pls->n_segments; i++) {
-        av_freep(&pls->segments[i]->key);
-        av_freep(&pls->segments[i]->url);
-        av_freep(&pls->segments[i]);
+    for (i = 0; i < n_segments; i++) {
+        av_freep(&segments[i]->key);
+        av_freep(&segments[i]->url);
+        av_freep(&segments[i]);
     }
-    av_freep(&pls->segments);
-    pls->n_segments = 0;
+}
+
+static void free_segment_list(struct playlist *pls)
+{
+        free_segment_dynarray(pls->segments, pls->n_segments);
+        av_freep(&pls->segments);
+        pls->n_segments = 0;
 }
 
 static void free_init_section_list(struct playlist *pls)
@@ -698,6 +703,9 @@ static int parse_playlist(HLSContext *c, const char *url,
     char tmp_str[MAX_URL_SIZE];
     struct segment *cur_init_section = NULL;
     int is_http = av_strstart(url, "http", NULL);
+    struct segment **prev_segments = NULL;
+    int prev_n_segments = 0;
+    int prev_start_seq_no = -1;
 
     if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
@@ -741,7 +749,12 @@ static int parse_playlist(HLSContext *c, const char *url,
     }
 
     if (pls) {
-        free_segment_list(pls);
+        prev_start_seq_no = pls->start_seq_no;
+        prev_segments = pls->segments;
+        prev_n_segments = pls->n_segments;
+        pls->segments = NULL;
+        pls->n_segments = 0;
+
         pls->finished = 0;
         pls->type = PLS_TYPE_UNSPECIFIED;
     }
@@ -880,6 +893,23 @@ static int parse_playlist(HLSContext *c, const char *url,
                 seg->init_section = cur_init_section;
             }
         }
+    }
+    if (prev_segments) {
+        if (pls->start_seq_no > prev_start_seq_no && c->first_timestamp != AV_NOPTS_VALUE) {
+            int64_t prev_timestamp = c->first_timestamp;
+            int i, diff = pls->start_seq_no - prev_start_seq_no;
+            for (i = 0; i < prev_n_segments && i < diff; i++) {
+                c->first_timestamp += prev_segments[i]->duration;
+            }
+            av_log(c->ctx, AV_LOG_DEBUG, "Media sequence change (%d -> %d)"
+                   " reflected in first_timestamp: %"PRId64" -> %"PRId64"\n",
+                   prev_start_seq_no, pls->start_seq_no,
+                   prev_timestamp, c->first_timestamp);
+        } else if (pls->start_seq_no < prev_start_seq_no) {
+            av_log(c->ctx, AV_LOG_WARNING, "Media sequence changed unexpectedly: %d -> %d\n",
+                   prev_start_seq_no, pls->start_seq_no);
+        }
+        free_segment_dynarray(prev_segments, prev_n_segments);
     }
     if (pls)
         pls->last_load_time = av_gettime_relative();

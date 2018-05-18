@@ -760,7 +760,12 @@ extern AVCodec ff_vp9_cuvid_decoder;
 extern AVCodec ff_vp9_mediacodec_decoder;
 extern AVCodec ff_vp9_vaapi_encoder;
 
+// The iterate API is not usable with ossfuzz due to the excessive size of binaries created
+#if CONFIG_OSSFUZZ
+extern AVCodec * codec_list[];
+#else
 #include "libavcodec/codec_list.c"
+#endif
 
 static AVOnce av_codec_static_init = AV_ONCE_INIT;
 static void av_codec_init_static(void)

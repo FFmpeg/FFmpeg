@@ -15,6 +15,12 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-05-xx - xxxxxxxxxx - lavf 58.14.100 - avformat.h
+  Add AV_DISPOSITION_STILL_IMAGE
+
+2018-05-xx - xxxxxxxxxx - lavu 56.18.101 - hwcontext_cuda.h
+  Add AVCUDADeviceContext.stream.
+
 2018-04-xx - xxxxxxxxxx - lavu 56.18.100 - pixdesc.h
   Add AV_PIX_FMT_FLAG_ALPHA to AV_PIX_FMT_PAL8.
 

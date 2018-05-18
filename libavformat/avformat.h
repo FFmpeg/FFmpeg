@@ -846,6 +846,7 @@ typedef struct AVStreamInternal AVStreamInternal;
 #define AV_DISPOSITION_DESCRIPTIONS 0x20000
 #define AV_DISPOSITION_METADATA     0x40000
 #define AV_DISPOSITION_DEPENDENT    0x80000 ///< dependent audio stream (mix_type=0 in mpegts)
+#define AV_DISPOSITION_STILL_IMAGE 0x100000 ///< still images in video stream (still_picture_flag=1 in mpegts)
 
 /**
  * Options for behavior on timestamp wrap detection.
@@ -1926,6 +1927,13 @@ typedef struct AVFormatContext {
      * - decoding: set by user
      */
     int max_streams;
+
+    /**
+     * Skip duration calcuation in estimate_timings_from_pts.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int skip_estimate_duration_from_pts;
 } AVFormatContext;
 
 #if FF_API_FORMAT_GET_SET

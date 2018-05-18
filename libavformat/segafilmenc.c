@@ -69,7 +69,7 @@ static int film_write_packet_to_header(AVFormatContext *format_context, FILMPack
         info1 = pkt->pts;
         info2 = pkt->duration;
         /* The top bit being set indicates a key frame */
-        if (pkt->keyframe)
+        if (!pkt->keyframe)
             info1 |= (1 << 31);
     }
 

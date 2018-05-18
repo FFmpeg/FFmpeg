@@ -264,6 +264,17 @@ typedef struct H264RawSEIPicTiming {
     H264RawSEIPicTimestamp timestamp[3];
 } H264RawSEIPicTiming;
 
+typedef struct H264RawSEIPanScanRect {
+    uint32_t pan_scan_rect_id;
+    uint8_t  pan_scan_rect_cancel_flag;
+    uint8_t  pan_scan_cnt_minus1;
+    int32_t  pan_scan_rect_left_offset[3];
+    int32_t  pan_scan_rect_right_offset[3];
+    int32_t  pan_scan_rect_top_offset[3];
+    int32_t  pan_scan_rect_bottom_offset[3];
+    uint16_t pan_scan_rect_repetition_period;
+} H264RawSEIPanScanRect;
+
 typedef struct H264RawSEIUserDataRegistered {
     uint8_t itu_t_t35_country_code;
     uint8_t itu_t_t35_country_code_extension_byte;
@@ -295,17 +306,28 @@ typedef struct H264RawSEIDisplayOrientation {
     uint8_t display_orientation_extension_flag;
 } H264RawSEIDisplayOrientation;
 
+typedef struct H264RawSEIMasteringDisplayColourVolume {
+    uint16_t display_primaries_x[3];
+    uint16_t display_primaries_y[3];
+    uint16_t white_point_x;
+    uint16_t white_point_y;
+    uint32_t max_display_mastering_luminance;
+    uint32_t min_display_mastering_luminance;
+} H264RawSEIMasteringDisplayColourVolume;
+
 typedef struct H264RawSEIPayload {
     uint32_t payload_type;
     uint32_t payload_size;
     union {
         H264RawSEIBufferingPeriod buffering_period;
         H264RawSEIPicTiming pic_timing;
+        H264RawSEIPanScanRect pan_scan_rect;
         // H264RawSEIFiller filler -> no fields.
         H264RawSEIUserDataRegistered user_data_registered;
         H264RawSEIUserDataUnregistered user_data_unregistered;
         H264RawSEIRecoveryPoint recovery_point;
         H264RawSEIDisplayOrientation display_orientation;
+        H264RawSEIMasteringDisplayColourVolume mastering_display_colour_volume;
         struct {
             uint8_t *data;
             size_t data_length;
@@ -421,6 +443,8 @@ typedef struct CodedBitstreamH264Context {
 
     // All currently available parameter sets.  These are updated when
     // any parameter set NAL unit is read/written with this context.
+    AVBufferRef *sps_ref[H264_MAX_SPS_COUNT];
+    AVBufferRef *pps_ref[H264_MAX_PPS_COUNT];
     H264RawSPS *sps[H264_MAX_SPS_COUNT];
     H264RawPPS *pps[H264_MAX_PPS_COUNT];
 
