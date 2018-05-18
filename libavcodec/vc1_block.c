@@ -181,7 +181,8 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
             mquant = -v->altpq;                                \
         if ((edges&4) && s->mb_x == (s->mb_width - 1))         \
             mquant = -v->altpq;                                \
-        if ((edges&8) && s->mb_y == (s->mb_height - 1))        \
+        if ((edges&8) &&                                       \
+            s->mb_y == ((s->mb_height >> v->field_mode) - 1))  \
             mquant = -v->altpq;                                \
         if (!mquant || mquant > 31) {                          \
             av_log(v->s.avctx, AV_LOG_ERROR,                   \
