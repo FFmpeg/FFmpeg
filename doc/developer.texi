@@ -129,6 +129,9 @@ designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
 compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
 
 @item
+for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
+
+@item
 Implementation defined behavior for signed integers is assumed to match the
 expected behavior for two's complement. Non representable values in integer
 casts are binary truncated. Shift right of signed values uses sign extension.
