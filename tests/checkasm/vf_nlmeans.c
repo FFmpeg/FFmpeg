@@ -80,8 +80,8 @@ void checkasm_check_nlmeans(void)
                     av_assert0(startx_safe - s2x >= 0); av_assert0(startx_safe - s2x < w);
                     av_assert0(starty_safe - s2y >= 0); av_assert0(starty_safe - s2y < h);
 
-                    memset(ii_ref, 0, ii_lz_32 * ii_h * sizeof(*ii_ref));
-                    memset(ii_new, 0, ii_lz_32 * ii_h * sizeof(*ii_new));
+                    memset(ii_ref, 0, (ii_lz_32 * ii_h - 1) * sizeof(*ii_ref));
+                    memset(ii_new, 0, (ii_lz_32 * ii_h - 1) * sizeof(*ii_new));
 
                     call_ref(ii_ref + starty_safe*ii_lz_32 + startx_safe, ii_lz_32,
                              src + (starty_safe - s1y) * src_lz + (startx_safe - s1x), src_lz,
@@ -92,10 +92,10 @@ void checkasm_check_nlmeans(void)
                              src + (starty_safe - s2y) * src_lz + (startx_safe - s2x), src_lz,
                              safe_pw, safe_ph);
 
-                    if (memcmp(ii_ref, ii_new, ii_h * ii_lz_32 * 4))
+                    if (memcmp(ii_ref, ii_new, (ii_lz_32 * ii_h - 1) * sizeof(*ii_ref)))
                         fail();
 
-                    memset(ii_new, 0, ii_lz_32 * ii_h * sizeof(*ii_new));
+                    memset(ii_new, 0, (ii_lz_32 * ii_h - 1) * sizeof(*ii_new));
                     bench_new(ii_new + starty_safe*ii_lz_32 + startx_safe, ii_lz_32,
                              src + (starty_safe - s1y) * src_lz + (startx_safe - s1x), src_lz,
                              src + (starty_safe - s2y) * src_lz + (startx_safe - s2x), src_lz,
