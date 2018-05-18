@@ -68,6 +68,7 @@ typedef struct MXFCodecUL {
     UID uid;
     unsigned matching_len;
     int id;
+    const char *desc;
 } MXFCodecUL;
 
 typedef struct {

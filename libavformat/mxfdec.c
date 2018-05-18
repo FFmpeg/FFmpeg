@@ -1278,12 +1278,8 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
 };
 
 static const MXFCodecUL mxf_data_essence_container_uls[] = {
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, 0 },
+    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x09,0x0d,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 }, 16, AV_CODEC_ID_NONE, "vbi_vanc_smpte_436M" },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0, AV_CODEC_ID_NONE },
-};
-
-static const char * const mxf_data_essence_descriptor[] = {
-    "vbi_vanc_smpte_436M",
 };
 
 static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segments, MXFIndexTableSegment ***sorted_segments)
@@ -2354,13 +2350,9 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
-            int codec_id = mxf_get_codec_ul(mxf_data_essence_container_uls,
-                                            essence_container_ul)->id;
-            if (codec_id >= 0 &&
-                codec_id < FF_ARRAY_ELEMS(mxf_data_essence_descriptor)) {
-                av_dict_set(&st->metadata, "data_type",
-                            mxf_data_essence_descriptor[codec_id], 0);
-            }
+            container_ul = mxf_get_codec_ul(mxf_data_essence_container_uls, essence_container_ul);
+            if (container_ul->desc)
+                av_dict_set(&st->metadata, "data_type", container_ul->desc, 0);
         }
         if (descriptor->extradata) {
             if (!ff_alloc_extradata(st->codecpar, descriptor->extradata_size)) {
