@@ -1750,6 +1750,29 @@ Full filter invocation with asendcmd may look like this:
 asendcmd=c='4.0 anequalizer change 0|f=200|w=50|g=1',anequalizer=...
 @end table
 
+@section anlmdn
+
+Reduce broadband noise in audio samples using Non-Local Means algorithm.
+
+Each sample is adjusted by looking for other samples with similar contexts. This
+context similarity is defined by comparing their surrounding patches of size
+@option{p}. Patches are searched in an area of @option{r} around the sample.
+
+The filter accepts the following options.
+
+@table @option
+@item s
+Set denoising strength. Allowed range is from 1 to 9999. Default value is 1.
+
+@item p
+Set patch radius duration. Allowed range is from 1 to 100 milliseconds.
+Default value is 2 milliseconds.
+
+@item r
+Set research radius duration. Allowed range is from 2 to 300 milliseconds.
+Default value is 6 milliseconds.
+@end table
+
 @section anull
 
 Pass the audio source unchanged to the output.
