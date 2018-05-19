@@ -3047,6 +3047,14 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("HDMV Text subtitle"),
         .props     = AV_CODEC_PROP_TEXT_SUB,
     },
+    {
+        .id        = AV_CODEC_ID_TTML,
+        .type      = AVMEDIA_TYPE_SUBTITLE,
+        .name      = "ttml",
+        .long_name = NULL_IF_CONFIG_SMALL("Timed Text Markup Language"),
+        .props     = AV_CODEC_PROP_TEXT_SUB,
+    },
+
 
     /* other kind of codecs and pseudo-codecs */
     {
