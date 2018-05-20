@@ -62,6 +62,7 @@ typedef struct KLVPacket {
     UID key;
     int64_t offset;
     uint64_t length;
+    int64_t next_klv;
 } KLVPacket;
 
 typedef struct MXFCodecUL {

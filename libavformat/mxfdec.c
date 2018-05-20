@@ -392,7 +392,7 @@ static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 
 static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
 {
-    int64_t length;
+    int64_t length, pos;
     if (!mxf_read_sync(pb, mxf_klv_key, 4))
         return AVERROR_INVALIDDATA;
     klv->offset = avio_tell(pb) - 4;
@@ -402,6 +402,10 @@ static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
     if (length < 0)
         return length;
     klv->length = length;
+    pos = avio_tell(pb);
+    if (pos > INT64_MAX - length)
+        return AVERROR_INVALIDDATA;
+    klv->next_klv = pos + length;
     return 0;
 }
 
@@ -3264,7 +3268,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
             int body_sid = find_body_sid_by_offset(mxf, klv.offset);
             int index = mxf_get_stream_index(s, &klv, body_sid);
-            int64_t next_ofs, next_klv;
+            int64_t next_ofs;
             AVStream *st;
 
             if (index < 0) {
@@ -3279,10 +3283,9 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             if (s->streams[index]->discard == AVDISCARD_ALL)
                 goto skip;
 
-            next_klv = avio_tell(s->pb) + klv.length;
             next_ofs = mxf_set_current_edit_unit(mxf, klv.offset);
 
-            if (next_ofs >= 0 && next_klv > next_ofs) {
+            if (next_ofs >= 0 && klv.next_klv > next_ofs) {
                 /* if this check is hit then it's possible OPAtom was treated as OP1a
                  * truncate the packet since it's probably very large (>2 GiB is common) */
                 avpriv_request_sample(s,
@@ -3314,7 +3317,7 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
                 return ret;
 
             /* seek for truncated packets */
-            avio_seek(s->pb, next_klv, SEEK_SET);
+            avio_seek(s->pb, klv.next_klv, SEEK_SET);
 
             return 0;
         } else
