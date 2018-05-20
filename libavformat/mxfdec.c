@@ -2879,35 +2879,33 @@ static void mxf_handle_small_eubc(AVFormatContext *s)
 }
 
 /**
- * Deal with the case where OPAtom files does not have any IndexTableSegments.
+ * Deal with the case where ClipWrapped essences does not have any IndexTableSegments.
  */
-static int mxf_handle_missing_index_segment(MXFContext *mxf)
+static int mxf_handle_missing_index_segment(MXFContext *mxf, AVStream *st)
 {
-    AVFormatContext *s = mxf->fc;
-    AVStream *st = NULL;
+    MXFTrack *track = st->priv_data;
     MXFIndexTableSegment *segment = NULL;
     MXFPartition *p = NULL;
     int essence_partition_count = 0;
     int i, ret;
 
-    st = mxf_get_opatom_stream(mxf);
-    if (!st)
-        return 0;
-
     /* TODO: support raw video without an index if they exist */
-    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO || !is_pcm(st->codecpar->codec_id))
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO || !is_pcm(st->codecpar->codec_id) || track->wrapping != ClipWrapped)
         return 0;
 
-    /* check if file already has a IndexTableSegment */
+    /* check if track already has an IndexTableSegment */
     for (i = 0; i < mxf->metadata_sets_count; i++) {
-        if (mxf->metadata_sets[i]->type == IndexTableSegment)
-            return 0;
+        if (mxf->metadata_sets[i]->type == IndexTableSegment) {
+            MXFIndexTableSegment *s = (MXFIndexTableSegment*)mxf->metadata_sets[i];
+            if (s->body_sid == track->body_sid)
+                return 0;
+        }
     }
 
     /* find the essence partition */
     for (i = 0; i < mxf->partitions_count; i++) {
         /* BodySID == 0 -> no essence */
-        if (!mxf->partitions[i].body_sid)
+        if (mxf->partitions[i].body_sid != track->body_sid)
             continue;
 
         p = &mxf->partitions[i];
@@ -2926,12 +2924,19 @@ static int mxf_handle_missing_index_segment(MXFContext *mxf)
         return ret;
     }
 
+    /* Make sure we have nonzero unique index_sid, body_sid will be ok, because
+     * using the same SID for index is forbidden in MXF. */
+    if (!track->index_sid)
+        track->index_sid = track->body_sid;
+    track->edit_rate = av_inv_q(st->time_base);
+
     segment->type = IndexTableSegment;
     /* stream will be treated as small EditUnitByteCount */
     segment->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->channels) >> 3;
     segment->index_start_position = 0;
-    segment->index_duration = s->streams[0]->duration;
-    segment->index_sid = p->index_sid;
+    segment->index_duration = st->duration;
+    segment->index_edit_rate = track->edit_rate;
+    segment->index_sid = track->index_sid;
     segment->body_sid = p->body_sid;
     return 0;
 }
@@ -3102,7 +3107,9 @@ static int mxf_read_header(AVFormatContext *s)
     if ((ret = mxf_parse_structural_metadata(mxf)) < 0)
         goto fail;
 
-    mxf_handle_missing_index_segment(mxf);
+    for (int i = 0; i < s->nb_streams; i++)
+        mxf_handle_missing_index_segment(mxf, s->streams[i]);
+
     if ((ret = mxf_compute_index_tables(mxf)) < 0)
         goto fail;
 
