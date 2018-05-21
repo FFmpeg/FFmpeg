@@ -142,7 +142,7 @@ static int pix_fmt_to_mfx_fourcc(int format)
         return MFX_FOURCC_NV12;
     case AV_PIX_FMT_YUYV422:
         return MFX_FOURCC_YUY2;
-    case AV_PIX_FMT_RGB32:
+    case AV_PIX_FMT_BGRA:
         return MFX_FOURCC_RGB4;
     }
 
