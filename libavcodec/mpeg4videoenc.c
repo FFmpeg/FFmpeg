@@ -882,7 +882,7 @@ void ff_set_mpeg4_time(MpegEncContext *s)
 
 static void mpeg4_encode_gop_header(MpegEncContext *s)
 {
-    int hours, minutes, seconds;
+    int64_t hours, minutes, seconds;
     int64_t time;
 
     put_bits(&s->pb, 16, 0);
