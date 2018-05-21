@@ -3,6 +3,8 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - tpad filter
+- AV1 decoding support through libdav1d
+
 
 version 4.1:
 - deblock filter
