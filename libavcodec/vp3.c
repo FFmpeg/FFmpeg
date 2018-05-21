@@ -543,7 +543,10 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                                          : s->y_superblock_count);
         int num_coded_frags = 0;
 
-        for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
+        for (i = sb_start; i < sb_end; i++) {
+            if (get_bits_left(gb) < ((s->total_num_coded_frags + num_coded_frags) >> 2)) {
+                return AVERROR_INVALIDDATA;
+            }
             /* iterate through all 16 fragments in a superblock */
             for (j = 0; j < 16; j++) {
                 /* if the fragment is in bounds, check its coding status */

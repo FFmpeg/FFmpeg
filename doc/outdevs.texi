@@ -396,6 +396,11 @@ downscaled according to the aspect ratio.
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
 Default value is zero.
+
+@item window_enable_quit
+Enable quit action (using window button or keyboard key)
+when non-zero value is provided.
+Default value is 1 (enable quit action)
 @end table
 
 @subsection Interactive commands

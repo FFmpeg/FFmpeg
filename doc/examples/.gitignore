@@ -20,3 +20,5 @@
 /scaling_video
 /transcode_aac
 /transcoding
+/vaapi_encode
+/vaapi_transcode

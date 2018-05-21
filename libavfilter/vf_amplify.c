@@ -227,8 +227,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     AmplifyContext *s = ctx->priv;
     int i;
 
-    for (i = 0; i < s->nb_frames; i++)
-        av_frame_free(&s->frames[i]);
+    if (s->frames) {
+        for (i = 0; i < s->nb_frames; i++)
+           av_frame_free(&s->frames[i]);
+    }
     av_freep(&s->frames);
 }
 

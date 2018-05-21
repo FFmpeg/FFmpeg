@@ -846,6 +846,7 @@ typedef struct AVStreamInternal AVStreamInternal;
 #define AV_DISPOSITION_DESCRIPTIONS 0x20000
 #define AV_DISPOSITION_METADATA     0x40000
 #define AV_DISPOSITION_DEPENDENT    0x80000 ///< dependent audio stream (mix_type=0 in mpegts)
+#define AV_DISPOSITION_STILL_IMAGE 0x100000 ///< still images in video stream (still_picture_flag=1 in mpegts)
 
 /**
  * Options for behavior on timestamp wrap detection.
@@ -1102,6 +1103,13 @@ typedef struct AVStream {
      */
     int stream_identifier;
 
+    /**
+     * Details of the MPEG-TS program which created this stream.
+     */
+    int program_num;
+    int pmt_version;
+    int pmt_stream_idx;
+
     int64_t interleaver_chunk_size;
     int64_t interleaver_chunk_duration;
 
@@ -1259,6 +1267,7 @@ typedef struct AVProgram {
     int program_num;
     int pmt_pid;
     int pcr_pid;
+    int pmt_version;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They
@@ -1926,6 +1935,13 @@ typedef struct AVFormatContext {
      * - decoding: set by user
      */
     int max_streams;
+
+    /**
+     * Skip duration calcuation in estimate_timings_from_pts.
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int skip_estimate_duration_from_pts;
 } AVFormatContext;
 
 #if FF_API_FORMAT_GET_SET

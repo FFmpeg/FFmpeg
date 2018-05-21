@@ -41,6 +41,8 @@
 #define NBIT_VO_TYPE             5
 #define ARTS_VO_TYPE            10
 #define ACE_VO_TYPE             12
+#define SIMPLE_STUDIO_VO_TYPE   14
+#define CORE_STUDIO_VO_TYPE     15
 #define ADV_SIMPLE_VO_TYPE      17
 
 #define VOT_VIDEO_ID 1
