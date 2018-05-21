@@ -755,6 +755,17 @@ only if @option{pbkeylen} is non-zero. It is used on
 the receiver only if the received data is encrypted.
 The configured passphrase cannot be recovered (write-only).
 
+@item payloadsize=@var{bytes}
+Sets the maximum declared size of a packet transferred
+during the single call to the sending function in Live
+mode. Use 0 if this value isn't used (which is default in
+file mode).
+Default value is for MPEG-TS; if you are going to use SRT
+to send any different kind of payload, such as, for example,
+wrapping a live stream in very small frames, then you can
+use a bigger maximum frame size, though not greater than
+1456 bytes.
+
 @item pbkeylen=@var{bytes}
 Sender encryption key length, in bytes.
 Only can be set to 0, 16, 24 and 32.

@@ -34,6 +34,16 @@
 #include "os_support.h"
 #include "url.h"
 
+/* This is for MPEG-TS and it's a default SRTO_PAYLOADSIZE for SRTT_LIVE (8 TS packets) */
+#ifndef SRT_LIVE_DEFAULT_PAYLOAD_SIZE
+#define SRT_LIVE_DEFAULT_PAYLOAD_SIZE 1316
+#endif
+
+/* This is the maximum payload size for Live mode, should you have a different payload type than MPEG-TS */
+#ifndef SRT_LIVE_MAX_PAYLOAD_SIZE
+#define SRT_LIVE_MAX_PAYLOAD_SIZE 1456
+#endif
+
 enum SRTMode {
     SRT_MODE_CALLER = 0,
     SRT_MODE_LISTENER = 1,
@@ -62,6 +72,7 @@ typedef struct SRTContext {
     int tlpktdrop;
     int nakreport;
     int64_t connect_timeout;
+    int payload_size;
     enum SRTMode mode;
 } SRTContext;
 
@@ -86,6 +97,9 @@ static const AVOption libsrt_options[] = {
     { "tlpktdrop",      "Enable receiver pkt drop",                                             OFFSET(tlpktdrop),        AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 1,         .flags = D|E },
     { "nakreport",      "Enable receiver to send periodic NAK reports",                         OFFSET(nakreport),        AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 1,         .flags = D|E },
     { "connect_timeout", "Connect timeout. Caller default: 3000, rendezvous (x 10)",            OFFSET(connect_timeout),  AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "payload size",   "maximum declared size of a packet transferred",                        OFFSET(payload_size),     AV_OPT_TYPE_INT,      { .i64 = SRT_LIVE_DEFAULT_PAYLOAD_SIZE }, -1, SRT_LIVE_MAX_PAYLOAD_SIZE, .flags = D|E },
+    { "ts_size",        NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRT_LIVE_DEFAULT_PAYLOAD_SIZE }, INT_MIN, INT_MAX, .flags = D|E, "payload_size" },
+    { "max_size",       NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRT_LIVE_MAX_PAYLOAD_SIZE },     INT_MIN, INT_MAX, .flags = D|E, "payload_size" },
     { "mode",           "Connection mode (caller, listener, rendezvous)",                       OFFSET(mode),             AV_OPT_TYPE_INT,      { .i64 = SRT_MODE_CALLER }, SRT_MODE_CALLER, SRT_MODE_RENDEZVOUS, .flags = D|E, "mode" },
     { "caller",         NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRT_MODE_CALLER },     INT_MIN, INT_MAX, .flags = D|E, "mode" },
     { "listener",       NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRT_MODE_LISTENER },   INT_MIN, INT_MAX, .flags = D|E, "mode" },
@@ -276,7 +290,8 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
         (tsbpddelay >= 0 && libsrt_setsockopt(h, fd, SRTO_TSBPDDELAY, "SRTO_TSBPDELAY", &tsbpddelay, sizeof(tsbpddelay)) < 0) ||
         (s->tlpktdrop >= 0 && libsrt_setsockopt(h, fd, SRTO_TLPKTDROP, "SRTO_TLPKDROP", &s->tlpktdrop, sizeof(s->tlpktdrop)) < 0) ||
         (s->nakreport >= 0 && libsrt_setsockopt(h, fd, SRTO_NAKREPORT, "SRTO_NAKREPORT", &s->nakreport, sizeof(s->nakreport)) < 0) ||
-        (connect_timeout >= 0 && libsrt_setsockopt(h, fd, SRTO_CONNTIMEO, "SRTO_CONNTIMEO", &connect_timeout, sizeof(connect_timeout)) <0 )) {
+        (connect_timeout >= 0 && libsrt_setsockopt(h, fd, SRTO_CONNTIMEO, "SRTO_CONNTIMEO", &connect_timeout, sizeof(connect_timeout)) < 0) ||
+        (s->payload_size >= 0 && libsrt_setsockopt(h, fd, SRTO_PAYLOADSIZE, "SRTO_PAYLOADSIZE", &s->payload_size, sizeof(s->payload_size)) < 0)) {
         return AVERROR(EIO);
     }
     return 0;
@@ -454,6 +469,9 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "connect_timeout", p)) {
             s->connect_timeout = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "payload_size", p)) {
+            s->payload_size = strtol(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "mode", p)) {
             if (!strcmp(buf, "caller")) {
                 s->mode = SRT_MODE_CALLER;
@@ -466,6 +484,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             }
         }
     }
+    h->max_packet_size = s->payload_size > 0 ? s->payload_size : SRT_LIVE_DEFAULT_PAYLOAD_SIZE;
     return libsrt_setup(h, uri, flags);
 }
 
