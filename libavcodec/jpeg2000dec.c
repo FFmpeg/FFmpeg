@@ -2053,7 +2053,6 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     }
                 } else if (atom2 == MKBETAG('p','c','l','r') && atom2_size >= 6) {
                     int i, size, colour_count, colour_channels, colour_depth[3];
-                    uint32_t r, g, b;
                     colour_count = bytestream2_get_be16u(&s->g);
                     colour_channels = bytestream2_get_byteu(&s->g);
                     // FIXME: Do not ignore channel_sign
@@ -2075,6 +2074,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     }
                     s->pal8 = 1;
                     for (i = 0; i < colour_count; i++) {
+                        uint32_t r, g, b;
                         if (colour_depth[0] <= 8) {
                             r = bytestream2_get_byteu(&s->g) << 8 - colour_depth[0];
                             r |= r >> colour_depth[0];
