@@ -2063,7 +2063,7 @@ static int jp2_find_codestream(Jpeg2000DecoderContext *s)
                     size = (colour_depth[0] + 7 >> 3) * colour_count +
                            (colour_depth[1] + 7 >> 3) * colour_count +
                            (colour_depth[2] + 7 >> 3) * colour_count;
-                    if (colour_count > 256   ||
+                    if (colour_count > AVPALETTE_COUNT ||
                         colour_channels != 3 ||
                         colour_depth[0] > 16 ||
                         colour_depth[1] > 16 ||
