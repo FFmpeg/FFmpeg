@@ -128,14 +128,15 @@ curl -O -L https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
 cd ffmpeg
 PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./configure \
-  --prefix="$HOME/ffmpeg_build" \
-  --pkg-config-flags="--static" \
-  --extra-cflags="-I$HOME/ffmpeg_build/include" \
-  --extra-ldflags="-L$HOME/ffmpeg_build/lib" \
-  --extra-libs=-lpthread \
-  --extra-libs=-lm \
-  --bindir="$HOME/bin" \
-  --enable-gpl \
+  --prefix=/usr --libdir=/usr/lib64 --shlibdir=/usr/lib64 --mandir=/usr/share/man \
+  --enable-shared --enable-runtime-cpudetect --enable-gpl --enable-version3 --enable-postproc \
+  --enable-avfilter --enable-pthreads --enable-x11grab --enable-vdpau --disable-avisynth 
+  --enable-frei0r --enable-libopencv --enable-libdc1394 --enable-libgsm --enable-libmp3lame \ 
+  --enable-libnut --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg \ 
+  --enable-librtmp --enable-libspeex --enable-libtheora --enable-libvorbis --enable-libvpx \ 
+  --enable-libx264 --enable-libxavs --enable-libxvid \
+  --extra-cflags='-O2 -g -pipe -Wall -Wp,-D_FORTIFY_SOURCE=2 -fexceptions -fstack-protector-strong --param=ssp-buffer-size=4 -grecord-gcc-switches -m64 -mtune=generic -fPIC' \
+  --disable-stripping \
   --enable-libfdk_aac \
   --enable-libfreetype \
   --enable-libmp3lame \
