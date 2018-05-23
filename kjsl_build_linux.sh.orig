@@ -122,19 +122,7 @@ cd libvpx
 ./configure --prefix="$HOME/ffmpeg_build" --disable-examples --disable-unit-tests --enable-vp9-highbitdepth --as=yasm
 make
 make install
-
-#libaom (AV1 for x86)
-cd ~/ffmpeg_sources
-curl -O -L https://github.com/kevleyski/aom/archive/master.zip
-unzip master.zip
-cd aom-master
-./configure --prefix="$HOME/ffmpeg_build" --cpu=sse3 --enable-av1 --disable-shared
-make
-make install
-cd ..
-
-
-# FFmpeg
+FFmpeg
 cd ~/ffmpeg_sources
 curl -O -L https://ffmpeg.org/releases/ffmpeg-snapshot.tar.bz2
 tar xjvf ffmpeg-snapshot.tar.bz2
@@ -156,8 +144,11 @@ PATH="$HOME/bin:$PATH" PKG_CONFIG_PATH="$HOME/ffmpeg_build/lib/pkgconfig" ./conf
   --enable-libvpx \
   --enable-libx264 \
   --enable-libx265 \
-  --enable-openssl \
+<<<<<<< HEAD:kjsl_build_linux.sh
   --enable-libaom \
+=======
+  --enable-openssl \
+>>>>>>> 2d2159d8889e09e18d3f5bbdebfa910c0b68a221:build_linux.sh
   --enable-nonfree
 make
 make install
