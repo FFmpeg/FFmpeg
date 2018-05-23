@@ -71,7 +71,7 @@
         w = WIDTH / depth;                                                                 \
                                                                                            \
         for (i = 0; i < BUF_UNITS - 1; i++) {                                              \
-            int src_offset = i * SIZE_PER_UNIT + i; /* Test various alignments */          \
+            int src_offset = i * SIZE_PER_UNIT + (BUF_UNITS - 1 - i) * depth; /* Test various alignments */  \
             int dst_offset = i * SIZE_PER_UNIT; /* dst must be aligned */                  \
             randomize_buffers();                                                           \
             call_ref(top1 + src_offset, w, bot1 + src_offset, w,                           \
