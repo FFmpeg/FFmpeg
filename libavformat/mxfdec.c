@@ -98,6 +98,7 @@ typedef struct MXFPartition {
     int pack_length;
     int64_t pack_ofs;               ///< absolute offset of pack in file, including run-in
     int64_t body_offset;
+    KLVPacket first_essence_klv;
 } MXFPartition;
 
 typedef struct MXFCryptoContext {
@@ -2784,45 +2785,74 @@ static int mxf_parse_handle_partition_or_eof(MXFContext *mxf)
     return mxf->parsing_backward ? mxf_seek_to_previous_partition(mxf) : 1;
 }
 
-/**
- * Figures out the proper offset and length of the essence container in each partition
- */
-static void mxf_compute_essence_containers(MXFContext *mxf)
-{
-    int x;
-
-    /* everything is already correct */
-    if (mxf->op == OPAtom)
-        return;
-
-    for (x = 0; x < mxf->partitions_count; x++) {
-        MXFPartition *p = &mxf->partitions[x];
-
-        if (!p->body_sid)
-            continue;       /* BodySID == 0 -> no essence */
-
-        if (x >= mxf->partitions_count - 1)
-            break;          /* FooterPartition - can't compute length (and we don't need to) */
-
-        /* essence container spans to the next partition */
-        p->essence_length = mxf->partitions[x+1].this_partition - p->essence_offset;
-
-        if (p->essence_length < 0) {
-            /* next ThisPartition < essence_offset */
-            p->essence_length = 0;
-            av_log(mxf->fc, AV_LOG_ERROR,
-                   "partition %i: bad ThisPartition = %"PRIX64"\n",
-                   x+1, mxf->partitions[x+1].this_partition);
-        }
-    }
-}
-
 static int64_t round_to_kag(int64_t position, int kag_size)
 {
     /* TODO: account for run-in? the spec isn't clear whether KAG should account for it */
     /* NOTE: kag_size may be any integer between 1 - 2^10 */
     int64_t ret = (position / kag_size) * kag_size;
     return ret == position ? ret : ret + kag_size;
+}
+
+static MXFWrappingScheme mxf_get_wrapping_by_body_sid(AVFormatContext *s, int body_sid)
+{
+    for (int i = 0; i < s->nb_streams; i++) {
+        MXFTrack *track = s->streams[i]->priv_data;
+        if (track && track->body_sid == body_sid && track->wrapping != UnknownWrapped)
+            return track->wrapping;
+    }
+    return UnknownWrapped;
+}
+
+/**
+ * Figures out the proper offset and length of the essence container in each partition
+ */
+static void mxf_compute_essence_containers(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    int x;
+
+    for (x = 0; x < mxf->partitions_count; x++) {
+        MXFPartition *p = &mxf->partitions[x];
+        MXFWrappingScheme wrapping;
+
+        if (!p->body_sid)
+            continue;       /* BodySID == 0 -> no essence */
+
+        /* for non clip-wrapped essences we compute essence_offset
+         * for clip wrapped essences we point essence_offset after the KL (usually klv.offset + 20 or 25)
+         */
+
+        wrapping = (mxf->op == OPAtom) ? ClipWrapped : mxf_get_wrapping_by_body_sid(s, p->body_sid);
+
+        if (wrapping == ClipWrapped) {
+            p->essence_offset = p->first_essence_klv.next_klv - p->first_essence_klv.length;
+            p->essence_length = p->first_essence_klv.length;
+        } else {
+            int64_t op1a_essence_offset =
+                p->this_partition +
+                round_to_kag(p->pack_length,       p->kag_size) +
+                round_to_kag(p->header_byte_count, p->kag_size) +
+                round_to_kag(p->index_byte_count,  p->kag_size);
+
+            /* NOTE: op1a_essence_offset may be less than to klv.offset (C0023S01.mxf)  */
+            if (IS_KLV_KEY(p->first_essence_klv.key, mxf_system_item_key_cp) || IS_KLV_KEY(p->first_essence_klv.key, mxf_system_item_key_gc))
+                p->essence_offset = p->first_essence_klv.offset;
+            else
+                p->essence_offset = op1a_essence_offset;
+
+            /* essence container spans to the next partition */
+            if (x < mxf->partitions_count - 1)
+                p->essence_length = mxf->partitions[x+1].this_partition - p->essence_offset;
+
+            if (p->essence_length < 0) {
+                /* next ThisPartition < essence_offset */
+                p->essence_length = 0;
+                av_log(mxf->fc, AV_LOG_ERROR,
+                       "partition %i: bad ThisPartition = %"PRIX64"\n",
+                       x+1, mxf->partitions[x+1].this_partition);
+            }
+        }
+    }
 }
 
 static int is_pcm(enum AVCodecID codec_id)
@@ -3036,32 +3066,8 @@ static int mxf_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            if (!mxf->current_partition->essence_offset) {
-                /* for OP1a we compute essence_offset
-                 * for OPAtom we point essence_offset after the KL (usually op1a_essence_offset + 20 or 25)
-                 * TODO: for OP1a we could eliminate this entire if statement, always stopping parsing at op1a_essence_offset
-                 *       for OPAtom we still need the actual essence_offset though (the KL's length can vary)
-                 */
-                int64_t op1a_essence_offset =
-                    mxf->current_partition->this_partition +
-                    round_to_kag(mxf->current_partition->pack_length,       mxf->current_partition->kag_size) +
-                    round_to_kag(mxf->current_partition->header_byte_count, mxf->current_partition->kag_size) +
-                    round_to_kag(mxf->current_partition->index_byte_count,  mxf->current_partition->kag_size);
-
-                if (mxf->op == OPAtom) {
-                    /* point essence_offset to the actual data
-                    * OPAtom has all the essence in one big KLV
-                    */
-                    mxf->current_partition->essence_offset = avio_tell(s->pb);
-                    mxf->current_partition->essence_length = klv.length;
-                } else {
-                    /* NOTE: op1a_essence_offset may be less than to klv.offset (C0023S01.mxf)  */
-                    if (IS_KLV_KEY(klv.key, mxf_system_item_key_cp) || IS_KLV_KEY(klv.key, mxf_system_item_key_gc))
-                        mxf->current_partition->essence_offset = klv.offset;
-                    else
-                        mxf->current_partition->essence_offset = op1a_essence_offset;
-                }
-            }
+            if (!mxf->current_partition->first_essence_klv.offset)
+                mxf->current_partition->first_essence_klv = klv;
 
             if (!essence_offset)
                 essence_offset = klv.offset;
@@ -3100,8 +3106,6 @@ static int mxf_read_header(AVFormatContext *s)
     }
     avio_seek(s->pb, essence_offset, SEEK_SET);
 
-    mxf_compute_essence_containers(mxf);
-
     /* we need to do this before computing the index tables
      * to be able to fill in zero IndexDurations with st->duration */
     if ((ret = mxf_parse_structural_metadata(mxf)) < 0)
@@ -3122,6 +3126,8 @@ static int mxf_read_header(AVFormatContext *s)
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
+
+    mxf_compute_essence_containers(s);
 
     mxf_handle_small_eubc(s);
 
