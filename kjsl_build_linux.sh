@@ -128,7 +128,7 @@ cd ~/ffmpeg_sources
 curl -O -L https://github.com/kevleyski/aom/archive/master.zip
 unzip master.zip
 cd aom-master
-./configure --prefix="$HOME/ffmpeg_build" --cpu=sse3 --enable-av1 --disable-shared
+./configure --prefix="$HOME/ffmpeg_build" --enable-av1 --disable-shared
 make
 make install
 cd ..
