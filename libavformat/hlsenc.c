@@ -2147,6 +2147,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int range_length = 0;
     uint8_t *buffer = NULL;
     VariantStream *vs = NULL;
+    AVDictionary *options = NULL;
 
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
@@ -2272,7 +2273,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
                 vs->size = range_length;
             } else {
-                ret = hlsenc_io_open(s, &vs->out, vs->avf->url, NULL);
+                set_http_options(s, &options, hls);
+                ret = hlsenc_io_open(s, &vs->out, vs->avf->url, &options);
                 if (ret < 0) {
                     av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n",
                            vs->avf->url);
