@@ -3200,7 +3200,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
 }
 
 static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
-                                    uint64_t *sample_count)
+                                    int64_t edit_unit, uint64_t *sample_count)
 {
     int i, total = 0, size = 0;
     AVStream *st = mxf->fc->streams[stream_index];
@@ -3214,7 +3214,7 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
     if (!spf) {
         int remainder = (sample_rate.num * time_base.num) %
                         (time_base.den * sample_rate.den);
-        *sample_count = av_rescale_q(mxf->current_edit_unit, sample_rate, track->edit_rate);
+        *sample_count = av_rescale_q(edit_unit, sample_rate, track->edit_rate);
         if (remainder)
             av_log(mxf->fc, AV_LOG_WARNING,
                    "seeking detected on stream #%d with time base (%d/%d) and "
@@ -3231,8 +3231,8 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
 
     av_assert2(size);
 
-    *sample_count = (mxf->current_edit_unit / size) * (uint64_t)total;
-    for (i = 0; i < mxf->current_edit_unit % size; i++) {
+    *sample_count = (edit_unit / size) * (uint64_t)total;
+    for (i = 0; i < edit_unit % size; i++) {
         *sample_count += spf->samples_per_frame[i];
     }
 
@@ -3580,7 +3580,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
                                                        cur_st->time_base);
             } else {
                 uint64_t current_sample_count = 0;
-                ret = mxf_compute_sample_count(mxf, i, &current_sample_count);
+                ret = mxf_compute_sample_count(mxf, i, sample_time, &current_sample_count);
                 if (ret < 0)
                     return ret;
                 cur_track->sample_count = current_sample_count;
