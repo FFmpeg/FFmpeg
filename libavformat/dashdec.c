@@ -1875,43 +1875,22 @@ fail:
     return ret;
 }
 
-static int init_section_compare_video(DASHContext *c)
+static int is_common_init_section_exist(struct representation **pls, int n_pls)
 {
+    struct fragment *first_init_section = pls[0]->init_section;
     char *url =NULL;
     int64_t url_offset = -1;
     int64_t size = -1;
     int i = 0;
 
-    if (c->videos[0]->init_section == NULL)
+    if (first_init_section == NULL || n_pls == 0)
         return 0;
 
-    url = c->videos[0]->init_section->url;
-    url_offset = c->videos[0]->init_section->url_offset;
-    size = c->videos[0]->init_section->size;
-    for (i=0;i<c->n_videos;i++) {
-        if (av_strcasecmp(c->videos[i]->init_section->url,url) || c->videos[i]->init_section->url_offset != url_offset || c->videos[i]->init_section->size != size) {
-            return 0;
-        }
-    }
-
-    return 1;
-}
-
-static int init_section_compare_audio(DASHContext *c)
-{
-    char *url =NULL;
-    int64_t url_offset = -1;
-    int64_t size = -1;
-    int i = 0;
-
-    if (c->audios[0]->init_section == NULL)
-        return 0;
-
-    url = c->audios[0]->init_section->url;
-    url_offset = c->audios[0]->init_section->url_offset;
-    size = c->audios[0]->init_section->size;
-    for (i=0; i<c->n_audios; i++) {
-        if (av_strcasecmp(c->audios[i]->init_section->url,url) || c->audios[i]->init_section->url_offset != url_offset || c->audios[i]->init_section->size != size) {
+    url = first_init_section->url;
+    url_offset = first_init_section->url_offset;
+    size = pls[0]->init_section->size;
+    for (i=0;i<n_pls;i++) {
+        if (av_strcasecmp(pls[i]->init_section->url,url) || pls[i]->init_section->url_offset != url_offset || pls[i]->init_section->size != size) {
             return 0;
         }
     }
@@ -1957,9 +1936,7 @@ static int dash_read_header(AVFormatContext *s)
         s->duration = (int64_t) c->media_presentation_duration * AV_TIME_BASE;
     }
 
-    if (c->n_videos) {
-        c->is_init_section_common_video = init_section_compare_video(c);
-    }
+    c->is_init_section_common_video = is_common_init_section_exist(c->videos, c->n_videos);
 
     /* Open the demuxer for video and audio components if available */
     for (i = 0; i < c->n_videos; i++) {
@@ -1975,10 +1952,7 @@ static int dash_read_header(AVFormatContext *s)
         ++stream_index;
     }
 
-
-    if (c->n_audios) {
-        c->is_init_section_common_audio = init_section_compare_audio(c);
-    }
+  c->is_init_section_common_audio = is_common_init_section_exist(c->audios, c->n_audios);
 
     for (i = 0; i < c->n_audios; i++) {
         struct representation *cur_audio = c->audios[i];
