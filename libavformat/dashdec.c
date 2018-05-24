@@ -380,7 +380,7 @@ static void free_audio_list(DASHContext *c)
 static void set_httpheader_options(DASHContext *c, AVDictionary **opts)
 {
     // broker prior HTTP options that should be consistent across requests
-    av_dict_set(opts, "user-agent", c->user_agent, 0);
+    av_dict_set(opts, "user_agent", c->user_agent, 0);
     av_dict_set(opts, "cookies", c->cookies, 0);
     av_dict_set(opts, "headers", c->headers, 0);
     if (c->is_live) {
@@ -1731,7 +1731,7 @@ end:
 static int save_avio_options(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
-    const char *opts[] = { "headers", "user_agent", "user-agent", "cookies", NULL }, **opt = opts;
+    const char *opts[] = { "headers", "user_agent", "user_agent", "cookies", NULL }, **opt = opts;
     uint8_t *buf = NULL;
     int ret = 0;
 
@@ -1919,7 +1919,7 @@ static int dash_read_header(AVFormatContext *s)
     c->interrupt_callback = &s->interrupt_callback;
     // if the URL context is good, read important options we must broker later
     if (u) {
-        update_options(&c->user_agent, "user-agent", u);
+        update_options(&c->user_agent, "user_agent", u);
         update_options(&c->cookies, "cookies", u);
         update_options(&c->headers, "headers", u);
     }
