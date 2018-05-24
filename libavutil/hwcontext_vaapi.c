@@ -1024,8 +1024,10 @@ static int vaapi_map_from_drm(AVHWFramesContext *src_fc, AVFrame *dst,
            "%08x.\n", desc->objects[0].fd, va_fourcc);
 
     for (i = 0; i < FF_ARRAY_ELEMS(vaapi_format_map); i++) {
-        if (vaapi_format_map[i].fourcc == va_fourcc)
+        if (vaapi_format_map[i].fourcc == va_fourcc) {
             va_rt_format = vaapi_format_map[i].rt_format;
+            break;
+        }
     }
 
     av_assert0(i < FF_ARRAY_ELEMS(vaapi_format_map));
