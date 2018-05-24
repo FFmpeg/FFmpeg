@@ -1877,25 +1877,40 @@ fail:
 
 static int init_section_compare_video(DASHContext *c)
 {
+    char *url =NULL;
+    int64_t url_offset = -1;
+    int64_t size = -1;
     int i = 0;
-    char *url = c->videos[0]->init_section->url;
-    int64_t url_offset = c->videos[0]->init_section->url_offset;
-    int64_t size = c->videos[0]->init_section->size;
+
+    if (c->videos[0]->init_section == NULL)
+        return 0;
+
+    url = c->videos[0]->init_section->url;
+    url_offset = c->videos[0]->init_section->url_offset;
+    size = c->videos[0]->init_section->size;
     for (i=0;i<c->n_videos;i++) {
         if (av_strcasecmp(c->videos[i]->init_section->url,url) || c->videos[i]->init_section->url_offset != url_offset || c->videos[i]->init_section->size != size) {
             return 0;
         }
     }
+
     return 1;
 }
 
 static int init_section_compare_audio(DASHContext *c)
 {
+    char *url =NULL;
+    int64_t url_offset = -1;
+    int64_t size = -1;
     int i = 0;
-    char *url = c->audios[0]->init_section->url;
-    int64_t url_offset = c->audios[0]->init_section->url_offset;
-    int64_t size = c->audios[0]->init_section->size;
-    for (i=0;i<c->n_audios;i++) {
+
+    if (c->audios[0]->init_section == NULL)
+        return 0;
+
+    url = c->audios[0]->init_section->url;
+    url_offset = c->audios[0]->init_section->url_offset;
+    size = c->audios[0]->init_section->size;
+    for (i=0; i<c->n_audios; i++) {
         if (av_strcasecmp(c->audios[i]->init_section->url,url) || c->audios[i]->init_section->url_offset != url_offset || c->audios[i]->init_section->size != size) {
             return 0;
         }
@@ -1959,6 +1974,7 @@ static int dash_read_header(AVFormatContext *s)
         cur_video->stream_index = stream_index;
         ++stream_index;
     }
+
 
     if (c->n_audios) {
         c->is_init_section_common_audio = init_section_compare_audio(c);
