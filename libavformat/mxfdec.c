@@ -173,6 +173,7 @@ typedef struct {
     int index_sid;
     int body_sid;
     MXFWrappingScheme wrapping;
+    int edit_units_per_packet; /* how many edit units to read at a time (PCM, ClipWrapped) */
 } MXFTrack;
 
 typedef struct MXFDescriptor {
@@ -286,7 +287,6 @@ typedef struct MXFContext {
     int64_t current_edit_unit;
     int nb_index_tables;
     MXFIndexTable *index_tables;
-    int edit_units_per_packet;      ///< how many edit units to read at a time (PCM, OPAtom)
 } MXFContext;
 
 /* NOTE: klv_offset is not set (-1) for local keys */
@@ -2858,36 +2858,46 @@ static AVStream* mxf_get_opatom_stream(MXFContext *mxf)
     return NULL;
 }
 
+static MXFIndexTable *mxf_find_index_table(MXFContext *mxf, int index_sid)
+{
+    int i;
+    for (i = 0; i < mxf->nb_index_tables; i++)
+        if (mxf->index_tables[i].index_sid == index_sid)
+            return &mxf->index_tables[i];
+    return NULL;
+}
+
 /**
  * Deal with the case where for some audio atoms EditUnitByteCount is
  * very small (2, 4..). In those cases we should read more than one
  * sample per call to mxf_read_packet().
  */
-static void mxf_handle_small_eubc(AVFormatContext *s)
+static void mxf_compute_edit_units_per_packet(MXFContext *mxf, AVStream *st)
 {
-    MXFContext *mxf = s->priv_data;
-    MXFTrack *track;
+    MXFTrack *track = st->priv_data;
+    MXFIndexTable *t;
 
-    /* assuming non-OPAtom == frame wrapped
-     * no sane writer would wrap 2 byte PCM packets with 20 byte headers.. */
-    AVStream *st = mxf_get_opatom_stream(mxf);
-    if (!st)
+    if (!track)
         return;
+    track->edit_units_per_packet = 1;
+    if (track->wrapping != ClipWrapped)
+        return;
+
+    t = mxf_find_index_table(mxf, track->index_sid);
 
     /* expect PCM with exactly one index table segment and a small (< 32) EUBC */
     if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO         ||
         !is_pcm(st->codecpar->codec_id)                        ||
-        mxf->nb_index_tables != 1                              ||
-        mxf->index_tables[0].nb_segments != 1                  ||
-        mxf->index_tables[0].segments[0]->edit_unit_byte_count >= 32)
+        !t                                                     ||
+        t->nb_segments != 1                                    ||
+        t->segments[0]->edit_unit_byte_count >= 32)
         return;
 
     /* arbitrarily default to 48 kHz PAL audio frame size */
     /* TODO: We could compute this from the ratio between the audio
      *       and video edit rates for 48 kHz NTSC we could use the
      *       1802-1802-1802-1802-1801 pattern. */
-    track = st->priv_data;
-    mxf->edit_units_per_packet = FFMAX(1, track->edit_rate.num / track->edit_rate.den / 25);
+    track->edit_units_per_packet = FFMAX(1, track->edit_rate.num / track->edit_rate.den / 25);
 }
 
 /**
@@ -3012,7 +3022,6 @@ static int mxf_read_header(AVFormatContext *s)
     int ret;
 
     mxf->last_forward_tell = INT64_MAX;
-    mxf->edit_units_per_packet = 1;
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
@@ -3112,22 +3121,14 @@ static int mxf_read_header(AVFormatContext *s)
 
     mxf_compute_essence_containers(s);
 
-    mxf_handle_small_eubc(s);
+    for (int i = 0; i < s->nb_streams; i++)
+        mxf_compute_edit_units_per_packet(mxf, s->streams[i]);
 
     return 0;
 fail:
     mxf_read_close(s);
 
     return ret;
-}
-
-static MXFIndexTable *mxf_find_index_table(MXFContext *mxf, int index_sid)
-{
-    int i;
-    for (i = 0; i < mxf->nb_index_tables; i++)
-        if (mxf->index_tables[i].index_sid == index_sid)
-            return &mxf->index_tables[i];
-    return NULL;
 }
 
 /* Get the edit unit of the next packet from current_offset in a track. The returned edit unit can be original_duration as well! */
@@ -3391,7 +3392,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mxf->current_edit_unit >= track->original_duration)
         return AVERROR_EOF;
 
-    edit_units = FFMIN(mxf->edit_units_per_packet, track->original_duration - mxf->current_edit_unit);
+    edit_units = FFMIN(track->edit_units_per_packet, track->original_duration - mxf->current_edit_unit);
 
     if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, 1)) < 0)
         return ret;
