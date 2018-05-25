@@ -34,6 +34,7 @@
 #include "internal.h"
 #include "img2.h"
 #include "libavcodec/mjpeg.h"
+#include "libavcodec/xwd.h"
 #include "subtitles.h"
 
 #if HAVE_GLOB
@@ -974,6 +975,36 @@ static int xpm_probe(AVProbeData *p)
     return 0;
 }
 
+static int xwd_probe(AVProbeData *p)
+{
+    const uint8_t *b = p->buf;
+    unsigned width, bpp, bpad, lsize;
+
+    if (   p->buf_size < XWD_HEADER_SIZE
+        || AV_RB32(b     ) < XWD_HEADER_SIZE                          // header size
+        || AV_RB32(b +  4) != XWD_VERSION                             // version
+        || AV_RB32(b +  8) != XWD_Z_PIXMAP                            // format
+        || AV_RB32(b + 12) > 32 || !AV_RB32(b + 12)                   // depth
+        || AV_RB32(b + 16) == 0                                       // width
+        || AV_RB32(b + 20) == 0                                       // height
+        || AV_RB32(b + 28) > 1                                        // byteorder
+        || AV_RB32(b + 32) & ~56 || av_popcount(AV_RB32(b + 32)) != 1 // bitmap unit
+        || AV_RB32(b + 36) > 1                                        // bitorder
+        || AV_RB32(b + 40) & ~56 || av_popcount(AV_RB32(b + 40)) != 1 // padding
+        || AV_RB32(b + 44) > 32 || !AV_RB32(b + 44)                   // bpp
+        || AV_RB32(b + 68) > 256)                                     // colours
+        return 0;
+
+    width = AV_RB32(b + 16);
+    bpad  = AV_RB32(b + 40);
+    bpp   = AV_RB32(b + 44);
+    lsize = AV_RB32(b + 48);
+    if (lsize < FFALIGN(width * bpp, bpad) >> 3)
+        return 0;
+
+    return AVPROBE_SCORE_MAX / 2 + 1;
+}
+
 #define IMAGEAUTO_DEMUXER(imgname, codecid)\
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
@@ -1016,3 +1047,4 @@ IMAGEAUTO_DEMUXER(svg,     AV_CODEC_ID_SVG)
 IMAGEAUTO_DEMUXER(tiff,    AV_CODEC_ID_TIFF)
 IMAGEAUTO_DEMUXER(webp,    AV_CODEC_ID_WEBP)
 IMAGEAUTO_DEMUXER(xpm,     AV_CODEC_ID_XPM)
+IMAGEAUTO_DEMUXER(xwd,     AV_CODEC_ID_XWD)
