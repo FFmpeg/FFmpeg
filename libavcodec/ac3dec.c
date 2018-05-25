@@ -1702,6 +1702,11 @@ dependent_frame:
                 channel_layout |= custom_channel_map_locations[ch][1];
             }
         }
+        if (av_get_channel_layout_nb_channels(channel_layout) > EAC3_MAX_CHANNELS) {
+            av_log(avctx, AV_LOG_ERROR, "Too many channels (%d) coded\n",
+                   av_get_channel_layout_nb_channels(channel_layout));
+            return AVERROR_INVALIDDATA;
+        }
 
         avctx->channel_layout = channel_layout;
         avctx->channels = av_get_channel_layout_nb_channels(channel_layout);
