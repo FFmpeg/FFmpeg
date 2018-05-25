@@ -1738,7 +1738,9 @@ dependent_frame:
 
     for (ch = 0; ch < avctx->channels; ch++) {
         int map = extended_channel_map[ch];
-        memcpy((SHORTFLOAT *)frame->data[ch], s->output_buffer[map],
+        av_assert0(ch>=AV_NUM_DATA_POINTERS || frame->extended_data[ch] == frame->data[ch]);
+        memcpy((SHORTFLOAT *)frame->extended_data[ch],
+               s->output_buffer[map],
                s->num_blocks * AC3_BLOCK_SIZE * sizeof(SHORTFLOAT));
     }
 
