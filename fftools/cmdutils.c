@@ -1414,6 +1414,16 @@ static void print_codec(const AVCodec *c)
                            AV_CODEC_CAP_SLICE_THREADS |
                            AV_CODEC_CAP_AUTO_THREADS))
         printf("threads ");
+    if (c->capabilities & AV_CODEC_CAP_AVOID_PROBING)
+        printf("avoidprobe ");
+    if (c->capabilities & AV_CODEC_CAP_INTRA_ONLY)
+        printf("intraonly ");
+    if (c->capabilities & AV_CODEC_CAP_LOSSLESS)
+        printf("lossless ");
+    if (c->capabilities & AV_CODEC_CAP_HARDWARE)
+        printf("hardware ");
+    if (c->capabilities & AV_CODEC_CAP_HYBRID)
+        printf("hybrid ");
     if (!c->capabilities)
         printf("none");
     printf("\n");
