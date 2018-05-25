@@ -549,7 +549,7 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
         denom <<= bits2;
 
         bits2 = 5 + bits1 - bits2;
-        bits2 = FFMAX(0, bits2);
+        bits2 = av_clip_uintp2(bits2, 5);
 
         gain = (num >> 1) / (denom >> 16);
         gain = square_root(gain << 16 >> bits2);
