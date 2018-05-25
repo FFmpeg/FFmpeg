@@ -9,6 +9,8 @@ version <next>:
 - aderivative and aintegral audio filters
 - pal75bars and pal100bars video filter sources
 - support mbedTLS based TLS
+- DNN inference interface
+- Reimplemented SRCNN filter using DNN inference interface
 
 
 version 4.0:

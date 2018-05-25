@@ -12,6 +12,8 @@ OBJS = allfilters.o                                                     \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \
        buffersrc.o                                                      \
+       dnn_interface.o                                                  \
+       dnn_backend_native.o                                             \
        drawutils.o                                                      \
        fifo.o                                                           \
        formats.o                                                        \
