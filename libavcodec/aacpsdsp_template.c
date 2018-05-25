@@ -181,10 +181,10 @@ static void ps_stereo_interpolate_ipdopd_c(INTFLOAT (*l)[2], INTFLOAT (*r)[2],
     INTFLOAT h01  = h[0][1],      h11  = h[1][1];
     INTFLOAT h02  = h[0][2],      h12  = h[1][2];
     INTFLOAT h03  = h[0][3],      h13  = h[1][3];
-    INTFLOAT hs00 = h_step[0][0], hs10 = h_step[1][0];
-    INTFLOAT hs01 = h_step[0][1], hs11 = h_step[1][1];
-    INTFLOAT hs02 = h_step[0][2], hs12 = h_step[1][2];
-    INTFLOAT hs03 = h_step[0][3], hs13 = h_step[1][3];
+    UINTFLOAT hs00 = h_step[0][0], hs10 = h_step[1][0];
+    UINTFLOAT hs01 = h_step[0][1], hs11 = h_step[1][1];
+    UINTFLOAT hs02 = h_step[0][2], hs12 = h_step[1][2];
+    UINTFLOAT hs03 = h_step[0][3], hs13 = h_step[1][3];
     int n;
 
     for (n = 0; n < len; n++) {
