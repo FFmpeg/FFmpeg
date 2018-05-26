@@ -3167,8 +3167,7 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
     if (!spf) {
         int remainder = (sample_rate.num * time_base.num) %
                         (time_base.den * sample_rate.den);
-        *sample_count = av_q2d(av_mul_q((AVRational){mxf->current_edit_unit, 1},
-                                        av_mul_q(sample_rate, time_base)));
+        *sample_count = av_rescale_q(mxf->current_edit_unit, sample_rate, track->edit_rate);
         if (remainder)
             av_log(mxf->fc, AV_LOG_WARNING,
                    "seeking detected on stream #%d with time base (%d/%d) and "
