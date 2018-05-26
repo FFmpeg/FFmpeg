@@ -1444,6 +1444,17 @@ static void print_codec(const AVCodec *c)
         printf("\n");
     }
 
+    if (avcodec_get_hw_config(c, 0)) {
+        printf("    Supported hardware devices: ");
+        for (int i = 0;; i++) {
+            const AVCodecHWConfig *config = avcodec_get_hw_config(c, i);
+            if (!config)
+                break;
+            printf("%s ", av_hwdevice_get_type_name(config->device_type));
+        }
+        printf("\n");
+    }
+
     if (c->supported_framerates) {
         const AVRational *fps = c->supported_framerates;
 
