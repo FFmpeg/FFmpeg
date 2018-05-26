@@ -3201,29 +3201,32 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
     return next_ofs;
 }
 
-static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
-                                    int64_t edit_unit, uint64_t *sample_count)
+static int64_t mxf_compute_sample_count(MXFContext *mxf, AVStream *st,
+                                        int64_t edit_unit)
 {
     int i, total = 0, size = 0;
-    AVStream *st = mxf->fc->streams[stream_index];
     MXFTrack *track = st->priv_data;
     AVRational time_base = av_inv_q(track->edit_rate);
     AVRational sample_rate = av_inv_q(st->time_base);
     const MXFSamplesPerFrame *spf = NULL;
+    int64_t sample_count;
+
+    // For non-audio sample_count equals current edit unit
+    if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
+        return edit_unit;
 
     if ((sample_rate.num / sample_rate.den) == 48000)
         spf = ff_mxf_get_samples_per_frame(mxf->fc, time_base);
     if (!spf) {
         int remainder = (sample_rate.num * time_base.num) %
                         (time_base.den * sample_rate.den);
-        *sample_count = av_rescale_q(edit_unit, sample_rate, track->edit_rate);
         if (remainder)
             av_log(mxf->fc, AV_LOG_WARNING,
                    "seeking detected on stream #%d with time base (%d/%d) and "
                    "sample rate (%d/%d), audio pts won't be accurate.\n",
-                   stream_index, time_base.num, time_base.den,
+                   st->index, time_base.num, time_base.den,
                    sample_rate.num, sample_rate.den);
-        return 0;
+        return av_rescale_q(edit_unit, sample_rate, track->edit_rate);
     }
 
     while (spf->samples_per_frame[size]) {
@@ -3233,12 +3236,12 @@ static int mxf_compute_sample_count(MXFContext *mxf, int stream_index,
 
     av_assert2(size);
 
-    *sample_count = (edit_unit / size) * (uint64_t)total;
+    sample_count = (edit_unit / size) * (uint64_t)total;
     for (i = 0; i < edit_unit % size; i++) {
-        *sample_count += spf->samples_per_frame[i];
+        sample_count += spf->samples_per_frame[i];
     }
 
-    return 0;
+    return sample_count;
 }
 
 static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
@@ -3574,19 +3577,11 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *cur_st = s->streams[i];
         MXFTrack *cur_track = cur_st->priv_data;
-        if (cur_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            int64_t track_edit_unit;
-            if (st != cur_st && mxf_get_next_track_edit_unit(mxf, cur_track, seekpos, &track_edit_unit) >= 0) {
-                cur_track->sample_count = av_rescale_q(track_edit_unit,
-                                                       av_inv_q(cur_track->edit_rate),
-                                                       cur_st->time_base);
-            } else {
-                uint64_t current_sample_count = 0;
-                ret = mxf_compute_sample_count(mxf, i, sample_time, &current_sample_count);
-                if (ret < 0)
-                    return ret;
-                cur_track->sample_count = current_sample_count;
-            }
+        if (cur_track) {
+            int64_t track_edit_unit = sample_time;
+            if (st != cur_st)
+                mxf_get_next_track_edit_unit(mxf, cur_track, seekpos, &track_edit_unit);
+            cur_track->sample_count = mxf_compute_sample_count(mxf, cur_st, track_edit_unit);
         }
     }
     return 0;
