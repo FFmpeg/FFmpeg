@@ -1401,7 +1401,7 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
 /**
  * Computes the absolute file offset of the given essence container offset
  */
-static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t offset, int64_t *offset_out)
+static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t offset, int64_t *offset_out, MXFPartition **partition_out)
 {
     MXFPartition *last_p = NULL;
     int a, b, m, m0;
@@ -1429,6 +1429,8 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
 
     if (last_p && (!last_p->essence_length || last_p->essence_length > (offset - last_p->body_offset))) {
         *offset_out = last_p->essence_offset + (offset - last_p->body_offset);
+        if (partition_out)
+            *partition_out = last_p;
         return 0;
     }
 
@@ -1463,7 +1465,7 @@ static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
 }
 
 /* EditUnit -> absolute offset */
-static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, int64_t *edit_unit_out, int64_t *offset_out, int nag)
+static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, int64_t *edit_unit_out, int64_t *offset_out, MXFPartition **partition_out, int nag)
 {
     int i;
     int64_t offset_temp = 0;
@@ -1498,7 +1500,7 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
             if (edit_unit_out)
                 *edit_unit_out = edit_unit;
 
-            return mxf_absolute_bodysid_offset(mxf, index_table->body_sid, offset_temp, offset_out);
+            return mxf_absolute_bodysid_offset(mxf, index_table->body_sid, offset_temp, offset_out, partition_out);
         } else {
             /* EditUnitByteCount == 0 for VBR indexes, which is fine since they use explicit StreamOffsets */
             offset_temp += s->edit_unit_byte_count * s->index_duration;
@@ -3145,7 +3147,7 @@ static int mxf_get_next_track_edit_unit(MXFContext *mxf, MXFTrack *track, int64_
 
     while (b - a > 1) {
         m = (a + b) >> 1;
-        if (mxf_edit_unit_absolute_offset(mxf, t, m, NULL, &offset, 0) < 0)
+        if (mxf_edit_unit_absolute_offset(mxf, t, m, NULL, &offset, NULL, 0) < 0)
             return -1;
         if (offset < current_offset)
             a = m;
@@ -3174,7 +3176,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, int64_t current_offset
 
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of current_offset */
     while (mxf->current_edit_unit >= 0) {
-        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
+        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, NULL, 0) < 0)
             return -2;
 
         if (next_ofs <= last_ofs) {
@@ -3394,12 +3396,12 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     edit_units = FFMIN(track->edit_units_per_packet, track->original_duration - mxf->current_edit_unit);
 
-    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, 1)) < 0)
+    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, NULL, 1)) < 0)
         return ret;
 
     /* compute size by finding the next edit unit or the end of the essence container
      * not pretty, but it works */
-    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + edit_units, NULL, &next_pos, 0)) < 0 &&
+    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + edit_units, NULL, &next_pos, NULL, 0)) < 0 &&
         (next_pos = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
         av_log(s, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
         return AVERROR_INVALIDDATA;
@@ -3560,7 +3562,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             sample_time = FFMIN(sample_time, source_track->original_duration - 1);
         }
 
-        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, 1)) < 0)
+        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, NULL, 1)) < 0)
             return ret;
 
         ff_update_cur_dts(s, st, sample_time);
