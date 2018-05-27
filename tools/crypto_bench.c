@@ -23,6 +23,7 @@
 #define USE_crypto           0x01    /* OpenSSL's libcrypto */
 #define USE_gcrypt           0x02    /* GnuTLS's libgcrypt */
 #define USE_tomcrypt         0x04    /* LibTomCrypt */
+#define USE_mbedcrypto       0x08    /* mbed TLS */
 
 #include <stdlib.h>
 #include <math.h>
@@ -335,6 +336,116 @@ DEFINE_GCRYPT_CYPHER_WRAPPER(twofish,  TWOFISH128,  16)
 #endif
 
 /***************************************************************************
+ * mbedcrypto: mbed TLS
+ ***************************************************************************/
+
+#if (USE_EXT_LIBS) & USE_mbedcrypto
+
+#include <mbedtls/aes.h>
+#include <mbedtls/arc4.h>
+#include <mbedtls/blowfish.h>
+#include <mbedtls/camellia.h>
+#include <mbedtls/des.h>
+#include <mbedtls/md5.h>
+#include <mbedtls/ripemd160.h>
+#include <mbedtls/sha1.h>
+#include <mbedtls/sha256.h>
+#include <mbedtls/sha512.h>
+#include <mbedtls/xtea.h>
+
+#define DEFINE_MBEDCRYPTO_WRAPPER(suffix)                                  \
+static void run_mbedcrypto_ ## suffix(uint8_t *output,                     \
+                                      const uint8_t *input, unsigned size) \
+{                                                                          \
+    mbedtls_ ## suffix ## _ret(input, size, output);                       \
+}
+
+#define DEFINE_MBEDCRYPTO_WRAPPER_SHA2(suffix)                             \
+static void run_mbedcrypto_ ## suffix(uint8_t *output,                     \
+                                      const uint8_t *input, unsigned size) \
+{                                                                          \
+    mbedtls_ ## suffix ## _ret(input, size, output, 0);                    \
+}
+
+DEFINE_MBEDCRYPTO_WRAPPER(md5)
+DEFINE_MBEDCRYPTO_WRAPPER(ripemd160)
+DEFINE_MBEDCRYPTO_WRAPPER(sha1)
+DEFINE_MBEDCRYPTO_WRAPPER_SHA2(sha256)
+DEFINE_MBEDCRYPTO_WRAPPER_SHA2(sha512)
+
+
+#define DEFINE_MBEDCRYPTO_CYPHER_WRAPPER(suffix, cypher, algo)                  \
+static void run_mbedcrypto_ ## suffix(uint8_t *output,                          \
+                                      const uint8_t *input, unsigned size)      \
+{                                                                               \
+    mbedtls_ ## cypher ## _context cypher;                                      \
+                                                                                \
+    mbedtls_ ## cypher ## _init(&cypher);                                       \
+    mbedtls_ ## cypher ## _setkey_enc(&cypher, hardcoded_key, 128);             \
+    for (int i = 0; i < size; i += 16)                                          \
+        mbedtls_ ## cypher ## _crypt_ecb(&cypher, MBEDTLS_ ## algo ## _ENCRYPT, \
+                                         input + i, output + i);                \
+    mbedtls_ ## cypher ## _free(&cypher);                                       \
+}
+
+DEFINE_MBEDCRYPTO_CYPHER_WRAPPER(aes128, aes, AES)
+DEFINE_MBEDCRYPTO_CYPHER_WRAPPER(camellia, camellia, CAMELLIA)
+
+static void run_mbedcrypto_blowfish(uint8_t *output,
+                                    const uint8_t *input, unsigned size)
+{
+    mbedtls_blowfish_context blowfish;
+
+    mbedtls_blowfish_init(&blowfish);
+    mbedtls_blowfish_setkey(&blowfish, hardcoded_key, 128);
+    for (int i = 0; i < size; i += 8)
+        mbedtls_blowfish_crypt_ecb(&blowfish, MBEDTLS_BLOWFISH_ENCRYPT,
+                                   input + i, output + i);
+    mbedtls_blowfish_free(&blowfish);
+}
+
+static void run_mbedcrypto_des(uint8_t *output,
+                               const uint8_t *input, unsigned size)
+{
+    mbedtls_des_context des;
+
+    mbedtls_des_init(&des);
+    mbedtls_des_setkey_enc(&des, hardcoded_key);
+    for (int i = 0; i < size; i += 8)
+        mbedtls_des_crypt_ecb(&des, input + i, output + i);
+    mbedtls_des_free(&des);
+}
+
+static void run_mbedcrypto_rc4(uint8_t *output,
+                               const uint8_t *input, unsigned size)
+{
+    mbedtls_arc4_context rc4;
+
+    mbedtls_arc4_init(&rc4);
+    mbedtls_arc4_setup(&rc4, hardcoded_key, 16);
+    mbedtls_arc4_crypt(&rc4, size, input, output);
+    mbedtls_arc4_free(&rc4);
+}
+
+static void run_mbedcrypto_xtea(uint8_t *output,
+                                const uint8_t *input, unsigned size)
+{
+    mbedtls_xtea_context xtea;
+
+    mbedtls_xtea_init(&xtea);
+    mbedtls_xtea_setup(&xtea, hardcoded_key);
+    for (int i = 0; i < size; i += 8)
+        mbedtls_xtea_crypt_ecb(&xtea, MBEDTLS_XTEA_ENCRYPT,
+                               input + i, output + i);
+    mbedtls_xtea_free(&xtea);
+}
+
+#define IMPL_USE_mbedcrypto(...) IMPL_USE(__VA_ARGS__)
+#else
+#define IMPL_USE_mbedcrypto(...) /* ignore */
+#endif
+
+/***************************************************************************
  * tomcrypt: LibTomCrypt
  ***************************************************************************/
 
@@ -512,6 +623,7 @@ static void run_implementation(const uint8_t *input, uint8_t *output,
     IMPL(lavu,       __VA_ARGS__) \
     IMPL(crypto,     __VA_ARGS__) \
     IMPL(gcrypt,     __VA_ARGS__) \
+    IMPL(mbedcrypto, __VA_ARGS__) \
     IMPL(tomcrypt,   __VA_ARGS__)
 
 struct hash_impl implementations[] = {
@@ -525,7 +637,10 @@ struct hash_impl implementations[] = {
     IMPL_ALL("RIPEMD-160", ripemd160, "62a5321e4fc8784903bb43ab7752c75f8b25af00")
     IMPL_ALL("AES-128",    aes128,    "crc:ff6bc888")
     IMPL_ALL("CAMELLIA",   camellia,  "crc:7abb59a7")
-    IMPL_ALL("CAST-128",   cast128,   "crc:456aa584")
+    IMPL(lavu,     "CAST-128", cast128, "crc:456aa584")
+    IMPL(crypto,   "CAST-128", cast128, "crc:456aa584")
+    IMPL(gcrypt,   "CAST-128", cast128, "crc:456aa584")
+    IMPL(tomcrypt, "CAST-128", cast128, "crc:456aa584")
     IMPL_ALL("BLOWFISH",   blowfish,  "crc:33e8aa74")
     IMPL_ALL("DES",        des,       "crc:31291e0b")
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
@@ -533,7 +648,9 @@ struct hash_impl implementations[] = {
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
     IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
+    IMPL(mbedcrypto, "RC4",   rc4,     "crc:538d37b2")
     IMPL(lavu,     "XTEA",    xtea,    "crc:931fc270")
+    IMPL(mbedcrypto, "XTEA",  xtea,    "crc:931fc270")
     IMPL(tomcrypt, "XTEA",    xtea,    "crc:931fc270")
 };
 
@@ -561,15 +678,16 @@ int main(int argc, char **argv)
                     argv[0]);
             if ((USE_EXT_LIBS)) {
                 char buf[1024];
-                snprintf(buf, sizeof(buf), "%s%s%s",
+                snprintf(buf, sizeof(buf), "%s%s%s%s",
                          ((USE_EXT_LIBS) & USE_crypto)   ? "+crypto"   : "",
                          ((USE_EXT_LIBS) & USE_gcrypt)   ? "+gcrypt"   : "",
+                         ((USE_EXT_LIBS) & USE_mbedcrypto) ? "+mbedcrypto" : "",
                          ((USE_EXT_LIBS) & USE_tomcrypt) ? "+tomcrypt" : "");
                 fprintf(stderr, "Built with the following external libraries:\n"
                         "make VERSUS=%s\n", buf + 1);
             } else {
                 fprintf(stderr, "Built without external libraries; use\n"
-                        "make VERSUS=crypto+gcrypt+tomcrypt tools/crypto_bench\n"
+                        "make VERSUS=crypto+gcrypt+mbedcrypto+tomcrypt tools/crypto_bench\n"
                         "to enable them.\n");
             }
             exit(opt != 'h');
