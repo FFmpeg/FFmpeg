@@ -372,6 +372,8 @@ static int64_t klv_decode_ber_length(AVIOContext *pb)
         while (bytes_num--)
             size = size << 8 | avio_r8(pb);
     }
+    if (size > INT64_MAX)
+        return AVERROR_INVALIDDATA;
     return size;
 }
 
@@ -390,13 +392,17 @@ static int mxf_read_sync(AVIOContext *pb, const uint8_t *key, unsigned size)
 
 static int klv_read_packet(KLVPacket *klv, AVIOContext *pb)
 {
+    int64_t length;
     if (!mxf_read_sync(pb, mxf_klv_key, 4))
         return AVERROR_INVALIDDATA;
     klv->offset = avio_tell(pb) - 4;
     memcpy(klv->key, mxf_klv_key, 4);
     avio_read(pb, klv->key + 4, 12);
-    klv->length = klv_decode_ber_length(pb);
-    return klv->length == -1 ? -1 : 0;
+    length = klv_decode_ber_length(pb);
+    if (length < 0)
+        return length;
+    klv->length = length;
+    return 0;
 }
 
 static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv, int body_sid)
@@ -486,7 +492,10 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
         av_aes_init(mxf->aesc, s->key, 128, 1);
     }
     // crypto context
-    avio_skip(pb, klv_decode_ber_length(pb));
+    size = klv_decode_ber_length(pb);
+    if (size < 0)
+        return size;
+    avio_skip(pb, size);
     // plaintext offset
     klv_decode_ber_length(pb);
     plaintext_size = avio_rb64(pb);
