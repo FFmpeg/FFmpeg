@@ -433,12 +433,10 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int ret;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
-        return ret;
 
     /* check if this frame is even supposed to change */
     if (avpkt->size < 8)
-        goto done;
+        return avpkt->size;
 
     /* start after the chunk size */
     bytestream2_seek(&s->g, 4, SEEK_SET);
@@ -449,17 +447,20 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     /* if a header is present, fetch additional decoding parameters */
     if (header & 0x0008) {
         if (avpkt->size < 14)
-            goto done;
+            return avpkt->size;
         start_line = bytestream2_get_be16(&s->g);
         bytestream2_skip(&s->g, 2);
         height     = bytestream2_get_be16(&s->g);
         bytestream2_skip(&s->g, 2);
         if (height > s->avctx->height - start_line)
-            goto done;
+            return avpkt->size;
     } else {
         start_line = 0;
         height     = s->avctx->height;
     }
+    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+        return ret;
+
     row_ptr = s->frame->linesize[0] * start_line;
 
     switch (avctx->bits_per_coded_sample) {
@@ -520,7 +521,6 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         memcpy(s->frame->data[1], s->pal, AVPALETTE_SIZE);
     }
 
-done:
     if ((ret = av_frame_ref(data, s->frame)) < 0)
         return ret;
     *got_frame      = 1;
