@@ -329,6 +329,8 @@ static av_cold int dct_init(MpegEncContext *s)
 
 av_cold void ff_mpv_idct_init(MpegEncContext *s)
 {
+    if (s->codec_id == AV_CODEC_ID_MPEG4)
+        s->idsp.mpeg4_studio_profile = s->studio_profile;
     ff_idctdsp_init(&s->idsp, s->avctx);
 
     /* load & permutate scantables
