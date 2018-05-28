@@ -56,10 +56,7 @@
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
-AVCodec * codec_list[] = {
-    NULL,
-    NULL
-};
+extern AVCodec * codec_list[];
 
 static void error(const char *err)
 {
