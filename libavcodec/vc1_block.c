@@ -2678,8 +2678,10 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             s->bdsp.clear_blocks(block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos + v->mb_off]                         = MB_TYPE_INTRA;
-            s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
-            s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
+            for (int i = 0; i < 4; i++) {
+                s->current_picture.motion_val[1][s->block_index[i] + v->blocks_off][0] = 0;
+                s->current_picture.motion_val[1][s->block_index[i] + v->blocks_off][1] = 0;
+            }
 
             // do actual MB decoding and displaying
             if (v->fieldtx_is_raw)
