@@ -200,6 +200,11 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    if (atom_size < 16) {
+        printf("bad moov atom size\n");
+        goto error_out;
+    }
+
     /* moov atom was, in fact, the last atom in the chunk; load the whole
      * moov atom */
     if (fseeko(infile, -atom_size, SEEK_END)) {
@@ -239,12 +244,12 @@ int main(int argc, char *argv[])
         if (atom_type == STCO_ATOM) {
             printf(" patching stco atom...\n");
             atom_size = BE_32(&moov_atom[i - 4]);
-            if (i + atom_size - 4 > moov_atom_size) {
+            if (atom_size < 16 || atom_size > moov_atom_size - i + 4) {
                 printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12 + offset_count * UINT64_C(4) > moov_atom_size) {
+            if (offset_count > (atom_size - 16) / 4) {
                 printf(" bad atom size/element count\n");
                 goto error_out;
             }
@@ -260,12 +265,12 @@ int main(int argc, char *argv[])
         } else if (atom_type == CO64_ATOM) {
             printf(" patching co64 atom...\n");
             atom_size = BE_32(&moov_atom[i - 4]);
-            if (i + atom_size - 4 > moov_atom_size) {
+            if (atom_size < 16 || atom_size > moov_atom_size - i + 4) {
                 printf(" bad atom size\n");
                 goto error_out;
             }
             offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12 + offset_count * UINT64_C(8) > moov_atom_size) {
+            if (offset_count > (atom_size - 16) / 8) {
                 printf(" bad atom size/element count\n");
                 goto error_out;
             }
