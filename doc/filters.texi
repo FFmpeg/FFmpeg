@@ -969,6 +969,17 @@ Enable applying gain measured from power of IR.
 @item maxir
 Set max allowed Impulse Response filter duration in seconds. Default is 30 seconds.
 Allowed range is 0.1 to 60 seconds.
+
+@item response
+Show IR frequency reponse, magnitude and phase in additional video stream.
+By default it is disabled.
+
+@item channel
+Set for which IR channel to display frequency response. By default is first channel
+displayed. This option is used only when @var{response} is enabled.
+
+@item size
+Set video stream size. This option is used only when @var{response} is enabled.
 @end table
 
 @subsection Examples
