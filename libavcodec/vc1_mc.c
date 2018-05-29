@@ -179,11 +179,16 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     int i;
     uint8_t (*luty)[256], (*lutuv)[256];
     int use_ic;
+    int interlace;
+    int linesize, uvlinesize;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
         !v->s.last_picture.f->data[0])
         return;
+
+    linesize = s->current_picture_ptr->f->linesize[0];
+    uvlinesize = s->current_picture_ptr->f->linesize[1];
 
     mx = s->mv[dir][0][0];
     my = s->mv[dir][0][1];
@@ -220,6 +225,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
             luty  = v->curr_luty;
             lutuv = v->curr_lutuv;
             use_ic = *v->curr_use_ic;
+            interlace = 1;
         } else {
             srcY = s->last_picture.f->data[0];
             srcU = s->last_picture.f->data[1];
@@ -227,6 +233,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
             luty  = v->last_luty;
             lutuv = v->last_lutuv;
             use_ic = v->last_use_ic;
+            interlace = s->last_picture.f->interlaced_frame;
         }
     } else {
         srcY = s->next_picture.f->data[0];
@@ -235,6 +242,7 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         luty  = v->next_luty;
         lutuv = v->next_lutuv;
         use_ic = v->next_use_ic;
+        interlace = s->next_picture.f->interlaced_frame;
     }
 
     if (!srcY || !srcU) {
@@ -269,9 +277,9 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
 
     if (v->field_mode && v->ref_field_type[dir]) {
-        srcY += s->current_picture_ptr->f->linesize[0];
-        srcU += s->current_picture_ptr->f->linesize[1];
-        srcV += s->current_picture_ptr->f->linesize[2];
+        srcY += linesize;
+        srcU += uvlinesize;
+        srcV += uvlinesize;
     }
 
     /* for grayscale we should not try to read from unknown area */
@@ -289,112 +297,105 @@ void ff_vc1_mc_1mv(VC1Context *v, int dir)
         const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
-        if (v->fcm == ILACE_FRAME) {
-            if (src_y - s->mspel & 1) {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
-                                         srcY,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k + 1 >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos + 1 >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize,
-                                         srcY + s->linesize,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel + 1 >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos >> 1);
-            } else {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
-                                         srcY,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k + 1 >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize,
-                                         srcY + s->linesize,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize << 1,
+                                     linesize << 1,
+                                     k,
+                                     v->field_mode ? k : k + 1 >> 1,
+                                     src_x - s->mspel,
+                                     src_y - s->mspel >> !v->field_mode,
+                                     s->h_edge_pos,
+                                     s->v_edge_pos >> 1);
+            if (!v->field_mode)
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + linesize,
+                                         srcY + linesize,
+                                         linesize << 1,
+                                         linesize << 1,
                                          k,
                                          k >> 1,
                                          src_x - s->mspel,
                                          src_y - s->mspel + 1 >> 1,
                                          s->h_edge_pos,
-                                         v_edge_pos + 1 >> 1);
-            }
+                                         s->v_edge_pos >> 1);
         } else
-            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
-                                     s->linesize, s->linesize,
-                                     k, k,
-                                     src_x - s->mspel, src_y - s->mspel,
-                                     s->h_edge_pos, v_edge_pos);
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize,
+                                     linesize,
+                                     k,
+                                     v->field_mode ? (k << 1) - 1 : k,
+                                     src_x - s->mspel,
+                                     v->field_mode ? 2 * (src_y - s->mspel) + v->ref_field_type[dir] :
+                                                     src_y - s->mspel,
+                                     s->h_edge_pos,
+                                     s->v_edge_pos);
         srcY = s->sc.edge_emu_buffer;
-        if (v->fcm == ILACE_FRAME) {
-            if (uvsrc_y & 1) {
-                s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(ubuf + s->uvlinesize, srcU + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(vbuf + s->uvlinesize, srcV + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-            } else {
-                s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(ubuf + s->uvlinesize, srcU + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(vbuf + s->uvlinesize, srcV + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(ubuf,
+                                     srcU,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            s->vdsp.emulated_edge_mc(vbuf,
+                                     srcV,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            if (!v->field_mode) {
+                s->vdsp.emulated_edge_mc(ubuf + uvlinesize,
+                                         srcU + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+                s->vdsp.emulated_edge_mc(vbuf + uvlinesize,
+                                         srcV + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
             }
         } else {
-            s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                     s->uvlinesize, s->uvlinesize,
-                                     8 + 1, 8 + 1,
-                                     uvsrc_x, uvsrc_y,
-                                     s->h_edge_pos >> 1, v_edge_pos >> 1);
-            s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                     s->uvlinesize, s->uvlinesize,
-                                     8 + 1, 8 + 1,
-                                     uvsrc_x, uvsrc_y,
-                                     s->h_edge_pos >> 1, v_edge_pos >> 1);
+            s->vdsp.emulated_edge_mc(ubuf,
+                                     srcU,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + v->ref_field_type[dir] : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
+            s->vdsp.emulated_edge_mc(vbuf,
+                                     srcV,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + v->ref_field_type[dir] : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
         }
         srcU = ubuf;
         srcV = vbuf;
@@ -458,11 +459,15 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     uint8_t (*luty)[256];
     int use_ic;
+    int interlace;
+    int linesize;
 
     if ((!v->field_mode ||
          (v->ref_field_type[dir] == 1 && v->cur_field_type == 1)) &&
         !v->s.last_picture.f->data[0])
         return;
+
+    linesize = s->current_picture_ptr->f->linesize[0];
 
     mx = s->mv[dir][n][0];
     my = s->mv[dir][n][1];
@@ -472,15 +477,18 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
             srcY = s->current_picture.f->data[0];
             luty = v->curr_luty;
             use_ic = *v->curr_use_ic;
+            interlace = 1;
         } else {
             srcY = s->last_picture.f->data[0];
             luty = v->last_luty;
             use_ic = v->last_use_ic;
+            interlace = s->last_picture.f->interlaced_frame;
         }
     } else {
         srcY = s->next_picture.f->data[0];
         luty = v->next_luty;
         use_ic = v->next_use_ic;
+        interlace = s->next_picture.f->interlaced_frame;
     }
 
     if (!srcY) {
@@ -547,7 +555,7 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
 
     srcY += src_y * s->linesize + src_x;
     if (v->field_mode && v->ref_field_type[dir])
-        srcY += s->current_picture_ptr->f->linesize[0];
+        srcY += linesize;
 
     if (v->rangeredfrm || use_ic
         || s->h_edge_pos < 13 || v_edge_pos < 23
@@ -557,36 +565,40 @@ void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg)
 
         srcY -= s->mspel * (1 + (s->linesize << fieldmv));
         /* check emulate edge stride and offset */
-        if (v->fcm == ILACE_FRAME) {
-            if (src_y - (s->mspel << fieldmv) & 1) {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
-                                         2 * s->linesize, 2 * s->linesize,
-                                         k, (k << fieldmv) + 1 >> 1,
-                                         src_x - s->mspel, src_y - (s->mspel << fieldmv) >> 1,
-                                         s->h_edge_pos, v_edge_pos + 1 >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize, srcY + s->linesize,
-                                         2 * s->linesize, 2 * s->linesize,
-                                         k, (k << fieldmv) >> 1,
-                                         src_x - s->mspel, src_y - (s->mspel << fieldmv) + 1 >> 1,
-                                         s->h_edge_pos, v_edge_pos >> 1);
-            } else {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
-                                         2 * s->linesize, 2 * s->linesize,
-                                         k, (k << fieldmv) + 1 >> 1,
-                                         src_x - s->mspel, src_y - (s->mspel << fieldmv) >> 1,
-                                         s->h_edge_pos, v_edge_pos >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize, srcY + s->linesize,
-                                         2 * s->linesize, 2 * s->linesize,
-                                         k, (k << fieldmv) >> 1,
-                                         src_x - s->mspel, src_y - (s->mspel << fieldmv) + 1 >> 1,
-                                         s->h_edge_pos, v_edge_pos + 1 >> 1);
-            }
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize << 1,
+                                     linesize << 1,
+                                     k,
+                                     v->field_mode ? k : (k << fieldmv) + 1 >> 1,
+                                     src_x - s->mspel,
+                                     src_y - (s->mspel << fieldmv) >> !v->field_mode,
+                                     s->h_edge_pos,
+                                     s->v_edge_pos >> 1);
+            if (!v->field_mode && !fieldmv)
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + linesize,
+                                         srcY + linesize,
+                                         linesize << 1,
+                                         linesize << 1,
+                                         k,
+                                         k >> 1,
+                                         src_x - s->mspel,
+                                         src_y - s->mspel + 1 >> 1,
+                                         s->h_edge_pos,
+                                         s->v_edge_pos >> 1);
         } else
-            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
-                                     s->linesize, s->linesize,
-                                     k, k,
-                                     src_x - s->mspel, src_y - s->mspel,
-                                     s->h_edge_pos, v_edge_pos);
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize,
+                                     linesize,
+                                     k,
+                                     v->field_mode ? (k << 1) - 1 : k << fieldmv,
+                                     src_x - s->mspel,
+                                     v->field_mode ? 2 * (src_y - s->mspel) + v->ref_field_type[dir] :
+                                                     src_y - (s->mspel << fieldmv),
+                                     s->h_edge_pos,
+                                     s->v_edge_pos);
         srcY = s->sc.edge_emu_buffer;
         /* if we deal with range reduction we need to scale source blocks */
         if (v->rangeredfrm) {
@@ -630,6 +642,8 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     uint8_t (*lutuv)[256];
     int use_ic;
+    int interlace;
+    int uvlinesize;
 
     if (!v->field_mode && !v->s.last_picture.f->data[0])
         return;
@@ -654,6 +668,9 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
         return;
     s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
     s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
+
+    uvlinesize = s->current_picture_ptr->f->linesize[1];
+
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
     uvmy = (ty + ((ty & 3) == 3)) >> 1;
 
@@ -685,17 +702,20 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
             srcV = s->current_picture.f->data[2];
             lutuv = v->curr_lutuv;
             use_ic = *v->curr_use_ic;
+            interlace = 1;
         } else {
             srcU = s->last_picture.f->data[1];
             srcV = s->last_picture.f->data[2];
             lutuv = v->last_lutuv;
             use_ic = v->last_use_ic;
+            interlace = s->last_picture.f->interlaced_frame;
         }
     } else {
         srcU = s->next_picture.f->data[1];
         srcV = s->next_picture.f->data[2];
         lutuv = v->next_lutuv;
         use_ic = v->next_use_ic;
+        interlace = s->next_picture.f->interlaced_frame;
     }
 
     if (!srcU) {
@@ -708,8 +728,8 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
 
     if (v->field_mode) {
         if (chroma_ref_type) {
-            srcU += s->current_picture_ptr->f->linesize[1];
-            srcV += s->current_picture_ptr->f->linesize[2];
+            srcU += uvlinesize;
+            srcV += uvlinesize;
         }
     }
 
@@ -717,14 +737,71 @@ void ff_vc1_mc_4mv_chroma(VC1Context *v, int dir)
         || s->h_edge_pos < 18 || v_edge_pos < 18
         || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
         || (unsigned)uvsrc_y > (v_edge_pos    >> 1) - 9) {
-        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
-                                 s->uvlinesize, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
-                                 s->h_edge_pos >> 1, v_edge_pos >> 1);
-        s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
-                                 s->uvlinesize, s->uvlinesize,
-                                 8 + 1, 8 + 1, uvsrc_x, uvsrc_y,
-                                 s->h_edge_pos >> 1, v_edge_pos >> 1);
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcU,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16,
+                                     srcV,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            if (!v->field_mode) {
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + uvlinesize,
+                                         srcU + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16 + uvlinesize,
+                                         srcV + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+            }
+        } else {
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcU,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + chroma_ref_type : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16,
+                                     srcV,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + chroma_ref_type : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
+        }
         srcU = s->sc.edge_emu_buffer;
         srcV = s->sc.edge_emu_buffer + 16;
 
@@ -772,10 +849,14 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
     int v_dist = fieldmv ? 1 : 4; // vertical offset for lower sub-blocks
     int v_edge_pos = s->v_edge_pos >> 1;
     int use_ic;
+    int interlace;
+    int uvlinesize;
     uint8_t (*lutuv)[256];
 
     if (CONFIG_GRAY && s->avctx->flags & AV_CODEC_FLAG_GRAY)
         return;
+
+    uvlinesize = s->current_picture_ptr->f->linesize[1];
 
     for (i = 0; i < 4; i++) {
         int d = i < 2 ? dir: dir2;
@@ -803,11 +884,13 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             srcV = s->next_picture.f->data[2];
             lutuv  = v->next_lutuv;
             use_ic = v->next_use_ic;
+            interlace = s->next_picture.f->interlaced_frame;
         } else {
             srcU = s->last_picture.f->data[1];
             srcV = s->last_picture.f->data[2];
             lutuv  = v->last_lutuv;
             use_ic = v->last_use_ic;
+            interlace = s->last_picture.f->interlaced_frame;
         }
         if (!srcU)
             return;
@@ -820,51 +903,70 @@ void ff_vc1_mc_4mv_chroma4(VC1Context *v, int dir, int dir2, int avg)
             || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
-            if (v->fcm == ILACE_FRAME) {
-                if (uvsrc_y & 1) {
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) + 1 >> 1, uvsrc_x, uvsrc_y >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos + 1 >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->uvlinesize, srcU + s->uvlinesize,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) >> 1, uvsrc_x, uvsrc_y + 1 >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) + 1 >> 1, uvsrc_x, uvsrc_y >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos + 1 >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16 + s->uvlinesize, srcV + s->uvlinesize,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) >> 1, uvsrc_x, uvsrc_y + 1 >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos >> 1);
-                } else {
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) + 1 >> 1, uvsrc_x, uvsrc_y >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->uvlinesize, srcU + s->uvlinesize,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) >> 1, uvsrc_x, uvsrc_y + 1 >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos + 1 >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) + 1 >> 1, uvsrc_x, uvsrc_y >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos >> 1);
-                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16 + s->uvlinesize, srcV + s->uvlinesize,
-                                             2 * s->uvlinesize, 2 * s->uvlinesize,
-                                             5, (5 << fieldmv) + 1, uvsrc_x, uvsrc_y + 1 >> 1,
-                                             s->h_edge_pos >> 1, v_edge_pos + 1 >> 1);
+            if (interlace) {
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                         srcU,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         5,
+                                         (5 << fieldmv) + 1 >> 1,
+                                         uvsrc_x,
+                                         uvsrc_y >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16,
+                                         srcV,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         5,
+                                         (5 << fieldmv) + 1 >> 1,
+                                         uvsrc_x,
+                                         uvsrc_y >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+                if (!fieldmv) {
+                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + uvlinesize,
+                                             srcU + uvlinesize,
+                                             uvlinesize << 1,
+                                             uvlinesize << 1,
+                                             5,
+                                             2,
+                                             uvsrc_x,
+                                             uvsrc_y + 1 >> 1,
+                                             s->h_edge_pos >> 1,
+                                             s->v_edge_pos >> 2);
+                    s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16 + uvlinesize,
+                                             srcV + uvlinesize,
+                                             uvlinesize << 1,
+                                             uvlinesize << 1,
+                                             5,
+                                             2,
+                                             uvsrc_x,
+                                             uvsrc_y + 1 >> 1,
+                                             s->h_edge_pos >> 1,
+                                             s->v_edge_pos >> 2);
                 }
             } else {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcU,
-                                         s->uvlinesize, s->uvlinesize,
-                                         5, 5, uvsrc_x, uvsrc_y,
-                                         s->h_edge_pos >> 1, v_edge_pos);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16, srcV,
-                                         s->uvlinesize, s->uvlinesize,
-                                         5, 5, uvsrc_x, uvsrc_y,
-                                         s->h_edge_pos >> 1, v_edge_pos);
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                         srcU,
+                                         uvlinesize,
+                                         uvlinesize,
+                                         5,
+                                         5 << fieldmv,
+                                         uvsrc_x,
+                                         uvsrc_y,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 1);
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + 16,
+                                         srcV,
+                                         uvlinesize,
+                                         uvlinesize,
+                                         5,
+                                         5 << fieldmv,
+                                         uvsrc_x,
+                                         uvsrc_y,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 1);
             }
             srcU = s->sc.edge_emu_buffer;
             srcV = s->sc.edge_emu_buffer + 16;
@@ -907,9 +1009,14 @@ void ff_vc1_interp_mc(VC1Context *v)
     int dxy, mx, my, uvmx, uvmy, src_x, src_y, uvsrc_x, uvsrc_y;
     int v_edge_pos = s->v_edge_pos >> v->field_mode;
     int use_ic = v->next_use_ic;
+    int interlace;
+    int linesize, uvlinesize;
 
     if (!v->field_mode && !v->s.next_picture.f->data[0])
         return;
+
+    linesize = s->current_picture_ptr->f->linesize[0];
+    uvlinesize = s->current_picture_ptr->f->linesize[1];
 
     mx   = s->mv[1][0][0];
     my   = s->mv[1][0][1];
@@ -926,6 +1033,8 @@ void ff_vc1_interp_mc(VC1Context *v)
     srcY = s->next_picture.f->data[0];
     srcU = s->next_picture.f->data[1];
     srcV = s->next_picture.f->data[2];
+
+    interlace = s->next_picture.f->interlaced_frame;
 
     src_x   = s->mb_x * 16 + (mx   >> 2);
     src_y   = s->mb_y * 16 + (my   >> 2);
@@ -954,9 +1063,9 @@ void ff_vc1_interp_mc(VC1Context *v)
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
 
     if (v->field_mode && v->ref_field_type[1]) {
-        srcY += s->current_picture_ptr->f->linesize[0];
-        srcU += s->current_picture_ptr->f->linesize[1];
-        srcV += s->current_picture_ptr->f->linesize[2];
+        srcY += linesize;
+        srcU += uvlinesize;
+        srcV += uvlinesize;
     }
 
     /* for grayscale we should not try to read from unknown area */
@@ -973,112 +1082,105 @@ void ff_vc1_interp_mc(VC1Context *v)
         const int k = 17 + s->mspel * 2;
 
         srcY -= s->mspel * (1 + s->linesize);
-        if (v->fcm == ILACE_FRAME) {
-            if (src_y - s->mspel & 1) {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
-                                         srcY,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k + 1 >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos + 1 >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize,
-                                         srcY + s->linesize,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel + 1 >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos >> 1);
-            } else {
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
-                                         srcY,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
-                                         k,
-                                         k + 1 >> 1,
-                                         src_x - s->mspel,
-                                         src_y - s->mspel >> 1,
-                                         s->h_edge_pos,
-                                         v_edge_pos >> 1);
-                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + s->linesize,
-                                         srcY + s->linesize,
-                                         2 * s->linesize,
-                                         2 * s->linesize,
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize << 1,
+                                     linesize << 1,
+                                     k,
+                                     v->field_mode ? k : (k + 1 >> 1),
+                                     src_x - s->mspel,
+                                     src_y - s->mspel >> !v->field_mode,
+                                     s->h_edge_pos,
+                                     s->v_edge_pos >> 1);
+            if (!v->field_mode)
+                s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer + linesize,
+                                         srcY + linesize,
+                                         linesize << 1,
+                                         linesize << 1,
                                          k,
                                          k >> 1,
                                          src_x - s->mspel,
                                          src_y - s->mspel + 1 >> 1,
                                          s->h_edge_pos,
-                                         v_edge_pos + 1 >> 1);
-            }
+                                         s->v_edge_pos >> 1);
         } else
-            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer, srcY,
-                                     s->linesize, s->linesize,
-                                     k, k,
-                                     src_x - s->mspel, src_y - s->mspel,
-                                     s->h_edge_pos, v_edge_pos);
+            s->vdsp.emulated_edge_mc(s->sc.edge_emu_buffer,
+                                     srcY,
+                                     linesize,
+                                     linesize,
+                                     k,
+                                     v->field_mode ? (k << 1) - 1 : k,
+                                     src_x - s->mspel,
+                                     v->field_mode ? 2 * (src_y - s->mspel) + v->ref_field_type[1] :
+                                                     src_y - s->mspel,
+                                     s->h_edge_pos,
+                                     s->v_edge_pos);
         srcY = s->sc.edge_emu_buffer;
-        if (v->fcm == ILACE_FRAME) {
-            if (uvsrc_y & 1) {
-                s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(ubuf + s->uvlinesize, srcU + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(vbuf + s->uvlinesize, srcV + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-            } else {
-                s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(ubuf + s->uvlinesize, srcU + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
-                s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 5,
-                                         uvsrc_x, uvsrc_y >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) >> 1);
-                s->vdsp.emulated_edge_mc(vbuf + s->uvlinesize, srcV + s->uvlinesize,
-                                         2 * s->uvlinesize, 2 * s->uvlinesize,
-                                         8 + 1, 4,
-                                         uvsrc_x, uvsrc_y + 1 >> 1,
-                                         s->h_edge_pos >> 1, (v_edge_pos >> 1) + 1 >> 1);
+        if (interlace) {
+            s->vdsp.emulated_edge_mc(ubuf,
+                                     srcU,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            s->vdsp.emulated_edge_mc(vbuf,
+                                     srcV,
+                                     uvlinesize << 1,
+                                     uvlinesize << 1,
+                                     9,
+                                     v->field_mode ? 9 : 5,
+                                     uvsrc_x,
+                                     uvsrc_y >> !v->field_mode,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 2);
+            if (!v->field_mode) {
+                s->vdsp.emulated_edge_mc(ubuf + uvlinesize,
+                                         srcU + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
+                s->vdsp.emulated_edge_mc(vbuf + uvlinesize,
+                                         srcV + uvlinesize,
+                                         uvlinesize << 1,
+                                         uvlinesize << 1,
+                                         9,
+                                         4,
+                                         uvsrc_x,
+                                         uvsrc_y + 1 >> 1,
+                                         s->h_edge_pos >> 1,
+                                         s->v_edge_pos >> 2);
             }
         } else {
-            s->vdsp.emulated_edge_mc(ubuf, srcU,
-                                     s->uvlinesize, s->uvlinesize,
-                                     8 + 1, 8 + 1,
-                                     uvsrc_x, uvsrc_y,
-                                     s->h_edge_pos >> 1, v_edge_pos >> 1);
-            s->vdsp.emulated_edge_mc(vbuf, srcV,
-                                     s->uvlinesize, s->uvlinesize,
-                                     8 + 1, 8 + 1,
-                                     uvsrc_x, uvsrc_y,
-                                     s->h_edge_pos >> 1, v_edge_pos >> 1);
+            s->vdsp.emulated_edge_mc(ubuf,
+                                     srcU,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + v->ref_field_type[1] : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
+            s->vdsp.emulated_edge_mc(vbuf,
+                                     srcV,
+                                     uvlinesize,
+                                     uvlinesize,
+                                     9,
+                                     v->field_mode ? 17 : 9,
+                                     uvsrc_x,
+                                     v->field_mode ? 2 * uvsrc_y + v->ref_field_type[1] : uvsrc_y,
+                                     s->h_edge_pos >> 1,
+                                     s->v_edge_pos >> 1);
         }
         srcU = ubuf;
         srcV = vbuf;
