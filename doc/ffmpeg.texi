@@ -375,21 +375,30 @@ The following dispositions are recognized:
 @item hearing_impaired
 @item visual_impaired
 @item clean_effects
+@item attached_pic
 @item captions
 @item descriptions
+@item dependent
 @item metadata
 @end table
 
 For example, to make the second audio stream the default stream:
 @example
-ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+ffmpeg -i in.mkv -c copy -disposition:a:1 default out.mkv
 @end example
 
 To make the second subtitle stream the default stream and remove the default
 disposition from the first subtitle stream:
 @example
-ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
+ffmpeg -i in.mkv -c copy -disposition:s:0 0 -disposition:s:1 default out.mkv
 @end example
+
+To add an embedded cover/thumbnail:
+@example
+ffmpeg -i in.mp4 -i IMAGE -map 0 -map 1 -c copy -c:v:1 png -disposition:v:1 attached_pic out.mp4
+@end example
+
+Not all muxers support embedded thumbnails, and those who do, only support a few formats, like JPEG or PNG.
 
 @item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
 
