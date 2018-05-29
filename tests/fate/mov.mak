@@ -16,6 +16,7 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-frag-overlap \
            fate-mov-bbi-elst-starts-b \
            fate-mov-neg-firstpts-discard-frames \
+           fate-mov-stream-shorter-than-movie \
 
 FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-aac-2048-priming \
@@ -87,6 +88,9 @@ fate-mov-neg-firstpts-discard: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entri
 
 # Makes sure that expected frames are generated for mov_neg_first_pts_discard.mov with -vsync 1
 fate-mov-neg-firstpts-discard-frames: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_neg_first_pts_discard.mov -vsync 1
+
+# Makes sure that no frame is dropped/duplicated with fps filter due to start_time / duration miscalculations.
+fate-mov-stream-shorter-than-movie: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_stream_shorter_than_movie.mov -vf fps=fps=24 -an
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 

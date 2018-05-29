@@ -3673,11 +3673,15 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
 
     // If the minimum pts turns out to be greater than zero after fixing the index, then we subtract the
     // dts by that amount to make the first pts zero.
-    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && msc->min_corrected_pts > 0) {
-        av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", msc->min_corrected_pts);
-        for (i = 0; i < st->nb_index_entries; ++i) {
-            st->index_entries[i].timestamp -= msc->min_corrected_pts;
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+        if (msc->min_corrected_pts > 0) {
+            av_log(mov->fc, AV_LOG_DEBUG, "Offset DTS by %"PRId64" to make first pts zero.\n", msc->min_corrected_pts);
+            for (i = 0; i < st->nb_index_entries; ++i) {
+                st->index_entries[i].timestamp -= msc->min_corrected_pts;
+            }
         }
+        // Start time should be equal to zero or the duration of any empty edits.
+        st->start_time = empty_edits_sum_duration;
     }
 
     // Update av stream length, if it ends up shorter than the track's media duration
@@ -4011,6 +4015,14 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     if (!mov->ignore_editlist && mov->advanced_editlist) {
         // Fix index according to edit lists.
         mov_fix_index(mov, st);
+    }
+
+    // Update start time of the stream.
+    if (st->start_time == AV_NOPTS_VALUE && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && st->nb_index_entries > 0) {
+        st->start_time = st->index_entries[0].timestamp + sc->dts_shift;
+        if (sc->ctts_data) {
+            st->start_time += sc->ctts_data[0].duration;
+        }
     }
 
     mov_estimate_video_delay(mov, st);
