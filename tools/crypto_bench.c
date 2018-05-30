@@ -312,23 +312,24 @@ DEFINE_GCRYPT_WRAPPER(sha256,    SHA256)
 DEFINE_GCRYPT_WRAPPER(sha512,    SHA512)
 DEFINE_GCRYPT_WRAPPER(ripemd160, RMD160)
 
-#define DEFINE_GCRYPT_CYPHER_WRAPPER(suffix, cypher, sz)                            \
+#define DEFINE_GCRYPT_CYPHER_WRAPPER(suffix, cypher, mode, sz)                      \
 static void run_gcrypt_ ## suffix(uint8_t *output,                                  \
                               const uint8_t *input, unsigned size)                  \
 {                                                                                   \
     static gcry_cipher_hd_t suffix;                                                 \
     if (!suffix)                                                                    \
-        gcry_cipher_open(&suffix, GCRY_CIPHER_ ## cypher, GCRY_CIPHER_MODE_ECB, 0); \
+        gcry_cipher_open(&suffix, GCRY_CIPHER_ ## cypher, GCRY_CIPHER_MODE_ ## mode, 0); \
     gcry_cipher_setkey(suffix, hardcoded_key, sz);                                  \
     gcry_cipher_encrypt(suffix, output, size, input, size);                         \
 }
 
-DEFINE_GCRYPT_CYPHER_WRAPPER(aes128,   AES128,      16)
-DEFINE_GCRYPT_CYPHER_WRAPPER(blowfish, BLOWFISH,    16)
-DEFINE_GCRYPT_CYPHER_WRAPPER(camellia, CAMELLIA128, 16)
-DEFINE_GCRYPT_CYPHER_WRAPPER(cast128,  CAST5,       16)
-DEFINE_GCRYPT_CYPHER_WRAPPER(des,      DES,         8)
-DEFINE_GCRYPT_CYPHER_WRAPPER(twofish,  TWOFISH128,  16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(aes128,   AES128,      ECB,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(blowfish, BLOWFISH,    ECB,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(camellia, CAMELLIA128, ECB,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(cast128,  CAST5,       ECB,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(des,      DES,         ECB,    8)
+DEFINE_GCRYPT_CYPHER_WRAPPER(twofish,  TWOFISH128,  ECB,    16)
+DEFINE_GCRYPT_CYPHER_WRAPPER(rc4,      ARCFOUR,     STREAM, 16)
 
 #define IMPL_USE_gcrypt(...) IMPL_USE(__VA_ARGS__)
 #else
@@ -648,6 +649,7 @@ struct hash_impl implementations[] = {
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
     IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
+    IMPL(gcrypt,   "RC4",     rc4,     "crc:538d37b2")
     IMPL(mbedcrypto, "RC4",   rc4,     "crc:538d37b2")
     IMPL(lavu,     "XTEA",    xtea,    "crc:931fc270")
     IMPL(mbedcrypto, "XTEA",  xtea,    "crc:931fc270")
