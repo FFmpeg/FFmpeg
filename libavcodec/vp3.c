@@ -451,6 +451,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     int i, j;
     int current_fragment;
     int plane;
+    int plane0_num_coded_frags = 0;
 
     if (s->keyframe) {
         memset(s->superblock_coding, SB_FULLY_CODED, s->superblock_count);
@@ -543,8 +544,8 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                                          : s->y_superblock_count);
         int num_coded_frags = 0;
 
-        for (i = sb_start; i < sb_end; i++) {
-            if (get_bits_left(gb) < ((s->total_num_coded_frags + num_coded_frags) >> 2)) {
+        for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
+            if (s->keyframe == 0 && get_bits_left(gb) < plane0_num_coded_frags >> 2) {
                 return AVERROR_INVALIDDATA;
             }
             /* iterate through all 16 fragments in a superblock */
@@ -579,6 +580,8 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 }
             }
         }
+        if (!plane)
+            plane0_num_coded_frags = num_coded_frags;
         s->total_num_coded_frags += num_coded_frags;
         for (i = 0; i < 64; i++)
             s->num_coded_frags[plane][i] = num_coded_frags;
