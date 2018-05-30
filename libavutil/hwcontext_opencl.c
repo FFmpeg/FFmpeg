@@ -2810,7 +2810,7 @@ static int opencl_map_from(AVHWFramesContext *hwfc, AVFrame *dst,
 static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
                          const AVFrame *src, int flags)
 {
-    OpenCLDeviceContext *priv = hwfc->device_ctx->internal->priv;
+    av_unused OpenCLDeviceContext *priv = hwfc->device_ctx->internal->priv;
     av_assert0(dst->format == AV_PIX_FMT_OPENCL);
     switch (src->format) {
 #if HAVE_OPENCL_DRM_BEIGNET
@@ -2851,7 +2851,7 @@ static int opencl_map_to(AVHWFramesContext *hwfc, AVFrame *dst,
 static int opencl_frames_derive_to(AVHWFramesContext *dst_fc,
                                    AVHWFramesContext *src_fc, int flags)
 {
-    OpenCLDeviceContext *priv = dst_fc->device_ctx->internal->priv;
+    av_unused OpenCLDeviceContext *priv = dst_fc->device_ctx->internal->priv;
     switch (src_fc->device_ctx->type) {
 #if HAVE_OPENCL_DRM_BEIGNET
     case AV_HWDEVICE_TYPE_DRM:
