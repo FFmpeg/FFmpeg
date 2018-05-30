@@ -230,7 +230,7 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     if (!mag || !phase)
         goto end;
 
-    channel = av_clip(s->ir_channel, 0, s->in[1]->channels);
+    channel = av_clip(s->ir_channel, 0, s->in[1]->channels - 1);
     for (i = 0; i < s->w; i++) {
         const float *src = (const float *)s->in[1]->extended_data[channel];
         double w = i * M_PI / (s->w - 1);
