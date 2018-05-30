@@ -1036,7 +1036,7 @@ EOF
 
 check_insn(){
     log check_insn "$@"
-    check_inline_asm ${1}_inline "$2"
+    check_inline_asm ${1}_inline "\"$2\""
     check_as ${1}_external "$2"
 }
 
