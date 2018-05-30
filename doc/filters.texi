@@ -1136,6 +1136,16 @@ single-precision floating-point
 16-bit integers
 @end table
 
+@item response
+Show IR frequency reponse, magnitude and phase in additional video stream.
+By default it is disabled.
+
+@item channel
+Set for which IR channel to display frequency response. By default is first channel
+displayed. This option is used only when @var{response} is enabled.
+
+@item size
+Set video stream size. This option is used only when @var{response} is enabled.
 @end table
 
 Coefficients in @code{tf} format are separated by spaces and are in ascending
