@@ -1465,10 +1465,12 @@ static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
 }
 
 /* EditUnit -> absolute offset */
-static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, int64_t *edit_unit_out, int64_t *offset_out, MXFPartition **partition_out, int nag)
+static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, AVRational edit_rate, int64_t *edit_unit_out, int64_t *offset_out, MXFPartition **partition_out, int nag)
 {
     int i;
     int64_t offset_temp = 0;
+
+    edit_unit = av_rescale_q(edit_unit, index_table->segments[0]->index_edit_rate, edit_rate);
 
     for (i = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
@@ -1498,7 +1500,7 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
             }
 
             if (edit_unit_out)
-                *edit_unit_out = edit_unit;
+                *edit_unit_out = av_rescale_q(edit_unit, edit_rate, s->index_edit_rate);
 
             return mxf_absolute_bodysid_offset(mxf, index_table->body_sid, offset_temp, offset_out, partition_out);
         } else {
@@ -1712,6 +1714,13 @@ static int mxf_compute_index_tables(MXFContext *mxf)
 
         /* fix zero IndexDurations */
         for (k = 0; k < t->nb_segments; k++) {
+            if (!t->segments[k]->index_edit_rate.num || !t->segments[k]->index_edit_rate.den) {
+                av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment %i has invalid IndexEditRate\n",
+                       t->index_sid, k);
+                if (mxf_track)
+                    t->segments[k]->index_edit_rate = mxf_track->edit_rate;
+            }
+
             if (t->segments[k]->index_duration)
                 continue;
 
@@ -3138,7 +3147,7 @@ static int mxf_get_next_track_edit_unit(MXFContext *mxf, MXFTrack *track, int64_
 
     while (b - a > 1) {
         m = (a + b) >> 1;
-        if (mxf_edit_unit_absolute_offset(mxf, t, m, NULL, &offset, NULL, 0) < 0)
+        if (mxf_edit_unit_absolute_offset(mxf, t, m, track->edit_rate, NULL, &offset, NULL, 0) < 0)
             return -1;
         if (offset < current_offset)
             a = m;
@@ -3210,7 +3219,7 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, AVStream *st, int64_t 
     if (!t || track->wrapping == UnknownWrapped)
         return -1;
 
-    if (mxf_edit_unit_absolute_offset(mxf, t, edit_unit + track->edit_units_per_packet, NULL, &next_ofs, NULL, 0) < 0 &&
+    if (mxf_edit_unit_absolute_offset(mxf, t, edit_unit + track->edit_units_per_packet, track->edit_rate, NULL, &next_ofs, NULL, 0) < 0 &&
         (next_ofs = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
         av_log(mxf->fc, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
         return -1;
@@ -3542,7 +3551,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         if (source_track->wrapping == UnknownWrapped)
             av_log(mxf->fc, AV_LOG_WARNING, "attempted seek in an UnknownWrapped essence\n");
 
-        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, &partition, 1)) < 0)
+        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, source_track->edit_rate, &sample_time, &seekpos, &partition, 1)) < 0)
             return ret;
 
         ff_update_cur_dts(s, st, sample_time);
