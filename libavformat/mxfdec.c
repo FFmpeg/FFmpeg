@@ -3221,7 +3221,7 @@ static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt, int64_t nex
         if (mxf->nb_index_tables >= 1 && mxf->current_edit_unit < t->nb_ptses) {
             pkt->dts = mxf->current_edit_unit + t->first_dts;
             pkt->pts = t->ptses[mxf->current_edit_unit];
-        } else if (track && track->intra_only) {
+        } else if (track->intra_only) {
             /* intra-only -> PTS = EditUnit.
              * let utils.c figure out DTS since it can be < PTS if low_delay = 0 (Sony IMX30) */
             pkt->pts = mxf->current_edit_unit;
