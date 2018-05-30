@@ -29,6 +29,14 @@
 #include "internal.h"
 #include "video.h"
 
+typedef struct ThreadData {
+    AVFrame *in;
+    AVFrame *out;
+    int component;
+    int offset_y;
+    int offset_x;
+} ThreadData;
+
 enum FilterType {
     LOWPASS,
     FLAT,
@@ -94,11 +102,9 @@ typedef struct WaveformContext {
     int            shift_w[4], shift_h[4];
     GraticuleLines *glines;
     int            nb_glines;
-    void (*waveform)(struct WaveformContext *s,
-                     AVFrame *in, AVFrame *out,
-                     int component, int intensity,
-                     int offset_y, int offset_x,
-                     int column, int mirror);
+
+    int (*waveform_slice)(AVFilterContext *ctx, void *arg,
+                          int jobnr, int nb_jobs);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
     const AVPixFmtDescriptor *desc;
     const AVPixFmtDescriptor *odesc;
@@ -644,7 +650,8 @@ static av_always_inline void lowpass16(WaveformContext *s,
                                        AVFrame *in, AVFrame *out,
                                        int component, int intensity,
                                        int offset_y, int offset_x,
-                                       int column, int mirror)
+                                       int column, int mirror,
+                                       int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int shift_w = s->shift_w[component];
@@ -656,22 +663,26 @@ static av_always_inline void lowpass16(WaveformContext *s,
     const int max = limit - intensity;
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
-    const uint16_t *src_data = (const uint16_t *)in->data[plane];
-    uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
+    const int step = column ? 1 << shift_w : 1 << shift_h;
+    const uint16_t *src_data = (const uint16_t *)in->data[plane] + sliceh_start * src_linesize;
+    uint16_t *dst_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
     uint16_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint16_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
-    const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint16_t *p;
     int y;
 
     if (!column && mirror)
         dst_data += s->size;
 
-    for (y = 0; y < src_h; y++) {
-        const uint16_t *src_data_end = src_data + src_w;
-        uint16_t *dst = dst_line;
+    for (y = sliceh_start; y < sliceh_end; y++) {
+        const uint16_t *src_data_end = src_data + slicew_end;
+        uint16_t *dst = dst_line + slicew_start * step;
 
-        for (p = src_data; p < src_data_end; p++) {
+        for (p = src_data + slicew_start; p < src_data_end; p++) {
             uint16_t *target;
             int i = 0, v = FFMIN(*p, limit);
 
@@ -695,19 +706,26 @@ static av_always_inline void lowpass16(WaveformContext *s,
         src_data += src_linesize;
         dst_data += dst_linesize * step;
     }
-
-    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-#define LOWPASS16_FUNC(name, column, mirror)               \
-static void lowpass16_##name(WaveformContext *s,           \
-                             AVFrame *in, AVFrame *out,    \
-                             int component, int intensity, \
-                             int offset_y, int offset_x,   \
-                             int unused1, int unused2)     \
-{                                                          \
-    lowpass16(s, in, out, component, intensity,            \
-              offset_y, offset_x, column, mirror);         \
+#define LOWPASS16_FUNC(name, column, mirror)        \
+static int lowpass16_##name(AVFilterContext *ctx,   \
+                             void *arg, int jobnr,  \
+                             int nb_jobs)           \
+{                                                   \
+    WaveformContext *s = ctx->priv;                 \
+    ThreadData *td = arg;                           \
+    AVFrame *in = td->in;                           \
+    AVFrame *out = td->out;                         \
+    int component = td->component;                  \
+    int offset_y = td->offset_y;                    \
+    int offset_x = td->offset_x;                    \
+                                                    \
+    lowpass16(s, in, out, component, s->intensity,  \
+              offset_y, offset_x, column, mirror,   \
+              jobnr, nb_jobs);                      \
+                                                    \
+    return 0;                                       \
 }
 
 LOWPASS16_FUNC(column_mirror, 1, 1)
@@ -719,7 +737,8 @@ static av_always_inline void lowpass(WaveformContext *s,
                                      AVFrame *in, AVFrame *out,
                                      int component, int intensity,
                                      int offset_y, int offset_x,
-                                     int column, int mirror)
+                                     int column, int mirror,
+                                     int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int shift_w = s->shift_w[component];
@@ -730,22 +749,26 @@ static av_always_inline void lowpass(WaveformContext *s,
     const int max = 255 - intensity;
     const int src_h = AV_CEIL_RSHIFT(in->height, shift_h);
     const int src_w = AV_CEIL_RSHIFT(in->width, shift_w);
-    const uint8_t *src_data = in->data[plane];
-    uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
+    const int step = column ? 1 << shift_w : 1 << shift_h;
+    const uint8_t *src_data = in->data[plane] + sliceh_start * src_linesize;
+    uint8_t *dst_data = out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
     uint8_t * const dst_bottom_line = dst_data + dst_linesize * (s->size - 1);
     uint8_t * const dst_line = (mirror ? dst_bottom_line : dst_data);
-    const int step = column ? 1 << shift_w : 1 << shift_h;
     const uint8_t *p;
     int y;
 
     if (!column && mirror)
         dst_data += s->size;
 
-    for (y = 0; y < src_h; y++) {
-        const uint8_t *src_data_end = src_data + src_w;
-        uint8_t *dst = dst_line;
+    for (y = sliceh_start; y < sliceh_end; y++) {
+        const uint8_t *src_data_end = src_data + slicew_end;
+        uint8_t *dst = dst_line + slicew_start * step;
 
-        for (p = src_data; p < src_data_end; p++) {
+        for (p = src_data + slicew_start; p < src_data_end; p++) {
             uint8_t *target;
             if (column) {
                 target = dst + dst_signed_linesize * *p;
@@ -766,14 +789,13 @@ static av_always_inline void lowpass(WaveformContext *s,
     }
 
     if (column && step > 1) {
-        const int dst_w = s->display == PARADE ? out->width / s->acomp : out->width;
         const int dst_h = 256;
         uint8_t *dst;
         int x, z;
 
         dst = out->data[plane] + offset_y * dst_linesize + offset_x;
         for (y = 0; y < dst_h; y++) {
-            for (x = 0; x < dst_w; x+=step) {
+            for (x = slicew_start * step; x < slicew_end * step; x+=step) {
                 for (z = 1; z < step; z++) {
                     dst[x + z] = dst[x];
                 }
@@ -781,31 +803,37 @@ static av_always_inline void lowpass(WaveformContext *s,
             dst += dst_linesize;
         }
     } else if (step > 1) {
-        const int dst_h = s->display == PARADE ? out->height / s->acomp : out->height;
         const int dst_w = 256;
         uint8_t *dst;
         int z;
 
-        dst = out->data[plane] + offset_y * dst_linesize + offset_x;
-        for (y = 0; y < dst_h; y+=step) {
+        dst = out->data[plane] + (offset_y + sliceh_start * step) * dst_linesize + offset_x;
+        for (y = sliceh_start * step; y < sliceh_end * step; y+=step) {
             for (z = 1; z < step; z++)
                 memcpy(dst + dst_linesize * z, dst, dst_w);
             dst += dst_linesize * step;
         }
     }
-
-    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
 
-#define LOWPASS_FUNC(name, column, mirror)               \
-static void lowpass_##name(WaveformContext *s,           \
-                           AVFrame *in, AVFrame *out,    \
-                           int component, int intensity, \
-                           int offset_y, int offset_x,   \
-                           int unused1, int unused2)     \
-{                                                        \
-    lowpass(s, in, out, component, intensity,            \
-            offset_y, offset_x, column, mirror);         \
+#define LOWPASS_FUNC(name, column, mirror)        \
+static int lowpass_##name(AVFilterContext *ctx,   \
+                          void *arg, int jobnr,   \
+                          int nb_jobs)            \
+{                                                 \
+    WaveformContext *s = ctx->priv;               \
+    ThreadData *td = arg;                         \
+    AVFrame *in = td->in;                         \
+    AVFrame *out = td->out;                       \
+    int component = td->component;                \
+    int offset_y = td->offset_y;                  \
+    int offset_x = td->offset_x;                  \
+                                                  \
+    lowpass(s, in, out, component, s->intensity,  \
+            offset_y, offset_x, column, mirror,   \
+            jobnr, nb_jobs);                      \
+                                                  \
+    return 0;                                     \
 }
 
 LOWPASS_FUNC(column_mirror, 1, 1)
@@ -817,7 +845,8 @@ static av_always_inline void flat16(WaveformContext *s,
                                     AVFrame *in, AVFrame *out,
                                     int component, int intensity,
                                     int offset_y, int offset_x,
-                                    int column, int mirror)
+                                    int column, int mirror,
+                                    int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
@@ -836,13 +865,17 @@ static av_always_inline void flat16(WaveformContext *s,
     const int mid = s->max / 2;
     const int src_h = in->height;
     const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     int x, y;
 
     if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
 
-        for (x = 0; x < src_w; x++) {
+        for (x = slicew_start; x < slicew_end; x++) {
             const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];
             const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
             const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
@@ -876,18 +909,18 @@ static av_always_inline void flat16(WaveformContext *s,
             }
         }
     } else {
-        const uint16_t *c0_data = (uint16_t *)in->data[plane];
-        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
-        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
-        uint16_t *d0_data = (uint16_t *)(out->data[plane]) + offset_y * d0_linesize + offset_x;
-        uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + offset_y * d1_linesize + offset_x;
+        const uint16_t *c0_data = (uint16_t *)(in->data[plane]) +                  (sliceh_start >> c0_shift_h) * c0_linesize;
+        const uint16_t *c1_data = (uint16_t *)(in->data[(plane + 1) % s->ncomp]) + (sliceh_start >> c1_shift_h) * c1_linesize;
+        const uint16_t *c2_data = (uint16_t *)(in->data[(plane + 2) % s->ncomp]) + (sliceh_start >> c2_shift_h) * c2_linesize;
+        uint16_t *d0_data = (uint16_t *)(out->data[plane]) + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)(out->data[(plane + 1) % s->ncomp]) + (offset_y + sliceh_start) * d1_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
             d1_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + s->max;
                 const int c1 = FFMIN(FFABS(c1_data[x >> c1_shift_w] - mid) + FFABS(c2_data[x >> c2_shift_w] - mid), limit);
@@ -920,16 +953,39 @@ static av_always_inline void flat16(WaveformContext *s,
             d1_data += d1_linesize;
         }
     }
-
-    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
-    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
 }
+
+#define FLAT16_FUNC(name, column, mirror)        \
+static int flat16_##name(AVFilterContext *ctx,   \
+                         void *arg, int jobnr,   \
+                         int nb_jobs)            \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    flat16(s, in, out, component, s->intensity,  \
+           offset_y, offset_x, column, mirror,   \
+           jobnr, nb_jobs);                      \
+                                                 \
+    return 0;                                    \
+}
+
+FLAT16_FUNC(column_mirror, 1, 1)
+FLAT16_FUNC(column,        1, 0)
+FLAT16_FUNC(row_mirror,    0, 1)
+FLAT16_FUNC(row,           0, 0)
 
 static av_always_inline void flat(WaveformContext *s,
                                   AVFrame *in, AVFrame *out,
                                   int component, int intensity,
                                   int offset_y, int offset_x,
-                                  int column, int mirror)
+                                  int column, int mirror,
+                                  int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int c0_linesize = in->linesize[ plane + 0 ];
@@ -946,13 +1002,17 @@ static av_always_inline void flat(WaveformContext *s,
     const int max = 255 - intensity;
     const int src_h = in->height;
     const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     int x, y;
 
     if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
 
-        for (x = 0; x < src_w; x++) {
+        for (x = slicew_start; x < slicew_end; x++) {
             const uint8_t *c0_data = in->data[plane + 0];
             const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
@@ -986,20 +1046,20 @@ static av_always_inline void flat(WaveformContext *s,
             }
         }
     } else {
-        const uint8_t *c0_data = in->data[plane];
-        const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
-        const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
+        const uint8_t *c0_data = in->data[plane] +                  (sliceh_start >> c0_shift_h) * c0_linesize;
+        const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+        const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize;
+        uint8_t *d0_data = out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
             d1_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
-                int c0 = c0_data[x >> c0_shift_w] + 256;
+                const int c0 = c0_data[x >> c0_shift_w] + 256;
                 const int c1 = FFABS(c1_data[x >> c1_shift_w] - 128) + FFABS(c2_data[x >> c2_shift_w] - 128);
                 uint8_t *target;
 
@@ -1030,18 +1090,46 @@ static av_always_inline void flat(WaveformContext *s,
             d1_data += d1_linesize;
         }
     }
-
-    envelope(s, out, plane, plane, column ? offset_x : offset_y);
-    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);
 }
 
+#define FLAT_FUNC(name, column, mirror)        \
+static int flat_##name(AVFilterContext *ctx,   \
+                       void *arg, int jobnr,   \
+                       int nb_jobs)            \
+{                                              \
+    WaveformContext *s = ctx->priv;            \
+    ThreadData *td = arg;                      \
+    AVFrame *in = td->in;                      \
+    AVFrame *out = td->out;                    \
+    int component = td->component;             \
+    int offset_y = td->offset_y;               \
+    int offset_x = td->offset_x;               \
+                                               \
+    flat(s, in, out, component, s->intensity,  \
+         offset_y, offset_x, column, mirror,   \
+         jobnr, nb_jobs);                      \
+                                               \
+    return 0;                                  \
+}
+
+FLAT_FUNC(column_mirror, 1, 1)
+FLAT_FUNC(column,        1, 0)
+FLAT_FUNC(row_mirror,    0, 1)
+FLAT_FUNC(row,           0, 0)
+
 #define AFLAT16(name, update_cr, column, mirror)                                                                   \
-static av_always_inline void name (WaveformContext *s,                                                             \
-                                     AVFrame *in, AVFrame *out,                                                    \
-                                     int component, int intensity,                                                 \
-                                     int offset_y, int offset_x,                                                   \
-                                     int unused1, int unused2)                                                     \
+static int name(AVFilterContext *ctx,                                                                              \
+                void *arg, int jobnr,                                                                              \
+                int nb_jobs)                                                                                       \
 {                                                                                                                  \
+    WaveformContext *s = ctx->priv;                                                                                \
+    ThreadData *td = arg;                                                                                          \
+    AVFrame *in = td->in;                                                                                          \
+    AVFrame *out = td->out;                                                                                        \
+    int component = td->component;                                                                                 \
+    int offset_y = td->offset_y;                                                                                   \
+    int offset_x = td->offset_x;                                                                                   \
+    const int intensity = s->intensity;                                                                            \
     const int plane = s->desc->comp[component].plane;                                                              \
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;                                                         \
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;                                              \
@@ -1060,6 +1148,10 @@ static av_always_inline void name (WaveformContext *s,                          
     const int mid = s->max / 2;                                                                                    \
     const int src_h = in->height;                                                                                  \
     const int src_w = in->width;                                                                                   \
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;                                              \
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;                                        \
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;                                               \
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;                                         \
     int x, y;                                                                                                      \
                                                                                                                    \
     if (column) {                                                                                                  \
@@ -1067,7 +1159,7 @@ static av_always_inline void name (WaveformContext *s,                          
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);                                       \
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);                                       \
                                                                                                                    \
-        for (x = 0; x < src_w; x++) {                                                                              \
+        for (x = slicew_start; x < slicew_end; x++) {                                                              \
             const uint16_t *c0_data = (uint16_t *)in->data[plane + 0];                                             \
             const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];                                \
             const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];                                \
@@ -1108,12 +1200,12 @@ static av_always_inline void name (WaveformContext *s,                          
             }                                                                                                      \
         }                                                                                                          \
     } else {                                                                                                       \
-        const uint16_t *c0_data = (uint16_t *)in->data[plane];                                                     \
-        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];                                    \
-        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];                                    \
-        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;                      \
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;     \
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;     \
+        const uint16_t *c0_data = (uint16_t *)in->data[plane] + (sliceh_start >> c0_shift_h) * c0_linesize;        \
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize; \
+        const uint16_t *c2_data = (uint16_t *)in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize; \
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;                      \
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;     \
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x;     \
                                                                                                                    \
         if (mirror) {                                                                                              \
             d0_data += s->size - 1;                                                                                \
@@ -1121,7 +1213,7 @@ static av_always_inline void name (WaveformContext *s,                          
             d2_data += s->size - 1;                                                                                \
         }                                                                                                          \
                                                                                                                    \
-        for (y = 0; y < src_h; y++) {                                                                              \
+        for (y = sliceh_start; y < sliceh_end; y++) {                                                              \
             for (x = 0; x < src_w; x++) {                                                                          \
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit) + mid;                                       \
                 const int c1 = FFMIN(c1_data[x >> c1_shift_w], limit) - mid;                                       \
@@ -1156,19 +1248,28 @@ static av_always_inline void name (WaveformContext *s,                          
             d2_data += d2_linesize;                                                                                \
         }                                                                                                          \
     }                                                                                                              \
-                                                                                                                   \
-    envelope16(s, out, plane, (plane + 0) % s->ncomp, column ? offset_x : offset_y);                               \
-    envelope16(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);                               \
-    envelope16(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);                               \
+    return 0;                                                                                                      \
 }
 
 #define AFLAT(name, update_cr, column, mirror)                                                        \
-static av_always_inline void name(WaveformContext *s,                                                 \
-                                  AVFrame *in, AVFrame *out,                                          \
-                                  int component, int intensity,                                       \
-                                  int offset_y, int offset_x,                                         \
-                                  int unused1, int unused2)                                           \
+static int name(AVFilterContext *ctx,                                                                 \
+                void *arg, int jobnr,                                                                 \
+                int nb_jobs)                                                                          \
 {                                                                                                     \
+    WaveformContext *s = ctx->priv;                                                                   \
+    ThreadData *td = arg;                                                                             \
+    AVFrame *in = td->in;                                                                             \
+    AVFrame *out = td->out;                                                                           \
+    int component = td->component;                                                                    \
+    int offset_y = td->offset_y;                                                                      \
+    int offset_x = td->offset_x;                                                                      \
+    const int src_h = in->height;                                                                     \
+    const int src_w = in->width;                                                                      \
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;                                 \
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;                           \
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;                                  \
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;                            \
+    const int intensity = s->intensity;                                                               \
     const int plane = s->desc->comp[component].plane;                                                 \
     const int c0_linesize = in->linesize[ plane + 0 ];                                                \
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];                                     \
@@ -1183,8 +1284,6 @@ static av_always_inline void name(WaveformContext *s,                           
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];                                    \
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];                                    \
     const int max = 255 - intensity;                                                                  \
-    const int src_h = in->height;                                                                     \
-    const int src_w = in->width;                                                                      \
     int x, y;                                                                                         \
                                                                                                       \
     if (column) {                                                                                     \
@@ -1192,7 +1291,7 @@ static av_always_inline void name(WaveformContext *s,                           
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);                          \
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);                          \
                                                                                                       \
-        for (x = 0; x < src_w; x++) {                                                                 \
+        for (x = slicew_start; x < slicew_end; x++) {                                                 \
             const uint8_t *c0_data = in->data[plane + 0];                                             \
             const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];                                \
             const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];                                \
@@ -1233,12 +1332,12 @@ static av_always_inline void name(WaveformContext *s,                           
             }                                                                                         \
         }                                                                                             \
     } else {                                                                                          \
-        const uint8_t *c0_data = in->data[plane];                                                     \
-        const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];                                    \
-        const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];                                    \
-        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;                      \
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;     \
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;     \
+        const uint8_t *c0_data = in->data[plane] + (sliceh_start >> c0_shift_h) * c0_linesize;        \
+        const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize; \
+        const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize; \
+        uint8_t *d0_data = out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;     \
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x; \
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x; \
                                                                                                       \
         if (mirror) {                                                                                 \
             d0_data += s->size - 1;                                                                   \
@@ -1246,7 +1345,7 @@ static av_always_inline void name(WaveformContext *s,                           
             d2_data += s->size - 1;                                                                   \
         }                                                                                             \
                                                                                                       \
-        for (y = 0; y < src_h; y++) {                                                                 \
+        for (y = sliceh_start; y < sliceh_end; y++) {                                                 \
             for (x = 0; x < src_w; x++) {                                                             \
                 const int c0 = c0_data[x >> c0_shift_w] + 128;                                        \
                 const int c1 = c1_data[x >> c1_shift_w] - 128;                                        \
@@ -1281,10 +1380,7 @@ static av_always_inline void name(WaveformContext *s,                           
             d2_data += d2_linesize;                                                                   \
         }                                                                                             \
     }                                                                                                 \
-                                                                                                      \
-    envelope(s, out, plane, (plane + 0) % s->ncomp, column ? offset_x : offset_y);                    \
-    envelope(s, out, plane, (plane + 1) % s->ncomp, column ? offset_x : offset_y);                    \
-    envelope(s, out, plane, (plane + 2) % s->ncomp, column ? offset_x : offset_y);                    \
+    return 0;                                                                                         \
 }
 
 AFLAT16(aflat16_row,           update16,    0, 0)
@@ -1309,7 +1405,8 @@ static av_always_inline void chroma16(WaveformContext *s,
                                       AVFrame *in, AVFrame *out,
                                       int component, int intensity,
                                       int offset_y, int offset_x,
-                                      int column, int mirror)
+                                      int column, int mirror,
+                                      int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int c0_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
@@ -1324,12 +1421,16 @@ static av_always_inline void chroma16(WaveformContext *s,
     const int c1_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int src_h = in->height;
     const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     int x, y;
 
     if (column) {
         const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
 
-        for (x = 0; x < src_w; x++) {
+        for (x = slicew_start; x < slicew_end; x++) {
             const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
             const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
             uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
@@ -1352,13 +1453,13 @@ static av_always_inline void chroma16(WaveformContext *s,
             }
         }
     } else {
-        const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp];
-        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp];
-        uint16_t *dst_data = (uint16_t *)out->data[plane] + offset_y * dst_linesize + offset_x;
+        const uint16_t *c0_data = (uint16_t *)in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c0_shift_h) * c0_linesize;
+        const uint16_t *c1_data = (uint16_t *)in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+        uint16_t *dst_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start) * dst_linesize + offset_x;
 
         if (mirror)
             dst_data += s->size - 1;
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int sum = FFMIN(FFABS(c0_data[x >> c0_shift_w] - mid) + FFABS(c1_data[x >> c1_shift_w] - mid - 1), limit);
                 uint16_t *target;
@@ -1379,17 +1480,47 @@ static av_always_inline void chroma16(WaveformContext *s,
             dst_data += dst_linesize;
         }
     }
-
-    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define CHROMA16_FUNC(name, column, mirror)      \
+static int chroma16_##name(AVFilterContext *ctx, \
+                           void *arg, int jobnr, \
+                           int nb_jobs)          \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    chroma16(s, in, out, component, s->intensity,\
+           offset_y, offset_x, column, mirror,   \
+           jobnr, nb_jobs);                      \
+                                                 \
+    return 0;                                    \
+}
+
+CHROMA16_FUNC(column_mirror, 1, 1)
+CHROMA16_FUNC(column,        1, 0)
+CHROMA16_FUNC(row_mirror,    0, 1)
+CHROMA16_FUNC(row,           0, 0)
 
 static av_always_inline void chroma(WaveformContext *s,
                                     AVFrame *in, AVFrame *out,
                                     int component, int intensity,
                                     int offset_y, int offset_x,
-                                    int column, int mirror)
+                                    int column, int mirror,
+                                    int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
+    const int src_h = in->height;
+    const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int c0_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c1_linesize = in->linesize[(plane + 2) % s->ncomp];
     const int dst_linesize = out->linesize[plane];
@@ -1398,14 +1529,12 @@ static av_always_inline void chroma(WaveformContext *s,
     const int c1_shift_w = s->shift_w[(component + 2) % s->ncomp];
     const int c0_shift_h = s->shift_h[(component + 1) % s->ncomp];
     const int c1_shift_h = s->shift_h[(component + 2) % s->ncomp];
-    const int src_h = in->height;
-    const int src_w = in->width;
     int x, y;
 
     if (column) {
         const int dst_signed_linesize = dst_linesize * (mirror == 1 ? -1 : 1);
 
-        for (x = 0; x < src_w; x++) {
+        for (x = slicew_start; x < slicew_end; x++) {
             const uint8_t *c0_data = in->data[(plane + 1) % s->ncomp];
             const uint8_t *c1_data = in->data[(plane + 2) % s->ncomp];
             uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
@@ -1428,13 +1557,13 @@ static av_always_inline void chroma(WaveformContext *s,
             }
         }
     } else {
-        const uint8_t *c0_data = in->data[(plane + 1) % s->ncomp];
-        const uint8_t *c1_data = in->data[(plane + 2) % s->ncomp];
-        uint8_t *dst_data = out->data[plane] + offset_y * dst_linesize + offset_x;
+        const uint8_t *c0_data = in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c0_shift_h) * c0_linesize;
+        const uint8_t *c1_data = in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+        uint8_t *dst_data = out->data[plane] + (offset_y + sliceh_start) * dst_linesize + offset_x;
 
         if (mirror)
             dst_data += s->size - 1;
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int sum = FFABS(c0_data[x >> c0_shift_w] - 128) + FFABS(c1_data[x >> c1_shift_w] - 127);
                 uint8_t *target;
@@ -1455,35 +1584,63 @@ static av_always_inline void chroma(WaveformContext *s,
             dst_data += dst_linesize;
         }
     }
-
-    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define CHROMA_FUNC(name, column, mirror)        \
+static int chroma_##name(AVFilterContext *ctx,   \
+                         void *arg, int jobnr,   \
+                         int nb_jobs)            \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    chroma(s, in, out, component, s->intensity,  \
+           offset_y, offset_x, column, mirror,   \
+           jobnr, nb_jobs);                      \
+                                                 \
+    return 0;                                    \
+}
+
+CHROMA_FUNC(column_mirror, 1, 1)
+CHROMA_FUNC(column,        1, 0)
+CHROMA_FUNC(row_mirror,    0, 1)
+CHROMA_FUNC(row,           0, 0)
 
 static av_always_inline void color16(WaveformContext *s,
                                      AVFrame *in, AVFrame *out,
                                      int component, int intensity,
                                      int offset_y, int offset_x,
-                                     int column, int mirror)
+                                     int column, int mirror,
+                                     int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int limit = s->max - 1;
-    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
-    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
-    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp];
+    const int src_h = in->height;
+    const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
+    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0] + (sliceh_start >> c0_shift_h) * c0_linesize;
+    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize;
     const int d0_linesize = out->linesize[ plane + 0 ] / 2;
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
     const int c0_shift_w = s->shift_w[ component + 0 ];
     const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
     const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
-    const int c0_shift_h = s->shift_h[ component + 0 ];
-    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
-    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
-    const int src_h = in->height;
-    const int src_w = in->width;
     int x, y;
 
     if (column) {
@@ -1501,7 +1658,7 @@ static av_always_inline void color16(WaveformContext *s,
         uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
         for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
+            for (x = slicew_start; x < slicew_end; x++) {
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit);
                 const int c1 = c1_data[x >> c1_shift_w];
                 const int c2 = c2_data[x >> c2_shift_w];
@@ -1522,9 +1679,9 @@ static av_always_inline void color16(WaveformContext *s,
             d2_data += d2_linesize;
         }
     } else {
-        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1532,7 +1689,7 @@ static av_always_inline void color16(WaveformContext *s,
             d2_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit);
                 const int c1 = c1_data[x >> c1_shift_w];
@@ -1560,37 +1717,65 @@ static av_always_inline void color16(WaveformContext *s,
             d2_data += d2_linesize;
         }
     }
-
-    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define COLOR16_FUNC(name, column, mirror)       \
+static int color16_##name(AVFilterContext *ctx,  \
+                          void *arg, int jobnr,  \
+                          int nb_jobs)           \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    color16(s, in, out, component, s->intensity, \
+            offset_y, offset_x, column, mirror,  \
+            jobnr, nb_jobs);                     \
+                                                 \
+    return 0;                                    \
+}
+
+COLOR16_FUNC(column_mirror, 1, 1)
+COLOR16_FUNC(column,        1, 0)
+COLOR16_FUNC(row_mirror,    0, 1)
+COLOR16_FUNC(row,           0, 0)
 
 static av_always_inline void color(WaveformContext *s,
                                    AVFrame *in, AVFrame *out,
                                    int component, int intensity,
                                    int offset_y, int offset_x,
-                                   int column, int mirror)
+                                   int column, int mirror,
+                                   int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
-    const uint8_t *c0_data = in->data[plane + 0];
-    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
-    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
+    const int src_h = in->height;
+    const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int c0_linesize = in->linesize[ plane + 0 ];
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
+    const uint8_t *c0_data = in->data[plane] +                  (sliceh_start >> c0_shift_h) * c0_linesize;
+    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize;
     const int d0_linesize = out->linesize[ plane + 0 ];
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
     const int c0_shift_w = s->shift_w[ component + 0 ];
     const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
     const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
-    const int c0_shift_h = s->shift_h[ component + 0 ];
-    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
-    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
-    const int src_h = in->height;
-    const int src_w = in->width;
     int x, y;
 
-    if (s->mode) {
+    if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
@@ -1605,7 +1790,7 @@ static av_always_inline void color(WaveformContext *s,
         uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
         for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
+            for (x = slicew_start; x < slicew_end; x++) {
                 const int c0 = c0_data[x >> c0_shift_w];
                 const int c1 = c1_data[x >> c1_shift_w];
                 const int c2 = c2_data[x >> c2_shift_w];
@@ -1626,9 +1811,9 @@ static av_always_inline void color(WaveformContext *s,
             d2_data += d2_linesize;
         }
     } else {
-        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint8_t *d0_data = out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1636,7 +1821,7 @@ static av_always_inline void color(WaveformContext *s,
             d2_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int c0 = c0_data[x >> c0_shift_w];
                 const int c1 = c1_data[x >> c1_shift_w];
@@ -1664,39 +1849,67 @@ static av_always_inline void color(WaveformContext *s,
             d2_data += d2_linesize;
         }
     }
-
-    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define COLOR_FUNC(name, column, mirror)       \
+static int color_##name(AVFilterContext *ctx,  \
+                        void *arg, int jobnr,  \
+                        int nb_jobs)           \
+{                                              \
+    WaveformContext *s = ctx->priv;            \
+    ThreadData *td = arg;                      \
+    AVFrame *in = td->in;                      \
+    AVFrame *out = td->out;                    \
+    int component = td->component;             \
+    int offset_y = td->offset_y;               \
+    int offset_x = td->offset_x;               \
+                                               \
+    color(s, in, out, component, s->intensity, \
+          offset_y, offset_x, column, mirror,  \
+          jobnr, nb_jobs);                     \
+                                               \
+    return 0;                                  \
+}
+
+COLOR_FUNC(column_mirror, 1, 1)
+COLOR_FUNC(column,        1, 0)
+COLOR_FUNC(row_mirror,    0, 1)
+COLOR_FUNC(row,           0, 0)
 
 static av_always_inline void acolor16(WaveformContext *s,
                                       AVFrame *in, AVFrame *out,
                                       int component, int intensity,
                                       int offset_y, int offset_x,
-                                      int column, int mirror)
+                                      int column, int mirror,
+                                      int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
     const int limit = s->max - 1;
     const int max = limit - intensity;
-    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0];
-    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp];
-    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp];
+    const int src_h = in->height;
+    const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
+    const int c0_shift_h = s->shift_h[ component + 0 ];
+    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
+    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
     const int c0_linesize = in->linesize[ plane + 0 ] / 2;
     const int c1_linesize = in->linesize[(plane + 1) % s->ncomp] / 2;
     const int c2_linesize = in->linesize[(plane + 2) % s->ncomp] / 2;
+    const uint16_t *c0_data = (const uint16_t *)in->data[plane + 0] + (sliceh_start >> c0_shift_h) * c0_linesize;
+    const uint16_t *c1_data = (const uint16_t *)in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+    const uint16_t *c2_data = (const uint16_t *)in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize;
     const int d0_linesize = out->linesize[ plane + 0 ] / 2;
     const int d1_linesize = out->linesize[(plane + 1) % s->ncomp] / 2;
     const int d2_linesize = out->linesize[(plane + 2) % s->ncomp] / 2;
     const int c0_shift_w = s->shift_w[ component + 0 ];
     const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
     const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
-    const int c0_shift_h = s->shift_h[ component + 0 ];
-    const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
-    const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
-    const int src_h = in->height;
-    const int src_w = in->width;
     int x, y;
 
-    if (s->mode) {
+    if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
@@ -1711,7 +1924,7 @@ static av_always_inline void acolor16(WaveformContext *s,
         uint16_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
         for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
+            for (x = slicew_start; x < slicew_end; x++) {
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit);
                 const int c1 = c1_data[x >> c1_shift_w];
                 const int c2 = c2_data[x >> c2_shift_w];
@@ -1732,9 +1945,9 @@ static av_always_inline void acolor16(WaveformContext *s,
             d2_data += d2_linesize;
         }
     } else {
-        uint16_t *d0_data = (uint16_t *)out->data[plane] + offset_y * d0_linesize + offset_x;
-        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint16_t *d0_data = (uint16_t *)out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint16_t *d1_data = (uint16_t *)out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;
+        uint16_t *d2_data = (uint16_t *)out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1742,7 +1955,7 @@ static av_always_inline void acolor16(WaveformContext *s,
             d2_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int c0 = FFMIN(c0_data[x >> c0_shift_w], limit);
                 const int c1 = c1_data[x >> c1_shift_w];
@@ -1770,38 +1983,66 @@ static av_always_inline void acolor16(WaveformContext *s,
             d2_data += d2_linesize;
         }
     }
-
-    envelope16(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define ACOLOR16_FUNC(name, column, mirror)      \
+static int acolor16_##name(AVFilterContext *ctx, \
+                           void *arg, int jobnr, \
+                           int nb_jobs)          \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    acolor16(s, in, out, component, s->intensity,\
+             offset_y, offset_x, column, mirror, \
+             jobnr, nb_jobs);                    \
+                                                 \
+    return 0;                                    \
+}
+
+ACOLOR16_FUNC(column_mirror, 1, 1)
+ACOLOR16_FUNC(column,        1, 0)
+ACOLOR16_FUNC(row_mirror,    0, 1)
+ACOLOR16_FUNC(row,           0, 0)
 
 static av_always_inline void acolor(WaveformContext *s,
                                     AVFrame *in, AVFrame *out,
                                     int component, int intensity,
                                     int offset_y, int offset_x,
-                                    int column, int mirror)
+                                    int column, int mirror,
+                                    int jobnr, int nb_jobs)
 {
     const int plane = s->desc->comp[component].plane;
-    const uint8_t *c0_data = in->data[plane + 0];
-    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp];
-    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp];
-    const int c0_linesize = in->linesize[ plane + 0 ];
-    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
-    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
-    const int d0_linesize = out->linesize[ plane + 0 ];
-    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
-    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
+    const int src_h = in->height;
+    const int src_w = in->width;
+    const int sliceh_start = !column ? (src_h * jobnr) / nb_jobs : 0;
+    const int sliceh_end = !column ? (src_h * (jobnr+1)) / nb_jobs : src_h;
+    const int slicew_start = column ? (src_w * jobnr) / nb_jobs : 0;
+    const int slicew_end = column ? (src_w * (jobnr+1)) / nb_jobs : src_w;
     const int c0_shift_w = s->shift_w[ component + 0 ];
     const int c1_shift_w = s->shift_w[(component + 1) % s->ncomp];
     const int c2_shift_w = s->shift_w[(component + 2) % s->ncomp];
     const int c0_shift_h = s->shift_h[ component + 0 ];
     const int c1_shift_h = s->shift_h[(component + 1) % s->ncomp];
     const int c2_shift_h = s->shift_h[(component + 2) % s->ncomp];
+    const int c0_linesize = in->linesize[ plane + 0 ];
+    const int c1_linesize = in->linesize[(plane + 1) % s->ncomp];
+    const int c2_linesize = in->linesize[(plane + 2) % s->ncomp];
+    const uint8_t *c0_data = in->data[plane + 0] + (sliceh_start >> c0_shift_h) * c0_linesize;
+    const uint8_t *c1_data = in->data[(plane + 1) % s->ncomp] + (sliceh_start >> c1_shift_h) * c1_linesize;
+    const uint8_t *c2_data = in->data[(plane + 2) % s->ncomp] + (sliceh_start >> c2_shift_h) * c2_linesize;
+    const int d0_linesize = out->linesize[ plane + 0 ];
+    const int d1_linesize = out->linesize[(plane + 1) % s->ncomp];
+    const int d2_linesize = out->linesize[(plane + 2) % s->ncomp];
     const int max = 255 - intensity;
-    const int src_h = in->height;
-    const int src_w = in->width;
     int x, y;
 
-    if (s->mode) {
+    if (column) {
         const int d0_signed_linesize = d0_linesize * (mirror == 1 ? -1 : 1);
         const int d1_signed_linesize = d1_linesize * (mirror == 1 ? -1 : 1);
         const int d2_signed_linesize = d2_linesize * (mirror == 1 ? -1 : 1);
@@ -1816,7 +2057,7 @@ static av_always_inline void acolor(WaveformContext *s,
         uint8_t * const d2 = (mirror ? d2_bottom_line : d2_data);
 
         for (y = 0; y < src_h; y++) {
-            for (x = 0; x < src_w; x++) {
+            for (x = slicew_start; x < slicew_end; x++) {
                 const int c0 = c0_data[x >> c0_shift_w];
                 const int c1 = c1_data[x >> c1_shift_w];
                 const int c2 = c2_data[x >> c2_shift_w];
@@ -1837,9 +2078,9 @@ static av_always_inline void acolor(WaveformContext *s,
             d2_data += d2_linesize;
         }
     } else {
-        uint8_t *d0_data = out->data[plane] + offset_y * d0_linesize + offset_x;
-        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + offset_y * d1_linesize + offset_x;
-        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + offset_y * d2_linesize + offset_x;
+        uint8_t *d0_data = out->data[plane] + (offset_y + sliceh_start) * d0_linesize + offset_x;
+        uint8_t *d1_data = out->data[(plane + 1) % s->ncomp] + (offset_y + sliceh_start) * d1_linesize + offset_x;
+        uint8_t *d2_data = out->data[(plane + 2) % s->ncomp] + (offset_y + sliceh_start) * d2_linesize + offset_x;
 
         if (mirror) {
             d0_data += s->size - 1;
@@ -1847,7 +2088,7 @@ static av_always_inline void acolor(WaveformContext *s,
             d2_data += s->size - 1;
         }
 
-        for (y = 0; y < src_h; y++) {
+        for (y = sliceh_start; y < sliceh_end; y++) {
             for (x = 0; x < src_w; x++) {
                 const int c0 = c0_data[x >> c0_shift_w];
                 const int c1 = c1_data[x >> c1_shift_w];
@@ -1875,9 +2116,32 @@ static av_always_inline void acolor(WaveformContext *s,
             d2_data += d2_linesize;
         }
     }
-
-    envelope(s, out, plane, plane, column ? offset_x : offset_y);
 }
+
+#define ACOLOR_FUNC(name, column, mirror)        \
+static int acolor_##name(AVFilterContext *ctx,   \
+                         void *arg, int jobnr,   \
+                         int nb_jobs)            \
+{                                                \
+    WaveformContext *s = ctx->priv;              \
+    ThreadData *td = arg;                        \
+    AVFrame *in = td->in;                        \
+    AVFrame *out = td->out;                      \
+    int component = td->component;               \
+    int offset_y = td->offset_y;                 \
+    int offset_x = td->offset_x;                 \
+                                                 \
+    acolor(s, in, out, component, s->intensity,  \
+           offset_y, offset_x, column, mirror,   \
+           jobnr, nb_jobs);                      \
+                                                 \
+    return 0;                                    \
+}
+
+ACOLOR_FUNC(column_mirror, 1, 1)
+ACOLOR_FUNC(column,        1, 0)
+ACOLOR_FUNC(row_mirror,    0, 1)
+ACOLOR_FUNC(row,           0, 0)
 
 static const uint8_t black_yuva_color[4] = { 0, 127, 127, 255 };
 static const uint8_t black_gbrp_color[4] = { 0, 0, 0, 255 };
@@ -2529,62 +2793,62 @@ static int config_input(AVFilterLink *inlink)
 
     switch (s->filter | ((s->bits > 8) << 4) |
             (s->mode << 8) | (s->mirror << 12)) {
-    case 0x1100: s->waveform = lowpass_column_mirror; break;
-    case 0x1000: s->waveform = lowpass_row_mirror;    break;
-    case 0x0100: s->waveform = lowpass_column;        break;
-    case 0x0000: s->waveform = lowpass_row;           break;
-    case 0x1110: s->waveform = lowpass16_column_mirror; break;
-    case 0x1010: s->waveform = lowpass16_row_mirror;    break;
-    case 0x0110: s->waveform = lowpass16_column;        break;
-    case 0x0010: s->waveform = lowpass16_row;           break;
-    case 0x1101:
-    case 0x1001:
-    case 0x0101:
-    case 0x0001: s->waveform = flat;      break;
-    case 0x1111:
-    case 0x1011:
-    case 0x0111:
-    case 0x0011: s->waveform = flat16;    break;
-    case 0x1102: s->waveform = aflat_column_mirror; break;
-    case 0x1002: s->waveform = aflat_row_mirror;    break;
-    case 0x0102: s->waveform = aflat_column;        break;
-    case 0x0002: s->waveform = aflat_row;           break;
-    case 0x1112: s->waveform = aflat16_column_mirror; break;
-    case 0x1012: s->waveform = aflat16_row_mirror;    break;
-    case 0x0112: s->waveform = aflat16_column;        break;
-    case 0x0012: s->waveform = aflat16_row;           break;
-    case 0x1103:
-    case 0x1003:
-    case 0x0103:
-    case 0x0003: s->waveform = chroma;    break;
-    case 0x1113:
-    case 0x1013:
-    case 0x0113:
-    case 0x0013: s->waveform = chroma16;  break;
-    case 0x1104:
-    case 0x1004:
-    case 0x0104:
-    case 0x0004: s->waveform = color;     break;
-    case 0x1114:
-    case 0x1014:
-    case 0x0114:
-    case 0x0014: s->waveform = color16;   break;
-    case 0x1105:
-    case 0x1005:
-    case 0x0105:
-    case 0x0005: s->waveform = acolor;    break;
-    case 0x1115:
-    case 0x1015:
-    case 0x0115:
-    case 0x0015: s->waveform = acolor16;  break;
-    case 0x1106: s->waveform = xflat_column_mirror; break;
-    case 0x1006: s->waveform = xflat_row_mirror;    break;
-    case 0x0106: s->waveform = xflat_column;        break;
-    case 0x0006: s->waveform = xflat_row;           break;
-    case 0x1116: s->waveform = xflat16_column_mirror; break;
-    case 0x1016: s->waveform = xflat16_row_mirror;    break;
-    case 0x0116: s->waveform = xflat16_column;        break;
-    case 0x0016: s->waveform = xflat16_row;           break;
+    case 0x1100: s->waveform_slice = lowpass_column_mirror; break;
+    case 0x1000: s->waveform_slice = lowpass_row_mirror;    break;
+    case 0x0100: s->waveform_slice = lowpass_column;        break;
+    case 0x0000: s->waveform_slice = lowpass_row;           break;
+    case 0x1110: s->waveform_slice = lowpass16_column_mirror; break;
+    case 0x1010: s->waveform_slice = lowpass16_row_mirror;    break;
+    case 0x0110: s->waveform_slice = lowpass16_column;        break;
+    case 0x0010: s->waveform_slice = lowpass16_row;           break;
+    case 0x1101: s->waveform_slice = flat_column_mirror; break;
+    case 0x1001: s->waveform_slice = flat_row_mirror;    break;
+    case 0x0101: s->waveform_slice = flat_column;        break;
+    case 0x0001: s->waveform_slice = flat_row;           break;
+    case 0x1111: s->waveform_slice = flat16_column_mirror; break;
+    case 0x1011: s->waveform_slice = flat16_row_mirror;    break;
+    case 0x0111: s->waveform_slice = flat16_column;        break;
+    case 0x0011: s->waveform_slice = flat16_row;           break;
+    case 0x1102: s->waveform_slice = aflat_column_mirror; break;
+    case 0x1002: s->waveform_slice = aflat_row_mirror;    break;
+    case 0x0102: s->waveform_slice = aflat_column;        break;
+    case 0x0002: s->waveform_slice = aflat_row;           break;
+    case 0x1112: s->waveform_slice = aflat16_column_mirror; break;
+    case 0x1012: s->waveform_slice = aflat16_row_mirror;    break;
+    case 0x0112: s->waveform_slice = aflat16_column;        break;
+    case 0x0012: s->waveform_slice = aflat16_row;           break;
+    case 0x1103: s->waveform_slice = chroma_column_mirror; break;
+    case 0x1003: s->waveform_slice = chroma_row_mirror;    break;
+    case 0x0103: s->waveform_slice = chroma_column;        break;
+    case 0x0003: s->waveform_slice = chroma_row;           break;
+    case 0x1113: s->waveform_slice = chroma16_column_mirror; break;
+    case 0x1013: s->waveform_slice = chroma16_row_mirror;    break;
+    case 0x0113: s->waveform_slice = chroma16_column;        break;
+    case 0x0013: s->waveform_slice = chroma16_row;           break;
+    case 0x1104: s->waveform_slice = color_column_mirror; break;
+    case 0x1004: s->waveform_slice = color_row_mirror;    break;
+    case 0x0104: s->waveform_slice = color_column;        break;
+    case 0x0004: s->waveform_slice = color_row;           break;
+    case 0x1114: s->waveform_slice = color16_column_mirror; break;
+    case 0x1014: s->waveform_slice = color16_row_mirror;    break;
+    case 0x0114: s->waveform_slice = color16_column;        break;
+    case 0x0014: s->waveform_slice = color16_row;           break;
+    case 0x1105: s->waveform_slice = acolor_column_mirror; break;
+    case 0x1005: s->waveform_slice = acolor_row_mirror;    break;
+    case 0x0105: s->waveform_slice = acolor_column;        break;
+    case 0x0005: s->waveform_slice = acolor_row;           break;
+    case 0x1115: s->waveform_slice = acolor16_column_mirror; break;
+    case 0x1015: s->waveform_slice = acolor16_row_mirror;    break;
+    case 0x0115: s->waveform_slice = acolor16_column;        break;
+    case 0x0015: s->waveform_slice = acolor16_row;           break;
+    case 0x1106: s->waveform_slice = xflat_column_mirror; break;
+    case 0x1006: s->waveform_slice = xflat_row_mirror;    break;
+    case 0x0106: s->waveform_slice = xflat_column;        break;
+    case 0x0006: s->waveform_slice = xflat_row;           break;
+    case 0x1116: s->waveform_slice = xflat16_column_mirror; break;
+    case 0x1016: s->waveform_slice = xflat16_row_mirror;    break;
+    case 0x0116: s->waveform_slice = xflat16_column;        break;
+    case 0x0016: s->waveform_slice = xflat16_row;           break;
     }
 
     s->grat_yuva_color[0] = 255;
@@ -2839,6 +3103,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     for (k = 0, i = 0; k < s->ncomp; k++) {
         if ((1 << k) & s->pcomp) {
+            const int plane = s->desc->comp[k].plane;
+            ThreadData td;
             int offset_y;
             int offset_x;
 
@@ -2849,7 +3115,45 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 offset_y = s->mode ? i++ * s->size * !!s->display : 0;
                 offset_x = s->mode ? 0 : i++ * s->size * !!s->display;
             }
-            s->waveform(s, in, out, k, s->intensity, offset_y, offset_x, s->mode, s->mirror);
+
+            td.in = in;
+            td.out = out;
+            td.component = k;
+            td.offset_y = offset_y;
+            td.offset_x = offset_x;
+            ctx->internal->execute(ctx, s->waveform_slice, &td, NULL, ff_filter_get_nb_threads(ctx));
+            switch (s->filter) {
+            case ACOLOR:
+            case CHROMA:
+            case COLOR:
+            case LOWPASS:
+                if (s->bits <= 8)
+                    envelope(s, out, plane, plane, s->mode ? offset_x : offset_y);
+                else
+                    envelope16(s, out, plane, plane, s->mode ? offset_x : offset_y);
+                break;
+            case FLAT:
+                if (s->bits <= 8) {
+                    envelope(s, out, plane, plane, s->mode ? offset_x : offset_y);
+                    envelope(s, out, plane, (plane + 1) % s->ncomp, s->mode ? offset_x : offset_y);
+                } else {
+                    envelope16(s, out, plane, plane, s->mode ? offset_x : offset_y);
+                    envelope16(s, out, plane, (plane + 1) % s->ncomp, s->mode ? offset_x : offset_y);
+                }
+                break;
+            case AFLAT:
+            case XFLAT:
+                if (s->bits <= 8) {
+                    envelope(s, out, plane, (plane + 0) % s->ncomp, s->mode ? offset_x : offset_y);
+                    envelope(s, out, plane, (plane + 1) % s->ncomp, s->mode ? offset_x : offset_y);
+                    envelope(s, out, plane, (plane + 2) % s->ncomp, s->mode ? offset_x : offset_y);
+                } else {
+                    envelope16(s, out, plane, (plane + 0) % s->ncomp, s->mode ? offset_x : offset_y);
+                    envelope16(s, out, plane, (plane + 1) % s->ncomp, s->mode ? offset_x : offset_y);
+                    envelope16(s, out, plane, (plane + 2) % s->ncomp, s->mode ? offset_x : offset_y);
+                }
+                break;
+            }
         }
     }
     s->graticulef(s, out);
@@ -2893,4 +3197,5 @@ AVFilter ff_vf_waveform = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
+    .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };

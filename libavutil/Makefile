@@ -206,6 +206,7 @@ TESTPROGS = adler32                                                     \
             fifo                                                        \
             hash                                                        \
             hmac                                                        \
+            hwdevice                                                    \
             integer                                                     \
             imgutils                                                    \
             lfg                                                         \

@@ -2642,14 +2642,22 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     sc->stsc_count = i;
     for (i = sc->stsc_count - 1; i < UINT_MAX; i--) {
+        int64_t first_min = i + 1;
         if ((i+1 < sc->stsc_count && sc->stsc_data[i].first >= sc->stsc_data[i+1].first) ||
             (i > 0 && sc->stsc_data[i].first <= sc->stsc_data[i-1].first) ||
-            sc->stsc_data[i].first < 1 ||
+            sc->stsc_data[i].first < first_min ||
             sc->stsc_data[i].count < 1 ||
             sc->stsc_data[i].id < 1) {
             av_log(c->fc, AV_LOG_WARNING, "STSC entry %d is invalid (first=%d count=%d id=%d)\n", i, sc->stsc_data[i].first, sc->stsc_data[i].count, sc->stsc_data[i].id);
-            if (i+1 >= sc->stsc_count || sc->stsc_data[i+1].first < 2)
-                return AVERROR_INVALIDDATA;
+            if (i+1 >= sc->stsc_count) {
+                sc->stsc_data[i].first = FFMAX(sc->stsc_data[i].first, first_min);
+                if (i > 0 && sc->stsc_data[i].first <= sc->stsc_data[i-1].first)
+                    sc->stsc_data[i].first = FFMIN(sc->stsc_data[i-1].first + 1LL, INT_MAX);
+                sc->stsc_data[i].count = FFMAX(sc->stsc_data[i].count, 1);
+                sc->stsc_data[i].id    = FFMAX(sc->stsc_data[i].id, 1);
+                continue;
+            }
+            av_assert0(sc->stsc_data[i+1].first >= 2);
             // We replace this entry by the next valid
             sc->stsc_data[i].first = sc->stsc_data[i+1].first - 1;
             sc->stsc_data[i].count = sc->stsc_data[i+1].count;
@@ -3900,6 +3908,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     } else {
         unsigned chunk_samples, total = 0;
 
+        if (!sc->chunk_count)
+            return;
+
         // compute total chunk count
         for (i = 0; i < sc->stsc_count; i++) {
             unsigned count, chunk_count;
@@ -4145,7 +4156,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                st->index);
         return 0;
     }
-    if (sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
+    if (sc->chunk_count && sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
         av_log(c->fc, AV_LOG_ERROR, "stream %d, contradictionary STSC and STCO\n",
                st->index);
         return AVERROR_INVALIDDATA;

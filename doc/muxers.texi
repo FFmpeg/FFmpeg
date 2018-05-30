@@ -288,6 +288,15 @@ the segment indexes fall behind the expected real time position.
 Set container format (mp4/webm) options using a @code{:} separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
+
+@item dash_segment_type @var{dash_segment_type}
+Possible values:
+@item mp4
+If this flag is set, the dash segment files will be in in ISOBMFF format. This is the default format.
+
+@item webm
+If this flag is set, the dash segment files will be in in WebM format.
+
 @end table
 
 @anchor{framecrc}
@@ -1335,6 +1344,16 @@ be negative. This enables the initial sample to have DTS/CTS of zero, and
 reduces the need for edit lists for some cases such as video tracks with
 B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
+@item -write_prft
+Write producer time reference box (PRFT) with a specified time source for the
+NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
+as wallclock time and @samp{pts} to specify timesource as input packets' PTS
+values.
+
+Setting value to @samp{pts} is applicable only for a live encoding use case,
+where PTS values are set as as wallclock time at the source. For example, an
+encoding use case with decklink capture source where @option{video_pts} and
+@option{audio_pts} are set to @samp{abs_wallclock}.
 @end table
 
 @subsection Example

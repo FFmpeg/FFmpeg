@@ -181,7 +181,8 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
             mquant = -v->altpq;                                \
         if ((edges&4) && s->mb_x == (s->mb_width - 1))         \
             mquant = -v->altpq;                                \
-        if ((edges&8) && s->mb_y == (s->mb_height - 1))        \
+        if ((edges&8) &&                                       \
+            s->mb_y == ((s->mb_height >> v->field_mode) - 1))  \
             mquant = -v->altpq;                                \
         if (!mquant || mquant > 31) {                          \
             av_log(v->s.avctx, AV_LOG_ERROR,                   \
@@ -2172,41 +2173,6 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         }
     }
 
-    if (v->dmb_is_raw)
-        direct = get_bits1(gb);
-    else
-        direct = v->direct_mb_plane[mb_pos];
-
-    if (direct) {
-        if (s->next_picture_ptr->field_picture)
-            av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
-        s->mv[0][0][0] = s->current_picture.motion_val[0][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 0, s->quarter_sample);
-        s->mv[0][0][1] = s->current_picture.motion_val[0][s->block_index[0]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][1], v->bfraction, 0, s->quarter_sample);
-        s->mv[1][0][0] = s->current_picture.motion_val[1][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 1, s->quarter_sample);
-        s->mv[1][0][1] = s->current_picture.motion_val[1][s->block_index[0]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][1], v->bfraction, 1, s->quarter_sample);
-
-        if (twomv) {
-            s->mv[0][2][0] = s->current_picture.motion_val[0][s->block_index[2]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][0], v->bfraction, 0, s->quarter_sample);
-            s->mv[0][2][1] = s->current_picture.motion_val[0][s->block_index[2]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][1], v->bfraction, 0, s->quarter_sample);
-            s->mv[1][2][0] = s->current_picture.motion_val[1][s->block_index[2]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][0], v->bfraction, 1, s->quarter_sample);
-            s->mv[1][2][1] = s->current_picture.motion_val[1][s->block_index[2]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][1], v->bfraction, 1, s->quarter_sample);
-
-            for (i = 1; i < 4; i += 2) {
-                s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0] = s->mv[0][i-1][0];
-                s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1] = s->mv[0][i-1][1];
-                s->mv[1][i][0] = s->current_picture.motion_val[1][s->block_index[i]][0] = s->mv[1][i-1][0];
-                s->mv[1][i][1] = s->current_picture.motion_val[1][s->block_index[i]][1] = s->mv[1][i-1][1];
-            }
-        } else {
-            for (i = 1; i < 4; i++) {
-                s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0] = s->mv[0][0][0];
-                s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1] = s->mv[0][0][1];
-                s->mv[1][i][0] = s->current_picture.motion_val[1][s->block_index[i]][0] = s->mv[1][0][0];
-                s->mv[1][i][1] = s->current_picture.motion_val[1][s->block_index[i]][1] = s->mv[1][0][1];
-            }
-        }
-    }
-
     if (ff_vc1_mbmode_intfrp[0][idx_mbmode][0] == MV_PMODE_INTFR_INTRA) { // intra MB
         for (i = 0; i < 4; i++) {
             s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0] = 0;
@@ -2257,6 +2223,42 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
         }
     } else {
         s->mb_intra = v->is_intra[s->mb_x] = 0;
+
+        if (v->dmb_is_raw)
+            direct = get_bits1(gb);
+        else
+            direct = v->direct_mb_plane[mb_pos];
+
+        if (direct) {
+            if (s->next_picture_ptr->field_picture)
+                av_log(s->avctx, AV_LOG_WARNING, "Mixed frame/field direct mode not supported\n");
+            s->mv[0][0][0] = s->current_picture.motion_val[0][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 0, s->quarter_sample);
+            s->mv[0][0][1] = s->current_picture.motion_val[0][s->block_index[0]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][1], v->bfraction, 0, s->quarter_sample);
+            s->mv[1][0][0] = s->current_picture.motion_val[1][s->block_index[0]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][0], v->bfraction, 1, s->quarter_sample);
+            s->mv[1][0][1] = s->current_picture.motion_val[1][s->block_index[0]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[0]][1], v->bfraction, 1, s->quarter_sample);
+
+            if (twomv) {
+                s->mv[0][2][0] = s->current_picture.motion_val[0][s->block_index[2]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][0], v->bfraction, 0, s->quarter_sample);
+                s->mv[0][2][1] = s->current_picture.motion_val[0][s->block_index[2]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][1], v->bfraction, 0, s->quarter_sample);
+                s->mv[1][2][0] = s->current_picture.motion_val[1][s->block_index[2]][0] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][0], v->bfraction, 1, s->quarter_sample);
+                s->mv[1][2][1] = s->current_picture.motion_val[1][s->block_index[2]][1] = scale_mv(s->next_picture.motion_val[1][s->block_index[2]][1], v->bfraction, 1, s->quarter_sample);
+
+                for (i = 1; i < 4; i += 2) {
+                    s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0] = s->mv[0][i-1][0];
+                    s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1] = s->mv[0][i-1][1];
+                    s->mv[1][i][0] = s->current_picture.motion_val[1][s->block_index[i]][0] = s->mv[1][i-1][0];
+                    s->mv[1][i][1] = s->current_picture.motion_val[1][s->block_index[i]][1] = s->mv[1][i-1][1];
+                }
+            } else {
+                for (i = 1; i < 4; i++) {
+                    s->mv[0][i][0] = s->current_picture.motion_val[0][s->block_index[i]][0] = s->mv[0][0][0];
+                    s->mv[0][i][1] = s->current_picture.motion_val[0][s->block_index[i]][1] = s->mv[0][0][1];
+                    s->mv[1][i][0] = s->current_picture.motion_val[1][s->block_index[i]][0] = s->mv[1][0][0];
+                    s->mv[1][i][1] = s->current_picture.motion_val[1][s->block_index[i]][1] = s->mv[1][0][1];
+                }
+            }
+        }
+
         if (!direct) {
             if (skipped || !s->mb_intra) {
                 bmvtype = decode012(gb);
@@ -2676,8 +2678,10 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
             s->bdsp.clear_blocks(block[0]);
             mb_pos = s->mb_x + s->mb_y * s->mb_stride;
             s->current_picture.mb_type[mb_pos + v->mb_off]                         = MB_TYPE_INTRA;
-            s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
-            s->current_picture.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
+            for (int i = 0; i < 4; i++) {
+                s->current_picture.motion_val[1][s->block_index[i] + v->blocks_off][0] = 0;
+                s->current_picture.motion_val[1][s->block_index[i] + v->blocks_off][1] = 0;
+            }
 
             // do actual MB decoding and displaying
             if (v->fieldtx_is_raw)

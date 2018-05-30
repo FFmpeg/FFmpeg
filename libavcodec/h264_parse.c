@@ -120,7 +120,7 @@ int ff_h264_pred_weight_table(GetBitContext *gb, const SPS *sps,
     pwt->use_weight = pwt->use_weight || pwt->use_weight_chroma;
     return 0;
 out_range_weight:
-    avpriv_request_sample(logctx, "Out of range weight\n");
+    avpriv_request_sample(logctx, "Out of range weight");
     return AVERROR_INVALIDDATA;
 }
 

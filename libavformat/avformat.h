@@ -1103,6 +1103,13 @@ typedef struct AVStream {
      */
     int stream_identifier;
 
+    /**
+     * Details of the MPEG-TS program which created this stream.
+     */
+    int program_num;
+    int pmt_version;
+    int pmt_stream_idx;
+
     int64_t interleaver_chunk_size;
     int64_t interleaver_chunk_duration;
 
@@ -1260,6 +1267,7 @@ typedef struct AVProgram {
     int program_num;
     int pmt_pid;
     int pcr_pid;
+    int pmt_version;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

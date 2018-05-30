@@ -98,6 +98,9 @@ static const AVOption options[] = {
     { "encryption_kid", "The media encryption key identifier (hex)", offsetof(MOVMuxContext, encryption_kid), AV_OPT_TYPE_BINARY, .flags = AV_OPT_FLAG_ENCODING_PARAM },
     { "use_stream_ids_as_track_ids", "use stream ids as track ids", offsetof(MOVMuxContext, use_stream_ids_as_track_ids), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "write_tmcd", "force or disable writing tmcd", offsetof(MOVMuxContext, write_tmcd), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "write_prft", "Write producer reference time box with specified time source", offsetof(MOVMuxContext, write_prft), AV_OPT_TYPE_INT, {.i64 = MOV_PRFT_NONE}, 0, MOV_PRFT_NB-1, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
+    { "wallclock", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = MOV_PRFT_SRC_WALLCLOCK}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
+    { "pts", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = MOV_PRFT_SRC_PTS}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM, "prft"},
     { NULL },
 };
 
@@ -4514,6 +4517,49 @@ static int mov_write_sidx_tags(AVIOContext *pb, MOVMuxContext *mov,
     return 0;
 }
 
+static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
+{
+    int64_t pos = avio_tell(pb), pts_us, ntp_ts;
+    MOVTrack *first_track;
+
+    /* PRFT should be associated with at most one track. So, choosing only the
+     * first track. */
+    if (tracks > 0)
+        return 0;
+    first_track = &(mov->tracks[0]);
+
+    if (!first_track->entry) {
+        av_log(mov->fc, AV_LOG_WARNING, "Unable to write PRFT, no entries in the track\n");
+        return 0;
+    }
+
+    if (first_track->cluster[0].pts == AV_NOPTS_VALUE) {
+        av_log(mov->fc, AV_LOG_WARNING, "Unable to write PRFT, first PTS is invalid\n");
+        return 0;
+    }
+
+    if (mov->write_prft == MOV_PRFT_SRC_WALLCLOCK) {
+        ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time());
+    } else if (mov->write_prft == MOV_PRFT_SRC_PTS) {
+        pts_us = av_rescale_q(first_track->cluster[0].pts,
+                              first_track->st->time_base, AV_TIME_BASE_Q);
+        ntp_ts = ff_get_formatted_ntp_time(pts_us + NTP_OFFSET_US);
+    } else {
+        av_log(mov->fc, AV_LOG_WARNING, "Unsupported PRFT box configuration: %d\n",
+               mov->write_prft);
+        return 0;
+    }
+
+    avio_wb32(pb, 0);                           // Size place holder
+    ffio_wfourcc(pb, "prft");                   // Type
+    avio_w8(pb, 1);                             // Version
+    avio_wb24(pb, 0);                           // Flags
+    avio_wb32(pb, first_track->track_id);       // reference track ID
+    avio_wb64(pb, ntp_ts);                      // NTP time stamp
+    avio_wb64(pb, first_track->cluster[0].pts); //media time
+    return update_size(pb, pos);
+}
+
 static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks,
                               int64_t mdat_size)
 {
@@ -4527,6 +4573,9 @@ static int mov_write_moof_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks,
 
     if (mov->flags & FF_MOV_FLAG_DASH && !(mov->flags & FF_MOV_FLAG_GLOBAL_SIDX))
         mov_write_sidx_tags(pb, mov, tracks, moof_size + 8 + mdat_size);
+
+    if (mov->write_prft > MOV_PRFT_NONE && mov->write_prft < MOV_PRFT_NB)
+        mov_write_prft_tag(pb, mov, tracks);
 
     if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX ||
         !(mov->flags & FF_MOV_FLAG_SKIP_TRAILER) ||
@@ -5317,6 +5366,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     trk->cluster[trk->entry].size             = size;
     trk->cluster[trk->entry].entries          = samples_in_chunk;
     trk->cluster[trk->entry].dts              = pkt->dts;
+    trk->cluster[trk->entry].pts              = pkt->pts;
     if (!trk->entry && trk->start_dts != AV_NOPTS_VALUE) {
         if (!trk->frag_discont) {
             /* First packet of a new fragment. We already wrote the duration

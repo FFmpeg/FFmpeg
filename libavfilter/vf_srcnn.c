@@ -28,164 +28,47 @@
 #include "formats.h"
 #include "internal.h"
 #include "libavutil/opt.h"
-#include "vf_srcnn.h"
 #include "libavformat/avio.h"
-
-typedef struct Convolution
-{
-    double* kernel;
-    double* biases;
-    int32_t size, input_channels, output_channels;
-} Convolution;
+#include "dnn_interface.h"
 
 typedef struct SRCNNContext {
     const AVClass *class;
 
-    /// SRCNN convolutions
-    struct Convolution conv1, conv2, conv3;
-    /// Path to binary file with kernels specifications
-    char* config_file_path;
-    /// Buffers for network input/output and feature maps
-    double* input_output_buf;
-    double* conv1_buf;
-    double* conv2_buf;
+    char* model_filename;
+    float* input_output_buf;
+    DNNModule* dnn_module;
+    DNNModel* model;
+    DNNData input_output;
 } SRCNNContext;
 
 
 #define OFFSET(x) offsetof(SRCNNContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption srcnn_options[] = {
-    { "config_file", "path to configuration file with network parameters", OFFSET(config_file_path), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
+    { "model_filename", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(srcnn);
 
-#define CHECK_FILE_SIZE(file_size, srcnn_size, avio_context)    if (srcnn_size > file_size){ \
-                                                                    av_log(context, AV_LOG_ERROR, "error reading configuration file\n");\
-                                                                    avio_closep(&avio_context); \
-                                                                    return AVERROR(EIO); \
-                                                                }
-
-#define CHECK_ALLOCATION(call, end_call)    if (call){ \
-                                                av_log(context, AV_LOG_ERROR, "could not allocate memory for convolutions\n"); \
-                                                end_call; \
-                                                return AVERROR(ENOMEM); \
-                                            }
-
-static int allocate_read_conv_data(Convolution* conv, AVIOContext* config_file_context)
-{
-    int32_t kernel_size = conv->output_channels * conv->size * conv->size * conv->input_channels;
-    int32_t i;
-
-    conv->kernel = av_malloc(kernel_size * sizeof(double));
-    if (!conv->kernel){
-        return AVERROR(ENOMEM);
-    }
-    for (i = 0; i < kernel_size; ++i){
-        conv->kernel[i] = av_int2double(avio_rl64(config_file_context));
-    }
-
-    conv->biases = av_malloc(conv->output_channels * sizeof(double));
-    if (!conv->biases){
-        return AVERROR(ENOMEM);
-    }
-    for (i = 0; i < conv->output_channels; ++i){
-        conv->biases[i] = av_int2double(avio_rl64(config_file_context));
-    }
-
-    return 0;
-}
-
-static int allocate_copy_conv_data(Convolution* conv, const double* kernel, const double* biases)
-{
-    int32_t kernel_size = conv->output_channels * conv->size * conv->size * conv->input_channels;
-
-    conv->kernel = av_malloc(kernel_size * sizeof(double));
-    if (!conv->kernel){
-        return AVERROR(ENOMEM);
-    }
-    memcpy(conv->kernel, kernel, kernel_size * sizeof(double));
-
-    conv->biases = av_malloc(conv->output_channels * sizeof(double));
-    if (!conv->kernel){
-        return AVERROR(ENOMEM);
-    }
-    memcpy(conv->biases, biases, conv->output_channels * sizeof(double));
-
-    return 0;
-}
-
 static av_cold int init(AVFilterContext* context)
 {
-    SRCNNContext *srcnn_context = context->priv;
-    AVIOContext* config_file_context;
-    int64_t file_size, srcnn_size;
+    SRCNNContext* srcnn_context = context->priv;
 
-    /// Check specified confguration file name and read network weights from it
-    if (!srcnn_context->config_file_path){
-        av_log(context, AV_LOG_INFO, "configuration file for network was not specified, using default weights for x2 upsampling\n");
-
-        /// Create convolution kernels and copy default weights
-        srcnn_context->conv1.input_channels = 1;
-        srcnn_context->conv1.output_channels = 64;
-        srcnn_context->conv1.size = 9;
-        CHECK_ALLOCATION(allocate_copy_conv_data(&srcnn_context->conv1, conv1_kernel, conv1_biases), )
-
-        srcnn_context->conv2.input_channels = 64;
-        srcnn_context->conv2.output_channels = 32;
-        srcnn_context->conv2.size = 1;
-        CHECK_ALLOCATION(allocate_copy_conv_data(&srcnn_context->conv2, conv2_kernel, conv2_biases), )
-
-        srcnn_context->conv3.input_channels = 32;
-        srcnn_context->conv3.output_channels = 1;
-        srcnn_context->conv3.size = 5;
-        CHECK_ALLOCATION(allocate_copy_conv_data(&srcnn_context->conv3, conv3_kernel, conv3_biases), )
+    srcnn_context->dnn_module = ff_get_dnn_module(DNN_NATIVE);
+    if (!srcnn_context->dnn_module){
+        av_log(context, AV_LOG_ERROR, "could not create dnn module\n");
+        return AVERROR(ENOMEM);
     }
-    else if (avio_check(srcnn_context->config_file_path, AVIO_FLAG_READ) > 0){
-        if (avio_open(&config_file_context, srcnn_context->config_file_path, AVIO_FLAG_READ) < 0){
-            av_log(context, AV_LOG_ERROR, "failed to open configuration file\n");
-            return AVERROR(EIO);
-        }
-
-        file_size = avio_size(config_file_context);
-
-        /// Create convolution kernels and read weights from file
-        srcnn_context->conv1.input_channels = 1;
-        srcnn_context->conv1.size = (int32_t)avio_rl32(config_file_context);
-        srcnn_context->conv1.output_channels = (int32_t)avio_rl32(config_file_context);
-        srcnn_size = 8 + (srcnn_context->conv1.output_channels * srcnn_context->conv1.size *
-                          srcnn_context->conv1.size * srcnn_context->conv1.input_channels +
-                          srcnn_context->conv1.output_channels << 3);
-        CHECK_FILE_SIZE(file_size, srcnn_size, config_file_context)
-        CHECK_ALLOCATION(allocate_read_conv_data(&srcnn_context->conv1, config_file_context), avio_closep(&config_file_context))
-
-        srcnn_context->conv2.input_channels = (int32_t)avio_rl32(config_file_context);
-        srcnn_context->conv2.size = (int32_t)avio_rl32(config_file_context);
-        srcnn_context->conv2.output_channels = (int32_t)avio_rl32(config_file_context);
-        srcnn_size += 12 + (srcnn_context->conv2.output_channels * srcnn_context->conv2.size *
-                            srcnn_context->conv2.size * srcnn_context->conv2.input_channels +
-                            srcnn_context->conv2.output_channels << 3);
-        CHECK_FILE_SIZE(file_size, srcnn_size, config_file_context)
-        CHECK_ALLOCATION(allocate_read_conv_data(&srcnn_context->conv2, config_file_context), avio_closep(&config_file_context))
-
-        srcnn_context->conv3.input_channels = (int32_t)avio_rl32(config_file_context);
-        srcnn_context->conv3.size = (int32_t)avio_rl32(config_file_context);
-        srcnn_context->conv3.output_channels = 1;
-        srcnn_size += 8 + (srcnn_context->conv3.output_channels * srcnn_context->conv3.size *
-                           srcnn_context->conv3.size * srcnn_context->conv3.input_channels
-                           + srcnn_context->conv3.output_channels << 3);
-        if (file_size != srcnn_size){
-            av_log(context, AV_LOG_ERROR, "error reading configuration file\n");
-            avio_closep(&config_file_context);
-            return AVERROR(EIO);
-        }
-        CHECK_ALLOCATION(allocate_read_conv_data(&srcnn_context->conv3, config_file_context), avio_closep(&config_file_context))
-
-        avio_closep(&config_file_context);
+    if (!srcnn_context->model_filename){
+        av_log(context, AV_LOG_INFO, "model file for network was not specified, using default network for x2 upsampling\n");
+        srcnn_context->model = (srcnn_context->dnn_module->load_default_model)(DNN_SRCNN);
     }
     else{
-        av_log(context, AV_LOG_ERROR, "specified configuration file does not exist or not readable\n");
+        srcnn_context->model = (srcnn_context->dnn_module->load_model)(srcnn_context->model_filename);
+    }
+    if (!srcnn_context->model){
+        av_log(context, AV_LOG_ERROR, "could not load dnn model\n");
         return AVERROR(EIO);
     }
 
@@ -197,7 +80,7 @@ static int query_formats(AVFilterContext* context)
     const enum AVPixelFormat pixel_formats[] = {AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
                                                 AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
                                                 AV_PIX_FMT_NONE};
-    AVFilterFormats *formats_list;
+    AVFilterFormats* formats_list;
 
     formats_list = ff_make_format_list(pixel_formats);
     if (!formats_list){
@@ -209,28 +92,29 @@ static int query_formats(AVFilterContext* context)
 
 static int config_props(AVFilterLink* inlink)
 {
-    AVFilterContext *context = inlink->dst;
-    SRCNNContext *srcnn_context = context->priv;
-    int min_dim;
+    AVFilterContext* context = inlink->dst;
+    SRCNNContext* srcnn_context = context->priv;
+    DNNReturnType result;
 
-    /// Check if input data width or height is too low
-    min_dim = FFMIN(inlink->w, inlink->h);
-    if (min_dim <= srcnn_context->conv1.size >> 1 || min_dim <= srcnn_context->conv2.size >> 1 || min_dim <= srcnn_context->conv3.size >> 1){
-        av_log(context, AV_LOG_ERROR, "input width or height is too low\n");
-        return AVERROR(EIO);
-    }
-
-    /// Allocate network buffers
-    srcnn_context->input_output_buf = av_malloc(inlink->h * inlink->w * sizeof(double));
-    srcnn_context->conv1_buf = av_malloc(inlink->h * inlink->w * srcnn_context->conv1.output_channels * sizeof(double));
-    srcnn_context->conv2_buf = av_malloc(inlink->h * inlink->w * srcnn_context->conv2.output_channels * sizeof(double));
-
-    if (!srcnn_context->input_output_buf || !srcnn_context->conv1_buf || !srcnn_context->conv2_buf){
-        av_log(context, AV_LOG_ERROR, "could not allocate memory for srcnn buffers\n");
+    srcnn_context->input_output_buf = av_malloc(inlink->h * inlink->w * sizeof(float));
+    if (!srcnn_context->input_output_buf){
+        av_log(context, AV_LOG_ERROR, "could not allocate memory for input/output buffer\n");
         return AVERROR(ENOMEM);
     }
 
-    return 0;
+    srcnn_context->input_output.data = srcnn_context->input_output_buf;
+    srcnn_context->input_output.width = inlink->w;
+    srcnn_context->input_output.height = inlink->h;
+    srcnn_context->input_output.channels = 1;
+
+    result = (srcnn_context->model->set_input_output)(srcnn_context->model->model, &srcnn_context->input_output, &srcnn_context->input_output);
+    if (result != DNN_SUCCESS){
+        av_log(context, AV_LOG_ERROR, "could not set input and output for the model\n");
+        return AVERROR(EIO);
+    }
+    else{
+        return 0;
+    }
 }
 
 typedef struct ThreadData{
@@ -238,28 +122,19 @@ typedef struct ThreadData{
     int out_linesize, height, width;
 } ThreadData;
 
-typedef struct ConvThreadData
-{
-    const Convolution* conv;
-    const double* input;
-    double* output;
-    int height, width;
-} ConvThreadData;
-
-/// Convert uint8 data to double and scale it to use in network
-static int uint8_to_double(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
+static int uint8_to_float(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
 {
     SRCNNContext* srcnn_context = context->priv;
     const ThreadData* td = arg;
     const int slice_start = (td->height *  jobnr     ) / nb_jobs;
     const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
     const uint8_t* src = td->out + slice_start * td->out_linesize;
-    double* dst = srcnn_context->input_output_buf + slice_start * td->width;
+    float* dst = srcnn_context->input_output_buf + slice_start * td->width;
     int y, x;
 
     for (y = slice_start; y < slice_end; ++y){
         for (x = 0; x < td->width; ++x){
-            dst[x] = (double)src[x] / 255.0;
+            dst[x] = (float)src[x] / 255.0f;
         }
         src += td->out_linesize;
         dst += td->width;
@@ -268,62 +143,22 @@ static int uint8_to_double(AVFilterContext* context, void* arg, int jobnr, int n
     return 0;
 }
 
-/// Convert double data from network to uint8 and scale it to output as filter result
-static int double_to_uint8(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
+static int float_to_uint8(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
 {
     SRCNNContext* srcnn_context = context->priv;
     const ThreadData* td = arg;
     const int slice_start = (td->height *  jobnr     ) / nb_jobs;
     const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const double* src = srcnn_context->input_output_buf + slice_start * td->width;
+    const float* src = srcnn_context->input_output_buf + slice_start * td->width;
     uint8_t* dst = td->out + slice_start * td->out_linesize;
     int y, x;
 
     for (y = slice_start; y < slice_end; ++y){
         for (x = 0; x < td->width; ++x){
-            dst[x] = (uint8_t)(255.0 * FFMIN(src[x], 1.0));
+            dst[x] = (uint8_t)(255.0f * FFMIN(src[x], 1.0f));
         }
         src += td->width;
         dst += td->out_linesize;
-    }
-
-    return 0;
-}
-
-#define CLAMP_TO_EDGE(x, w) ((x) < 0 ? 0 : ((x) >= (w) ? (w - 1) : (x)))
-
-static int convolve(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
-{
-    const ConvThreadData* td = arg;
-    const int slice_start = (td->height *  jobnr     ) / nb_jobs;
-    const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const double* src = td->input;
-    double* dst = td->output + slice_start * td->width * td->conv->output_channels;
-    int y, x;
-    int32_t n_filter, ch, kernel_y, kernel_x;
-    int32_t radius = td->conv->size >> 1;
-    int src_linesize = td->width * td->conv->input_channels;
-    int filter_linesize = td->conv->size * td->conv->input_channels;
-    int filter_size = td->conv->size * filter_linesize;
-
-    for (y = slice_start; y < slice_end; ++y){
-        for (x = 0; x < td->width; ++x){
-            for (n_filter = 0; n_filter < td->conv->output_channels; ++n_filter){
-                dst[n_filter] = td->conv->biases[n_filter];
-                for (ch = 0; ch < td->conv->input_channels; ++ch){
-                    for (kernel_y = 0; kernel_y < td->conv->size; ++kernel_y){
-                        for (kernel_x = 0; kernel_x < td->conv->size; ++kernel_x){
-                            dst[n_filter] += src[CLAMP_TO_EDGE(y + kernel_y - radius, td->height) * src_linesize +
-                                                 CLAMP_TO_EDGE(x + kernel_x - radius, td->width) * td->conv->input_channels + ch] *
-                                             td->conv->kernel[n_filter * filter_size + kernel_y * filter_linesize +
-                                                              kernel_x * td->conv->input_channels + ch];
-                        }
-                    }
-                }
-                dst[n_filter] = FFMAX(dst[n_filter], 0.0);
-            }
-            dst += td->conv->output_channels;
-        }
     }
 
     return 0;
@@ -336,8 +171,8 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     AVFilterLink* outlink = context->outputs[0];
     AVFrame* out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     ThreadData td;
-    ConvThreadData ctd;
     int nb_threads;
+    DNNReturnType dnn_result;
 
     if (!out){
         av_log(context, AV_LOG_ERROR, "could not allocate memory for output frame\n");
@@ -349,24 +184,19 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     av_frame_free(&in);
     td.out = out->data[0];
     td.out_linesize = out->linesize[0];
-    td.height = ctd.height = out->height;
-    td.width = ctd.width = out->width;
+    td.height = out->height;
+    td.width = out->width;
 
     nb_threads = ff_filter_get_nb_threads(context);
-    context->internal->execute(context, uint8_to_double, &td, NULL, FFMIN(td.height, nb_threads));
-    ctd.conv = &srcnn_context->conv1;
-    ctd.input = srcnn_context->input_output_buf;
-    ctd.output = srcnn_context->conv1_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
-    ctd.conv = &srcnn_context->conv2;
-    ctd.input = srcnn_context->conv1_buf;
-    ctd.output = srcnn_context->conv2_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
-    ctd.conv = &srcnn_context->conv3;
-    ctd.input = srcnn_context->conv2_buf;
-    ctd.output = srcnn_context->input_output_buf;
-    context->internal->execute(context, convolve, &ctd, NULL, FFMIN(ctd.height, nb_threads));
-    context->internal->execute(context, double_to_uint8, &td, NULL, FFMIN(td.height, nb_threads));
+    context->internal->execute(context, uint8_to_float, &td, NULL, FFMIN(td.height, nb_threads));
+
+    dnn_result = (srcnn_context->dnn_module->execute_model)(srcnn_context->model);
+    if (dnn_result != DNN_SUCCESS){
+        av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
+        return AVERROR(EIO);
+    }
+
+    context->internal->execute(context, float_to_uint8, &td, NULL, FFMIN(td.height, nb_threads));
 
     return ff_filter_frame(outlink, out);
 }
@@ -375,18 +205,11 @@ static av_cold void uninit(AVFilterContext* context)
 {
     SRCNNContext* srcnn_context = context->priv;
 
-    /// Free convolution data
-    av_freep(&srcnn_context->conv1.kernel);
-    av_freep(&srcnn_context->conv1.biases);
-    av_freep(&srcnn_context->conv2.kernel);
-    av_freep(&srcnn_context->conv2.biases);
-    av_freep(&srcnn_context->conv3.kernel);
-    av_freep(&srcnn_context->conv3.kernel);
-
-    /// Free network buffers
+    if (srcnn_context->dnn_module){
+        (srcnn_context->dnn_module->free_model)(&srcnn_context->model);
+        av_freep(&srcnn_context->dnn_module);
+    }
     av_freep(&srcnn_context->input_output_buf);
-    av_freep(&srcnn_context->conv1_buf);
-    av_freep(&srcnn_context->conv2_buf);
 }
 
 static const AVFilterPad srcnn_inputs[] = {
@@ -419,3 +242,4 @@ AVFilter ff_vf_srcnn = {
     .priv_class    = &srcnn_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
+

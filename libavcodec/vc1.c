@@ -1010,7 +1010,8 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 return -1;
             av_log(v->s.avctx, AV_LOG_DEBUG, "FIELDTX plane encoding: "
                    "Imode: %i, Invert: %i\n", status>>1, status&1);
-        }
+        } else
+            v->fieldtx_is_raw = 0;
         status = bitplane_decoding(v->acpred_plane, &v->acpred_is_raw, v);
         if (status < 0)
             return -1;

@@ -68,6 +68,12 @@ typedef struct Plane {
     SubBand band[DWT_LEVELS][4];
 } Plane;
 
+typedef struct Peak {
+    int level;
+    int offset;
+    const int16_t *base;
+} Peak;
+
 typedef struct CFHDContext {
     AVCodecContext *avctx;
 
@@ -83,6 +89,7 @@ typedef struct CFHDContext {
     int coded_height;
     int cropped_height;
     enum AVPixelFormat coded_format;
+    int progressive;
 
     int a_width;
     int a_height;
@@ -98,12 +105,14 @@ typedef struct CFHDContext {
     int pshift;
 
     int codebook;
+    int difference_coding;
     int subband_num;
     int level;
     int subband_num_actual;
 
     uint8_t prescale_shift[3];
     Plane plane[4];
+    Peak peak;
 } CFHDContext;
 
 int ff_cfhd_init_vlcs(CFHDContext *s);

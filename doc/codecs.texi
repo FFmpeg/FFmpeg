@@ -986,10 +986,6 @@ Set chroma qp offset from luma.
 @item trellis @var{integer} (@emph{encoding,audio,video})
 Set rate-distortion optimal quantization.
 
-@item sc_factor @var{integer} (@emph{encoding,video})
-Set value multiplied by qscale for each frame and added to
-scene_change_score.
-
 @item mv0_threshold @var{integer} (@emph{encoding,video})
 @item b_sensitivity @var{integer} (@emph{encoding,video})
 Adjust sensitivity of b_frame_strategy 1.
