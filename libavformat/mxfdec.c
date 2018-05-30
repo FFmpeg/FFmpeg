@@ -3447,7 +3447,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     MXFIndexTable *t;
     MXFTrack *source_track = st->priv_data;
 
-    if(st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+    if (!source_track)
         return 0;
 
     /* if audio then truncate sample_time to EditRate */
