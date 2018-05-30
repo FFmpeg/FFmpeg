@@ -30,7 +30,6 @@ const AVProfile ff_aac_profiles[] = {
     { FF_PROFILE_AAC_LD,    "LD"       },
     { FF_PROFILE_AAC_ELD,   "ELD"      },
     { FF_PROFILE_AAC_MAIN,  "Main" },
-    { FF_PROFILE_AAC_LOW,   "LC"   },
     { FF_PROFILE_AAC_SSR,   "SSR"  },
     { FF_PROFILE_AAC_LTP,   "LTP"  },
     { FF_PROFILE_UNKNOWN },
