@@ -528,6 +528,16 @@ static void run_tomcrypt_des(uint8_t *output,
         des_ecb_encrypt(input + i, output + i, &des);
 }
 
+static void run_tomcrypt_rc4(uint8_t *output,
+                             const uint8_t *input, unsigned size)
+{
+    rc4_state rc4;
+
+    rc4_stream_setup(&rc4, hardcoded_key, 16);
+    rc4_stream_crypt(&rc4, input, size, output);
+    rc4_stream_done(&rc4);
+}
+
 static void run_tomcrypt_twofish(uint8_t *output,
                                 const uint8_t *input, unsigned size)
 {
@@ -647,10 +657,7 @@ struct hash_impl implementations[] = {
     IMPL(lavu,     "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(gcrypt,   "TWOFISH", twofish, "crc:9edbd5c1")
     IMPL(tomcrypt, "TWOFISH", twofish, "crc:9edbd5c1")
-    IMPL(lavu,     "RC4",     rc4,     "crc:538d37b2")
-    IMPL(crypto,   "RC4",     rc4,     "crc:538d37b2")
-    IMPL(gcrypt,   "RC4",     rc4,     "crc:538d37b2")
-    IMPL(mbedcrypto, "RC4",   rc4,     "crc:538d37b2")
+    IMPL_ALL("RC4",           rc4,     "crc:538d37b2")
     IMPL(lavu,     "XTEA",    xtea,    "crc:931fc270")
     IMPL(mbedcrypto, "XTEA",  xtea,    "crc:931fc270")
     IMPL(tomcrypt, "XTEA",    xtea,    "crc:931fc270")
