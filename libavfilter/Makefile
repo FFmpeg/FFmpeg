@@ -35,6 +35,7 @@ OBJS-$(CONFIG_ACOMPRESSOR_FILTER)            += af_sidechaincompress.o
 OBJS-$(CONFIG_ACONTRAST_FILTER)              += af_acontrast.o
 OBJS-$(CONFIG_ACOPY_FILTER)                  += af_acopy.o
 OBJS-$(CONFIG_ACROSSFADE_FILTER)             += af_afade.o
+OBJS-$(CONFIG_ACROSSOVER_FILTER)             += af_acrossover.o
 OBJS-$(CONFIG_ACRUSHER_FILTER)               += af_acrusher.o
 OBJS-$(CONFIG_ACUE_FILTER)                   += f_cue.o
 OBJS-$(CONFIG_ADECLICK_FILTER)               += af_adeclick.o

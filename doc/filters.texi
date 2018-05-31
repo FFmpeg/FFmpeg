@@ -493,6 +493,23 @@ ffmpeg -i first.flac -i second.flac -filter_complex acrossfade=d=10:o=0:c1=exp:c
 @end example
 @end itemize
 
+@section acrossover
+Split audio stream into several bands.
+
+This filter splits audio stream into two or more frequency ranges.
+Summing all streams back will give flat output.
+
+The filter accepts the following options:
+
+@table @option
+@item split
+Set split frequencies. Those must be positive and increasing.
+
+@item order
+Set filter order, can be @var{2nd}, @var{4th} or @var{8th}.
+Default is @var{4th}.
+@end table
+
 @section acrusher
 
 Reduce audio bit resolution.
