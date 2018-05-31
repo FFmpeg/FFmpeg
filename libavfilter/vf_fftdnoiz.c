@@ -176,7 +176,7 @@ static void export_row16(FFTComplex *src, uint8_t *dstp, int rw, float scale, in
     int j;
 
     for (j = 0; j < rw; j++)
-        dst[j] = av_clip_uintp2(src[j].re * scale, depth);
+        dst[j] = av_clip_uintp2_c(src[j].re * scale, depth);
 }
 
 static int config_input(AVFilterLink *inlink)

@@ -186,7 +186,7 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                         } else {
                             amp = FFMIN(FFABS(diff * factor), hlimit);
                         }
-                        dst[x] = av_clip_uintp2(src + amp, depth);
+                        dst[x] = av_clip_uintp2_c(src + amp, depth);
                     } else {
                         dst[x] = src;
                     }
