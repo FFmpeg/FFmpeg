@@ -1557,9 +1557,19 @@ static int mov_get_codec_tag(AVFormatContext *s, MOVTrack *track)
     return tag;
 }
 
+static const AVCodecTag codec_cover_image_tags[] = {
+    { AV_CODEC_ID_MJPEG,  0xD },
+    { AV_CODEC_ID_PNG,    0xE },
+    { AV_CODEC_ID_BMP,    0x1B },
+    { AV_CODEC_ID_NONE, 0 },
+};
+
 static int mov_find_codec_tag(AVFormatContext *s, MOVTrack *track)
 {
     int tag;
+
+    if (track->st->disposition & AV_DISPOSITION_ATTACHED_PIC)
+        return ff_codec_get_tag(codec_cover_image_tags, track->par->codec_id);
 
     if (track->mode == MODE_MP4 || track->mode == MODE_PSP)
         tag = track->par->codec_tag;
@@ -3429,7 +3439,7 @@ static int mov_write_covr(AVIOContext *pb, AVFormatContext *s)
 {
     MOVMuxContext *mov = s->priv_data;
     int64_t pos = 0;
-    int i, type;
+    int i;
 
     for (i = 0; i < s->nb_streams; i++) {
         MOVTrack *trk = &mov->tracks[i];
@@ -3439,22 +3449,6 @@ static int mov_write_covr(AVIOContext *pb, AVFormatContext *s)
             trk->cover_image.size <= 0)
             continue;
 
-        switch (st->codecpar->codec_id) {
-        case AV_CODEC_ID_MJPEG:
-            type = 0xD;
-            break;
-        case AV_CODEC_ID_PNG:
-            type = 0xE;
-            break;
-        case AV_CODEC_ID_BMP:
-            type = 0x1B;
-            break;
-        default:
-            av_log(s, AV_LOG_ERROR, "unsupported codec_id (0x%x) for cover",
-                   st->codecpar->codec_id);
-            continue;
-        }
-
         if (!pos) {
             pos = avio_tell(pb);
             avio_wb32(pb, 0);
@@ -3462,7 +3456,7 @@ static int mov_write_covr(AVIOContext *pb, AVFormatContext *s)
         }
         avio_wb32(pb, 16 + trk->cover_image.size);
         ffio_wfourcc(pb, "data");
-        avio_wb32(pb, type);
+        avio_wb32(pb, trk->tag);
         avio_wb32(pb , 0);
         avio_write(pb, trk->cover_image.data, trk->cover_image.size);
     }
