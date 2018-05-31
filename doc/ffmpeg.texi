@@ -632,8 +632,6 @@ as the input (or graph output) and automatic conversions are disabled.
 
 @item -sws_flags @var{flags} (@emph{input/output})
 Set SwScaler flags.
-@item -vdt @var{n}
-Discard threshold.
 
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 Rate control override for specific intervals, formatted as "int,int,int"
