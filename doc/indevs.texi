@@ -326,6 +326,12 @@ Defaults to @samp{2}.
 Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
 Defaults to @samp{unset}.
 
+@item timecode_format
+Timecode type to include in the frame and video stream metadata. Must be
+@samp{none}, @samp{rp188vitc}, @samp{rp188vitc2}, @samp{rp188ltc},
+@samp{rp188any}, @samp{vitc}, @samp{vitc2}, or @samp{serial}. Defaults to
+@samp{none} (not included).
+
 @item video_input
 Sets the video input source. Must be @samp{unset}, @samp{sdi}, @samp{hdmi},
 @samp{optical_sdi}, @samp{component}, @samp{composite} or @samp{s_video}.

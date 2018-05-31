@@ -93,6 +93,7 @@ struct decklink_ctx {
     BMDDisplayMode bmd_mode;
     BMDVideoConnection video_input;
     BMDAudioConnection audio_input;
+    BMDTimecodeFormat tc_format;
     int bmd_width;
     int bmd_height;
     int bmd_field_dominance;
@@ -167,6 +168,17 @@ static const BMDVideoConnection decklink_video_connection_map[] = {
     bmdVideoConnectionComponent,
     bmdVideoConnectionComposite,
     bmdVideoConnectionSVideo,
+};
+
+static const BMDTimecodeFormat decklink_timecode_format_map[] = {
+    (BMDTimecodeFormat)0,
+    bmdTimecodeRP188VITC1,
+    bmdTimecodeRP188VITC2,
+    bmdTimecodeRP188LTC,
+    bmdTimecodeRP188Any,
+    bmdTimecodeVITC,
+    bmdTimecodeVITCField2,
+    bmdTimecodeSerial,
 };
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName);

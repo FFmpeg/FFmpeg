@@ -752,6 +752,35 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         "- Frames dropped %u\n", ctx->frameCount, ++ctx->dropped);
             }
             no_video = 0;
+
+            // Handle Timecode (if requested)
+            if (ctx->tc_format) {
+                IDeckLinkTimecode *timecode;
+                if (videoFrame->GetTimecode(ctx->tc_format, &timecode) == S_OK) {
+                    const char *tc = NULL;
+                    DECKLINK_STR decklink_tc;
+                    if (timecode->GetString(&decklink_tc) == S_OK) {
+                        tc = DECKLINK_STRDUP(decklink_tc);
+                        DECKLINK_FREE(decklink_tc);
+                    }
+                    timecode->Release();
+                    if (tc) {
+                        AVDictionary* metadata_dict = NULL;
+                        int metadata_len;
+                        uint8_t* packed_metadata;
+                        if (av_dict_set(&metadata_dict, "timecode", tc, AV_DICT_DONT_STRDUP_VAL) >= 0) {
+                            packed_metadata = av_packet_pack_dictionary(metadata_dict, &metadata_len);
+                            av_dict_free(&metadata_dict);
+                            if (packed_metadata) {
+                                if (av_packet_add_side_data(&pkt, AV_PKT_DATA_STRINGS_METADATA, packed_metadata, metadata_len) < 0)
+                                    av_freep(&packed_metadata);
+                            }
+                        }
+                    }
+                } else {
+                    av_log(avctx, AV_LOG_DEBUG, "Unable to find timecode.\n");
+                }
+            }
         }
 
         pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, abs_wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts, cctx->copyts);
@@ -969,6 +998,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
     ctx->duplex_mode  = cctx->duplex_mode;
+    if (cctx->tc_format > 0 && (unsigned int)cctx->tc_format < FF_ARRAY_ELEMS(decklink_timecode_format_map))
+        ctx->tc_format = decklink_timecode_format_map[cctx->tc_format];
     if (cctx->video_input > 0 && (unsigned int)cctx->video_input < FF_ARRAY_ELEMS(decklink_video_connection_map))
         ctx->video_input = decklink_video_connection_map[cctx->video_input];
     if (cctx->audio_input > 0 && (unsigned int)cctx->audio_input < FF_ARRAY_ELEMS(decklink_audio_connection_map))
@@ -1221,6 +1252,15 @@ int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     avpacket_queue_get(&ctx->queue, pkt, 1);
+
+    if (ctx->tc_format && !(av_dict_get(ctx->video_st->metadata, "timecode", NULL, 0))) {
+        int size;
+        const uint8_t *side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &size);
+        if (side_metadata) {
+           if (av_packet_unpack_dictionary(side_metadata, size, &ctx->video_st->metadata) < 0)
+               av_log(avctx, AV_LOG_ERROR, "Unable to set timecode\n");
+        }
+    }
 
     return 0;
 }
