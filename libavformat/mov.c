@@ -5895,7 +5895,7 @@ static int mov_read_senc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < sample_count; i++) {
-        unsigned int min_samples = FFMIN(FFMAX(i, 1024 * 1024), sample_count);
+        unsigned int min_samples = FFMIN(FFMAX(i + 1, 1024 * 1024), sample_count);
         encrypted_samples = av_fast_realloc(encryption_index->encrypted_samples, &alloc_size,
                                             min_samples * sizeof(*encrypted_samples));
         if (encrypted_samples) {
@@ -5949,7 +5949,7 @@ static int mov_parse_auxiliary_info(MOVContext *c, MOVStreamContext *sc, AVIOCon
     }
 
     for (i = 0; i < sample_count && !pb->eof_reached; i++) {
-        unsigned int min_samples = FFMIN(FFMAX(i, 1024 * 1024), sample_count);
+        unsigned int min_samples = FFMIN(FFMAX(i + 1, 1024 * 1024), sample_count);
         encrypted_samples = av_fast_realloc(encryption_index->encrypted_samples, &alloc_size,
                                             min_samples * sizeof(*encrypted_samples));
         if (!encrypted_samples) {
@@ -6110,7 +6110,7 @@ static int mov_read_saio(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
 
     for (i = 0; i < entry_count && !pb->eof_reached; i++) {
-        unsigned int min_offsets = FFMIN(FFMAX(i, 1024), entry_count);
+        unsigned int min_offsets = FFMIN(FFMAX(i + 1, 1024), entry_count);
         auxiliary_offsets = av_fast_realloc(
             encryption_index->auxiliary_offsets, &alloc_size,
             min_offsets * sizeof(*auxiliary_offsets));
