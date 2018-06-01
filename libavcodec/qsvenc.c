@@ -1128,6 +1128,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 {
     AVPacket new_pkt = { 0 };
     mfxBitstream *bs;
+#if QSV_VERSION_ATLEAST(1, 26)
+    mfxExtAVCEncodedFrameInfo *enc_info;
+    mfxExtBuffer **enc_buf;
+#endif
 
     mfxFrameSurface1 *surf = NULL;
     mfxSyncPoint *sync     = NULL;
@@ -1161,6 +1165,22 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     bs->Data      = new_pkt.data;
     bs->MaxLength = new_pkt.size;
 
+#if QSV_VERSION_ATLEAST(1, 26)
+    if (avctx->codec_id == AV_CODEC_ID_H264) {
+        enc_info = av_mallocz(sizeof(*enc_info));
+        if (!enc_info)
+            return AVERROR(ENOMEM);
+
+        enc_info->Header.BufferId = MFX_EXTBUFF_ENCODED_FRAME_INFO;
+        enc_info->Header.BufferSz = sizeof (*enc_info);
+        bs->NumExtParam = 1;
+        enc_buf = av_mallocz(sizeof(mfxExtBuffer *));
+        enc_buf[0] = (mfxExtBuffer *)enc_info;
+
+        bs->ExtParam = enc_buf;
+    }
+#endif
+
     if (q->set_encode_ctrl_cb) {
         q->set_encode_ctrl_cb(avctx, frame, &qsv_frame->enc_ctrl);
     }
@@ -1168,6 +1188,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     sync = av_mallocz(sizeof(*sync));
     if (!sync) {
         av_freep(&bs);
+ #if QSV_VERSION_ATLEAST(1, 26)
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            av_freep(&enc_info);
+ #endif
         av_packet_unref(&new_pkt);
         return AVERROR(ENOMEM);
     }
@@ -1184,6 +1208,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     if (ret < 0) {
         av_packet_unref(&new_pkt);
         av_freep(&bs);
+#if QSV_VERSION_ATLEAST(1, 26)
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            av_freep(&enc_info);
+#endif
         av_freep(&sync);
         return (ret == MFX_ERR_MORE_DATA) ?
                0 : ff_qsv_print_error(avctx, ret, "Error during encoding");
@@ -1200,6 +1228,10 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
         av_freep(&sync);
         av_packet_unref(&new_pkt);
         av_freep(&bs);
+#if QSV_VERSION_ATLEAST(1, 26)
+        if (avctx->codec_id == AV_CODEC_ID_H264)
+            av_freep(&enc_info);
+#endif
     }
 
     return 0;
@@ -1219,6 +1251,9 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         AVPacket new_pkt;
         mfxBitstream *bs;
         mfxSyncPoint *sync;
+#if QSV_VERSION_ATLEAST(1, 26)
+        mfxExtAVCEncodedFrameInfo *enc_info;
+#endif
 
         av_fifo_generic_read(q->async_fifo, &new_pkt, sizeof(new_pkt), NULL);
         av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
@@ -1247,6 +1282,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+#if QSV_VERSION_ATLEAST(1, 26)
+        if (avctx->codec_id == AV_CODEC_ID_H264) {
+            enc_info = (mfxExtAVCEncodedFrameInfo *)(*bs->ExtParam);
+            av_log(avctx, AV_LOG_DEBUG, "QP is %d\n", enc_info->QP);
+            q->sum_frame_qp += enc_info->QP;
+            av_freep(&enc_info);
+        }
+#endif
         av_freep(&bs);
         av_freep(&sync);
 
