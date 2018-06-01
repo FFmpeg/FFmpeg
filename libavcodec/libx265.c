@@ -114,6 +114,7 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
     ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
+    ctx->params->bOpenGOP        = !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP);
 
     /* Tune the CTU size based on input resolution. */
     if (ctx->params->sourceWidth < 64 || ctx->params->sourceHeight < 64)
