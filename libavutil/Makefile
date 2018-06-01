@@ -200,6 +200,7 @@ TESTPROGS = adler32                                                     \
             des                                                         \
             dict                                                        \
             display                                                     \
+            encryption_info                                             \
             error                                                       \
             eval                                                        \
             file                                                        \
