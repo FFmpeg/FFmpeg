@@ -68,7 +68,8 @@ typedef struct LUT3DContext {
 #if CONFIG_HALDCLUT_FILTER
     uint8_t clut_rgba_map[4];
     int clut_step;
-    int clut_is16bit;
+    int clut_bits;
+    int clut_planar;
     int clut_width;
     FFFrameSync fs;
 #endif
@@ -748,7 +749,7 @@ AVFilter ff_vf_lut3d = {
 
 #if CONFIG_HALDCLUT_FILTER
 
-static void update_clut(LUT3DContext *lut3d, const AVFrame *frame)
+static void update_clut_packed(LUT3DContext *lut3d, const AVFrame *frame)
 {
     const uint8_t *data = frame->data[0];
     const int linesize  = frame->linesize[0];
@@ -778,10 +779,57 @@ static void update_clut(LUT3DContext *lut3d, const AVFrame *frame)
     }                                                                   \
 } while (0)
 
-    if (!lut3d->clut_is16bit) LOAD_CLUT(8);
-    else                      LOAD_CLUT(16);
+    switch (lut3d->clut_bits) {
+    case  8: LOAD_CLUT(8);  break;
+    case 16: LOAD_CLUT(16); break;
+    }
 }
 
+static void update_clut_planar(LUT3DContext *lut3d, const AVFrame *frame)
+{
+    const uint8_t *datag = frame->data[0];
+    const uint8_t *datab = frame->data[1];
+    const uint8_t *datar = frame->data[2];
+    const int glinesize  = frame->linesize[0];
+    const int blinesize  = frame->linesize[1];
+    const int rlinesize  = frame->linesize[2];
+    const int w = lut3d->clut_width;
+    const int level = lut3d->lutsize;
+
+#define LOAD_CLUT_PLANAR(nbits, depth) do {                             \
+    int i, j, k, x = 0, y = 0;                                          \
+                                                                        \
+    for (k = 0; k < level; k++) {                                       \
+        for (j = 0; j < level; j++) {                                   \
+            for (i = 0; i < level; i++) {                               \
+                const uint##nbits##_t *gsrc = (const uint##nbits##_t *) \
+                    (datag + y*glinesize);                              \
+                const uint##nbits##_t *bsrc = (const uint##nbits##_t *) \
+                    (datab + y*blinesize);                              \
+                const uint##nbits##_t *rsrc = (const uint##nbits##_t *) \
+                    (datar + y*rlinesize);                              \
+                struct rgbvec *vec = &lut3d->lut[i][j][k];              \
+                vec->r = gsrc[x] / (float)((1<<(depth)) - 1);           \
+                vec->g = bsrc[x] / (float)((1<<(depth)) - 1);           \
+                vec->b = rsrc[x] / (float)((1<<(depth)) - 1);           \
+                if (++x == w) {                                         \
+                    x = 0;                                              \
+                    y++;                                                \
+                }                                                       \
+            }                                                           \
+        }                                                               \
+    }                                                                   \
+} while (0)
+
+    switch (lut3d->clut_bits) {
+    case  8: LOAD_CLUT_PLANAR(8, 8);   break;
+    case  9: LOAD_CLUT_PLANAR(16, 9);  break;
+    case 10: LOAD_CLUT_PLANAR(16, 10); break;
+    case 12: LOAD_CLUT_PLANAR(16, 12); break;
+    case 14: LOAD_CLUT_PLANAR(16, 14); break;
+    case 16: LOAD_CLUT_PLANAR(16, 16); break;
+    }
+}
 
 static int config_output(AVFilterLink *outlink)
 {
@@ -815,14 +863,8 @@ static int config_clut(AVFilterLink *inlink)
 
     av_assert0(desc);
 
-    lut3d->clut_is16bit = 0;
-    switch (inlink->format) {
-    case AV_PIX_FMT_RGB48:
-    case AV_PIX_FMT_BGR48:
-    case AV_PIX_FMT_RGBA64:
-    case AV_PIX_FMT_BGRA64:
-        lut3d->clut_is16bit = 1;
-    }
+    lut3d->clut_bits = desc->comp[0].depth;
+    lut3d->clut_planar = av_pix_fmt_count_planes(inlink->format) > 1;
 
     lut3d->clut_step = av_get_padded_bits_per_pixel(desc) >> 3;
     ff_fill_rgba_map(lut3d->clut_rgba_map, inlink->format);
@@ -859,6 +901,7 @@ static int config_clut(AVFilterLink *inlink)
 static int update_apply_clut(FFFrameSync *fs)
 {
     AVFilterContext *ctx = fs->parent;
+    LUT3DContext *lut3d = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
     AVFrame *master, *second, *out;
     int ret;
@@ -868,7 +911,10 @@ static int update_apply_clut(FFFrameSync *fs)
         return ret;
     if (!second)
         return ff_filter_frame(ctx->outputs[0], master);
-    update_clut(ctx->priv, second);
+    if (lut3d->clut_planar)
+        update_clut_planar(ctx->priv, second);
+    else
+        update_clut_packed(ctx->priv, second);
     out = apply_lut(inlink, master);
     return ff_filter_frame(ctx->outputs[0], out);
 }
