@@ -46,7 +46,9 @@
 #endif
 
 #if HAVE_OPENCL_VAAPI_INTEL_MEDIA
+#if CONFIG_LIBMFX
 #include <mfx/mfxstructures.h>
+#endif
 #include <va/va.h>
 #include <CL/va_ext.h>
 #include "hwcontext_vaapi.h"
@@ -2245,10 +2247,13 @@ static int opencl_map_from_qsv(AVHWFramesContext *dst_fc, AVFrame *dst,
     cl_int cle;
     int err, p;
 
+#if CONFIG_LIBMFX
     if (src->format == AV_PIX_FMT_QSV) {
         mfxFrameSurface1 *mfx_surface = (mfxFrameSurface1*)src->data[3];
         va_surface = *(VASurfaceID*)mfx_surface->Data.MemId;
-    } else if (src->format == AV_PIX_FMT_VAAPI) {
+    } else
+#endif
+        if (src->format == AV_PIX_FMT_VAAPI) {
         va_surface = (VASurfaceID)(uintptr_t)src->data[3];
     } else {
         return AVERROR(ENOSYS);

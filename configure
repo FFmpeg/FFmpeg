@@ -6336,10 +6336,8 @@ fi
 
 if enabled_all opencl vaapi ; then
     enabled opencl_drm_beignet && enable opencl_vaapi_beignet
-    if enabled libmfx ; then
-        check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
-            enable opencl_vaapi_intel_media
-    fi
+    check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
+        enable opencl_vaapi_intel_media
 fi
 
 if enabled_all opencl dxva2 ; then
