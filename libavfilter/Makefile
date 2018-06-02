@@ -12,8 +12,6 @@ OBJS = allfilters.o                                                     \
        avfiltergraph.o                                                  \
        buffersink.o                                                     \
        buffersrc.o                                                      \
-       dnn_interface.o                                                  \
-       dnn_backend_native.o                                             \
        drawutils.o                                                      \
        fifo.o                                                           \
        formats.o                                                        \
@@ -338,7 +336,7 @@ OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SOBEL_FILTER)                  += vf_convolution.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
 OBJS-$(CONFIG_SPP_FILTER)                    += vf_spp.o
-OBJS-$(CONFIG_SRCNN_FILTER)                  += vf_srcnn.o
+OBJS-$(CONFIG_SRCNN_FILTER)                  += vf_srcnn.o dnn_interface.o dnn_backend_native.o
 OBJS-$(CONFIG_SSIM_FILTER)                   += vf_ssim.o framesync.o
 OBJS-$(CONFIG_STEREO3D_FILTER)               += vf_stereo3d.o
 OBJS-$(CONFIG_STREAMSELECT_FILTER)           += f_streamselect.o framesync.o
