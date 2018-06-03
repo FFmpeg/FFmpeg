@@ -1190,7 +1190,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                     for (x = 0; x < w; x+=80) {
                         dst[x] = 200;
                     }
-                    for (x = 0; x < w; x += 80) {
+                    for (x = 0; x < w - 79; x += 80) {
                         float hertz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
                         char *units;
 
