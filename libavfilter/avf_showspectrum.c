@@ -1082,9 +1082,19 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
         if (s->legend) {
             int multi = (s->mode == SEPARATE && s->color_mode == CHANNEL);
             float spp = samples / (float)sz;
+            char *text;
             uint8_t *dst;
+            char chlayout_str[128];
+
+            av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), inlink->channels,
+                                         inlink->channel_layout);
+
+            text = av_asprintf("%d Hz | %s", inlink->sample_rate, chlayout_str);
 
             drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
+            drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
+
+            av_freep(&text);
 
             dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
             for (x = 0; x < s->w + 1; x++)
