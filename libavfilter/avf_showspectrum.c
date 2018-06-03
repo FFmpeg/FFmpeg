@@ -1099,14 +1099,15 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
             }
             if (s->orientation == VERTICAL) {
                 int h = s->mode == SEPARATE ? s->h / s->nb_display_channels : s->h;
+                int hh = s->mode == SEPARATE ? -(s->h % s->nb_display_channels) + 1 : 1;
                 for (ch = 0; ch < (s->mode == SEPARATE ? s->nb_display_channels : 1); ch++) {
                     for (y = 0; y < h; y += 20) {
-                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[0];
+                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
                         dst[s->start_x - 2] = 200;
                         dst[s->start_x + s->w + 1] = 200;
                     }
                     for (y = 0; y < h; y += 40) {
-                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[0];
+                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
                         dst[s->start_x - 3] = 200;
                         dst[s->start_x + s->w + 2] = 200;
                     }
@@ -1135,7 +1136,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         if (!units)
                             return AVERROR(ENOMEM);
 
-                        drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, h * (ch + 1) + s->start_y - y - 4, units, 0);
+                        drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, h * (ch + 1) + s->start_y - y - 4 - hh, units, 0);
                         av_free(units);
                     }
                 }
