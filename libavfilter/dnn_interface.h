@@ -28,7 +28,7 @@
 
 typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
-typedef enum {DNN_NATIVE} DNNBackendType;
+typedef enum {DNN_NATIVE, DNN_TF} DNNBackendType;
 
 typedef enum {DNN_SRCNN} DNNDefaultModel;
 
@@ -36,7 +36,6 @@ typedef struct DNNData{
     float* data;
     int width, height, channels;
 } DNNData;
-
 
 typedef struct DNNModel{
     // Stores model that can be different for different backends.

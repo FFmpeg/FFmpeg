@@ -41,7 +41,6 @@ typedef struct SRCNNContext {
     DNNData input_output;
 } SRCNNContext;
 
-
 #define OFFSET(x) offsetof(SRCNNContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption srcnn_options[] = {
@@ -55,10 +54,19 @@ static av_cold int init(AVFilterContext* context)
 {
     SRCNNContext* srcnn_context = context->priv;
 
-    srcnn_context->dnn_module = ff_get_dnn_module(DNN_NATIVE);
+    srcnn_context->dnn_module = ff_get_dnn_module(DNN_TF);
     if (!srcnn_context->dnn_module){
-        av_log(context, AV_LOG_ERROR, "could not create dnn module\n");
-        return AVERROR(ENOMEM);
+        srcnn_context->dnn_module = ff_get_dnn_module(DNN_NATIVE);
+        if (!srcnn_context->dnn_module){
+            av_log(context, AV_LOG_ERROR, "could not create dnn module\n");
+            return AVERROR(ENOMEM);
+        }
+        else{
+            av_log(context, AV_LOG_INFO, "using native backend for DNN inference\n");
+        }
+    }
+    else{
+        av_log(context, AV_LOG_INFO, "using tensorflow backend for DNN inference\n");
     }
     if (!srcnn_context->model_filename){
         av_log(context, AV_LOG_INFO, "model file for network was not specified, using default network for x2 upsampling\n");
