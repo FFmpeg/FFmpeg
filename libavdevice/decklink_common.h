@@ -56,7 +56,6 @@ struct decklink_ctx {
     IDeckLinkConfiguration *cfg;
     IDeckLinkAttributes *attr;
     decklink_output_callback *output_callback;
-    decklink_input_callback *input_callback;
 
     /* DeckLink mode information */
     BMDTimeValue bmd_tb_den;
