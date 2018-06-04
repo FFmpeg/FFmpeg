@@ -21,6 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <atomic>
+using std::atomic;
+
 /* Include internal.h first to avoid conflict between winsock.h (used by
  * DeckLink headers) and winsock2.h (used by libavformat) in MSVC++ builds */
 extern "C" {
@@ -96,6 +99,44 @@ static VANCLineNumber vanc_line_numbers[] = {
 
     /* For all other modes, for which we don't support VANC */
     {bmdModeUnknown, 0, -1, -1, -1}
+};
+
+class decklink_allocator : public IDeckLinkMemoryAllocator
+{
+public:
+        decklink_allocator(): _refs(1) { }
+        virtual ~decklink_allocator() { }
+
+        // IDeckLinkMemoryAllocator methods
+        virtual HRESULT STDMETHODCALLTYPE AllocateBuffer(unsigned int bufferSize, void* *allocatedBuffer)
+        {
+            void *buf = av_malloc(bufferSize + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!buf)
+                return E_OUTOFMEMORY;
+            *allocatedBuffer = buf;
+            return S_OK;
+        }
+        virtual HRESULT STDMETHODCALLTYPE ReleaseBuffer(void* buffer)
+        {
+            av_free(buffer);
+            return S_OK;
+        }
+        virtual HRESULT STDMETHODCALLTYPE Commit() { return S_OK; }
+        virtual HRESULT STDMETHODCALLTYPE Decommit() { return S_OK; }
+
+        // IUnknown methods
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
+        virtual ULONG   STDMETHODCALLTYPE AddRef(void) { return ++_refs; }
+        virtual ULONG   STDMETHODCALLTYPE Release(void)
+        {
+            int ret = --_refs;
+            if (!ret)
+                delete this;
+            return ret;
+        }
+
+private:
+        std::atomic<int>  _refs;
 };
 
 extern "C" {
@@ -924,6 +965,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx;
+    class decklink_allocator *allocator;
     AVStream *st;
     HRESULT result;
     char fname[1024];
@@ -1016,6 +1058,14 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     ctx->input_callback = new decklink_input_callback(avctx);
     ctx->dli->SetCallback(ctx->input_callback);
+
+    allocator = new decklink_allocator();
+    ret = (ctx->dli->SetVideoInputFrameMemoryAllocator(allocator) == S_OK ? 0 : AVERROR_EXTERNAL);
+    allocator->Release();
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot set custom memory allocator\n");
+        goto error;
+    }
 
     if (mode_num == 0 && !cctx->format_code) {
         if (decklink_autodetect(cctx) < 0) {
