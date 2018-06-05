@@ -450,6 +450,10 @@ static int read_header(ShortenContext *s)
             return AVERROR_INVALIDDATA;
         }
         s->nmean = get_uint(s, 0);
+        if (s->nmean > 32768U) {
+            av_log(s->avctx, AV_LOG_ERROR, "nmean is: %d\n", s->nmean);
+            return AVERROR_INVALIDDATA;
+        }
 
         skip_bytes = get_uint(s, NSKIPSIZE);
         if ((unsigned)skip_bytes > get_bits_left(&s->gb)/8) {
