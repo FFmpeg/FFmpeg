@@ -389,7 +389,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     for (i = 0; i < s->blocksize; i++) {
         sum = init_sum;
         for (j = 0; j < pred_order; j++)
-            sum += coeffs[j] * s->decoded[channel][i - j - 1];
+            sum += coeffs[j] * (unsigned)s->decoded[channel][i - j - 1];
         s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) +
                                  (sum >> qshift);
     }
@@ -696,7 +696,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
 
             /* update means with info from the current block */
             if (s->nmean > 0) {
-                int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
+                int64_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
                 for (i = 0; i < s->blocksize; i++)
                     sum += s->decoded[channel][i];
 
