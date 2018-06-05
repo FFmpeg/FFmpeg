@@ -172,7 +172,7 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
             buffer[i] = 0;
     } else if (s->bitshift != 0) {
         for (i = 0; i < s->blocksize; i++)
-            buffer[i] <<= s->bitshift;
+            buffer[i] *= 1 << s->bitshift;
     }
 }
 
