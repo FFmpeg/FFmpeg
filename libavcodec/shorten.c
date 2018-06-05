@@ -710,7 +710,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 if (s->version < 2)
                     s->offset[channel][s->nmean - 1] = sum / s->blocksize;
                 else
-                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) << s->bitshift;
+                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) * (1 << s->bitshift);
             }
 
             /* copy wrap samples for use with next block */
