@@ -3893,6 +3893,9 @@ not meant to be used directly.
 @section rubberband
 Apply time-stretching and pitch-shifting with librubberband.
 
+To enable compilation of this filter, you need to configure FFmpeg with
+@code{--enable-librubberband}.
+
 The filter accepts the following options:
 
 @table @option
@@ -11739,7 +11742,9 @@ Pass the video source unchanged to the output.
 @section ocr
 Optical Character Recognition
 
-This filter uses Tesseract for optical character recognition.
+This filter uses Tesseract for optical character recognition. To enable
+compilation of this filter, you need to configure FFmpeg with
+@code{--enable-libtesseract}.
 
 It accepts the following options:
 
@@ -17143,7 +17148,8 @@ zoompan=z='min(max(zoom,pzoom)+0.0015,1.5)':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih
 @anchor{zscale}
 @section zscale
 Scale (resize) the input video, using the z.lib library:
-https://github.com/sekrit-twc/zimg.
+@url{https://github.com/sekrit-twc/zimg}. To enable compilation of this
+filter, you need to configure FFmpeg with @code{--enable-libzimg}.
 
 The zscale filter forces the output display aspect ratio to be the same
 as the input, by changing the output sample aspect ratio.
