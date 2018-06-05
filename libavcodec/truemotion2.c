@@ -451,7 +451,7 @@ static inline int GET_TOK(TM2Context *ctx,int type)
 /* common operations - add deltas to 4x4 block of luma or 2x2 blocks of chroma */
 static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *deltas, int *last)
 {
-    int ct, d;
+    unsigned ct, d;
     int i, j;
 
     for (j = 0; j < 4; j++){
