@@ -234,11 +234,11 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
 
     while (bytestream2_get_le32(&gb) != MKTAG('C', 'O', 'M', 'M')) {
         len = bytestream2_get_be32(&gb);
-        bytestream2_skip(&gb, len + (len & 1));
-        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18) {
+        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18LL + len + (len&1)) {
             av_log(avctx, AV_LOG_ERROR, "no COMM chunk found\n");
             return AVERROR_INVALIDDATA;
         }
+        bytestream2_skip(&gb, len + (len & 1));
     }
     len = bytestream2_get_be32(&gb);
 
