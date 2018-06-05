@@ -36,6 +36,7 @@ typedef struct SRCNNContext {
 
     char* model_filename;
     float* input_output_buf;
+    DNNBackendType backend_type;
     DNNModule* dnn_module;
     DNNModel* model;
     DNNData input_output;
@@ -44,6 +45,11 @@ typedef struct SRCNNContext {
 #define OFFSET(x) offsetof(SRCNNContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption srcnn_options[] = {
+    { "dnn_backend", "DNN backend used for model execution", OFFSET(backend_type), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, 1, FLAGS, "backend" },
+    { "native", "native backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "backend" },
+#if (CONFIG_LIBTENSORFLOW == 1)
+    { "tensorflow", "tensorflow backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "backend" },
+#endif
     { "model_filename", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { NULL }
 };
@@ -54,29 +60,20 @@ static av_cold int init(AVFilterContext* context)
 {
     SRCNNContext* srcnn_context = context->priv;
 
-    srcnn_context->dnn_module = ff_get_dnn_module(DNN_TF);
+    srcnn_context->dnn_module = ff_get_dnn_module(srcnn_context->backend_type);
     if (!srcnn_context->dnn_module){
-        srcnn_context->dnn_module = ff_get_dnn_module(DNN_NATIVE);
-        if (!srcnn_context->dnn_module){
-            av_log(context, AV_LOG_ERROR, "could not create dnn module\n");
-            return AVERROR(ENOMEM);
-        }
-        else{
-            av_log(context, AV_LOG_INFO, "using native backend for DNN inference\n");
-        }
-    }
-    else{
-        av_log(context, AV_LOG_INFO, "using tensorflow backend for DNN inference\n");
+        av_log(context, AV_LOG_ERROR, "could not create DNN module for requested backend\n");
+        return AVERROR(ENOMEM);
     }
     if (!srcnn_context->model_filename){
-        av_log(context, AV_LOG_INFO, "model file for network was not specified, using default network for x2 upsampling\n");
+        av_log(context, AV_LOG_VERBOSE, "model file for network was not specified, using default network for x2 upsampling\n");
         srcnn_context->model = (srcnn_context->dnn_module->load_default_model)(DNN_SRCNN);
     }
     else{
         srcnn_context->model = (srcnn_context->dnn_module->load_model)(srcnn_context->model_filename);
     }
     if (!srcnn_context->model){
-        av_log(context, AV_LOG_ERROR, "could not load dnn model\n");
+        av_log(context, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EIO);
     }
 
