@@ -3485,6 +3485,23 @@ static int init_output_stream(OutputStream *ost, char *error, int error_len)
                 return ret;
             }
         }
+        if (ist && ist->dec->type == AVMEDIA_TYPE_SUBTITLE && ost->enc->type == AVMEDIA_TYPE_SUBTITLE) {
+            int input_props = 0, output_props = 0;
+            AVCodecDescriptor const *input_descriptor =
+                avcodec_descriptor_get(dec->codec_id);
+            AVCodecDescriptor const *output_descriptor =
+                avcodec_descriptor_get(ost->enc_ctx->codec_id);
+            if (input_descriptor)
+                input_props = input_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (output_descriptor)
+                output_props = output_descriptor->props & (AV_CODEC_PROP_TEXT_SUB | AV_CODEC_PROP_BITMAP_SUB);
+            if (input_props && output_props && input_props != output_props) {
+                snprintf(error, error_len,
+                         "Subtitle encoding currently only possible from text to text "
+                         "or bitmap to bitmap");
+                return AVERROR_INVALIDDATA;
+            }
+        }
 
         if ((ret = avcodec_open2(ost->enc_ctx, codec, &ost->encoder_opts)) < 0) {
             if (ret == AVERROR_EXPERIMENTAL)
