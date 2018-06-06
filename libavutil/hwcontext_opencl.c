@@ -141,9 +141,10 @@ typedef struct OpenCLFramesContext {
 } OpenCLFramesContext;
 
 
-static void opencl_error_callback(const char *errinfo,
-                                  const void *private_info, size_t cb,
-                                  void *user_data)
+static void CL_CALLBACK opencl_error_callback(const char *errinfo,
+                                              const void *private_info,
+                                              size_t cb,
+                                              void *user_data)
 {
     AVHWDeviceContext *ctx = user_data;
     av_log(ctx, AV_LOG_ERROR, "OpenCL error: %s\n", errinfo);
