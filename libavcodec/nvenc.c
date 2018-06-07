@@ -2051,8 +2051,16 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     if ((!ctx->cu_context && !ctx->d3d11_device) || !ctx->nvencoder)
         return AVERROR(EINVAL);
 
-    if (ctx->encoder_flushing)
-        return AVERROR_EOF;
+    if (ctx->encoder_flushing) {
+        if (avctx->internal->draining)
+            return AVERROR_EOF;
+
+        ctx->encoder_flushing = 0;
+        ctx->first_packet_output = 0;
+        ctx->initial_pts[0] = AV_NOPTS_VALUE;
+        ctx->initial_pts[1] = AV_NOPTS_VALUE;
+        av_fifo_reset(ctx->timestamp_list);
+    }
 
     if (frame) {
         in_surf = get_free_frame(ctx);
