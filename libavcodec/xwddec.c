@@ -39,6 +39,7 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     uint32_t pixformat, pixdepth, bunit, bitorder, bpad;
     uint32_t rgb[3];
     uint8_t *ptr;
+    int width, height;
     GetByteContext gb;
 
     if (buf_size < XWD_HEADER_SIZE)
@@ -60,8 +61,8 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
 
     pixformat     = bytestream2_get_be32u(&gb);
     pixdepth      = bytestream2_get_be32u(&gb);
-    avctx->width  = bytestream2_get_be32u(&gb);
-    avctx->height = bytestream2_get_be32u(&gb);
+    width         = bytestream2_get_be32u(&gb);
+    height        = bytestream2_get_be32u(&gb);
     xoffset       = bytestream2_get_be32u(&gb);
     be            = bytestream2_get_be32u(&gb);
     bunit         = bytestream2_get_be32u(&gb);
@@ -76,6 +77,9 @@ static int xwd_decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_skipu(&gb, 8);
     ncolors       = bytestream2_get_be32u(&gb);
     bytestream2_skipu(&gb, header_size - (XWD_HEADER_SIZE - 20));
+
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+        return ret;
 
     av_log(avctx, AV_LOG_DEBUG,
            "pixformat %"PRIu32", pixdepth %"PRIu32", bunit %"PRIu32", bitorder %"PRIu32", bpad %"PRIu32"\n",
