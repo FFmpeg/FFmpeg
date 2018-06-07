@@ -461,8 +461,19 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     if (avctx->level > 0)
         q->param.mfx.CodecLevel = avctx->level;
 
+    if (avctx->compression_level == FF_COMPRESSION_DEFAULT) {
+        avctx->compression_level = q->preset;
+    } else if (avctx->compression_level >= 0) {
+        if (avctx->compression_level > MFX_TARGETUSAGE_BEST_SPEED) {
+            av_log(avctx, AV_LOG_WARNING, "Invalid compression level: "
+                    "valid range is 0-%d, using %d instead\n",
+                    MFX_TARGETUSAGE_BEST_SPEED, MFX_TARGETUSAGE_BEST_SPEED);
+            avctx->compression_level = MFX_TARGETUSAGE_BEST_SPEED;
+        }
+    }
+
     q->param.mfx.CodecProfile       = q->profile;
-    q->param.mfx.TargetUsage        = q->preset;
+    q->param.mfx.TargetUsage        = avctx->compression_level;
     q->param.mfx.GopPicSize         = FFMAX(0, avctx->gop_size);
     q->param.mfx.GopRefDist         = FFMAX(-1, avctx->max_b_frames) + 1;
     q->param.mfx.GopOptFlag         = avctx->flags & AV_CODEC_FLAG_CLOSED_GOP ?
