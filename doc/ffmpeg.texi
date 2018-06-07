@@ -508,7 +508,7 @@ input until the timestamps reach @var{position}.
 @var{position} must be a time duration specification,
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
-@item -sseof @var{position} (@emph{input/output})
+@item -sseof @var{position} (@emph{input})
 
 Like the @code{-ss} option but relative to the "end of file". That is negative
 values are earlier in the file, 0 is at EOF.
