@@ -264,10 +264,16 @@ static int decode_unregistered_user_data(H264SEIUnregistered *h, GetBitContext *
     return 0;
 }
 
-static int decode_recovery_point(H264SEIRecoveryPoint *h, GetBitContext *gb)
+static int decode_recovery_point(H264SEIRecoveryPoint *h, GetBitContext *gb, void *logctx)
 {
-    h->recovery_frame_cnt = get_ue_golomb_long(gb);
+    unsigned recovery_frame_cnt = get_ue_golomb_long(gb);
 
+    if (recovery_frame_cnt >= (1<<MAX_LOG2_MAX_FRAME_NUM)) {
+        av_log(logctx, AV_LOG_ERROR, "recovery_frame_cnt %u is out of range\n", recovery_frame_cnt);
+        return AVERROR_INVALIDDATA;
+    }
+
+    h->recovery_frame_cnt = recovery_frame_cnt;
     /* 1b exact_match_flag,
      * 1b broken_link_flag,
      * 2b changing_slice_group_idc */
@@ -431,7 +437,7 @@ int ff_h264_sei_decode(H264SEIContext *h, GetBitContext *gb,
             ret = decode_unregistered_user_data(&h->unregistered, gb, logctx, size);
             break;
         case H264_SEI_TYPE_RECOVERY_POINT:
-            ret = decode_recovery_point(&h->recovery_point, gb);
+            ret = decode_recovery_point(&h->recovery_point, gb, logctx);
             break;
         case H264_SEI_TYPE_BUFFERING_PERIOD:
             ret = decode_buffering_period(&h->buffering_period, gb, ps, logctx);
