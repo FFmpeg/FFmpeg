@@ -66,7 +66,7 @@ static inline void init_block_index(VC1Context *v)
 
 /** @} */ //Bitplane group
 
-static void vc1_put_signed_blocks_clamped(VC1Context *v)
+static void vc1_put_blocks_clamped(VC1Context *v, int put_signed)
 {
     MpegEncContext *s = &v->s;
     uint8_t *dest;
@@ -85,20 +85,30 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
                 if (i > 3 ? v->mb_type[0][s->block_index[i] - s->block_wrap[i] - 1] :
                             v->mb_type[0][s->block_index[i] - 2 * s->block_wrap[i] - 2]) {
                     dest = s->dest[0] + ((i & 2) - 4) * 4 * s->linesize + ((i & 1) - 2) * 8;
-                    s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][i],
-                                                      i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest,
-                                                      i > 3 ? s->uvlinesize : s->linesize);
+                    if (put_signed)
+                        s->idsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][i],
+                                                          i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest,
+                                                          i > 3 ? s->uvlinesize : s->linesize);
+                    else
+                        s->idsp.put_pixels_clamped(v->block[v->topleft_blk_idx][i],
+                                                   i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest,
+                                                   i > 3 ? s->uvlinesize : s->linesize);
                 }
             }
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             for (i = 0; i < block_count; i++) {
                 if (i > 3 ? v->mb_type[0][s->block_index[i] - s->block_wrap[i]] :
                             v->mb_type[0][s->block_index[i] - 2 * s->block_wrap[i]]) {
                     dest = s->dest[0] + ((i & 2) - 4) * 4 * s->linesize + (i & 1) * 8;
-                    s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][i],
-                                                      i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize : dest,
-                                                      i > 3 ? s->uvlinesize : s->linesize);
+                    if (put_signed)
+                        s->idsp.put_signed_pixels_clamped(v->block[v->top_blk_idx][i],
+                                                          i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize : dest,
+                                                          i > 3 ? s->uvlinesize : s->linesize);
+                    else
+                        s->idsp.put_pixels_clamped(v->block[v->top_blk_idx][i],
+                                                   i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize : dest,
+                                                   i > 3 ? s->uvlinesize : s->linesize);
                 }
             }
         }
@@ -114,13 +124,18 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
                         dest = s->dest[0] + ((i & 2) >> 1) * s->linesize + ((i & 1) - 2) * 8;
                     else
                         dest = s->dest[0] + (i & 2) * 4 * s->linesize + ((i & 1) - 2) * 8;
-                    s->idsp.put_signed_pixels_clamped(v->block[v->left_blk_idx][i],
-                                                      i > 3 ? s->dest[i - 3] - 8 : dest,
-                                                      i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                    if (put_signed)
+                        s->idsp.put_signed_pixels_clamped(v->block[v->left_blk_idx][i],
+                                                          i > 3 ? s->dest[i - 3] - 8 : dest,
+                                                          i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                    else
+                        s->idsp.put_pixels_clamped(v->block[v->left_blk_idx][i],
+                                                   i > 3 ? s->dest[i - 3] - 8 : dest,
+                                                   i > 3 ? s->uvlinesize : s->linesize << fieldtx);
                 }
             }
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             if (v->fcm == ILACE_FRAME)
                 fieldtx = v->fieldtx_plane[s->mb_y * s->mb_stride + s->mb_x];
             for (i = 0; i < block_count; i++) {
@@ -129,9 +144,14 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
                         dest = s->dest[0] + ((i & 2) >> 1) * s->linesize + (i & 1) * 8;
                     else
                         dest = s->dest[0] + (i & 2) * 4 * s->linesize + (i & 1) * 8;
-                    s->idsp.put_signed_pixels_clamped(v->block[v->cur_blk_idx][i],
-                                                      i > 3 ? s->dest[i - 3] : dest,
-                                                      i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                    if (put_signed)
+                        s->idsp.put_signed_pixels_clamped(v->block[v->cur_blk_idx][i],
+                                                          i > 3 ? s->dest[i - 3] : dest,
+                                                          i > 3 ? s->uvlinesize : s->linesize << fieldtx);
+                    else
+                        s->idsp.put_pixels_clamped(v->block[v->cur_blk_idx][i],
+                                                   i > 3 ? s->dest[i - 3] : dest,
+                                                   i > 3 ? s->uvlinesize : s->linesize << fieldtx);
                 }
             }
         }
@@ -1469,7 +1489,7 @@ static int vc1_decode_p_mb(VC1Context *v)
 end:
     if (v->overlap && v->pq >= 9)
         ff_vc1_p_overlap_filter(v);
-    vc1_put_signed_blocks_clamped(v);
+    vc1_put_blocks_clamped(v, 1);
 
     v->cbp[s->mb_x]      = block_cbp;
     v->ttblk[s->mb_x]    = block_tt;
@@ -1680,7 +1700,7 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
     }
     if (v->overlap && v->pq >= 9)
         ff_vc1_p_overlap_filter(v);
-    vc1_put_signed_blocks_clamped(v);
+    vc1_put_blocks_clamped(v, 1);
 
     v->cbp[s->mb_x]      = block_cbp;
     v->ttblk[s->mb_x]    = block_tt;
@@ -1800,7 +1820,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
     }
     if (v->overlap && v->pq >= 9)
         ff_vc1_p_overlap_filter(v);
-    vc1_put_signed_blocks_clamped(v);
+    vc1_put_blocks_clamped(v, 1);
 
     v->cbp[s->mb_x]      = block_cbp;
     v->ttblk[s->mb_x]    = block_tt;
@@ -2727,7 +2747,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
 
             if (v->overlap && v->condover != CONDOVER_NONE)
                 ff_vc1_i_overlap_filter(v);
-            vc1_put_signed_blocks_clamped(v);
+            vc1_put_blocks_clamped(v, 1);
             if (v->s.loop_filter)
                 ff_vc1_i_loop_filter(v);
 
