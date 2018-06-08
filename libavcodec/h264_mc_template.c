@@ -78,7 +78,8 @@ static void MCFUNC(hl_motion)(const H264Context *h, H264SliceContext *sl,
 
     if (HAVE_THREADS && (h->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h, sl);
-    prefetch_motion(h, sl, 0, PIXEL_SHIFT, CHROMA_IDC);
+    if (USES_LIST(mb_type, 0))
+        prefetch_motion(h, sl, 0, PIXEL_SHIFT, CHROMA_IDC);
 
     if (IS_16X16(mb_type)) {
         mc_part(h, sl, 0, 1, 16, 0, dest_y, dest_cb, dest_cr, 0, 0,
