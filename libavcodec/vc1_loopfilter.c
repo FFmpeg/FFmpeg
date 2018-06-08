@@ -108,8 +108,10 @@ void ff_vc1_i_overlap_filter(VC1Context *v)
         if (s->mb_x == 0 && (i & 5) != 1)
             continue;
 
-        if (v->pq >= 9 || v->condover == CONDOVER_ALL ||
-            (v->over_flags_plane[mb_pos] && ((i & 5) == 1 || v->over_flags_plane[mb_pos - 1])))
+        if (v->pq >= 9 || (v->profile == PROFILE_ADVANCED &&
+                           (v->condover == CONDOVER_ALL ||
+                            (v->over_flags_plane[mb_pos] &&
+                             ((i & 5) == 1 || v->over_flags_plane[mb_pos - 1])))))
             vc1_h_overlap_filter(v, s->mb_x ? left_blk : cur_blk, cur_blk, i);
     }
 
@@ -118,15 +120,18 @@ void ff_vc1_i_overlap_filter(VC1Context *v)
             if (s->first_slice_line && !(i & 2))
                 continue;
 
-            if (s->mb_x && (v->pq >= 9 || v->condover == CONDOVER_ALL ||
-                (v->over_flags_plane[mb_pos - 1] &&
-                 ((i & 2) || v->over_flags_plane[mb_pos - 1 - s->mb_stride]))))
+            if (s->mb_x &&
+                (v->pq >= 9 || (v->profile == PROFILE_ADVANCED &&
+                                (v->condover == CONDOVER_ALL ||
+                                 (v->over_flags_plane[mb_pos - 1] &&
+                                  ((i & 2) || v->over_flags_plane[mb_pos - 1 - s->mb_stride]))))))
                 vc1_v_overlap_filter(v, s->first_slice_line ? left_blk : topleft_blk, left_blk, i);
-            if (s->mb_x == s->mb_width - 1)
-                if (v->pq >= 9 || v->condover == CONDOVER_ALL ||
-                    (v->over_flags_plane[mb_pos] &&
-                     ((i & 2) || v->over_flags_plane[mb_pos - s->mb_stride])))
-                    vc1_v_overlap_filter(v, s->first_slice_line ? cur_blk : top_blk, cur_blk, i);
+            if (s->mb_x == s->mb_width - 1 &&
+                (v->pq >= 9 || (v->profile == PROFILE_ADVANCED &&
+                                (v->condover == CONDOVER_ALL ||
+                                 (v->over_flags_plane[mb_pos] &&
+                                  ((i & 2) || v->over_flags_plane[mb_pos - s->mb_stride]))))))
+                vc1_v_overlap_filter(v, s->first_slice_line ? cur_blk : top_blk, cur_blk, i);
         }
 }
 
@@ -260,7 +265,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
             for (i = 0; i < block_count; i++)
                 vc1_i_v_loop_filter(v, i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest, flags, fieldtx, i);
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             dest += 16;
             fieldtx = v->fieldtx_plane[mb_pos - s->mb_stride];
             for (i = 0; i < block_count; i++)
@@ -275,7 +280,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
             for (i = 0; i < block_count; i++)
                 vc1_i_v_loop_filter(v, i > 3 ? s->dest[i - 3] - 8 : dest, flags, fieldtx, i);
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             dest += 16;
             fieldtx = v->fieldtx_plane[mb_pos];
             for (i = 0; i < block_count; i++)
@@ -290,7 +295,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
             for (i = 0; i < block_count; i++)
                 vc1_i_h_loop_filter(v, i > 3 ? s->dest[i - 3] - 16 * s->uvlinesize - 8 : dest, flags, i);
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             dest += 16;
             flags = s->mb_x == 0 ? LEFT_EDGE | RIGHT_EDGE : RIGHT_EDGE;
             for (i = 0; i < block_count; i++)
@@ -305,7 +310,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
                 for (i = 0; i < block_count; i++)
                     vc1_i_h_loop_filter(v, i > 3 ? s->dest[i - 3] - 8 * s->uvlinesize - 8 : dest, flags, i);
             }
-            if (s->mb_x == s->mb_width - 1) {
+            if (s->mb_x == v->end_mb_x - 1) {
                 flags = s->mb_x == 0 ? LEFT_EDGE | RIGHT_EDGE : RIGHT_EDGE;
                 dest += 16;
                 for (i = 0; i < block_count; i++)
@@ -318,7 +323,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
             for (i = 0; i < block_count; i++)
                 vc1_i_h_loop_filter(v, i > 3 ? s->dest[i - 3] - 8 : dest, flags, i);
         }
-        if (s->mb_x == s->mb_width - 1) {
+        if (s->mb_x == v->end_mb_x - 1) {
             dest += 16;
             flags = s->mb_x == 0 ? LEFT_EDGE | RIGHT_EDGE : RIGHT_EDGE;
             for (i = 0; i < block_count; i++)
