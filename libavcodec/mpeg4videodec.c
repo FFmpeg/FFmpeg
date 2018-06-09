@@ -3109,6 +3109,12 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
     /* search next start code */
     align_get_bits(gb);
 
+    // If we have not switched to studio profile than we also did not switch bps
+    // that means something else (like a previous instance) outside set bps which
+    // would be inconsistant with the currect state, thus reset it
+    if (!s->studio_profile && s->avctx->bits_per_raw_sample != 8)
+        s->avctx->bits_per_raw_sample = 0;
+
     if (s->codec_tag == AV_RL32("WV1F") && show_bits(gb, 24) == 0x575630) {
         skip_bits(gb, 24);
         if (get_bits(gb, 8) == 0xF0)
