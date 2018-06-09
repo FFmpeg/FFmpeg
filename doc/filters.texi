@@ -15285,10 +15285,10 @@ To render the second subtitles stream from that file, use:
 subtitles=video.mkv:si=1
 @end example
 
-To make the subtitles stream from @file{sub.srt} appear in transparent green
+To make the subtitles stream from @file{sub.srt} appear in 80% transparent blue
 @code{DejaVu Serif}, use:
 @example
-subtitles=sub.srt:force_style='FontName=DejaVu Serif,PrimaryColour=&HAA00FF00'
+subtitles=sub.srt:force_style='FontName=DejaVu Serif,PrimaryColour=&HCCFF0000'
 @end example
 
 @section super2xsai
