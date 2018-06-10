@@ -36,6 +36,7 @@
 
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
+#define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 
 /**
  * Sequence parameter set
