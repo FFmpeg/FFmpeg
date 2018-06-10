@@ -47,13 +47,13 @@ int main(void)
     char buf[256];
     struct tm testtime = { .tm_year = 100, .tm_mon = 11, .tm_mday = 20 };
 
-    av_bprint_init(&b, 0, -1);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_UNLIMITED);
     bprint_pascal(&b, 5);
     printf("Short text in unlimited buffer: %u/%u\n", (unsigned)strlen(b.str), b.len);
     printf("%s\n", b.str);
     av_bprint_finalize(&b, NULL);
 
-    av_bprint_init(&b, 0, -1);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_UNLIMITED);
     bprint_pascal(&b, 25);
     printf("Long text in unlimited buffer: %u/%u\n", (unsigned)strlen(b.str), b.len);
     av_bprint_finalize(&b, NULL);
@@ -63,16 +63,16 @@ int main(void)
     printf("Long text in limited buffer: %u/%u\n", (unsigned)strlen(b.str), b.len);
     av_bprint_finalize(&b, NULL);
 
-    av_bprint_init(&b, 0, 1);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_AUTOMATIC);
     bprint_pascal(&b, 5);
     printf("Short text in automatic buffer: %u/%u\n", (unsigned)strlen(b.str), b.len);
 
-    av_bprint_init(&b, 0, 1);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_AUTOMATIC);
     bprint_pascal(&b, 25);
     printf("Long text in automatic buffer: %u/%u\n", (unsigned)strlen(b.str)/8*8, b.len);
     /* Note that the size of the automatic buffer is arch-dependent. */
 
-    av_bprint_init(&b, 0, 0);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_COUNT_ONLY);
     bprint_pascal(&b, 25);
     printf("Long text count only buffer: %u/%u\n", (unsigned)strlen(b.str), b.len);
 
@@ -80,7 +80,7 @@ int main(void)
     bprint_pascal(&b, 25);
     printf("Long text count only buffer: %u/%u\n", (unsigned)strlen(buf), b.len);
 
-    av_bprint_init(&b, 0, -1);
+    av_bprint_init(&b, 0, AV_BPRINT_SIZE_UNLIMITED);
     av_bprint_strftime(&b, "%Y-%m-%d", &testtime);
     printf("strftime full: %u/%u \"%s\"\n", (unsigned)strlen(buf), b.len, b.str);
     av_bprint_finalize(&b, NULL);
