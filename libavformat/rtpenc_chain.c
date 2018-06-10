@@ -58,7 +58,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     rtpctx->max_delay = s->max_delay;
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
-    rtpctx->flags |= s->flags & (AVFMT_FLAG_MP4A_LATM | AVFMT_FLAG_BITEXACT);
+    rtpctx->flags |= s->flags & AVFMT_FLAG_BITEXACT;
 
     /* Get the payload type from the codec */
     if (st->id < RTP_PT_PRIVATE)

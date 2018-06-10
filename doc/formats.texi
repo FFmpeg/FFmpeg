@@ -53,8 +53,6 @@ Discard corrupted frames.
 Try to interleave output packets by DTS.
 @item keepside
 Do not merge side data.
-@item latm
-Enable RTP MP4A-LATM payload.
 @item nobuffer
 Reduce the latency introduced by optional buffering
 @item bitexact
