@@ -1018,7 +1018,7 @@ static int init_report(const char *env)
         av_free(key);
     }
 
-    av_bprint_init(&filename, 0, 1);
+    av_bprint_init(&filename, 0, AV_BPRINT_SIZE_AUTOMATIC);
     expand_filename_template(&filename,
                              av_x_if_null(filename_template, "%p-%t.log"), tm);
     av_free(filename_template);
