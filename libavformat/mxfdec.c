@@ -3284,7 +3284,7 @@ static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt)
     return 0;
 }
 
-static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
+static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
     MXFContext *mxf = s->priv_data;
@@ -3295,22 +3295,22 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
         int64_t pos = avio_tell(s->pb);
 
         if (pos < mxf->current_klv_data.next_klv - mxf->current_klv_data.length || pos >= mxf->current_klv_data.next_klv) {
-        mxf->current_klv_data = (KLVPacket){{0}};
-        ret = klv_read_packet(&klv, s->pb);
-        if (ret < 0)
-            break;
-        max_data_size = klv.length;
-        pos = klv.next_klv - klv.length;
-        PRINT_KEY(s, "read packet", klv.key);
-        av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
-        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            ret = mxf_decrypt_triplet(s, pkt, &klv);
-            if (ret < 0) {
-                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return ret;
+            mxf->current_klv_data = (KLVPacket){{0}};
+            ret = klv_read_packet(&klv, s->pb);
+            if (ret < 0)
+                break;
+            max_data_size = klv.length;
+            pos = klv.next_klv - klv.length;
+            PRINT_KEY(s, "read packet", klv.key);
+            av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
+            if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+                ret = mxf_decrypt_triplet(s, pkt, &klv);
+                if (ret < 0) {
+                    av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
+                    return ret;
+                }
+                return 0;
             }
-            return 0;
-        }
         } else {
             klv = mxf->current_klv_data;
             max_data_size = klv.next_klv - pos;
@@ -3580,7 +3580,7 @@ AVInputFormat ff_mxf_demuxer = {
     .priv_data_size = sizeof(MXFContext),
     .read_probe     = mxf_probe,
     .read_header    = mxf_read_header,
-    .read_packet    = mxf_read_packet_old,
+    .read_packet    = mxf_read_packet,
     .read_close     = mxf_read_close,
     .read_seek      = mxf_read_seek,
 };
