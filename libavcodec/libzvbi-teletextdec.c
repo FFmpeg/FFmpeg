@@ -74,6 +74,8 @@ typedef struct TeletextContext
 
     int             readorder;
     uint8_t         subtitle_map[2048];
+    int             last_pgno;
+    int             last_p5;
 } TeletextContext;
 
 static int chop_spaces_utf8(const unsigned char* t, int len)
@@ -372,6 +374,17 @@ static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
                         int pgno = ((pmag & 7) << 8) + page;
                         // Check for disabled NEWSFLASH flag and enabled SUBTITLE and SUPRESS_HEADER flags
                         ctx->subtitle_map[pgno] = (!(flags1 & 0x40) && flags1 & 0x80 && flags2 & 0x01);
+                        // Propagate ERASE_PAGE flag for repeated page headers to work around a libzvbi bug
+                        if (ctx->subtitle_map[pgno] && pgno == ctx->last_pgno) {
+                            int last_byte9 = vbi_unham8(ctx->last_p5);
+                            if (last_byte9 >= 0 && last_byte9 & 0x8) {
+                                int byte9 = vbi_unham8(p[5]);
+                                if (byte9 >= 0)
+                                    p[5] = vbi_ham8(byte9 | 0x8);
+                            }
+                        }
+                        ctx->last_pgno = pgno;
+                        ctx->last_p5 = p[5];
                     }
                 }
                 lines++;
@@ -494,6 +507,7 @@ static int teletext_init_decoder(AVCodecContext *avctx)
 
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
+    ctx->last_pgno = -1;
 
     if (ctx->opacity == -1)
         ctx->opacity = ctx->transparent_bg ? 0 : 255;
@@ -514,6 +528,7 @@ static int teletext_close_decoder(AVCodecContext *avctx)
     vbi_decoder_delete(ctx->vbi);
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
+    ctx->last_pgno = -1;
     memset(ctx->subtitle_map, 0, sizeof(ctx->subtitle_map));
     if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
         ctx->readorder = 0;
