@@ -35,7 +35,6 @@
 #include "h264_ps.h"
 #include "golomb.h"
 
-#define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 #define MIN_LOG2_MAX_FRAME_NUM    4
 
 #define EXTENDED_SAR       255
