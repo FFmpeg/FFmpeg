@@ -166,7 +166,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
 
-    av_bprint_init(&bp, 0, 1);
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (i = 0; i < s->nb_inputs; i++) {
         av_bprintf(&bp, "%sin%d:", i ? " + " : "", i);
         av_bprint_channel_layout(&bp, -1, ctx->inputs[i]->channel_layout);
