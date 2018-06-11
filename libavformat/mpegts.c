@@ -447,6 +447,7 @@ static void write_section_data(MpegTSContext *ts, MpegTSFilter *tss1,
             offset += tss->section_h_size;
             tss->section_h_size = -1;
         } else {
+            tss->section_h_size = -1;
             tss->end_of_section_reached = 0;
             break;
         }
