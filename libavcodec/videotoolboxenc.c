@@ -1262,18 +1262,15 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
     return 0;
 }
 
-static av_cold int vtenc_init(AVCodecContext *avctx)
+static int vtenc_configure_encoder(AVCodecContext *avctx)
 {
     CFMutableDictionaryRef enc_info;
     CFMutableDictionaryRef pixel_buffer_info;
     CMVideoCodecType       codec_type;
     VTEncContext           *vtctx = avctx->priv_data;
     CFStringRef            profile_level;
-    CFBooleanRef           has_b_frames_cfbool;
     CFNumberRef            gamma_level = NULL;
     int                    status;
-
-    pthread_once(&once_ctrl, loadVTEncSymbols);
 
     codec_type = get_cm_codec_type(avctx->codec_id);
     if (!codec_type) {
@@ -1304,8 +1301,6 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         if (!get_vt_hevc_profile_level(avctx, &profile_level)) return AVERROR(EINVAL);
     }
 
-    vtctx->session = NULL;
-
     enc_info = CFDictionaryCreateMutable(
         kCFAllocatorDefault,
         20,
@@ -1335,8 +1330,6 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
         pixel_buffer_info = NULL;
     }
 
-    pthread_mutex_init(&vtctx->lock, NULL);
-    pthread_cond_init(&vtctx->cv_sample_sent, NULL);
     vtctx->dts_delta = vtctx->has_b_frames ? -1 : 0;
 
     get_cv_transfer_function(avctx, &vtctx->transfer_function, &gamma_level);
@@ -1363,8 +1356,32 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
                                   pixel_buffer_info,
                                   &vtctx->session);
 
-    if (status < 0)
-        goto init_cleanup;
+init_cleanup:
+    if (gamma_level)
+        CFRelease(gamma_level);
+
+    if (pixel_buffer_info)
+        CFRelease(pixel_buffer_info);
+
+    CFRelease(enc_info);
+
+    return status;
+}
+
+static av_cold int vtenc_init(AVCodecContext *avctx)
+{
+    VTEncContext    *vtctx = avctx->priv_data;
+    CFBooleanRef    has_b_frames_cfbool;
+    int             status;
+
+    pthread_once(&once_ctrl, loadVTEncSymbols);
+
+    pthread_mutex_init(&vtctx->lock, NULL);
+    pthread_cond_init(&vtctx->cv_sample_sent, NULL);
+
+    vtctx->session = NULL;
+    status = vtenc_configure_encoder(avctx);
+    if (status) return status;
 
     status = VTSessionCopyProperty(vtctx->session,
                                    kVTCompressionPropertyKey_AllowFrameReordering,
@@ -1378,16 +1395,7 @@ static av_cold int vtenc_init(AVCodecContext *avctx)
     }
     avctx->has_b_frames = vtctx->has_b_frames;
 
-init_cleanup:
-    if (gamma_level)
-        CFRelease(gamma_level);
-
-    if (pixel_buffer_info)
-        CFRelease(pixel_buffer_info);
-
-    CFRelease(enc_info);
-
-    return status;
+    return 0;
 }
 
 static void vtenc_get_frame_info(CMSampleBufferRef buffer, bool *is_key_frame)
