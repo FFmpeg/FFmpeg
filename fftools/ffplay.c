@@ -3251,15 +3251,14 @@ static void event_loop(VideoState *cur_stream)
         refresh_loop_wait_event(cur_stream, &event);
         switch (event.type) {
         case SDL_KEYDOWN:
-            if (exit_on_keydown) {
+            if (exit_on_keydown || event.key.keysym.sym == SDLK_ESCAPE || event.key.keysym.sym == SDLK_q) {
                 do_exit(cur_stream);
                 break;
             }
+            // If we don't yet have a window, skip all key events, because read_thread might still be initializing...
+            if (!cur_stream->width)
+                continue;
             switch (event.key.keysym.sym) {
-            case SDLK_ESCAPE:
-            case SDLK_q:
-                do_exit(cur_stream);
-                break;
             case SDLK_f:
                 toggle_full_screen(cur_stream);
                 cur_stream->force_refresh = 1;
