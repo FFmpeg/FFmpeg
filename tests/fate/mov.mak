@@ -28,10 +28,13 @@ FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-guess-delay-2 \
                    fate-mov-guess-delay-3 \
 
+FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
+
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 FATE_SAMPLES_FFPROBE += $(FATE_MOV_FFPROBE)
+FATE_SAMPLES_FASTSTART += $(FATE_MOV_FASTSTART)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE)
+fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART)
 
 # Make sure we handle edit lists correctly in normal cases.
 fate-mov-1elist-noctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-noctts.mov
@@ -109,3 +112,7 @@ fate-mov-gpmf-remux: REF = 8f48e435ee1f6b7e173ea756141eabf3
 fate-mov-guess-delay-1: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_nopyramid_nobsrestriction.mp4
 fate-mov-guess-delay-2: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_pyramid_nobsrestriction.mp4
 fate-mov-guess-delay-3: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_4bf_pyramid_nobsrestriction.mp4
+
+fate-mov-faststart-4gb-overflow: CMD = run tools/qt-faststart$(PROGSSUF)$(EXESUF) $(TARGET_SAMPLES)/mov/faststart-4gb-overflow.mov faststart-4gb-overflow-output.mov > /dev/null ; md5sum faststart-4gb-overflow-output.mov | cut -d " " -f1 ; rm faststart-4gb-overflow-output.mov
+fate-mov-faststart-4gb-overflow: CMP = oneline
+fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
