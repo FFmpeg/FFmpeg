@@ -2992,6 +2992,7 @@ vc1_parser_select="vc1dsp"
 
 # bitstream_filters
 aac_adtstoasc_bsf_select="adts_header"
+eac3_core_bsf_select="ac3_parser"
 filter_units_bsf_select="cbs"
 h264_metadata_bsf_deps="const_nan"
 h264_metadata_bsf_select="cbs_h264"
