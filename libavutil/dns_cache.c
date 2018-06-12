@@ -60,10 +60,10 @@ static void free_private_addrinfo(struct addrinfo **p_ai) {
     }
 }
 
-static int inner_remove_dns_cache(char *hostname, DnsCacheEntry *dns_cache_entry) {
+static int inner_remove_dns_cache(const char *uri, DnsCacheEntry *dns_cache_entry) {
     if (context && dns_cache_entry) {
         if (dns_cache_entry->ref_count == 0) {
-            av_dict_set_int(&context->dns_dictionary, hostname, 0, 0);
+            av_dict_set_int(&context->dns_dictionary, uri, 0, 0);
             free_private_addrinfo(&dns_cache_entry->res);
             av_freep(&dns_cache_entry);
         } else {
@@ -74,7 +74,7 @@ static int inner_remove_dns_cache(char *hostname, DnsCacheEntry *dns_cache_entry
     return 0;
 }
 
-static DnsCacheEntry *new_dns_cache_entry(char *hostname, struct addrinfo *cur_ai, int64_t timeout) {
+static DnsCacheEntry *new_dns_cache_entry(const char *uri, struct addrinfo *cur_ai, int64_t timeout) {
     DnsCacheEntry *new_entry = NULL;
     int64_t cur_time         = av_gettime_relative();
 
@@ -115,12 +115,12 @@ fail:
     return NULL;
 }
 
-DnsCacheEntry *get_dns_cache_reference(char *hostname) {
+DnsCacheEntry *get_dns_cache_reference(const char *uri) {
     AVDictionaryEntry *elem = NULL;
     DnsCacheEntry *dns_cache_entry = NULL;
     int64_t cur_time = av_gettime_relative();
 
-    if (cur_time < 0 || !hostname || strlen(hostname) == 0) {
+    if (cur_time < 0 || !uri || strlen(uri) == 0) {
         return NULL;
     }
 
@@ -132,12 +132,12 @@ DnsCacheEntry *get_dns_cache_reference(char *hostname) {
 
     if (context && context->initialized) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
-        elem = av_dict_get(context->dns_dictionary, hostname, NULL, AV_DICT_MATCH_CASE);
+        elem = av_dict_get(context->dns_dictionary, uri, NULL, AV_DICT_MATCH_CASE);
         if (elem) {
             dns_cache_entry = (DnsCacheEntry *) (intptr_t) strtoll(elem->value, NULL, 10);
             if (dns_cache_entry) {
                 if (dns_cache_entry->expired_time < cur_time) {
-                    inner_remove_dns_cache(hostname, dns_cache_entry);
+                    inner_remove_dns_cache(uri, dns_cache_entry);
                     dns_cache_entry = NULL;
                 } else {
                     dns_cache_entry->ref_count++;
@@ -150,10 +150,10 @@ DnsCacheEntry *get_dns_cache_reference(char *hostname) {
     return dns_cache_entry;
 }
 
-int release_dns_cache_reference(char *hostname, DnsCacheEntry **p_entry) {
+int release_dns_cache_reference(const char *uri, DnsCacheEntry **p_entry) {
     DnsCacheEntry *entry = *p_entry;
 
-    if (!hostname || strlen(hostname) == 0) {
+    if (!uri || strlen(uri) == 0) {
         return -1;
     }
 
@@ -161,7 +161,7 @@ int release_dns_cache_reference(char *hostname, DnsCacheEntry **p_entry) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
         entry->ref_count--;
         if (entry->delete_flag && entry->ref_count == 0) {
-            inner_remove_dns_cache(hostname, entry);
+            inner_remove_dns_cache(uri, entry);
             entry = NULL;
         }
         pthread_mutex_unlock(&context->dns_dictionary_mutex);
@@ -169,21 +169,21 @@ int release_dns_cache_reference(char *hostname, DnsCacheEntry **p_entry) {
     return 0;
 }
 
-int remove_dns_cache_entry(char *hostname) {
+int remove_dns_cache_entry(const char *uri) {
     AVDictionaryEntry *elem = NULL;
     DnsCacheEntry *dns_cache_entry = NULL;
 
-    if (!hostname || strlen(hostname) == 0) {
+    if (!uri || strlen(uri) == 0) {
         return -1;
     }
 
     if (context && context->initialized) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
-        elem = av_dict_get(context->dns_dictionary, hostname, NULL, AV_DICT_MATCH_CASE);
+        elem = av_dict_get(context->dns_dictionary, uri, NULL, AV_DICT_MATCH_CASE);
         if (elem) {
             dns_cache_entry = (DnsCacheEntry *) (intptr_t) strtoll(elem->value, NULL, 10);
             if (dns_cache_entry) {
-                inner_remove_dns_cache(hostname, dns_cache_entry);
+                inner_remove_dns_cache(uri, dns_cache_entry);
             }
         }
         pthread_mutex_unlock(&context->dns_dictionary_mutex);
@@ -192,12 +192,12 @@ int remove_dns_cache_entry(char *hostname) {
     return 0;
 }
 
-int add_dns_cache_entry(char *hostname, struct addrinfo *cur_ai, int64_t timeout) {
+int add_dns_cache_entry(const char *uri, struct addrinfo *cur_ai, int64_t timeout) {
     DnsCacheEntry *new_entry = NULL;
     DnsCacheEntry *old_entry = NULL;
     AVDictionaryEntry *elem  = NULL;
 
-    if (!hostname || strlen(hostname) == 0 || timeout <= 0) {
+    if (!uri || strlen(uri) == 0 || timeout <= 0) {
         goto fail;
     }
 
@@ -207,7 +207,7 @@ int add_dns_cache_entry(char *hostname, struct addrinfo *cur_ai, int64_t timeout
 
     if (context && context->initialized) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
-        elem = av_dict_get(context->dns_dictionary, hostname, NULL, AV_DICT_MATCH_CASE);
+        elem = av_dict_get(context->dns_dictionary, uri, NULL, AV_DICT_MATCH_CASE);
         if (elem) {
             old_entry = (DnsCacheEntry *) (intptr_t) strtoll(elem->value, NULL, 10);
             if (old_entry) {
@@ -215,9 +215,9 @@ int add_dns_cache_entry(char *hostname, struct addrinfo *cur_ai, int64_t timeout
                 goto fail;
             }
         }
-        new_entry = new_dns_cache_entry(hostname, cur_ai, timeout);
+        new_entry = new_dns_cache_entry(uri, cur_ai, timeout);
         if (new_entry) {
-            av_dict_set_int(&context->dns_dictionary, hostname, (int64_t) (intptr_t) new_entry, 0);
+            av_dict_set_int(&context->dns_dictionary, uri, (int64_t) (intptr_t) new_entry, 0);
         }
         pthread_mutex_unlock(&context->dns_dictionary_mutex);
 

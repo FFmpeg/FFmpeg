@@ -78,7 +78,7 @@ static const AVOption options[] = {
 
     { "addrinfo_one_by_one",  "parse addrinfo one by one in getaddrinfo()",    OFFSET(addrinfo_one_by_one), AV_OPT_TYPE_INT, { .i64 = 0 },         0, 1, .flags = D|E },
     { "addrinfo_timeout", "set timeout (in microseconds) for getaddrinfo()",   OFFSET(addrinfo_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT_MAX, .flags = D|E },
-    { "dns_cache_timeout", "dns cache TTL (in microseconds)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT64_MAX, .flags = D|E },
+    { "dns_cache_timeout", "dns cache TTL (in microseconds)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
     { "dns_cache_clear", "clear dns cache",   OFFSET(dns_cache_clear), AV_OPT_TYPE_INT, { .i64 = 0},       -1, INT_MAX, .flags = D|E },
     { "fastopen", "enable fastopen",          OFFSET(fastopen), AV_OPT_TYPE_INT, { .i64 = 0},       0, INT_MAX, .flags = D|E },
     { NULL }
@@ -350,7 +350,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
-    char hostname_bak[1024] = {0};
     AVAppTcpIOControl control = {0};
     DnsCacheEntry *dns_entry = NULL;
 
@@ -404,12 +403,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         hints.ai_flags |= AI_PASSIVE;
 
     if (s->dns_cache_timeout > 0) {
-        memcpy(hostname_bak, hostname, 1024);
         if (s->dns_cache_clear) {
-            av_log(NULL, AV_LOG_INFO, "will delete cache entry, hostname = %s\n", hostname);
-            remove_dns_cache_entry(hostname);
+            av_log(NULL, AV_LOG_INFO, "will delete dns cache entry, uri = %s\n", uri);
+            remove_dns_cache_entry(uri);
         } else {
-            dns_entry = get_dns_cache_reference(hostname);
+            dns_entry = get_dns_cache_reference(uri);
         }
     }
 
@@ -434,7 +432,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
         cur_ai = ai;
     } else {
-        av_log(NULL, AV_LOG_INFO, "Hit DNS cache hostname = %s\n", hostname);
+        av_log(NULL, AV_LOG_INFO, "hit dns cache uri = %s\n", uri);
         cur_ai = dns_entry->res;
     }
 
@@ -503,10 +501,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
-            } else if (!dns_entry && strcmp(control.ip, hostname_bak)) {
-                add_dns_cache_entry(hostname_bak, cur_ai, s->dns_cache_timeout);
-                av_log(NULL, AV_LOG_INFO, "Add dns cache hostname = %s, ip = %s\n", hostname_bak , control.ip);
+            } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
+                add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
+                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
             }
+            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
         }
     }
 
@@ -514,7 +513,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     s->fd = fd;
 
     if (dns_entry) {
-        release_dns_cache_reference(hostname_bak, &dns_entry);
+        release_dns_cache_reference(uri, &dns_entry);
     } else {
         freeaddrinfo(ai);
     }
@@ -534,9 +533,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         closesocket(fd);
 
     if (dns_entry) {
-        av_log(NULL, AV_LOG_ERROR, "Hit dns cache but connect fail hostname = %s, ip = %s\n", hostname , control.ip);
-        release_dns_cache_reference(hostname_bak, &dns_entry);
-        remove_dns_cache_entry(hostname_bak);
+        av_log(NULL, AV_LOG_ERROR, "hit dns cache but connect fail uri = %s, ip = %s\n", uri , control.ip);
+        release_dns_cache_reference(uri, &dns_entry);
+        remove_dns_cache_entry(uri);
     } else {
         freeaddrinfo(ai);
     }
@@ -555,7 +554,6 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
     int ret;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
-    char hostname_bak[1024] = {0};
     AVAppTcpIOControl control = {0};
     DnsCacheEntry *dns_entry = NULL;
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname),
@@ -597,12 +595,11 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         hints.ai_flags |= AI_PASSIVE;
 
     if (s->dns_cache_timeout > 0) {
-        memcpy(hostname_bak, hostname, 1024);
         if (s->dns_cache_clear) {
-            av_log(NULL, AV_LOG_INFO, "will delete cache entry, hostname = %s\n", hostname);
-            remove_dns_cache_entry(hostname);
+            av_log(NULL, AV_LOG_INFO, "will delete dns cache entry, uri = %s\n", uri);
+            remove_dns_cache_entry(uri);
         } else {
-            dns_entry = get_dns_cache_reference(hostname);
+            dns_entry = get_dns_cache_reference(uri);
         }
     }
 
@@ -627,7 +624,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
 
         cur_ai = ai;
     } else {
-        av_log(NULL, AV_LOG_INFO, "Hit DNS cache hostname = %s\n", hostname);
+        av_log(NULL, AV_LOG_INFO, "hit dns cache uri = %s\n", uri);
         cur_ai = dns_entry->res;
     }
 
@@ -693,10 +690,11 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
-            } else if (!dns_entry && strcmp(control.ip, hostname_bak)) {
-                add_dns_cache_entry(hostname_bak, cur_ai, s->dns_cache_timeout);
-                av_log(NULL, AV_LOG_INFO, "Add dns cache hostname = %s, ip = %s\n", hostname_bak , control.ip);
+            } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
+                add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
+                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
             }
+            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
         }
     }
 
@@ -704,7 +702,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
     s->fd = fd;
 
     if (dns_entry) {
-        release_dns_cache_reference(hostname_bak, &dns_entry);
+        release_dns_cache_reference(uri, &dns_entry);
     } else {
         freeaddrinfo(ai);
     }
@@ -724,9 +722,9 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         closesocket(fd);
 
     if (dns_entry) {
-        av_log(NULL, AV_LOG_ERROR, "Hit dns cache but connect fail hostname = %s, ip = %s\n", hostname , control.ip);
-        release_dns_cache_reference(hostname_bak, &dns_entry);
-        remove_dns_cache_entry(hostname_bak);
+        av_log(NULL, AV_LOG_ERROR, "hit dns cache but connect fail uri = %s, ip = %s\n", uri , control.ip);
+        release_dns_cache_reference(uri, &dns_entry);
+        remove_dns_cache_entry(uri);
     } else {
         freeaddrinfo(ai);
     }
