@@ -1528,6 +1528,12 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
             return 0;                               /* no TemporalOffsets */
         }
 
+        if (s->index_duration > INT_MAX - index_table->nb_ptses) {
+            index_table->nb_ptses = 0;
+            av_log(mxf->fc, AV_LOG_ERROR, "ignoring IndexSID %d, duration is too large\n", s->index_sid);
+            return 0;
+        }
+
         index_table->nb_ptses += s->index_duration;
     }
 
