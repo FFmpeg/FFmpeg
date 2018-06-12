@@ -6273,8 +6273,13 @@ static int mov_read_tenc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR(ENOMEM);
     }
     sc->cenc.per_sample_iv_size = avio_r8(pb);
+    if (sc->cenc.per_sample_iv_size != 0 && sc->cenc.per_sample_iv_size != 8 &&
+        sc->cenc.per_sample_iv_size != 16) {
+        av_log(c->fc, AV_LOG_ERROR, "invalid per-sample IV size value\n");
+        return AVERROR_INVALIDDATA;
+    }
     if (avio_read(pb, sc->cenc.default_encrypted_sample->key_id, 16) != 16) {
-        av_log(c->fc, AV_LOG_ERROR, "failed to read the default key ID");
+        av_log(c->fc, AV_LOG_ERROR, "failed to read the default key ID\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -6286,7 +6291,7 @@ static int mov_read_tenc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         }
 
         if (avio_read(pb, sc->cenc.default_encrypted_sample->iv, iv_size) != iv_size) {
-            av_log(c->fc, AV_LOG_ERROR, "failed to read the default IV");
+            av_log(c->fc, AV_LOG_ERROR, "failed to read the default IV\n");
             return AVERROR_INVALIDDATA;
         }
     }
