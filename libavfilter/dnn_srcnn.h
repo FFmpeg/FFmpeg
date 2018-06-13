@@ -20,13 +20,13 @@
 
 /**
  * @file
- * Default cnn weights for x2 upsampling with srcnn filter.
+ * Default cnn weights for x2 upsampling with srcnn model.
  */
 
 #ifndef AVFILTER_DNN_SRCNN_H
 #define AVFILTER_DNN_SRCNN_H
 
-static const float conv1_kernel[] = {
+static const float srcnn_conv1_kernel[] = {
     -0.08866338f,     0.055409566f,     0.037196506f,     -0.11961404f,
     -0.12341991f,     0.29963422f,      -0.0911817f,      -0.00013613555f,
     -0.049023595f,    0.038421184f,     -0.077267796f,    0.027273094f,
@@ -1325,7 +1325,7 @@ static const float conv1_kernel[] = {
     -0.013759381f,    0.026358005f,     0.088238746f,     0.082134426f
 };
 
-static const float conv1_biases[] = {
+static const float srcnn_conv1_biases[] = {
     -0.016606892f,    -0.011107335f,    -0.0048309686f,   -0.04867378f,
     -0.030040957f,    -0.07297248f,     -0.019458665f,    -0.009738028f,
     0.6951231f,       -0.07369442f,     -0.01354204f,     0.010336088f,
@@ -1344,7 +1344,7 @@ static const float conv1_biases[] = {
     0.054407462f,     -0.08068252f,     -0.009446503f,    -0.04663234f
 };
 
-static const float conv2_kernel[] = {
+static const float srcnn_conv2_kernel[] = {
     -0.24004751f,     0.1037138f,       0.11173403f,      0.04352092f,
     -0.23728481f,     0.12153747f,      -0.23676059f,     -0.28548065f,
     -0.612738f,       -0.12218937f,     -0.06005159f,     0.1850652f,
@@ -1859,7 +1859,7 @@ static const float conv2_kernel[] = {
     0.11089696f,      -0.08941251f,     -0.3529318f,      0.0654588f
 };
 
-static const float conv2_biases[] = {
+static const float srcnn_conv2_biases[] = {
     0.12326373f,      0.13270757f,      0.07082674f,      0.051456157f,
     0.058445618f,     0.13153197f,      0.0809729f,       0.10153213f,
     0.055915363f,     0.05228166f,      -0.11212896f,     0.07462141f,
@@ -1870,7 +1870,7 @@ static const float conv2_biases[] = {
     -0.086404406f,    0.06046943f,      -0.1733751f,      0.2654999f
 };
 
-static const float conv3_kernel[] = {
+static const float srcnn_conv3_kernel[] = {
     -0.01733648f,     0.01492609f,      0.019393086f,     -0.004445322f,
     0.026939709f,     0.00038831023f,   0.004221528f,     0.0050745453f,
     0.0129861f,       0.008007169f,     0.008950762f,     0.005279691f,
@@ -2073,7 +2073,7 @@ static const float conv3_kernel[] = {
     0.012931146f,     0.0046948805f,    0.013098622f,     -0.015422701f
 };
 
-static const float conv3_biases[] = {
+static const float srcnn_conv3_biases[] = {
     0.05037664f
 };
 
