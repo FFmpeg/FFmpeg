@@ -84,6 +84,7 @@
 
 #define ATOM_PREAMBLE_SIZE    8
 #define COPY_BUFFER_SIZE   33554432
+#define MAX_FTYP_ATOM_SIZE 1048576
 
 int main(int argc, char *argv[])
 {
@@ -133,6 +134,11 @@ int main(int argc, char *argv[])
 
         /* keep ftyp atom */
         if (atom_type == FTYP_ATOM) {
+            if (atom_size > MAX_FTYP_ATOM_SIZE) {
+                printf("ftyp atom size %"PRIu64" too big\n",
+                       atom_size);
+                goto error_out;
+            }
             ftyp_atom_size = atom_size;
             free(ftyp_atom);
             ftyp_atom = malloc(ftyp_atom_size);
