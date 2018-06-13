@@ -2785,14 +2785,6 @@ static int mxf_parse_handle_partition_or_eof(MXFContext *mxf)
     return mxf->parsing_backward ? mxf_seek_to_previous_partition(mxf) : 1;
 }
 
-static int64_t round_to_kag(int64_t position, int kag_size)
-{
-    /* TODO: account for run-in? the spec isn't clear whether KAG should account for it */
-    /* NOTE: kag_size may be any integer between 1 - 2^10 */
-    int64_t ret = (position / kag_size) * kag_size;
-    return ret == position ? ret : ret + kag_size;
-}
-
 static MXFWrappingScheme mxf_get_wrapping_by_body_sid(AVFormatContext *s, int body_sid)
 {
     for (int i = 0; i < s->nb_streams; i++) {
@@ -2818,8 +2810,8 @@ static void mxf_compute_essence_containers(AVFormatContext *s)
         if (!p->body_sid)
             continue;       /* BodySID == 0 -> no essence */
 
-        /* for non clip-wrapped essences we compute essence_offset
-         * for clip wrapped essences we point essence_offset after the KL (usually klv.offset + 20 or 25)
+        /* for clip wrapped essences we point essence_offset after the KL (usually klv.offset + 20 or 25)
+         * otherwise we point essence_offset at the key of the first essence KLV.
          */
 
         wrapping = (mxf->op == OPAtom) ? ClipWrapped : mxf_get_wrapping_by_body_sid(s, p->body_sid);
@@ -2828,17 +2820,7 @@ static void mxf_compute_essence_containers(AVFormatContext *s)
             p->essence_offset = p->first_essence_klv.next_klv - p->first_essence_klv.length;
             p->essence_length = p->first_essence_klv.length;
         } else {
-            int64_t op1a_essence_offset =
-                p->this_partition +
-                round_to_kag(p->pack_length,       p->kag_size) +
-                round_to_kag(p->header_byte_count, p->kag_size) +
-                round_to_kag(p->index_byte_count,  p->kag_size);
-
-            /* NOTE: op1a_essence_offset may be less than to klv.offset (C0023S01.mxf)  */
-            if (IS_KLV_KEY(p->first_essence_klv.key, mxf_system_item_key_cp) || IS_KLV_KEY(p->first_essence_klv.key, mxf_system_item_key_gc))
-                p->essence_offset = p->first_essence_klv.offset;
-            else
-                p->essence_offset = op1a_essence_offset;
+            p->essence_offset = p->first_essence_klv.offset;
 
             /* essence container spans to the next partition */
             if (x < mxf->partitions_count - 1)
@@ -3057,6 +3039,7 @@ static int mxf_read_header(AVFormatContext *s)
         av_log(s, AV_LOG_TRACE, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
+            IS_KLV_KEY(klv.key, mxf_canopus_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key_cp) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key_gc)) {
