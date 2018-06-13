@@ -2710,6 +2710,7 @@ static int process_input_packet(InputStream *ist, const AVPacket *pkt, int no_eo
         ist->dts = ist->next_dts;
         switch (ist->dec_ctx->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
+            av_assert1(pkt->duration >= 0);
             if (ist->dec_ctx->sample_rate) {
                 ist->next_dts += ((int64_t)AV_TIME_BASE * ist->dec_ctx->frame_size) /
                                   ist->dec_ctx->sample_rate;
