@@ -106,7 +106,7 @@ static const AVClass v4l2_class = {
 };
 
 AVOutputFormat ff_v4l2_muxer = {
-    .name           = "v4l2",
+    .name           = "video4linux2,v4l2",
     .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 output device"),
     .priv_data_size = sizeof(V4L2Context),
     .audio_codec    = AV_CODEC_ID_NONE,
