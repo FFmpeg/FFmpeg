@@ -2175,8 +2175,27 @@ static int create_cv_pixel_buffer(AVCodecContext   *avctx,
 #if TARGET_OS_IPHONE
     pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
     if (!pix_buf_pool) {
-        av_log(avctx, AV_LOG_ERROR, "Could not get pixel buffer pool.\n");
-        return AVERROR_EXTERNAL;
+        /* On iOS, the VT session is invalidated when the APP switches from
+         * foreground to background and vice versa. Fetch the actual error code
+         * of the VT session to detect that case and restart the VT session
+         * accordingly. */
+        OSStatus vtstatus;
+
+        vtstatus = VTCompressionSessionPrepareToEncodeFrames(vtctx->session);
+        if (vtstatus == kVTInvalidSessionErr) {
+            CFRelease(vtctx->session);
+            vtctx->session = NULL;
+            status = vtenc_configure_encoder(avctx);
+            if (status == 0)
+                pix_buf_pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
+        }
+        if (!pix_buf_pool) {
+            av_log(avctx, AV_LOG_ERROR, "Could not get pixel buffer pool.\n");
+            return AVERROR_EXTERNAL;
+        }
+        else
+            av_log(avctx, AV_LOG_WARNING, "VT session restarted because of a "
+                   "kVTInvalidSessionErr error.\n");
     }
 
     status = CVPixelBufferPoolCreatePixelBuffer(NULL,
