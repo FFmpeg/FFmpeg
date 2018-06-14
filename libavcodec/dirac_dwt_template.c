@@ -57,8 +57,8 @@ static av_always_inline void RENAME(interleave)(TYPE *dst, TYPE *src0, TYPE *src
 {
     int i;
     for (i = 0; i < w2; i++) {
-        dst[2*i  ] = (src0[i] + add) >> shift;
-        dst[2*i+1] = (src1[i] + add) >> shift;
+        dst[2*i  ] = (src0[i] + (unsigned)add) >> shift;
+        dst[2*i+1] = (src1[i] + (unsigned)add) >> shift;
     }
 }
 
