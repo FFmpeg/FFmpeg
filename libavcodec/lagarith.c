@@ -141,6 +141,7 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
     unsigned prob, cumulative_target;
     unsigned cumul_prob = 0;
     unsigned scaled_cumul_prob = 0;
+    int nnz = 0;
 
     rac->prob[0] = 0;
     rac->prob[257] = UINT_MAX;
@@ -164,12 +165,18 @@ static int lag_read_prob_header(lag_rac *rac, GetBitContext *gb)
                 prob = 256 - i;
             for (j = 0; j < prob; j++)
                 rac->prob[++i] = 0;
+        }else {
+            nnz++;
         }
     }
 
     if (!cumul_prob) {
         av_log(rac->avctx, AV_LOG_ERROR, "All probabilities are 0!\n");
         return -1;
+    }
+
+    if (nnz == 1 && (show_bits_long(gb, 32) & 0xFFFFFF)) {
+        return AVERROR_INVALIDDATA;
     }
 
     /* Scale probabilities so cumulative probability is an even power of 2. */
