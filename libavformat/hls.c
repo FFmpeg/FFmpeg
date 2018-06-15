@@ -2106,6 +2106,7 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
          * stream */
         if (pls->needed && !pls->pkt.data) {
             while (1) {
+                int64_t pkt_ts;
                 int64_t ts_diff;
                 AVRational tb;
                 ret = av_read_frame(pls->ctx, &pls->pkt);
@@ -2121,10 +2122,16 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                         fill_timing_for_id3_timestamped_stream(pls);
                     }
 
-                    if (c->first_timestamp == AV_NOPTS_VALUE &&
-                        pls->pkt.dts       != AV_NOPTS_VALUE)
-                        c->first_timestamp = av_rescale_q(pls->pkt.dts,
-                            get_timebase(pls), AV_TIME_BASE_Q);
+                    if (pls->pkt.pts != AV_NOPTS_VALUE)
+                        pkt_ts =  pls->pkt.pts;
+                    else if (pls->pkt.dts != AV_NOPTS_VALUE)
+                        pkt_ts =  pls->pkt.dts;
+                    else
+                        pkt_ts = AV_NOPTS_VALUE;
+
+
+                    c->first_timestamp = s->start_time != AV_NOPTS_VALUE ? s->start_time : 0;
+
                 }
 
                 if (pls->seek_timestamp == AV_NOPTS_VALUE)
@@ -2133,15 +2140,16 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                 if (pls->seek_stream_index < 0 ||
                     pls->seek_stream_index == pls->pkt.stream_index) {
 
-                    if (pls->pkt.dts == AV_NOPTS_VALUE) {
+                    if (pkt_ts == AV_NOPTS_VALUE) {
                         pls->seek_timestamp = AV_NOPTS_VALUE;
                         break;
                     }
 
                     tb = get_timebase(pls);
-                    ts_diff = av_rescale_rnd(pls->pkt.dts, AV_TIME_BASE,
+                    ts_diff = av_rescale_rnd(pkt_ts, AV_TIME_BASE,
                                             tb.den, AV_ROUND_DOWN) -
                             pls->seek_timestamp;
+
                     if (ts_diff >= 0 && (pls->seek_flags  & AVSEEK_FLAG_ANY ||
                                         pls->pkt.flags & AV_PKT_FLAG_KEY)) {
                         pls->seek_timestamp = AV_NOPTS_VALUE;
