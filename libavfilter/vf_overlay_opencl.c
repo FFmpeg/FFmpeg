@@ -167,47 +167,39 @@ static int overlay_opencl_blend(FFFrameSync *fs)
         kernel_arg = 0;
 
         mem = (cl_mem)output->data[plane];
-        cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_mem), &mem);
-        if (cle != CL_SUCCESS)
-            goto fail_kernel_arg;
+        CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_mem, &mem);
+        kernel_arg++;
 
         mem = (cl_mem)input_main->data[plane];
-        cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_mem), &mem);
-        if (cle != CL_SUCCESS)
-            goto fail_kernel_arg;
+        CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_mem, &mem);
+        kernel_arg++;
 
         mem = (cl_mem)input_overlay->data[plane];
-        cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_mem), &mem);
-        if (cle != CL_SUCCESS)
-            goto fail_kernel_arg;
+        CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_mem, &mem);
+        kernel_arg++;
 
         if (ctx->alpha_separate) {
             mem = (cl_mem)input_overlay->data[ctx->nb_planes];
-            cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_mem), &mem);
-            if (cle != CL_SUCCESS)
-                goto fail_kernel_arg;
+            CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_mem, &mem);
+            kernel_arg++;
         }
 
         x = ctx->x_position / (plane == 0 ? 1 : ctx->x_subsample);
         y = ctx->y_position / (plane == 0 ? 1 : ctx->y_subsample);
 
-        cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_int), &x);
-        if (cle != CL_SUCCESS)
-            goto fail_kernel_arg;
-        cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_int), &y);
-        if (cle != CL_SUCCESS)
-            goto fail_kernel_arg;
+        CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_int, &x);
+        kernel_arg++;
+        CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_int, &y);
+        kernel_arg++;
 
         if (ctx->alpha_separate) {
             cl_int alpha_adj_x = plane == 0 ? 1 : ctx->x_subsample;
             cl_int alpha_adj_y = plane == 0 ? 1 : ctx->y_subsample;
 
-            cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_int), &alpha_adj_x);
-            if (cle != CL_SUCCESS)
-                goto fail_kernel_arg;
-            cle = clSetKernelArg(ctx->kernel, kernel_arg++, sizeof(cl_int), &alpha_adj_y);
-            if (cle != CL_SUCCESS)
-                goto fail_kernel_arg;
+            CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_int, &alpha_adj_x);
+            kernel_arg++;
+            CL_SET_KERNEL_ARG(ctx->kernel, kernel_arg, cl_int, &alpha_adj_y);
+            kernel_arg++;
         }
 
         err = ff_opencl_filter_work_size_from_image(avctx, global_work,
@@ -241,10 +233,6 @@ static int overlay_opencl_blend(FFFrameSync *fs)
 
     return ff_filter_frame(outlink, output);
 
-fail_kernel_arg:
-    av_log(avctx, AV_LOG_ERROR, "Failed to set kernel arg %d: %d.\n",
-           kernel_arg, cle);
-    err = AVERROR(EIO);
 fail:
     av_frame_free(&output);
     return err;

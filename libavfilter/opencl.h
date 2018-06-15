@@ -46,6 +46,21 @@ typedef struct OpenCLFilterContext {
     int                output_height;
 } OpenCLFilterContext;
 
+
+/**
+ * set argument to specific Kernel.
+ * This macro relies on usage of local label "fail" and variables:
+ * avctx, cle and err.
+ */
+#define CL_SET_KERNEL_ARG(kernel, arg_num, type, arg)          \
+    cle = clSetKernelArg(kernel, arg_num, sizeof(type), arg);  \
+    if (cle != CL_SUCCESS) {                                   \
+        av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "    \
+               "argument %d: error %d.\n", arg_num, cle);      \
+        err = AVERROR(EIO);                                    \
+        goto fail;                                             \
+    }
+
 /**
  * Return that all inputs and outputs support only AV_PIX_FMT_OPENCL.
  */

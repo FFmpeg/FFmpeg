@@ -204,43 +204,12 @@ static int convolution_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
         if (!dst)
             break;
 
-        cle = clSetKernelArg(ctx->kernel, 0, sizeof(cl_mem), &dst);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "destination image argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 1, sizeof(cl_mem), &src);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "source image argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 2, sizeof(cl_int), &ctx->dims[p]);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "matrix size argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 3, sizeof(cl_mem), &ctx->matrix[p]);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "matrix argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 4, sizeof(cl_float), &ctx->rdivs[p]);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "rdiv argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 5, sizeof(cl_float), &ctx->biases[p]);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "bias argument: %d.\n", cle);
-            goto fail;
-        }
-
+        CL_SET_KERNEL_ARG(ctx->kernel, 0, cl_mem,   &dst);
+        CL_SET_KERNEL_ARG(ctx->kernel, 1, cl_mem,   &src);
+        CL_SET_KERNEL_ARG(ctx->kernel, 2, cl_int,   &ctx->dims[p]);
+        CL_SET_KERNEL_ARG(ctx->kernel, 3, cl_mem,   &ctx->matrix[p]);
+        CL_SET_KERNEL_ARG(ctx->kernel, 4, cl_float, &ctx->rdivs[p]);
+        CL_SET_KERNEL_ARG(ctx->kernel, 5, cl_float, &ctx->biases[p]);
 
         err = ff_opencl_filter_work_size_from_image(avctx, global_work, output, p, 0);
         if (err < 0)

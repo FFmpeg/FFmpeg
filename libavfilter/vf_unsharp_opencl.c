@@ -268,56 +268,17 @@ static int unsharp_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
         if (!dst)
             break;
 
-        cle = clSetKernelArg(ctx->kernel, 0, sizeof(cl_mem), &dst);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "destination image argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 1, sizeof(cl_mem), &src);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "source image argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 2, sizeof(cl_int), &ctx->plane[p].size_x);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "matrix size argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 3, sizeof(cl_int), &ctx->plane[p].size_y);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "matrix size argument: %d.\n", cle);
-            goto fail;
-        }
-        cle = clSetKernelArg(ctx->kernel, 4, sizeof(cl_float), &ctx->plane[p].amount);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                   "amount argument: %d.\n", cle);
-            goto fail;
-        }
+        CL_SET_KERNEL_ARG(ctx->kernel, 0, cl_mem,   &dst);
+        CL_SET_KERNEL_ARG(ctx->kernel, 1, cl_mem,   &src);
+        CL_SET_KERNEL_ARG(ctx->kernel, 2, cl_int,   &ctx->plane[p].size_x);
+        CL_SET_KERNEL_ARG(ctx->kernel, 3, cl_int,   &ctx->plane[p].size_y);
+        CL_SET_KERNEL_ARG(ctx->kernel, 4, cl_float, &ctx->plane[p].amount);
+
         if (ctx->global) {
-            cle = clSetKernelArg(ctx->kernel, 5, sizeof(cl_mem), &ctx->plane[p].matrix);
-            if (cle != CL_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                       "matrix argument: %d.\n", cle);
-                goto fail;
-            }
+            CL_SET_KERNEL_ARG(ctx->kernel, 5, cl_mem, &ctx->plane[p].matrix);
         } else {
-            cle = clSetKernelArg(ctx->kernel, 5, sizeof(cl_mem), &ctx->plane[p].coef_x);
-            if (cle != CL_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                       "x-coef argument: %d.\n", cle);
-                goto fail;
-            }
-            cle = clSetKernelArg(ctx->kernel, 6, sizeof(cl_mem), &ctx->plane[p].coef_y);
-            if (cle != CL_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "
-                       "y-coef argument: %d.\n", cle);
-                goto fail;
-            }
+            CL_SET_KERNEL_ARG(ctx->kernel, 5, cl_mem, &ctx->plane[p].coef_x);
+            CL_SET_KERNEL_ARG(ctx->kernel, 6, cl_mem, &ctx->plane[p].coef_y);
         }
 
         err = ff_opencl_filter_work_size_from_image(avctx, global_work, output, p,
