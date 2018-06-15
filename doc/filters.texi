@@ -1986,7 +1986,12 @@ Adjust audio tempo.
 
 The filter accepts exactly one parameter, the audio tempo. If not
 specified then the filter will assume nominal 1.0 tempo. Tempo must
-be in the [0.5, 2.0] range.
+be in the [0.5, 100.0] range.
+
+Note that tempo greater than 2 will skip some samples rather than
+blend them in.  If for any reason this is a concern it is always
+possible to daisy-chain several instances of atempo to achieve the
+desired product tempo.
 
 @subsection Examples
 
@@ -1998,9 +2003,15 @@ atempo=0.8
 @end example
 
 @item
-To speed up audio to 125% tempo:
+To speed up audio to 300% tempo:
 @example
-atempo=1.25
+atempo=3
+@end example
+
+@item
+To speed up audio to 300% tempo by daisy-chaining two atempo instances:
+@example
+atempo=sqrt(3),atempo=sqrt(3)
 @end example
 @end itemize
 
