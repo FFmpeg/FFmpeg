@@ -1892,8 +1892,14 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (type == MKTAG('f','i','e','l') && size == atom.size)
             return mov_read_default(c, pb, atom);
     }
+    c->has_extradata = 1;
     if (st->codecpar->extradata_size > 1 && st->codecpar->extradata) {
-        av_log(c, AV_LOG_WARNING, "ignoring multiple glbl\n");
+        if (c->allow_multi_extradata) {
+            av_log(c, AV_LOG_WARNING, "found multiple glbl\n");
+        } else {
+            av_log(c, AV_LOG_WARNING, "ignoring multiple glbl\n");
+            return 0;
+        }
         return 0;
     }
     av_freep(&st->codecpar->extradata);
@@ -7186,6 +7192,12 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return ret;
         }
     }
+    if (mov->allow_multi_extradata && mov->has_extradata) {
+        mov->has_extradata = 0;
+        ret = mov_change_extradata(sc, pkt);
+        if (ret < 0)
+            return ret;
+    }
 
     if (mov->aax_mode)
         aax_filter(pkt->data, pkt->size, mov);
@@ -7367,6 +7379,8 @@ static const AVOption mov_options[] = {
     { "enable_drefs", "Enable external track support.", OFFSET(enable_drefs), AV_OPT_TYPE_BOOL,
         {.i64 = 0}, 0, 1, FLAGS },
 
+    {"allow_multi_extradata", "", OFFSET(allow_multi_extradata), AV_OPT_TYPE_BOOL, {.i64 = 0},
+        0, 1, FLAGS},
     { NULL },
 };
 
