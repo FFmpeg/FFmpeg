@@ -51,7 +51,7 @@ static unsigned int read32(const uint8_t **ptr, int is_big)
 }
 
 static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big)
+                                  int * n_datum, int is_big, int shift)
 {
     if (*n_datum)
         (*n_datum)--;
@@ -60,7 +60,7 @@ static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
         *n_datum = 2;
     }
 
-    *lbuf = (*lbuf << 10) | (*lbuf >> 22);
+    *lbuf = *lbuf << 10 | *lbuf >> shift & 0x3FFFFF;
 
     return *lbuf & 0x3FF;
 }
@@ -221,7 +221,7 @@ static int decode_frame(AVCodecContext *avctx,
         stride = avctx->width * elements;
         break;
     case 10:
-        if (!packing || packing > 1) {
+        if (!packing) {
             av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
             return -1;
         }
@@ -360,17 +360,18 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
+            int shift = packing == 1 ? 22 : 20;
             for (y = 0; y < avctx->width; y++) {
                 *dst[2]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 *dst[0]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 *dst[1]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 if (elements == 4)
                     *dst[3]++ =
                     read10in32(&buf, &rgbBuffer,
-                               &n_datum, endian);
+                               &n_datum, endian, shift);
             }
             n_datum = 0;
             for (i = 0; i < elements; i++)
