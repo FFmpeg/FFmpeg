@@ -232,19 +232,6 @@ static int decode_frame(AVCodecContext *avctx,
         stride = (avctx->width * elements + 2) / 3 * 4;
         break;
     case 12:
-        if (!packing) {
-            int tested = 0;
-            if (descriptor == 50 && endian) { // Little endian needs tests
-                tested = 1;
-            }
-            if (descriptor == 51 && endian) { // Little endian needs tests
-                tested = 1;
-            }
-            if (!tested) {
-                av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
-                return -1;
-            }
-        }
         stride = avctx->width * elements;
         if (packing) {
             stride *= 2;
