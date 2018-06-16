@@ -170,10 +170,6 @@ static int decode_frame(AVCodecContext *avctx,
     packing = read16(&buf, endian);
     encoding = read16(&buf, endian);
 
-    if (packing > 1) {
-        avpriv_report_missing_feature(avctx, "Packing %d", packing);
-        return AVERROR_PATCHWELCOME;
-    }
     if (encoding) {
         avpriv_report_missing_feature(avctx, "Encoding %d", encoding);
         return AVERROR_PATCHWELCOME;
@@ -225,7 +221,7 @@ static int decode_frame(AVCodecContext *avctx,
         stride = avctx->width * elements;
         break;
     case 10:
-        if (!packing) {
+        if (!packing || packing > 1) {
             av_log(avctx, AV_LOG_ERROR, "Packing to 32bit required\n");
             return -1;
         }
@@ -387,16 +383,16 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
+            int shift = packing == 1 ? 4 : 0;
             for (y = 0; y < avctx->width; y++) {
                 if (packing) {
-                if (elements >= 3)
-                    *dst[2]++ = read16(&buf, endian) >> 4;
-                *dst[0] = read16(&buf, endian) >> 4;
-                dst[0]++;
-                if (elements >= 2)
-                    *dst[1]++ = read16(&buf, endian) >> 4;
-                if (elements == 4)
-                    *dst[3]++ = read16(&buf, endian) >> 4;
+                    if (elements >= 3)
+                        *dst[2]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    *dst[0]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements >= 2)
+                        *dst[1]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements == 4)
+                        *dst[3]++ = read16(&buf, endian) >> shift & 0xFFF;
                 } else {
                     *dst[2]++ = read12in32(&buf, &rgbBuffer,
                                            &n_datum, endian);
