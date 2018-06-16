@@ -2841,7 +2841,8 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (ret < 0) {
         av_freep(&sc->sample_sizes);
         av_free(buf);
-        return ret;
+        av_log(c->fc, AV_LOG_WARNING, "STSZ atom truncated\n");
+        return 0;
     }
 
     init_get_bits(&gb, buf, 8*num_bytes);
