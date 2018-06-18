@@ -928,7 +928,6 @@ static int opencl_enumerate_intel_media_vaapi_devices(AVHWDeviceContext *hwdev,
     clGetDeviceIDsFromVA_APIMediaAdapterINTEL_fn
         clGetDeviceIDsFromVA_APIMediaAdapterINTEL;
     cl_int cle;
-    int err;
 
     clGetDeviceIDsFromVA_APIMediaAdapterINTEL =
         clGetExtensionFunctionAddressForPlatform(platform_id,
