@@ -3603,8 +3603,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                     read_size += pkt->size;
 
                 if (!(ic->flags & AVFMT_FLAG_NOBUFFER)) {
-                    ret = add_to_pktbuf(&ic->internal->packet_buffer, pkt,
-                                        &ic->internal->packet_buffer_end, 0);
+                    ret = ff_packet_list_put(&ic->internal->raw_packet_buffer,
+                                             &ic->internal->raw_packet_buffer_end,
+                                             pkt,0);
                     if (ret < 0)
                         return ret;
                 }
