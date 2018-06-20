@@ -1088,7 +1088,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 av_log(v->s.avctx, AV_LOG_ERROR, "end mb y %d %d invalid\n", s->end_mb_y, s->start_mb_y);
                 continue;
             }
-            if (!v->p_frame_skipped && s->pict_type != AV_PICTURE_TYPE_I && !v->cbpcy_vlc) {
+            if (((s->pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) ||
+                 (s->pict_type == AV_PICTURE_TYPE_B && !v->bi_type)) &&
+                !v->cbpcy_vlc) {
                 av_log(v->s.avctx, AV_LOG_ERROR, "missing cbpcy_vlc\n");
                 continue;
             }
