@@ -2726,7 +2726,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
                 v->vc1dsp.vc1_inv_trans_8x8(block[k]);
             }
 
-            if (v->overlap && v->condover != CONDOVER_NONE)
+            if (v->overlap && (v->pq >= 9 || v->condover != CONDOVER_NONE))
                 ff_vc1_i_overlap_filter(v);
             vc1_put_blocks_clamped(v, 1);
             if (v->s.loop_filter)
