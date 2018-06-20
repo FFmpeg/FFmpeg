@@ -1361,10 +1361,7 @@ static int opencl_device_derive(AVHWDeviceContext *hwdev,
         break;
     }
 
-    if (err < 0)
-        return err;
-
-    return opencl_device_init(hwdev);
+    return err;
 }
 
 static int opencl_get_plane_format(enum AVPixelFormat pixfmt,
