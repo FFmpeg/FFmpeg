@@ -148,6 +148,7 @@ extern AVFilter ff_vf_blackdetect;
 extern AVFilter ff_vf_blackframe;
 extern AVFilter ff_vf_blend;
 extern AVFilter ff_vf_boxblur;
+extern AVFilter ff_vf_boxblur_opencl;
 extern AVFilter ff_vf_bwdif;
 extern AVFilter ff_vf_chromakey;
 extern AVFilter ff_vf_ciescope;
