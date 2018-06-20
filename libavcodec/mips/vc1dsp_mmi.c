@@ -1019,12 +1019,13 @@ void ff_vc1_h_overlap_mmi(uint8_t *src, int stride)
     }
 }
 
-void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right)
+void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags)
 {
     int i;
     int a, b, c, d;
     int d1, d2;
-    int rnd1 = 4, rnd2 = 3;
+    int rnd1 = flags & 2 ? 3 : 4;
+    int rnd2 = 7 - rnd1;
     for (i = 0; i < 8; i++) {
         a  = left[6];
         b  = left[7];
@@ -1038,10 +1039,12 @@ void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right)
         right[0] = ((c << 3) + d2 + rnd1) >> 3;
         right[1] = ((d << 3) + d1 + rnd2) >> 3;
 
-        right += 8;
-        left  += 8;
-        rnd2   = 7 - rnd2;
-        rnd1   = 7 - rnd1;
+        right += right_stride;
+        left  += left_stride;
+        if (flags & 1) {
+            rnd2   = 7 - rnd2;
+            rnd1   = 7 - rnd1;
+        }
     }
 }
 

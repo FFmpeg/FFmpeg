@@ -32,25 +32,74 @@
 #include "vc1dsp.h"
 
 static av_always_inline void vc1_h_overlap_filter(VC1Context *v, int16_t (*left_block)[64],
-                                                  int16_t (*right_block)[64], int block_num)
+                                                  int16_t (*right_block)[64], int left_fieldtx,
+                                                  int right_fieldtx, int block_num)
 {
-    if (block_num > 3)
-        v->vc1dsp.vc1_h_s_overlap(left_block[block_num], right_block[block_num]);
-    else if (block_num & 1)
-        v->vc1dsp.vc1_h_s_overlap(right_block[block_num - 1], right_block[block_num]);
-    else
-        v->vc1dsp.vc1_h_s_overlap(left_block[block_num + 1], right_block[block_num]);
+    switch (block_num) {
+    case 0:
+        v->vc1dsp.vc1_h_s_overlap(left_block[2],
+                                  right_block[0],
+                                  left_fieldtx ^ right_fieldtx ? 16 - 8 * left_fieldtx : 8,
+                                  left_fieldtx ^ right_fieldtx ? 16 - 8 * right_fieldtx : 8,
+                                  left_fieldtx || right_fieldtx ? 0 : 1);
+        break;
+
+    case 1:
+        v->vc1dsp.vc1_h_s_overlap(right_block[0],
+                                  right_block[2],
+                                  8,
+                                  8,
+                                  right_fieldtx ? 0 : 1);
+        break;
+
+    case 2:
+        v->vc1dsp.vc1_h_s_overlap(!left_fieldtx && right_fieldtx ? left_block[2] + 8 : left_block[3],
+                                  left_fieldtx && !right_fieldtx ? right_block[0] + 8 : right_block[1],
+                                  left_fieldtx ^ right_fieldtx ? 16 - 8 * left_fieldtx : 8,
+                                  left_fieldtx ^ right_fieldtx ? 16 - 8 * right_fieldtx : 8,
+                                  left_fieldtx || right_fieldtx ? 2 : 1);
+        break;
+
+    case 3:
+        v->vc1dsp.vc1_h_s_overlap(right_block[1],
+                                  right_block[3],
+                                  8,
+                                  8,
+                                  right_fieldtx ? 2 : 1);
+        break;
+
+    case 4:
+    case 5:
+        v->vc1dsp.vc1_h_s_overlap(left_block[block_num], right_block[block_num], 8, 8, 1);
+        break;
+    }
 }
 
 static av_always_inline void vc1_v_overlap_filter(VC1Context *v, int16_t (*top_block)[64],
                                                   int16_t (*bottom_block)[64], int block_num)
 {
-    if (block_num > 3)
+    switch (block_num) {
+    case 0:
+        v->vc1dsp.vc1_v_s_overlap(top_block[1], bottom_block[0]);
+        break;
+
+    case 1:
+        v->vc1dsp.vc1_v_s_overlap(top_block[3], bottom_block[2]);
+        break;
+
+    case 2:
+        v->vc1dsp.vc1_v_s_overlap(bottom_block[0], bottom_block[1]);
+        break;
+
+    case 3:
+        v->vc1dsp.vc1_v_s_overlap(bottom_block[2], bottom_block[3]);
+        break;
+
+    case 4:
+    case 5:
         v->vc1dsp.vc1_v_s_overlap(top_block[block_num], bottom_block[block_num]);
-    else if (block_num & 2)
-        v->vc1dsp.vc1_v_s_overlap(bottom_block[block_num - 2], bottom_block[block_num]);
-    else
-        v->vc1dsp.vc1_v_s_overlap(top_block[block_num + 2], bottom_block[block_num]);
+        break;
+    }
 }
 
 void ff_vc1_i_overlap_filter(VC1Context *v)
@@ -82,7 +131,11 @@ void ff_vc1_i_overlap_filter(VC1Context *v)
                            (v->condover == CONDOVER_ALL ||
                             (v->over_flags_plane[mb_pos] &&
                              ((i & 5) == 1 || v->over_flags_plane[mb_pos - 1])))))
-            vc1_h_overlap_filter(v, s->mb_x ? left_blk : cur_blk, cur_blk, i);
+            vc1_h_overlap_filter(v,
+                                 s->mb_x ? left_blk : cur_blk, cur_blk,
+                                 v->fcm == ILACE_FRAME && s->mb_x && v->fieldtx_plane[mb_pos - 1],
+                                 v->fcm == ILACE_FRAME && v->fieldtx_plane[mb_pos],
+                                 i);
     }
 
     if (v->fcm != ILACE_FRAME)
@@ -110,6 +163,7 @@ void ff_vc1_p_overlap_filter(VC1Context *v)
     MpegEncContext *s = &v->s;
     int16_t (*topleft_blk)[64], (*top_blk)[64], (*left_blk)[64], (*cur_blk)[64];
     int block_count = CONFIG_GRAY && (s->avctx->flags & AV_CODEC_FLAG_GRAY) ? 4 : 6;
+    int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
     int i;
 
     topleft_blk = v->block[v->topleft_blk_idx];
@@ -122,7 +176,11 @@ void ff_vc1_p_overlap_filter(VC1Context *v)
             continue;
 
         if (v->mb_type[0][s->block_index[i]] && v->mb_type[0][s->block_index[i] - 1])
-            vc1_h_overlap_filter(v, s->mb_x ? left_blk : cur_blk, cur_blk, i);
+            vc1_h_overlap_filter(v,
+                                 s->mb_x ? left_blk : cur_blk, cur_blk,
+                                 v->fcm == ILACE_FRAME && s->mb_x && v->fieldtx_plane[mb_pos - 1],
+                                 v->fcm == ILACE_FRAME && v->fieldtx_plane[mb_pos],
+                                 i);
     }
 
     if (v->fcm != ILACE_FRAME)
