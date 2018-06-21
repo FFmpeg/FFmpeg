@@ -201,7 +201,7 @@ static int amrnb_probe(AVProbeData *p)
             i++;
         }
     }
-    if (valid > 100 && valid > invalid)
+    if (valid > 100 && valid >> 4 > invalid)
         return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
@@ -258,8 +258,8 @@ static int amrwb_probe(AVProbeData *p)
             i++;
         }
     }
-    if (valid > 100 && valid > invalid)
-        return AVPROBE_SCORE_EXTENSION / 2 - 1;
+    if (valid > 100 && valid >> 4 > invalid)
+        return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
 
