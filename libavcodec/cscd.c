@@ -81,7 +81,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     switch ((buf[0] >> 1) & 7) {
         case 0: { // lzo compression
             int outlen = c->decomp_size, inlen = buf_size - 2;
-            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen)) {
+            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen) || outlen) {
                 av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
                 return AVERROR_INVALIDDATA;
             }
