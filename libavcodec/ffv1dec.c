@@ -546,8 +546,14 @@ static int read_header(FFV1Context *f)
         f->ac = get_symbol(c, state, 0);
 
         if (f->ac == AC_RANGE_CUSTOM_TAB) {
-            for (i = 1; i < 256; i++)
-                f->state_transition[i] = get_symbol(c, state, 1) + c->one_state[i];
+            for (i = 1; i < 256; i++) {
+                int st = get_symbol(c, state, 1) + c->one_state[i];
+                if (st < 1 || st > 255) {
+                    av_log(f->avctx, AV_LOG_ERROR, "invalid state transition %d\n", st);
+                    return AVERROR_INVALIDDATA;
+                }
+                f->state_transition[i] = st;
+            }
         }
 
         colorspace          = get_symbol(c, state, 0); //YUV cs type
