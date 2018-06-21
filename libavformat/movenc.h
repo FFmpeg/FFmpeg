@@ -233,6 +233,7 @@ typedef struct MOVMuxContext {
     int track_ids_ok;
     int write_tmcd;
     MOVPrftBox write_prft;
+    int empty_hdlr_name;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT              (1 <<  0)
