@@ -578,14 +578,16 @@ static void fill_buffer(AVIOContext *s)
         len = s->orig_buffer_size;
     }
 
-    len = read_packet_wrapper(s, dst, len);
-    if (len == AVERROR_EOF) {
+    if (s->read_packet)
+        len = s->read_packet(s->opaque, dst, len);
+    else
+        len = 0;
+    if (len <= 0) {
         /* do not modify buffer if EOF reached so that a seek back can
            be done without rereading data */
         s->eof_reached = 1;
-    } else if (len < 0) {
-        s->eof_reached = 1;
-        s->error= len;
+        if (len < 0)
+            s->error = len;
     } else {
         s->pos += len;
         s->buf_ptr = dst;
@@ -651,15 +653,15 @@ int avio_read(AVIOContext *s, unsigned char *buf, int size)
         if (len == 0 || s->write_flag) {
             if((s->direct || size > s->buffer_size) && !s->update_checksum) {
                 // bypass the buffer and read data directly into buf
-                len = read_packet_wrapper(s, buf, size);
-                if (len == AVERROR_EOF) {
+                if(s->read_packet)
+                    len = s->read_packet(s->opaque, buf, size);
+
+                if (len <= 0) {
                     /* do not modify buffer if EOF reached so that a seek back can
                     be done without rereading data */
                     s->eof_reached = 1;
-                    break;
-                } else if (len < 0) {
-                    s->eof_reached = 1;
-                    s->error= len;
+                    if(len<0)
+                        s->error= len;
                     break;
                 } else {
                     s->pos += len;
