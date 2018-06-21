@@ -22,6 +22,8 @@
 #include <math.h>
 
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -41,11 +43,11 @@ typedef struct CNGContext {
 static av_cold int cng_decode_close(AVCodecContext *avctx)
 {
     CNGContext *p = avctx->priv_data;
-    av_free(p->refl_coef);
-    av_free(p->target_refl_coef);
-    av_free(p->lpc_coef);
-    av_free(p->filter_out);
-    av_free(p->excitation);
+    av_freep(&p->refl_coef);
+    av_freep(&p->target_refl_coef);
+    av_freep(&p->lpc_coef);
+    av_freep(&p->filter_out);
+    av_freep(&p->excitation);
     return 0;
 }
 
@@ -59,12 +61,12 @@ static av_cold int cng_decode_init(AVCodecContext *avctx)
 
     p->order            = 12;
     avctx->frame_size   = 640;
-    p->refl_coef        = av_mallocz(p->order * sizeof(*p->refl_coef));
-    p->target_refl_coef = av_mallocz(p->order * sizeof(*p->target_refl_coef));
-    p->lpc_coef         = av_mallocz(p->order * sizeof(*p->lpc_coef));
-    p->filter_out       = av_mallocz((avctx->frame_size + p->order) *
+    p->refl_coef        = av_mallocz_array(p->order, sizeof(*p->refl_coef));
+    p->target_refl_coef = av_mallocz_array(p->order, sizeof(*p->target_refl_coef));
+    p->lpc_coef         = av_mallocz_array(p->order, sizeof(*p->lpc_coef));
+    p->filter_out       = av_mallocz_array(avctx->frame_size + p->order,
                                      sizeof(*p->filter_out));
-    p->excitation       = av_mallocz(avctx->frame_size * sizeof(*p->excitation));
+    p->excitation       = av_mallocz_array(avctx->frame_size, sizeof(*p->excitation));
     if (!p->refl_coef || !p->target_refl_coef || !p->lpc_coef ||
         !p->filter_out || !p->excitation) {
         cng_decode_close(avctx);
@@ -112,11 +114,16 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
 
     if (avpkt->size) {
         int dbov = -avpkt->data[0];
-        p->target_energy = 1081109975 * pow(10, dbov / 10.0) * 0.75;
+        p->target_energy = 1081109975 * ff_exp10(dbov / 10.0) * 0.75;
         memset(p->target_refl_coef, 0, p->order * sizeof(*p->target_refl_coef));
         for (i = 0; i < FFMIN(avpkt->size - 1, p->order); i++) {
             p->target_refl_coef[i] = (avpkt->data[1 + i] - 127) / 128.0;
         }
+    }
+
+    if (avctx->internal->skip_samples > 10 * avctx->frame_size) {
+        avctx->internal->skip_samples = 0;
+        return AVERROR_INVALIDDATA;
     }
 
     if (p->inited) {
@@ -146,7 +153,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     buf_out = (int16_t *)frame->data[0];
     for (i = 0; i < avctx->frame_size; i++)
-        buf_out[i] = p->filter_out[i + p->order];
+        buf_out[i] = av_clip_int16(p->filter_out[i + p->order]);
     memcpy(p->filter_out, p->filter_out + avctx->frame_size,
            p->order * sizeof(*p->filter_out));
 
@@ -167,5 +174,5 @@ AVCodec ff_comfortnoise_decoder = {
     .close          = cng_decode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
 };

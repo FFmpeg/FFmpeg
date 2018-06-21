@@ -25,9 +25,9 @@
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
 
-static char *check_nan_suffix(char *s)
+static const char *check_nan_suffix(const char *s)
 {
-    char *start = s;
+    const char *start = s;
 
     if (*s++ != '(')
         return start;
@@ -44,7 +44,7 @@ double strtod(const char *, char **);
 
 double avpriv_strtod(const char *nptr, char **endptr)
 {
-    char *end;
+    const char *end;
     double res;
 
     /* Skip leading spaces */
@@ -81,13 +81,13 @@ double avpriv_strtod(const char *nptr, char **endptr)
                !av_strncasecmp(nptr, "+0x", 3)) {
         /* FIXME this doesn't handle exponents, non-integers (float/double)
          * and numbers too large for long long */
-        res = strtoll(nptr, &end, 16);
+        res = strtoll(nptr, (char **)&end, 16);
     } else {
-        res = strtod(nptr, &end);
+        res = strtod(nptr, (char **)&end);
     }
 
     if (endptr)
-        *endptr = end;
+        *endptr = (char *)end;
 
     return res;
 }

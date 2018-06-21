@@ -18,11 +18,11 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#ifndef FFMPEG_G729POSTFILTER_H
-#define FFMPEG_G729POSTFILTER_H
+#ifndef AVCODEC_G729POSTFILTER_H
+#define AVCODEC_G729POSTFILTER_H
 
 #include <stdint.h>
-#include "dsputil.h"
+#include "audiodsp.h"
 
 /**
  * tilt compensation factor (G.729, k1>0)
@@ -94,7 +94,7 @@
  *   Short-term postfilter (4.2.2).
  *   Tilt-compensation (4.2.3)
  */
-void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
+void ff_g729_postfilter(AudioDSPContext *adsp, int16_t* ht_prev_data, int* voicing,
                      const int16_t *lp_filter_coeffs, int pitch_delay_int,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech,
@@ -113,4 +113,4 @@ void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
 int16_t ff_g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
                                    int subframe_size, int16_t gain_prev);
 
-#endif // FFMPEG_G729POSTFILTER_H
+#endif // AVCODEC_G729POSTFILTER_H

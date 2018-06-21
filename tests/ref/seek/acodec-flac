@@ -5,14 +5,16 @@ ret: 0         st:-1 flags:1  ts: 1.894167
 ret: 0         st: 0 flags:1 dts: 1.880816 pts: 1.880816 pos:  86742 size:  2191
 ret: 0         st: 0 flags:0  ts: 0.788345
 ret: 0         st: 0 flags:1 dts: 0.809796 pts: 0.809796 pos:  27366 size:   615
-ret:-1         st: 0 flags:1  ts:-0.317506
+ret: 0         st: 0 flags:1  ts:-0.317506
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:   8256 size:   614
 ret: 0         st:-1 flags:0  ts: 2.576668
 ret: 0         st: 0 flags:1 dts: 2.586122 pts: 2.586122 pos: 145606 size:  2384
 ret: 0         st:-1 flags:1  ts: 1.470835
 ret: 0         st: 0 flags:1 dts: 1.462857 pts: 1.462857 pos:  53388 size:  1851
 ret: 0         st: 0 flags:0  ts: 0.365011
 ret: 0         st: 0 flags:1 dts: 0.365714 pts: 0.365714 pos:  16890 size:   614
-ret:-1         st: 0 flags:1  ts:-0.740839
+ret: 0         st: 0 flags:1  ts:-0.740839
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:   8256 size:   614
 ret: 0         st:-1 flags:0  ts: 2.153336
 ret: 0         st: 0 flags:1 dts: 2.168163 pts: 2.168163 pos: 110531 size:  2143
 ret: 0         st:-1 flags:1  ts: 1.047503
@@ -39,11 +41,13 @@ ret: 0         st: 0 flags:1  ts: 1.989184
 ret: 0         st: 0 flags:1 dts: 1.985306 pts: 1.985306 pos:  95508 size:  2169
 ret: 0         st:-1 flags:0  ts: 0.883340
 ret: 0         st: 0 flags:1 dts: 0.888163 pts: 0.888163 pos:  29211 size:   620
-ret:-1         st:-1 flags:1  ts:-0.222493
+ret: 0         st:-1 flags:1  ts:-0.222493
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:   8256 size:   614
 ret: 0         st: 0 flags:0  ts: 2.671678
 ret: 0         st: 0 flags:1 dts: 2.690612 pts: 2.690612 pos: 155154 size:  2394
 ret: 0         st: 0 flags:1  ts: 1.565850
 ret: 0         st: 0 flags:1 dts: 1.541224 pts: 1.541224 pos:  59082 size:  1974
 ret: 0         st:-1 flags:0  ts: 0.460008
 ret: 0         st: 0 flags:1 dts: 0.470204 pts: 0.470204 pos:  19353 size:   608
-ret:-1         st:-1 flags:1  ts:-0.645825
+ret: 0         st:-1 flags:1  ts:-0.645825
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:   8256 size:   614

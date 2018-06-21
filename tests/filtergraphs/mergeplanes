@@ -1,0 +1,2 @@
+sws_flags=+accurate_rnd+bitexact;
+format=yuv420p,mergeplanes=0:yuv444p

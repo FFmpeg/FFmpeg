@@ -1,4 +1,4 @@
-f5e8917781d576d0721d44a3111d3efa *tests/data/fate/vsynth1-mpeg2-ivlc-qprd.mpeg2video
+2e5882eeaaae088750d9854c93bbf68e *tests/data/fate/vsynth1-mpeg2-ivlc-qprd.mpeg2video
 783518 tests/data/fate/vsynth1-mpeg2-ivlc-qprd.mpeg2video
 0876d78f40971c5a8eb2367cbd27c5a6 *tests/data/fate/vsynth1-mpeg2-ivlc-qprd.out.rawvideo
 stddev:   10.07 PSNR: 28.07 MAXDIFF:  165 bytes:  7603200/  7603200

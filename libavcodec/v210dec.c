@@ -27,6 +27,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/intreadwrite.h"
 
 #define READ_PIXELS(a, b, c)         \
     do {                             \
@@ -53,17 +54,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     V210DecContext *s = avctx->priv_data;
 
-    if (avctx->width & 1) {
-        av_log(avctx, AV_LOG_ERROR, "v210 needs even width\n");
-        return AVERROR_INVALIDDATA;
-    }
     avctx->pix_fmt             = AV_PIX_FMT_YUV422P10;
     avctx->bits_per_raw_sample = 10;
 
     s->unpack_frame            = v210_planar_unpack_c;
 
     if (HAVE_MMX)
-        v210_x86_init(s);
+        ff_v210_x86_init(s);
 
     return 0;
 }
@@ -96,12 +93,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     }
+    if (   avctx->codec_tag == MKTAG('C', '2', '1', '0')
+        && avpkt->size > 64
+        && AV_RN32(psrc) == AV_RN32("INFO")
+        && avpkt->size - 64 >= stride * avctx->height)
+        psrc += 64;
 
     aligned_input = !((uintptr_t)psrc & 0xf) && !(stride & 0xf);
     if (aligned_input != s->aligned_input) {
         s->aligned_input = aligned_input;
         if (HAVE_MMX)
-            v210_x86_init(s);
+            ff_v210_x86_init(s);
     }
 
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
@@ -141,7 +143,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
 
         psrc += stride;
-        y += pic->linesize[0] / 2 - avctx->width;
+        y += pic->linesize[0] / 2 - avctx->width + (avctx->width & 1);
         u += pic->linesize[1] / 2 - avctx->width / 2;
         v += pic->linesize[2] / 2 - avctx->width / 2;
     }
@@ -160,16 +162,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
 #define V210DEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption v210dec_options[] = {
-    {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), FF_OPT_TYPE_INT,
+    {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), AV_OPT_TYPE_INT,
      {.i64 = 0}, INT_MIN, INT_MAX, V210DEC_FLAGS},
     {NULL}
 };
 
 static const AVClass v210dec_class = {
-    "V210 Decoder",
-    av_default_item_name,
-    v210dec_options,
-    LIBAVUTIL_VERSION_INT,
+    .class_name = "V210 Decoder",
+    .item_name  = av_default_item_name,
+    .option     = v210dec_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_v210_decoder = {
@@ -180,6 +182,6 @@ AVCodec ff_v210_decoder = {
     .priv_data_size = sizeof(V210DecContext),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .priv_class     = &v210dec_class,
 };

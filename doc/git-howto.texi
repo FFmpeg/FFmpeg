@@ -1,9 +1,10 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
-@settitle Using git to develop FFmpeg
+@settitle Using Git to develop FFmpeg
 
 @titlepage
-@center @titlefont{Using git to develop FFmpeg}
+@center @titlefont{Using Git to develop FFmpeg}
 @end titlepage
 
 @top
@@ -12,9 +13,9 @@
 
 @chapter Introduction
 
-This document aims in giving some quick references on a set of useful git
+This document aims in giving some quick references on a set of useful Git
 commands. You should always use the extensive and detailed documentation
-provided directly by git:
+provided directly by Git:
 
 @example
 git --help
@@ -31,22 +32,21 @@ man git-<command>
 shows information about the subcommand <command>.
 
 Additional information could be found on the
-@url{http://gitref.org, Git Reference} website
+@url{http://gitref.org, Git Reference} website.
 
 For more information about the Git project, visit the
-
-@url{http://git-scm.com/, Git website}
+@url{http://git-scm.com/, Git website}.
 
 Consult these resources whenever you have problems, they are quite exhaustive.
 
 What follows now is a basic introduction to Git and some FFmpeg-specific
-guidelines to ease the contribution to the project
+guidelines to ease the contribution to the project.
 
 @chapter Basics Usage
 
-@section Get GIT
+@section Get Git
 
-You can get git from @url{http://git-scm.com/}
+You can get Git from @url{http://git-scm.com/}
 Most distribution and operating system provide a package for it.
 
 
@@ -65,6 +65,21 @@ git clone git@@source.ffmpeg.org:ffmpeg <target>
 This will put the FFmpeg sources into the directory @var{<target>} and let
 you push back your changes to the remote repository.
 
+@example
+git clone gil@@ffmpeg.org:ffmpeg-web <target>
+@end example
+
+This will put the source of the FFmpeg website into the directory
+@var{<target>} and let you push back your changes to the remote repository.
+(Note that @var{gil} stands for GItoLite and is not a typo of @var{git}.)
+
+If you don't have write-access to the ffmpeg-web repository, you can
+create patches after making a read-only ffmpeg-web clone:
+
+@example
+git clone git://ffmpeg.org/ffmpeg-web <target>
+@end example
+
 Make sure that you do not have Windows line endings in your checkouts,
 otherwise you may experience spurious compilation failures. One way to
 achieve this is to run
@@ -74,6 +89,7 @@ git config --global core.autocrlf false
 @end example
 
 
+@anchor{Updating the source tree to the latest revision}
 @section Updating the source tree to the latest revision
 
 @example
@@ -106,7 +122,7 @@ git add [-A] <filename/dirname>
 git rm [-r] <filename/dirname>
 @end example
 
-GIT needs to get notified of all changes you make to your working
+Git needs to get notified of all changes you make to your working
 directory that makes files appear or disappear.
 Line moves across files are automatically tracked.
 
@@ -126,8 +142,8 @@ will show all local modifications in your working directory as unified diff.
 git log <filename(s)>
 @end example
 
-You may also use the graphical tools like gitview or gitk or the web
-interface available at http://source.ffmpeg.org/
+You may also use the graphical tools like @command{gitview} or @command{gitk}
+or the web interface available at @url{http://source.ffmpeg.org/}.
 
 @section Checking source tree status
 
@@ -148,6 +164,7 @@ git diff --check
 to double check your changes before committing them to avoid trouble later
 on. All experienced developers do this on each and every commit, no matter
 how small.
+
 Every one of them has been saved from looking like a fool by this many times.
 It's very easy for stray debug output or cosmetic modifications to slip in,
 please avoid problems through this extra level of scrutiny.
@@ -170,14 +187,14 @@ to make sure you don't have untracked files or deletions.
 git add [-i|-p|-A] <filenames/dirnames>
 @end example
 
-Make sure you have told git your name and email address
+Make sure you have told Git your name and email address
 
 @example
 git config --global user.name "My Name"
 git config --global user.email my@@email.invalid
 @end example
 
-Use @var{--global} to set the global configuration for all your git checkouts.
+Use @option{--global} to set the global configuration for all your Git checkouts.
 
 Git will select the changes to the files for commit. Optionally you can use
 the interactive or the patch mode to select hunk by hunk what should be
@@ -208,7 +225,7 @@ include filenames in log messages, Git provides that information.
 
 Possibly make the commit message have a terse, descriptive first line, an
 empty line and then a full description. The first line will be used to name
-the patch by git format-patch.
+the patch by @command{git format-patch}.
 
 @section Preparing a patchset
 
@@ -324,12 +341,14 @@ faulty commit disappear from the history.
 @section Pushing changes to remote trees
 
 @example
-git push
+git push origin master --dry-run
 @end example
 
-Will push the changes to the default remote (@var{origin}).
+Will simulate a push of the local master branch to the default remote
+(@var{origin}). And list which branches and ranges or commits would have been
+pushed.
 Git will prevent you from pushing changes if the local and remote trees are
-out of sync. Refer to and to sync the local tree.
+out of sync. Refer to @ref{Updating the source tree to the latest revision}.
 
 @example
 git remote add <name> <url>
@@ -348,23 +367,24 @@ branches matching the local ones.
 
 @section Finding a specific svn revision
 
-Since version 1.7.1 git supports @var{:/foo} syntax for specifying commits
+Since version 1.7.1 Git supports @samp{:/foo} syntax for specifying commits
 based on a regular expression. see man gitrevisions
 
 @example
 git show :/'as revision 23456'
 @end example
 
-will show the svn changeset @var{r23456}. With older git versions searching in
+will show the svn changeset @samp{r23456}. With older Git versions searching in
 the @command{git log} output is the easiest option (especially if a pager with
 search capabilities is used).
+
 This commit can be checked out with
 
 @example
 git checkout -b svn_23456 :/'as revision 23456'
 @end example
 
-or for git < 1.7.1 with
+or for Git < 1.7.1 with
 
 @example
 git checkout -b svn_23456 $SHA1
@@ -373,7 +393,7 @@ git checkout -b svn_23456 $SHA1
 where @var{$SHA1} is the commit hash from the @command{git log} output.
 
 
-@chapter pre-push checklist
+@chapter Pre-push checklist
 
 Once you have a set of commits that you feel are ready for pushing,
 work through the following checklist to doublecheck everything is in
@@ -384,21 +404,21 @@ Apply your common sense, but if in doubt, err on the side of caution.
 First, make sure that the commits and branches you are going to push
 match what you want pushed and that nothing is missing, extraneous or
 wrong. You can see what will be pushed by running the git push command
-with --dry-run first. And then inspecting the commits listed with
+with @option{--dry-run} first. And then inspecting the commits listed with
 @command{git log -p 1234567..987654}. The @command{git status} command
 may help in finding local changes that have been forgotten to be added.
 
-Next let the code pass through a full run of our testsuite.
+Next let the code pass through a full run of our test suite.
 
 @itemize
 @item @command{make distclean}
 @item @command{/path/to/ffmpeg/configure}
-@item @command{make check}
+@item @command{make fate}
 @item if fate fails due to missing samples run @command{make fate-rsync} and retry
 @end itemize
 
 Make sure all your changes have been checked before pushing them, the
-testsuite only checks against regressions and that only to some extend. It does
+test suite only checks against regressions and that only to some extend. It does
 obviously not check newly added features/code to be working unless you have
 added a test for that (which is recommended).
 
@@ -411,5 +431,5 @@ recommended.
 
 @chapter Server Issues
 
-Contact the project admins @email{root@@ffmpeg.org} if you have technical
-problems with the GIT server.
+Contact the project admins at @email{root@@ffmpeg.org} if you have technical
+problems with the Git server.

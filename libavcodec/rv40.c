@@ -109,6 +109,8 @@ static int get_dimension(GetBitContext *gb, const int *dim)
         val = dim[get_bits1(gb) - val];
     if(!val){
         do{
+            if (get_bits_left(gb) < 8)
+                return AVERROR_INVALIDDATA;
             t = get_bits(gb, 8);
             val += t << 2;
         }while(t == 0xFF);
@@ -130,22 +132,23 @@ static int rv40_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     int mb_bits;
     int w = r->s.width, h = r->s.height;
     int mb_size;
+    int ret;
 
     memset(si, 0, sizeof(SliceInfo));
     if(get_bits1(gb))
-        return -1;
+        return AVERROR_INVALIDDATA;
     si->type = get_bits(gb, 2);
     if(si->type == 1) si->type = 0;
     si->quant = get_bits(gb, 5);
     if(get_bits(gb, 2))
-        return -1;
+        return AVERROR_INVALIDDATA;
     si->vlc_set = get_bits(gb, 2);
     skip_bits1(gb);
     si->pts = get_bits(gb, 13);
     if(!si->type || !get_bits1(gb))
         rv40_parse_picture_size(gb, &w, &h);
-    if(av_image_check_size(w, h, 0, r->s.avctx) < 0)
-        return -1;
+    if ((ret = av_image_check_size(w, h, 0, r->s.avctx)) < 0)
+        return ret;
     si->width  = w;
     si->height = h;
     mb_size = ((w + 15) >> 4) * ((h + 15) >> 4);
@@ -186,7 +189,7 @@ static int rv40_decode_intra_types(RV34DecContext *r, GetBitContext *gb, int8_t 
             A = ptr[-r->intra_types_stride + 1]; // it won't be used for the last coefficient in a row
             B = ptr[-r->intra_types_stride];
             C = ptr[-1];
-            pattern = A + (B << 4) + (C << 8);
+            pattern = A + B * (1 << 4) + C * (1 << 8);
             for(k = 0; k < MODE2_PATTERNS_NUM; k++)
                 if(pattern == rv40_aic_table_index[k])
                     break;
@@ -230,7 +233,7 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
 
     if(!r->s.mb_skip_run) {
-        r->s.mb_skip_run = svq3_get_ue_golomb(gb) + 1;
+        r->s.mb_skip_run = get_interleaved_ue_golomb(gb) + 1;
         if(r->s.mb_skip_run > (unsigned)s->mb_num)
             return -1;
     }
@@ -456,7 +459,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
         }
 
         for(j = 0; j < 16; j += 4){
-            Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize;
+            Y = s->current_picture_ptr->f->data[0] + mb_x*16 + (row*16 + j) * s->linesize;
             for(i = 0; i < 4; i++, Y += 4){
                 int ij = i + j;
                 int clip_cur = y_to_deblock & (MASK_CUR << ij) ? clip[POS_CUR] : 0;
@@ -501,7 +504,7 @@ static void rv40_loop_filter(RV34DecContext *r, int row)
         }
         for(k = 0; k < 2; k++){
             for(j = 0; j < 2; j++){
-                C = s->current_picture_ptr->f.data[k + 1] + mb_x*8 + (row*8 + j*4) * s->uvlinesize;
+                C = s->current_picture_ptr->f->data[k + 1] + mb_x*8 + (row*8 + j*4) * s->uvlinesize;
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + j*2;
                     int clip_cur = c_to_deblock[k] & (MASK_CUR << ij) ? clip[POS_CUR] : 0;
@@ -573,8 +576,8 @@ AVCodec ff_rv40_decoder = {
     .init                  = rv40_decode_init,
     .close                 = ff_rv34_decode_end,
     .decode                = ff_rv34_decode_frame,
-    .capabilities          = CODEC_CAP_DR1 | CODEC_CAP_DELAY |
-                             CODEC_CAP_FRAME_THREADS,
+    .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY |
+                             AV_CODEC_CAP_FRAME_THREADS,
     .flush                 = ff_mpeg_flush,
     .pix_fmts              = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV420P,

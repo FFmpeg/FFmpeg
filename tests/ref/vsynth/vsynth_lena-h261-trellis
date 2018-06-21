@@ -1,0 +1,4 @@
+41522be50f14b7fff6b1fb8d10b1ff00 *tests/data/fate/vsynth_lena-h261-trellis.avi
+184586 tests/data/fate/vsynth_lena-h261-trellis.avi
+f9df8cd110a2f3d9706dd2f29a1d0a89 *tests/data/fate/vsynth_lena-h261-trellis.out.rawvideo
+stddev:    6.32 PSNR: 32.11 MAXDIFF:   89 bytes:  7603200/  7603200

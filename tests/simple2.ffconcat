@@ -1,0 +1,19 @@
+ffconcat version 1.0
+
+stream    0
+exact_stream_id 257
+stream    1
+exact_stream_id 256
+
+file      %SRCFILE%
+
+file      %SRCFILE%
+duration  0.5
+
+file      %SRCFILE%
+inpoint   00:02.20
+
+file      %SRCFILE%
+inpoint   00:01.80
+outpoint  00:02.00
+

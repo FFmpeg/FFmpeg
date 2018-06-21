@@ -29,6 +29,7 @@
 #include "sha512.h"
 
 #include "avstring.h"
+#include "base64.h"
 #include "error.h"
 #include "intreadwrite.h"
 #include "mem.h"
@@ -59,7 +60,7 @@ typedef struct AVHashContext {
     uint32_t crc;
 } AVHashContext;
 
-struct {
+static const struct {
     const char *name;
     int size;
 } hashdesc[] = {
@@ -154,7 +155,11 @@ void av_hash_init(AVHashContext *ctx)
     }
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_hash_update(AVHashContext *ctx, const uint8_t *src, int len)
+#else
+void av_hash_update(AVHashContext *ctx, const uint8_t *src, size_t len)
+#endif
 {
     switch (ctx->type) {
     case MD5:     av_md5_update(ctx->ctx, src, len); break;
@@ -194,6 +199,40 @@ void av_hash_final(AVHashContext *ctx, uint8_t *dst)
     case CRC32:   AV_WB32(dst, ctx->crc ^ UINT32_MAX); break;
     case ADLER32: AV_WB32(dst, ctx->crc); break;
     }
+}
+
+void av_hash_final_bin(struct AVHashContext *ctx, uint8_t *dst, int size)
+{
+    uint8_t buf[AV_HASH_MAX_SIZE];
+    unsigned rsize = av_hash_get_size(ctx);
+
+    av_hash_final(ctx, buf);
+    memcpy(dst, buf, FFMIN(size, rsize));
+    if (size > rsize)
+        memset(dst + rsize, 0, size - rsize);
+}
+
+void av_hash_final_hex(struct AVHashContext *ctx, uint8_t *dst, int size)
+{
+    uint8_t buf[AV_HASH_MAX_SIZE];
+    unsigned rsize = av_hash_get_size(ctx), i;
+
+    av_hash_final(ctx, buf);
+    for (i = 0; i < FFMIN(rsize, size / 2); i++)
+        snprintf(dst + i * 2, size - i * 2, "%02x", buf[i]);
+}
+
+void av_hash_final_b64(struct AVHashContext *ctx, uint8_t *dst, int size)
+{
+    uint8_t buf[AV_HASH_MAX_SIZE], b64[AV_BASE64_SIZE(AV_HASH_MAX_SIZE)];
+    unsigned rsize = av_hash_get_size(ctx), osize;
+
+    av_hash_final(ctx, buf);
+    av_base64_encode(b64, sizeof(b64), buf, rsize);
+    osize = AV_BASE64_SIZE(rsize);
+    memcpy(dst, b64, FFMIN(osize, size));
+    if (size < osize)
+        dst[size - 1] = 0;
 }
 
 void av_hash_freep(AVHashContext **ctx)

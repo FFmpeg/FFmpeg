@@ -24,7 +24,6 @@
  *
  * TODO:
  * - add support to more formats
- * - add support to window id specification
  */
 
 #include <X11/Xlib.h>
@@ -44,9 +43,12 @@ typedef struct {
     GC gc;
 
     Window window;
+    int64_t window_id;
     char *window_title;
     int window_width, window_height;
     int window_x, window_y;
+    int dest_x, dest_y;          /**< display area position */
+    unsigned int dest_w, dest_h; /**< display area dimensions */
 
     Display* display;
     char *display_name;
@@ -56,6 +58,7 @@ typedef struct {
     int image_width, image_height;
     XShmSegmentInfo yuv_shminfo;
     int xv_port;
+    Atom wm_delete_message;
 } XVContext;
 
 typedef struct XVTagFormatMap
@@ -64,7 +67,7 @@ typedef struct XVTagFormatMap
     enum AVPixelFormat format;
 } XVTagFormatMap;
 
-static XVTagFormatMap tag_codec_map[] = {
+static const XVTagFormatMap tag_codec_map[] = {
     { MKTAG('I','4','2','0'), AV_PIX_FMT_YUV420P },
     { MKTAG('U','Y','V','Y'), AV_PIX_FMT_UYVY422 },
     { MKTAG('Y','U','Y','2'), AV_PIX_FMT_YUYV422 },
@@ -73,7 +76,7 @@ static XVTagFormatMap tag_codec_map[] = {
 
 static int xv_get_tag_from_format(enum AVPixelFormat format)
 {
-    XVTagFormatMap *m = tag_codec_map;
+    const XVTagFormatMap *m = tag_codec_map;
     int i;
     for (i = 0; m->tag; m = &tag_codec_map[++i]) {
         if (m->format == format)
@@ -103,23 +106,25 @@ static int xv_write_header(AVFormatContext *s)
     unsigned int num_adaptors;
     XvAdaptorInfo *ai;
     XvImageFormatValues *fv;
+    XColor fgcolor;
+    XWindowAttributes window_attrs;
     int num_formats = 0, j, tag, ret;
-    AVCodecContext *encctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (   s->nb_streams > 1
-        || encctx->codec_type != AVMEDIA_TYPE_VIDEO
-        || encctx->codec_id   != AV_CODEC_ID_RAWVIDEO) {
+        || par->codec_type != AVMEDIA_TYPE_VIDEO
+        || par->codec_id   != AV_CODEC_ID_RAWVIDEO) {
         av_log(s, AV_LOG_ERROR, "Only supports one rawvideo stream\n");
         return AVERROR(EINVAL);
     }
 
-    if (!(tag = xv_get_tag_from_format(encctx->pix_fmt))) {
+    if (!(tag = xv_get_tag_from_format(par->format))) {
         av_log(s, AV_LOG_ERROR,
                "Unsupported pixel format '%s', only yuv420p, uyvy422, yuyv422 are currently supported\n",
-               av_get_pix_fmt_name(encctx->pix_fmt));
+               av_get_pix_fmt_name(par->format));
         return AVERROR_PATCHWELCOME;
     }
-    xv->image_format = encctx->pix_fmt;
+    xv->image_format = par->format;
 
     xv->display = XOpenDisplay(xv->display_name);
     if (!xv->display) {
@@ -127,12 +132,12 @@ static int xv_write_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    xv->image_width  = encctx->width;
-    xv->image_height = encctx->height;
+    xv->image_width  = par->width;
+    xv->image_height = par->height;
     if (!xv->window_width && !xv->window_height) {
-        AVRational sar = encctx->sample_aspect_ratio;
-        xv->window_width  = encctx->width;
-        xv->window_height = encctx->height;
+        AVRational sar = par->sample_aspect_ratio;
+        xv->window_width  = par->width;
+        xv->window_height = par->height;
         if (sar.num) {
             if (sar.num > sar.den)
                 xv->window_width = av_rescale(xv->window_width, sar.num, sar.den);
@@ -140,18 +145,23 @@ static int xv_write_header(AVFormatContext *s)
                 xv->window_height = av_rescale(xv->window_height, sar.den, sar.num);
         }
     }
-    xv->window = XCreateSimpleWindow(xv->display, DefaultRootWindow(xv->display),
-                                     xv->window_x, xv->window_y,
-                                     xv->window_width, xv->window_height,
-                                     0, 0, 0);
-    if (!xv->window_title) {
-        if (!(xv->window_title = av_strdup(s->filename))) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+    if (!xv->window_id) {
+        xv->window = XCreateSimpleWindow(xv->display, DefaultRootWindow(xv->display),
+                                         xv->window_x, xv->window_y,
+                                         xv->window_width, xv->window_height,
+                                         0, 0, 0);
+        if (!xv->window_title) {
+            if (!(xv->window_title = av_strdup(s->url))) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
         }
-    }
-    XStoreName(xv->display, xv->window, xv->window_title);
-    XMapWindow(xv->display, xv->window);
+        XStoreName(xv->display, xv->window, xv->window_title);
+        xv->wm_delete_message = XInternAtom(xv->display, "WM_DELETE_WINDOW", False);
+        XSetWMProtocols(xv->display, xv->window, &xv->wm_delete_message, 1);
+        XMapWindow(xv->display, xv->window);
+    } else
+        xv->window = xv->window_id;
 
     if (XvQueryAdaptors(xv->display, DefaultRootWindow(xv->display), &num_adaptors, &ai) != Success) {
         ret = AVERROR_EXTERNAL;
@@ -179,14 +189,14 @@ static int xv_write_header(AVFormatContext *s)
     if (j >= num_formats) {
         av_log(s, AV_LOG_ERROR,
                "Device does not support pixel format %s, aborting\n",
-               av_get_pix_fmt_name(encctx->pix_fmt));
+               av_get_pix_fmt_name(par->format));
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
     xv->gc = XCreateGC(xv->display, xv->window, 0, 0);
-    xv->image_width  = encctx->width;
-    xv->image_height = encctx->height;
+    xv->image_width  = par->width;
+    xv->image_height = par->height;
     xv->yuv_image = XvShmCreateImage(xv->display, xv->xv_port, tag, 0,
                                      xv->image_width, xv->image_height, &xv->yuv_shminfo);
     xv->yuv_shminfo.shmid = shmget(IPC_PRIVATE, xv->yuv_image->data_size,
@@ -199,42 +209,125 @@ static int xv_write_header(AVFormatContext *s)
     XSync(xv->display, False);
     shmctl(xv->yuv_shminfo.shmid, IPC_RMID, 0);
 
+    XGetWindowAttributes(xv->display, xv->window, &window_attrs);
+    fgcolor.red = fgcolor.green = fgcolor.blue = 0;
+    fgcolor.flags = DoRed | DoGreen | DoBlue;
+    XAllocColor(xv->display, window_attrs.colormap, &fgcolor);
+    XSetForeground(xv->display, xv->gc, fgcolor.pixel);
+    //force display area recalculation at first frame
+    xv->window_width = xv->window_height = 0;
+
     return 0;
   fail:
     xv_write_trailer(s);
     return ret;
 }
 
-static int write_picture(AVFormatContext *s, AVPicture *pict)
+static void compute_display_area(AVFormatContext *s)
 {
     XVContext *xv = s->priv_data;
-    XvImage *img = xv->yuv_image;
-    XWindowAttributes window_attrs;
-    uint8_t *data[3] = {
-        img->data + img->offsets[0],
-        img->data + img->offsets[1],
-        img->data + img->offsets[2]
-    };
+    AVRational sar, dar; /* sample and display aspect ratios */
+    AVStream *st = s->streams[0];
+    AVCodecParameters *par = st->codecpar;
 
-    av_image_copy(data, img->pitches, (const uint8_t **)pict->data, pict->linesize,
-                  xv->image_format, img->width, img->height);
+    /* compute overlay width and height from the codec context information */
+    sar = st->sample_aspect_ratio.num ? st->sample_aspect_ratio : (AVRational){ 1, 1 };
+    dar = av_mul_q(sar, (AVRational){ par->width, par->height });
+
+    /* we suppose the screen has a 1/1 sample aspect ratio */
+    /* fit in the window */
+    if (av_cmp_q(dar, (AVRational){ xv->dest_w, xv->dest_h }) > 0) {
+        /* fit in width */
+        xv->dest_y = xv->dest_h;
+        xv->dest_x = 0;
+        xv->dest_h = av_rescale(xv->dest_w, dar.den, dar.num);
+        xv->dest_y -= xv->dest_h;
+        xv->dest_y /= 2;
+    } else {
+        /* fit in height */
+        xv->dest_x = xv->dest_w;
+        xv->dest_y = 0;
+        xv->dest_w = av_rescale(xv->dest_h, dar.num, dar.den);
+        xv->dest_x -= xv->dest_w;
+        xv->dest_x /= 2;
+    }
+}
+
+static int xv_repaint(AVFormatContext *s)
+{
+    XVContext *xv = s->priv_data;
+    XWindowAttributes window_attrs;
+
     XGetWindowAttributes(xv->display, xv->window, &window_attrs);
+    if (window_attrs.width != xv->window_width || window_attrs.height != xv->window_height) {
+        XRectangle rect[2];
+        xv->dest_w = window_attrs.width;
+        xv->dest_h = window_attrs.height;
+        compute_display_area(s);
+        if (xv->dest_x) {
+            rect[0].width  = rect[1].width  = xv->dest_x;
+            rect[0].height = rect[1].height = window_attrs.height;
+            rect[0].y      = rect[1].y      = 0;
+            rect[0].x = 0;
+            rect[1].x = xv->dest_w + xv->dest_x;
+            XFillRectangles(xv->display, xv->window, xv->gc, rect, 2);
+        }
+        if (xv->dest_y) {
+            rect[0].width  = rect[1].width  = window_attrs.width;
+            rect[0].height = rect[1].height = xv->dest_y;
+            rect[0].x      = rect[1].x      = 0;
+            rect[0].y = 0;
+            rect[1].y = xv->dest_h + xv->dest_y;
+            XFillRectangles(xv->display, xv->window, xv->gc, rect, 2);
+        }
+    }
+
     if (XvShmPutImage(xv->display, xv->xv_port, xv->window, xv->gc,
-                      xv->yuv_image, 0, 0, xv->image_width, xv->image_height, 0, 0,
-                      window_attrs.width, window_attrs.height, True) != Success) {
+                      xv->yuv_image, 0, 0, xv->image_width, xv->image_height,
+                      xv->dest_x, xv->dest_y, xv->dest_w, xv->dest_h, True) != Success) {
         av_log(s, AV_LOG_ERROR, "Could not copy image to XV shared memory buffer\n");
         return AVERROR_EXTERNAL;
     }
     return 0;
 }
 
+static int write_picture(AVFormatContext *s, uint8_t *input_data[4],
+                         int linesize[4])
+{
+    XVContext *xv = s->priv_data;
+    XvImage *img = xv->yuv_image;
+    uint8_t *data[3] = {
+        img->data + img->offsets[0],
+        img->data + img->offsets[1],
+        img->data + img->offsets[2]
+    };
+
+    /* Check messages. Window might get closed. */
+    if (!xv->window_id) {
+        XEvent event;
+        while (XPending(xv->display)) {
+            XNextEvent(xv->display, &event);
+            if (event.type == ClientMessage && event.xclient.data.l[0] == xv->wm_delete_message) {
+                av_log(xv, AV_LOG_DEBUG, "Window close event.\n");
+                return AVERROR(EPIPE);
+            }
+        }
+    }
+
+    av_image_copy(data, img->pitches, (const uint8_t **)input_data, linesize,
+                  xv->image_format, img->width, img->height);
+    return xv_repaint(s);
+}
+
 static int xv_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    AVPicture pict;
-    AVCodecContext *ctx = s->streams[0]->codec;
+    AVCodecParameters *par = s->streams[0]->codecpar;
+    uint8_t *data[4];
+    int linesize[4];
 
-    avpicture_fill(&pict, pkt->data, ctx->pix_fmt, ctx->width, ctx->height);
-    return write_picture(s, &pict);
+    av_image_fill_arrays(data, linesize, pkt->data, par->format,
+                         par->width, par->height, 1);
+    return write_picture(s, data, linesize);
 }
 
 static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
@@ -243,12 +336,24 @@ static int xv_write_frame(AVFormatContext *s, int stream_index, AVFrame **frame,
     /* xv_write_header() should have accepted only supported formats */
     if ((flags & AV_WRITE_UNCODED_FRAME_QUERY))
         return 0;
-    return write_picture(s, (AVPicture *)*frame);
+    return write_picture(s, (*frame)->data, (*frame)->linesize);
+}
+
+static int xv_control_message(AVFormatContext *s, int type, void *data, size_t data_size)
+{
+    switch(type) {
+    case AV_APP_TO_DEV_WINDOW_REPAINT:
+        return xv_repaint(s);
+    default:
+        break;
+    }
+    return AVERROR(ENOSYS);
 }
 
 #define OFFSET(x) offsetof(XVContext, x)
 static const AVOption options[] = {
     { "display_name", "set display name",       OFFSET(display_name), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_id",    "set existing window id", OFFSET(window_id),    AV_OPT_TYPE_INT64,  {.i64 = 0 }, 0, INT64_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size",  "set window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_title", "set window title",       OFFSET(window_title), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_x",     "set window x offset",    OFFSET(window_x),     AV_OPT_TYPE_INT,    {.i64 = 0 }, -INT_MAX, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
@@ -275,6 +380,7 @@ AVOutputFormat ff_xv_muxer = {
     .write_packet   = xv_write_packet,
     .write_uncoded_frame = xv_write_frame,
     .write_trailer  = xv_write_trailer,
+    .control_message = xv_control_message,
     .flags          = AVFMT_NOFILE | AVFMT_VARIABLE_FPS | AVFMT_NOTIMESTAMPS,
     .priv_class     = &xv_class,
 };

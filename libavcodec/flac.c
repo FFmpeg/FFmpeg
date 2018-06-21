@@ -166,7 +166,7 @@ int ff_flac_get_max_frame_size(int blocksize, int ch, int bps)
     return count;
 }
 
-int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+int ff_flac_is_extradata_valid(AVCodecContext *avctx,
                                enum FLACExtradataFormat *format,
                                uint8_t **streaminfo_start)
 {
@@ -201,7 +201,7 @@ void ff_flac_set_channel_layout(AVCodecContext *avctx)
         avctx->channel_layout = 0;
 }
 
-void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+int ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
                               const uint8_t *buffer)
 {
     GetBitContext gb;
@@ -213,6 +213,7 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
         av_log(avctx, AV_LOG_WARNING, "invalid max blocksize: %d\n",
                s->max_blocksize);
         s->max_blocksize = 16;
+        return AVERROR_INVALIDDATA;
     }
 
     skip_bits(&gb, 24); /* skip min frame size */
@@ -222,25 +223,24 @@ void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *
     s->channels = get_bits(&gb, 3) + 1;
     s->bps = get_bits(&gb, 5) + 1;
 
+    if (s->bps < 4) {
+        av_log(avctx, AV_LOG_ERROR, "invalid bps: %d\n", s->bps);
+        s->bps = 16;
+        return AVERROR_INVALIDDATA;
+    }
+
     avctx->channels = s->channels;
     avctx->sample_rate = s->samplerate;
     avctx->bits_per_raw_sample = s->bps;
-    ff_flac_set_channel_layout(avctx);
+
+    if (!avctx->channel_layout ||
+        av_get_channel_layout_nb_channels(avctx->channel_layout) != avctx->channels)
+        ff_flac_set_channel_layout(avctx);
 
     s->samples = get_bits64(&gb, 36);
 
     skip_bits_long(&gb, 64); /* md5 sum */
     skip_bits_long(&gb, 64); /* md5 sum */
-}
 
-void avpriv_flac_parse_block_header(const uint8_t *block_header,
-                                int *last, int *type, int *size)
-{
-    int tmp = bytestream_get_byte(&block_header);
-    if (last)
-        *last = tmp & 0x80;
-    if (type)
-        *type = tmp & 0x7F;
-    if (size)
-        *size = bytestream_get_be24(&block_header);
+    return 0;
 }

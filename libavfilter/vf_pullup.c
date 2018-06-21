@@ -42,7 +42,7 @@ static const AVOption pullup_options[] = {
     { "jr", "set right junk size", OFFSET(junk_right), AV_OPT_TYPE_INT, {.i64=1}, 0, INT_MAX, FLAGS },
     { "jt", "set top junk size",   OFFSET(junk_top),   AV_OPT_TYPE_INT, {.i64=4}, 1, INT_MAX, FLAGS },
     { "jb", "set bottom junk size", OFFSET(junk_bottom), AV_OPT_TYPE_INT, {.i64=4}, 1, INT_MAX, FLAGS },
-    { "sb", "set strict breaks", OFFSET(strict_breaks), AV_OPT_TYPE_INT, {.i64=0},-1, 1, FLAGS },
+    { "sb", "set strict breaks", OFFSET(strict_breaks), AV_OPT_TYPE_BOOL,{.i64=0},-1, 1, FLAGS },
     { "mp", "set metric plane",  OFFSET(metric_plane),  AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "mp" },
     { "y", "luma",        0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "mp" },
     { "u", "chroma blue", 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "mp" },
@@ -63,13 +63,16 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_NONE
     };
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 #define ABS(a) (((a) ^ ((a) >> 31)) - ((a) >> 31))
 
-static int diff_c(const uint8_t *a, const uint8_t *b, int s)
+static int diff_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
 {
     int i, j, diff = 0;
 
@@ -83,7 +86,7 @@ static int diff_c(const uint8_t *a, const uint8_t *b, int s)
     return diff;
 }
 
-static int comb_c(const uint8_t *a, const uint8_t *b, int s)
+static int comb_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
 {
     int i, j, comb = 0;
 
@@ -98,7 +101,7 @@ static int comb_c(const uint8_t *a, const uint8_t *b, int s)
     return comb;
 }
 
-static int var_c(const uint8_t *a, const uint8_t *b, int s)
+static int var_c(const uint8_t *a, const uint8_t *b, ptrdiff_t s)
 {
     int i, j, var = 0;
 
@@ -126,20 +129,21 @@ static int alloc_metrics(PullupContext *s, PullupField *f)
     return 0;
 }
 
-static void free_field_queue(PullupField *head, PullupField **last)
+static void free_field_queue(PullupField *head)
 {
     PullupField *f = head;
-    while (f) {
+    do {
+        PullupField *next;
+        if (!f)
+            break;
         av_free(f->diffs);
         av_free(f->combs);
         av_free(f->vars);
-        if (f == *last) {
-            av_freep(last);
-            break;
-        }
-        f = f->next;
-        av_freep(&f->prev);
-    };
+        next = f->next;
+        memset(f, 0, sizeof(*f)); // clear all pointers to avoid stale ones
+        av_free(f);
+        f = next;
+    } while (f != head);
 }
 
 static PullupField *make_field_queue(PullupContext *s, int len)
@@ -158,14 +162,14 @@ static PullupField *make_field_queue(PullupContext *s, int len)
     for (; len > 0; len--) {
         f->next = av_mallocz(sizeof(*f->next));
         if (!f->next) {
-            free_field_queue(head, &f);
+            free_field_queue(head);
             return NULL;
         }
 
         f->next->prev = f;
         f = f->next;
         if (alloc_metrics(s, f) < 0) {
-            free_field_queue(head, &f);
+            free_field_queue(head);
             return NULL;
         }
     }
@@ -190,9 +194,9 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(EINVAL);
     }
 
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
-    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
     s->metric_w      = (s->planewidth[mp]  - ((s->junk_left + s->junk_right)  << 3)) >> 3;
@@ -213,12 +217,6 @@ static int config_input(AVFilterLink *inlink)
 
     if (ARCH_X86)
         ff_pullup_init_x86(s);
-    return 0;
-}
-
-static int config_output(AVFilterLink *outlink)
-{
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
     return 0;
 }
 
@@ -255,6 +253,8 @@ static int alloc_buffer(PullupContext *s, PullupBuffer *b)
     for (i = 0; i < s->nb_planes; i++) {
         b->planes[i] = av_malloc(s->planeheight[i] * s->planewidth[i]);
     }
+    if (s->nb_planes == 1)
+        b->planes[1] = av_malloc(4*256);
 
     return 0;
 }
@@ -386,8 +386,8 @@ static void compute_affinity(PullupContext *s, PullupField *f)
         int v  = f->vars[i];
         int lv = f->prev->vars[i];
         int rv = f->next->vars[i];
-        int lc = f->combs[i] - (v + lv) + ABS(v - lv);
-        int rc = f->next->combs[i] - (v + rv) + ABS(v - rv);
+        int lc = f->      combs[i] - 2*(v < lv ? v : lv);
+        int rc = f->next->combs[i] - 2*(v < rv ? v : rv);
 
         lc = FFMAX(lc, 0);
         rc = FFMAX(rc, 0);
@@ -528,7 +528,7 @@ static void pullup_release_frame(PullupFrame *f)
 
 static void compute_metric(PullupContext *s, int *dest,
                            PullupField *fa, int pa, PullupField *fb, int pb,
-                           int (*func)(const uint8_t *, const uint8_t *, int))
+                           int (*func)(const uint8_t *, const uint8_t *, ptrdiff_t))
 {
     int mp = s->metric_plane;
     int xstep = 8;
@@ -736,7 +736,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     PullupContext *s = ctx->priv;
     int i;
 
-    free_field_queue(s->head, &s->last);
+    free_field_queue(s->head);
+    s->last = NULL;
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->buffers); i++) {
         av_freep(&s->buffers[i].planes[0]);
@@ -759,7 +760,6 @@ static const AVFilterPad pullup_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .config_props = config_output,
     },
     { NULL }
 };

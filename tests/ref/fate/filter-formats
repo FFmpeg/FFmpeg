@@ -1,0 +1,88 @@
+mono
+2 channels (FC+LFE)
+stereo
+2.1
+3.0
+3.1
+3 channels (FC+BL+BR)
+4 channels (FC+LFE+BL+BR)
+quad
+5 channels (FL+FR+LFE+BL+BR)
+5.0
+5.1
+2 channels (FC+BC)
+3 channels (FC+LFE+BC)
+3.0(back)
+4 channels (FL+FR+LFE+BC)
+4.0
+4.1
+3 channels (FC+SL+SR)
+4 channels (FC+LFE+SL+SR)
+quad(side)
+5 channels (FL+FR+LFE+SL+SR)
+5.0(side)
+5.1(side)
+5 channels (FC+BL+BR+SL+SR)
+6 channels (FC+LFE+BL+BR+SL+SR)
+6 channels (FL+FR+BL+BR+SL+SR)
+7 channels (FL+FR+LFE+BL+BR+SL+SR)
+7.0
+7.1
+4 channels (FC+BC+SL+SR)
+5 channels (FC+LFE+BC+SL+SR)
+5 channels (FL+FR+BC+SL+SR)
+6 channels (FL+FR+LFE+BC+SL+SR)
+6.0
+6.1
+3 channels (FC+DL+DR)
+4 channels (FC+LFE+DL+DR)
+4 channels (FL+FR+DL+DR)
+5 channels (FL+FR+LFE+DL+DR)
+5 channels (FL+FR+FC+DL+DR)
+6 channels (FL+FR+FC+LFE+DL+DR)
+5 channels (FC+BL+BR+DL+DR)
+6 channels (FC+LFE+BL+BR+DL+DR)
+6 channels (FL+FR+BL+BR+DL+DR)
+7 channels (FL+FR+LFE+BL+BR+DL+DR)
+7 channels (FL+FR+FC+BL+BR+DL+DR)
+8 channels (FL+FR+FC+LFE+BL+BR+DL+DR)
+4 channels (FC+BC+DL+DR)
+5 channels (FC+LFE+BC+DL+DR)
+5 channels (FL+FR+BC+DL+DR)
+6 channels (FL+FR+LFE+BC+DL+DR)
+6 channels (FL+FR+FC+BC+DL+DR)
+7 channels (FL+FR+FC+LFE+BC+DL+DR)
+5 channels (FC+SL+SR+DL+DR)
+6 channels (FC+LFE+SL+SR+DL+DR)
+6 channels (FL+FR+SL+SR+DL+DR)
+7 channels (FL+FR+LFE+SL+SR+DL+DR)
+7 channels (FL+FR+FC+SL+SR+DL+DR)
+8 channels (FL+FR+FC+LFE+SL+SR+DL+DR)
+7 channels (FC+BL+BR+SL+SR+DL+DR)
+8 channels (FC+LFE+BL+BR+SL+SR+DL+DR)
+8 channels (FL+FR+BL+BR+SL+SR+DL+DR)
+6 channels (FC+BC+SL+SR+DL+DR)
+7 channels (FC+LFE+BC+SL+SR+DL+DR)
+7 channels (FL+FR+BC+SL+SR+DL+DR)
+8 channels (FL+FR+LFE+BC+SL+SR+DL+DR)
+8 channels (FL+FR+FC+BC+SL+SR+DL+DR)
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, blah);
+0 = ff_parse_channel_layout(0000000000000001,  1, 1);
+0 = ff_parse_channel_layout(0000000000000002,  1, 2);
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, -1);
+0 = ff_parse_channel_layout(000000000000003C,  4, 60);
+0 = ff_parse_channel_layout(0000000000000041,  2, 65);
+0 = ff_parse_channel_layout(0000000000000004,  1, 1c);
+0 = ff_parse_channel_layout(0000000000000003,  2, 2c);
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, -1c);
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, 60c);
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, 65c);
+0 = ff_parse_channel_layout(0000000000000000,  2, 2C);
+0 = ff_parse_channel_layout(0000000000000000, 60, 60C);
+-1 = ff_parse_channel_layout(FFFFFFFFFFFFFFFF, -1, 65C);
+0 = ff_parse_channel_layout(000000000000003F,  6, 5.1);
+0 = ff_parse_channel_layout(0000000000000003,  2, stereo);
+0 = ff_parse_channel_layout(0000000000000001,  1, 1+1+1+1);
+0 = ff_parse_channel_layout(0000000000000004,  1, 1c+1c+1c+1c);
+0 = ff_parse_channel_layout(0000000000000007,  3, 2c+1c);
+0 = ff_parse_channel_layout(0000000000000003,  2, 0x3);

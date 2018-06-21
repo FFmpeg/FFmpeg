@@ -38,6 +38,11 @@ typedef struct AVBlowfish {
 } AVBlowfish;
 
 /**
+ * Allocate an AVBlowfish context.
+ */
+AVBlowfish *av_blowfish_alloc(void);
+
+/**
  * Initialize an AVBlowfish context.
  *
  * @param ctx an AVBlowfish context

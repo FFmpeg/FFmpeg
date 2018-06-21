@@ -22,9 +22,13 @@
  */
 #include "avutil.h"
 #include "common.h"
+#include "mem.h"
 #include "rc4.h"
 
-typedef struct AVRC4 AVRC4;
+AVRC4 *av_rc4_alloc(void)
+{
+    return av_mallocz(sizeof(struct AVRC4));
+}
 
 int av_rc4_init(AVRC4 *r, const uint8_t *key, int key_bits, int decrypt) {
     int i, j;
@@ -32,7 +36,7 @@ int av_rc4_init(AVRC4 *r, const uint8_t *key, int key_bits, int decrypt) {
     uint8_t *state = r->state;
     int keylen = key_bits >> 3;
     if (key_bits & 7)
-        return -1;
+        return AVERROR(EINVAL);
     for (i = 0; i < 256; i++)
         state[i] = i;
     y = 0;

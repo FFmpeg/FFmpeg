@@ -30,12 +30,13 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
+#include "libavutil/time_internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "wtv.h"
 #include "mpegts.h"
 
-/* Macros for formating GUIDs */
+/* Macros for formatting GUIDs */
 #define PRI_PRETTY_GUID \
     "%08"PRIx32"-%04"PRIx16"-%04"PRIx16"-%02x%02x%02x%02x%02x%02x%02x%02x"
 #define ARG_PRETTY_GUID(g) \
@@ -43,12 +44,10 @@
 #define LEN_PRETTY_GUID 34
 
 /*
- *
  * File system routines
- *
  */
 
-typedef struct {
+typedef struct WtvFile {
     AVIOContext *pb_filesystem;  /**< file system (AVFormatContext->pb) */
 
     int sector_bits;     /**< sector shift bits; used to convert sector number into pb_filesystem offset */
@@ -66,7 +65,7 @@ static int64_t seek_by_sector(AVIOContext *pb, int64_t sector, int64_t offset)
 }
 
 /**
- * @return bytes read, 0 on end of file, or <0 on error
+ * @return bytes read, AVERROR_EOF on end of file, or <0 on error
  */
 static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 {
@@ -76,8 +75,8 @@ static int wtvfile_read_packet(void *opaque, uint8_t *buf, int buf_size)
 
     if (wf->error || pb->error)
         return -1;
-    if (wf->position >= wf->length || url_feof(pb))
-        return 0;
+    if (wf->position >= wf->length || avio_feof(pb))
+        return AVERROR_EOF;
 
     buf_size = FFMIN(buf_size, wf->length - wf->position);
     while(nread < buf_size) {
@@ -203,8 +202,8 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
     wf->sector_bits = length & (1ULL<<63) ? WTV_SECTOR_BITS : WTV_BIGSECTOR_BITS;
 
     if (!wf->nb_sectors) {
-        av_free(wf->sectors);
-        av_free(wf);
+        av_freep(&wf->sectors);
+        av_freep(&wf);
         return NULL;
     }
 
@@ -223,25 +222,25 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
     /* seek to initial sector */
     wf->position = 0;
     if (seek_by_sector(s->pb, wf->sectors[0], 0) < 0) {
-        av_free(wf->sectors);
-        av_free(wf);
+        av_freep(&wf->sectors);
+        av_freep(&wf);
         return NULL;
     }
 
     wf->pb_filesystem = s->pb;
     buffer = av_malloc(1 << wf->sector_bits);
     if (!buffer) {
-        av_free(wf->sectors);
-        av_free(wf);
+        av_freep(&wf->sectors);
+        av_freep(&wf);
         return NULL;
     }
 
     pb = avio_alloc_context(buffer, 1 << wf->sector_bits, 0, wf,
                            wtvfile_read_packet, NULL, wtvfile_seek);
     if (!pb) {
-        av_free(buffer);
-        av_free(wf->sectors);
-        av_free(wf);
+        av_freep(&buffer);
+        av_freep(&wf->sectors);
+        av_freep(&wf);
     }
     return pb;
 }
@@ -303,27 +302,25 @@ static AVIOContext * wtvfile_open2(AVFormatContext *s, const uint8_t *buf, int b
 static void wtvfile_close(AVIOContext *pb)
 {
     WtvFile *wf = pb->opaque;
-    av_free(wf->sectors);
+    av_freep(&wf->sectors);
     av_freep(&pb->opaque);
     av_freep(&pb->buffer);
-    av_free(pb);
+    avio_context_free(&pb);
 }
 
 /*
- *
  * Main demuxer
- *
  */
 
-typedef struct {
+typedef struct WtvStream {
     int seen_data;
 } WtvStream;
 
-typedef struct {
+typedef struct WtvContext {
     AVIOContext *pb;       /**< timeline file */
     int64_t epoch;
     int64_t pts;             /**< pts for next data chunk */
-    int64_t last_valid_pts;  /**< latest valid pts, used for interative seeking */
+    int64_t last_valid_pts;  /**< latest valid pts, used for interactive seeking */
 
     /* maintain private seek index, as the AVIndexEntry->pos is relative to the
        start of the 'timeline' file, not the file system (AVFormatContext->pb) */
@@ -386,10 +383,12 @@ static int read_probe(AVProbeData *p)
 static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 11644473600LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -400,10 +399,12 @@ static int filetime_to_iso8601(char *buf, int buf_size, int64_t value)
 static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (value / 10000000LL) - 719162LL*86400LL;
-    struct tm *tm = gmtime(&t);
+    struct tm tmbuf;
+    struct tm *tm = gmtime_r(&t, &tmbuf);
     if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", gmtime(&t));
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -414,10 +415,12 @@ static int crazytime_to_iso8601(char *buf, int buf_size, int64_t value)
 static int oledate_to_iso8601(char *buf, int buf_size, int64_t value)
 {
     time_t t = (av_int2double(value) - 25569.0) * 86400;
-    struct tm *result= gmtime(&t);
-    if (!result)
+    struct tm tmbuf;
+    struct tm *tm= gmtime_r(&t, &tmbuf);
+    if (!tm)
         return -1;
-    strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", result);
+    if (!strftime(buf, buf_size, "%Y-%m-%d %H:%M:%S", tm))
+        return -1;
     return 0;
 }
 
@@ -444,8 +447,8 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (!st)
         goto done;
     av_dict_set(&st->metadata, "title", description, 0);
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->codec_id   = AV_CODEC_ID_MJPEG;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_MJPEG;
     st->id = -1;
     ret = av_get_packet(pb, &st->attached_pic, filesize);
     if (ret < 0)
@@ -533,7 +536,7 @@ static void parse_legacy_attrib(AVFormatContext *s, AVIOContext *pb)
 {
     ff_asf_guid guid;
     int length, type;
-    while(!url_feof(pb)) {
+    while(!avio_feof(pb)) {
         char key[1024];
         ff_get_guid(pb, &guid);
         type   = avio_rl32(pb);
@@ -562,7 +565,7 @@ static int parse_videoinfoheader2(AVFormatContext *s, AVStream *st)
     AVIOContext *pb = wtv->pb;
 
     avio_skip(pb, 72);  // picture aspect ratio is unreliable
-    ff_get_bmp_header(pb, st, NULL);
+    st->codecpar->codec_tag = ff_get_bmp_header(pb, st, NULL);
 
     return 72 + 40;
 }
@@ -573,23 +576,23 @@ static int parse_videoinfoheader2(AVFormatContext *s, AVStream *st)
 static void parse_mpeg1waveformatex(AVStream *st)
 {
     /* fwHeadLayer */
-    switch (AV_RL16(st->codec->extradata)) {
-    case 0x0001 : st->codec->codec_id = AV_CODEC_ID_MP1; break;
-    case 0x0002 : st->codec->codec_id = AV_CODEC_ID_MP2; break;
-    case 0x0004 : st->codec->codec_id = AV_CODEC_ID_MP3; break;
+    switch (AV_RL16(st->codecpar->extradata)) {
+    case 0x0001 : st->codecpar->codec_id = AV_CODEC_ID_MP1; break;
+    case 0x0002 : st->codecpar->codec_id = AV_CODEC_ID_MP2; break;
+    case 0x0004 : st->codecpar->codec_id = AV_CODEC_ID_MP3; break;
     }
 
-    st->codec->bit_rate = AV_RL32(st->codec->extradata + 2); /* dwHeadBitrate */
+    st->codecpar->bit_rate = AV_RL32(st->codecpar->extradata + 2); /* dwHeadBitrate */
 
     /* dwHeadMode */
-    switch (AV_RL16(st->codec->extradata + 6)) {
+    switch (AV_RL16(st->codecpar->extradata + 6)) {
     case 1 :
     case 2 :
-    case 4 : st->codec->channels       = 2;
-             st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
+    case 4 : st->codecpar->channels       = 2;
+             st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
              break;
-    case 8 : st->codec->channels       = 1;
-             st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    case 8 : st->codecpar->channels       = 1;
+             st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
              break;
     }
 }
@@ -602,9 +605,9 @@ static void parse_mpeg1waveformatex(AVStream *st)
 static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int codec_type)
 {
     if (st) {
-        if (st->codec->extradata) {
-            av_freep(&st->codec->extradata);
-            st->codec->extradata_size = 0;
+        if (st->codecpar->extradata) {
+            av_freep(&st->codecpar->extradata);
+            st->codecpar->extradata_size = 0;
         }
     } else {
         WtvStream *wst = av_mallocz(sizeof(WtvStream));
@@ -618,7 +621,7 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
         st->id = sid;
         st->priv_data = wst;
     }
-    st->codec->codec_type = codec_type;
+    st->codecpar->codec_type = codec_type;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
     avpriv_set_pts_info(st, 64, 1, 10000000);
     return st;
@@ -635,7 +638,7 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
  */
 static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
                                    ff_asf_guid mediatype, ff_asf_guid subtype,
-                                   ff_asf_guid formattype, int size)
+                                   ff_asf_guid formattype, uint64_t size)
 {
     WtvContext *wtv = s->priv_data;
     AVIOContext *pb = wtv->pb;
@@ -663,7 +666,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (!st)
             return NULL;
         if (!ff_guidcmp(formattype, ff_format_waveformatex)) {
-            int ret = ff_get_wav_header(pb, st->codec, size);
+            int ret = ff_get_wav_header(s, pb, st->codecpar, size, 0);
             if (ret < 0)
                 return NULL;
         } else {
@@ -673,15 +676,15 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         }
 
         if (!memcmp(subtype + 4, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12)) {
-            st->codec->codec_id = ff_wav_codec_get_id(AV_RL32(subtype), st->codec->bits_per_coded_sample);
+            st->codecpar->codec_id = ff_wav_codec_get_id(AV_RL32(subtype), st->codecpar->bits_per_coded_sample);
         } else if (!ff_guidcmp(subtype, mediasubtype_mpeg1payload)) {
-            if (st->codec->extradata && st->codec->extradata_size >= 22)
+            if (st->codecpar->extradata && st->codecpar->extradata_size >= 22)
                 parse_mpeg1waveformatex(st);
             else
                 av_log(s, AV_LOG_WARNING, "MPEG1WAVEFORMATEX underflow\n");
         } else {
-            st->codec->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subtype);
-            if (st->codec->codec_id == AV_CODEC_ID_NONE)
+            st->codecpar->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subtype);
+            if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
                 av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
         }
         return st;
@@ -693,7 +696,8 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
             int consumed = parse_videoinfoheader2(s, st);
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else if (!ff_guidcmp(formattype, ff_format_mpeg2_video)) {
-            int consumed = parse_videoinfoheader2(s, st);
+            uint64_t consumed = parse_videoinfoheader2(s, st);
+            /* ignore extradata; files produced by windows media center contain meaningless mpeg1 sequence header */
             avio_skip(pb, FFMAX(size - consumed, 0));
         } else {
             if (ff_guidcmp(formattype, ff_format_none))
@@ -702,11 +706,11 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         }
 
         if (!memcmp(subtype + 4, (const uint8_t[]){FF_MEDIASUBTYPE_BASE_GUID}, 12)) {
-            st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, AV_RL32(subtype));
+            st->codecpar->codec_id = ff_codec_get_id(ff_codec_bmp_tags, AV_RL32(subtype));
         } else {
-            st->codec->codec_id = ff_codec_guid_get_id(ff_video_guids, subtype);
+            st->codecpar->codec_id = ff_codec_guid_get_id(ff_video_guids, subtype);
         }
-        if (st->codec->codec_id == AV_CODEC_ID_NONE)
+        if (st->codecpar->codec_id == AV_CODEC_ID_NONE)
             av_log(s, AV_LOG_WARNING, "unknown subtype:"FF_PRI_GUID"\n", FF_ARG_GUID(subtype));
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_pes) &&
@@ -717,7 +721,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
-        st->codec->codec_id = AV_CODEC_ID_DVB_SUBTITLE;
+        st->codecpar->codec_id = AV_CODEC_ID_DVB_SUBTITLE;
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mstvcaption) &&
                (!ff_guidcmp(subtype, mediasubtype_teletext) || !ff_guidcmp(subtype, mediasubtype_dtvccdata))) {
@@ -727,7 +731,7 @@ static AVStream * parse_media_type(AVFormatContext *s, AVStream *st, int sid,
         if (ff_guidcmp(formattype, ff_format_none))
             av_log(s, AV_LOG_WARNING, "unknown formattype:"FF_PRI_GUID"\n", FF_ARG_GUID(formattype));
         avio_skip(pb, size);
-        st->codec->codec_id = !ff_guidcmp(subtype, mediasubtype_teletext) ? AV_CODEC_ID_DVB_TELETEXT : AV_CODEC_ID_EIA_608;
+        st->codecpar->codec_id = !ff_guidcmp(subtype, mediasubtype_teletext) ? AV_CODEC_ID_DVB_TELETEXT : AV_CODEC_ID_EIA_608;
         return st;
     } else if (!ff_guidcmp(mediatype, mediatype_mpeg2_sections) &&
                !ff_guidcmp(subtype, mediasubtype_mpeg2_sections)) {
@@ -750,6 +754,26 @@ enum {
 };
 
 /**
+ * Try to seek over a broken chunk
+ * @return <0 on error
+ */
+static int recover(WtvContext *wtv, uint64_t broken_pos)
+{
+    AVIOContext *pb = wtv->pb;
+    int i;
+    for (i = 0; i < wtv->nb_index_entries; i++) {
+        if (wtv->index_entries[i].pos > broken_pos) {
+            int64_t ret = avio_seek(pb, wtv->index_entries[i].pos, SEEK_SET);
+            if (ret < 0)
+                return ret;
+            wtv->pts = wtv->index_entries[i].timestamp;
+            return 0;
+         }
+     }
+     return AVERROR(EIO);
+}
+
+/**
  * Parse WTV chunks
  * @param mode SEEK_TO_DATA or SEEK_TO_PTS
  * @param seekts timestamp
@@ -760,14 +784,21 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
 {
     WtvContext *wtv = s->priv_data;
     AVIOContext *pb = wtv->pb;
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         ff_asf_guid g;
         int len, sid, consumed;
 
         ff_get_guid(pb, &g);
         len = avio_rl32(pb);
-        if (len < 32)
-            break;
+        if (len < 32) {
+            int ret;
+            if (avio_feof(pb))
+                return AVERROR_EOF;
+            av_log(s, AV_LOG_WARNING, "encountered broken chunk\n");
+            if ((ret = recover(wtv, avio_tell(pb) - 20)) < 0)
+                return ret;
+            continue;
+        }
         sid = avio_rl32(pb) & 0x7FFF;
         avio_skip(pb, 8);
         consumed = 32;
@@ -930,7 +961,7 @@ static int read_header(AVFormatContext *s)
     uint8_t root[WTV_SECTOR_SIZE];
     AVIOContext *pb;
     int64_t timeline_pos;
-    int ret;
+    int64_t ret;
 
     wtv->epoch          =
     wtv->pts            =
@@ -946,7 +977,9 @@ static int read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     root_sector = avio_rl32(s->pb);
 
-    seek_by_sector(s->pb, root_sector, 0);
+    ret = seek_by_sector(s->pb, root_sector, 0);
+    if (ret < 0)
+        return ret;
     root_size = avio_read(s->pb, root, root_size);
     if (root_size < 0)
         return AVERROR_INVALIDDATA;
@@ -972,6 +1005,8 @@ static int read_header(AVFormatContext *s)
         wtvfile_close(pb);
     }
 
+    s->ctx_flags |= AVFMTCTX_NOHEADER; // Needed for noStreams.wtv
+
     /* read seek index */
     if (s->nb_streams) {
         AVStream *st = s->streams[0];
@@ -980,7 +1015,7 @@ static int read_header(AVFormatContext *s)
             while(1) {
                 uint64_t timestamp = avio_rl64(pb);
                 uint64_t frame_nb  = avio_rl64(pb);
-                if (url_feof(pb))
+                if (avio_feof(pb))
                     break;
                 ff_add_index_entry(&wtv->index_entries, &wtv->nb_index_entries, &wtv->index_entries_allocated_size,
                                    0, timestamp, frame_nb, 0, AVINDEX_KEYFRAME);
@@ -990,22 +1025,23 @@ static int read_header(AVFormatContext *s)
             if (wtv->nb_index_entries) {
                 pb = wtvfile_open(s, root, root_size, ff_timeline_table_0_entries_Events_le16);
                 if (pb) {
-                    int i;
+                    AVIndexEntry *e = wtv->index_entries;
+                    AVIndexEntry *e_end = wtv->index_entries + wtv->nb_index_entries - 1;
+                    uint64_t last_position = 0;
                     while (1) {
                         uint64_t frame_nb = avio_rl64(pb);
                         uint64_t position = avio_rl64(pb);
-                        if (url_feof(pb))
-                            break;
-                        for (i = wtv->nb_index_entries - 1; i >= 0; i--) {
-                            AVIndexEntry *e = wtv->index_entries + i;
-                            if (frame_nb > e->size)
-                                break;
-                            if (position > e->pos)
-                                e->pos = position;
+                        while (e <= e_end && frame_nb > e->size) {
+                            e->pos = last_position;
+                            e++;
                         }
+                        if (avio_feof(pb))
+                            break;
+                        last_position = position;
                     }
+                    e_end->pos = last_position;
                     wtvfile_close(pb);
-                    st->duration = wtv->index_entries[wtv->nb_index_entries - 1].timestamp;
+                    st->duration = e_end->timestamp;
                 }
             }
         }

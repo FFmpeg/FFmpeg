@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SWR_AUDIOCONVERT_H
-#define SWR_AUDIOCONVERT_H
+#ifndef SWRESAMPLE_AUDIOCONVERT_H
+#define SWRESAMPLE_AUDIOCONVERT_H
 
 /**
  * @file
@@ -75,4 +75,4 @@ void swri_audio_convert_free(AudioConvert **ctx);
  */
 int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len);
 
-#endif /* AUDIOCONVERT_H */
+#endif /* SWRESAMPLE_AUDIOCONVERT_H */

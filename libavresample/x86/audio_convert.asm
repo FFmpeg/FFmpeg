@@ -36,7 +36,7 @@ pb_interleave_words: SHUFFLE_MASK_W  0,  4,  1,  5,  2,  6,  3,  7
 pb_deinterleave_words: SHUFFLE_MASK_W  0,  2,  4,  6,  1,  3,  5,  7
 pw_zero_even:     times 4 dw 0x0000, 0xffff
 
-SECTION_TEXT
+SECTION .text
 
 ;------------------------------------------------------------------------------
 ; void ff_conv_s16_to_s32(int32_t *dst, const int16_t *src, int len);

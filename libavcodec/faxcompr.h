@@ -31,7 +31,7 @@
 #include "tiff.h"
 
 /**
- * initialize upacker code
+ * initialize unpacker code
  */
 void ff_ccitt_unpack_init(void);
 

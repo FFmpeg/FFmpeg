@@ -68,19 +68,19 @@ static const struct {
   {-1, "",           AVMEDIA_TYPE_UNKNOWN, AV_CODEC_ID_NONE, -1, -1}
 };
 
-int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
+int ff_rtp_get_codec_info(AVCodecParameters *par, int payload_type)
 {
     int i = 0;
 
     for (i = 0; rtp_payload_types[i].pt >= 0; i++)
         if (rtp_payload_types[i].pt == payload_type) {
             if (rtp_payload_types[i].codec_id != AV_CODEC_ID_NONE) {
-                codec->codec_type = rtp_payload_types[i].codec_type;
-                codec->codec_id = rtp_payload_types[i].codec_id;
+                par->codec_type = rtp_payload_types[i].codec_type;
+                par->codec_id = rtp_payload_types[i].codec_id;
                 if (rtp_payload_types[i].audio_channels > 0)
-                    codec->channels = rtp_payload_types[i].audio_channels;
+                    par->channels = rtp_payload_types[i].audio_channels;
                 if (rtp_payload_types[i].clock_rate > 0)
-                    codec->sample_rate = rtp_payload_types[i].clock_rate;
+                    par->sample_rate = rtp_payload_types[i].clock_rate;
                 return 0;
             }
         }
@@ -88,7 +88,7 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 }
 
 int ff_rtp_get_payload_type(AVFormatContext *fmt,
-                            AVCodecContext *codec, int idx)
+                            AVCodecParameters *par, int idx)
 {
     int i;
     AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
@@ -103,27 +103,27 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt,
 
     /* static payload type */
     for (i = 0; rtp_payload_types[i].pt >= 0; ++i)
-        if (rtp_payload_types[i].codec_id == codec->codec_id) {
-            if (codec->codec_id == AV_CODEC_ID_H263 && (!fmt || !fmt->oformat ||
+        if (rtp_payload_types[i].codec_id == par->codec_id) {
+            if (par->codec_id == AV_CODEC_ID_H263 && (!fmt || !fmt->oformat ||
                 !fmt->oformat->priv_class || !fmt->priv_data ||
                 !av_opt_flag_is_set(fmt->priv_data, "rtpflags", "rfc2190")))
                 continue;
             /* G722 has 8000 as nominal rate even if the sample rate is 16000,
              * see section 4.5.2 in RFC 3551. */
-            if (codec->codec_id == AV_CODEC_ID_ADPCM_G722 &&
-                codec->sample_rate == 16000 && codec->channels == 1)
+            if (par->codec_id == AV_CODEC_ID_ADPCM_G722 &&
+                par->sample_rate == 16000 && par->channels == 1)
                 return rtp_payload_types[i].pt;
-            if (codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+            if (par->codec_type == AVMEDIA_TYPE_AUDIO &&
                 ((rtp_payload_types[i].clock_rate > 0 &&
-                  codec->sample_rate != rtp_payload_types[i].clock_rate) ||
+                  par->sample_rate != rtp_payload_types[i].clock_rate) ||
                  (rtp_payload_types[i].audio_channels > 0 &&
-                  codec->channels != rtp_payload_types[i].audio_channels)))
+                  par->channels != rtp_payload_types[i].audio_channels)))
                 continue;
             return rtp_payload_types[i].pt;
         }
 
     if (idx < 0)
-        idx = codec->codec_type == AVMEDIA_TYPE_AUDIO;
+        idx = par->codec_type == AVMEDIA_TYPE_AUDIO;
 
     /* dynamic payload type */
     return RTP_PT_PRIVATE + idx;

@@ -1,0 +1,4 @@
+0dd4e19b989cb102ffb06768740d940f *tests/data/fate/vsynth_lena-xface.nut
+17551 tests/data/fate/vsynth_lena-xface.nut
+88ff6155a8b88872e6581d08febdb050 *tests/data/fate/vsynth_lena-xface.out.rawvideo
+stddev:   99.20 PSNR:  8.20 MAXDIFF:  238 bytes:  7603200/  7603200

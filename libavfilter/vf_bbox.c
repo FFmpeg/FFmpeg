@@ -30,7 +30,7 @@
 #include "bbox.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct BBoxContext {
     const AVClass *class;
     int min_val;
 } BBoxContext;
@@ -56,13 +56,14 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE,
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 #define SET_META(key, value) \
-    snprintf(buf, sizeof(buf), "%d", value);  \
-    av_dict_set(metadata, key, buf, 0);
+    av_dict_set_int(metadata, key, value, 0);
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
@@ -70,7 +71,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     BBoxContext *bbox = ctx->priv;
     FFBoundingBox box;
     int has_bbox, w, h;
-    char buf[32];
 
     has_bbox =
         ff_calculate_bounding_box(&box,
@@ -80,11 +80,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     h = box.y2 - box.y1 + 1;
 
     av_log(ctx, AV_LOG_INFO,
-           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count,
+           "n:%"PRId64" pts:%s pts_time:%s", inlink->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base));
 
     if (has_bbox) {
-        AVDictionary **metadata = avpriv_frame_get_metadatap(frame);
+        AVDictionary **metadata = &frame->metadata;
 
         SET_META("lavfi.bbox.x1", box.x1)
         SET_META("lavfi.bbox.x2", box.x2)

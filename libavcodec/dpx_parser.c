@@ -25,6 +25,8 @@
  */
 
 #include "libavutil/bswap.h"
+#include "libavutil/common.h"
+
 #include "parser.h"
 
 typedef struct DPXParseContext {
@@ -48,7 +50,7 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
     *poutbuf_size = 0;
     if (buf_size == 0)
-        return 0;
+        next = 0;
 
     if (!d->pc.frame_start_found) {
         for (; i < buf_size; i++) {
@@ -57,6 +59,7 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 state == MKTAG('S','D','P','X')) {
                 d->pc.frame_start_found = 1;
                 d->is_be = state == MKBETAG('S','D','P','X');
+                d->index = 0;
                 break;
             }
         }
@@ -67,33 +70,38 @@ static int dpx_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             d->remaining_size -= i;
             if (d->remaining_size)
                 goto flush;
-            next = i;
         }
     }
 
-    for (;d->pc.frame_start_found && i < buf_size; i++) {
+    for (; d->pc.frame_start_found && i < buf_size; i++) {
         d->pc.state = (d->pc.state << 8) | buf[i];
-        if (d->index == 16) {
+        d->index++;
+        if (d->index == 17) {
             d->fsize = d->is_be ? d->pc.state : av_bswap32(d->pc.state);
             if (d->fsize <= 1664) {
-                d->index = d->pc.frame_start_found = 0;
+                d->pc.frame_start_found = 0;
                 goto flush;
             }
-            d->index = 0;
             if (d->fsize > buf_size - i + 19)
                 d->remaining_size = d->fsize - buf_size + i - 19;
             else
-                next = d->fsize + i - 19;
+                i += d->fsize - 19;
+
             break;
+        } else if (d->index > 17) {
+            if (d->pc.state == MKBETAG('S','D','P','X') ||
+                d->pc.state == MKTAG('S','D','P','X')) {
+                next = i - 3;
+                break;
+            }
         }
-        d->index++;
     }
 
 flush:
     if (ff_combine_frame(&d->pc, next, &buf, &buf_size) < 0)
         return buf_size;
 
-    d->index = d->pc.frame_start_found = 0;
+    d->pc.frame_start_found = 0;
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;

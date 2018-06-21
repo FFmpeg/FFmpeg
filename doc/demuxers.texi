@@ -13,10 +13,17 @@ You can disable all the demuxers using the configure option
 the option @code{--enable-demuxer=@var{DEMUXER}}, or disable it
 with the option @code{--disable-demuxer=@var{DEMUXER}}.
 
-The option @code{-formats} of the ff* tools will display the list of
-enabled demuxers.
+The option @code{-demuxers} of the ff* tools will display the list of
+enabled demuxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
 
 The description of some of the currently available demuxers follows.
+
+@section aa
+
+Audible Format 2, 3, and 4 demuxer.
+
+This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
 
 @section applehttp
 
@@ -28,6 +35,26 @@ the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
 the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
+
+@section apng
+
+Animated Portable Network Graphics demuxer.
+
+This demuxer is used to demux APNG files.
+All headers, but the PNG signature, up to (but not including) the first
+fcTL chunk are transmitted as extradata.
+Frames are then split as being all the chunks between two fcTL ones, or
+between the last fcTL and IEND chunks.
+
+@table @option
+@item -ignore_loop @var{bool}
+Ignore the loop variable in the file if set.
+@item -max_fps @var{int}
+Maximum framerate in frames per second (0 for no limit).
+@item -default_fps @var{int}
+Default framerate in frames per second when none is specified in the file
+(0 meaning as fast as possible).
+@end table
 
 @section asf
 
@@ -46,7 +73,7 @@ Do not try to resynchronize by looking for a certain optional start code.
 Virtual concatenation script demuxer.
 
 This demuxer reads a list of files and other directives from a text file and
-demuxes them one after the other, as if all their packet had been muxed
+demuxes them one after the other, as if all their packets had been muxed
 together.
 
 The timestamps in the files are adjusted so that the first file starts at 0
@@ -74,14 +101,14 @@ following directive is recognized:
 Path to a file to read; special characters and spaces must be escaped with
 backslash or single quotes.
 
-All subsequent directives apply to that file.
+All subsequent file-related directives apply to that file.
 
 @item @code{ffconcat version 1.0}
 Identify the script type and version. It also sets the @option{safe} option
-to 1 if it was to its default -1.
+to 1 if it was -1.
 
 To make FFmpeg recognize the format automatically, this directive must
-appears exactly as is (no extra space or byte-order-mark) on the very first
+appear exactly as is (no extra space or byte-order-mark) on the very first
 line of the script.
 
 @item @code{duration @var{dur}}
@@ -91,6 +118,63 @@ file is not available or accurate.
 
 If the duration is set for all files, then it is possible to seek in the
 whole concatenated video.
+
+@item @code{inpoint @var{timestamp}}
+In point of the file. When the demuxer opens the file it instantly seeks to the
+specified timestamp. Seeking is done so that all streams can be presented
+successfully at In point.
+
+This directive works best with intra frame codecs, because for non-intra frame
+ones you will usually get extra packets before the actual In point and the
+decoded content will most likely contain frames before In point too.
+
+For each file, packets before the file In point will have timestamps less than
+the calculated start timestamp of the file (negative in case of the first
+file), and the duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified In point.
+
+Because of potential packets before the specified In point, packet timestamps
+may overlap between two concatenated files.
+
+@item @code{outpoint @var{timestamp}}
+Out point of the file. When the demuxer reaches the specified decoding
+timestamp in any of the streams, it handles it as an end of file condition and
+skips the current and all the remaining packets from all streams.
+
+Out point is exclusive, which means that the demuxer will not output packets
+with a decoding timestamp greater or equal to Out point.
+
+This directive works best with intra frame codecs and formats where all streams
+are tightly interleaved. For non-intra frame codecs you will usually get
+additional packets with presentation timestamp after Out point therefore the
+decoded content will most likely contain frames after Out point too. If your
+streams are not tightly interleaved you may not get all the packets from all
+streams before Out point and you may only will be able to decode the earliest
+stream until Out point.
+
+The duration of the files (if not specified by the @code{duration}
+directive) will be reduced based on their specified Out point.
+
+@item @code{file_packet_metadata @var{key=value}}
+Metadata of the packets of the file. The specified metadata will be set for
+each file packet. You can specify this directive multiple times to add multiple
+metadata entries.
+
+@item @code{stream}
+Introduce a stream in the virtual file.
+All subsequent stream-related directives apply to the last introduced
+stream.
+Some streams properties must be set in order to allow identifying the
+matching streams in the subfiles.
+If no streams are defined in the script, the streams from the first file are
+copied.
+
+@item @code{exact_stream_id @var{id}}
+Set the id of the stream.
+If this directive is given, the string with the corresponding id in the
+subfiles will be used.
+This is especially useful for MPEG-PS (VOB) files, where the order of the
+streams is not reliable.
 
 @end table
 
@@ -109,46 +193,148 @@ component.
 
 If set to 0, any file name is accepted.
 
-The default is -1, it is equivalent to 1 if the format was automatically
+The default is 1.
+
+-1 is equivalent to 1 if the format was automatically
 probed and 0 otherwise.
+
+@item auto_convert
+If set to 1, try to perform automatic conversions on packet data to make the
+streams concatenable.
+The default is 1.
+
+Currently, the only conversion is adding the h264_mp4toannexb bitstream
+filter to H.264 streams in MP4 format. This is necessary in particular if
+there are resolution changes.
+
+@item segment_time_metadata
+If set to 1, every packet will contain the @var{lavf.concat.start_time} and the
+@var{lavf.concat.duration} packet metadata values which are the start_time and
+the duration of the respective file segments in the concatenated output
+expressed in microseconds. The duration metadata is only set if it is known
+based on the concat file.
+The default is 0.
 
 @end table
 
-@section flv
+@subsection Examples
+
+@itemize
+@item
+Use absolute filenames and include some comments:
+@example
+# my first filename
+file /mnt/share/file-1.wav
+# my second filename including whitespace
+file '/mnt/share/file 2.wav'
+# my third filename including whitespace plus single quote
+file '/mnt/share/file 3'\''.wav'
+@end example
+
+@item
+Allow for input format auto-probing, use safe filenames and set the duration of
+the first file:
+@example
+ffconcat version 1.0
+
+file file-1.wav
+duration 20.0
+
+file subdir/file-2.wav
+@end example
+@end itemize
+
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
+@section flv, live_flv
 
 Adobe Flash Video Format demuxer.
 
-This demuxer is used to demux FLV files and RTMP network streams.
+This demuxer is used to demux FLV files and RTMP network streams. In case of live network streams, if you force format, you may use live_flv option instead of flv to survive timestamp discontinuities.
+
+@example
+ffmpeg -f flv -i myfile.flv ...
+ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
+@end example
+
 
 @table @option
 @item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
 @end table
 
-@section libgme
+@section gif
 
-The Game Music Emu library is a collection of video game music file emulators.
+Animated GIF demuxer.
 
-See @url{http://code.google.com/p/game-music-emu/} for more information.
+It accepts the following options:
 
-Some files have multiple tracks. The demuxer will pick the first track by
-default. The @option{track_index} option can be used to select a different
-track. Track indexes start at 0. The demuxer exports the number of tracks as
-@var{tracks} meta data entry.
+@table @option
+@item min_delay
+Set the minimum valid delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 2.
 
-For very large files, the @option{max_size} option may have to be adjusted.
+@item max_gif_delay
+Set the maximum valid delay between frames in hundredth of seconds.
+Range is 0 to 65535. Default value is 65535 (nearly eleven minutes),
+the maximum value allowed by the specification.
 
-@section libquvi
+@item default_delay
+Set the default delay between frames in hundredths of seconds.
+Range is 0 to 6000. Default value is 10.
 
-Play media from Internet services using the quvi project.
+@item ignore_loop
+GIF files can contain information to loop a certain number of times (or
+infinitely). If @option{ignore_loop} is set to 1, then the loop setting
+from the input will be ignored and looping will not occur. If set to 0,
+then looping will occur and will cycle the number of times according to
+the GIF. Default value is 1.
+@end table
 
-The demuxer accepts a @option{format} option to request a specific quality. It
-is by default set to @var{best}.
+For example, with the overlay filter, place an infinitely looping GIF
+over another video:
+@example
+ffmpeg -i input.mp4 -ignore_loop 0 -i input.gif -filter_complex overlay=shortest=1 out.mkv
+@end example
 
-See @url{http://quvi.sourceforge.net/} for more information.
+Note that in the above example the shortest option for overlay filter is
+used to end the output video at the length of the shortest input file,
+which in this case is @file{input.mp4} as the GIF in this example loops
+infinitely.
 
-FFmpeg needs to be built with @code{--enable-libquvi} for this demuxer to be
-enabled.
+@section hls
+
+HLS demuxer
+
+It accepts the following options:
+
+@table @option
+@item live_start_index
+segment index to start live streams at (negative values are from the end).
+
+@item allowed_extensions
+',' separated list of file extensions that hls is allowed to access.
+
+@item max_reload
+Maximum number of times a insufficient list is attempted to be reloaded.
+Default value is 1000.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP streams.
+Enabled by default.
+
+@item http_multiple
+Use multiple HTTP connections for downloading HTTP segments.
+Enabled by default for HTTP/1.1 servers.
+@end table
 
 @section image2
 
@@ -175,6 +361,10 @@ Select the pattern type used to interpret the provided filename.
 
 @var{pattern_type} accepts one of the following values.
 @table @option
+@item none
+Disable pattern matching, therefore the video will only contain the specified
+image. You should use this option if you do not want to create sequences from
+multiple images and your filenames may contain special pattern characters.
 @item sequence
 Select a sequence pattern type, used to specify a sequence of files
 indexed by sequential numbers.
@@ -249,6 +439,8 @@ is 5.
 If set to 1, will set frame timestamp to modification time of image file. Note
 that monotonity of timestamps is not provided: images go in the same order as
 without this option. Default value is 0.
+If set to 2, will set frame timestamp to the modification time of the image file in
+nanosecond precision.
 @item video_size
 Set the video size of the images to read. If not specified the video
 size is guessed from the first image file in the sequence.
@@ -279,17 +471,109 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 
+@section libgme
+
+The Game Music Emu library is a collection of video game music file emulators.
+
+See @url{http://code.google.com/p/game-music-emu/} for more information.
+
+Some files have multiple tracks. The demuxer will pick the first track by
+default. The @option{track_index} option can be used to select a different
+track. Track indexes start at 0. The demuxer exports the number of tracks as
+@var{tracks} meta data entry.
+
+For very large files, the @option{max_size} option may have to be adjusted.
+
+@section libopenmpt
+
+libopenmpt based module demuxer
+
+See @url{https://lib.openmpt.org/libopenmpt/} for more information.
+
+Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
+option.
+
+It accepts the following options:
+
+@table @option
+@item subsong
+Set the subsong index. This can be either  'all', 'auto', or the index of the
+subsong. Subsong indexes start at 0. The default is 'auto'.
+
+The default value is to let libopenmpt choose.
+
+@item layout
+Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
+The default value is STEREO.
+
+@item sample_rate
+Set the sample rate for libopenmpt to output.
+Range is from 1000 to INT_MAX. The value default is 48000.
+@end table
+
+@section mov/mp4/3gp/QuickTime
+
+QuickTime / MP4 demuxer.
+
+This demuxer accepts the following options:
+@table @option
+@item enable_drefs
+Enable loading of external tracks, disabled by default.
+Enabling this can theoretically leak information in some use cases.
+
+@item use_absolute_path
+Allows loading of external tracks via absolute paths, disabled by default.
+Enabling this poses a security risk. It should only be enabled if the source
+is known to be non malicious.
+
+@end table
+
 @section mpegts
 
 MPEG-2 transport stream demuxer.
 
+This demuxer accepts the following options:
 @table @option
+@item resync_size
+Set size limit for looking up a new synchronization. Default value is
+65536.
+
+@item skip_unknown_pmt
+Skip PMTs for programs not defined in the PAT. Default value is 0.
 
 @item fix_teletext_pts
-Overrides teletext packet PTS and DTS values with the timestamps calculated
+Override teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
 not discarded. Default value is 1, set this option to 0 if you want your
 teletext packet PTS and DTS values untouched.
+
+@item ts_packetsize
+Output option carrying the raw packet size in bytes.
+Show the detected raw packet size, cannot be set by the user.
+
+@item scan_all_pmts
+Scan and combine all PMTs. The value is an integer with value from -1
+to 1 (-1 means automatic setting, 1 means enabled, 0 means
+disabled). Default value is -1.
+
+@item merge_pmt_versions
+Re-use existing streams when a PMT's version is updated and elementary
+streams move to different PIDs. Default value is 0.
+@end table
+
+@section mpjpeg
+
+MJPEG encapsulated in multi-part MIME demuxer.
+
+This demuxer allows reading of MJPEG, where each frame is represented as a part of
+multipart/x-mixed-replace stream.
+@table @option
+
+@item strict_mime_boundary
+Default implementation applies a relaxed standard to multi-part MIME boundary detection,
+to prevent regression with numerous existing endpoints not generating a proper MIME
+MJPEG stream. Turning this option on by setting it to 1 will result in a stricter check
+of the boundary value.
 @end table
 
 @section rawvideo

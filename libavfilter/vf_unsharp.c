@@ -46,7 +46,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "unsharp.h"
-#include "unsharp_opencl.h"
 
 static void apply_unsharp(      uint8_t *dst, int dst_stride,
                           const uint8_t *src, int src_stride,
@@ -105,15 +104,15 @@ static void apply_unsharp(      uint8_t *dst, int dst_stride,
 static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
     AVFilterLink *inlink = ctx->inputs[0];
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
     int i, plane_w[3], plane_h[3];
     UnsharpFilterParam *fp[3];
     plane_w[0] = inlink->w;
-    plane_w[1] = plane_w[2] = FF_CEIL_RSHIFT(inlink->w, unsharp->hsub);
+    plane_w[1] = plane_w[2] = AV_CEIL_RSHIFT(inlink->w, s->hsub);
     plane_h[0] = inlink->h;
-    plane_h[1] = plane_h[2] = FF_CEIL_RSHIFT(inlink->h, unsharp->vsub);
-    fp[0] = &unsharp->luma;
-    fp[1] = fp[2] = &unsharp->chroma;
+    plane_h[1] = plane_h[2] = AV_CEIL_RSHIFT(inlink->h, s->vsub);
+    fp[0] = &s->luma;
+    fp[1] = fp[2] = &s->chroma;
     for (i = 0; i < 3; i++) {
         apply_unsharp(out->data[i], out->linesize[i], in->data[i], in->linesize[i], plane_w[i], plane_h[i], fp[i]);
     }
@@ -134,24 +133,16 @@ static void set_filter_param(UnsharpFilterParam *fp, int msize_x, int msize_y, f
 
 static av_cold int init(AVFilterContext *ctx)
 {
-    int ret = 0;
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
 
+    set_filter_param(&s->luma,   s->lmsize_x, s->lmsize_y, s->lamount);
+    set_filter_param(&s->chroma, s->cmsize_x, s->cmsize_y, s->camount);
 
-    set_filter_param(&unsharp->luma,   unsharp->lmsize_x, unsharp->lmsize_y, unsharp->lamount);
-    set_filter_param(&unsharp->chroma, unsharp->cmsize_x, unsharp->cmsize_y, unsharp->camount);
-
-    unsharp->apply_unsharp = apply_unsharp_c;
-    if (!CONFIG_OPENCL && unsharp->opencl) {
-        av_log(ctx, AV_LOG_ERROR, "OpenCL support was not enabled in this build, cannot be selected\n");
+    if (s->luma.scalebits >= 26 || s->chroma.scalebits >= 26) {
+        av_log(ctx, AV_LOG_ERROR, "luma or chroma matrix size too big\n");
         return AVERROR(EINVAL);
     }
-    if (CONFIG_OPENCL && unsharp->opencl) {
-        unsharp->apply_unsharp = ff_opencl_apply_unsharp;
-        ret = ff_opencl_unsharp_init(ctx);
-        if (ret < 0)
-            return ret;
-    }
+    s->apply_unsharp = apply_unsharp_c;
     return 0;
 }
 
@@ -163,9 +154,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const char *effect_type, int width)
@@ -184,7 +176,8 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     for (z = 0; z < 2 * fp->steps_y; z++)
-        if (!(fp->sc[z] = av_malloc(sizeof(*(fp->sc[z])) * (width + 2 * fp->steps_x))))
+        if (!(fp->sc[z] = av_malloc_array(width + 2 * fp->steps_x,
+                                          sizeof(*(fp->sc[z])))))
             return AVERROR(ENOMEM);
 
     return 0;
@@ -192,17 +185,17 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
 
 static int config_props(AVFilterLink *link)
 {
-    UnsharpContext *unsharp = link->dst->priv;
+    UnsharpContext *s = link->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int ret;
 
-    unsharp->hsub = desc->log2_chroma_w;
-    unsharp->vsub = desc->log2_chroma_h;
+    s->hsub = desc->log2_chroma_w;
+    s->vsub = desc->log2_chroma_h;
 
-    ret = init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
+    ret = init_filter_param(link->dst, &s->luma,   "luma",   link->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &unsharp->chroma, "chroma", FF_CEIL_RSHIFT(link->w, unsharp->hsub));
+    ret = init_filter_param(link->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(link->w, s->hsub));
     if (ret < 0)
         return ret;
 
@@ -214,24 +207,20 @@ static void free_filter_param(UnsharpFilterParam *fp)
     int z;
 
     for (z = 0; z < 2 * fp->steps_y; z++)
-        av_free(fp->sc[z]);
+        av_freep(&fp->sc[z]);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
-    UnsharpContext *unsharp = ctx->priv;
+    UnsharpContext *s = ctx->priv;
 
-    if (CONFIG_OPENCL && unsharp->opencl) {
-        ff_opencl_unsharp_uninit(ctx);
-    }
-
-    free_filter_param(&unsharp->luma);
-    free_filter_param(&unsharp->chroma);
+    free_filter_param(&s->luma);
+    free_filter_param(&s->chroma);
 }
 
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    UnsharpContext *unsharp = link->dst->priv;
+    UnsharpContext *s = link->dst->priv;
     AVFilterLink *outlink   = link->dst->outputs[0];
     AVFrame *out;
     int ret = 0;
@@ -242,25 +231,22 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
-    if (CONFIG_OPENCL && unsharp->opencl) {
-        ret = ff_opencl_unsharp_process_inout_buf(link->dst, in, out);
-        if (ret < 0)
-            goto end;
-    }
 
-    ret = unsharp->apply_unsharp(link->dst, in, out);
-end:
+    ret = s->apply_unsharp(link->dst, in, out);
+
     av_frame_free(&in);
 
-    if (ret < 0)
+    if (ret < 0) {
+        av_frame_free(&out);
         return ret;
+    }
     return ff_filter_frame(outlink, out);
 }
 
 #define OFFSET(x) offsetof(UnsharpContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 #define MIN_SIZE 3
-#define MAX_SIZE 63
+#define MAX_SIZE 23
 static const AVOption unsharp_options[] = {
     { "luma_msize_x",   "set luma matrix horizontal size",   OFFSET(lmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "lx",             "set luma matrix horizontal size",   OFFSET(lmsize_x), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
@@ -274,7 +260,7 @@ static const AVOption unsharp_options[] = {
     { "cy",             "set chroma matrix vertical size",   OFFSET(cmsize_y), AV_OPT_TYPE_INT,   { .i64 = 5 }, MIN_SIZE, MAX_SIZE, FLAGS },
     { "chroma_amount",  "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
     { "ca",             "set chroma effect strength",        OFFSET(camount),  AV_OPT_TYPE_FLOAT, { .dbl = 0 },       -2,        5, FLAGS },
-    { "opencl",         "use OpenCL filtering capabilities", OFFSET(opencl), AV_OPT_TYPE_INT, { .i64 = 0 },        0,        1, FLAGS },
+    { "opencl",         "ignored",                           OFFSET(opencl),   AV_OPT_TYPE_BOOL,  { .i64 = 0 },        0,        1, FLAGS },
     { NULL }
 };
 

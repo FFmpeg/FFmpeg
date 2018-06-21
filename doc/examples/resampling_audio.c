@@ -168,7 +168,7 @@ int main(int argc, char **argv)
         dst_nb_samples = av_rescale_rnd(swr_get_delay(swr_ctx, src_rate) +
                                         src_nb_samples, dst_rate, src_rate, AV_ROUND_UP);
         if (dst_nb_samples > max_dst_nb_samples) {
-            av_free(dst_data[0]);
+            av_freep(&dst_data[0]);
             ret = av_samples_alloc(dst_data, &dst_linesize, dst_nb_channels,
                                    dst_nb_samples, dst_sample_fmt, 1);
             if (ret < 0)
@@ -199,8 +199,7 @@ int main(int argc, char **argv)
             fmt, dst_ch_layout, dst_nb_channels, dst_rate, dst_filename);
 
 end:
-    if (dst_file)
-        fclose(dst_file);
+    fclose(dst_file);
 
     if (src_data)
         av_freep(&src_data[0]);

@@ -27,9 +27,9 @@
 #include <inttypes.h>
 
 #include "avcodec.h"
+#include "bswapdsp.h"
 #include "bytestream.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "internal.h"
 
 #define TM2_ESCAPE 0x80000000
@@ -63,7 +63,8 @@ typedef struct TM2Context {
     AVFrame *pic;
 
     GetBitContext gb;
-    DSPContext dsp;
+    int error;
+    BswapDSPContext bdsp;
 
     uint8_t *buffer;
     int buffer_size;
@@ -177,7 +178,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     if (!huff.nums || !huff.bits || !huff.lens) {
         res = AVERROR(ENOMEM);
-        goto fail;
+        goto out;
     }
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
@@ -203,13 +204,14 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
             code->recode = av_malloc_array(code->length, sizeof(int));
             if (!code->recode) {
                 res = AVERROR(ENOMEM);
-                goto fail;
+                goto out;
             }
             for (i = 0; i < code->length; i++)
                 code->recode[i] = huff.nums[i];
         }
     }
-fail:
+
+out:
     /* free allocated memory */
     av_free(huff.nums);
     av_free(huff.bits);
@@ -262,7 +264,8 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     d  = get_bits(&ctx->gb, 9);
     mb = get_bits(&ctx->gb, 5);
 
-    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1) || (mb > 32)) {
+    av_assert2(mb < 32);
+    if ((d < 1) || (d > TM2_DELTAS) || (mb < 1)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect delta table: %i deltas x %i bits\n", d, mb);
         return AVERROR_INVALIDDATA;
     }
@@ -270,7 +273,7 @@ static int tm2_read_deltas(TM2Context *ctx, int stream_id)
     for (i = 0; i < d; i++) {
         v = get_bits_long(&ctx->gb, mb);
         if (v & (1 << (mb - 1)))
-            ctx->deltas[stream_id][i] = v - (1 << mb);
+            ctx->deltas[stream_id][i] = v - (1U << mb);
         else
             ctx->deltas[stream_id][i] = v;
     }
@@ -296,15 +299,15 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     /* get stream length in dwords */
     bytestream2_init(&gb, buf, buf_size);
     len  = bytestream2_get_be32(&gb);
-    skip = len * 4 + 4;
 
     if (len == 0)
         return 4;
 
-    if (len >= INT_MAX/4-1 || len < 0 || skip > buf_size) {
-        av_log(ctx->avctx, AV_LOG_ERROR, "invalid stream size\n");
+    if (len >= INT_MAX / 4 - 1 || len < 0 || len * 4 + 4 > buf_size) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Error, invalid stream size.\n");
         return AVERROR_INVALIDDATA;
     }
+    skip = len * 4 + 4;
 
     toks = bytestream2_get_be32(&gb);
     if (toks & 1) {
@@ -342,31 +345,35 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     /* check if we have sane number of tokens */
     if ((toks < 0) || (toks > 0xFFFFFF)) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-        tm2_free_codes(&codes);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     ret = av_reallocp_array(&ctx->tokens[stream_id], toks, sizeof(int));
     if (ret < 0) {
         ctx->tok_lens[stream_id] = 0;
-        return ret;
+        goto end;
     }
     ctx->tok_lens[stream_id] = toks;
     len = bytestream2_get_be32(&gb);
     if (len > 0) {
         pos = bytestream2_tell(&gb);
-        if (skip <= pos)
-            return AVERROR_INVALIDDATA;
+        if (skip <= pos) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         init_get_bits(&ctx->gb, buf + pos, (skip - pos) * 8);
         for (i = 0; i < toks; i++) {
             if (get_bits_left(&ctx->gb) <= 0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Incorrect number of tokens: %i\n", toks);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
             ctx->tokens[stream_id][i] = tm2_get_token(&ctx->gb, &codes);
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS || ctx->tokens[stream_id][i]<0) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     } else {
@@ -375,19 +382,24 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
                 av_log(ctx->avctx, AV_LOG_ERROR, "Invalid delta token index %d for type %d, n=%d\n",
                        ctx->tokens[stream_id][i], stream_id, i);
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto end;
             }
         }
     }
-    tm2_free_codes(&codes);
 
-    return skip;
+    ret = skip;
+
+end:
+    tm2_free_codes(&codes);
+    return ret;
 }
 
 static inline int GET_TOK(TM2Context *ctx,int type)
 {
     if (ctx->tok_ptrs[type] >= ctx->tok_lens[type]) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Read token from stream %i out of bounds (%i>=%i)\n", type, ctx->tok_ptrs[type], ctx->tok_lens[type]);
+        ctx->error = 1;
         return 0;
     }
     if (type <= TM2_MOT) {
@@ -431,15 +443,15 @@ static inline int GET_TOK(TM2Context *ctx,int type)
 
 /* recalculate last and delta values for next blocks */
 #define TM2_RECALC_BLOCK(CHR, stride, last, CD) {\
-    CD[0] = CHR[1] - last[1];\
-    CD[1] = (int)CHR[stride + 1] - (int)CHR[1];\
+    CD[0] = (unsigned)CHR[         1] - (unsigned)last[1];\
+    CD[1] = (unsigned)CHR[stride + 1] - (unsigned) CHR[1];\
     last[0] = (int)CHR[stride + 0];\
     last[1] = (int)CHR[stride + 1];}
 
 /* common operations - add deltas to 4x4 block of luma or 2x2 blocks of chroma */
 static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *deltas, int *last)
 {
-    int ct, d;
+    unsigned ct, d;
     int i, j;
 
     for (j = 0; j < 4; j++){
@@ -455,7 +467,7 @@ static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *de
     }
 }
 
-static inline void tm2_high_chroma(int *data, int stride, int *last, int *CD, int *deltas)
+static inline void tm2_high_chroma(int *data, int stride, int *last, unsigned *CD, int *deltas)
 {
     int i, j;
     for (j = 0; j < 2; j++) {
@@ -799,6 +811,8 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
             default:
                 av_log(ctx->avctx, AV_LOG_ERROR, "Skipping unknown block type %i\n", type);
             }
+            if (ctx->error)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -879,6 +893,8 @@ static int decode_frame(AVCodecContext *avctx,
     int offset           = TM2_HEADER_SIZE;
     int i, t, ret;
 
+    l->error = 0;
+
     av_fast_padded_malloc(&l->buffer, &l->buffer_size, buf_size);
     if (!l->buffer) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
@@ -888,7 +904,8 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_reget_buffer(avctx, p)) < 0)
         return ret;
 
-    l->dsp.bswap_buf((uint32_t*)l->buffer, (const uint32_t*)buf, buf_size >> 2);
+    l->bdsp.bswap_buf((uint32_t *) l->buffer, (const uint32_t *) buf,
+                      buf_size >> 2);
 
     if ((ret = tm2_read_header(l, l->buffer)) < 0) {
         return ret;
@@ -904,7 +921,8 @@ static int decode_frame(AVCodecContext *avctx,
                             buf_size - offset);
         if (t < 0) {
             int j = tm2_stream_order[i];
-            memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
+            if (l->tok_lens[j])
+                memset(l->tokens[j], 0, sizeof(**l->tokens) * l->tok_lens[j]);
             return t;
         }
         offset += t;
@@ -939,7 +957,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!l->pic)
         return AVERROR(ENOMEM);
 
-    ff_dsputil_init(&l->dsp, avctx);
+    ff_bswapdsp_init(&l->bdsp);
 
     l->last  = av_malloc_array(w >> 2, 4 * sizeof(*l->last) );
     l->clast = av_malloc_array(w >> 2, 4 * sizeof(*l->clast));
@@ -994,14 +1012,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_free(l->last);
     av_free(l->clast);
     for (i = 0; i < TM2_NUM_STREAMS; i++)
-        av_free(l->tokens[i]);
+        av_freep(&l->tokens[i]);
     if (l->Y1) {
-        av_free(l->Y1_base);
-        av_free(l->U1_base);
-        av_free(l->V1_base);
-        av_free(l->Y2_base);
-        av_free(l->U2_base);
-        av_free(l->V2_base);
+        av_freep(&l->Y1_base);
+        av_freep(&l->U1_base);
+        av_freep(&l->V1_base);
+        av_freep(&l->Y2_base);
+        av_freep(&l->U2_base);
+        av_freep(&l->V2_base);
     }
     av_freep(&l->buffer);
     l->buffer_size = 0;
@@ -1020,5 +1038,5 @@ AVCodec ff_truemotion2_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

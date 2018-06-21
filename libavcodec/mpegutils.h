@@ -28,6 +28,10 @@
 #include "avcodec.h"
 #include "version.h"
 
+/**
+ * Return value for header parsers if frame is not coded.
+ * */
+#define FRAME_SKIPPED 100
 
 /* picture type */
 #define PICT_TOP_FIELD     1
@@ -40,9 +44,10 @@
  */
 #define DELAYED_PIC_REF 4
 
+#define MAX_MB_BYTES    (30 * 16 * 16 * 3 / 8 + 120)
+#define MAX_FCODE        7
 
 /* MB types */
-#if !FF_API_MB_TYPE
 #define MB_TYPE_INTRA4x4   (1 <<  0)
 #define MB_TYPE_INTRA16x16 (1 <<  1) // FIXME H.264-specific
 #define MB_TYPE_INTRA_PCM  (1 <<  2) // FIXME H.264-specific
@@ -64,7 +69,6 @@
 #define MB_TYPE_L0L1       (MB_TYPE_L0   | MB_TYPE_L1)
 #define MB_TYPE_QUANT      (1 << 16)
 #define MB_TYPE_CBP        (1 << 17)
-#endif
 
 #define MB_TYPE_INTRA    MB_TYPE_INTRA4x4 // default mb_type if there is just one type
 
@@ -114,6 +118,15 @@
 
 #define CANDIDATE_MB_TYPE_DIRECT0    (1 << 12)
 
+#define INPLACE_OFFSET 16
+
+enum OutputFormat {
+    FMT_MPEG1,
+    FMT_H261,
+    FMT_H263,
+    FMT_MJPEG,
+};
+
 
 /**
  * Draw a horizontal band if supported.
@@ -124,4 +137,12 @@ void ff_draw_horiz_band(AVCodecContext *avctx, AVFrame *cur, AVFrame *last,
                         int y, int h, int picture_structure, int first_field,
                         int low_delay);
 
-#endif /* AVCODEC_PICTTYPE_H */
+/**
+ * Print debugging info for the given picture.
+ */
+void ff_print_debug_info2(AVCodecContext *avctx, AVFrame *pict, uint8_t *mbskip_table,
+                         uint32_t *mbtype_table, int8_t *qscale_table, int16_t (*motion_val[2])[2],
+                         int *low_delay,
+                         int mb_width, int mb_height, int mb_stride, int quarter_sample);
+
+#endif /* AVCODEC_MPEGUTILS_H */

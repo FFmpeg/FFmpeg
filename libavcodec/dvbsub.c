@@ -239,9 +239,9 @@ static void dvb_encode_rle8(uint8_t **pq,
             x += len;
         }
         /* end of line */
-        // 00000000 00000000 end of 8-bit/pixel_code_string
+        // 00000000 end of 8-bit/pixel_code_string
         *q++ = 0x00;
-        *q++ = 0x00;
+        *q++ = 0xf0;
         bitmap += linesize;
     }
     *pq = q;
@@ -258,7 +258,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     page_id = 1;
 
-    if (h->num_rects && h->rects == NULL)
+    if (h->num_rects && !h->rects)
         return -1;
 
     /* page composition segment */
@@ -315,7 +315,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 *q++ = (1 << (7 - bpp_index)) | (0xf << 1) | 1; /* 2 bits/pixel full range */
                 {
                     int a, r, g, b;
-                    uint32_t x= ((uint32_t*)h->rects[clut_id]->pict.data[1])[i];
+                    uint32_t x= ((uint32_t*)h->rects[clut_id]->data[1])[i];
                     a = (x >> 24) & 0xff;
                     r = (x >> 16) & 0xff;
                     g = (x >>  8) & 0xff;
@@ -342,6 +342,9 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         } else if (h->rects[region_id]->nb_colors <= 16) {
             /* 4 bpp, standard encoding */
             bpp_index = 1;
+        } else if (h->rects[region_id]->nb_colors <= 256) {
+            /* 8 bpp, standard encoding */
+            bpp_index = 2;
         } else {
             return -1;
         }
@@ -410,10 +413,10 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 q += 2;
 
                 top_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id]->pict.data[0], h->rects[object_id]->w * 2,
+                dvb_encode_rle(&q, h->rects[object_id]->data[0], h->rects[object_id]->w * 2,
                                     h->rects[object_id]->w, h->rects[object_id]->h >> 1);
                 bottom_ptr = q;
-                dvb_encode_rle(&q, h->rects[object_id]->pict.data[0] + h->rects[object_id]->w,
+                dvb_encode_rle(&q, h->rects[object_id]->data[0] + h->rects[object_id]->w,
                                     h->rects[object_id]->w * 2, h->rects[object_id]->w,
                                     h->rects[object_id]->h >> 1);
 

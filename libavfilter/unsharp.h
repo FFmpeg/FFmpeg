@@ -24,34 +24,10 @@
 
 #include "config.h"
 #include "avfilter.h"
-#if CONFIG_OPENCL
-#include "libavutil/opencl.h"
-#endif
 
 #define MIN_MATRIX_SIZE 3
 #define MAX_MATRIX_SIZE 63
 
-#if CONFIG_OPENCL
-
-typedef struct {
-    cl_command_queue command_queue;
-    cl_program program;
-    cl_kernel kernel_default;
-    cl_kernel kernel_luma;
-    cl_kernel kernel_chroma;
-    cl_mem cl_luma_mask;
-    cl_mem cl_chroma_mask;
-    int in_plane_size[8];
-    int out_plane_size[8];
-    int plane_num;
-    cl_mem cl_inbuf;
-    size_t cl_inbuf_size;
-    cl_mem cl_outbuf;
-    size_t cl_outbuf_size;
-    int use_fast_kernels;
-} UnsharpOpenclContext;
-
-#endif
 
 typedef struct UnsharpFilterParam {
     int msize_x;                             ///< matrix width
@@ -64,7 +40,7 @@ typedef struct UnsharpFilterParam {
     uint32_t *sc[MAX_MATRIX_SIZE - 1];       ///< finite state machine storage
 } UnsharpFilterParam;
 
-typedef struct {
+typedef struct UnsharpContext {
     const AVClass *class;
     int lmsize_x, lmsize_y, cmsize_x, cmsize_y;
     float lamount, camount;
@@ -72,9 +48,6 @@ typedef struct {
     UnsharpFilterParam chroma; ///< chroma parameters (width, height, amount)
     int hsub, vsub;
     int opencl;
-#if CONFIG_OPENCL
-    UnsharpOpenclContext opencl_ctx;
-#endif
     int (* apply_unsharp)(AVFilterContext *ctx, AVFrame *in, AVFrame *out);
 } UnsharpContext;
 

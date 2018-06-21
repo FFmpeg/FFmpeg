@@ -25,6 +25,7 @@
  * @author Kamil Nowosad
  */
 
+#include "libavutil/avassert.h"
 #include "mqc.h"
 
 static void byteout(MqcState *mqc)
@@ -116,4 +117,23 @@ int ff_mqc_flush(MqcState *mqc)
     if (*mqc->bp != 0xff)
         mqc->bp++;
     return mqc->bp - mqc->bpstart;
+}
+
+int ff_mqc_flush_to(MqcState *mqc, uint8_t *dst, int *dst_len)
+{
+    MqcState mqc2 = *mqc;
+    mqc2.bpstart=
+    mqc2.bp = dst;
+    *mqc2.bp = *mqc->bp;
+    ff_mqc_flush(&mqc2);
+    *dst_len = mqc2.bp - dst;
+    if (mqc->bp < mqc->bpstart) {
+        av_assert1(mqc->bpstart - mqc->bp == 1);
+        av_assert1(*dst_len > 0);
+        av_assert1(mqc->bp[0] == 0 && dst[0] == 0);
+        (*dst_len) --;
+        memmove(dst, dst+1, *dst_len);
+        return mqc->bp - mqc->bpstart + 1 + *dst_len;
+    }
+    return mqc->bp - mqc->bpstart + *dst_len;
 }

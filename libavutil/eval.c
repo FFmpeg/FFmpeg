@@ -31,11 +31,14 @@
 #include "avutil.h"
 #include "common.h"
 #include "eval.h"
+#include "ffmath.h"
+#include "internal.h"
 #include "log.h"
 #include "mathematics.h"
 #include "time.h"
 #include "avstring.h"
 #include "timer.h"
+#include "reverse.h"
 
 typedef struct Parser {
     const AVClass *class;
@@ -54,29 +57,40 @@ typedef struct Parser {
     double *var;
 } Parser;
 
-static const AVClass eval_class = { "Eval", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(Parser,log_offset), offsetof(Parser,log_ctx) };
+static const AVClass eval_class = {
+    .class_name                = "Eval",
+    .item_name                 = av_default_item_name,
+    .option                    = NULL,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = offsetof(Parser, log_offset),
+    .parent_log_context_offset = offsetof(Parser, log_ctx),
+};
 
-static const int8_t si_prefixes['z' - 'E' + 1] = {
-    ['y'-'E']= -24,
-    ['z'-'E']= -21,
-    ['a'-'E']= -18,
-    ['f'-'E']= -15,
-    ['p'-'E']= -12,
-    ['n'-'E']= - 9,
-    ['u'-'E']= - 6,
-    ['m'-'E']= - 3,
-    ['c'-'E']= - 2,
-    ['d'-'E']= - 1,
-    ['h'-'E']=   2,
-    ['k'-'E']=   3,
-    ['K'-'E']=   3,
-    ['M'-'E']=   6,
-    ['G'-'E']=   9,
-    ['T'-'E']=  12,
-    ['P'-'E']=  15,
-    ['E'-'E']=  18,
-    ['Z'-'E']=  21,
-    ['Y'-'E']=  24,
+static const struct {
+    double bin_val;
+    double dec_val;
+    int8_t exp;
+} si_prefixes['z' - 'E' + 1] = {
+    ['y'-'E']= { 8.271806125530276749e-25, 1e-24, -24 },
+    ['z'-'E']= { 8.4703294725430034e-22, 1e-21, -21 },
+    ['a'-'E']= { 8.6736173798840355e-19, 1e-18, -18 },
+    ['f'-'E']= { 8.8817841970012523e-16, 1e-15, -15 },
+    ['p'-'E']= { 9.0949470177292824e-13, 1e-12, -12 },
+    ['n'-'E']= { 9.3132257461547852e-10, 1e-9,  -9 },
+    ['u'-'E']= { 9.5367431640625e-7, 1e-6, -6 },
+    ['m'-'E']= { 9.765625e-4, 1e-3, -3 },
+    ['c'-'E']= { 9.8431332023036951e-3, 1e-2, -2 },
+    ['d'-'E']= { 9.921256574801246e-2, 1e-1, -1 },
+    ['h'-'E']= { 1.0159366732596479e2, 1e2, 2 },
+    ['k'-'E']= { 1.024e3, 1e3, 3 },
+    ['K'-'E']= { 1.024e3, 1e3, 3 },
+    ['M'-'E']= { 1.048576e6, 1e6, 6 },
+    ['G'-'E']= { 1.073741824e9, 1e9, 9 },
+    ['T'-'E']= { 1.099511627776e12, 1e12, 12 },
+    ['P'-'E']= { 1.125899906842624e15, 1e15, 15 },
+    ['E'-'E']= { 1.152921504606847e18, 1e18, 18 },
+    ['Z'-'E']= { 1.1805916207174113e21, 1e21, 21 },
+    ['Y'-'E']= { 1.2089258196146292e24, 1e24, 24 },
 };
 
 static const struct {
@@ -86,6 +100,7 @@ static const struct {
     { "E",   M_E   },
     { "PI",  M_PI  },
     { "PHI", M_PHI },
+    { "QP2LAMBDA", FF_QP2LAMBDA },
 };
 
 double av_strtod(const char *numstr, char **tail)
@@ -100,16 +115,16 @@ double av_strtod(const char *numstr, char **tail)
     if (next!=numstr) {
         if (next[0] == 'd' && next[1] == 'B') {
             /* treat dB as decibels instead of decibytes */
-            d = pow(10, d / 20);
+            d = ff_exp10(d / 20);
             next += 2;
         } else if (*next >= 'E' && *next <= 'z') {
-            int e= si_prefixes[*next - 'E'];
+            int e= si_prefixes[*next - 'E'].exp;
             if (e) {
                 if (next[1] == 'i') {
-                    d*= pow( 2, e/0.3);
+                    d*= si_prefixes[*next - 'E'].bin_val;
                     next+=2;
                 } else {
-                    d*= pow(10, e);
+                    d*= si_prefixes[*next - 'E'].dec_val;
                     next++;
                 }
             }
@@ -145,9 +160,9 @@ struct AVExpr {
         e_squish, e_gauss, e_ld, e_isnan, e_isinf,
         e_mod, e_max, e_min, e_eq, e_gt, e_gte, e_lte, e_lt,
         e_pow, e_mul, e_div, e_add,
-        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc,
+        e_last, e_st, e_while, e_taylor, e_root, e_floor, e_ceil, e_trunc, e_round,
         e_sqrt, e_not, e_random, e_hypot, e_gcd,
-        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between,
+        e_if, e_ifnot, e_print, e_bitand, e_bitor, e_between, e_clip, e_atan2, e_lerp,
     } type;
     double value; // is sign in other types
     union {
@@ -181,16 +196,30 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_floor:  return e->value * floor(eval_expr(p, e->param[0]));
         case e_ceil :  return e->value * ceil (eval_expr(p, e->param[0]));
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
+        case e_round:  return e->value * round(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
         case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
         case e_if:     return e->value * (eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
         case e_ifnot:  return e->value * (!eval_expr(p, e->param[0]) ? eval_expr(p, e->param[1]) :
                                           e->param[2] ? eval_expr(p, e->param[2]) : 0);
+        case e_clip: {
+            double x = eval_expr(p, e->param[0]);
+            double min = eval_expr(p, e->param[1]), max = eval_expr(p, e->param[2]);
+            if (isnan(min) || isnan(max) || isnan(x) || min > max)
+                return NAN;
+            return e->value * av_clipd(eval_expr(p, e->param[0]), min, max);
+        }
         case e_between: {
             double d = eval_expr(p, e->param[0]);
             return e->value * (d >= eval_expr(p, e->param[1]) &&
                                d <= eval_expr(p, e->param[2]));
+        }
+        case e_lerp: {
+            double v0 = eval_expr(p, e->param[0]);
+            double v1 = eval_expr(p, e->param[1]);
+            double f  = eval_expr(p, e->param[2]);
+            return v0 + (v1 - v0) * f;
         }
         case e_print: {
             double x = eval_expr(p, e->param[0]);
@@ -236,7 +265,7 @@ static double eval_expr(Parser *p, AVExpr *e)
             double x_max = eval_expr(p, e->param[1]);
             for(i=-1; i<1024; i++) {
                 if(i<255) {
-                    p->var[0] = av_reverse[i&255]*x_max/255;
+                    p->var[0] = ff_reverse[i&255]*x_max/255;
                 } else {
                     p->var[0] = x_max*pow(0.9, i-255);
                     if (i&1) p->var[0] *= -1;
@@ -290,7 +319,8 @@ static double eval_expr(Parser *p, AVExpr *e)
                 case e_add: return e->value * (d + d2);
                 case e_last:return e->value * d2;
                 case e_st : return e->value * (p->var[av_clip(d, 0, VARS-1)]= d2);
-                case e_hypot:return e->value * (sqrt(d*d + d2*d2));
+                case e_hypot:return e->value * hypot(d, d2);
+                case e_atan2:return e->value * atan2(d, d2);
                 case e_bitand: return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d & (long int)d2);
                 case e_bitor:  return isnan(d) || isnan(d2) ? NAN : e->value * ((long int)d | (long int)d2);
             }
@@ -351,7 +381,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     }
 
     p->s= strchr(p->s, '(');
-    if (p->s==NULL) {
+    if (!p->s) {
         av_log(p, AV_LOG_ERROR, "Undefined constant or missing '(' in '%s'\n", s0);
         p->s= next;
         av_expr_free(d);
@@ -424,6 +454,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "floor" )) d->type = e_floor;
     else if (strmatch(next, "ceil"  )) d->type = e_ceil;
     else if (strmatch(next, "trunc" )) d->type = e_trunc;
+    else if (strmatch(next, "round" )) d->type = e_round;
     else if (strmatch(next, "sqrt"  )) d->type = e_sqrt;
     else if (strmatch(next, "not"   )) d->type = e_not;
     else if (strmatch(next, "pow"   )) d->type = e_pow;
@@ -436,6 +467,9 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "bitand")) d->type = e_bitand;
     else if (strmatch(next, "bitor" )) d->type = e_bitor;
     else if (strmatch(next, "between"))d->type = e_between;
+    else if (strmatch(next, "clip"  )) d->type = e_clip;
+    else if (strmatch(next, "atan2" )) d->type = e_atan2;
+    else if (strmatch(next, "lerp"  )) d->type = e_lerp;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -619,6 +653,7 @@ static int verify_expr(AVExpr *e)
         case e_floor:
         case e_ceil:
         case e_trunc:
+        case e_round:
         case e_sqrt:
         case e_not:
         case e_random:
@@ -632,6 +667,8 @@ static int verify_expr(AVExpr *e)
             return verify_expr(e->param[0]) && verify_expr(e->param[1])
                    && (!e->param[2] || verify_expr(e->param[2]));
         case e_between:
+        case e_clip:
+        case e_lerp:
             return verify_expr(e->param[0]) &&
                    verify_expr(e->param[1]) &&
                    verify_expr(e->param[2]);
@@ -673,19 +710,23 @@ int av_expr_parse(AVExpr **expr, const char *s,
     if ((ret = parse_expr(&e, &p)) < 0)
         goto end;
     if (*p.s) {
-        av_expr_free(e);
         av_log(&p, AV_LOG_ERROR, "Invalid chars '%s' at the end of expression '%s'\n", p.s, s0);
         ret = AVERROR(EINVAL);
         goto end;
     }
     if (!verify_expr(e)) {
-        av_expr_free(e);
         ret = AVERROR(EINVAL);
         goto end;
     }
     e->var= av_mallocz(sizeof(double) *VARS);
+    if (!e->var) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
     *expr = e;
+    e = NULL;
 end:
+    av_expr_free(e);
     av_free(w);
     return ret;
 }
@@ -717,153 +758,3 @@ int av_expr_parse_and_eval(double *d, const char *s,
     av_expr_free(e);
     return isnan(*d) ? AVERROR(EINVAL) : 0;
 }
-
-#ifdef TEST
-#include <string.h>
-
-static const double const_values[] = {
-    M_PI,
-    M_E,
-    0
-};
-
-static const char *const const_names[] = {
-    "PI",
-    "E",
-    0
-};
-
-int main(int argc, char **argv)
-{
-    int i;
-    double d;
-    const char *const *expr;
-    static const char *const exprs[] = {
-        "",
-        "1;2",
-        "-20",
-        "-PI",
-        "+PI",
-        "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
-        "80G/80Gi",
-        "1k",
-        "1Gi",
-        "1gi",
-        "1GiFoo",
-        "1k+1k",
-        "1Gi*3foo",
-        "foo",
-        "foo(",
-        "foo()",
-        "foo)",
-        "sin",
-        "sin(",
-        "sin()",
-        "sin)",
-        "sin 10",
-        "sin(1,2,3)",
-        "sin(1 )",
-        "1",
-        "1foo",
-        "bar + PI + E + 100f*2 + foo",
-        "13k + 12f - foo(1, 2)",
-        "1gi",
-        "1Gi",
-        "st(0, 123)",
-        "st(1, 123); ld(1)",
-        "lte(0, 1)",
-        "lte(1, 1)",
-        "lte(1, 0)",
-        "lt(0, 1)",
-        "lt(1, 1)",
-        "gt(1, 0)",
-        "gt(2, 7)",
-        "gte(122, 122)",
-        /* compute 1+2+...+N */
-        "st(0, 1); while(lte(ld(0), 100), st(1, ld(1)+ld(0));st(0, ld(0)+1)); ld(1)",
-        /* compute Fib(N) */
-        "st(1, 1); st(2, 2); st(0, 1); while(lte(ld(0),10), st(3, ld(1)+ld(2)); st(1, ld(2)); st(2, ld(3)); st(0, ld(0)+1)); ld(3)",
-        "while(0, 10)",
-        "st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))",
-        "isnan(1)",
-        "isnan(NAN)",
-        "isnan(INF)",
-        "isinf(1)",
-        "isinf(NAN)",
-        "isinf(INF)",
-        "floor(NAN)",
-        "floor(123.123)",
-        "floor(-123.123)",
-        "trunc(123.123)",
-        "trunc(-123.123)",
-        "ceil(123.123)",
-        "ceil(-123.123)",
-        "sqrt(1764)",
-        "isnan(sqrt(-1))",
-        "not(1)",
-        "not(NAN)",
-        "not(0)",
-        "6.0206dB",
-        "-3.0103dB",
-        "pow(0,1.23)",
-        "pow(PI,1.23)",
-        "PI^1.23",
-        "pow(-1,1.23)",
-        "if(1, 2)",
-        "if(1, 1, 2)",
-        "if(0, 1, 2)",
-        "ifnot(0, 23)",
-        "ifnot(1, NaN) + if(0, 1)",
-        "ifnot(1, 1, 2)",
-        "ifnot(0, 1, 2)",
-        "taylor(1, 1)",
-        "taylor(eq(mod(ld(1),4),1)-eq(mod(ld(1),4),3), PI/2, 1)",
-        "root(sin(ld(0))-1, 2)",
-        "root(sin(ld(0))+6+sin(ld(0)/12)-log(ld(0)), 100)",
-        "7000000B*random(0)",
-        "squish(2)",
-        "gauss(0.1)",
-        "hypot(4,3)",
-        "gcd(30,55)*print(min(9,1))",
-        "bitor(42, 12)",
-        "bitand(42, 12)",
-        "bitand(NAN, 1)",
-        "between(10, -3, 10)",
-        "between(-4, -2, -1)",
-        "between(1,2)",
-        NULL
-    };
-
-    for (expr = exprs; *expr; expr++) {
-        printf("Evaluating '%s'\n", *expr);
-        av_expr_parse_and_eval(&d, *expr,
-                               const_names, const_values,
-                               NULL, NULL, NULL, NULL, NULL, 0, NULL);
-        if (isnan(d))
-            printf("'%s' -> nan\n\n", *expr);
-        else
-            printf("'%s' -> %f\n\n", *expr, d);
-    }
-
-    av_expr_parse_and_eval(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
-                           const_names, const_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, NULL);
-    printf("%f == 12.7\n", d);
-    av_expr_parse_and_eval(&d, "80G/80Gi",
-                           const_names, const_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, NULL);
-    printf("%f == 0.931322575\n", d);
-
-    if (argc > 1 && !strcmp(argv[1], "-t")) {
-        for (i = 0; i < 1050; i++) {
-            START_TIMER;
-            av_expr_parse_and_eval(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
-                                   const_names, const_values,
-                                   NULL, NULL, NULL, NULL, NULL, 0, NULL);
-            STOP_TIMER("av_expr_parse_and_eval");
-        }
-    }
-
-    return 0;
-}
-#endif

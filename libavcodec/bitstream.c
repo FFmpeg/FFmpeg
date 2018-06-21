@@ -28,12 +28,13 @@
  * bitstream api.
  */
 
-#include "libavutil/atomic.h"
 #include "libavutil/avassert.h"
+#include "libavutil/qsort.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "mathops.h"
-#include "get_bits.h"
 #include "put_bits.h"
+#include "vlc.h"
 
 const uint8_t ff_log2_run[41]={
  0, 0, 0, 0, 1, 1, 1, 1,
@@ -69,6 +70,8 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
     if (length == 0)
         return;
 
+    av_assert0(length <= put_bits_left(pb));
+
     if (CONFIG_SMALL || words < 16 || put_bits_count(pb) & 7) {
         for (i = 0; i < words; i++)
             put_bits(pb, 16, AV_RB16(src + 2 * i));
@@ -95,9 +98,11 @@ void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
     case 2:                                                 \
         v = *(const uint16_t *)ptr;                         \
         break;                                              \
-    default:                                                \
+    case 4:                                                 \
         v = *(const uint32_t *)ptr;                         \
         break;                                              \
+    default:                                                \
+        av_assert1(0);                                      \
     }                                                       \
 }
 
@@ -117,19 +122,12 @@ static int alloc_table(VLC *vlc, int size, int use_static)
             vlc->table_size = 0;
             return AVERROR(ENOMEM);
         }
+        memset(vlc->table + vlc->table_allocated - (1 << vlc->bits), 0, sizeof(VLC_TYPE) * 2 << vlc->bits);
     }
     return index;
 }
 
-static av_always_inline uint32_t bitswap_32(uint32_t x)
-{
-    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
-           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
-           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
-           (uint32_t)ff_reverse[ x >> 24];
-}
-
-typedef struct {
+typedef struct VLCcode {
     uint8_t bits;
     uint16_t symbol;
     /** codeword, with the first bit-to-be-read in the msb
@@ -145,7 +143,7 @@ static int compare_vlcspec(const void *a, const void *b)
 /**
  * Build VLC decoding tables suitable for use with get_vlc().
  *
- * @param vlc            the context to be initted
+ * @param vlc            the context to be initialized
  *
  * @param table_nb_bits  max length of vlc codes to store directly in this table
  *                       (Longer codes are delegated to subtables.)
@@ -162,28 +160,23 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
     int table_size, table_index, index, code_prefix, symbol, subtable_bits;
     int i, j, k, n, nb, inc;
     uint32_t code;
-    VLC_TYPE (*table)[2];
+    volatile VLC_TYPE (* volatile table)[2]; // the double volatile is needed to prevent an internal compiler error in gcc 4.2
 
     table_size = 1 << table_nb_bits;
     if (table_nb_bits > 30)
        return -1;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
-    av_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
+    ff_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
         return table_index;
-    table = &vlc->table[table_index];
-
-    for (i = 0; i < table_size; i++) {
-        table[i][1] = 0; //bits
-        table[i][0] = -1; //codes
-    }
+    table = (volatile VLC_TYPE (*)[2])&vlc->table[table_index];
 
     /* first pass: map codes and compute auxiliary table sizes */
     for (i = 0; i < nb_codes; i++) {
         n      = codes[i].bits;
         code   = codes[i].code;
         symbol = codes[i].symbol;
-        av_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
+        ff_dlog(NULL, "i=%d n=%d code=0x%"PRIx32"\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
@@ -194,8 +187,9 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                 inc = 1 << n;
             }
             for (k = 0; k < nb; k++) {
-                av_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
-                if (table[j][1] /*bits*/ != 0) {
+                int bits = table[j][1];
+                ff_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
+                if (bits != 0 && bits != n) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return AVERROR_INVALIDDATA;
                 }
@@ -224,25 +218,30 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             subtable_bits = FFMIN(subtable_bits, table_nb_bits);
             j = (flags & INIT_VLC_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
             table[j][1] = -subtable_bits;
-            av_dlog(NULL, "%4x: n=%d (subtable)\n",
+            ff_dlog(NULL, "%4x: n=%d (subtable)\n",
                     j, codes[i].bits + table_nb_bits);
             index = build_table(vlc, subtable_bits, k-i, codes+i, flags);
             if (index < 0)
                 return index;
             /* note: realloc has been done, so reload tables */
-            table = &vlc->table[table_index];
+            table = (volatile VLC_TYPE (*)[2])&vlc->table[table_index];
             table[j][0] = index; //code
-            av_assert0(table[j][0] == index);
             i = k-1;
         }
     }
+
+    for (i = 0; i < table_size; i++) {
+        if (table[i][1] == 0) //bits
+            table[i][0] = -1; //codes
+    }
+
     return table_index;
 }
 
 
 /* Build VLC decoding tables suitable for use with get_vlc().
 
-   'nb_bits' set thee decoding table size (2^nb_bits) entries. The
+   'nb_bits' sets the decoding table size (2^nb_bits) entries. The
    bigger it is, the faster is the decoding. But it should not be too
    big to save memory and L1 cache. '9' is a good compromise.
 
@@ -258,15 +257,15 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
    'bits' or 'codes' tables.
 
    'xxx_size' : gives the number of bytes of each entry of the 'bits'
-   or 'codes' tables.
+   or 'codes' tables. Currently 1,2 and 4 are supported.
 
-   'wrap' and 'size' allows to use any memory configuration and types
+   'wrap' and 'size' make it possible to use any memory configuration and types
    (byte/word/long) to store the 'bits', 'codes', and 'symbols' tables.
 
    'use_static' should be set to 1 for tables, which should be freed
    with av_free_static(), 0 if ff_free_vlc() will be used.
 */
-int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
+int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
                        const void *bits, int bits_wrap, int bits_size,
                        const void *codes, int codes_wrap, int codes_size,
                        const void *symbols, int symbols_wrap, int symbols_size,
@@ -275,25 +274,22 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
     VLCcode *buf;
     int i, j, ret;
     VLCcode localbuf[1500]; // the maximum currently needed is 1296 by rv34
-    void *state;
+    VLC localvlc, *vlc;
 
+    vlc = vlc_arg;
     vlc->bits = nb_bits;
     if (flags & INIT_VLC_USE_NEW_STATIC) {
-        while (state = avpriv_atomic_ptr_cas(&vlc->init_state, NULL, vlc)) {
-            if (state == vlc + 1) {
-                av_assert0(vlc->table_size && vlc->table_size == vlc->table_allocated);
-                return 0;
-            }
-        }
-        av_assert0(!vlc->table_size);
         av_assert0(nb_codes + 1 <= FF_ARRAY_ELEMS(localbuf));
         buf = localbuf;
+        localvlc = *vlc_arg;
+        vlc = &localvlc;
+        vlc->table_size = 0;
     } else {
         vlc->table           = NULL;
         vlc->table_allocated = 0;
         vlc->table_size      = 0;
 
-        buf = av_malloc((nb_codes + 1) * sizeof(VLCcode));
+        buf = av_malloc_array((nb_codes + 1), sizeof(VLCcode));
         if (!buf)
             return AVERROR(ENOMEM);
     }
@@ -314,7 +310,8 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         }                                                                   \
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
         if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
-            av_log(NULL, AV_LOG_ERROR, "Invalid code in init_vlc\n");       \
+            av_log(NULL, AV_LOG_ERROR, "Invalid code %"PRIx32" for %d in "  \
+                   "init_vlc\n", buf[j].code, i);                           \
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
             return -1;                                                      \
@@ -331,7 +328,7 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
     }
     COPY(buf[j].bits > nb_bits);
     // qsort is the slowest part of init_vlc, and could probably be improved or avoided
-    qsort(buf, j, sizeof(VLCcode), compare_vlcspec);
+    AV_QSORT(buf, j, struct VLCcode, compare_vlcspec);
     COPY(buf[j].bits && buf[j].bits <= nb_bits);
     nb_codes = j;
 
@@ -340,9 +337,9 @@ int ff_init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
     if (flags & INIT_VLC_USE_NEW_STATIC) {
         if(vlc->table_size != vlc->table_allocated)
             av_log(NULL, AV_LOG_ERROR, "needed %d had %d\n", vlc->table_size, vlc->table_allocated);
-        state = avpriv_atomic_ptr_cas(&vlc->init_state, vlc, vlc+1);
-        av_assert0(state == vlc);
+
         av_assert0(ret >= 0);
+        *vlc_arg = *vlc;
     } else {
         av_free(buf);
         if (ret < 0) {

@@ -31,7 +31,6 @@ void ff_vorbis_inverse_coupling_sse(float *mag, float *ang,
 
 av_cold void ff_vorbisdsp_init_x86(VorbisDSPContext *dsp)
 {
-#if HAVE_YASM
     int cpu_flags = av_get_cpu_flags();
 
 #if ARCH_X86_32
@@ -40,5 +39,4 @@ av_cold void ff_vorbisdsp_init_x86(VorbisDSPContext *dsp)
 #endif /* ARCH_X86_32 */
     if (EXTERNAL_SSE(cpu_flags))
         dsp->vorbis_inverse_coupling = ff_vorbis_inverse_coupling_sse;
-#endif /* HAVE_YASM */
 }

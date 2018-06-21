@@ -29,6 +29,7 @@
 #include "jacosub.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
+#include "libavutil/time_internal.h"
 
 #undef time
 
@@ -44,13 +45,9 @@ static int insert_datetime(AVBPrint *dst, const char *in, const char *arg)
     time_t now = time(0);
     struct tm ltime;
 
-#if HAVE_LOCALTIME_R
     localtime_r(&now, &ltime);
-#else
-    ltime = *localtime(&now);
-#endif
-    strftime(buf, sizeof(buf), arg, &ltime);
-    av_bprintf(dst, "%s", buf);
+    if (strftime(buf, sizeof(buf), arg, &ltime))
+        av_bprintf(dst, "%s", buf);
     return 0;
 }
 
@@ -162,21 +159,21 @@ static void jacosub_to_ass(AVCodecContext *avctx, AVBPrint *dst, const char *src
         if (i == FF_ARRAY_ELEMS(ass_codes_map))
             av_bprintf(dst, "%c", *src++);
     }
-    av_bprintf(dst, "\r\n");
 }
 
 static int jacosub_decode_frame(AVCodecContext *avctx,
                                 void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
+    int ret;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    FFASSDecoderContext *s = avctx->priv_data;
 
     if (avpkt->size <= 0)
         goto end;
 
     if (*ptr) {
         AVBPrint buffer;
-        char *dec_sub;
 
         // skip timers
         ptr = jss_skip_whitespace(ptr);
@@ -185,9 +182,10 @@ static int jacosub_decode_frame(AVCodecContext *avctx,
 
         av_bprint_init(&buffer, JSS_MAX_LINESIZE, JSS_MAX_LINESIZE);
         jacosub_to_ass(avctx, &buffer, ptr);
-        av_bprint_finalize(&buffer, &dec_sub);
-        ff_ass_add_rect(sub, dec_sub, avpkt->pts, avpkt->duration, 0);
-        av_free(dec_sub);
+        ret = ff_ass_add_rect(sub, buffer.str, s->readorder++, 0, NULL, NULL);
+        av_bprint_finalize(&buffer, NULL);
+        if (ret < 0)
+            return ret;
     }
 
 end:
@@ -202,4 +200,6 @@ AVCodec ff_jacosub_decoder = {
     .id             = AV_CODEC_ID_JACOSUB,
     .init           = ff_ass_subtitle_header_default,
     .decode         = jacosub_decode_frame,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

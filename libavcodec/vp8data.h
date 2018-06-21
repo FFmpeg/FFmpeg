@@ -30,28 +30,89 @@
 #include "vp8.h"
 #include "h264pred.h"
 
-static const uint8_t vp8_pred4x4_mode[] =
-{
+static const uint8_t vp7_pred4x4_mode[] = {
+    [DC_PRED8x8]    = DC_PRED,
+    [VERT_PRED8x8]  = TM_VP8_PRED,
+    [HOR_PRED8x8]   = TM_VP8_PRED,
+    [PLANE_PRED8x8] = TM_VP8_PRED,
+};
+
+static const uint8_t vp8_pred4x4_mode[] = {
     [DC_PRED8x8]    = DC_PRED,
     [VERT_PRED8x8]  = VERT_PRED,
     [HOR_PRED8x8]   = HOR_PRED,
     [PLANE_PRED8x8] = TM_VP8_PRED,
 };
 
-static const int8_t vp8_pred16x16_tree_intra[4][2] =
-{
-    { -MODE_I4x4, 1 },                      // '0'
-     { 2, 3 },
-      {  -DC_PRED8x8,  -VERT_PRED8x8 },     // '100', '101'
-      { -HOR_PRED8x8, -PLANE_PRED8x8 },     // '110', '111'
+static const int8_t vp8_pred16x16_tree_intra[4][2] = {
+    {   -MODE_I4x4,              1 }, // '0'
+    {            2,              3 },
+    {  -DC_PRED8x8,  -VERT_PRED8x8 }, // '100', '101'
+    { -HOR_PRED8x8, -PLANE_PRED8x8 }, // '110', '111'
 };
 
-static const int8_t vp8_pred16x16_tree_inter[4][2] =
-{
-    { -DC_PRED8x8, 1 },                     // '0'
-     { 2, 3 },
-      {  -VERT_PRED8x8, -HOR_PRED8x8 },     // '100', '101'
-      { -PLANE_PRED8x8, -MODE_I4x4 },       // '110', '111'
+static const int8_t vp8_pred16x16_tree_inter[4][2] = {
+    {    -DC_PRED8x8,            1 }, // '0'
+    {              2,            3 },
+    {  -VERT_PRED8x8, -HOR_PRED8x8 }, // '100', '101'
+    { -PLANE_PRED8x8,   -MODE_I4x4 }, // '110', '111'
+};
+
+typedef struct VP7MVPred {
+    int8_t yoffset;
+    int8_t xoffset;
+    uint8_t subblock;
+    uint8_t score;
+} VP7MVPred;
+
+#define VP7_MV_PRED_COUNT 12
+static const VP7MVPred vp7_mv_pred[VP7_MV_PRED_COUNT] = {
+    { -1,  0, 12, 8 },
+    {  0, -1,  3, 8 },
+    { -1, -1, 15, 2 },
+    { -1,  1, 12, 2 },
+    { -2,  0, 12, 2 },
+    {  0, -2,  3, 2 },
+    { -1, -2, 15, 1 },
+    { -2, -1, 15, 1 },
+    { -2,  1, 12, 1 },
+    { -1,  2, 12, 1 },
+    { -2, -2, 15, 1 },
+    { -2,  2, 12, 1 },
+};
+
+static const int vp7_mode_contexts[31][4] = {
+    {   3,   3,   1, 246 },
+    {   7,  89,  66, 239 },
+    {  10,  90,  78, 238 },
+    {  14, 118,  95, 241 },
+    {  14, 123, 106, 238 },
+    {  20, 140, 109, 240 },
+    {  13, 155, 103, 238 },
+    {  21, 158,  99, 240 },
+    {  27,  82, 108, 232 },
+    {  19,  99, 123, 217 },
+    {  45, 139, 148, 236 },
+    {  50, 117, 144, 235 },
+    {  57, 128, 164, 238 },
+    {  69, 139, 171, 239 },
+    {  74, 154, 179, 238 },
+    { 112, 165, 186, 242 },
+    {  98, 143, 185, 245 },
+    { 105, 153, 190, 250 },
+    { 124, 167, 192, 245 },
+    { 131, 186, 203, 246 },
+    {  59, 184, 222, 224 },
+    { 148, 215, 214, 213 },
+    { 137, 211, 210, 219 },
+    { 190, 227, 128, 228 },
+    { 183, 228, 128, 228 },
+    { 194, 234, 128, 228 },
+    { 202, 236, 128, 228 },
+    { 205, 240, 128, 228 },
+    { 205, 244, 128, 228 },
+    { 225, 246, 128, 228 },
+    { 233, 251, 128, 228 },
 };
 
 static const int vp8_mode_contexts[6][4] = {
@@ -64,26 +125,30 @@ static const int vp8_mode_contexts[6][4] = {
 };
 
 static const uint8_t vp8_mbsplits[5][16] = {
-    {  0,  0,  0,  0,  0,  0,  0,  0,
-       1,  1,  1,  1,  1,  1,  1,  1  },
-    {  0,  0,  1,  1,  0,  0,  1,  1,
-       0,  0,  1,  1,  0,  0,  1,  1  },
-    {  0,  0,  1,  1,  0,  0,  1,  1,
-       2,  2,  3,  3,  2,  2,  3,  3  },
-    {  0,  1,  2,  3,  4,  5,  6,  7,
-       8,  9, 10, 11, 12, 13, 14, 15  },
-    {  0,  0,  0,  0,  0,  0,  0,  0,
-       0,  0,  0,  0,  0,  0,  0,  0  }
+    { 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,  1,  1,  1,  1,  1,  1 },
+    { 0, 0, 1, 1, 0, 0, 1, 1, 0, 0,  1,  1,  0,  0,  1,  1 },
+    { 0, 0, 1, 1, 0, 0, 1, 1, 2, 2,  3,  3,  2,  2,  3,  3 },
+    { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 },
+    { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  0,  0,  0,  0,  0,  0 }
 };
 
 static const uint8_t vp8_mbfirstidx[4][16] = {
-    {  0,  8 }, {  0,  2 }, {  0,  2,  8,  10 },
-    {  0,  1,  2,  3,  4,  5,  6,  7,
-       8,  9, 10, 11, 12, 13, 14, 15 }
+    { 0, 8 },
+    { 0, 2 },
+    { 0, 2, 8, 10 },
+    { 0, 1, 2,  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
 };
 
-static const uint8_t vp8_mbsplit_count[4] = {   2,   2,   4,  16 };
-static const uint8_t vp8_mbsplit_prob[3]  = { 110, 111, 150 };
+static const uint8_t vp8_mbsplit_count[4] = {
+    2, 2, 4, 16
+};
+static const uint8_t vp8_mbsplit_prob[3] = {
+    110, 111, 150
+};
+
+static const uint8_t vp7_submv_prob[3] = {
+    180, 162, 25
+};
 
 static const uint8_t vp8_submv_prob[5][3] = {
     { 147, 136,  18 },
@@ -93,39 +158,42 @@ static const uint8_t vp8_submv_prob[5][3] = {
     { 208,   1,   1 }
 };
 
-static const uint8_t vp8_pred16x16_prob_intra[4] = { 145, 156, 163, 128 };
-static const uint8_t vp8_pred16x16_prob_inter[4] = { 112,  86, 140,  37 };
-
-static const int8_t vp8_pred4x4_tree[9][2] =
-{
-    { -DC_PRED, 1 },                                    // '0'
-     { -TM_VP8_PRED, 2 },                               // '10'
-      { -VERT_PRED, 3 },                                // '110'
-       { 4, 6 },
-        { -HOR_PRED, 5 },                               // '11100'
-         { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED },   // '111010', '111011'
-        { -DIAG_DOWN_LEFT_PRED, 7 },                    // '11110'
-         { -VERT_LEFT_PRED, 8 },                        // '111110'
-          { -HOR_DOWN_PRED, -HOR_UP_PRED },             // '1111110', '1111111'
+static const uint8_t vp8_pred16x16_prob_intra[4] = {
+    145, 156, 163, 128
+};
+static const uint8_t vp8_pred16x16_prob_inter[4] = {
+    112,  86, 140,  37
 };
 
-static const int8_t vp8_pred8x8c_tree[3][2] =
-{
-    { -DC_PRED8x8, 1 },                 // '0'
-     { -VERT_PRED8x8, 2 },              // '10
-      { -HOR_PRED8x8, -PLANE_PRED8x8 }, // '110', '111'
+static const int8_t vp8_pred4x4_tree[9][2] = {
+    {              -DC_PRED,                1 }, // '0'
+    {          -TM_VP8_PRED,                2 }, // '10'
+    {            -VERT_PRED,                3 }, // '110'
+    {                     4,                6 },
+    {             -HOR_PRED,                5 }, // '11100'
+    { -DIAG_DOWN_RIGHT_PRED, -VERT_RIGHT_PRED }, // '111010', '111011'
+    {  -DIAG_DOWN_LEFT_PRED,                7 }, // '11110'
+    {       -VERT_LEFT_PRED,                8 }, // '111110'
+    {        -HOR_DOWN_PRED,     -HOR_UP_PRED }, // '1111110', '1111111'
 };
 
-static const uint8_t vp8_pred8x8c_prob_intra[3] = { 142, 114, 183 };
-static const uint8_t vp8_pred8x8c_prob_inter[3] = { 162, 101, 204 };
+static const int8_t vp8_pred8x8c_tree[3][2] = {
+    {   -DC_PRED8x8,              1 },  // '0'
+    { -VERT_PRED8x8,              2 },  // '10
+    {  -HOR_PRED8x8, -PLANE_PRED8x8 },  // '110', '111'
+};
 
-static const uint8_t vp8_pred4x4_prob_inter[9] =
-{
+static const uint8_t vp8_pred8x8c_prob_intra[3] = {
+    142, 114, 183
+};
+static const uint8_t vp8_pred8x8c_prob_inter[3] = {
+    162, 101, 204
+};
+static const uint8_t vp8_pred4x4_prob_inter[9] = {
     120, 90, 79, 133, 87, 85, 80, 111, 151
 };
 
-static const uint8_t vp8_pred4x4_prob_intra[10][10][9] =
-{
+static const uint8_t vp8_pred4x4_prob_intra[10][10][9] = {
     {
         {  39,  53, 200,  87,  26,  21,  43, 232, 171 },
         {  56,  34,  51, 104, 114, 102,  29,  93,  77 },
@@ -248,50 +316,57 @@ static const uint8_t vp8_pred4x4_prob_intra[10][10][9] =
     },
 };
 
-static const int8_t vp8_segmentid_tree[][2] =
-{
-    { 1, 2 },
-     { -0, -1 },    // '00', '01'
-     { -2, -3 },    // '10', '11'
+static const int8_t vp8_segmentid_tree[][2] = {
+    {  1,  2 },
+    { -0, -1 }, // '00', '01'
+    { -2, -3 }, // '10', '11'
 };
 
-static const uint8_t vp8_coeff_band[16] =
-{
+static const uint8_t vp8_coeff_band[16] = {
     0, 1, 2, 3, 6, 4, 5, 6, 6, 6, 6, 6, 6, 6, 6, 7
 };
 
 /* Inverse of vp8_coeff_band: mappings of bands to coefficient indexes.
  * Each list is -1-terminated. */
-static const int8_t vp8_coeff_band_indexes[8][10] =
-{
-    {0, -1},
-    {1, -1},
-    {2, -1},
-    {3, -1},
-    {5, -1},
-    {6, -1},
-    {4, 7, 8, 9, 10, 11, 12, 13, 14, -1},
-    {15, -1}
+static const int8_t vp8_coeff_band_indexes[8][10] = {
+    {  0, -1 },
+    {  1, -1 },
+    {  2, -1 },
+    {  3, -1 },
+    {  5, -1 },
+    {  6, -1 },
+    {  4,  7, 8, 9, 10, 11, 12, 13, 14, -1 },
+    { 15, -1 }
 };
 
-static const uint8_t vp8_dct_cat1_prob[] = { 159, 0 };
-static const uint8_t vp8_dct_cat2_prob[] = { 165, 145, 0 };
-static const uint8_t vp8_dct_cat3_prob[] = { 173, 148, 140, 0 };
-static const uint8_t vp8_dct_cat4_prob[] = { 176, 155, 140, 135, 0 };
-static const uint8_t vp8_dct_cat5_prob[] = { 180, 157, 141, 134, 130, 0 };
-static const uint8_t vp8_dct_cat6_prob[] = { 254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0 };
+static const uint8_t vp8_dct_cat1_prob[] = {
+    159, 0
+};
+static const uint8_t vp8_dct_cat2_prob[] = {
+    165, 145, 0
+};
+static const uint8_t vp8_dct_cat3_prob[] = {
+    173, 148, 140, 0
+};
+static const uint8_t vp8_dct_cat4_prob[] = {
+    176, 155, 140, 135, 0
+};
+static const uint8_t vp8_dct_cat5_prob[] = {
+    180, 157, 141, 134, 130, 0
+};
+static const uint8_t vp8_dct_cat6_prob[] = {
+    254, 254, 243, 230, 196, 177, 153, 140, 133, 130, 129, 0
+};
 
 // only used for cat3 and above; cat 1 and 2 are referenced directly
-const uint8_t * const ff_vp8_dct_cat_prob[] =
-{
+const uint8_t *const ff_vp8_dct_cat_prob[] = {
     vp8_dct_cat3_prob,
     vp8_dct_cat4_prob,
     vp8_dct_cat5_prob,
     vp8_dct_cat6_prob,
 };
 
-static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS-1] =
-{
+static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS - 1] = {
     {
         {
             { 128, 128, 128, 128, 128, 128, 128, 128, 128, 128, 128 },
@@ -462,8 +537,7 @@ static const uint8_t vp8_token_default_probs[4][8][3][NUM_DCT_TOKENS-1] =
     },
 };
 
-static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS-1] =
-{
+static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS - 1] = {
     {
         {
             { 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255 },
@@ -634,16 +708,7 @@ static const uint8_t vp8_token_update_probs[4][8][3][NUM_DCT_TOKENS-1] =
     },
 };
 
-// fixme: copied from h264data.h
-static const uint8_t zigzag_scan[16]={
-    0+0*4, 1+0*4, 0+1*4, 0+2*4,
-    1+1*4, 2+0*4, 3+0*4, 2+1*4,
-    1+2*4, 0+3*4, 1+3*4, 2+2*4,
-    3+1*4, 3+2*4, 2+3*4, 3+3*4,
-};
-
-static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT+1] =
-{
+static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT + 1] = {
       4,   5,   6,   7,   8,   9,  10,  10,  11,  12,  13,  14,  15,  16,  17,  17,
      18,  19,  20,  20,  21,  21,  22,  22,  23,  23,  24,  25,  25,  26,  27,  28,
      29,  30,  31,  32,  33,  34,  35,  36,  37,  37,  38,  39,  40,  41,  42,  43,
@@ -654,8 +719,7 @@ static const uint8_t vp8_dc_qlookup[VP8_MAX_QUANT+1] =
     122, 124, 126, 128, 130, 132, 134, 136, 138, 140, 143, 145, 148, 151, 154, 157,
 };
 
-static const uint16_t vp8_ac_qlookup[VP8_MAX_QUANT+1] =
-{
+static const uint16_t vp8_ac_qlookup[VP8_MAX_QUANT + 1] = {
       4,   5,   6,   7,   8,   9,  10,  11,  12,  13,  14,  15,  16,  17,  18,  19,
      20,  21,  22,  23,  24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,
      36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,  48,  49,  50,  51,
@@ -670,11 +734,22 @@ static const uint8_t vp8_mv_update_prob[2][19] = {
     { 237,
       246,
       253, 253, 254, 254, 254, 254, 254,
-      254, 254, 254, 254, 254, 250, 250, 252, 254, 254 },
+      254, 254, 254, 254, 254, 250, 250, 252, /* VP8 only: */ 254, 254 },
     { 231,
       243,
       245, 253, 254, 254, 254, 254, 254,
-      254, 254, 254, 254, 254, 251, 251, 254, 254, 254 }
+      254, 254, 254, 254, 254, 251, 251, 254, /* VP8 only: */ 254, 254 }
+};
+
+static const uint8_t vp7_mv_default_prob[2][17] = {
+    { 162,
+      128,
+      225, 146, 172, 147, 214,  39, 156,
+      247, 210, 135,  68, 138, 220, 239, 246 },
+    { 164,
+      128,
+      204, 170, 119, 235, 140, 230, 228,
+      244, 184, 201,  44, 173, 221, 239, 253 }
 };
 
 static const uint8_t vp8_mv_default_prob[2][19] = {
@@ -686,6 +761,70 @@ static const uint8_t vp8_mv_default_prob[2][19] = {
       128,
       204, 170, 119, 235, 140, 230, 228,
       128, 130, 130,  74, 148, 180, 203, 236, 254, 254 }
+};
+
+static const uint8_t vp7_feature_value_size[2][4] = {
+    { 7, 6, 0, 8 },
+    { 7, 6, 0, 5 },
+};
+
+static const int8_t vp7_feature_index_tree[4][2] =
+{
+    {  1,  2 },
+    { -0, -1 }, // '00', '01'
+    { -2, -3 }, // '10', '11'
+};
+
+static const uint16_t vp7_ydc_qlookup[] = {
+      4,   4,   5,   6,   6,   7,   8,   8,   9,  10,  11,  12,  13,  14,  15,
+     16,  17,  18,  19,  20,  21,  22,  23,  23,  24,  25,  26,  27,  28,  29,
+     30,  31,  32,  33,  33,  34,  35,  36,  36,  37,  38,  39,  39,  40,  41,
+     41,  42,  43,  43,  44,  45,  45,  46,  47,  48,  48,  49,  50,  51,  52,
+     53,  53,  54,  56,  57,  58,  59,  60,  62,  63,  65,  66,  68,  70,  72,
+     74,  76,  79,  81,  84,  87,  90,  93,  96, 100, 104, 108, 112, 116, 121,
+    126, 131, 136, 142, 148, 154, 160, 167, 174, 182, 189, 198, 206, 215, 224,
+    234, 244, 254, 265, 277, 288, 301, 313, 327, 340, 355, 370, 385, 401, 417,
+    434, 452, 470, 489, 509, 529, 550, 572,
+};
+
+static const uint16_t vp7_yac_qlookup[] = {
+       4,    4,   5,   5,   6,   6,   7,   8,   9,  10,  11,  12,   13,   15,
+      16,   17,  19,  20,  22,  23,  25,  26,  28,  29,  31,  32,   34,   35,
+      37,   38,  40,  41,  42,  44,  45,  46,  48,  49,  50,  51,   53,   54,
+      55,   56,  57,  58,  59,  61,  62,  63,  64,  65,  67,  68,   69,   70,
+      72,   73,  75,  76,  78,  80,  82,  84,  86,  88,  91,  93,   96,   99,
+     102,  105, 109, 112, 116, 121, 125, 130, 135, 140, 146, 152,  158,  165,
+     172,  180, 188, 196, 205, 214, 224, 234, 245, 256, 268, 281,  294,  308,
+     322,  337, 353, 369, 386, 404, 423, 443, 463, 484, 506, 529,  553,  578,
+     604,  631, 659, 688, 718, 749, 781, 814, 849, 885, 922, 960, 1000, 1041,
+    1083, 1127,
+};
+
+static const uint16_t vp7_y2dc_qlookup[] = {
+       7,    9,  11,  13,  15,  17,  19,  21,  23,  26,  28,  30,   33,   35,
+      37,   39,  42,  44,  46,  48,  51,  53,  55,  57,  59,  61,   63,   65,
+      67,   69,  70,  72,  74,  75,  77,  78,  80,  81,  83,  84,   85,   87,
+      88,   89,  90,  92,  93,  94,  95,  96,  97,  99, 100, 101,  102,  104,
+     105,  106, 108, 109, 111, 113, 114, 116, 118, 120, 123, 125,  128,  131,
+     134,  137, 140, 144, 148, 152, 156, 161, 166, 171, 176, 182,  188,  195,
+     202,  209, 217, 225, 234, 243, 253, 263, 274, 285, 297, 309,  322,  336,
+     350,  365, 381, 397, 414, 432, 450, 470, 490, 511, 533, 556,  579,  604,
+     630,  656, 684, 713, 742, 773, 805, 838, 873, 908, 945, 983, 1022, 1063,
+    1105, 1148,
+};
+
+static const uint16_t vp7_y2ac_qlookup[] = {
+       7,    9,   11,   13,   16,   18,   21,   24,   26,   29,   32,   35,
+      38,   41,   43,   46,   49,   52,   55,   58,   61,   64,   66,   69,
+      72,   74,   77,   79,   82,   84,   86,   88,   91,   93,   95,   97,
+      98,  100,  102,  104,  105,  107,  109,  110,  112,  113,  115,  116,
+     117,  119,  120,  122,  123,  125,  127,  128,  130,  132,  134,  136,
+     138,  141,  143,  146,  149,  152,  155,  158,  162,  166,  171,  175,
+     180,  185,  191,  197,  204,  210,  218,  226,  234,  243,  252,  262,
+     273,  284,  295,  308,  321,  335,  350,  365,  381,  398,  416,  435,
+     455,  476,  497,  520,  544,  569,  595,  622,  650,  680,  711,  743,
+     776,  811,  848,  885,  925,  965, 1008, 1052, 1097, 1144, 1193, 1244,
+    1297, 1351, 1407, 1466, 1526, 1588, 1652, 1719,
 };
 
 #endif /* AVCODEC_VP8DATA_H */

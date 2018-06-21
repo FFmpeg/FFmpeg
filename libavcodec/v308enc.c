@@ -31,12 +31,8 @@ static av_cold int v308_encode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avctx->coded_frame = av_frame_alloc();
-
-    if (!avctx->coded_frame) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
-        return AVERROR(ENOMEM);
-    }
+    avctx->bits_per_coded_sample = 24;
+    avctx->bit_rate = ff_guess_coded_bitrate(avctx);
 
     return 0;
 }
@@ -48,12 +44,9 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *y, *u, *v;
     int i, j, ret;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 3)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width * avctx->height * 3, 0)) < 0)
         return ret;
     dst = pkt->data;
-
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     y = pic->data[0];
     u = pic->data[1];
@@ -77,8 +70,6 @@ static int v308_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int v308_encode_close(AVCodecContext *avctx)
 {
-    av_freep(&avctx->coded_frame);
-
     return 0;
 }
 
@@ -91,4 +82,5 @@ AVCodec ff_v308_encoder = {
     .encode2      = v308_encode_frame,
     .close        = v308_encode_close,
     .pix_fmts     = (const enum AVPixelFormat[]){ AV_PIX_FMT_YUV444P, AV_PIX_FMT_NONE },
+    .capabilities = AV_CODEC_CAP_INTRA_ONLY,
 };

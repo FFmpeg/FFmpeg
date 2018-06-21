@@ -18,16 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
+#include "libavutil/x86/asm.h"
+#include "libswscale/swscale_internal.h"
+
 #undef REAL_MOVNTQ
 #undef MOVNTQ
 #undef MOVNTQ2
 #undef PREFETCH
 
-#if COMPILE_TEMPLATE_MMXEXT
-#define PREFETCH "prefetchnta"
-#else
-#define PREFETCH  " # nop"
-#endif
 
 #if COMPILE_TEMPLATE_MMXEXT
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
@@ -88,16 +88,16 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
         "movq    %%mm3, %%mm6\n\t"
         "movq    %%mm4, %%mm7\n\t"
         "movl %3, %%ecx\n\t"
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        ".p2align                             4             \n\t" /* FIXME Unroll? */\
-        "1:                                                 \n\t"\
-        "movq                      8(%%"REG_d"), %%mm0      \n\t" /* filterCoeff */\
-        "movq                (%%"REG_S", %%"REG_c", 2), %%mm2      \n\t" /* srcData */\
-        "movq               8(%%"REG_S", %%"REG_c", 2), %%mm5      \n\t" /* srcData */\
-        "add                                $16, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "mov                                 %0, %%"FF_REG_d"       \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"    \n\t"\
+        ".p2align                             4                     \n\t" /* FIXME Unroll? */\
+        "1:                                                         \n\t"\
+        "movq                      8(%%"FF_REG_d"), %%mm0           \n\t" /* filterCoeff */\
+        "movq                (%%"FF_REG_S", %%"FF_REG_c", 2), %%mm2 \n\t" /* srcData */\
+        "movq               8(%%"FF_REG_S", %%"FF_REG_c", 2), %%mm5 \n\t" /* srcData */\
+        "add                                $16, %%"FF_REG_d"       \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"    \n\t"\
+        "test                         %%"FF_REG_S", %%"FF_REG_S"    \n\t"\
         "pmulhw                           %%mm0, %%mm2      \n\t"\
         "pmulhw                           %%mm0, %%mm5      \n\t"\
         "paddw                            %%mm2, %%mm3      \n\t"\
@@ -106,62 +106,62 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
         "psraw                               $3, %%mm3      \n\t"\
         "psraw                               $3, %%mm4      \n\t"\
         "packuswb                         %%mm4, %%mm3      \n\t"
-        MOVNTQ2 "                         %%mm3, (%1, %%"REG_c")\n\t"
-        "add                          $8, %%"REG_c"         \n\t"\
-        "cmp                          %2, %%"REG_c"         \n\t"\
+        MOVNTQ2 "                         %%mm3, (%1, %%"FF_REG_c")\n\t"
+        "add                          $8, %%"FF_REG_c"      \n\t"\
+        "cmp                          %2, %%"FF_REG_c"      \n\t"\
         "movq    %%mm6, %%mm3\n\t"
         "movq    %%mm7, %%mm4\n\t"
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        "jb                                  1b             \n\t"\
+        "mov                                 %0, %%"FF_REG_d"     \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
+        "jb                                  1b                   \n\t"\
         :: "g" (filter),
            "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset)
-        : "%"REG_d, "%"REG_S, "%"REG_c
+        : "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_c
     );
 }
 
 #define YSCALEYUV2PACKEDX_UV \
     __asm__ volatile(\
-        "xor                   %%"REG_a", %%"REG_a"     \n\t"\
+        "xor                %%"FF_REG_a", %%"FF_REG_a"  \n\t"\
         ".p2align                      4                \n\t"\
         "nop                                            \n\t"\
         "1:                                             \n\t"\
-        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
-        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"FF_REG_d"  \n\t"\
+        "mov              (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
         "movq      "VROUNDER_OFFSET"(%0), %%mm3         \n\t"\
         "movq                      %%mm3, %%mm4         \n\t"\
         ".p2align                      4                \n\t"\
         "2:                                             \n\t"\
-        "movq               8(%%"REG_d"), %%mm0         \n\t" /* filterCoeff */\
-        "movq     (%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* UsrcData */\
-        "add                          %6, %%"REG_S"     \n\t" \
-        "movq     (%%"REG_S", %%"REG_a"), %%mm5         \n\t" /* VsrcData */\
-        "add                         $16, %%"REG_d"     \n\t"\
-        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "movq            8(%%"FF_REG_d"), %%mm0         \n\t" /* filterCoeff */\
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm2      \n\t" /* UsrcData */\
+        "add                          %6, %%"FF_REG_S"  \n\t" \
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm5      \n\t" /* VsrcData */\
+        "add                         $16, %%"FF_REG_d"  \n\t"\
+        "mov              (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
         "pmulhw                    %%mm0, %%mm2         \n\t"\
         "pmulhw                    %%mm0, %%mm5         \n\t"\
         "paddw                     %%mm2, %%mm3         \n\t"\
         "paddw                     %%mm5, %%mm4         \n\t"\
-        "test                  %%"REG_S", %%"REG_S"     \n\t"\
+        "test               %%"FF_REG_S", %%"FF_REG_S"  \n\t"\
         " jnz                         2b                \n\t"\
 
 #define YSCALEYUV2PACKEDX_YA(offset,coeff,src1,src2,dst1,dst2) \
-    "lea                "offset"(%0), %%"REG_d"     \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+    "lea                "offset"(%0), %%"FF_REG_d"  \n\t"\
+    "mov              (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
     "movq      "VROUNDER_OFFSET"(%0), "#dst1"       \n\t"\
     "movq                    "#dst1", "#dst2"       \n\t"\
     ".p2align                      4                \n\t"\
     "2:                                             \n\t"\
-    "movq               8(%%"REG_d"), "#coeff"      \n\t" /* filterCoeff */\
-    "movq  (%%"REG_S", %%"REG_a", 2), "#src1"       \n\t" /* Y1srcData */\
-    "movq 8(%%"REG_S", %%"REG_a", 2), "#src2"       \n\t" /* Y2srcData */\
-    "add                         $16, %%"REG_d"            \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+    "movq            8(%%"FF_REG_d"), "#coeff"      \n\t" /* filterCoeff */\
+    "movq  (%%"FF_REG_S", %%"FF_REG_a", 2), "#src1" \n\t" /* Y1srcData */\
+    "movq 8(%%"FF_REG_S", %%"FF_REG_a", 2), "#src2" \n\t" /* Y2srcData */\
+    "add                         $16, %%"FF_REG_d"  \n\t"\
+    "mov              (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
     "pmulhw                 "#coeff", "#src1"       \n\t"\
     "pmulhw                 "#coeff", "#src2"       \n\t"\
     "paddw                   "#src1", "#dst1"       \n\t"\
     "paddw                   "#src2", "#dst2"       \n\t"\
-    "test                  %%"REG_S", %%"REG_S"     \n\t"\
+    "test               %%"FF_REG_S", %%"FF_REG_S"  \n\t"\
     " jnz                         2b                \n\t"\
 
 #define YSCALEYUV2PACKEDX \
@@ -173,41 +173,41 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
             "m" (dummy), "m" (dummy), "m" (dummy),\
             "r" (dest), "m" (dstW_reg), "m"(uv_off) \
             NAMED_CONSTRAINTS_ADD(bF8,bFC) \
-        : "%"REG_a, "%"REG_d, "%"REG_S            \
+        : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_S            \
     );
 
 #define YSCALEYUV2PACKEDX_ACCURATE_UV \
     __asm__ volatile(\
-        "xor %%"REG_a", %%"REG_a"                       \n\t"\
+        "xor %%"FF_REG_a", %%"FF_REG_a"                 \n\t"\
         ".p2align                      4                \n\t"\
         "nop                                            \n\t"\
         "1:                                             \n\t"\
-        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"REG_d"     \n\t"\
-        "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+        "lea "CHR_MMX_FILTER_OFFSET"(%0), %%"FF_REG_d"  \n\t"\
+        "mov              (%%"FF_REG_d"), %%"FF_REG_S"  \n\t"\
         "pxor                      %%mm4, %%mm4         \n\t"\
         "pxor                      %%mm5, %%mm5         \n\t"\
         "pxor                      %%mm6, %%mm6         \n\t"\
         "pxor                      %%mm7, %%mm7         \n\t"\
         ".p2align                      4                \n\t"\
         "2:                                             \n\t"\
-        "movq     (%%"REG_S", %%"REG_a"), %%mm0         \n\t" /* UsrcData */\
-        "add                          %6, %%"REG_S"      \n\t" \
-        "movq     (%%"REG_S", %%"REG_a"), %%mm2         \n\t" /* VsrcData */\
-        "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
-        "movq     (%%"REG_S", %%"REG_a"), %%mm1         \n\t" /* UsrcData */\
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm0      \n\t" /* UsrcData */\
+        "add                          %6, %%"FF_REG_S"  \n\t" \
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm2      \n\t" /* VsrcData */\
+        "mov "STR(APCK_PTR2)"(%%"FF_REG_d"), %%"FF_REG_S" \n\t"\
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm1      \n\t" /* UsrcData */\
         "movq                      %%mm0, %%mm3         \n\t"\
         "punpcklwd                 %%mm1, %%mm0         \n\t"\
         "punpckhwd                 %%mm1, %%mm3         \n\t"\
-        "movq "STR(APCK_COEF)"(%%"REG_d"),%%mm1         \n\t" /* filterCoeff */\
+        "movq "STR(APCK_COEF)"(%%"FF_REG_d"),%%mm1      \n\t" /* filterCoeff */\
         "pmaddwd                   %%mm1, %%mm0         \n\t"\
         "pmaddwd                   %%mm1, %%mm3         \n\t"\
         "paddd                     %%mm0, %%mm4         \n\t"\
         "paddd                     %%mm3, %%mm5         \n\t"\
-        "add                          %6, %%"REG_S"      \n\t" \
-        "movq     (%%"REG_S", %%"REG_a"), %%mm3         \n\t" /* VsrcData */\
-        "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
-        "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
-        "test                  %%"REG_S", %%"REG_S"     \n\t"\
+        "add                          %6, %%"FF_REG_S"  \n\t" \
+        "movq  (%%"FF_REG_S", %%"FF_REG_a"), %%mm3      \n\t" /* VsrcData */\
+        "mov "STR(APCK_SIZE)"(%%"FF_REG_d"), %%"FF_REG_S" \n\t"\
+        "add           $"STR(APCK_SIZE)", %%"FF_REG_d"  \n\t"\
+        "test               %%"FF_REG_S", %%"FF_REG_S"  \n\t"\
         "movq                      %%mm2, %%mm0         \n\t"\
         "punpcklwd                 %%mm3, %%mm2         \n\t"\
         "punpckhwd                 %%mm3, %%mm0         \n\t"\
@@ -229,30 +229,30 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
         "movq                      %%mm6, "V_TEMP"(%0)  \n\t"\
 
 #define YSCALEYUV2PACKEDX_ACCURATE_YA(offset) \
-    "lea                "offset"(%0), %%"REG_d"     \n\t"\
-    "mov                 (%%"REG_d"), %%"REG_S"     \n\t"\
+    "lea                "offset"(%0), %%"FF_REG_d"      \n\t"\
+    "mov                 (%%"FF_REG_d"), %%"FF_REG_S"   \n\t"\
     "pxor                      %%mm1, %%mm1         \n\t"\
     "pxor                      %%mm5, %%mm5         \n\t"\
     "pxor                      %%mm7, %%mm7         \n\t"\
     "pxor                      %%mm6, %%mm6         \n\t"\
     ".p2align                      4                \n\t"\
     "2:                                             \n\t"\
-    "movq  (%%"REG_S", %%"REG_a", 2), %%mm0         \n\t" /* Y1srcData */\
-    "movq 8(%%"REG_S", %%"REG_a", 2), %%mm2         \n\t" /* Y2srcData */\
-    "mov "STR(APCK_PTR2)"(%%"REG_d"), %%"REG_S"     \n\t"\
-    "movq  (%%"REG_S", %%"REG_a", 2), %%mm4         \n\t" /* Y1srcData */\
+    "movq  (%%"FF_REG_S", %%"FF_REG_a", 2), %%mm0       \n\t" /* Y1srcData */\
+    "movq 8(%%"FF_REG_S", %%"FF_REG_a", 2), %%mm2       \n\t" /* Y2srcData */\
+    "mov "STR(APCK_PTR2)"(%%"FF_REG_d"), %%"FF_REG_S"   \n\t"\
+    "movq  (%%"FF_REG_S", %%"FF_REG_a", 2), %%mm4       \n\t" /* Y1srcData */\
     "movq                      %%mm0, %%mm3         \n\t"\
     "punpcklwd                 %%mm4, %%mm0         \n\t"\
     "punpckhwd                 %%mm4, %%mm3         \n\t"\
-    "movq "STR(APCK_COEF)"(%%"REG_d"), %%mm4         \n\t" /* filterCoeff */\
+    "movq "STR(APCK_COEF)"(%%"FF_REG_d"), %%mm4     \n\t" /* filterCoeff */\
     "pmaddwd                   %%mm4, %%mm0         \n\t"\
     "pmaddwd                   %%mm4, %%mm3         \n\t"\
     "paddd                     %%mm0, %%mm1         \n\t"\
     "paddd                     %%mm3, %%mm5         \n\t"\
-    "movq 8(%%"REG_S", %%"REG_a", 2), %%mm3         \n\t" /* Y2srcData */\
-    "mov "STR(APCK_SIZE)"(%%"REG_d"), %%"REG_S"     \n\t"\
-    "add           $"STR(APCK_SIZE)", %%"REG_d"     \n\t"\
-    "test                  %%"REG_S", %%"REG_S"     \n\t"\
+    "movq 8(%%"FF_REG_S", %%"FF_REG_a", 2), %%mm3   \n\t" /* Y2srcData */\
+    "mov "STR(APCK_SIZE)"(%%"FF_REG_d"), %%"FF_REG_S" \n\t"\
+    "add           $"STR(APCK_SIZE)", %%"FF_REG_d"  \n\t"\
+    "test               %%"FF_REG_S", %%"FF_REG_S"  \n\t"\
     "movq                      %%mm2, %%mm0         \n\t"\
     "punpcklwd                 %%mm3, %%mm2         \n\t"\
     "punpckhwd                 %%mm3, %%mm0         \n\t"\
@@ -333,7 +333,7 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
     MOVNTQ(   q3, 24(dst, index, 4))\
 \
     "add      $8, "#index"      \n\t"\
-    "cmp "#dstw", "#index"      \n\t"\
+    "cmp  "dstw", "#index"      \n\t"\
     " jb      1b                \n\t"
 #define WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)  REAL_WRITEBGR32(dst, dstw, index, b, g, r, a, q0, q2, q3, t)
 
@@ -348,7 +348,7 @@ static void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilter,
     x86_reg dstW_reg = dstW;
     x86_reg uv_off = c->uv_offx2;
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         YSCALEYUV2PACKEDX_ACCURATE
         YSCALEYUV2RGBX
         "movq                      %%mm2, "U_TEMP"(%0)  \n\t"
@@ -359,13 +359,13 @@ static void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilter,
         "psraw                        $3, %%mm1         \n\t"
         "psraw                        $3, %%mm7         \n\t"
         "packuswb                  %%mm7, %%mm1         \n\t"
-        WRITEBGR32(%4, %5, %%REGa, %%mm3, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm2, %%mm6)
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm3, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm2, %%mm6)
         YSCALEYUV2PACKEDX_END
     } else {
         YSCALEYUV2PACKEDX_ACCURATE
         YSCALEYUV2RGBX
         "pcmpeqd %%mm7, %%mm7 \n\t"
-        WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
         YSCALEYUV2PACKEDX_END
     }
 }
@@ -381,20 +381,49 @@ static void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter,
     x86_reg dstW_reg = dstW;
     x86_reg uv_off = c->uv_offx2;
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         YSCALEYUV2PACKEDX
         YSCALEYUV2RGBX
         YSCALEYUV2PACKEDX_YA(ALP_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
         "psraw                        $3, %%mm1         \n\t"
         "psraw                        $3, %%mm7         \n\t"
         "packuswb                  %%mm7, %%mm1         \n\t"
-        WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
         YSCALEYUV2PACKEDX_END
     } else {
         YSCALEYUV2PACKEDX
         YSCALEYUV2RGBX
         "pcmpeqd %%mm7, %%mm7 \n\t"
-        WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+        YSCALEYUV2PACKEDX_END
+    }
+}
+
+static void RENAME(yuv2bgr32_X)(SwsContext *c, const int16_t *lumFilter,
+                                const int16_t **lumSrc, int lumFilterSize,
+                                const int16_t *chrFilter, const int16_t **chrUSrc,
+                                const int16_t **chrVSrc,
+                                int chrFilterSize, const int16_t **alpSrc,
+                                uint8_t *dest, int dstW, int dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+    x86_reg uv_off = c->uv_offx2;
+
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
+        YSCALEYUV2PACKEDX
+        YSCALEYUV2RGBX
+        YSCALEYUV2PACKEDX_YA(ALP_MMX_FILTER_OFFSET, %%mm0, %%mm3, %%mm6, %%mm1, %%mm7)
+        "psraw                        $3, %%mm1         \n\t"
+        "psraw                        $3, %%mm7         \n\t"
+        "packuswb                  %%mm7, %%mm1         \n\t"
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm5, %%mm4, %%mm2, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+        YSCALEYUV2PACKEDX_END
+    } else {
+        YSCALEYUV2PACKEDX
+        YSCALEYUV2RGBX
+        "pcmpeqd %%mm7, %%mm7 \n\t"
+        WRITEBGR32(%4, "%5", %%FF_REGa, %%mm5, %%mm4, %%mm2, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
         YSCALEYUV2PACKEDX_END
     }
 }
@@ -423,7 +452,7 @@ static void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter,
     MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
     "add             $8, "#index"   \n\t"\
-    "cmp        "#dstw", "#index"   \n\t"\
+    "cmp         "dstw", "#index"   \n\t"\
     " jb             1b             \n\t"
 #define WRITERGB16(dst, dstw, index)  REAL_WRITERGB16(dst, dstw, index)
 
@@ -447,7 +476,7 @@ static void RENAME(yuv2rgb565_X_ar)(SwsContext *c, const int16_t *lumFilter,
     "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
     "paddusb "RED_DITHER"(%0), %%mm5\n\t"
 #endif
-    WRITERGB16(%4, %5, %%REGa)
+    WRITERGB16(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -471,7 +500,7 @@ static void RENAME(yuv2rgb565_X)(SwsContext *c, const int16_t *lumFilter,
     "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
     "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
 #endif
-    WRITERGB16(%4, %5, %%REGa)
+    WRITERGB16(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -500,7 +529,7 @@ static void RENAME(yuv2rgb565_X)(SwsContext *c, const int16_t *lumFilter,
     MOVNTQ(%%mm1, 8(dst, index, 2))\
 \
     "add             $8, "#index"   \n\t"\
-    "cmp        "#dstw", "#index"   \n\t"\
+    "cmp         "dstw", "#index"   \n\t"\
     " jb             1b             \n\t"
 #define WRITERGB15(dst, dstw, index)  REAL_WRITERGB15(dst, dstw, index)
 
@@ -524,7 +553,7 @@ static void RENAME(yuv2rgb555_X_ar)(SwsContext *c, const int16_t *lumFilter,
     "paddusb "GREEN_DITHER"(%0), %%mm4\n\t"
     "paddusb "RED_DITHER"(%0), %%mm5\n\t"
 #endif
-    WRITERGB15(%4, %5, %%REGa)
+    WRITERGB15(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -548,7 +577,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "paddusb "GREEN_DITHER"(%0), %%mm4  \n\t"
     "paddusb "RED_DITHER"(%0), %%mm5  \n\t"
 #endif
-    WRITERGB15(%4, %5, %%REGa)
+    WRITERGB15(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -602,7 +631,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "add         $24, "#dst"    \n\t"\
 \
     "add          $8, "#index"  \n\t"\
-    "cmp     "#dstw", "#index"  \n\t"\
+    "cmp      "dstw", "#index"  \n\t"\
     " jb          1b            \n\t"
 
 #define WRITEBGR24MMXEXT(dst, dstw, index) \
@@ -650,7 +679,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
     "add      $24, "#dst"       \n\t"\
 \
     "add       $8, "#index"     \n\t"\
-    "cmp  "#dstw", "#index"     \n\t"\
+    "cmp   "dstw", "#index"     \n\t"\
     " jb       1b               \n\t"
 
 #if COMPILE_TEMPLATE_MMXEXT
@@ -661,6 +690,7 @@ static void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
 #define WRITEBGR24(dst, dstw, index)  WRITEBGR24MMX(dst, dstw, index)
 #endif
 
+#if HAVE_6REGS
 static void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilter,
                                    const int16_t **lumSrc, int lumFilterSize,
                                    const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -675,14 +705,14 @@ static void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2PACKEDX_ACCURATE
     YSCALEYUV2RGBX
     "pxor %%mm7, %%mm7 \n\t"
-    "lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"\n\t" //FIXME optimize
-    "add %4, %%"REG_c"                        \n\t"
-    WRITEBGR24(%%REGc, %5, %%REGa)
+    "lea (%%"FF_REG_a", %%"FF_REG_a", 2), %%"FF_REG_c"\n\t" //FIXME optimize
+    "add %4, %%"FF_REG_c"                        \n\t"
+    WRITEBGR24(%%FF_REGc, "%5", %%FF_REGa)
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest), "m" (dstW_reg), "m"(uv_off)
        NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
-    : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
+    : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S
     );
 }
 
@@ -699,17 +729,18 @@ static void RENAME(yuv2bgr24_X)(SwsContext *c, const int16_t *lumFilter,
 
     YSCALEYUV2PACKEDX
     YSCALEYUV2RGBX
-    "pxor                    %%mm7, %%mm7       \n\t"
-    "lea (%%"REG_a", %%"REG_a", 2), %%"REG_c"   \n\t" //FIXME optimize
-    "add                        %4, %%"REG_c"   \n\t"
-    WRITEBGR24(%%REGc, %5, %%REGa)
+    "pxor                    %%mm7, %%mm7              \n\t"
+    "lea (%%"FF_REG_a", %%"FF_REG_a", 2), %%"FF_REG_c" \n\t" //FIXME optimize
+    "add                        %4, %%"FF_REG_c"       \n\t"
+    WRITEBGR24(%%FF_REGc, "%5", %%FF_REGa)
     :: "r" (&c->redDither),
        "m" (dummy), "m" (dummy), "m" (dummy),
        "r" (dest),  "m" (dstW_reg), "m"(uv_off)
        NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
-    : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
+    : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S
     );
 }
+#endif /* HAVE_6REGS */
 
 #define REAL_WRITEYUY2(dst, dstw, index) \
     "packuswb  %%mm3, %%mm3     \n\t"\
@@ -724,7 +755,7 @@ static void RENAME(yuv2bgr24_X)(SwsContext *c, const int16_t *lumFilter,
     MOVNTQ(%%mm7, 8(dst, index, 2))\
 \
     "add          $8, "#index"  \n\t"\
-    "cmp     "#dstw", "#index"  \n\t"\
+    "cmp      "dstw", "#index"  \n\t"\
     " jb          1b            \n\t"
 #define WRITEYUY2(dst, dstw, index)  REAL_WRITEYUY2(dst, dstw, index)
 
@@ -745,7 +776,7 @@ static void RENAME(yuv2yuyv422_X_ar)(SwsContext *c, const int16_t *lumFilter,
     "psraw $3, %%mm4    \n\t"
     "psraw $3, %%mm1    \n\t"
     "psraw $3, %%mm7    \n\t"
-    WRITEYUY2(%4, %5, %%REGa)
+    WRITEYUY2(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -766,7 +797,7 @@ static void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter,
     "psraw $3, %%mm4    \n\t"
     "psraw $3, %%mm1    \n\t"
     "psraw $3, %%mm7    \n\t"
-    WRITEYUY2(%4, %5, %%REGa)
+    WRITEYUY2(%4, "%5", %%FF_REGa)
     YSCALEYUV2PACKEDX_END
 }
 
@@ -858,7 +889,7 @@ static void RENAME(yuv2rgb32_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+    if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
         const int16_t *abuf0 = abuf[0], *abuf1 = abuf[1];
 #if ARCH_X86_64
         __asm__ volatile(
@@ -867,7 +898,7 @@ static void RENAME(yuv2rgb32_2)(SwsContext *c, const int16_t *buf[2],
             "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
             "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
             "packuswb            %%mm7, %%mm1       \n\t"
-            WRITEBGR32(%4, 8280(%5), %%r8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+            WRITEBGR32(%4, DSTW_OFFSET"(%5)", %%r8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "r" (dest),
                "a" (&c->redDither),
                "r" (abuf0), "r" (abuf1)
@@ -877,37 +908,37 @@ static void RENAME(yuv2rgb32_2)(SwsContext *c, const int16_t *buf[2],
         c->u_temp=(intptr_t)abuf0;
         c->v_temp=(intptr_t)abuf1;
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov        %4, %%"FF_REG_b"            \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB(%%FF_REGBP, %5)
             "push                   %0              \n\t"
             "push                   %1              \n\t"
             "mov          "U_TEMP"(%5), %0          \n\t"
             "mov          "V_TEMP"(%5), %1          \n\t"
-            YSCALEYUV2RGB_YA(%%REGBP, %5, %0, %1)
+            YSCALEYUV2RGB_YA(%%FF_REGBP, %5, %0, %1)
             "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
             "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
             "packuswb            %%mm7, %%mm1       \n\t"
             "pop                    %1              \n\t"
             "pop                    %0              \n\t"
-            WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
         );
 #endif
     } else {
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov        %4, %%"FF_REG_b"            \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB(%%FF_REGBP, %5)
             "pcmpeqd %%mm7, %%mm7                   \n\t"
-            WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
         );
@@ -922,16 +953,15 @@ static void RENAME(yuv2bgr24_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
-        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-        "mov        %4, %%"REG_b"               \n\t"
-        "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5)
+        "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+        "mov           %4, %%"FF_REG_b"         \n\t"
+        "push %%"FF_REG_BP"                     \n\t"
+        YSCALEYUV2RGB(%%FF_REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
-        WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-        "pop %%"REG_BP"                         \n\t"
-        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+        WRITEBGR24(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+        "pop %%"FF_REG_BP"                      \n\t"
+        "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
            NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
@@ -946,22 +976,21 @@ static void RENAME(yuv2rgb555_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
-        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-        "mov        %4, %%"REG_b"               \n\t"
-        "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5)
+        "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+        "mov        %4, %%"FF_REG_b"            \n\t"
+        "push %%"FF_REG_BP"                     \n\t"
+        YSCALEYUV2RGB(%%FF_REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-        "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+        "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
         "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-        "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+        "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-        WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-        "pop %%"REG_BP"                         \n\t"
-        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+        WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+        "pop %%"FF_REG_BP"                      \n\t"
+        "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
            NAMED_CONSTRAINTS_ADD(bF8)
@@ -976,22 +1005,21 @@ static void RENAME(yuv2rgb565_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
-        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-        "mov        %4, %%"REG_b"               \n\t"
-        "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5)
+        "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+        "mov           %4, %%"FF_REG_b"         \n\t"
+        "push %%"FF_REG_BP"                     \n\t"
+        YSCALEYUV2RGB(%%FF_REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-        "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+        "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
         "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-        "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+        "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-        WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-        "pop %%"REG_BP"                         \n\t"
-        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+        WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+        "pop %%"FF_REG_BP"                      \n\t"
+        "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
            NAMED_CONSTRAINTS_ADD(bF8,bFC)
@@ -1046,15 +1074,14 @@ static void RENAME(yuv2yuyv422_2)(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1];
 
-    //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
-        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-        "mov %4, %%"REG_b"                        \n\t"
-        "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2PACKED(%%REGBP, %5)
-        WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
-        "pop %%"REG_BP"                         \n\t"
-        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+        "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+        "mov           %4, %%"FF_REG_b"         \n\t"
+        "push %%"FF_REG_BP"                     \n\t"
+        YSCALEYUV2PACKED(%%FF_REGBP, %5)
+        WRITEYUY2(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+        "pop %%"FF_REG_BP"                      \n\t"
+        "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
            "a" (&c->redDither)
     );
@@ -1188,58 +1215,58 @@ static void RENAME(yuv2rgb32_1)(SwsContext *c, const int16_t *buf0,
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
-        if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+        if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
             __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5)
-                YSCALEYUV2RGB1_ALPHA(%%REGBP)
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+                "mov           %4, %%"FF_REG_b"         \n\t"
+                "push %%"FF_REG_BP"                     \n\t"
+                YSCALEYUV2RGB1(%%FF_REGBP, %5)
+                YSCALEYUV2RGB1_ALPHA(%%FF_REGBP)
+                WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                "pop %%"FF_REG_BP"                      \n\t"
+                "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                    "a" (&c->redDither)
             );
         } else {
             __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5)
+                "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+                "mov           %4, %%"FF_REG_b"         \n\t"
+                "push %%"FF_REG_BP"                     \n\t"
+                YSCALEYUV2RGB1(%%FF_REGBP, %5)
                 "pcmpeqd %%mm7, %%mm7                   \n\t"
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                "pop %%"FF_REG_BP"                      \n\t"
+                "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                    "a" (&c->redDither)
             );
         }
     } else {
         const int16_t *ubuf1 = ubuf[1];
-        if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+        if (CONFIG_SWSCALE_ALPHA && c->needAlpha) {
             __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5)
-                YSCALEYUV2RGB1_ALPHA(%%REGBP)
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+                "mov           %4, %%"FF_REG_b"         \n\t"
+                "push %%"FF_REG_BP"                     \n\t"
+                YSCALEYUV2RGB1b(%%FF_REGBP, %5)
+                YSCALEYUV2RGB1_ALPHA(%%FF_REGBP)
+                WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                "pop %%"FF_REG_BP"                      \n\t"
+                "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                    "a" (&c->redDither)
             );
         } else {
             __asm__ volatile(
-                "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                "mov        %4, %%"REG_b"               \n\t"
-                "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5)
+                "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+                "mov           %4, %%"FF_REG_b"         \n\t"
+                "push %%"FF_REG_BP"                     \n\t"
+                YSCALEYUV2RGB1b(%%FF_REGBP, %5)
                 "pcmpeqd %%mm7, %%mm7                   \n\t"
-                WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                "pop %%"REG_BP"                         \n\t"
-                "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+                WRITEBGR32(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                "pop %%"FF_REG_BP"                      \n\t"
+                "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                    "a" (&c->redDither)
             );
@@ -1258,14 +1285,14 @@ static void RENAME(yuv2bgr24_1)(SwsContext *c, const int16_t *buf0,
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
-            WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITEBGR24(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
@@ -1273,14 +1300,14 @@ static void RENAME(yuv2bgr24_1)(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1b(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
-            WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITEBGR24(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(ff_M24A,ff_M24C,ff_M24B)
@@ -1299,20 +1326,20 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-            "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+            "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-            "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+            "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-            WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(bF8)
@@ -1320,20 +1347,20 @@ static void RENAME(yuv2rgb555_1)(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1b(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-            "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+            "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-            "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+            "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-            WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITERGB15(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(bF8)
@@ -1352,20 +1379,20 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-            "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+            "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-            "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+            "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-            WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(bF8,bFC)
@@ -1373,20 +1400,20 @@ static void RENAME(yuv2rgb565_1)(SwsContext *c, const int16_t *buf0,
     } else {
         const int16_t *ubuf1 = ubuf[1];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5)
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2RGB1b(%%FF_REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
-            "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+            "paddusb "BLUE_DITHER"(%5), %%mm2       \n\t"
             "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-            "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+            "paddusb "RED_DITHER"(%5), %%mm5        \n\t"
 #endif
-            WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            WRITERGB16(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
                NAMED_CONSTRAINTS_ADD(bF8,bFC)
@@ -1442,228 +1469,45 @@ static void RENAME(yuv2yuyv422_1)(SwsContext *c, const int16_t *buf0,
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
         const int16_t *ubuf1 = ubuf[0];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2PACKED1(%%REGBP, %5)
-            WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2PACKED1(%%FF_REGBP, %5)
+            WRITEYUY2(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
         );
     } else {
         const int16_t *ubuf1 = ubuf[1];
         __asm__ volatile(
-            "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-            "mov        %4, %%"REG_b"               \n\t"
-            "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2PACKED1b(%%REGBP, %5)
-            WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
-            "pop %%"REG_BP"                         \n\t"
-            "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+            "mov %%"FF_REG_b", "ESP_OFFSET"(%5)     \n\t"
+            "mov           %4, %%"FF_REG_b"         \n\t"
+            "push %%"FF_REG_BP"                     \n\t"
+            YSCALEYUV2PACKED1b(%%FF_REGBP, %5)
+            WRITEYUY2(%%FF_REGb, DSTW_OFFSET"(%5)", %%FF_REGBP)
+            "pop %%"FF_REG_BP"                      \n\t"
+            "mov "ESP_OFFSET"(%5), %%"FF_REG_b"     \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither)
         );
     }
 }
-
-#if COMPILE_TEMPLATE_MMXEXT
-static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
-                                 int dstWidth, const uint8_t *src,
-                                 int srcW, int xInc)
-{
-    int32_t *filterPos = c->hLumFilterPos;
-    int16_t *filter    = c->hLumFilter;
-    void    *mmxextFilterCode = c->lumMmxextFilterCode;
-    int i;
-#if defined(PIC)
-    uint64_t ebxsave;
-#endif
-#if ARCH_X86_64
-    uint64_t retsave;
-#endif
-
-    __asm__ volatile(
-#if defined(PIC)
-        "mov               %%"REG_b", %5        \n\t"
-#if ARCH_X86_64
-        "mov               -8(%%rsp), %%"REG_a" \n\t"
-        "mov               %%"REG_a", %6        \n\t"
-#endif
-#else
-#if ARCH_X86_64
-        "mov               -8(%%rsp), %%"REG_a" \n\t"
-        "mov               %%"REG_a", %5        \n\t"
-#endif
-#endif
-        "pxor                  %%mm7, %%mm7     \n\t"
-        "mov                      %0, %%"REG_c" \n\t"
-        "mov                      %1, %%"REG_D" \n\t"
-        "mov                      %2, %%"REG_d" \n\t"
-        "mov                      %3, %%"REG_b" \n\t"
-        "xor               %%"REG_a", %%"REG_a" \n\t" // i
-        PREFETCH"        (%%"REG_c")            \n\t"
-        PREFETCH"      32(%%"REG_c")            \n\t"
-        PREFETCH"      64(%%"REG_c")            \n\t"
-
-#if ARCH_X86_64
-#define CALL_MMXEXT_FILTER_CODE \
-        "movl            (%%"REG_b"), %%esi     \n\t"\
-        "call                    *%4            \n\t"\
-        "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
-        "add               %%"REG_S", %%"REG_c" \n\t"\
-        "add               %%"REG_a", %%"REG_D" \n\t"\
-        "xor               %%"REG_a", %%"REG_a" \n\t"\
-
-#else
-#define CALL_MMXEXT_FILTER_CODE \
-        "movl (%%"REG_b"), %%esi        \n\t"\
-        "call         *%4                       \n\t"\
-        "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-        "add               %%"REG_a", %%"REG_D" \n\t"\
-        "xor               %%"REG_a", %%"REG_a" \n\t"\
-
-#endif /* ARCH_X86_64 */
-
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-
-#if defined(PIC)
-        "mov                      %5, %%"REG_b" \n\t"
-#if ARCH_X86_64
-        "mov                      %6, %%"REG_a" \n\t"
-        "mov               %%"REG_a", -8(%%rsp) \n\t"
-#endif
-#else
-#if ARCH_X86_64
-        "mov                      %5, %%"REG_a" \n\t"
-        "mov               %%"REG_a", -8(%%rsp) \n\t"
-#endif
-#endif
-        :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
-           "m" (mmxextFilterCode)
-#if defined(PIC)
-          ,"m" (ebxsave)
-#endif
-#if ARCH_X86_64
-          ,"m"(retsave)
-#endif
-        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
-         ,"%"REG_b
-#endif
-    );
-
-    for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
-        dst[i] = src[srcW-1]*128;
-}
-
-static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
-                                 int dstWidth, const uint8_t *src1,
-                                 const uint8_t *src2, int srcW, int xInc)
-{
-    int32_t *filterPos = c->hChrFilterPos;
-    int16_t *filter    = c->hChrFilter;
-    void    *mmxextFilterCode = c->chrMmxextFilterCode;
-    int i;
-#if defined(PIC)
-    DECLARE_ALIGNED(8, uint64_t, ebxsave);
-#endif
-#if ARCH_X86_64
-    DECLARE_ALIGNED(8, uint64_t, retsave);
-#endif
-
-    __asm__ volatile(
-#if defined(PIC)
-        "mov          %%"REG_b", %7         \n\t"
-#if ARCH_X86_64
-        "mov          -8(%%rsp), %%"REG_a"  \n\t"
-        "mov          %%"REG_a", %8         \n\t"
-#endif
-#else
-#if ARCH_X86_64
-        "mov          -8(%%rsp), %%"REG_a"  \n\t"
-        "mov          %%"REG_a", %7         \n\t"
-#endif
-#endif
-        "pxor             %%mm7, %%mm7      \n\t"
-        "mov                 %0, %%"REG_c"  \n\t"
-        "mov                 %1, %%"REG_D"  \n\t"
-        "mov                 %2, %%"REG_d"  \n\t"
-        "mov                 %3, %%"REG_b"  \n\t"
-        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-        PREFETCH"   (%%"REG_c")             \n\t"
-        PREFETCH" 32(%%"REG_c")             \n\t"
-        PREFETCH" 64(%%"REG_c")             \n\t"
-
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-        "mov                 %5, %%"REG_c"  \n\t" // src
-        "mov                 %6, %%"REG_D"  \n\t" // buf2
-        PREFETCH"   (%%"REG_c")             \n\t"
-        PREFETCH" 32(%%"REG_c")             \n\t"
-        PREFETCH" 64(%%"REG_c")             \n\t"
-
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-        CALL_MMXEXT_FILTER_CODE
-
-#if defined(PIC)
-        "mov %7, %%"REG_b"    \n\t"
-#if ARCH_X86_64
-        "mov                 %8, %%"REG_a"  \n\t"
-        "mov          %%"REG_a", -8(%%rsp)  \n\t"
-#endif
-#else
-#if ARCH_X86_64
-        "mov                 %7, %%"REG_a"  \n\t"
-        "mov          %%"REG_a", -8(%%rsp)  \n\t"
-#endif
-#endif
-        :: "m" (src1), "m" (dst1), "m" (filter), "m" (filterPos),
-           "m" (mmxextFilterCode), "m" (src2), "m"(dst2)
-#if defined(PIC)
-          ,"m" (ebxsave)
-#endif
-#if ARCH_X86_64
-          ,"m"(retsave)
-#endif
-        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if !defined(PIC)
-         ,"%"REG_b
-#endif
-    );
-
-    for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
-        dst1[i] = src1[srcW-1]*128;
-        dst2[i] = src2[srcW-1]*128;
-    }
-}
-#endif /* COMPILE_TEMPLATE_MMXEXT */
-
 static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
 {
     enum AVPixelFormat dstFormat = c->dstFormat;
 
     c->use_mmx_vfilter= 0;
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) && dstFormat != AV_PIX_FMT_NV12
+    if (!is16BPS(dstFormat) && !isNBPS(dstFormat) && dstFormat != AV_PIX_FMT_NV12
         && dstFormat != AV_PIX_FMT_NV21 && !(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
+#if HAVE_6REGS
                     case AV_PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
+#endif
                     case AV_PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
                     case AV_PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
                     case AV_PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
@@ -1676,7 +1520,10 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case AV_PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
+                    case AV_PIX_FMT_BGR32:   c->yuv2packedX = RENAME(yuv2bgr32_X);   break;
+#if HAVE_6REGS
                     case AV_PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
+#endif
                     case AV_PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
                     case AV_PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
                     case AV_PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
@@ -1716,8 +1563,8 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
     // Use the new MMX scaler if the MMXEXT one can't be used (it is faster than the x86 ASM one).
 #if COMPILE_TEMPLATE_MMXEXT
     if (c->flags & SWS_FAST_BILINEAR && c->canMMXEXTBeUsed) {
-        c->hyscale_fast = RENAME(hyscale_fast);
-        c->hcscale_fast = RENAME(hcscale_fast);
+        c->hyscale_fast = ff_hyscale_fast_mmxext;
+        c->hcscale_fast = ff_hcscale_fast_mmxext;
     } else {
 #endif /* COMPILE_TEMPLATE_MMXEXT */
         c->hyscale_fast = NULL;

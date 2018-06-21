@@ -32,7 +32,7 @@ static int xbm_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     linesize = (avctx->width + 7) / 8;
     size     = avctx->height * (linesize * 7 + 2) + 110;
-    if ((ret = ff_alloc_packet2(avctx, pkt, size)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0)
         return ret;
 
     buf = pkt->data;

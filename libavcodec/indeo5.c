@@ -30,9 +30,8 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
+#include "ivi.h"
 #include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo5data.h"
 
 /**
@@ -114,7 +113,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* check if picture layout was changed and reallocate buffers */
     if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf) || ctx->gop_invalid) {
-        result = ff_ivi_init_planes(ctx->planes, &pic_conf);
+        result = ff_ivi_init_planes(avctx, ctx->planes, &pic_conf, 0);
         if (result < 0) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
             return result;
@@ -290,14 +289,18 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
  *
  *  @param[in,out]  gb  the GetBit context
  */
-static inline void skip_hdr_extension(GetBitContext *gb)
+static inline int skip_hdr_extension(GetBitContext *gb)
 {
     int i, len;
 
     do {
         len = get_bits(gb, 8);
+        if (8*len > get_bits_left(gb))
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < len; i++) skip_bits(gb, 8);
     } while(len);
+
+    return 0;
 }
 
 
@@ -321,6 +324,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     ctx->frame_type      = get_bits(&ctx->gb, 3);
     if (ctx->frame_type >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Invalid frame type: %d \n", ctx->frame_type);
+        ctx->frame_type = FRAMETYPE_INTRA;
         return AVERROR_INVALIDDATA;
     }
 
@@ -336,7 +340,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     if (ctx->frame_type == FRAMETYPE_INTER_SCAL && !ctx->is_scalable) {
-        av_log(avctx, AV_LOG_ERROR, "Scalable inter frame in non scaleable stream\n");
+        av_log(avctx, AV_LOG_ERROR, "Scalable inter frame in non scalable stream\n");
         ctx->frame_type = FRAMETYPE_INTER;
         return AVERROR_INVALIDDATA;
     }
@@ -654,7 +658,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->pic_conf.tile_height   = avctx->height;
     ctx->pic_conf.luma_bands    = ctx->pic_conf.chroma_bands = 1;
 
-    result = ff_ivi_init_planes(ctx->planes, &ctx->pic_conf);
+    result = ff_ivi_init_planes(avctx, ctx->planes, &ctx->pic_conf, 0);
     if (result) {
         av_log(avctx, AV_LOG_ERROR, "Couldn't allocate color planes!\n");
         return AVERROR_INVALIDDATA;
@@ -668,6 +672,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->decode_mb_info   = decode_mb_info;
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
+
+    ctx->is_indeo4 = 0;
 
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
 
@@ -683,5 +689,5 @@ AVCodec ff_indeo5_decoder = {
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

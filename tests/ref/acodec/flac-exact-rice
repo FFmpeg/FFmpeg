@@ -1,0 +1,4 @@
+aab144de213ae684ca008a3e0afe5e28 *tests/data/fate/acodec-flac-exact-rice.flac
+360454 tests/data/fate/acodec-flac-exact-rice.flac
+95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-flac-exact-rice.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

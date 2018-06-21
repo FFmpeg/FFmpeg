@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/time.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "url.h"
 #include "version.h"
@@ -68,19 +69,11 @@ typedef struct HLSContext {
     int64_t last_load_time;
 } HLSContext;
 
-static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
-{
-    int len = ff_get_line(s, buf, maxlen);
-    while (len > 0 && av_isspace(buf[len - 1]))
-        buf[--len] = '\0';
-    return len;
-}
-
 static void free_segment_list(HLSContext *s)
 {
     int i;
     for (i = 0; i < s->n_segments; i++)
-        av_free(s->segments[i]);
+        av_freep(&s->segments[i]);
     av_freep(&s->segments);
     s->n_segments = 0;
 }
@@ -89,7 +82,7 @@ static void free_variant_list(HLSContext *s)
 {
     int i;
     for (i = 0; i < s->n_variants; i++)
-        av_free(s->variants[i]);
+        av_freep(&s->variants[i]);
     av_freep(&s->variants);
     s->n_variants = 0;
 }
@@ -116,18 +109,21 @@ static int parse_playlist(URLContext *h, const char *url)
     char line[1024];
     const char *ptr;
 
-    if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
-                          &h->interrupt_callback, NULL)) < 0)
+    if ((ret = ffio_open_whitelist(&in, url, AVIO_FLAG_READ,
+                                   &h->interrupt_callback, NULL,
+                                   h->protocol_whitelist, h->protocol_blacklist)) < 0)
         return ret;
 
-    read_chomp_line(in, line, sizeof(line));
-    if (strcmp(line, "#EXTM3U"))
-        return AVERROR_INVALIDDATA;
+    ff_get_chomp_line(in, line, sizeof(line));
+    if (strcmp(line, "#EXTM3U")) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
 
     free_segment_list(s);
     s->finished = 0;
-    while (!url_feof(in)) {
-        read_chomp_line(in, line, sizeof(line));
+    while (!avio_feof(in)) {
+        ff_get_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
             struct variant_info info = {{0}};
             is_variant = 1;
@@ -169,7 +165,7 @@ static int parse_playlist(URLContext *h, const char *url)
             }
         }
     }
-    s->last_load_time = av_gettime();
+    s->last_load_time = av_gettime_relative();
 
 fail:
     avio_close(in);
@@ -273,7 +269,7 @@ start:
                       s->target_duration;
 retry:
     if (!s->finished) {
-        int64_t now = av_gettime();
+        int64_t now = av_gettime_relative();
         if (now - s->last_load_time >= reload_interval) {
             if ((ret = parse_playlist(h, s->playlisturl)) < 0)
                 return ret;
@@ -292,7 +288,7 @@ retry:
     if (s->cur_seq_no - s->start_seq_no >= s->n_segments) {
         if (s->finished)
             return AVERROR_EOF;
-        while (av_gettime() - s->last_load_time < reload_interval) {
+        while (av_gettime_relative() - s->last_load_time < reload_interval) {
             if (ff_check_interrupt(&h->interrupt_callback))
                 return AVERROR_EXIT;
             av_usleep(100*1000);
@@ -301,8 +297,9 @@ retry:
     }
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
-    ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ,
-                     &h->interrupt_callback, NULL);
+    ret = ffurl_open_whitelist(&s->seg_hd, url, AVIO_FLAG_READ,
+                               &h->interrupt_callback, NULL,
+                               h->protocol_whitelist, h->protocol_blacklist, h);
     if (ret < 0) {
         if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
@@ -313,7 +310,7 @@ retry:
     goto start;
 }
 
-URLProtocol ff_hls_protocol = {
+const URLProtocol ff_hls_protocol = {
     .name           = "hls",
     .url_open       = hls_open,
     .url_read       = hls_read,

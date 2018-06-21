@@ -24,7 +24,10 @@
  * MPEG Audio header decoder.
  */
 
+#include "libavutil/common.h"
+
 #include "avcodec.h"
+#include "internal.h"
 #include "mpegaudio.h"
 #include "mpegaudiodata.h"
 #include "mpegaudiodecheader.h"
@@ -34,6 +37,12 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
 {
     int sample_rate, frame_size, mpeg25, padding;
     int sample_rate_index, bitrate_index;
+    int ret;
+
+    ret = ff_mpa_check_header(header);
+    if (ret < 0)
+        return ret;
+
     if (header & (1<<20)) {
         s->lsf = (header & (1<<19)) ? 0 : 1;
         mpeg25 = 0;
@@ -45,6 +54,8 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     s->layer = 4 - ((header >> 17) & 3);
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
+    if (sample_rate_index >= FF_ARRAY_ELEMS(avpriv_mpa_freq_tab))
+        sample_rate_index = 0;
     sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
@@ -90,30 +101,27 @@ int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     }
 
 #if defined(DEBUG)
-    av_dlog(NULL, "layer%d, %d Hz, %d kbits/s, ",
+    ff_dlog(NULL, "layer%d, %d Hz, %d kbits/s, ",
            s->layer, s->sample_rate, s->bit_rate);
     if (s->nb_channels == 2) {
         if (s->layer == 3) {
             if (s->mode_ext & MODE_EXT_MS_STEREO)
-                av_dlog(NULL, "ms-");
+                ff_dlog(NULL, "ms-");
             if (s->mode_ext & MODE_EXT_I_STEREO)
-                av_dlog(NULL, "i-");
+                ff_dlog(NULL, "i-");
         }
-        av_dlog(NULL, "stereo");
+        ff_dlog(NULL, "stereo");
     } else {
-        av_dlog(NULL, "mono");
+        ff_dlog(NULL, "mono");
     }
-    av_dlog(NULL, "\n");
+    ff_dlog(NULL, "\n");
 #endif
     return 0;
 }
 
-int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
+int ff_mpa_decode_header(uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate, enum AVCodecID *codec_id)
 {
     MPADecodeHeader s1, *s = &s1;
-
-    if (ff_mpa_check_header(head) != 0)
-        return -1;
 
     if (avpriv_mpegaudio_decode_header(s, head) != 0) {
         return -1;
@@ -130,7 +138,8 @@ int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, in
         break;
     default:
     case 3:
-        *codec_id = AV_CODEC_ID_MP3;
+        if (*codec_id != AV_CODEC_ID_MP3ADU)
+            *codec_id = AV_CODEC_ID_MP3;
         if (s->lsf)
             *frame_size = 576;
         else
@@ -142,9 +151,4 @@ int avpriv_mpa_decode_header2(uint32_t head, int *sample_rate, int *channels, in
     *channels = s->nb_channels;
     *bit_rate = s->bit_rate;
     return s->frame_size;
-}
-
-int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
-{
-    return avpriv_mpa_decode_header2(head, sample_rate, channels, frame_size, bit_rate, &avctx->codec_id);
 }

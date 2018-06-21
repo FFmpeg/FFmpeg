@@ -1,0 +1,4 @@
+ec8859b3206ea0c45701fbdcf60dbe48 *tests/data/fate/acodec-adpcm-swf-trellis.flv
+269166 tests/data/fate/acodec-adpcm-swf-trellis.flv
+29820ce5b95b3b0a2feafa808cc264a7 *tests/data/fate/acodec-adpcm-swf-trellis.out.wav
+stddev:  747.92 PSNR: 38.85 MAXDIFF:51119 bytes:  1058400/  1064960

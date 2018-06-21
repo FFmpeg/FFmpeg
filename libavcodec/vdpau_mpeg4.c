@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "mpeg4video.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -46,13 +47,13 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        ref = ff_vdpau_get_surface_id(&s->next_picture.f);
+        ref = ff_vdpau_get_surface_id(s->next_picture.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
         info->vop_coding_type    = 2;
         /* fall-through */
     case AV_PICTURE_TYPE_P:
-        ref = ff_vdpau_get_surface_id(&s->last_picture.f);
+        ref = ff_vdpau_get_surface_id(s->last_picture.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->forward_reference  = ref;
     }
@@ -61,7 +62,7 @@ static int vdpau_mpeg4_start_frame(AVCodecContext *avctx,
     info->trb[0]                            = s->pb_time;
     info->trd[1]                            = s->pp_field_time >> 1;
     info->trb[1]                            = s->pb_field_time >> 1;
-    info->vop_time_increment_resolution     = s->avctx->time_base.den;
+    info->vop_time_increment_resolution     = s->avctx->framerate.num;
     info->vop_fcode_forward                 = s->f_code;
     info->vop_fcode_backward                = s->b_code;
     info->resync_marker_disable             = !ctx->resync_marker;
@@ -88,21 +89,28 @@ static int vdpau_mpeg4_decode_slice(av_unused AVCodecContext *avctx,
      return 0;
 }
 
-#if CONFIG_H263_VDPAU_HWACCEL
-AVHWAccel ff_h263_vdpau_hwaccel = {
-    .name           = "h263_vdpau",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = AV_CODEC_ID_H263,
-    .pix_fmt        = AV_PIX_FMT_VDPAU,
-    .start_frame    = vdpau_mpeg4_start_frame,
-    .end_frame      = ff_vdpau_mpeg_end_frame,
-    .decode_slice   = vdpau_mpeg4_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
-};
-#endif
+static int vdpau_mpeg4_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
 
-#if CONFIG_MPEG4_VDPAU_HWACCEL
-AVHWAccel ff_mpeg4_vdpau_hwaccel = {
+    switch (avctx->profile) {
+    case FF_PROFILE_MPEG4_SIMPLE:
+        profile = VDP_DECODER_PROFILE_MPEG4_PART2_SP;
+        break;
+    // As any ASP decoder must be able to decode SP, this
+    // should be a safe fallback if profile is unknown/unspecified.
+    case FF_PROFILE_UNKNOWN:
+    case FF_PROFILE_MPEG4_ADVANCED_SIMPLE:
+        profile = VDP_DECODER_PROFILE_MPEG4_PART2_ASP;
+        break;
+    default:
+        return AVERROR(ENOTSUP);
+    }
+
+    return ff_vdpau_common_init(avctx, profile, avctx->level);
+}
+
+const AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .name           = "mpeg4_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG4,
@@ -110,6 +118,10 @@ AVHWAccel ff_mpeg4_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg4_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg4_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_mpeg4_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
+    .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
-#endif

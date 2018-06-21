@@ -20,7 +20,7 @@
 
 #include "libavutil/arm/asm.S"
 
-/* chroma_mc8(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
+/* chroma_mc8(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h, int x, int y) */
 .macro  h264_chroma_mc8 type, codec=h264
 function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         push            {r4-r7, lr}
@@ -96,9 +96,10 @@ T       cmp             r7,  #0
 
         pop             {r4-r7, pc}
 
-2:      tst             r6,  r6
-        add             r12, r12, r6
+2:      adds            r12, r12, r6
         vdup.8          d0,  r4
+        beq             5f
+        tst             r6,  r6
         vdup.8          d1,  r12
 
         beq             4f
@@ -164,10 +165,37 @@ T       cmp             r7,  #0
         bgt             4b
 
         pop             {r4-r7, pc}
+
+5:      vld1.8          {d4}, [r1], r2
+        vld1.8          {d5}, [r1], r2
+        pld             [r1]
+        subs            r3,  r3,  #2
+        vmull.u8        q8,  d4,  d0
+        vmull.u8        q9,  d5,  d0
+        pld             [r1, r2]
+  .ifc \codec,h264
+        vrshrn.u16      d16, q8,  #6
+        vrshrn.u16      d17, q9,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vadd.u16        q9,  q9,  q11
+        vshrn.u16       d16, q8,  #6
+        vshrn.u16       d17, q9,  #6
+  .endif
+  .ifc \type,avg
+        vld1.8          {d20}, [lr,:64], r2
+        vld1.8          {d21}, [lr,:64], r2
+        vrhadd.u8       q8,  q8,  q10
+  .endif
+        vst1.8          {d16}, [r0,:64], r2
+        vst1.8          {d17}, [r0,:64], r2
+        bgt             5b
+
+        pop             {r4-r7, pc}
 endfunc
 .endm
 
-/* chroma_mc4(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
+/* chroma_mc4(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int h, int x, int y) */
 .macro  h264_chroma_mc4 type, codec=h264
 function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         push            {r4-r7, lr}
@@ -245,9 +273,10 @@ T       cmp             r7,  #0
 
         pop             {r4-r7, pc}
 
-2:      tst             r6,  r6
-        add             r12, r12, r6
+2:      adds            r12, r12, r6
         vdup.8          d0,  r4
+        beq             5f
+        tst             r6,  r6
         vdup.8          d1,  r12
         vtrn.32         d0,  d1
 
@@ -309,6 +338,29 @@ T       cmp             r7,  #0
         vst1.32         {d16[0]}, [r0,:32], r2
         vst1.32         {d16[1]}, [r0,:32], r2
         bgt             4b
+
+        pop             {r4-r7, pc}
+
+5:      vld1.32         {d4[0]},  [r1], r2
+        vld1.32         {d4[1]},  [r1], r2
+        vmull.u8        q8,  d4,  d0
+        subs            r3,  r3,  #2
+        pld             [r1]
+  .ifc \codec,h264
+        vrshrn.u16      d16, q8,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vshrn.u16       d16, q8,  #6
+  .endif
+  .ifc \type,avg
+        vld1.32         {d20[0]}, [lr,:32], r2
+        vld1.32         {d20[1]}, [lr,:32], r2
+        vrhadd.u8       d16, d16, d20
+  .endif
+        pld             [r1]
+        vst1.32         {d16[0]}, [r0,:32], r2
+        vst1.32         {d16[1]}, [r0,:32], r2
+        bgt             5b
 
         pop             {r4-r7, pc}
 endfunc
@@ -403,7 +455,7 @@ endconst
         h264_chroma_mc4 avg, rv40
 #endif
 
-#if CONFIG_VC1_DECODER
+#if CONFIG_VC1DSP
         h264_chroma_mc8 put, vc1
         h264_chroma_mc8 avg, vc1
         h264_chroma_mc4 put, vc1

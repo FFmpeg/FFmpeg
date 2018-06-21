@@ -30,17 +30,6 @@ pw_1: times 8 dw 1
 
 SECTION .text
 
-%macro PABS 2
-%if cpuflag(ssse3)
-    pabsw %1, %1
-%else
-    pxor    %2, %2
-    pcmpgtw %2, %1
-    pxor    %1, %2
-    psubw   %1, %2
-%endif
-%endmacro
-
 %macro PMAXUW 2
 %if cpuflag(sse4)
     pmaxuw %1, %2
@@ -59,24 +48,15 @@ SECTION .text
     pavgw     m5, m3
     pand      m4, [pw_1]
     psubusw   m5, m4
-%if mmsize == 16
-    psrldq    m5, 2
-%else
-    psrlq     m5, 16
-%endif
+    RSHIFT    m5, 2
     mova      m4, m2
     psubusw   m2, m3
     psubusw   m3, m4
     PMAXUW    m2, m3
     mova      m3, m2
     mova      m4, m2
-%if mmsize == 16
-    psrldq    m3, 2
-    psrldq    m4, 4
-%else
-    psrlq     m3, 16
-    psrlq     m4, 32
-%endif
+    RSHIFT    m3, 2
+    RSHIFT    m4, 4
     paddw     m2, m3
     paddw     m2, m4
 %endmacro
@@ -140,13 +120,12 @@ SECTION .text
     mova   [rsp+16], m3
     mova   [rsp+32], m1
     psubw        m2, m4
-    PABS         m2, m4
+    ABS1         m2, m4
     LOAD         m3, [prevq+t1]
     LOAD         m4, [prevq+t0]
     psubw        m3, m0
     psubw        m4, m1
-    PABS         m3, m5
-    PABS         m4, m5
+    ABS2         m3, m4, m5, m6
     paddw        m3, m4
     psrlw        m2, 1
     psrlw        m3, 1
@@ -155,8 +134,7 @@ SECTION .text
     LOAD         m4, [nextq+t0]
     psubw        m3, m0
     psubw        m4, m1
-    PABS         m3, m5
-    PABS         m4, m5
+    ABS2         m3, m4, m5, m6
     paddw        m3, m4
     psrlw        m3, 1
     pmaxsw       m2, m3
@@ -166,7 +144,7 @@ SECTION .text
     paddw        m0, m0
     psubw        m0, m1
     psrlw        m1, 1
-    PABS         m0, m2
+    ABS1         m0, m2
 
     movu         m2, [curq+t1-1*2]
     movu         m3, [curq+t0-1*2]
@@ -174,13 +152,8 @@ SECTION .text
     psubusw      m2, m3
     psubusw      m3, m4
     PMAXUW       m2, m3
-%if mmsize == 16
     mova         m3, m2
-    psrldq       m3, 4
-%else
-    mova         m3, m2
-    psrlq        m3, 32
-%endif
+    RSHIFT       m3, 4
     paddw        m0, m2
     paddw        m0, m3
     psubw        m0, [pw_1]

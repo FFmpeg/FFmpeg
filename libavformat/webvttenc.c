@@ -46,7 +46,13 @@ static void webvtt_write_time(AVIOContext *pb, int64_t millisec)
 static int webvtt_write_header(AVFormatContext *ctx)
 {
     AVStream     *s = ctx->streams[0];
+    AVCodecParameters *par = ctx->streams[0]->codecpar;
     AVIOContext *pb = ctx->pb;
+
+    if (ctx->nb_streams != 1 || par->codec_id != AV_CODEC_ID_WEBVTT) {
+        av_log(ctx, AV_LOG_ERROR, "Exactly one WebVTT stream is needed.\n");
+        return AVERROR(EINVAL);
+    }
 
     avpriv_set_pts_info(s, 64, 1, 1000);
 
@@ -93,6 +99,7 @@ AVOutputFormat ff_webvtt_muxer = {
     .long_name         = NULL_IF_CONFIG_SMALL("WebVTT subtitle"),
     .extensions        = "vtt",
     .mime_type         = "text/vtt",
+    .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
     .subtitle_codec    = AV_CODEC_ID_WEBVTT,
     .write_header      = webvtt_write_header,
     .write_packet      = webvtt_write_packet,

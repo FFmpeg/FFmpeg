@@ -21,6 +21,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdint.h>
+
+#include "libavutil/x86/asm.h"
+#include "libswscale/swscale_internal.h"
+
 #undef MOVNTQ
 #undef EMMS
 #undef SFENCE
@@ -135,8 +140,10 @@
     "js   1b\n\t"                                \
 
 #if COMPILE_TEMPLATE_MMXEXT
-#define RGB_PACK24_B_OPERANDS NAMED_CONSTRAINTS_ADD(mask1101,mask0110,mask0100,mask0010,mask1001)
+#undef RGB_PACK24_B_OPERANDS
+#define RGB_PACK24_B_OPERANDS NAMED_CONSTRAINTS_ARRAY_ADD(mask1101,mask0110,mask0100,mask0010,mask1001)
 #else
+#undef RGB_PACK24_B_OPERANDS
 #define RGB_PACK24_B_OPERANDS
 #endif
 

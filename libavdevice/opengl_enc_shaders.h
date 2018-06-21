@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVDEVICE_OPENGL_SHADERS_H
-#define AVDEVICE_OPENGL_SHADERS_H
+#ifndef AVDEVICE_OPENGL_ENC_SHADERS_H
+#define AVDEVICE_OPENGL_ENC_SHADERS_H
 
 #include "libavutil/pixfmt.h"
 
@@ -185,4 +185,4 @@ static const char * const FF_OPENGL_FRAGMENT_SHADER_GRAY =
         "gl_FragColor = vec4(c, c, c, 1.0);"
     "}";
 
-#endif /* AVDEVICE_OPENGL_SHADERS_H */
+#endif /* AVDEVICE_OPENGL_ENC_SHADERS_H */

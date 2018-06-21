@@ -50,28 +50,28 @@ DECLARE_ASM_CONST(8, uint64_t, pb_03) = 0x0303030303030303ULL;
 DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 //MMX versions
-#if HAVE_MMX_INLINE
+#if HAVE_MMX_INLINE && HAVE_6REGS
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 0
 #define RENAME(a) a ## _mmx
 #include "yuv2rgb_template.c"
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_MMX_INLINE && HAVE_6REGS */
 
 // MMXEXT versions
-#if HAVE_MMXEXT_INLINE
+#if HAVE_MMXEXT_INLINE && HAVE_6REGS
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMXEXT
 #define COMPILE_TEMPLATE_MMXEXT 1
 #define RENAME(a) a ## _mmxext
 #include "yuv2rgb_template.c"
-#endif /* HAVE_MMXEXT_INLINE */
+#endif /* HAVE_MMXEXT_INLINE && HAVE_6REGS */
 
 #endif /* HAVE_INLINE_ASM */
 
 av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
 {
-#if HAVE_MMX_INLINE
+#if HAVE_MMX_INLINE && HAVE_6REGS
     int cpu_flags = av_get_cpu_flags();
 
 #if HAVE_MMXEXT_INLINE
@@ -113,7 +113,7 @@ av_cold SwsFunc ff_yuv2rgb_init_x86(SwsContext *c)
                 return yuv420_rgb15_mmx;
         }
     }
-#endif /* HAVE_MMX_INLINE */
+#endif /* HAVE_MMX_INLINE  && HAVE_6REGS */
 
     return NULL;
 }

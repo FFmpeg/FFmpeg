@@ -25,22 +25,21 @@
 #include <stdint.h>
 
 #include "libavutil/common.h"
+#include "libavutil/reverse.h"
 #include "config.h"
 
 #define MAX_NEG_CROP 1024
 
 extern const uint32_t ff_inverse[257];
-extern const uint8_t  ff_reverse[256];
 extern const uint8_t ff_sqrt_tab[256];
 extern const uint8_t ff_crop_tab[256 + 2 * MAX_NEG_CROP];
 extern const uint8_t ff_zigzag_direct[64];
+extern const uint8_t ff_zigzag_scan[16+1];
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"
 #elif ARCH_AVR32
 #   include "avr32/mathops.h"
-#elif ARCH_BFIN
-#   include "bfin/mathops.h"
 #elif ARCH_MIPS
 #   include "mips/mathops.h"
 #elif ARCH_PPC
@@ -98,15 +97,6 @@ static av_always_inline unsigned UMULH(unsigned a, unsigned b){
 #define mid_pred mid_pred
 static inline av_const int mid_pred(int a, int b, int c)
 {
-#if 0
-    int t= (a-b)&((a-b)>>31);
-    a-=t;
-    b+=t;
-    b-= (b-c)&((b-c)>>31);
-    b+= (a-b)&((a-b)>>31);
-
-    return b;
-#else
     if(a>b){
         if(c>b){
             if(c>a) b=a;
@@ -119,7 +109,20 @@ static inline av_const int mid_pred(int a, int b, int c)
         }
     }
     return b;
+}
 #endif
+
+#ifndef median4
+#define median4 median4
+static inline av_const int median4(int a, int b, int c, int d)
+{
+    if (a < b) {
+        if (c < d) return (FFMIN(b, d) + FFMAX(a, c)) / 2;
+        else       return (FFMIN(b, c) + FFMAX(a, d)) / 2;
+    } else {
+        if (c < d) return (FFMIN(a, d) + FFMAX(b, c)) / 2;
+        else       return (FFMIN(a, c) + FFMAX(b, d)) / 2;
+    }
 }
 #endif
 
@@ -199,6 +202,8 @@ if ((y) < (x)) {\
 #   define FASTDIV(a,b) ((uint32_t)((((uint64_t)a) * ff_inverse[b]) >> 32))
 #endif /* FASTDIV */
 
+#ifndef ff_sqrt
+#define ff_sqrt ff_sqrt
 static inline av_const unsigned int ff_sqrt(unsigned int a)
 {
     unsigned int b;
@@ -218,6 +223,12 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
 
     return b - (a < b * b);
 }
+#endif
+
+static inline av_const float ff_sqrf(float a)
+{
+    return a*a;
+}
 
 static inline int8_t ff_u8_to_s8(uint8_t a)
 {
@@ -227,6 +238,14 @@ static inline int8_t ff_u8_to_s8(uint8_t a)
     } b;
     b.u8 = a;
     return b.s8;
+}
+
+static av_always_inline uint32_t bitswap_32(uint32_t x)
+{
+    return (uint32_t)ff_reverse[ x        & 0xFF] << 24 |
+           (uint32_t)ff_reverse[(x >> 8)  & 0xFF] << 16 |
+           (uint32_t)ff_reverse[(x >> 16) & 0xFF] << 8  |
+           (uint32_t)ff_reverse[ x >> 24];
 }
 
 #endif /* AVCODEC_MATHOPS_H */

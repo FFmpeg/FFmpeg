@@ -36,8 +36,6 @@
 %define pointer resd
 %endif
 
-SECTION_RODATA 32
-
 struc FFTContext
     .nbits:    resd 1
     .reverse:  resd 1
@@ -52,6 +50,8 @@ struc FFTContext
     .imdctcalc:pointer 1
     .imdcthalf:pointer 1
 endstruc
+
+SECTION_RODATA 32
 
 %define M_SQRT1_2 0.70710678118654752440
 %define M_COS_PI_1_8 0.923879532511287
@@ -68,11 +68,12 @@ perm1: dd 0x00, 0x02, 0x03, 0x01, 0x03, 0x00, 0x02, 0x01
 perm2: dd 0x00, 0x01, 0x02, 0x03, 0x01, 0x00, 0x02, 0x03
 ps_p1p1m1p1root2: dd 1.0, 1.0, -1.0, 1.0, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2, M_SQRT1_2
 ps_m1m1p1m1p1m1m1m1: dd 1<<31, 1<<31, 0, 1<<31, 0, 1<<31, 1<<31, 1<<31
-ps_m1m1m1m1: times 4 dd 1<<31
 ps_m1p1: dd 1<<31, 0
 
+cextern ps_neg
+
 %assign i 16
-%rep 13
+%rep 14
 cextern cos_ %+ i
 %assign i i<<1
 %endrep
@@ -89,7 +90,7 @@ cextern cos_ %+ i
     %1
 %endmacro
 
-SECTION_TEXT
+SECTION .text
 
 %macro T2_3DNOW 4 ; z0, z1, mem0, mem1
     mova     %1, %3
@@ -188,6 +189,23 @@ SECTION_TEXT
     addps    %1, %1, %6       ; {r0,r1,r2,r3}
     subps    %4, %2, %5       ; {i4,i5,i6,i7}
     addps    %2, %2, %5       ; {i0,i1,i2,i3}
+%endmacro
+
+%macro INTERL 5
+%if cpuflag(avx)
+    vunpckhps      %3, %2, %1
+    vunpcklps      %2, %2, %1
+    vextractf128   %4(%5), %2, 0
+    vextractf128  %4 %+ H(%5), %3, 0
+    vextractf128   %4(%5 + 1), %2, 1
+    vextractf128  %4 %+ H(%5 + 1), %3, 1
+%elif cpuflag(sse) || cpuflag(3dnow)
+    mova     %3, %2
+    unpcklps %2, %1
+    unpckhps %3, %1
+    mova  %4(%5), %2
+    mova  %4(%5+1), %3
+%endif
 %endmacro
 
 ; scheduled for cpu-bound sizes
@@ -540,17 +558,6 @@ DEFINE_ARGS zc, w, n, o1, o3
 INIT_YMM avx
 
 %if HAVE_AVX_EXTERNAL
-%macro INTERL_AVX 5
-    vunpckhps      %3, %2, %1
-    vunpcklps      %2, %2, %1
-    vextractf128   %4(%5), %2, 0
-    vextractf128  %4 %+ H(%5), %3, 0
-    vextractf128   %4(%5 + 1), %2, 1
-    vextractf128  %4 %+ H(%5 + 1), %3, 1
-%endmacro
-
-%define INTERL INTERL_AVX
-
 DECL_PASS pass_avx, PASS_BIG 1
 DECL_PASS pass_interleave_avx, PASS_BIG 0
 
@@ -564,16 +571,6 @@ cglobal fft_calc, 2,5,8
 %endif
 
 INIT_XMM sse
-
-%macro INTERL_SSE 5
-    mova     %3, %2
-    unpcklps %2, %1
-    unpckhps %3, %1
-    mova  %4(%5), %2
-    mova  %4(%5+1), %3
-%endmacro
-
-%define INTERL INTERL_SSE
 
 DECL_PASS pass_sse, PASS_BIG 1
 DECL_PASS pass_interleave_sse, PASS_BIG 0
@@ -685,7 +682,7 @@ cglobal imdct_calc, 3,5,3
     mov     r2, r3
     sub     r3, mmsize
     neg     r2
-    mova    m2, [ps_m1m1m1m1]
+    mova    m2, [ps_neg]
 .loop:
 %if mmsize == 8
     PSWAPD  m0, [r1 + r3]
@@ -755,7 +752,7 @@ DECL_PASS pass_interleave_3dnow, PASS_BIG 0
 %endif
 
 %assign n 1<<%1
-%rep 17-%1
+%rep 18-%1
 %assign n2 n/2
 %assign n4 n/4
 %xdefine list_of_fft list_of_fft, fft %+ n %+ fullsuffix SECTION_REL
@@ -860,16 +857,30 @@ INIT_XMM sse
 %endmacro
 
 %macro CMUL 6 ;j, xmm0, xmm1, 3, 4, 5
+%if cpuflag(sse)
     mulps      m6, %3, [%5+%1]
     mulps      m7, %2, [%5+%1]
     mulps      %2, %2, [%6+%1]
     mulps      %3, %3, [%6+%1]
     subps      %2, %2, m6
     addps      %3, %3, m7
+%elif cpuflag(3dnow)
+    mova       m6, [%1+%2*2]
+    mova       %3, [%1+%2*2+8]
+    mova       %4, m6
+    mova       m7, %3
+    pfmul      m6, [%5+%2]
+    pfmul      %3, [%6+%2]
+    pfmul      %4, [%6+%2]
+    pfmul      m7, [%5+%2]
+    pfsub      %3, m6
+    pfadd      %4, m7
+%endif
 %endmacro
 
-%macro POSROTATESHUF_AVX 5 ;j, k, z+n8, tcos+n8, tsin+n8
+%macro POSROTATESHUF 5 ;j, k, z+n8, tcos+n8, tsin+n8
 .post:
+%if cpuflag(avx)
     vmovaps      ymm1,   [%3+%1*2]
     vmovaps      ymm0,   [%3+%1*2+0x20]
     vmovaps      ymm3,   [%3+%2*2]
@@ -898,10 +909,7 @@ INIT_XMM sse
     sub      %2,   0x20
     add      %1,   0x20
     jl       .post
-%endmacro
-
-%macro POSROTATESHUF 5 ;j, k, z+n8, tcos+n8, tsin+n8
-.post:
+%elif cpuflag(sse)
     movaps   xmm1, [%3+%1*2]
     movaps   xmm0, [%3+%1*2+0x10]
     CMUL     %1,   xmm0, xmm1, %3, %4, %5
@@ -923,25 +931,9 @@ INIT_XMM sse
     sub      %2,   0x10
     add      %1,   0x10
     jl       .post
-%endmacro
-
-%macro CMUL_3DNOW 6
-    mova       m6, [%1+%2*2]
-    mova       %3, [%1+%2*2+8]
-    mova       %4, m6
-    mova       m7, %3
-    pfmul      m6, [%5+%2]
-    pfmul      %3, [%6+%2]
-    pfmul      %4, [%6+%2]
-    pfmul      m7, [%5+%2]
-    pfsub      %3, m6
-    pfadd      %4, m7
-%endmacro
-
-%macro POSROTATESHUF_3DNOW 5 ;j, k, z+n8, tcos+n8, tsin+n8
-.post:
-    CMUL_3DNOW %3, %1, m0, m1, %4, %5
-    CMUL_3DNOW %3, %2, m2, m3, %4, %5
+%elif cpuflag(3dnow)
+    CMUL  %3, %1, m0, m1, %4, %5
+    CMUL  %3, %2, m2, m3, %4, %5
     movd  [%3+%1*2+ 0], m0
     movd  [%3+%2*2+12], m1
     movd  [%3+%2*2+ 0], m2
@@ -957,9 +949,10 @@ INIT_XMM sse
     sub        %2, 8
     add        %1, 8
     jl         .post
+%endif
 %endmacro
 
-%macro DECL_IMDCT 1
+%macro DECL_IMDCT 0
 cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *input
 %if ARCH_X86_64
 %define rrevtab r7
@@ -998,7 +991,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     sub   r4, r3
 %endif
 %if notcpuflag(3dnowext) && mmsize == 8
-    movd  m7, [ps_m1m1m1m1]
+    movd  m7, [ps_neg]
 %endif
 .pre:
 %if ARCH_X86_64 == 0
@@ -1065,7 +1058,7 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     neg  r0
     mov  r1, -mmsize
     sub  r1, r0
-    %1 r0, r1, r6, rtcos, rtsin
+    POSROTATESHUF r0, r1, r6, rtcos, rtsin
 %if ARCH_X86_64 == 0
     add esp, 12
 %endif
@@ -1075,18 +1068,18 @@ cglobal imdct_half, 3,12,8; FFTContext *s, FFTSample *output, const FFTSample *i
     RET
 %endmacro
 
-DECL_IMDCT POSROTATESHUF
+DECL_IMDCT
 
 %if ARCH_X86_32
 INIT_MMX 3dnow
-DECL_IMDCT POSROTATESHUF_3DNOW
+DECL_IMDCT
 
 INIT_MMX 3dnowext
-DECL_IMDCT POSROTATESHUF_3DNOW
+DECL_IMDCT
 %endif
 
 INIT_YMM avx
 
 %if HAVE_AVX_EXTERNAL
-DECL_IMDCT POSROTATESHUF_AVX
+DECL_IMDCT
 %endif

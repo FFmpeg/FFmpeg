@@ -23,9 +23,9 @@
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
 #include "libavutil/internal.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
 #include "libavcodec/mpegaudiodsp.h"
-#include "dsputil_altivec.h"
 
 #if HAVE_ALTIVEC
 
@@ -90,7 +90,7 @@ static void apply_window(const float *buf, const float *win1,
 }
 
 static void apply_window_mp3(float *in, float *win, int *unused, float *out,
-                             int incr)
+                             ptrdiff_t incr)
 {
     LOCAL_ALIGNED_16(float, suma, [17]);
     LOCAL_ALIGNED_16(float, sumb, [17]);
@@ -133,7 +133,7 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
 av_cold void ff_mpadsp_init_ppc(MPADSPContext *s)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
     s->apply_window_float = apply_window_mp3;

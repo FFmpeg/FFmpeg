@@ -28,7 +28,9 @@
  */
 
 /**
- * @defgroup lpp Libpostproc
+ * @defgroup lpp libpostproc
+ * Video postprocessing library.
+ *
  * @{
  */
 
@@ -51,8 +53,6 @@ const char *postproc_license(void);
 
 #define PP_QUALITY_MAX 6
 
-#define QP_STORE_T int8_t
-
 #include <inttypes.h>
 
 typedef void pp_context;
@@ -69,7 +69,7 @@ extern const char pp_help[]; ///< a simple help text
 void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
                      int horizontalSize, int verticalSize,
-                     const QP_STORE_T *QP_store,  int QP_stride,
+                     const int8_t *QP_store,  int QP_stride,
                      pp_mode *mode, pp_context *ppContext, int pict_type);
 
 
@@ -96,6 +96,7 @@ void pp_free_context(pp_context *ppContext);
 #define PP_FORMAT_422    (0x00000001|PP_FORMAT)
 #define PP_FORMAT_411    (0x00000002|PP_FORMAT)
 #define PP_FORMAT_444    (0x00000000|PP_FORMAT)
+#define PP_FORMAT_440    (0x00000010|PP_FORMAT)
 
 #define PP_PICT_TYPE_QP2  0x00000010 ///< MPEG2 style QScale
 

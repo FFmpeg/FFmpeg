@@ -35,15 +35,14 @@
 #include "libavutil/float_dsp.h"
 #include "libavutil/lfg.h"
 #include "libavutil/random_seed.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "fft.h"
-#include "fmtconvert.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "nellymoser.h"
 #include "sinewin.h"
-
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 
 
 typedef struct NellyMoserDecodeContext {
@@ -51,7 +50,7 @@ typedef struct NellyMoserDecodeContext {
     AVLFG           random_state;
     GetBitContext   gb;
     float           scale_bias;
-    AVFloatDSPContext fdsp;
+    AVFloatDSPContext *fdsp;
     FFTContext      imdct_ctx;
     DECLARE_ALIGNED(32, float, imdct_buf)[2][NELLY_BUF_LEN];
     float          *imdct_out;
@@ -76,7 +75,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
     for (i=0 ; i<NELLY_BANDS ; i++) {
         if (i > 0)
             val += ff_nelly_delta_table[get_bits(&s->gb, 5)];
-        pval = -pow(2, val/2048) * s->scale_bias;
+        pval = -exp2(val/2048) * s->scale_bias;
         for (j = 0; j < ff_nelly_band_sizes_table[i]; j++) {
             *bptr++ = val;
             *pptr++ = pval;
@@ -106,7 +105,7 @@ static void nelly_decode_block(NellyMoserDecodeContext *s,
                (NELLY_BUF_LEN - NELLY_FILL_LEN) * sizeof(float));
 
         s->imdct_ctx.imdct_half(&s->imdct_ctx, s->imdct_out, aptr);
-        s->fdsp.vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN / 2,
+        s->fdsp->vector_fmul_window(aptr, s->imdct_prev + NELLY_BUF_LEN / 2,
                                    s->imdct_out, ff_sine_128,
                                    NELLY_BUF_LEN / 2);
         FFSWAP(float *, s->imdct_out, s->imdct_prev);
@@ -122,7 +121,9 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     av_lfg_init(&s->random_state, 0);
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
-    avpriv_float_dsp_init(&s->fdsp, avctx->flags & CODEC_FLAG_BITEXACT);
+    s->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
+    if (!s->fdsp)
+        return AVERROR(ENOMEM);
 
     s->scale_bias = 1.0/(32768*8);
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
@@ -190,6 +191,7 @@ static av_cold int decode_end(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
     ff_mdct_end(&s->imdct_ctx);
+    av_freep(&s->fdsp);
 
     return 0;
 }
@@ -203,7 +205,7 @@ AVCodec ff_nellymoser_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_tag,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_PARAM_CHANGE,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_PARAM_CHANGE,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_NONE },
 };

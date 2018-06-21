@@ -3,7 +3,7 @@
  * Copyright (c) 2002 Steve O'Hara-Smith
  * based on
  *           Linux video grab interface
- *           Copyright (c) 2000,2001 Gerard Lantau
+ *           Copyright (c) 2000, 2001 Fabrice Bellard
  * and
  *           simple_grab.c Copyright (c) 1999 Roger Hardiman
  *
@@ -51,7 +51,7 @@
 #include <stdint.h>
 #include "avdevice.h"
 
-typedef struct {
+typedef struct VideoData {
     AVClass *class;
     int video_fd;
     int tuner_fd;
@@ -80,7 +80,7 @@ typedef struct {
 #define VIDEO_FORMAT NTSC
 #endif
 
-static int bktr_dev[] = { METEOR_DEV0, METEOR_DEV1, METEOR_DEV2,
+static const int bktr_dev[] = { METEOR_DEV0, METEOR_DEV1, METEOR_DEV2,
     METEOR_DEV3, METEOR_DEV_SVIDEO };
 
 uint8_t *video_buf;
@@ -103,7 +103,9 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     long ioctl_frequency;
     char *arg;
     int c;
-    struct sigaction act = { {0} }, old;
+    struct sigaction act, old;
+    int ret;
+    char errbuf[128];
 
     if (idev < 0 || idev > 4)
     {
@@ -132,6 +134,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
             frequency = 0.0;
     }
 
+    memset(&act, 0, sizeof(act));
     sigemptyset(&act.sa_mask);
     act.sa_handler = catchsignal;
     sigaction(SIGUSR1, &act, &old);
@@ -142,8 +145,10 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
 
     *video_fd = avpriv_open(video_device, O_RDONLY);
     if (*video_fd < 0) {
-        av_log(NULL, AV_LOG_ERROR, "%s: %s\n", video_device, strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_ERROR, "%s: %s\n", video_device, errbuf);
+        return ret;
     }
 
     geo.rows = height;
@@ -165,19 +170,25 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
         geo.oformat |= METEOR_GEO_EVEN_ONLY;
 
     if (ioctl(*video_fd, METEORSETGEO, &geo) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "METEORSETGEO: %s\n", strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_ERROR, "METEORSETGEO: %s\n", errbuf);
+        return ret;
     }
 
     if (ioctl(*video_fd, BT848SFMT, &c) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "BT848SFMT: %s\n", strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_ERROR, "BT848SFMT: %s\n", errbuf);
+        return ret;
     }
 
     c = bktr_dev[idev];
     if (ioctl(*video_fd, METEORSINPUT, &c) < 0) {
-        av_log(NULL, AV_LOG_ERROR, "METEORSINPUT: %s\n", strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_ERROR, "METEORSINPUT: %s\n", errbuf);
+        return ret;
     }
 
     video_buf_size = width * height * 12 / 8;
@@ -185,8 +196,10 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     video_buf = (uint8_t *)mmap((caddr_t)0, video_buf_size,
         PROT_READ, MAP_SHARED, *video_fd, (off_t)0);
     if (video_buf == MAP_FAILED) {
-        av_log(NULL, AV_LOG_ERROR, "mmap: %s\n", strerror(errno));
-        return -1;
+        ret = AVERROR(errno);
+        av_strerror(ret, errbuf, sizeof(errbuf));
+        av_log(NULL, AV_LOG_ERROR, "mmap: %s\n", errbuf);
+        return ret;
     }
 
     if (frequency != 0.0) {
@@ -274,16 +287,14 @@ static int grab_read_header(AVFormatContext *s1)
 
     s->per_frame = ((uint64_t)1000000 * framerate.den) / framerate.num;
 
-    st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codec->pix_fmt = AV_PIX_FMT_YUV420P;
-    st->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
-    st->codec->width = s->width;
-    st->codec->height = s->height;
-    st->codec->time_base.den = framerate.num;
-    st->codec->time_base.num = framerate.den;
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->format = AV_PIX_FMT_YUV420P;
+    st->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
+    st->codecpar->width = s->width;
+    st->codecpar->height = s->height;
+    st->avg_frame_rate = framerate;
 
-
-    if (bktr_init(s1->filename, s->width, s->height, s->standard,
+    if (bktr_init(s1->url, s->width, s->height, s->standard,
                   &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {
         ret = AVERROR(EIO);
         goto out;

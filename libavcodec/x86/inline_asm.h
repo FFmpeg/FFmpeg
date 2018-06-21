@@ -37,7 +37,7 @@
         "paddb   %%"#regd", %%"#regd"   \n\t" ::)
 
 #ifndef PIC
-#define MOVQ_WTWO(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_wtwo))
+#define MOVQ_WTWO(regd) __asm__ volatile ("movq %0, %%"#regd" \n\t" :: "m"(ff_pw_2))
 #else
 // for shared library it's better to use this way for accessing constants
 // pcmpeqd -> -1
@@ -50,7 +50,7 @@
 #endif
 
 // using regr as temporary and for the output result
-// first argument is unmodifed and second is trashed
+// first argument is unmodified and second is trashed
 // regfe is supposed to contain 0xfefefefefefefefe
 #define PAVGB_MMX_NO_RND(rega, regb, regr, regfe)                \
     "movq   "#rega", "#regr"            \n\t"                    \

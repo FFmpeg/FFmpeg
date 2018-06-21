@@ -134,14 +134,17 @@ WEIGHT_FUNC_HALF_MM 8, 8
     mov  off_regd, r7m
     add  off_regd, 1
     or   off_regd, 1
-    add        r4, 1
-    cmp        r5, 128
-     jne .normal
-    sar        r5, 1
-    sar        r6, 1
+    add       r4d, 1
+    cmp       r6d, 128
+    je .nonnormal
+    cmp       r5d, 128
+    jne .normal
+.nonnormal:
+    sar       r5d, 1
+    sar       r6d, 1
     sar  off_regd, 1
-    sub        r4, 1
-.normal
+    sub       r4d, 1
+.normal:
 %if cpuflag(ssse3)
     movd       m4, r5d
     movd       m0, r6d

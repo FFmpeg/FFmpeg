@@ -48,7 +48,7 @@ extern const  int8_t ff_interleaved_se_golomb_vlc_code[256];
 extern const uint8_t ff_interleaved_dirac_golomb_vlc_code[256];
 
 /**
- * read unsigned exp golomb code.
+ * Read an unsigned Exp-Golomb code in the range 0 to 8190.
  */
 static inline int get_ue_golomb(GetBitContext *gb)
 {
@@ -68,8 +68,8 @@ static inline int get_ue_golomb(GetBitContext *gb)
         int log = 2 * av_log2(buf) - 31;
         LAST_SKIP_BITS(re, gb, 32 - log);
         CLOSE_READER(re, gb);
-        if (CONFIG_FTRAPV && log < 0) {
-            av_log(0, AV_LOG_ERROR, "Invalid UE golomb code\n");
+        if (log < 7) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid UE golomb code\n");
             return AVERROR_INVALIDDATA;
         }
         buf >>= log;
@@ -112,7 +112,7 @@ static inline int get_ue_golomb_31(GetBitContext *gb)
     return ff_ue_golomb_vlc_code[buf];
 }
 
-static inline unsigned svq3_get_ue_golomb(GetBitContext *gb)
+static inline unsigned get_interleaved_ue_golomb(GetBitContext *gb)
 {
     uint32_t buf;
 
@@ -142,7 +142,7 @@ static inline unsigned svq3_get_ue_golomb(GetBitContext *gb)
             ret = (ret << 4) | ff_interleaved_dirac_golomb_vlc_code[buf];
             UPDATE_CACHE(re, gb);
             buf = GET_CACHE(re, gb);
-        } while (ret<0x8000000U && HAVE_BITS_REMAINING(re, gb));
+        } while (ret<0x8000000U && BITS_AVAILABLE(re, gb));
 
         CLOSE_READER(re, gb);
         return ret - 1;
@@ -195,7 +195,7 @@ static inline int get_se_golomb(GetBitContext *gb)
 
         return ff_se_golomb_vlc_code[buf];
     } else {
-        int log = av_log2(buf);
+        int log = av_log2(buf), sign;
         LAST_SKIP_BITS(re, gb, 31 - log);
         UPDATE_CACHE(re, gb);
         buf = GET_CACHE(re, gb);
@@ -205,10 +205,8 @@ static inline int get_se_golomb(GetBitContext *gb)
         LAST_SKIP_BITS(re, gb, 32 - log);
         CLOSE_READER(re, gb);
 
-        if (buf & 1)
-            buf = -(buf >> 1);
-        else
-            buf = (buf >> 1);
+        sign = -(buf & 1);
+        buf  = ((buf >> 1) ^ sign) - sign;
 
         return buf;
     }
@@ -217,16 +215,11 @@ static inline int get_se_golomb(GetBitContext *gb)
 static inline int get_se_golomb_long(GetBitContext *gb)
 {
     unsigned int buf = get_ue_golomb_long(gb);
-
-    if (buf & 1)
-        buf = -(buf >> 1);
-    else
-        buf = (buf >> 1);
-
-    return buf;
+    int sign = (buf & 1) - 1;
+    return ((buf >> 1) ^ sign) + 1;
 }
 
-static inline int svq3_get_se_golomb(GetBitContext *gb)
+static inline int get_interleaved_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
@@ -261,16 +254,11 @@ static inline int svq3_get_se_golomb(GetBitContext *gb)
 
 static inline int dirac_get_se_golomb(GetBitContext *gb)
 {
-    uint32_t ret = svq3_get_ue_golomb(gb);
+    uint32_t ret = get_interleaved_ue_golomb(gb);
 
     if (ret) {
-        uint32_t buf;
-        OPEN_READER(re, gb);
-        UPDATE_CACHE(re, gb);
-        buf = SHOW_SBITS(re, gb, 1);
-        LAST_SKIP_BITS(re, gb, 1);
-        ret = (ret ^ buf) - buf;
-        CLOSE_READER(re, gb);
+        int sign = -get_bits1(gb);
+        ret = (ret ^ sign) - sign;
     }
 
     return ret;
@@ -293,7 +281,7 @@ static inline int get_ur_golomb(GetBitContext *gb, int k, int limit,
 
     if (log > 31 - limit) {
         buf >>= log - k;
-        buf  += (30 - log) << k;
+        buf  += (30U - log) << k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
         CLOSE_READER(re, gb);
 
@@ -326,10 +314,12 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 
     log = av_log2(buf);
 
+    av_assert2(k <= 31);
+
     if (log - k >= 32 - MIN_CACHE_BITS + (MIN_CACHE_BITS == 32) &&
         32 - log < limit) {
         buf >>= log - k;
-        buf  += (30 - log) << k;
+        buf  += (30U - log) << k;
         LAST_SKIP_BITS(re, gb, 32 + k - log);
         CLOSE_READER(re, gb);
 
@@ -337,8 +327,10 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
     } else {
         int i;
         for (i = 0; i < limit && SHOW_UBITS(re, gb, 1) == 0; i++) {
-            if (gb->size_in_bits <= re_index)
+            if (gb->size_in_bits <= re_index) {
+                CLOSE_READER(re, gb);
                 return -1;
+            }
             LAST_SKIP_BITS(re, gb, 1);
             UPDATE_CACHE(re, gb);
         }
@@ -346,22 +338,31 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 
         if (i < limit - 1) {
             if (k) {
-                buf = SHOW_UBITS(re, gb, k);
-                LAST_SKIP_BITS(re, gb, k);
+                if (k > MIN_CACHE_BITS - 1) {
+                    buf = SHOW_UBITS(re, gb, 16) << (k-16);
+                    LAST_SKIP_BITS(re, gb, 16);
+                    UPDATE_CACHE(re, gb);
+                    buf |= SHOW_UBITS(re, gb, k-16);
+                    LAST_SKIP_BITS(re, gb, k-16);
+                } else {
+                    buf = SHOW_UBITS(re, gb, k);
+                    LAST_SKIP_BITS(re, gb, k);
+                }
             } else {
                 buf = 0;
             }
 
-            CLOSE_READER(re, gb);
-            return buf + (i << k);
+            buf += ((SUINT)i << k);
         } else if (i == limit - 1) {
             buf = SHOW_UBITS(re, gb, esc_len);
             LAST_SKIP_BITS(re, gb, esc_len);
-            CLOSE_READER(re, gb);
 
-            return buf + 1;
-        } else
-            return -1;
+            buf ++;
+        } else {
+            buf = -1;
+        }
+        CLOSE_READER(re, gb);
+        return buf;
     }
 }
 
@@ -371,15 +372,8 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
                                 int esc_len)
 {
-    int v = get_ur_golomb(gb, k, limit, esc_len);
-
-    v++;
-    if (v & 1)
-        return v >> 1;
-    else
-        return -(v >> 1);
-
-//    return (v>>1) ^ -(v&1);
+    unsigned v = get_ur_golomb(gb, k, limit, esc_len);
+    return (v >> 1) ^ -(v & 1);
 }
 
 /**
@@ -388,7 +382,7 @@ static inline int get_sr_golomb(GetBitContext *gb, int k, int limit,
 static inline int get_sr_golomb_flac(GetBitContext *gb, int k, int limit,
                                      int esc_len)
 {
-    int v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
+    unsigned v = get_ur_golomb_jpegls(gb, k, limit, esc_len);
     return (v >> 1) ^ -(v & 1);
 }
 
@@ -406,10 +400,7 @@ static inline unsigned int get_ur_golomb_shorten(GetBitContext *gb, int k)
 static inline int get_sr_golomb_shorten(GetBitContext *gb, int k)
 {
     int uvar = get_ur_golomb_jpegls(gb, k + 1, INT_MAX, 0);
-    if (uvar & 1)
-        return ~(uvar >> 1);
-    else
-        return uvar >> 1;
+    return (uvar >> 1) ^ -(uvar & 1);
 }
 
 #ifdef TRACE
@@ -422,8 +413,6 @@ static inline int get_ue(GetBitContext *s, const char *file, const char *func,
     int i    = get_ue_golomb(s);
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
-
-    print_bin(bits, len);
 
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d ue  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
@@ -440,8 +429,6 @@ static inline int get_se(GetBitContext *s, const char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d se  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
@@ -457,39 +444,47 @@ static inline int get_te(GetBitContext *s, int r, char *file, const char *func,
     int len  = get_bits_count(s) - pos;
     int bits = show >> (24 - len);
 
-    print_bin(bits, len);
-
     av_log(NULL, AV_LOG_DEBUG, "%5d %2d %3d te  @%5d in %s %s:%d\n",
            bits, len, i, pos, file, func, line);
 
     return i;
 }
 
-#define get_ue_golomb(a) get_ue(a, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_se_golomb(a) get_se(a, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_te_golomb(a, r)  get_te(a, r, __FILE__, __PRETTY_FUNCTION__, __LINE__)
-#define get_te0_golomb(a, r) get_te(a, r, __FILE__, __PRETTY_FUNCTION__, __LINE__)
+#define get_ue_golomb(a) get_ue(a, __FILE__, __func__, __LINE__)
+#define get_se_golomb(a) get_se(a, __FILE__, __func__, __LINE__)
+#define get_te_golomb(a, r)  get_te(a, r, __FILE__, __func__, __LINE__)
+#define get_te0_golomb(a, r) get_te(a, r, __FILE__, __func__, __LINE__)
 
 #endif /* TRACE */
 
 /**
- * write unsigned exp golomb code.
+ * write unsigned exp golomb code. 2^16 - 2 at most
  */
 static inline void set_ue_golomb(PutBitContext *pb, int i)
 {
     av_assert2(i >= 0);
+    av_assert2(i <= 0xFFFE);
 
-#if 0
-    if (i = 0) {
-        put_bits(pb, 1, 1);
-        return;
-    }
-#endif
     if (i < 256)
         put_bits(pb, ff_ue_golomb_len[i], i + 1);
     else {
         int e = av_log2(i + 1);
         put_bits(pb, 2 * e + 1, i + 1);
+    }
+}
+
+/**
+ * write unsigned exp golomb code. 2^32-2 at most.
+ */
+static inline void set_ue_golomb_long(PutBitContext *pb, uint32_t i)
+{
+    av_assert2(i <= (UINT32_MAX - 1));
+
+    if (i < 256)
+        put_bits(pb, ff_ue_golomb_len[i], i + 1);
+    else {
+        int e = av_log2(i + 1);
+        put_bits64(pb, 2 * e + 1, i + 1);
     }
 }
 
@@ -512,19 +507,9 @@ static inline void set_te_golomb(PutBitContext *pb, int i, int range)
  */
 static inline void set_se_golomb(PutBitContext *pb, int i)
 {
-#if 0
-    if (i <= 0)
-        i = -2 * i;
-    else
-        i = 2 * i - 1;
-#elif 1
     i = 2 * i - 1;
     if (i < 0)
         i ^= -1;    //FIXME check if gcc does the right thing
-#else
-    i  = 2 * i - 1;
-    i ^= (i >> 31);
-#endif
     set_ue_golomb(pb, i);
 }
 
@@ -540,7 +525,7 @@ static inline void set_ur_golomb(PutBitContext *pb, int i, int k, int limit,
 
     e = i >> k;
     if (e < limit)
-        put_bits(pb, e + k + 1, (1 << k) + (i & ((1 << k) - 1)));
+        put_bits(pb, e + k + 1, (1 << k) + av_mod_uintp2(i, k));
     else
         put_bits(pb, limit + esc_len, i - limit + 1);
 }

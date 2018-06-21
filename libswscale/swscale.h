@@ -35,7 +35,9 @@
 #include "version.h"
 
 /**
- * @defgroup libsws Color conversion and scaling
+ * @defgroup libsws libswscale
+ * Color conversion and scaling library.
+ *
  * @{
  *
  * Return the LIBSWSCALE_VERSION_INT constant.
@@ -73,7 +75,7 @@ const char *swscale_license(void);
 #define SWS_PRINT_INFO              0x1000
 
 //the following 3 flags are not completely implemented
-//internal chrominace subsampling info
+//internal chrominance subsampling info
 #define SWS_FULL_CHR_H_INT    0x2000
 //input subsampling info
 #define SWS_FULL_CHR_H_INP    0x4000
@@ -81,20 +83,6 @@ const char *swscale_license(void);
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 #define SWS_ERROR_DIFFUSION  0x800000
-
-#if FF_API_SWS_CPU_CAPS
-/**
- * CPU caps are autodetected now, those flags
- * are only provided for API compatibility.
- */
-#define SWS_CPU_CAPS_MMX      0x80000000
-#define SWS_CPU_CAPS_MMXEXT   0x20000000
-#define SWS_CPU_CAPS_MMX2     0x20000000
-#define SWS_CPU_CAPS_3DNOW    0x40000000
-#define SWS_CPU_CAPS_ALTIVEC  0x10000000
-#define SWS_CPU_CAPS_BFIN     0x01000000
-#define SWS_CPU_CAPS_SSE2     0x02000000
-#endif
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
@@ -105,6 +93,7 @@ const char *swscale_license(void);
 #define SWS_CS_SMPTE170M      5
 #define SWS_CS_SMPTE240M      7
 #define SWS_CS_DEFAULT        5
+#define SWS_CS_BT2020         9
 
 /**
  * Return a pointer to yuv<->rgb coefficients for the given colorspace
@@ -164,6 +153,7 @@ struct SwsContext *sws_alloc_context(void);
  * @return zero or positive value on success, a negative value on
  * error
  */
+av_warn_unused_result
 int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFilter *dstFilter);
 
 /**
@@ -172,7 +162,6 @@ int sws_init_context(struct SwsContext *sws_context, SwsFilter *srcFilter, SwsFi
  */
 void sws_freeContext(struct SwsContext *swsContext);
 
-#if FF_API_SWS_GETCONTEXT
 /**
  * Allocate and return an SwsContext. You need it to perform
  * scaling/conversion operations using sws_scale().
@@ -184,16 +173,20 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @param dstH the height of the destination image
  * @param dstFormat the destination image format
  * @param flags specify which algorithm and options to use for rescaling
+ * @param param extra parameters to tune the used scaler
+ *              For SWS_BICUBIC param[0] and [1] tune the shape of the basis
+ *              function, param[0] tunes f(1) and param[1] f´(1)
+ *              For SWS_GAUSS param[0] tunes the exponent and thus cutoff
+ *              frequency
+ *              For SWS_LANCZOS param[0] tunes the width of the window function
  * @return a pointer to an allocated context, or NULL in case of error
  * @note this function is to be removed after a saner alternative is
  *       written
- * @deprecated Use sws_getCachedContext() instead.
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum AVPixelFormat srcFormat,
                                   int dstW, int dstH, enum AVPixelFormat dstFormat,
                                   int flags, SwsFilter *srcFilter,
                                   SwsFilter *dstFilter, const double *param);
-#endif
 
 /**
  * Scale the image slice in srcSlice and put the resulting scaled
@@ -258,18 +251,6 @@ SwsVector *sws_allocVec(int length);
 SwsVector *sws_getGaussianVec(double variance, double quality);
 
 /**
- * Allocate and return a vector with length coefficients, all
- * with the same value c.
- */
-SwsVector *sws_getConstVec(double c, int length);
-
-/**
- * Allocate and return a vector with just one coefficient, with
- * value 1.0.
- */
-SwsVector *sws_getIdentityVec(void);
-
-/**
  * Scale all the coefficients of a by the scalar value.
  */
 void sws_scaleVec(SwsVector *a, double scalar);
@@ -278,22 +259,17 @@ void sws_scaleVec(SwsVector *a, double scalar);
  * Scale all the coefficients of a so that their sum equals height.
  */
 void sws_normalizeVec(SwsVector *a, double height);
-void sws_convVec(SwsVector *a, SwsVector *b);
-void sws_addVec(SwsVector *a, SwsVector *b);
-void sws_subVec(SwsVector *a, SwsVector *b);
-void sws_shiftVec(SwsVector *a, int shift);
 
-/**
- * Allocate and return a clone of the vector a, that is a vector
- * with the same coefficients as a.
- */
-SwsVector *sws_cloneVec(SwsVector *a);
-
-/**
- * Print with av_log() a textual representation of the vector a
- * if log_level <= av_log_level.
- */
-void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#if FF_API_SWS_VECTOR
+attribute_deprecated SwsVector *sws_getConstVec(double c, int length);
+attribute_deprecated SwsVector *sws_getIdentityVec(void);
+attribute_deprecated void sws_convVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_addVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_subVec(SwsVector *a, SwsVector *b);
+attribute_deprecated void sws_shiftVec(SwsVector *a, int shift);
+attribute_deprecated SwsVector *sws_cloneVec(SwsVector *a);
+attribute_deprecated void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level);
+#endif
 
 void sws_freeVec(SwsVector *a);
 

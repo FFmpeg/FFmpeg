@@ -33,22 +33,6 @@ pd_8000: times 4 dd 0x8000
 
 SECTION .text
 
-%macro PIXSHIFT1 1
-%if cpuflag(sse2)
-    psrldq %1, 2
-%else
-    psrlq %1, 16
-%endif
-%endmacro
-
-%macro PIXSHIFT2 1
-%if cpuflag(sse2)
-    psrldq %1, 4
-%else
-    psrlq %1, 32
-%endif
-%endmacro
-
 %macro PABS 2
 %if cpuflag(ssse3)
     pabsd %1, %1
@@ -70,30 +54,6 @@ SECTION .text
 %endif
 %endmacro
 
-%macro PMINSD 3
-%if cpuflag(sse4)
-    pminsd %1, %2
-%else
-    mova    %3, %2
-    pcmpgtd %3, %1
-    pand    %1, %3
-    pandn   %3, %2
-    por     %1, %3
-%endif
-%endmacro
-
-%macro PMAXSD 3
-%if cpuflag(sse4)
-    pmaxsd %1, %2
-%else
-    mova    %3, %1
-    pcmpgtd %3, %2
-    pand    %1, %3
-    pandn   %3, %2
-    por     %1, %3
-%endif
-%endmacro
-
 %macro PMAXUW 2
 %if cpuflag(sse4)
     pmaxuw %1, %2
@@ -112,11 +72,7 @@ SECTION .text
     pavgw     m5, m3
     pand      m4, [pw_1]
     psubusw   m5, m4
-%if mmsize == 16
-    psrldq    m5, 2
-%else
-    psrlq     m5, 16
-%endif
+    RSHIFT    m5, 2
     punpcklwd m5, m7
     mova      m4, m2
     psubusw   m2, m3
@@ -124,13 +80,8 @@ SECTION .text
     PMAXUW    m2, m3
     mova      m3, m2
     mova      m4, m2
-%if mmsize == 16
-    psrldq    m3, 2
-    psrldq    m4, 4
-%else
-    psrlq     m3, 16
-    psrlq     m4, 32
-%endif
+    RSHIFT    m3, 2
+    RSHIFT    m4, 4
     punpcklwd m2, m7
     punpcklwd m3, m7
     punpcklwd m4, m7
@@ -164,7 +115,7 @@ SECTION .text
 
 ; This version of CHECK2 has 3 fewer instructions on sets older than SSE4 but I
 ; am not sure whether it is any faster.  A rewrite or refactor of the filter
-; code should make it possible to eliminate the move intruction at the end.  It
+; code should make it possible to eliminate the move instruction at the end.  It
 ; exists to satisfy the expectation that the "score" values are in m1.
 
 ; %macro CHECK2 0
@@ -234,13 +185,8 @@ SECTION .text
     psubusw      m2, m3
     psubusw      m3, m4
     PMAXUW       m2, m3
-%if mmsize == 16
     mova         m3, m2
-    psrldq       m3, 4
-%else
-    mova         m3, m2
-    psrlq        m3, 32
-%endif
+    RSHIFT       m3, 4
     punpcklwd    m2, m7
     punpcklwd    m3, m7
     paddd        m0, m2

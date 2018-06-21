@@ -24,6 +24,8 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
+#include "mpegvideo.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
 
@@ -43,12 +45,12 @@ static int vdpau_mpeg_start_frame(AVCodecContext *avctx,
 
     switch (s->pict_type) {
     case AV_PICTURE_TYPE_B:
-        ref = ff_vdpau_get_surface_id(&s->next_picture.f);
+        ref = ff_vdpau_get_surface_id(s->next_picture.f);
         assert(ref != VDP_INVALID_HANDLE);
         info->backward_reference = ref;
         /* fall through to forward prediction */
     case AV_PICTURE_TYPE_P:
-        ref = ff_vdpau_get_surface_id(&s->last_picture.f);
+        ref = ff_vdpau_get_surface_id(s->last_picture.f);
         info->forward_reference  = ref;
     }
 
@@ -95,7 +97,13 @@ static int vdpau_mpeg_decode_slice(AVCodecContext *avctx,
 }
 
 #if CONFIG_MPEG1_VDPAU_HWACCEL
-AVHWAccel ff_mpeg1_vdpau_hwaccel = {
+static int vdpau_mpeg1_init(AVCodecContext *avctx)
+{
+    return ff_vdpau_common_init(avctx, VDP_DECODER_PROFILE_MPEG1,
+                                VDP_DECODER_LEVEL_MPEG1_NA);
+}
+
+const AVHWAccel ff_mpeg1_vdpau_hwaccel = {
     .name           = "mpeg1_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG1VIDEO,
@@ -103,12 +111,34 @@ AVHWAccel ff_mpeg1_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_mpeg1_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif
 
 #if CONFIG_MPEG2_VDPAU_HWACCEL
-AVHWAccel ff_mpeg2_vdpau_hwaccel = {
+static int vdpau_mpeg2_init(AVCodecContext *avctx)
+{
+    VdpDecoderProfile profile;
+
+    switch (avctx->profile) {
+    case FF_PROFILE_MPEG2_MAIN:
+        profile = VDP_DECODER_PROFILE_MPEG2_MAIN;
+        break;
+    case FF_PROFILE_MPEG2_SIMPLE:
+        profile = VDP_DECODER_PROFILE_MPEG2_SIMPLE;
+        break;
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    return ff_vdpau_common_init(avctx, profile, VDP_DECODER_LEVEL_MPEG2_HL);
+}
+
+const AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .name           = "mpeg2_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MPEG2VIDEO,
@@ -116,6 +146,11 @@ AVHWAccel ff_mpeg2_vdpau_hwaccel = {
     .start_frame    = vdpau_mpeg_start_frame,
     .end_frame      = ff_vdpau_mpeg_end_frame,
     .decode_slice   = vdpau_mpeg_decode_slice,
-    .priv_data_size = sizeof(struct vdpau_picture_context),
+    .frame_priv_data_size = sizeof(struct vdpau_picture_context),
+    .init           = vdpau_mpeg2_init,
+    .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
+    .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif

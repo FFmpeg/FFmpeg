@@ -12,17 +12,17 @@ explicitly specified. The following rules are applied:
 
 @itemize
 @item
-@code{'} and @code{\} are special characters (respectively used for
+@samp{'} and @samp{\} are special characters (respectively used for
 quoting and escaping). In addition to them, there might be other
 special characters depending on the specific syntax where the escaping
 and quoting are employed.
 
 @item
-A special character is escaped by prefixing it with a '\'.
+A special character is escaped by prefixing it with a @samp{\}.
 
 @item
-All characters enclosed between '' are included literally in the
-parsed string. The quote character @code{'} itself cannot be quoted,
+All characters enclosed between @samp{''} are included literally in the
+parsed string. The quote character @samp{'} itself cannot be quoted,
 so you may need to close the quote and escape it.
 
 @item
@@ -71,7 +71,7 @@ Escaping and quoting can be mixed together:
 @end example
 
 @item
-To include a literal @code{\} you can use either escaping or quoting:
+To include a literal @samp{\} you can use either escaping or quoting:
 @example
 'c:\foo' can be written as c:\\foo
 @end example
@@ -238,6 +238,14 @@ The following abbreviations are recognized:
 480x320
 @item qhd
 960x540
+@item 2kdci
+2048x1080
+@item 4kdci
+4096x2160
+@item uhd2160
+3840x2160
+@item uhd4320
+7680x4320
 @end table
 
 @anchor{video rate syntax}
@@ -711,19 +719,24 @@ the name of a standard channel layout (e.g. @samp{mono},
 the name of a single channel (e.g. @samp{FL}, @samp{FR}, @samp{FC}, @samp{LFE}, etc.)
 
 @item
-a number of channels, in decimal, optionally followed by 'c', yielding
-the default channel layout for that number of channels (see the
-function @code{av_get_default_channel_layout})
+a number of channels, in decimal, followed by 'c', yielding the default channel
+layout for that number of channels (see the function
+@code{av_get_default_channel_layout}). Note that not all channel counts have a
+default layout.
+
+@item
+a number of channels, in decimal, followed by 'C', yielding an unknown channel
+layout with the specified number of channels. Note that not all channel layout
+specification strings support unknown channel layouts.
 
 @item
 a channel layout mask, in hexadecimal starting with "0x" (see the
 @code{AV_CH_*} macros in @file{libavutil/channel_layout.h}.
 @end itemize
 
-Starting from libavutil version 53 the trailing character "c" to
-specify a number of channels will be required, while a channel layout
-mask could also be specified as a decimal number (if and only if not
-followed by "c").
+Before libavutil version 53 the trailing character "c" to specify a number of
+channels was optional, but now it is required, while a channel layout mask can
+also be specified as a decimal number (if and only if not followed by "c" or "C").
 
 See also the function @code{av_get_channel_layout} defined in
 @file{libavutil/channel_layout.h}.
@@ -763,6 +776,9 @@ Compute arcsine of @var{x}.
 @item atan(x)
 Compute arctangent of @var{x}.
 
+@item atan2(x, y)
+Compute principal value of the arc tangent of @var{y}/@var{x}.
+
 @item between(x, min, max)
 Return 1 if @var{x} is greater than or equal to @var{min} and lesser than or
 equal to @var{max}, 0 otherwise.
@@ -781,6 +797,9 @@ large numbers (usually 2^53 and larger).
 @item ceil(expr)
 Round the value of expression @var{expr} upwards to the nearest
 integer. For example, "ceil(1.5)" is "2.0".
+
+@item clip(x, min, max)
+Return the value of @var{x} clipped between @var{min} and @var{max}.
 
 @item cos(x)
 Compute cosine of @var{x}.
@@ -841,9 +860,12 @@ Return 1.0 if @var{x} is +/-INFINITY, 0.0 otherwise.
 Return 1.0 if @var{x} is NAN, 0.0 otherwise.
 
 @item ld(var)
-Allow to load the value of the internal variable with number
+Load the value of the internal variable with number
 @var{var}, which was previously stored with st(@var{var}, @var{expr}).
 The function returns the loaded value.
+
+@item lerp(x, y, z)
+Return linear interpolation between @var{x} and @var{y} by amount of @var{z}.
 
 @item log(x)
 Compute natural logarithm of @var{x}.
@@ -858,7 +880,7 @@ Return 1 if @var{x} is lesser than or equal to @var{y}, 0 otherwise.
 Return the maximum between @var{x} and @var{y}.
 
 @item min(x, y)
-Return the maximum between @var{x} and @var{y}.
+Return the minimum between @var{x} and @var{y}.
 
 @item mod(x, y)
 Compute the remainder of division of @var{x} by @var{y}.
@@ -895,6 +917,9 @@ various input values that the expression can access through
 @code{ld(0)}. When the expression evaluates to 0 then the
 corresponding input value will be returned.
 
+@item round(expr)
+Round the value of expression @var{expr} to the nearest integer. For example, "round(1.5)" is "2.0".
+
 @item sin(x)
 Compute sine of @var{x}.
 
@@ -909,7 +934,7 @@ Compute the square root of @var{expr}. This is equivalent to
 Compute expression @code{1/(1 + exp(4*x))}.
 
 @item st(var, expr)
-Allow to store the value of the expression @var{expr} in an internal
+Store the value of the expression @var{expr} in an internal
 variable. @var{var} specifies the number of the variable where to
 store the value, and it is a value ranging from 0 to 9. The function
 returns the value stored in the internal variable.
@@ -1031,34 +1056,4 @@ indication of the corresponding powers of 10 and of 2.
 10^24 / 2^70
 @end table
 
-@c man end
-
-@chapter OpenCL Options
-@c man begin OPENCL OPTIONS
-
-When FFmpeg is configured with @code{--enable-opencl}, it is possible
-to set the options for the global OpenCL context.
-
-The list of supported options follows:
-
-@table @option
-@item build_options
-Set build options used to compile the registered kernels.
-
-See reference "OpenCL Specification Version: 1.2 chapter 5.6.4".
-
-@item platform_idx
-Select the index of the platform to run OpenCL code.
-
-The specified index must be one of the indexes in the device list
-which can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_device_list()}.
-
-@item device_idx
-Select the index of the device used to run OpenCL code.
-
-The specified index must be one of the indexes in the device list which
-can be obtained with @code{ffmpeg -opencl_bench} or @code{av_opencl_get_device_list()}.
-
-@end table
-
-@c man end OPENCL OPTIONS
+@c man end EXPRESSION EVALUATION

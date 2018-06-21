@@ -38,7 +38,7 @@
 
 #define MIN_ISF_SPACING     (128.0 / 32768.0) ///< minimum isf gap
 #define PRED_FACTOR         (1.0 / 3.0)
-#define MIN_ENERGY         -14.0              ///< initial innnovation energy (dB)
+#define MIN_ENERGY         -14.0              ///< initial innovation energy (dB)
 #define ENERGY_MEAN         30.0              ///< mean innovation energy (dB) in all modes
 #define PREEMPH_FAC         0.68              ///< factor used to de-emphasize synthesis
 
@@ -673,7 +673,7 @@ static const uint16_t order_MODE_23k85[] = {
 };
 
 /** Reordering array addresses for each mode */
-static const uint16_t* amr_bit_orderings_by_mode[] = {
+static const uint16_t * const amr_bit_orderings_by_mode[] = {
     order_MODE_6k60,
     order_MODE_8k85,
     order_MODE_12k65,

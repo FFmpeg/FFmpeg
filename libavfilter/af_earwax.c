@@ -71,22 +71,24 @@ static const int8_t filt[NUMTAPS] = {
     0,   -5,
     4,    0};
 
-typedef struct {
+typedef struct EarwaxContext {
     int16_t taps[NUMTAPS * 2];
 } EarwaxContext;
 
 static int query_formats(AVFilterContext *ctx)
 {
     static const int sample_rates[] = { 44100, -1 };
+    int ret;
 
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layout = NULL;
 
-    ff_add_format(&formats, AV_SAMPLE_FMT_S16);
-    ff_set_common_formats(ctx, formats);
-    ff_add_channel_layout(&layout, AV_CH_LAYOUT_STEREO);
-    ff_set_common_channel_layouts(ctx, layout);
-    ff_set_common_samplerates(ctx, ff_make_format_list(sample_rates));
+    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_S16                 )) < 0 ||
+        (ret = ff_set_common_formats         (ctx     , formats                           )) < 0 ||
+        (ret = ff_add_channel_layout         (&layout , AV_CH_LAYOUT_STEREO               )) < 0 ||
+        (ret = ff_set_common_channel_layouts (ctx     , layout                            )) < 0 ||
+        (ret = ff_set_common_samplerates     (ctx     , ff_make_format_list(sample_rates) )) < 0)
+        return ret;
 
     return 0;
 }
@@ -113,7 +115,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     int16_t *taps, *endin, *in, *out;
-    AVFrame *outsamples = ff_get_audio_buffer(inlink, insamples->nb_samples);
+    AVFrame *outsamples = ff_get_audio_buffer(outlink, insamples->nb_samples);
     int len;
 
     if (!outsamples) {

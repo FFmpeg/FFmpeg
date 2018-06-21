@@ -154,6 +154,6 @@ static void FUNC(flac_lpc_encode_c)(int32_t *res, const int32_t *smp, int len,
  *
  * The CONFIG_SMALL code above simplifies to this, in the case of SAMPLE_SIZE
  * not being equal to 32 (at the present time that means for 16-bit audio). The
- * code above does 2 samples per iteration.  Commit bfdd5bc ( made all the way
+ * code above does 2 samples per iteration.  Commit bfdd5bc (made all the way
  * back in 2007) says that way is faster.
  */

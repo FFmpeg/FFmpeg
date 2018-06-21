@@ -1,0 +1,4 @@
+fdc1926e0a599de94513f0a3472b598f *./tests/data/vsynth_lena/cljr.avi
+5075660 ./tests/data/vsynth_lena/cljr.avi
+7df03229ee6361ea11a0d83d4926cb10 *./tests/data/cljr.vsynth_lena.out.yuv
+stddev:   10.30 PSNR: 27.87 MAXDIFF:   65 bytes:  7603200/  7603200

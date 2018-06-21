@@ -19,7 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
+
 #include "pixels.h"
+
+#include "bit_depth_template.c"
 
 #define DEF_HPEL(OPNAME, OP)                                            \
 static inline void FUNC(OPNAME ## _pixels8_l2)(uint8_t *dst,            \

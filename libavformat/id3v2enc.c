@@ -84,7 +84,7 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(avioc, tag);
-    /* ID3v2.3 frame size is not synchsafe */
+    /* ID3v2.3 frame size is not sync-safe */
     if (id3->version == 3)
         avio_wb32(avioc, len);
     else
@@ -93,6 +93,59 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     avio_write(avioc, pb, len);
 
     av_freep(&pb);
+    return len + ID3v2_HEADER_SIZE;
+}
+
+/**
+ * Write a priv frame with owner and data. 'key' is the owner prepended with
+ * ID3v2_PRIV_METADATA_PREFIX. 'data' is provided as a string. Any \xXX
+ * (where 'X' is a valid hex digit) will be unescaped to the byte value.
+ */
+static int id3v2_put_priv(ID3v2EncContext *id3, AVIOContext *avioc, const char *key, const char *data)
+{
+    int len;
+    uint8_t *pb;
+    AVIOContext *dyn_buf;
+
+    if (!av_strstart(key, ID3v2_PRIV_METADATA_PREFIX, &key)) {
+        return 0;
+    }
+
+    if (avio_open_dyn_buf(&dyn_buf) < 0)
+        return AVERROR(ENOMEM);
+
+    // owner + null byte.
+    avio_write(dyn_buf, key, strlen(key) + 1);
+
+    while (*data) {
+        if (av_strstart(data, "\\x", &data)) {
+            if (data[0] && data[1] && av_isxdigit(data[0]) && av_isxdigit(data[1])) {
+                char digits[] = {data[0], data[1], 0};
+                avio_w8(dyn_buf, strtol(digits, NULL, 16));
+                data += 2;
+            } else {
+                ffio_free_dyn_buf(&dyn_buf);
+                av_log(avioc, AV_LOG_ERROR, "Invalid escape '\\x%.2s' in metadata tag '"
+                       ID3v2_PRIV_METADATA_PREFIX "%s'.\n", data, key);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            avio_write(dyn_buf, data++, 1);
+        }
+    }
+
+    len = avio_close_dyn_buf(dyn_buf, &pb);
+
+    avio_wb32(avioc, MKBETAG('P', 'R', 'I', 'V'));
+    if (id3->version == 3)
+        avio_wb32(avioc, len);
+    else
+        id3v2_put_size(avioc, len);
+    avio_wb16(avioc, 0);
+    avio_write(avioc, pb, len);
+
+    av_free(pb);
+
     return len + ID3v2_HEADER_SIZE;
 }
 
@@ -186,6 +239,13 @@ static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
             continue;
         }
 
+        if ((ret = id3v2_put_priv(id3, pb, t->key, t->value)) > 0) {
+            id3->len += ret;
+            continue;
+        } else if (ret < 0) {
+            return ret;
+        }
+
         /* unknown tag, write as TXXX frame */
         if ((ret = id3v2_put_ttag(id3, pb, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
@@ -242,6 +302,7 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
                                   ID3v2_ENCODING_UTF8;
     int i, ret;
 
+    ff_standardize_creation_time(s);
     if ((ret = write_metadata(s->pb, &s->metadata, id3, enc)) < 0)
         return ret;
 
@@ -268,7 +329,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
 
     /* get the mimetype*/
     while (mime->id != AV_CODEC_ID_NONE) {
-        if (mime->id == st->codec->codec_id) {
+        if (mime->id == st->codecpar->codec_id) {
             mimetype = mime->str;
             break;
         }
@@ -283,7 +344,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
     /* get the picture type */
     e = av_dict_get(st->metadata, "comment", NULL, 0);
     for (i = 0; e && i < FF_ARRAY_ELEMS(ff_id3v2_picture_types); i++) {
-        if (strstr(ff_id3v2_picture_types[i], e->value) == ff_id3v2_picture_types[i]) {
+        if (!av_strcasecmp(e->value, ff_id3v2_picture_types[i])) {
             type = i;
             break;
         }

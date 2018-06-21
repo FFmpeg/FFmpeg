@@ -31,13 +31,21 @@
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "blockdsp.h"
+#include "bswapdsp.h"
+#include "fdctdsp.h"
+#include "idctdsp.h"
 #include "get_bits.h"
+#include "pixblockdsp.h"
 #include "put_bits.h"
 
-typedef struct ASV1Context{
+typedef struct ASV1Context {
     AVCodecContext *avctx;
-    DSPContext dsp;
+    BlockDSPContext bdsp;
+    BswapDSPContext bbdsp;
+    FDCTDSPContext fdsp;
+    IDCTDSPContext idsp;
+    PixblockDSPContext pdsp;
     PutBitContext pb;
     GetBitContext gb;
     ScanTable scantable;
@@ -46,7 +54,7 @@ typedef struct ASV1Context{
     int mb_height;
     int mb_width2;
     int mb_height2;
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
     uint16_t intra_matrix[64];
     int q_intra_matrix[64];
     uint8_t *bitstream_buffer;

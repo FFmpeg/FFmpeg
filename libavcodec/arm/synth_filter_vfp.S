@@ -124,7 +124,7 @@ function ff_synth_filter_float_vfp, export=1
         push    {r3-r7,lr}
         vpush   {s16-s31}
         ldr     lr, [P_SB_OFF]
-        add     a2, ORIG_P_SB, lr, LSL #2 @ calculate synth_buf to pass to imdct_half
+        add     a2, ORIG_P_SB, lr, lsl #2 @ calculate synth_buf to pass to imdct_half
         mov     P_SB, a2                  @ and keep a copy for ourselves
         bic     J_WRAP, lr, #63           @ mangled to make testing for wrap easier in inner loop
         sub     lr, lr, #32

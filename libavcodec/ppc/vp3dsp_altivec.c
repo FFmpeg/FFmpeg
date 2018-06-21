@@ -21,19 +21,25 @@
 #include <string.h>
 
 #include "config.h"
+
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
+#include "libavutil/ppc/cpu.h"
 #include "libavutil/ppc/util_altivec.h"
+
 #include "libavcodec/vp3dsp.h"
-#include "dsputil_altivec.h"
 
 #if HAVE_ALTIVEC
 
 static const vec_s16 constants =
     {0, 64277, 60547, 54491, 46341, 36410, 25080, 12785};
+#if HAVE_BIGENDIAN
 static const vec_u8 interleave_high =
     {0, 1, 16, 17, 4, 5, 20, 21, 8, 9, 24, 25, 12, 13, 28, 29};
+#else
+static const vec_u8 interleave_high =
+    {2, 3, 18, 19, 6, 7, 22, 23, 10, 11, 26, 27, 14, 15, 30, 31};
+#endif
 
 #define IDCT_START \
     vec_s16 A, B, C, D, Ad, Bd, Cd, Dd, E, F, G, H;\
@@ -114,7 +120,7 @@ static inline vec_s16 M16(vec_s16 a, vec_s16 C)
 #define ADD8(a) vec_add(a, eight)
 #define SHIFT4(a) vec_sra(a, four)
 
-static void vp3_idct_put_altivec(uint8_t *dst, int stride, int16_t block[64])
+static void vp3_idct_put_altivec(uint8_t *dst, ptrdiff_t stride, int16_t block[64])
 {
     vec_u8 t;
     IDCT_START
@@ -143,7 +149,7 @@ static void vp3_idct_put_altivec(uint8_t *dst, int stride, int16_t block[64])
     memset(block, 0, sizeof(*block) * 64);
 }
 
-static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
+static void vp3_idct_add_altivec(uint8_t *dst, ptrdiff_t stride, int16_t block[64])
 {
     LOAD_ZERO;
     vec_u8 t, vdst;
@@ -156,9 +162,18 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
     TRANSPOSE8(b0, b1, b2, b3, b4, b5, b6, b7);
     IDCT_1D(ADD8, SHIFT4)
 
-#define ADD(a)\
+#if HAVE_BIGENDIAN
+#define GET_VDST16\
     vdst = vec_ld(0, dst);\
-    vdst_16 = (vec_s16)vec_perm(vdst, zero_u8v, vdst_mask);\
+    vdst_16 = (vec_s16)vec_perm(vdst, zero_u8v, vdst_mask);
+#else
+#define GET_VDST16\
+    vdst = vec_vsx_ld(0,dst);\
+    vdst_16 = (vec_s16)vec_mergeh(vdst, zero_u8v);
+#endif
+
+#define ADD(a)\
+    GET_VDST16;\
     vdst_16 = vec_adds(a, vdst_16);\
     t = vec_packsu(vdst_16, vdst_16);\
     vec_ste((vec_u32)t, 0, (unsigned int *)dst);\
@@ -180,7 +195,7 @@ static void vp3_idct_add_altivec(uint8_t *dst, int stride, int16_t block[64])
 av_cold void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags)
 {
 #if HAVE_ALTIVEC
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!PPC_ALTIVEC(av_get_cpu_flags()))
         return;
 
     c->idct_put = vp3_idct_put_altivec;

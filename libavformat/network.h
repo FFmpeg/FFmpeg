@@ -59,6 +59,7 @@ int ff_neterrno(void);
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <netdb.h>
 
 #define ff_neterrno() AVERROR(errno)
@@ -74,11 +75,10 @@ int ff_neterrno(void);
 
 int ff_socket_nonblock(int socket, int enable);
 
-extern int ff_network_inited_globally;
 int ff_network_init(void);
 void ff_network_close(void);
 
-void ff_tls_init(void);
+int ff_tls_init(void);
 void ff_tls_deinit(void);
 
 int ff_network_wait_fd(int fd, int write);
@@ -87,15 +87,22 @@ int ff_network_wait_fd(int fd, int write);
  * This works similarly to ff_network_wait_fd, but waits up to 'timeout' microseconds
  * Uses ff_network_wait_fd in a loop
  *
- * @fd Socket descriptor
- * @write Set 1 to wait for socket able to be read, 0 to be written
- * @timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
+ * @param fd Socket descriptor
+ * @param write Set 1 to wait for socket able to be read, 0 to be written
+ * @param timeout Timeout interval, in microseconds. Actual precision is 100000 mcs, due to ff_network_wait_fd usage
  * @param int_cb Interrupt callback, is checked before each ff_network_wait_fd call
  * @return 0 if data can be read/written, AVERROR(ETIMEDOUT) if timeout expired, or negative error code
  */
 int ff_network_wait_fd_timeout(int fd, int write, int64_t timeout, AVIOInterruptCB *int_cb);
 
-int ff_inet_aton (const char * str, struct in_addr * add);
+/**
+ * Waits for up to 'timeout' microseconds. If the usert's int_cb is set and
+ * triggered, return before that.
+ * @param timeout Timeout in microseconds. Maybe have lower actual precision.
+ * @param int_cb Interrupt callback, is checked regularly.
+ * @return AVERROR(ETIMEDOUT) if timeout expirted, AVERROR_EXIT if interrupted by int_cb
+ */
+int ff_network_sleep_interruptible(int64_t timeout, AVIOInterruptCB *int_cb);
 
 #if !HAVE_STRUCT_SOCKADDR_STORAGE
 struct sockaddr_storage {
@@ -110,6 +117,18 @@ struct sockaddr_storage {
     char ss_pad2[112];
 };
 #endif /* !HAVE_STRUCT_SOCKADDR_STORAGE */
+
+typedef union sockaddr_union {
+    struct sockaddr_storage storage;
+    struct sockaddr_in in;
+#if HAVE_STRUCT_SOCKADDR_IN6
+    struct sockaddr_in6 in6;
+#endif
+} sockaddr_union;
+
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
 
 #if !HAVE_STRUCT_ADDRINFO
 struct addrinfo {
@@ -241,6 +260,26 @@ int ff_is_multicast_address(struct sockaddr *addr);
 int ff_listen_bind(int fd, const struct sockaddr *addr,
                    socklen_t addrlen, int timeout,
                    URLContext *h);
+
+/**
+ * Bind to a file descriptor to an address without accepting connections.
+ * @param fd      First argument of bind().
+ * @param addr    Second argument of bind().
+ * @param addrlen Third argument of bind().
+ * @return        0 on success or an AVERROR on failure.
+ */
+int ff_listen(int fd, const struct sockaddr *addr, socklen_t addrlen);
+
+/**
+ * Poll for a single connection on the passed file descriptor.
+ * @param fd      The listening socket file descriptor.
+ * @param timeout Polling timeout in milliseconds.
+ * @param h       URLContext providing interrupt check
+ *                callback and logging context.
+ * @return        A non-blocking file descriptor on success
+ *                or an AVERROR on failure.
+ */
+int ff_accept(int fd, int timeout, URLContext *h);
 
 /**
  * Connect to a file descriptor and poll for result.

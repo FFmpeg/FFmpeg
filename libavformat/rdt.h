@@ -41,7 +41,7 @@ typedef struct RDTDemuxContext RDTDemuxContext;
 RDTDemuxContext *ff_rdt_parse_open(AVFormatContext *ic,
                                    int first_stream_of_set_idx,
                                    void *priv_data,
-                                   RTPDynamicProtocolHandler *handler);
+                                   const RTPDynamicProtocolHandler *handler);
 void ff_rdt_parse_close(RDTDemuxContext *s);
 
 /**
@@ -58,11 +58,6 @@ void ff_rdt_parse_close(RDTDemuxContext *s);
  */
 void ff_rdt_calc_response_and_checksum(char response[41], char chksum[9],
                                        const char *challenge);
-
-/**
- * Register RDT-related dynamic payload handlers with our cache.
- */
-void ff_register_rdt_dynamic_payload_handlers(void);
 
 /**
  * Add subscription information to Subscribe parameter string.

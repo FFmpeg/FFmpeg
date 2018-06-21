@@ -51,11 +51,12 @@
 #define AVCODEC_AC3DEC_H
 
 #include "libavutil/float_dsp.h"
+#include "libavutil/fixed_dsp.h"
 #include "libavutil/lfg.h"
 #include "ac3.h"
 #include "ac3dsp.h"
+#include "bswapdsp.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "fmtconvert.h"
 
@@ -75,6 +76,7 @@ typedef struct AC3DecodeContext {
 ///@{
     int frame_type;                         ///< frame type                             (strmtyp)
     int substreamid;                        ///< substream identification
+    int superframe_size;                    ///< current superframe size, in bytes
     int frame_size;                         ///< current frame size, in bytes
     int bit_rate;                           ///< stream bit rate, in bits-per-second
     int sample_rate;                        ///< sample frequency, in Hz
@@ -83,7 +85,10 @@ typedef struct AC3DecodeContext {
     int bitstream_mode;                     ///< bitstream mode                         (bsmod)
     int channel_mode;                       ///< channel mode                           (acmod)
     int lfe_on;                             ///< lfe channel in use
-    int channel_map;                        ///< custom channel map
+    int dialog_normalization[2];            ///< dialog level in dBFS                   (dialnorm)
+    int compression_exists[2];              ///< compression field is valid for frame   (compre)
+    int compression_gain[2];                ///< gain to apply for heavy compression    (compr)
+    int channel_map;                        ///< custom channel map                     (chanmap)
     int preferred_downmix;                  ///< Preferred 2-channel downmix mode       (dmixmod)
     int center_mix_level;                   ///< Center mix level index
     int center_mix_level_ltrt;              ///< Center mix level index for Lt/Rt       (ltrtcmixlev)
@@ -92,6 +97,8 @@ typedef struct AC3DecodeContext {
     int lfe_mix_level_exists;               ///< indicates if lfemixlevcod is specified (lfemixlevcode)
     int lfe_mix_level;                      ///< LFE mix level index                    (lfemixlevcod)
     int eac3;                               ///< indicates if current frame is E-AC-3
+    int eac3_frame_dependent_found;         ///< bitstream has E-AC-3 dependent frame(s)
+    int eac3_subsbtreamid_found;            ///< bitstream has E-AC-3 additional substream(s)
     int dolby_surround_mode;                ///< dolby surround mode                    (dsurmod)
     int dolby_surround_ex_mode;             ///< dolby surround ex mode                 (dsurexmod)
     int dolby_headphone_mode;               ///< dolby headphone mode                   (dheadphonmod)
@@ -102,6 +109,8 @@ typedef struct AC3DecodeContext {
     float ltrt_surround_mix_level;
     float loro_center_mix_level;
     float loro_surround_mix_level;
+    int target_level;                       ///< target level in dBFS
+    float level_gain[2];
 
 ///@name Frame syntax parameters
     int snr_offset_strategy;                ///< SNR offset strategy                    (snroffststr)
@@ -120,6 +129,7 @@ typedef struct AC3DecodeContext {
     int phase_flags_in_use;                 ///< phase flags in use                     (phsflginu)
     int phase_flags[AC3_MAX_CPL_BANDS];     ///< phase flags                            (phsflg)
     int num_cpl_bands;                      ///< number of coupling bands               (ncplbnd)
+    uint8_t cpl_band_struct[AC3_MAX_CPL_BANDS];
     uint8_t cpl_band_sizes[AC3_MAX_CPL_BANDS]; ///< number of coeffs in each coupling band
     int firstchincpl;                       ///< first channel in coupling
     int first_cpl_coords[AC3_MAX_CHANNELS]; ///< first coupling coordinates states      (firstcplcos)
@@ -136,10 +146,11 @@ typedef struct AC3DecodeContext {
     int spx_dst_start_freq;                     ///< spx starting frequency bin for copying (copystartmant)
                                                 ///< the copy region ends at the start of the spx region.
     int num_spx_bands;                          ///< number of spx bands                    (nspxbnds)
+    uint8_t spx_band_struct[SPX_MAX_BANDS];
     uint8_t spx_band_sizes[SPX_MAX_BANDS];      ///< number of bins in each spx band
     uint8_t first_spx_coords[AC3_MAX_CHANNELS]; ///< first spx coordinates states           (firstspxcos)
-    float spx_noise_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS]; ///< spx noise blending factor  (nblendfact)
-    float spx_signal_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS];///< spx signal blending factor (sblendfact)
+    INTFLOAT spx_noise_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS]; ///< spx noise blending factor  (nblendfact)
+    INTFLOAT spx_signal_blend[AC3_MAX_CHANNELS][SPX_MAX_BANDS];///< spx signal blending factor (sblendfact)
 ///@}
 
 ///@name Adaptive hybrid transform
@@ -151,20 +162,28 @@ typedef struct AC3DecodeContext {
     int fbw_channels;                           ///< number of full-bandwidth channels
     int channels;                               ///< number of total channels
     int lfe_ch;                                 ///< index of LFE channel
-    float downmix_coeffs[AC3_MAX_CHANNELS][2];  ///< stereo downmix coefficients
+    SHORTFLOAT *downmix_coeffs[2];              ///< stereo downmix coefficients
     int downmixed;                              ///< indicates if coeffs are currently downmixed
     int output_mode;                            ///< output channel configuration
+    int prev_output_mode;                       ///< output channel configuration for previous frame
     int out_channels;                           ///< number of output channels
+    int prev_bit_rate;                          ///< stream bit rate, in bits-per-second for previous frame
 ///@}
 
 ///@name Dynamic range
-    float dynamic_range[2];                 ///< dynamic range
-    float drc_scale;                        ///< percentage of dynamic range compression to be applied
+    INTFLOAT dynamic_range[2];                 ///< dynamic range
+    INTFLOAT drc_scale;                        ///< percentage of dynamic range compression to be applied
+    int heavy_compression;                     ///< apply heavy compression
+    INTFLOAT heavy_dynamic_range[2];           ///< heavy dynamic range compression
 ///@}
 
 ///@name Bandwidth
     int start_freq[AC3_MAX_CHANNELS];       ///< start frequency bin                    (strtmant)
     int end_freq[AC3_MAX_CHANNELS];         ///< end frequency bin                      (endmant)
+///@}
+
+///@name Consistent noise generation
+    int consistent_noise_generation;        ///< seed noise generation with AC-3 frame on decode
 ///@}
 
 ///@name Rematrixing
@@ -206,24 +225,29 @@ typedef struct AC3DecodeContext {
 ///@}
 
 ///@name Optimization
-    DSPContext dsp;                         ///< for optimization
-    AVFloatDSPContext fdsp;
+    BswapDSPContext bdsp;
+#if USE_FIXED
+    AVFixedDSPContext *fdsp;
+#else
+    AVFloatDSPContext *fdsp;
+#endif
     AC3DSPContext ac3dsp;
     FmtConvertContext fmt_conv;             ///< optimized conversion functions
 ///@}
 
-    float *outptr[AC3_MAX_CHANNELS];
-    float *xcfptr[AC3_MAX_CHANNELS];
-    float *dlyptr[AC3_MAX_CHANNELS];
+    SHORTFLOAT *outptr[AC3_MAX_CHANNELS];
+    INTFLOAT *xcfptr[AC3_MAX_CHANNELS];
+    INTFLOAT *dlyptr[AC3_MAX_CHANNELS];
 
 ///@name Aligned arrays
-    DECLARE_ALIGNED(16, int32_t, fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];     ///< fixed-point transform coefficients
-    DECLARE_ALIGNED(32, float, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
-    DECLARE_ALIGNED(32, float, delay)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];             ///< delay - added to the next block
-    DECLARE_ALIGNED(32, float, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
-    DECLARE_ALIGNED(32, float, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
-    DECLARE_ALIGNED(32, float, output)[AC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
-    DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + FF_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
+    DECLARE_ALIGNED(16, int,   fixed_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];       ///< fixed-point transform coefficients
+    DECLARE_ALIGNED(32, INTFLOAT, transform_coeffs)[AC3_MAX_CHANNELS][AC3_MAX_COEFS];   ///< transform coefficients
+    DECLARE_ALIGNED(32, INTFLOAT, delay)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];         ///< delay - added to the next block
+    DECLARE_ALIGNED(32, INTFLOAT, window)[AC3_BLOCK_SIZE];                              ///< window coefficients
+    DECLARE_ALIGNED(32, INTFLOAT, tmp_output)[AC3_BLOCK_SIZE];                          ///< temporary storage for output before windowing
+    DECLARE_ALIGNED(32, SHORTFLOAT, output)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE];            ///< output after imdct transform and windowing
+    DECLARE_ALIGNED(32, uint8_t, input_buffer)[AC3_FRAME_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE]; ///< temp buffer to prevent overread
+    DECLARE_ALIGNED(32, SHORTFLOAT, output_buffer)[EAC3_MAX_CHANNELS][AC3_BLOCK_SIZE * 6];  ///< final output buffer
 ///@}
 } AC3DecodeContext;
 
@@ -231,19 +255,23 @@ typedef struct AC3DecodeContext {
  * Parse the E-AC-3 frame header.
  * This parses both the bit stream info and audio frame header.
  */
-int ff_eac3_parse_header(AC3DecodeContext *s);
+static int ff_eac3_parse_header(AC3DecodeContext *s);
 
 /**
  * Decode mantissas in a single channel for the entire frame.
  * This is used when AHT mode is enabled.
  */
-void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
+static void ff_eac3_decode_transform_coeffs_aht_ch(AC3DecodeContext *s, int ch);
 
 /**
  * Apply spectral extension to each channel by copying lower frequency
  * coefficients to higher frequency bins and applying side information to
  * approximate the original high frequency signal.
  */
-void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+static void ff_eac3_apply_spectral_extension(AC3DecodeContext *s);
+
+#if (!USE_FIXED)
+extern float ff_ac3_heavy_dynamic_range_tab[256];
+#endif
 
 #endif /* AVCODEC_AC3DEC_H */

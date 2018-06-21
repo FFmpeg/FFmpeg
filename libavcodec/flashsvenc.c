@@ -94,11 +94,9 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 
     deflateEnd(&s->zstream);
 
-    av_free(s->encbuffer);
-    av_free(s->previous_frame);
-    av_free(s->tmpblock);
-
-    av_frame_free(&avctx->coded_frame);
+    av_freep(&s->encbuffer);
+    av_freep(&s->previous_frame);
+    av_freep(&s->tmpblock);
 
     return 0;
 }
@@ -111,7 +109,7 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     if (avctx->width > 4095 || avctx->height > 4095) {
         av_log(avctx, AV_LOG_ERROR,
-               "Input dimensions too large, input must be max 4096x4096 !\n");
+               "Input dimensions too large, input must be max 4095x4095 !\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -131,12 +129,6 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame) {
-        flashsv_encode_end(avctx);
-        return AVERROR(ENOMEM);
-    }
-
     return 0;
 }
 
@@ -151,7 +143,7 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
     int buf_pos, res;
     int pred_blocks = 0;
 
-    init_put_bits(&pb, buf, buf_size * 8);
+    init_put_bits(&pb, buf, buf_size);
 
     put_bits(&pb,  4, block_width / 16 - 1);
     put_bits(&pb, 12, s->image_width);
@@ -197,7 +189,7 @@ static int encode_bitstream(FlashSVContext *s, const AVFrame *p, uint8_t *buf,
 
                 bytestream_put_be16(&ptr, zsize);
                 buf_pos += zsize + 2;
-                av_dlog(s->avctx, "buf_pos = %d\n", buf_pos);
+                ff_dlog(s->avctx, "buf_pos = %d\n", buf_pos);
             } else {
                 pred_blocks++;
                 bytestream_put_be16(&ptr, 0);
@@ -246,7 +238,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         I_frame = 1;
     }
 
-    if ((res = ff_alloc_packet2(avctx, pkt, s->image_width * s->image_height * 3)) < 0)
+    if ((res = ff_alloc_packet2(avctx, pkt, s->image_width * s->image_height * 3, 0)) < 0)
         return res;
 
     pkt->size = encode_bitstream(s, p, pkt->data, pkt->size, opt_w * 16, opt_h * 16,
@@ -262,16 +254,24 @@ static int flashsv_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->pict_type      = AV_PICTURE_TYPE_I;
         avctx->coded_frame->key_frame      = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         s->last_key_frame = avctx->frame_number;
-        av_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
+        ff_dlog(avctx, "Inserting keyframe at frame %d\n", avctx->frame_number);
     } else {
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
         avctx->coded_frame->pict_type = AV_PICTURE_TYPE_P;
         avctx->coded_frame->key_frame = 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     }
 
-    if (avctx->coded_frame->key_frame)
+    if (I_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 

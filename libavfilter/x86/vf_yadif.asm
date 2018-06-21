@@ -39,11 +39,7 @@ SECTION .text
     pavgb     m5, m3
     pand      m4, [pb_1]
     psubusb   m5, m4
-%if mmsize == 16
-    psrldq    m5, 1
-%else
-    psrlq     m5, 8
-%endif
+    RSHIFT    m5, 1
     punpcklbw m5, m7
     mova      m4, m2
     psubusb   m2, m3
@@ -51,13 +47,8 @@ SECTION .text
     pmaxub    m2, m3
     mova      m3, m2
     mova      m4, m2
-%if mmsize == 16
-    psrldq    m3, 1
-    psrldq    m4, 2
-%else
-    psrlq     m3, 8
-    psrlq     m4, 16
-%endif
+    RSHIFT    m3, 1
+    RSHIFT    m4, 2
     punpcklbw m2, m7
     punpcklbw m3, m7
     punpcklbw m4, m7

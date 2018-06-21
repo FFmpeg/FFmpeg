@@ -35,7 +35,8 @@ static int y216_decode_frame(AVCodecContext *avctx, void *data,
 {
     AVFrame *pic = data;
     const uint16_t *src = (uint16_t *)avpkt->data;
-    uint16_t *y, *u, *v, aligned_width = FFALIGN(avctx->width, 4);
+    uint16_t *y, *u, *v;
+    int aligned_width = FFALIGN(avctx->width, 4);
     int i, j, ret;
 
     if (avpkt->size < 4 * avctx->height * aligned_width) {
@@ -79,5 +80,5 @@ AVCodec ff_targa_y216_decoder = {
     .id           = AV_CODEC_ID_TARGA_Y216,
     .init         = y216_decode_init,
     .decode       = y216_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

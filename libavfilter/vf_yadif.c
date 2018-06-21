@@ -1,6 +1,8 @@
 /*
  * Copyright (C) 2006-2011 Michael Niedermayer <michaelni@gmx.at>
  *               2010      James Darnley <james.darnley@gmail.com>
+
+ * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -121,18 +123,20 @@ static void filter_edges(void *dst1, void *prev1, void *cur1, void *next1,
     uint8_t *prev2 = parity ? prev : cur ;
     uint8_t *next2 = parity ? cur  : next;
 
+    const int edge = MAX_ALIGN - 1;
+
     /* Only edge pixels need to be processed here.  A constant value of false
      * for is_not_edge should let the compiler ignore the whole branch. */
     FILTER(0, 3, 0)
 
-    dst  = (uint8_t*)dst1  + w - (MAX_ALIGN-1);
-    prev = (uint8_t*)prev1 + w - (MAX_ALIGN-1);
-    cur  = (uint8_t*)cur1  + w - (MAX_ALIGN-1);
-    next = (uint8_t*)next1 + w - (MAX_ALIGN-1);
+    dst  = (uint8_t*)dst1  + w - edge;
+    prev = (uint8_t*)prev1 + w - edge;
+    cur  = (uint8_t*)cur1  + w - edge;
+    next = (uint8_t*)next1 + w - edge;
     prev2 = (uint8_t*)(parity ? prev : cur);
     next2 = (uint8_t*)(parity ? cur  : next);
 
-    FILTER(w - (MAX_ALIGN-1), w - 3, 1)
+    FILTER(w - edge, w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -165,19 +169,22 @@ static void filter_edges_16bit(void *dst1, void *prev1, void *cur1, void *next1,
     int x;
     uint16_t *prev2 = parity ? prev : cur ;
     uint16_t *next2 = parity ? cur  : next;
+
+    const int edge = MAX_ALIGN / 2 - 1;
+
     mrefs /= 2;
     prefs /= 2;
 
     FILTER(0, 3, 0)
 
-    dst   = (uint16_t*)dst1  + w - (MAX_ALIGN/2-1);
-    prev  = (uint16_t*)prev1 + w - (MAX_ALIGN/2-1);
-    cur   = (uint16_t*)cur1  + w - (MAX_ALIGN/2-1);
-    next  = (uint16_t*)next1 + w - (MAX_ALIGN/2-1);
+    dst   = (uint16_t*)dst1  + w - edge;
+    prev  = (uint16_t*)prev1 + w - edge;
+    cur   = (uint16_t*)cur1  + w - edge;
+    next  = (uint16_t*)next1 + w - edge;
     prev2 = (uint16_t*)(parity ? prev : cur);
     next2 = (uint16_t*)(parity ? cur  : next);
 
-    FILTER(w - (MAX_ALIGN/2-1), w - 3, 1)
+    FILTER(w - edge, w - 3, 1)
     FILTER(w - 3, w, 0)
 }
 
@@ -186,11 +193,12 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     YADIFContext *s = ctx->priv;
     ThreadData *td  = arg;
     int refs = s->cur->linesize[td->plane];
-    int df = (s->csp->comp[td->plane].depth_minus1 + 8) / 8;
+    int df = (s->csp->comp[td->plane].depth + 7) / 8;
     int pix_3 = 3 * df;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
     int y;
+    int edge = 3 + MAX_ALIGN / df - 1;
 
     /* filtering reads 3 pixels to the left/right; to avoid invalid reads,
      * we need to call the c variant which avoids this for border pixels
@@ -203,7 +211,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
             int     mode  = y == 1 || y + 2 == td->h ? 2 : s->mode;
             s->filter_line(dst + pix_3, prev + pix_3, cur + pix_3,
-                           next + pix_3, td->w - (3 + MAX_ALIGN/df-1),
+                           next + pix_3, td->w - edge,
                            y + 1 < td->h ? refs : -refs,
                            y ? -refs : refs,
                            td->parity ^ td->tff, mode);
@@ -231,8 +239,8 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = FF_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
-            h = FF_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
 
@@ -240,7 +248,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
         td.h       = h;
         td.plane   = i;
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
 
     emms_c();
@@ -325,8 +333,9 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     yadif->cur  = yadif->next;
     yadif->next = frame;
 
-    if (!yadif->cur)
-        return 0;
+    if (!yadif->cur &&
+        !(yadif->cur = av_frame_clone(yadif->next)))
+        return AVERROR(ENOMEM);
 
     if (checkstride(yadif, yadif->next, yadif->cur)) {
         av_log(ctx, AV_LOG_VERBOSE, "Reallocating frame due to differing stride\n");
@@ -341,7 +350,14 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
         return -1;
     }
 
-    if ((yadif->deint && !yadif->cur->interlaced_frame) || ctx->is_disabled) {
+    if (!yadif->prev)
+        return 0;
+
+    if ((yadif->deint && !yadif->cur->interlaced_frame) ||
+        ctx->is_disabled ||
+        (yadif->deint && !yadif->prev->interlaced_frame && yadif->prev->repeat_pict) ||
+        (yadif->deint && !yadif->next->interlaced_frame && yadif->next->repeat_pict)
+    ) {
         yadif->out  = av_frame_clone(yadif->cur);
         if (!yadif->out)
             return AVERROR(ENOMEM);
@@ -351,10 +367,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
             yadif->out->pts *= 2;
         return ff_filter_frame(ctx->outputs[0], yadif->out);
     }
-
-    if (!yadif->prev &&
-        !(yadif->prev = av_frame_clone(yadif->cur)))
-        return AVERROR(ENOMEM);
 
     yadif->out = ff_get_video_buffer(ctx->outputs[0], link->w, link->h);
     if (!yadif->out)
@@ -373,34 +385,31 @@ static int request_frame(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     YADIFContext *yadif = ctx->priv;
+    int ret;
 
     if (yadif->frame_pending) {
         return_frame(ctx, 1);
         return 0;
     }
 
-    do {
-        int ret;
+    if (yadif->eof)
+        return AVERROR_EOF;
 
-        if (yadif->eof)
-            return AVERROR_EOF;
+    ret  = ff_request_frame(ctx->inputs[0]);
 
-        ret  = ff_request_frame(link->src->inputs[0]);
+    if (ret == AVERROR_EOF && yadif->cur) {
+        AVFrame *next = av_frame_clone(yadif->next);
 
-        if (ret == AVERROR_EOF && yadif->cur) {
-            AVFrame *next = av_frame_clone(yadif->next);
+        if (!next)
+            return AVERROR(ENOMEM);
 
-            if (!next)
-                return AVERROR(ENOMEM);
+        next->pts = yadif->next->pts * 2 - yadif->cur->pts;
 
-            next->pts = yadif->next->pts * 2 - yadif->cur->pts;
-
-            filter_frame(link->src->inputs[0], next);
-            yadif->eof = 1;
-        } else if (ret < 0) {
-            return ret;
-        }
-    } while (!yadif->cur);
+        filter_frame(ctx->inputs[0], next);
+        yadif->eof = 1;
+    } else if (ret < 0) {
+        return ret;
+    }
 
     return 0;
 }
@@ -448,27 +457,34 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_GBRP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10,
+        AV_PIX_FMT_GBRP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
-    YADIFContext *s = link->src->priv;
+    YADIFContext *s = ctx->priv;
 
-    link->time_base.num = link->src->inputs[0]->time_base.num;
-    link->time_base.den = link->src->inputs[0]->time_base.den * 2;
-    link->w             = link->src->inputs[0]->w;
-    link->h             = link->src->inputs[0]->h;
+    link->time_base.num = ctx->inputs[0]->time_base.num;
+    link->time_base.den = ctx->inputs[0]->time_base.den * 2;
+    link->w             = ctx->inputs[0]->w;
+    link->h             = ctx->inputs[0]->h;
 
-    if(s->mode&1)
-        link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
+    if(s->mode & 1)
+        link->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
+                                    (AVRational){2, 1});
 
     if (link->w < 3 || link->h < 3) {
         av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
@@ -476,7 +492,7 @@ static int config_props(AVFilterLink *link)
     }
 
     s->csp = av_pix_fmt_desc_get(link->format);
-    if (s->csp->comp[0].depth_minus1 / 8 == 1) {
+    if (s->csp->comp[0].depth > 8) {
         s->filter_line  = filter_line_c_16bit;
         s->filter_edges = filter_edges_16bit;
     } else {

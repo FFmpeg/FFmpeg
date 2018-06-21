@@ -1,0 +1,4 @@
+88e3488e4689cf06e75959c71e2f9d96 *tests/data/fate/vsynth1-vc2-422p10.mov
+1684055 tests/data/fate/vsynth1-vc2-422p10.mov
+f35dd1c1df4726bb1d75d95e321b0698 *tests/data/fate/vsynth1-vc2-422p10.out.rawvideo
+stddev:    1.88 PSNR: 42.61 MAXDIFF:   23 bytes:  7603200/   760320

@@ -1,0 +1,9 @@
+open: 0
+size: 2048
+read: 2048
+read: 0
+seek: 1536
+read: 512
+read: 0
+open: 0
+read: -10000

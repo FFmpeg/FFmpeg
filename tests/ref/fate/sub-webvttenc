@@ -1,0 +1,177 @@
+WEBVTT
+
+00:00.000 --> 00:00.000
+Don't show this text it may be used to insert hidden data
+
+00:01.500 --> 00:04.500
+SubRip subtitles capability tester 1.3o by ale5000
+<b><i>Use VLC 1.1 or higher as reference for most things and MPC Home Cinema for others</i></b>
+This text should be blue
+This text should be red
+This text should be black
+If you see this with the normal font, the player don't (fully) support font face
+
+00:04.500 --> 00:04.500
+Hidden
+
+00:04.501 --> 00:07.500
+This text should be small
+This text should be normal
+This text should be big
+
+00:07.501 --> 00:11.500
+This should be an E with an accent: È
+日本語
+<b><i><u>This text should be bold, italics and underline</u></i></b>
+This text should be small and green
+This text should be small and red
+This text should be big and brown
+
+00:11.501 --> 00:14.500
+<b>This line should be bold</b>
+<i>This line should be italics</i>
+<u>This line should be underline</u>
+This line should be strikethrough
+<u>Both lines
+should be underline</u>
+
+00:14.501 --> 00:17.500
+>
+It would be a good thing to
+hide invalid html tags that are closed and show the text in them
+but show un-closed invalid html tags
+Show not opened tags
+<
+
+00:17.501 --> 00:20.500
+and also
+hide invalid html tags with parameters that are closed and show the text in them
+but show un-closed invalid html tags
+<u>This text should be showed underlined without problems also: 2<3,5>1,4<6</u>
+This shouldn't be underlined
+
+00:20.501 --> 00:21.500
+This text should be in the normal position...
+
+00:21.501 --> 00:22.500
+This text should NOT be in the normal position
+
+00:22.501 --> 00:24.500
+Implementation is the same of the ASS tag
+This text should be at the
+top and horizontally centered
+
+00:22.501 --> 00:24.500
+This text should be at the
+middle and horizontally centered
+
+00:22.501 --> 00:24.500
+This text should be at the
+bottom and horizontally centered
+
+00:24.501 --> 00:26.500
+This text should be at the
+top and horizontally at the left
+
+00:24.501 --> 00:26.500
+This text should be at the
+middle and horizontally at the left
+(The second position must be ignored)
+
+00:24.501 --> 00:26.500
+This text should be at the
+bottom and horizontally at the left
+
+00:26.501 --> 00:28.500
+This text should be at the
+top and horizontally at the right
+
+00:26.501 --> 00:28.500
+This text should be at the
+middle and horizontally at the right
+
+00:26.501 --> 00:28.500
+This text should be at the
+bottom and horizontally at the right
+
+00:28.501 --> 00:31.500
+This could be the most difficult thing to implement
+
+00:31.501 --> 00:50.500
+First text
+
+00:33.500 --> 00:35.500
+Second, it shouldn't overlap first
+
+00:35.501 --> 00:37.500
+Third, it should replace second
+
+00:36.501 --> 00:50.500
+Fourth, it shouldn't overlap first and third
+
+00:40.501 --> 00:45.500
+Fifth, it should replace third
+
+00:45.501 --> 00:50.500
+Sixth, it shouldn't be
+showed overlapped
+
+00:50.501 --> 00:52.500
+TEXT 1 (bottom)
+
+00:50.501 --> 00:52.500
+text 2
+
+00:52.501 --> 00:54.500
+Hide these tags:
+also hide these tags:
+but show this: {normal text}
+
+00:54.501 --> 01:00.500
+
+\ N is a forced line break
+\ h is a hard space
+Normal spaces at the start and at the end of the line are trimmed while hard spaces are not trimmed.
+The\hline\hwill\hnever\hbreak\hautomatically\hright\hbefore\hor\hafter\ha\hhard\hspace.\h:-D
+
+00:54.501 --> 00:56.500
+
+\h\h\h\h\hA (05 hard spaces followed by a letter)
+A (Normal  spaces followed by a letter)
+A (No hard spaces followed by a letter)
+
+00:56.501 --> 00:58.500
+\h\h\h\h\hA (05 hard spaces followed by a letter)
+A (Normal  spaces followed by a letter)
+A (No hard spaces followed by a letter)
+Show this: \TEST and this: \-)
+
+00:58.501 --> 01:00.500
+
+A letter followed by 05 hard spaces: A\h\h\h\h\h
+A letter followed by normal  spaces: A
+A letter followed by no hard spaces: A
+05 hard  spaces between letters: A\h\h\h\h\hA
+5 normal spaces between letters: A     A
+
+^--Forced line break
+
+01:00.501 --> 01:02.500
+Both line should be strikethrough,
+yes.
+Correctly closed tags
+should be hidden.
+
+01:02.501 --> 01:04.500
+It shouldn't be strikethrough,
+not opened tag showed as text.
+Not opened tag showed as text.
+
+01:04.501 --> 01:06.500
+Three lines should be strikethrough,
+yes.
+Not closed tags showed as text
+
+01:06.501 --> 01:08.500
+Both line should be strikethrough but
+the wrong closing tag should be showed

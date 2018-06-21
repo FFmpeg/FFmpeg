@@ -56,8 +56,8 @@ static av_cold int cng_encode_init(AVCodecContext *avctx)
     p->order = 10;
     if ((ret = ff_lpc_init(&p->lpc, avctx->frame_size, p->order, FF_LPC_TYPE_LEVINSON)) < 0)
         return ret;
-    p->samples32 = av_malloc(avctx->frame_size * sizeof(*p->samples32));
-    p->ref_coef = av_malloc(p->order * sizeof(*p->ref_coef));
+    p->samples32 = av_malloc_array(avctx->frame_size, sizeof(*p->samples32));
+    p->ref_coef = av_malloc_array(p->order, sizeof(*p->ref_coef));
     if (!p->samples32 || !p->ref_coef) {
         cng_encode_close(avctx);
         return AVERROR(ENOMEM);
@@ -75,7 +75,7 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int qdbov;
     int16_t *samples = (int16_t*) frame->data[0];
 
-    if ((ret = ff_alloc_packet(avpkt, 1 + p->order))) {
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 1 + p->order, 1 + p->order))) {
         av_log(avctx, AV_LOG_ERROR, "Error getting output packet\n");
         return ret;
     }
@@ -87,17 +87,17 @@ static int cng_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     energy /= frame->nb_samples;
     if (energy > 0) {
         double dbov = 10 * log10(energy / 1081109975);
-        qdbov = av_clip(-floor(dbov), 0, 127);
+        qdbov = av_clip_uintp2(-floor(dbov), 7);
     } else {
         qdbov = 127;
     }
-    ret = ff_lpc_calc_ref_coefs(&p->lpc, p->samples32, p->order, p->ref_coef);
+    ff_lpc_calc_ref_coefs(&p->lpc, p->samples32, p->order, p->ref_coef);
     avpkt->data[0] = qdbov;
     for (i = 0; i < p->order; i++)
         avpkt->data[1 + i] = p->ref_coef[i] * 127 + 127;
 
     *got_packet_ptr = 1;
-    avpkt->size = 1 + p->order;
+    av_assert1(avpkt->size == 1 + p->order);
 
     return 0;
 }

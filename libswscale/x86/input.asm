@@ -347,8 +347,9 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
 %if ARCH_X86_64
     movsxd         wq, wd
 %endif
-    lea          srcq, [srcq+wq*4]
     add            wq, wq
+    sub            wq, mmsize - 1
+    lea          srcq, [srcq+wq*2]
     add          dstq, wq
     neg            wq
     mova           m4, [rgb_Yrnd]
@@ -373,6 +374,23 @@ cglobal %2%3%4%5 %+ ToY, 6, 6, %1, dst, src, u1, u2, w, table
     mova    [dstq+wq], m0
     add            wq, mmsize
     jl .loop
+    sub            wq, mmsize - 1
+    jz .end
+    add            srcq, 2*mmsize - 2
+    add            dstq, mmsize - 1
+.loop2:
+    movd           m0, [srcq+wq*2+0]      ; (byte) { Bx, Gx, Rx, xx }[0-3]
+    DEINTB          1,  0,  3,  2,  7     ; (word) { Gx, xx (m0/m2) or Bx, Rx (m1/m3) }[0-3]/[4-7]
+    pmaddwd        m1, m5                 ; (dword) { Bx*BY + Rx*RY }[0-3]
+    pmaddwd        m0, m6                 ; (dword) { Gx*GY }[0-3]
+    paddd          m0, m4                 ; += rgb_Yrnd
+    paddd          m0, m1                 ; (dword) { Y[0-3] }
+    psrad          m0, 9
+    packssdw       m0, m0                 ; (word) { Y[0-7] }
+    movd    [dstq+wq], m0
+    add            wq, 2
+    jl .loop2
+.end:
     REP_RET
 %endif ; %0 == 3
 %endmacro
@@ -406,6 +424,7 @@ cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
     mov            wq, r5m
 %endif
     add            wq, wq
+    sub            wq, mmsize - 1
     add         dstUq, wq
     add         dstVq, wq
     lea          srcq, [srcq+wq*2]
@@ -449,6 +468,31 @@ cglobal %2%3%4%5 %+ ToUV, 7, 7, %1, dstU, dstV, u1, src, u2, w, table
 %endif ; mmsize == 8/16
     add            wq, mmsize
     jl .loop
+    sub            wq, mmsize - 1
+    jz .end
+    add            srcq , 2*mmsize - 2
+    add            dstUq, mmsize - 1
+    add            dstVq, mmsize - 1
+.loop2:
+    movd           m0, [srcq+wq*2]        ; (byte) { Bx, Gx, Rx, xx }[0-3]
+    DEINTB          1,  0,  5,  4,  7     ; (word) { Gx, xx (m0/m4) or Bx, Rx (m1/m5) }[0-3]/[4-7]
+    pmaddwd        m3, m1, coeffV1        ; (dword) { Bx*BV + Rx*RV }[0-3]
+    pmaddwd        m2, m0, coeffV2        ; (dword) { Gx*GV }[0-3]
+    pmaddwd        m1, coeffU1            ; (dword) { Bx*BU + Rx*RU }[0-3]
+    pmaddwd        m0, coeffU2            ; (dword) { Gx*GU }[0-3]
+    paddd          m3, m6                 ; += rgb_UVrnd
+    paddd          m1, m6                 ; += rgb_UVrnd
+    paddd          m2, m3                 ; (dword) { V[0-3] }
+    paddd          m0, m1                 ; (dword) { U[0-3] }
+    psrad          m0, 9
+    psrad          m2, 9
+    packssdw       m0, m0                 ; (word) { U[0-7] }
+    packssdw       m2, m2                 ; (word) { V[0-7] }
+    movd   [dstUq+wq], m0
+    movd   [dstVq+wq], m2
+    add            wq, 2
+    jl .loop2
+.end:
     REP_RET
 %endif ; ARCH_X86_64 && %0 == 3
 %endmacro

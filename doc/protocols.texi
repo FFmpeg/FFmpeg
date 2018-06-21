@@ -1,3 +1,27 @@
+@chapter Protocol Options
+@c man begin PROTOCOL OPTIONS
+
+The libavformat library provides some generic global options, which
+can be set on all the protocols. In addition each protocol may support
+so-called private options, which are specific for that component.
+
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
+The list of supported options follows:
+
+@table @option
+@item protocol_whitelist @var{list} (@emph{input})
+Set a ","-separated list of allowed protocols. "ALL" matches all protocols. Protocols
+prefixed by "-" are disabled.
+All protocols are allowed by default but protocols used by an another
+protocol (nested protocols) are restricted to a per protocol subset.
+@end table
+
+@c man end PROTOCOL OPTIONS
+
 @chapter Protocols
 @c man begin PROTOCOLS
 
@@ -17,7 +41,27 @@ particular protocol using the option
 The option "-protocols" of the ff* tools will display the list of
 supported protocols.
 
+All protocols accept the following options:
+
+@table @option
+@item rw_timeout
+Maximum time to wait for (network) read/write operations to complete,
+in microseconds.
+@end table
+
 A description of the currently available protocols follows.
+
+@section async
+
+Asynchronous data filling wrapper for input stream.
+
+Fill data in a background thread, to decouple I/O operation from demux thread.
+
+@example
+async:@var{URL}
+async:http://host/resource
+async:cache:http://host/resource
+@end example
 
 @section bluray
 
@@ -63,7 +107,7 @@ cache:@var{URL}
 
 Physical concatenation protocol.
 
-Allow to read and seek from many resource in sequence as if they were
+Read and seek from many resources in sequence as if they were
 a unique resource.
 
 A URL accepted by this protocol has the syntax:
@@ -117,7 +161,7 @@ ffmpeg -i "data:image/gif;base64,R0lGODdhCAAIAMIEAAAAAAAA//8AAP//AP/////////////
 
 File access protocol.
 
-Allow to read from or write to a file.
+Read from or write to a file.
 
 A file URL can have the form:
 @example
@@ -155,7 +199,7 @@ time, which is valuable for files on slow medium.
 
 FTP (File Transfer Protocol).
 
-Allow to read from or write to remote resources using FTP protocol.
+Read from or write to remote resources using FTP protocol.
 
 Following syntax is required.
 @example
@@ -166,7 +210,7 @@ This protocol accepts the following options.
 
 @table @option
 @item timeout
-Set timeout of socket I/O operations used by the underlying low level
+Set timeout in microseconds of socket I/O operations used by the underlying low level
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
@@ -184,6 +228,17 @@ NOTE: Protocol can be used as output, but it is recommended to not do
 it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
+
+This protocol accepts the following options:
+
+@table @option
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
+
+@end table
 
 @section gopher
 
@@ -226,7 +281,10 @@ value is -1.
 If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 
 @item content_type
-Set a specific content type for the POST messages.
+Set a specific content type for the POST messages or for listen mode.
+
+@item http_proxy
+set HTTP proxy to tunnel through e.g. http://example.com:1234
 
 @item headers
 Set custom HTTP headers, can override built in default headers. The
@@ -238,24 +296,42 @@ Use persistent connections if set to 1, default is 0.
 @item post_data
 Set custom HTTP post data.
 
-@item user-agent
+@item referer
+Set the Referer header. Include 'Referer: URL' header in HTTP request.
+
 @item user_agent
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
 
+@item user-agent
+This is a deprecated option, you can use user_agent instead it.
+
 @item timeout
-Set timeout of socket I/O operations used by the underlying low level
+Set timeout in microseconds of socket I/O operations used by the underlying low level
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
+@item reconnect_at_eof
+If set then eof is treated like an error and causes reconnection, this is useful
+for live / endless streams.
+
+@item reconnect_streamed
+If set then even streamed/non seekable streams will be reconnected on errors.
+
+@item reconnect_delay_max
+Sets the maximum delay in seconds after which to give up reconnecting
+
 @item mime_type
 Export the MIME type.
+
+@item http_version
+Exports the HTTP response version number. Usually "1.0" or "1.1".
 
 @item icy
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
 supports this, the metadata has to be retrieved by the application by reading
 the @option{icy_metadata_headers} and @option{icy_metadata_packet} options.
-The default is 0.
+The default is 1.
 
 @item icy_metadata_headers
 If the server supports ICY metadata, this contains the ICY-specific HTTP reply
@@ -277,6 +353,43 @@ Set initial byte offset.
 
 @item end_offset
 Try to limit the request to bytes preceding this offset.
+
+@item method
+When used as a client option it sets the HTTP method for the request.
+
+When used as a server option it sets the HTTP method that is going to be
+expected from the client(s).
+If the expected and the received HTTP method do not match the client will
+be given a Bad Request response.
+When unset the HTTP method is not checked for now. This will be replaced by
+autodetection in the future.
+
+@item listen
+If set to 1 enables experimental HTTP server. This can be used to send data when
+used as an output option, or read data from a client with HTTP POST when used as
+an input option.
+If set to 2 enables experimental multi-client HTTP server. This is not yet implemented
+in ffmpeg.c and thus must not be used as a command line option.
+@example
+# Server side (sending):
+ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
+
+# Client side (receiving):
+ffmpeg -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client can also be done with wget:
+wget http://@var{server}:@var{port} -O somefile.ogg
+
+# Server side (receiving):
+ffmpeg -listen 1 -i http://@var{server}:@var{port} -c copy somefile.ogg
+
+# Client side (sending):
+ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{port}
+
+# Client can also be done with wget:
+wget --post-file=somefile.ogg http://@var{server}:@var{port}
+@end example
+
 @end table
 
 @subsection HTTP Cookies
@@ -291,6 +404,50 @@ by a newline.
 The required syntax to play a stream specifying a cookie is:
 @example
 ffplay -cookies "nlqptid=nltid=tsn; path=/; domain=somedomain.com;" http://somedomain.com/somestream.m3u8
+@end example
+
+@section Icecast
+
+Icecast protocol (stream to Icecast servers)
+
+This protocol accepts the following options:
+
+@table @option
+@item ice_genre
+Set the stream genre.
+
+@item ice_name
+Set the stream name.
+
+@item ice_description
+Set the stream description.
+
+@item ice_url
+Set the stream website URL.
+
+@item ice_public
+Set if the stream should be public.
+The default is 0 (not public).
+
+@item user_agent
+Override the User-Agent header. If not specified a string of the form
+"Lavf/<version>" will be used.
+
+@item password
+Set the Icecast mountpoint password.
+
+@item content_type
+Set the stream content type. This must be set if it is different from
+audio/mpeg.
+
+@item legacy_icecast
+This enables support for Icecast versions < 2.4.0, that do not support the
+HTTP PUT method but the SOURCE method.
+
+@end table
+
+@example
+icecast://[@var{username}[:@var{password}]@@]@var{server}:@var{port}/@var{mountpoint}
 @end example
 
 @section mmst
@@ -330,7 +487,7 @@ be seekable, so they will fail with the MD5 output protocol.
 
 UNIX pipe access protocol.
 
-Allow to read and write from UNIX pipes.
+Read and write from UNIX pipes.
 
 The accepted syntax is:
 @example
@@ -368,6 +525,41 @@ time, which is valuable if data transmission is slow.
 
 Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
+
+@section prompeg
+
+Pro-MPEG Code of Practice #3 Release 2 FEC protocol.
+
+The Pro-MPEG CoP#3 FEC is a 2D parity-check forward error correction mechanism
+for MPEG-2 Transport Streams sent over RTP.
+
+This protocol must be used in conjunction with the @code{rtp_mpegts} muxer and
+the @code{rtp} protocol.
+
+The required syntax is:
+@example
+-f rtp_mpegts -fec prompeg=@var{option}=@var{val}... rtp://@var{hostname}:@var{port}
+@end example
+
+The destination UDP ports are @code{port + 2} for the column FEC stream
+and @code{port + 4} for the row FEC stream.
+
+This protocol accepts the following options:
+@table @option
+
+@item l=@var{n}
+The number of columns (4-20, LxD <= 100)
+
+@item d=@var{n}
+The number of rows (4-20, LxD <= 100)
+
+@end table
+
+Example usage:
+
+@example
+-f rtp_mpegts -fec prompeg=l=8:d=4 rtp://@var{hostname}:@var{port}
+@end example
 
 @section rtmp
 
@@ -537,11 +729,40 @@ The Real-Time Messaging Protocol tunneled through HTTPS (RTMPTS) is used
 for streaming multimedia content within HTTPS requests to traverse
 firewalls.
 
+@section libsmbclient
+
+libsmbclient permits one to manipulate CIFS/SMB network resources.
+
+Following syntax is required.
+
+@example
+smb://[[domain:]user[:password@@]]server[/share[/path[/file]]]
+@end example
+
+This protocol accepts the following options.
+
+@table @option
+@item timeout
+Set timeout in milliseconds of socket I/O operations used by the underlying
+low level operation. By default it is set to -1, which means that the timeout
+is not specified.
+
+@item truncate
+Truncate existing files on write, if set to 1. A value of 0 prevents
+truncating. Default value is 1.
+
+@item workgroup
+Set the workgroup used for making connections. By default workgroup is not specified.
+
+@end table
+
+For more information see: @url{http://www.samba.org/}.
+
 @section libssh
 
 Secure File Transfer Protocol via libssh
 
-Allow to read from or write to remote resources using SFTP protocol.
+Read from or write to remote resources using SFTP protocol.
 
 Following syntax is required.
 
@@ -677,7 +898,7 @@ port will be used for the local RTP and RTCP ports.
 
 @item
 If @option{localrtcpport} (the local RTCP port) is not set it will be
-set to the the local RTP port value plus 1.
+set to the local RTP port value plus 1.
 @end enumerate
 
 @section rtsp
@@ -710,7 +931,7 @@ Do not start playing the stream immediately if set to 1. Default value
 is 0.
 
 @item rtsp_transport
-Set RTSP trasport protocols.
+Set RTSP transport protocols.
 
 It accepts the following values:
 @table @samp
@@ -769,17 +990,17 @@ Set maximum local UDP port. Default value is 65000.
 @item timeout
 Set maximum timeout (in seconds) to wait for incoming connections.
 
-A value of -1 mean infinite (default). This option implies the
+A value of -1 means infinite (default). This option implies the
 @option{rtsp_flags} set to @samp{listen}.
 
 @item reorder_queue_size
 Set number of packets to buffer for handling of reordered packets.
 
 @item stimeout
-Set socket TCP I/O timeout in micro seconds.
+Set socket TCP I/O timeout in microseconds.
 
 @item user-agent
-Override User-Agent header. If not specified, it default to the
+Override User-Agent header. If not specified, it defaults to the
 libavformat identifier string.
 @end table
 
@@ -934,6 +1155,146 @@ If set to any value, listen for an incoming connection. Outgoing connection is d
 Set the maximum number of streams. By default no limit is set.
 @end table
 
+@section srt
+
+Haivision Secure Reliable Transport Protocol via libsrt.
+
+The supported syntax for a SRT URL is:
+@example
+srt://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@var{options} contains a list of &-separated options of the form
+@var{key}=@var{val}.
+
+or
+
+@example
+@var{options} srt://@var{hostname}:@var{port}
+@end example
+
+@var{options} contains a list of '-@var{key} @var{val}'
+options.
+
+This protocol accepts the following options.
+
+@table @option
+@item connect_timeout
+Connection timeout; SRT cannot connect for RTT > 1500 msec
+(2 handshake exchanges) with the default connect timeout of
+3 seconds. This option applies to the caller and rendezvous
+connection modes. The connect timeout is 10 times the value
+set for the rendezvous mode (which can be used as a
+workaround for this connection problem with earlier versions).
+
+@item ffs=@var{bytes}
+Flight Flag Size (Window Size), in bytes. FFS is actually an
+internal parameter and you should set it to not less than
+@option{recv_buffer_size} and @option{mss}. The default value
+is relatively large, therefore unless you set a very large receiver buffer,
+you do not need to change this option. Default value is 25600.
+
+@item inputbw=@var{bytes/seconds}
+Sender nominal input rate, in bytes per seconds. Used along with
+@option{oheadbw}, when @option{maxbw} is set to relative (0), to
+calculate maximum sending rate when recovery packets are sent
+along with the main media stream:
+@option{inputbw} * (100 + @option{oheadbw}) / 100
+if @option{inputbw} is not set while @option{maxbw} is set to
+relative (0), the actual input rate is evaluated inside
+the library. Default value is 0.
+
+@item iptos=@var{tos}
+IP Type of Service. Applies to sender only. Default value is 0xB8.
+
+@item ipttl=@var{ttl}
+IP Time To Live. Applies to sender only. Default value is 64.
+
+@item listen_timeout
+Set socket listen timeout.
+
+@item maxbw=@var{bytes/seconds}
+Maximum sending bandwidth, in bytes per seconds.
+-1 infinite (CSRTCC limit is 30mbps)
+0 relative to input rate (see @option{inputbw})
+>0 absolute limit value
+Default value is 0 (relative)
+
+@item mode=@var{caller|listener|rendezvous}
+Connection mode.
+@option{caller} opens client connection.
+@option{listener} starts server to listen for incoming connections.
+@option{rendezvous} use Rendez-Vous connection mode.
+Default value is caller.
+
+@item mss=@var{bytes}
+Maximum Segment Size, in bytes. Used for buffer allocation
+and rate calculation using a packet counter assuming fully
+filled packets. The smallest MSS between the peers is
+used. This is 1500 by default in the overall internet.
+This is the maximum size of the UDP packet and can be
+only decreased, unless you have some unusual dedicated
+network settings. Default value is 1500.
+
+@item nakreport=@var{1|0}
+If set to 1, Receiver will send `UMSG_LOSSREPORT` messages
+periodically until a lost packet is retransmitted or
+intentionally dropped. Default value is 1.
+
+@item oheadbw=@var{percents}
+Recovery bandwidth overhead above input rate, in percents.
+See @option{inputbw}. Default value is 25%.
+
+@item passphrase=@var{string}
+HaiCrypt Encryption/Decryption Passphrase string, length
+from 10 to 79 characters. The passphrase is the shared
+secret between the sender and the receiver. It is used
+to generate the Key Encrypting Key using PBKDF2
+(Password-Based Key Derivation Function). It is used
+only if @option{pbkeylen} is non-zero. It is used on
+the receiver only if the received data is encrypted.
+The configured passphrase cannot be recovered (write-only).
+
+@item pbkeylen=@var{bytes}
+Sender encryption key length, in bytes.
+Only can be set to 0, 16, 24 and 32.
+Enable sender encryption if not 0.
+Not required on receiver (set to 0),
+key size obtained from sender in HaiCrypt handshake.
+Default value is 0.
+
+@item recv_buffer_size=@var{bytes}
+Set receive buffer size, expressed in bytes.
+
+@item send_buffer_size=@var{bytes}
+Set send buffer size, expressed in bytes.
+
+@item rw_timeout
+Set raise error timeout for read/write optations.
+
+This option is only relevant in read mode:
+if no data arrived in more than this time
+interval, raise error.
+
+@item tlpktdrop=@var{1|0}
+Too-late Packet Drop. When enabled on receiver, it skips
+missing packets that have not been delivered in time and
+delivers the following packets to the application when
+their time-to-play has come. It also sends a fake ACK to
+the sender. When enabled on sender and enabled on the
+receiving peer, the sender drops the older packets that
+have no chance of being delivered in time. It was
+automatically enabled in the sender if the receiver
+supports it.
+
+@item tsbpddelay
+Timestamp-based Packet Delivery Delay.
+Used to absorb burst of missed packet retransmission.
+
+@end table
+
+For more information see: @url{https://github.com/Haivision/srt}.
+
 @section srtp
 
 Secure Real-time Transport Protocol.
@@ -971,6 +1332,7 @@ Accepted options:
 Start offset of the extracted segment, in bytes.
 @item end
 End offset of the extracted segment, in bytes.
+If set to 0, extract till end of file.
 @end table
 
 Examples:
@@ -982,7 +1344,23 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 @end example
 
 Play an AVI file directly from a TAR archive:
+@example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
+
+Play a MPEG-TS file from start offset till end:
+@example
+subfile,,start,32815239,end,0,,:video.ts
+@end example
+
+@section tee
+
+Writes the output to multiple protocols. The individual outputs are separated
+by |
+
+@example
+tee:file://path/to/local/this.avi|file://path/to/local/that.avi
+@end example
 
 @section tcp
 
@@ -1008,8 +1386,17 @@ Set raise error timeout, expressed in microseconds.
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
 
-@item listen_timeout=@var{microseconds}
-Set listen timeout, expressed in microseconds.
+@item listen_timeout=@var{milliseconds}
+Set listen timeout, expressed in milliseconds.
+
+@item recv_buffer_size=@var{bytes}
+Set receive buffer size, expressed bytes.
+
+@item send_buffer_size=@var{bytes}
+Set send buffer size, expressed bytes.
+
+@item tcp_nodelay=@var{1|0}
+Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
 @end table
 
 The following example shows how to setup a listening TCP connection
@@ -1045,7 +1432,7 @@ If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
 database, but it does not validate that the certificate actually
-matches the host name we are trying to connect to. (With GnuTLS,
+matches the host name we are trying to connect to. (With other backends,
 the host name is validated as well.)
 
 This is disabled by default since it requires a CA database to be
@@ -1102,6 +1489,15 @@ The list of supported options follows.
 @item buffer_size=@var{size}
 Set the UDP maximum socket buffer size in bytes. This is used to set either
 the receive or send buffer size, depending on what the socket is used for.
+Default is 64KB.  See also @var{fifo_size}.
+
+@item bitrate=@var{bitrate}
+If set to nonzero, the output will have the specified constant bitrate if the
+input has enough packets to sustain it.
+
+@item burst_bits=@var{bits}
+When using @var{bitrate} this specifies the maximum number of bits in
+packet bursts.
 
 @item localport=@var{port}
 Override the local UDP port to bind with.
@@ -1152,6 +1548,12 @@ Set raise error timeout, expressed in microseconds.
 
 This option is only relevant in read mode: if no data arrived in more
 than this time interval, raise error.
+
+@item broadcast=@var{1|0}
+Explicitly allow or disallow UDP broadcasting.
+
+Note that broadcasting may not work properly on networks having
+a broadcast storm protection.
 @end table
 
 @subsection Examples

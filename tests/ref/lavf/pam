@@ -13,6 +13,6 @@
 032538f0313b4f240b44a5bef115f5bf *./tests/data/images/pam/02.pam
 ./tests/data/images/pam/%02d.pam CRC=0x5984c023
 608321 ./tests/data/images/pam/02.pam
-e8bd9f1830e6a9db201386e96580f869 *./tests/data/images/pam/02.pam
-./tests/data/images/pam/%02d.pam CRC=0x65707c37
+d2f5eb2f959ca3a90c02f1887b6e0c4f *./tests/data/images/pam/02.pam
+./tests/data/images/pam/%02d.pam CRC=0xab19200d
 101447 ./tests/data/images/pam/02.pam

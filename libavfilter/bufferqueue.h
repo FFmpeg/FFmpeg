@@ -37,7 +37,7 @@
  * Powers of 2 are recommended.
  */
 #ifndef FF_BUFQUEUE_SIZE
-#define FF_BUFQUEUE_SIZE 32
+#define FF_BUFQUEUE_SIZE 64
 #endif
 
 #include "avfilter.h"

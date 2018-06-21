@@ -27,7 +27,7 @@
 static int adp_probe(AVProbeData *p)
 {
     int i, changes = 0;
-    char last = 0;
+    uint8_t last = 0;
 
     if (p->buf_size < 32)
         return 0;
@@ -53,16 +53,16 @@ static int adp_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
 
-    st->codec->codec_type     = AVMEDIA_TYPE_AUDIO;
-    st->codec->codec_id       = AV_CODEC_ID_ADPCM_DTK;
-    st->codec->channel_layout = AV_CH_LAYOUT_STEREO;
-    st->codec->channels       = 2;
-    st->codec->sample_rate    = 48000;
+    st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
+    st->codecpar->codec_id       = AV_CODEC_ID_ADPCM_DTK;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->channels       = 2;
+    st->codecpar->sample_rate    = 48000;
     st->start_time            = 0;
-    if (s->pb->seekable)
-        st->duration          = av_get_audio_frame_duration(st->codec, avio_size(s->pb));
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
+        st->duration          = av_get_audio_frame_duration2(st->codecpar, avio_size(s->pb));
 
-    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     return 0;
 }
@@ -71,14 +71,14 @@ static int adp_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, size = 1024;
 
-    if (url_feof(s->pb))
+    if (avio_feof(s->pb))
         return AVERROR_EOF;
 
     ret = av_get_packet(s->pb, pkt, size);
 
     if (ret != size) {
         if (ret < 0) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return ret;
         }
         av_shrink_packet(pkt, ret);

@@ -29,8 +29,7 @@
 
 #include <stdint.h>
 
-#include "ivi_common.h"
-#include "mathops.h"
+#include "ivi.h"
 
 /**
  *  standard picture dimensions
@@ -61,7 +60,7 @@ static const uint8_t ivi4_horizontal_scan_4x4[16] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
 };
 
-static const uint8_t *scan_index_to_tab[15] = {
+static const uint8_t * const scan_index_to_tab[15] = {
     // for 8x8 transforms
     ff_zigzag_direct,
     ivi4_alternate_scan_8x8,

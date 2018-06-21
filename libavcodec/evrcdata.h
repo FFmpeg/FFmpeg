@@ -1451,7 +1451,7 @@ static const float * const evrc_lspq_quant_codebooks[] = {
     evrc_lspq_quant_codebook1[0], evrc_lspq_quant_codebook2[0],
 };
 
-static const float * const *evrc_lspq_codebooks[] = {
+static const float * const * const evrc_lspq_codebooks[] = {
     0,
     evrc_lspq_quant_codebooks,
     0,

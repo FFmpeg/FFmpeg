@@ -76,6 +76,8 @@ typedef struct HpelDSPContext {
      * @param pixels source
      * @param line_size number of bytes in a horizontal line of block
      * @param h height
+     * @note The size is kept at [4][4] to match the above pixel_tabs and avoid
+     *       out of bounds reads in the motion estimation code.
      */
     op_pixels_func put_no_rnd_pixels_tab[4][4];
 
@@ -97,8 +99,8 @@ void ff_hpeldsp_init(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_aarch64(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_alpha(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_arm(HpelDSPContext *c, int flags);
-void ff_hpeldsp_init_bfin(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_ppc(HpelDSPContext *c, int flags);
 void ff_hpeldsp_init_x86(HpelDSPContext *c, int flags);
+void ff_hpeldsp_init_mips(HpelDSPContext *c, int flags);
 
 #endif /* AVCODEC_HPELDSP_H */

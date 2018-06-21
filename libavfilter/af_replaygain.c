@@ -323,19 +323,21 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layout = NULL;
-    int i;
+    int i, ret;
 
-    ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
-    ff_set_common_formats(ctx, formats);
-    ff_add_channel_layout(&layout, AV_CH_LAYOUT_STEREO);
-    ff_set_common_channel_layouts(ctx, layout);
+    if ((ret = ff_add_format                 (&formats, AV_SAMPLE_FMT_FLT  )) < 0 ||
+        (ret = ff_set_common_formats         (ctx     , formats            )) < 0 ||
+        (ret = ff_add_channel_layout         (&layout , AV_CH_LAYOUT_STEREO)) < 0 ||
+        (ret = ff_set_common_channel_layouts (ctx     , layout             )) < 0)
+        return ret;
 
     formats = NULL;
-    for (i = 0; i < FF_ARRAY_ELEMS(freqinfos); i++)
-        ff_add_format(&formats, freqinfos[i].sample_rate);
-    ff_set_common_samplerates(ctx, formats);
+    for (i = 0; i < FF_ARRAY_ELEMS(freqinfos); i++) {
+        if ((ret = ff_add_format(&formats, freqinfos[i].sample_rate)) < 0)
+            return ret;
+    }
 
-    return 0;
+    return ff_set_common_samplerates(ctx, formats);
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -552,7 +554,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     uint32_t level;
     AVFrame *out;
 
-    out = ff_get_audio_buffer(inlink, in->nb_samples);
+    out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);

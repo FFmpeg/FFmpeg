@@ -1,0 +1,4 @@
+9bf00cd3188b7395b798bb10df376243 *tests/data/fate/vsynth2-mjpeg-huffman.avi
+792742 tests/data/fate/vsynth2-mjpeg-huffman.avi
+2b8c59c59e33d6ca7c85d31c5eeab7be *tests/data/fate/vsynth2-mjpeg-huffman.out.rawvideo
+stddev:    4.87 PSNR: 34.37 MAXDIFF:   55 bytes:  7603200/  7603200

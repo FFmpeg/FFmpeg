@@ -32,8 +32,3 @@ int av_log2_16bit(unsigned v)
 {
     return ff_log2_16bit(v);
 }
-
-int av_ctz(int v)
-{
-    return ff_ctz(v);
-}

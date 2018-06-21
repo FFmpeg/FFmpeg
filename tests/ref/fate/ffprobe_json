@@ -11,12 +11,13 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "572",
-            "flags": "K"
+            "pos": "647",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -26,7 +27,7 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "572",
+            "pkt_pos": "647",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -43,12 +44,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "2647",
-            "flags": "K"
+            "pos": "2722",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -58,7 +60,8 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "2647",
+            "pkt_pos": "2722",
+            "pkt_size": "230400",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -81,12 +84,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "233068",
-            "flags": "K"
+            "pos": "233143",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 0,
             "pkt_pts_time": "0.000000",
@@ -96,7 +100,8 @@
             "best_effort_timestamp_time": "0.000000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "233068",
+            "pkt_pos": "233143",
+            "pkt_size": "30000",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -119,12 +124,13 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "263073",
-            "flags": "K"
+            "pos": "263148",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 1024,
             "pkt_pts_time": "0.023220",
@@ -134,7 +140,7 @@
             "best_effort_timestamp_time": "0.023220",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "263073",
+            "pkt_pos": "263148",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -151,12 +157,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "265151",
-            "flags": "K"
+            "pos": "265226",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.040000",
@@ -166,7 +173,8 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "265151",
+            "pkt_pos": "265226",
+            "pkt_size": "230400",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -189,12 +197,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "495575",
-            "flags": "K"
+            "pos": "495650",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.040000",
@@ -204,7 +213,8 @@
             "best_effort_timestamp_time": "0.040000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "495575",
+            "pkt_pos": "495650",
+            "pkt_size": "30000",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -227,12 +237,13 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "525580",
-            "flags": "K"
+            "pos": "525655",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 2048,
             "pkt_pts_time": "0.046440",
@@ -242,7 +253,7 @@
             "best_effort_timestamp_time": "0.046440",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "525580",
+            "pkt_pos": "525655",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -259,12 +270,13 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "527651",
-            "flags": "K"
+            "pos": "527726",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 3072,
             "pkt_pts_time": "0.069660",
@@ -274,7 +286,7 @@
             "best_effort_timestamp_time": "0.069660",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "527651",
+            "pkt_pos": "527726",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -291,12 +303,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "529729",
-            "flags": "K"
+            "pos": "529804",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.080000",
@@ -306,7 +319,8 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "529729",
+            "pkt_pos": "529804",
+            "pkt_size": "230400",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -329,12 +343,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "760153",
-            "flags": "K"
+            "pos": "760228",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.080000",
@@ -344,7 +359,8 @@
             "best_effort_timestamp_time": "0.080000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "760153",
+            "pkt_pos": "760228",
+            "pkt_size": "30000",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -367,12 +383,13 @@
             "duration": 1024,
             "duration_time": "0.023220",
             "size": "2048",
-            "pos": "790158",
-            "flags": "K"
+            "pos": "790233",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 4096,
             "pkt_pts_time": "0.092880",
@@ -382,7 +399,7 @@
             "best_effort_timestamp_time": "0.092880",
             "pkt_duration": 1024,
             "pkt_duration_time": "0.023220",
-            "pkt_pos": "790158",
+            "pkt_pos": "790233",
             "pkt_size": "2048",
             "sample_fmt": "s16",
             "nb_samples": 1024,
@@ -396,15 +413,16 @@
             "pts_time": "0.116100",
             "dts": 5120,
             "dts_time": "0.116100",
-            "duration": 1024,
-            "duration_time": "0.023220",
-            "size": "2048",
-            "pos": "792229",
-            "flags": "K"
+            "duration": 393,
+            "duration_time": "0.008912",
+            "size": "786",
+            "pos": "792304",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "audio",
+            "stream_index": 0,
             "key_frame": 1,
             "pkt_pts": 5120,
             "pkt_pts_time": "0.116100",
@@ -412,12 +430,12 @@
             "pkt_dts_time": "0.116100",
             "best_effort_timestamp": 5120,
             "best_effort_timestamp_time": "0.116100",
-            "pkt_duration": 1024,
-            "pkt_duration_time": "0.023220",
-            "pkt_pos": "792229",
-            "pkt_size": "2048",
+            "pkt_duration": 393,
+            "pkt_duration_time": "0.008912",
+            "pkt_pos": "792304",
+            "pkt_size": "786",
             "sample_fmt": "s16",
-            "nb_samples": 1024,
+            "nb_samples": 393,
             "channels": 1
         },
         {
@@ -431,12 +449,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "230400",
-            "pos": "794307",
-            "flags": "K"
+            "pos": "793120",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 1,
             "key_frame": 1,
             "pkt_pts": 6144,
             "pkt_pts_time": "0.120000",
@@ -446,7 +465,8 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "794307",
+            "pkt_pos": "793120",
+            "pkt_size": "230400",
             "width": 320,
             "height": 240,
             "pix_fmt": "rgb24",
@@ -469,12 +489,13 @@
             "duration": 2048,
             "duration_time": "0.040000",
             "size": "30000",
-            "pos": "1024731",
-            "flags": "K"
+            "pos": "1023544",
+            "flags": "K_"
         },
         {
             "type": "frame",
             "media_type": "video",
+            "stream_index": 2,
             "key_frame": 1,
             "pkt_pts": 6144,
             "pkt_pts_time": "0.120000",
@@ -484,7 +505,8 @@
             "best_effort_timestamp_time": "0.120000",
             "pkt_duration": 2048,
             "pkt_duration_time": "0.040000",
-            "pkt_pos": "1024731",
+            "pkt_pos": "1023544",
+            "pkt_size": "30000",
             "width": 100,
             "height": 100,
             "pix_fmt": "rgb24",
@@ -528,26 +550,31 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
             },
             "tags": {
-                "E": "mc²"
+                "E": "mc²",
+                "encoder": "Lavc pcm_s16le"
             }
         },
         {
             "index": 1,
             "codec_name": "rawvideo",
             "codec_type": "video",
-            "codec_time_base": "1/51200",
+            "codec_time_base": "1/25",
             "codec_tag_string": "RGB[24]",
             "codec_tag": "0x18424752",
             "width": 320,
             "height": 240,
+            "coded_width": 320,
+            "coded_height": 240,
             "has_b_frames": 0,
             "sample_aspect_ratio": "1:1",
             "display_aspect_ratio": "4:3",
             "pix_fmt": "rgb24",
             "level": -99,
+            "refs": 1,
             "r_frame_rate": "25/1",
             "avg_frame_rate": "25/1",
             "time_base": "1/51200",
@@ -566,27 +593,32 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
             },
             "tags": {
                 "title": "foobar",
-                "duration_ts": "field-and-tags-conflict-attempt"
+                "duration_ts": "field-and-tags-conflict-attempt",
+                "encoder": "Lavc rawvideo"
             }
         },
         {
             "index": 2,
             "codec_name": "rawvideo",
             "codec_type": "video",
-            "codec_time_base": "1/51200",
+            "codec_time_base": "1/25",
             "codec_tag_string": "RGB[24]",
             "codec_tag": "0x18424752",
             "width": 100,
             "height": 100,
+            "coded_width": 100,
+            "coded_height": 100,
             "has_b_frames": 0,
             "sample_aspect_ratio": "1:1",
             "display_aspect_ratio": "1:1",
             "pix_fmt": "rgb24",
             "level": -99,
+            "refs": 1,
             "r_frame_rate": "25/1",
             "avg_frame_rate": "25/1",
             "time_base": "1/51200",
@@ -605,7 +637,11 @@
                 "hearing_impaired": 0,
                 "visual_impaired": 0,
                 "clean_effects": 0,
-                "attached_pic": 0
+                "attached_pic": 0,
+                "timed_thumbnails": 0
+            },
+            "tags": {
+                "encoder": "Lavc rawvideo"
             }
         }
     ],
@@ -616,8 +652,8 @@
         "format_name": "nut",
         "start_time": "0.000000",
         "duration": "0.120000",
-        "size": "1054812",
-        "bit_rate": "70320800",
+        "size": "1053624",
+        "bit_rate": "70241600",
         "probe_score": 100,
         "tags": {
             "title": "ffprobe test file",

@@ -114,6 +114,7 @@ struct ogg {
 #define OGG_NOGRANULE_VALUE (-1ull)
 
 extern const struct ogg_codec ff_celt_codec;
+extern const struct ogg_codec ff_daala_codec;
 extern const struct ogg_codec ff_dirac_codec;
 extern const struct ogg_codec ff_flac_codec;
 extern const struct ogg_codec ff_ogm_audio_codec;
@@ -129,7 +130,11 @@ extern const struct ogg_codec ff_theora_codec;
 extern const struct ogg_codec ff_vorbis_codec;
 extern const struct ogg_codec ff_vp8_codec;
 
-int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m, const uint8_t *buf, int size);
+int ff_vorbis_comment(AVFormatContext *ms, AVDictionary **m,
+                      const uint8_t *buf, int size, int parse_picture);
+
+int ff_vorbis_stream_comment(AVFormatContext *as, AVStream *st,
+                             const uint8_t *buf, int size);
 
 static inline int
 ogg_find_stream (struct ogg * ogg, int serial)
@@ -156,6 +161,11 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
         pts = gp;
         if (dts)
             *dts = pts;
+    }
+    if (pts > INT64_MAX && pts != AV_NOPTS_VALUE) {
+        // The return type is unsigned, we thus cannot return negative pts
+        av_log(s, AV_LOG_ERROR, "invalid pts %"PRId64"\n", pts);
+        pts = AV_NOPTS_VALUE;
     }
 
     return pts;

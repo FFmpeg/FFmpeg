@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MPD
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns="urn:mpeg:DASH:schema:MPD:2011"
+  xsi:schemaLocation="urn:mpeg:DASH:schema:MPD:2011"
+  type="dynamic"
+  minBufferTime="PT1S"
+  profiles="urn:mpeg:dash:profile:isoff-live:2011"
+  availabilityStartTime=""
+  timeShiftBufferDepth="PT7200S"
+  minimumUpdatePeriod="PT60S">
+<Period id="0" start="PT0S" >
+<AdaptationSet id="0" mimeType="video/webm" codecs="vp9" bitstreamSwitching="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+<ContentComponent id="1" type="video"/>
+<SegmentTemplate timescale="1000" duration="5000" media="dash_live_video_$RepresentationID$_$Number$.chk" startNumber="1" initialization="dash_live_video_$RepresentationID$.hdr"/>
+<Representation id="360" bandwidth="1000000" width="640" height="360" codecs="vp9" mimeType="video/webm" startsWithSAP="1"></Representation>
+</AdaptationSet>
+<AdaptationSet id="1" mimeType="audio/webm" codecs="vorbis" bitstreamSwitching="true" subsegmentAlignment="true" subsegmentStartsWithSAP="1">
+<ContentComponent id="1" type="audio"/>
+<SegmentTemplate timescale="1000" duration="5000" media="dash_live_audio_$RepresentationID$_$Number$.chk" startNumber="1" initialization="dash_live_audio_$RepresentationID$.hdr"/>
+<Representation id="171" bandwidth="128000" audioSamplingRate="32000" codecs="vorbis" mimeType="audio/webm" startsWithSAP="1"></Representation>
+</AdaptationSet>
+</Period>
+</MPD>

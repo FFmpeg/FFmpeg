@@ -25,9 +25,9 @@
 #include <stdint.h>
 
 typedef struct PNGDSPContext {
-    void (*add_bytes_l2)(uint8_t *dst  /* align 16 */,
+    void (*add_bytes_l2)(uint8_t *dst,
                          uint8_t *src1 /* align 16 */,
-                         uint8_t *src2 /* align 16 */, int w);
+                         uint8_t *src2, int w);
 
     /* this might write to dst[w] */
     void (*add_paeth_prediction)(uint8_t *dst, uint8_t *src,
@@ -37,4 +37,4 @@ typedef struct PNGDSPContext {
 void ff_pngdsp_init(PNGDSPContext *dsp);
 void ff_pngdsp_init_x86(PNGDSPContext *dsp);
 
-#endif /* AVCDODEC_PNGDSP_H */
+#endif /* AVCODEC_PNGDSP_H */

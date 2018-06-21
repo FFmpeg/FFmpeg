@@ -1,0 +1,19 @@
+#format: frame checksums
+#version: 2
+#hash: MD5
+#tb 0: 1001/30000
+#media_type 0: video
+#codec_id 0: rawvideo
+#dimensions 0: 352x288
+#sar 0: 1/1
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,        1,   152064, 818a5af531c921ae58dfedc75234f3c5
+0,          1,          1,        1,   152064, f863f8c68b5c87c721d345c5a894336d
+0,          2,          2,        1,   152064, 3f1213e44db416530bc0717f0a795b5d
+0,          3,          3,        1,   152064, 4b99c16a62c3d6687c78236fa13e1f41
+0,          4,          4,        1,   152064, 80f23a3f04215dd7542128e7c53d68d0
+0,          5,          5,        1,   152064, b40b7aa34a77fe773d82d75b5bdd9c13
+0,          6,          6,        1,   152064, dd4af6263d20bbaf9afedb6695c1ba67
+0,          7,          7,        1,   152064, 1f2ccf88f15c10e3c27b2368dacc3727
+0,          8,          8,        1,   152064, 232b027c4e9b598f50d078bb7b7a165e
+0,          9,          9,        1,   152064, 2b44367332aa0fe42362d61f18e7f8dd

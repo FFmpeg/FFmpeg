@@ -41,7 +41,7 @@ static int theora_header(AVFormatContext *s, int idx)
     struct ogg_stream *os = ogg->streams + idx;
     AVStream *st          = s->streams[idx];
     TheoraParams *thp     = os->private;
-    int cds               = st->codec->extradata_size + os->psize + 2;
+    int cds               = st->codecpar->extradata_size + os->psize + 2;
     int err;
     uint8_t *cdp;
 
@@ -72,8 +72,8 @@ static int theora_header(AVFormatContext *s, int idx)
             return AVERROR(ENOSYS);
         }
 
-        st->codec->width  = get_bits(&gb, 16) << 4;
-        st->codec->height = get_bits(&gb, 16) << 4;
+        st->codecpar->width  = get_bits(&gb, 16) << 4;
+        st->codecpar->height = get_bits(&gb, 16) << 4;
 
         if (thp->version >= 0x030400)
             skip_bits(&gb, 100);
@@ -81,10 +81,10 @@ static int theora_header(AVFormatContext *s, int idx)
         if (thp->version >= 0x030200) {
             int width  = get_bits_long(&gb, 24);
             int height = get_bits_long(&gb, 24);
-            if (width  <= st->codec->width  && width  > st->codec->width  - 16 &&
-                height <= st->codec->height && height > st->codec->height - 16) {
-                st->codec->width  = width;
-                st->codec->height = height;
+            if (width  <= st->codecpar->width  && width  > st->codecpar->width  - 16 &&
+                height <= st->codecpar->height && height > st->codecpar->height - 16) {
+                st->codecpar->width  = width;
+                st->codecpar->height = height;
             }
 
             skip_bits(&gb, 16);
@@ -108,15 +108,15 @@ static int theora_header(AVFormatContext *s, int idx)
             skip_bits(&gb, 2);
 
         thp->gpshift = get_bits(&gb, 5);
-        thp->gpmask  = (1 << thp->gpshift) - 1;
+        thp->gpmask  = (1U << thp->gpshift) - 1;
 
-        st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-        st->codec->codec_id   = AV_CODEC_ID_THEORA;
+        st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->codecpar->codec_id   = AV_CODEC_ID_THEORA;
         st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     }
     break;
     case 0x81:
-        ff_vorbis_comment(s, &st->metadata, os->buf + os->pstart + 7, os->psize - 7);
+        ff_vorbis_stream_comment(s, st, os->buf + os->pstart + 7, os->psize - 7);
     case 0x82:
         if (!thp->version)
             return AVERROR_INVALIDDATA;
@@ -126,18 +126,18 @@ static int theora_header(AVFormatContext *s, int idx)
         return AVERROR_INVALIDDATA;
     }
 
-    if ((err = av_reallocp(&st->codec->extradata,
-                           cds + FF_INPUT_BUFFER_PADDING_SIZE)) < 0) {
-        st->codec->extradata_size = 0;
+    if ((err = av_reallocp(&st->codecpar->extradata,
+                           cds + AV_INPUT_BUFFER_PADDING_SIZE)) < 0) {
+        st->codecpar->extradata_size = 0;
         return err;
     }
-    memset(st->codec->extradata + cds, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(st->codecpar->extradata + cds, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    cdp    = st->codec->extradata + st->codec->extradata_size;
+    cdp    = st->codecpar->extradata + st->codecpar->extradata_size;
     *cdp++ = os->psize >> 8;
     *cdp++ = os->psize & 0xff;
     memcpy(cdp, os->buf + os->pstart, os->psize);
-    st->codec->extradata_size = cds;
+    st->codecpar->extradata_size = cds;
 
     return 1;
 }
@@ -181,6 +181,7 @@ static int theora_packet(AVFormatContext *s, int idx)
 
     if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
         int seg;
+        int64_t pts;
 
         duration = 1;
         for (seg = os->segp; seg < os->nsegs; seg++) {
@@ -188,10 +189,13 @@ static int theora_packet(AVFormatContext *s, int idx)
                 duration ++;
         }
 
-        os->lastpts = os->lastdts   = theora_gptopts(s, idx, os->granule, NULL) - duration;
+        pts = theora_gptopts(s, idx, os->granule, NULL);
+        if (pts != AV_NOPTS_VALUE)
+            pts -= duration;
+        os->lastpts = os->lastdts = pts;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration > 0)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
     }

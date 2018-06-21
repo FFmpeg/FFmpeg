@@ -23,7 +23,8 @@
 
 SECTION_RODATA 32
 
-align 32
+ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
+
 ps_cos_vec: dd   0.500603,  0.505471,  0.515447,  0.531043
             dd   0.553104,  0.582935,  0.622504,  0.674808
             dd -10.190008, -3.407609, -2.057781, -1.484165
@@ -37,9 +38,6 @@ ps_cos_vec: dd   0.500603,  0.505471,  0.515447,  0.531043
             dd   1.000000,  0.707107,  1.000000, -0.707107
             dd   1.000000,  0.707107,  1.000000, -0.707107
             dd   0.707107,  0.707107,  0.707107,  0.707107
-
-align 32
-ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 
 %macro BUTTERFLY 4
     subps  %4, %1, %2
@@ -191,7 +189,7 @@ ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 %endmacro
 
 INIT_YMM avx
-SECTION_TEXT
+SECTION .text
 %if HAVE_AVX_EXTERNAL
 ; void ff_dct32_float_avx(FFTSample *out, const FFTSample *in)
 cglobal dct32_float, 2,3,8, out, in, tmp
@@ -484,7 +482,10 @@ cglobal dct32_float, 2, 3, 16, out, in, tmp
 %endif
 %endmacro
 
+%if ARCH_X86_32
 INIT_XMM sse
 DCT32_FUNC
+%endif
+
 INIT_XMM sse2
 DCT32_FUNC

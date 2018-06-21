@@ -78,6 +78,6 @@ int ff_af_queue_add(AudioFrameQueue *afq, const AVFrame *f);
  * @param[out] duration output packet duration
  */
 void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
-                        int *duration);
+                        int64_t *duration);
 
 #endif /* AVCODEC_AUDIO_FRAME_QUEUE_H */

@@ -52,7 +52,7 @@ static inline int wnv1_get_code(WNV1Context *w, int base_value)
     if (v == 15)
         return ff_reverse[get_bits(&w->gb, 8 - w->shift)];
     else
-        return base_value + ((v - 7) << w->shift);
+        return base_value + ((v - 7U) << w->shift);
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -68,17 +68,17 @@ static int decode_frame(AVCodecContext *avctx,
     int prev_y = 0, prev_u = 0, prev_v = 0;
     uint8_t *rbuf;
 
-    if (buf_size <= 8) {
+    if (buf_size < 8 + avctx->height * (avctx->width/2)/8) {
         av_log(avctx, AV_LOG_ERROR, "Packet size %d is too small\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
 
-    rbuf = av_malloc(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+    rbuf = av_malloc(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!rbuf) {
         av_log(avctx, AV_LOG_ERROR, "Cannot allocate temporary buffer\n");
         return AVERROR(ENOMEM);
     }
-    memset(rbuf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    memset(rbuf + buf_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0) {
         av_free(rbuf);
@@ -88,7 +88,9 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (i = 8; i < buf_size; i++)
         rbuf[i] = ff_reverse[buf[i]];
-    init_get_bits(&l->gb, rbuf + 8, (buf_size - 8) * 8);
+
+    if ((ret = init_get_bits8(&l->gb, rbuf + 8, buf_size - 8)) < 0)
+        return ret;
 
     if (buf[2] >> 4 == 6)
         l->shift = 2;
@@ -153,5 +155,5 @@ AVCodec ff_wnv1_decoder = {
     .priv_data_size = sizeof(WNV1Context),
     .init           = decode_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

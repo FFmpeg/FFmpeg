@@ -25,7 +25,7 @@
 #include "avcodec.h"
 #include "libavutil/avutil.h"
 #include "get_bits.h"
-#include "dsputil.h"
+#include "audiodsp.h"
 #include "internal.h"
 
 
@@ -100,7 +100,7 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
-    DSPContext dsp;
+    AudioDSPContext adsp;
 
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
@@ -178,14 +178,6 @@ static const G729FormatDescription format_g729d_6k4 = {
 static inline uint16_t g729_prng(uint16_t value)
 {
     return 31821 * value + 13849;
-}
-
-/**
- * Get parity bit of bit 2..7
- */
-static inline int get_parity(uint8_t value)
-{
-   return (0x6996966996696996ULL >> (value >> 2)) & 1;
 }
 
 /**
@@ -381,8 +373,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    ff_dsputil_init(&ctx->dsp, avctx);
-    ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
+    ff_audiodsp_init(&ctx->adsp);
+    ctx->adsp.scalarproduct_int16 = scalarproduct_int16_c;
 
     return 0;
 }
@@ -421,7 +413,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         return ret;
     out_frame = (int16_t*) frame->data[0];
 
-    if (buf_size == 10) {
+    if (buf_size % 10 == 0) {
         packet_type = FORMAT_G729_8K;
         format = &format_g729_8k;
         //Reset voice decision
@@ -480,7 +472,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         ac_index      = get_bits(&gb, format->ac_index_bits[i]);
         if(!i && format->parity_bit)
-            bad_pitch = get_parity(ac_index) == get_bits1(&gb);
+            bad_pitch = av_parity(ac_index >> 2) == get_bits1(&gb);
         fc_indexes    = get_bits(&gb, format->fc_indexes_bits);
         pulses_signs  = get_bits(&gb, format->fc_signs_bits);
         gc_1st_index  = get_bits(&gb, format->gc_1st_index_bits);
@@ -512,7 +504,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
-            fc_indexes   = ctx->rand_value & ((1 << format->fc_indexes_bits) - 1);
+            fc_indexes   = av_mod_uintp2(ctx->rand_value, format->fc_indexes_bits);
 
             ctx->rand_value = g729_prng(ctx->rand_value);
             pulses_signs = ctx->rand_value;
@@ -578,7 +570,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             }
 
             /* Decode the fixed-codebook gain. */
-            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->dsp, gain_corr_factor,
+            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->adsp, gain_corr_factor,
                                                                fc, MR_ENERGY,
                                                                ctx->quant_energy,
                                                                ma_prediction_coeff,
@@ -668,7 +660,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         /* Call postfilter and also update voicing decision for use in next frame. */
         ff_g729_postfilter(
-                &ctx->dsp,
+                &ctx->adsp,
                 &ctx->ht_prev_data,
                 &is_periodic,
                 &lp[i][0],
@@ -711,7 +703,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
     *got_frame_ptr = 1;
-    return buf_size;
+    return packet_type == FORMAT_G729_8K ? 10 : 8;
 }
 
 AVCodec ff_g729_decoder = {
@@ -722,5 +714,5 @@ AVCodec ff_g729_decoder = {
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
 };

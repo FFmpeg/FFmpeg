@@ -56,8 +56,54 @@
 #include "aacdec_mips.h"
 #include "libavcodec/aactab.h"
 #include "libavcodec/sinewin.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+static av_always_inline void float_copy(float *dst, const float *src, int count)
+{
+    // Copy 'count' floats from src to dst
+    const float *loop_end = src + count;
+    int temp[8];
+
+    // count must be a multiple of 8
+    av_assert2(count % 8 == 0);
+
+    // loop unrolled 8 times
+    __asm__ volatile (
+        ".set push                               \n\t"
+        ".set noreorder                          \n\t"
+    "1:                                          \n\t"
+        "lw      %[temp0],    0(%[src])          \n\t"
+        "lw      %[temp1],    4(%[src])          \n\t"
+        "lw      %[temp2],    8(%[src])          \n\t"
+        "lw      %[temp3],    12(%[src])         \n\t"
+        "lw      %[temp4],    16(%[src])         \n\t"
+        "lw      %[temp5],    20(%[src])         \n\t"
+        "lw      %[temp6],    24(%[src])         \n\t"
+        "lw      %[temp7],    28(%[src])         \n\t"
+        PTR_ADDIU "%[src],    %[src],      32    \n\t"
+        "sw      %[temp0],    0(%[dst])          \n\t"
+        "sw      %[temp1],    4(%[dst])          \n\t"
+        "sw      %[temp2],    8(%[dst])          \n\t"
+        "sw      %[temp3],    12(%[dst])         \n\t"
+        "sw      %[temp4],    16(%[dst])         \n\t"
+        "sw      %[temp5],    20(%[dst])         \n\t"
+        "sw      %[temp6],    24(%[dst])         \n\t"
+        "sw      %[temp7],    28(%[dst])         \n\t"
+        "bne     %[src],      %[loop_end], 1b    \n\t"
+        PTR_ADDIU "%[dst],    %[dst],      32    \n\t"
+        ".set pop                                \n\t"
+
+        : [temp0]"=&r"(temp[0]), [temp1]"=&r"(temp[1]),
+          [temp2]"=&r"(temp[2]), [temp3]"=&r"(temp[3]),
+          [temp4]"=&r"(temp[4]), [temp5]"=&r"(temp[5]),
+          [temp6]"=&r"(temp[6]), [temp7]"=&r"(temp[7]),
+          [src]"+r"(src), [dst]"+r"(dst)
+        : [loop_end]"r"(loop_end)
+        : "memory"
+    );
+}
+
 static av_always_inline int lcg_random(unsigned previous_val)
 {
     union { unsigned u; int s; } v = { previous_val * 1664525u + 1013904223 };
@@ -90,51 +136,9 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
      */
     if ((ics->window_sequence[1] == ONLY_LONG_SEQUENCE || ics->window_sequence[1] == LONG_STOP_SEQUENCE) &&
             (ics->window_sequence[0] == ONLY_LONG_SEQUENCE || ics->window_sequence[0] == LONG_START_SEQUENCE)) {
-        ac->fdsp.vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
+        ac->fdsp->vector_fmul_window(    out,               saved,            buf,         lwindow_prev, 512);
     } else {
-        {
-            float *buf1 = saved;
-            float *buf2 = out;
-            int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-            int loop_end;
-
-            /* loop unrolled 8 times */
-            __asm__ volatile (
-                ".set push                               \n\t"
-                ".set noreorder                          \n\t"
-                "addiu   %[loop_end], %[src],      1792  \n\t"
-            "1:                                          \n\t"
-                "lw      %[temp0],    0(%[src])          \n\t"
-                "lw      %[temp1],    4(%[src])          \n\t"
-                "lw      %[temp2],    8(%[src])          \n\t"
-                "lw      %[temp3],    12(%[src])         \n\t"
-                "lw      %[temp4],    16(%[src])         \n\t"
-                "lw      %[temp5],    20(%[src])         \n\t"
-                "lw      %[temp6],    24(%[src])         \n\t"
-                "lw      %[temp7],    28(%[src])         \n\t"
-                "addiu   %[src],      %[src],      32    \n\t"
-                "sw      %[temp0],    0(%[dst])          \n\t"
-                "sw      %[temp1],    4(%[dst])          \n\t"
-                "sw      %[temp2],    8(%[dst])          \n\t"
-                "sw      %[temp3],    12(%[dst])         \n\t"
-                "sw      %[temp4],    16(%[dst])         \n\t"
-                "sw      %[temp5],    20(%[dst])         \n\t"
-                "sw      %[temp6],    24(%[dst])         \n\t"
-                "sw      %[temp7],    28(%[dst])         \n\t"
-                "bne     %[src],      %[loop_end], 1b    \n\t"
-                " addiu  %[dst],      %[dst],      32    \n\t"
-                ".set pop                                \n\t"
-
-                : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-                  [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-                  [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-                  [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-                  [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-                  [dst]"+r"(buf2)
-                :
-                : "memory"
-            );
-        }
+        float_copy(out, saved, 448);
 
         if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
             {
@@ -199,228 +203,22 @@ static void imdct_and_windowing_mips(AACContext *ac, SingleChannelElement *sce)
                 }
             }
         } else {
-            ac->fdsp.vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
-            {
-                float *buf1 = buf + 64;
-                float *buf2 = out + 576;
-                int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-                int loop_end;
-
-                /* loop unrolled 8 times */
-                __asm__ volatile (
-                    ".set push                               \n\t"
-                    ".set noreorder                          \n\t"
-                    "addiu   %[loop_end], %[src],      1792  \n\t"
-                "1:                                          \n\t"
-                    "lw      %[temp0],    0(%[src])          \n\t"
-                    "lw      %[temp1],    4(%[src])          \n\t"
-                    "lw      %[temp2],    8(%[src])          \n\t"
-                    "lw      %[temp3],    12(%[src])         \n\t"
-                    "lw      %[temp4],    16(%[src])         \n\t"
-                    "lw      %[temp5],    20(%[src])         \n\t"
-                    "lw      %[temp6],    24(%[src])         \n\t"
-                    "lw      %[temp7],    28(%[src])         \n\t"
-                    "addiu   %[src],      %[src],      32    \n\t"
-                    "sw      %[temp0],    0(%[dst])          \n\t"
-                    "sw      %[temp1],    4(%[dst])          \n\t"
-                    "sw      %[temp2],    8(%[dst])          \n\t"
-                    "sw      %[temp3],    12(%[dst])         \n\t"
-                    "sw      %[temp4],    16(%[dst])         \n\t"
-                    "sw      %[temp5],    20(%[dst])         \n\t"
-                    "sw      %[temp6],    24(%[dst])         \n\t"
-                    "sw      %[temp7],    28(%[dst])         \n\t"
-                    "bne     %[src],      %[loop_end], 1b    \n\t"
-                    " addiu  %[dst],      %[dst],      32    \n\t"
-                    ".set pop                                \n\t"
-
-                    : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-                      [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-                      [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-                      [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-                      [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-                      [dst]"+r"(buf2)
-                    :
-                    : "memory"
-                );
-            }
+            ac->fdsp->vector_fmul_window(out + 448,         saved + 448,      buf,         swindow_prev, 64);
+            float_copy(out + 576, buf + 64, 448);
         }
     }
 
     // buffer update
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        ac->fdsp.vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
-        ac->fdsp.vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
-        {
-            float *buf1 = buf + 7*128 + 64;
-            float *buf2 = saved + 448;
-            int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-            int loop_end;
-
-            /* loop unrolled 8 times */
-            __asm__ volatile (
-                ".set push                                \n\t"
-                ".set noreorder                           \n\t"
-                "addiu   %[loop_end], %[src],       256   \n\t"
-            "1:                                           \n\t"
-                "lw      %[temp0],    0(%[src])           \n\t"
-                "lw      %[temp1],    4(%[src])           \n\t"
-                "lw      %[temp2],    8(%[src])           \n\t"
-                "lw      %[temp3],    12(%[src])          \n\t"
-                "lw      %[temp4],    16(%[src])          \n\t"
-                "lw      %[temp5],    20(%[src])          \n\t"
-                "lw      %[temp6],    24(%[src])          \n\t"
-                "lw      %[temp7],    28(%[src])          \n\t"
-                "addiu   %[src],      %[src],       32    \n\t"
-                "sw      %[temp0],    0(%[dst])           \n\t"
-                "sw      %[temp1],    4(%[dst])           \n\t"
-                "sw      %[temp2],    8(%[dst])           \n\t"
-                "sw      %[temp3],    12(%[dst])          \n\t"
-                "sw      %[temp4],    16(%[dst])          \n\t"
-                "sw      %[temp5],    20(%[dst])          \n\t"
-                "sw      %[temp6],    24(%[dst])          \n\t"
-                "sw      %[temp7],    28(%[dst])          \n\t"
-                "bne     %[src],      %[loop_end],  1b    \n\t"
-                " addiu  %[dst],      %[dst],       32    \n\t"
-                ".set pop                                 \n\t"
-
-                : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-                  [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-                  [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-                  [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-                  [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-                  [dst]"+r"(buf2)
-                :
-                : "memory"
-            );
-        }
+        ac->fdsp->vector_fmul_window(saved + 64,  buf + 4*128 + 64, buf + 5*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 192, buf + 5*128 + 64, buf + 6*128, swindow, 64);
+        ac->fdsp->vector_fmul_window(saved + 320, buf + 6*128 + 64, buf + 7*128, swindow, 64);
+        float_copy(saved + 448, buf + 7*128 + 64, 64);
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
-        float *buf1 = buf + 512;
-        float *buf2 = saved;
-        int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-        int loop_end;
-
-        /* loop unrolled 8 times */
-        __asm__ volatile (
-            ".set push                                \n\t"
-            ".set noreorder                           \n\t"
-            "addiu   %[loop_end], %[src],       1792  \n\t"
-        "1:                                           \n\t"
-            "lw      %[temp0],    0(%[src])           \n\t"
-            "lw      %[temp1],    4(%[src])           \n\t"
-            "lw      %[temp2],    8(%[src])           \n\t"
-            "lw      %[temp3],    12(%[src])          \n\t"
-            "lw      %[temp4],    16(%[src])          \n\t"
-            "lw      %[temp5],    20(%[src])          \n\t"
-            "lw      %[temp6],    24(%[src])          \n\t"
-            "lw      %[temp7],    28(%[src])          \n\t"
-            "addiu   %[src],      %[src],       32    \n\t"
-            "sw      %[temp0],    0(%[dst])           \n\t"
-            "sw      %[temp1],    4(%[dst])           \n\t"
-            "sw      %[temp2],    8(%[dst])           \n\t"
-            "sw      %[temp3],    12(%[dst])          \n\t"
-            "sw      %[temp4],    16(%[dst])          \n\t"
-            "sw      %[temp5],    20(%[dst])          \n\t"
-            "sw      %[temp6],    24(%[dst])          \n\t"
-            "sw      %[temp7],    28(%[dst])          \n\t"
-            "bne     %[src],      %[loop_end],  1b    \n\t"
-            " addiu  %[dst],      %[dst],       32    \n\t"
-            ".set pop                                 \n\t"
-
-            : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-              [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-              [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-              [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-              [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-              [dst]"+r"(buf2)
-            :
-            : "memory"
-        );
-        {
-            float *buf1 = buf + 7*128 + 64;
-            float *buf2 = saved + 448;
-            int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-            int loop_end;
-
-            /* loop unrolled 8 times */
-            __asm__ volatile (
-                ".set push                                 \n\t"
-                ".set noreorder                            \n\t"
-                "addiu   %[loop_end], %[src],        256   \n\t"
-            "1:                                            \n\t"
-                "lw      %[temp0],    0(%[src])            \n\t"
-                "lw      %[temp1],    4(%[src])            \n\t"
-                "lw      %[temp2],    8(%[src])            \n\t"
-                "lw      %[temp3],    12(%[src])           \n\t"
-                "lw      %[temp4],    16(%[src])           \n\t"
-                "lw      %[temp5],    20(%[src])           \n\t"
-                "lw      %[temp6],    24(%[src])           \n\t"
-                "lw      %[temp7],    28(%[src])           \n\t"
-                "addiu   %[src],      %[src],        32    \n\t"
-                "sw      %[temp0],    0(%[dst])            \n\t"
-                "sw      %[temp1],    4(%[dst])            \n\t"
-                "sw      %[temp2],    8(%[dst])            \n\t"
-                "sw      %[temp3],    12(%[dst])           \n\t"
-                "sw      %[temp4],    16(%[dst])           \n\t"
-                "sw      %[temp5],    20(%[dst])           \n\t"
-                "sw      %[temp6],    24(%[dst])           \n\t"
-                "sw      %[temp7],    28(%[dst])           \n\t"
-                "bne     %[src],      %[loop_end],   1b    \n\t"
-                " addiu  %[dst],      %[dst],        32    \n\t"
-                ".set pop                                  \n\t"
-
-                : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-                  [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-                  [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-                  [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-                  [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-                  [dst]"+r"(buf2)
-                :
-                : "memory"
-            );
-        }
+        float_copy(saved, buf + 512, 448);
+        float_copy(saved + 448, buf + 7*128 + 64, 64);
     } else { // LONG_STOP or ONLY_LONG
-        float *buf1 = buf + 512;
-        float *buf2 = saved;
-        int temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
-        int loop_end;
-
-        /* loop unrolled 8 times */
-        __asm__ volatile (
-            ".set push                                 \n\t"
-            ".set noreorder                            \n\t"
-            "addiu   %[loop_end], %[src],        2048  \n\t"
-        "1:                                            \n\t"
-            "lw      %[temp0],    0(%[src])            \n\t"
-            "lw      %[temp1],    4(%[src])            \n\t"
-            "lw      %[temp2],    8(%[src])            \n\t"
-            "lw      %[temp3],    12(%[src])           \n\t"
-            "lw      %[temp4],    16(%[src])           \n\t"
-            "lw      %[temp5],    20(%[src])           \n\t"
-            "lw      %[temp6],    24(%[src])           \n\t"
-            "lw      %[temp7],    28(%[src])           \n\t"
-            "addiu   %[src],      %[src],        32    \n\t"
-            "sw      %[temp0],    0(%[dst])            \n\t"
-            "sw      %[temp1],    4(%[dst])            \n\t"
-            "sw      %[temp2],    8(%[dst])            \n\t"
-            "sw      %[temp3],    12(%[dst])           \n\t"
-            "sw      %[temp4],    16(%[dst])           \n\t"
-            "sw      %[temp5],    20(%[dst])           \n\t"
-            "sw      %[temp6],    24(%[dst])           \n\t"
-            "sw      %[temp7],    28(%[dst])           \n\t"
-            "bne     %[src],      %[loop_end],   1b    \n\t"
-            " addiu  %[dst],      %[dst],        32    \n\t"
-            ".set pop                                  \n\t"
-
-            : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-              [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-              [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-              [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-              [loop_end]"=&r"(loop_end), [src]"+r"(buf1),
-              [dst]"+r"(buf2)
-            :
-            : "memory"
-        );
+        float_copy(saved, buf + 512, 512);
     }
 }
 
@@ -453,7 +251,7 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
                 "sw      $0,              4(%[p_predTime])        \n\t"
                 "sw      $0,              8(%[p_predTime])        \n\t"
                 "sw      $0,              12(%[p_predTime])       \n\t"
-                "addiu   %[p_predTime],   %[p_predTime],     16   \n\t"
+                PTR_ADDIU "%[p_predTime], %[p_predTime],     16   \n\t"
 
                 : [p_predTime]"+r"(p_predTime)
                 :
@@ -464,7 +262,7 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 
             __asm__ volatile (
                 "sw      $0,              0(%[p_predTime])        \n\t"
-                "addiu   %[p_predTime],   %[p_predTime],     4    \n\t"
+                PTR_ADDIU "%[p_predTime], %[p_predTime],     4    \n\t"
 
                 : [p_predTime]"+r"(p_predTime)
                 :
@@ -485,6 +283,56 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 }
 
 #if HAVE_MIPSFPU
+static av_always_inline void fmul_and_reverse(float *dst, const float *src0, const float *src1, int count)
+{
+    /* Multiply 'count' floats in src0 by src1 and store the results in dst in reverse */
+    /* This should be equivalent to a normal fmul, followed by reversing dst */
+
+    // count must be a multiple of 4
+    av_assert2(count % 4 == 0);
+
+    // move src0 and src1 to the last element of their arrays
+    src0 += count - 1;
+    src1 += count - 1;
+
+    for (; count > 0; count -= 4){
+        float temp[12];
+
+        /* loop unrolled 4 times */
+        __asm__ volatile (
+            "lwc1    %[temp0],    0(%[ptr2])                \n\t"
+            "lwc1    %[temp1],    -4(%[ptr2])               \n\t"
+            "lwc1    %[temp2],    -8(%[ptr2])               \n\t"
+            "lwc1    %[temp3],    -12(%[ptr2])              \n\t"
+            "lwc1    %[temp4],    0(%[ptr3])                \n\t"
+            "lwc1    %[temp5],    -4(%[ptr3])               \n\t"
+            "lwc1    %[temp6],    -8(%[ptr3])               \n\t"
+            "lwc1    %[temp7],    -12(%[ptr3])              \n\t"
+            "mul.s   %[temp8],    %[temp0],     %[temp4]    \n\t"
+            "mul.s   %[temp9],    %[temp1],     %[temp5]    \n\t"
+            "mul.s   %[temp10],   %[temp2],     %[temp6]    \n\t"
+            "mul.s   %[temp11],   %[temp3],     %[temp7]    \n\t"
+            "swc1    %[temp8],    0(%[ptr1])                \n\t"
+            "swc1    %[temp9],    4(%[ptr1])                \n\t"
+            "swc1    %[temp10],   8(%[ptr1])                \n\t"
+            "swc1    %[temp11],   12(%[ptr1])               \n\t"
+            PTR_ADDIU "%[ptr1],   %[ptr1],      16          \n\t"
+            PTR_ADDIU "%[ptr2],   %[ptr2],      -16         \n\t"
+            PTR_ADDIU "%[ptr3],   %[ptr3],      -16         \n\t"
+
+            : [temp0]"=&f"(temp[0]), [temp1]"=&f"(temp[1]),
+              [temp2]"=&f"(temp[2]), [temp3]"=&f"(temp[3]),
+              [temp4]"=&f"(temp[4]), [temp5]"=&f"(temp[5]),
+              [temp6]"=&f"(temp[6]), [temp7]"=&f"(temp[7]),
+              [temp8]"=&f"(temp[8]), [temp9]"=&f"(temp[9]),
+              [temp10]"=&f"(temp[10]), [temp11]"=&f"(temp[11]),
+              [ptr1]"+r"(dst), [ptr2]"+r"(src0), [ptr3]"+r"(src1)
+            :
+            : "memory"
+        );
+    }
+}
+
 static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 {
     IndividualChannelStream *ics = &sce->ics;
@@ -492,55 +340,13 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
     float *saved_ltp = sce->coeffs;
     const float *lwindow = ics->use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float *swindow = ics->use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
-    int i;
-    int loop_end, loop_end1, loop_end2;
-    float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7, temp8, temp9, temp10, temp11;
+    float temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7;
 
     if (ics->window_sequence[0] == EIGHT_SHORT_SEQUENCE) {
-        float *buf = saved;
-        float *buf0 = saved_ltp;
         float *p_saved_ltp = saved_ltp + 576;
-        float *ptr1 = &saved_ltp[512];
-        float *ptr2 = &ac->buf_mdct[1023];
-        float *ptr3 = (float*)&swindow[63];
-        loop_end1 = (int)(p_saved_ltp + 448);
+        float *loop_end1 = p_saved_ltp + 448;
 
-        /* loop unrolled 8 times */
-        __asm__ volatile (
-            ".set push                                     \n\t"
-            ".set noreorder                                \n\t"
-            "addiu   %[loop_end],   %[src],         2048   \n\t"
-        "1:                                                \n\t"
-            "lw      %[temp0],      0(%[src])              \n\t"
-            "lw      %[temp1],      4(%[src])              \n\t"
-            "lw      %[temp2],      8(%[src])              \n\t"
-            "lw      %[temp3],      12(%[src])             \n\t"
-            "lw      %[temp4],      16(%[src])             \n\t"
-            "lw      %[temp5],      20(%[src])             \n\t"
-            "lw      %[temp6],      24(%[src])             \n\t"
-            "lw      %[temp7],      28(%[src])             \n\t"
-            "addiu   %[src],        %[src],         32     \n\t"
-            "sw      %[temp0],      0(%[dst])              \n\t"
-            "sw      %[temp1],      4(%[dst])              \n\t"
-            "sw      %[temp2],      8(%[dst])              \n\t"
-            "sw      %[temp3],      12(%[dst])             \n\t"
-            "sw      %[temp4],      16(%[dst])             \n\t"
-            "sw      %[temp5],      20(%[dst])             \n\t"
-            "sw      %[temp6],      24(%[dst])             \n\t"
-            "sw      %[temp7],      28(%[dst])             \n\t"
-            "bne     %[src],        %[loop_end],    1b     \n\t"
-            " addiu  %[dst],        %[dst],         32     \n\t"
-            ".set pop                                      \n\t"
-
-            : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-              [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-              [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-              [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-              [loop_end]"=&r"(loop_end), [src]"+r"(buf),
-              [dst]"+r"(buf0)
-            :
-            : "memory"
-        );
+        float_copy(saved_ltp, saved, 512);
 
         /* loop unrolled 8 times */
         __asm__ volatile (
@@ -553,7 +359,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "sw     $0,              20(%[p_saved_ltp])       \n\t"
             "sw     $0,              24(%[p_saved_ltp])       \n\t"
             "sw     $0,              28(%[p_saved_ltp])       \n\t"
-            "addiu  %[p_saved_ltp],  %[p_saved_ltp],     32   \n\t"
+            PTR_ADDIU "%[p_saved_ltp],%[p_saved_ltp],    32   \n\t"
             "bne    %[p_saved_ltp],  %[loop_end1],       1b   \n\t"
 
             : [p_saved_ltp]"+r"(p_saved_ltp)
@@ -561,48 +367,12 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             : "memory"
         );
 
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
-        for (i = 0; i < 16; i++){
-            /* loop unrolled 4 times */
-            __asm__ volatile (
-                "lwc1    %[temp0],    0(%[ptr2])                \n\t"
-                "lwc1    %[temp1],    -4(%[ptr2])               \n\t"
-                "lwc1    %[temp2],    -8(%[ptr2])               \n\t"
-                "lwc1    %[temp3],    -12(%[ptr2])              \n\t"
-                "lwc1    %[temp4],    0(%[ptr3])                \n\t"
-                "lwc1    %[temp5],    -4(%[ptr3])               \n\t"
-                "lwc1    %[temp6],    -8(%[ptr3])               \n\t"
-                "lwc1    %[temp7],    -12(%[ptr3])              \n\t"
-                "mul.s   %[temp8],    %[temp0],     %[temp4]    \n\t"
-                "mul.s   %[temp9],    %[temp1],     %[temp5]    \n\t"
-                "mul.s   %[temp10],   %[temp2],     %[temp6]    \n\t"
-                "mul.s   %[temp11],   %[temp3],     %[temp7]    \n\t"
-                "swc1    %[temp8],    0(%[ptr1])                \n\t"
-                "swc1    %[temp9],    4(%[ptr1])                \n\t"
-                "swc1    %[temp10],   8(%[ptr1])                \n\t"
-                "swc1    %[temp11],   12(%[ptr1])               \n\t"
-                "addiu   %[ptr1],     %[ptr1],      16          \n\t"
-                "addiu   %[ptr2],     %[ptr2],      -16         \n\t"
-                "addiu   %[ptr3],     %[ptr3],      -16         \n\t"
-
-                : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),
-                  [temp2]"=&f"(temp2), [temp3]"=&f"(temp3),
-                  [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
-                  [temp6]"=&f"(temp6), [temp7]"=&f"(temp7),
-                  [temp8]"=&f"(temp8), [temp9]"=&f"(temp9),
-                  [temp10]"=&f"(temp10), [temp11]"=&f"(temp11),
-                  [ptr1]"+r"(ptr1), [ptr2]"+r"(ptr2), [ptr3]"+r"(ptr3)
-                :
-                : "memory"
-            );
-        }
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        fmul_and_reverse(saved_ltp + 512, ac->buf_mdct + 960, swindow, 64);
     } else if (ics->window_sequence[0] == LONG_START_SEQUENCE) {
         float *buff0 = saved;
         float *buff1 = saved_ltp;
-        float *ptr1 = &saved_ltp[512];
-        float *ptr2 = &ac->buf_mdct[1023];
-        float *ptr3 = (float*)&swindow[63];
-        loop_end = (int)(saved + 448);
+        float *loop_end = saved + 448;
 
         /* loop unrolled 8 times */
         __asm__ volatile (
@@ -617,7 +387,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "lw      %[temp5],    20(%[src])            \n\t"
             "lw      %[temp6],    24(%[src])            \n\t"
             "lw      %[temp7],    28(%[src])            \n\t"
-            "addiu   %[src],      %[src],         32    \n\t"
+            PTR_ADDIU "%[src],    %[src],         32    \n\t"
             "sw      %[temp0],    0(%[dst])             \n\t"
             "sw      %[temp1],    4(%[dst])             \n\t"
             "sw      %[temp2],    8(%[dst])             \n\t"
@@ -635,7 +405,7 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             "sw      $0,          2328(%[dst])          \n\t"
             "sw      $0,          2332(%[dst])          \n\t"
             "bne     %[src],      %[loop_end],    1b    \n\t"
-            " addiu  %[dst],      %[dst],         32    \n\t"
+            PTR_ADDIU "%[dst],    %[dst],         32    \n\t"
             ".set pop                                   \n\t"
 
             : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
@@ -646,175 +416,16 @@ static void update_ltp_mips(AACContext *ac, SingleChannelElement *sce)
             : [loop_end]"r"(loop_end)
             : "memory"
         );
-        ac->fdsp.vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
-        for (i = 0; i < 16; i++){
-            /* loop unrolled 8 times */
-            __asm__ volatile (
-                "lwc1    %[temp0],    0(%[ptr2])                \n\t"
-                "lwc1    %[temp1],    -4(%[ptr2])               \n\t"
-                "lwc1    %[temp2],    -8(%[ptr2])               \n\t"
-                "lwc1    %[temp3],    -12(%[ptr2])              \n\t"
-                "lwc1    %[temp4],    0(%[ptr3])                \n\t"
-                "lwc1    %[temp5],    -4(%[ptr3])               \n\t"
-                "lwc1    %[temp6],    -8(%[ptr3])               \n\t"
-                "lwc1    %[temp7],    -12(%[ptr3])              \n\t"
-                "mul.s   %[temp8],    %[temp0],     %[temp4]    \n\t"
-                "mul.s   %[temp9],    %[temp1],     %[temp5]    \n\t"
-                "mul.s   %[temp10],   %[temp2],     %[temp6]    \n\t"
-                "mul.s   %[temp11],   %[temp3],     %[temp7]    \n\t"
-                "swc1    %[temp8],    0(%[ptr1])                \n\t"
-                "swc1    %[temp9],    4(%[ptr1])                \n\t"
-                "swc1    %[temp10],   8(%[ptr1])                \n\t"
-                "swc1    %[temp11],   12(%[ptr1])               \n\t"
-                "addiu   %[ptr1],     %[ptr1],      16          \n\t"
-                "addiu   %[ptr2],     %[ptr2],      -16         \n\t"
-                "addiu   %[ptr3],     %[ptr3],      -16         \n\t"
-
-                : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),
-                  [temp2]"=&f"(temp2), [temp3]"=&f"(temp3),
-                  [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
-                  [temp6]"=&f"(temp6), [temp7]"=&f"(temp7),
-                  [temp8]"=&f"(temp8), [temp9]"=&f"(temp9),
-                  [temp10]"=&f"(temp10), [temp11]"=&f"(temp11),
-                  [ptr1]"+r"(ptr1), [ptr2]"+r"(ptr2), [ptr3]"+r"(ptr3)
-                :
-                : "memory"
-            );
-        }
+        ac->fdsp->vector_fmul_reverse(saved_ltp + 448, ac->buf_mdct + 960,     &swindow[64],      64);
+        fmul_and_reverse(saved_ltp + 512, ac->buf_mdct + 960, swindow, 64);
     } else { // LONG_STOP or ONLY_LONG
-        float *ptr1, *ptr2, *ptr3;
-        ac->fdsp.vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
-
-        ptr1 = &saved_ltp[512];
-        ptr2 = &ac->buf_mdct[1023];
-        ptr3 = (float*)&lwindow[511];
-
-        for (i = 0; i < 512; i+=4){
-            /* loop unrolled 4 times */
-            __asm__ volatile (
-                "lwc1    %[temp0],    0(%[ptr2])                \n\t"
-                "lwc1    %[temp1],    -4(%[ptr2])               \n\t"
-                "lwc1    %[temp2],    -8(%[ptr2])               \n\t"
-                "lwc1    %[temp3],    -12(%[ptr2])              \n\t"
-                "lwc1    %[temp4],    0(%[ptr3])                \n\t"
-                "lwc1    %[temp5],    -4(%[ptr3])               \n\t"
-                "lwc1    %[temp6],    -8(%[ptr3])               \n\t"
-                "lwc1    %[temp7],    -12(%[ptr3])              \n\t"
-                "mul.s   %[temp8],    %[temp0],     %[temp4]    \n\t"
-                "mul.s   %[temp9],    %[temp1],     %[temp5]    \n\t"
-                "mul.s   %[temp10],   %[temp2],     %[temp6]    \n\t"
-                "mul.s   %[temp11],   %[temp3],     %[temp7]    \n\t"
-                "swc1    %[temp8],    0(%[ptr1])                \n\t"
-                "swc1    %[temp9],    4(%[ptr1])                \n\t"
-                "swc1    %[temp10],   8(%[ptr1])                \n\t"
-                "swc1    %[temp11],   12(%[ptr1])               \n\t"
-                "addiu   %[ptr1],     %[ptr1],      16          \n\t"
-                "addiu   %[ptr2],     %[ptr2],      -16         \n\t"
-                "addiu   %[ptr3],     %[ptr3],      -16         \n\t"
-
-                : [temp0]"=&f"(temp0), [temp1]"=&f"(temp1),
-                  [temp2]"=&f"(temp2), [temp3]"=&f"(temp3),
-                  [temp4]"=&f"(temp4), [temp5]"=&f"(temp5),
-                  [temp6]"=&f"(temp6), [temp7]"=&f"(temp7),
-                  [temp8]"=&f"(temp8), [temp9]"=&f"(temp9),
-                  [temp10]"=&f"(temp10), [temp11]"=&f"(temp11),
-                  [ptr1]"+r"(ptr1), [ptr2]"+r"(ptr2),
-                  [ptr3]"+r"(ptr3)
-                :
-                : "memory"
-            );
-        }
+        ac->fdsp->vector_fmul_reverse(saved_ltp,       ac->buf_mdct + 512,     &lwindow[512],     512);
+        fmul_and_reverse(saved_ltp + 512, ac->buf_mdct + 512, lwindow, 512);
     }
 
-    {
-        float *buf1 = sce->ltp_state+1024;
-        float *buf2 = sce->ltp_state;
-        float *buf3 = sce->ret;
-        float *buf4 = sce->ltp_state+1024;
-        float *buf5 = saved_ltp;
-        float *buf6 = sce->ltp_state+2048;
-
-        /* loops unrolled 8 times */
-        __asm__ volatile (
-            ".set push                                    \n\t"
-            ".set noreorder                               \n\t"
-            "addiu   %[loop_end],   %[src],         4096  \n\t"
-            "addiu   %[loop_end1],  %[src1],        4096  \n\t"
-            "addiu   %[loop_end2],  %[src2],        4096  \n\t"
-        "1:                                               \n\t"
-            "lw      %[temp0],      0(%[src])             \n\t"
-            "lw      %[temp1],      4(%[src])             \n\t"
-            "lw      %[temp2],      8(%[src])             \n\t"
-            "lw      %[temp3],      12(%[src])            \n\t"
-            "lw      %[temp4],      16(%[src])            \n\t"
-            "lw      %[temp5],      20(%[src])            \n\t"
-            "lw      %[temp6],      24(%[src])            \n\t"
-            "lw      %[temp7],      28(%[src])            \n\t"
-            "addiu   %[src],        %[src],         32    \n\t"
-            "sw      %[temp0],      0(%[dst])             \n\t"
-            "sw      %[temp1],      4(%[dst])             \n\t"
-            "sw      %[temp2],      8(%[dst])             \n\t"
-            "sw      %[temp3],      12(%[dst])            \n\t"
-            "sw      %[temp4],      16(%[dst])            \n\t"
-            "sw      %[temp5],      20(%[dst])            \n\t"
-            "sw      %[temp6],      24(%[dst])            \n\t"
-            "sw      %[temp7],      28(%[dst])            \n\t"
-            "bne     %[src],        %[loop_end],    1b    \n\t"
-            " addiu  %[dst],        %[dst],         32    \n\t"
-        "2:                                               \n\t"
-            "lw      %[temp0],      0(%[src1])            \n\t"
-            "lw      %[temp1],      4(%[src1])            \n\t"
-            "lw      %[temp2],      8(%[src1])            \n\t"
-            "lw      %[temp3],      12(%[src1])           \n\t"
-            "lw      %[temp4],      16(%[src1])           \n\t"
-            "lw      %[temp5],      20(%[src1])           \n\t"
-            "lw      %[temp6],      24(%[src1])           \n\t"
-            "lw      %[temp7],      28(%[src1])           \n\t"
-            "addiu   %[src1],       %[src1],        32    \n\t"
-            "sw      %[temp0],      0(%[dst1])            \n\t"
-            "sw      %[temp1],      4(%[dst1])            \n\t"
-            "sw      %[temp2],      8(%[dst1])            \n\t"
-            "sw      %[temp3],      12(%[dst1])           \n\t"
-            "sw      %[temp4],      16(%[dst1])           \n\t"
-            "sw      %[temp5],      20(%[dst1])           \n\t"
-            "sw      %[temp6],      24(%[dst1])           \n\t"
-            "sw      %[temp7],      28(%[dst1])           \n\t"
-            "bne     %[src1],       %[loop_end1],   2b    \n\t"
-            " addiu  %[dst1],       %[dst1],        32    \n\t"
-        "3:                                               \n\t"
-            "lw      %[temp0],      0(%[src2])            \n\t"
-            "lw      %[temp1],      4(%[src2])            \n\t"
-            "lw      %[temp2],      8(%[src2])            \n\t"
-            "lw      %[temp3],      12(%[src2])           \n\t"
-            "lw      %[temp4],      16(%[src2])           \n\t"
-            "lw      %[temp5],      20(%[src2])           \n\t"
-            "lw      %[temp6],      24(%[src2])           \n\t"
-            "lw      %[temp7],      28(%[src2])           \n\t"
-            "addiu   %[src2],       %[src2],        32    \n\t"
-            "sw      %[temp0],      0(%[dst2])            \n\t"
-            "sw      %[temp1],      4(%[dst2])            \n\t"
-            "sw      %[temp2],      8(%[dst2])            \n\t"
-            "sw      %[temp3],      12(%[dst2])           \n\t"
-            "sw      %[temp4],      16(%[dst2])           \n\t"
-            "sw      %[temp5],      20(%[dst2])           \n\t"
-            "sw      %[temp6],      24(%[dst2])           \n\t"
-            "sw      %[temp7],      28(%[dst2])           \n\t"
-            "bne     %[src2],       %[loop_end2],   3b    \n\t"
-            " addiu  %[dst2],       %[dst2],        32    \n\t"
-            ".set pop                                     \n\t"
-
-            : [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
-              [temp2]"=&r"(temp2), [temp3]"=&r"(temp3),
-              [temp4]"=&r"(temp4), [temp5]"=&r"(temp5),
-              [temp6]"=&r"(temp6), [temp7]"=&r"(temp7),
-              [loop_end]"=&r"(loop_end), [loop_end1]"=&r"(loop_end1),
-              [loop_end2]"=&r"(loop_end2), [src]"+r"(buf1),
-              [dst]"+r"(buf2), [src1]"+r"(buf3), [dst1]"+r"(buf4),
-              [src2]"+r"(buf5), [dst2]"+r"(buf6)
-            :
-            : "memory"
-        );
-    }
+    float_copy(sce->ltp_state, sce->ltp_state + 1024, 1024);
+    float_copy(sce->ltp_state + 1024, sce->ret, 1024);
+    float_copy(sce->ltp_state + 2048, saved_ltp, 1024);
 }
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */

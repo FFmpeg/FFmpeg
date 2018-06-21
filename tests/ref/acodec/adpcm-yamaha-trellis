@@ -1,0 +1,4 @@
+c8306ada93ef52b1e87b6758853f4937 *tests/data/fate/acodec-adpcm-yamaha-trellis.wav
+265274 tests/data/fate/acodec-adpcm-yamaha-trellis.wav
+8ad27b0ea7e13e70ed334b5ec26c62ef *tests/data/fate/acodec-adpcm-yamaha-trellis.out.wav
+stddev:  926.56 PSNR: 36.99 MAXDIFF:33570 bytes:  1058400/  1060864

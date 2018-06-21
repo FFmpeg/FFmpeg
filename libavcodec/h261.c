@@ -1,5 +1,5 @@
 /*
- * H261 common code
+ * H.261 common code
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * h261codec.
+ * H.261 codec
  */
 
 #include "avcodec.h"
@@ -87,6 +87,6 @@ av_cold void ff_h261_common_init(void)
     if (done)
         return;
 
-    ff_init_rl(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
+    ff_rl_init(&ff_h261_rl_tcoeff, ff_h261_rl_table_store);
     done = 1;
 }

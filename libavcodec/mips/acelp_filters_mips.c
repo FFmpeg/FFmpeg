@@ -54,8 +54,10 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavcodec/acelp_filters.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void ff_acelp_interpolatef_mips(float *out, const float *in,
                            const float *filter_coeffs, int precision,
                            int frac_pos, int filter_length, int length)
@@ -82,14 +84,14 @@ static void ff_acelp_interpolatef_mips(float *out, const float *in,
                 "lwc1   %[fc_val_p],           0(%[p_filter_coeffs_p])         \n\t"
                 "lwc1   %[in_val_m],           0(%[p_in_m])                    \n\t"
                 "lwc1   %[fc_val_m],           0(%[p_filter_coeffs_m])         \n\t"
-                "addiu  %[p_in_p],             %[p_in_p],              4       \n\t"
+                PTR_ADDIU "%[p_in_p],          %[p_in_p],              4       \n\t"
                 "madd.s %[v],%[v],             %[in_val_p],%[fc_val_p]         \n\t"
-                "addiu  %[p_in_m],             %[p_in_m],              -4      \n\t"
-                "addu   %[p_filter_coeffs_p],  %[p_filter_coeffs_p],   %[prec] \n\t"
-                "addu   %[p_filter_coeffs_m],  %[p_filter_coeffs_m],   %[prec] \n\t"
+                PTR_ADDIU "%[p_in_m],          %[p_in_m],              -4      \n\t"
+                PTR_ADDU "%[p_filter_coeffs_p],%[p_filter_coeffs_p],   %[prec] \n\t"
+                PTR_ADDU "%[p_filter_coeffs_m],%[p_filter_coeffs_m],   %[prec] \n\t"
                 "madd.s %[v],%[v],%[in_val_m], %[fc_val_m]                     \n\t"
 
-                : [v] "=&f" (v),[p_in_p] "+r" (p_in_p), [p_in_m] "+r" (p_in_m),
+                : [v] "+&f" (v),[p_in_p] "+r" (p_in_p), [p_in_m] "+r" (p_in_m),
                   [p_filter_coeffs_p] "+r" (p_filter_coeffs_p),
                   [in_val_p] "=&f" (in_val_p), [in_val_m] "=&f" (in_val_m),
                   [fc_val_p] "=&f" (fc_val_p), [fc_val_m] "=&f" (fc_val_m),
@@ -185,8 +187,8 @@ static void ff_acelp_apply_order_2_transfer_function_mips(float *out, const floa
         "madd.s $f14,   $f0,      $f4,     $f1                                 \n\t"
         "madd.s $f14,   $f14,     $f5,     $f13                                \n\t"
         "swc1   $f8,    24(%[out])                                             \n\t"
-        "addiu  %[out], 32                                                     \n\t"
-        "addiu  %[in],  32                                                     \n\t"
+        PTR_ADDIU "%[out], 32                                                  \n\t"
+        PTR_ADDIU "%[in],  32                                                  \n\t"
         "addiu  %[n],   -8                                                     \n\t"
         "swc1   $f14,   -4(%[out])                                             \n\t"
         "bnez   %[n],   ff_acelp_apply_order_2_transfer_function_madd%=        \n\t"
@@ -205,12 +207,15 @@ static void ff_acelp_apply_order_2_transfer_function_mips(float *out, const floa
            "$f12", "$f13", "$f14", "$f15", "$f16", "memory"
     );
 }
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_INLINE_ASM */
 
 void ff_acelp_filter_init_mips(ACELPFContext *c)
 {
 #if HAVE_INLINE_ASM
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
     c->acelp_interpolatef                      = ff_acelp_interpolatef_mips;
     c->acelp_apply_order_2_transfer_function   = ff_acelp_apply_order_2_transfer_function_mips;
+#endif
 #endif
 }

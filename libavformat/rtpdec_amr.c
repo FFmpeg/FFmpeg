@@ -38,17 +38,10 @@ struct PayloadContext {
     int channels;
 };
 
-static PayloadContext *amr_new_context(void)
+static av_cold int amr_init(AVFormatContext *s, int st_index, PayloadContext *data)
 {
-    PayloadContext *data = av_mallocz(sizeof(PayloadContext));
-    if(!data) return data;
     data->channels = 1;
-    return data;
-}
-
-static void amr_free_context(PayloadContext *data)
-{
-    av_free(data);
+    return 0;
 }
 
 static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
@@ -62,20 +55,20 @@ static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     const uint8_t *speech_data;
     uint8_t *ptr;
 
-    if (st->codec->codec_id == AV_CODEC_ID_AMR_NB) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_AMR_NB) {
         frame_sizes = frame_sizes_nb;
-    } else if (st->codec->codec_id == AV_CODEC_ID_AMR_WB) {
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_AMR_WB) {
         frame_sizes = frame_sizes_wb;
     } else {
         av_log(ctx, AV_LOG_ERROR, "Bad codec ID\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (st->codec->channels != 1) {
+    if (st->codecpar->channels != 1) {
         av_log(ctx, AV_LOG_ERROR, "Only mono AMR is supported\n");
         return AVERROR_INVALIDDATA;
     }
-    st->codec->channel_layout = AV_CH_LAYOUT_MONO;
+    st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
 
     /* The AMR RTP packet consists of one header byte, followed
      * by one TOC byte for each AMR frame in the packet, followed
@@ -139,17 +132,18 @@ static int amr_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-static int amr_parse_fmtp(AVStream *stream, PayloadContext *data,
-                          char *attr, char *value)
+static int amr_parse_fmtp(AVFormatContext *s,
+                          AVStream *stream, PayloadContext *data,
+                          const char *attr, const char *value)
 {
     /* Some AMR SDP configurations contain "octet-align", without
      * the trailing =1. Therefore, if the value is empty,
      * interpret it as "1".
      */
     if (!strcmp(value, "")) {
-        av_log(NULL, AV_LOG_WARNING, "AMR fmtp attribute %s had "
-                                     "nonstandard empty value\n", attr);
-        strcpy(value, "1");
+        av_log(s, AV_LOG_WARNING, "AMR fmtp attribute %s had "
+                                  "nonstandard empty value\n", attr);
+        value = "1";
     }
     if (!strcmp(attr, "octet-align"))
         data->octet_align = atoi(value);
@@ -177,7 +171,7 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
      * separated key/value pairs.
      */
     if (av_strstart(line, "fmtp:", &p)) {
-        ret = ff_parse_fmtp(s->streams[st_index], data, p, amr_parse_fmtp);
+        ret = ff_parse_fmtp(s, s->streams[st_index], data, p, amr_parse_fmtp);
         if (!data->octet_align || data->crc ||
             data->interleaving || data->channels != 1) {
             av_log(s, AV_LOG_ERROR, "Unsupported RTP/AMR configuration!\n");
@@ -188,22 +182,22 @@ static int amr_parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler = {
     .enc_name         = "AMR",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_AMR_NB,
+    .priv_data_size   = sizeof(PayloadContext),
+    .init             = amr_init,
     .parse_sdp_a_line = amr_parse_sdp_line,
-    .alloc            = amr_new_context,
-    .free             = amr_free_context,
     .parse_packet     = amr_handle_packet,
 };
 
-RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler = {
     .enc_name         = "AMR-WB",
     .codec_type       = AVMEDIA_TYPE_AUDIO,
     .codec_id         = AV_CODEC_ID_AMR_WB,
+    .priv_data_size   = sizeof(PayloadContext),
+    .init             = amr_init,
     .parse_sdp_a_line = amr_parse_sdp_line,
-    .alloc            = amr_new_context,
-    .free             = amr_free_context,
     .parse_packet     = amr_handle_packet,
 };

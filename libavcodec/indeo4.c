@@ -30,22 +30,10 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "ivi_dsp.h"
-#include "ivi_common.h"
 #include "indeo4data.h"
-
-/**
- *  Indeo 4 frame types.
- */
-enum {
-    FRAMETYPE_INTRA       = 0,
-    FRAMETYPE_INTRA1      = 1,  ///< intra frame with slightly different bitstream coding
-    FRAMETYPE_INTER       = 2,  ///< non-droppable P-frame
-    FRAMETYPE_BIDIR       = 3,  ///< bidirectional frame
-    FRAMETYPE_INTER_NOREF = 4,  ///< droppable P-frame
-    FRAMETYPE_NULL_FIRST  = 5,  ///< empty frame with no data
-    FRAMETYPE_NULL_LAST   = 6   ///< empty frame with no data
-};
+#include "internal.h"
+#include "ivi.h"
+#include "ivi_dsp.h"
 
 #define IVI4_PIC_SIZE_ESC   7
 
@@ -131,17 +119,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-#if IVI4_STREAM_ANALYSER
-    if (ctx->frame_type == FRAMETYPE_BIDIR)
+    if (ctx->frame_type == IVI4_FRAMETYPE_BIDIR)
         ctx->has_b_frames = 1;
-#endif
 
-    ctx->transp_status = get_bits1(&ctx->gb);
-#if IVI4_STREAM_ANALYSER
-    if (ctx->transp_status) {
-        ctx->has_transp = 1;
-    }
-#endif
+    ctx->has_transp = get_bits1(&ctx->gb);
 
     /* unknown bit: Mac decoder ignores this bit, XANIM returns error */
     if (get_bits1(&ctx->gb)) {
@@ -152,8 +133,8 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     ctx->data_size = get_bits1(&ctx->gb) ? get_bits(&ctx->gb, 24) : 0;
 
     /* null frames don't contain anything else so we just return */
-    if (ctx->frame_type >= FRAMETYPE_NULL_FIRST) {
-        av_dlog(avctx, "Null frame encountered!\n");
+    if (ctx->frame_type >= IVI4_FRAMETYPE_NULL_FIRST) {
+        ff_dlog(avctx, "Null frame encountered!\n");
         return 0;
     }
 
@@ -162,7 +143,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     /* we don't do that because Indeo 4 videos can be decoded anyway */
     if (get_bits1(&ctx->gb)) {
         skip_bits_long(&ctx->gb, 32);
-        av_dlog(avctx, "Password-protected clip!\n");
+        ff_dlog(avctx, "Password-protected clip!\n");
     }
 
     pic_size_indx = get_bits(&ctx->gb, 3);
@@ -175,12 +156,10 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     }
 
     /* Decode tile dimensions. */
-    if (get_bits1(&ctx->gb)) {
+    ctx->uses_tiling = get_bits1(&ctx->gb);
+    if (ctx->uses_tiling) {
         pic_conf.tile_height = scale_tile_size(pic_conf.pic_height, get_bits(&ctx->gb, 4));
         pic_conf.tile_width  = scale_tile_size(pic_conf.pic_width,  get_bits(&ctx->gb, 4));
-#if IVI4_STREAM_ANALYSER
-        ctx->uses_tiling = 1;
-#endif
     } else {
         pic_conf.tile_height = pic_conf.pic_height;
         pic_conf.tile_width  = pic_conf.pic_width;
@@ -208,7 +187,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* check if picture layout was changed and reallocate buffers */
     if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf)) {
-        if (ff_ivi_init_planes(ctx->planes, &pic_conf)) {
+        if (ff_ivi_init_planes(avctx, ctx->planes, &pic_conf, 1)) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
             ctx->pic_conf.luma_bands = 0;
             return AVERROR(ENOMEM);
@@ -257,7 +236,9 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
-        av_dlog(avctx, "Pic hdr extension encountered!\n");
+        ff_dlog(avctx, "Pic hdr extension encountered!\n");
+        if (get_bits_left(&ctx->gb) < 10)
+            return AVERROR_INVALIDDATA;
         skip_bits(&ctx->gb, 8);
     }
 
@@ -279,12 +260,14 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
  *  @param[in]     avctx     pointer to the AVCodecContext
  *  @return        result code: 0 = OK, negative number = error
  */
-static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
+static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *arg_band,
                            AVCodecContext *avctx)
 {
     int plane, band_num, indx, transform_id, scan_indx;
     int i;
     int quant_mat;
+    IVIBandDesc temp_band, *band = &temp_band;
+    memcpy(&temp_band, arg_band, sizeof(temp_band));
 
     plane    = get_bits(&ctx->gb, 2);
     band_num = get_bits(&ctx->gb, 4);
@@ -307,10 +290,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                    band->is_halfpel);
             return AVERROR_INVALIDDATA;
         }
-#if IVI4_STREAM_ANALYSER
         if (!band->is_halfpel)
             ctx->uses_fullpel = 1;
-#endif
 
         band->checksum_present = get_bits1(&ctx->gb);
         if (band->checksum_present)
@@ -329,7 +310,7 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
         band->glob_quant = get_bits(&ctx->gb, 5);
 
-        if (!get_bits1(&ctx->gb) || ctx->frame_type == FRAMETYPE_INTRA) {
+        if (!get_bits1(&ctx->gb) || ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
             transform_id = get_bits(&ctx->gb, 5);
             if (transform_id >= FF_ARRAY_ELEMS(transforms) ||
                 !transforms[transform_id].inv_trans) {
@@ -346,10 +327,8 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
                 av_log(avctx, AV_LOG_ERROR, "wrong transform size!\n");
                 return AVERROR_INVALIDDATA;
             }
-#if IVI4_STREAM_ANALYSER
             if ((transform_id >= 0 && transform_id <= 2) || transform_id == 10)
                 ctx->uses_haar = 1;
-#endif
 
             band->inv_transform = transforms[transform_id].inv_trans;
             band->dc_transform  = transforms[transform_id].dc_trans;
@@ -418,10 +397,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
         /* decode block huffman codebook */
         if (!get_bits1(&ctx->gb))
-            band->blk_vlc.tab = ctx->blk_vlc.tab;
+            arg_band->blk_vlc.tab = ctx->blk_vlc.tab;
         else
             if (ff_ivi_dec_huff_desc(&ctx->gb, 1, IVI_BLK_HUFF,
-                                     &band->blk_vlc, avctx))
+                                     &arg_band->blk_vlc, avctx))
                 return AVERROR_INVALIDDATA;
 
         /* select appropriate rvmap table for this band */
@@ -462,6 +441,9 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         return AVERROR_INVALIDDATA;
     }
 
+    band->blk_vlc = arg_band->blk_vlc;
+    memcpy(arg_band, band, sizeof(*arg_band));
+
     return 0;
 }
 
@@ -489,7 +471,7 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
     offs   = tile->ypos * band->pitch + tile->xpos;
 
     blks_per_mb  = band->mb_size   != band->blk_size  ? 4 : 1;
-    mb_type_bits = ctx->frame_type == FRAMETYPE_BIDIR ? 2 : 1;
+    mb_type_bits = ctx->frame_type == IVI4_FRAMETYPE_BIDIR ? 2 : 1;
 
     /* scale factor for motion vectors */
     mv_scale = (ctx->planes[0].bands[0].mb_size >> 3) - (band->mb_size >> 3);
@@ -507,9 +489,11 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             mb->xpos     = x;
             mb->ypos     = y;
             mb->buf_offs = mb_offset;
+            mb->b_mv_x   =
+            mb->b_mv_y   = 0;
 
             if (get_bits1(&ctx->gb)) {
-                if (ctx->frame_type == FRAMETYPE_INTRA) {
+                if (ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
                     av_log(avctx, AV_LOG_ERROR, "Empty macroblock in an INTRA picture!\n");
                     return AVERROR_INVALIDDATA;
                 }
@@ -542,8 +526,8 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
                         return AVERROR_INVALIDDATA;
                     }
                     mb->type = ref_mb->type;
-                } else if (ctx->frame_type == FRAMETYPE_INTRA ||
-                           ctx->frame_type == FRAMETYPE_INTRA1) {
+                } else if (ctx->frame_type == IVI4_FRAMETYPE_INTRA ||
+                           ctx->frame_type == IVI4_FRAMETYPE_INTRA1) {
                     mb->type = 0; /* mb_type is always INTRA for intra-frames */
                 } else {
                     mb->type = get_bits(&ctx->gb, mb_type_bits);
@@ -584,6 +568,24 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
                         mv_x += IVI_TOSIGNED(mv_delta);
                         mb->mv_x = mv_x;
                         mb->mv_y = mv_y;
+                        if (mb->type == 3) {
+                            mv_delta = get_vlc2(&ctx->gb,
+                                                ctx->mb_vlc.tab->table,
+                                                IVI_VLC_BITS, 1);
+                            mv_y += IVI_TOSIGNED(mv_delta);
+                            mv_delta = get_vlc2(&ctx->gb,
+                                                ctx->mb_vlc.tab->table,
+                                                IVI_VLC_BITS, 1);
+                            mv_x += IVI_TOSIGNED(mv_delta);
+                            mb->b_mv_x = -mv_x;
+                            mb->b_mv_y = -mv_y;
+                        }
+                    }
+                    if (mb->type == 2) {
+                        mb->b_mv_x = -mb->mv_x;
+                        mb->b_mv_y = -mb->mv_y;
+                        mb->mv_x = 0;
+                        mb->mv_y = 0;
                     }
                 }
             }
@@ -619,38 +621,36 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
  */
 static void switch_buffers(IVI45DecContext *ctx)
 {
+    int is_prev_ref = 0, is_ref = 0;
+
     switch (ctx->prev_frame_type) {
-    case FRAMETYPE_INTRA:
-    case FRAMETYPE_INTRA1:
-    case FRAMETYPE_INTER:
-        ctx->buf_switch ^= 1;
-        ctx->dst_buf     = ctx->buf_switch;
-        ctx->ref_buf     = ctx->buf_switch ^ 1;
-        break;
-    case FRAMETYPE_INTER_NOREF:
+    case IVI4_FRAMETYPE_INTRA:
+    case IVI4_FRAMETYPE_INTRA1:
+    case IVI4_FRAMETYPE_INTER:
+        is_prev_ref = 1;
         break;
     }
 
     switch (ctx->frame_type) {
-    case FRAMETYPE_INTRA:
-    case FRAMETYPE_INTRA1:
-        ctx->buf_switch = 0;
-        /* FALLTHROUGH */
-    case FRAMETYPE_INTER:
-        ctx->dst_buf = ctx->buf_switch;
-        ctx->ref_buf = ctx->buf_switch ^ 1;
+    case IVI4_FRAMETYPE_INTRA:
+    case IVI4_FRAMETYPE_INTRA1:
+    case IVI4_FRAMETYPE_INTER:
+        is_ref = 1;
         break;
-    case FRAMETYPE_INTER_NOREF:
-    case FRAMETYPE_NULL_FIRST:
-    case FRAMETYPE_NULL_LAST:
-        break;
+    }
+
+    if (is_prev_ref && is_ref) {
+        FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
+    } else if (is_prev_ref) {
+        FFSWAP(int, ctx->ref_buf, ctx->b_ref_buf);
+        FFSWAP(int, ctx->dst_buf, ctx->ref_buf);
     }
 }
 
 
 static int is_nonnull_frame(IVI45DecContext *ctx)
 {
-    return ctx->frame_type < FRAMETYPE_NULL_FIRST;
+    return ctx->frame_type < IVI4_FRAMETYPE_NULL_FIRST;
 }
 
 
@@ -676,6 +676,16 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ctx->switch_buffers   = switch_buffers;
     ctx->is_nonnull_frame = is_nonnull_frame;
 
+    ctx->is_indeo4 = 1;
+    ctx->show_indeo4_info = 1;
+
+    ctx->dst_buf   = 0;
+    ctx->ref_buf   = 1;
+    ctx->b_ref_buf = 3; /* buffer 2 is used for scalability mode */
+    ctx->p_frame = av_frame_alloc();
+    if (!ctx->p_frame)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -689,5 +699,5 @@ AVCodec ff_indeo4_decoder = {
     .init           = decode_init,
     .close          = ff_ivi_decode_close,
     .decode         = ff_ivi_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

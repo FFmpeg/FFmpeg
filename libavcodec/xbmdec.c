@@ -20,17 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
+
 #include "avcodec.h"
 #include "internal.h"
 #include "mathops.h"
-#include "libavutil/avstring.h"
-
-static av_cold int xbm_decode_init(AVCodecContext *avctx)
-{
-    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
-
-    return 0;
-}
 
 static int convert(uint8_t x)
 {
@@ -43,42 +37,57 @@ static int convert(uint8_t x)
     return x;
 }
 
+static int parse_str_int(const uint8_t *p, int len, const uint8_t *key)
+{
+    const uint8_t *end = p + len;
+
+    for(; p<end - strlen(key); p++) {
+        if (!memcmp(p, key, strlen(key)))
+            break;
+    }
+    p += strlen(key);
+    if (p >= end)
+        return INT_MIN;
+
+    for(; p<end; p++) {
+        char *eptr;
+        int64_t ret = strtol(p, &eptr, 10);
+        if ((const uint8_t *)eptr != p)
+            return ret;
+    }
+    return INT_MIN;
+}
+
 static int xbm_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame, AVPacket *avpkt)
 {
     AVFrame *p = data;
-    const uint8_t *end, *ptr = avpkt->data;
-    uint8_t *dst;
     int ret, linesize, i, j;
+    int width  = 0;
+    int height = 0;
+    const uint8_t *end, *ptr = avpkt->data;
+    const uint8_t *next;
+    uint8_t *dst;
 
+    avctx->pix_fmt = AV_PIX_FMT_MONOWHITE;
     end = avpkt->data + avpkt->size;
-    while (!avctx->width || !avctx->height) {
-        char name[256];
-        int number, len;
 
-        ptr += strcspn(ptr, "#");
-        if (sscanf(ptr, "#define %255s %u", name, &number) != 2) {
-            av_log(avctx, AV_LOG_ERROR, "Unexpected preprocessor directive\n");
-            return AVERROR_INVALIDDATA;
-        }
+    width  = parse_str_int(avpkt->data, avpkt->size, "_width");
+    height = parse_str_int(avpkt->data, avpkt->size, "_height");
 
-        len = strlen(name);
-        if ((len > 6) && !avctx->height && !memcmp(name + len - 7, "_height", 7)) {
-                avctx->height = number;
-        } else if ((len > 5) && !avctx->width && !memcmp(name + len - 6, "_width", 6)) {
-                avctx->width = number;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "Unknown define '%s'\n", name);
-            return AVERROR_INVALIDDATA;
-        }
-        ptr += strcspn(ptr, "\n\r") + 1;
-    }
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     // goto start of image data
-    ptr += strcspn(ptr, "{") + 1;
+    next = memchr(ptr, '{', avpkt->size);
+    if (!next)
+        next = memchr(ptr, '(', avpkt->size);
+    if (!next)
+        return AVERROR_INVALIDDATA;
+    ptr = next + 1;
 
     linesize = (avctx->width + 7) / 8;
     for (i = 0; i < avctx->height; i++) {
@@ -86,15 +95,25 @@ static int xbm_decode_frame(AVCodecContext *avctx, void *data,
         for (j = 0; j < linesize; j++) {
             uint8_t val;
 
-            ptr += strcspn(ptr, "x") + 1;
-            if (ptr < end && av_isxdigit(*ptr)) {
-                val = convert(*ptr);
+            while (ptr < end && *ptr != 'x' && *ptr != '$')
                 ptr++;
+
+            ptr ++;
+            if (ptr < end && av_isxdigit(*ptr)) {
+                val = convert(*ptr++);
                 if (av_isxdigit(*ptr))
-                    val = (val << 4) + convert(*ptr);
+                    val = (val << 4) + convert(*ptr++);
                 *dst++ = ff_reverse[val];
+                if (av_isxdigit(*ptr) && j+1 < linesize) {
+                    j++;
+                    val = convert(*ptr++);
+                    if (av_isxdigit(*ptr))
+                        val = (val << 4) + convert(*ptr++);
+                    *dst++ = ff_reverse[val];
+                }
             } else {
-                av_log(avctx, AV_LOG_ERROR, "Unexpected data at '%.8s'\n", ptr);
+                av_log(avctx, AV_LOG_ERROR,
+                       "Unexpected data at %.8s.\n", ptr);
                 return AVERROR_INVALIDDATA;
             }
         }
@@ -113,7 +132,6 @@ AVCodec ff_xbm_decoder = {
     .long_name    = NULL_IF_CONFIG_SMALL("XBM (X BitMap) image"),
     .type         = AVMEDIA_TYPE_VIDEO,
     .id           = AV_CODEC_ID_XBM,
-    .init         = xbm_decode_init,
     .decode       = xbm_decode_frame,
-    .capabilities = CODEC_CAP_DR1,
+    .capabilities = AV_CODEC_CAP_DR1,
 };

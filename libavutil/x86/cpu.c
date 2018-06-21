@@ -28,7 +28,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 #define cpuid(index, eax, ebx, ecx, edx)        \
     ff_cpu_cpuid(index, &eax, &ebx, &ecx, &edx)
@@ -41,11 +41,11 @@
 /* ebx saving is necessary for PIC. gcc seems unable to see it alone */
 #define cpuid(index, eax, ebx, ecx, edx)                        \
     __asm__ volatile (                                          \
-        "mov    %%"REG_b", %%"REG_S" \n\t"                      \
+        "mov    %%"FF_REG_b", %%"FF_REG_S" \n\t"                \
         "cpuid                       \n\t"                      \
-        "xchg   %%"REG_b", %%"REG_S                             \
+        "xchg   %%"FF_REG_b", %%"FF_REG_S                       \
         : "=a" (eax), "=S" (ebx), "=c" (ecx), "=d" (edx)        \
-        : "0" (index))
+        : "0" (index), "2"(0))
 
 #define xgetbv(index, eax, edx)                                 \
     __asm__ (".byte 0x0f, 0x01, 0xd0" : "=a"(eax), "=d"(edx) : "c" (index))
@@ -66,7 +66,7 @@
 
 #define cpuid_test() 1
 
-#elif HAVE_YASM
+#elif HAVE_X86ASM
 
 #define cpuid_test ff_cpu_cpuid_test
 
@@ -97,6 +97,7 @@ int ff_get_cpu_flags_x86(void)
     int max_std_level, max_ext_level, std_caps = 0, ext_caps = 0;
     int family = 0, model = 0;
     union { int i[3]; char c[12]; } vendor;
+    int xcr0_lo = 0, xcr0_hi = 0;
 
     if (!cpuid_test())
         return 0; /* CPUID not supported */
@@ -126,12 +127,14 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
             rval |= AV_CPU_FLAG_SSE42;
+        if (ecx & 0x01000000 )
+            rval |= AV_CPU_FLAG_AESNI;
 #if HAVE_AVX
         /* Check OXSAVE and AVX bits */
         if ((ecx & 0x18000000) == 0x18000000) {
             /* Check for OS support */
-            xgetbv(0, eax, edx);
-            if ((eax & 0x6) == 0x6) {
+            xgetbv(0, xcr0_lo, xcr0_hi);
+            if ((xcr0_lo & 0x6) == 0x6) {
                 rval |= AV_CPU_FLAG_AVX;
                 if (ecx & 0x00001000)
                     rval |= AV_CPU_FLAG_FMA3;
@@ -143,8 +146,15 @@ int ff_get_cpu_flags_x86(void)
     if (max_std_level >= 7) {
         cpuid(7, eax, ebx, ecx, edx);
 #if HAVE_AVX2
-        if (ebx & 0x00000020)
+        if ((rval & AV_CPU_FLAG_AVX) && (ebx & 0x00000020))
             rval |= AV_CPU_FLAG_AVX2;
+#if HAVE_AVX512 /* F, CD, BW, DQ, VL */
+        if ((xcr0_lo & 0xe0) == 0xe0) { /* OPMASK/ZMM state */
+            if ((rval & AV_CPU_FLAG_AVX2) && (ebx & 0xd0030000) == 0xd0030000)
+                rval |= AV_CPU_FLAG_AVX512;
+
+        }
+#endif /* HAVE_AVX512 */
 #endif /* HAVE_AVX2 */
         /* BMI1/2 don't need OS support */
         if (ebx & 0x00000008) {
@@ -167,6 +177,7 @@ int ff_get_cpu_flags_x86(void)
         if (ext_caps & (1 << 22))
             rval |= AV_CPU_FLAG_MMXEXT;
 
+        if (!strncmp(vendor.c, "AuthenticAMD", 12)) {
         /* Allow for selectively disabling SSE2 functions on AMD processors
            with SSE2 support but not SSE4a. This includes Athlon64, some
            Opteron, and some Sempron processors. MMX, SSE, or 3DNow! are faster
@@ -174,9 +185,17 @@ int ff_get_cpu_flags_x86(void)
            AV_CPU_FLAG_SSE2 and AV_CPU_FLAG_SSE2SLOW are both set in this case
            so that SSE2 is used unless explicitly disabled by checking
            AV_CPU_FLAG_SSE2SLOW. */
-        if (!strncmp(vendor.c, "AuthenticAMD", 12) &&
-            rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040)) {
-            rval |= AV_CPU_FLAG_SSE2SLOW;
+            if (rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040))
+                rval |= AV_CPU_FLAG_SSE2SLOW;
+
+        /* Similar to the above but for AVX functions on AMD processors.
+           This is necessary only for functions using YMM registers on Bulldozer
+           and Jaguar based CPUs as they lack 256-bit execution units. SSE/AVX
+           functions using XMM registers are always faster on them.
+           AV_CPU_FLAG_AVX and AV_CPU_FLAG_AVXSLOW are both set so that AVX is
+           used unless explicitly disabled by checking AV_CPU_FLAG_AVXSLOW. */
+            if ((family == 0x15 || family == 0x16) && (rval & AV_CPU_FLAG_AVX))
+                rval |= AV_CPU_FLAG_AVXSLOW;
         }
 
         /* XOP and FMA4 use the AVX instruction coding scheme, so they can't be
@@ -210,9 +229,44 @@ int ff_get_cpu_flags_x86(void)
          * functions on the Atom. */
         if (family == 6 && model == 28)
             rval |= AV_CPU_FLAG_ATOM;
+
+        /* Conroe has a slow shuffle unit. Check the model number to ensure not
+         * to include crippled low-end Penryns and Nehalems that lack SSE4. */
+        if ((rval & AV_CPU_FLAG_SSSE3) && !(rval & AV_CPU_FLAG_SSE4) &&
+            family == 6 && model < 23)
+            rval |= AV_CPU_FLAG_SSSE3SLOW;
     }
 
 #endif /* cpuid */
 
     return rval;
+}
+
+size_t ff_get_cpu_max_align_x86(void)
+{
+    int flags = av_get_cpu_flags();
+
+    if (flags & AV_CPU_FLAG_AVX512)
+        return 64;
+    if (flags & (AV_CPU_FLAG_AVX2      |
+                 AV_CPU_FLAG_AVX       |
+                 AV_CPU_FLAG_XOP       |
+                 AV_CPU_FLAG_FMA4      |
+                 AV_CPU_FLAG_FMA3      |
+                 AV_CPU_FLAG_AVXSLOW))
+        return 32;
+    if (flags & (AV_CPU_FLAG_AESNI     |
+                 AV_CPU_FLAG_SSE42     |
+                 AV_CPU_FLAG_SSE4      |
+                 AV_CPU_FLAG_SSSE3     |
+                 AV_CPU_FLAG_SSE3      |
+                 AV_CPU_FLAG_SSE2      |
+                 AV_CPU_FLAG_SSE       |
+                 AV_CPU_FLAG_ATOM      |
+                 AV_CPU_FLAG_SSSE3SLOW |
+                 AV_CPU_FLAG_SSE3SLOW  |
+                 AV_CPU_FLAG_SSE2SLOW))
+        return 16;
+
+    return 8;
 }

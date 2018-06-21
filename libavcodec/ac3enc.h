@@ -35,10 +35,11 @@
 #include "ac3.h"
 #include "ac3dsp.h"
 #include "avcodec.h"
-#include "dsputil.h"
 #include "fft.h"
 #include "mathops.h"
+#include "me_cmp.h"
 #include "put_bits.h"
+#include "audiodsp.h"
 
 #ifndef CONFIG_AC3ENC_FLOAT
 #define CONFIG_AC3ENC_FLOAT 0
@@ -79,12 +80,14 @@ typedef int64_t CoefSumType;
 #define AC3ENC_OPT_NOT_INDICATED    0
 #define AC3ENC_OPT_MODE_ON          2
 #define AC3ENC_OPT_MODE_OFF         1
+#define AC3ENC_OPT_DSUREX_DPLIIZ    3
 
 /* specific option values */
 #define AC3ENC_OPT_LARGE_ROOM       1
 #define AC3ENC_OPT_SMALL_ROOM       2
 #define AC3ENC_OPT_DOWNMIX_LTRT     1
 #define AC3ENC_OPT_DOWNMIX_LORO     2
+#define AC3ENC_OPT_DOWNMIX_DPLII    3 // reserved value in A/52, but used by encoders to indicate DPL2
 #define AC3ENC_OPT_ADCONV_STANDARD  0
 #define AC3ENC_OPT_ADCONV_HDCD      1
 
@@ -161,8 +164,9 @@ typedef struct AC3EncodeContext {
     AC3EncOptions options;                  ///< encoding options
     AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
-    DSPContext dsp;
-    AVFloatDSPContext fdsp;
+    AudioDSPContext adsp;
+    AVFloatDSPContext *fdsp;
+    MECmpContext mecc;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
     FFTContext mdct;                        ///< FFT context for MDCT calculation
     const SampleType *mdct_window;          ///< MDCT window function array
@@ -266,6 +270,7 @@ typedef struct AC3EncodeContext {
 extern const uint64_t ff_ac3_channel_layouts[19];
 
 int ff_ac3_encode_init(AVCodecContext *avctx);
+int ff_ac3_float_encode_init(AVCodecContext *avctx);
 
 int ff_ac3_encode_close(AVCodecContext *avctx);
 

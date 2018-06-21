@@ -40,8 +40,8 @@
 
 #define VP6_MAX_HUFF_SIZE 12
 
-static void vp6_parse_coeff(VP56Context *s);
-static void vp6_parse_coeff_huffman(VP56Context *s);
+static int vp6_parse_coeff(VP56Context *s);
+static int vp6_parse_coeff_huffman(VP56Context *s);
 
 static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
 {
@@ -52,6 +52,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     int sub_version;
     int rows, cols;
     int res = 0;
+    int ret;
     int separated_coeff = buf[0] & 1;
 
     s->frames[VP56_FRAME_CURRENT]->key_frame = !(buf[0] & 0x80);
@@ -93,7 +94,7 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
                 s->avctx->coded_width  = 16 * cols;
                 s->avctx->coded_height = 16 * rows;
             } else {
-                int ret = ff_set_dimensions(s->avctx, 16 * cols, 16 * rows);
+                ret = ff_set_dimensions(s->avctx, 16 * cols, 16 * rows);
                 if (ret < 0)
                     return ret;
 
@@ -105,7 +106,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             res = VP56_SIZE_CHANGE;
         }
 
-        ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
+        ret = ff_vp56_init_range_decoder(c, buf+6, buf_size-6);
+        if (ret < 0)
+            goto fail;
         vp56_rac_gets(c, 2);
 
         parse_filter_info = s->filter_header;
@@ -122,7 +125,9 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
             buf += 2;
             buf_size -= 2;
         }
-        ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
+        ret = ff_vp56_init_range_decoder(c, buf+1, buf_size-1);
+        if (ret < 0)
+            return ret;
 
         s->golden_frame = vp56_rac_get(c);
         if (s->filter_header) {
@@ -157,15 +162,16 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
         buf      += coeff_offset;
         buf_size -= coeff_offset;
         if (buf_size < 0) {
-            if (s->frames[VP56_FRAME_CURRENT]->key_frame)
-                ff_set_dimensions(s->avctx, 0, 0);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
         if (s->use_huffman) {
             s->parse_coeff = vp6_parse_coeff_huffman;
             init_get_bits(&s->gb, buf, buf_size<<3);
         } else {
-            ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
+            ret = ff_vp56_init_range_decoder(&s->cc, buf, buf_size);
+            if (ret < 0)
+                goto fail;
             s->ccp = &s->cc;
         }
     } else {
@@ -173,6 +179,10 @@ static int vp6_parse_header(VP56Context *s, const uint8_t *buf, int buf_size)
     }
 
     return res;
+fail:
+    if (res == VP56_SIZE_CHANGE)
+        ff_set_dimensions(s->avctx, 0, 0);
+    return ret;
 }
 
 static void vp6_coeff_order_table_init(VP56Context *s)
@@ -211,20 +221,20 @@ static void vp6_parse_vector_models(VP56Context *s)
     int comp, node;
 
     for (comp=0; comp<2; comp++) {
-        if (vp56_rac_get_prob(c, vp6_sig_dct_pct[comp][0]))
+        if (vp56_rac_get_prob_branchy(c, vp6_sig_dct_pct[comp][0]))
             model->vector_dct[comp] = vp56_rac_gets_nn(c, 7);
-        if (vp56_rac_get_prob(c, vp6_sig_dct_pct[comp][1]))
+        if (vp56_rac_get_prob_branchy(c, vp6_sig_dct_pct[comp][1]))
             model->vector_sig[comp] = vp56_rac_gets_nn(c, 7);
     }
 
     for (comp=0; comp<2; comp++)
         for (node=0; node<7; node++)
-            if (vp56_rac_get_prob(c, vp6_pdv_pct[comp][node]))
+            if (vp56_rac_get_prob_branchy(c, vp6_pdv_pct[comp][node]))
                 model->vector_pdv[comp][node] = vp56_rac_gets_nn(c, 7);
 
     for (comp=0; comp<2; comp++)
         for (node=0; node<8; node++)
-            if (vp56_rac_get_prob(c, vp6_fdv_pct[comp][node]))
+            if (vp56_rac_get_prob_branchy(c, vp6_fdv_pct[comp][node]))
                 model->vector_fdv[comp][node] = vp56_rac_gets_nn(c, 7);
 }
 
@@ -270,7 +280,7 @@ static int vp6_parse_coeff_models(VP56Context *s)
 
     for (pt=0; pt<2; pt++)
         for (node=0; node<11; node++)
-            if (vp56_rac_get_prob(c, vp6_dccv_pct[pt][node])) {
+            if (vp56_rac_get_prob_branchy(c, vp6_dccv_pct[pt][node])) {
                 def_prob[node] = vp56_rac_gets_nn(c, 7);
                 model->coeff_dccv[pt][node] = def_prob[node];
             } else if (s->frames[VP56_FRAME_CURRENT]->key_frame) {
@@ -279,21 +289,21 @@ static int vp6_parse_coeff_models(VP56Context *s)
 
     if (vp56_rac_get(c)) {
         for (pos=1; pos<64; pos++)
-            if (vp56_rac_get_prob(c, vp6_coeff_reorder_pct[pos]))
+            if (vp56_rac_get_prob_branchy(c, vp6_coeff_reorder_pct[pos]))
                 model->coeff_reorder[pos] = vp56_rac_gets(c, 4);
         vp6_coeff_order_table_init(s);
     }
 
     for (cg=0; cg<2; cg++)
         for (node=0; node<14; node++)
-            if (vp56_rac_get_prob(c, vp6_runv_pct[cg][node]))
+            if (vp56_rac_get_prob_branchy(c, vp6_runv_pct[cg][node]))
                 model->coeff_runv[cg][node] = vp56_rac_gets_nn(c, 7);
 
     for (ct=0; ct<3; ct++)
         for (pt=0; pt<2; pt++)
             for (cg=0; cg<6; cg++)
                 for (node=0; node<11; node++)
-                    if (vp56_rac_get_prob(c, vp6_ract_pct[ct][pt][cg][node])) {
+                    if (vp56_rac_get_prob_branchy(c, vp6_ract_pct[ct][pt][cg][node])) {
                         def_prob[node] = vp56_rac_gets_nn(c, 7);
                         model->coeff_ract[pt][ct][cg][node] = def_prob[node];
                     } else if (s->frames[VP56_FRAME_CURRENT]->key_frame) {
@@ -339,7 +349,7 @@ static void vp6_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
     for (comp=0; comp<2; comp++) {
         int i, delta = 0;
 
-        if (vp56_rac_get_prob(c, model->vector_dct[comp])) {
+        if (vp56_rac_get_prob_branchy(c, model->vector_dct[comp])) {
             static const uint8_t prob_order[] = {0, 1, 2, 7, 6, 5, 4};
             for (i=0; i<sizeof(prob_order); i++) {
                 int j = prob_order[i];
@@ -354,7 +364,7 @@ static void vp6_parse_vector_adjustment(VP56Context *s, VP56mv *vect)
                                       model->vector_pdv[comp]);
         }
 
-        if (delta && vp56_rac_get_prob(c, model->vector_sig[comp]))
+        if (delta && vp56_rac_get_prob_branchy(c, model->vector_sig[comp]))
             delta = -delta;
 
         if (!comp)
@@ -380,7 +390,7 @@ static unsigned vp6_get_nb_null(VP56Context *s)
     return val;
 }
 
-static void vp6_parse_coeff_huffman(VP56Context *s)
+static int vp6_parse_coeff_huffman(VP56Context *s)
 {
     VP56Model *model = s->modelp;
     uint8_t *permute = s->idct_scantable;
@@ -402,7 +412,7 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
                     break;
             } else {
                 if (get_bits_left(&s->gb) <= 0)
-                    return;
+                    return AVERROR_INVALIDDATA;
                 coeff = get_vlc2(&s->gb, vlc_coeff->table, FF_HUFFMAN_BITS, 3);
                 if (coeff == 0) {
                     if (coeff_idx) {
@@ -437,9 +447,10 @@ static void vp6_parse_coeff_huffman(VP56Context *s)
             vlc_coeff = &s->ract_vlc[pt][ct][cg];
         }
     }
+    return 0;
 }
 
-static void vp6_parse_coeff(VP56Context *s)
+static int vp6_parse_coeff(VP56Context *s)
 {
     VP56RangeCoder *c = s->ccp;
     VP56Model *model = s->modelp;
@@ -448,6 +459,11 @@ static void vp6_parse_coeff(VP56Context *s)
     int coeff, sign, coeff_idx;
     int b, i, cg, idx, ctx;
     int pt = 0;    /* plane type (0 for Y, 1 for U or V) */
+
+    if (c->end <= c->buffer && c->bits >= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "End of AC stream reached in vp6_parse_coeff\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     for (b=0; b<6; b++) {
         int ct = 1;    /* code type */
@@ -462,16 +478,16 @@ static void vp6_parse_coeff(VP56Context *s)
 
         coeff_idx = 0;
         for (;;) {
-            if ((coeff_idx>1 && ct==0) || vp56_rac_get_prob(c, model2[0])) {
+            if ((coeff_idx>1 && ct==0) || vp56_rac_get_prob_branchy(c, model2[0])) {
                 /* parse a coeff */
-                if (vp56_rac_get_prob(c, model2[2])) {
-                    if (vp56_rac_get_prob(c, model2[3])) {
+                if (vp56_rac_get_prob_branchy(c, model2[2])) {
+                    if (vp56_rac_get_prob_branchy(c, model2[3])) {
                         idx = vp56_rac_get_tree(c, ff_vp56_pc_tree, model1);
                         coeff = ff_vp56_coeff_bias[idx+5];
                         for (i=ff_vp56_coeff_bit_length[idx]; i>=0; i--)
                             coeff += vp56_rac_get_prob(c, ff_vp56_coeff_parse_table[idx][i]) << i;
                     } else {
-                        if (vp56_rac_get_prob(c, model2[4]))
+                        if (vp56_rac_get_prob_branchy(c, model2[4]))
                             coeff = 3 + vp56_rac_get_prob(c, model1[5]);
                         else
                             coeff = 2;
@@ -492,7 +508,7 @@ static void vp6_parse_coeff(VP56Context *s)
                 /* parse a run */
                 ct = 0;
                 if (coeff_idx > 0) {
-                    if (!vp56_rac_get_prob(c, model2[1]))
+                    if (!vp56_rac_get_prob_branchy(c, model2[1]))
                         break;
 
                     model3 = model->coeff_runv[coeff_idx >= 6];
@@ -512,9 +528,10 @@ static void vp6_parse_coeff(VP56Context *s)
         s->left_block[ff_vp56_b6to4[b]].not_null_dc =
         s->above_blocks[s->above_block_idx[b]].not_null_dc = !!s->block_coeff[b][0];
     }
+    return 0;
 }
 
-static int vp6_block_variance(uint8_t *src, int stride)
+static int vp6_block_variance(uint8_t *src, ptrdiff_t stride)
 {
     int sum = 0, square_sum = 0;
     int y, x;
@@ -529,7 +546,7 @@ static int vp6_block_variance(uint8_t *src, int stride)
     return (16*square_sum - sum*sum) >> 8;
 }
 
-static void vp6_filter_hv4(uint8_t *dst, uint8_t *src, int stride,
+static void vp6_filter_hv4(uint8_t *dst, uint8_t *src, ptrdiff_t stride,
                            int delta, const int16_t *weights)
 {
     int x, y;
@@ -547,7 +564,7 @@ static void vp6_filter_hv4(uint8_t *dst, uint8_t *src, int stride,
 }
 
 static void vp6_filter_diag2(VP56Context *s, uint8_t *dst, uint8_t *src,
-                             int stride, int h_weight, int v_weight)
+                             ptrdiff_t stride, int h_weight, int v_weight)
 {
     uint8_t *tmp = s->edge_emu_buffer+16;
     s->h264chroma.put_h264_chroma_pixels_tab[0](tmp, src, stride, 9, h_weight, 0);
@@ -555,7 +572,7 @@ static void vp6_filter_diag2(VP56Context *s, uint8_t *dst, uint8_t *src,
 }
 
 static void vp6_filter(VP56Context *s, uint8_t *dst, uint8_t *src,
-                       int offset1, int offset2, int stride,
+                       int offset1, int offset2, ptrdiff_t stride,
                        VP56mv mv, int mask, int select, int luma)
 {
     int filter4 = 0;
@@ -614,6 +631,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
     if ((ret = ff_vp56_init(avctx, avctx->codec->id == AV_CODEC_ID_VP6,
                             avctx->codec->id == AV_CODEC_ID_VP6A)) < 0)
         return ret;
+    ff_vp6dsp_init(&s->vp56dsp);
 
     vp6_decode_init_context(s);
 
@@ -621,6 +639,7 @@ static av_cold int vp6_decode_init(AVCodecContext *avctx)
         s->alpha_context = av_mallocz(sizeof(VP56Context));
         ff_vp56_init_context(avctx, s->alpha_context,
                              s->flip == -1, s->has_alpha);
+        ff_vp6dsp_init(&s->alpha_context->vp56dsp);
         vp6_decode_init_context(s->alpha_context);
     }
 
@@ -651,7 +670,7 @@ static av_cold int vp6_decode_free(AVCodecContext *avctx)
     if (s->alpha_context) {
         ff_vp56_free_context(s->alpha_context);
         vp6_decode_free_context(s->alpha_context);
-        av_free(s->alpha_context);
+        av_freep(&s->alpha_context);
     }
 
     return 0;
@@ -679,7 +698,7 @@ AVCodec ff_vp6_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 /* flash version, not flipped upside-down */
@@ -692,7 +711,7 @@ AVCodec ff_vp6f_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
 
 /* flash version, not flipped upside-down, with alpha channel */
@@ -705,5 +724,5 @@ AVCodec ff_vp6a_decoder = {
     .init           = vp6_decode_init,
     .close          = vp6_decode_free,
     .decode         = ff_vp56_decode_frame,
-    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
 };

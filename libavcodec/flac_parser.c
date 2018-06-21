@@ -40,7 +40,7 @@
 #include "flac.h"
 
 /** maximum number of adjacent headers that compare CRCs against each other   */
-#define FLAC_MAX_SEQUENTIAL_HEADERS 3
+#define FLAC_MAX_SEQUENTIAL_HEADERS 4
 /** minimum number of headers buffered and checked before returning frames    */
 #define FLAC_MIN_HEADERS 10
 /** estimate for average size of a FLAC frame                                 */
@@ -182,7 +182,7 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
             size++;
         }
 
-        *end_handle = av_mallocz(sizeof(FLACHeaderMarker));
+        *end_handle = av_mallocz(sizeof(**end_handle));
         if (!*end_handle) {
             av_log(fpc->avctx, AV_LOG_ERROR,
                    "couldn't allocate FLACHeaderMarker\n");
@@ -192,6 +192,13 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
         (*end_handle)->offset       = offset;
         (*end_handle)->link_penalty = av_malloc(sizeof(int) *
                                             FLAC_MAX_SEQUENTIAL_HEADERS);
+        if (!(*end_handle)->link_penalty) {
+            av_freep(end_handle);
+            av_log(fpc->avctx, AV_LOG_ERROR,
+                   "couldn't allocate link_penalty\n");
+            return AVERROR(ENOMEM);
+        }
+
         for (i = 0; i < FLAC_MAX_SEQUENTIAL_HEADERS; i++)
             (*end_handle)->link_penalty[i] = FLAC_HEADER_NOT_PENALIZED_YET;
 
@@ -489,6 +496,14 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
                                         &fpc->wrap_buf,
                                         &fpc->wrap_buf_allocated_size);
 
+
+    if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+        if (header->fi.is_var_size)
+          fpc->pc->pts = header->fi.frame_or_sample_num;
+        else if (header->best_child)
+          fpc->pc->pts = header->fi.frame_or_sample_num * header->fi.blocksize;
+    }
+
     fpc->best_header_valid = 0;
     fpc->last_fi_valid = 1;
     fpc->last_fi = header->fi;
@@ -516,6 +531,11 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             s->duration = fi.blocksize;
             if (!avctx->sample_rate)
                 avctx->sample_rate = fi.samplerate;
+            if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+                fpc->pc->pts = fi.frame_or_sample_num;
+                if (!fi.is_var_size)
+                  fpc->pc->pts *= fi.blocksize;
+            }
         }
         *poutbuf      = buf;
         *poutbuf_size = buf_size;
@@ -566,10 +586,12 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             temp = curr->next;
             av_freep(&curr->link_penalty);
             av_free(curr);
+            fpc->nb_headers_buffered--;
         }
         fpc->headers = fpc->best_header->next;
         av_freep(&fpc->best_header->link_penalty);
         av_freep(&fpc->best_header);
+        fpc->nb_headers_buffered--;
     }
 
     /* Find and score new headers.                                     */
@@ -595,11 +617,20 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                                               nb_desired * FLAC_AVG_FRAME_SIZE);
         }
 
+        if (!av_fifo_space(fpc->fifo_buf) &&
+            av_fifo_size(fpc->fifo_buf) / FLAC_AVG_FRAME_SIZE >
+            fpc->nb_headers_buffered * 20) {
+            /* There is less than one valid flac header buffered for 20 headers
+             * buffered. Therefore the fifo is most likely filled with invalid
+             * data and the input is not a flac file. */
+            goto handle_error;
+        }
+
         /* Fill the buffer. */
         if (   av_fifo_space(fpc->fifo_buf) < read_end - read_start
             && av_fifo_realloc2(fpc->fifo_buf, (read_end - read_start) + 2*av_fifo_size(fpc->fifo_buf)) < 0) {
             av_log(avctx, AV_LOG_ERROR,
-                   "couldn't reallocate buffer of size %td\n",
+                   "couldn't reallocate buffer of size %"PTRDIFF_SPECIFIER"\n",
                    (read_end - read_start) + av_fifo_size(fpc->fifo_buf));
             goto handle_error;
         }
@@ -609,7 +640,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                                   read_end - read_start, NULL);
         } else {
             int8_t pad[MAX_FRAME_HEADER_SIZE] = { 0 };
-            av_fifo_generic_write(fpc->fifo_buf, (void*) pad, sizeof(pad), NULL);
+            av_fifo_generic_write(fpc->fifo_buf, pad, sizeof(pad), NULL);
         }
 
         /* Tag headers and update sequences. */
@@ -654,12 +685,16 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         }
     }
 
-    curr = fpc->headers;
     for (curr = fpc->headers; curr; curr = curr->next) {
-        if (curr->max_score > 0 &&
-            (!fpc->best_header || curr->max_score > fpc->best_header->max_score)) {
+        if (!fpc->best_header || curr->max_score > fpc->best_header->max_score) {
             fpc->best_header = curr;
         }
+    }
+
+    if (fpc->best_header && fpc->best_header->max_score <= 0) {
+        // Only accept a bad header if there is no other option to continue
+        if (!buf_size || !buf || read_end != buf || fpc->nb_headers_buffered < FLAC_MIN_HEADERS)
+            fpc->best_header = NULL;
     }
 
     if (fpc->best_header) {
@@ -685,7 +720,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 handle_error:
     *poutbuf      = NULL;
     *poutbuf_size = 0;
-    return read_end - buf;
+    return buf_size ? read_end - buf : 0;
 }
 
 static av_cold int flac_parse_init(AVCodecParserContext *c)
@@ -694,9 +729,12 @@ static av_cold int flac_parse_init(AVCodecParserContext *c)
     fpc->pc = c;
     /* There will generally be FLAC_MIN_HEADERS buffered in the fifo before
        it drains.  This is allocated early to avoid slow reallocation. */
-    fpc->fifo_buf = av_fifo_alloc(FLAC_AVG_FRAME_SIZE * (FLAC_MIN_HEADERS + 3));
-    if (!fpc->fifo_buf)
+    fpc->fifo_buf = av_fifo_alloc_array(FLAC_MIN_HEADERS + 3, FLAC_AVG_FRAME_SIZE);
+    if (!fpc->fifo_buf) {
+        av_log(fpc->avctx, AV_LOG_ERROR,
+                "couldn't allocate fifo_buf\n");
         return AVERROR(ENOMEM);
+    }
     return 0;
 }
 
@@ -711,8 +749,8 @@ static void flac_parse_close(AVCodecParserContext *c)
         av_free(curr);
         curr = temp;
     }
-    av_fifo_free(fpc->fifo_buf);
-    av_free(fpc->wrap_buf);
+    av_fifo_freep(&fpc->fifo_buf);
+    av_freep(&fpc->wrap_buf);
 }
 
 AVCodecParser ff_flac_parser = {

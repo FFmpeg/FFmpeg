@@ -56,7 +56,7 @@ enum {
     FLV_HEADER_FLAG_HASAUDIO = 4,
 };
 
-enum {
+enum FlvTagType {
     FLV_TAG_TYPE_AUDIO = 0x08,
     FLV_TAG_TYPE_VIDEO = 0x09,
     FLV_TAG_TYPE_META  = 0x12,

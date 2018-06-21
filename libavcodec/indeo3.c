@@ -53,7 +53,7 @@ enum {
 
 
 /* Some constants for parsing frame bitstream flags. */
-#define BS_8BIT_PEL     (1 << 1) ///< 8bit pixel bitdepth indicator
+#define BS_8BIT_PEL     (1 << 1) ///< 8-bit pixel bitdepth indicator
 #define BS_KEYFRAME     (1 << 2) ///< intra frame indicator
 #define BS_MV_Y_HALF    (1 << 4) ///< vertical mv halfpel resolution indicator
 #define BS_MV_X_HALF    (1 << 5) ///< horizontal mv halfpel resolution indicator
@@ -66,7 +66,7 @@ typedef struct Plane {
     uint8_t         *pixels[2]; ///< pointer to the actual pixel data of the buffers above
     uint32_t        width;
     uint32_t        height;
-    uint32_t        pitch;
+    ptrdiff_t       pitch;
 } Plane;
 
 #define CELL_STACK_MAX  20
@@ -94,7 +94,7 @@ typedef struct Indeo3DecodeContext {
 
     int16_t         width, height;
     uint32_t        frame_num;      ///< current frame number (zero-based)
-    uint32_t        data_size;      ///< size of the frame data in bytes
+    int             data_size;      ///< size of the frame data in bytes
     uint16_t        frame_flags;    ///< frame properties
     uint8_t         cb_offset;      ///< needed for selecting VQ tables
     uint8_t         buf_sel;        ///< active frame buffer: 0 - primary, 1 -secondary
@@ -118,8 +118,8 @@ static uint8_t requant_tab[8][128];
  */
 static av_cold void build_requant_tab(void)
 {
-    static int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
-    static int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
+    static const int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
+    static const int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
 
     int i, j, step;
 
@@ -166,7 +166,8 @@ static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
                                           AVCodecContext *avctx, int luma_width, int luma_height)
 {
     int p, chroma_width, chroma_height;
-    int luma_pitch, chroma_pitch, luma_size, chroma_size;
+    int luma_size, chroma_size;
+    ptrdiff_t luma_pitch, chroma_pitch;
 
     if (luma_width  < 16 || luma_width  > 640 ||
         luma_height < 16 || luma_height > 480 ||
@@ -317,7 +318,7 @@ static inline uint32_t replicate32(uint32_t a) {
 }
 
 
-/* Fill n lines with 64bit pixel value pix */
+/* Fill n lines with 64-bit pixel value pix */
 static inline void fill_64(uint8_t *dst, const uint64_t pix, int32_t n,
                            int32_t row_offset)
 {
@@ -425,7 +426,7 @@ if (*data_ptr >= last_ptr) \
 
 static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
                             uint8_t *block, uint8_t *ref_block,
-                            int pitch, int h_zoom, int v_zoom, int mode,
+                            ptrdiff_t row_offset, int h_zoom, int v_zoom, int mode,
                             const vqEntry *delta[2], int swap_quads[2],
                             const uint8_t **data_ptr, const uint8_t *last_ptr)
 {
@@ -436,9 +437,8 @@ static int decode_cell_data(Indeo3DecodeContext *ctx, Cell *cell,
     unsigned int  dyad1, dyad2;
     uint64_t      pix64;
     int           skip_flag = 0, is_top_of_cell, is_first_row = 1;
-    int           row_offset, blk_row_offset, line_offset;
+    int           blk_row_offset, line_offset;
 
-    row_offset     =  pitch;
     blk_row_offset = (row_offset << (2 + v_zoom)) - (cell->width << 2);
     line_offset    = v_zoom ? row_offset : 0;
 
@@ -899,7 +899,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     GetByteContext gb;
     const uint8_t   *bs_hdr;
     uint32_t        frame_num, word2, check_sum, data_size;
-    uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
+    int             y_offset, u_offset, v_offset;
+    uint32_t        starts[3], ends[3];
     uint16_t        height, width;
     int             i, j;
 
@@ -944,7 +945,7 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     if (width != ctx->width || height != ctx->height) {
         int res;
 
-        av_dlog(avctx, "Frame dimensions changed!\n");
+        ff_dlog(avctx, "Frame dimensions changed!\n");
 
         if (width  < 16 || width  > 640 ||
             height < 16 || height > 480 ||
@@ -981,7 +982,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     ctx->y_data_size = ends[0] - starts[0];
     ctx->v_data_size = ends[1] - starts[1];
     ctx->u_data_size = ends[2] - starts[2];
-    if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+    if (FFMIN3(y_offset, v_offset, u_offset) < 0 ||
+        FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
         FFMIN3(y_offset, v_offset, u_offset) < gb.buffer - bs_hdr + 16 ||
         FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
         av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");
@@ -1023,11 +1025,11 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
  *  @param[in]  dst_height   output plane height
  */
 static void output_plane(const Plane *plane, int buf_sel, uint8_t *dst,
-                         int dst_pitch, int dst_height)
+                         ptrdiff_t dst_pitch, int dst_height)
 {
     int             x,y;
     const uint8_t   *src  = plane->pixels[buf_sel];
-    uint32_t        pitch = plane->pitch;
+    ptrdiff_t       pitch = plane->pitch;
 
     dst_height = FFMIN(dst_height, plane->height);
     for (y = 0; y < dst_height; y++) {
@@ -1140,5 +1142,5 @@ AVCodec ff_indeo3_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

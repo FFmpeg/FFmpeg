@@ -25,47 +25,49 @@
 #include "config.h"
 
 typedef struct xmm_reg { uint64_t a, b; } xmm_reg;
+typedef struct ymm_reg { uint64_t a, b, c, d; } ymm_reg;
 
 #if ARCH_X86_64
-#    define OPSIZE "q"
-#    define REG_a "rax"
-#    define REG_b "rbx"
-#    define REG_c "rcx"
-#    define REG_d "rdx"
-#    define REG_D "rdi"
-#    define REG_S "rsi"
-#    define PTR_SIZE "8"
+#    define FF_OPSIZE "q"
+#    define FF_REG_a "rax"
+#    define FF_REG_b "rbx"
+#    define FF_REG_c "rcx"
+#    define FF_REG_d "rdx"
+#    define FF_REG_D "rdi"
+#    define FF_REG_S "rsi"
+#    define FF_PTR_SIZE "8"
 typedef int64_t x86_reg;
 
-#    define REG_SP "rsp"
-#    define REG_BP "rbp"
-#    define REGBP   rbp
-#    define REGa    rax
-#    define REGb    rbx
-#    define REGc    rcx
-#    define REGd    rdx
-#    define REGSP   rsp
+/* FF_REG_SP is defined in Solaris sys headers, so use FF_REG_sp */
+#    define FF_REG_sp "rsp"
+#    define FF_REG_BP "rbp"
+#    define FF_REGBP   rbp
+#    define FF_REGa    rax
+#    define FF_REGb    rbx
+#    define FF_REGc    rcx
+#    define FF_REGd    rdx
+#    define FF_REGSP   rsp
 
 #elif ARCH_X86_32
 
-#    define OPSIZE "l"
-#    define REG_a "eax"
-#    define REG_b "ebx"
-#    define REG_c "ecx"
-#    define REG_d "edx"
-#    define REG_D "edi"
-#    define REG_S "esi"
-#    define PTR_SIZE "4"
+#    define FF_OPSIZE "l"
+#    define FF_REG_a "eax"
+#    define FF_REG_b "ebx"
+#    define FF_REG_c "ecx"
+#    define FF_REG_d "edx"
+#    define FF_REG_D "edi"
+#    define FF_REG_S "esi"
+#    define FF_PTR_SIZE "4"
 typedef int32_t x86_reg;
 
-#    define REG_SP "esp"
-#    define REG_BP "ebp"
-#    define REGBP   ebp
-#    define REGa    eax
-#    define REGb    ebx
-#    define REGc    ecx
-#    define REGd    edx
-#    define REGSP   esp
+#    define FF_REG_sp "esp"
+#    define FF_REG_BP "ebp"
+#    define FF_REGBP   ebp
+#    define FF_REGa    eax
+#    define FF_REGb    ebx
+#    define FF_REGc    ecx
+#    define FF_REGd    edx
+#    define FF_REGSP   esp
 #else
 typedef int x86_reg;
 #endif
@@ -111,6 +113,8 @@ typedef int x86_reg;
 #   define MANGLE(a) EXTERN_PREFIX LOCAL_MANGLE(a)
 #   define NAMED_CONSTRAINTS_ADD(...)
 #   define NAMED_CONSTRAINTS(...)
+#   define NAMED_CONSTRAINTS_ARRAY_ADD(...)
+#   define NAMED_CONSTRAINTS_ARRAY(...)
 #else
     /* When direct symbol references are used in code passed to a compiler that does not support them
      *  then these references need to be converted to named asm constraints instead.
@@ -141,6 +145,10 @@ typedef int x86_reg;
 #   define NAMED_CONSTRAINTS_ADD(...) , FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
     // Same but without comma for when there are no previously defined constraints
 #   define NAMED_CONSTRAINTS(...) FOR_EACH_VA(NAME_CONSTRAINT,__VA_ARGS__)
+    // Same as above NAMED_CONSTRAINTS except used for passing arrays/pointers instead of normal variables
+#   define NAME_CONSTRAINT_ARRAY(x) [x] "m"(*x)
+#   define NAMED_CONSTRAINTS_ARRAY_ADD(...) , FOR_EACH_VA(NAME_CONSTRAINT_ARRAY,__VA_ARGS__)
+#   define NAMED_CONSTRAINTS_ARRAY(...) FOR_EACH_VA(NAME_CONSTRAINT_ARRAY,__VA_ARGS__)
 #endif
 
 #endif /* AVUTIL_X86_ASM_H */

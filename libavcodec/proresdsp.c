@@ -23,7 +23,7 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "dsputil.h"
+#include "idctdsp.h"
 #include "proresdsp.h"
 #include "simple_idct.h"
 
@@ -36,11 +36,11 @@
 /**
  * Add bias value, clamp and output pixels of a slice
  */
-static void put_pixels(uint16_t *dst, int stride, const int16_t *in)
+static void put_pixels(uint16_t *dst, ptrdiff_t linesize, const int16_t *in)
 {
     int x, y, src_offset, dst_offset;
 
-    for (y = 0, dst_offset = 0; y < 8; y++, dst_offset += stride) {
+    for (y = 0, dst_offset = 0; y < 8; y++, dst_offset += linesize) {
         for (x = 0; x < 8; x++) {
             src_offset = (y << 3) + x;
 
@@ -49,7 +49,7 @@ static void put_pixels(uint16_t *dst, int stride, const int16_t *in)
     }
 }
 
-static void prores_idct_put_c(uint16_t *out, int linesize, int16_t *block, const int16_t *qmat)
+static void prores_idct_put_c(uint16_t *out, ptrdiff_t linesize, int16_t *block, const int16_t *qmat)
 {
     ff_prores_idct(block, qmat);
     put_pixels(out, linesize >> 1, block);
@@ -58,7 +58,7 @@ static void prores_idct_put_c(uint16_t *out, int linesize, int16_t *block, const
 av_cold void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
     dsp->idct_put = prores_idct_put_c;
-    dsp->idct_permutation_type = FF_NO_IDCT_PERM;
+    dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
 
     if (ARCH_X86)
         ff_proresdsp_init_x86(dsp, avctx);

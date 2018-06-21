@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "avformat.h"
@@ -32,7 +33,7 @@ static const AVCodecTag nuv_audio_tags[] = {
     { AV_CODEC_ID_NONE,      0 },
 };
 
-typedef struct {
+typedef struct NUVContext {
     int v_id;
     int a_id;
     int rtjpg_video;
@@ -65,14 +66,14 @@ static int nuv_probe(AVProbeData *p)
  * @param myth set if this is a MythTVVideo format file
  * @return 0 or AVERROR code
  */
-static int get_codec_data(AVIOContext *pb, AVStream *vst,
+static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth)
 {
     nuv_frametype frametype;
 
     if (!vst && !myth)
         return 1; // no codec data needed
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         int size, subtype;
 
         frametype = avio_r8(pb);
@@ -82,11 +83,11 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
             avio_skip(pb, 6);
             size = PKTSIZE(avio_rl32(pb));
             if (vst && subtype == 'R') {
-                if (vst->codec->extradata) {
-                    av_freep(&vst->codec->extradata);
-                    vst->codec->extradata_size = 0;
+                if (vst->codecpar->extradata) {
+                    av_freep(&vst->codecpar->extradata);
+                    vst->codecpar->extradata_size = 0;
                 }
-                if (ff_get_extradata(vst->codec, pb, size) < 0)
+                if (ff_get_extradata(NULL, vst->codecpar, pb, size) < 0)
                     return AVERROR(ENOMEM);
                 size = 0;
                 if (!myth)
@@ -100,32 +101,36 @@ static int get_codec_data(AVIOContext *pb, AVStream *vst,
                 break;
             avio_rl32(pb); // version
             if (vst) {
-                vst->codec->codec_tag = avio_rl32(pb);
-                vst->codec->codec_id =
-                    ff_codec_get_id(ff_codec_bmp_tags, vst->codec->codec_tag);
-                if (vst->codec->codec_tag == MKTAG('R', 'J', 'P', 'G'))
-                    vst->codec->codec_id = AV_CODEC_ID_NUV;
+                vst->codecpar->codec_tag = avio_rl32(pb);
+                vst->codecpar->codec_id =
+                    ff_codec_get_id(ff_codec_bmp_tags, vst->codecpar->codec_tag);
+                if (vst->codecpar->codec_tag == MKTAG('R', 'J', 'P', 'G'))
+                    vst->codecpar->codec_id = AV_CODEC_ID_NUV;
             } else
                 avio_skip(pb, 4);
 
             if (ast) {
                 int id;
 
-                ast->codec->codec_tag             = avio_rl32(pb);
-                ast->codec->sample_rate           = avio_rl32(pb);
-                ast->codec->bits_per_coded_sample = avio_rl32(pb);
-                ast->codec->channels              = avio_rl32(pb);
-                ast->codec->channel_layout        = 0;
+                ast->codecpar->codec_tag             = avio_rl32(pb);
+                ast->codecpar->sample_rate           = avio_rl32(pb);
+                if (ast->codecpar->sample_rate <= 0) {
+                    av_log(s, AV_LOG_ERROR, "Invalid sample rate %d\n", ast->codecpar->sample_rate);
+                    return AVERROR_INVALIDDATA;
+                }
+                ast->codecpar->bits_per_coded_sample = avio_rl32(pb);
+                ast->codecpar->channels              = avio_rl32(pb);
+                ast->codecpar->channel_layout        = 0;
 
-                id = ff_wav_codec_get_id(ast->codec->codec_tag,
-                                         ast->codec->bits_per_coded_sample);
+                id = ff_wav_codec_get_id(ast->codecpar->codec_tag,
+                                         ast->codecpar->bits_per_coded_sample);
                 if (id == AV_CODEC_ID_NONE) {
-                    id = ff_codec_get_id(nuv_audio_tags, ast->codec->codec_tag);
+                    id = ff_codec_get_id(nuv_audio_tags, ast->codecpar->codec_tag);
                     if (id == AV_CODEC_ID_PCM_S16LE)
-                        id = ff_get_pcm_codec_id(ast->codec->bits_per_coded_sample,
+                        id = ff_get_pcm_codec_id(ast->codecpar->bits_per_coded_sample,
                                                  0, 0, ~1);
                 }
-                ast->codec->codec_id = id;
+                ast->codecpar->codec_id = id;
 
                 ast->need_parsing = AVSTREAM_PARSE_FULL;
             } else
@@ -171,6 +176,15 @@ static int nuv_header(AVFormatContext *s)
     if (aspect > 0.9999 && aspect < 1.0001)
         aspect = 4.0 / 3.0;
     fps = av_int2double(avio_rl64(pb));
+    if (fps < 0.0f) {
+        if (s->error_recognition & AV_EF_EXPLODE) {
+            av_log(s, AV_LOG_ERROR, "Invalid frame rate %f\n", fps);
+            return AVERROR_INVALIDDATA;
+        } else {
+            av_log(s, AV_LOG_WARNING, "Invalid frame rate %f, setting to 0.\n", fps);
+            fps = 0.0f;
+        }
+    }
 
     // number of packets per stream type, -1 means unknown, e.g. streaming
     v_packs = avio_rl32(pb);
@@ -185,11 +199,15 @@ static int nuv_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         ctx->v_id = vst->index;
 
-        vst->codec->codec_type            = AVMEDIA_TYPE_VIDEO;
-        vst->codec->codec_id              = AV_CODEC_ID_NUV;
-        vst->codec->width                 = width;
-        vst->codec->height                = height;
-        vst->codec->bits_per_coded_sample = 10;
+        ret = av_image_check_size(width, height, 0, s);
+        if (ret < 0)
+            return ret;
+
+        vst->codecpar->codec_type            = AVMEDIA_TYPE_VIDEO;
+        vst->codecpar->codec_id              = AV_CODEC_ID_NUV;
+        vst->codecpar->width                 = width;
+        vst->codecpar->height                = height;
+        vst->codecpar->bits_per_coded_sample = 10;
         vst->sample_aspect_ratio          = av_d2q(aspect * height / width,
                                                    10000);
 #if FF_API_R_FRAME_RATE
@@ -206,22 +224,22 @@ static int nuv_header(AVFormatContext *s)
             return AVERROR(ENOMEM);
         ctx->a_id = ast->index;
 
-        ast->codec->codec_type            = AVMEDIA_TYPE_AUDIO;
-        ast->codec->codec_id              = AV_CODEC_ID_PCM_S16LE;
-        ast->codec->channels              = 2;
-        ast->codec->channel_layout        = AV_CH_LAYOUT_STEREO;
-        ast->codec->sample_rate           = 44100;
-        ast->codec->bit_rate              = 2 * 2 * 44100 * 8;
-        ast->codec->block_align           = 2 * 2;
-        ast->codec->bits_per_coded_sample = 16;
+        ast->codecpar->codec_type            = AVMEDIA_TYPE_AUDIO;
+        ast->codecpar->codec_id              = AV_CODEC_ID_PCM_S16LE;
+        ast->codecpar->channels              = 2;
+        ast->codecpar->channel_layout        = AV_CH_LAYOUT_STEREO;
+        ast->codecpar->sample_rate           = 44100;
+        ast->codecpar->bit_rate              = 2 * 2 * 44100 * 8;
+        ast->codecpar->block_align           = 2 * 2;
+        ast->codecpar->bits_per_coded_sample = 16;
         avpriv_set_pts_info(ast, 32, 1, 1000);
     } else
         ctx->a_id = -1;
 
-    if ((ret = get_codec_data(pb, vst, ast, is_mythtv)) < 0)
+    if ((ret = get_codec_data(s, pb, vst, ast, is_mythtv)) < 0)
         return ret;
 
-    ctx->rtjpg_video = vst && vst->codec->codec_id == AV_CODEC_ID_NUV;
+    ctx->rtjpg_video = vst && vst->codecpar->codec_id == AV_CODEC_ID_NUV;
 
     return 0;
 }
@@ -236,7 +254,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
     nuv_frametype frametype;
     int ret, size;
 
-    while (!url_feof(pb)) {
+    while (!avio_feof(pb)) {
         int copyhdrsize = ctx->rtjpg_video ? HDRSIZE : 0;
         uint64_t pos    = avio_tell(pb);
 
@@ -270,7 +288,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
             memcpy(pkt->data, hdr, copyhdrsize);
             ret = avio_read(pb, pkt->data + copyhdrsize, size);
             if (ret < 0) {
-                av_free_packet(pkt);
+                av_packet_unref(pkt);
                 return ret;
             }
             if (ret < size)
@@ -309,7 +327,7 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt)
 static int nuv_resync(AVFormatContext *s, int64_t pos_limit) {
     AVIOContext *pb = s->pb;
     uint32_t tag = 0;
-    while(!url_feof(pb) && avio_tell(pb) < pos_limit) {
+    while(!avio_feof(pb) && avio_tell(pb) < pos_limit) {
         tag = (tag << 8) | avio_r8(pb);
         if (tag                  == MKBETAG('R','T','j','j') &&
            (tag = avio_rb32(pb)) == MKBETAG('j','j','j','j') &&
@@ -339,7 +357,7 @@ static int64_t nuv_read_dts(AVFormatContext *s, int stream_index,
     if (!nuv_resync(s, pos_limit))
         return AV_NOPTS_VALUE;
 
-    while (!url_feof(pb) && avio_tell(pb) < pos_limit) {
+    while (!avio_feof(pb) && avio_tell(pb) < pos_limit) {
         if (avio_read(pb, hdr, HDRSIZE) < HDRSIZE)
             return AV_NOPTS_VALUE;
         frametype = hdr[0];

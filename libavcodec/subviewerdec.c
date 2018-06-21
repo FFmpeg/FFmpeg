@@ -43,33 +43,25 @@ static int subviewer_event_to_ass(AVBPrint *buf, const char *p)
         }
     }
 
-    av_bprintf(buf, "\r\n");
     return 0;
 }
 
 static int subviewer_decode_frame(AVCodecContext *avctx,
                                   void *data, int *got_sub_ptr, AVPacket *avpkt)
 {
-    char c;
+    int ret = 0;
     AVSubtitle *sub = data;
     const char *ptr = avpkt->data;
+    FFASSDecoderContext *s = avctx->priv_data;
     AVBPrint buf;
 
-    /* To be removed later */
-    if (ptr && sscanf(ptr, "%*u:%*u:%*u.%*u,%*u:%*u:%*u.%*u%c", &c) == 1) {
-        av_log(avctx, AV_LOG_ERROR, "AVPacket is not clean (contains timing "
-               "information). You need to upgrade your libavformat or "
-               "sanitize your packet.\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
-    // note: no need to rescale pts & duration since they are in the same
-    // timebase as ASS (1/100)
     if (ptr && avpkt->size > 0 && !subviewer_event_to_ass(&buf, ptr))
-        ff_ass_add_rect(sub, buf.str, avpkt->pts, avpkt->duration, 0);
-    *got_sub_ptr = sub->num_rects > 0;
+        ret = ff_ass_add_rect(sub, buf.str, s->readorder++, 0, NULL, NULL);
     av_bprint_finalize(&buf, NULL);
+    if (ret < 0)
+        return ret;
+    *got_sub_ptr = sub->num_rects > 0;
     return avpkt->size;
 }
 
@@ -80,4 +72,6 @@ AVCodec ff_subviewer_decoder = {
     .id             = AV_CODEC_ID_SUBVIEWER,
     .decode         = subviewer_decode_frame,
     .init           = ff_ass_subtitle_header_default,
+    .flush          = ff_ass_decoder_flush,
+    .priv_data_size = sizeof(FFASSDecoderContext),
 };

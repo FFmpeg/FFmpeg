@@ -22,7 +22,7 @@
 #ifndef AVCODEC_PRORESDEC_H
 #define AVCODEC_PRORESDEC_H
 
-#include "dsputil.h"
+#include "blockdsp.h"
 #include "proresdsp.h"
 
 typedef struct {
@@ -35,7 +35,7 @@ typedef struct {
 } SliceContext;
 
 typedef struct {
-    DSPContext dsp;
+    BlockDSPContext bdsp;
     ProresDSPContext prodsp;
     AVFrame *frame;
     int frame_type;              ///< 0 = progressive, 1 = tff, 2 = bff

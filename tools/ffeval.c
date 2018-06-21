@@ -124,7 +124,7 @@ int main(int argc, char **argv)
                 if (echo)
                     fprintf(outfile, "%s ", buf);
                 if (ret >= 0) fprintf(outfile, "%s%f\n", prompt, d);
-                else          fprintf(outfile, "%s%s\n", prompt, av_err2str(ret));
+                else          fprintf(outfile, "%s%f (%s)\n", prompt, d, av_err2str(ret));
             }
             count = 0;
         } else {

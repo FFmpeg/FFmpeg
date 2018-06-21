@@ -21,12 +21,13 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/float_dsp.h"
-#include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "acelp_pitch_delay.h"
 #include "celp_math.h"
+#include "audiodsp.h"
 
 int ff_acelp_decode_8bit_to_1st_delay3(int ac_index)
 {
@@ -91,7 +92,7 @@ void ff_acelp_update_past_gain(
 }
 
 int16_t ff_acelp_decode_gain_code(
-    DSPContext *dsp,
+    AudioDSPContext *adsp,
     int gain_corr_factor,
     const int16_t* fc_v,
     int mr_energy,
@@ -118,7 +119,7 @@ int16_t ff_acelp_decode_gain_code(
            );
 #else
     mr_energy = gain_corr_factor * exp(M_LN10 / (20 << 23) * mr_energy) /
-                sqrt(dsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
+                sqrt(adsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
     return mr_energy >> 12;
 #endif
 }
@@ -131,10 +132,10 @@ float ff_amr_set_fixed_gain(float fixed_gain_factor, float fixed_mean_energy,
     // ^g_c = ^gamma_gc * 100.05 (predicted dB + mean dB - dB of fixed vector)
     // Note 10^(0.05 * -10log(average x2)) = 1/sqrt((average x2)).
     float val = fixed_gain_factor *
-        exp2f(M_LOG2_10 * 0.05 *
+        ff_exp10(0.05 *
               (avpriv_scalarproduct_float_c(pred_table, prediction_error, 4) +
                energy_mean)) /
-        sqrtf(fixed_mean_energy);
+        sqrtf(fixed_mean_energy ? fixed_mean_energy : 1.0);
 
     // update quantified prediction error energy history
     memmove(&prediction_error[0], &prediction_error[1],

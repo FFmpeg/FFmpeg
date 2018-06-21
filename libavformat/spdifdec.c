@@ -25,18 +25,22 @@
  * @author Anssi Hannula
  */
 
+#include "libavutil/bswap.h"
+
+#include "libavcodec/ac3.h"
+#include "libavcodec/adts_parser.h"
+
 #include "avformat.h"
 #include "spdif.h"
-#include "libavcodec/ac3.h"
-#include "libavcodec/aacadtsdec.h"
 
 static int spdif_get_offset_and_codec(AVFormatContext *s,
                                       enum IEC61937DataType data_type,
                                       const char *buf, int *offset,
                                       enum AVCodecID *codec)
 {
-    AACADTSHeaderInfo aac_hdr;
-    GetBitContext gbc;
+    uint32_t samples;
+    uint8_t frames;
+    int ret;
 
     switch (data_type & 0xff) {
     case IEC61937_AC3:
@@ -56,13 +60,13 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
         *codec = AV_CODEC_ID_MP3;
         break;
     case IEC61937_MPEG2_AAC:
-        init_get_bits(&gbc, buf, AAC_ADTS_HEADER_SIZE * 8);
-        if (avpriv_aac_parse_header(&gbc, &aac_hdr) < 0) {
+        ret = av_adts_header_parse(buf, &samples, &frames);
+        if (ret < 0) {
             if (s) /* be silent during a probe */
                 av_log(s, AV_LOG_ERROR, "Invalid AAC packet in IEC 61937\n");
-            return AVERROR_INVALIDDATA;
+            return ret;
         }
-        *offset = aac_hdr.samples << 2;
+        *offset = samples << 2;
         *codec = AV_CODEC_ID_AAC;
         break;
     case IEC61937_MPEG2_LAYER1_LSF:
@@ -100,7 +104,7 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
 }
 
 /* Largest offset between bursts we currently handle, i.e. AAC with
-   aac_hdr.samples = 4096 */
+   samples = 4096 */
 #define SPDIF_MAX_OFFSET 16384
 
 static int spdif_probe(AVProbeData *p)
@@ -132,7 +136,7 @@ int ff_spdif_probe(const uint8_t *p_buf, int buf_size, enum AVCodecID *codec)
             } else
                 consecutive_codes = 0;
 
-            if (buf + 4 + AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
+            if (buf + 4 + AV_AAC_ADTS_HEADER_SIZE > p_buf + buf_size)
                 break;
 
             /* continue probing to find more sync codes */
@@ -176,7 +180,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     while (state != (AV_BSWAP16C(SYNCWORD1) << 16 | AV_BSWAP16C(SYNCWORD2))) {
         state = (state << 8) | avio_r8(pb);
-        if (url_feof(pb))
+        if (avio_feof(pb))
             return AVERROR_EOF;
     }
 
@@ -193,7 +197,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pos = avio_tell(pb) - BURST_HEADER_SIZE;
 
     if (avio_read(pb, pkt->data, pkt->size) < pkt->size) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return AVERROR_EOF;
     }
     ff_spdif_bswap_buf16((uint16_t *)pkt->data, (uint16_t *)pkt->data, pkt->size >> 1);
@@ -201,7 +205,7 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = spdif_get_offset_and_codec(s, data_type, pkt->data,
                                      &offset, &codec_id);
     if (ret) {
-        av_free_packet(pkt);
+        av_packet_unref(pkt);
         return ret;
     }
 
@@ -212,20 +216,20 @@ int ff_spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
         /* first packet, create a stream */
         AVStream *st = avformat_new_stream(s, NULL);
         if (!st) {
-            av_free_packet(pkt);
+            av_packet_unref(pkt);
             return AVERROR(ENOMEM);
         }
-        st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
-        st->codec->codec_id = codec_id;
-    } else if (codec_id != s->streams[0]->codec->codec_id) {
+        st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
+        st->codecpar->codec_id = codec_id;
+    } else if (codec_id != s->streams[0]->codecpar->codec_id) {
         avpriv_report_missing_feature(s, "Codec change in IEC 61937");
         return AVERROR_PATCHWELCOME;
     }
 
-    if (!s->bit_rate && s->streams[0]->codec->sample_rate)
+    if (!s->bit_rate && s->streams[0]->codecpar->sample_rate)
         /* stream bitrate matches 16-bit stereo PCM bitrate for currently
            supported codecs */
-        s->bit_rate = 2 * 16 * s->streams[0]->codec->sample_rate;
+        s->bit_rate = 2 * 16 * s->streams[0]->codecpar->sample_rate;
 
     return 0;
 }

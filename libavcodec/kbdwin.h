@@ -19,6 +19,8 @@
 #ifndef AVCODEC_KBDWIN_H
 #define AVCODEC_KBDWIN_H
 
+#include <stdint.h>
+
 /**
  * Maximum window size for ff_kbd_window_init.
  */
@@ -31,5 +33,6 @@
  * @param   n       size of half window, max FF_KBD_WINDOW_MAX
  */
 void ff_kbd_window_init(float *window, float alpha, int n);
+void ff_kbd_window_init_fixed(int32_t *window, float alpha, int n);
 
 #endif /* AVCODEC_KBDWIN_H */

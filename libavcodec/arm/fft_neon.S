@@ -348,7 +348,7 @@ function ff_fft_permute_neon, export=1
         pop             {r4,pc}
 endfunc
 
-const   fft_tab_neon
+const   fft_tab_neon, relocate=1
         .word fft4_neon
         .word fft8_neon
         .word fft16_neon

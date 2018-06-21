@@ -69,12 +69,7 @@
 #define GLOBAL(x) x
 #define RIGHT_SHIFT(x, n) ((x) >> (n))
 #define MULTIPLY16C16(var,const) ((var)*(const))
-
-#if 1 //def USE_ACCURATE_ROUNDING
 #define DESCALE(x,n)  RIGHT_SHIFT((x) + (1 << ((n) - 1)), n)
-#else
-#define DESCALE(x,n)  RIGHT_SHIFT(x, n)
-#endif
 
 
 /*
@@ -216,8 +211,8 @@ static av_always_inline void FUNC(row_fdct)(int16_t *data)
     tmp11 = tmp1 + tmp2;
     tmp12 = tmp1 - tmp2;
 
-    dataptr[0] = (int16_t) ((tmp10 + tmp11) << PASS1_BITS);
-    dataptr[4] = (int16_t) ((tmp10 - tmp11) << PASS1_BITS);
+    dataptr[0] = (int16_t) ((tmp10 + tmp11) * (1 << PASS1_BITS));
+    dataptr[4] = (int16_t) ((tmp10 - tmp11) * (1 << PASS1_BITS));
 
     z1 = MULTIPLY(tmp12 + tmp13, FIX_0_541196100);
     dataptr[2] = (int16_t) DESCALE(z1 + MULTIPLY(tmp13, FIX_0_765366865),

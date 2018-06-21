@@ -42,15 +42,13 @@ int ff_tis_ifd(unsigned tag)
 
 unsigned ff_tget_short(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
-    return v;
+    return le ? bytestream2_get_le16(gb) : bytestream2_get_be16(gb);
 }
 
 
 unsigned ff_tget_long(GetByteContext *gb, int le)
 {
-    unsigned v = le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
-    return v;
+    return le ? bytestream2_get_le32(gb) : bytestream2_get_be32(gb);
 }
 
 
@@ -64,14 +62,10 @@ double ff_tget_double(GetByteContext *gb, int le)
 unsigned ff_tget(GetByteContext *gb, int type, int le)
 {
     switch (type) {
-    case TIFF_BYTE:
-        return bytestream2_get_byte(gb);
-    case TIFF_SHORT:
-        return ff_tget_short(gb, le);
-    case TIFF_LONG:
-        return ff_tget_long(gb, le);
-    default:
-        return UINT_MAX;
+    case TIFF_BYTE:  return bytestream2_get_byte(gb);
+    case TIFF_SHORT: return ff_tget_short(gb, le);
+    case TIFF_LONG:  return ff_tget_long(gb, le);
+    default:         return UINT_MAX;
     }
 }
 
@@ -103,7 +97,7 @@ int ff_tadd_rational_metadata(int count, const char *name, const char *sep,
     for (i = 0; i < count; i++) {
         nom   = ff_tget_long(gb, le);
         denom = ff_tget_long(gb, le);
-        av_bprintf(&bp, "%s%7i:%-7i", auto_sep(count, sep, i, 4), nom, denom);
+        av_bprintf(&bp, "%s%7"PRId32":%-7"PRId32, auto_sep(count, sep, i, 4), nom, denom);
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -182,7 +176,7 @@ int ff_tadd_doubles_metadata(int count, const char *name, const char *sep,
 
 
 int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
-                            GetByteContext *gb, int le, AVDictionary **metadata)
+                            GetByteContext *gb, int le, int is_signed, AVDictionary **metadata)
 {
     AVBPrint bp;
     char *ap;
@@ -196,7 +190,8 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
     av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
-        av_bprintf(&bp, "%s%5i", auto_sep(count, sep, i, 8), ff_tget_short(gb, le));
+        int v = is_signed ? (int16_t)ff_tget_short(gb, le) :  ff_tget_short(gb, le);
+        av_bprintf(&bp, "%s%5i", auto_sep(count, sep, i, 8), v);
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {
@@ -213,7 +208,7 @@ int ff_tadd_shorts_metadata(int count, const char *name, const char *sep,
 
 
 int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
-                           GetByteContext *gb, int le, AVDictionary **metadata)
+                           GetByteContext *gb, int le, int is_signed, AVDictionary **metadata)
 {
     AVBPrint bp;
     char *ap;
@@ -227,7 +222,8 @@ int ff_tadd_bytes_metadata(int count, const char *name, const char *sep,
     av_bprint_init(&bp, 10 * count, AV_BPRINT_SIZE_UNLIMITED);
 
     for (i = 0; i < count; i++) {
-        av_bprintf(&bp, "%s%3i", auto_sep(count, sep, i, 16), bytestream2_get_byte(gb));
+        int v = is_signed ? (int8_t)bytestream2_get_byte(gb) :  bytestream2_get_byte(gb);
+        av_bprintf(&bp, "%s%3i", auto_sep(count, sep, i, 16), v);
     }
 
     if ((i = av_bprint_finalize(&bp, &ap))) {

@@ -28,12 +28,12 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
-#include "dsputil.h"
+#include "blockdsp.h"
 #include "get_bits.h"
 #include "internal.h"
 
 typedef struct JvContext {
-    DSPContext dsp;
+    BlockDSPContext bdsp;
     AVFrame   *frame;
     uint32_t   palette[AVPALETTE_COUNT];
     int        palette_has_changed;
@@ -43,12 +43,19 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     JvContext *s = avctx->priv_data;
 
+    if (!avctx->width || !avctx->height ||
+        (avctx->width & 7) || (avctx->height & 7)) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid video dimensions: %dx%d\n",
+               avctx->width, avctx->height);
+        return AVERROR(EINVAL);
+    }
+
     s->frame = av_frame_alloc();
     if (!s->frame)
         return AVERROR(ENOMEM);
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-    ff_dsputil_init(&s->dsp, avctx);
+    ff_blockdsp_init(&s->bdsp, avctx);
     return 0;
 }
 
@@ -113,14 +120,14 @@ static inline void decode4x4(GetBitContext *gb, uint8_t *dst, int linesize)
  * Decode 8x8 block
  */
 static inline void decode8x8(GetBitContext *gb, uint8_t *dst, int linesize,
-                             DSPContext *dsp)
+                             BlockDSPContext *bdsp)
 {
     int i, j, v[2];
 
     switch (get_bits(gb, 2)) {
     case 1:
         v[0] = get_bits(gb, 8);
-        dsp->fill_block_tab[1](dst, v[0], linesize, 8);
+        bdsp->fill_block_tab[1](dst, v[0], linesize, 8);
         break;
     case 2:
         v[0] = get_bits(gb, 8);
@@ -167,7 +174,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 for (i = 0; i < avctx->width; i += 8)
                     decode8x8(&gb,
                               s->frame->data[0] + j * s->frame->linesize[0] + i,
-                              s->frame->linesize[0], &s->dsp);
+                              s->frame->linesize[0], &s->bdsp);
 
             buf += video_size;
         } else if (video_type == 2) {
@@ -224,5 +231,5 @@ AVCodec ff_jv_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

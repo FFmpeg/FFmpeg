@@ -28,7 +28,8 @@
 #include "config.h"
 
 #if   (defined(__i386) && defined(__clang__) && (__clang_major__<2 || (__clang_major__==2 && __clang_minor__<10)))\
-   || (                  !defined(__clang__) && defined(__llvm__) && __GNUC__==4 && __GNUC_MINOR__==2 && __GNUC_PATCHLEVEL__<=1)
+   || (                  !defined(__clang__) && defined(__llvm__) && __GNUC__==4 && __GNUC_MINOR__==2 && __GNUC_PATCHLEVEL__<=1)\
+   || (defined(__INTEL_COMPILER) && defined(_MSC_VER))
 #       define BROKEN_COMPILER 1
 #else
 #       define BROKEN_COMPILER 0
@@ -44,7 +45,7 @@
 #define END_CHECK(end) ""
 #else
 #define END_CHECK(end) \
-        "cmp    "end"       , %%"REG_c"                                 \n\t"\
+        "cmp    "end"       , %%"FF_REG_c"                              \n\t"\
         "jge    1f                                                      \n\t"
 #endif
 
@@ -61,7 +62,7 @@
         "sub    "tmp"       , "low"                        \n\t"
 #else /* HAVE_FAST_CMOV */
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, retq, low, range, tmp) \
-/* P4 Prescott has crappy cmov,sbb,64bit shift so avoid them */ \
+/* P4 Prescott has crappy cmov,sbb,64-bit shift so avoid them */ \
         "sub    "low"       , "tmp"                        \n\t"\
         "sar    $31         , "tmp"                        \n\t"\
         "sub    %%ecx       , "range"                      \n\t"\
@@ -91,11 +92,11 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         "jnz    2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
         END_CHECK(end)\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c") , "tmp"                                     \n\t"\
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -110,7 +111,7 @@
         "2:                                                             \n\t"
 
 #else /* BROKEN_RELOCATIONS */
-#define TABLES_ARG NAMED_CONSTRAINTS_ADD(ff_h264_cabac_tables)
+#define TABLES_ARG NAMED_CONSTRAINTS_ARRAY_ADD(ff_h264_cabac_tables)
 #define RIP_ARG
 
 #if HAVE_FAST_CMOV
@@ -152,11 +153,11 @@
         "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   2f                                                      \n\t"\
-        "mov    "byte"      , %%"REG_c"                                 \n\t"\
+        "mov    "byte"      , %%"FF_REG_c"                              \n\t"\
         END_CHECK(end)\
-        "add"OPSIZE" $2     , "byte"                                    \n\t"\
+        "add"FF_OPSIZE" $2  , "byte"                                    \n\t"\
         "1:                                                             \n\t"\
-        "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
+        "movzwl (%%"FF_REG_c") , "tmp"                                  \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -184,7 +185,7 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
     __asm__ volatile(
         "lea    "MANGLE(ff_h264_cabac_tables)", %0      \n\t"
         : "=&r"(tables)
-        : NAMED_CONSTRAINTS(ff_h264_cabac_tables)
+        : NAMED_CONSTRAINTS_ARRAY(ff_h264_cabac_tables)
     );
 #endif
 
@@ -202,11 +203,11 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
           "i"(offsetof(CABACContext, bytestream_end))
           TABLES_ARG
           ,"1"(c->low), "2"(c->range)
-        : "%"REG_c, "memory"
+        : "%"FF_REG_c, "memory"
     );
     return bit & 1;
 }
-#endif /* HAVE_7REGS */
+#endif /* HAVE_7REGS && !BROKEN_COMPILER */
 
 #if !BROKEN_COMPILER
 #define get_cabac_bypass_sign get_cabac_bypass_sign_x86
@@ -219,7 +220,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "shl             $17, %k1       \n\t"
         "add           %%eax, %%eax     \n\t"
         "sub             %k1, %%eax     \n\t"
-        "cltd                           \n\t"
+        "cdq                            \n\t"
         "and           %%edx, %k1       \n\t"
         "add             %k1, %%eax     \n\t"
         "xor           %%edx, %%ecx     \n\t"
@@ -239,7 +240,7 @@ static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
         "addl          %%edx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
 #endif
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
@@ -266,7 +267,7 @@ static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
         "shl             $17, %k1       \n\t"
         "add           %%eax, %%eax     \n\t"
         "sub             %k1, %%eax     \n\t"
-        "cltd                           \n\t"
+        "cdq                            \n\t"
         "and           %%edx, %k1       \n\t"
         "add             %k1, %%eax     \n\t"
         "inc           %%edx            \n\t"
@@ -280,7 +281,7 @@ static av_always_inline int get_cabac_bypass_x86(CABACContext *c)
         "addl          %%ecx, %%eax     \n\t"
         "cmp         %c5(%2), %1        \n\t"
         "jge              1f            \n\t"
-        "add"OPSIZE"      $2, %c4(%2)   \n\t"
+        "add"FF_OPSIZE"   $2, %c4(%2)   \n\t"
         "1:                             \n\t"
         "movl          %%eax, %c3(%2)   \n\t"
 

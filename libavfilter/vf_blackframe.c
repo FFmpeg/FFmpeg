@@ -37,7 +37,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct BlackFrameContext {
     const AVClass *class;
     int bamount;          ///< black amount
     int bthresh;          ///< black threshold
@@ -54,9 +54,15 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
+
+#define SET_META(key, format, value) \
+    snprintf(buf, sizeof(buf), format, value);  \
+    av_dict_set(metadata, key, buf, 0)
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
@@ -65,6 +71,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int x, i;
     int pblack = 0;
     uint8_t *p = frame->data[0];
+    AVDictionary **metadata;
+    char buf[32];
 
     for (i = 0; i < frame->height; i++) {
         for (x = 0; x < inlink->w; x++)
@@ -76,12 +84,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         s->last_keyframe = s->frame;
 
     pblack = s->nblack * 100 / (inlink->w * inlink->h);
-    if (pblack >= s->bamount)
+    if (pblack >= s->bamount) {
+        metadata = &frame->metadata;
+
         av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pts:%"PRId64" t:%f "
                "type:%c last_keyframe:%d\n",
                s->frame, pblack, frame->pts,
                frame->pts == AV_NOPTS_VALUE ? -1 : frame->pts * av_q2d(inlink->time_base),
                av_get_picture_type_char(frame->pict_type), s->last_keyframe);
+
+        SET_META("lavfi.blackframe.pblack", "%u", pblack);
+    }
 
     s->frame++;
     s->nblack = 0;
@@ -91,8 +104,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define OFFSET(x) offsetof(BlackFrameContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption blackframe_options[] = {
-    { "amount", "Percentage of the pixels that have to be below the threshold "
-        "for the frame to be considered black.", OFFSET(bamount), AV_OPT_TYPE_INT, { .i64 = 98 }, 0, 100,     FLAGS },
+    { "amount", "percentage of the pixels that have to be below the threshold "
+        "for the frame to be considered black",  OFFSET(bamount), AV_OPT_TYPE_INT, { .i64 = 98 }, 0, 100,     FLAGS },
     { "threshold", "threshold below which a pixel value is considered black",
                                                  OFFSET(bthresh), AV_OPT_TYPE_INT, { .i64 = 32 }, 0, 255,     FLAGS },
     { "thresh", "threshold below which a pixel value is considered black",

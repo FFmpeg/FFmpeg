@@ -28,6 +28,7 @@
 #define AVCODEC_AC3_H
 
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
+#define EAC3_MAX_CHANNELS 16          /**< maximum number of channels in EAC3 */
 #define AC3_MAX_CHANNELS 7            /**< maximum number of channels, including coupling channel */
 #define CPL_CH 0                      /**< coupling channel index */
 
@@ -51,11 +52,59 @@
 #define EXP_D25   2
 #define EXP_D45   3
 
+#ifndef USE_FIXED
+#define USE_FIXED 0
+#endif
+
+#if USE_FIXED
+
+#define FFT_FLOAT 0
+
+#define FIXR(a)                 ((int)((a) * 0 + 0.5))
+#define FIXR12(a)               ((int)((a) * 4096 + 0.5))
+#define FIXR15(a)               ((int)((a) * 32768 + 0.5))
+#define ROUND15(x)              ((x) + 16384) >> 15
+
+#define AC3_RENAME(x)           x ## _fixed
+#define AC3_NORM(norm)          (1<<24)/(norm)
+#define AC3_MUL(a,b)            ((((int64_t) (a)) * (b))>>12)
+#define AC3_RANGE(x)            ((x)|(((x)&128)<<1))
+#define AC3_HEAVY_RANGE(x)      ((x)<<1)
+#define AC3_DYNAMIC_RANGE(x)    (x)
+#define AC3_SPX_BLEND(x)        (x)
+#define AC3_DYNAMIC_RANGE1      0
+
+typedef int                     INTFLOAT;
+typedef int16_t                 SHORTFLOAT;
+
+#else /* USE_FIXED */
+
+#define FIXR(x)                 ((float)(x))
+#define FIXR12(x)               ((float)(x))
+#define FIXR15(x)               ((float)(x))
+#define ROUND15(x)              (x)
+
+#define AC3_RENAME(x)           x
+#define AC3_NORM(norm)          (1.0f/(norm))
+#define AC3_MUL(a,b)            ((a) * (b))
+#define AC3_RANGE(x)            (dynamic_range_tab[(x)])
+#define AC3_HEAVY_RANGE(x)      (ff_ac3_heavy_dynamic_range_tab[(x)])
+#define AC3_DYNAMIC_RANGE(x)    (powf(x,  s->drc_scale))
+#define AC3_SPX_BLEND(x)        (x)* (1.0f/32)
+#define AC3_DYNAMIC_RANGE1      1.0f
+
+typedef float                   INTFLOAT;
+typedef float                   SHORTFLOAT;
+
+#endif /* USE_FIXED */
+
+#define AC3_LEVEL(x)            ROUND15((x) * FIXR15(M_SQRT1_2))
+
 /* pre-defined gain values */
-#define LEVEL_PLUS_3DB          1.4142135623730950
+#define LEVEL_PLUS_3DB          M_SQRT2
 #define LEVEL_PLUS_1POINT5DB    1.1892071150027209
 #define LEVEL_MINUS_1POINT5DB   0.8408964152537145
-#define LEVEL_MINUS_3DB         0.7071067811865476
+#define LEVEL_MINUS_3DB         M_SQRT1_2
 #define LEVEL_MINUS_4POINT5DB   0.5946035575013605
 #define LEVEL_MINUS_6DB         0.5000000000000000
 #define LEVEL_MINUS_9DB         0.3535533905932738
@@ -142,9 +191,7 @@ typedef struct AC3HeaderInfo {
     int surround_mix_level;                 ///< Surround mix level index
     uint16_t channel_map;
     int num_blocks;                         ///< number of audio blocks
-#if AV_HAVE_INCOMPATIBLE_LIBAV_ABI
     int dolby_surround_mode;
-#endif
     /** @} */
 
     /** @name Derived values
@@ -157,9 +204,6 @@ typedef struct AC3HeaderInfo {
     uint16_t frame_size;
     uint64_t channel_layout;
     /** @} */
-#if !AV_HAVE_INCOMPATIBLE_LIBAV_ABI
-    int dolby_surround_mode;
-#endif
 } AC3HeaderInfo;
 
 typedef enum {

@@ -25,6 +25,7 @@
 
 #include <string.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
 #include "bufferqueue.h"
@@ -35,8 +36,7 @@
 
 enum { Y, U, V, A };
 
-typedef struct {
-    int frame_requested;
+typedef struct AlphaMergeContext {
     int is_packed_rgb;
     uint8_t rgba_map[4];
     struct FFBufQueue queue_main;
@@ -54,23 +54,40 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat main_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat alpha_fmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
-    AVFilterFormats *main_formats = ff_make_format_list(main_fmts);
-    AVFilterFormats *alpha_formats = ff_make_format_list(alpha_fmts);
-    ff_formats_ref(main_formats, &ctx->inputs[0]->out_formats);
-    ff_formats_ref(alpha_formats, &ctx->inputs[1]->out_formats);
-    ff_formats_ref(main_formats, &ctx->outputs[0]->in_formats);
+    AVFilterFormats *main_formats = NULL, *alpha_formats = NULL;
+    int ret;
+
+    if (!(main_formats = ff_make_format_list(main_fmts)) ||
+        !(alpha_formats = ff_make_format_list(alpha_fmts))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    if ((ret = ff_formats_ref(main_formats , &ctx->inputs[0]->out_formats)) < 0 ||
+        (ret = ff_formats_ref(alpha_formats, &ctx->inputs[1]->out_formats)) < 0 ||
+        (ret = ff_formats_ref(main_formats , &ctx->outputs[0]->in_formats)) < 0)
+            goto fail;
     return 0;
+fail:
+    if (main_formats)
+        av_freep(&main_formats->formats);
+    av_freep(&main_formats);
+    if (alpha_formats)
+        av_freep(&alpha_formats->formats);
+    av_freep(&alpha_formats);
+    return ret;
 }
 
 static int config_input_main(AVFilterLink *inlink)
 {
     AlphaMergeContext *merge = inlink->dst->priv;
     merge->is_packed_rgb =
-        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0;
+        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0 &&
+        inlink->format != AV_PIX_FMT_GBRAP;
     return 0;
 }
 
@@ -115,14 +132,11 @@ static void draw_frame(AVFilterContext *ctx,
             }
         }
     } else {
-        int y;
         const int main_linesize = main_buf->linesize[A];
         const int alpha_linesize = alpha_buf->linesize[Y];
-        for (y = 0; y < h && y < alpha_buf->height; y++) {
-            memcpy(main_buf->data[A] + y * main_linesize,
-                   alpha_buf->data[Y] + y * alpha_linesize,
-                   FFMIN(main_linesize, alpha_linesize));
-        }
+        av_image_copy_plane(main_buf->data[A], main_linesize,
+                            alpha_buf->data[Y], alpha_linesize,
+                            FFMIN(main_linesize, alpha_linesize), alpha_buf->height);
     }
 }
 
@@ -146,7 +160,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         main_buf = ff_bufqueue_get(&merge->queue_main);
         alpha_buf = ff_bufqueue_get(&merge->queue_alpha);
 
-        merge->frame_requested = 0;
         draw_frame(ctx, main_buf, alpha_buf);
         ret = ff_filter_frame(ctx->outputs[0], main_buf);
         av_frame_free(&alpha_buf);
@@ -160,13 +173,10 @@ static int request_frame(AVFilterLink *outlink)
     AlphaMergeContext *merge = ctx->priv;
     int in, ret;
 
-    merge->frame_requested = 1;
-    while (merge->frame_requested) {
-        in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
-        ret = ff_request_frame(ctx->inputs[in]);
-        if (ret < 0)
-            return ret;
-    }
+    in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
+    ret = ff_request_frame(ctx->inputs[in]);
+    if (ret < 0)
+        return ret;
     return 0;
 }
 

@@ -51,11 +51,12 @@
  * Reference: libavcodec/aacsbr.c
  */
 
-#ifndef AVCODEC_MIPS_AACSBR_FLOAT_H
-#define AVCODEC_MIPS_AACSBR_FLOAT_H
+#ifndef AVCODEC_MIPS_AACSBR_MIPS_H
+#define AVCODEC_MIPS_AACSBR_MIPS_H
 
 #include "libavcodec/aac.h"
 #include "libavcodec/sbr.h"
+#include "libavutil/mips/asmdefs.h"
 
 #if HAVE_INLINE_ASM
 static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
@@ -89,8 +90,8 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
             "sw      %[temp5],   20(%[w0])        \n\t"
             "sw      %[temp6],   24(%[w0])        \n\t"
             "sw      %[temp7],   28(%[w0])        \n\t"
-            "addiu   %[w0],      %[w0],     32    \n\t"
-            "addiu   %[w1],      %[w1],     32    \n\t"
+            PTR_ADDIU " %[w0],      %[w0],     32 \n\t"
+            PTR_ADDIU " %[w1],      %[w1],     32 \n\t"
 
             : [w0]"+r"(w0), [w1]"+r"(w1),
               [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
@@ -124,8 +125,8 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
             "sw       %[temp5],    20(%[w0])       \n\t"
             "sw       %[temp6],    24(%[w0])       \n\t"
             "sw       %[temp7],    28(%[w0])       \n\t"
-            "addiu    %[w0],       %[w0],     32   \n\t"
-            "addiu    %[w1],       %[w1],     32   \n\t"
+            PTR_ADDIU "  %[w0],       %[w0],    32 \n\t"
+            PTR_ADDIU "  %[w1],       %[w1],    32 \n\t"
 
             : [w0]"+r"(w0), [w1]"+r"(w1),
               [temp0]"=&r"(temp0), [temp1]"=&r"(temp1),
@@ -149,6 +150,7 @@ static void sbr_qmf_analysis_mips(AVFloatDSPContext *fdsp, FFTContext *mdct,
 }
 
 #if HAVE_MIPSFPU
+#if !HAVE_MIPS32R6 && !HAVE_MIPS64R6
 static void sbr_qmf_synthesis_mips(FFTContext *mdct,
                               SBRDSPContext *sbrdsp, AVFloatDSPContext *fdsp,
                               float *out, float X[2][38][64],
@@ -298,13 +300,13 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
                 "lwc1    %[temp7],   2052(%[s0])                        \n\t"
                 "madd.s  %[temp0],   %[temp0],   %[temp12],  %[temp13]  \n\t"
                 "lwc1    %[temp8],   4104(%[v0])                        \n\t"
-                "addiu   %[dst],     %[dst],     16                     \n\t"
+                PTR_ADDIU "%[dst],     %[dst],      16                  \n\t"
                 "madd.s  %[temp1],   %[temp1],   %[temp14],  %[temp15]  \n\t"
                 "lwc1    %[temp9],   2056(%[s0])                        \n\t"
-                "addiu   %[s0],      %[s0],      16                     \n\t"
+                PTR_ADDIU " %[s0],      %[s0],      16                  \n\t"
                 "madd.s  %[temp2],   %[temp2],   %[temp16],  %[temp17]  \n\t"
                 "lwc1    %[temp10],  4108(%[v0])                        \n\t"
-                "addiu   %[v0],      %[v0],      16                     \n\t"
+                PTR_ADDIU " %[v0],      %[v0],      16                  \n\t"
                 "madd.s  %[temp3],   %[temp3],   %[temp18],  %[temp19]  \n\t"
                 "lwc1    %[temp11],  2044(%[s0])                        \n\t"
                 "lwc1    %[temp12],  4848(%[v0])                        \n\t"
@@ -445,7 +447,7 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
                 "madd.s  %[temp3],   %[temp3],   %[temp10],  %[temp11]  \n\t"
                 "lwc1    %[temp19],  2316(%[s0])                        \n\t"
                 "madd.s  %[temp0],   %[temp0],   %[temp12],  %[temp13]  \n\t"
-                "addiu   %[dst],     %[dst],     16                     \n\t"
+                PTR_ADDIU "%[dst],     %[dst],     16                   \n\t"
                 "madd.s  %[temp1],   %[temp1],   %[temp14],  %[temp15]  \n\t"
                 "madd.s  %[temp2],   %[temp2],   %[temp16],  %[temp17]  \n\t"
                 "madd.s  %[temp3],   %[temp3],   %[temp18],  %[temp19]  \n\t"
@@ -487,7 +489,8 @@ static void sbr_qmf_synthesis_mips(FFTContext *mdct,
 #define sbr_qmf_analysis sbr_qmf_analysis_mips
 #define sbr_qmf_synthesis sbr_qmf_synthesis_mips
 
+#endif /* !HAVE_MIPS32R6 && !HAVE_MIPS64R6 */
 #endif /* HAVE_MIPSFPU */
 #endif /* HAVE_INLINE_ASM */
 
-#endif /* AVCODEC_MIPS_AACSBR_FLOAT_H */
+#endif /* AVCODEC_MIPS_AACSBR_MIPS_H */

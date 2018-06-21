@@ -30,7 +30,7 @@
 #endif
 #include "libavutil/lzo.h"
 
-typedef struct {
+typedef struct CamStudioContext {
     AVFrame *pic;
     int linelen, height, bpp;
     unsigned int decomp_size;
@@ -81,15 +81,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     switch ((buf[0] >> 1) & 7) {
         case 0: { // lzo compression
             int outlen = c->decomp_size, inlen = buf_size - 2;
-            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen))
+            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen)) {
                 av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
+                return AVERROR_INVALIDDATA;
+            }
             break;
         }
         case 1: { // zlib compression
 #if CONFIG_ZLIB
             unsigned long dlen = c->decomp_size;
-            if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK)
+            if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK) {
                 av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
+                return AVERROR_INVALIDDATA;
+            }
             break;
 #else
             av_log(avctx, AV_LOG_ERROR, "compiled without zlib support\n");
@@ -127,7 +131,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     switch (avctx->bits_per_coded_sample) {
         case 16: avctx->pix_fmt = AV_PIX_FMT_RGB555LE; break;
         case 24: avctx->pix_fmt = AV_PIX_FMT_BGR24; break;
-        case 32: avctx->pix_fmt = AV_PIX_FMT_BGRA; break;
+        case 32: avctx->pix_fmt = AV_PIX_FMT_BGR0; break;
         default:
             av_log(avctx, AV_LOG_ERROR,
                    "CamStudio codec error: invalid depth %i bpp\n",
@@ -166,5 +170,5 @@ AVCodec ff_cscd_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

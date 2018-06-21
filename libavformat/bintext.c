@@ -54,12 +54,12 @@ static AVStream * init_stream(AVFormatContext *s)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
-    st->codec->codec_tag   = 0;
-    st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_tag   = 0;
+    st->codecpar->codec_type  = AVMEDIA_TYPE_VIDEO;
 
     if (!bin->width) {
-        st->codec->width  = (80<<3);
-        st->codec->height = (25<<4);
+        st->codecpar->width  = (80<<3);
+        st->codecpar->height = (25<<4);
     }
 
     avpriv_set_pts_info(st, 60, bin->framerate.den, bin->framerate.num);
@@ -74,9 +74,9 @@ static AVStream * init_stream(AVFormatContext *s)
 /**
  * Given filesize and width, calculate height (assume font_height of 16)
  */
-static void calculate_height(AVCodecContext *avctx, uint64_t fsize)
+static void calculate_height(AVCodecParameters *par, uint64_t fsize)
 {
-    avctx->height = (fsize / ((avctx->width>>3)*2)) << 4;
+    par->height = (fsize / ((par->width>>3)*2)) << 4;
 }
 #endif
 
@@ -119,12 +119,59 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
     return 0;
 }
 
-static void predict_width(AVCodecContext *avctx, uint64_t fsize, int got_width)
+static void predict_width(AVCodecParameters *par, uint64_t fsize, int got_width)
 {
     /** attempt to guess width */
     if (!got_width)
-        avctx->width = fsize > 4000 ? (160<<3) : (80<<3);
+        par->width = fsize > 4000 ? (160<<3) : (80<<3);
 }
+
+static int bin_probe(AVProbeData *p)
+{
+    const uint8_t *d = p->buf;
+    int magic = 0, sauce = 0;
+    int invisible = 0;
+    int i;
+
+    if (p->buf_size > 256)
+        magic = !memcmp(d + p->buf_size - 256, next_magic, sizeof(next_magic));
+    if (p->buf_size > 128)
+        sauce = !memcmp(d + p->buf_size - 128, "SAUCE00", 7);
+
+    if (magic)
+        return AVPROBE_SCORE_EXTENSION + 1;
+
+    if (av_match_ext(p->filename, "bin")) {
+        AVCodecParameters par;
+        int got_width = 0;
+        par.width = par.height = 0;
+        if (sauce)
+            return AVPROBE_SCORE_EXTENSION + 1;
+
+        predict_width(&par, p->buf_size, got_width);
+        if (par.width <= 0)
+            return 0;
+        calculate_height(&par, p->buf_size);
+        if (par.height <= 0)
+            return 0;
+
+        for (i = 0; i < p->buf_size - 256;  i+=2) {
+            if ((d[i+1] & 15) == (d[i+1] >> 4) && d[i] && d[i] != 0xFF && d[i] != ' ') {
+                invisible ++;
+            }
+        }
+
+        if (par.width * par.height * 2 / (8*16) == p->buf_size)
+            return AVPROBE_SCORE_MAX / 2;
+        return 0;
+    }
+
+    if (sauce)
+        return 1;
+
+    return 0;
+}
+
 
 static int bintext_read_header(AVFormatContext *s)
 {
@@ -134,21 +181,21 @@ static int bintext_read_header(AVFormatContext *s)
     AVStream *st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_id    = AV_CODEC_ID_BINTEXT;
+    st->codecpar->codec_id    = AV_CODEC_ID_BINTEXT;
 
-    if (ff_alloc_extradata(st->codec, 2))
+    if (ff_alloc_extradata(st->codecpar, 2))
         return AVERROR(ENOMEM);
-    st->codec->extradata[0] = 16;
-    st->codec->extradata[1] = 0;
+    st->codecpar->extradata[0] = 16;
+    st->codecpar->extradata[1] = 0;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int got_width = 0;
         bin->fsize = avio_size(pb);
         if (ff_sauce_read(s, &bin->fsize, &got_width, 0) < 0)
             next_tag_read(s, &bin->fsize);
         if (!bin->width) {
-            predict_width(st->codec, bin->fsize, got_width);
-            calculate_height(st->codec, bin->fsize);
+            predict_width(st->codecpar, bin->fsize, got_width);
+            calculate_height(st->codecpar, bin->fsize);
         }
         avio_seek(pb, 0, SEEK_SET);
     }
@@ -179,30 +226,30 @@ static int xbin_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     avio_skip(pb, 5);
-    st->codec->width   = avio_rl16(pb)<<3;
-    st->codec->height  = avio_rl16(pb);
+    st->codecpar->width   = avio_rl16(pb)<<3;
+    st->codecpar->height  = avio_rl16(pb);
     fontheight         = avio_r8(pb);
-    st->codec->height *= fontheight;
+    st->codecpar->height *= fontheight;
     flags              = avio_r8(pb);
 
-    st->codec->extradata_size = 2;
+    st->codecpar->extradata_size = 2;
     if ((flags & BINTEXT_PALETTE))
-        st->codec->extradata_size += 48;
+        st->codecpar->extradata_size += 48;
     if ((flags & BINTEXT_FONT))
-        st->codec->extradata_size += fontheight * (flags & 0x10 ? 512 : 256);
-    st->codec->codec_id    = flags & 4 ? AV_CODEC_ID_XBIN : AV_CODEC_ID_BINTEXT;
+        st->codecpar->extradata_size += fontheight * (flags & 0x10 ? 512 : 256);
+    st->codecpar->codec_id    = flags & 4 ? AV_CODEC_ID_XBIN : AV_CODEC_ID_BINTEXT;
 
-    if (ff_alloc_extradata(st->codec, st->codec->extradata_size))
+    if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size))
         return AVERROR(ENOMEM);
-    st->codec->extradata[0] = fontheight;
-    st->codec->extradata[1] = flags;
-    if (avio_read(pb, st->codec->extradata + 2, st->codec->extradata_size - 2) < 0)
+    st->codecpar->extradata[0] = fontheight;
+    st->codecpar->extradata[1] = flags;
+    if (avio_read(pb, st->codecpar->extradata + 2, st->codecpar->extradata_size - 2) < 0)
         return AVERROR(EIO);
 
-    if (pb->seekable) {
-        bin->fsize = avio_size(pb) - 9 - st->codec->extradata_size;
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
+        bin->fsize = avio_size(pb) - 9 - st->codecpar->extradata_size;
         ff_sauce_read(s, &bin->fsize, NULL, 0);
-        avio_seek(pb, 9 + st->codec->extradata_size, SEEK_SET);
+        avio_seek(pb, 9 + st->codecpar->extradata_size, SEEK_SET);
     }
 
     return 0;
@@ -222,28 +269,28 @@ static int adf_read_header(AVFormatContext *s)
     st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_id    = AV_CODEC_ID_BINTEXT;
+    st->codecpar->codec_id    = AV_CODEC_ID_BINTEXT;
 
-    if (ff_alloc_extradata(st->codec, 2 + 48 + 4096))
+    if (ff_alloc_extradata(st->codecpar, 2 + 48 + 4096))
         return AVERROR(ENOMEM);
-    st->codec->extradata[0] = 16;
-    st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
+    st->codecpar->extradata[0] = 16;
+    st->codecpar->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
 
-    if (avio_read(pb, st->codec->extradata + 2, 24) < 0)
+    if (avio_read(pb, st->codecpar->extradata + 2, 24) < 0)
         return AVERROR(EIO);
     avio_skip(pb, 144);
-    if (avio_read(pb, st->codec->extradata + 2 + 24, 24) < 0)
+    if (avio_read(pb, st->codecpar->extradata + 2 + 24, 24) < 0)
         return AVERROR(EIO);
-    if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)
+    if (avio_read(pb, st->codecpar->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int got_width = 0;
         bin->fsize = avio_size(pb) - 1 - 192 - 4096;
-        st->codec->width = 80<<3;
+        st->codecpar->width = 80<<3;
         ff_sauce_read(s, &bin->fsize, &got_width, 0);
         if (!bin->width)
-            calculate_height(st->codec, bin->fsize);
+            calculate_height(st->codecpar, bin->fsize);
         avio_seek(pb, 1 + 192 + 4096, SEEK_SET);
     }
     return 0;
@@ -271,30 +318,30 @@ static int idf_read_header(AVFormatContext *s)
     AVStream *st;
     int got_width = 0;
 
-    if (!pb->seekable)
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     st = init_stream(s);
     if (!st)
         return AVERROR(ENOMEM);
-    st->codec->codec_id    = AV_CODEC_ID_IDF;
+    st->codecpar->codec_id    = AV_CODEC_ID_IDF;
 
-    if (ff_alloc_extradata(st->codec, 2 + 48 + 4096))
+    if (ff_alloc_extradata(st->codecpar, 2 + 48 + 4096))
         return AVERROR(ENOMEM);
-    st->codec->extradata[0] = 16;
-    st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
+    st->codecpar->extradata[0] = 16;
+    st->codecpar->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
 
     avio_seek(pb, avio_size(pb) - 4096 - 48, SEEK_SET);
 
-    if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)
+    if (avio_read(pb, st->codecpar->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
-    if (avio_read(pb, st->codec->extradata + 2, 48) < 0)
+    if (avio_read(pb, st->codecpar->extradata + 2, 48) < 0)
         return AVERROR(EIO);
 
     bin->fsize = avio_size(pb) - 12 - 4096 - 48;
     ff_sauce_read(s, &bin->fsize, &got_width, 0);
     if (!bin->width)
-        calculate_height(st->codec, bin->fsize);
+        calculate_height(st->codecpar, bin->fsize);
     avio_seek(pb, 12, SEEK_SET);
     return 0;
 }
@@ -310,7 +357,7 @@ static int read_packet(AVFormatContext *s,
             return AVERROR(EIO);
         bin->fsize = -1; /* done */
     } else if (!bin->fsize) {
-        if (url_feof(s->pb))
+        if (avio_feof(s->pb))
             return AVERROR(EIO);
         if (av_get_packet(s->pb, pkt, bin->chars_per_frame) < 0)
             return AVERROR(EIO);
@@ -326,7 +373,7 @@ static int read_packet(AVFormatContext *s,
 static const AVOption options[] = {
     { "linespeed", "set simulated line speed (bytes per second)", OFFSET(chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "set video size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
@@ -343,9 +390,9 @@ AVInputFormat ff_bintext_demuxer = {
     .name           = "bin",
     .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
     .priv_data_size = sizeof(BinDemuxContext),
+    .read_probe     = bin_probe,
     .read_header    = bintext_read_header,
     .read_packet    = read_packet,
-    .extensions     = "bin",
     .priv_class     = CLASS("Binary text demuxer"),
 };
 #endif

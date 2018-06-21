@@ -23,14 +23,24 @@
  */
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <float.h>
 
-#include "libavformat/avformat.h"
-#include "libavformat/options_table.h"
-#include "libavcodec/avcodec.h"
-#include "libavcodec/options_table.h"
+// print_options is build for the host, os_support.h isn't needed and is setup
+// for the target. without this build breaks on mingw
+#define AVFORMAT_OS_SUPPORT_H
+
+#include "libavutil/attributes.h"
 #include "libavutil/opt.h"
+
+/* Forcibly turn off deprecation warnings, which just add noise here. */
+#undef attribute_deprecated
+#define attribute_deprecated
+
+#include "libavcodec/options_table.h"
+
+#include "libavformat/options_table.h"
 
 static void print_usage(void)
 {

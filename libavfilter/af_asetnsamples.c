@@ -33,7 +33,7 @@
 #include "internal.h"
 #include "formats.h"
 
-typedef struct {
+typedef struct ASNSContext {
     const AVClass *class;
     int nb_out_samples;  ///< how many samples to output
     AVAudioFifo *fifo;   ///< samples are queued here
@@ -47,8 +47,8 @@ typedef struct {
 static const AVOption asetnsamples_options[] = {
     { "nb_out_samples", "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
     { "n",              "set the number of per-frame output samples", OFFSET(nb_out_samples), AV_OPT_TYPE_INT, {.i64=1024}, 1, INT_MAX, FLAGS },
-    { "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
-    { "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS },
+    { "pad", "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
+    { "p",   "pad last frame with zeros", OFFSET(pad), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -77,7 +77,6 @@ static int config_props_output(AVFilterLink *outlink)
     asns->fifo = av_audio_fifo_alloc(outlink->format, outlink->channels, asns->nb_out_samples);
     if (!asns->fifo)
         return AVERROR(ENOMEM);
-    outlink->flags |= FF_LINK_FLAG_REQUEST_LOOP;
 
     return 0;
 }
@@ -116,7 +115,7 @@ static int push_samples(AVFilterLink *outlink)
     outsamples->pts = asns->next_out_pts;
 
     if (asns->next_out_pts != AV_NOPTS_VALUE)
-        asns->next_out_pts += nb_out_samples;
+        asns->next_out_pts += av_rescale_q(nb_out_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     ret = ff_filter_frame(outlink, outsamples);
     if (ret < 0)
@@ -141,10 +140,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             return -1;
         }
     }
-    av_audio_fifo_write(asns->fifo, (void **)insamples->extended_data, nb_samples);
-    if (asns->next_out_pts == AV_NOPTS_VALUE)
+    ret = av_audio_fifo_write(asns->fifo, (void **)insamples->extended_data, nb_samples);
+    if (ret > 0 && asns->next_out_pts == AV_NOPTS_VALUE)
         asns->next_out_pts = insamples->pts;
     av_frame_free(&insamples);
+
+    if (ret < 0)
+        return ret;
 
     while (av_audio_fifo_size(asns->fifo) >= asns->nb_out_samples)
         push_samples(outlink);

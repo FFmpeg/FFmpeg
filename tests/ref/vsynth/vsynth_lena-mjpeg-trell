@@ -1,0 +1,4 @@
+6eb36ab28a082f496f1f3bc165704a68 *tests/data/fate/vsynth_lena-mjpeg-trell.avi
+582534 tests/data/fate/vsynth_lena-mjpeg-trell.avi
+dcb183a6a5fa06e7234d46dd97ceb8ec *tests/data/fate/vsynth_lena-mjpeg-trell.out.rawvideo
+stddev:    4.51 PSNR: 35.05 MAXDIFF:   60 bytes:  7603200/  7603200

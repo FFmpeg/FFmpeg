@@ -3,7 +3,7 @@
  *
  * Copyright (C) 2010 David Conrad
  * Copyright (C) 2010 Ronald S. Bultje
- * Copyright (C) 2010 Jason Garrett-Glaser
+ * Copyright (C) 2010 Fiona Glaser
  * Copyright (C) 2012 Daniel Kang
  *
  * This file is part of FFmpeg.
@@ -26,19 +26,15 @@
 #ifndef AVCODEC_VP8_H
 #define AVCODEC_VP8_H
 
-#include "libavutil/buffer.h"
+#include <stdatomic.h>
 
-#include "vp56.h"
-#include "vp8dsp.h"
+#include "libavutil/buffer.h"
+#include "libavutil/thread.h"
+
 #include "h264pred.h"
 #include "thread.h"
-#if HAVE_PTHREADS
-#include <pthread.h>
-#elif HAVE_OS2THREADS
-#include "compat/os2threads.h"
-#elif HAVE_W32THREADS
-#include "compat/w32pthreads.h"
-#endif
+#include "vp56.h"
+#include "vp8dsp.h"
 
 #define VP8_MAX_QUANT 127
 
@@ -84,7 +80,7 @@ typedef struct VP8FilterStrength {
 
 typedef struct VP8Macroblock {
     uint8_t skip;
-    // todo: make it possible to check for at least (i4x4 or split_mv)
+    // TODO: make it possible to check for at least (i4x4 or split_mv)
     // in one op. are others needed?
     uint8_t mode;
     uint8_t ref_frame;
@@ -92,10 +88,20 @@ typedef struct VP8Macroblock {
     uint8_t chroma_pred_mode;
     uint8_t segment;
     uint8_t intra4x4_pred_mode_mb[16];
-    uint8_t intra4x4_pred_mode_top[4];
+    DECLARE_ALIGNED(4, uint8_t, intra4x4_pred_mode_top)[4];
     VP56mv mv;
     VP56mv bmv[16];
 } VP8Macroblock;
+
+typedef struct VP8intmv {
+    int x;
+    int y;
+} VP8intmv;
+
+typedef struct VP8mvbounds {
+    VP8intmv mv_min;
+    VP8intmv mv_max;
+} VP8mvbounds;
 
 typedef struct VP8ThreadData {
     DECLARE_ALIGNED(16, int16_t, block)[6][4][16];
@@ -118,25 +124,32 @@ typedef struct VP8ThreadData {
     int thread_nr;
 #if HAVE_THREADS
     pthread_mutex_t lock;
-    pthread_cond_t  cond;
+    pthread_cond_t cond;
 #endif
-    int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
-    int wait_mb_pos; // What the current thread is waiting on.
+    atomic_int thread_mb_pos; // (mb_y << 16) | (mb_x & 0xFFFF)
+    atomic_int wait_mb_pos; // What the current thread is waiting on.
 
 #define EDGE_EMU_LINESIZE 32
     DECLARE_ALIGNED(16, uint8_t, edge_emu_buffer)[21 * EDGE_EMU_LINESIZE];
     VP8FilterStrength *filter_strength;
+    VP8mvbounds mv_bounds;
 } VP8ThreadData;
 
 typedef struct VP8Frame {
     ThreadFrame tf;
     AVBufferRef *seg_map;
+
+    AVBufferRef *hwaccel_priv_buf;
+    void *hwaccel_picture_private;
 } VP8Frame;
 
 #define MAX_THREADS 8
 typedef struct VP8Context {
     VP8ThreadData *thread_data;
     AVCodecContext *avctx;
+    enum AVPixelFormat pix_fmt;
+    int actually_webp;
+
     VP8Frame *framep[4];
     VP8Frame *next_framep[4];
     VP8Frame *curframe;
@@ -144,15 +157,14 @@ typedef struct VP8Context {
 
     uint16_t mb_width;   /* number of horizontal MB */
     uint16_t mb_height;  /* number of vertical MB */
-    int linesize;
-    int uvlinesize;
+    ptrdiff_t linesize;
+    ptrdiff_t uvlinesize;
 
     uint8_t keyframe;
     uint8_t deblock_filter;
     uint8_t mbskip_enabled;
     uint8_t profile;
-    VP56mv mv_min;
-    VP56mv mv_max;
+    VP8mvbounds mv_bounds;
 
     int8_t sign_bias[4]; ///< one state [0, 1] per ref frame type
     int ref_count[3];
@@ -166,6 +178,7 @@ typedef struct VP8Context {
         uint8_t enabled;
         uint8_t absolute_vals;
         uint8_t update_map;
+        uint8_t update_feature_data;
         int8_t base_quant[4];
         int8_t filter_level[4];     ///< base loop filter level
     } segmentation;
@@ -193,8 +206,19 @@ typedef struct VP8Context {
         int16_t chroma_qmul[2];
     } qmat[4];
 
+    // Raw quantisation values, which may be needed by hwaccel decode.
+    struct {
+        int yac_qi;
+        int ydc_delta;
+        int y2dc_delta;
+        int y2ac_delta;
+        int uvdc_delta;
+        int uvac_delta;
+    } quant;
+
     struct {
         uint8_t enabled;    ///< whether each mb can have a different strength based on mode/ref
+        uint8_t update;
 
         /**
          * filter strength adjustment for the following macroblock modes:
@@ -205,7 +229,7 @@ typedef struct VP8Context {
          * [7]   - split mv
          *  i16x16 modes never have any adjustment
          */
-        int8_t mode[VP8_MVMODE_SPLIT+1];
+        int8_t mode[VP8_MVMODE_SPLIT + 1];
 
         /**
          * filter strength adjustment for macroblocks that reference:
@@ -217,14 +241,28 @@ typedef struct VP8Context {
         int8_t ref[4];
     } lf_delta;
 
-    uint8_t (*top_border)[16+8+8];
+    uint8_t (*top_border)[16 + 8 + 8];
     uint8_t (*top_nnz)[9];
 
     VP56RangeCoder c;   ///< header context, includes mb modes and motion vectors
 
+    /* This contains the entropy coder state at the end of the header
+     * block, in the form specified by the standard.  For use by
+     * hwaccels, so that a hardware decoder has the information to
+     * start decoding at the macroblock layer.
+     */
+    struct {
+        const uint8_t *input;
+        uint32_t range;
+        uint32_t value;
+        int bit_count;
+    } coder_state_at_header_end;
+
+    int header_partition_size;
+
     /**
      * These are all of the updatable probabilities for binary decisions.
-     * They are only implictly reset on keyframes, making it quite likely
+     * They are only implicitly reset on keyframes, making it quite likely
      * for an interframe to desync if a prior frame's header was corrupt
      * or missing outright!
      */
@@ -236,8 +274,9 @@ typedef struct VP8Context {
         uint8_t golden;
         uint8_t pred16x16[4];
         uint8_t pred8x8c[3];
-        uint8_t token[4][16][3][NUM_DCT_TOKENS-1];
+        uint8_t token[4][16][3][NUM_DCT_TOKENS - 1];
         uint8_t mvc[2][19];
+        uint8_t scan[16];
     } prob[2];
 
     VP8Macroblock *macroblocks_base;
@@ -258,19 +297,48 @@ typedef struct VP8Context {
      */
     int num_coeff_partitions;
     VP56RangeCoder coeff_partition[8];
+    int coeff_partition_size[8];
     VideoDSPContext vdsp;
     VP8DSPContext vp8dsp;
     H264PredContext hpc;
     vp8_mc_func put_pixels_tab[3][3][3];
     VP8Frame frames[5];
 
+    uint8_t colorspace; ///< 0 is the only value allowed (meaning bt601)
+    uint8_t fullrange;  ///< whether we can skip clamping in dsp functions
+
     int num_jobs;
     /**
      * This describes the macroblock memory layout.
      * 0 -> Only width+height*2+1 macroblocks allocated (frame/single thread).
-     * 1 -> Macroblocks for entire frame alloced (sliced thread).
+     * 1 -> Macroblocks for entire frame allocated (sliced thread).
      */
     int mb_layout;
+
+    int (*decode_mb_row_no_filter)(AVCodecContext *avctx, void *tdata, int jobnr, int threadnr);
+    void (*filter_mb_row)(AVCodecContext *avctx, void *tdata, int jobnr, int threadnr);
+
+    int vp7;
+
+    /**
+     * Fade bit present in bitstream (VP7)
+     */
+    int fade_present;
+
+    /**
+     * Interframe DC prediction (VP7)
+     * [0] VP56_FRAME_PREVIOUS
+     * [1] VP56_FRAME_GOLDEN
+     */
+    uint16_t inter_dc_pred[2][2];
+
+    /**
+     * Macroblock features (VP7)
+     */
+    uint8_t feature_enabled[4];
+    uint8_t feature_present_prob[4];
+    uint8_t feature_index_prob[4][3];
+    uint8_t feature_value[4][4];
 } VP8Context;
 
 int ff_vp8_decode_init(AVCodecContext *avctx);

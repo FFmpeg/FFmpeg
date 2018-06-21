@@ -13,8 +13,8 @@ You can disable all the output devices using the configure option
 option "--enable-outdev=@var{OUTDEV}", or you can disable a particular
 input device using the option "--disable-outdev=@var{OUTDEV}".
 
-The option "-formats" of the ff* tools will display the list of
-enabled output devices (amongst the muxers).
+The option "-devices" of the ff* tools will display the list of
+enabled output devices.
 
 A description of the currently available output devices follows.
 
@@ -104,7 +104,7 @@ The argument must be one of @code{algorithms}, @code{antialiases},
 The following command shows the @command{ffmpeg} output is an
 CACA window, forcing its size to 80x25:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
 @end example
 
 @item
@@ -131,8 +131,8 @@ and @code{--extra-ldflags}.
 On Windows, you need to run the IDL files through @command{widl}.
 
 DeckLink is very picky about the formats it supports. Pixel format is always
-uyvy422, framerate and video size must be determined for your device with
-@command{-list_formats 1}. Audio sample rate is always 48 kHz.
+uyvy422, framerate, field order and video size must be determined for your
+device with @command{-list_formats 1}. Audio sample rate is always 48 kHz.
 
 @subsection Options
 
@@ -206,25 +206,70 @@ Set x/y coordinate of top left corner. Default is 0.
 Play a file on framebuffer device @file{/dev/fb0}.
 Required pixel format depends on current framebuffer settings.
 @example
-ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
+
+@section libndi_newtek
+
+The libndi_newtek output device provides playback capabilities for using NDI (Network
+Device Interface, standard created by NewTek).
+
+Output filename is a NDI name.
+
+To enable this output device, you need the NDI SDK and you
+need to configure with the appropriate @code{--extra-cflags}
+and @code{--extra-ldflags}.
+
+NDI uses uyvy422 pixel format natively, but also supports bgra, bgr0, rgba and
+rgb0.
+
+@subsection Options
+
+@table @option
+
+@item reference_level
+The audio reference level in dB. This specifies how many dB above the
+reference level (+4dBU) is the full range of 16 bit audio.
+Defaults to @option{0}.
+
+@item clock_video
+These specify whether video "clock" themselves.
+Defaults to @option{false}.
+
+@item clock_audio
+These specify whether audio "clock" themselves.
+Defaults to @option{false}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Play video clip:
+@example
+ffmpeg -i "udp://@@239.1.1.1:10480?fifo_size=1000000&overrun_nonfatal=1" -vf "scale=720:576,fps=fps=25,setdar=dar=16/9,format=pix_fmts=uyvy422" -f libndi_newtek NEW_NDI1
+@end example
+
+@end itemize
 
 @section opengl
 OpenGL output device.
 
 To enable this output device you need to configure FFmpeg with @code{--enable-opengl}.
 
-Device allows to render to OpenGL context.
+This output device allows one to render to OpenGL context.
 Context may be provided by application or default SDL window is created.
 
 When device renders to external context, application must implement handlers for following messages:
-@code{AV_CTL_MESSAGE_CREATE_WINDOW_BUFFER} - create OpenGL context on current thread.
-@code{AV_CTL_MESSAGE_PREPARE_WINDOW_BUFFER} - make OpenGL context current.
-@code{AV_CTL_MESSAGE_DISPLAY_WINDOW_BUFFER} - swap buffers.
-@code{AV_CTL_MESSAGE_DESTROY_WINDOW_BUFFER} - destroy OpenGL context.
-Application is also required to inform a device about current resolution by sending @code{AV_DEVICE_WINDOW_RESIZED} message.
+@code{AV_DEV_TO_APP_CREATE_WINDOW_BUFFER} - create OpenGL context on current thread.
+@code{AV_DEV_TO_APP_PREPARE_WINDOW_BUFFER} - make OpenGL context current.
+@code{AV_DEV_TO_APP_DISPLAY_WINDOW_BUFFER} - swap buffers.
+@code{AV_DEV_TO_APP_DESTROY_WINDOW_BUFFER} - destroy OpenGL context.
+Application is also required to inform a device about current resolution by sending @code{AV_APP_TO_DEV_WINDOW_SIZE} message.
 
 @subsection Options
 @table @option
@@ -237,6 +282,10 @@ Application must provide OpenGL context and both @code{window_size_cb} and @code
 @item window_title
 Set the SDL window title, if not specified default to the filename specified for the output device.
 Ignored when @option{no_window} is set.
+@item window_size
+Set preferred window size, can be a string of the form widthxheight or a video size abbreviation.
+If not specified it defaults to the size of the input video, downscaled according to the aspect ratio.
+Mostly usable when @option{no_window} is not set.
 
 @end table
 
@@ -290,6 +339,20 @@ When both options are provided then the highest value is used
 are set to 0 (which is default), the device will use the default
 PulseAudio duration value. By default PulseAudio set buffer duration
 to around 2 seconds.
+
+@item prebuf
+Specify pre-buffering size in bytes. The server does not start with
+playback before at least @option{prebuf} bytes are available in the
+buffer. By default this option is initialized to the same value as
+@option{buffer_size} or @option{buffer_duration} (whichever is bigger).
+
+@item minreq
+Specify minimum request size in bytes. The server does not request less
+than @option{minreq} bytes from the client, instead waits until the buffer
+is free enough to request more bytes at once. It is recommended to not set
+this option, which will initialize this to a value that is deemed sensible
+by the server.
+
 @end table
 
 @subsection Examples
@@ -333,6 +396,11 @@ downscaled according to the aspect ratio.
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
 Default value is zero.
+
+@item window_enable_quit
+Enable quit action (using window button or keyboard key)
+when non-zero value is provided.
+Default value is 1 (enable quit action)
 @end table
 
 @subsection Interactive commands
@@ -350,12 +418,16 @@ Quit the device immediately.
 The following command shows the @command{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
 @section sndio
 
 sndio audio output device.
+
+@section v4l2
+
+Video4Linux2 output device.
 
 @section xv
 
@@ -388,19 +460,26 @@ For example, @code{dual-headed:0.1} would specify screen 1 of display
 Check the X11 specification for more detailed information about the
 display name format.
 
+@item window_id
+When set to non-zero value then device doesn't create new window,
+but uses existing one with provided @var{window_id}. By default
+this options is set to zero and device creates its own window.
+
 @item window_size
 Set the created window size, can be a string of the form
 @var{width}x@var{height} or a video size abbreviation. If not
 specified it defaults to the size of the input video.
+Ignored when @var{window_id} is set.
 
 @item window_x
 @item window_y
 Set the X and Y window offsets for the created window. They are both
 set to 0 by default. The values may be ignored by the window manager.
+Ignored when @var{window_id} is set.
 
 @item window_title
 Set the window title, if not specified default to the filename
-specified for the output device.
+specified for the output device. Ignored when @var{window_id} is set.
 @end table
 
 For more information about XVideo see @url{http://www.x.org/}.

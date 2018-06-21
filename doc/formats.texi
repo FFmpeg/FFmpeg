@@ -23,38 +23,54 @@ Reduce buffering.
 
 @item probesize @var{integer} (@emph{input})
 Set probing size in bytes, i.e. the size of the data to analyze to get
-stream information. A higher value will allow to detect more
+stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
 
-@item fflags @var{flags} (@emph{input/output})
-Set format flags.
+@item fflags @var{flags}
+Set format flags. Some are implemented for a limited number of formats.
 
-Possible values:
+Possible values for input files:
 @table @samp
+@item discardcorrupt
+Discard corrupted packets.
+@item fastseek
+Enable fast, but inaccurate seeks for some formats.
+@item genpts
+Generate missing PTS if DTS is present.
+@item igndts
+Ignore DTS if PTS is set. Inert when nofillin is set.
 @item ignidx
 Ignore index.
-@item genpts
-Generate PTS.
+@item keepside (@emph{deprecated},@emph{inert})
+@item nobuffer
+Reduce the latency introduced by buffering during initial input streams analysis.
 @item nofillin
-Do not fill in missing values that can be exactly calculated.
+Do not fill in missing values in packet fields that can be exactly calculated.
 @item noparse
 Disable AVParsers, this needs @code{+nofillin} too.
-@item igndts
-Ignore DTS.
-@item discardcorrupt
-Discard corrupted frames.
 @item sortdts
-Try to interleave output packets by DTS.
-@item keepside
-Do not merge side data.
-@item latm
-Enable RTP MP4A-LATM payload.
-@item nobuffer
-Reduce the latency introduced by optional buffering
+Try to interleave output packets by DTS. At present, available only for AVIs with an index.
+@end table
+
+Possible values for output files:
+@table @samp
+@item autobsf
+Automatically apply bitstream filters as required by the output format. Enabled by default.
+@item bitexact
+Only write platform-, build- and time-independent data.
+This ensures that file and data checksums are reproducible and match between
+platforms. Its primary use is for regression testing.
+@item flush_packets
+Write out packets immediately.
+@item latm (@emph{deprecated},@emph{inert})
+@item shortest
+Stop muxing at the end of the shortest stream.
+It may be needed to increase max_interleave_delta to avoid flushing the longer
+streams before EOF.
 @end table
 
 @item seek2any @var{integer} (@emph{input})
@@ -63,7 +79,7 @@ Default is 0.
 
 @item analyzeduration @var{integer} (@emph{input})
 Specify how many microseconds are analyzed to probe the input. A
-higher value will allow to detect more accurate information, but will
+higher value will enable detecting more accurate information, but will
 increase latency. It defaults to 5,000,000 microseconds = 5 seconds.
 
 @item cryptokey @var{hexadecimal string} (@emph{input})
@@ -121,8 +137,27 @@ Consider all spec non compliancies as errors.
 Consider things that a sane encoder should not do as an error.
 @end table
 
+@item max_interleave_delta @var{integer} (@emph{output})
+Set maximum buffering duration for interleaving. The duration is
+expressed in microseconds, and defaults to 1000000 (1 second).
+
+To ensure all the streams are interleaved correctly, libavformat will
+wait until it has at least one packet for each stream before actually
+writing any packets to the output file. When some streams are
+"sparse" (i.e. there are large gaps between successive packets), this
+can result in excessive buffering.
+
+This field specifies the maximum difference between the timestamps of the
+first and the last packet in the muxing queue, above which libavformat
+will output a packet regardless of whether it has queued a packet for all
+the streams.
+
+If set to 0, libavformat will continue buffering packets until it has
+a packet for each stream, regardless of the maximum timestamp
+difference between the buffered packets.
+
 @item use_wallclock_as_timestamps @var{integer} (@emph{input})
-Use wallclock as timestamps.
+Use wallclock as timestamps if set to 1. Default is 0.
 
 @item avoid_negative_ts @var{integer} (@emph{output})
 
@@ -153,9 +188,10 @@ Default is 0.
 Correct single timestamp overflows if set to 1. Default is 1.
 
 @item flush_packets @var{integer} (@emph{output})
-Flush the underlying I/O stream after each packet. Default 1 enables it, and
-has the effect of reducing the latency; 0 disables it and may slightly
-increase performance in some cases.
+Flush the underlying I/O stream after each packet. Default is -1 (auto), which
+means that the underlying protocol will decide, 1 enables it, and has the
+effect of reducing the latency, 0 disables it and may increase IO throughput in
+some cases.
 
 @item output_ts_offset @var{offset} (@emph{output})
 Set the output time offset.
@@ -168,6 +204,22 @@ The offset is added by the muxer to the output timestamps.
 Specifying a positive offset means that the corresponding streams are
 delayed bt the time duration specified in @var{offset}. Default value
 is @code{0} (meaning that no offset is applied).
+
+@item format_whitelist @var{list} (@emph{input})
+"," separated list of allowed demuxers. By default all are allowed.
+
+@item dump_separator @var{string} (@emph{input})
+Separator used to separate the fields printed on the command line about the
+Stream parameters.
+For example to separate the fields with newlines and indention:
+@example
+ffprobe -dump_separator "
+                          "  -i ~/videos/matrixbench_mpeg2.mpg
+@end example
+
+@item max_streams @var{integer} (@emph{input})
+Specifies the maximum number of streams. This can be used to reject files that
+would require too many resources due to a large number of streams.
 @end table
 
 @c man end FORMAT OPTIONS

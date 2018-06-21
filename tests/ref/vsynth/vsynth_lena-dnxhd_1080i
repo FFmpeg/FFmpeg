@@ -1,0 +1,4 @@
+204e80f2e406ada90fca596ab2810b3e *./tests/data/vsynth_lena/dnxhd-1080i.mov
+3031911 ./tests/data/vsynth_lena/dnxhd-1080i.mov
+3c559af629ae0a8fb1a9a0e4b4da7733 *./tests/data/dnxhd_1080i.vsynth_lena.out.yuv
+stddev:    1.31 PSNR: 45.77 MAXDIFF:   23 bytes:   760320/  7603200

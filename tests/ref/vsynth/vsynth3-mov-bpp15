@@ -1,0 +1,4 @@
+3d64ea4e9c78e72fcedca5e00363db7b *tests/data/fate/vsynth3-mov-bpp15.mov
+116293 tests/data/fate/vsynth3-mov-bpp15.mov
+19f61c34cbdef98b0f4aca6c19f59ed4 *tests/data/fate/vsynth3-mov-bpp15.out.rawvideo
+stddev:    4.35 PSNR: 35.35 MAXDIFF:   46 bytes:    86700/    86700

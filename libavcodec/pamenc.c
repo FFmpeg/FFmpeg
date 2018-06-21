@@ -57,6 +57,12 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         maxval     = 255;
         tuple_type = "GRAYSCALE_ALPHA";
         break;
+    case AV_PIX_FMT_YA16BE:
+        n          = w * 4;
+        depth      = 2;
+        maxval     = 0xFFFF;
+        tuple_type = "GRAYSCALE_ALPHA";
+        break;
     case AV_PIX_FMT_RGB24:
         n          = w * 3;
         depth      = 3;
@@ -85,7 +91,7 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return -1;
     }
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, n*h + 200, 0)) < 0)
         return ret;
 
     bytestream_start =
@@ -123,19 +129,13 @@ static int pam_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 static av_cold int pam_encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
-
+#if FF_API_CODED_FRAME
+FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     avctx->coded_frame->key_frame = 1;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
-    return 0;
-}
-
-static av_cold int pam_encode_close(AVCodecContext *avctx)
-{
-    av_frame_free(&avctx->coded_frame);
     return 0;
 }
 
@@ -145,9 +145,12 @@ AVCodec ff_pam_encoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_PAM,
     .init           = pam_encode_init,
-    .close          = pam_encode_close,
     .encode2        = pam_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A, AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA,
+        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_RGBA64BE,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
+        AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_YA16BE,
+        AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_NONE
     },
 };

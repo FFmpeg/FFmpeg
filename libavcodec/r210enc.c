@@ -26,10 +26,12 @@
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
-    avctx->coded_frame = av_frame_alloc();
+    int aligned_width = FFALIGN(avctx->width,
+                                avctx->codec_id == AV_CODEC_ID_R10K ? 1 : 64);
 
-    if (!avctx->coded_frame)
-        return AVERROR(ENOMEM);
+    avctx->bits_per_coded_sample = 32;
+    if (avctx->width > 0)
+        avctx->bit_rate = ff_guess_coded_bitrate(avctx) * aligned_width / avctx->width;
 
     return 0;
 }
@@ -44,11 +46,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     uint8_t *src_line;
     uint8_t *dst;
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, 4 * aligned_width * avctx->height)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, pkt, 4 * aligned_width * avctx->height, 0)) < 0)
         return ret;
 
-    avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
     src_line = pic->data[0];
     dst = pkt->data;
 
@@ -58,11 +58,11 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             uint32_t pixel;
             uint16_t r = *src++ >> 6;
             uint16_t g = *src++ >> 6;
-            uint16_t b = *src++ >> 4;
+            uint16_t b = *src++ >> 6;
             if (avctx->codec_id == AV_CODEC_ID_R210)
-                pixel = (r << 20) | (g << 10) | b >> 2;
+                pixel = (r << 20) | (g << 10) | b;
             else
-                pixel = (r << 22) | (g << 12) | b;
+                pixel = (r << 22) | (g << 12) | (b << 2);
             if (avctx->codec_id == AV_CODEC_ID_AVRP)
                 bytestream_put_le32(&dst, pixel);
             else
@@ -78,12 +78,6 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     return 0;
 }
 
-static av_cold int encode_close(AVCodecContext *avctx)
-{
-    av_freep(&avctx->coded_frame);
-
-    return 0;
-}
 
 #if CONFIG_R210_ENCODER
 AVCodec ff_r210_encoder = {
@@ -93,8 +87,8 @@ AVCodec ff_r210_encoder = {
     .id             = AV_CODEC_ID_R210,
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_R10K_ENCODER
@@ -105,8 +99,8 @@ AVCodec ff_r10k_encoder = {
     .id             = AV_CODEC_ID_R10K,
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif
 #if CONFIG_AVRP_ENCODER
@@ -117,7 +111,7 @@ AVCodec ff_avrp_encoder = {
     .id             = AV_CODEC_ID_AVRP,
     .init           = encode_init,
     .encode2        = encode_frame,
-    .close          = encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_RGB48, AV_PIX_FMT_NONE },
+    .capabilities   = AV_CODEC_CAP_INTRA_ONLY,
 };
 #endif

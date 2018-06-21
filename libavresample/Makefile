@@ -1,5 +1,5 @@
 NAME = avresample
-FFLIBS = avutil
+DESC = Libav audio resampling library
 
 HEADERS = avresample.h                                                  \
           version.h                                                     \

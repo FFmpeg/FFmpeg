@@ -23,8 +23,9 @@
 #define AVCODEC_CAVS_H
 
 #include "cavsdsp.h"
-#include "dsputil.h"
+#include "blockdsp.h"
 #include "h264chroma.h"
+#include "idctdsp.h"
 #include "get_bits.h"
 #include "videodsp.h"
 
@@ -161,8 +162,9 @@ typedef struct AVSFrame {
 
 typedef struct AVSContext {
     AVCodecContext *avctx;
-    DSPContext       dsp;
+    BlockDSPContext bdsp;
     H264ChromaContext h264chroma;
+    IDCTDSPContext idsp;
     VideoDSPContext vdsp;
     CAVSDSPContext  cdsp;
     GetBitContext gb;
@@ -214,6 +216,7 @@ typedef struct AVSContext {
     int luma_scan[4];
     int qp;
     int qp_fixed;
+    int pic_qp_fixed;
     int cbp;
     ScanTable scantable;
 
@@ -224,8 +227,8 @@ typedef struct AVSContext {
     uint8_t intern_border_y[26];
     uint8_t topleft_border_y, topleft_border_u, topleft_border_v;
 
-    void (*intra_pred_l[8])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
-    void (*intra_pred_c[7])(uint8_t *d,uint8_t *top,uint8_t *left,int stride);
+    void (*intra_pred_l[8])(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride);
+    void (*intra_pred_c[7])(uint8_t *d, uint8_t *top, uint8_t *left, ptrdiff_t stride);
     uint8_t *col_type_base;
 
     /* scaling factors for MV prediction */
@@ -239,6 +242,7 @@ typedef struct AVSContext {
     int16_t *block;
 } AVSContext;
 
+extern const uint8_t     ff_cavs_chroma_qp[64];
 extern const uint8_t     ff_cavs_partition_flags[30];
 extern const cavs_vector ff_cavs_intra_mv;
 extern const cavs_vector ff_cavs_dir_mv;
@@ -268,7 +272,7 @@ void ff_cavs_mv(AVSContext *h, enum cavs_mv_loc nP, enum cavs_mv_loc nC,
 void ff_cavs_init_mb(AVSContext *h);
 int  ff_cavs_next_mb(AVSContext *h);
 int ff_cavs_init_pic(AVSContext *h);
-void ff_cavs_init_top_lines(AVSContext *h);
+int ff_cavs_init_top_lines(AVSContext *h);
 int ff_cavs_init(AVCodecContext *avctx);
 int ff_cavs_end (AVCodecContext *avctx);
 

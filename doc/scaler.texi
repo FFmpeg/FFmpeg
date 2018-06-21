@@ -13,7 +13,8 @@ FFmpeg tools. For programmatic use, they can be set explicitly in the
 @anchor{sws_flags}
 @item sws_flags
 Set the scaler flags. This is also used to set the scaling
-algorithm. Only a single algorithm should be selected.
+algorithm. Only a single algorithm should be selected. Default
+value is @samp{bicubic}.
 
 It accepts the following values:
 @table @samp
@@ -35,7 +36,7 @@ Select nearest neighbor rescaling algorithm.
 @item area
 Select averaging area rescaling algorithm.
 
-@item bicubiclin
+@item bicublin
 Select bicubic scaling algorithm for the luma component, bilinear for
 chroma components.
 
@@ -46,7 +47,7 @@ Select Gaussian rescaling algorithm.
 Select sinc rescaling algorithm.
 
 @item lanczos
-Select lanczos rescaling algorithm.
+Select Lanczos rescaling algorithm.
 
 @item spline
 Select natural bicubic spline rescaling algorithm.
@@ -91,6 +92,7 @@ Select source range.
 @item dst_range
 Select destination range.
 
+@anchor{sws_params}
 @item param0, param1
 Set scaling algorithm parameters. The specified values are specific of
 some scaling algorithms and ignored by others. The specified values
@@ -112,6 +114,30 @@ bayer dither
 
 @item ed
 error diffusion dither
+
+@item a_dither
+arithmetic dither, based using addition
+
+@item x_dither
+arithmetic dither, based using xor (more random/less apparent patterning that
+a_dither).
+
+@end table
+
+@item alphablend
+Set the alpha blending to use when the input has alpha but the output does not.
+Default value is @samp{none}.
+
+@table @samp
+@item uniform_color
+Blend onto a uniform background color
+
+@item checkerboard
+Blend onto a checkerboard
+
+@item none
+No blending
+
 @end table
 
 @end table

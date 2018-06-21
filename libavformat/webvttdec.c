@@ -67,8 +67,8 @@ static int webvtt_read_header(AVFormatContext *s)
     if (!st)
         return AVERROR(ENOMEM);
     avpriv_set_pts_info(st, 64, 1, 1000);
-    st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
-    st->codec->codec_id   = AV_CODEC_ID_WEBVTT;
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id   = AV_CODEC_ID_WEBVTT;
     st->disposition |= webvtt->kind;
 
     av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
@@ -92,7 +92,8 @@ static int webvtt_read_header(AVFormatContext *s)
 
         /* ignore header chunk */
         if (!strncmp(p, "\xEF\xBB\xBFWEBVTT", 9) ||
-            !strncmp(p, "WEBVTT", 6))
+            !strncmp(p, "WEBVTT", 6) ||
+            !strncmp(p, "NOTE", 4))
             continue;
 
         /* optional cue identifier (can be a number like in SRT or some kind of
@@ -161,7 +162,7 @@ static int webvtt_read_header(AVFormatContext *s)
         SET_SIDE_DATA(settings,   AV_PKT_DATA_WEBVTT_SETTINGS);
     }
 
-    ff_subtitles_queue_finalize(&webvtt->q);
+    ff_subtitles_queue_finalize(s, &webvtt->q);
 
 end:
     av_bprint_finalize(&cue,    NULL);

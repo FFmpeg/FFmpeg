@@ -54,7 +54,7 @@ thread.
 If the codec allocates writable tables in its init(), add an init_thread_copy()
 which re-allocates them for other threads.
 
-Add CODEC_CAP_FRAME_THREADS to the codec capabilities. There will be very little
+Add AV_CODEC_CAP_FRAME_THREADS to the codec capabilities. There will be very little
 speed gain at this point but it should work.
 
 If there are inter-frame dependencies, so the codec calls

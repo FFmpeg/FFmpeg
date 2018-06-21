@@ -36,7 +36,9 @@
 #include "internal.h"
 #include "video.h"
 
-static const char *var_names[] = {
+#include <float.h>
+
+static const char * const var_names[] = {
     "in_w" , "iw",  ///< width of the input video
     "in_h" , "ih",  ///< height of the input video
     "out_w", "ow",  ///< width of the input video
@@ -58,7 +60,7 @@ enum var_name {
     VAR_VARS_NB
 };
 
-typedef struct {
+typedef struct RotContext {
     const AVClass *class;
     double angle;
     char *angle_expr_str;   ///< expression for the angle
@@ -75,6 +77,9 @@ typedef struct {
     double var_values[VAR_VARS_NB];
     FFDrawContext draw;
     FFDrawColor color;
+    uint8_t *(*interpolate_bilinear)(uint8_t *dst_color,
+                                    const uint8_t *src, int src_linesize, int src_linestep,
+                                    int x, int y, int max_x, int max_y);
 } RotContext;
 
 typedef struct ThreadData {
@@ -99,7 +104,7 @@ static const AVOption rotate_options[] = {
     { "oh",        "set output height expression", OFFSET(outh_expr_str), AV_OPT_TYPE_STRING, {.str="ih"}, CHAR_MIN, CHAR_MAX, .flags=FLAGS },
     { "fillcolor", "set background fill color",    OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, .flags=FLAGS },
     { "c",         "set background fill color",    OFFSET(fillcolor_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX, .flags=FLAGS },
-    { "bilinear",  "use bilinear interpolation",   OFFSET(use_bilinear),  AV_OPT_TYPE_INT, {.i64=1}, 0, 1, .flags=FLAGS },
+    { "bilinear",  "use bilinear interpolation",   OFFSET(use_bilinear),  AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, .flags=FLAGS },
     { NULL }
 };
 
@@ -128,7 +133,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static enum PixelFormat pix_fmts[] = {
+    static const enum AVPixelFormat pix_fmts[] = {
         AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_ARGB,   AV_PIX_FMT_RGBA,
         AV_PIX_FMT_ABGR,   AV_PIX_FMT_BGRA,
@@ -140,11 +145,21 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P,  AV_PIX_FMT_YUVJ444P,
         AV_PIX_FMT_YUV420P,  AV_PIX_FMT_YUVJ420P,
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV420P10LE, AV_PIX_FMT_YUVA420P10LE,
+        AV_PIX_FMT_YUV444P10LE, AV_PIX_FMT_YUVA444P10LE,
+        AV_PIX_FMT_YUV420P12LE,
+        AV_PIX_FMT_YUV444P12LE,
+        AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
+        AV_PIX_FMT_YUV420P16LE, AV_PIX_FMT_YUVA420P16LE,
+        AV_PIX_FMT_YUV444P9LE, AV_PIX_FMT_YUVA444P9LE,
+        AV_PIX_FMT_YUV420P9LE, AV_PIX_FMT_YUVA420P9LE,
         AV_PIX_FMT_NONE
     };
 
-    ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
-    return 0;
+    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    if (!fmts_list)
+        return AVERROR(ENOMEM);
+    return ff_set_common_formats(ctx, fmts_list);
 }
 
 static double get_rotated_w(void *opaque, double angle)
@@ -183,6 +198,93 @@ static const char * const func1_names[] = {
     NULL
 };
 
+#define FIXP (1<<16)
+#define FIXP2 (1<<20)
+#define INT_PI 3294199 //(M_PI * FIXP2)
+
+/**
+ * Compute the sin of a using integer values.
+ * Input is scaled by FIXP2 and output values are scaled by FIXP.
+ */
+static int64_t int_sin(int64_t a)
+{
+    int64_t a2, res = 0;
+    int i;
+    if (a < 0) a = INT_PI-a; // 0..inf
+    a %= 2 * INT_PI;         // 0..2PI
+
+    if (a >= INT_PI*3/2) a -= 2*INT_PI;  // -PI/2 .. 3PI/2
+    if (a >= INT_PI/2  ) a = INT_PI - a; // -PI/2 ..  PI/2
+
+    /* compute sin using Taylor series approximated to the fifth term */
+    a2 = (a*a)/(FIXP2);
+    for (i = 2; i < 11; i += 2) {
+        res += a;
+        a = -a*a2 / (FIXP2*i*(i+1));
+    }
+    return (res + 8)>>4;
+}
+
+/**
+ * Interpolate the color in src at position x and y using bilinear
+ * interpolation.
+ */
+static uint8_t *interpolate_bilinear8(uint8_t *dst_color,
+                                      const uint8_t *src, int src_linesize, int src_linestep,
+                                      int x, int y, int max_x, int max_y)
+{
+    int int_x = av_clip(x>>16, 0, max_x);
+    int int_y = av_clip(y>>16, 0, max_y);
+    int frac_x = x&0xFFFF;
+    int frac_y = y&0xFFFF;
+    int i;
+    int int_x1 = FFMIN(int_x+1, max_x);
+    int int_y1 = FFMIN(int_y+1, max_y);
+
+    for (i = 0; i < src_linestep; i++) {
+        int s00 = src[src_linestep * int_x  + i + src_linesize * int_y ];
+        int s01 = src[src_linestep * int_x1 + i + src_linesize * int_y ];
+        int s10 = src[src_linestep * int_x  + i + src_linesize * int_y1];
+        int s11 = src[src_linestep * int_x1 + i + src_linesize * int_y1];
+        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
+        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
+
+        dst_color[i] = ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32;
+    }
+
+    return dst_color;
+}
+
+/**
+ * Interpolate the color in src at position x and y using bilinear
+ * interpolation.
+ */
+static uint8_t *interpolate_bilinear16(uint8_t *dst_color,
+                                       const uint8_t *src, int src_linesize, int src_linestep,
+                                       int x, int y, int max_x, int max_y)
+{
+    int int_x = av_clip(x>>16, 0, max_x);
+    int int_y = av_clip(y>>16, 0, max_y);
+    int frac_x = x&0xFFFF;
+    int frac_y = y&0xFFFF;
+    int i;
+    int int_x1 = FFMIN(int_x+1, max_x);
+    int int_y1 = FFMIN(int_y+1, max_y);
+
+    for (i = 0; i < src_linestep; i+=2) {
+        int s00 = AV_RL16(&src[src_linestep * int_x  + i + src_linesize * int_y ]);
+        int s01 = AV_RL16(&src[src_linestep * int_x1 + i + src_linesize * int_y ]);
+        int s10 = AV_RL16(&src[src_linestep * int_x  + i + src_linesize * int_y1]);
+        int s11 = AV_RL16(&src[src_linestep * int_x1 + i + src_linesize * int_y1]);
+        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
+        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
+
+        AV_WL16(&dst_color[i], ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32);
+    }
+
+    return dst_color;
+}
+
 static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -198,6 +300,11 @@ static int config_props(AVFilterLink *outlink)
 
     rot->hsub = pixdesc->log2_chroma_w;
     rot->vsub = pixdesc->log2_chroma_h;
+
+    if (pixdesc->comp[0].depth == 8)
+        rot->interpolate_bilinear = interpolate_bilinear8;
+    else
+        rot->interpolate_bilinear = interpolate_bilinear16;
 
     rot->var_values[VAR_IN_W] = rot->var_values[VAR_IW] = inlink->w;
     rot->var_values[VAR_IN_H] = rot->var_values[VAR_IH] = inlink->h;
@@ -235,12 +342,12 @@ static int config_props(AVFilterLink *outlink)
                            func1_names, func1, NULL, NULL, rot, 0, ctx);
     rot->var_values[VAR_OUT_W] = rot->var_values[VAR_OW] = res;
     rot->outw = res + 0.5;
-    SET_SIZE_EXPR(outh, "out_w");
+    SET_SIZE_EXPR(outh, "out_h");
     rot->var_values[VAR_OUT_H] = rot->var_values[VAR_OH] = res;
     rot->outh = res + 0.5;
 
     /* evaluate the width again, as it may depend on the evaluated output height */
-    SET_SIZE_EXPR(outw, "out_h");
+    SET_SIZE_EXPR(outw, "out_w");
     rot->var_values[VAR_OUT_W] = rot->var_values[VAR_OW] = res;
     rot->outw = res + 0.5;
 
@@ -251,60 +358,60 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 }
 
-#define FIXP (1<<16)
-#define INT_PI 205887 //(M_PI * FIXP)
-
-/**
- * Compute the sin of a using integer values.
- * Input and output values are scaled by FIXP.
- */
-static int64_t int_sin(int64_t a)
+static av_always_inline void copy_elem(uint8_t *pout, const uint8_t *pin, int elem_size)
 {
-    int64_t a2, res = 0;
-    int i;
-    if (a < 0) a = INT_PI-a; // 0..inf
-    a %= 2 * INT_PI;         // 0..2PI
-
-    if (a >= INT_PI*3/2) a -= 2*INT_PI;  // -PI/2 .. 3PI/2
-    if (a >= INT_PI/2  ) a = INT_PI - a; // -PI/2 ..  PI/2
-
-    /* compute sin using Taylor series approximated to the third term */
-    a2 = (a*a)/FIXP;
-    for (i = 2; i < 7; i += 2) {
-        res += a;
-        a = -a*a2 / (FIXP*i*(i+1));
+    int v;
+    switch (elem_size) {
+    case 1:
+        *pout = *pin;
+        break;
+    case 2:
+        *((uint16_t *)pout) = *((uint16_t *)pin);
+        break;
+    case 3:
+        v = AV_RB24(pin);
+        AV_WB24(pout, v);
+        break;
+    case 4:
+        *((uint32_t *)pout) = *((uint32_t *)pin);
+        break;
+    default:
+        memcpy(pout, pin, elem_size);
+        break;
     }
-    return res;
 }
 
-/**
- * Interpolate the color in src at position x and y using bilinear
- * interpolation.
- */
-static uint8_t *interpolate_bilinear(uint8_t *dst_color,
-                                     const uint8_t *src, int src_linesize, int src_linestep,
-                                     int x, int y, int max_x, int max_y)
+static av_always_inline void simple_rotate_internal(uint8_t *dst, const uint8_t *src, int src_linesize, int angle, int elem_size, int len)
 {
-    int int_x = av_clip(x>>16, 0, max_x);
-    int int_y = av_clip(y>>16, 0, max_y);
-    int frac_x = x&0xFFFF;
-    int frac_y = y&0xFFFF;
     int i;
-    int int_x1 = FFMIN(int_x+1, max_x);
-    int int_y1 = FFMIN(int_y+1, max_y);
-
-    for (i = 0; i < src_linestep; i++) {
-        int s00 = src[src_linestep * int_x  + i + src_linesize * int_y ];
-        int s01 = src[src_linestep * int_x1 + i + src_linesize * int_y ];
-        int s10 = src[src_linestep * int_x  + i + src_linesize * int_y1];
-        int s11 = src[src_linestep * int_x1 + i + src_linesize * int_y1];
-        int s0 = (((1<<16) - frac_x)*s00 + frac_x*s01);
-        int s1 = (((1<<16) - frac_x)*s10 + frac_x*s11);
-
-        dst_color[i] = ((int64_t)((1<<16) - frac_y)*s0 + (int64_t)frac_y*s1) >> 32;
+    switch(angle) {
+    case 0:
+        memcpy(dst, src, elem_size * len);
+        break;
+    case 1:
+        for (i = 0; i<len; i++)
+            copy_elem(dst + i*elem_size, src + (len-i-1)*src_linesize, elem_size);
+        break;
+    case 2:
+        for (i = 0; i<len; i++)
+            copy_elem(dst + i*elem_size, src + (len-i-1)*elem_size, elem_size);
+        break;
+    case 3:
+        for (i = 0; i<len; i++)
+            copy_elem(dst + i*elem_size, src + i*src_linesize, elem_size);
+        break;
     }
+}
 
-    return dst_color;
+static av_always_inline void simple_rotate(uint8_t *dst, const uint8_t *src, int src_linesize, int angle, int elem_size, int len)
+{
+    switch(elem_size) {
+    case 1 : simple_rotate_internal(dst, src, src_linesize, angle, 1, len); break;
+    case 2 : simple_rotate_internal(dst, src, src_linesize, angle, 2, len); break;
+    case 3 : simple_rotate_internal(dst, src, src_linesize, angle, 3, len); break;
+    case 4 : simple_rotate_internal(dst, src, src_linesize, angle, 4, len); break;
+    default: simple_rotate_internal(dst, src, src_linesize, angle, elem_size, len); break;
+    }
 }
 
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts)*av_q2d(tb))
@@ -327,15 +434,31 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
     int i, j, x, y;
 
     for (j = start; j < end; j++) {
-        x = xprime + xi + FIXP*inw/2;
-        y = yprime + yi + FIXP*inh/2;
+        x = xprime + xi + FIXP*(inw-1)/2;
+        y = yprime + yi + FIXP*(inh-1)/2;
+
+        if (fabs(rot->angle - 0) < FLT_EPSILON && outw == inw && outh == inh) {
+            simple_rotate(out->data[plane] + j * out->linesize[plane],
+                           in->data[plane] + j *  in->linesize[plane],
+                          in->linesize[plane], 0, rot->draw.pixelstep[plane], outw);
+        } else if (fabs(rot->angle - M_PI/2) < FLT_EPSILON && outw == inh && outh == inw) {
+            simple_rotate(out->data[plane] + j * out->linesize[plane],
+                           in->data[plane] + j * rot->draw.pixelstep[plane],
+                          in->linesize[plane], 1, rot->draw.pixelstep[plane], outw);
+        } else if (fabs(rot->angle - M_PI) < FLT_EPSILON && outw == inw && outh == inh) {
+            simple_rotate(out->data[plane] + j * out->linesize[plane],
+                           in->data[plane] + (outh-j-1) *  in->linesize[plane],
+                          in->linesize[plane], 2, rot->draw.pixelstep[plane], outw);
+        } else if (fabs(rot->angle - 3*M_PI/2) < FLT_EPSILON && outw == inh && outh == inw) {
+            simple_rotate(out->data[plane] + j * out->linesize[plane],
+                           in->data[plane] + (outh-j-1) * rot->draw.pixelstep[plane],
+                          in->linesize[plane], 3, rot->draw.pixelstep[plane], outw);
+        } else {
 
         for (i = 0; i < outw; i++) {
             int32_t v;
             int x1, y1;
             uint8_t *pin, *pout;
-            x += c;
-            y -= s;
             x1 = x>>16;
             y1 = y>>16;
 
@@ -344,9 +467,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                 uint8_t inp_inv[4]; /* interpolated input value */
                 pout = out->data[plane] + j * out->linesize[plane] + i * rot->draw.pixelstep[plane];
                 if (rot->use_bilinear) {
-                    pin = interpolate_bilinear(inp_inv,
-                                               in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
-                                               x, y, inw-1, inh-1);
+                    pin = rot->interpolate_bilinear(inp_inv,
+                                                    in->data[plane], in->linesize[plane], rot->draw.pixelstep[plane],
+                                                    x, y, inw-1, inh-1);
                 } else {
                     int x2 = av_clip(x1, 0, inw-1);
                     int y2 = av_clip(y1, 0, inh-1);
@@ -357,7 +480,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                     *pout = *pin;
                     break;
                 case 2:
-                    *((uint16_t *)pout) = *((uint16_t *)pin);
+                    v = AV_RL16(pin);
+                    AV_WL16(pout, v);
                     break;
                 case 3:
                     v = AV_RB24(pin);
@@ -371,6 +495,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
                     break;
                 }
             }
+            x += c;
+            y -= s;
+        }
         }
         xprime += s;
         yprime += c;
@@ -395,14 +522,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    rot->var_values[VAR_N] = inlink->frame_count;
+    rot->var_values[VAR_N] = inlink->frame_count_out;
     rot->var_values[VAR_T] = TS2T(in->pts, inlink->time_base);
     rot->angle = res = av_expr_eval(rot->angle_expr, rot->var_values, rot);
 
     av_log(ctx, AV_LOG_DEBUG, "n:%f time:%f angle:%f/PI\n",
            rot->var_values[VAR_N], rot->var_values[VAR_T], rot->angle/M_PI);
 
-    angle_int = res * FIXP;
+    angle_int = res * FIXP * 16;
     s = int_sin(angle_int);
     c = int_sin(angle_int + INT_PI/2);
 
@@ -414,19 +541,19 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (plane = 0; plane < rot->nb_planes; plane++) {
         int hsub = plane == 1 || plane == 2 ? rot->hsub : 0;
         int vsub = plane == 1 || plane == 2 ? rot->vsub : 0;
-        const int outw = FF_CEIL_RSHIFT(outlink->w, hsub);
-        const int outh = FF_CEIL_RSHIFT(outlink->h, vsub);
+        const int outw = AV_CEIL_RSHIFT(outlink->w, hsub);
+        const int outh = AV_CEIL_RSHIFT(outlink->h, vsub);
         ThreadData td = { .in = in,   .out  = out,
-                          .inw  = FF_CEIL_RSHIFT(inlink->w, hsub),
-                          .inh  = FF_CEIL_RSHIFT(inlink->h, vsub),
+                          .inw  = AV_CEIL_RSHIFT(inlink->w, hsub),
+                          .inh  = AV_CEIL_RSHIFT(inlink->h, vsub),
                           .outh = outh, .outw = outw,
-                          .xi = -outw/2 * c, .yi =  outw/2 * s,
-                          .xprime = -outh/2 * s,
-                          .yprime = -outh/2 * c,
+                          .xi = -(outw-1) * c / 2, .yi =  (outw-1) * s / 2,
+                          .xprime = -(outh-1) * s / 2,
+                          .yprime = -(outh-1) * c / 2,
                           .plane = plane, .c = c, .s = s };
 
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&in);

@@ -1,0 +1,4 @@
+98e1f0bd1734cfb0eb0b442259a7de32 *tests/data/fate/vsynth1-huffyuvbgra.avi
+14464170 tests/data/fate/vsynth1-huffyuvbgra.avi
+49c03ab1b73b7cd3cabc3c77a9479c9e *tests/data/fate/vsynth1-huffyuvbgra.out.rawvideo
+stddev:    3.16 PSNR: 38.12 MAXDIFF:   50 bytes:  7603200/  7603200

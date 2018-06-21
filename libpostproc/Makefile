@@ -1,6 +1,5 @@
-include $(SUBDIR)../config.mak
-
 NAME = postproc
+DESC = FFmpeg postprocessing library
 FFLIBS = avutil
 
 HEADERS = postprocess.h        \

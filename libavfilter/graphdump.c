@@ -25,15 +25,16 @@
 #include "libavutil/bprint.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
+#include "internal.h"
 
 static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
 {
     char *format;
     char layout[64];
+    AVBPrint dummy_buffer = { 0 };
 
     if (!buf)
-        buf = &(AVBPrint){ 0 }; /* dummy buffer */
+        buf = &dummy_buffer;
     switch (link->type) {
         case AVMEDIA_TYPE_VIDEO:
             format = av_x_if_null(av_get_pix_fmt_name(link->format), "?");
@@ -155,7 +156,7 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options)
     AVBPrint buf;
     char *dump;
 
-    av_bprint_init(&buf, 0, 0);
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
     avfilter_graph_dump_to_buf(&buf, graph);
     av_bprint_init(&buf, buf.len + 1, buf.len + 1);
     avfilter_graph_dump_to_buf(&buf, graph);

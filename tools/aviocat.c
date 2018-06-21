@@ -26,7 +26,8 @@
 
 static int usage(const char *argv0, int ret)
 {
-    fprintf(stderr, "%s [-b bytespersec] [-d duration] input_url output_url\n", argv0);
+    fprintf(stderr, "%s [-b bytespersec] [-d duration] [-oi <options>] [-oo <options>] input_url output_url\n", argv0);
+    fprintf(stderr, "<options>: AVOptions expressed as key=value, :-separated\n");
     return ret;
 }
 
@@ -38,8 +39,9 @@ int main(int argc, char **argv)
     int64_t start_time;
     char errbuf[50];
     AVIOContext *input, *output;
+    AVDictionary *in_opts = NULL;
+    AVDictionary *out_opts = NULL;
 
-    av_register_all();
     avformat_network_init();
 
     for (i = 1; i < argc; i++) {
@@ -48,6 +50,20 @@ int main(int argc, char **argv)
             i++;
         } else if (!strcmp(argv[i], "-d") && i + 1 < argc) {
             duration = atoi(argv[i + 1]);
+            i++;
+        } else if (!strcmp(argv[i], "-oi") && i + 1 < argc) {
+            if (av_dict_parse_string(&in_opts, argv[i + 1], "=", ":", 0) < 0) {
+                fprintf(stderr, "Cannot parse option string %s\n",
+                        argv[i + 1]);
+                return usage(argv[0], 1);
+            }
+            i++;
+        } else if (!strcmp(argv[i], "-oo") && i + 1 < argc) {
+            if (av_dict_parse_string(&out_opts, argv[i + 1], "=", ":", 0) < 0) {
+                fprintf(stderr, "Cannot parse option string %s\n",
+                        argv[i + 1]);
+                return usage(argv[0], 1);
+            }
             i++;
         } else if (!input_url) {
             input_url = argv[i];
@@ -60,7 +76,7 @@ int main(int argc, char **argv)
     if (!output_url)
         return usage(argv[0], 1);
 
-    ret = avio_open2(&input, input_url, AVIO_FLAG_READ, NULL, NULL);
+    ret = avio_open2(&input, input_url, AVIO_FLAG_READ, NULL, &in_opts);
     if (ret) {
         av_strerror(ret, errbuf, sizeof(errbuf));
         fprintf(stderr, "Unable to open %s: %s\n", input_url, errbuf);
@@ -75,14 +91,14 @@ int main(int argc, char **argv)
         }
         bps = size / duration;
     }
-    ret = avio_open2(&output, output_url, AVIO_FLAG_WRITE, NULL, NULL);
+    ret = avio_open2(&output, output_url, AVIO_FLAG_WRITE, NULL, &out_opts);
     if (ret) {
         av_strerror(ret, errbuf, sizeof(errbuf));
         fprintf(stderr, "Unable to open %s: %s\n", output_url, errbuf);
         goto fail;
     }
 
-    start_time = av_gettime();
+    start_time = av_gettime_relative();
     while (1) {
         uint8_t buf[1024];
         int n;
@@ -90,10 +106,15 @@ int main(int argc, char **argv)
         if (n <= 0)
             break;
         avio_write(output, buf, n);
+        if (output->error) {
+            av_strerror(output->error, errbuf, sizeof(errbuf));
+            fprintf(stderr, "Unable to write %s: %s\n", output_url, errbuf);
+            break;
+        }
         stream_pos += n;
         if (bps) {
             avio_flush(output);
-            while ((av_gettime() - start_time) * bps / AV_TIME_BASE < stream_pos)
+            while ((av_gettime_relative() - start_time) * bps / AV_TIME_BASE < stream_pos)
                 av_usleep(50 * 1000);
         }
     }
@@ -102,6 +123,8 @@ int main(int argc, char **argv)
     avio_close(output);
 
 fail:
+    av_dict_free(&in_opts);
+    av_dict_free(&out_opts);
     avio_close(input);
     avformat_network_deinit();
     return ret ? 1 : 0;

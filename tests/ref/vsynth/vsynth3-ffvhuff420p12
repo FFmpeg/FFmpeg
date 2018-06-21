@@ -1,0 +1,4 @@
+e5a178d75afeda6df1d4eb6f7cdfa3a0 *tests/data/fate/vsynth3-ffvhuff420p12.avi
+175260 tests/data/fate/vsynth3-ffvhuff420p12.avi
+a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-ffvhuff420p12.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700

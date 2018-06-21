@@ -28,7 +28,6 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <assert.h>
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
@@ -63,6 +62,24 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
 }
 
 /**
+ * Rebase the bit writer onto a reallocated buffer.
+ *
+ * @param buffer the buffer where to put bits
+ * @param buffer_size the size in bytes of buffer,
+ *                    must be larger than the previous size
+ */
+static inline void rebase_put_bits(PutBitContext *s, uint8_t *buffer,
+                                   int buffer_size)
+{
+    av_assert0(8*buffer_size > s->size_in_bits);
+
+    s->buf_end = buffer + buffer_size;
+    s->buf_ptr = buffer + (s->buf_ptr - s->buf);
+    s->buf     = buffer;
+    s->size_in_bits = 8 * buffer_size;
+}
+
+/**
  * @return the total number of bits written to the bitstream.
  */
 static inline int put_bits_count(PutBitContext *s)
@@ -88,7 +105,7 @@ static inline void flush_put_bits(PutBitContext *s)
         s->bit_buf <<= s->bit_left;
 #endif
     while (s->bit_left < 32) {
-        /* XXX: should test end of buffer */
+        av_assert0(s->buf_ptr < s->buf_end);
 #ifdef BITSTREAM_WRITER_LE
         *s->buf_ptr++ = s->bit_buf;
         s->bit_buf  >>= 8;
@@ -96,6 +113,18 @@ static inline void flush_put_bits(PutBitContext *s)
         *s->buf_ptr++ = s->bit_buf >> 24;
         s->bit_buf  <<= 8;
 #endif
+        s->bit_left  += 8;
+    }
+    s->bit_left = 32;
+    s->bit_buf  = 0;
+}
+
+static inline void flush_put_bits_le(PutBitContext *s)
+{
+    while (s->bit_left < 32) {
+        av_assert0(s->buf_ptr < s->buf_end);
+        *s->buf_ptr++ = s->bit_buf;
+        s->bit_buf  >>= 8;
         s->bit_left  += 8;
     }
     s->bit_left = 32;
@@ -146,10 +175,14 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifdef BITSTREAM_WRITER_LE
     bit_buf |= value << (32 - bit_left);
     if (n >= bit_left) {
-        av_assert2(s->buf_ptr+3<s->buf_end);
-        AV_WL32(s->buf_ptr, bit_buf);
-        s->buf_ptr += 4;
-        bit_buf     = (bit_left == 32) ? 0 : value >> bit_left;
+        if (3 < s->buf_end - s->buf_ptr) {
+            AV_WL32(s->buf_ptr, bit_buf);
+            s->buf_ptr += 4;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
+            av_assert2(0);
+        }
+        bit_buf     = value >> bit_left;
         bit_left   += 32;
     }
     bit_left -= n;
@@ -160,9 +193,13 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     } else {
         bit_buf   <<= bit_left;
         bit_buf    |= value >> (n - bit_left);
-        av_assert2(s->buf_ptr+3<s->buf_end);
-        AV_WB32(s->buf_ptr, bit_buf);
-        s->buf_ptr += 4;
+        if (3 < s->buf_end - s->buf_ptr) {
+            AV_WB32(s->buf_ptr, bit_buf);
+            s->buf_ptr += 4;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
+            av_assert2(0);
+        }
         bit_left   += 32 - n;
         bit_buf     = value;
     }
@@ -172,11 +209,39 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     s->bit_left = bit_left;
 }
 
+static inline void put_bits_le(PutBitContext *s, int n, unsigned int value)
+{
+    unsigned int bit_buf;
+    int bit_left;
+
+    av_assert2(n <= 31 && value < (1U << n));
+
+    bit_buf  = s->bit_buf;
+    bit_left = s->bit_left;
+
+    bit_buf |= value << (32 - bit_left);
+    if (n >= bit_left) {
+        if (3 < s->buf_end - s->buf_ptr) {
+            AV_WL32(s->buf_ptr, bit_buf);
+            s->buf_ptr += 4;
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
+            av_assert2(0);
+        }
+        bit_buf     = value >> bit_left;
+        bit_left   += 32;
+    }
+    bit_left -= n;
+
+    s->bit_buf  = bit_buf;
+    s->bit_left = bit_left;
+}
+
 static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
 {
     av_assert2(n >= 0 && n <= 31);
 
-    put_bits(pb, n, value & ((1 << n) - 1));
+    put_bits(pb, n, av_mod_uintp2(value, n));
 }
 
 /**
@@ -184,15 +249,72 @@ static inline void put_sbits(PutBitContext *pb, int n, int32_t value)
  */
 static void av_unused put_bits32(PutBitContext *s, uint32_t value)
 {
-    int lo = value & 0xffff;
-    int hi = value >> 16;
+    unsigned int bit_buf;
+    int bit_left;
+
+    bit_buf  = s->bit_buf;
+    bit_left = s->bit_left;
+
 #ifdef BITSTREAM_WRITER_LE
-    put_bits(s, 16, lo);
-    put_bits(s, 16, hi);
+    bit_buf |= value << (32 - bit_left);
+    if (3 < s->buf_end - s->buf_ptr) {
+        AV_WL32(s->buf_ptr, bit_buf);
+        s->buf_ptr += 4;
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
+        av_assert2(0);
+    }
+    bit_buf     = (uint64_t)value >> bit_left;
 #else
-    put_bits(s, 16, hi);
-    put_bits(s, 16, lo);
+    bit_buf     = (uint64_t)bit_buf << bit_left;
+    bit_buf    |= value >> (32 - bit_left);
+    if (3 < s->buf_end - s->buf_ptr) {
+        AV_WB32(s->buf_ptr, bit_buf);
+        s->buf_ptr += 4;
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Internal error, put_bits buffer too small\n");
+        av_assert2(0);
+    }
+    bit_buf     = value;
 #endif
+
+    s->bit_buf  = bit_buf;
+    s->bit_left = bit_left;
+}
+
+/**
+ * Write up to 64 bits into a bitstream.
+ */
+static inline void put_bits64(PutBitContext *s, int n, uint64_t value)
+{
+    av_assert2((n == 64) || (n < 64 && value < (UINT64_C(1) << n)));
+
+    if (n < 32)
+        put_bits(s, n, value);
+    else if (n == 32)
+        put_bits32(s, value);
+    else if (n < 64) {
+        uint32_t lo = value & 0xffffffff;
+        uint32_t hi = value >> 32;
+#ifdef BITSTREAM_WRITER_LE
+        put_bits32(s, lo);
+        put_bits(s, n - 32, hi);
+#else
+        put_bits(s, n - 32, hi);
+        put_bits32(s, lo);
+#endif
+    } else {
+        uint32_t lo = value & 0xffffffff;
+        uint32_t hi = value >> 32;
+#ifdef BITSTREAM_WRITER_LE
+        put_bits32(s, lo);
+        put_bits32(s, hi);
+#else
+        put_bits32(s, hi);
+        put_bits32(s, lo);
+#endif
+
+    }
 }
 
 /**
@@ -212,6 +334,7 @@ static inline void skip_put_bytes(PutBitContext *s, int n)
 {
     av_assert2((put_bits_count(s) & 7) == 0);
     av_assert2(s->bit_left == 32);
+    av_assert0(n <= s->buf_end - s->buf_ptr);
     s->buf_ptr += n;
 }
 
@@ -234,7 +357,9 @@ static inline void skip_put_bits(PutBitContext *s, int n)
  */
 static inline void set_put_bits_buffer_size(PutBitContext *s, int size)
 {
+    av_assert0(size <= INT_MAX/8 - 32);
     s->buf_end = s->buf + size;
+    s->size_in_bits = 8*size;
 }
 
 #endif /* AVCODEC_PUT_BITS_H */

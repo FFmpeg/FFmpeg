@@ -1,0 +1,4 @@
+e3b49e22e8acbd21f34a2909bb35075e *tests/data/fate/vsynth3-mpeg4-qprd.avi
+61830 tests/data/fate/vsynth3-mpeg4-qprd.avi
+c59f2bead1c81b23fabc0a740048b110 *tests/data/fate/vsynth3-mpeg4-qprd.out.rawvideo
+stddev:    2.68 PSNR: 39.55 MAXDIFF:   27 bytes:    86700/    86700

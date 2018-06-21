@@ -23,9 +23,12 @@
 #if HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if HAVE_CRYPTGENRANDOM
+#if HAVE_IO_H
+#include <io.h>
+#endif
+#if HAVE_BCRYPT
 #include <windows.h>
-#include <wincrypt.h>
+#include <bcrypt.h>
 #endif
 #include <fcntl.h>
 #include <math.h>
@@ -61,9 +64,11 @@ static int read_random(uint32_t *dst, const char *file)
 
 static uint32_t get_generic_seed(void)
 {
-    uint8_t tmp[120];
+    uint64_t tmp[120/8];
     struct AVSHA *sha = (void*)tmp;
     clock_t last_t  = 0;
+    clock_t last_td = 0;
+    clock_t init_t = 0;
     static uint64_t i = 0;
     static uint32_t buffer[512] = { 0 };
     unsigned char digest[20];
@@ -83,19 +88,28 @@ static uint32_t get_generic_seed(void)
 
     for (;;) {
         clock_t t = clock();
-
-        if (last_t == t) {
-            buffer[i & 511]++;
+        if (last_t + 2*last_td + (CLOCKS_PER_SEC > 1000) >= t) {
+            last_td = t - last_t;
+            buffer[i & 511] = 1664525*buffer[i & 511] + 1013904223 + (last_td % 3294638521U);
         } else {
-            buffer[++i & 511] += (t - last_t) % 3294638521U;
-            if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
-                break;
+            last_td = t - last_t;
+            buffer[++i & 511] += last_td % 3294638521U;
+            if ((t - init_t) >= CLOCKS_PER_SEC>>5)
+                if (last_i && i - last_i > 4 || i - last_i > 64 || TEST && i - last_i > 8)
+                    break;
         }
         last_t = t;
+        if (!init_t)
+            init_t = t;
     }
 
-    if(TEST)
+    if(TEST) {
         buffer[0] = buffer[1] = 0;
+    } else {
+#ifdef AV_READ_TIME
+        buffer[111] += AV_READ_TIME();
+#endif
+    }
 
     av_sha_init(sha, 160);
     av_sha_update(sha, (const uint8_t *)buffer, sizeof(buffer));
@@ -107,15 +121,20 @@ uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
 
-#if HAVE_CRYPTGENRANDOM
-    HCRYPTPROV provider;
-    if (CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL,
-                            CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
-        BOOL ret = CryptGenRandom(provider, sizeof(seed), (PBYTE) &seed);
-        CryptReleaseContext(provider, 0);
-        if (ret)
+#if HAVE_BCRYPT
+    BCRYPT_ALG_HANDLE algo_handle;
+    NTSTATUS ret = BCryptOpenAlgorithmProvider(&algo_handle, BCRYPT_RNG_ALGORITHM,
+                                               MS_PRIMITIVE_PROVIDER, 0);
+    if (BCRYPT_SUCCESS(ret)) {
+        NTSTATUS ret = BCryptGenRandom(algo_handle, (UCHAR*)&seed, sizeof(seed), 0);
+        BCryptCloseAlgorithmProvider(algo_handle, 0);
+        if (BCRYPT_SUCCESS(ret))
             return seed;
     }
+#endif
+
+#if HAVE_ARC4RANDOM
+    return arc4random();
 #endif
 
     if (read_random(&seed, "/dev/urandom") == sizeof(seed))
@@ -124,29 +143,3 @@ uint32_t av_get_random_seed(void)
         return seed;
     return get_generic_seed();
 }
-
-#if TEST
-#undef printf
-#define N 256
-#include <stdio.h>
-
-int main(void)
-{
-    int i, j, retry;
-    uint32_t seeds[N];
-
-    for (retry=0; retry<3; retry++){
-        for (i=0; i<N; i++){
-            seeds[i] = av_get_random_seed();
-            for (j=0; j<i; j++)
-                if (seeds[j] == seeds[i])
-                    goto retry;
-        }
-        printf("seeds OK\n");
-        return 0;
-        retry:;
-    }
-    printf("FAIL at %d with %X\n", j, seeds[j]);
-    return 1;
-}
-#endif

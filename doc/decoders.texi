@@ -62,7 +62,7 @@ AC-3 audio decoder.
 This decoder implements part of ATSC A/52:2010 and ETSI TS 102 366, as well as
 the undocumented RealAudio 3 (a.k.a. dnet).
 
-@subsubsection AC-3 Decoder Options
+@subsection AC-3 Decoder Options
 
 @table @option
 
@@ -83,9 +83,26 @@ Loud sounds are fully compressed.  Soft sounds are enhanced.
 
 @end table
 
+@section flac
+
+FLAC audio decoder.
+
+This decoder aims to implement the complete FLAC specification from Xiph.
+
+@subsection FLAC Decoder options
+
+@table @option
+
+@item -use_buggy_lpc
+The lavc FLAC encoder used to produce buggy streams with high lpc values
+(like the default value). This option makes it possible to decode such streams
+correctly by using lavc's old buggy lpc logic for decoding.
+
+@end table
+
 @section ffwavesynth
 
-Internal wave synthetizer.
+Internal wave synthesizer.
 
 This decoder generates wave patterns according to predefined sequences. Its
 use is purely internal and the format of the data it accepts is not publicly
@@ -163,10 +180,32 @@ Requires the presence of the libopus headers and library during
 configuration. You need to explicitly configure the build with
 @code{--enable-libopus}.
 
+An FFmpeg native decoder for Opus exists, so users can decode Opus
+without this library.
+
 @c man end AUDIO DECODERS
 
 @chapter Subtitles Decoders
 @c man begin SUBTILES DECODERS
+
+@section dvbsub
+
+@subsection Options
+
+@table @option
+@item compute_clut
+@table @option
+@item -1
+Compute clut if no matching CLUT is in the stream.
+@item 0
+Never compute CLUT
+@item 1
+Always compute CLUT and override the one provided in the stream.
+@end table
+@item dvb_substream
+Selects the dvb substream, or all substreams if -1 which is default.
+
+@end table
 
 @section dvdsub
 
@@ -187,6 +226,15 @@ The format for this option is a string containing 16 24-bits hexadecimal
 numbers (without 0x prefix) separated by comas, for example @code{0d00ee,
 ee450d, 101010, eaeaea, 0ce60b, ec14ed, ebff0b, 0d617a, 7b7b7b, d1d1d1,
 7b2a0e, 0d950c, 0f007b, cf0dec, cfa80c, 7c127b}.
+
+@item ifo_palette
+Specify the IFO file from which the global palette is obtained.
+(experimental)
+
+@item forced_subs_only
+Only decode subtitle entries marked as forced. Some titles have forced
+and non-forced subtitles in the same track. Setting this flag to @code{1}
+will only keep the forced subtitles. Default value is @code{0}.
 @end table
 
 @section libzvbi-teletext
@@ -200,8 +248,9 @@ configuration. You need to explicitly configure the build with
 
 @table @option
 @item txt_page
-List of teletext page numbers to decode. You may use the special * string to
-match all pages. Pages that do not match the specified list are dropped.
+List of teletext page numbers to decode. Pages that do not match the specified
+list are dropped. You may use the special @code{*} string to match all pages,
+or @code{subtitle} to match all subtitle pages.
 Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
@@ -220,14 +269,21 @@ Y offset of generated bitmaps, default is 0.
 Chops leading and trailing spaces and removes empty lines from the generated
 text. This option is useful for teletext based subtitles where empty spaces may
 be present at the start or at the end of the lines or empty lines may be
-present between the subtitle lines because of double-sized teletext charactes.
+present between the subtitle lines because of double-sized teletext characters.
 Default value is 1.
 @item txt_duration
 Sets the display duration of the decoded teletext pages or subtitles in
-miliseconds. Default value is 30000 which is 30 seconds.
+milliseconds. Default value is -1 which means infinity or until the next
+subtitle event comes.
 @item txt_transparent
 Force transparent background of the generated teletext bitmaps. Default value
-is 0 which means an opaque (black) background.
+is 0 which means an opaque background.
+@item txt_opacity
+Sets the opacity (0-255) of the teletext background. If
+@option{txt_transparent} is not set, it only affects characters between a start
+box and an end box, typically subtitles. Default value is 0 if
+@option{txt_transparent} is set, 255 otherwise.
+
 @end table
 
 @c man end SUBTILES DECODERS

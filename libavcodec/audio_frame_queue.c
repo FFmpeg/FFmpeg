@@ -28,8 +28,8 @@
 av_cold void ff_af_queue_init(AVCodecContext *avctx, AudioFrameQueue *afq)
 {
     afq->avctx = avctx;
-    afq->remaining_delay   = avctx->delay;
-    afq->remaining_samples = avctx->delay;
+    afq->remaining_delay   = avctx->initial_padding;
+    afq->remaining_samples = avctx->initial_padding;
     afq->frame_count       = 0;
 }
 
@@ -73,7 +73,7 @@ int ff_af_queue_add(AudioFrameQueue *afq, const AVFrame *f)
 }
 
 void ff_af_queue_remove(AudioFrameQueue *afq, int nb_samples, int64_t *pts,
-                        int *duration)
+                        int64_t *duration)
 {
     int64_t out_pts = AV_NOPTS_VALUE;
     int removed_samples = 0;

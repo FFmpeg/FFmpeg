@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 common code
+ * MPEG-1/2 common code
  * Copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of FFmpeg.
@@ -22,29 +22,21 @@
 #ifndef AVCODEC_MPEG12_H
 #define AVCODEC_MPEG12_H
 
+#include "mpeg12vlc.h"
 #include "mpegvideo.h"
-
-#define DC_VLC_BITS 9
-#define MV_VLC_BITS 9
-#define TEX_VLC_BITS 9
-
-#define MBINCR_VLC_BITS 9
-#define MB_PAT_VLC_BITS 9
-#define MB_PTYPE_VLC_BITS 6
-#define MB_BTYPE_VLC_BITS 6
-
-extern VLC ff_dc_lum_vlc;
-extern VLC ff_dc_chroma_vlc;
-extern VLC ff_mbincr_vlc;
-extern VLC ff_mb_ptype_vlc;
-extern VLC ff_mb_btype_vlc;
-extern VLC ff_mb_pat_vlc;
-extern VLC ff_mv_vlc;
 
 extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 void ff_mpeg12_common_init(MpegEncContext *s);
-void ff_mpeg12_init_vlcs(void);
+
+#define INIT_2D_VLC_RL(rl, static_size, flags)\
+{\
+    static RL_VLC_ELEM rl_vlc_table[static_size];\
+    rl.rl_vlc[0] = rl_vlc_table;\
+    ff_init_2d_vlc_rl(&rl, static_size, flags);\
+}
+
+void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags);
 
 static inline int decode_dc(GetBitContext *gb, int component)
 {
@@ -67,8 +59,22 @@ static inline int decode_dc(GetBitContext *gb, int component)
     return diff;
 }
 
-int ff_mpeg1_decode_block_intra(MpegEncContext *s, int16_t *block, int n);
+int ff_mpeg1_decode_block_intra(GetBitContext *gb,
+                                const uint16_t *quant_matrix,
+                                uint8_t *const scantable, int last_dc[3],
+                                int16_t *block, int index, int qscale);
+
 void ff_mpeg1_clean_buffers(MpegEncContext *s);
 int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, AVCodecParserContext *s);
+
+void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number);
+void ff_mpeg1_encode_mb(MpegEncContext *s, int16_t block[8][64],
+                        int motion_x, int motion_y);
+void ff_mpeg1_encode_init(MpegEncContext *s);
+void ff_mpeg1_encode_slice_header(MpegEncContext *s);
+
+void ff_mpeg12_find_best_frame_rate(AVRational frame_rate,
+                                    int *code, int *ext_n, int *ext_d,
+                                    int nonstandard);
 
 #endif /* AVCODEC_MPEG12_H */

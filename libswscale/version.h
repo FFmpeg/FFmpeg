@@ -26,9 +26,9 @@
 
 #include "libavutil/version.h"
 
-#define LIBSWSCALE_VERSION_MAJOR 2
-#define LIBSWSCALE_VERSION_MINOR 5
-#define LIBSWSCALE_VERSION_MICRO 102
+#define LIBSWSCALE_VERSION_MAJOR   5
+#define LIBSWSCALE_VERSION_MINOR   2
+#define LIBSWSCALE_VERSION_MICRO 100
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
                                                LIBSWSCALE_VERSION_MINOR, \
@@ -46,14 +46,8 @@
  * the public API and may change, break or disappear at any time.
  */
 
-#ifndef FF_API_SWS_GETCONTEXT
-#define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 3)
-#endif
-#ifndef FF_API_SWS_CPU_CAPS
-#define FF_API_SWS_CPU_CAPS    (LIBSWSCALE_VERSION_MAJOR < 3)
-#endif
-#ifndef FF_API_SWS_FORMAT_NAME
-#define FF_API_SWS_FORMAT_NAME  (LIBSWSCALE_VERSION_MAJOR < 3)
+#ifndef FF_API_SWS_VECTOR
+#define FF_API_SWS_VECTOR            (LIBSWSCALE_VERSION_MAJOR < 6)
 #endif
 
 #endif /* SWSCALE_VERSION_H */

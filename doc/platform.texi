@@ -1,4 +1,5 @@
 \input texinfo @c -*- texinfo -*-
+@documentencoding UTF-8
 
 @settitle Platform Specific Information
 @titlepage
@@ -24,6 +25,20 @@ If not, then you should install a different compiler that has no
 hard-coded path to gas. In the worst case pass @code{--disable-asm}
 to configure.
 
+@section Advanced linking configuration
+
+If you compiled FFmpeg libraries statically and you want to use them to
+build your own shared library, you may need to force PIC support (with
+@code{--enable-pic} during FFmpeg configure) and add the following option
+to your project LDFLAGS:
+
+@example
+-Wl,-Bsymbolic
+@end example
+
+If your target platform requires position independent binaries, you should
+pass the correct linking flag (e.g. @code{-pie}) to @code{--extra-ldexeflags}.
+
 @section BSD
 
 BSD make will not build FFmpeg, you need to install and use GNU Make
@@ -48,17 +63,17 @@ bash ./configure
 @section Darwin (Mac OS X, iPhone)
 
 The toolchain provided with Xcode is sufficient to build the basic
-unacelerated code.
+unaccelerated code.
 
 Mac OS X on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{https://github.com/FFmpeg/gas-preprocessor} or
 @url{https://github.com/yuvi/gas-preprocessor}(currently outdated) to build the optimized
-assembler functions. Put the Perl script somewhere
+assembly functions. Put the Perl script somewhere
 in your PATH, FFmpeg's configure will pick it up automatically.
 
-Mac OS X on amd64 and x86 requires @command{yasm} to build most of the
-optimized assembler functions. @uref{http://www.finkproject.org/, Fink},
-@uref{http://www.gentoo.org/proj/en/gentoo-alt/prefix/bootstrap-macos.xml, Gentoo Prefix},
+Mac OS X on amd64 and x86 requires @command{nasm} to build most of the
+optimized assembly functions. @uref{http://www.finkproject.org/, Fink},
+@uref{https://wiki.gentoo.org/wiki/Project:Prefix, Gentoo Prefix},
 @uref{https://mxcl.github.com/homebrew/, Homebrew}
 or @uref{http://www.macports.org, MacPorts} can easily provide it.
 
@@ -82,9 +97,9 @@ the FFmpeg Windows Help Forum at @url{http://ffmpeg.zeranoe.com/forum/}.
 
 @section Native Windows compilation using MinGW or MinGW-w64
 
-FFmpeg can be built to run natively on Windows using the MinGW or MinGW-w64
-toolchains. Install the latest versions of MSYS and MinGW or MinGW-w64 from
-@url{http://www.mingw.org/} or @url{http://mingw-w64.sourceforge.net/}.
+FFmpeg can be built to run natively on Windows using the MinGW-w64
+toolchain. Install the latest versions of MSYS2 and MinGW-w64 from
+@url{http://msys2.github.io/} and/or @url{http://mingw-w64.sourceforge.net/}.
 You can find detailed installation instructions in the download section and
 the FAQ.
 
@@ -92,8 +107,13 @@ Notes:
 
 @itemize
 
-@item Building natively using MSYS can be sped up by disabling implicit rules
-in the Makefile by calling @code{make -r} instead of plain @code{make}. This
+@item Building for the MSYS environment is discouraged, MSYS2 provides a full
+MinGW-w64 environment through @file{mingw64_shell.bat} or
+@file{mingw32_shell.bat} that should be used instead of the environment
+provided by @file{msys2_shell.bat}.
+
+@item Building using MSYS2 can be sped up by disabling implicit rules in the
+Makefile by calling @code{make -r} instead of plain @code{make}. This
 speed up is close to non-existent for normal one-off builds and is only
 noticeable when running make for a second time (for example during
 @code{make install}).
@@ -107,37 +127,47 @@ libavformat) as DLLs.
 
 @end itemize
 
+@subsection Native Windows compilation using MSYS2
+
+The MSYS2 MinGW-w64 environment provides ready to use toolchains and dependencies
+through @command{pacman}.
+
+Make sure to use @file{mingw64_shell.bat} or @file{mingw32_shell.bat} to have
+the correct MinGW-w64 environment. The default install provides shortcuts to
+them under @command{MinGW-w64 Win64 Shell} and @command{MinGW-w64 Win32 Shell}.
+
+@example
+# normal msys2 packages
+pacman -S make pkgconf diffutils
+
+# mingw-w64 packages and toolchains
+pacman -S mingw-w64-x86_64-nasm mingw-w64-x86_64-gcc mingw-w64-x86_64-SDL2
+@end example
+
+To target 32 bits replace @code{x86_64} with @code{i686} in the command above.
+
 @section Microsoft Visual C++ or Intel C++ Compiler for Windows
 
-FFmpeg can be built with MSVC 2012 or earlier using a C99-to-C89 conversion utility
-and wrapper, or with MSVC 2013 and ICL natively.
+FFmpeg can be built with MSVC 2013 or later.
 
 You will need the following prerequisites:
 
 @itemize
-@item @uref{https://github.com/libav/c99-to-c89/, C99-to-C89 Converter & Wrapper}
-(if using MSVC 2012 or earlier)
-@item @uref{http://code.google.com/p/msinttypes/, msinttypes}
-(if using MSVC 2012 or earlier)
-@item @uref{http://www.mingw.org/, MSYS}
-@item @uref{http://yasm.tortall.net/, YASM}
-@item @uref{http://gnuwin32.sourceforge.net/packages/bc.htm, bc for Windows} if
-you want to run @uref{fate.html, FATE}.
+@item @uref{http://msys2.github.io/, MSYS2}
+@item @uref{http://www.nasm.us/, NASM}
+(Also available via MSYS2's package manager.)
 @end itemize
 
-To set up a proper environment in MSYS, you need to run @code{msys.bat} from
+To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
 the Visual Studio or Intel Compiler command prompt.
 
-Place @code{yasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
-earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
-@code{PATH} as well.
+Place @code{yasm.exe} somewhere in your @code{PATH}.
 
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
 and @code{INCLUDE} environment variables to include the @strong{Windows-style}
-paths to these directories. Alternatively, you can try and use the
-@code{--extra-cflags}/@code{--extra-ldflags} configure options. If using MSVC
-2012 or earlier, place @code{inttypes.h} somewhere the compiler can see too.
+paths to these directories. Alternatively, you can try to use the
+@code{--extra-cflags}/@code{--extra-ldflags} configure options.
 
 Finally, run:
 
@@ -161,12 +191,6 @@ Notes:
 
 @itemize
 
-@item It is possible that coreutils' @code{link.exe} conflicts with MSVC's linker.
-You can find out by running @code{which link} to see which @code{link.exe} you
-are using. If it is located at @code{/bin/link.exe}, then you have the wrong one
-in your @code{PATH}. Either move or remove that copy, or make sure MSVC's
-@code{link.exe} takes precedence in your @code{PATH} over coreutils'.
-
 @item If you wish to build with zlib support, you will have to grab a compatible
 zlib binary from somewhere, with an MSVC import lib, or if you wish to link
 statically, you can follow the instructions below to build a compatible
@@ -185,8 +209,6 @@ can see.
 
 @item FFmpeg has been tested with the following on i686 and x86_64:
 @itemize
-@item Visual Studio 2010 Pro and Express
-@item Visual Studio 2012 Pro and Express
 @item Visual Studio 2013 Pro and Express
 @item Intel Composer XE 2013
 @item Intel Composer XE 2013 SP1
@@ -264,12 +286,12 @@ llrint() in its C library.
 Install your Cygwin with all the "Base" packages, plus the
 following "Devel" ones:
 @example
-binutils, gcc4-core, make, git, mingw-runtime, texi2html
+binutils, gcc4-core, make, git, mingw-runtime, texinfo
 @end example
 
 In order to run FATE you will also need the following "Utils" packages:
 @example
-bc, diffutils
+diffutils
 @end example
 
 If you want to build FFmpeg with additional libraries, download Cygwin
@@ -282,8 +304,8 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libfaac-devel, libaacplus-devel, libgsm-devel, libmp3lame-devel,
-libschroedinger1.0-devel, speex-devel, libtheora-devel, libxvidcore-devel
+yasm, libSDL-devel, libgsm-devel, libmp3lame-devel,
+speex-devel, libtheora-devel, libxvidcore-devel
 @end example
 
 The recommendation for x264 is to build it from source, as it evolves too
@@ -310,68 +332,5 @@ and for a build with shared libraries
 @example
 ./configure --target-os=mingw32 --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
-
-@chapter Plan 9
-
-The native @uref{http://plan9.bell-labs.com/plan9/, Plan 9} compiler
-does not implement all the C99 features needed by FFmpeg so the gcc
-port must be used.  Furthermore, a few items missing from the C
-library and shell environment need to be fixed.
-
-@itemize
-
-@item GNU awk, grep, make, and sed
-
-Working packages of these tools can be found at
-@uref{http://code.google.com/p/ports2plan9/downloads/list, ports2plan9}.
-They can be installed with @uref{http://9front.org/, 9front's} @code{pkg}
-utility by setting @code{pkgpath} to
-@code{http://ports2plan9.googlecode.com/files/}.
-
-@item Missing/broken @code{head} and @code{printf} commands
-
-Replacements adequate for building FFmpeg can be found in the
-@code{compat/plan9} directory.  Place these somewhere they will be
-found by the shell.  These are not full implementations of the
-commands and are @emph{not} suitable for general use.
-
-@item Missing C99 @code{stdint.h} and @code{inttypes.h}
-
-Replacement headers are available from
-@url{http://code.google.com/p/plan9front/issues/detail?id=152}.
-
-@item Missing or non-standard library functions
-
-Some functions in the C library are missing or incomplete.  The
-@code{@uref{http://ports2plan9.googlecode.com/files/gcc-apelibs-1207.tbz,
-gcc-apelibs-1207}} package from
-@uref{http://code.google.com/p/ports2plan9/downloads/list, ports2plan9}
-includes an updated C library, but installing the full package gives
-unusable executables.  Instead, keep the files from @code{gccbin.tgz}
-under @code{/386/lib/gnu}.  From the @code{libc.a} archive in the
-@code{gcc-apelibs-1207} package, extract the following object files and
-turn them into a library:
-
-@itemize
-@item @code{strerror.o}
-@item @code{strtoll.o}
-@item @code{snprintf.o}
-@item @code{vsnprintf.o}
-@item @code{vfprintf.o}
-@item @code{_IO_getc.o}
-@item @code{_IO_putc.o}
-@end itemize
-
-Use the @code{--extra-libs} option of @code{configure} to inform the
-build system of this library.
-
-@item FPU exceptions enabled by default
-
-Unlike most other systems, Plan 9 enables FPU exceptions by default.
-These must be disabled before calling any FFmpeg functions.  While the
-included tools will do this automatically, other users of the
-libraries must do it themselves.
-
-@end itemize
 
 @bye

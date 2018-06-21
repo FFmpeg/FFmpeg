@@ -33,7 +33,7 @@ typedef struct WvMuxContext {
 static av_cold int wv_write_header(AVFormatContext *ctx)
 {
     if (ctx->nb_streams > 1 ||
-        ctx->streams[0]->codec->codec_id != AV_CODEC_ID_WAVPACK) {
+        ctx->streams[0]->codecpar->codec_id != AV_CODEC_ID_WAVPACK) {
         av_log(ctx, AV_LOG_ERROR, "This muxer only supports a single WavPack stream.\n");
         return AVERROR(EINVAL);
     }
@@ -64,7 +64,7 @@ static av_cold int wv_write_trailer(AVFormatContext *ctx)
     WvMuxContext *s = ctx->priv_data;
 
     /* update total number of samples in the first block */
-    if (ctx->pb->seekable && s->samples &&
+    if ((ctx->pb->seekable & AVIO_SEEKABLE_NORMAL) && s->samples &&
         s->samples < UINT32_MAX) {
         int64_t pos = avio_tell(ctx->pb);
         avio_seek(ctx->pb, 12, SEEK_SET);

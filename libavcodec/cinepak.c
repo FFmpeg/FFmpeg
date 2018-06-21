@@ -1,6 +1,6 @@
 /*
  * Cinepak Video Decoder
- * Copyright (C) 2003 the ffmpeg project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -47,7 +47,7 @@ typedef uint8_t cvid_codebook[12];
 
 #define MAX_STRIPS      32
 
-typedef struct {
+typedef struct cvid_strip {
     uint16_t          id;
     uint16_t          x1, y1;
     uint16_t          x2, y2;
@@ -135,7 +135,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
     const uint8_t   *eod = (data + size);
     uint32_t         flag, mask;
     uint8_t         *cb0, *cb1, *cb2, *cb3;
-    unsigned int     x, y;
+    int             x, y;
     char            *ip0, *ip1, *ip2, *ip3;
 
     flag = 0;
@@ -155,8 +155,8 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
                 }
             }
         }
-/* to get the correct picture for not-multiple-of-4 cases let us fill
- * each block from the bottom up, thus possibly overwriting the top line
+/* to get the correct picture for not-multiple-of-4 cases let us fill each
+ * block from the bottom up, thus possibly overwriting the bottommost line
  * more than once but ending with the correct data in place
  * (instead of in-loop checking) */
 
@@ -315,17 +315,11 @@ static int cinepak_decode_strip (CinepakContext *s,
     return AVERROR_INVALIDDATA;
 }
 
-static int cinepak_decode (CinepakContext *s)
+static int cinepak_predecode_check (CinepakContext *s)
 {
-    const uint8_t  *eod = (s->data + s->size);
-    int           i, result, strip_size, frame_flags, num_strips;
-    int           y0 = 0;
+    int           num_strips;
     int           encoded_buf_size;
 
-    if (s->size < 10)
-        return AVERROR_INVALIDDATA;
-
-    frame_flags = s->data[0];
     num_strips  = AV_RB16 (&s->data[8]);
     encoded_buf_size = AV_RB24(&s->data[1]);
 
@@ -355,6 +349,21 @@ static int cinepak_decode (CinepakContext *s)
         } else
             s->sega_film_skip_bytes = 0;
     }
+
+    if (s->size < 10 + s->sega_film_skip_bytes + num_strips * 12)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
+static int cinepak_decode (CinepakContext *s)
+{
+    const uint8_t  *eod = (s->data + s->size);
+    int           i, result, strip_size, frame_flags, num_strips;
+    int           y0 = 0;
+
+    frame_flags = s->data[0];
+    num_strips  = AV_RB16 (&s->data[8]);
 
     s->data += 10 + s->sega_film_skip_bytes;
 
@@ -435,18 +444,36 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int ret = 0, buf_size = avpkt->size;
     CinepakContext *s = avctx->priv_data;
+    int num_strips;
 
     s->data = buf;
     s->size = buf_size;
+
+    if (s->size < 10)
+        return AVERROR_INVALIDDATA;
+
+    num_strips = AV_RB16 (&s->data[8]);
+
+    //Empty frame, do not waste time
+    if (!num_strips && (!s->palette_video || !av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL)))
+        return buf_size;
+
+    if ((ret = cinepak_predecode_check(s)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "cinepak_predecode_check failed\n");
+        return ret;
+    }
 
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
 
     if (s->palette_video) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
-        if (pal) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+        if (pal && size == AVPALETTE_SIZE) {
             s->frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
     }
 
@@ -484,5 +511,5 @@ AVCodec ff_cinepak_decoder = {
     .init           = cinepak_decode_init,
     .close          = cinepak_decode_end,
     .decode         = cinepak_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };

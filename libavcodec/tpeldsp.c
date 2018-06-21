@@ -29,7 +29,7 @@
 #include "tpeldsp.h"
 
 #define BIT_DEPTH 8
-#include "tpel_template.c"
+#include "pel_template.c"
 
 static inline void put_tpel_pixels_mc00_c(uint8_t *dst, const uint8_t *src,
                                           int stride, int width, int height)

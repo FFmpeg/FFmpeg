@@ -250,18 +250,15 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     int maxband, keyframe;
     int last[2];
 
-    /* get output buffer */
-    frame->nb_samples = MPC_FRAME_SIZE;
-    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
-        return res;
-
     keyframe = c->cur_frame == 0;
 
     if(keyframe){
         memset(c->Q, 0, sizeof(c->Q));
         c->last_bits_used = 0;
     }
-    init_get_bits(gb, buf, buf_size * 8);
+    if ((res = init_get_bits8(gb, buf, buf_size)) < 0)
+        return res;
+
     skip_bits(gb, c->last_bits_used & 7);
 
     if(keyframe)
@@ -269,6 +266,11 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     else{
         maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
+    }
+
+    if (get_bits_left(gb) < 0) {
+        *got_frame_ptr = 0;
+        return buf_size;
     }
 
     if(maxband > c->maxbands + 1) {
@@ -408,6 +410,10 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
+    frame->nb_samples = MPC_FRAME_SIZE;
+    if ((res = ff_get_buffer(avctx, frame, 0)) < 0)
+        return res;
+
     ff_mpc_dequantize_and_synth(c, maxband - 1,
                                 (int16_t **)frame->extended_data,
                                 avctx->channels);
@@ -415,10 +421,14 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
     c->cur_frame++;
 
     c->last_bits_used = get_bits_count(gb);
-    if(get_bits_left(gb) < 8) // we have only padding left
-        c->last_bits_used = buf_size << 3;
     if(c->cur_frame >= c->frames)
         c->cur_frame = 0;
+    if (get_bits_left(gb) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Overread %d\n", -get_bits_left(gb));
+        c->last_bits_used = buf_size << 3;
+    } else if (c->cur_frame == 0 && get_bits_left(gb) < 8) {// we have only padding left
+        c->last_bits_used = buf_size << 3;
+    }
 
     *got_frame_ptr = 1;
 
@@ -440,7 +450,7 @@ AVCodec ff_mpc8_decoder = {
     .init           = mpc8_decode_init,
     .decode         = mpc8_decode_frame,
     .flush          = mpc8_decode_flush,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                       AV_SAMPLE_FMT_NONE },
 };

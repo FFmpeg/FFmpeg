@@ -95,11 +95,12 @@ typedef struct AVDownmixInfo {
 /**
  * Get a frame's AV_FRAME_DATA_DOWNMIX_INFO side data for editing.
  *
- * The side data is created and added to the frame if it's absent.
+ * If the side data is absent, it is created and added to the frame.
  *
- * @param frame the frame for which the side data is to be obtained.
+ * @param frame the frame for which the side data is to be obtained or created
  *
- * @return the AVDownmixInfo structure to be edited by the caller.
+ * @return the AVDownmixInfo structure to be edited by the caller, or NULL if
+ *         the structure cannot be allocated.
  */
 AVDownmixInfo *av_downmix_info_update_side_data(AVFrame *frame);
 

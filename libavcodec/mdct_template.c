@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libavutil/common.h"
+#include "libavutil/libm.h"
 #include "libavutil/mathematics.h"
 #include "fft.h"
 #include "fft-internal.h"
@@ -32,12 +33,12 @@
  */
 
 #if FFT_FLOAT
-#   define RSCALE(x) (x)
+#   define RSCALE(x, y) ((x) + (y))
 #else
 #if FFT_FIXED_32
-#   define RSCALE(x) (((x) + 32) >> 6)
+#   define RSCALE(x, y) ((int)((x) + (unsigned)(y) + 32) >> 6)
 #else /* FFT_FIXED_32 */
-#   define RSCALE(x) ((x) >> 1)
+#   define RSCALE(x, y) ((int)((x) + (unsigned)(y)) >> 1)
 #endif /* FFT_FIXED_32 */
 #endif
 
@@ -60,7 +61,7 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     if (ff_fft_init(s, s->mdct_bits - 2, inverse) < 0)
         goto fail;
 
-    s->tcos = av_malloc(n/2 * sizeof(FFTSample));
+    s->tcos = av_malloc_array(n/2, sizeof(FFTSample));
     if (!s->tcos)
         goto fail;
 
@@ -81,8 +82,13 @@ av_cold int ff_mdct_init(FFTContext *s, int nbits, int inverse, double scale)
     scale = sqrt(fabs(scale));
     for(i=0;i<n4;i++) {
         alpha = 2 * M_PI * (i + theta) / n;
+#if FFT_FIXED_32
+        s->tcos[i*tstep] = lrint(-cos(alpha) * 2147483648.0);
+        s->tsin[i*tstep] = lrint(-sin(alpha) * 2147483648.0);
+#else
         s->tcos[i*tstep] = FIX15(-cos(alpha) * scale);
         s->tsin[i*tstep] = FIX15(-sin(alpha) * scale);
+#endif
     }
     return 0;
  fail:
@@ -175,13 +181,13 @@ void ff_mdct_calc_c(FFTContext *s, FFTSample *out, const FFTSample *input)
 
     /* pre rotation */
     for(i=0;i<n8;i++) {
-        re = RSCALE(-input[2*i+n3] - input[n3-1-2*i]);
-        im = RSCALE(-input[n4+2*i] + input[n4-1-2*i]);
+        re = RSCALE(-input[2*i+n3], - input[n3-1-2*i]);
+        im = RSCALE(-input[n4+2*i], + input[n4-1-2*i]);
         j = revtab[i];
         CMUL(x[j].re, x[j].im, re, im, -tcos[i], tsin[i]);
 
-        re = RSCALE( input[2*i]    - input[n2-1-2*i]);
-        im = RSCALE(-input[n2+2*i] - input[ n-1-2*i]);
+        re = RSCALE( input[2*i]   , - input[n2-1-2*i]);
+        im = RSCALE(-input[n2+2*i], - input[ n-1-2*i]);
         j = revtab[n8 + i];
         CMUL(x[j].re, x[j].im, re, im, -tcos[n8 + i], tsin[n8 + i]);
     }

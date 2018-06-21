@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "golomb.h"
+#include "internal.h"
 #include "mathops.h"
 #include "mjpeg.h"
 #include "mjpegdec.h"
@@ -50,33 +51,93 @@
 int ff_jpegls_decode_lse(MJpegDecodeContext *s)
 {
     int id;
+    int tid, wt, maxtab, i, j;
 
-    skip_bits(&s->gb, 16);  /* length: FIXME: verify field validity */
+    int len = get_bits(&s->gb, 16);
     id = get_bits(&s->gb, 8);
 
     switch (id) {
     case 1:
+        if (len < 13)
+            return AVERROR_INVALIDDATA;
+
         s->maxval = get_bits(&s->gb, 16);
         s->t1     = get_bits(&s->gb, 16);
         s->t2     = get_bits(&s->gb, 16);
         s->t3     = get_bits(&s->gb, 16);
         s->reset  = get_bits(&s->gb, 16);
 
+        if(s->avctx->debug & FF_DEBUG_PICT_INFO) {
+            av_log(s->avctx, AV_LOG_DEBUG, "Coding parameters maxval:%d T1:%d T2:%d T3:%d reset:%d\n",
+                   s->maxval, s->t1, s->t2, s->t3, s->reset);
+        }
+
 //        ff_jpegls_reset_coding_parameters(s, 0);
         //FIXME quant table?
         break;
     case 2:
+        s->palette_index = 0;
     case 3:
-        av_log(s->avctx, AV_LOG_ERROR, "palette not supported\n");
-        return AVERROR(ENOSYS);
+        tid= get_bits(&s->gb, 8);
+        wt = get_bits(&s->gb, 8);
+
+        if (len < 5)
+            return AVERROR_INVALIDDATA;
+
+        if (wt < 1 || wt > MAX_COMPONENTS) {
+            avpriv_request_sample(s->avctx, "wt %d", wt);
+            return AVERROR_PATCHWELCOME;
+        }
+
+        if (!s->maxval)
+            maxtab = 255;
+        else if ((5 + wt*(s->maxval+1)) < 65535)
+            maxtab = s->maxval;
+        else
+            maxtab = 65530/wt - 1;
+
+        if(s->avctx->debug & FF_DEBUG_PICT_INFO) {
+            av_log(s->avctx, AV_LOG_DEBUG, "LSE palette %d tid:%d wt:%d maxtab:%d\n", id, tid, wt, maxtab);
+        }
+        if (maxtab >= 256) {
+            avpriv_request_sample(s->avctx, ">8bit palette");
+            return AVERROR_PATCHWELCOME;
+        }
+        maxtab = FFMIN(maxtab, (len - 5) / wt + s->palette_index);
+
+        if (s->palette_index > maxtab)
+            return AVERROR_INVALIDDATA;
+
+        if ((s->avctx->pix_fmt == AV_PIX_FMT_GRAY8 || s->avctx->pix_fmt == AV_PIX_FMT_PAL8) &&
+            (s->picture_ptr->format == AV_PIX_FMT_GRAY8 || s->picture_ptr->format == AV_PIX_FMT_PAL8)) {
+            uint32_t *pal = (uint32_t *)s->picture_ptr->data[1];
+            int shift = 0;
+
+            if (s->avctx->bits_per_raw_sample > 0 && s->avctx->bits_per_raw_sample < 8) {
+                maxtab = FFMIN(maxtab, (1<<s->avctx->bits_per_raw_sample)-1);
+                shift = 8 - s->avctx->bits_per_raw_sample;
+            }
+
+            s->picture_ptr->format =
+            s->avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            for (i=s->palette_index; i<=maxtab; i++) {
+                uint8_t k = i << shift;
+                pal[k] = 0;
+                for (j=0; j<wt; j++) {
+                    pal[k] |= get_bits(&s->gb, 8) << (8*(wt-j-1));
+                }
+            }
+            s->palette_index = i;
+        }
+        break;
     case 4:
-        av_log(s->avctx, AV_LOG_ERROR, "oversize image not supported\n");
+        avpriv_request_sample(s->avctx, "oversize image");
         return AVERROR(ENOSYS);
     default:
         av_log(s->avctx, AV_LOG_ERROR, "invalid id %d\n", id);
         return AVERROR_INVALIDDATA;
     }
-    av_dlog(s->avctx, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
+    ff_dlog(s->avctx, "ID=%i, T=%i,%i,%i\n", id, s->t1, s->t2, s->t3);
 
     return 0;
 }
@@ -172,6 +233,9 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s,
     while (x < w) {
         int err, pred;
 
+        if (get_bits_left(&s->gb) <= 0)
+            return;
+
         /* compute gradients */
         Ra = x ? R(dst, x - stride) : R(last, x);
         Rb = R(last, x);
@@ -215,6 +279,12 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s,
             for (i = 0; i < r; i++) {
                 W(dst, x, Ra);
                 x += stride;
+            }
+
+            if (x >= w) {
+                av_log(NULL, AV_LOG_ERROR, "run overflow\n");
+                av_assert0(x <= w);
+                return;
             }
 
             /* decode run termination value */
@@ -282,10 +352,16 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     int off = 0, stride = 1, width, shift, ret = 0;
 
     zero = av_mallocz(s->picture_ptr->linesize[0]);
+    if (!zero)
+        return AVERROR(ENOMEM);
     last = zero;
     cur  = s->picture_ptr->data[0];
 
     state = av_mallocz(sizeof(JLSState));
+    if (!state) {
+        av_free(zero);
+        return AVERROR(ENOMEM);
+    }
     /* initialize JPEG-LS state from JPEG parameters */
     state->near   = near;
     state->bpp    = (s->bits < 2) ? 2 : s->bits;
@@ -302,6 +378,11 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     else
         shift = point_transform + (16 - s->bits);
 
+    if (shift >= 16) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
     if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) "
@@ -311,6 +392,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 state->reset, state->limit, state->qbpp, state->range);
         av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
                 ilv, point_transform, s->bits, s->cur_scan);
+    }
+    if (get_bits_left(&s->gb) < s->height) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     if (ilv == 0) { /* separate planes */
         if (s->cur_scan > s->nb_components) {
@@ -359,6 +444,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         }
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
+    } else { /* unknown interleaving */
+        avpriv_report_missing_feature(s->avctx, "Unknown interleaved images");
         ret = AVERROR_PATCHWELCOME;
         goto end;
     }
@@ -450,5 +539,6 @@ AVCodec ff_jpegls_decoder = {
     .init           = ff_mjpeg_decode_init,
     .close          = ff_mjpeg_decode_end,
     .decode         = ff_mjpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

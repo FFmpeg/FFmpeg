@@ -32,19 +32,21 @@ typedef struct OggVorbisDecContext {
     ogg_packet op;                      /**< ogg packet                     */
 } OggVorbisDecContext;
 
+static int oggvorbis_decode_close(AVCodecContext *avccontext);
+
 static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     OggVorbisDecContext *context = avccontext->priv_data ;
     uint8_t *p= avccontext->extradata;
-    int i, hsizes[3];
+    int i, hsizes[3], ret;
     unsigned char *headers[3], *extradata = avccontext->extradata;
-
-    vorbis_info_init(&context->vi) ;
-    vorbis_comment_init(&context->vc) ;
 
     if(! avccontext->extradata_size || ! p) {
         av_log(avccontext, AV_LOG_ERROR, "vorbis extradata absent\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
+
+    vorbis_info_init(&context->vi) ;
+    vorbis_comment_init(&context->vc) ;
 
     if(p[0] == 0 && p[1] == 30) {
         for(i = 0; i < 3; i++){
@@ -65,7 +67,8 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
             if(offset >= avccontext->extradata_size - 1) {
                 av_log(avccontext, AV_LOG_ERROR,
                        "vorbis header sizes damaged\n");
-                return -1;
+                ret = AVERROR_INVALIDDATA;
+                goto error;
             }
             hsizes[i] += *p;
             offset++;
@@ -83,7 +86,8 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     } else {
         av_log(avccontext, AV_LOG_ERROR,
                "vorbis initial header len is wrong: %d\n", *p);
-        return -1;
+        ret = AVERROR_INVALIDDATA;
+        goto error;
     }
 
     for(i=0; i<3; i++){
@@ -92,7 +96,8 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
         context->op.packet = headers[i];
         if(vorbis_synthesis_headerin(&context->vi, &context->vc, &context->op)<0){
             av_log(avccontext, AV_LOG_ERROR, "%d. vorbis header damaged\n", i+1);
-            return -1;
+            ret = AVERROR_INVALIDDATA;
+            goto error;
         }
     }
 
@@ -105,6 +110,10 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     vorbis_block_init(&context->vd, &context->vb);
 
     return 0 ;
+
+  error:
+    oggvorbis_decode_close(avccontext);
+    return ret;
 }
 
 
@@ -179,6 +188,8 @@ static int oggvorbis_decode_frame(AVCodecContext *avccontext, void *data,
 static int oggvorbis_decode_close(AVCodecContext *avccontext) {
     OggVorbisDecContext *context = avccontext->priv_data ;
 
+    vorbis_block_clear(&context->vb);
+    vorbis_dsp_clear(&context->vd);
     vorbis_info_clear(&context->vi) ;
     vorbis_comment_clear(&context->vc) ;
 
@@ -195,5 +206,5 @@ AVCodec ff_libvorbis_decoder = {
     .init           = oggvorbis_decode_init,
     .decode         = oggvorbis_decode_frame,
     .close          = oggvorbis_decode_close,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY,
 };

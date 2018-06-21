@@ -29,6 +29,7 @@
 
 #include "config.h"
 #include <inttypes.h>
+#include <limits.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -78,11 +79,11 @@ static float ssim_end1( int s1, int s2, int ss, int s12 )
  * s1*s1, s2*s2, and s1*s2 also obtain this value for edge cases: ((2^10-1)*16*4)^2 = 4286582784.
  * Maximum value for 9-bit is: ss*64 = (2^9-1)^2*16*4*64 = 1069551616, which will not overflow. */
 #if BIT_DEPTH > 9
-#define type float
+    typedef float type;
     static const float ssim_c1 = .01*.01*PIXEL_MAX*PIXEL_MAX*64;
     static const float ssim_c2 = .03*.03*PIXEL_MAX*PIXEL_MAX*64*63;
 #else
-#define type int
+    typedef int type;
     static const int ssim_c1 = (int)(.01*.01*PIXEL_MAX*PIXEL_MAX*64 + .5);
     static const int ssim_c2 = (int)(.03*.03*PIXEL_MAX*PIXEL_MAX*64*63 + .5);
 #endif
@@ -94,7 +95,6 @@ static float ssim_end1( int s1, int s2, int ss, int s12 )
     type covar = fs12*64 - fs1*fs2;
     return (float)(2*fs1*fs2 + ssim_c1) * (float)(2*covar + ssim_c2)
          / ((float)(fs1*fs1 + fs2*fs2 + ssim_c1) * (float)(vars + ssim_c2));
-#undef type
 }
 
 static float ssim_end4( int sum0[5][4], int sum1[5][4], int width )
@@ -195,7 +195,13 @@ int main(int argc, char* argv[])
     f[0] = fopen(argv[1], "rb");
     f[1] = fopen(argv[2], "rb");
     sscanf(argv[3], "%dx%d", &w, &h);
-    frame_size = w*h*3/2;
+
+    if (w<=0 || h<=0 || w*(int64_t)h >= INT_MAX/3 || 2LL*w+12 >= INT_MAX / sizeof(*temp)) {
+        fprintf(stderr, "Dimensions are too large, or invalid\n");
+        return -2;
+    }
+
+    frame_size = w*h*3LL/2;
     for( i=0; i<2; i++ )
     {
         buf[i] = malloc(frame_size);

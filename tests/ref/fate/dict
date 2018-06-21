@@ -1,0 +1,50 @@
+Testing av_dict_get_string() and av_dict_parse_string()
+
+aaa aaa   b,b bbb   c=c ccc   ddd d,d   eee e=e   f,f f=f   g=g g,g
+aaa=aaa,b\,b=bbb,c\=c=ccc,ddd=d\,d,eee=e\=e,f\,f=f\=f,g\=g=g\,g
+ret 0
+aaa aaa   b,b bbb   c=c ccc   ddd d,d   eee e=e   f,f f=f   g=g g,g
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa=aaa"bbb=bbb"ccc=ccc"\\,\=\'\"=\\,\=\'\"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa=aaa'bbb=bbb'ccc=ccc'\\,\=\'"=\\,\=\'"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa"aaa,bbb"bbb,ccc"ccc,\\\,=\'\""\\\,=\'\"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa'aaa,bbb'bbb,ccc'ccc,\\\,=\'"'\\\,=\'"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa"aaa'bbb"bbb'ccc"ccc'\\,=\'\""\\,=\'\"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+aaa'aaa"bbb'bbb"ccc'ccc"\\,=\'\"'\\,=\'\"
+ret 0
+aaa aaa   bbb bbb   ccc ccc   \,='" \,='"
+
+Testing av_dict_set()
+a a
+b b
+c c
+d d
+e e
+ff ff
+
+Testing av_dict_set_int()
+1 1
+2 2
+3 3
+4 4
+5 5
+12 12
+
+Testing av_dict_set() with existing AVDictionaryEntry.key as key
+new val OK
+new val OK

@@ -19,7 +19,6 @@
 #ifndef AVUTIL_ARM_CPU_H
 #define AVUTIL_ARM_CPU_H
 
-#include "config.h"
 #include "libavutil/cpu.h"
 #include "libavutil/cpu_internal.h"
 
@@ -29,5 +28,11 @@
 #define have_vfp(flags)     CPUEXT(flags, VFP)
 #define have_vfpv3(flags)   CPUEXT(flags, VFPV3)
 #define have_neon(flags)    CPUEXT(flags, NEON)
+#define have_setend(flags)  CPUEXT(flags, SETEND)
+
+/* some functions use the VFPv2 vector mode which is deprecated in ARMv7-A
+ * and might trap on such CPU depending on the OS configuration */
+#define have_vfp_vm(flags)                                              \
+    (HAVE_VFP && ((flags) & AV_CPU_FLAG_VFP_VM))
 
 #endif /* AVUTIL_ARM_CPU_H */

@@ -251,14 +251,13 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
 }
 
 
-#if CONFIG_EAC3_ENCODER
 AVCodec ff_eac3_encoder = {
     .name            = "eac3",
     .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
     .type            = AVMEDIA_TYPE_AUDIO,
     .id              = AV_CODEC_ID_EAC3,
     .priv_data_size  = sizeof(AC3EncodeContext),
-    .init            = ff_ac3_encode_init,
+    .init            = ff_ac3_float_encode_init,
     .encode2         = ff_ac3_float_encode_frame,
     .close           = ff_ac3_encode_close,
     .sample_fmts     = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
@@ -267,4 +266,3 @@ AVCodec ff_eac3_encoder = {
     .channel_layouts = ff_ac3_channel_layouts,
     .defaults        = ac3_defaults,
 };
-#endif

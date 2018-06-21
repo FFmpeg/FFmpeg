@@ -47,22 +47,19 @@ static void usage(void)
            "-h                print this help\n");
 }
 
-static void print_pix_fmt_fourccs(enum AVPixelFormat pix_fmt, char sep)
+static void print_pix_fmt_fourccs(enum AVPixelFormat pix_fmt, const PixelFormatTag *pix_fmt_tags, char sep)
 {
     int i;
 
-    for (i = 0; ff_raw_pix_fmt_tags[i].pix_fmt != AV_PIX_FMT_NONE; i++) {
-        if (ff_raw_pix_fmt_tags[i].pix_fmt == pix_fmt) {
-            char buf[32];
-            av_get_codec_tag_string(buf, sizeof(buf), ff_raw_pix_fmt_tags[i].fourcc);
-            printf("%s%c", buf, sep);
-        }
-    }
+    for (i = 0; pix_fmt_tags[i].pix_fmt != AV_PIX_FMT_NONE; i++)
+        if (pix_fmt_tags[i].pix_fmt == pix_fmt)
+            printf("%s%c", av_fourcc2str(pix_fmt_tags[i].fourcc), sep);
 }
 
 int main(int argc, char **argv)
 {
     int i, list_fourcc_pix_fmt = 0, list_pix_fmt_fourccs = 0;
+    const PixelFormatTag *pix_fmt_tags = avpriv_get_raw_pix_fmt_tags();
     const char *pix_fmt_name = NULL;
     char c;
 
@@ -91,21 +88,18 @@ int main(int argc, char **argv)
         }
     }
 
-    if (list_fourcc_pix_fmt) {
-        for (i = 0; ff_raw_pix_fmt_tags[i].pix_fmt != AV_PIX_FMT_NONE; i++) {
-            char buf[32];
-            av_get_codec_tag_string(buf, sizeof(buf), ff_raw_pix_fmt_tags[i].fourcc);
-            printf("%s: %s\n", buf, av_get_pix_fmt_name(ff_raw_pix_fmt_tags[i].pix_fmt));
-        }
-    }
+    if (list_fourcc_pix_fmt)
+        for (i = 0; pix_fmt_tags[i].pix_fmt != AV_PIX_FMT_NONE; i++)
+            printf("%s: %s\n", av_fourcc2str(pix_fmt_tags[i].fourcc),
+                   av_get_pix_fmt_name(pix_fmt_tags[i].pix_fmt));
 
     if (list_pix_fmt_fourccs) {
-        for (i = 0; i < AV_PIX_FMT_NB; i++) {
+        for (i = 0; av_pix_fmt_desc_get(i); i++) {
             const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(i);
             if (!pix_desc->name || pix_desc->flags & AV_PIX_FMT_FLAG_HWACCEL)
                 continue;
             printf("%s: ", pix_desc->name);
-            print_pix_fmt_fourccs(i, ' ');
+            print_pix_fmt_fourccs(i, pix_fmt_tags, ' ');
             printf("\n");
         }
     }
@@ -116,7 +110,7 @@ int main(int argc, char **argv)
             fprintf(stderr, "Invalid pixel format selected '%s'\n", pix_fmt_name);
             return 1;
         }
-        print_pix_fmt_fourccs(pix_fmt, '\n');
+        print_pix_fmt_fourccs(pix_fmt, pix_fmt_tags, '\n');
     }
 
     return 0;

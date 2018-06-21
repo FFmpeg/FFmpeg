@@ -71,8 +71,10 @@ static av_always_inline type bytestream2_get_ ## name ## u(GetByteContext *g)  \
 }                                                                              \
 static av_always_inline type bytestream2_get_ ## name(GetByteContext *g)       \
 {                                                                              \
-    if (g->buffer_end - g->buffer < bytes)                                     \
+    if (g->buffer_end - g->buffer < bytes) {                                   \
+        g->buffer = g->buffer_end;                                             \
         return 0;                                                              \
+    }                                                                          \
     return bytestream2_get_ ## name ## u(g);                                   \
 }                                                                              \
 static av_always_inline type bytestream2_peek_ ## name(GetByteContext *g)      \
@@ -92,7 +94,7 @@ DEF(unsigned int, be24, 3, AV_RB24, AV_WB24)
 DEF(unsigned int, be16, 2, AV_RB16, AV_WB16)
 DEF(unsigned int, byte, 1, AV_RB8 , AV_WB8)
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #   define bytestream2_get_ne16  bytestream2_get_be16
 #   define bytestream2_get_ne24  bytestream2_get_be24
 #   define bytestream2_get_ne32  bytestream2_get_be32
@@ -326,6 +328,32 @@ static av_always_inline void bytestream2_set_bufferu(PutByteContext *p,
 static av_always_inline unsigned int bytestream2_get_eof(PutByteContext *p)
 {
     return p->eof;
+}
+
+static av_always_inline unsigned int bytestream2_copy_bufferu(PutByteContext *p,
+                                                              GetByteContext *g,
+                                                              unsigned int size)
+{
+    memcpy(p->buffer, g->buffer, size);
+    p->buffer += size;
+    g->buffer += size;
+    return size;
+}
+
+static av_always_inline unsigned int bytestream2_copy_buffer(PutByteContext *p,
+                                                             GetByteContext *g,
+                                                             unsigned int size)
+{
+    int size2;
+
+    if (p->eof)
+        return 0;
+    size  = FFMIN(g->buffer_end - g->buffer, size);
+    size2 = FFMIN(p->buffer_end - p->buffer, size);
+    if (size2 != size)
+        p->eof = 1;
+
+    return bytestream2_copy_bufferu(p, g, size2);
 }
 
 static av_always_inline unsigned int bytestream_get_buffer(const uint8_t **b,

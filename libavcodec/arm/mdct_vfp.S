@@ -33,6 +33,11 @@ J0      .req    a2
 J1      .req    a4
 J2      .req    ip
 J3      .req    lr
+REVTAB_HI .req  v5
+IN_HI   .req    v6
+OUT_HI  .req    v6
+TCOS_HI .req    sl
+TSIN_HI .req    fp
 
 .macro prerotation_innerloop
  .set trig_lo, k
@@ -74,6 +79,43 @@ J3      .req    lr
         vstr    s14, [J2, #4]
         vstr    s15, [J3, #4]
  .set k, k + 2
+.endm
+
+.macro prerotation_innerloop_rolled
+        vldmia  TCOS!, {s16,s17}
+        vldmdb  TCOS_HI!, {s18,s19}
+        vldr    s0, [IN_HI, #-4]
+        vldr    s1, [IN_HI, #-12]
+        vldr    s2, [IN, #12]
+        vldr    s3, [IN, #4]
+        vmul.f  s8, s0, s16                     @ vector operation
+        vldmia  TSIN!, {s20,s21}
+        vldmdb  TSIN_HI!, {s22,s23}
+        vldr    s4, [IN]
+        vldr    s5, [IN, #8]
+        vldr    s6, [IN_HI, #-16]
+        vldr    s7, [IN_HI, #-8]
+        vmul.f  s12, s0, s20                    @ vector operation
+        add     IN, IN, #16
+        sub     IN_HI, IN_HI, #16
+        ldrh    J0, [REVTAB], #2
+        ldrh    J1, [REVTAB], #2
+        vmls.f  s8, s4, s20                     @ vector operation
+        ldrh    J3, [REVTAB_HI, #-2]!
+        ldrh    J2, [REVTAB_HI, #-2]!
+        add     J0, OUT, J0, lsl #3
+        vmla.f  s12, s4, s16                    @ vector operation
+        add     J1, OUT, J1, lsl #3
+        add     J2, OUT, J2, lsl #3
+        add     J3, OUT, J3, lsl #3
+        vstr    s8, [J0]
+        vstr    s9, [J1]
+        vstr    s10, [J2]
+        vstr    s11, [J3]
+        vstr    s12, [J0, #4]
+        vstr    s13, [J1, #4]
+        vstr    s14, [J2, #4]
+        vstr    s15, [J3, #4]
 .endm
 
 .macro postrotation_innerloop tail, head
@@ -142,6 +184,49 @@ J3      .req    lr
  .endif
 .endm
 
+.macro postrotation_innerloop_rolled tail, head, tcos_s0_head, tcos_s1_head, tcos_s2_head, tcos_s3_head, tcos_s0_tail, out_offset_head, out_offset_tail
+ .ifnc "\tail",""
+        vmls.f  s8, s0, \tcos_s0_tail       @ vector operation
+ .endif
+ .ifnc "\head",""
+        vldmia  TSIN!, {s16,s17}
+        vldmdb  TSIN_HI!, {s18,s19}
+        vldmia  TCOS!, {\tcos_s0_head,\tcos_s1_head}
+ .endif
+ .ifnc "\tail",""
+        vmla.f  s12, s4, \tcos_s0_tail      @ vector operation
+ .endif
+ .ifnc "\head",""
+        vldr    s0, [OUT, #+\out_offset_head+0]
+        vldr    s1, [OUT, #+\out_offset_head+8]
+        vldr    s2, [OUT_HI, #-\out_offset_head-16]
+        vldr    s3, [OUT_HI, #-\out_offset_head-8]
+        vldr    s4, [OUT, #+\out_offset_head+4]
+        vldr    s5, [OUT, #+\out_offset_head+12]
+        vldr    s6, [OUT_HI, #-\out_offset_head-12]
+        vldr    s7, [OUT_HI, #-\out_offset_head-4]
+ .endif
+ .ifnc "\tail",""
+        vstr    s8, [OUT, #+\out_offset_tail+0]
+        vstr    s9, [OUT, #+\out_offset_tail+8]
+        vstr    s10, [OUT_HI, #-\out_offset_tail-16]
+        vstr    s11, [OUT_HI, #-\out_offset_tail-8]
+ .endif
+ .ifnc "\head",""
+        vmul.f  s8, s4, s16                 @ vector operation
+ .endif
+ .ifnc "\tail",""
+        vstr    s12, [OUT_HI, #-\out_offset_tail-4]
+        vstr    s13, [OUT_HI, #-\out_offset_tail-12]
+        vstr    s14, [OUT, #+\out_offset_tail+12]
+        vstr    s15, [OUT, #+\out_offset_tail+4]
+ .endif
+ .ifnc "\head",""
+        vmul.f  s12, s0, s16                @ vector operation
+        vldmdb  TCOS_HI!, {\tcos_s2_head,\tcos_s3_head}
+ .endif
+.endm
+
 
 /* void ff_imdct_half_vfp(FFTContext *s,
  *                        FFTSample *output,
@@ -150,8 +235,7 @@ J3      .req    lr
 function ff_imdct_half_vfp, export=1
         ldr     ip, [CONTEXT, #5*4]         @ mdct_bits
         teq     ip, #6
-        it      ne
-        bne     X(ff_imdct_half_c)          @ only case currently accelerated is the one used by DCA
+        bne     10f
 
  .set n, 1<<6
  .set n2, n/2
@@ -189,6 +273,59 @@ function ff_imdct_half_vfp, export=1
         fmxr    FPSCR, OLDFPSCR
         vpop    {s16-s27}
         pop     {v1-v5,pc}
+
+10:
+        push    {v1-v6,sl,fp,lr}
+        vpush   {s16-s27}
+        fmrx    OLDFPSCR, FPSCR
+        ldr     lr, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
+        fmxr    FPSCR, lr
+        mov     lr, #1
+        mov     OUT, ORIGOUT
+        ldr     REVTAB, [CONTEXT, #2*4]
+        ldr     TCOS, [CONTEXT, #6*4]
+        ldr     TSIN, [CONTEXT, #7*4]
+        mov     lr, lr, lsl ip
+
+        push    {CONTEXT,OLDFPSCR}
+        add     IN_HI, IN, lr, lsl #1
+        add     REVTAB_HI, REVTAB, lr, lsr #1
+        add     TCOS_HI, TCOS, lr
+        add     TSIN_HI, TSIN, lr
+0:      prerotation_innerloop_rolled
+        teq     IN, IN_HI
+        bne     0b
+        ldmia   sp, {CONTEXT,OLDFPSCR}
+
+        mov     ORIGOUT, OUT
+        fmxr    FPSCR, OLDFPSCR
+        ldr     ip, [CONTEXT, #9*4]
+        blx     ip                          @ s->fft_calc(s, output)
+
+        pop     {CONTEXT,OLDFPSCR}
+        ldr     lr, =0x03030000             @ RunFast mode, short vectors of length 4, stride 1
+        ldr     ip, [CONTEXT, #5*4]         @ mdct_bits
+        fmxr    FPSCR, lr
+        mov     lr, #1
+        mov     lr, lr, lsl ip
+        sub     TCOS, TCOS, lr, lsr #1
+        sub     TSIN, TSIN, lr, lsr #1
+        add     OUT_HI, OUT, lr, lsl #1
+        add     TCOS_HI, TCOS, lr
+        add     TSIN_HI, TSIN, lr
+        postrotation_innerloop_rolled , head, s20, s21, s22, s23,, 0
+        b       1f
+0:      add     OUT, OUT, #32
+        sub     OUT_HI, OUT_HI, #32
+        postrotation_innerloop_rolled tail, head, s20, s21, s22, s23, s24, 0, -16
+1:      postrotation_innerloop_rolled tail, head, s24, s25, s26, s27, s20, 16, 0
+        teq     TSIN, TSIN_HI
+        bne     0b
+        postrotation_innerloop_rolled tail,,,,,, s24,, 16
+
+        fmxr    FPSCR, OLDFPSCR
+        vpop    {s16-s27}
+        pop     {v1-v6,sl,fp,pc}
 endfunc
 
         .unreq  CONTEXT
@@ -203,3 +340,8 @@ endfunc
         .unreq  J1
         .unreq  J2
         .unreq  J3
+        .unreq  REVTAB_HI
+        .unreq  IN_HI
+        .unreq  OUT_HI
+        .unreq  TCOS_HI
+        .unreq  TSIN_HI

@@ -1,5 +1,4 @@
 /*
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -31,6 +30,10 @@
 #ifndef AVUTIL_DICT_H
 #define AVUTIL_DICT_H
 
+#include <stdint.h>
+
+#include "version.h"
+
 /**
  * @addtogroup lavu_dict AVDictionary
  * @ingroup lavu_data
@@ -61,7 +64,6 @@
    }
    av_dict_free(&d);
  @endcode
- *
  */
 
 #define AV_DICT_MATCH_CASE      1   /**< Only get an entry with exact-case key match. Only relevant in av_dict_get(). */
@@ -74,6 +76,7 @@
 #define AV_DICT_DONT_OVERWRITE 16   ///< Don't overwrite existing entries.
 #define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
                                       delimiter is added, the strings are simply concatenated. */
+#define AV_DICT_MULTIKEY       64   /**< Allow to store several equal keys in the dictionary */
 
 typedef struct AVDictionaryEntry {
     char *key;
@@ -97,8 +100,8 @@ typedef struct AVDictionary AVDictionary;
  * @param flags a collection of AV_DICT_* flags controlling how the entry is retrieved
  * @return found entry or NULL in case no matching entry was found in the dictionary
  */
-AVDictionaryEntry *
-av_dict_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
+AVDictionaryEntry *av_dict_get(const AVDictionary *m, const char *key,
+                               const AVDictionaryEntry *prev, int flags);
 
 /**
  * Get number of entries in dictionary.
@@ -111,14 +114,28 @@ int av_dict_count(const AVDictionary *m);
 /**
  * Set the given entry in *pm, overwriting an existing entry.
  *
+ * Note: If AV_DICT_DONT_STRDUP_KEY or AV_DICT_DONT_STRDUP_VAL is set,
+ * these arguments will be freed on error.
+ *
+ * Warning: Adding a new entry to a dictionary invalidates all existing entries
+ * previously returned with av_dict_get.
+ *
  * @param pm pointer to a pointer to a dictionary struct. If *pm is NULL
  * a dictionary struct is allocated and put in *pm.
- * @param key entry key to add to *pm (will be av_strduped depending on flags)
- * @param value entry value to add to *pm (will be av_strduped depending on flags).
+ * @param key entry key to add to *pm (will either be av_strduped or added as a new key depending on flags)
+ * @param value entry value to add to *pm (will be av_strduped or added as a new key depending on flags).
  *        Passing a NULL value will cause an existing entry to be deleted.
  * @return >= 0 on success otherwise an error code <0
  */
 int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags);
+
+/**
+ * Convenience wrapper for av_dict_set that converts the value to a string
+ * and stores it.
+ *
+ * Note: If AV_DICT_DONT_STRDUP_KEY is set, key will be freed on error.
+ */
+int av_dict_set_int(AVDictionary **pm, const char *key, int64_t value, int flags);
 
 /**
  * Parse the key/value pairs list and add the parsed entries to a dictionary.
@@ -147,14 +164,34 @@ int av_dict_parse_string(AVDictionary **pm, const char *str,
  * @param src pointer to source AVDictionary struct
  * @param flags flags to use when setting entries in *dst
  * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
+ * @return 0 on success, negative AVERROR code on failure. If dst was allocated
+ *           by this function, callers should free the associated memory.
  */
-void av_dict_copy(AVDictionary **dst, AVDictionary *src, int flags);
+int av_dict_copy(AVDictionary **dst, const AVDictionary *src, int flags);
 
 /**
  * Free all the memory allocated for an AVDictionary struct
  * and all keys and values.
  */
 void av_dict_free(AVDictionary **m);
+
+/**
+ * Get dictionary entries as a string.
+ *
+ * Create a string containing dictionary's entries.
+ * Such string may be passed back to av_dict_parse_string().
+ * @note String is escaped with backslashes ('\').
+ *
+ * @param[in]  m             dictionary
+ * @param[out] buffer        Pointer to buffer that will be allocated with string containg entries.
+ *                           Buffer must be freed by the caller when is no longer needed.
+ * @param[in]  key_val_sep   character used to separate key from value
+ * @param[in]  pairs_sep     character used to separate two pairs from each other
+ * @return                   >= 0 on success, negative on error
+ * @warning Separators cannot be neither '\\' nor '\0'. They also cannot be the same.
+ */
+int av_dict_get_string(const AVDictionary *m, char **buffer,
+                       const char key_val_sep, const char pairs_sep);
 
 /**
  * @}

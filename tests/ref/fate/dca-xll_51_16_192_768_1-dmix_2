@@ -1,0 +1,16 @@
+#format: frame checksums
+#version: 2
+#hash: MD5
+#tb 0: 1/192000
+#media_type 0: audio
+#codec_id 0: pcm_s16le
+#sample_rate 0: 192000
+#channel_layout 0: 3
+#channel_layout_name 0: stereo
+#stream#, dts,        pts, duration,     size, hash
+0,          0,          0,     2048,     8192, 0829f71740aab1ab98b33eae21dee122
+0,       2048,       2048,     2048,     8192, c8ca1cff44674809d464ec39cf1bd1e9
+0,       4096,       4096,     2048,     8192, d67d26915ca86554568aac685c9a6dc3
+0,       6144,       6144,     2048,     8192, 8fdf69fdac9985ac4f9470a7b8e8529d
+0,       8192,       8192,     2048,     8192, dc8a9ca39b38c98147f2308f985ff648
+0,      10240,      10240,     2048,     8192, ea13b97373762ab16d0f664013fdc962

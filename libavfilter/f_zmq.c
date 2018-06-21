@@ -29,11 +29,10 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "internal.h"
-#include "avfiltergraph.h"
 #include "audio.h"
 #include "video.h"
 
-typedef struct {
+typedef struct ZMQContext {
     const AVClass *class;
     void *zmq;
     void *responder;
@@ -86,7 +85,7 @@ static void av_cold uninit(AVFilterContext *ctx)
     zmq_ctx_destroy(zmq->zmq);
 }
 
-typedef struct {
+typedef struct Command {
     char *target, *command, *arg;
 } Command;
 
