@@ -772,7 +772,7 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
                      - FFMIN3(pkt->pts, pkt->dts, ost->last_mux_dts + 1)
                      - FFMAX3(pkt->pts, pkt->dts, ost->last_mux_dts + 1);
         }
-        if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
+        if ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO || st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) &&
             pkt->dts != AV_NOPTS_VALUE &&
             !(st->codecpar->codec_id == AV_CODEC_ID_VP9 && ost->stream_copy) &&
             ost->last_mux_dts != AV_NOPTS_VALUE) {
