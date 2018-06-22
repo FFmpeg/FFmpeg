@@ -121,20 +121,23 @@ static int h264_find_frame_end(H264ParseContext *p, const uint8_t *buf,
             }
             state = 7;
         } else {
+            unsigned int mb, last_mb = p->parse_last_mb;
+            GetBitContext gb;
             p->parse_history[p->parse_history_count++] = buf[i];
-            if (p->parse_history_count > 5) {
-                unsigned int mb, last_mb = p->parse_last_mb;
-                GetBitContext gb;
 
-                init_get_bits(&gb, p->parse_history, 8*p->parse_history_count);
-                p->parse_history_count = 0;
-                mb= get_ue_golomb_long(&gb);
+            init_get_bits(&gb, p->parse_history, 8*p->parse_history_count);
+            mb= get_ue_golomb_long(&gb);
+            if (get_bits_left(&gb) > 0 || p->parse_history_count > 5) {
                 p->parse_last_mb = mb;
                 if (pc->frame_start_found) {
-                    if (mb <= last_mb)
+                    if (mb <= last_mb) {
+                        i -= p->parse_history_count - 1;
+                        p->parse_history_count = 0;
                         goto found;
+                    }
                 } else
                     pc->frame_start_found = 1;
+                p->parse_history_count = 0;
                 state = 7;
             }
         }
@@ -149,7 +152,7 @@ found:
     pc->frame_start_found = 0;
     if (p->is_avc)
         return next_avc;
-    return i - (state & 5) - 5 * (state > 7);
+    return i - (state & 5);
 }
 
 static int scan_mmco_reset(AVCodecParserContext *s, GetBitContext *gb,
