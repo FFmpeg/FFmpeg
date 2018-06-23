@@ -240,6 +240,8 @@ static int magy_decode_slice10(AVCodecContext *avctx, void *tdata,
 
         dst = (uint16_t *)p->data[i] + j * sheight * stride;
         if (flags & 1) {
+            if (get_bits_left(&gb) < bps * width * height)
+                return AVERROR_INVALIDDATA;
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++)
                     dst[x] = get_bits(&gb, bps);
@@ -371,6 +373,8 @@ static int magy_decode_slice(AVCodecContext *avctx, void *tdata,
 
         dst = p->data[i] + j * sheight * stride;
         if (flags & 1) {
+            if (get_bits_left(&gb) < 8* width * height)
+                return AVERROR_INVALIDDATA;
             for (k = 0; k < height; k++) {
                 for (x = 0; x < width; x++)
                     dst[x] = get_bits(&gb, 8);
