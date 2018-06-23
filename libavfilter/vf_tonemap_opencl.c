@@ -124,10 +124,10 @@ static void get_rgb2rgb_matrix(enum AVColorPrimaries in, enum AVColorPrimaries o
                                double rgb2rgb[3][3]) {
     double rgb2xyz[3][3], xyz2rgb[3][3];
 
-    fill_rgb2xyz_table(&primaries_table[out], &whitepoint_table[out], rgb2xyz);
-    invert_matrix3x3(rgb2xyz, xyz2rgb);
-    fill_rgb2xyz_table(&primaries_table[in], &whitepoint_table[in], rgb2xyz);
-    mul3x3(rgb2rgb, rgb2xyz, xyz2rgb);
+    ff_fill_rgb2xyz_table(&primaries_table[out], &whitepoint_table[out], rgb2xyz);
+    ff_matrix_invert_3x3(rgb2xyz, xyz2rgb);
+    ff_fill_rgb2xyz_table(&primaries_table[in], &whitepoint_table[in], rgb2xyz);
+    ff_matrix_mul_3x3(rgb2rgb, rgb2xyz, xyz2rgb);
 }
 
 #define OPENCL_SOURCE_NB 3

@@ -371,7 +371,7 @@ static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptati
     double mai[3][3], fac[3][3], tmp[3][3];
     double rs, gs, bs, rd, gd, bd;
 
-    invert_matrix3x3(ma, mai);
+    ff_matrix_invert_3x3(ma, mai);
     rs = ma[0][0] * wp_src->xw + ma[0][1] * wp_src->yw + ma[0][2] * zw_src;
     gs = ma[1][0] * wp_src->xw + ma[1][1] * wp_src->yw + ma[1][2] * zw_src;
     bs = ma[2][0] * wp_src->xw + ma[2][1] * wp_src->yw + ma[2][2] * zw_src;
@@ -382,8 +382,8 @@ static void fill_whitepoint_conv_table(double out[3][3], enum WhitepointAdaptati
     fac[1][1] = gd / gs;
     fac[2][2] = bd / bs;
     fac[0][1] = fac[0][2] = fac[1][0] = fac[1][2] = fac[2][0] = fac[2][1] = 0.0;
-    mul3x3(tmp, ma, fac);
-    mul3x3(out, tmp, mai);
+    ff_matrix_mul_3x3(tmp, ma, fac);
+    ff_matrix_mul_3x3(out, tmp, mai);
 }
 
 static void apply_lut(int16_t *buf[3], ptrdiff_t stride,
@@ -588,19 +588,19 @@ static int create_filtergraph(AVFilterContext *ctx,
 
             wp_out = &whitepoint_coefficients[s->out_primaries->wp];
             wp_in = &whitepoint_coefficients[s->in_primaries->wp];
-            fill_rgb2xyz_table(&s->out_primaries->coeff, wp_out, rgb2xyz);
-            invert_matrix3x3(rgb2xyz, xyz2rgb);
-            fill_rgb2xyz_table(&s->in_primaries->coeff, wp_in, rgb2xyz);
+            ff_fill_rgb2xyz_table(&s->out_primaries->coeff, wp_out, rgb2xyz);
+            ff_matrix_invert_3x3(rgb2xyz, xyz2rgb);
+            ff_fill_rgb2xyz_table(&s->in_primaries->coeff, wp_in, rgb2xyz);
             if (s->out_primaries->wp != s->in_primaries->wp &&
                 s->wp_adapt != WP_ADAPT_IDENTITY) {
                 double wpconv[3][3], tmp[3][3];
 
                 fill_whitepoint_conv_table(wpconv, s->wp_adapt, s->in_primaries->wp,
                                            s->out_primaries->wp);
-                mul3x3(tmp, rgb2xyz, wpconv);
-                mul3x3(rgb2rgb, tmp, xyz2rgb);
+                ff_matrix_mul_3x3(tmp, rgb2xyz, wpconv);
+                ff_matrix_mul_3x3(rgb2rgb, tmp, xyz2rgb);
             } else {
-                mul3x3(rgb2rgb, rgb2xyz, xyz2rgb);
+                ff_matrix_mul_3x3(rgb2rgb, rgb2xyz, xyz2rgb);
             }
             for (m = 0; m < 3; m++)
                 for (n = 0; n < 3; n++) {
@@ -725,7 +725,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             for (n = 0; n < 8; n++)
                 s->yuv_offset[0][n] = off;
             fill_rgb2yuv_table(s->in_lumacoef, rgb2yuv);
-            invert_matrix3x3(rgb2yuv, yuv2rgb);
+            ff_matrix_invert_3x3(rgb2yuv, yuv2rgb);
             bits = 1 << (in_desc->comp[0].depth - 1);
             for (n = 0; n < 3; n++) {
                 for (in_rng = s->in_y_rng, m = 0; m < 3; m++, in_rng = s->in_uv_rng) {
@@ -781,7 +781,7 @@ static int create_filtergraph(AVFilterContext *ctx,
             double yuv2yuv[3][3];
             int in_rng, out_rng;
 
-            mul3x3(yuv2yuv, yuv2rgb, rgb2yuv);
+            ff_matrix_mul_3x3(yuv2yuv, yuv2rgb, rgb2yuv);
             for (out_rng = s->out_y_rng, m = 0; m < 3; m++, out_rng = s->out_uv_rng) {
                 for (in_rng = s->in_y_rng, n = 0; n < 3; n++, in_rng = s->in_uv_rng) {
                     s->yuv2yuv_coeffs[m][n][0] =

@@ -20,7 +20,7 @@
 #include "colorspace.h"
 
 
-void invert_matrix3x3(const double in[3][3], double out[3][3])
+void ff_matrix_invert_3x3(const double in[3][3], double out[3][3])
 {
     double m00 = in[0][0], m01 = in[0][1], m02 = in[0][2],
            m10 = in[1][0], m11 = in[1][1], m12 = in[1][2],
@@ -47,7 +47,8 @@ void invert_matrix3x3(const double in[3][3], double out[3][3])
     }
 }
 
-void mul3x3(double dst[3][3], const double src1[3][3], const double src2[3][3])
+void ff_matrix_mul_3x3(double dst[3][3],
+               const double src1[3][3], const double src2[3][3])
 {
     int m, n;
 
@@ -60,9 +61,9 @@ void mul3x3(double dst[3][3], const double src1[3][3], const double src2[3][3])
 /*
  * see e.g. http://www.brucelindbloom.com/index.html?Eqn_RGB_XYZ_Matrix.html
  */
-void fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
-                        const struct WhitepointCoefficients *wp,
-                        double rgb2xyz[3][3])
+void ff_fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
+                           const struct WhitepointCoefficients *wp,
+                           double rgb2xyz[3][3])
 {
     double i[3][3], sr, sg, sb, zw;
 
@@ -73,7 +74,7 @@ void fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
     rgb2xyz[2][0] = (1.0 - coeffs->xr - coeffs->yr) / coeffs->yr;
     rgb2xyz[2][1] = (1.0 - coeffs->xg - coeffs->yg) / coeffs->yg;
     rgb2xyz[2][2] = (1.0 - coeffs->xb - coeffs->yb) / coeffs->yb;
-    invert_matrix3x3(rgb2xyz, i);
+    ff_matrix_invert_3x3(rgb2xyz, i);
     zw = 1.0 - wp->xw - wp->yw;
     sr = i[0][0] * wp->xw + i[0][1] * wp->yw + i[0][2] * zw;
     sg = i[1][0] * wp->xw + i[1][1] * wp->yw + i[1][2] * zw;
