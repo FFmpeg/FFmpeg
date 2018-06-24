@@ -3125,7 +3125,7 @@ static int mxf_read_header(AVFormatContext *s)
         /* TODO: look up which IndexSID to use via EssenceContainerData */
         av_log(mxf->fc, AV_LOG_INFO, "got %i index tables - only the first one (IndexSID %i) will be used\n",
                mxf->nb_index_tables, mxf->index_tables[0].index_sid);
-    } else if (mxf->nb_index_tables == 0 && mxf->op == OPAtom) {
+    } else if (mxf->nb_index_tables == 0 && mxf->op == OPAtom && (s->error_recognition & AV_EF_EXPLODE)) {
         av_log(mxf->fc, AV_LOG_ERROR, "cannot demux OPAtom without an index\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
