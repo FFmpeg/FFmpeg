@@ -61,7 +61,7 @@ enum {
 
 static int consume_from_fifos(FFFrameSync *fs);
 
-const AVClass *framesync_get_class(void)
+const AVClass *ff_framesync_get_class(void)
 {
     return &framesync_class;
 }
