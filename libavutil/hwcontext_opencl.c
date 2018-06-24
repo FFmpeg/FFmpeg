@@ -2154,7 +2154,6 @@ static int opencl_map_from_vaapi(AVHWFramesContext *dst_fc,
                                  AVFrame *dst, const AVFrame *src,
                                  int flags)
 {
-    HWMapDescriptor *hwmap;
     AVFrame *tmp;
     int err;
 
