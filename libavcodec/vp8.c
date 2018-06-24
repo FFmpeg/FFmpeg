@@ -492,9 +492,11 @@ static void fade(uint8_t *dst, ptrdiff_t dst_linesize,
 {
     int i, j;
     for (j = 0; j < height; j++) {
+        const uint8_t *src2 = src + j * src_linesize;
+        uint8_t *dst2 = dst + j * dst_linesize;
         for (i = 0; i < width; i++) {
-            uint8_t y = src[j * src_linesize + i];
-            dst[j * dst_linesize + i] = av_clip_uint8(y + ((y * beta) >> 8) + alpha);
+            uint8_t y = src2[i];
+            dst2[i] = av_clip_uint8(y + ((y * beta) >> 8) + alpha);
         }
     }
 }
