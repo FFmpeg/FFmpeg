@@ -507,6 +507,9 @@ static int vp7_fade_frame(VP8Context *s, VP56RangeCoder *c)
     int beta  = (int8_t) vp8_rac_get_uint(c, 8);
     int ret;
 
+    if (c->end <= c->buffer && c->bits >= 0)
+        return AVERROR_INVALIDDATA;
+
     if (!s->keyframe && (alpha || beta)) {
         int width  = s->mb_width * 16;
         int height = s->mb_height * 16;
