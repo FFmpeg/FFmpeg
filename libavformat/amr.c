@@ -184,12 +184,11 @@ static int amrnb_probe(AVProbeData *p)
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 9 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrnb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
@@ -241,12 +240,11 @@ static int amrwb_probe(AVProbeData *p)
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 10 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrwb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
