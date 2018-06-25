@@ -510,7 +510,7 @@ end:
  * Pops up a user dialog allowing them to adjust properties for the given filter, if possible.
  */
 void
-dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx) {
+ff_dshow_show_filter_properties(IBaseFilter *device_filter, AVFormatContext *avctx) {
     ISpecifyPropertyPages *property_pages = NULL;
     IUnknown *device_filter_iunknown = NULL;
     HRESULT hr;
@@ -582,7 +582,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
     int should_show_properties = (devtype == VideoDevice) ? ctx->show_video_device_dialog : ctx->show_audio_device_dialog;
 
     if (should_show_properties)
-        dshow_show_filter_properties(device_filter, avctx);
+        ff_dshow_show_filter_properties(device_filter, avctx);
 
     r = IBaseFilter_EnumPins(device_filter, &pins);
     if (r != S_OK) {
@@ -887,7 +887,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
         goto error;
     }
 
-    r = dshow_try_setup_crossbar_options(graph_builder2, device_filter, devtype, avctx);
+    r = ff_dshow_try_setup_crossbar_options(graph_builder2, device_filter, devtype, avctx);
 
     if (r != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not setup CrossBar\n");
