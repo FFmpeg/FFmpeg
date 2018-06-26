@@ -129,7 +129,7 @@ typedef struct AVEncryptionInitInfo {
  *
  * @param subsample_count The number of subsamples.
  * @param key_id_size The number of bytes in the key ID, should be 16.
- * @param key_id_size The number of bytes in the IV, should be 16.
+ * @param iv_size The number of bytes in the IV, should be 16.
  *
  * @return The new AVEncryptionInfo structure, or NULL on error.
  */
