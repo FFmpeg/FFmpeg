@@ -149,11 +149,14 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (avpkt.size) {
         ret = v4l2_try_start(avctx);
-        if (ret)
+        if (ret) {
+            av_packet_unref(&avpkt);
             return 0;
+        }
     }
 
 dequeue:
+    av_packet_unref(&avpkt);
     return ff_v4l2_context_dequeue_frame(capture, frame);
 }
 
