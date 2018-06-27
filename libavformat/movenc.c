@@ -385,6 +385,11 @@ static int handle_eac3(MOVMuxContext *mov, AVPacket *pkt, MOVTrack *track)
                 info->ec3_done = 1;
                 goto concatenate;
             }
+        } else {
+            if (hdr->substreamid != 0) {
+                avpriv_request_sample(mov->fc, "Multiple non EAC3 independent substreams");
+                return AVERROR_PATCHWELCOME;
+            }
         }
 
         /* fill the info needed for the "dec3" atom */
