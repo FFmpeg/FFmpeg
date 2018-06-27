@@ -4213,7 +4213,7 @@ static int process_input(int file_index)
     AVFormatContext *is;
     InputStream *ist;
     AVPacket pkt;
-    int ret, i, j;
+    int ret, thread_ret, i, j;
     int64_t duration;
     int64_t pkt_dts;
 
@@ -4236,7 +4236,15 @@ static int process_input(int file_index)
                 avcodec_flush_buffers(avctx);
             }
         }
+#if HAVE_THREADS
+        free_input_thread(file_index);
+#endif
         ret = seek_to_start(ifile, is);
+#if HAVE_THREADS
+        thread_ret = init_input_thread(file_index);
+        if (thread_ret < 0)
+            return thread_ret;
+#endif
         if (ret < 0)
             av_log(NULL, AV_LOG_WARNING, "Seek to start failed.\n");
         else
