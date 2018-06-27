@@ -314,3 +314,21 @@ const uint16_t ff_eac3_default_chmap[8] = {
     AC3_CHMAP_L |               AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR,
     AC3_CHMAP_L | AC3_CHMAP_C | AC3_CHMAP_R | AC3_CHMAP_L_SUR |                  AC3_CHMAP_R_SUR
 };
+const uint64_t ff_eac3_custom_channel_map_locations[16][2] = {
+    { 1, AV_CH_FRONT_LEFT },
+    { 1, AV_CH_FRONT_CENTER },
+    { 1, AV_CH_FRONT_RIGHT },
+    { 1, AV_CH_SIDE_LEFT },
+    { 1, AV_CH_SIDE_RIGHT },
+    { 0, AV_CH_FRONT_LEFT_OF_CENTER | AV_CH_FRONT_RIGHT_OF_CENTER },
+    { 0, AV_CH_BACK_LEFT | AV_CH_BACK_RIGHT },
+    { 0, AV_CH_BACK_CENTER },
+    { 0, AV_CH_TOP_CENTER },
+    { 0, AV_CH_SURROUND_DIRECT_LEFT | AV_CH_SURROUND_DIRECT_RIGHT },
+    { 0, AV_CH_WIDE_LEFT | AV_CH_WIDE_RIGHT },
+    { 0, AV_CH_TOP_FRONT_LEFT | AV_CH_TOP_FRONT_RIGHT},
+    { 0, AV_CH_TOP_FRONT_CENTER },
+    { 0, AV_CH_TOP_BACK_LEFT | AV_CH_TOP_BACK_RIGHT },
+    { 0, AV_CH_LOW_FREQUENCY_2 },
+    { 1, AV_CH_LOW_FREQUENCY },
+};

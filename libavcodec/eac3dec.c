@@ -349,8 +349,18 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
     /* dependent stream channel map */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
         if (get_bits1(gbc)) {
-            s->channel_map = get_bits(gbc, 16);
-            av_log(s->avctx, AV_LOG_DEBUG, "channel_map: %0X\n", s->channel_map);
+            int64_t channel_layout = 0;
+            int channel_map = get_bits(gbc, 16);
+            av_log(s->avctx, AV_LOG_DEBUG, "channel_map: %0X\n", channel_map);
+
+            for (i = 0; i < 16; i++)
+                if (channel_map & (1 << (EAC3_MAX_CHANNELS - i - 1)))
+                    channel_layout |= ff_eac3_custom_channel_map_locations[i][1];
+
+            if (av_popcount64(channel_layout) > EAC3_MAX_CHANNELS) {
+                return AVERROR_INVALIDDATA;
+            }
+            s->channel_map = channel_map;
         }
     }
 
