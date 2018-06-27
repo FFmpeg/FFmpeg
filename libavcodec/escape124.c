@@ -222,8 +222,8 @@ static int escape124_decode_frame(AVCodecContext *avctx,
     // This call also guards the potential depth reads for the
     // codebook unpacking.
     // Check if the amount we will read minimally is available on input.
-    // The 64 represent the immedeatly next 2 frame_* elements read, the 23/4320
-    // represent a lower bound of the space needed for skiped superblocks. Non
+    // The 64 represent the immediately next 2 frame_* elements read, the 23/4320
+    // represent a lower bound of the space needed for skipped superblocks. Non
     // skipped SBs need more space.
     if (get_bits_left(&gb) < 64 + s->num_superblocks * 23LL / 4320)
         return -1;
