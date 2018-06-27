@@ -1407,6 +1407,11 @@ static int h264_field_start(H264Context *h, const H264SliceContext *sl,
 
     sps = h->ps.sps;
 
+    if (sps && sps->bitstream_restriction_flag &&
+        h->avctx->has_b_frames < sps->num_reorder_frames) {
+        h->avctx->has_b_frames = sps->num_reorder_frames;
+    }
+
     last_pic_droppable   = h->droppable;
     last_pic_structure   = h->picture_structure;
     h->droppable         = (nal->ref_idc == 0);
