@@ -1690,6 +1690,7 @@ dependent_frame:
 
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
         uint64_t ich_layout = avpriv_ac3_channel_layout_tab[s->prev_output_mode & ~AC3_OUTPUT_LFEON];
+        int channel_map_size = ff_ac3_channels_tab[s->output_mode & ~AC3_OUTPUT_LFEON] + s->lfe_on;
         uint64_t channel_layout;
         int extend = 0;
 
@@ -1718,6 +1719,9 @@ dependent_frame:
                                                                     custom_channel_map_locations[ch][1]);
                     if (index < 0)
                         return AVERROR_INVALIDDATA;
+                    if (extend >= channel_map_size)
+                        return AVERROR_INVALIDDATA;
+
                     extended_channel_map[index] = offset + channel_map[extend++];
                 } else {
                     int i;
@@ -1728,6 +1732,9 @@ dependent_frame:
                                                                             1LL << i);
                             if (index < 0)
                                 return AVERROR_INVALIDDATA;
+                            if (extend >= channel_map_size)
+                                return AVERROR_INVALIDDATA;
+
                             extended_channel_map[index] = offset + channel_map[extend++];
                         }
                     }
