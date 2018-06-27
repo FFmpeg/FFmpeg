@@ -295,6 +295,10 @@ static int flvseg_open(URLContext *h, const char *filename, int flags)
     } else {
         av_log(NULL, AV_LOG_INFO, "[flvseg] work directory is %s\n", c->work_dir);
     }
+    if (mkdir(c->work_dir, 0777) == -1 && errno != EEXIST) {
+        av_log(NULL, AV_LOG_ERROR , "[flvseg]  failed to create directory %s\n", c->work_dir);
+        return AVERROR(errno);
+    }
 
     if (c->first_name == 0) {
         c->first_name = av_gettime() / 1000000;
