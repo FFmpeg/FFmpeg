@@ -1980,15 +1980,15 @@ static int mpeg4_decode_gop_header(MpegEncContext *s, GetBitContext *gb)
     return 0;
 }
 
-static int mpeg4_decode_profile_level(MpegEncContext *s, GetBitContext *gb)
+static int mpeg4_decode_profile_level(MpegEncContext *s, GetBitContext *gb, int *profile, int *level)
 {
 
-    s->avctx->profile = get_bits(gb, 4);
-    s->avctx->level   = get_bits(gb, 4);
+    *profile = get_bits(gb, 4);
+    *level   = get_bits(gb, 4);
 
     // for Simple profile, level 0
-    if (s->avctx->profile == 0 && s->avctx->level == 8) {
-        s->avctx->level = 0;
+    if (*profile == 0 && *level == 8) {
+        *level = 0;
     }
 
     return 0;
@@ -3211,13 +3211,19 @@ int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         } else if (startcode == GOP_STARTCODE) {
             mpeg4_decode_gop_header(s, gb);
         } else if (startcode == VOS_STARTCODE) {
-            mpeg4_decode_profile_level(s, gb);
-            if (s->avctx->profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO &&
-                (s->avctx->level > 0 && s->avctx->level < 9)) {
+            int profile, level;
+            mpeg4_decode_profile_level(s, gb, &profile, &level);
+            if (profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO &&
+                (level > 0 && level < 9)) {
                 s->studio_profile = 1;
                 next_start_code_studio(gb);
                 extension_and_user_data(s, gb, 0);
+            } else if (s->studio_profile) {
+                avpriv_request_sample(s->avctx, "Mixes studio and non studio profile\n");
+                return AVERROR_PATCHWELCOME;
             }
+            s->avctx->profile = profile;
+            s->avctx->level   = level;
         } else if (startcode == VISUAL_OBJ_STARTCODE) {
             if (s->studio_profile) {
                 if ((ret = decode_studiovisualobject(ctx, gb)) < 0)
@@ -3238,6 +3244,7 @@ end:
     s->avctx->has_b_frames = !s->low_delay;
 
     if (s->studio_profile) {
+        av_assert0(s->avctx->profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO);
         if (!s->avctx->bits_per_raw_sample) {
             av_log(s->avctx, AV_LOG_ERROR, "Missing VOL header\n");
             return AVERROR_INVALIDDATA;
