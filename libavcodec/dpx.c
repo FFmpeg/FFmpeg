@@ -408,12 +408,14 @@ static int decode_frame(AVCodecContext *avctx,
                 if (elements == 4)
                     *dst[3]++ = read16(&buf, endian) >> 4;
                 } else {
-                    *dst[2]++ = read12in32(&buf, &rgbBuffer,
-                                           &n_datum, endian);
+                    if (elements >= 3)
+                        *dst[2]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
                     *dst[0]++ = read12in32(&buf, &rgbBuffer,
                                            &n_datum, endian);
-                    *dst[1]++ = read12in32(&buf, &rgbBuffer,
-                                           &n_datum, endian);
+                    if (elements >= 2)
+                        *dst[1]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
                     if (elements == 4)
                         *dst[3]++ = read12in32(&buf, &rgbBuffer,
                                                &n_datum, endian);
