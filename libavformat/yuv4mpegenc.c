@@ -33,6 +33,7 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     int raten, rated, aspectn, aspectd, n;
     char inter;
     const char *colorspace = "";
+    const char *colorrange = "";
     int field_order;
 
     st     = s->streams[0];
@@ -56,6 +57,17 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         field_order = st->codec->field_order;
     FF_ENABLE_DEPRECATION_WARNINGS
 #endif
+
+    switch(st->codecpar->color_range) {
+    case AVCOL_RANGE_MPEG:
+        colorrange = " XCOLORRANGE=LIMITED";
+        break;
+    case AVCOL_RANGE_JPEG:
+        colorrange = " XCOLORRANGE=FULL";
+        break;
+    default:
+        break;
+    }
 
     switch (field_order) {
     case AV_FIELD_TB:
@@ -83,6 +95,18 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
         break;
     case AV_PIX_FMT_YUV411P:
         colorspace = " C411 XYSCSS=411";
+        break;
+    case AV_PIX_FMT_YUVJ420P:
+        colorspace = " C420jpeg XYSCSS=420JPEG";
+        colorrange = " XCOLORRANGE=FULL";
+        break;
+    case AV_PIX_FMT_YUVJ422P:
+        colorspace = " C422 XYSCSS=422";
+        colorrange = " XCOLORRANGE=FULL";
+        break;
+    case AV_PIX_FMT_YUVJ444P:
+        colorspace = " C444 XYSCSS=444";
+        colorrange = " XCOLORRANGE=FULL";
         break;
     case AV_PIX_FMT_YUV420P:
         switch (st->codecpar->chroma_location) {
@@ -145,12 +169,13 @@ static int yuv4_generate_header(AVFormatContext *s, char* buf)
     }
 
     /* construct stream header, if this is the first frame */
-    n = snprintf(buf, Y4M_LINE_MAX, "%s W%d H%d F%d:%d I%c A%d:%d%s\n",
+    n = snprintf(buf, Y4M_LINE_MAX, "%s W%d H%d F%d:%d I%c A%d:%d%s%s\n",
                  Y4M_MAGIC, width, height, raten, rated, inter,
-                 aspectn, aspectd, colorspace);
+                 aspectn, aspectd, colorspace, colorrange);
 
     return n;
 }
+
 
 static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
@@ -192,6 +217,10 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
+    // TODO: remove YUVJ pixel formats when they are completely removed from the codebase.
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ444P:
         break;
     case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_GRAY10:
@@ -271,6 +300,10 @@ static int yuv4_write_header(AVFormatContext *s)
     case AV_PIX_FMT_YUV420P:
     case AV_PIX_FMT_YUV422P:
     case AV_PIX_FMT_YUV444P:
+    // TODO: remove YUVJ pixel formats when they are completely removed from the codebase.
+    case AV_PIX_FMT_YUVJ420P:
+    case AV_PIX_FMT_YUVJ422P:
+    case AV_PIX_FMT_YUVJ444P:
         break;
     case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_GRAY10:
