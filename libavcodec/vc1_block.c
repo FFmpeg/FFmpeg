@@ -207,7 +207,7 @@ static void vc1_put_blocks_clamped(VC1Context *v, int put_signed)
         if ((edges&8) &&                                       \
             s->mb_y == ((s->mb_height >> v->field_mode) - 1))  \
             mquant = -v->altpq;                                \
-        if (!mquant || mquant > 31) {                          \
+        if (!mquant || mquant > 31 || mquant < -31) {                          \
             av_log(v->s.avctx, AV_LOG_ERROR,                   \
                    "Overriding invalid mquant %d\n", mquant);  \
             mquant = 1;                                        \
