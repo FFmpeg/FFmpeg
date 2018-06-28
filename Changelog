@@ -23,6 +23,7 @@ version <next>:
 - WinCam Motion Video decoder
 - 1D LUT filter (lut1d)
 - RemotelyAnywhere Screen Capture decoder
+- cue and acue filters
 
 
 version 4.0:

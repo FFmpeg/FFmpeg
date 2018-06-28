@@ -551,6 +551,11 @@ Set LFO range.
 Set LFO rate.
 @end table
 
+@section acue
+
+Delay audio filtering until a given wallclock timestamp. See the @ref{cue}
+filter.
+
 @section adeclick
 Remove impulsive noise from input audio.
 
@@ -6985,6 +6990,37 @@ detect the current optimal crop area. Default value is 0.
 This can be useful when channel logos distort the video area. 0
 indicates 'never reset', and returns the largest area encountered during
 playback.
+@end table
+
+@anchor{cue}
+@section cue
+
+Delay video filtering until a given wallclock timestamp. The filter first
+passes on @option{preroll} amount of frames, then it buffers at most
+@option{buffer} amount of frames and waits for the cue. After reaching the cue
+it forwards the buffered frames and also any subsequent frames coming in its
+input.
+
+The filter can be used synchronize the output of multiple ffmpeg processes for
+realtime output devices like decklink. By putting the delay in the filtering
+chain and pre-buffering frames the process can pass on data to output almost
+immediately after the target wallclock timestamp is reached.
+
+Perfect frame accuracy cannot be guaranteed, but the result is good enough for
+some use cases.
+
+@table @option
+
+@item cue
+The cue timestamp expressed in a UNIX timestamp in microseconds. Default is 0.
+
+@item preroll
+The duration of content to pass on as preroll expressed in seconds. Default is 0.
+
+@item buffer
+The maximum duration of content to buffer before waiting for the cue expressed
+in seconds. Default is 0.
+
 @end table
 
 @anchor{curves}
