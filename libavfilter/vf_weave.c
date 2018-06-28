@@ -84,6 +84,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     int i;
+    int weave;
+    int field1, field2;
 
     if (!s->prev) {
         s->prev = in;
@@ -98,26 +100,18 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
+    weave = (s->double_weave && !(inlink->frame_count_out & 1));
+    field1 = weave ? s->first_field : (!s->first_field);
+    field2 = weave ? (!s->first_field) : s->first_field;
     for (i = 0; i < s->nb_planes; i++) {
-        if (s->double_weave && !(inlink->frame_count_out & 1)) {
-            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
-                                out->linesize[i] * 2,
-                                in->data[i], in->linesize[i],
-                                s->linesize[i], s->planeheight[i]);
-            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
-                                out->linesize[i] * 2,
-                                s->prev->data[i], s->prev->linesize[i],
-                                s->linesize[i], s->planeheight[i]);
-        } else {
-            av_image_copy_plane(out->data[i] + out->linesize[i] * !s->first_field,
-                                out->linesize[i] * 2,
-                                in->data[i], in->linesize[i],
-                                s->linesize[i], s->planeheight[i]);
-            av_image_copy_plane(out->data[i] + out->linesize[i] * s->first_field,
-                                out->linesize[i] * 2,
-                                s->prev->data[i], s->prev->linesize[i],
-                                s->linesize[i], s->planeheight[i]);
-        }
+        av_image_copy_plane(out->data[i] + out->linesize[i] * field1,
+                            out->linesize[i] * 2,
+                            in->data[i], in->linesize[i],
+                            s->linesize[i], s->planeheight[i]);
+        av_image_copy_plane(out->data[i] + out->linesize[i] * field2,
+                            out->linesize[i] * 2,
+                            s->prev->data[i], s->prev->linesize[i],
+                            s->linesize[i], s->planeheight[i]);
     }
 
     out->pts = s->double_weave ? s->prev->pts : in->pts / 2;
