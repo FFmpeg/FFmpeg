@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2018 hongjucheng
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public License
+ * as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with FFmpeg; if not, write to the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/*
+* flvseg is just a output protocol, which can output flv segment file.
+* options:
+* first_name: first segment file name, if is 0 then refine to current unix time.
+* duration  : segment duration
+* command examples:
+* ffmpeg -i input.mp4 ... -f flv -first_name 1 -duration 3 flvseg:work_dir
+* flvseg" represents protocol; "work_dir" represents output directory
+*/
+
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -29,7 +59,7 @@
 typedef struct FlvTagHeader {
     uint8_t  tag_type;
     uint32_t data_size;
-    uint32_t timestamp;
+    int64_t  timestamp;
     uint32_t stream_id;
     uint32_t is_video_key_frame;
 } FlvTagHeader;
@@ -47,12 +77,12 @@ typedef struct FlvSegContext {
     //about flv tags
     FlvTagHeader flv_header;
     AVFifoBuffer *fifo;
-    uint8_t *head_buf;
-    uint8_t *tag_buf;
+    uint8_t  *head_buf;
+    uint8_t  *tag_buf;
     uint64_t tag_offset;
     uint64_t need_read_size;
-    uint32_t video_ts;
-    uint32_t prev_video_ts;
+    int64_t  video_ts;
+    int64_t  prev_video_ts;
     int  metadata_size;
     int  video_head_size;
     int  audio_head_size;
@@ -107,15 +137,18 @@ static int flvseg_parse_tag_header(const uint8_t *buf, int size, FlvTagHeader *f
 
 static int flvseg_is_header(FlvSegContext *c)
 {
+    int64_t cts = 0;
     uint8_t tag_type = c->flv_header.tag_type;
     if (tag_type == FLVSEG_VIDEO_TAG) {
         uint8_t video_flag = c->tag_buf[FLVSEG_TAGS_HEAD_SIZE];
         uint8_t frame_type = (video_flag & 0xf0) >> 4;
         uint8_t codec_id   = video_flag & 0x0f;
 
-        c->flv_header.is_video_key_frame = (frame_type == 1);
-
         if (codec_id == 7) { //avc
+            c->flv_header.is_video_key_frame = (frame_type == 1);
+            cts = flvseg_rb24(c->tag_buf + FLVSEG_TAGS_HEAD_SIZE + 1 + 1); // tag_header + video_flag + avc_packet_type
+            c->flv_header.timestamp += cts;
+
             if (!c->is_found_video_head) {
                 uint8_t avc_packet_type = c->tag_buf[FLVSEG_TAGS_HEAD_SIZE + 1];
                 if (avc_packet_type == 0) { //avc seq header
