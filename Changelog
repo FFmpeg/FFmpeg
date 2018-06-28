@@ -12,6 +12,7 @@ version <next>:
 - adeclick filter
 - adeclip filter
 - libtensorflow backend for DNN based filters like srcnn
+- vc1 decoder is now bit-exact
 
 
 version 4.0:
