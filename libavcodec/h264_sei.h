@@ -87,6 +87,15 @@ typedef struct H264SEIPictureTiming {
      * cpb_removal_delay in picture timing SEI message, see H.264 C.1.2
      */
     int cpb_removal_delay;
+
+    /* When not continuously receiving full timecodes, we have to reference
+       the previous timecode received */
+    int fulltc_received;
+    int tc_frames;
+    int tc_seconds;
+    int tc_minutes;
+    int tc_hours;
+    int tc_dropframe;
 } H264SEIPictureTiming;
 
 typedef struct H264SEIAFD {

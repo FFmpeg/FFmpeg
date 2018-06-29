@@ -1287,6 +1287,44 @@ static int h264_export_frame_props(H264Context *h)
         h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
+    if (h->sei.picture_timing.fulltc_received) {
+        uint32_t tc = 0;
+        uint32_t frames;
+
+        AVFrameSideData *tcside = av_frame_new_side_data(cur->f,
+                                                         AV_FRAME_DATA_S12M_TIMECODE,
+                                                         sizeof(uint32_t));
+        if (!tcside)
+            return AVERROR(ENOMEM);
+
+        /* For SMPTE 12-M timecodes, frame count is a special case if > 30 FPS.
+           See SMPTE ST 12-1:2014 Sec 12.1 for more info. */
+        if (av_cmp_q(h->avctx->framerate, (AVRational) {30, 1}) == 1) {
+            frames = h->sei.picture_timing.tc_frames / 2;
+            if (h->sei.picture_timing.tc_frames % 2 == 1) {
+                if (av_cmp_q(h->avctx->framerate, (AVRational) {50, 1}) == 0)
+                    tc |= (1 << 7);
+                else
+                    tc |= (1 << 23);
+            }
+        } else {
+            frames = h->sei.picture_timing.tc_frames;
+        }
+
+        tc |= h->sei.picture_timing.tc_dropframe << 30;
+        tc |= (frames / 10) << 28;
+        tc |= (frames % 10) << 24;
+        tc |= (h->sei.picture_timing.tc_seconds / 10) << 20;
+        tc |= (h->sei.picture_timing.tc_seconds % 10) << 16;
+        tc |= (h->sei.picture_timing.tc_minutes / 10) << 12;
+        tc |= (h->sei.picture_timing.tc_minutes % 10) << 8;
+        tc |= (h->sei.picture_timing.tc_hours / 10) << 4;
+        tc |= (h->sei.picture_timing.tc_hours % 10);
+
+        memcpy(tcside->data, &tc, sizeof(uint32_t));
+        h->sei.picture_timing.fulltc_received = 0;
+    }
+
     if (h->sei.alternative_transfer.present &&
         av_color_transfer_name(h->sei.alternative_transfer.preferred_transfer_characteristics) &&
         h->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
