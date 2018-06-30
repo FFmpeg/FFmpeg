@@ -392,6 +392,7 @@ extern AVCodec ff_atrac3_decoder;
 extern AVCodec ff_atrac3al_decoder;
 extern AVCodec ff_atrac3p_decoder;
 extern AVCodec ff_atrac3pal_decoder;
+extern AVCodec ff_atrac9_decoder;
 extern AVCodec ff_binkaudio_dct_decoder;
 extern AVCodec ff_binkaudio_rdft_decoder;
 extern AVCodec ff_bmv_audio_decoder;

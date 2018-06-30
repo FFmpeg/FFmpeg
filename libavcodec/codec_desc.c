@@ -2878,6 +2878,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("SBC (low-complexity subband codec)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ATRAC9,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "atrac9",
+        .long_name = NULL_IF_CONFIG_SMALL("ATRAC9 (Adaptive TRansform Acoustic Coding 9)"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {

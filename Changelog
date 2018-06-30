@@ -13,6 +13,7 @@ version <next>:
 - adeclip filter
 - libtensorflow backend for DNN based filters like srcnn
 - vc1 decoder is now bit-exact
+- ATRAC9 decoder
 
 
 version 4.0:
