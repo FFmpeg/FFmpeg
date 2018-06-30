@@ -171,7 +171,7 @@ OBJS-$(CONFIG_COLORMATRIX_FILTER)            += vf_colormatrix.o
 OBJS-$(CONFIG_COLORSPACE_FILTER)             += vf_colorspace.o colorspace.o colorspacedsp.o
 OBJS-$(CONFIG_CONVOLUTION_FILTER)            += vf_convolution.o
 OBJS-$(CONFIG_CONVOLUTION_OPENCL_FILTER)     += vf_convolution_opencl.o opencl.o \
-	                                        opencl/convolution.o
+                                                opencl/convolution.o
 OBJS-$(CONFIG_CONVOLVE_FILTER)               += vf_convolve.o framesync.o
 OBJS-$(CONFIG_COPY_FILTER)                   += vf_copy.o
 OBJS-$(CONFIG_COREIMAGE_FILTER)              += vf_coreimage.o
@@ -294,6 +294,8 @@ OBJS-$(CONFIG_PP_FILTER)                     += vf_pp.o
 OBJS-$(CONFIG_PP7_FILTER)                    += vf_pp7.o
 OBJS-$(CONFIG_PREMULTIPLY_FILTER)            += vf_premultiply.o framesync.o
 OBJS-$(CONFIG_PREWITT_FILTER)                += vf_convolution.o
+OBJS-$(CONFIG_PREWITT_OPENCL_FILTER)         += vf_convolution_opencl.o opencl.o \
+                                                opencl/convolution.o
 OBJS-$(CONFIG_PROCAMP_VAAPI_FILTER)          += vf_procamp_vaapi.o vaapi_vpp.o
 OBJS-$(CONFIG_PROGRAM_OPENCL_FILTER)         += vf_program_opencl.o opencl.o framesync.o
 OBJS-$(CONFIG_PSEUDOCOLOR_FILTER)            += vf_pseudocolor.o
@@ -310,6 +312,8 @@ OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o v
 OBJS-$(CONFIG_REPEATFIELDS_FILTER)           += vf_repeatfields.o
 OBJS-$(CONFIG_REVERSE_FILTER)                += f_reverse.o
 OBJS-$(CONFIG_ROBERTS_FILTER)                += vf_convolution.o
+OBJS-$(CONFIG_ROBERTS_OPENCL_FILTER)         += vf_convolution_opencl.o opencl.o \
+                                                opencl/convolution.o
 OBJS-$(CONFIG_ROTATE_FILTER)                 += vf_rotate.o
 OBJS-$(CONFIG_SAB_FILTER)                    += vf_sab.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o scale.o
@@ -338,6 +342,8 @@ OBJS-$(CONFIG_SIGNALSTATS_FILTER)            += vf_signalstats.o
 OBJS-$(CONFIG_SIGNATURE_FILTER)              += vf_signature.o
 OBJS-$(CONFIG_SMARTBLUR_FILTER)              += vf_smartblur.o
 OBJS-$(CONFIG_SOBEL_FILTER)                  += vf_convolution.o
+OBJS-$(CONFIG_SOBEL_OPENCL_FILTER)           += vf_convolution_opencl.o opencl.o \
+                                                opencl/convolution.o
 OBJS-$(CONFIG_SPLIT_FILTER)                  += split.o
 OBJS-$(CONFIG_SPP_FILTER)                    += vf_spp.o
 OBJS-$(CONFIG_SR_FILTER)                     += vf_sr.o
