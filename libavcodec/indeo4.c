@@ -492,6 +492,11 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             mb->b_mv_x   =
             mb->b_mv_y   = 0;
 
+            if (get_bits_left(&ctx->gb) < 1) {
+                av_log(avctx, AV_LOG_ERROR, "Insufficient input for mb info\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             if (get_bits1(&ctx->gb)) {
                 if (ctx->frame_type == IVI4_FRAMETYPE_INTRA) {
                     av_log(avctx, AV_LOG_ERROR, "Empty macroblock in an INTRA picture!\n");
