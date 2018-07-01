@@ -377,6 +377,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             }
         }
     } else {
+        if (len < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         for (i = 0; i < toks; i++) {
             ctx->tokens[stream_id][i] = codes.recode[0];
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
