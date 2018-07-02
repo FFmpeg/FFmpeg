@@ -678,7 +678,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             else {
                 int32_t sum = (s->version < 2) ? 0 : s->nmean / 2;
                 for (i = 0; i < s->nmean; i++)
-                    sum += s->offset[channel][i];
+                    sum += (unsigned)s->offset[channel][i];
                 coffset = sum / s->nmean;
                 if (s->version >= 2)
                     coffset = s->bitshift == 0 ? coffset : coffset >> s->bitshift - 1 >> 1;
