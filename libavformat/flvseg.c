@@ -79,6 +79,7 @@ typedef struct FlvSegContext {
     const AVClass *class;
     //option
     int64_t first_name;
+    int64_t duration_threshold;
     int     duration;
     //about file
     char    *work_dir;
@@ -93,7 +94,6 @@ typedef struct FlvSegContext {
     uint64_t tag_offset;
     uint64_t need_read_size;
     int64_t  video_ts;
-    int64_t  prev_video_ts;
     int  metadata_size;
     int  video_head_size;
     int  audio_head_size;
@@ -222,15 +222,12 @@ static void flvseg_write_file(FlvSegContext *c)
 
     if (c->flv_header.tag_type == FLVSEG_VIDEO_TAG) {
         c->video_ts = c->flv_header.timestamp;
-
-        if (c->prev_video_ts == -1)
-            c->prev_video_ts = c->flv_header.timestamp;
     }
 
-    if ((((int64_t)c->video_ts - (int64_t)c->prev_video_ts) >= c->duration * 1000) && 
-         (c->flv_header.tag_type == FLVSEG_VIDEO_TAG) && c->flv_header.is_video_key_frame) {
+    if ((c->flv_header.tag_type == FLVSEG_VIDEO_TAG) && (c->video_ts >= c->duration_threshold) && c->flv_header.is_video_key_frame) {
         //next file
         c->file_counts++;
+        c->duration_threshold += c->duration * 1000;
 
         // close old file
         if (c->fd != -1) {
@@ -238,8 +235,7 @@ static void flvseg_write_file(FlvSegContext *c)
         }
 
         // open new file
-        c->first_name += c->duration;
-        file_path = make_file_path(c, c->first_name);
+        file_path = make_file_path(c, c->first_name + c->duration * c->file_counts);
         access = O_CREAT | O_WRONLY;
 #ifdef O_BINARY
         access |= O_BINARY;
@@ -255,8 +251,6 @@ static void flvseg_write_file(FlvSegContext *c)
         write(c->fd, c->tag_buf, FLVSEG_TAGS_HEAD_SIZE + c->flv_header.data_size + FLVSEG_PREV_TAG_SIZE);
 
         c->is_write_header = 1;
-        c->prev_video_ts = c->flv_header.timestamp;
-
     } else {
         write(c->fd, c->tag_buf, FLVSEG_TAGS_HEAD_SIZE + c->flv_header.data_size + FLVSEG_PREV_TAG_SIZE);
     }
@@ -383,11 +377,11 @@ static int flvseg_open(URLContext *h, const char *filename, int flags)
     }
 
     //init 
+    c->duration_threshold  = c->duration * 1000;
     c->file_counts         = 0;
     c->tag_offset          = 0;
     c->need_read_size      = 0;
     c->video_ts            = 0;
-    c->prev_video_ts       = -1;
     c->metadata_size       = 0;
     c->video_head_size     = 0;
     c->audio_head_size     = 0;
