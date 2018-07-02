@@ -60,6 +60,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     mpegts_ctx->oformat   = mpegts_format;
     mpegts_ctx->max_delay = s->max_delay;
+    av_dict_copy(&mpegts_ctx->metadata, s->metadata, 0);
     for (i = 0; i < s->nb_streams; i++) {
         AVStream* st = avformat_new_stream(mpegts_ctx, NULL);
         if (!st)
@@ -102,6 +103,7 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 fail:
     if (mpegts_ctx) {
         ffio_free_dyn_buf(&mpegts_ctx->pb);
+        av_dict_free(&mpegts_ctx->metadata);
         avformat_free_context(mpegts_ctx);
     }
     if (rtp_ctx)
