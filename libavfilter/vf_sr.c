@@ -268,7 +268,7 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     out->width = sr_context->output.width;
     switch (sr_context->model_type){
     case SRCNN:
-        sws_scale(sr_context->sws_context, in->data, in->linesize,
+        sws_scale(sr_context->sws_context, (const uint8_t **)in->data, in->linesize,
                   0, sr_context->sws_slice_h, out->data, out->linesize);
         td.data = out->data[0];
         td.data_linesize = out->linesize[0];
@@ -277,9 +277,9 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
         break;
     case ESPCN:
         if (sr_context->sws_context){
-            sws_scale(sr_context->sws_context, in->data + 1, in->linesize + 1,
+            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 1), in->linesize + 1,
                       0, sr_context->sws_slice_h, out->data + 1, out->linesize + 1);
-            sws_scale(sr_context->sws_context, in->data + 2, in->linesize + 2,
+            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 2), in->linesize + 2,
                       0, sr_context->sws_slice_h, out->data + 2, out->linesize + 2);
         }
         td.data = in->data[0];
