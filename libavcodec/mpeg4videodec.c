@@ -3244,7 +3244,6 @@ end:
     s->avctx->has_b_frames = !s->low_delay;
 
     if (s->studio_profile) {
-        av_assert0(s->avctx->profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO);
         if (!s->avctx->bits_per_raw_sample) {
             av_log(s->avctx, AV_LOG_ERROR, "Missing VOL header\n");
             return AVERROR_INVALIDDATA;
