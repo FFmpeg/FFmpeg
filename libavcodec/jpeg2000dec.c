@@ -342,7 +342,10 @@ static int get_siz(Jpeg2000DecoderContext *s)
     s->numXtiles = ff_jpeg2000_ceildiv(s->width  - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_jpeg2000_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
-    if (s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(*s->tile)) {
+    // There must be at least a SOT and SOD per tile, their minimum size is 14
+    if (s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(*s->tile) ||
+        s->numXtiles * s->numYtiles * 14LL > bytestream2_size(&s->g)
+    ) {
         s->numXtiles = s->numYtiles = 0;
         return AVERROR(EINVAL);
     }
