@@ -3973,8 +3973,8 @@ case "$toolchain" in
     ;;
     *-tsan)
         cc_default="${toolchain%-tsan}"
-        add_cflags  -fsanitize=thread -fPIE
-        add_ldflags -fsanitize=thread -pie
+        add_cflags  -fsanitize=thread
+        add_ldflags -fsanitize=thread
         case "$toolchain" in
             gcc-tsan)
                 add_cflags  -fPIC
