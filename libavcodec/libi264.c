@@ -16,8 +16,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#if CONFIG_LIBI264_ENCODER
-
 #include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
@@ -34,6 +32,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#if CONFIG_LIBI264_ENCODER
 
 typedef struct I264Context {
     AVClass        *class;
