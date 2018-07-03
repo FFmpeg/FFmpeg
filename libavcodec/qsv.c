@@ -198,7 +198,7 @@ int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame)
 
 enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type)
 {
-    enum AVPictureType type = AV_PICTURE_TYPE_NONE;
+    enum AVPictureType type;
     switch (mfx_pic_type & 0x7) {
     case MFX_FRAMETYPE_I:
         if (mfx_pic_type & MFX_FRAMETYPE_S)
@@ -214,6 +214,9 @@ enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type)
             type = AV_PICTURE_TYPE_SP;
         else
             type = AV_PICTURE_TYPE_P;
+        break;
+    case MFX_FRAMETYPE_UNKNOWN:
+        type = AV_PICTURE_TYPE_NONE;
         break;
     default:
         av_assert0(0);
