@@ -423,7 +423,7 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv, int body_sid
             return i;
     }
     /* return 0 if only one stream, for OP Atom files with 0 as track number */
-    return s->nb_streams == 1 ? 0 : -1;
+    return s->nb_streams == 1 && s->streams[0]->priv_data ? 0 : -1;
 }
 
 static int find_body_sid_by_offset(MXFContext *mxf, int64_t offset)
