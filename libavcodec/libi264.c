@@ -303,7 +303,7 @@ static const enum AVPixelFormat pix_fmts_all[] = {
     AV_PIX_FMT_NV20,
     AV_PIX_FMT_NONE
 };
-#if CONFIG_LIBX264RGB_ENCODER
+#if CONFIG_LIBI264RGB_ENCODER
 static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
     AV_PIX_FMT_BGR0,
     AV_PIX_FMT_BGR24,
