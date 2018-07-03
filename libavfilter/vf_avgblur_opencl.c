@@ -228,7 +228,6 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
                                          0, NULL, NULL);
             CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue horizontal "
                              "kernel: %d.\n", cle);
-            cle = clFinish(ctx->command_queue);
 
             err = ff_opencl_filter_work_size_from_image(avctx, global_work,
                                                         i == 0 ? output : intermediate, p, 0);
