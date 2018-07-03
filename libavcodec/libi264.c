@@ -43,7 +43,7 @@ typedef struct I264Context {
 
     uint8_t        *sei;
     int             sei_size;
-} X264Context;
+} I264Context;
 
 static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
                        const x264_nal_t *nals, int nnal)
@@ -188,44 +188,44 @@ static av_cold int I264_init(AVCodecContext *avctx)
 {
     I264Context *i4 = avctx->priv_data;
 
-    i4.configs.width  = avctx->width;
-    i4.configs.height = avctx->height;
+    i4->configs.width  = avctx->width;
+    i4->configs.height = avctx->height;
     if (avctx->height <= 180) {
-        i4.configs.profile = PROFILE_ZHIBO_320x180;
+        i4->configs.profile = PROFILE_ZHIBO_320x180;
     } else if(avctx->height <= 240){
-        i4.configs.profile = PROFILE_ZHIBO_320x240;
+        i4->configs.profile = PROFILE_ZHIBO_320x240;
     } else if(avctx->height <= 480){
-        i4.configs.profile = PROFILE_ZHIBO_640x480;
-    } else if(avctx->height <= 540 && width < 960){
-        i4.configs.profile = PROFILE_ZHIBO_720x540;
-    } else if(avctx->height <= 540 && width < 1280){
-        i4.configs.profile = PROFILE_ZHIBO_960x540;
+        i4->configs.profile = PROFILE_ZHIBO_640x480;
+    } else if(avctx->height <= 540 && avctx->width < 960){
+        i4->configs.profile = PROFILE_ZHIBO_720x540;
+    } else if(avctx->height <= 540 && avctx->width < 1280){
+        i4->configs.profile = PROFILE_ZHIBO_960x540;
     } else if(avctx->height <= 720){
-        i4.configs.profile = PROFILE_ZHIBO_1280x720;
+        i4->configs.profile = PROFILE_ZHIBO_1280x720;
     } else {
-        i4.configs.profile = PROFILE_ZHIBO_1920x1080;
+        i4->configs.profile = PROFILE_ZHIBO_1920x1080;
     }
 
-    i4.configs.bitrate = avctx->bit_rate / 1000;
+    i4->configs.bitrate = avctx->bit_rate / 1000;
     if (avctx->time_base.den > 0 ) {
-        i4.configs.frame_rate = avctx->time_base.num * avctx->ticks_per_frame / avctx->time_base.den;
+        i4->configs.frame_rate = avctx->time_base.num * avctx->ticks_per_frame / avctx->time_base.den;
     } else {
-        i4.configs.frame_rate = 25;
+        i4->configs.frame_rate = 25;
         av_log(avctx, AV_LOG_INFO, "AVCodecContext.time_base.den is not greater than 0, frame_rate refine to 25\n");
     }
-    i4.configs.keyint_max = avctx->gop_size;
+    i4->configs.keyint_max = avctx->gop_size;
 
-    i4.configs.repeat_header = 1;
+    i4->configs.repeat_header = 1;
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
-        i4.configs.repeat_header = 0;
+        i4->configs.repeat_header = 0;
     }
-    i4.configs.num_thread = 0;
+    i4->configs.num_thread = 0;
 
     av_log(avctx, AV_LOG_INFO, "Dump libi264 config values: \n");
     av_log(avctx, AV_LOG_INFO, "width: %d, height: %d, profile: %d, bitrate: %d(kbps), frame_rate: %d, keyint_max: %d, repeat_header: %d, num_thread: %d\n", 
-    i4.configs.width, i4.configs.height, i4.configs.profile, i4.configs.bitrate, i4.configs.frame_rate, i4.configs.keyint_max, i4.configs.repeat_header, i4.configs.num_thread);
+    i4->configs.width, i4->configs.height, i4->configs.profile, i4->configs.bitrate, i4->configs.frame_rate, i4->configs.keyint_max, i4->configs.repeat_header, i4->configs.num_thread);
 
-    i4.enc = x264_init(&i4.configs);
+    i4->enc = x264_init(&i4->configs);
     if (!i4->enc)
         return AVERROR_EXTERNAL;
 
@@ -303,16 +303,8 @@ static const enum AVPixelFormat pix_fmts_all[] = {
     AV_PIX_FMT_NV20,
     AV_PIX_FMT_NONE
 };
-#if CONFIG_LIBI264RGB_ENCODER
-static const enum AVPixelFormat pix_fmts_8bit_rgb[] = {
-    AV_PIX_FMT_BGR0,
-    AV_PIX_FMT_BGR24,
-    AV_PIX_FMT_RGB24,
-    AV_PIX_FMT_NONE
-};
-#endif
 
-static av_cold void X264_init_static(AVCodec *codec)
+static av_cold void I264_init_static(AVCodec *codec)
 {
 #if X264_BUILD < 153
     if (x264_bit_depth == 8)
