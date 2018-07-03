@@ -2085,7 +2085,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 MXFEssenceContainerData *essence_data;
 
                 if (!(essence_data = mxf_resolve_strong_ref(mxf, &mxf->essence_container_data_refs[k], EssenceContainerData))) {
-                    av_log(mxf, AV_LOG_TRACE, "could not resolve essence container data strong ref\n");
+                    av_log(mxf->fc, AV_LOG_TRACE, "could not resolve essence container data strong ref\n");
                     continue;
                 }
                 if (!memcmp(component->source_package_ul, essence_data->package_ul, sizeof(UID)) && !memcmp(component->source_package_uid, essence_data->package_uid, sizeof(UID))) {
