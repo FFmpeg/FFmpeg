@@ -1539,6 +1539,9 @@ static void print_final_stats(int64_t total_size)
     int i, j;
     int pass1_used = 1;
 
+    FILE *pf = NULL;
+    unsigned char tmp_buf[256] = {0};
+
     for (i = 0; i < nb_output_streams; i++) {
         OutputStream *ost = output_streams[i];
         switch (ost->enc_ctx->codec_type) {
@@ -1636,6 +1639,19 @@ static void print_final_stats(int64_t total_size)
 
         av_log(NULL, AV_LOG_VERBOSE, "  Total: %"PRIu64" packets (%"PRIu64" bytes) muxed\n",
                total_packets, total_size);
+        
+        if (!strncmp(of->ctx->url, "flvseg:", 7)) {
+            char *tmp_ptr = NULL;
+            av_strstart(of->ctx->url, "flvseg:", (const char **)&tmp_ptr);
+            if (tmp_ptr) {
+                snprintf(tmp_buf, 255, "%s/finish.txt", tmp_ptr);
+                pf = fopen(tmp_buf, "wb");
+                if (pf) {
+                    fclose(pf);
+                    pf = NULL;
+                }
+            }
+        }
     }
     if(video_size + data_size + audio_size + subtitle_size + extra_size == 0){
         av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded ");
