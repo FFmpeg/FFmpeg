@@ -62,6 +62,18 @@ typedef struct OpenCLFilterContext {
     }
 
 /**
+ * A helper macro to handle OpenCL errors. It will assign errcode to
+ * variable err, log error msg, and jump to fail label on error.
+ */
+#define CL_FAIL_ON_ERROR(errcode, ...) do {                    \
+        if (cle != CL_SUCCESS) {                               \
+            av_log(avctx, AV_LOG_ERROR, __VA_ARGS__);          \
+            err = errcode;                                     \
+            goto fail;                                         \
+        }                                                      \
+    } while(0)
+
+/**
  * Return that all inputs and outputs support only AV_PIX_FMT_OPENCL.
  */
 int ff_opencl_filter_query_formats(AVFilterContext *avctx);

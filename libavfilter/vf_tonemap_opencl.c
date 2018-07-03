@@ -262,29 +262,17 @@ static int tonemap_opencl_init(AVFilterContext *avctx)
     ctx->command_queue = clCreateCommandQueue(ctx->ocf.hwctx->context,
                                               ctx->ocf.hwctx->device_id,
                                               0, &cle);
-    if (!ctx->command_queue) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create OpenCL "
-               "command queue: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create OpenCL "
+                     "command queue %d.\n", cle);
 
     ctx->kernel = clCreateKernel(ctx->ocf.program, "tonemap", &cle);
-    if (!ctx->kernel) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create kernel: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create kernel %d.\n", cle);
 
     ctx->util_mem =
         clCreateBuffer(ctx->ocf.hwctx->context, 0,
                        (2 * DETECTION_FRAMES + 7) * sizeof(unsigned),
                        NULL, &cle);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create util buffer: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create util buffer: %d.\n", cle);
 
     ctx->initialised = 1;
     return 0;
@@ -349,11 +337,7 @@ static int launch_kernel(AVFilterContext *avctx, cl_kernel kernel,
     cle = clEnqueueNDRangeKernel(ctx->command_queue, kernel, 2, NULL,
                                  global_work, local_work,
                                  0, NULL, NULL);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to enqueue kernel: %d.\n",
-               cle);
-        return AVERROR(EIO);
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue kernel: %d.\n", cle);
     return 0;
 fail:
     return err;
@@ -482,12 +466,7 @@ static int tonemap_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
     }
 
     cle = clFinish(ctx->command_queue);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to finish command queue: %d.\n",
-               cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to finish command queue: %d.\n", cle);
 
     av_frame_free(&input);
 

@@ -76,12 +76,8 @@ static int unsharp_opencl_init(AVFilterContext *avctx)
     ctx->command_queue = clCreateCommandQueue(ctx->ocf.hwctx->context,
                                               ctx->ocf.hwctx->device_id,
                                               0, &cle);
-    if (!ctx->command_queue) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create OpenCL "
-               "command queue: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create OpenCL "
+                     "command queue %d.\n", cle);
 
     // Use global kernel if mask size will be too big for the local store..
     ctx->global = (ctx->luma_size_x   > 17.0f ||
@@ -92,11 +88,7 @@ static int unsharp_opencl_init(AVFilterContext *avctx)
     ctx->kernel = clCreateKernel(ctx->ocf.program,
                                  ctx->global ? "unsharp_global"
                                              : "unsharp_local", &cle);
-    if (!ctx->kernel) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create kernel: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create kernel %d.\n", cle);
 
     ctx->initialised = 1;
     return 0;
@@ -176,12 +168,8 @@ static int unsharp_opencl_make_filter_params(AVFilterContext *avctx)
                                     CL_MEM_COPY_HOST_PTR |
                                     CL_MEM_HOST_NO_ACCESS,
                                     matrix_bytes, matrix, &cle);
-            if (!buffer) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to create matrix buffer: "
-                       "%d.\n", cle);
-                err = AVERROR(EIO);
-                goto fail;
-            }
+            CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create matrix buffer: "
+                             "%d.\n", cle);
             ctx->plane[p].matrix = buffer;
         } else {
             buffer = clCreateBuffer(ctx->ocf.hwctx->context,
@@ -190,12 +178,8 @@ static int unsharp_opencl_make_filter_params(AVFilterContext *avctx)
                                     CL_MEM_HOST_NO_ACCESS,
                                     sizeof(ctx->plane[p].blur_x),
                                     ctx->plane[p].blur_x, &cle);
-            if (!buffer) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to create x-coef buffer: "
-                       "%d.\n", cle);
-                err = AVERROR(EIO);
-                goto fail;
-            }
+            CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create x-coef buffer: "
+                             "%d.\n", cle);
             ctx->plane[p].coef_x = buffer;
 
             buffer = clCreateBuffer(ctx->ocf.hwctx->context,
@@ -204,12 +188,8 @@ static int unsharp_opencl_make_filter_params(AVFilterContext *avctx)
                                     CL_MEM_HOST_NO_ACCESS,
                                     sizeof(ctx->plane[p].blur_y),
                                     ctx->plane[p].blur_y, &cle);
-            if (!buffer) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to create y-coef buffer: "
-                       "%d.\n", cle);
-                err = AVERROR(EIO);
-                goto fail;
-            }
+            CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create y-coef buffer: "
+                             "%d.\n", cle);
             ctx->plane[p].coef_y = buffer;
         }
 
@@ -296,21 +276,11 @@ static int unsharp_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, ctx->global ? NULL : local_work,
                                      0, NULL, NULL);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to enqueue kernel: %d.\n",
-                   cle);
-            err = AVERROR(EIO);
-            goto fail;
-        }
+        CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue kernel: %d.\n", cle);
     }
 
     cle = clFinish(ctx->command_queue);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to finish command queue: %d.\n",
-               cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to finish command queue: %d.\n", cle);
 
     err = av_frame_copy_props(output, input);
     if (err < 0)
