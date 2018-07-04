@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+
 enum ATRAC9BlockType {
     ATRAC9_BLOCK_TYPE_SCE, /* Single channel */
     ATRAC9_BLOCK_TYPE_CPE, /* 2 coupled channels */
