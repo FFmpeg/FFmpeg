@@ -1348,9 +1348,22 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
         return AVERROR(ENOMEM);
     }
 
-    for (i = j = 0; i < mxf->metadata_sets_count; i++)
-        if (mxf->metadata_sets[i]->type == IndexTableSegment)
-            unsorted_segments[j++] = (MXFIndexTableSegment*)mxf->metadata_sets[i];
+    for (i = nb_segments = 0; i < mxf->metadata_sets_count; i++) {
+        if (mxf->metadata_sets[i]->type == IndexTableSegment) {
+            MXFIndexTableSegment *s = (MXFIndexTableSegment*)mxf->metadata_sets[i];
+            if (s->edit_unit_byte_count || s->nb_index_entries)
+                unsorted_segments[nb_segments++] = s;
+            else
+                av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment at %"PRId64" missing EditUnitByteCount and IndexEntryArray\n",
+                       s->index_sid, s->index_start_position);
+        }
+    }
+
+    if (!nb_segments) {
+        av_freep(sorted_segments);
+        av_free(unsorted_segments);
+        return AVERROR_INVALIDDATA;
+    }
 
     *nb_sorted_segments = 0;
 
@@ -1482,7 +1495,7 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
 
             if (s->edit_unit_byte_count)
                 offset_temp += s->edit_unit_byte_count * index;
-            else if (s->nb_index_entries) {
+            else {
                 if (s->nb_index_entries == 2 * s->index_duration + 1)
                     index *= 2;     /* Avid index */
 
@@ -1493,10 +1506,6 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
                 }
 
                 offset_temp = s->stream_offset_entries[index];
-            } else {
-                av_log(mxf->fc, AV_LOG_ERROR, "IndexSID %i segment at %"PRId64" missing EditUnitByteCount and IndexEntryArray\n",
-                       index_table->index_sid, s->index_start_position);
-                return AVERROR_INVALIDDATA;
             }
 
             if (edit_unit_out)
