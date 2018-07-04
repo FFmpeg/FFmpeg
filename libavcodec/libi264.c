@@ -43,6 +43,8 @@ typedef struct I264Context {
 
     uint8_t        *sei;
     int             sei_size;
+
+    int             keyint;
 } I264Context;
 
 static int encode_nals(AVCodecContext *ctx, AVPacket *pkt,
@@ -207,13 +209,13 @@ static av_cold int I264_init(AVCodecContext *avctx)
     }
 
     i4->configs.bitrate = avctx->bit_rate / 1000;
-    if (avctx->time_base.den > 0 ) {
-        i4->configs.frame_rate = avctx->time_base.num * avctx->ticks_per_frame / avctx->time_base.den;
+    if (avctx->time_base.num > 0 && avctx->ticks_per_frame > 0) {
+        i4->configs.frame_rate = avctx->time_base.den / (avctx->time_base.num * avctx->ticks_per_frame);
     } else {
         i4->configs.frame_rate = 25;
         av_log(avctx, AV_LOG_INFO, "AVCodecContext.time_base.den is not greater than 0, frame_rate refine to 25\n");
     }
-    i4->configs.keyint_max = avctx->gop_size;
+    i4->configs.keyint_max = /*avctx->gop_size*/i4->keyint;
 
     i4->configs.repeat_header = 1;
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
@@ -321,6 +323,7 @@ static av_cold void I264_init_static(AVCodec *codec)
 #define OFFSET(x) offsetof(I264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "keyint", "keyframe interval", OFFSET(keyint), AV_OPT_TYPE_INT,  {.i64 = 3 }, 1, UINT64_MAX, VE },
     { NULL },
 };
 
