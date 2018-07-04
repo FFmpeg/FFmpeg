@@ -1017,7 +1017,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
         return AVERROR_EXTERNAL;
     }
 
-    if (vtctx->codec_id == AV_CODEC_ID_H264) {
+    if (vtctx->codec_id == AV_CODEC_ID_H264 && max_rate > 0) {
         // kVTCompressionPropertyKey_DataRateLimits is not available for HEVC
         bytes_per_second_value = max_rate >> 3;
         bytes_per_second = CFNumberCreate(kCFAllocatorDefault,
@@ -1058,7 +1058,10 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
             av_log(avctx, AV_LOG_ERROR, "Error setting max bitrate property: %d\n", status);
             return AVERROR_EXTERNAL;
         }
+    }
 
+    if (vtctx->codec_id == AV_CODEC_ID_H264) {
+        // kVTCompressionPropertyKey_ProfileLevel is not available for HEVC
         if (profile_level) {
             status = VTSessionSetProperty(vtctx->session,
                                         kVTCompressionPropertyKey_ProfileLevel,
