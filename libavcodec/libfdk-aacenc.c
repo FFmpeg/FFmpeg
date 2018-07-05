@@ -227,7 +227,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     /* Choose bitstream format - if global header is requested, use
      * raw access units, otherwise use ADTS. */
     if ((err = aacEncoder_SetParam(s->handle, AACENC_TRANSMUX,
-                                   avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? 0 : s->latm ? 10 : 2)) != AACENC_OK) {
+                                   avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER ? TT_MP4_RAW :
+                                   s->latm ? TT_MP4_LOAS : TT_MP4_ADTS)) != AACENC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set the transmux format: %s\n",
                aac_get_error(err));
         goto error;
