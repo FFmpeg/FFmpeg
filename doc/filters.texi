@@ -11437,10 +11437,15 @@ Default value for @option{hi} is 64*12, default value for @option{lo} is
 
 @section negate
 
-Negate input video.
+Negate (invert) the input video.
 
-It accepts an integer in input; if non-zero it negates the
-alpha component (if available). The default value in input is 0.
+It accepts the following option:
+
+@table @option
+
+@item negate_alpha
+With value 1, it negates the alpha component, if present. Default value is 0.
+@end table
 
 @section nlmeans
 
