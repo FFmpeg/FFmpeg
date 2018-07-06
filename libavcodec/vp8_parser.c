@@ -28,6 +28,9 @@ static int parse(AVCodecParserContext *s,
     unsigned int frame_type;
     unsigned int profile;
 
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+
     if (buf_size < 3)
         return buf_size;
 
