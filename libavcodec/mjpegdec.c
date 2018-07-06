@@ -616,6 +616,10 @@ unk_pixfmt:
         avpriv_report_missing_feature(s->avctx, "Lowres for weird subsampling");
         return AVERROR_PATCHWELCOME;
     }
+    if ((AV_RB32(s->upscale_h) || AV_RB32(s->upscale_v)) && s->progressive && s->avctx->pix_fmt == AV_PIX_FMT_GBRP) {
+        avpriv_report_missing_feature(s->avctx, "progressive for weird subsampling");
+        return AVERROR_PATCHWELCOME;
+    }
     if (s->ls) {
         memset(s->upscale_h, 0, sizeof(s->upscale_h));
         memset(s->upscale_v, 0, sizeof(s->upscale_v));
