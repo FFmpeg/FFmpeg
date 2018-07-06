@@ -2631,7 +2631,8 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         if (ctx_size && tag == 0x3C0A) {
             avio_read(pb, ctx->uid, 16);
         } else if ((ret = read_child(ctx, pb, tag, size, uid, -1)) < 0) {
-            mxf_free_metadataset(&ctx, !!ctx_size);
+            if (ctx_size)
+                mxf_free_metadataset(&ctx, 1);
             return ret;
         }
 
@@ -2640,7 +2641,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         if (avio_tell(pb) > klv_end) {
             if (ctx_size) {
                 ctx->type = type;
-                mxf_free_metadataset(&ctx, !!ctx_size);
+                mxf_free_metadataset(&ctx, 1);
             }
 
             av_log(mxf->fc, AV_LOG_ERROR,
