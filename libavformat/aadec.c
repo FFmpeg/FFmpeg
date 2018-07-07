@@ -46,6 +46,7 @@ typedef struct AADemuxContext {
     struct AVTEA *tea_ctx;
     uint8_t file_key[16];
     int64_t current_chapter_size;
+    int64_t content_end;
 } AADemuxContext;
 
 static int get_second_size(char *codec_name)
@@ -197,6 +198,7 @@ static int aa_read_header(AVFormatContext *s)
     }
     start = TOC[largest_idx].offset;
     avio_seek(pb, start, SEEK_SET);
+    c->content_end = start + largest_size;
     c->current_chapter_size = 0;
 
     return 0;
@@ -213,6 +215,11 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     int written = 0;
     int ret;
     AADemuxContext *c = s->priv_data;
+
+    // are we at the end of the audio content?
+    if (avio_tell(s->pb) >= c->content_end) {
+        return AVERROR_EOF;
+    }
 
     // are we at the start of a chapter?
     if (c->current_chapter_size == 0) {
@@ -234,7 +241,9 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     // decrypt c->current_codec_second_size bytes
     blocks = c->current_codec_second_size / TEA_BLOCK_SIZE;
     for (i = 0; i < blocks; i++) {
-        avio_read(s->pb, src, TEA_BLOCK_SIZE);
+        ret = avio_read(s->pb, src, TEA_BLOCK_SIZE);
+        if (ret != TEA_BLOCK_SIZE)
+            return (ret < 0) ? ret : AVERROR_EOF;
         av_tea_init(c->tea_ctx, c->file_key, 16);
         av_tea_crypt(c->tea_ctx, dst, src, 1, NULL, 1);
         memcpy(buf + written, dst, TEA_BLOCK_SIZE);
@@ -242,7 +251,9 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     trailing_bytes = c->current_codec_second_size % TEA_BLOCK_SIZE;
     if (trailing_bytes != 0) { // trailing bytes are left unencrypted!
-        avio_read(s->pb, src, trailing_bytes);
+        ret = avio_read(s->pb, src, trailing_bytes);
+        if (ret != trailing_bytes)
+            return (ret < 0) ? ret : AVERROR_EOF;
         memcpy(buf + written, src, trailing_bytes);
         written = written + trailing_bytes;
     }
