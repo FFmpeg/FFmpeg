@@ -964,7 +964,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     uint32_t tag = track->tag;
 
     if (track->mode == MODE_MOV) {
-        if (track->timescale > UINT16_MAX) {
+        if (track->timescale > UINT16_MAX || !track->par->channels) {
             if (mov_get_lpcm_flags(track->par->codec_id))
                 tag = AV_RL32("lpcm");
             version = 2;
