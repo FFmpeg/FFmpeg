@@ -55,6 +55,7 @@ struct FrameListData {
 
 typedef struct AOMEncoderContext {
     AVClass *class;
+    AVBSFContext *bsf;
     struct aom_codec_ctx encoder;
     struct aom_image rawimg;
     struct aom_fixed_buf twopass_stats;
@@ -202,6 +203,7 @@ static av_cold int aom_free(AVCodecContext *avctx)
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
+    av_bsf_free(&ctx->bsf);
     return 0;
 }
 
@@ -463,6 +465,28 @@ static av_cold int aom_init(AVCodecContext *avctx,
     if (!cpb_props)
         return AVERROR(ENOMEM);
 
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+        const AVBitStreamFilter *filter = av_bsf_get_by_name("extract_extradata");
+        int ret;
+
+        if (!filter) {
+            av_log(avctx, AV_LOG_ERROR, "extract_extradata bitstream filter "
+                   "not found. This is a bug, please report it.\n");
+            return AVERROR_BUG;
+        }
+        ret = av_bsf_alloc(filter, &ctx->bsf);
+        if (ret < 0)
+            return ret;
+
+        ret = avcodec_parameters_from_context(ctx->bsf->par_in, avctx);
+        if (ret < 0)
+           return ret;
+
+        ret = av_bsf_init(ctx->bsf);
+        if (ret < 0)
+           return ret;
+    }
+
     if (enccfg.rc_end_usage == AOM_CBR ||
         enccfg.g_pass != AOM_RC_ONE_PASS) {
         cpb_props->max_bitrate = avctx->rc_max_rate;
@@ -494,6 +518,7 @@ static inline void cx_pktcpy(struct FrameListData *dst,
 static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
                       AVPacket *pkt)
 {
+    AOMContext *ctx = avctx->priv_data;
     int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -505,6 +530,22 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
 
     if (!!(cx_frame->flags & AOM_FRAME_IS_KEY))
         pkt->flags |= AV_PKT_FLAG_KEY;
+
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+        ret = av_bsf_send_packet(ctx->bsf, pkt);
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "extract_extradata filter "
+                   "failed to send input packet\n");
+            return ret;
+        }
+        ret = av_bsf_receive_packet(ctx->bsf, pkt);
+
+        if (ret < 0) {
+            av_log(avctx, AV_LOG_ERROR, "extract_extradata filter "
+                   "failed to receive output packet\n");
+            return ret;
+        }
+    }
     return pkt->size;
 }
 
