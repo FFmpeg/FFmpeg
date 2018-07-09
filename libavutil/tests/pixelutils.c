@@ -115,7 +115,7 @@ int main(void)
         goto end;
 
     /* Exact buffer sizes, to check for overreads */
-    for (i = 1; i <= 4; i++) {
+    for (i = 1; i <= 5; i++) {
         for (align = 0; align < 3; align++) {
             int size1, size2;
 
