@@ -31,7 +31,11 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <unistd.h>
+
 #include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+
 
 #define INBUF_SIZE 4096
 
@@ -41,11 +45,65 @@ static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
     FILE *f;
     int i;
 
+    printf("storing to %s\n", filename);
     f = fopen(filename,"w");
     fprintf(f, "P5\n%d %d\n%d\n", xsize, ysize, 255);
     for (i = 0; i < ysize; i++)
         fwrite(buf + i * wrap, 1, xsize, f);
     fclose(f);
+}
+
+
+static int save_frame_as_jpeg(AVCodecContext *pCodecCtx, AVFrame *pFrame, int FrameNo) {
+    printf("slava save_frame_as_jpeg\n");
+    AVCodec *jpegCodec = avcodec_find_encoder(AV_CODEC_ID_MJPEG);///AV_CODEC_ID_JPEG2000);
+    if (!jpegCodec) {
+        fprintf(stderr, "Error in avcodec_find_encoder\n");
+        return -1;
+    }
+    printf("slava1");
+    AVCodecContext *jpegContext = avcodec_alloc_context3(jpegCodec);
+    if (!jpegContext) {
+        fprintf(stderr, "Error in avcodec_alloc_context3\n");
+        return -1;
+    }
+    
+    jpegContext->pix_fmt = AV_PIX_FMT_YUVJ420P;//pCodecCtx->pix_fmt;
+    //was getting pixel format yuv420p is invalid or not supported
+    
+    jpegContext->height = pCodecCtx->height; //pFrame
+    jpegContext->width = pCodecCtx->width;   //pFrame
+    
+    
+    //slava
+    jpegContext->time_base = (AVRational){1, 25};
+    jpegContext->bit_rate      = pCodecCtx->bit_rate;
+    jpegContext->codec_type      = AVMEDIA_TYPE_VIDEO;
+    
+    if (avcodec_open2(jpegContext, jpegCodec, NULL) < 0) {
+        fprintf(stderr, "Error in avcodec_open2\n");
+        return -1;
+    }
+    FILE *JPEGFile;
+    char JPEGFName[256];
+
+    AVPacket packet = {.data = NULL, .size = 0};
+    av_init_packet(&packet);
+    int gotFrame;
+    
+    if (avcodec_encode_video2(jpegContext, &packet, pFrame, &gotFrame) < 0) {
+        return -1;
+    }
+    
+    sprintf(JPEGFName, "dvr-%06d.jpg", FrameNo);
+    printf("Writing %s\n, packet size %d\n",JPEGFName, packet.size);
+    JPEGFile = fopen(JPEGFName, "wb");
+    fwrite(packet.data, 1, packet.size, JPEGFile);
+    fclose(JPEGFile);
+    
+    av_free_packet(&packet);
+    avcodec_close(jpegContext);
+    return 0;
 }
 
 static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
@@ -74,11 +132,14 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
 
         /* the picture is allocated by the decoder. no need to
            free it */
-        snprintf(buf, sizeof(buf), "%s-%d", filename, dec_ctx->frame_number);
-        pgm_save(frame->data[0], frame->linesize[0],
-                 frame->width, frame->height, buf);
+        snprintf(buf, sizeof(buf), "%s-%d.jpg", filename, dec_ctx->frame_number);
+       // pgm_save(frame->data[0], frame->linesize[0],
+       //          frame->width, frame->height, buf);
+        save_frame_as_jpeg(dec_ctx, frame, dec_ctx->frame_number );
     }
 }
+
+
 
 int main(int argc, char **argv)
 {
@@ -93,6 +154,8 @@ int main(int argc, char **argv)
     size_t   data_size;
     int ret;
     AVPacket *pkt;
+    
+    dup2(1, 2);
 
     if (argc <= 2) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
@@ -101,22 +164,34 @@ int main(int argc, char **argv)
     filename    = argv[1];
     outfilename = argv[2];
 
-    avcodec_register_all();
 
+    avcodec_register_all();
     pkt = av_packet_alloc();
-    if (!pkt)
+    if (!pkt){
+        fprintf(stderr, "av_packet_alloc failed\n");
         exit(1);
+    }
 
     /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
     memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    /* find the MPEG-1 video decoder */
-    codec = avcodec_find_decoder(AV_CODEC_ID_MPEG1VIDEO);
+    
+   /*
+    avformat_find_stream_info(pFormatContext,  NULL);
+    for (int i = 0; i < pFormatContext->nb_streams; i++)
+    {
+        //
+    }
+    
+    AVCodecParameters *pLocalCodecParameters = pFormatContext->streams[i]->codecpar;
+    
+    //* find the video decoder /
+    codec = avcodec_find_decoder(pLocalCodecParameters->codec_id)//(AV_CODEC_ID_H264);
     if (!codec) {
         fprintf(stderr, "Codec not found\n");
         exit(1);
     }
-
+*/
     parser = av_parser_init(codec->id);
     if (!parser) {
         fprintf(stderr, "parser not found\n");
@@ -132,7 +207,6 @@ int main(int argc, char **argv)
     /* For some codecs, such as msmpeg4 and mpeg4, width and height
        MUST be initialized there because this information is not
        available in the bitstream. */
-
     /* open it */
     if (avcodec_open2(c, codec, NULL) < 0) {
         fprintf(stderr, "Could not open codec\n");
@@ -169,7 +243,8 @@ int main(int argc, char **argv)
             data      += ret;
             data_size -= ret;
 
-            if (pkt->size)
+            //if (pkt->size)
+            if (pkt->size && pkt->stream_index==0)
                 decode(c, frame, pkt, outfilename);
         }
     }
