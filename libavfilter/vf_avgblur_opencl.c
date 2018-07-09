@@ -205,10 +205,6 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             radius_y = 0;
         }
 
-        av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-               "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
-               p, global_work[0], global_work[1]);
-
         for (i = 0; i < ctx->power[p]; i++) {
             CL_SET_KERNEL_ARG(ctx->kernel_horiz, 0, cl_mem, &inter);
             CL_SET_KERNEL_ARG(ctx->kernel_horiz, 1, cl_mem, i == 0 ? &src : &dst);
@@ -222,6 +218,10 @@ static int avgblur_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
                                                         i == 0 ? intermediate : output, p, 0);
             if (err < 0)
                 goto fail;
+
+            av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
+                   "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+                   p, global_work[0], global_work[1]);
 
             cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel_horiz, 2, NULL,
                                          global_work, NULL,
