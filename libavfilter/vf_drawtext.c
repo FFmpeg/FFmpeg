@@ -1407,8 +1407,8 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     update_color_with_alpha(s, &bordercolor, s->bordercolor);
     update_color_with_alpha(s, &boxcolor   , s->boxcolor   );
 
-    box_w = FFMIN(width - 1 , max_text_line_w);
-    box_h = FFMIN(height - 1, y + s->max_glyph_h);
+    box_w = max_text_line_w;
+    box_h = y + s->max_glyph_h;
 
     if (s->fix_bounds) {
 
