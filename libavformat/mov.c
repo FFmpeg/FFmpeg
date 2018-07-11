@@ -3310,13 +3310,12 @@ static void mov_estimate_video_delay(MOVContext *c, AVStream* st) {
         st->codecpar->codec_id == AV_CODEC_ID_H264) {
         st->codecpar->video_delay = 0;
         for(ind = 0; ind < st->nb_index_entries && ctts_ind < msc->ctts_count; ++ind) {
+            // Point j to the last elem of the buffer and insert the current pts there.
+            j = buf_start;
             buf_start = (buf_start + 1);
             if (buf_start == MAX_REORDER_DELAY + 1)
                 buf_start = 0;
 
-            // Point j to the last elem of the buffer and insert the current pts there.
-            j = buf_start - 1;
-            if (j < 0) j = MAX_REORDER_DELAY;
             pts_buf[j] = st->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].duration;
 
             // The timestamps that are already in the sorted buffer, and are greater than the
