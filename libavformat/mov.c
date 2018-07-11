@@ -3301,25 +3301,22 @@ static void mov_estimate_video_delay(MOVContext *c, AVStream* st) {
     int ctts_sample = 0;
     int64_t pts_buf[MAX_REORDER_DELAY + 1]; // Circular buffer to sort pts.
     int buf_start = 0;
-    int buf_size = 0;
     int j, r, num_swaps;
+
+    for (j = 0; j < MAX_REORDER_DELAY + 1; j++)
+        pts_buf[j] = INT64_MIN;
 
     if (st->codecpar->video_delay <= 0 && msc->ctts_data &&
         st->codecpar->codec_id == AV_CODEC_ID_H264) {
         st->codecpar->video_delay = 0;
         for(ind = 0; ind < st->nb_index_entries && ctts_ind < msc->ctts_count; ++ind) {
-            if (buf_size == (MAX_REORDER_DELAY + 1)) {
-                // If circular buffer is full, then move the first element forward.
-                buf_start = (buf_start + 1);
-                if (buf_start == MAX_REORDER_DELAY + 1)
-                    buf_start = 0;
-            } else {
-                ++buf_size;
-            }
+            buf_start = (buf_start + 1);
+            if (buf_start == MAX_REORDER_DELAY + 1)
+                buf_start = 0;
 
             // Point j to the last elem of the buffer and insert the current pts there.
             j = buf_start - 1;
-            if (j < 0) j = buf_size - 1;
+            if (j < 0) j = MAX_REORDER_DELAY;
             pts_buf[j] = st->index_entries[ind].timestamp + msc->ctts_data[ctts_ind].duration;
 
             // The timestamps that are already in the sorted buffer, and are greater than the
@@ -3331,7 +3328,7 @@ static void mov_estimate_video_delay(MOVContext *c, AVStream* st) {
             num_swaps = 0;
             while (j != buf_start) {
                 r = j - 1;
-                if (r < 0) r = buf_size - 1;
+                if (r < 0) r = MAX_REORDER_DELAY;
                 if (pts_buf[j] < pts_buf[r]) {
                     FFSWAP(int64_t, pts_buf[j], pts_buf[r]);
                     ++num_swaps;
