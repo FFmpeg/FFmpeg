@@ -63,7 +63,7 @@ static inline int ff_mpa_check_header(uint32_t header){
     if ((header & 0xffe00000) != 0xffe00000)
         return -1;
     /* version check */
-    if ((header & (3<<19)) == 1)
+    if ((header & (3<<19)) == 1<<19)
         return -1;
     /* layer check */
     if ((header & (3<<17)) == 0)
