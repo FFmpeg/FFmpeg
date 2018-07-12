@@ -67,12 +67,8 @@ static int convolution_opencl_init(AVFilterContext *avctx)
     ctx->command_queue = clCreateCommandQueue(ctx->ocf.hwctx->context,
                                               ctx->ocf.hwctx->device_id,
                                               0, &cle);
-    if (!ctx->command_queue) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create OpenCL "
-               "command queue: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create OpenCL "
+                     "command queue %d.\n", cle);
 
     if (!strcmp(avctx->filter->name, "convolution_opencl")) {
         kernel_name = "convolution_global";
@@ -84,11 +80,8 @@ static int convolution_opencl_init(AVFilterContext *avctx)
         kernel_name = "roberts_global";
     }
     ctx->kernel = clCreateKernel(ctx->ocf.program, kernel_name, &cle);
-    if (!ctx->kernel) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to create kernel: %d.\n", cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to create "
+                     "kernel %d.\n", cle);
 
     ctx->initialised = 1;
     return 0;
@@ -243,12 +236,8 @@ static int convolution_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
             cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                          global_work, NULL,
                                          0, NULL, NULL);
-            if (cle != CL_SUCCESS) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to enqueue kernel: %d.\n",
-                       cle);
-                err = AVERROR(EIO);
-                goto fail;
-            }
+            CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue "
+                             "kernel: %d.\n", cle);
         } else {
             if (!(ctx->planes & (1 << p))) {
                 err = ff_opencl_filter_work_size_from_image(avctx, region, output, p, 0);
@@ -257,12 +246,8 @@ static int convolution_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
 
                 cle = clEnqueueCopyImage(ctx->command_queue, src, dst,
                                          origin, origin, region, 0, NULL, NULL);
-                if (cle != CL_SUCCESS) {
-                    av_log(avctx, AV_LOG_ERROR, "Failed to copy plane %d: %d.\n",
-                           p, cle);
-                    err = AVERROR(EIO);
-                    goto fail;
-                }
+                CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to copy plane %d: %d.\n",
+                                 p, cle);
             } else {
                 CL_SET_KERNEL_ARG(ctx->kernel, 0, cl_mem,   &dst);
                 CL_SET_KERNEL_ARG(ctx->kernel, 1, cl_mem,   &src);
@@ -280,23 +265,14 @@ static int convolution_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
                 cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                                          global_work, NULL,
                                                          0, NULL, NULL);
-                if (cle != CL_SUCCESS) {
-                    av_log(avctx, AV_LOG_ERROR, "Failed to enqueue kernel: %d.\n",
-                           cle);
-                    err = AVERROR(EIO);
-                    goto fail;
-                }
+                CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue "
+                                 "kernel: %d.\n", cle);
             }
         }
     }
 
     cle = clFinish(ctx->command_queue);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to finish command queue: %d.\n",
-               cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to finish command queue: %d.\n", cle);
 
     err = av_frame_copy_props(output, input);
     if (err < 0)
