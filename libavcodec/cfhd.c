@@ -541,7 +541,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->peak.level   = 0;
         } else if (tag == -76) {
             s->peak.offset &= 0xffff;
-            s->peak.offset |= (data & 0xffff)<<16;
+            s->peak.offset |= (data & 0xffffU)<<16;
             s->peak.base    = (int16_t *) gb.buffer;
             s->peak.level   = 0;
         } else if (tag == -74 && s->peak.offset) {
