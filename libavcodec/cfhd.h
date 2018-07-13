@@ -26,6 +26,7 @@
 #include "libavutil/avassert.h"
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "vlc.h"
 
@@ -71,7 +72,7 @@ typedef struct Plane {
 typedef struct Peak {
     int level;
     int offset;
-    const int16_t *base;
+    GetByteContext base;
 } Peak;
 
 typedef struct CFHDContext {
