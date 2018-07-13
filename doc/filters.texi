@@ -5645,10 +5645,10 @@ the width and height of currently filtered plane
 
 @item SW
 @item SH
-Width and height scale depending on the currently filtered plane. It is the
-ratio between the corresponding luma plane number of pixels and the current
-plane ones. E.g. for YUV4:2:0 the values are @code{1,1} for the luma plane, and
-@code{0.5,0.5} for chroma planes.
+Width and height scale for the plane being filtered. It is the
+ratio between the dimensions of the current plane to the luma plane,
+e.g. for a @code{yuv420p} frame, the values are @code{1,1} for
+the luma plane and @code{0.5,0.5} for the chroma planes.
 
 @item T
 Time of the current frame, expressed in seconds.
