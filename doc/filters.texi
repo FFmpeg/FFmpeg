@@ -10700,6 +10700,124 @@ The formula that generates the correction is:
 where @var{r_0} is halve of the image diagonal and @var{r_src} and @var{r_tgt} are the
 distances from the focal point in the source and target images, respectively.
 
+@section lensfun
+
+Apply lens correction via the lensfun library (@url{http://lensfun.sourceforge.net/}).
+
+The @code{lensfun} filter requires the camera make, camera model, and lens model
+to apply the lens correction. The filter will load the lensfun database and
+query it to find the corresponding camera and lens entries in the database. As
+long as these entries can be found with the given options, the filter can
+perform corrections on frames. Note that incomplete strings will result in the
+filter choosing the best match with the given options, and the filter will
+output the chosen camera and lens models (logged with level "info"). You must
+provide the make, camera model, and lens model as they are required.
+
+The filter accepts the following options:
+
+@table @option
+@item make
+The make of the camera (for example, "Canon"). This option is required.
+
+@item model
+The model of the camera (for example, "Canon EOS 100D"). This option is
+required.
+
+@item lens_model
+The model of the lens (for example, "Canon EF-S 18-55mm f/3.5-5.6 IS STM"). This
+option is required.
+
+@item mode
+The type of correction to apply. The following values are valid options:
+
+@table @samp
+@item vignetting
+Enables fixing lens vignetting.
+
+@item geometry
+Enables fixing lens geometry. This is the default.
+
+@item subpixel
+Enables fixing chromatic aberrations.
+
+@item vig_geo
+Enables fixing lens vignetting and lens geometry.
+
+@item vig_subpixel
+Enables fixing lens vignetting and chromatic aberrations.
+
+@item distortion
+Enables fixing both lens geometry and chromatic aberrations.
+
+@item all
+Enables all possible corrections.
+
+@end table
+@item focal_length
+The focal length of the image/video (zoom; expected constant for video). For
+example, a 18--55mm lens has focal length range of [18--55], so a value in that
+range should be chosen when using that lens. Default 18.
+
+@item aperture
+The aperture of the image/video (expected constant for video). Note that
+aperture is only used for vignetting correction. Default 3.5.
+
+@item focus_distance
+The focus distance of the image/video (expected constant for video). Note that
+focus distance is only used for vignetting and only slightly affects the
+vignetting correction process. If unknown, leave it at the default value (which
+is 1000).
+
+@item target_geometry
+The target geometry of the output image/video. The following values are valid
+options:
+
+@table @samp
+@item rectilinear (default)
+@item fisheye
+@item panoramic
+@item equirectangular
+@item fisheye_orthographic
+@item fisheye_stereographic
+@item fisheye_equisolid
+@item fisheye_thoby
+@end table
+@item reverse
+Apply the reverse of image correction (instead of correcting distortion, apply
+it).
+
+@item interpolation
+The type of interpolation used when correcting distortion. The following values
+are valid options:
+
+@table @samp
+@item nearest
+@item linear (default)
+@item lanczos
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply lens correction with make "Canon", camera model "Canon EOS 100D", and lens
+model "Canon EF-S 18-55mm f/3.5-5.6 IS STM" with focal length of "18" and
+aperture of "8.0".
+
+@example
+ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Canon EF-S 18-55mm f/3.5-5.6 IS STM":focal_length=18:aperture=8 -c:v h264 -b:v 8000k output.mov
+@end example
+
+@item
+Apply the same as before, but only for the first 5 seconds of video.
+
+@example
+ffmpeg -i input.mov -vf lensfun=make=Canon:model="Canon EOS 100D":lens_model="Canon EF-S 18-55mm f/3.5-5.6 IS STM":focal_length=18:aperture=8:enable='lte(t\,5)' -c:v h264 -b:v 8000k output.mov
+@end example
+
+@end itemize
+
 @section libvmaf
 
 Obtain the VMAF (Video Multi-Method Assessment Fusion)
