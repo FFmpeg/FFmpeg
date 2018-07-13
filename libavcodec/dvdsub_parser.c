@@ -44,6 +44,9 @@ static int dvdsub_parse(AVCodecParserContext *s,
 {
     DVDSubParseContext *pc = s->priv_data;
 
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+
     if (pc->packet_index == 0) {
         if (buf_size < 2 || AV_RB16(buf) && buf_size < 6) {
             if (buf_size)
