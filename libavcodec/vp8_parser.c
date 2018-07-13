@@ -70,8 +70,6 @@ static int parse(AVCodecParserContext *s,
         s->coded_height = FFALIGN(height, 16);
     }
 
-    *poutbuf      = buf;
-    *poutbuf_size = buf_size;
     return buf_size;
 }
 
