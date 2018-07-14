@@ -32,6 +32,7 @@ version <next>:
 - acrossover filter
 - ilbc decoder
 - audio denoiser as afftdn filter
+- AV1 parser
 
 
 version 4.0:

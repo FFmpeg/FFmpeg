@@ -3020,6 +3020,7 @@ wmv3_crystalhd_decoder_select="crystalhd"
 
 # parsers
 aac_parser_select="adts_header"
+av1_parser_select="cbs_av1"
 h264_parser_select="golomb h264dsp h264parse"
 hevc_parser_select="hevcparse"
 mpegaudio_parser_select="mpegaudioheader"
