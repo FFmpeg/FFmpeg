@@ -37,6 +37,7 @@
 #define TEA_BLOCK_SIZE 8
 #define CHAPTER_HEADER_SIZE 8
 #define TIMEPREC 1000
+#define MP3_FRAME_SIZE 104
 
 typedef struct AADemuxContext {
     AVClass *class;
@@ -50,6 +51,7 @@ typedef struct AADemuxContext {
     int64_t current_chapter_size;
     int64_t content_start;
     int64_t content_end;
+    int seek_offset;
 } AADemuxContext;
 
 static int get_second_size(char *codec_name)
@@ -177,6 +179,7 @@ static int aa_read_header(AVFormatContext *s)
         st->codecpar->sample_rate = 22050;
         st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
         avpriv_set_pts_info(st, 64, 8, 32000 * TIMEPREC);
+        // encoded audio frame is MP3_FRAME_SIZE bytes (+1 with padding, unlikely)
     } else if (!strcmp(codec_name, "acelp85")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 19;
@@ -228,6 +231,7 @@ static int aa_read_header(AVFormatContext *s)
     ff_update_cur_dts(s, st, 0);
     avio_seek(pb, start, SEEK_SET);
     c->current_chapter_size = 0;
+    c->seek_offset = 0;
 
     return 0;
 }
@@ -293,12 +297,16 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->current_chapter_size <= 0)
         c->current_chapter_size = 0;
 
-    ret = av_new_packet(pkt, written);
+    if (c->seek_offset > written)
+        c->seek_offset = 0; // ignore wrong estimate
+
+    ret = av_new_packet(pkt, written - c->seek_offset);
     if (ret < 0)
         return ret;
-    memcpy(pkt->data, buf, written);
+    memcpy(pkt->data, buf + c->seek_offset, written - c->seek_offset);
     pkt->pos = pos;
 
+    c->seek_offset = 0;
     return 0;
 }
 
@@ -342,7 +350,12 @@ static int aa_read_seek(AVFormatContext *s,
     c->current_chapter_size = chapter_size - chapter_pos;
     c->chapter_idx = 1 + chapter_idx;
 
-    ff_update_cur_dts(s, s->streams[0], ch->start + chapter_pos * TIMEPREC);
+    // for unaligned frames, estimate offset of first frame in block (assume no padding)
+    if (s->streams[0]->codecpar->codec_id == AV_CODEC_ID_MP3) {
+        c->seek_offset = (MP3_FRAME_SIZE - chapter_pos % MP3_FRAME_SIZE) % MP3_FRAME_SIZE;
+    }
+
+    ff_update_cur_dts(s, s->streams[0], ch->start + (chapter_pos + c->seek_offset) * TIMEPREC);
 
     return 1;
 }
