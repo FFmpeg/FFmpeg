@@ -2674,7 +2674,7 @@ static int mov_write_minf_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     } else if (track->tag == MKTAG('g','p','m','d')) {
         mov_write_gmhd_tag(pb, track);
     }
-    if (track->mode == MODE_MOV) /* FIXME: Why do it for MODE_MOV only ? */
+    if (track->mode == MODE_MOV) /* ISO 14496-12 8.4.3.1 specifies hdlr only within mdia or meta boxes */
         mov_write_hdlr_tag(s, pb, NULL);
     mov_write_dinf_tag(pb);
     if ((ret = mov_write_stbl_tag(s, pb, mov, track)) < 0)
