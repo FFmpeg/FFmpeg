@@ -94,6 +94,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     c->zstream.avail_out = c->decomp_size;
     ret = inflate(&c->zstream, Z_FINISH);
     // Z_DATA_ERROR means empty picture
+    if (ret == Z_DATA_ERROR && !palette_has_changed) {
+        return buf_size;
+    }
+
     if ((ret != Z_OK) && (ret != Z_STREAM_END) && (ret != Z_DATA_ERROR)) {
         av_log(avctx, AV_LOG_ERROR, "Inflate error: %d\n", ret);
         return AVERROR_UNKNOWN;
