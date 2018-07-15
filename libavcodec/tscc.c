@@ -69,6 +69,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     CamtasiaContext * const c = avctx->priv_data;
     AVFrame *frame = c->frame;
     int ret;
+    int palette_has_changed = 0;
+
+    if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+
+        if (pal && size == AVPALETTE_SIZE) {
+            palette_has_changed = 1;
+            memcpy(c->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
+        }
+    }
 
     ret = inflateReset(&c->zstream);
     if (ret != Z_OK) {
@@ -97,15 +110,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     /* make the palette available on the way out */
     if (c->avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        int size;
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
-
-        if (pal && size == AVPALETTE_SIZE) {
-            frame->palette_has_changed = 1;
-            memcpy(c->pal, pal, AVPALETTE_SIZE);
-        } else if (pal) {
-            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
-        }
+        frame->palette_has_changed = palette_has_changed;
         memcpy(frame->data[1], c->pal, AVPALETTE_SIZE);
     }
 
