@@ -70,9 +70,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     AVFrame *frame = c->frame;
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
-        return ret;
-
     ret = inflateReset(&c->zstream);
     if (ret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate reset error: %d\n", ret);
@@ -89,6 +86,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_UNKNOWN;
     }
 
+    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
+        return ret;
 
     if (ret != Z_DATA_ERROR) {
         bytestream2_init(&c->gb, c->decomp_buf,
