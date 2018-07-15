@@ -541,7 +541,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     LagarithContext *l = avctx->priv_data;
     ThreadFrame frame = { .f = data };
     AVFrame *const p  = data;
-    uint8_t frametype = 0;
+    uint8_t frametype;
     uint32_t offset_gu = 0, offset_bv = 0, offset_ry = 9;
     uint32_t offs[4];
     uint8_t *srcs[4], *dst;
