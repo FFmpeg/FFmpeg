@@ -14,6 +14,7 @@ version <next>:
 - libtensorflow backend for DNN based filters like srcnn
 - vc1 decoder is now bit-exact
 - ATRAC9 decoder
+- lensfun wrapper filter
 
 
 version 4.0:
