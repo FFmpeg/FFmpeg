@@ -217,6 +217,7 @@ extern AVFilter ff_vf_fspp;
 extern AVFilter ff_vf_gblur;
 extern AVFilter ff_vf_geq;
 extern AVFilter ff_vf_gradfun;
+extern AVFilter ff_vf_greyedge;
 extern AVFilter ff_vf_haldclut;
 extern AVFilter ff_vf_hflip;
 extern AVFilter ff_vf_histeq;

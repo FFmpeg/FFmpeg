@@ -15,6 +15,7 @@ version <next>:
 - vc1 decoder is now bit-exact
 - ATRAC9 decoder
 - lensfun wrapper filter
+- colorconstancy filter
 
 
 version 4.0:

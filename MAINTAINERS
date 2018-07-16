@@ -332,6 +332,7 @@ Filters:
   vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
   vf_colorchannelmixer.c                Paul B Mahol
+  vf_colorconstancy.c                   Mina Sami    (CC <minas.gorgy@gmail.com>)
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
   vf_colorlevels.c                      Paul B Mahol
