@@ -18435,9 +18435,15 @@ Default is @code{replace}.
 
 @section aphasemeter
 
-Convert input audio to a video output, displaying the audio phase.
+Measures phase of input audio, which is exported as metadata @code{lavfi.aphasemeter.phase},
+representing mean phase of current audio frame. A video output can also be produced and is
+enabled by default. The audio is passed through as first output.
 
-The filter accepts the following options:
+Audio will be rematrixed to stereo if it has a different channel layout. Phase value is in
+range @code{[-1, 1]} where @code{-1} means left and right channels are completely out of phase
+and @code{1} means channels are in phase.
+
+The filter accepts the following options, all related to its video output:
 
 @table @option
 @item rate, r
@@ -18462,11 +18468,6 @@ Set color which will be used for drawing median phase. If color is
 @item video
 Enable video output. Default is enabled.
 @end table
-
-The filter also exports the frame metadata @code{lavfi.aphasemeter.phase} which
-represents mean phase of current audio frame. Value is in range @code{[-1, 1]}.
-The @code{-1} means left and right channels are completely out of phase and
-@code{1} means channels are in phase.
 
 @section avectorscope
 
