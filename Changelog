@@ -1,6 +1,14 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.4.4:
+- avcodec/dvdsub_parser: Allocate input padding
+- avcodec/dvdsub_parser: Init output buf/size
+- avcodec/dirac_dwt_template: Fix signedness regression in interleave()
+- avformat/movenc: Write version 2 of audio atom if channels is not known
+- swresample/arm: rename labels to fix xcode build error
+- avcodec/imgconvert: fix possible null pointer dereference
+
 version 3.4.3:
 - avformat/movenc: Check input sample count
 - avcodec/mjpegdec: Check for odd progressive RGB
