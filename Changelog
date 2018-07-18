@@ -1,6 +1,15 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.12:
+- avcodec/dvdsub_parser: Allocate input padding
+- avcodec/dvdsub_parser: Init output buf/size
+- avcodec/dirac_dwt_template: Fix signedness regression in interleave()
+- avformat/movenc: Write version 2 of audio atom if channels is not known
+- swresample/arm: rename labels to fix xcode build error
+- avformat/utils: fix mixed declarations and code
+- avcodec/imgconvert: fix possible null pointer dereference
+
 version 3.2.11:
 - avformat/mov: Fix extradata memleak
 - lavc/libopusdec: Allow avcodec_open2 to call .close
