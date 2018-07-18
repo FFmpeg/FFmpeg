@@ -1,6 +1,53 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.0.2:
+- avcodec/dvdsub_parser: Allocate input padding
+- avcodec/dvdsub_parser: Init output buf/size
+- avcodec/dirac_dwt_template: Fix signedness regression in interleave()
+- avformat/mov: Simplify last element computation in mov_estimate_video_delay()
+- avformat/mov: Break out of inner loop early in mov_estimate_video_delay()
+- avformat/mov: Eliminate variable buf_size from mov_estimate_video_delay()
+- avformat/mov: remove modulo operations from mov_estimate_video_delay()
+- avformat/movenc: Write version 2 of audio atom if channels is not known
+- swresample/arm: rename labels to fix xcode build error
+- avformat/movenc: Check input sample count
+- avcodec/mjpegdec: Check for odd progressive RGB
+- avcodec/vp8_parser: Do not leave data/size uninitialized
+- avformat/mms: Add missing chunksize check
+- avformat/pva: Check for EOF before retrying in read_part_of_packet()
+- avformat/rmdec: Do not pass mime type in rm_read_multi() to ff_rm_read_mdpr_codecdata()
+- avformat/asfdec_o: Check size_bmp more fully
+- avformat/mxfdec: Fix av_log context
+- avcodec/mpeg4videodec: Check for bitstream end in read_quant_matrix_ext()
+- avcodec/indeo4: Check for end of bitstream in decode_mb_info()
+- avcodec/ac3dec: Check channel_map index
+- avcodec/mpeg4videodec: Remove use of FF_PROFILE_MPEG4_SIMPLE_STUDIO as indicator of studio profile
+- avcodec/shorten: Fix undefined addition in shorten_decode_frame()
+- avcodec/shorten: Fix undefined integer overflow
+- avcodec/jpeg2000dec: Fixes invalid shifts in jpeg2000_decode_packets_po_iteration()
+- avcodec/jpeg2000dec: Check that there are enough bytes for all tiles
+- avformat/movenc: Use mov->fc consistently for av_log()
+- avcodec/mpeg4videodec: Check read profile before setting it
+- avformat/movenc: Do not pass AVCodecParameters in avpriv_request_sample
+- avcodec/ac3_parser: Check init_get_bits8() for failure
+- avformat/movenc: Check that frame_types other than EAC3_FRAME_TYPE_INDEPENDENT have a supported substream id
+- avcodec/dpx: Check elements in 12bps planar path
+- avcodec/escape124: Fix spelling errors in comment
+- avcodec/ra144: Fix integer overflow in ff_eval_refl()
+- avcodec/cscd: Check output buffer size for lzo.
+- avcodec/escape124: Check buf_size against num_superblocks
+- avcodec/h264_parser: Reduce needed history for parsing mb index
+- avcodec/magicyuv: Check bits left in flags&1 branch
+- avcodec/mjpegdec: Check for end of bitstream in ljpeg_decode_rgb_scan()
+- ffmpeg: fix -stream_loop with multiple inputs
+- ffmpeg: factorize input thread creation and destruction
+- avformat/mpegts: parse large PMTs with multiple tables
+- Revert "avcodec/mediacodecdec: wait on first frame after input buffers are full"
+- avcodec/videotoolboxenc: fix invalid session on iOS
+- avcodec/videotoolboxenc: split initialization
+- avcodec/videotoolboxenc: fix mutex/cond leak in error path
+
 version 4.0.1:
 - avcodec/aacdec_fixed: Fix undefined integer overflow in apply_independent_coupling_fixed()
 - avcodec/dirac_dwt_template: Fix undefined behavior in interleave()
