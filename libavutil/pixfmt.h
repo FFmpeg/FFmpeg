@@ -42,6 +42,10 @@
  * This is stored as BGRA on little-endian CPU architectures and ARGB on
  * big-endian CPUs.
  *
+ * @note
+ * If the resolution is not a multiple of the chroma subsampling factor
+ * then the chroma plane resolution must be rounded up.
+ *
  * @par
  * When the pixel format is palettized RGB32 (AV_PIX_FMT_PAL8), the palettized
  * image data is stored in AVFrame.data[0]. The palette is transported in
