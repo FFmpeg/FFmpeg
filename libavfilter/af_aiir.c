@@ -686,7 +686,7 @@ static void drawtext(AVFrame *pic, int x, int y, const char *txt, uint32_t color
 
 static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t color)
 {
-    int dx = FFABS(x1-x0), sx = x0 < x1 ? 1 : -1;
+    int dx = FFABS(x1-x0);
     int dy = FFABS(y1-y0), sy = y0 < y1 ? 1 : -1;
     int err = (dx>dy ? dx : -dy) / 2, e2;
 
@@ -700,7 +700,7 @@ static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t col
 
         if (e2 >-dx) {
             err -= dy;
-            x0 += sx;
+            x0--;
         }
 
         if (e2 < dy) {
