@@ -67,7 +67,7 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
 
     int extradata_size = 0, filtered_size = 0;
     int nb_extradata_obu_types = FF_ARRAY_ELEMS(extradata_obu_types);
-    int i, ret = 0;
+    int i, has_seq = 0, ret = 0;
 
     ret = ff_av1_packet_split(&s->av1_pkt, pkt->data, pkt->size, ctx);
     if (ret < 0)
@@ -77,12 +77,14 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
         AV1OBU *obu = &s->av1_pkt.obus[i];
         if (val_in_array(extradata_obu_types, nb_extradata_obu_types, obu->type)) {
             extradata_size += obu->raw_size;
+            if (obu->type == AV1_OBU_SEQUENCE_HEADER)
+                has_seq = 1;
         } else if (s->remove) {
             filtered_size += obu->raw_size;
         }
     }
 
-    if (extradata_size) {
+    if (extradata_size && has_seq) {
         AVBufferRef *filtered_buf;
         uint8_t *extradata, *filtered_data;
 
