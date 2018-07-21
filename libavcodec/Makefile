@@ -44,6 +44,7 @@ OBJS = ac3_parser.o                                                     \
        options.o                                                        \
        mjpegenc_huffman.o                                               \
        parser.o                                                         \
+       parsers.o                                                        \
        profiles.o                                                       \
        qsv_api.o                                                        \
        raw.o                                                            \
