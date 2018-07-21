@@ -5876,6 +5876,11 @@ static int mov_read_sample_encryption_info(MOVContext *c, AVIOContext *pb, MOVSt
     unsigned int subsample_count;
     AVSubsampleEncryptionInfo *subsamples;
 
+    if (!sc->cenc.default_encrypted_sample) {
+        av_log(c->fc, AV_LOG_ERROR, "Missing schm or tenc\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     *sample = av_encryption_info_clone(sc->cenc.default_encrypted_sample);
     if (!*sample)
         return AVERROR(ENOMEM);
