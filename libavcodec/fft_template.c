@@ -523,9 +523,11 @@ static void name(FFTComplex *z, const FFTSample *wre, unsigned int n)\
 }
 
 PASS(pass)
+#if !CONFIG_SMALL
 #undef BUTTERFLIES
 #define BUTTERFLIES BUTTERFLIES_BIG
 PASS(pass_big)
+#endif
 
 #define DECL_FFT(n,n2,n4)\
 static void fft##n(FFTComplex *z)\
