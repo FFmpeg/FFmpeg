@@ -139,7 +139,7 @@ typedef struct DiracContext {
     GetBitContext gb;
     AVDiracSeqHeader seq;
     int seen_sequence_header;
-    int frame_number;           /* number of the next frame to display       */
+    int64_t frame_number;       /* number of the next frame to display       */
     Plane plane[3];
     int chroma_x_shift;
     int chroma_y_shift;
@@ -2294,7 +2294,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     if (*got_frame)
-        s->frame_number = picture->display_picture_number + 1;
+        s->frame_number = picture->display_picture_number + 1LL;
 
     return buf_idx;
 }
