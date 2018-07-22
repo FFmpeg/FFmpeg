@@ -190,15 +190,15 @@ static void RENAME(horizontal_compose_daub97i)(uint8_t *_b, uint8_t *_temp, int 
 
     // second stage combined with interleave and shift
     b0 = b2 = COMPOSE_DAUB97iL0(temp[w2], temp[0], temp[w2]);
-    b[0] = (b0 + 1) >> 1;
+    b[0] = ~((~b0) >> 1);
     for (x = 1; x < w2; x++) {
         b2 = COMPOSE_DAUB97iL0(temp[x+w2-1], temp[x     ], temp[x+w2]);
         b1 = COMPOSE_DAUB97iH0(          b0, temp[x+w2-1], b2        );
-        b[2*x-1] = (b1 + 1) >> 1;
-        b[2*x  ] = (b2 + 1) >> 1;
+        b[2*x-1] = ~((~b1) >> 1);
+        b[2*x  ] = ~((~b2) >> 1);
         b0 = b2;
     }
-    b[w-1] = (COMPOSE_DAUB97iH0(b2, temp[w-1], b2) + 1) >> 1;
+    b[w-1] = ~((~COMPOSE_DAUB97iH0(b2, temp[w-1], b2)) >> 1);
 }
 
 static void RENAME(vertical_compose_dirac53iH0)(uint8_t *_b0, uint8_t *_b1, uint8_t *_b2,
