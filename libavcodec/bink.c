@@ -1343,6 +1343,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return ret;
 
     avctx->pix_fmt = c->has_alpha ? AV_PIX_FMT_YUVA420P : AV_PIX_FMT_YUV420P;
+    avctx->color_range = c->version == 'k' ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
     ff_blockdsp_init(&c->bdsp, avctx);
     ff_hpeldsp_init(&c->hdsp, avctx->flags);
