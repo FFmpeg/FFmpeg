@@ -82,6 +82,9 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
 
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+
     while (size > 0) {
         int ret = parse_obu_header(buf, size, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
