@@ -232,4 +232,5 @@ AVCodec ff_libaom_av1_decoder = {
     .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_av1_profiles),
     .wrapper_name   = "libaom",
+    .bsfs           = "dump_extra",
 };
