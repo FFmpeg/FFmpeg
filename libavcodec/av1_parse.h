@@ -118,6 +118,10 @@ static inline int parse_obu_header(const uint8_t *buf, int buf_size,
 
     *obu_size  = has_size_flag ? leb128(&gb)
                                : buf_size - 1 - extension_flag;
+
+    if (get_bits_left(&gb) < 0)
+        return AVERROR_INVALIDDATA;
+
     *start_pos = get_bits_count(&gb) / 8;
 
     return 0;
