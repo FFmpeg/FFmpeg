@@ -550,7 +550,7 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
     }
 
     if (pAdapter) {
-        DXGI_ADAPTER_DESC2 desc;
+        DXGI_ADAPTER_DESC desc;
         hr = IDXGIAdapter2_GetDesc(pAdapter, &desc);
         if (!FAILED(hr)) {
             av_log(ctx, AV_LOG_INFO, "Using device %04x:%04x (%ls).\n",
