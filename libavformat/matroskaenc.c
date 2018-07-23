@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "av1.h"
 #include "avc.h"
 #include "hevc.h"
 #include "avformat.h"
@@ -769,6 +770,9 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
         ff_isom_write_hvcc(dyn_cp, par->extradata,
                            par->extradata_size, 0);
         return 0;
+    case AV_CODEC_ID_AV1:
+        return ff_isom_write_av1c(dyn_cp, par->extradata,
+                                  par->extradata_size);
     case AV_CODEC_ID_ALAC:
         if (par->extradata_size < 36) {
             av_log(s, AV_LOG_ERROR,
@@ -2120,6 +2124,8 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
              (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
         /* extradata is Annex B, assume the bitstream is too and convert it */
         ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
+    else if (par->codec_id == AV_CODEC_ID_AV1)
+        ff_av1_filter_obus_buf(pkt->data, &data, &size);
     else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
         int ret = mkv_strip_wavpack(pkt->data, &data, &size);
         if (ret < 0) {
