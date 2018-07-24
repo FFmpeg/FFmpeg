@@ -318,7 +318,7 @@ av_cold int swr_init(struct SwrContext *s){
 
 av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
-    s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
+    s->resample_first= RSC*s->out.ch_count/s->used_ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
     s->in_buffer= s->in;
     s->silence  = s->in;
