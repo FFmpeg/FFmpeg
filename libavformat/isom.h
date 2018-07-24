@@ -118,7 +118,7 @@ typedef struct MOVEncryptionIndex {
     uint8_t* auxiliary_info_sizes;
     size_t auxiliary_info_sample_count;
     uint8_t auxiliary_info_default_size;
-    size_t* auxiliary_offsets;  ///< Absolute seek position
+    uint64_t* auxiliary_offsets;  ///< Absolute seek position
     size_t auxiliary_offsets_count;
 } MOVEncryptionIndex;
 
