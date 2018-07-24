@@ -220,6 +220,10 @@ ffprobe -dump_separator "
 @item max_streams @var{integer} (@emph{input})
 Specifies the maximum number of streams. This can be used to reject files that
 would require too many resources due to a large number of streams.
+
+@item skip_estimate_duration_from_pts @var{bool} (@emph{input})
+Skip estimation of input duration when calculated using PTS.
+At present, applicable for MPEG-PS and MPEG-TS.
 @end table
 
 @c man end FORMAT OPTIONS
