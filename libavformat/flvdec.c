@@ -654,8 +654,6 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos)
     AVStream av_unused *dstream;
     AVIOContext *ioc;
     int i;
-    // only needs to hold the string "onMetaData".
-    // Anything longer is something we don't want.
     char buffer[32];
 
     astream = NULL;
