@@ -5049,6 +5049,8 @@ case $target_os in
     android)
         disable symver
         enable section_data_rel_ro
+        add_cflags -fPIE
+        add_ldexeflags -fPIE -pie
         SLIB_INSTALL_NAME='$(SLIBNAME)'
         SLIB_INSTALL_LINKS=
         SHFLAGS='-shared -Wl,-soname,$(SLIBNAME)'
