@@ -45,5 +45,6 @@ void ff_fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
                            double rgb2xyz[3][3]);
 
 double ff_determine_signal_peak(AVFrame *in);
+void ff_update_hdr_metadata(AVFrame *in, double peak);
 
 #endif

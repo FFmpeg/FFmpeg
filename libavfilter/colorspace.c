@@ -118,3 +118,20 @@ double ff_determine_signal_peak(AVFrame *in)
 
     return peak;
 }
+
+void ff_update_hdr_metadata(AVFrame *in, double peak)
+{
+    AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+    if (sd) {
+        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
+        clm->MaxCLL = (unsigned)(peak * REFERENCE_WHITE);
+    }
+
+    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (sd) {
+        AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+        if (metadata->has_luminance)
+            metadata->max_luminance = av_d2q(peak * REFERENCE_WHITE, 10000);
+    }
+}

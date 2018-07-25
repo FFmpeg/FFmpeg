@@ -21,7 +21,6 @@
 #include "libavutil/bprint.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
-#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -342,22 +341,6 @@ fail:
     return err;
 }
 
-static void update_metadata(AVFrame *in, double peak) {
-    AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-
-    if (sd) {
-        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
-        clm->MaxCLL = (unsigned)(peak * REFERENCE_WHITE);
-    }
-
-    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-    if (sd) {
-        AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
-        if (metadata->has_luminance)
-            metadata->max_luminance =av_d2q(peak * REFERENCE_WHITE, 10000);
-    }
-}
-
 static int tonemap_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
 {
     AVFilterContext    *avctx = inlink->dst;
@@ -444,7 +427,7 @@ static int tonemap_opencl_filter_frame(AVFilterLink *inlink, AVFrame *input)
 
     av_frame_free(&input);
 
-    update_metadata(output, ctx->target_peak);
+    ff_update_hdr_metadata(output, ctx->target_peak);
 
     av_log(ctx, AV_LOG_DEBUG, "Tone-mapping output: %s, %ux%u (%"PRId64").\n",
            av_get_pix_fmt_name(output->format),
