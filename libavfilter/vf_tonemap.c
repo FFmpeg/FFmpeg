@@ -131,10 +131,10 @@ static double determine_signal_peak(AVFrame *in)
             peak = av_q2d(metadata->max_luminance) / REFERENCE_WHITE;
     }
 
-    /* smpte2084 needs the side data above to work correctly
-     * if missing, assume that the original transfer was arib-std-b67 */
+    // For untagged source, use peak of 10000 if SMPTE ST.2084
+    // otherwise assume HLG with reference display peak 1000.
     if (!peak)
-        peak = 12;
+        peak = in->color_trc == AVCOL_TRC_SMPTE2084 ? 100.0f : 10.0f;
 
     return peak;
 }
