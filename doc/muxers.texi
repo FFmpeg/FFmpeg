@@ -1344,6 +1344,8 @@ be negative. This enables the initial sample to have DTS/CTS of zero, and
 reduces the need for edit lists for some cases such as video tracks with
 B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
+
+This option is implicitly set when writing ismv (Smooth Streaming) files.
 @item -write_prft
 Write producer time reference box (PRFT) with a specified time source for the
 NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
