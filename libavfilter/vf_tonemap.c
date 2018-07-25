@@ -265,6 +265,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     av_frame_free(&in);
 
+    ff_update_hdr_metadata(out, peak);
+
     return ff_filter_frame(outlink, out);
 }
 
