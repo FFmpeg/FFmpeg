@@ -5769,6 +5769,7 @@ typedef struct AVBitStreamFilter {
     int (*init)(AVBSFContext *ctx);
     int (*filter)(AVBSFContext *ctx, AVPacket *pkt);
     void (*close)(AVBSFContext *ctx);
+    void (*flush)(AVBSFContext *ctx);
 } AVBitStreamFilter;
 
 #if FF_API_OLD_BSF
@@ -5894,6 +5895,11 @@ int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
  * AVERROR(EAGAIN) immediately after a successful av_bsf_send_packet() call.
  */
 int av_bsf_receive_packet(AVBSFContext *ctx, AVPacket *pkt);
+
+/**
+ * Reset the internal bitstream filter state / flush internal buffers.
+ */
+void av_bsf_flush(AVBSFContext *ctx);
 
 /**
  * Free a bitstream filter context and everything associated with it; write NULL

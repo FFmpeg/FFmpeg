@@ -172,6 +172,16 @@ int av_bsf_init(AVBSFContext *ctx)
     return 0;
 }
 
+void av_bsf_flush(AVBSFContext *ctx)
+{
+    ctx->internal->eof = 0;
+
+    av_packet_unref(ctx->internal->buffer_pkt);
+
+    if (ctx->filter->flush)
+        ctx->filter->flush(ctx);
+}
+
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
     int ret;
