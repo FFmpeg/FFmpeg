@@ -182,7 +182,7 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     return 0;
 }
 
-static int bsfs_init(AVCodecContext *avctx)
+int ff_decode_bsfs_init(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     DecodeFilterContext *s = &avci->filter;
@@ -688,10 +688,6 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avpkt && !avpkt->size && avpkt->data)
         return AVERROR(EINVAL);
 
-    ret = bsfs_init(avctx);
-    if (ret < 0)
-        return ret;
-
     av_packet_unref(avci->buffer_pkt);
     if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
@@ -750,10 +746,6 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
-
-    ret = bsfs_init(avctx);
-    if (ret < 0)
-        return ret;
 
     if (avci->buffer_frame->buf[0]) {
         av_frame_move_ref(frame, avci->buffer_frame);
@@ -1978,6 +1970,14 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
     return ret;
 }
 
+static void bsfs_flush(AVCodecContext *avctx)
+{
+    DecodeFilterContext *s = &avctx->internal->filter;
+
+    for (int i = 0; i < s->nb_bsfs; i++)
+        av_bsf_flush(s->bsfs[i]);
+}
+
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
     avctx->internal->draining      = 0;
@@ -1998,7 +1998,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    ff_decode_bsfs_uninit(avctx);
+    bsfs_flush(avctx);
 
     if (!avctx->refcounted_frames)
         av_frame_unref(avctx->internal->to_free);

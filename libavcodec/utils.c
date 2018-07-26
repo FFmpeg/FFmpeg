@@ -727,6 +727,12 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
             goto free_and_end;
     }
 
+    if (av_codec_is_decoder(avctx->codec)) {
+        ret = ff_decode_bsfs_init(avctx);
+        if (ret < 0)
+            goto free_and_end;
+    }
+
     if (HAVE_THREADS
         && !(avctx->internal->frame_thread_encoder && (avctx->active_thread_type&FF_THREAD_FRAME))) {
         ret = ff_thread_init(avctx);
@@ -1032,6 +1038,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_packet_free(&avctx->internal->last_pkt_props);
 
         av_packet_free(&avctx->internal->ds.in_pkt);
+        ff_decode_bsfs_uninit(avctx);
 
         av_freep(&avctx->internal->pool);
     }
