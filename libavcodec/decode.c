@@ -281,6 +281,10 @@ int ff_decode_bsfs_init(AVCodecContext *avctx)
             bsfs_str++;
     }
 
+    ret = avcodec_parameters_to_context(avctx, s->bsfs[s->nb_bsfs - 1]->par_out);
+    if (ret < 0)
+        return ret;
+
     return 0;
 fail:
     ff_decode_bsfs_uninit(avctx);
