@@ -89,11 +89,7 @@ void av_frame_free(AVFrame **frame)
 
 static int get_video_buffer(AVFrame *frame, int align)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
     int ret, i;
-
-    if (!desc)
-        return AVERROR(EINVAL);
 
     if ((ret = av_image_check_size(frame->width, frame->height, 0, NULL)) < 0)
         return ret;
@@ -111,24 +107,17 @@ static int get_video_buffer(AVFrame *frame, int align)
             frame->linesize[i] = FFALIGN(frame->linesize[i], align);
     }
 
-    for (i = 0; i < 4 && frame->linesize[i]; i++) {
-        int h = frame->height;
-        if (i == 1 || i == 2)
-            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    if ((ret = av_image_fill_pointers(frame->data, frame->format, frame->height,
+                                      NULL, frame->linesize)) < 0)
+        return ret;
 
-        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h);
-        if (!frame->buf[i])
-            goto fail;
+    frame->buf[0] = av_buffer_alloc(ret);
+    if (!frame->buf[0])
+        goto fail;
 
-        frame->data[i] = frame->buf[i]->data;
-    }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
-        av_buffer_unref(&frame->buf[1]);
-        frame->buf[1] = av_buffer_alloc(1024);
-        if (!frame->buf[1])
-            goto fail;
-        frame->data[1] = frame->buf[1]->data;
-    }
+    if (av_image_fill_pointers(frame->data, frame->format, frame->height,
+                               frame->buf[0]->data, frame->linesize) < 0)
+        goto fail;
 
     frame->extended_data = frame->data;
 
