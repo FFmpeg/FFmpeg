@@ -162,26 +162,26 @@ static int config_props(AVFilterLink* inlink)
 
                 switch (inlink->format){
                 case AV_PIX_FMT_YUV420P:
-                    sws_src_h = (sws_src_h >> 1) + (sws_src_h % 2 != 0 ? 1 : 0);
-                    sws_src_w = (sws_src_w >> 1) + (sws_src_w % 2 != 0 ? 1 : 0);
-                    sws_dst_h = (sws_dst_h >> 1) + (sws_dst_h % 2 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 1) + (sws_dst_w % 2 != 0 ? 1 : 0);
+                    sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 1);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
+                    sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 1);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
                     break;
                 case AV_PIX_FMT_YUV422P:
-                    sws_src_w = (sws_src_w >> 1) + (sws_src_w % 2 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 1) + (sws_dst_w % 2 != 0 ? 1 : 0);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
                     break;
                 case AV_PIX_FMT_YUV444P:
                     break;
                 case AV_PIX_FMT_YUV410P:
-                    sws_src_h = (sws_src_h >> 2) + (sws_src_h % 4 != 0 ? 1 : 0);
-                    sws_src_w = (sws_src_w >> 2) + (sws_src_w % 4 != 0 ? 1 : 0);
-                    sws_dst_h = (sws_dst_h >> 2) + (sws_dst_h % 4 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 2) + (sws_dst_w % 4 != 0 ? 1 : 0);
+                    sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 2);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
+                    sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 2);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                     break;
                 case AV_PIX_FMT_YUV411P:
-                    sws_src_w = (sws_src_w >> 2) + (sws_src_w % 4 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 2) + (sws_dst_w % 4 != 0 ? 1 : 0);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                     break;
                 default:
                     av_log(context, AV_LOG_ERROR, "could not create SwsContext for input pixel format");

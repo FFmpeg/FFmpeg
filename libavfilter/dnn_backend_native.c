@@ -334,17 +334,17 @@ DNNModel* ff_dnn_load_default_model_native(DNNDefaultModel model_type)
 
     switch (model_type){
     case DNN_SRCNN:
-        if (set_up_conv_layer(network->layers + 1, srcnn_conv1_kernel, srcnn_conv1_biases, RELU, 1, 64, 9) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 2, srcnn_conv2_kernel, srcnn_conv2_biases, RELU, 64, 32, 1) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 3, srcnn_conv3_kernel, srcnn_conv3_biases, RELU, 32, 1, 5) != DNN_SUCCESS){
+        if (set_up_conv_layer(network->layers + 1, srcnn_conv1_kernel, srcnn_conv1_bias, RELU, 1, 64, 9) != DNN_SUCCESS ||
+            set_up_conv_layer(network->layers + 2, srcnn_conv2_kernel, srcnn_conv2_bias, RELU, 64, 32, 1) != DNN_SUCCESS ||
+            set_up_conv_layer(network->layers + 3, srcnn_conv3_kernel, srcnn_conv3_bias, RELU, 32, 1, 5) != DNN_SUCCESS){
             ff_dnn_free_model_native(&model);
             return NULL;
         }
         break;
     case DNN_ESPCN:
-        if (set_up_conv_layer(network->layers + 1, espcn_conv1_kernel, espcn_conv1_biases, TANH, 1, 64, 5) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 2, espcn_conv2_kernel, espcn_conv2_biases, TANH, 64, 32, 3) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 3, espcn_conv3_kernel, espcn_conv3_biases, SIGMOID, 32, 4, 3) != DNN_SUCCESS){
+        if (set_up_conv_layer(network->layers + 1, espcn_conv1_kernel, espcn_conv1_bias, TANH, 1, 64, 5) != DNN_SUCCESS ||
+            set_up_conv_layer(network->layers + 2, espcn_conv2_kernel, espcn_conv2_bias, TANH, 64, 32, 3) != DNN_SUCCESS ||
+            set_up_conv_layer(network->layers + 3, espcn_conv3_kernel, espcn_conv3_bias, SIGMOID, 32, 4, 3) != DNN_SUCCESS){
             ff_dnn_free_model_native(&model);
             return NULL;
         }
