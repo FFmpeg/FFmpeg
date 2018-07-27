@@ -232,6 +232,13 @@ fail:
     return ret;
 }
 
+static void h264_mp4toannexb_flush(AVBSFContext *ctx)
+{
+    H264BSFContext *s = ctx->priv_data;
+
+    s->first_idr = s->extradata_parsed;
+}
+
 static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_H264, AV_CODEC_ID_NONE,
 };
@@ -241,5 +248,6 @@ const AVBitStreamFilter ff_h264_mp4toannexb_bsf = {
     .priv_data_size = sizeof(H264BSFContext),
     .init           = h264_mp4toannexb_init,
     .filter         = h264_mp4toannexb_filter,
+    .flush          = h264_mp4toannexb_flush,
     .codec_ids      = codec_ids,
 };
