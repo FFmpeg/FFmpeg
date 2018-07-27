@@ -31,24 +31,24 @@
 #include <tensorflow/c/c_api.h>
 
 typedef struct TFModel{
-    TF_Graph* graph;
-    TF_Session* session;
-    TF_Status* status;
+    TF_Graph *graph;
+    TF_Session *session;
+    TF_Status *status;
     TF_Output input, output;
-    TF_Tensor* input_tensor;
-    DNNData* output_data;
+    TF_Tensor *input_tensor;
+    DNNData *output_data;
 } TFModel;
 
-static void free_buffer(void* data, size_t length)
+static void free_buffer(void *data, size_t length)
 {
     av_freep(&data);
 }
 
-static TF_Buffer* read_graph(const char* model_filename)
+static TF_Buffer *read_graph(const char *model_filename)
 {
-    TF_Buffer* graph_buf;
-    unsigned char* graph_data = NULL;
-    AVIOContext* model_file_context;
+    TF_Buffer *graph_buf;
+    unsigned char *graph_data = NULL;
+    AVIOContext *model_file_context;
     long size, bytes_read;
 
     if (avio_open(&model_file_context, model_filename, AVIO_FLAG_READ) < 0){
@@ -70,20 +70,20 @@ static TF_Buffer* read_graph(const char* model_filename)
     }
 
     graph_buf = TF_NewBuffer();
-    graph_buf->data = (void*)graph_data;
+    graph_buf->data = (void *)graph_data;
     graph_buf->length = size;
     graph_buf->data_deallocator = free_buffer;
 
     return graph_buf;
 }
 
-static DNNReturnType set_input_output_tf(void* model, DNNData* input, DNNData* output)
+static DNNReturnType set_input_output_tf(void *model, DNNData *input, DNNData *output)
 {
-    TFModel* tf_model = (TFModel*)model;
+    TFModel *tf_model = (TFModel *)model;
     int64_t input_dims[] = {1, input->height, input->width, input->channels};
-    TF_SessionOptions* sess_opts;
-    const TF_Operation* init_op = TF_GraphOperationByName(tf_model->graph, "init");
-    TF_Tensor* output_tensor;
+    TF_SessionOptions *sess_opts;
+    const TF_Operation *init_op = TF_GraphOperationByName(tf_model->graph, "init");
+    TF_Tensor *output_tensor;
 
     // Input operation should be named 'x'
     tf_model->input.oper = TF_GraphOperationByName(tf_model->graph, "x");
@@ -99,7 +99,7 @@ static DNNReturnType set_input_output_tf(void* model, DNNData* input, DNNData* o
     if (!tf_model->input_tensor){
         return DNN_ERROR;
     }
-    input->data = (float*)TF_TensorData(tf_model->input_tensor);
+    input->data = (float *)TF_TensorData(tf_model->input_tensor);
 
     // Output operation should be named 'y'
     tf_model->output.oper = TF_GraphOperationByName(tf_model->graph, "y");
@@ -156,12 +156,12 @@ static DNNReturnType set_input_output_tf(void* model, DNNData* input, DNNData* o
     return DNN_SUCCESS;
 }
 
-DNNModel* ff_dnn_load_model_tf(const char* model_filename)
+DNNModel *ff_dnn_load_model_tf(const char *model_filename)
 {
-    DNNModel* model = NULL;
-    TFModel* tf_model = NULL;
-    TF_Buffer* graph_def;
-    TF_ImportGraphDefOptions* graph_opts;
+    DNNModel *model = NULL;
+    TFModel *tf_model = NULL;
+    TF_Buffer *graph_def;
+    TF_ImportGraphDefOptions *graph_opts;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -197,25 +197,25 @@ DNNModel* ff_dnn_load_model_tf(const char* model_filename)
         return NULL;
     }
 
-    model->model = (void*)tf_model;
+    model->model = (void *)tf_model;
     model->set_input_output = &set_input_output_tf;
 
     return model;
 }
 
-static TF_Operation* add_pad_op(TFModel* tf_model, TF_Operation* input_op, int32_t pad)
+static TF_Operation *add_pad_op(TFModel *tf_model, TF_Operation *input_op, int32_t pad)
 {
-    TF_OperationDescription* op_desc;
-    TF_Operation* op;
-    TF_Tensor* tensor;
+    TF_OperationDescription *op_desc;
+    TF_Operation *op;
+    TF_Tensor *tensor;
     TF_Output input;
-    int32_t* pads;
+    int32_t *pads;
     int64_t pads_shape[] = {4, 2};
 
     op_desc = TF_NewOperation(tf_model->graph, "Const", "pads");
     TF_SetAttrType(op_desc, "dtype", TF_INT32);
     tensor = TF_AllocateTensor(TF_INT32, pads_shape, 2, 4 * 2 * sizeof(int32_t));
-    pads = (int32_t*)TF_TensorData(tensor);
+    pads = (int32_t *)TF_TensorData(tensor);
     pads[0] = 0;   pads[1] = 0;
     pads[2] = pad; pads[3] = pad;
     pads[4] = pad; pads[5] = pad;
@@ -246,11 +246,11 @@ static TF_Operation* add_pad_op(TFModel* tf_model, TF_Operation* input_op, int32
     return op;
 }
 
-static TF_Operation* add_const_op(TFModel* tf_model, const float* values, const int64_t* dims, int dims_len, const char* name)
+static TF_Operation *add_const_op(TFModel *tf_model, const float *values, const int64_t *dims, int dims_len, const char *name)
 {
     int dim;
-    TF_OperationDescription* op_desc;
-    TF_Tensor* tensor;
+    TF_OperationDescription *op_desc;
+    TF_Tensor *tensor;
     size_t len;
 
     op_desc = TF_NewOperation(tf_model->graph, "Const", name);
@@ -269,18 +269,18 @@ static TF_Operation* add_const_op(TFModel* tf_model, const float* values, const 
     return TF_FinishOperation(op_desc, tf_model->status);
 }
 
-static TF_Operation* add_conv_layers(TFModel* tf_model, const float** consts, const int64_t** consts_dims,
-                                     const int* consts_dims_len, const char** activations,
-                                     TF_Operation* input_op, int layers_num)
+static TF_Operation* add_conv_layers(TFModel *tf_model, const float **consts, const int64_t **consts_dims,
+                                     const int *consts_dims_len, const char **activations,
+                                     TF_Operation *input_op, int layers_num)
 {
     int i;
-    TF_OperationDescription* op_desc;
-    TF_Operation* op;
-    TF_Operation* transpose_op;
+    TF_OperationDescription *op_desc;
+    TF_Operation *op;
+    TF_Operation *transpose_op;
     TF_Output input;
     int64_t strides[] = {1, 1, 1, 1};
-    int32_t* transpose_perm;
-    TF_Tensor* tensor;
+    int32_t *transpose_perm;
+    TF_Tensor *tensor;
     int64_t transpose_perm_shape[] = {4};
     #define NAME_BUFF_SIZE 256
     char name_buffer[NAME_BUFF_SIZE];
@@ -288,7 +288,7 @@ static TF_Operation* add_conv_layers(TFModel* tf_model, const float** consts, co
     op_desc = TF_NewOperation(tf_model->graph, "Const", "transpose_perm");
     TF_SetAttrType(op_desc, "dtype", TF_INT32);
     tensor = TF_AllocateTensor(TF_INT32, transpose_perm_shape, 1, 4 * sizeof(int32_t));
-    transpose_perm = (int32_t*)TF_TensorData(tensor);
+    transpose_perm = (int32_t *)TF_TensorData(tensor);
     transpose_perm[0] = 1;
     transpose_perm[1] = 2;
     transpose_perm[2] = 3;
@@ -369,13 +369,13 @@ static TF_Operation* add_conv_layers(TFModel* tf_model, const float** consts, co
     return input_op;
 }
 
-DNNModel* ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
+DNNModel *ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
 {
-    DNNModel* model = NULL;
-    TFModel* tf_model = NULL;
-    TF_OperationDescription* op_desc;
-    TF_Operation* op;
-    TF_Operation* const_ops_buffer[6];
+    DNNModel *model = NULL;
+    TFModel *tf_model = NULL;
+    TF_OperationDescription *op_desc;
+    TF_Operation *op;
+    TF_Operation *const_ops_buffer[6];
     TF_Output input;
     int64_t input_shape[] = {1, -1, -1, 1};
 
@@ -461,16 +461,16 @@ DNNModel* ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
         CLEANUP_ON_ERROR(tf_model, model);
     }
 
-    model->model = (void*)tf_model;
+    model->model = (void *)tf_model;
     model->set_input_output = &set_input_output_tf;
 
     return model;
 }
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel* model)
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model)
 {
-    TFModel* tf_model = (TFModel*)model->model;
-    TF_Tensor* output_tensor;
+    TFModel *tf_model = (TFModel *)model->model;
+    TF_Tensor *output_tensor;
 
     TF_SessionRun(tf_model->session, NULL,
                   &tf_model->input, &tf_model->input_tensor, 1,
@@ -490,12 +490,12 @@ DNNReturnType ff_dnn_execute_model_tf(const DNNModel* model)
     }
 }
 
-void ff_dnn_free_model_tf(DNNModel** model)
+void ff_dnn_free_model_tf(DNNModel **model)
 {
-    TFModel* tf_model;
+    TFModel *tf_model;
 
     if (*model){
-        tf_model = (TFModel*)(*model)->model;
+        tf_model = (TFModel *)(*model)->model;
         if (tf_model->graph){
             TF_DeleteGraph(tf_model->graph);
         }

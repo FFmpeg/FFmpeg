@@ -34,15 +34,15 @@ typedef enum {RELU, TANH, SIGMOID} ActivationFunc;
 
 typedef struct Layer{
     LayerType type;
-    float* output;
-    void* params;
+    float *output;
+    void *params;
 } Layer;
 
 typedef struct ConvolutionalParams{
     int32_t input_num, output_num, kernel_size;
     ActivationFunc activation;
-    float* kernel;
-    float* biases;
+    float *kernel;
+    float *biases;
 } ConvolutionalParams;
 
 typedef struct InputParams{
@@ -55,16 +55,16 @@ typedef struct DepthToSpaceParams{
 
 // Represents simple feed-forward convolutional network.
 typedef struct ConvolutionalNetwork{
-    Layer* layers;
+    Layer *layers;
     int32_t layers_num;
 } ConvolutionalNetwork;
 
-static DNNReturnType set_input_output_native(void* model, DNNData* input, DNNData* output)
+static DNNReturnType set_input_output_native(void *model, DNNData *input, DNNData *output)
 {
-    ConvolutionalNetwork* network = (ConvolutionalNetwork*)model;
-    InputParams* input_params;
-    ConvolutionalParams* conv_params;
-    DepthToSpaceParams* depth_to_space_params;
+    ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
+    InputParams *input_params;
+    ConvolutionalParams *conv_params;
+    DepthToSpaceParams *depth_to_space_params;
     int cur_width, cur_height, cur_channels;
     int32_t layer;
 
@@ -72,7 +72,7 @@ static DNNReturnType set_input_output_native(void* model, DNNData* input, DNNDat
         return DNN_ERROR;
     }
     else{
-        input_params = (InputParams*)network->layers[0].params;
+        input_params = (InputParams *)network->layers[0].params;
         input_params->width = cur_width = input->width;
         input_params->height = cur_height = input->height;
         input_params->channels = cur_channels = input->channels;
@@ -88,14 +88,14 @@ static DNNReturnType set_input_output_native(void* model, DNNData* input, DNNDat
     for (layer = 1; layer < network->layers_num; ++layer){
         switch (network->layers[layer].type){
         case CONV:
-            conv_params = (ConvolutionalParams*)network->layers[layer].params;
+            conv_params = (ConvolutionalParams *)network->layers[layer].params;
             if (conv_params->input_num != cur_channels){
                 return DNN_ERROR;
             }
             cur_channels = conv_params->output_num;
             break;
         case DEPTH_TO_SPACE:
-            depth_to_space_params = (DepthToSpaceParams*)network->layers[layer].params;
+            depth_to_space_params = (DepthToSpaceParams *)network->layers[layer].params;
             if (cur_channels % (depth_to_space_params->block_size * depth_to_space_params->block_size) != 0){
                 return DNN_ERROR;
             }
@@ -127,16 +127,16 @@ static DNNReturnType set_input_output_native(void* model, DNNData* input, DNNDat
 // layers_num,layer_type,layer_parameterss,layer_type,layer_parameters...
 // For CONV layer: activation_function, input_num, output_num, kernel_size, kernel, biases
 // For DEPTH_TO_SPACE layer: block_size
-DNNModel* ff_dnn_load_model_native(const char* model_filename)
+DNNModel *ff_dnn_load_model_native(const char *model_filename)
 {
-    DNNModel* model = NULL;
-    ConvolutionalNetwork* network = NULL;
-    AVIOContext* model_file_context;
+    DNNModel *model = NULL;
+    ConvolutionalNetwork *network = NULL;
+    AVIOContext *model_file_context;
     int file_size, dnn_size, kernel_size, i;
     int32_t layer;
     LayerType layer_type;
-    ConvolutionalParams* conv_params;
-    DepthToSpaceParams* depth_to_space_params;
+    ConvolutionalParams *conv_params;
+    DepthToSpaceParams *depth_to_space_params;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -155,7 +155,7 @@ DNNModel* ff_dnn_load_model_native(const char* model_filename)
         av_freep(&model);
         return NULL;
     }
-    model->model = (void*)network;
+    model->model = (void *)network;
 
     network->layers_num = 1 + (int32_t)avio_rl32(model_file_context);
     dnn_size = 4;
@@ -251,10 +251,10 @@ DNNModel* ff_dnn_load_model_native(const char* model_filename)
     return model;
 }
 
-static int set_up_conv_layer(Layer* layer, const float* kernel, const float* biases, ActivationFunc activation,
+static int set_up_conv_layer(Layer *layer, const float *kernel, const float *biases, ActivationFunc activation,
                              int32_t input_num, int32_t output_num, int32_t size)
 {
-    ConvolutionalParams* conv_params;
+    ConvolutionalParams *conv_params;
     int kernel_size;
 
     conv_params = av_malloc(sizeof(ConvolutionalParams));
@@ -282,11 +282,11 @@ static int set_up_conv_layer(Layer* layer, const float* kernel, const float* bia
     return DNN_SUCCESS;
 }
 
-DNNModel* ff_dnn_load_default_model_native(DNNDefaultModel model_type)
+DNNModel *ff_dnn_load_default_model_native(DNNDefaultModel model_type)
 {
-    DNNModel* model = NULL;
-    ConvolutionalNetwork* network = NULL;
-    DepthToSpaceParams* depth_to_space_params;
+    DNNModel *model = NULL;
+    ConvolutionalNetwork *network = NULL;
+    DepthToSpaceParams *depth_to_space_params;
     int32_t layer;
 
     model = av_malloc(sizeof(DNNModel));
@@ -299,7 +299,7 @@ DNNModel* ff_dnn_load_default_model_native(DNNDefaultModel model_type)
         av_freep(&model);
         return NULL;
     }
-    model->model = (void*)network;
+    model->model = (void *)network;
 
     switch (model_type){
     case DNN_SRCNN:
@@ -365,7 +365,7 @@ DNNModel* ff_dnn_load_default_model_native(DNNDefaultModel model_type)
 
 #define CLAMP_TO_EDGE(x, w) ((x) < 0 ? 0 : ((x) >= (w) ? (w - 1) : (x)))
 
-static void convolve(const float* input, float* output, const ConvolutionalParams* conv_params, int width, int height)
+static void convolve(const float *input, float *output, const ConvolutionalParams *conv_params, int width, int height)
 {
     int y, x, n_filter, ch, kernel_y, kernel_x;
     int radius = conv_params->kernel_size >> 1;
@@ -403,7 +403,7 @@ static void convolve(const float* input, float* output, const ConvolutionalParam
     }
 }
 
-static void depth_to_space(const float* input, float* output, int block_size, int width, int height, int channels)
+static void depth_to_space(const float *input, float *output, int block_size, int width, int height, int channels)
 {
     int y, x, by, bx, ch;
     int new_channels = channels / (block_size * block_size);
@@ -426,20 +426,20 @@ static void depth_to_space(const float* input, float* output, int block_size, in
     }
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel* model)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model)
 {
-    ConvolutionalNetwork* network = (ConvolutionalNetwork*)model->model;
+    ConvolutionalNetwork *network = (ConvolutionalNetwork *)model->model;
     int cur_width, cur_height, cur_channels;
     int32_t layer;
-    InputParams* input_params;
-    ConvolutionalParams* conv_params;
-    DepthToSpaceParams* depth_to_space_params;
+    InputParams *input_params;
+    ConvolutionalParams *conv_params;
+    DepthToSpaceParams *depth_to_space_params;
 
     if (network->layers_num <= 0 || network->layers[0].type != INPUT || !network->layers[0].output){
         return DNN_ERROR;
     }
     else{
-        input_params = (InputParams*)network->layers[0].params;
+        input_params = (InputParams *)network->layers[0].params;
         cur_width = input_params->width;
         cur_height = input_params->height;
         cur_channels = input_params->channels;
@@ -451,12 +451,12 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel* model)
         }
         switch (network->layers[layer].type){
         case CONV:
-            conv_params = (ConvolutionalParams*)network->layers[layer].params;
+            conv_params = (ConvolutionalParams *)network->layers[layer].params;
             convolve(network->layers[layer - 1].output, network->layers[layer].output, conv_params, cur_width, cur_height);
             cur_channels = conv_params->output_num;
             break;
         case DEPTH_TO_SPACE:
-            depth_to_space_params = (DepthToSpaceParams*)network->layers[layer].params;
+            depth_to_space_params = (DepthToSpaceParams *)network->layers[layer].params;
             depth_to_space(network->layers[layer - 1].output, network->layers[layer].output,
                            depth_to_space_params->block_size, cur_width, cur_height, cur_channels);
             cur_height *= depth_to_space_params->block_size;
@@ -471,19 +471,19 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel* model)
     return DNN_SUCCESS;
 }
 
-void ff_dnn_free_model_native(DNNModel** model)
+void ff_dnn_free_model_native(DNNModel **model)
 {
-    ConvolutionalNetwork* network;
-    ConvolutionalParams* conv_params;
+    ConvolutionalNetwork *network;
+    ConvolutionalParams *conv_params;
     int32_t layer;
 
     if (*model)
     {
-        network = (ConvolutionalNetwork*)(*model)->model;
+        network = (ConvolutionalNetwork *)(*model)->model;
         for (layer = 0; layer < network->layers_num; ++layer){
             av_freep(&network->layers[layer].output);
             if (network->layers[layer].type == CONV){
-                conv_params = (ConvolutionalParams*)network->layers[layer].params;
+                conv_params = (ConvolutionalParams *)network->layers[layer].params;
                 av_freep(&conv_params->kernel);
                 av_freep(&conv_params->biases);
             }

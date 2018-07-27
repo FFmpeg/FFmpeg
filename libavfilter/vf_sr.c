@@ -39,13 +39,13 @@ typedef struct SRContext {
     const AVClass *class;
 
     SRModel model_type;
-    char* model_filename;
+    char *model_filename;
     DNNBackendType backend_type;
-    DNNModule* dnn_module;
-    DNNModel* model;
+    DNNModule *dnn_module;
+    DNNModel *model;
     DNNData input, output;
     int scale_factor;
-    struct SwsContext* sws_context;
+    struct SwsContext *sws_context;
     int sws_slice_h;
 } SRContext;
 
@@ -67,9 +67,9 @@ static const AVOption sr_options[] = {
 
 AVFILTER_DEFINE_CLASS(sr);
 
-static av_cold int init(AVFilterContext* context)
+static av_cold int init(AVFilterContext *context)
 {
-    SRContext* sr_context = context->priv;
+    SRContext *sr_context = context->priv;
 
     sr_context->dnn_module = ff_get_dnn_module(sr_context->backend_type);
     if (!sr_context->dnn_module){
@@ -98,12 +98,12 @@ static av_cold int init(AVFilterContext* context)
     return 0;
 }
 
-static int query_formats(AVFilterContext* context)
+static int query_formats(AVFilterContext *context)
 {
     const enum AVPixelFormat pixel_formats[] = {AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
                                                 AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
                                                 AV_PIX_FMT_NONE};
-    AVFilterFormats* formats_list;
+    AVFilterFormats *formats_list;
 
     formats_list = ff_make_format_list(pixel_formats);
     if (!formats_list){
@@ -113,11 +113,11 @@ static int query_formats(AVFilterContext* context)
     return ff_set_common_formats(context, formats_list);
 }
 
-static int config_props(AVFilterLink* inlink)
+static int config_props(AVFilterLink *inlink)
 {
-    AVFilterContext* context = inlink->dst;
-    SRContext* sr_context = context->priv;
-    AVFilterLink* outlink = context->outputs[0];
+    AVFilterContext *context = inlink->dst;
+    SRContext *sr_context = context->priv;
+    AVFilterLink *outlink = context->outputs[0];
     DNNReturnType result;
     int sws_src_h, sws_src_w, sws_dst_h, sws_dst_w;
 
@@ -202,18 +202,18 @@ static int config_props(AVFilterLink* inlink)
 }
 
 typedef struct ThreadData{
-    uint8_t* data;
+    uint8_t *data;
     int data_linesize, height, width;
 } ThreadData;
 
-static int uint8_to_float(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
+static int uint8_to_float(AVFilterContext *context, void *arg, int jobnr, int nb_jobs)
 {
-    SRContext* sr_context = context->priv;
-    const ThreadData* td = arg;
+    SRContext *sr_context = context->priv;
+    const ThreadData *td = arg;
     const int slice_start = (td->height *  jobnr     ) / nb_jobs;
     const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const uint8_t* src = td->data + slice_start * td->data_linesize;
-    float* dst = sr_context->input.data + slice_start * td->width;
+    const uint8_t *src = td->data + slice_start * td->data_linesize;
+    float *dst = sr_context->input.data + slice_start * td->width;
     int y, x;
 
     for (y = slice_start; y < slice_end; ++y){
@@ -227,14 +227,14 @@ static int uint8_to_float(AVFilterContext* context, void* arg, int jobnr, int nb
     return 0;
 }
 
-static int float_to_uint8(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
+static int float_to_uint8(AVFilterContext *context, void *arg, int jobnr, int nb_jobs)
 {
-    SRContext* sr_context = context->priv;
-    const ThreadData* td = arg;
+    SRContext *sr_context = context->priv;
+    const ThreadData *td = arg;
     const int slice_start = (td->height *  jobnr     ) / nb_jobs;
     const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const float* src = sr_context->output.data + slice_start * td->width;
-    uint8_t* dst = td->data + slice_start * td->data_linesize;
+    const float *src = sr_context->output.data + slice_start * td->width;
+    uint8_t *dst = td->data + slice_start * td->data_linesize;
     int y, x;
 
     for (y = slice_start; y < slice_end; ++y){
@@ -248,12 +248,12 @@ static int float_to_uint8(AVFilterContext* context, void* arg, int jobnr, int nb
     return 0;
 }
 
-static int filter_frame(AVFilterLink* inlink, AVFrame* in)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    AVFilterContext* context = inlink->dst;
-    SRContext* sr_context = context->priv;
-    AVFilterLink* outlink = context->outputs[0];
-    AVFrame* out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+    AVFilterContext *context = inlink->dst;
+    SRContext *sr_context = context->priv;
+    AVFilterLink *outlink = context->outputs[0];
+    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     ThreadData td;
     int nb_threads;
     DNNReturnType dnn_result;
@@ -307,9 +307,9 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     return ff_filter_frame(outlink, out);
 }
 
-static av_cold void uninit(AVFilterContext* context)
+static av_cold void uninit(AVFilterContext *context)
 {
-    SRContext* sr_context = context->priv;
+    SRContext *sr_context = context->priv;
 
     if (sr_context->dnn_module){
         (sr_context->dnn_module->free_model)(&sr_context->model);

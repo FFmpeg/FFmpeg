@@ -28,9 +28,9 @@
 #include "dnn_backend_tf.h"
 #include "libavutil/mem.h"
 
-DNNModule* ff_get_dnn_module(DNNBackendType backend_type)
+DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
 {
-    DNNModule* dnn_module;
+    DNNModule *dnn_module;
 
     dnn_module = av_malloc(sizeof(DNNModule));
     if(!dnn_module){

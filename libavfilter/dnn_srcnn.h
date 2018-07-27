@@ -2110,7 +2110,7 @@ static const long int srcnn_conv3_bias_dims[] = {
     1
 };
 
-static const float* srcnn_consts[] = {
+static const float *srcnn_consts[] = {
     srcnn_conv1_kernel,
     srcnn_conv1_bias,
     srcnn_conv2_kernel,
@@ -2119,7 +2119,7 @@ static const float* srcnn_consts[] = {
     srcnn_conv3_bias
 };
 
-static const long int* srcnn_consts_dims[] = {
+static const long int *srcnn_consts_dims[] = {
     srcnn_conv1_kernel_dims,
     srcnn_conv1_bias_dims,
     srcnn_conv2_kernel_dims,
@@ -2139,7 +2139,7 @@ static const int srcnn_consts_dims_len[] = {
 
 static const char srcnn_relu[] = "Relu";
 
-static const char* srcnn_activations[] = {
+static const char *srcnn_activations[] = {
     srcnn_relu,
     srcnn_relu,
     srcnn_relu
