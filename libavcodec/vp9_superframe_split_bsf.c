@@ -131,6 +131,12 @@ fail:
     return ret;
 }
 
+static void vp9_superframe_split_flush(AVBSFContext *ctx)
+{
+    VP9SFSplitContext *s = ctx->priv_data;
+    av_packet_free(&s->buffer_pkt);
+}
+
 static void vp9_superframe_split_uninit(AVBSFContext *ctx)
 {
     VP9SFSplitContext *s = ctx->priv_data;
@@ -140,6 +146,7 @@ static void vp9_superframe_split_uninit(AVBSFContext *ctx)
 const AVBitStreamFilter ff_vp9_superframe_split_bsf = {
     .name = "vp9_superframe_split",
     .priv_data_size = sizeof(VP9SFSplitContext),
+    .flush          = vp9_superframe_split_flush,
     .close          = vp9_superframe_split_uninit,
     .filter         = vp9_superframe_split_filter,
     .codec_ids      = (const enum AVCodecID []){ AV_CODEC_ID_VP9, AV_CODEC_ID_NONE },
