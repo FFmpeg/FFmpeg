@@ -16,6 +16,7 @@ version <next>:
 - ATRAC9 decoder
 - lensfun wrapper filter
 - colorconstancy filter
+- AVS2 video decoder via libdavs2
 
 
 version 4.0:

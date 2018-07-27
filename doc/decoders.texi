@@ -47,6 +47,12 @@ top-field-first is assumed
 
 @end table
 
+@section libdavs2
+
+AVS2/IEEE 1857.4 video decoder wrapper.
+
+This decoder allows libavcodec to decode AVS2 streams with davs2 library.
+
 @c man end VIDEO DECODERS
 
 @chapter Audio Decoders
