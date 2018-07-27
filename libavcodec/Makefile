@@ -996,6 +996,7 @@ OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
                                           mpeg4audio.o
 OBJS-$(CONFIG_AC3_PARSER)              += ac3tab.o aac_ac3_parser.o
 OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
+OBJS-$(CONFIG_AVS2_PARSER)             += avs2_parser.o
 OBJS-$(CONFIG_BMP_PARSER)              += bmp_parser.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs_parser.o
 OBJS-$(CONFIG_COOK_PARSER)             += cook_parser.o
