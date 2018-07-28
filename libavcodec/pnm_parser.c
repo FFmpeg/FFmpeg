@@ -51,8 +51,9 @@ retry:
             if (pc->index) {
                 pc->index = 0;
             } else {
-                buf++;
-                buf_size--;
+                unsigned step = FFMAX(1, pnmctx.bytestream - pnmctx.bytestream_start);
+                buf      += step;
+                buf_size -= step;
             }
             goto retry;
         }
