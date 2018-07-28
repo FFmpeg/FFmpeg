@@ -101,8 +101,8 @@
 #define DC_SHIFT -1
 # endif
 
-#define MUL(a, b)    ((a) * (b))
-#define MAC(a, b, c) ((a) += (b) * (c))
+#define MUL(a, b)    ((int)((SUINT)(a) * (b)))
+#define MAC(a, b, c) ((a) += (SUINT)(b) * (c))
 
 #else
 
@@ -156,15 +156,15 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
 #endif
 #endif
 
-    a0 = (W4 * row[0]) + (1 << (ROW_SHIFT + extra_shift - 1));
+    a0 = ((SUINT)W4 * row[0]) + (1 << (ROW_SHIFT + extra_shift - 1));
     a1 = a0;
     a2 = a0;
     a3 = a0;
 
-    a0 += W2 * row[2];
-    a1 += W6 * row[2];
-    a2 -= W6 * row[2];
-    a3 -= W2 * row[2];
+    a0 += (SUINT)W2 * row[2];
+    a1 += (SUINT)W6 * row[2];
+    a2 -= (SUINT)W6 * row[2];
+    a3 -= (SUINT)W2 * row[2];
 
     b0 = MUL(W1, row[1]);
     MAC(b0, W3, row[3]);
@@ -180,10 +180,10 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
 #else
     if (AV_RN64A(row + 4)) {
 #endif
-        a0 +=   W4*row[4] + W6*row[6];
-        a1 += - W4*row[4] - W2*row[6];
-        a2 += - W4*row[4] + W2*row[6];
-        a3 +=   W4*row[4] - W6*row[6];
+        a0 += (SUINT)  W4*row[4] + (SUINT)W6*row[6];
+        a1 += (SUINT)- W4*row[4] - (SUINT)W2*row[6];
+        a2 += (SUINT)- W4*row[4] + (SUINT)W2*row[6];
+        a3 += (SUINT)  W4*row[4] - (SUINT)W6*row[6];
 
         MAC(b0,  W5, row[5]);
         MAC(b0,  W7, row[7]);
@@ -209,15 +209,15 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
 }
 
 #define IDCT_COLS do {                                  \
-        a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4)); \
+        a0 = (SUINT)W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4)); \
         a1 = a0;                                        \
         a2 = a0;                                        \
         a3 = a0;                                        \
                                                         \
-        a0 +=  W2*col[8*2];                             \
-        a1 +=  W6*col[8*2];                             \
-        a2 += -W6*col[8*2];                             \
-        a3 += -W2*col[8*2];                             \
+        a0 += (SUINT) W2*col[8*2];                             \
+        a1 += (SUINT) W6*col[8*2];                             \
+        a2 += (SUINT)-W6*col[8*2];                             \
+        a3 += (SUINT)-W2*col[8*2];                             \
                                                         \
         b0 = MUL(W1, col[8*1]);                         \
         b1 = MUL(W3, col[8*1]);                         \
@@ -230,10 +230,10 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
         MAC(b3, -W5, col[8*3]);                         \
                                                         \
         if (col[8*4]) {                                 \
-            a0 +=  W4*col[8*4];                         \
-            a1 += -W4*col[8*4];                         \
-            a2 += -W4*col[8*4];                         \
-            a3 +=  W4*col[8*4];                         \
+            a0 += (SUINT) W4*col[8*4];                         \
+            a1 += (SUINT)-W4*col[8*4];                         \
+            a2 += (SUINT)-W4*col[8*4];                         \
+            a3 += (SUINT) W4*col[8*4];                         \
         }                                               \
                                                         \
         if (col[8*5]) {                                 \
@@ -244,10 +244,10 @@ static inline void FUNC6(idctRowCondDC)(idctin *row, int extra_shift)
         }                                               \
                                                         \
         if (col[8*6]) {                                 \
-            a0 +=  W6*col[8*6];                         \
-            a1 += -W2*col[8*6];                         \
-            a2 +=  W2*col[8*6];                         \
-            a3 += -W6*col[8*6];                         \
+            a0 += (SUINT) W6*col[8*6];                         \
+            a1 += (SUINT)-W2*col[8*6];                         \
+            a2 += (SUINT) W2*col[8*6];                         \
+            a3 += (SUINT)-W6*col[8*6];                         \
         }                                               \
                                                         \
         if (col[8*7]) {                                 \
