@@ -59,6 +59,9 @@ const AVBitStreamFilter *av_bsf_get_by_name(const char *name)
 {
     int i;
 
+    if (!name)
+        return NULL;
+
     for (i = 0; bitstream_filters[i]; i++) {
         const AVBitStreamFilter *f = bitstream_filters[i];
         if (!strcmp(f->name, name))
