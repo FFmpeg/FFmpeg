@@ -143,6 +143,7 @@ Codecs:
   asv*                                  Michael Niedermayer
   atrac3plus*                           Maxim Poliakovski
   audiotoolbox*                         Rodger Combs
+  avs2*                                 Huiwen Ren
   bgmc.c, bgmc.h                        Thilo Borgmann
   binkaudio.c                           Peter Ross
   cavs*                                 Stefan Gehrer
@@ -189,6 +190,7 @@ Codecs:
   libcelt_dec.c                         Nicolas George
   libcodec2.c                           Tomas Härdin
   libdirac*                             David Conrad
+  libdavs2.c                            Huiwen Ren
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenjpeg.c                         Jaikrishnan Menon
