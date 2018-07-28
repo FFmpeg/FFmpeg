@@ -1956,7 +1956,10 @@ static void show_help_bsf(const char *name)
 {
     const AVBitStreamFilter *bsf = av_bsf_get_by_name(name);
 
-    if (!bsf) {
+    if (!name) {
+        av_log(NULL, AV_LOG_ERROR, "No bitstream filter name specified.\n");
+        return;
+    } else if (!bsf) {
         av_log(NULL, AV_LOG_ERROR, "Unknown bit stream filter '%s'.\n", name);
         return;
     }
