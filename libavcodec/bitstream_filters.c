@@ -77,6 +77,9 @@ const AVBitStreamFilter *av_bsf_get_by_name(const char *name)
     const AVBitStreamFilter *f = NULL;
     void *i = 0;
 
+    if (!name)
+        return NULL;
+
     while ((f = av_bsf_iterate(&i))) {
         if (!strcmp(f->name, name))
             return f;
