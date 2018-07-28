@@ -150,10 +150,10 @@ static void ps_stereo_interpolate_c(INTFLOAT (*l)[2], INTFLOAT (*r)[2],
     INTFLOAT h1 = h[0][1];
     INTFLOAT h2 = h[0][2];
     INTFLOAT h3 = h[0][3];
-    INTFLOAT hs0 = h_step[0][0];
-    INTFLOAT hs1 = h_step[0][1];
-    INTFLOAT hs2 = h_step[0][2];
-    INTFLOAT hs3 = h_step[0][3];
+    UINTFLOAT hs0 = h_step[0][0];
+    UINTFLOAT hs1 = h_step[0][1];
+    UINTFLOAT hs2 = h_step[0][2];
+    UINTFLOAT hs3 = h_step[0][3];
     int n;
 
     for (n = 0; n < len; n++) {
