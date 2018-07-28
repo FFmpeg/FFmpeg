@@ -375,9 +375,71 @@ DNNModel *ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
     TFModel *tf_model = NULL;
     TF_OperationDescription *op_desc;
     TF_Operation *op;
-    TF_Operation *const_ops_buffer[6];
     TF_Output input;
-    int64_t input_shape[] = {1, -1, -1, 1};
+    static const int64_t input_shape[] = {1, -1, -1, 1};
+    static const char tanh[] = "Tanh";
+    static const char sigmoid[] = "Sigmoid";
+    static const char relu[] = "Relu";
+
+    static const float *srcnn_consts[] = {
+        srcnn_conv1_kernel,
+        srcnn_conv1_bias,
+        srcnn_conv2_kernel,
+        srcnn_conv2_bias,
+        srcnn_conv3_kernel,
+        srcnn_conv3_bias
+    };
+    static const long int *srcnn_consts_dims[] = {
+        srcnn_conv1_kernel_dims,
+        srcnn_conv1_bias_dims,
+        srcnn_conv2_kernel_dims,
+        srcnn_conv2_bias_dims,
+        srcnn_conv3_kernel_dims,
+        srcnn_conv3_bias_dims
+    };
+    static const int srcnn_consts_dims_len[] = {
+        4,
+        1,
+        4,
+        1,
+        4,
+        1
+    };
+    static const char *srcnn_activations[] = {
+        relu,
+        relu,
+        relu
+    };
+
+    static const float *espcn_consts[] = {
+        espcn_conv1_kernel,
+        espcn_conv1_bias,
+        espcn_conv2_kernel,
+        espcn_conv2_bias,
+        espcn_conv3_kernel,
+        espcn_conv3_bias
+    };
+    static const long int *espcn_consts_dims[] = {
+        espcn_conv1_kernel_dims,
+        espcn_conv1_bias_dims,
+        espcn_conv2_kernel_dims,
+        espcn_conv2_bias_dims,
+        espcn_conv3_kernel_dims,
+        espcn_conv3_bias_dims
+    };
+    static const int espcn_consts_dims_len[] = {
+        4,
+        1,
+        4,
+        1,
+        4,
+        1
+    };
+    static const char *espcn_activations[] = {
+        tanh,
+        tanh,
+        sigmoid
+    };
 
     input.index = 0;
 

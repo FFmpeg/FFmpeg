@@ -5398,41 +5398,4 @@ static const long int espcn_conv3_bias_dims[] = {
     4
 };
 
-static const float *espcn_consts[] = {
-    espcn_conv1_kernel,
-    espcn_conv1_bias,
-    espcn_conv2_kernel,
-    espcn_conv2_bias,
-    espcn_conv3_kernel,
-    espcn_conv3_bias
-};
-
-static const long int *espcn_consts_dims[] = {
-    espcn_conv1_kernel_dims,
-    espcn_conv1_bias_dims,
-    espcn_conv2_kernel_dims,
-    espcn_conv2_bias_dims,
-    espcn_conv3_kernel_dims,
-    espcn_conv3_bias_dims
-};
-
-static const int espcn_consts_dims_len[] = {
-    4,
-    1,
-    4,
-    1,
-    4,
-    1
-};
-
-static const char espcn_tanh[] = "Tanh";
-
-static const char espcn_sigmoid[] = "Sigmoid";
-
-static const char *espcn_activations[] = {
-    espcn_tanh,
-    espcn_tanh,
-    espcn_sigmoid
-};
-
 #endif
