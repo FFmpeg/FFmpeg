@@ -132,6 +132,8 @@ static inline void qtrle_decode_2n4bpp(QtrleContext *s, int row_ptr,
         CHECK_PIXEL_PTR(0);
 
         while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
+            if (bytestream2_get_bytes_left(&s->g) < 1)
+                return;
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (num_pixels * (bytestream2_get_byte(&s->g) - 1));
@@ -187,6 +189,8 @@ static void qtrle_decode_8bpp(QtrleContext *s, int row_ptr, int lines_to_change)
         CHECK_PIXEL_PTR(0);
 
         while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
+            if (bytestream2_get_bytes_left(&s->g) < 1)
+                return;
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (4 * (bytestream2_get_byte(&s->g) - 1));
@@ -236,6 +240,8 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
         CHECK_PIXEL_PTR(0);
 
         while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
+            if (bytestream2_get_bytes_left(&s->g) < 1)
+                return;
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 2;
@@ -280,6 +286,8 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
         CHECK_PIXEL_PTR(0);
 
         while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
+            if (bytestream2_get_bytes_left(&s->g) < 1)
+                return;
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 3;
@@ -327,6 +335,8 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
         CHECK_PIXEL_PTR(0);
 
         while ((rle_code = (int8_t)bytestream2_get_byte(&s->g)) != -1) {
+            if (bytestream2_get_bytes_left(&s->g) < 1)
+                return;
             if (rle_code == 0) {
                 /* there's another skip code in the stream */
                 pixel_ptr += (bytestream2_get_byte(&s->g) - 1) * 4;
