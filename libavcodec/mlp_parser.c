@@ -320,7 +320,7 @@ static int mlp_parse(AVCodecParserContext *s,
         mp->bytes_left = 0;
     }
 
-    sync_present = (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
+    sync_present = buf_size >= 8 && (AV_RB32(buf + 4) & 0xfffffffe) == 0xf8726fba;
 
     if (!sync_present) {
         /* The first nibble of a frame is a parity check of the 4-byte
