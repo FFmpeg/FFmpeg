@@ -27,6 +27,7 @@
 #include "bytestream.h"
 #include "internal.h"
 #include "libopus.h"
+#include "mathops.h"
 #include "vorbis.h"
 #include "audio_frame_queue.h"
 
@@ -200,6 +201,21 @@ static int libopus_check_vorbis_layout(AVCodecContext *avctx, int mapping_family
     return 0;
 }
 
+static int libopus_check_ambisonics_channels(AVCodecContext *avctx) {
+    int channels = avctx->channels;
+    int ambisonic_order = ff_sqrt(channels) - 1;
+    if (channels != ((ambisonic_order + 1) * (ambisonic_order + 1)) &&
+        channels != ((ambisonic_order + 1) * (ambisonic_order + 1) + 2)) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Ambisonics coding is only specified for channel counts"
+               " which can be written as (n + 1)^2 or (n + 1)^2 + 2"
+               " for nonnegative integer n\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    return 0;
+}
+
 static int libopus_validate_layout_and_get_channel_map(
         AVCodecContext *avctx,
         int mapping_family,
@@ -229,6 +245,12 @@ static int libopus_validate_layout_and_get_channel_map(
         if (ret == 0) {
             ret = libopus_check_vorbis_layout(avctx, mapping_family);
             channel_map = ff_vorbis_channel_layout_offsets[avctx->channels - 1];
+        }
+        break;
+    case 2:
+        ret = libopus_check_max_channels(avctx, 227);
+        if (ret == 0) {
+            ret = libopus_check_ambisonics_channels(avctx);
         }
         break;
     case 255:
