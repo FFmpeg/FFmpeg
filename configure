@@ -836,22 +836,37 @@ prepend(){
     eval "$var=\"$* \$$var\""
 }
 
+reverse () {
+    eval '
+        reverse_out=
+        for v in $'$1'; do
+            reverse_out="$v $reverse_out"
+        done
+        '$1'=$reverse_out
+    '
+}
+
+# keeps the last occurence of each non-unique item
 unique(){
-    var=$1
-    uniq_list=""
-    for tok in $(eval echo \$$var); do
-        uniq_list="$(filter_out $tok $uniq_list) $tok"
+    unique_out=
+    eval unique_in=\$$1
+    reverse unique_in
+    for v in $unique_in; do
+        # " $unique_out" +space such that every item is surrounded with spaces
+        case " $unique_out" in *" $v "*) continue; esac  # already in list
+        unique_out="$unique_out$v "
     done
-    eval "$var=\"${uniq_list}\""
+    reverse unique_out
+    eval $1=\$unique_out
 }
 
 resolve(){
-    var=$1
-    tmpvar=
-    for entry in $(eval echo \$$var); do
-        tmpvar="$tmpvar $(eval echo \$${entry})"
+    resolve_out=
+    eval resolve_in=\$$1
+    for v in $resolve_in; do
+        eval 'resolve_out="$resolve_out$'$v' "'
     done
-    eval "$var=\"${tmpvar}\""
+    eval $1=\$resolve_out
 }
 
 add_cppflags(){
@@ -6682,14 +6697,19 @@ if test $target_os = "haiku"; then
 fi
 
 flatten_extralibs(){
-    unset nested_entries
+    nested_entries=
     list_name=$1
     eval list=\$${1}
     for entry in $list; do
         entry_copy=$entry
         resolve entry_copy
-        append nested_entries $(filter '*_extralibs' $entry_copy)
-        flat_entries=$(filter_out '*_extralibs' $entry_copy)
+        flat_entries=
+        for e in $entry_copy; do
+            case $e in
+                *_extralibs) nested_entries="$nested_entries$e ";;
+                          *) flat_entries="$flat_entries$e ";;
+            esac
+        done
         eval $entry="\$flat_entries"
     done
     append $list_name "$nested_entries"
