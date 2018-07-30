@@ -7184,9 +7184,10 @@ echo "#endif /* AVUTIL_AVCONFIG_H */" >> $TMPH
 
 cp_if_changed $TMPH libavutil/avconfig.h
 
-full_filter_name(){
-    sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_$1;/\1_$1/p" $source_path/libavfilter/allfilters.c
-}
+# full_filter_name_foo=vf_foo
+# full_filter_name_bar=asrc_bar
+# ...
+eval "$(sed -n "s/^extern AVFilter ff_\([avfsinkrc]\{2,5\}\)_\(.*\);/full_filter_name_\2=\1_\2/p" $source_path/libavfilter/allfilters.c)"
 
 # generate the lists of enabled components
 print_enabled_components(){
@@ -7199,13 +7200,13 @@ print_enabled_components(){
         if enabled $c; then
             case $name in
                 filter_list)
-                    c=$(full_filter_name $(remove_suffix _filter $c))
+                    eval c=\$full_filter_name_${c%_filter}
                 ;;
                 indev_list)
-                    c=$(add_suffix _demuxer $(remove_suffix _indev $c))
+                    c=${c%_indev}_demuxer
                 ;;
                 outdev_list)
-                    c=$(add_suffix _muxer $(remove_suffix _outdev $c))
+                    c=${c%_outdev}_muxer
                 ;;
             esac
             printf "    &ff_%s,\n" $c >> $TMPH
