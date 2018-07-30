@@ -75,22 +75,45 @@ int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size)
 
 int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
 {
+    AVIOContext *seq_pb = NULL, *meta_pb = NULL;
+    uint8_t *seq = NULL, *meta = NULL;
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
+    int ret, nb_seq = 0, seq_size, meta_size;
 
     if (size <= 0)
         return AVERROR_INVALIDDATA;
 
+    ret = avio_open_dyn_buf(&seq_pb);
+    if (ret < 0)
+        return ret;
+    ret = avio_open_dyn_buf(&meta_pb);
+    if (ret < 0)
+        goto fail;
+
     while (size > 0) {
         int len = parse_obu_header(buf, size, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
-        if (len < 0)
-            return len;
+        if (len < 0) {
+            ret = len;
+            goto fail;
+        }
 
         switch (type) {
         case AV1_OBU_SEQUENCE_HEADER:
+            nb_seq++;
+            if (!obu_size || nb_seq > 1) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            avio_write(seq_pb, buf, len);
+            break;
         case AV1_OBU_METADATA:
-            avio_write(pb, buf, len);
+            if (!obu_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
+            avio_write(meta_pb, buf, len);
             break;
         default:
             break;
@@ -99,5 +122,24 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         buf  += len;
     }
 
-    return 0;
+    seq_size  = avio_close_dyn_buf(seq_pb, &seq);
+    if (!seq_size) {
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+    avio_write(pb, seq, seq_size);
+
+    meta_size = avio_close_dyn_buf(meta_pb, &meta);
+    if (meta_size)
+        avio_write(pb, meta, meta_size);
+
+fail:
+    if (!seq)
+        avio_close_dyn_buf(seq_pb, &seq);
+    if (!meta)
+        avio_close_dyn_buf(meta_pb, &meta);
+    av_free(seq);
+    av_free(meta);
+
+    return ret;
 }
