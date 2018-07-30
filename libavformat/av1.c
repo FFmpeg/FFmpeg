@@ -33,14 +33,10 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
 
     size = 0;
     while (buf < end) {
-        int ret = parse_obu_header(buf, end - buf, &obu_size, &start_pos,
+        int len = parse_obu_header(buf, end - buf, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
-        if (ret < 0)
-            return ret;
-
-        obu_size += start_pos;
-        if (obu_size > INT_MAX)
-            return AVERROR_INVALIDDATA;
+        if (len < 0)
+            return len;
 
         switch (type) {
         case AV1_OBU_TEMPORAL_DELIMITER:
@@ -48,11 +44,11 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
         case AV1_OBU_PADDING:
             break;
         default:
-            avio_write(pb, buf, obu_size);
-            size += obu_size;
+            avio_write(pb, buf, len);
+            size += len;
             break;
         }
-        buf += obu_size;
+        buf += len;
     }
 
     return size;
@@ -86,25 +82,21 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         return AVERROR_INVALIDDATA;
 
     while (size > 0) {
-        int ret = parse_obu_header(buf, size, &obu_size, &start_pos,
+        int len = parse_obu_header(buf, size, &obu_size, &start_pos,
                                    &type, &temporal_id, &spatial_id);
-        if (ret < 0)
-            return ret;
-
-        obu_size += start_pos;
-        if (obu_size > INT_MAX)
-            return AVERROR_INVALIDDATA;
+        if (len < 0)
+            return len;
 
         switch (type) {
         case AV1_OBU_SEQUENCE_HEADER:
         case AV1_OBU_METADATA:
-            avio_write(pb, buf, obu_size);
+            avio_write(pb, buf, len);
             break;
         default:
             break;
         }
-        size -= obu_size;
-        buf  += obu_size;
+        size -= len;
+        buf  += len;
     }
 
     return 0;

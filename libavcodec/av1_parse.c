@@ -29,11 +29,12 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
 {
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
+    int len, ret;
 
-    int ret = parse_obu_header(buf, length, &obu_size, &start_pos,
-                               &type, &temporal_id, &spatial_id);
-    if (ret < 0)
-        return ret;
+    len = parse_obu_header(buf, length, &obu_size, &start_pos,
+                           &type, &temporal_id, &spatial_id);
+    if (len < 0)
+        return len;
 
     if (obu_size > INT_MAX / 8 || obu_size < 0)
         return AVERROR(ERANGE);
@@ -42,12 +43,10 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
     obu->temporal_id = temporal_id;
     obu->spatial_id  = spatial_id;
 
-    length = obu_size + start_pos;
-
     obu->data     = buf + start_pos;
     obu->size     = obu_size;
     obu->raw_data = buf;
-    obu->raw_size = length;
+    obu->raw_size = len;
 
     ret = init_get_bits(&obu->gb, obu->data, obu->size * 8);
     if (ret < 0)
@@ -57,7 +56,7 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
            "obu_type: %d, temporal_id: %d, spatial_id: %d, payload size: %d\n",
            obu->type, obu->temporal_id, obu->spatial_id, obu->size);
 
-    return length;
+    return len;
 }
 
 int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *logctx)
