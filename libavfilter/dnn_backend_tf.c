@@ -571,7 +571,9 @@ void ff_dnn_free_model_tf(DNNModel **model)
         if (tf_model->input_tensor){
             TF_DeleteTensor(tf_model->input_tensor);
         }
-        av_freep(&tf_model->output_data->data);
+        if (tf_model->output_data){
+            av_freep(&(tf_model->output_data->data));
+        }
         av_freep(&tf_model);
         av_freep(model);
     }
