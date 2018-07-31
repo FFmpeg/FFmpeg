@@ -45,8 +45,8 @@ typedef struct SRContext {
     DNNModel *model;
     DNNData input, output;
     int scale_factor;
-    struct SwsContext *sws_context;
-    int sws_slice_h;
+    struct SwsContext *sws_contexts[3];
+    int sws_slice_h, sws_input_linesize, sws_output_linesize;
 } SRContext;
 
 #define OFFSET(x) offsetof(SRContext, x)
@@ -95,6 +95,10 @@ static av_cold int init(AVFilterContext *context)
         return AVERROR(EIO);
     }
 
+    sr_context->sws_contexts[0] = NULL;
+    sr_context->sws_contexts[1] = NULL;
+    sr_context->sws_contexts[2] = NULL;
+
     return 0;
 }
 
@@ -110,6 +114,7 @@ static int query_formats(AVFilterContext *context)
         av_log(context, AV_LOG_ERROR, "could not create formats list\n");
         return AVERROR(ENOMEM);
     }
+
     return ff_set_common_formats(context, formats_list);
 }
 
@@ -140,21 +145,31 @@ static int config_props(AVFilterLink *inlink)
     else{
         outlink->h = sr_context->output.height;
         outlink->w = sr_context->output.width;
+        sr_context->sws_contexts[1] = sws_getContext(sr_context->input.width, sr_context->input.height, AV_PIX_FMT_GRAY8,
+                                                     sr_context->input.width, sr_context->input.height, AV_PIX_FMT_GRAYF32,
+                                                     0, NULL, NULL, NULL);
+        sr_context->sws_input_linesize = sr_context->input.width << 2;
+        sr_context->sws_contexts[2] = sws_getContext(sr_context->output.width, sr_context->output.height, AV_PIX_FMT_GRAYF32,
+                                                     sr_context->output.width, sr_context->output.height, AV_PIX_FMT_GRAY8,
+                                                     0, NULL, NULL, NULL);
+        sr_context->sws_output_linesize = sr_context->output.width << 2;
+        if (!sr_context->sws_contexts[1] || !sr_context->sws_contexts[2]){
+            av_log(context, AV_LOG_ERROR, "could not create SwsContext for conversions\n");
+            return AVERROR(ENOMEM);
+        }
         switch (sr_context->model_type){
         case SRCNN:
-            sr_context->sws_context = sws_getContext(inlink->w, inlink->h, inlink->format,
-                                                     outlink->w, outlink->h, outlink->format, SWS_BICUBIC, NULL, NULL, NULL);
-            if (!sr_context->sws_context){
-                av_log(context, AV_LOG_ERROR, "could not create SwsContext\n");
+            sr_context->sws_contexts[0] = sws_getContext(inlink->w, inlink->h, inlink->format,
+                                                         outlink->w, outlink->h, outlink->format,
+                                                         SWS_BICUBIC, NULL, NULL, NULL);
+            if (!sr_context->sws_contexts[0]){
+                av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling\n");
                 return AVERROR(ENOMEM);
             }
             sr_context->sws_slice_h = inlink->h;
             break;
         case ESPCN:
-            if (inlink->format == AV_PIX_FMT_GRAY8){
-                sr_context->sws_context = NULL;
-            }
-            else{
+            if (inlink->format != AV_PIX_FMT_GRAY8){
                 sws_src_h = sr_context->input.height;
                 sws_src_w = sr_context->input.width;
                 sws_dst_h = sr_context->output.height;
@@ -184,13 +199,14 @@ static int config_props(AVFilterLink *inlink)
                     sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                     break;
                 default:
-                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for input pixel format");
+                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling for given input pixel format");
                     return AVERROR(EIO);
                 }
-                sr_context->sws_context = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
-                                                         sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8, SWS_BICUBIC, NULL, NULL, NULL);
-                if (!sr_context->sws_context){
-                    av_log(context, AV_LOG_ERROR, "could not create SwsContext\n");
+                sr_context->sws_contexts[0] = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
+                                                             sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
+                                                             SWS_BICUBIC, NULL, NULL, NULL);
+                if (!sr_context->sws_contexts[0]){
+                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling\n");
                     return AVERROR(ENOMEM);
                 }
                 sr_context->sws_slice_h = sws_src_h;
@@ -201,61 +217,12 @@ static int config_props(AVFilterLink *inlink)
     }
 }
 
-typedef struct ThreadData{
-    uint8_t *data;
-    int data_linesize, height, width;
-} ThreadData;
-
-static int uint8_to_float(AVFilterContext *context, void *arg, int jobnr, int nb_jobs)
-{
-    SRContext *sr_context = context->priv;
-    const ThreadData *td = arg;
-    const int slice_start = (td->height *  jobnr     ) / nb_jobs;
-    const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const uint8_t *src = td->data + slice_start * td->data_linesize;
-    float *dst = sr_context->input.data + slice_start * td->width;
-    int y, x;
-
-    for (y = slice_start; y < slice_end; ++y){
-        for (x = 0; x < td->width; ++x){
-            dst[x] = (float)src[x] / 255.0f;
-        }
-        src += td->data_linesize;
-        dst += td->width;
-    }
-
-    return 0;
-}
-
-static int float_to_uint8(AVFilterContext *context, void *arg, int jobnr, int nb_jobs)
-{
-    SRContext *sr_context = context->priv;
-    const ThreadData *td = arg;
-    const int slice_start = (td->height *  jobnr     ) / nb_jobs;
-    const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const float *src = sr_context->output.data + slice_start * td->width;
-    uint8_t *dst = td->data + slice_start * td->data_linesize;
-    int y, x;
-
-    for (y = slice_start; y < slice_end; ++y){
-        for (x = 0; x < td->width; ++x){
-            dst[x] = (uint8_t)(255.0f * FFMIN(src[x], 1.0f));
-        }
-        src += td->width;
-        dst += td->data_linesize;
-    }
-
-    return 0;
-}
-
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *context = inlink->dst;
     SRContext *sr_context = context->priv;
     AVFilterLink *outlink = context->outputs[0];
     AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    ThreadData td;
-    int nb_threads;
     DNNReturnType dnn_result;
 
     if (!out){
@@ -268,28 +235,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     out->width = sr_context->output.width;
     switch (sr_context->model_type){
     case SRCNN:
-        sws_scale(sr_context->sws_context, (const uint8_t **)in->data, in->linesize,
+        sws_scale(sr_context->sws_contexts[0], (const uint8_t **)in->data, in->linesize,
                   0, sr_context->sws_slice_h, out->data, out->linesize);
-        td.data = out->data[0];
-        td.data_linesize = out->linesize[0];
-        td.height = out->height;
-        td.width = out->width;
+
+        sws_scale(sr_context->sws_contexts[1], (const uint8_t **)out->data, out->linesize,
+                  0, out->height, (uint8_t * const*)(&sr_context->input.data), &sr_context->sws_input_linesize);
         break;
     case ESPCN:
-        if (sr_context->sws_context){
-            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 1), in->linesize + 1,
+        if (sr_context->sws_contexts[0]){
+            sws_scale(sr_context->sws_contexts[0], (const uint8_t **)(in->data + 1), in->linesize + 1,
                       0, sr_context->sws_slice_h, out->data + 1, out->linesize + 1);
-            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 2), in->linesize + 2,
+            sws_scale(sr_context->sws_contexts[0], (const uint8_t **)(in->data + 2), in->linesize + 2,
                       0, sr_context->sws_slice_h, out->data + 2, out->linesize + 2);
         }
-        td.data = in->data[0];
-        td.data_linesize = in->linesize[0];
-        td.height = in->height;
-        td.width = in->width;
-    }
 
-    nb_threads = ff_filter_get_nb_threads(context);
-    context->internal->execute(context, uint8_to_float, &td, NULL, FFMIN(td.height, nb_threads));
+        sws_scale(sr_context->sws_contexts[1], (const uint8_t **)in->data, in->linesize,
+                  0, in->height, (uint8_t * const*)(&sr_context->input.data), &sr_context->sws_input_linesize);
+    }
     av_frame_free(&in);
 
     dnn_result = (sr_context->dnn_module->execute_model)(sr_context->model);
@@ -298,17 +260,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(EIO);
     }
 
-    td.data = out->data[0];
-    td.data_linesize = out->linesize[0];
-    td.height = out->height;
-    td.width = out->width;
-    context->internal->execute(context, float_to_uint8, &td, NULL, FFMIN(td.height, nb_threads));
+    sws_scale(sr_context->sws_contexts[2], (const uint8_t **)(&sr_context->output.data), &sr_context->sws_output_linesize,
+              0, out->height, (uint8_t * const*)out->data, out->linesize);
 
     return ff_filter_frame(outlink, out);
 }
 
 static av_cold void uninit(AVFilterContext *context)
 {
+    int i;
     SRContext *sr_context = context->priv;
 
     if (sr_context->dnn_module){
@@ -316,8 +276,10 @@ static av_cold void uninit(AVFilterContext *context)
         av_freep(&sr_context->dnn_module);
     }
 
-    if (sr_context->sws_context){
-        sws_freeContext(sr_context->sws_context);
+    for (i = 0; i < 3; ++i){
+        if (sr_context->sws_contexts[i]){
+            sws_freeContext(sr_context->sws_contexts[i]);
+        }
     }
 }
 
