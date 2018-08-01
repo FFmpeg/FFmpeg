@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-10-11 - xxxxxxxxxx - lavc 58.33.100 - mediacodec.h
+  Add av_mediacodec_render_buffer_at_time().
+
 2018-09-09 - xxxxxxxxxx - lavc 58.29.100 - avcodec.h
   Add AV_PKT_DATA_AFD
 

@@ -1432,7 +1432,7 @@ int ff_AMediaCodec_releaseOutputBufferAtTime(FFAMediaCodec *codec, size_t idx, i
 
     JNI_GET_ENV_OR_RETURN(env, codec, AVERROR_EXTERNAL);
 
-    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_at_time_id, (jint)idx, timestampNs);
+    (*env)->CallVoidMethod(env, codec->object, codec->jfields.release_output_buffer_at_time_id, (jint)idx, (jlong)timestampNs);
     if (ff_jni_exception_check(env, 1, codec) < 0) {
         ret = AVERROR_EXTERNAL;
         goto fail;
