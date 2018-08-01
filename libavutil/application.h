@@ -39,6 +39,7 @@
 #define AVAPP_CTRL_WILL_LIVE_OPEN  0x20005 //AVAppIOControl
 
 #define AVAPP_CTRL_WILL_CONCAT_SEGMENT_OPEN 0x20007 //AVAppIOControl
+#define AVAPP_CTRL_WILL_FILE_OPEN 0x20009 //AVAppIOControl
 
 typedef struct AVAppIOControl {
     size_t  size;

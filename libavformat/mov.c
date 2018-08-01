@@ -4702,7 +4702,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             // pts = frag_stream_info->sidx_pts;
             dts = frag_stream_info->sidx_pts - sc->time_offset;
             av_log(c->fc, AV_LOG_DEBUG, "found sidx time %"PRId64
-                    ", using it for pts\n", pts);
+                    ", using it for dts\n", dts);
         } else if (frag_stream_info->tfdt_dts != AV_NOPTS_VALUE) {
             dts = frag_stream_info->tfdt_dts - sc->time_offset;
             av_log(c->fc, AV_LOG_DEBUG, "found tfdt time %"PRId64
@@ -4961,7 +4961,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR_PATCHWELCOME;
         }
         avio_rb32(pb); // sap_flags
-        timestamp = av_rescale_q(pts, st->time_base, timescale);
+        timestamp = av_rescale_q(pts, timescale, st->time_base);
 
         index = update_frag_index(c, offset);
         frag_stream_info = get_frag_stream_info(&c->frag_index, index, track_id);
@@ -7332,6 +7332,8 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
             mov_current_sample_inc(sc);
         }
     }
+    MOVStreamContext *sc = st->priv_data;
+    st->seek_result = st->index_entries[sc->current_sample].timestamp + sc->time_offset;;
     return 0;
 }
 
