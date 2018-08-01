@@ -84,7 +84,7 @@ void ff_pixelutils_sad_init_x86(av_pixelutils_sad_fn *sad, int aligned)
         }
     }
 
-    if (EXTERNAL_AVX2(cpu_flags)) {
+    if (EXTERNAL_AVX2_FAST(cpu_flags)) {
         switch (aligned) {
         case 0: sad[4] = ff_pixelutils_sad_32x32_avx2;   break; // src1 unaligned, src2 unaligned
         case 1: sad[4] = ff_pixelutils_sad_u_32x32_avx2; break; // src1   aligned, src2 unaligned
