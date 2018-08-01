@@ -80,6 +80,9 @@ typedef struct HueContext {
     uint8_t  lut_l[256];
     uint8_t  lut_u[256][256];
     uint8_t  lut_v[256][256];
+    uint16_t  lut_l16[65536];
+    uint16_t  lut_u10[1024][1024];
+    uint16_t  lut_v10[1024][1024];
 } HueContext;
 
 #define OFFSET(x) offsetof(HueContext, x)
@@ -117,6 +120,9 @@ static inline void create_luma_lut(HueContext *h)
     for (i = 0; i < 256; i++) {
         h->lut_l[i] = av_clip_uint8(i + b * 25.5);
     }
+    for (i = 0; i < 65536; i++) {
+        h->lut_l16[i] = av_clip_uintp2(i + b * 102.4, 10);
+    }
 }
 
 static inline void create_chrominance_lut(HueContext *h, const int32_t c,
@@ -146,6 +152,25 @@ static inline void create_chrominance_lut(HueContext *h, const int32_t c,
             /* Prevent a potential overflow */
             h->lut_u[i][j] = av_clip_uint8(new_u);
             h->lut_v[i][j] = av_clip_uint8(new_v);
+        }
+    }
+    for (i = 0; i < 1024; i++) {
+        for (j = 0; j < 1024; j++) {
+            u = i - 512;
+            v = j - 512;
+            /*
+             * Apply the rotation of the vector : (c * u) - (s * v)
+             *                                    (s * u) + (c * v)
+             * De-normalize the components (without forgetting to scale 512
+             * by << 16)
+             * Finally scale back the result by >> 16
+             */
+            new_u = ((c * u) - (s * v) + (1 << 15) + (512 << 16)) >> 16;
+            new_v = ((s * u) + (c * v) + (1 << 15) + (512 << 16)) >> 16;
+
+            /* Prevent a potential overflow */
+            h->lut_u10[i][j] = av_clip_uintp2(new_u, 10);
+            h->lut_v10[i][j] = av_clip_uintp2(new_v, 10);
         }
     }
 }
@@ -231,6 +256,11 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV410P,      AV_PIX_FMT_YUV440P,
         AV_PIX_FMT_YUVA444P,     AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUV444P10,      AV_PIX_FMT_YUV422P10,
+        AV_PIX_FMT_YUV420P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUVA444P10,     AV_PIX_FMT_YUVA422P10,
+        AV_PIX_FMT_YUVA420P10,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -271,6 +301,22 @@ static void apply_luma_lut(HueContext *s,
     }
 }
 
+static void apply_luma_lut10(HueContext *s,
+                             uint16_t *ldst, const int dst_linesize,
+                             uint16_t *lsrc, const int src_linesize,
+                             int w, int h)
+{
+    int i;
+
+    while (h--) {
+        for (i = 0; i < w; i++)
+            ldst[i] = s->lut_l16[lsrc[i]];
+
+        lsrc += src_linesize;
+        ldst += dst_linesize;
+    }
+}
+
 static void apply_lut(HueContext *s,
                       uint8_t *udst, uint8_t *vdst, const int dst_linesize,
                       uint8_t *usrc, uint8_t *vsrc, const int src_linesize,
@@ -294,6 +340,29 @@ static void apply_lut(HueContext *s,
     }
 }
 
+static void apply_lut10(HueContext *s,
+                      uint16_t *udst, uint16_t *vdst, const int dst_linesize,
+                      uint16_t *usrc, uint16_t *vsrc, const int src_linesize,
+                      int w, int h)
+{
+    int i;
+
+    while (h--) {
+        for (i = 0; i < w; i++) {
+            const int u = av_clip_uintp2(usrc[i], 10);
+            const int v = av_clip_uintp2(vsrc[i], 10);
+
+            udst[i] = s->lut_u10[u][v];
+            vdst[i] = s->lut_v10[u][v];
+        }
+
+        usrc += src_linesize;
+        vsrc += src_linesize;
+        udst += dst_linesize;
+        vdst += dst_linesize;
+    }
+}
+
 #define TS2D(ts) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts))
 #define TS2T(ts, tb) ((ts) == AV_NOPTS_VALUE ? NAN : (double)(ts) * av_q2d(tb))
 
@@ -305,6 +374,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     const int32_t old_hue_sin = hue->hue_sin, old_hue_cos = hue->hue_cos;
     const float old_brightness = hue->brightness;
     int direct = 0;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    const int bps = desc->comp[0].depth > 8 ? 2 : 1;
 
     if (av_frame_is_writable(inpic)) {
         direct = 1;
@@ -367,21 +438,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpic)
     if (!direct) {
         if (!hue->brightness)
             av_image_copy_plane(outpic->data[0], outpic->linesize[0],
-                                inpic->data[0],  inpic->linesize[0],
-                                inlink->w, inlink->h);
+                                inpic->data[0],   inpic->linesize[0],
+                                inlink->w * bps, inlink->h);
         if (inpic->data[3])
             av_image_copy_plane(outpic->data[3], outpic->linesize[3],
-                                inpic->data[3],  inpic->linesize[3],
-                                inlink->w, inlink->h);
+                                inpic->data[3],   inpic->linesize[3],
+                                inlink->w * bps, inlink->h);
     }
 
-    apply_lut(hue, outpic->data[1], outpic->data[2], outpic->linesize[1],
-              inpic->data[1],  inpic->data[2],  inpic->linesize[1],
-              AV_CEIL_RSHIFT(inlink->w, hue->hsub),
-              AV_CEIL_RSHIFT(inlink->h, hue->vsub));
-    if (hue->brightness)
-        apply_luma_lut(hue, outpic->data[0], outpic->linesize[0],
-                       inpic->data[0], inpic->linesize[0], inlink->w, inlink->h);
+    if (bps > 1) {
+        apply_lut10(hue, (uint16_t*)outpic->data[1], (uint16_t*)outpic->data[2], outpic->linesize[1]/2,
+                         (uint16_t*) inpic->data[1], (uint16_t*) inpic->data[2],  inpic->linesize[1]/2,
+                    AV_CEIL_RSHIFT(inlink->w, hue->hsub),
+                    AV_CEIL_RSHIFT(inlink->h, hue->vsub));
+        if (hue->brightness)
+            apply_luma_lut10(hue, (uint16_t*)outpic->data[0], outpic->linesize[0]/2,
+                                  (uint16_t*) inpic->data[0],  inpic->linesize[0]/2, inlink->w, inlink->h);
+    } else {
+        apply_lut(hue, outpic->data[1], outpic->data[2], outpic->linesize[1],
+                       inpic->data[1],   inpic->data[2],  inpic->linesize[1],
+                  AV_CEIL_RSHIFT(inlink->w, hue->hsub),
+                  AV_CEIL_RSHIFT(inlink->h, hue->vsub));
+        if (hue->brightness)
+            apply_luma_lut(hue, outpic->data[0], outpic->linesize[0],
+                                inpic->data[0],  inpic->linesize[0], inlink->w, inlink->h);
+    }
 
     if (!direct)
         av_frame_free(&inpic);
