@@ -292,6 +292,7 @@ cglobal pixelutils_sad_%1_32x32, 4,5,3, src1, stride1, src2, stride2
 SAD_XMM_32x32 a
 SAD_XMM_32x32 u
 
+%if HAVE_AVX2_EXTERNAL
 ;-------------------------------------------------------------------------------
 ; int ff_pixelutils_sad_32x32_avx2(const uint8_t *src1, ptrdiff_t stride1,
 ;                                  const uint8_t *src2, ptrdiff_t stride2);
@@ -382,3 +383,4 @@ cglobal pixelutils_sad_%1_32x32, 4,7,3, src1, stride1, src2, stride2
 
 SAD_AVX2_32x32 a
 SAD_AVX2_32x32 u
+%endif
