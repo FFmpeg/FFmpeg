@@ -148,7 +148,7 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
     SECURITY_STATUS sspi_ret;
-    SecBuffer outbuf[3];
+    SecBuffer outbuf[3] = { 0 };
     SecBufferDesc outbuf_desc;
     SecBuffer inbuf[2];
     SecBufferDesc inbuf_desc;
