@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * Argonaut Games' Creature Shock demuxer
+ * @see http://wiki.multimedia.cx/index.php?title=AVS
+ */
+
 #include "avformat.h"
 #include "voc.h"
 
@@ -225,7 +231,7 @@ static int avs_read_close(AVFormatContext * s)
 
 AVInputFormat ff_avs_demuxer = {
     .name           = "avs",
-    .long_name      = NULL_IF_CONFIG_SMALL("AVS"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Argonaut Games Creature Shock"),
     .priv_data_size = sizeof(AvsFormat),
     .read_probe     = avs_probe,
     .read_header    = avs_read_header,
