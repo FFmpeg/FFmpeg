@@ -336,6 +336,8 @@ typedef struct SwsContext {
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
 
+    float uint2float_lut[256];
+
     /**
      * @name Scaled horizontal lines ring buffer.
      * The horizontal scaler keeps just enough scaled lines in a ring buffer
@@ -762,6 +764,13 @@ static av_always_inline int isAnyRGB(enum AVPixelFormat pix_fmt)
     av_assert0(desc);
     return (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
             pix_fmt == AV_PIX_FMT_MONOBLACK || pix_fmt == AV_PIX_FMT_MONOWHITE;
+}
+
+static av_always_inline int isFloat(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->flags & AV_PIX_FMT_FLAG_FLOAT;
 }
 
 static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)

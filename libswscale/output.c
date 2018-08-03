@@ -208,6 +208,105 @@ static void yuv2p016cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterS
     }
 }
 
+static av_always_inline void
+yuv2plane1_float_c_template(const int32_t *src, float *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 3;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = src[i] + (1 << (shift - 1));
+        output_pixel(&val_uint, val, 0, uint);
+        dest[i] = float_mult * (float)val_uint;
+    }
+}
+
+static av_always_inline void
+yuv2plane1_float_bswap_c_template(const int32_t *src, uint32_t *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 3;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = src[i] + (1 << (shift - 1));
+        output_pixel(&val_uint, val, 0, uint);
+        dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
+    }
+}
+
+static av_always_inline void
+yuv2planeX_float_c_template(const int16_t *filter, int filterSize, const int32_t **src,
+                            float *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 15;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, j, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = (1 << (shift - 1)) - 0x40000000;
+        for (j = 0; j < filterSize; ++j){
+            val += src[j][i] * (unsigned)filter[j];
+        }
+        output_pixel(&val_uint, val, 0x8000, int);
+        dest[i] = float_mult * (float)val_uint;
+    }
+}
+
+static av_always_inline void
+yuv2planeX_float_bswap_c_template(const int16_t *filter, int filterSize, const int32_t **src,
+                            uint32_t *dest, int dstW)
+{
+    static const int big_endian = HAVE_BIGENDIAN;
+    static const int shift = 15;
+    static const float float_mult = 1.0f / 65535.0f;
+    int i, j, val;
+    uint16_t val_uint;
+
+    for (i = 0; i < dstW; ++i){
+        val = (1 << (shift - 1)) - 0x40000000;
+        for (j = 0; j < filterSize; ++j){
+            val += src[j][i] * (unsigned)filter[j];
+        }
+        output_pixel(&val_uint, val, 0x8000, int);
+        dest[i] = av_bswap32(av_float2int(float_mult * (float)val_uint));
+    }
+}
+
+#define yuv2plane1_float(template, dest_type, BE_LE) \
+static void yuv2plane1_float ## BE_LE ## _c(const int16_t *src, uint8_t *dest, int dstW, \
+                                            const uint8_t *dither, int offset) \
+{ \
+    template((const int32_t *)src, (dest_type *)dest, dstW); \
+}
+
+#define yuv2planeX_float(template, dest_type, BE_LE) \
+static void yuv2planeX_float ## BE_LE ## _c(const int16_t *filter, int filterSize, \
+                                            const int16_t **src, uint8_t *dest, int dstW, \
+                                            const uint8_t *dither, int offset) \
+{ \
+    template(filter, filterSize, (const int32_t **)src, (dest_type *)dest, dstW); \
+}
+
+#if HAVE_BIGENDIAN
+yuv2plane1_float(yuv2plane1_float_c_template,       float,    BE)
+yuv2plane1_float(yuv2plane1_float_bswap_c_template, uint32_t, LE)
+yuv2planeX_float(yuv2planeX_float_c_template,       float,    BE)
+yuv2planeX_float(yuv2planeX_float_bswap_c_template, uint32_t, LE)
+#else
+yuv2plane1_float(yuv2plane1_float_c_template,       float,    LE)
+yuv2plane1_float(yuv2plane1_float_bswap_c_template, uint32_t, BE)
+yuv2planeX_float(yuv2planeX_float_c_template,       float,    LE)
+yuv2planeX_float(yuv2planeX_float_bswap_c_template, uint32_t, BE)
+#endif
+
 #undef output_pixel
 
 #define output_pixel(pos, val) \
@@ -2303,6 +2402,12 @@ av_cold void ff_sws_init_output_funcs(SwsContext *c,
             *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_14BE_c  : yuv2plane1_14LE_c;
         } else
             av_assert0(0);
+    } else if (dstFormat == AV_PIX_FMT_GRAYF32BE) {
+        *yuv2planeX = yuv2planeX_floatBE_c;
+        *yuv2plane1 = yuv2plane1_floatBE_c;
+    } else if (dstFormat == AV_PIX_FMT_GRAYF32LE) {
+        *yuv2planeX = yuv2planeX_floatLE_c;
+        *yuv2plane1 = yuv2plane1_floatLE_c;
     } else {
         *yuv2plane1 = yuv2plane1_8_c;
         *yuv2planeX = yuv2planeX_8_c;

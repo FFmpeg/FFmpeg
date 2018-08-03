@@ -942,6 +942,30 @@ static av_always_inline void planar_rgb16_to_uv(uint8_t *_dstU, uint8_t *_dstV,
 }
 #undef rdpx
 
+static av_always_inline void grayf32ToY16_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
+                                            const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int i;
+    const float *src = (const float *)_src;
+    uint16_t *dst    = (uint16_t *)_dst;
+
+    for (i = 0; i < width; ++i){
+        dst[i] = av_clip_uint16(lrintf(65535.0f * src[i]));
+    }
+}
+
+static av_always_inline void grayf32ToY16_bswap_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1,
+                                                  const uint8_t *unused2, int width, uint32_t *unused)
+{
+    int i;
+    const uint32_t *src = (const uint32_t *)_src;
+    uint16_t *dst    = (uint16_t *)_dst;
+
+    for (i = 0; i < width; ++i){
+        dst[i] = av_clip_uint16(lrintf(65535.0f * av_int2float(av_bswap32(src[i]))));
+    }
+}
+
 #define rgb9plus_planar_funcs_endian(nbits, endian_name, endian)                                    \
 static void planar_rgb##nbits##endian_name##_to_y(uint8_t *dst, const uint8_t *src[4],              \
                                                   int w, int32_t *rgb2yuv)                          \
@@ -1537,6 +1561,20 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         break;
     case AV_PIX_FMT_P010BE:
         c->lumToYV12 = p010BEToY_c;
+        break;
+    case AV_PIX_FMT_GRAYF32LE:
+#if HAVE_BIGENDIAN
+        c->lumToYV12 = grayf32ToY16_bswap_c;
+#else
+        c->lumToYV12 = grayf32ToY16_c;
+#endif
+        break;
+    case AV_PIX_FMT_GRAYF32BE:
+#if HAVE_BIGENDIAN
+        c->lumToYV12 = grayf32ToY16_c;
+#else
+        c->lumToYV12 = grayf32ToY16_bswap_c;
+#endif
         break;
     }
     if (c->needAlpha) {
