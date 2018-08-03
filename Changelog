@@ -17,6 +17,7 @@ version <next>:
 - lensfun wrapper filter
 - colorconstancy filter
 - AVS2 video decoder via libdavs2
+- IMM4 video decoder
 
 
 version 4.0:

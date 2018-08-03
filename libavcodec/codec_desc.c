@@ -1654,6 +1654,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("FITS (Flexible Image Transport System)"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_IMM4,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "imm4",
+        .long_name = NULL_IF_CONFIG_SMALL("Infinity IMM4"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {
