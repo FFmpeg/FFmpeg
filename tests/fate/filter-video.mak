@@ -514,6 +514,9 @@ fate-filter-hue2: CMD = video_filter "perms=random,hue=h=18*n" -frames:v 20
 FATE_FILTER_VSYNTH-$(call ALLYES, PERMS_FILTER HUE_FILTER) += fate-filter-hue3
 fate-filter-hue3: CMD = video_filter "perms=random,hue=b=n-10" -frames:v 20
 
+FATE_FILTER_VSYNTH-$(call ALLYES, FORMAT_FILTER PERMS_FILTER HUE_FILTER) += fate-filter-hue4
+fate-filter-hue4: CMD = video_filter "format=yuv422p10,perms=random,hue=h=18*n:s=n/10" -frames:v 20 -pix_fmt yuv422p10le
+
 FATE_FILTER_VSYNTH-$(CONFIG_IDET_FILTER) += fate-filter-idet
 fate-filter-idet: CMD = framecrc -flags bitexact -idct simple -i $(SRC) -vf idet -frames:v 25 -flags +bitexact
 
