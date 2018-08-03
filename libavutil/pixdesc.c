@@ -2206,6 +2206,28 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         .name  = "opencl",
         .flags = AV_PIX_FMT_FLAG_HWACCEL,
     },
+    [AV_PIX_FMT_GRAYF32BE] = {
+        .name = "grayf32be",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 0, 32, 3, 31, 1 },       /* Y */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE | AV_PIX_FMT_FLAG_FLOAT,
+        .alias = "yf32be",
+    },
+    [AV_PIX_FMT_GRAYF32LE] = {
+        .name = "grayf32le",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 4, 0, 0, 32, 3, 31, 1 },       /* Y */
+        },
+        .flags = AV_PIX_FMT_FLAG_FLOAT,
+        .alias = "yf32le",
+    },
 };
 #if FF_API_PLUS1_MINUS1
 FF_ENABLE_DEPRECATION_WARNINGS
