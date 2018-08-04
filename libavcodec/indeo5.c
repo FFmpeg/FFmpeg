@@ -642,6 +642,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     IVI45DecContext  *ctx = avctx->priv_data;
     int             result;
 
+    ctx->gop_invalid = 1;
+
     ff_ivi_init_static_vlc();
 
     /* copy rvmap tables in our context so we can apply changes to them */
