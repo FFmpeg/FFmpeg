@@ -526,6 +526,9 @@ static int decompress_p(AVCodecContext *avctx,
         return ret;
 
     max += temp << 8;
+    if (min > max)
+        return AVERROR_INVALIDDATA;
+
     memset(s->blocks, 0, sizeof(*s->blocks) * s->nbcount);
 
     while (min <= max) {
