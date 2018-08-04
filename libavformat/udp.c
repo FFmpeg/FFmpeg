@@ -150,20 +150,13 @@ static const AVClass udplite_context_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-static void log_net_error(void *ctx, int level, const char* prefix)
-{
-    char errbuf[100];
-    av_strerror(ff_neterrno(), errbuf, sizeof(errbuf));
-    av_log(ctx, level, "%s: %s\n", prefix, errbuf);
-}
-
 static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
                                  struct sockaddr *addr)
 {
 #ifdef IP_MULTICAST_TTL
     if (addr->sa_family == AF_INET) {
         if (setsockopt(sockfd, IPPROTO_IP, IP_MULTICAST_TTL, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_MULTICAST_TTL)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_MULTICAST_TTL)");
             return -1;
         }
     }
@@ -171,7 +164,7 @@ static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
 #if defined(IPPROTO_IPV6) && defined(IPV6_MULTICAST_HOPS)
     if (addr->sa_family == AF_INET6) {
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &mcastTTL, sizeof(mcastTTL)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_MULTICAST_HOPS)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_MULTICAST_HOPS)");
             return -1;
         }
     }
@@ -191,7 +184,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct soc
         else
             mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_ADD_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_MEMBERSHIP)");
             return -1;
         }
     }
@@ -203,7 +196,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct soc
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP)");
             return -1;
         }
     }
@@ -223,7 +216,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
         else
             mreq.imr_interface.s_addr= INADDR_ANY;
         if (setsockopt(sockfd, IPPROTO_IP, IP_DROP_MEMBERSHIP, (const void *)&mreq, sizeof(mreq)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_DROP_MEMBERSHIP)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_DROP_MEMBERSHIP)");
             return -1;
         }
     }
@@ -235,7 +228,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
-            log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_DROP_MEMBERSHIP)");
+            ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_DROP_MEMBERSHIP)");
             return -1;
         }
     }
@@ -300,9 +293,9 @@ static int udp_set_multicast_sources(URLContext *h,
                        include ? MCAST_JOIN_SOURCE_GROUP : MCAST_BLOCK_SOURCE,
                        (const void *)&mreqs, sizeof(mreqs)) < 0) {
             if (include)
-                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_SOURCE_GROUP)");
+                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_SOURCE_GROUP)");
             else
-                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_BLOCK_SOURCE)");
+                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_BLOCK_SOURCE)");
             return ff_neterrno();
         }
     }
@@ -336,9 +329,9 @@ static int udp_set_multicast_sources(URLContext *h,
                        include ? IP_ADD_SOURCE_MEMBERSHIP : IP_BLOCK_SOURCE,
                        (const void *)&mreqs, sizeof(mreqs)) < 0) {
             if (include)
-                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_SOURCE_MEMBERSHIP)");
+                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_SOURCE_MEMBERSHIP)");
             else
-                log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_BLOCK_SOURCE)");
+                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_BLOCK_SOURCE)");
             return ff_neterrno();
         }
     }
@@ -384,7 +377,7 @@ static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
         else
             udp_fd = ff_socket(res->ai_family, SOCK_DGRAM, 0);
         if (udp_fd != -1) break;
-        log_net_error(NULL, AV_LOG_ERROR, "socket");
+        ff_log_net_error(NULL, AV_LOG_ERROR, "socket");
     }
 
     if (udp_fd < 0)
@@ -459,7 +452,7 @@ int ff_udp_set_remote_url(URLContext *h, const char *uri)
                 if (connect(s->udp_fd, (struct sockaddr *) &s->dest_addr,
                             s->dest_addr_len)) {
                     s->is_connected = 0;
-                    log_net_error(h, AV_LOG_ERROR, "connect");
+                    ff_log_net_error(h, AV_LOG_ERROR, "connect");
                     return AVERROR(EIO);
                 }
             }
@@ -866,7 +859,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
      * bind failed */
     /* the bind is needed to give a port to the socket now */
     if (bind_ret < 0 && bind(udp_fd,(struct sockaddr *)&my_addr, len) < 0) {
-        log_net_error(h, AV_LOG_ERROR, "bind failed");
+        ff_log_net_error(h, AV_LOG_ERROR, "bind failed");
         goto fail;
     }
 
@@ -912,18 +905,18 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         /* limit the tx buf size to limit latency */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_SNDBUF, &tmp, sizeof(tmp)) < 0) {
-            log_net_error(h, AV_LOG_ERROR, "setsockopt(SO_SNDBUF)");
+            ff_log_net_error(h, AV_LOG_ERROR, "setsockopt(SO_SNDBUF)");
             goto fail;
         }
     } else {
         /* set udp recv buffer size to the requested value (default 64K) */
         tmp = s->buffer_size;
         if (setsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, sizeof(tmp)) < 0) {
-            log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF)");
+            ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RECVBUF)");
         }
         len = sizeof(tmp);
         if (getsockopt(udp_fd, SOL_SOCKET, SO_RCVBUF, &tmp, &len) < 0) {
-            log_net_error(h, AV_LOG_WARNING, "getsockopt(SO_RCVBUF)");
+            ff_log_net_error(h, AV_LOG_WARNING, "getsockopt(SO_RCVBUF)");
         } else {
             av_log(h, AV_LOG_DEBUG, "end receive buffer size reported is %d\n", tmp);
             if(tmp < s->buffer_size)
@@ -935,7 +928,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     }
     if (s->is_connected) {
         if (connect(udp_fd, (struct sockaddr *) &s->dest_addr, s->dest_addr_len)) {
-            log_net_error(h, AV_LOG_ERROR, "connect");
+            ff_log_net_error(h, AV_LOG_ERROR, "connect");
             goto fail;
         }
     }
