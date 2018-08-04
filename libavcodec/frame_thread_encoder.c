@@ -251,6 +251,23 @@ void ff_frame_thread_encoder_free(AVCodecContext *avctx){
          pthread_join(c->worker[i], NULL);
     }
 
+    while (av_fifo_size(c->task_fifo) > 0) {
+        Task task;
+        AVFrame *frame;
+        av_fifo_generic_read(c->task_fifo, &task, sizeof(task), NULL);
+        frame = task.indata;
+        av_frame_free(&frame);
+        task.indata = NULL;
+    }
+
+    for (i=0; i<BUFFER_SIZE; i++) {
+        if (c->finished_tasks[i].outdata != NULL) {
+            AVPacket *pkt = c->finished_tasks[i].outdata;
+            av_packet_free(&pkt);
+            c->finished_tasks[i].outdata = NULL;
+        }
+    }
+
     pthread_mutex_destroy(&c->task_fifo_mutex);
     pthread_mutex_destroy(&c->finished_task_mutex);
     pthread_mutex_destroy(&c->buffer_mutex);
