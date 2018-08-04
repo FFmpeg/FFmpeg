@@ -304,4 +304,6 @@ int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
 
 int ff_socket(int domain, int type, int protocol);
 
+void ff_log_net_error(void *ctx, int level, const char* prefix);
+
 #endif /* AVFORMAT_NETWORK_H */

@@ -346,3 +346,10 @@ int ff_http_match_no_proxy(const char *no_proxy, const char *hostname)
     av_free(buf);
     return ret;
 }
+
+void ff_log_net_error(void *ctx, int level, const char* prefix)
+{
+    char errbuf[100];
+    av_strerror(ff_neterrno(), errbuf, sizeof(errbuf));
+    av_log(ctx, level, "%s: %s\n", prefix, errbuf);
+}
