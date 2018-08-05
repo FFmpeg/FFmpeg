@@ -481,8 +481,12 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
             if (!gdv->scale_v) {
                 memcpy(dst + didx, gdv->frame + sidx, avctx->width);
             } else {
-                for (x = 0; x < avctx->width; x++) {
-                    dst[didx + x] = gdv->frame[sidx + x/2];
+                for (x = 0; x < avctx->width - 1; x+=2) {
+                    dst[didx + x    ] =
+                    dst[didx + x + 1] = gdv->frame[sidx + (x>>1)];
+                }
+                for (; x < avctx->width; x++) {
+                    dst[didx + x] = gdv->frame[sidx + (x>>1)];
                 }
             }
             if (!gdv->scale_h || ((y & 1) == 1)) {
