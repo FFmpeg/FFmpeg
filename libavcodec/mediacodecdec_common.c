@@ -312,7 +312,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_log(avctx, AV_LOG_TRACE,
             "Frame: width=%d stride=%d height=%d slice-height=%d "
-            "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s\n"
+            "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s "
             "destination linesizes=%d,%d,%d\n" ,
             avctx->width, s->stride, avctx->height, s->slice_height,
             s->crop_top, s->crop_bottom, s->crop_left, s->crop_right, s->codec_name,
