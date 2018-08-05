@@ -479,9 +479,7 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
 
         for (y = 0; y < avctx->height; y++) {
             if (!gdv->scale_v) {
-                for (x = 0; x < avctx->width; x++) {
-                    dst[didx + x] = gdv->frame[sidx + x];
-                }
+                memcpy(dst + didx, gdv->frame + sidx, avctx->width);
             } else {
                 for (x = 0; x < avctx->width; x++) {
                     dst[didx + x] = gdv->frame[sidx + x/2];
