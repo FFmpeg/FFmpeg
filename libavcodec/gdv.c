@@ -85,14 +85,14 @@ static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, in
             int y = h - j - 1;
             for (i = 0; i < w; i++) {
                 int x = w - i - 1;
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x/2 + (y/2) * (w/2)];
+                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + (x>>1) + (y>>1) * (w>>1)];
             }
         }
     } else if (gdv->scale_h) {
         for (j = 0; j < h; j++) {
             int y = h - j - 1;
             for (x = 0; x < w; x++) {
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x + (y/2) * w];
+                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x + (y>>1) * w];
             }
         }
     } else if (gdv->scale_v) {
@@ -100,26 +100,26 @@ static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, in
             int y = h - j - 1;
             for (i = 0; i < w; i++) {
                 int x = w - i - 1;
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x/2 + y * (w/2)];
+                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + (x>>1) + y * (w>>1)];
             }
         }
     }
 
     if (scale_h && scale_v) {
-        for (y = 0; y < h/2; y++) {
-            for (x = 0; x < w/2; x++) {
-                dst[PREAMBLE_SIZE + x + y * (w/2)] = dst[PREAMBLE_SIZE + x*2 + y*2 * w];
+        for (y = 0; y < (h>>1); y++) {
+            for (x = 0; x < (w>>1); x++) {
+                dst[PREAMBLE_SIZE + x + y * (w>>1)] = dst[PREAMBLE_SIZE + x*2 + y*2 * w];
             }
         }
     } else if (scale_h) {
-        for (y = 0; y < h/2; y++) {
+        for (y = 0; y < (h>>1); y++) {
             for (x = 0; x < w; x++) {
                 dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x + y*2 * w];
             }
         }
     } else if (scale_v) {
         for (y = 0; y < h; y++) {
-            for (x = 0; x < w/2; x++) {
+            for (x = 0; x < (w>>1); x++) {
                 dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x*2 + y * w];
             }
         }
