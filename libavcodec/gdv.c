@@ -230,6 +230,10 @@ static int decompress_2(AVCodecContext *avctx)
             break;
         }
     }
+
+    if (bytestream2_get_bytes_left_p(pb) > 0)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
@@ -458,6 +462,8 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
     default:
         av_assert0(0);
     }
+    if (ret < 0)
+        return ret;
 
     memcpy(frame->data[1], gdv->pal, AVPALETTE_SIZE);
     dst = frame->data[0];
