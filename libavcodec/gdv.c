@@ -80,11 +80,11 @@ static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, in
         return;
     }
 
-    if (gdv->scale_h && gdv->scale_v) {
+    if (gdv->scale_v) {
         for (j = 0; j < h; j++) {
             int y = h - j - 1;
             uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
-            uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>1) * (w>>1);
+            uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>!!gdv->scale_h) * (w>>1);
             for (i = 0; i < w; i++) {
                 int x = w - i - 1;
                 dst1[x] = src1[(x>>1)];
@@ -96,16 +96,6 @@ static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, in
             uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
             uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>1) * w;
             memcpy(dst1, src1, w);
-        }
-    } else if (gdv->scale_v) {
-        for (j = 0; j < h; j++) {
-            int y = h - j - 1;
-            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
-            uint8_t *src1 = dst + PREAMBLE_SIZE + y * (w>>1);
-            for (i = 0; i < w; i++) {
-                int x = w - i - 1;
-                dst1[x] = src1[(x>>1)];
-            }
         }
     }
 
