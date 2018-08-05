@@ -85,8 +85,14 @@ static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, in
             int y = h - j - 1;
             uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
             uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>!!gdv->scale_h) * (w>>1);
-            for (x = w - 1; x >= 0; x--) {
+
+            for (x = w - 1; x >= 0 && !(x&1); x--) {
                 dst1[x] = src1[(x>>1)];
+            }
+
+            for (x--; x >= 0; x-=2) {
+                dst1[x  ] =
+                dst1[x+1] = src1[(x>>1)];
             }
         }
     } else if (gdv->scale_h) {
