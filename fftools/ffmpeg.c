@@ -724,11 +724,11 @@ static void write_packet(OutputFile *of, AVPacket *pkt, OutputStream *ost, int u
             if (ret < 0)
                 exit_program(1);
         }
-        ret = av_packet_ref(&tmp_pkt, pkt);
+        ret = av_packet_make_refcounted(pkt);
         if (ret < 0)
             exit_program(1);
+        av_packet_move_ref(&tmp_pkt, pkt);
         av_fifo_generic_write(ost->muxing_queue, &tmp_pkt, sizeof(tmp_pkt), NULL);
-        av_packet_unref(pkt);
         return;
     }
 
