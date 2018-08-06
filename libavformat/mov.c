@@ -3686,9 +3686,9 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
                 st->index_entries[i].timestamp -= msc->min_corrected_pts;
             }
         }
-        // Start time should be equal to zero or the duration of any empty edits.
-        st->start_time = empty_edits_sum_duration;
     }
+    // Start time should be equal to zero or the duration of any empty edits.
+    st->start_time = empty_edits_sum_duration;
 
     // Update av stream length, if it ends up shorter than the track's media duration
     st->duration = FFMIN(st->duration, edit_list_dts_entry_end - start_dts);
