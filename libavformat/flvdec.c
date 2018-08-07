@@ -1252,18 +1252,18 @@ retry_duration:
 leave:
     last = avio_rb32(s->pb);
     if (!flv->trust_datasize) {
-    if (last != orig_size + 11 && last != orig_size + 10 &&
-        !avio_feof(s->pb) &&
-        (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
-        !flv->broken_sizes) {
-        av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d %d\n", last, orig_size + 11, flv->sum_flv_tag_size);
-        avio_seek(s->pb, pos + 1, SEEK_SET);
-        ret = resync(s);
-        av_packet_unref(pkt);
-        if (ret >= 0) {
-            goto retry;
+        if (last != orig_size + 11 && last != orig_size + 10 &&
+            !avio_feof(s->pb) &&
+            (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
+            !flv->broken_sizes) {
+            av_log(s, AV_LOG_ERROR, "Packet mismatch %d %d %d\n", last, orig_size + 11, flv->sum_flv_tag_size);
+            avio_seek(s->pb, pos + 1, SEEK_SET);
+            ret = resync(s);
+            av_packet_unref(pkt);
+            if (ret >= 0) {
+                goto retry;
+            }
         }
-    }
     }
     return ret;
 }
