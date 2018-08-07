@@ -10868,7 +10868,7 @@ The obtained VMAF score is printed through the logging system.
 
 It requires Netflix's vmaf library (libvmaf) as a pre-requisite.
 After installing the library it can be enabled using:
-@code{./configure --enable-libvmaf}.
+@code{./configure --enable-libvmaf --enable-version3}.
 If no model path is specified it uses the default model: @code{vmaf_v0.6.1.pkl}.
 
 The filter has following options:
@@ -10902,6 +10902,15 @@ Enables computing ms_ssim along with vmaf.
 
 @item pool
 Set the pool method (mean, min or harmonic mean) to be used for computing vmaf.
+
+@item n_threads
+Set number of threads to be used when computing vmaf.
+
+@item n_subsample
+Set interval for frame subsampling used when computing vmaf.
+
+@item enable_conf_interval
+Enables confidence interval.
 @end table
 
 This filter also supports the @ref{framesync} options.
