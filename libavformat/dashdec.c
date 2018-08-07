@@ -1936,7 +1936,8 @@ static int dash_read_header(AVFormatContext *s)
         s->duration = (int64_t) c->media_presentation_duration * AV_TIME_BASE;
     }
 
-    c->is_init_section_common_video = is_common_init_section_exist(c->videos, c->n_videos);
+    if(c->n_videos)
+        c->is_init_section_common_video = is_common_init_section_exist(c->videos, c->n_videos);
 
     /* Open the demuxer for video and audio components if available */
     for (i = 0; i < c->n_videos; i++) {
@@ -1952,7 +1953,8 @@ static int dash_read_header(AVFormatContext *s)
         ++stream_index;
     }
 
-  c->is_init_section_common_audio = is_common_init_section_exist(c->audios, c->n_audios);
+    if(c->n_audios)
+        c->is_init_section_common_audio = is_common_init_section_exist(c->audios, c->n_audios);
 
     for (i = 0; i < c->n_audios; i++) {
         struct representation *cur_audio = c->audios[i];
