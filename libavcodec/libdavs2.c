@@ -163,7 +163,7 @@ static int davs2_decode_frame(AVCodecContext *avctx, void *data,
 
 AVCodec ff_libdavs2_decoder = {
     .name           = "libdavs2",
-    .long_name      = NULL_IF_CONFIG_SMALL("Decoder for AVS2/IEEE 1857.4"),
+    .long_name      = NULL_IF_CONFIG_SMALL("libdavs2 AVS2-P2/IEEE1857.4"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_AVS2,
     .priv_data_size = sizeof(DAVS2Context),

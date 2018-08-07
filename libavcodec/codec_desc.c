@@ -1398,7 +1398,7 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .id        = AV_CODEC_ID_AVS2,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "avs2",
-        .long_name = NULL_IF_CONFIG_SMALL("AVS2/IEEE 1857.4"),
+        .long_name = NULL_IF_CONFIG_SMALL("AVS2-P2/IEEE1857.4"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
     {

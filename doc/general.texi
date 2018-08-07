@@ -19,7 +19,7 @@ explicitly requested by passing the appropriate flags to
 
 @section libdavs2
 
-FFmpeg can make use of the davs2 library for AVS2/IEEE 1857.4 video decoding.
+FFmpeg can make use of the davs2 library for AVS2-P2/IEEE1857.4 video decoding.
 
 Go to @url{https://github.com/pkuvcl/davs2} and follow the instructions for
 installing the library. Then pass @code{--enable-libdavs2} to configure to
