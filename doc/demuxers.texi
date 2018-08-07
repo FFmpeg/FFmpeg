@@ -269,6 +269,9 @@ ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
 @table @option
 @item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
+
+@item -flv_ignore_prevtag @var{bool}
+Ignore the size of previous tag value.
 @end table
 
 @section gif

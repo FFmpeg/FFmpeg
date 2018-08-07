@@ -44,6 +44,7 @@
 typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
+    int trust_datasize;   ///< trust data size of FLVTag
     int wrong_dts;        ///< wrong dts due to negative cts
     uint8_t *new_extradata[FLV_STREAM_TYPE_NB];
     int new_extradata_size[FLV_STREAM_TYPE_NB];
@@ -1250,6 +1251,7 @@ retry_duration:
 
 leave:
     last = avio_rb32(s->pb);
+    if (!flv->trust_datasize) {
     if (last != orig_size + 11 && last != orig_size + 10 &&
         !avio_feof(s->pb) &&
         (last != orig_size || !last) && last != flv->sum_flv_tag_size &&
@@ -1261,6 +1263,7 @@ leave:
         if (ret >= 0) {
             goto retry;
         }
+    }
     }
     return ret;
 }
@@ -1277,6 +1280,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index,
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
+    { "flv_ignore_prevtag", "Ignore the Size of previous tag", OFFSET(trust_datasize), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { "missing_streams", "", OFFSET(missing_streams), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xFF, VD | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { NULL }
 };
