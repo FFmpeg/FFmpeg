@@ -45,6 +45,7 @@ typedef struct FLVContext {
     const AVClass *class; ///< Class for private options.
     int trust_metadata;   ///< configure streams according onMetaData
     int trust_datasize;   ///< trust data size of FLVTag
+    int dump_full_metadata;   ///< Dump full metadata of the onMetadata
     int wrong_dts;        ///< wrong dts due to negative cts
     uint8_t *new_extradata[FLV_STREAM_TYPE_NB];
     int new_extradata_size[FLV_STREAM_TYPE_NB];
@@ -612,7 +613,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             (!vpar && !strcmp(key, "videocodecid"))))
                 s->ctx_flags &= ~AVFMTCTX_NOHEADER; //If there is either audio/video missing, codecid will be an empty object
 
-        if (!strcmp(key, "duration")        ||
+        if ((!strcmp(key, "duration")        ||
             !strcmp(key, "filesize")        ||
             !strcmp(key, "width")           ||
             !strcmp(key, "height")          ||
@@ -624,7 +625,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
             !strcmp(key, "audiosamplesize") ||
             !strcmp(key, "stereo")          ||
             !strcmp(key, "audiocodecid")    ||
-            !strcmp(key, "datastream"))
+            !strcmp(key, "datastream")) && !flv->dump_full_metadata)
             return 0;
 
         s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
@@ -1280,6 +1281,7 @@ static int flv_read_seek(AVFormatContext *s, int stream_index,
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "flv_metadata", "Allocate streams according to the onMetaData array", OFFSET(trust_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
+    { "flv_full_metadata", "Dump full metadata of the onMetadata", OFFSET(dump_full_metadata), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { "flv_ignore_prevtag", "Ignore the Size of previous tag", OFFSET(trust_datasize), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VD },
     { "missing_streams", "", OFFSET(missing_streams), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 0xFF, VD | AV_OPT_FLAG_EXPORT | AV_OPT_FLAG_READONLY },
     { NULL }

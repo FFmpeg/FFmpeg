@@ -272,6 +272,9 @@ Allocate the streams according to the onMetaData array content.
 
 @item -flv_ignore_prevtag @var{bool}
 Ignore the size of previous tag value.
+
+@item -flv_full_metadata @var{bool}
+Output all context of the onMetadata.
 @end table
 
 @section gif
