@@ -754,9 +754,12 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
         if (!(node = baseurl_nodes[rootId])) {
             continue;
         }
-        if (ishttp(xmlNodeGetContent(node))) {
+        text = xmlNodeGetContent(node);
+        if (ishttp(text)) {
+            xmlFree(text);
             break;
         }
+        xmlFree(text);
     }
 
     node = baseurl_nodes[rootId];
