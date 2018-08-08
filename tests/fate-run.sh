@@ -152,6 +152,51 @@ enc_dec(){
     tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
 }
 
+# FIXME: There is a certain duplication between the avconv-related helper
+# functions above and below that should be refactored.
+avconv2="$target_exec ${target_path}/avconv"
+raw_src="${target_path}/tests/vsynth1/%02d.pgm"
+crcfile="tests/data/$test.lavf.crc"
+target_crcfile="${target_path}/$crcfile"
+
+echov(){
+    echo "$@" >&3
+}
+
+AVCONV_OPTS="-nostats -y -cpuflags $cpuflags -threads $threads"
+DEC_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+ENC_OPTS="$DEC_OPTS -threads 1 -dct fastint"
+
+run_avconv(){
+    $echov $avconv2 $AVCONV_OPTS $*
+    $avconv2 $AVCONV_OPTS $*
+}
+
+do_avconv(){
+    f="$1"
+    shift
+    set -- $* ${target_path}/$f
+    run_avconv $*
+    do_md5sum $f
+    echo $(wc -c $f)
+}
+
+do_avconv_crc(){
+    f="$1"
+    shift
+    run_avconv $* -f crc "$target_crcfile"
+    echo "$f $(cat $crcfile)"
+}
+
+lavf_image2pipe(){
+    t="${test#lavf-}"
+    t="${t%pipe}"
+    outdir="tests/data/lavf"
+    file=${outdir}/${t}pipe.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src -f image2pipe $ENC_OPTS -t 1 -qscale 10
+    do_avconv_crc $file $DEC_OPTS -f image2pipe -i $target_path/$file
+}
+
 lavftest(){
     t="${test#lavf-}"
     ref=${base}/ref/lavf/$t
