@@ -17148,7 +17148,7 @@ separatefields,select=eq(mod(n,4),0)+eq(mod(n,4),3),weave
 @section xbr
 Apply the xBR high-quality magnification filter which is designed for pixel
 art. It follows a set of edge-detection rules, see
-@url{http://www.libretro.com/forums/viewtopic.php?f=6&t=134}.
+@url{https://forums.libretro.com/t/xbr-algorithm-tutorial/123}.
 
 It accepts the following option:
 
