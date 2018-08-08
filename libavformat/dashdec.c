@@ -1879,7 +1879,6 @@ static int is_common_init_section_exist(struct representation **pls, int n_pls)
 
 static void copy_init_section(struct representation *rep_dest, struct representation *rep_src)
 {
-    *rep_dest->init_section = *rep_src->init_section;
     rep_dest->init_sec_buf = av_mallocz(rep_src->init_sec_buf_size);
     memcpy(rep_dest->init_sec_buf, rep_src->init_sec_buf, rep_src->init_sec_data_len);
     rep_dest->init_sec_buf_size = rep_src->init_sec_buf_size;
