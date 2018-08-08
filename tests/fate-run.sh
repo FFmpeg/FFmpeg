@@ -226,10 +226,12 @@ lavf_image2pipe(){
     do_avconv_crc $file $DEC_OPTS -f image2pipe -i $target_path/$file
 }
 
-lavftest(){
+lavf_video(){
     t="${test#lavf-}"
-    ref=${base}/ref/lavf/$t
-    ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10 $1
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $1
 }
 
 pixfmt_conversion(){

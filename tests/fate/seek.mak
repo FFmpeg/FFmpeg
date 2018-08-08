@@ -178,7 +178,7 @@ FATE_SEEK_LAVF-$(call ENCDEC,  TIFF,                  IMAGE2)      += tiff
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, MP2,       MPEGTS)      += ts
 FATE_SEEK_LAVF-$(call ENCDEC,  PCM_U8,                VOC)         += voc
 FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16LE,             WAV)         += wav
-FATE_SEEK_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                        += yuv4mpeg
+FATE_SEEK_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                        += y4m
 
 fate-seek-lavf-aiff:     SRC = lavf/lavf.aiff
 fate-seek-lavf-al:       SRC = lavf/lavf.al
@@ -214,7 +214,7 @@ fate-seek-lavf-tiff:     SRC = images/tiff/%02d.tiff
 fate-seek-lavf-ts:       SRC = lavf/lavf.ts
 fate-seek-lavf-voc:      SRC = lavf/lavf.voc
 fate-seek-lavf-wav:      SRC = lavf/lavf.wav
-fate-seek-lavf-yuv4mpeg: SRC = lavf/lavf.y4m
+fate-seek-lavf-y4m:      SRC = lavf/lavf.y4m
 
 FATE_SEEK += $(FATE_SEEK_LAVF-yes:%=fate-seek-lavf-%)
 
