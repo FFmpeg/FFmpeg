@@ -41,7 +41,7 @@ enum { kCMVideoCodecType_HEVC = 'hvc1' };
 
 typedef OSStatus (*getParameterSetAtIndex)(CMFormatDescriptionRef videoDesc,
                                            size_t parameterSetIndex,
-                                           const uint8_t * _Nullable *parameterSetPointerOut,
+                                           const uint8_t **parameterSetPointerOut,
                                            size_t *parameterSetSizeOut,
                                            size_t *parameterSetCountOut,
                                            int *NALUnitHeaderLengthOut);
