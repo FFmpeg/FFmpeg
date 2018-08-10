@@ -108,30 +108,28 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     cur_ai = ai;
 
- restart:
-    fd = ff_socket(cur_ai->ai_family,
-                   cur_ai->ai_socktype,
-                   cur_ai->ai_protocol);
-    if (fd < 0) {
-        ret = ff_neterrno();
-        goto fail;
-    }
-
     if (s->listen) {
+        while (cur_ai && fd < 0) {
+            fd = ff_socket(cur_ai->ai_family,
+                           cur_ai->ai_socktype,
+                           cur_ai->ai_protocol);
+            if (fd < 0) {
+                ret = ff_neterrno();
+                cur_ai = cur_ai->ai_next;
+            }
+        }
+        if (fd < 0)
+            goto fail1;
+
         if ((ret = ff_listen_bind(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                   s->listen_timeout, h)) < 0) {
             goto fail1;
         }
         fd = ret;
     } else {
-        if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     s->timeout, h, !!cur_ai->ai_next)) < 0) {
-
-            if (ret == AVERROR_EXIT)
-                goto fail1;
-            else
-                goto fail;
-        }
+        ret = ff_connect_parallel(ai, s->timeout, 3, h, &fd, NULL, NULL);
+        if (ret < 0)
+            goto fail1;
     }
 
     h->is_streamed = 1;
@@ -139,15 +137,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     freeaddrinfo(ai);
     return 0;
 
- fail:
-    if (cur_ai->ai_next) {
-        /* Retry with the next sockaddr */
-        cur_ai = cur_ai->ai_next;
-        if (fd >= 0)
-            closesocket(fd);
-        ret = 0;
-        goto restart;
-    }
  fail1:
     if (fd >= 0)
         closesocket(fd);
