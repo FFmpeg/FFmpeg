@@ -771,8 +771,12 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
                            par->extradata_size, 0);
         return 0;
     case AV_CODEC_ID_AV1:
-        return ff_isom_write_av1c(dyn_cp, par->extradata,
-                                  par->extradata_size);
+        if (par->extradata_size)
+            return ff_isom_write_av1c(dyn_cp, par->extradata,
+                                      par->extradata_size);
+        else
+            put_ebml_void(pb, 4 + 3);
+        break;
     case AV_CODEC_ID_ALAC:
         if (par->extradata_size < 36) {
             av_log(s, AV_LOG_ERROR,
@@ -2324,6 +2328,37 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
             avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
             avcodec_parameters_free(&codecpriv_par);
         }
+        break;
+    // FIXME: Remove the following once libaom starts propagating extradata during init()
+    //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
+    case AV_CODEC_ID_AV1:
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live &&
+            !par->extradata_size) {
+            AVIOContext *dyn_cp;
+            uint8_t *codecpriv;
+            int codecpriv_size;
+            int64_t curpos;
+            ret = avio_open_dyn_buf(&dyn_cp);
+            if (ret < 0)
+                return ret;
+            ff_isom_write_av1c(dyn_cp, side_data, side_data_size);
+            codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
+            if (!codecpriv_size) {
+                av_free(codecpriv);
+                return AVERROR_INVALIDDATA;
+            }
+            curpos = avio_tell(mkv->tracks_bc);
+            avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
+            // Do not write the OBUs as we don't have space saved for them
+            put_ebml_binary(mkv->tracks_bc, MATROSKA_ID_CODECPRIVATE, codecpriv, 4);
+            av_free(codecpriv);
+            avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+        } else if (!par->extradata_size)
+            return AVERROR_INVALIDDATA;
         break;
     default:
         if (side_data_size)
