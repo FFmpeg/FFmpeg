@@ -227,6 +227,14 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 extern const uint8_t ff_vp56_norm_shift[256];
 int ff_vp56_init_range_decoder(VP56RangeCoder *c, const uint8_t *buf, int buf_size);
 
+/**
+ * vp5689 returns 1 if the end of the stream has been reached, 0 otherwise.
+ */
+static av_always_inline int vpX_rac_is_end(VP56RangeCoder *c)
+{
+    return c->end <= c->buffer && c->bits >= 0;
+}
+
 static av_always_inline unsigned int vp56_rac_renorm(VP56RangeCoder *c)
 {
     int shift = ff_vp56_norm_shift[c->high];
