@@ -196,6 +196,8 @@ OBJS-$(CONFIG_DESHAKE_FILTER)                += vf_deshake.o
 OBJS-$(CONFIG_DESPILL_FILTER)                += vf_despill.o
 OBJS-$(CONFIG_DETELECINE_FILTER)             += vf_detelecine.o
 OBJS-$(CONFIG_DILATION_FILTER)               += vf_neighbor.o
+OBJS-$(CONFIG_DILATION_OPENCL_FILTER)        += vf_neighbor_opencl.o opencl.o \
+                                                opencl/neighbor.o
 OBJS-$(CONFIG_DISPLACE_FILTER)               += vf_displace.o framesync.o
 OBJS-$(CONFIG_DOUBLEWEAVE_FILTER)            += vf_weave.o
 OBJS-$(CONFIG_DRAWBOX_FILTER)                += vf_drawbox.o
@@ -207,6 +209,8 @@ OBJS-$(CONFIG_ELBG_FILTER)                   += vf_elbg.o
 OBJS-$(CONFIG_ENTROPY_FILTER)                += vf_entropy.o
 OBJS-$(CONFIG_EQ_FILTER)                     += vf_eq.o
 OBJS-$(CONFIG_EROSION_FILTER)                += vf_neighbor.o
+OBJS-$(CONFIG_EROSION_OPENCL_FILTER)         += vf_neighbor_opencl.o opencl.o \
+                                                opencl/neighbor.o
 OBJS-$(CONFIG_EXTRACTPLANES_FILTER)          += vf_extractplanes.o
 OBJS-$(CONFIG_FADE_FILTER)                   += vf_fade.o
 OBJS-$(CONFIG_FFTDNOIZ_FILTER)               += vf_fftdnoiz.o
