@@ -623,6 +623,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             switch (cmd) {
             case FN_VERBATIM:
                 len = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
+                if (len < 0 || len > get_bits_left(&s->gb)) {
+                    av_log(avctx, AV_LOG_ERROR, "verbatim length %d invalid\n",
+                           len);
+                    return AVERROR_INVALIDDATA;
+                }
                 while (len--)
                     get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
                 break;
