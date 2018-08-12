@@ -382,7 +382,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
         for (j = 0; j < pred_order; j++)
             sum += coeffs[j] * (unsigned)s->decoded[channel][i - j - 1];
         s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) +
-                                 (sum >> qshift);
+                                 (unsigned)(sum >> qshift);
     }
 
     /* add offset to current samples */
