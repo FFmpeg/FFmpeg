@@ -697,7 +697,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 goto end;
             }
             if (s->peak.level)
-                peak_table(coeff_data - expected, &s->peak, expected);
+                peak_table(coeff_data - count, &s->peak, count);
             if (s->difference_coding)
                 difference_coding(s->plane[s->channel_num].subband[s->subband_num_actual], highpass_width, highpass_height);
 
