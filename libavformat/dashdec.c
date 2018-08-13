@@ -259,6 +259,12 @@ static int64_t get_segment_start_time_based_on_timeline(struct representation *p
                 goto finish;
 
             start_time += pls->timelines[i]->duration;
+
+            if (pls->timelines[i]->repeat == -1) {
+                start_time = pls->timelines[i]->duration * cur_seq_no;
+                goto finish;
+            }
+
             for (j = 0; j < pls->timelines[i]->repeat; j++) {
                 num++;
                 if (num == cur_seq_no)
@@ -1322,7 +1328,12 @@ static int64_t calc_max_seg_no(struct representation *pls, DASHContext *c)
         int i = 0;
         num = pls->first_seq_no + pls->n_timelines - 1;
         for (i = 0; i < pls->n_timelines; i++) {
-            num += pls->timelines[i]->repeat;
+            if (pls->timelines[i]->repeat == -1) {
+                int length_of_each_segment = pls->timelines[i]->duration / pls->fragment_timescale;
+                num =  c->period_duration / length_of_each_segment;
+            } else {
+                num += pls->timelines[i]->repeat;
+            }
         }
     } else if (c->is_live && pls->fragment_duration) {
         num = pls->first_seq_no + (((get_current_time_in_sec() - c->availability_start_time)) * pls->fragment_timescale)  / pls->fragment_duration;
