@@ -1231,6 +1231,11 @@ start_sync:
             goto start_sync;
         }
 
+        if (d[2] == 'w' && d[3] == 'c' && n < s->nb_streams) {
+            avio_skip(pb, 16 * 3 + 8);
+            goto start_sync;
+        }
+
         if (avi->dv_demux && n != 0)
             continue;
 
