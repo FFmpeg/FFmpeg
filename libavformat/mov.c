@@ -5845,6 +5845,9 @@ static int get_current_encryption_info(MOVContext *c, MOVEncryptionIndex **encry
         *sc = st->priv_data;
 
         if (!frag_stream_info->encryption_index) {
+            // If this stream isn't encrypted, don't create the index.
+            if (!(*sc)->cenc.default_encrypted_sample)
+                return 0;
             frag_stream_info->encryption_index = av_mallocz(sizeof(*frag_stream_info->encryption_index));
             if (!frag_stream_info->encryption_index)
                 return AVERROR(ENOMEM);
@@ -5860,6 +5863,9 @@ static int get_current_encryption_info(MOVContext *c, MOVEncryptionIndex **encry
         *sc = st->priv_data;
 
         if (!(*sc)->cenc.encryption_index) {
+            // If this stream isn't encrypted, don't create the index.
+            if (!(*sc)->cenc.default_encrypted_sample)
+                return 0;
             (*sc)->cenc.encryption_index = av_mallocz(sizeof(*frag_stream_info->encryption_index));
             if (!(*sc)->cenc.encryption_index)
                 return AVERROR(ENOMEM);
