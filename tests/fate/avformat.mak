@@ -16,7 +16,6 @@ FATE_LAVF-$(call ENCDEC2, MPEG2VIDEO, MP2,       MPEGTS)             += ts
 FATE_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                               += yuv4mpeg
 
 FATE_LAVF += $(FATE_LAVF-yes:%=fate-lavf-%)
-FATE_LAVF += fate-lavf-pixfmt
 
 $(FATE_LAVF): $(AREF) $(VREF)
 $(FATE_LAVF): CMD = lavftest
