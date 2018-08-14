@@ -9955,13 +9955,13 @@ The order of differentiation to be applied on the scene. Must be chosen in the r
 
 @item minknorm
 The Minkowski parameter to be used for calculating the Minkowski distance. Must
-be chosen in the range [0,65535] and default value is 1. Set to 0 for getting
+be chosen in the range [0,20] and default value is 1. Set to 0 for getting
 max value instead of calculating Minkowski distance.
 
 @item sigma
 The standard deviation of Gaussian blur to be applied on the scene. Must be
-chosen in the range [0,1024.0] and default value = 1. Sigma can't be set to 0
-if @var{difford} is greater than 0.
+chosen in the range [0,1024.0] and default value = 1. floor( @var{sigma} * break_off_sigma(3) )
+can't be euqal to 0 if @var{difford} is greater than 0.
 @end table
 
 @subsection Examples

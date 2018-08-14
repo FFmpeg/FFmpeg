@@ -735,9 +735,9 @@ static const AVFilterPad colorconstancy_outputs[] = {
 #if CONFIG_GREYEDGE_FILTER
 
 static const AVOption greyedge_options[] = {
-    { "difford",  "set differentiation order", OFFSET(difford),  AV_OPT_TYPE_INT,    {.i64=1},   0,   2,      FLAGS },
-    { "minknorm", "set Minkowski norm",        OFFSET(minknorm), AV_OPT_TYPE_INT,    {.i64=1},   0,   65535,  FLAGS },
-    { "sigma",    "set sigma",                 OFFSET(sigma),    AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.0, 1024.0, FLAGS },
+    { "difford",  "set differentiation order", OFFSET(difford),  AV_OPT_TYPE_INT,    {.i64=1}, 0,   2,      FLAGS },
+    { "minknorm", "set Minkowski norm",        OFFSET(minknorm), AV_OPT_TYPE_INT,    {.i64=1}, 0,   20,     FLAGS },
+    { "sigma",    "set sigma",                 OFFSET(sigma),    AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.0, 1024.0, FLAGS },
     { NULL }
 };
 
