@@ -130,7 +130,7 @@ fi
 if [ -n "$do_yuv4mpeg" ] ; then
 file=${outfile}lavf.y4m
 do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10
-#do_avconv_crc $file -i $target_path/$file
+do_avconv_crc $file -i $target_path/$file
 fi
 
 # image formats
