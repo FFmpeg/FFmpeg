@@ -503,6 +503,11 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         }
     }
 
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     /* create a "slave" session with those same properties, to be used for vpp */
     ret = MFXInit(impl, &ver, &s->session);
     if (ret != MFX_ERR_NONE) {
