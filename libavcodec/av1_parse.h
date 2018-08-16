@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "av1.h"
 #include "avcodec.h"
 #include "get_bits.h"
 
@@ -30,6 +31,12 @@ typedef struct AV1OBU {
     /** Size of payload */
     int size;
     const uint8_t *data;
+
+    /**
+     * Size, in bits, of just the data, excluding the trailing_one_bit and
+     * any trailing padding.
+     */
+    int size_bits;
 
     /** Size of entire OBU, including header */
     int raw_size;
@@ -129,6 +136,37 @@ static inline int parse_obu_header(const uint8_t *buf, int buf_size,
 
     if (size > INT_MAX)
         return AVERROR(ERANGE);
+
+    return size;
+}
+
+static inline int get_obu_bit_length(const uint8_t *buf, int size, int type)
+{
+    int v;
+
+    /* There are no trailing bits on these */
+    if (type == AV1_OBU_TILE_GROUP || type == AV1_OBU_FRAME) {
+        if (size > INT_MAX / 8)
+            return AVERROR(ERANGE);
+        else
+            return size * 8;
+    }
+
+    while (size > 0 && buf[size - 1] == 0)
+        size--;
+
+    if (!size)
+        return 0;
+
+    v = buf[size - 1];
+
+    if (size > INT_MAX / 8)
+        return AVERROR(ERANGE);
+    size *= 8;
+
+    /* Remove the trailing_one_bit and following trailing zeros */
+    if (v)
+        size -= ff_ctz(v) + 1;
 
     return size;
 }

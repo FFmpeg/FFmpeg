@@ -22,6 +22,7 @@
 
 #include "libavutil/mem.h"
 
+#include "av1.h"
 #include "av1_parse.h"
 #include "bytestream.h"
 
@@ -29,15 +30,12 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
 {
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
-    int len, ret;
+    int len;
 
     len = parse_obu_header(buf, length, &obu_size, &start_pos,
                            &type, &temporal_id, &spatial_id);
     if (len < 0)
         return len;
-
-    if (obu_size > INT_MAX / 8 || obu_size < 0)
-        return AVERROR(ERANGE);
 
     obu->type        = type;
     obu->temporal_id = temporal_id;
@@ -47,10 +45,6 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
     obu->size     = obu_size;
     obu->raw_data = buf;
     obu->raw_size = len;
-
-    ret = init_get_bits(&obu->gb, obu->data, obu->size * 8);
-    if (ret < 0)
-        return ret;
 
     av_log(logctx, AV_LOG_DEBUG,
            "obu_type: %d, temporal_id: %d, spatial_id: %d, payload size: %d\n",
@@ -62,7 +56,7 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length, void *logctx
 int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *logctx)
 {
     GetByteContext bc;
-    int consumed;
+    int ret, consumed;
 
     bytestream2_init(&bc, buf, length);
     pkt->nb_obus = 0;
@@ -87,9 +81,20 @@ int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *lo
         if (consumed < 0)
             return consumed;
 
+        bytestream2_skip(&bc, consumed);
+
+        obu->size_bits = get_obu_bit_length(obu->data, obu->size, obu->type);
+
+        if (obu->size_bits < 0 || (!obu->size_bits && obu->type != AV1_OBU_TEMPORAL_DELIMITER)) {
+            av_log(logctx, AV_LOG_ERROR, "Invalid OBU of type %d, skipping.\n", obu->type);
+            continue;
+        }
+
         pkt->nb_obus++;
 
-        bytestream2_skip(&bc, consumed);
+        ret = init_get_bits(&obu->gb, obu->data, obu->size_bits);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
