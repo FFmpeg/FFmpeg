@@ -235,6 +235,7 @@ extern AVCodec ff_prores_encoder;
 extern AVCodec ff_prores_decoder;
 extern AVCodec ff_prores_aw_encoder;
 extern AVCodec ff_prores_ks_encoder;
+extern AVCodec ff_prosumer_decoder;
 extern AVCodec ff_psd_decoder;
 extern AVCodec ff_ptx_decoder;
 extern AVCodec ff_qdraw_decoder;
