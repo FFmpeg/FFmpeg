@@ -1170,9 +1170,6 @@ static int mov_write_av1c_tag(AVIOContext *pb, MOVTrack *track)
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "av1C");
-    avio_w8(pb, 0); /* version */
-    avio_wb24(pb, 0); /* flags */
-    avio_w8(pb, 0); /* reserved (3), initial_presentation_delay_present (1), initial_presentation_delay_minus_one/reserved (4) */
     ff_isom_write_av1c(pb, track->vos_data, track->vos_len);
     return update_size(pb, pos);
 }

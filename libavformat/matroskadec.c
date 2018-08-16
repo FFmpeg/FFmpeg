@@ -2421,6 +2421,10 @@ static int matroska_parse_tracks(AVFormatContext *s)
             /* we don't need any value stored in CodecPrivate.
                make sure that it's not exported as extradata. */
             track->codec_priv.size = 0;
+        } else if (codec_id == AV_CODEC_ID_AV1 && track->codec_priv.size) {
+            /* For now, propagate only the OBUs, if any. Once libavcodec is
+               updated to handle isobmff style extradata this can be removed. */
+            extradata_offset = 4;
         }
         track->codec_priv.size -= extradata_offset;
 

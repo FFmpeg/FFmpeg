@@ -5190,27 +5190,25 @@ static int mov_read_tmcd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_av1c(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
-    int ret, version;
+    int ret;
 
     if (c->fc->nb_streams < 1)
         return 0;
     st = c->fc->streams[c->fc->nb_streams - 1];
 
-    if (atom.size < 5) {
+    if (atom.size < 4) {
         av_log(c->fc, AV_LOG_ERROR, "Empty AV1 Codec Configuration Box\n");
         return AVERROR_INVALIDDATA;
     }
 
-    version = avio_r8(pb);
-    if (version != 0) {
-        av_log(c->fc, AV_LOG_WARNING, "Unknown AV1 Codec Configuration Box version %d\n", version);
+    /* For now, propagate only the OBUs, if any. Once libavcodec is
+       updated to handle isobmff style extradata this can be removed. */
+    avio_skip(pb, 4);
+
+    if (atom.size == 4)
         return 0;
-    }
-    avio_skip(pb, 3); /* flags */
 
-    avio_skip(pb, 1); /* reserved, initial_presentation_delay_present, initial_presentation_delay_minus_one */
-
-    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 5);
+    ret = ff_get_extradata(c->fc, st->codecpar, pb, atom.size - 4);
     if (ret < 0)
         return ret;
 
