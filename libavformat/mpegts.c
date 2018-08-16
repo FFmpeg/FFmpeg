@@ -1983,7 +1983,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 int service_type = ((component_type & service_type_mask) >> 3);
                 if (service_type == 0x02 /* 0b010 */) {
                     st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
-                    av_log(ts->stream, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
+                    av_log(ts ? ts->stream : fc, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
                 }
             }
         }
@@ -1997,7 +1997,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 int service_type = ((component_type & service_type_mask) >> 3);
                 if (service_type == 0x02 /* 0b010 */) {
                     st->disposition |= AV_DISPOSITION_DESCRIPTIONS;
-                    av_log(ts->stream, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
+                    av_log(ts ? ts->stream : fc, AV_LOG_DEBUG, "New track disposition for id %u: %u\n", st->id, st->disposition);
                 }
             }
         }
