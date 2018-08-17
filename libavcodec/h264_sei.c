@@ -51,8 +51,7 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->display_orientation.present = 0;
     h->afd.present                 =  0;
 
-    h->a53_caption.a53_caption_size = 0;
-    av_freep(&h->a53_caption.a53_caption);
+    av_buffer_unref(&h->a53_caption.buf_ref);
 }
 
 static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
@@ -169,7 +168,8 @@ static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
             size -= 2;
 
             if (cc_count && size >= cc_count * 3) {
-                const uint64_t new_size = (h->a53_caption_size + cc_count
+                int old_size = h->buf_ref ? h->buf_ref->size : 0;
+                const uint64_t new_size = (old_size + cc_count
                                            * UINT64_C(3));
                 int i, ret;
 
@@ -177,14 +177,15 @@ static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
                     return AVERROR(EINVAL);
 
                 /* Allow merging of the cc data from two fields. */
-                ret = av_reallocp(&h->a53_caption, new_size);
+                ret = av_buffer_realloc(&h->buf_ref, new_size);
                 if (ret < 0)
                     return ret;
 
+                /* Use of av_buffer_realloc assumes buffer is writeable */
                 for (i = 0; i < cc_count; i++) {
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
                 }
 
                 skip_bits(gb, 8);   // marker_bits

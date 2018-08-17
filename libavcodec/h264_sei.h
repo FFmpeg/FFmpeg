@@ -95,8 +95,7 @@ typedef struct H264SEIAFD {
 } H264SEIAFD;
 
 typedef struct H264SEIA53Caption {
-    int a53_caption_size;
-    uint8_t *a53_caption;
+    AVBufferRef *buf_ref;
 } H264SEIA53Caption;
 
 typedef struct H264SEIUnregistered {
