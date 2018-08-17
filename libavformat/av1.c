@@ -43,6 +43,7 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
         switch (type) {
         case AV1_OBU_TEMPORAL_DELIMITER:
         case AV1_OBU_REDUNDANT_FRAME_HEADER:
+        case AV1_OBU_TILE_LIST:
         case AV1_OBU_PADDING:
             break;
         default:
