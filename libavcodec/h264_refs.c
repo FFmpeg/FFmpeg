@@ -813,6 +813,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count)
         pps_ref_count[1] = FFMAX(pps_ref_count[1], h->pps.ref_count[1]);
     }
 
+    // Detect unmarked random access points
     if (   err >= 0
         && h->long_ref_count==0
         && (   h->short_ref_count<=2
