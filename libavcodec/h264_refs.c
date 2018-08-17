@@ -812,6 +812,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
         }
     }
 
+    // Detect unmarked random access points
     if (   err >= 0
         && h->long_ref_count==0
         && (   h->short_ref_count<=2
