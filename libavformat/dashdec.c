@@ -862,7 +862,9 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         baseurl_nodes[3] = representation_baseurl_node;
 
         ret = resolve_content_path(s, url, &c->max_url_size, baseurl_nodes, 4);
-        c->max_url_size = aligned(c->max_url_size  + strlen(rep_id_val) + strlen(rep_bandwidth_val));
+        c->max_url_size = aligned(c->max_url_size
+                                  + (rep_id_val ? strlen(rep_id_val) : 0)
+                                  + (rep_bandwidth_val ? strlen(rep_bandwidth_val) : 0));
         if (ret == AVERROR(ENOMEM) || ret == 0) {
             goto end;
         }
