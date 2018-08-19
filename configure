@@ -4080,7 +4080,9 @@ HOSTEXESUF=$(exesuf $host_os)
 # set temporary file name
 : ${TMPDIR:=$TEMPDIR}
 : ${TMPDIR:=$TMP}
-: ${TMPDIR:=/tmp}
+# tmp needed for gcc configure detection to pass
+: ${TMPDIR:=$(pwd)/tmp}
+mkdir -p "$(pwd)/tmp"
 
 if [ -n "$tempprefix" ] ; then
     mktemp(){
