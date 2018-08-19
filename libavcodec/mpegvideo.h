@@ -509,6 +509,8 @@ typedef struct MpegEncContext {
     int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
 
     int32_t (*block32)[12][64];
+    int dpcm_direction;          // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
+    int16_t (*dpcm_macroblock)[3][256];
 
 #define SLICE_OK         0
 #define SLICE_ERROR     -1

@@ -390,6 +390,8 @@ static int init_duplicate_context(MpegEncContext *s)
     }
 
     FF_ALLOCZ_OR_GOTO(s->avctx, s->block32, sizeof(*s->block32), fail)
+    s->dpcm_direction = 0;
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->dpcm_macroblock, sizeof(*s->dpcm_macroblock), fail)
 
     if (s->avctx->codec_tag == AV_RL32("VCR2")) {
         // exchange uv
@@ -427,6 +429,7 @@ static void free_duplicate_context(MpegEncContext *s)
     av_freep(&s->me.score_map);
     av_freep(&s->blocks);
     av_freep(&s->block32);
+    av_freep(&s->dpcm_macroblock);
     av_freep(&s->ac_val_base);
     s->block = NULL;
 }
@@ -445,6 +448,8 @@ static void backup_duplicate_context(MpegEncContext *bak, MpegEncContext *src)
     COPY(blocks);
     COPY(block);
     COPY(block32);
+    COPY(dpcm_macroblock);
+    COPY(dpcm_direction);
     COPY(start_mb_y);
     COPY(end_mb_y);
     COPY(me.map_generation);
@@ -820,6 +825,8 @@ static void clear_context(MpegEncContext *s)
     s->blocks = NULL;
     s->block32 = NULL;
     memset(s->pblocks, 0, sizeof(s->pblocks));
+    s->dpcm_direction = 0;
+    s->dpcm_macroblock = NULL;
     s->ac_val_base = NULL;
     s->ac_val[0] =
     s->ac_val[1] =
@@ -2132,23 +2139,55 @@ void mpv_reconstruct_mb_internal(MpegEncContext *s, int16_t block[12][64],
                TODO: Integrate 10-bit properly into mpegvideo.c so that ER works properly */
             if (s->avctx->bits_per_raw_sample > 8){
                 const int act_block_size = block_size * 2;
-                s->idsp.idct_put(dest_y,                           dct_linesize, (int16_t*)(*s->block32)[0]);
-                s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
-                s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, (int16_t*)(*s->block32)[2]);
-                s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
 
-                dct_linesize = uvlinesize << s->interlaced_dct;
-                dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
+                if(s->dpcm_direction == 0) {
+                    s->idsp.idct_put(dest_y,                           dct_linesize, (int16_t*)(*s->block32)[0]);
+                    s->idsp.idct_put(dest_y              + act_block_size, dct_linesize, (int16_t*)(*s->block32)[1]);
+                    s->idsp.idct_put(dest_y + dct_offset,              dct_linesize, (int16_t*)(*s->block32)[2]);
+                    s->idsp.idct_put(dest_y + dct_offset + act_block_size, dct_linesize, (int16_t*)(*s->block32)[3]);
 
-                s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
-                s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
-                s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
-                s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
-                if(!s->chroma_x_shift){//Chroma444
-                    s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
-                    s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
-                    s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
-                    s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
+                    dct_linesize = uvlinesize << s->interlaced_dct;
+                    dct_offset   = s->interlaced_dct ? uvlinesize : uvlinesize*block_size;
+
+                    s->idsp.idct_put(dest_cb,              dct_linesize, (int16_t*)(*s->block32)[4]);
+                    s->idsp.idct_put(dest_cr,              dct_linesize, (int16_t*)(*s->block32)[5]);
+                    s->idsp.idct_put(dest_cb + dct_offset, dct_linesize, (int16_t*)(*s->block32)[6]);
+                    s->idsp.idct_put(dest_cr + dct_offset, dct_linesize, (int16_t*)(*s->block32)[7]);
+                    if(!s->chroma_x_shift){//Chroma444
+                        s->idsp.idct_put(dest_cb + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[8]);
+                        s->idsp.idct_put(dest_cr + act_block_size,              dct_linesize, (int16_t*)(*s->block32)[9]);
+                        s->idsp.idct_put(dest_cb + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[10]);
+                        s->idsp.idct_put(dest_cr + act_block_size + dct_offset, dct_linesize, (int16_t*)(*s->block32)[11]);
+                    }
+                } else if(s->dpcm_direction == 1) {
+                    int i, w, h;
+                    uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
+                    int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
+                    for(i = 0; i < 3; i++) {
+                        int idx = 0;
+                        int vsub = i ? s->chroma_y_shift : 0;
+                        int hsub = i ? s->chroma_x_shift : 0;
+                        for(h = 0; h < (16 >> vsub); h++){
+                            for(w = 0; w < (16 >> hsub); w++)
+                                dest_pcm[i][w] = (*s->dpcm_macroblock)[i][idx++];
+                            dest_pcm[i] += linesize[i] / 2;
+                        }
+                    }
+                } else if(s->dpcm_direction == -1) {
+                    int i, w, h;
+                    uint16_t *dest_pcm[3] = {(uint16_t*)dest_y, (uint16_t*)dest_cb, (uint16_t*)dest_cr};
+                    int linesize[3] = {dct_linesize, uvlinesize, uvlinesize};
+                    for(i = 0; i < 3; i++) {
+                        int idx = 0;
+                        int vsub = i ? s->chroma_y_shift : 0;
+                        int hsub = i ? s->chroma_x_shift : 0;
+                        dest_pcm[i] += (linesize[i] / 2) * ((16 >> vsub) - 1);
+                        for(h = (16 >> vsub)-1; h >= 1; h--){
+                            for(w = (16 >> hsub)-1; w >= 1; w--)
+                                dest_pcm[i][w] = (*s->dpcm_macroblock)[i][idx++];
+                            dest_pcm[i] -= linesize[i] / 2;
+                        }
+                    }
                 }
             }
             /* dct only in intra block */
