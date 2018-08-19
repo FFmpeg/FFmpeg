@@ -1374,7 +1374,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     char temp_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, vs->sequence - vs->nb_entries);
     const char *proto = avio_find_protocol_name(s->url);
-    int use_rename = proto && !strcmp(proto, "file");
+    int use_temp_file = proto && !strcmp(proto, "file") && (s->flags & HLS_TEMP_FILE);
     static unsigned warned_non_file;
     char *key_uri = NULL;
     char *iv_string = NULL;
@@ -1397,11 +1397,11 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         hls->version = 7;
     }
 
-    if (!use_rename && !warned_non_file++)
+    if (!use_temp_file && !warned_non_file++)
         av_log(s, AV_LOG_ERROR, "Cannot use rename on non file protocol, this may lead to races and temporary partial files\n");
 
     set_http_options(s, &options, hls);
-    snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", vs->m3u8_name);
+    snprintf(temp_filename, sizeof(temp_filename), use_temp_file ? "%s.tmp" : "%s", vs->m3u8_name);
     if ((ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options)) < 0)
         goto fail;
 
@@ -1472,7 +1472,7 @@ fail:
     av_dict_free(&options);
     hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
     hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
-    if (ret >= 0 && use_rename)
+    if (use_temp_file)
         ff_rename(temp_filename, vs->m3u8_name, s);
 
     if (ret >= 0 && hls->master_pl_name)
@@ -1488,6 +1488,8 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
     AVFormatContext *oc = vs->avf;
     AVFormatContext *vtt_oc = vs->vtt_avf;
     AVDictionary *options = NULL;
+    const char *proto = avio_find_protocol_name(s->url);
+    int use_temp_file = proto && !strcmp(proto, "file") && (s->flags & HLS_TEMP_FILE);
     char *filename, iv_string[KEYSIZE*2 + 1];
     int err = 0;
 
@@ -1583,7 +1585,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
 
     set_http_options(s, &options, c);
 
-    if (c->flags & HLS_TEMP_FILE) {
+    if (use_temp_file) {
         char *new_name = av_asprintf("%s.tmp", oc->url);
         if (!new_name)
             return AVERROR(ENOMEM);
@@ -2145,6 +2147,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret = 0, can_split = 1, i, j;
     int stream_index = 0;
     int range_length = 0;
+    const char *proto = avio_find_protocol_name(s->url);
+    int use_temp_file = proto && !strcmp(proto, "file") && (s->flags & HLS_TEMP_FILE);
     uint8_t *buffer = NULL;
     VariantStream *vs = NULL;
     AVDictionary *options = NULL;
@@ -2214,10 +2218,10 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     }
 
+    char *old_filename = NULL;
     if (vs->packets_written && can_split && av_compare_ts(pkt->pts - vs->start_pts, st->time_base,
                                                           end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
-        char *old_filename = NULL;
         int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
 
         av_write_frame(vs->avf, NULL); /* Flush any buffered data */
@@ -2253,11 +2257,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 hlsenc_io_close(s, &vs->vtt_avf->pb, vs->vtt_avf->url);
             }
         }
-        if ((hls->flags & HLS_TEMP_FILE) && oc->url[0]) {
+
+        // look to rename the asset name
+        if (use_temp_file && oc->url[0]) {
             if (!(hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size <= 0))
-                if ((vs->avf->oformat->priv_class && vs->avf->priv_data) && hls->segment_type != SEGMENT_TYPE_FMP4)
+                if ((vs->avf->oformat->priv_class && vs->avf->priv_data) && hls->segment_type != SEGMENT_TYPE_FMP4) {
                     av_opt_set(vs->avf->priv_data, "mpegts_flags", "resend_headers", 0);
-            hls_rename_temp_file(s, oc);
+                }
         }
 
         if (vs->fmp4_init_mode) {
@@ -2286,6 +2292,17 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                     return ret;
                 }
                 ff_format_io_close(s, &vs->out);
+
+                // rename that segment from .tmp to the real one
+                if (use_temp_file && oc->url[0]) {
+                    hls_rename_temp_file(s, oc);
+                    av_free(old_filename);
+                    old_filename = av_strdup(vs->avf->url);
+
+                    if (!old_filename) {
+                        return AVERROR(ENOMEM);
+                    }
+                }
             }
         }
 
@@ -2334,10 +2351,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
 
-        if (!vs->fmp4_init_mode || byterange_mode)
+        // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
+        if (hls->pl_type != PLAYLIST_TYPE_VOD) {
             if ((ret = hls_window(s, 0, vs)) < 0) {
                 return ret;
             }
+        }
     }
 
     vs->packets_written++;
@@ -2352,6 +2371,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
     AVFormatContext *oc = NULL;
     AVFormatContext *vtt_oc = NULL;
     char *old_filename = NULL;
+    const char *proto = avio_find_protocol_name(s->url);
+    int use_temp_file = proto && !strcmp(proto, "file") && (s->flags & HLS_TEMP_FILE);
     int i;
     int ret = 0;
     VariantStream *vs = NULL;
@@ -2394,7 +2415,8 @@ failed:
             if (hls->segment_type != SEGMENT_TYPE_FMP4)
                 ff_format_io_close(s, &oc->pb);
 
-            if ((hls->flags & HLS_TEMP_FILE) && oc->url[0]) {
+            // rename that segment from .tmp to the real one
+            if (use_temp_file && oc->url[0] && !(hls->flags & HLS_SINGLE_FILE)) {
                 hls_rename_temp_file(s, oc);
                 av_free(old_filename);
                 old_filename = av_strdup(vs->avf->url);
