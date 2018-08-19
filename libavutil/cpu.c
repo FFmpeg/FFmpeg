@@ -41,7 +41,11 @@
 #include <sys/param.h>
 #endif
 #include <sys/types.h>
+#ifndef LUMIN
 #include <sys/sysctl.h>
+#else
+#include <linux/sysctl.h>
+#endif
 #endif
 #if HAVE_UNISTD_H
 #include <unistd.h>
