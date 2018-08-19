@@ -1955,6 +1955,14 @@ static int mpeg4_decode_studio_mb(MpegEncContext *s, int16_t block_[12][64])
         return SLICE_END;
     }
 
+    //vcon-stp9L1.bits (first frame)
+    if (get_bits_left(&s->gb) == 0)
+        return SLICE_END;
+
+    //vcon-stp2L1.bits, vcon-stp3L1.bits, vcon-stp6L1.bits, vcon-stp7L1.bits, vcon-stp8L1.bits, vcon-stp10L1.bits (first frame)
+    if (get_bits_left(&s->gb) < 8U && show_bits(&s->gb, get_bits_left(&s->gb)) == 0)
+        return SLICE_END;
+
     return SLICE_OK;
 }
 
