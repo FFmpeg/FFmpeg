@@ -208,8 +208,8 @@ static int decode_q_branch(SnowContext *s, int level, int x, int y){
                 return AVERROR_INVALIDDATA;
             }
             pred_mv(s, &mx, &my, ref, left, top, tr);
-            mx+= get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
-            my+= get_symbol(&s->c, &s->block_state[128 + 32*(my_context + 16*!!ref)], 1);
+            mx+= (unsigned)get_symbol(&s->c, &s->block_state[128 + 32*(mx_context + 16*!!ref)], 1);
+            my+= (unsigned)get_symbol(&s->c, &s->block_state[128 + 32*(my_context + 16*!!ref)], 1);
         }
         set_blocks(s, level, x, y, l, cb, cr, mx, my, ref, type);
     }else{
