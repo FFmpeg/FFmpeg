@@ -369,6 +369,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 avctx->pix_fmt = AV_PIX_FMT_GRAY8;
             } else if (s->channel_depth == 16) {
                 avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
+            } else if (s->channel_depth == 32) {
+                avctx->pix_fmt = AV_PIX_FMT_GRAYF32BE;
             } else {
                 avpriv_report_missing_feature(avctx, "channel depth %d for grayscale", s->channel_depth);
                 return AVERROR_PATCHWELCOME;
