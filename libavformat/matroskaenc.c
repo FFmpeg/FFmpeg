@@ -1296,11 +1296,12 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
 
     if (mkv->mode == MODE_WEBM && !(par->codec_id == AV_CODEC_ID_VP8 ||
                                     par->codec_id == AV_CODEC_ID_VP9 ||
+                                    par->codec_id == AV_CODEC_ID_AV1 ||
                                     par->codec_id == AV_CODEC_ID_OPUS ||
                                     par->codec_id == AV_CODEC_ID_VORBIS ||
                                     par->codec_id == AV_CODEC_ID_WEBVTT)) {
         av_log(s, AV_LOG_ERROR,
-               "Only VP8 or VP9 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.\n");
+               "Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.\n");
         return AVERROR(EINVAL);
     }
 
