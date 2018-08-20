@@ -2152,6 +2152,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t *buffer = NULL;
     VariantStream *vs = NULL;
     AVDictionary *options = NULL;
+    char *old_filename = NULL;
 
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
@@ -2218,7 +2219,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     }
 
-    char *old_filename = NULL;
     if (vs->packets_written && can_split && av_compare_ts(pkt->pts - vs->start_pts, st->time_base,
                                                           end_pts, AV_TIME_BASE_Q) >= 0) {
         int64_t new_start_pos;
