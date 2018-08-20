@@ -75,7 +75,7 @@ static void hScale16To19_c(SwsContext *c, int16_t *_dst, int dstW,
     int sh              = bits - 4;
 
     if ((isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8) && desc->comp[0].depth<16) {
-        sh= 9;
+        sh = 9;
     } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
         sh = 16 - 1 - 4;
     }
@@ -103,7 +103,7 @@ static void hScale16To15_c(SwsContext *c, int16_t *dst, int dstW,
     int sh              = desc->comp[0].depth - 1;
 
     if (sh<15) {
-        sh= isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
+        sh = isAnyRGB(c->srcFormat) || c->srcFormat==AV_PIX_FMT_PAL8 ? 13 : (desc->comp[0].depth - 1);
     } else if (desc->flags & AV_PIX_FMT_FLAG_FLOAT) { /* float input are process like uint 16bpc */
         sh = 16 - 1;
     }
