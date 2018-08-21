@@ -817,6 +817,7 @@ following image formats are supported:
     @tab fourcc: G2M2, G2M3
 @item Go2Webinar             @tab     @tab  X
     @tab fourcc: G2M4
+@item Gremlin Digital Video  @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
@@ -837,6 +838,7 @@ following image formats are supported:
     @tab IFF interleaved bitmap
 @item IFF ByteRun1           @tab     @tab  X
     @tab IFF run length encoded bitmap
+@item Infinity IMM4          @tab     @tab  X
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
@@ -1063,6 +1065,7 @@ following image formats are supported:
 @item ATRAC1                 @tab     @tab  X
 @item ATRAC3                 @tab     @tab  X
 @item ATRAC3+                @tab     @tab  X
+@item ATRAC9                 @tab     @tab  X
 @item Bink Audio             @tab     @tab  X
     @tab Used in Bink and Smacker files in many games.
 @item CELT                   @tab     @tab  E
