@@ -159,9 +159,14 @@ typedef struct DASHContext {
     int vst;
     char * aid;
     char * vid;
+    int disable_audio;
+    int disable_video;
+    int disable_retry;
+    int disable_xml_release;
     AVAppIOControl  app_io_ctrl;
     AVApplicationContext *app_ctx;
     int64_t         app_ctx_intptr;
+    AVAppDashStream info;
 } DASHContext;
 
 static int dash_call_inject(AVFormatContext *s);
@@ -401,6 +406,8 @@ static void set_httpheader_options(DASHContext *c, AVDictionary **opts)
     av_dict_set(opts, "http_proxy", c->http_proxy, 0);
     if (c->is_live) {
         av_dict_set(opts, "seekable", "0", 0);
+    } else {
+        av_dict_set(opts, "seekable", "1", 0);
     }
 }
 static void update_options(char **dest, const char *name, void *src)
@@ -880,6 +887,8 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             ret = AVERROR(ENOMEM);
             goto end;
         }
+
+        rep->type = type;
         representation_segmenttemplate_node = find_child_node_by_name(representation_node, "SegmentTemplate");
         representation_baseurl_node = find_child_node_by_name(representation_node, "BaseURL");
         representation_segmentlist_node = find_child_node_by_name(representation_node, "SegmentList");
@@ -1157,7 +1166,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     char *val  = NULL;
     uint32_t period_duration_sec = 0;
     uint32_t period_start_sec = 0;
-
+    int i = 0;
     if (!in) {
         close_in = 1;
 
@@ -1296,7 +1305,8 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 cleanup:
         /*free the document */
         xmlFreeDoc(doc);
-        xmlCleanupParser();
+        if (!c->disable_xml_release)
+            xmlCleanupParser();
     }
 
     if (c->ast < 0) {
@@ -1308,12 +1318,27 @@ cleanup:
         c->vst = 0;
         s->demuxer_status_code = IJK_DEMUXER_STATUS_DASH_VID_MISMATCH;
         av_log(NULL, AV_LOG_ERROR, "no video stream id found, use first video stream\n");
-        int i = 0;
         for (i = 0; i < c->n_videos; i++) {
             av_log(NULL, AV_LOG_ERROR, "rep %d id = %s\n", i, c->videos[i]->id);
         }
     }
-
+    c->info.video_stream_nb =  c->n_videos;
+    c->info.audio_stream_nb =  c->n_audios;
+    for (i = 0 ; i < c->n_videos; i++) {
+        if (strlen(c->videos[i]->id) < 20) {
+            strcpy(c->info.video_id[i], c->videos[i]->id);
+            if (c->videos[i]->ctx)
+                strcpy(c->info.cur_video_id, c->videos[i]->id);
+        }
+    }
+    for (i = 0 ; i < c->n_audios; i++) {
+        if (strlen(c->audios[i]->id) < 20) {
+            strcpy(c->info.audio_id[i], c->audios[i]->id);
+            if (c->audios[i]->ctx)
+                strcpy(c->info.cur_audio_id, c->audios[i]->id);
+        }
+    }
+    c->app_ctx->func_on_app_event(c->app_ctx, AVAPP_CTRL_SET_DASH_VIDEO_STREAM, &c->info, sizeof(c->info));
     av_free(new_url);
     av_free(buffer);
     if (close_in) {
@@ -1398,6 +1423,7 @@ static void move_timelines(struct representation *rep_src, struct representation
         rep_src->timelines = NULL;
         rep_src->n_timelines = 0;
         rep_dest->cur_seq_no = rep_src->cur_seq_no;
+        rep_dest->type       = rep_src->type;
     }
 }
 
@@ -1546,7 +1572,12 @@ static int func_on_app_event(AVApplicationContext *h, int event_type ,void *obj,
                 break;
             }
 
-
+            if (c->disable_retry) {
+                app_io_ctrl->is_url_changed = 0;
+                app_io_ctrl->is_handled = 0;
+                app_io_ctrl->retry_counter = 0;
+                return 0;
+            }
             if (dash_call_inject(s) < 0) {
                 app_io_ctrl->is_handled = 0;
                 av_log(NULL, AV_LOG_ERROR, "%s: hook AVAppIOControl fail\n", __func__);
@@ -2131,7 +2162,7 @@ static int dash_read_header(AVFormatContext *s, AVDictionary **options)
     /* Open the demuxer for video and audio components if available */
     for (i = 0; i < c->n_videos; i++) {
         struct representation *cur_video = c->videos[i];
-        if (c->vst >= 0 && i != c->vst) {
+        if ((c->vst >= 0 && i != c->vst) || (c->disable_video)) {
             ret = open_dummy_for_component(s, cur_video);
         } else {
             ret = open_demux_for_component(s, cur_video);
@@ -2142,9 +2173,10 @@ static int dash_read_header(AVFormatContext *s, AVDictionary **options)
         ++stream_index;
     }
 
+
     for (i = 0; i < c->n_audios; i++) {
         struct representation *cur_audio = c->audios[i];
-        if (c->ast >= 0 && i != c->ast) {
+        if ((c->ast >= 0 && i != c->ast) || (c->disable_audio)) {
             ret = open_dummy_for_component(s, cur_audio);
         } else {
             ret = open_demux_for_component(s, cur_audio);
@@ -2245,6 +2277,7 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
             mints = pls->cur_timestamp;
         }
     }
+
     for (i = 0; i < c->n_audios; i++) {
         struct representation *pls = c->audios[i];
         if (!pls->ctx)
@@ -2294,7 +2327,7 @@ static int dash_close(AVFormatContext *s)
     return 0;
 }
 
-static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t seek_pos_msec, int flags, int dry_run)
+static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t timestamp, int flags, int dry_run)
 {
     int ret = 0;
     int i = 0;
@@ -2302,7 +2335,7 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
     int64_t duration = 0;
 
     av_log(pls->parent, AV_LOG_VERBOSE, "DASH seek pos[%"PRId64"ms], playlist %d%s\n",
-            seek_pos_msec, pls->rep_idx, dry_run ? " (dry)" : "");
+            timestamp, pls->rep_idx, dry_run ? " (dry)" : "");
 
     // single fragment mode
     if (pls->n_fragments == 1) {
@@ -2311,9 +2344,8 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
         if (dry_run)
             return 0;
         ff_read_frame_flush(pls->ctx);
-        return av_seek_frame(pls->ctx, -1, seek_pos_msec * 1000, flags);
+        return av_seek_frame(pls->ctx, -1, timestamp, flags);
     }
-
     if (pls->input)
         ff_format_io_close(pls->parent, &pls->input);
 
@@ -2328,13 +2360,13 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
                 duration = pls->timelines[i]->starttime;
             }
             duration += pls->timelines[i]->duration;
-            if (seek_pos_msec < ((duration * 1000) /  pls->fragment_timescale)) {
+            if (timestamp < (duration /  pls->fragment_timescale)) {
                 goto set_seq_num;
             }
             for (j = 0; j < pls->timelines[i]->repeat; j++) {
                 duration += pls->timelines[i]->duration;
                 num++;
-                if (seek_pos_msec < ((duration * 1000) /  pls->fragment_timescale)) {
+                if (timestamp < (duration /  pls->fragment_timescale)) {
                     goto set_seq_num;
                 }
             }
@@ -2346,7 +2378,7 @@ set_seq_num:
         av_log(pls->parent, AV_LOG_VERBOSE, "dash_seek with SegmentTimeline end cur_seq_no[%"PRId64"], playlist %d.\n",
                (int64_t)pls->cur_seq_no, (int)pls->rep_idx);
     } else if (pls->fragment_duration > 0) {
-        pls->cur_seq_no = pls->first_seq_no + ((seek_pos_msec * pls->fragment_timescale) / pls->fragment_duration) / 1000;
+        pls->cur_seq_no = pls->first_seq_no + ((timestamp * pls->fragment_timescale) / pls->fragment_duration);
     } else {
         av_log(pls->parent, AV_LOG_ERROR, "dash_seek missing timeline or fragment_duration\n");
         pls->cur_seq_no = pls->first_seq_no;
@@ -2363,29 +2395,41 @@ static int dash_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
 {
     int ret = 0, i;
     DASHContext *c = s->priv_data;
-    int64_t seek_pos_msec = av_rescale_rnd(timestamp, 1000,
-                                           s->streams[stream_index]->time_base.den,
-                                           flags & AVSEEK_FLAG_BACKWARD ?
-                                           AV_ROUND_DOWN : AV_ROUND_UP);
+
+    int index = 0;
+
+    if (!(flags & AVSEEK_FLAG_SAP)) {
+        timestamp = av_rescale_q(timestamp, s->streams[stream_index]->time_base, AV_TIME_BASE_Q);
+    }
+
     if ((flags & AVSEEK_FLAG_BYTE) || c->is_live)
         return AVERROR(ENOSYS);
 
     /* Seek in discarded streams with dry_run=1 to avoid reopening them */
     for (i = 0; i < c->n_videos; i++) {
         if (!ret) {
-            ret = dash_seek(s, c->videos[i], seek_pos_msec, flags, !c->videos[i]->ctx);
-            if (c->videos[i]->ctx) {
-                //FIXME: only first stream
-                AVStream * st = c->videos[i]->ctx->streams[0];
-                seek_pos_msec = av_rescale_q(st->seek_result, st->time_base, AV_TIME_BASE_Q) / 1000;
+            ret = dash_seek(s, c->videos[i], timestamp, flags, !c->videos[i]->ctx);
+            if (s->streams[index + i] && c->videos[i]->ctx) {
+                int64_t seek_result = c->videos[i]->ctx->streams[0]->seek_result;
+                s->streams[index + i]->seek_result = av_rescale_q(seek_result,
+                                                                  c->videos[i]->ctx->streams[0]->time_base,
+                                                                  s->streams[index + i]->time_base);
             }
         }
     }
+    index += c->n_videos;
     for (i = 0; i < c->n_audios; i++) {
-        if (!ret)
-            ret = dash_seek(s, c->audios[i], seek_pos_msec, flags, !c->audios[i]->ctx);
+        if (!ret) {
+            ret = dash_seek(s, c->audios[i], timestamp, flags, !c->audios[i]->ctx);
+            if (s->streams[index + i] && c->audios[i]->ctx) {
+                int64_t seek_result = c->audios[i]->ctx->streams[0]->seek_result;
+                s->streams[index + i]->seek_result = av_rescale_q(seek_result,
+                                                                  c->audios[i]->ctx->streams[0]->time_base,
+                                                                  s->streams[index + i]->time_base);
+            }
+        }
     }
-
+    index += c->n_audios;
     return ret;
 }
 
@@ -2407,6 +2451,44 @@ static int dash_probe(AVProbeData *p)
     return 0;
 }
 
+extern int dash_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp);
+extern int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp);
+int dash_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp){
+    DASHContext *c = s->priv_data;
+    int i = 0;
+    for (i = 0; i < c->n_videos; i++) {
+        if (c->videos[i]->ctx) {
+            return mov_frag_get_frag_index_with_timestamp(c->videos[i]->ctx, timestamp);
+        }
+
+    }
+    return -1;
+}
+
+extern int64_t dash_frag_get_timestamp_with_index(AVFormatContext *s, int index);
+extern int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index);
+int64_t dash_frag_get_timestamp_with_index(AVFormatContext *s, int index){
+    DASHContext *c = s->priv_data;
+    int i = 0;
+    for (i = 0; i < c->n_videos; i++) {
+        if (c->videos[i]->ctx) {
+            return mov_frag_get_timestamp_with_index(c->videos[i]->ctx, index);
+        }
+    }
+    return AV_NOPTS_VALUE;
+}
+
+extern void dash_xml_release(void);
+void dash_xml_release(void) {
+    xmlCleanupParser();
+}
+
+extern void dash_set_retry(AVFormatContext *s, int retry);
+void dash_set_retry(AVFormatContext *s, int retry) {
+    DASHContext *c = s->priv_data;
+    c->disable_retry = retry ? 0 : 1;
+}
+
 #define OFFSET(x) offsetof(DASHContext, x)
 #define FLAGS AV_OPT_FLAG_DECODING_PARAM
 static const AVOption dash_options[] = {
@@ -2418,6 +2500,10 @@ static const AVOption dash_options[] = {
     {"vid", "video stream id", OFFSET(vid), AV_OPT_TYPE_STRING, {.str = NULL}, INT_MIN, INT_MAX, FLAGS},
     {"ast", "audio stream index", OFFSET(ast), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, FLAGS},
     {"vst", "video stream index", OFFSET(vst), AV_OPT_TYPE_INT, {.i64 = -1}, INT_MIN, INT_MAX, FLAGS},
+    {"disable_xml_release", "disable_xml_release", OFFSET(disable_xml_release), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
+    {"disable_retry", "disable_retry", OFFSET(disable_retry), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
+    {"disable_video", "disable_video", OFFSET(disable_video), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
+    {"disable_audio", "disable_audio", OFFSET(disable_audio), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
     { "dashapplication", "AVApplicationContext", OFFSET(app_ctx_intptr), AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };

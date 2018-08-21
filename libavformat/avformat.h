@@ -797,6 +797,7 @@ enum AVStreamParseType {
 
 typedef struct AVIndexEntry {
     int64_t pos;
+    int64_t sap;
     int64_t timestamp;        /**<
                                * Timestamp in AVStream.time_base units, preferably the time from which on correctly decoded frames are available
                                * when seeking to this entry. That means preferable PTS on keyframe based formats.
@@ -807,8 +808,9 @@ typedef struct AVIndexEntry {
 #define AVINDEX_DISCARD_FRAME  0x0002    /**
                                           * Flag is used to indicate which frame should be discarded after decoding.
                                           */
-    int flags:2;
-    int size:30; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
+#define AVINDEX_SAP 0x0004
+    int flags:3;
+    int size:29; //Yeah, trying to keep the size of this small to reduce memory requirements (it is 24 vs. 32 bytes due to possible 8-byte alignment).
     int min_distance;         /**< Minimum distance between this and the previous keyframe, used to avoid unneeded searching. */
 } AVIndexEntry;
 
@@ -2498,7 +2500,7 @@ void avformat_close_input(AVFormatContext **s);
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
-
+#define AVSEEK_FLAG_SAP     32 ///< seeking based on frame number
 /**
  * @addtogroup lavf_encoding
  * @{

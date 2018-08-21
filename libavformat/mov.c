@@ -4822,6 +4822,13 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (prev_dts >= dts)
             index_entry_flags |= AVINDEX_DISCARD_FRAME;
 
+
+        if (i == 0) {
+            index_entry_flags |= AVINDEX_SAP;
+        }
+
+
+        st->index_entries[index_entry_pos].sap = next_frag_index;
         st->index_entries[index_entry_pos].pos = offset;
         st->index_entries[index_entry_pos].timestamp = dts;
         st->index_entries[index_entry_pos].size= sample_size;
@@ -7154,6 +7161,9 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (sample->flags & AVINDEX_DISCARD_FRAME) {
         pkt->flags |= AV_PKT_FLAG_DISCARD;
     }
+    if (sample->flags & AVINDEX_SAP) {
+        pkt->flags |= AV_PKT_FLAG_SAP;
+    }
     if (sc->ctts_data && sc->ctts_index < sc->ctts_count) {
         pkt->pts = pkt->dts + sc->dts_shift + sc->ctts_data[sc->ctts_index].duration;
         /* update ctts context */
@@ -7208,7 +7218,64 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
     }
+    pkt->current_sap = AV_NOPTS_VALUE;
+    pkt->next_sap    = AV_NOPTS_VALUE;
+    if (mov && sc->has_sidx) {
+        int64_t search_index = search_frag_timestamp(&mov->frag_index, st, pkt->dts + sc->time_offset);
+        if (search_index >= 0 && search_index < mov->frag_index.nb_items) {
+            //pkt->current_sap = get_frag_time(&mov->frag_index, search_index, st->id);
+            //pkt->current_sap = av_rescale_q(pkt->current_sap, st->time_base, AV_TIME_BASE_Q);
+            pkt->current_sap = search_index;
+            if (search_index + 1 < mov->frag_index.nb_items) {
+                pkt->next_sap = search_index + 1;
+                //pkt->next_sap = get_frag_time(&mov->frag_index, search_index + 1, st->id);
+                //pkt->next_sap = av_rescale_q(pkt->next_sap, st->time_base, AV_TIME_BASE_Q);
+            }
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "search_frag_timestamp fail! stream %d pkt->dts = %lld\n", st->index, pkt->dts);
+        }
+    }
 
+    return 0;
+}
+
+extern int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp);
+extern int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index);
+
+int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp){
+    AVStream *st    = s->streams[0];
+    MOVContext *mov = s->priv_data;
+    MOVStreamContext *sc =  st->priv_data;
+    int ts = av_rescale_q(timestamp, AV_TIME_BASE_Q, st->time_base);
+    return search_frag_timestamp(&mov->frag_index, st, ts + sc->time_offset);
+}
+
+int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index){
+    AVStream *st    = s->streams[0];
+    MOVContext *mov = s->priv_data;
+    if (index < 0)
+        index = 0;
+    if (index >= mov->frag_index.nb_items)
+        index = mov->frag_index.nb_items - 1;
+    int64_t timestamp = get_frag_time(&mov->frag_index, index, st->id);
+    return av_rescale_q(timestamp, st->time_base, AV_TIME_BASE_Q);
+}
+
+static int mov_seek_sap(AVFormatContext *s, AVStream *st, int index)
+{
+    MOVContext *mov = s->priv_data;
+
+    if (!mov->frag_index.complete)
+        return 0;
+
+    if (index < 0)
+        index = 0;
+    if (index >= mov->frag_index.nb_items)
+        index = mov->frag_index.nb_items - 1;
+    if (!mov->frag_index.item[index].headers_read)
+        return mov_switch_root(s, -1, index);
+    if (index + 1 < mov->frag_index.nb_items)
+        mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
     return 0;
 }
 
@@ -7233,17 +7300,28 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
 
 static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, int flags)
 {
+    MOVContext *mov = s->priv_data;
     MOVStreamContext *sc = st->priv_data;
     int sample, time_sample, ret;
     unsigned int i;
 
-    // Here we consider timestamp to be PTS, hence try to offset it so that we
-    // can search over the DTS timeline.
-    timestamp -= (sc->min_corrected_pts + sc->dts_shift);
+    if ((flags & AVSEEK_FLAG_SAP) == AVSEEK_FLAG_SAP) {
+        ret = mov_seek_sap(s, st, timestamp);
+        if (ret < 0)
+            return ret;
+        timestamp = get_frag_time(&mov->frag_index, timestamp, st->id);
+        flags &= ~AVSEEK_FLAG_SAP;
+    } else {
+        // Here we consider timestamp to be PTS, hence  try to offset it so that we
+        // can search over the DTS timeline.
+        timestamp -= (sc->min_corrected_pts + sc->dts_shift);
 
-    ret = mov_seek_fragment(s, st, timestamp);
-    if (ret < 0)
-        return ret;
+        ret = mov_seek_fragment(s, st, timestamp);
+        if (ret < 0)
+            return ret;
+    }
+
+
 
     sample = av_index_search_timestamp(st, timestamp, flags);
     av_log(s, AV_LOG_TRACE, "stream %d, timestamp %"PRId64", sample %d\n", st->index, timestamp, sample);
@@ -7294,6 +7372,15 @@ static int mov_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         return AVERROR_INVALIDDATA;
 
     st = s->streams[stream_index];
+
+    if ((flags & AVSEEK_FLAG_SAP) == AVSEEK_FLAG_SAP) {
+        if (mc && sample_time >= mc->frag_index.nb_items) {
+            sample_time = mc->frag_index.nb_items - 1;
+        }
+        if (sample_time < 0) {
+            sample_time = 0;
+        }
+    }
     sample = mov_seek_stream(s, st, sample_time, flags);
     if (sample < 0)
         return sample;

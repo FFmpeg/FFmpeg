@@ -1774,6 +1774,32 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return ret;
 }
 
+extern int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts);
+int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts) {
+    int ret = 0;
+    AVPacket pkt1;
+    AVPacket *pkt = &pkt1;
+    while(!ff_check_interrupt(&s->interrupt_callback)) {
+        ret = read_frame_internal(s, pkt);
+        if (ret == AVERROR(EAGAIN))
+            continue;
+        if (ret < 0)
+            return ret;
+        if (ts != NULL && pkt->dts != AV_NOPTS_VALUE && pkt->stream_index >= 0 && s->nb_streams > 0) {
+            *ts = av_rescale_q(pkt->dts, s->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
+        }
+
+        ret = ff_packet_list_put(&s->internal->packet_buffer,
+                                 &s->internal->packet_buffer_end,
+                                 pkt, FF_PACKETLIST_FLAG_REF_PACKET);
+        (*nb_packets)++;
+        av_packet_unref(pkt);
+        if (ret < 0)
+            return ret;
+        return 0;
+    }
+    return 0;
+}
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 {
     const int genpts = s->flags & AVFMT_FLAG_GENPTS;
@@ -2485,6 +2511,14 @@ static int seek_frame_internal(AVFormatContext *s, int stream_index,
         stream_index = av_find_default_stream_index(s);
         if (stream_index < 0)
             return -1;
+
+        if (flags & AVSEEK_FLAG_SAP) {
+            if (s->iformat->read_seek) {
+                ff_read_frame_flush(s);
+                return s->iformat->read_seek(s, stream_index, timestamp, flags);
+            } else
+                return -1;
+        }
 
         st = s->streams[stream_index];
         /* timestamp for default must be expressed in AV_TIME_BASE units */
