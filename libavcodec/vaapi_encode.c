@@ -960,6 +960,20 @@ fail:
     return err;
 }
 
+static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx,
+                                                  VAEncMiscParameterBuffer *buffer,
+                                                  size_t size)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    av_assert0(ctx->nb_global_params < MAX_GLOBAL_PARAMS);
+
+    ctx->global_params     [ctx->nb_global_params] = buffer;
+    ctx->global_params_size[ctx->nb_global_params] = size;
+
+    ++ctx->nb_global_params;
+}
+
 static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
@@ -1182,20 +1196,16 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         .min_qp            = (avctx->qmin > 0 ? avctx->qmin : 0),
         .basic_unit_size   = 0,
     };
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->rc_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->rc_params);
+    vaapi_encode_add_global_param(avctx, &ctx->rc_params.misc,
+                                  sizeof(ctx->rc_params));
 
     ctx->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
     ctx->hrd_params.hrd = (VAEncMiscParameterHRD) {
         .initial_buffer_fullness = hrd_initial_buffer_fullness,
         .buffer_size             = hrd_buffer_size,
     };
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->hrd_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->hrd_params);
+    vaapi_encode_add_global_param(avctx, &ctx->hrd_params.misc,
+                                  sizeof(ctx->hrd_params));
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
         av_reduce(&fr_num, &fr_den,
@@ -1208,10 +1218,8 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     ctx->fr_params.fr.framerate = (unsigned int)fr_den << 16 | fr_num;
 
 #if VA_CHECK_VERSION(0, 40, 0)
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->fr_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->fr_params);
+    vaapi_encode_add_global_param(avctx, &ctx->fr_params.misc,
+                                  sizeof(ctx->fr_params));
 #endif
 
     return 0;
@@ -1467,10 +1475,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             ctx->quality_params.quality.quality_level =
                 avctx->compression_level;
 
-            ctx->global_params[ctx->nb_global_params] =
-                &ctx->quality_params.misc;
-            ctx->global_params_size[ctx->nb_global_params++] =
-                sizeof(ctx->quality_params);
+            vaapi_encode_add_global_param(avctx, &ctx->quality_params.misc,
+                                          sizeof(ctx->quality_params));
         }
 #else
         av_log(avctx, AV_LOG_WARNING, "The encode compression level "
