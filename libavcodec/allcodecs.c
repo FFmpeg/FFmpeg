@@ -152,6 +152,7 @@ extern AVCodec ff_hq_hqa_decoder;
 extern AVCodec ff_hqx_decoder;
 extern AVCodec ff_huffyuv_encoder;
 extern AVCodec ff_huffyuv_decoder;
+extern AVCodec ff_hymt_decoder;
 extern AVCodec ff_idcin_decoder;
 extern AVCodec ff_iff_ilbm_decoder;
 extern AVCodec ff_imm4_decoder;

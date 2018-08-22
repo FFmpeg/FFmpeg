@@ -12,6 +12,7 @@ version <next>:
 - PCM-DVD encoder
 - GIF parser
 - vividas demuxer
+- hymt decoder
 
 
 version 4.1:
