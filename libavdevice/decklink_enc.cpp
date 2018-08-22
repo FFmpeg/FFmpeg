@@ -193,6 +193,9 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
     pthread_cond_init(&ctx->cond, NULL);
     ctx->frames_buffer_available_spots = ctx->frames_buffer;
 
+    av_log(avctx, AV_LOG_DEBUG, "output: %s, preroll: %d, frames buffer size: %d\n",
+           avctx->url, ctx->frames_preroll, ctx->frames_buffer);
+
     /* The device expects the framerate to be fixed. */
     avpriv_set_pts_info(st, 64, st->time_base.num, st->time_base.den);
 
