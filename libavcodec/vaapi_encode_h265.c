@@ -1026,8 +1026,6 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
-    .priv_data_size        = sizeof(VAAPIEncodeH265Context),
-
     .configure             = &vaapi_encode_h265_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferHEVC),

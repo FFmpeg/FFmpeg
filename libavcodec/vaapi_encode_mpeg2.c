@@ -553,8 +553,6 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_mpeg2 = {
-    .priv_data_size        = sizeof(VAAPIEncodeMPEG2Context),
-
     .configure             = &vaapi_encode_mpeg2_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferMPEG2),

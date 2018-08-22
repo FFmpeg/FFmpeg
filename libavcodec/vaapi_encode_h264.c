@@ -867,8 +867,6 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_h264 = {
-    .priv_data_size        = sizeof(VAAPIEncodeH264Context),
-
     .configure             = &vaapi_encode_h264_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),

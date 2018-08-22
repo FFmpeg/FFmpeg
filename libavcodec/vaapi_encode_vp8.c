@@ -178,8 +178,6 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
 static const VAAPIEncodeType vaapi_encode_type_vp8 = {
     .configure             = &vaapi_encode_vp8_configure,
 
-    .priv_data_size        = sizeof(VAAPIEncodeVP8Context),
-
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP8),
     .init_sequence_params  = &vaapi_encode_vp8_init_sequence_params,
 

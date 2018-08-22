@@ -1372,16 +1372,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->codec_options = ctx->codec_options_data;
-
     ctx->va_config  = VA_INVALID_ID;
     ctx->va_context = VA_INVALID_ID;
-
-    ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
-    if (!ctx->priv_data) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     ctx->input_frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
     if (!ctx->input_frames_ref) {
@@ -1582,8 +1574,6 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
     av_buffer_unref(&ctx->recon_frames_ref);
     av_buffer_unref(&ctx->input_frames_ref);
     av_buffer_unref(&ctx->device_ref);
-
-    av_freep(&ctx->priv_data);
 
     return 0;
 }

@@ -360,8 +360,6 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
-    .priv_data_size        = sizeof(VAAPIEncodeMJPEGContext),
-
     .configure             = &vaapi_encode_mjpeg_configure,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),

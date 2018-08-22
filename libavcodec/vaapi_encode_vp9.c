@@ -206,8 +206,6 @@ static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
 static const VAAPIEncodeType vaapi_encode_type_vp9 = {
     .configure             = &vaapi_encode_vp9_configure,
 
-    .priv_data_size        = sizeof(VAAPIEncodeVP9Context),
-
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP9),
     .init_sequence_params  = &vaapi_encode_vp9_init_sequence_params,
 
