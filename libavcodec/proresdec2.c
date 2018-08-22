@@ -36,6 +36,7 @@
 #include "simple_idct.h"
 #include "proresdec.h"
 #include "proresdata.h"
+#include "thread.h"
 
 static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[64])
 {
@@ -644,6 +645,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                         AVPacket *avpkt)
 {
     ProresContext *ctx = avctx->priv_data;
+    ThreadFrame tframe = { .f = data };
     AVFrame *frame = data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -669,7 +671,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     buf += frame_hdr_size;
     buf_size -= frame_hdr_size;
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+    if ((ret = ff_thread_get_buffer(avctx, &tframe, 0)) < 0)
         return ret;
 
  decode_picture:
@@ -697,6 +699,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     return avpkt->size;
 }
 
+#if HAVE_THREADS
+static int decode_init_thread_copy(AVCodecContext *avctx)
+{
+    ProresContext *ctx = avctx->priv_data;
+
+    ctx->slices = NULL;
+
+    return 0;
+}
+#endif
+
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     ProresContext *ctx = avctx->priv_data;
@@ -713,7 +726,8 @@ AVCodec ff_prores_decoder = {
     .id             = AV_CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
     .init           = decode_init,
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
 };
