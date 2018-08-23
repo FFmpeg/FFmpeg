@@ -258,6 +258,7 @@ OBJS-$(CONFIG_LIBVMAF_FILTER)                += vf_libvmaf.o framesync.o
 OBJS-$(CONFIG_LIMITER_FILTER)                += vf_limiter.o
 OBJS-$(CONFIG_LOOP_FILTER)                   += f_loop.o
 OBJS-$(CONFIG_LUMAKEY_FILTER)                += vf_lumakey.o
+OBJS-$(CONFIG_LUT1D_FILTER)                  += vf_lut3d.o
 OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
 OBJS-$(CONFIG_LUT2_FILTER)                   += vf_lut2.o framesync.o
 OBJS-$(CONFIG_LUT3D_FILTER)                  += vf_lut3d.o

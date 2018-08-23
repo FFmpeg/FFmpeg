@@ -10962,6 +10962,37 @@ Set maximal size in number of frames. Default is 0.
 Set first frame of loop. Default is 0.
 @end table
 
+@section lut1d
+
+Apply a 1D LUT to an input video.
+
+The filter accepts the following options:
+
+@table @option
+@item file
+Set the 1D LUT file name.
+
+Currently supported formats:
+@table @samp
+@item cube
+Iridas
+@end table
+
+@item interp
+Select interpolation mode.
+
+Available values are:
+
+@table @samp
+@item nearest
+Use values from the nearest defined point.
+@item linear
+Interpolate values using the linear interpolation.
+@item cubic
+Interpolate values using the cubic interpolation.
+@end table
+@end table
+
 @anchor{lut3d}
 @section lut3d
 

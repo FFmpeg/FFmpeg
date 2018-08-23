@@ -21,6 +21,7 @@ version <next>:
 - Brooktree ProSumer video decoder
 - MatchWare Screen Capture Codec decoder
 - WinCam Motion Video decoder
+- 1D LUT filter (lut1d)
 
 
 version 4.0:
