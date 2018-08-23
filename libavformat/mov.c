@@ -7243,6 +7243,9 @@ extern int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t ti
 extern int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index);
 
 int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp){
+    if (!s->streams) {
+        av_log(NULL, AV_LOG_ERROR, "mov_frag_get_frag_index_with_timestamp s->streams is NULL\n");
+    }
     AVStream *st    = s->streams[0];
     MOVContext *mov = s->priv_data;
     MOVStreamContext *sc =  st->priv_data;

@@ -1338,7 +1338,9 @@ cleanup:
                 strcpy(c->info.cur_audio_id, c->audios[i]->id);
         }
     }
-    c->app_ctx->func_on_app_event(c->app_ctx, AVAPP_CTRL_SET_DASH_VIDEO_STREAM, &c->info, sizeof(c->info));
+    if (c->app_ctx) {
+        c->app_ctx->func_on_app_event(c->app_ctx, AVAPP_CTRL_SET_DASH_VIDEO_STREAM, &c->info, sizeof(c->info));
+    }
     av_free(new_url);
     av_free(buffer);
     if (close_in) {
@@ -2134,7 +2136,10 @@ static int dash_read_header(AVFormatContext *s, AVDictionary **options)
     c->app_io_ctrl.retry_counter = 0;
 
     c->interrupt_callback = &s->interrupt_callback;
-
+    if (!c->app_ctx) {
+        av_log(NULL, AV_LOG_ERROR, "dash c->app_ctx is NULL\n");
+        return -1;
+    }
 
     if (options && *options)
         av_dict_copy(&c->avio_opts, *options, 0);
