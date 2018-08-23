@@ -1779,25 +1779,24 @@ int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts) {
     int ret = 0;
     AVPacket pkt1;
     AVPacket *pkt = &pkt1;
-    while(!ff_check_interrupt(&s->interrupt_callback)) {
-        ret = read_frame_internal(s, pkt);
-        if (ret == AVERROR(EAGAIN))
-            continue;
-        if (ret < 0)
-            return ret;
-        if (ts != NULL && pkt->dts != AV_NOPTS_VALUE && pkt->stream_index >= 0 && s->nb_streams > 0) {
-            *ts = av_rescale_q(pkt->dts, s->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
-        }
 
-        ret = ff_packet_list_put(&s->internal->packet_buffer,
-                                 &s->internal->packet_buffer_end,
-                                 pkt, FF_PACKETLIST_FLAG_REF_PACKET);
-        (*nb_packets)++;
-        av_packet_unref(pkt);
-        if (ret < 0)
-            return ret;
-        return 0;
+retry:
+    ret = read_frame_internal(s, pkt);
+    if (ret == AVERROR(EAGAIN))
+        goto retry;
+    if (ret < 0)
+        return ret;
+    if (ts != NULL && pkt->dts != AV_NOPTS_VALUE && pkt->stream_index >= 0 && s->nb_streams > 0) {
+        *ts = av_rescale_q(pkt->dts, s->streams[pkt->stream_index]->time_base, AV_TIME_BASE_Q);
     }
+
+    ret = ff_packet_list_put(&s->internal->packet_buffer,
+                             &s->internal->packet_buffer_end,
+                             pkt, FF_PACKETLIST_FLAG_REF_PACKET);
+    (*nb_packets)++;
+    av_packet_unref(pkt);
+    if (ret < 0)
+        return ret;
     return 0;
 }
 int av_read_frame(AVFormatContext *s, AVPacket *pkt)

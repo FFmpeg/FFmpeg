@@ -1562,6 +1562,9 @@ static int func_on_app_event(AVApplicationContext *h, int event_type ,void *obj,
     int64_t cur_seq_no = pls->cur_seq_no;
     int ret = 0;
 
+    if (!c->app_ctx)
+        return -1;
+
     switch (event_type) {
         case AVAPP_CTRL_WILL_HTTP_OPEN:
             if (!obj || !app_io_ctrl || size != sizeof(AVAppIOControl)) {
