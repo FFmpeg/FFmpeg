@@ -45,7 +45,7 @@ typedef struct ProSumerContext {
 
 #define PAIR(high, low) (((uint64_t)(high) << 32) | low)
 
-static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const unsigned *lut)
+static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const uint32_t *lut)
 {
     int pos, idx, cnt, fill;
     uint32_t a, b, c;
@@ -149,7 +149,7 @@ static void do_shift(uint32_t *dst, int offset, uint32_t *src, int stride, int h
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
-                                      int *got_frame, AVPacket *avpkt)
+                        int *got_frame, AVPacket *avpkt)
 {
     ProSumerContext *s = avctx->priv_data;
     AVFrame * const frame = data;
@@ -278,9 +278,9 @@ static const uint32_t table[] = {
     0x0001
 };
 
-static void fill_elements(unsigned idx, unsigned shift, int size, unsigned *e0, unsigned *e1)
+static void fill_elements(uint32_t idx, uint32_t shift, int size, uint32_t *e0, uint32_t *e1)
 {
-    unsigned a = 1, b, g = 1, h = idx << (32 - shift);
+    uint32_t a = 1, b, g = 1, h = idx << (32 - shift);
 
     for (int i = 0; i < size; i++) {
         if (!a || !g)
@@ -315,12 +315,12 @@ static void fill_elements(unsigned idx, unsigned shift, int size, unsigned *e0, 
     }
 }
 
-static void fill_lut(unsigned *lut)
+static void fill_lut(uint32_t *lut)
 {
     for (int i = 1; i < FF_ARRAY_ELEMS(table); i += 2) {
-        unsigned a = table[i];
-        unsigned b = a & 0xFFu;
-        unsigned c, d, e;
+        uint32_t a = table[i];
+        uint32_t b = a & 0xFFu;
+        uint32_t c, d, e;
 
         if (b > 3)
             continue;
@@ -333,7 +333,7 @@ static void fill_lut(unsigned *lut)
             lut[2 * e + 1] = 0;
         } else {
             for (int j = 0; j < 1 << d; j++) {
-                unsigned f = 0xFFFFFFFFu;
+                uint32_t f = 0xFFFFFFFFu;
                 c &= 0xFFFFFFu;
                 if ((c & 0xFF00u) != 0x8000u)
                     fill_elements(j, d, 365, &c, &f);
