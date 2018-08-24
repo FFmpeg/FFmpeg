@@ -4819,15 +4819,24 @@ elif enabled mips; then
                 disable mipsfpu
                 disable mipsdsp
                 disable mipsdspr2
+                # When gcc version less than 5.3.0, add -fno-expensive-optimizations flag.
+                if [ $cc == gcc ]; then
+                    gcc_version=$(gcc -dumpversion)
+                    if [ "$(echo "$gcc_version 5.3.0" | tr " " "\n" | sort -rV | head -n 1)" == "$gcc_version" ]; then
+                        expensive_optimization_flag=""
+                    else
+                        expensive_optimization_flag="-fno-expensive-optimizations"
+                    fi
+                fi
                 case $cpu in
                     loongson3*)
-                        cpuflags="-march=loongson3a -mhard-float -fno-expensive-optimizations"
+                        cpuflags="-march=loongson3a -mhard-float $expensive_optimization_flag"
                     ;;
                     loongson2e)
-                        cpuflags="-march=loongson2e -mhard-float -fno-expensive-optimizations"
+                        cpuflags="-march=loongson2e -mhard-float $expensive_optimization_flag"
                     ;;
                     loongson2f)
-                        cpuflags="-march=loongson2f -mhard-float -fno-expensive-optimizations"
+                        cpuflags="-march=loongson2f -mhard-float $expensive_optimization_flag"
                     ;;
                 esac
             ;;
