@@ -1668,6 +1668,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Brooktree ProSumer Video"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_MWSC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "mwsc",
+        .long_name = NULL_IF_CONFIG_SMALL("MatchWare Screen Capture Codec"),
+        .props     = AV_CODEC_PROP_LOSSLESS,
+    },
 
     /* various PCM "codecs" */
     {
