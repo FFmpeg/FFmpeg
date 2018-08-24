@@ -753,6 +753,9 @@ static int flv_read_close(AVFormatContext *s)
 
 static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 {
+    if (!size)
+        return 0;
+
     av_freep(&st->codecpar->extradata);
     if (ff_get_extradata(s, st->codecpar, s->pb, size) < 0)
         return AVERROR(ENOMEM);
@@ -763,6 +766,9 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 static int flv_queue_extradata(FLVContext *flv, AVIOContext *pb, int stream,
                                int size)
 {
+    if (!size)
+        return 0;
+
     av_free(flv->new_extradata[stream]);
     flv->new_extradata[stream] = av_mallocz(size +
                                             AV_INPUT_BUFFER_PADDING_SIZE);
