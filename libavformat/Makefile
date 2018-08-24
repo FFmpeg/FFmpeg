@@ -285,7 +285,7 @@ OBJS-$(CONFIG_MATROSKA_DEMUXER)          += matroskadec.o matroska.o  \
                                             oggparsevorbis.o vorbiscomment.o \
                                             flac_picture.o replaygain.o
 OBJS-$(CONFIG_MATROSKA_MUXER)            += matroskaenc.o matroska.o \
-                                            avc.o hevc.o \
+                                            av1.o avc.o hevc.o \
                                             flacenc_header.o avlanguage.o vorbiscomment.o wv.o \
                                             webmdashenc.o webm_chunk.o
 OBJS-$(CONFIG_MD5_MUXER)                 += hashenc.o
@@ -529,7 +529,7 @@ OBJS-$(CONFIG_WAV_DEMUXER)               += wavdec.o pcm.o
 OBJS-$(CONFIG_WAV_MUXER)                 += wavenc.o
 OBJS-$(CONFIG_WC3_DEMUXER)               += wc3movie.o
 OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
-                                            avc.o hevc.o \
+                                            av1.o avc.o hevc.o \
                                             flacenc_header.o avlanguage.o \
                                             wv.o vorbiscomment.o \
                                             webmdashenc.o webm_chunk.o
