@@ -20,6 +20,7 @@ version <next>:
 - IMM4 video decoder
 - Brooktree ProSumer video decoder
 - MatchWare Screen Capture Codec decoder
+- WinCam Motion Video decoder
 
 
 version 4.0:

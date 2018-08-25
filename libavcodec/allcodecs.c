@@ -338,6 +338,7 @@ extern AVCodec ff_vp9_rkmpp_decoder;
 extern AVCodec ff_vp9_v4l2m2m_decoder;
 extern AVCodec ff_vqa_decoder;
 extern AVCodec ff_webp_decoder;
+extern AVCodec ff_wcmv_decoder;
 extern AVCodec ff_wrapped_avframe_encoder;
 extern AVCodec ff_wrapped_avframe_decoder;
 extern AVCodec ff_wmv1_encoder;
