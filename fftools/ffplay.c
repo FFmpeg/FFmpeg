@@ -2211,6 +2211,8 @@ static int video_thread(void *arg)
             ret = queue_picture(is, frame, pts, duration, frame->pkt_pos, is->viddec.pkt_serial);
             av_frame_unref(frame);
 #if CONFIG_AVFILTER
+            if (is->videoq.serial != is->viddec.pkt_serial)
+                break;
         }
 #endif
 
