@@ -57,6 +57,7 @@ typedef struct ZmbvContext {
     AVCodecContext *avctx;
 
     int bpp;
+    int alloc_bpp;
     unsigned int decomp_size;
     uint8_t* decomp_buf;
     uint8_t pal[768];
@@ -494,12 +495,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             return AVERROR_UNKNOWN;
         }
 
-        c->cur  = av_realloc_f(c->cur, avctx->width * avctx->height,  (c->bpp / 8));
-        c->prev = av_realloc_f(c->prev, avctx->width * avctx->height,  (c->bpp / 8));
+        if (c->alloc_bpp < c->bpp) {
+            c->cur  = av_realloc_f(c->cur, avctx->width * avctx->height,  (c->bpp / 8));
+            c->prev = av_realloc_f(c->prev, avctx->width * avctx->height,  (c->bpp / 8));
+            c->alloc_bpp = c->bpp;
+        }
         c->bx = (c->width + c->bw - 1) / c->bw;
         c->by = (c->height+ c->bh - 1) / c->bh;
-        if (!c->cur || !c->prev)
+        if (!c->cur || !c->prev) {
+            c->alloc_bpp = 0;
             return AVERROR(ENOMEM);
+        }
         memset(c->cur, 0, avctx->width * avctx->height * (c->bpp / 8));
         memset(c->prev, 0, avctx->width * avctx->height * (c->bpp / 8));
         c->decode_intra= decode_intra;
