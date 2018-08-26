@@ -2390,7 +2390,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (st->codecpar->codec_id == AV_CODEC_ID_NONE || (st->codecpar->codec_id == AV_CODEC_ID_PCM_ALAW && (enum AVCodecID)container_ul->id != AV_CODEC_ID_NONE))
                 st->codecpar->codec_id = (enum AVCodecID)container_ul->id;
             st->codecpar->channels = descriptor->channels;
-            st->codecpar->bits_per_coded_sample = descriptor->bits_per_sample;
 
             if (descriptor->sample_rate.den > 0) {
                 st->codecpar->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
@@ -2423,6 +2422,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             } else if (st->codecpar->codec_id == AV_CODEC_ID_MP2) {
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
+            st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             enum AVMediaType type;
             container_ul = mxf_get_codec_ul(mxf_data_essence_container_uls, essence_container_ul);
@@ -3269,7 +3269,8 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, AVStream *st, int64_t 
 static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
                              AVPacket *pkt)
 {
-    MXFTrack *track = mxf->fc->streams[pkt->stream_index]->priv_data;
+    AVStream *st = mxf->fc->streams[pkt->stream_index];
+    MXFTrack *track = st->priv_data;
     int64_t bits_per_sample = par->bits_per_coded_sample;
 
     if (!bits_per_sample)
@@ -3280,8 +3281,10 @@ static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
     if (   par->channels <= 0
         || bits_per_sample <= 0
         || par->channels * (int64_t)bits_per_sample < 8)
-        return AVERROR(EINVAL);
-    track->sample_count += pkt->size / (par->channels * (int64_t)bits_per_sample / 8);
+        track->sample_count = mxf_compute_sample_count(mxf, st, av_rescale_q(track->sample_count, st->time_base, av_inv_q(track->edit_rate)) + 1);
+    else
+        track->sample_count += pkt->size / (par->channels * (int64_t)bits_per_sample / 8);
+
     return 0;
 }
 
