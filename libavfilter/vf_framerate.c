@@ -38,6 +38,7 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+#include "filters.h"
 #include "framerate.h"
 
 #define OFFSET(x) offsetof(FrameRateContext, x)
@@ -360,53 +361,81 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
+static int activate(AVFilterContext *ctx)
 {
-    int ret;
-    AVFilterContext *ctx = inlink->dst;
+    int ret, status;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     FrameRateContext *s = ctx->priv;
+    AVFrame *inpicref;
     int64_t pts;
 
-    if (inpicref->interlaced_frame)
-        av_log(ctx, AV_LOG_WARNING, "Interlaced frame found - the output will not be correct.\n");
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (inpicref->pts == AV_NOPTS_VALUE) {
-        av_log(ctx, AV_LOG_WARNING, "Ignoring frame without PTS.\n");
-        return 0;
+retry:
+    ret = process_work_frame(ctx);
+    if (ret < 0)
+        return ret;
+    else if (ret == 1)
+        return ff_filter_frame(outlink, s->work);
+
+    ret = ff_inlink_consume_frame(inlink, &inpicref);
+    if (ret < 0)
+        return ret;
+
+    if (inpicref) {
+        if (inpicref->interlaced_frame)
+            av_log(ctx, AV_LOG_WARNING, "Interlaced frame found - the output will not be correct.\n");
+
+        if (inpicref->pts == AV_NOPTS_VALUE) {
+            av_log(ctx, AV_LOG_WARNING, "Ignoring frame without PTS.\n");
+            av_frame_free(&inpicref);
+        }
     }
 
-    pts = av_rescale_q(inpicref->pts, s->srce_time_base, s->dest_time_base);
-    if (s->f1 && pts == s->pts1) {
-        av_log(ctx, AV_LOG_WARNING, "Ignoring frame with same PTS.\n");
-        return 0;
+    if (inpicref) {
+        pts = av_rescale_q(inpicref->pts, s->srce_time_base, s->dest_time_base);
+
+        if (s->f1 && pts == s->pts1) {
+            av_log(ctx, AV_LOG_WARNING, "Ignoring frame with same PTS.\n");
+            av_frame_free(&inpicref);
+        }
     }
 
-    av_frame_free(&s->f0);
-    s->f0 = s->f1;
-    s->pts0 = s->pts1;
-    s->f1 = inpicref;
-    s->pts1 = pts;
-    s->delta = s->pts1 - s->pts0;
-    s->score = -1.0;
-
-    if (s->delta < 0) {
-        av_log(ctx, AV_LOG_WARNING, "PTS discontinuity.\n");
-        s->start_pts = s->pts1;
-        s->n = 0;
+    if (inpicref) {
         av_frame_free(&s->f0);
+        s->f0 = s->f1;
+        s->pts0 = s->pts1;
+        s->f1 = inpicref;
+        s->pts1 = pts;
+        s->delta = s->pts1 - s->pts0;
+        s->score = -1.0;
+
+        if (s->delta < 0) {
+            av_log(ctx, AV_LOG_WARNING, "PTS discontinuity.\n");
+            s->start_pts = s->pts1;
+            s->n = 0;
+            av_frame_free(&s->f0);
+        }
+
+        if (s->start_pts == AV_NOPTS_VALUE)
+            s->start_pts = s->pts1;
+
+        goto retry;
     }
 
-    if (s->start_pts == AV_NOPTS_VALUE)
-        s->start_pts = s->pts1;
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (!s->flush) {
+            s->flush = 1;
+            goto retry;
+        }
+        ff_outlink_set_status(outlink, status, pts);
+        return 0;
+    }
 
-    do {
-        ret = process_work_frame(ctx);
-        if (ret <= 0)
-            return ret;
-        ret = ff_filter_frame(ctx->outputs[0], s->work);
-    } while (ret >= 0);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
 
-    return ret;
+    return FFERROR_NOT_READY;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -454,33 +483,11 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    FrameRateContext *s = ctx->priv;
-    int ret;
-
-    ff_dlog(ctx, "request_frame()\n");
-
-    ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF && s->f1 && !s->flush) {
-        s->flush = 1;
-        ret = process_work_frame(ctx);
-        if (ret < 0)
-            return ret;
-        ret = ret ? ff_filter_frame(ctx->outputs[0], s->work) : AVERROR_EOF;
-    }
-
-    ff_dlog(ctx, "request_frame() source's request_frame() returned:%d\n", ret);
-    return ret;
-}
-
 static const AVFilterPad framerate_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -489,7 +496,6 @@ static const AVFilterPad framerate_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -506,4 +512,5 @@ AVFilter ff_vf_framerate = {
     .inputs        = framerate_inputs,
     .outputs       = framerate_outputs,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .activate      = activate,
 };
