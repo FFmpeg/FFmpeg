@@ -599,12 +599,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     c->decomp_size = (avctx->width + 255) * 4 * (avctx->height + 64);
 
     /* Allocate decompression buffer */
-    if (c->decomp_size) {
-        if (!(c->decomp_buf = av_mallocz(c->decomp_size))) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Can't allocate decompression buffer.\n");
-            return AVERROR(ENOMEM);
-        }
+    c->decomp_buf = av_mallocz(c->decomp_size);
+    if (!c->decomp_buf) {
+        av_log(avctx, AV_LOG_ERROR,
+                "Can't allocate decompression buffer.\n");
+        return AVERROR(ENOMEM);
     }
 
     c->zstream.zalloc = Z_NULL;
