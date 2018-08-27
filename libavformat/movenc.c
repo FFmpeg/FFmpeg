@@ -6778,6 +6778,7 @@ const AVCodecTag codec_mp4_tags[] = {
     { AV_CODEC_ID_EVRC        , MKTAG('m', 'p', '4', 'a') },
     { AV_CODEC_ID_DVD_SUBTITLE, MKTAG('m', 'p', '4', 's') },
     { AV_CODEC_ID_MOV_TEXT    , MKTAG('t', 'x', '3', 'g') },
+    { AV_CODEC_ID_BIN_DATA    , MKTAG('g', 'p', 'm', 'd') },
     { AV_CODEC_ID_NONE        ,    0 },
 };
 
