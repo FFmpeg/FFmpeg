@@ -634,6 +634,34 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
     const int reuse_params =  get_bits1(gb);
     const int stereo = s->block_config->type[block_idx] == ATRAC9_BLOCK_TYPE_CPE;
 
+    if (s->block_config->type[block_idx] == ATRAC9_BLOCK_TYPE_LFE) {
+        ATRAC9ChannelData *c = &b->channel[0];
+        const int precision = reuse_params ? 8 : 4;
+        c->q_unit_cnt = b->q_unit_cnt = 2;
+
+        memset(c->scalefactors, 0, sizeof(c->scalefactors));
+        memset(c->q_coeffs_fine, 0, sizeof(c->q_coeffs_fine));
+        memset(c->q_coeffs_coarse, 0, sizeof(c->q_coeffs_coarse));
+
+        for (int i = 0; i < b->q_unit_cnt; i++) {
+            c->scalefactors[i] = get_bits(gb, 5);
+            c->precision_coarse[i] = precision;
+            c->precision_fine[i] = 0;
+        }
+
+        for (int i = 0; i < c->q_unit_cnt; i++) {
+            const int start = at9_q_unit_to_coeff_idx[i + 0];
+            const int end   = at9_q_unit_to_coeff_idx[i + 1];
+            for (int j = start; j < end; j++)
+                c->q_coeffs_coarse[j] = get_bits(gb, c->precision_coarse[i] + 1);
+        }
+
+        dequantize        (s, b, c);
+        apply_scalefactors(s, b, 0);
+
+        goto imdct;
+    }
+
     if (first_in_pkt && reuse_params) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid block flags!\n");
         return AVERROR_INVALIDDATA;
@@ -718,7 +746,7 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
     apply_scalefactors    (s, b, stereo);
     apply_band_extension  (s, b, stereo);
 
-    /* iMDCT */
+imdct:
     for (int i = 0; i <= stereo; i++) {
         ATRAC9ChannelData *c = &b->channel[i];
         const int dst_idx = s->block_config->plane_map[block_idx][i];
