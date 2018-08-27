@@ -374,6 +374,11 @@ const AVCodecTag ff_codec_movsubtitle_tags[] = {
     { AV_CODEC_ID_NONE, 0 },
 };
 
+const AVCodecTag ff_codec_movdata_tags[] = {
+    { AV_CODEC_ID_BIN_DATA, MKTAG('g', 'p', 'm', 'd') },
+    { AV_CODEC_ID_NONE, 0 },
+};
+
 /* map numeric codes from mdhd atom to ISO 639 */
 /* cf. QTFileFormat.pdf p253, qtff.pdf p205 */
 /* http://developer.apple.com/documentation/mac/Text/Text-368.html */

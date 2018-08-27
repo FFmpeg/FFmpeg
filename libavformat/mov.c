@@ -2034,6 +2034,8 @@ static int mov_codec_id(AVStream *st, uint32_t format)
             id = ff_codec_get_id(ff_codec_movsubtitle_tags, format);
             if (id > 0)
                 st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            else
+                id = ff_codec_get_id(ff_codec_movdata_tags, format);
         }
     }
 
@@ -2507,6 +2509,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             mov_parse_stsd_subtitle(c, pb, st, sc,
                                     size - (avio_tell(pb) - start_pos));
         } else {
+            st->codecpar->codec_id = id;
             ret = mov_parse_stsd_data(c, pb, st, sc,
                                       size - (avio_tell(pb) - start_pos));
             if (ret < 0)
