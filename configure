@@ -1818,16 +1818,17 @@ FEATURE_LIST="
     swscale_alpha
 "
 
+# this list should be kept in linking order
 LIBRARY_LIST="
-    avcodec
     avdevice
     avfilter
+    swscale
+    postproc
     avformat
+    avcodec
+    swresample
     avresample
     avutil
-    postproc
-    swresample
-    swscale
 "
 
 LICENSE_LIST="
@@ -3491,7 +3492,7 @@ vaapi_transcode_example_deps="avcodec avformat avutil h264_vaapi_encoder"
 cpu_init_extralibs="pthreads_extralibs"
 cws2fws_extralibs="zlib_extralibs"
 
-# libraries, in linking order
+# libraries, in any order
 avcodec_deps="avutil"
 avcodec_suggest="libm"
 avcodec_select="null_bsf"
@@ -6846,7 +6847,7 @@ done
 
 enabled zlib && add_cppflags -DZLIB_CONST
 
-# conditional library dependencies, in linking order
+# conditional library dependencies, in any order
 enabled afftfilt_filter     && prepend avfilter_deps "avcodec"
 enabled afir_filter         && prepend avfilter_deps "avcodec"
 enabled amovie_filter       && prepend avfilter_deps "avformat avcodec"
@@ -6889,11 +6890,36 @@ enabled sdl2_outdev     && add_cflags $(filter_out '-Dmain=SDL_main' $sdl2_cflag
 
 enabled opus_decoder    && prepend avcodec_deps "swresample"
 
+# reorder the items at var $1 to align with the items order at var $2 .
+# die if an item at $1 is not at $2 .
+reorder_by(){
+    eval rb_in=\$$1
+    eval rb_ordered=\$$2
+
+    for rb in $rb_in; do
+        is_in $rb $rb_ordered || die "$rb at \$$1 is not at \$$2"
+    done
+
+    rb_out=
+    for rb in $rb_ordered; do
+        is_in $rb $rb_in && rb_out="$rb_out$rb "
+    done
+    eval $1=\$rb_out
+}
+
+# deps-expand fflib $1:  N x {append all expanded deps; unique}
+# within a set of N items, N expansions are enough to expose a cycle.
 expand_deps(){
-    lib_deps=${1}_deps
-    eval "deps=\$$lib_deps"
-    append $lib_deps $(map 'eval echo \$${v}_deps' $deps)
-    unique $lib_deps
+    unique ${1}_deps  # required for the early break test.
+    for dummy in $LIBRARY_LIST; do  # N iteratios
+        eval deps=\$${1}_deps
+        append ${1}_deps $(map 'eval echo \$${v}_deps' $deps)
+        unique ${1}_deps
+        eval '[ ${#deps} = ${#'${1}_deps'} ]' && break  # doesn't expand anymore
+    done
+
+    eval is_in $1 \$${1}_deps && die "Dependency cycle at ${1}_deps"
+    reorder_by ${1}_deps LIBRARY_LIST  # linking order is expected later
 }
 
 #we have to remove gpl from the deps here as some code assumes all lib deps are libs
