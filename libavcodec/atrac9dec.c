@@ -61,7 +61,6 @@ typedef struct ATRAC9BlockData {
     int has_band_ext;
     int has_band_ext_data;
     int band_ext_q_unit;
-    int band_ext_mode;
 
     /* Gradient */
     int grad_mode;
@@ -215,7 +214,7 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
         return 0;
 
     if (!b->has_band_ext) {
-        b->band_ext_mode = get_bits(gb, 2);
+        skip_bits(gb, 2);
         skip_bits_long(gb, get_bits(gb, 5));
         return 0;
     }
@@ -501,7 +500,7 @@ static inline void fill_with_noise(ATRAC9Context *s, ATRAC9ChannelData *c,
         av_bmg_get(&s->lfg, tmp);
         c->coeffs[start + i + 0] = tmp[0];
         c->coeffs[start + i + 1] = tmp[1];
-        maxval = FFMAX(FFABS(tmp[0]), FFMAX(FFABS(tmp[1]), maxval));
+        maxval = FFMAX(FFMAX(FFABS(tmp[0]), FFABS(tmp[1])), maxval);
     }
     /* Normalize */
     for (int i = 0; i < count; i++)
@@ -522,7 +521,6 @@ static inline void scale_band_ext_coeffs(ATRAC9ChannelData *c, float sf[6],
 static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
                                        const int stereo)
 {
-    const int bc = at9_tab_band_ext_group[b->q_unit_cnt - 13][2];
     const int g_units[4] = { /* A, B, C, total units */
         b->q_unit_cnt,
         at9_tab_band_ext_group[b->q_unit_cnt - 13][0],
@@ -550,11 +548,11 @@ static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
 
         switch (c->band_ext) {
         case 0: {
-            int l;
             float sf[6] = { 0.0f };
+            const int l = g_units[3] - g_units[0] - 1;
             const int n_start = at9_q_unit_to_coeff_idx[g_units[3] - 1];
             const int n_cnt   = at9_q_unit_to_coeff_cnt[g_units[3] - 1];
-            switch (bc) {
+            switch (at9_tab_band_ext_group[b->q_unit_cnt - 13][2]) {
             case 3:
                 sf[0] = at9_band_ext_scales_m0[0][0][c->band_ext_data[0]];
                 sf[1] = at9_band_ext_scales_m0[0][1][c->band_ext_data[0]];
@@ -576,7 +574,6 @@ static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
                 break;
             }
 
-            l = g_units[3] - g_units[0] - 1;
             sf[l] = at9_scalefactor_c[c->scalefactors[g_units[0]]];
 
             fill_with_noise(s, c, n_start, n_cnt);
