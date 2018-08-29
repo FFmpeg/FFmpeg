@@ -1777,6 +1777,12 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
     if (pls->ctx) {
         close_demux_for_component(pls);
     }
+
+    if (ff_check_interrupt(&s->interrupt_callback)) {
+        ret = AVERROR_EXIT;
+        goto fail;
+    }
+
     if (!(pls->ctx = avformat_alloc_context())) {
         ret = AVERROR(ENOMEM);
         goto fail;
