@@ -334,6 +334,8 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         ret = decode_value(s, s->run_model[0], 256, 400, &run);
         if (ret < 0)
             return ret;
+        if (run <= 0)
+            return AVERROR_INVALIDDATA;
 
         clr = (b << 16) + (g << 8) + r;
         k += run;
@@ -382,6 +384,8 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         ret = decode_value(s, s->run_model[ptype], 256, 400, &run);
         if (ret < 0)
             return ret;
+        if (run <= 0)
+            return AVERROR_INVALIDDATA;
 
         switch (ptype) {
         case 0:
@@ -615,6 +619,8 @@ static int decompress_p(AVCodecContext *avctx,
                     ret = decode_value(s, s->run_model[ptype], 256, 400, &run);
                     if (ret < 0)
                         return ret;
+                    if (run <= 0)
+                        return AVERROR_INVALIDDATA;
 
                     switch (ptype) {
                     case 0:
