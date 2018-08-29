@@ -25,6 +25,7 @@ version <next>:
 - RemotelyAnywhere Screen Capture decoder
 - cue and acue filters
 - support for AV1 in MP4
+- transpose_npp filter
 
 
 version 4.0:
