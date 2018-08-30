@@ -166,7 +166,7 @@ static int libsmbc_read(URLContext *h, unsigned char *buf, int size)
         return ret;
     }
 
-    return bytes_read;
+    return bytes_read ? bytes_read : AVERROR_EOF;
 }
 
 static int libsmbc_write(URLContext *h, const unsigned char *buf, int size)
