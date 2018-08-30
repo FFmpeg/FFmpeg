@@ -207,17 +207,17 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
     int i, j, level, run;
     int max_level = 1 << (ctx->bit_depth + 2);
 
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->vlc_codes,
-                      max_level, 4 * sizeof(*ctx->vlc_codes), fail);
-    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->vlc_bits,
-                      max_level, 4 * sizeof(*ctx->vlc_bits), fail);
+    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->orig_vlc_codes,
+                      max_level, 4 * sizeof(*ctx->orig_vlc_codes), fail);
+    FF_ALLOCZ_ARRAY_OR_GOTO(ctx->m.avctx, ctx->orig_vlc_bits,
+                      max_level, 4 * sizeof(*ctx->orig_vlc_bits), fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_codes,
                       63 * 2, fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_bits,
                       63, fail);
 
-    ctx->vlc_codes += max_level * 2;
-    ctx->vlc_bits  += max_level * 2;
+    ctx->vlc_codes = ctx->orig_vlc_codes + max_level * 2;
+    ctx->vlc_bits  = ctx->orig_vlc_bits + max_level * 2;
     for (level = -max_level; level < max_level; level++) {
         for (run = 0; run < 2; run++) {
             int index = (level << 1) | run;
@@ -1348,11 +1348,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static av_cold int dnxhd_encode_end(AVCodecContext *avctx)
 {
     DNXHDEncContext *ctx = avctx->priv_data;
-    int max_level        = 1 << (ctx->bit_depth + 2);
     int i;
 
-    av_free(ctx->vlc_codes - max_level * 2);
-    av_free(ctx->vlc_bits - max_level * 2);
+    av_freep(&ctx->orig_vlc_codes);
+    av_freep(&ctx->orig_vlc_bits);
     av_freep(&ctx->run_codes);
     av_freep(&ctx->run_bits);
 
@@ -1392,6 +1391,7 @@ AVCodec ff_dnxhd_encoder = {
     .encode2        = dnxhd_encode_picture,
     .close          = dnxhd_encode_end,
     .capabilities   = AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV422P10,

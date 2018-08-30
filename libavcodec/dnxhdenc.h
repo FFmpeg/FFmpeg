@@ -86,6 +86,8 @@ typedef struct DNXHDEncContext {
     unsigned frame_bits;
     uint8_t *src[3];
 
+    uint32_t *orig_vlc_codes;
+    uint8_t  *orig_vlc_bits;
     uint32_t *vlc_codes;
     uint8_t  *vlc_bits;
     uint16_t *run_codes;
