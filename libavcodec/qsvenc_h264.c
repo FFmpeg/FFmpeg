@@ -1,5 +1,5 @@
 /*
- * Intel MediaSDK QSV based H.264 enccoder
+ * Intel MediaSDK QSV based H.264 encoder
  *
  * copyright (c) 2013 Yukinori Yamazoe
  *
