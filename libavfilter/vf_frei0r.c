@@ -125,7 +125,6 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         if (sscanf(param, "%lf/%lf", &val.pos.x, &val.pos.y) != 2)
             goto fail;
         break;
-    }
 
     case F0R_PARAM_STRING:
         val.str = param;
