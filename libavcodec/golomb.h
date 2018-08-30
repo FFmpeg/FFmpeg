@@ -54,7 +54,7 @@ static inline int get_ue_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     if (buf >= (1 << 27)) {
@@ -119,7 +119,7 @@ static inline int get_ue_golomb_31(GetBitContext *gb)
 {
     unsigned int buf;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     buf >>= 32 - 9;
@@ -142,7 +142,7 @@ static inline unsigned get_interleaved_ue_golomb(GetBitContext *gb)
 {
     uint32_t buf;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     if (buf & 0xAA800000) {
@@ -238,7 +238,7 @@ static inline int get_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     if (buf >= (1 << 27)) {
@@ -300,7 +300,7 @@ static inline int get_interleaved_se_golomb(GetBitContext *gb)
 {
     unsigned int buf;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     if (buf & 0xAA800000) {
@@ -375,7 +375,7 @@ static inline int get_ur_golomb(GetBitContext *gb, int k, int limit,
     unsigned int buf;
     int log;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     log = av_log2(buf);
@@ -429,7 +429,7 @@ static inline int get_ur_golomb_jpegls(GetBitContext *gb, int k, int limit,
     unsigned int buf;
     int log;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     buf = show_bits_long(gb, 32);
 
     log = av_log2(buf);

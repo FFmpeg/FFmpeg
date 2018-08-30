@@ -54,9 +54,13 @@
 #define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
 #endif
 
+#ifndef CACHED_BITSTREAM_READER
+#define CACHED_BITSTREAM_READER 0
+#endif
+
 typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     uint64_t cache;
     unsigned bits_left;
 #endif
@@ -116,7 +120,7 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
  * For examples see get_bits, show_bits, skip_bits, get_vlc.
  */
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
 #   define MIN_CACHE_BITS 64
 #elif defined LONG_BITSTREAM_READER
 #   define MIN_CACHE_BITS 32
@@ -124,7 +128,7 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
 #   define MIN_CACHE_BITS 25
 #endif
 
-#ifndef CACHED_BITSTREAM_READER
+#if !CACHED_BITSTREAM_READER
 
 #define OPEN_READER_NOSIZE(name, gb)            \
     unsigned int name ## _index = (gb)->index;  \
@@ -214,14 +218,14 @@ static inline unsigned int show_bits(GetBitContext *s, int n);
 
 static inline int get_bits_count(const GetBitContext *s)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     return s->index - s->bits_left;
 #else
     return s->index;
 #endif
 }
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
 static inline void refill_32(GetBitContext *s)
 {
 #if !UNCHECKED_BITSTREAM_READER
@@ -288,7 +292,7 @@ static inline unsigned show_val(const GetBitContext *s, unsigned n)
  */
 static inline void skip_bits_long(GetBitContext *s, int n)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     skip_bits(s, n);
 #else
 #if UNCHECKED_BITSTREAM_READER
@@ -299,7 +303,7 @@ static inline void skip_bits_long(GetBitContext *s, int n)
 #endif
 }
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
 static inline void skip_remaining(GetBitContext *s, unsigned n)
 {
 #ifdef BITSTREAM_READER_LE
@@ -318,7 +322,7 @@ static inline void skip_remaining(GetBitContext *s, unsigned n)
  */
 static inline int get_xbits(GetBitContext *s, int n)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     int32_t cache = show_bits(s, 32);
     int sign = ~cache >> 31;
     skip_remaining(s, n);
@@ -338,7 +342,7 @@ static inline int get_xbits(GetBitContext *s, int n)
 #endif
 }
 
-#ifndef CACHED_BITSTREAM_READER
+#if !CACHED_BITSTREAM_READER
 static inline int get_xbits_le(GetBitContext *s, int n)
 {
     register int sign;
@@ -357,7 +361,7 @@ static inline int get_xbits_le(GetBitContext *s, int n)
 static inline int get_sbits(GetBitContext *s, int n)
 {
     register int tmp;
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     av_assert2(n>0 && n<=25);
     tmp = sign_extend(get_bits(s, n), n);
 #else
@@ -377,7 +381,7 @@ static inline int get_sbits(GetBitContext *s, int n)
 static inline unsigned int get_bits(GetBitContext *s, int n)
 {
     register int tmp;
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
 
     av_assert2(n>0 && n<=32);
     if (n > s->bits_left) {
@@ -412,7 +416,7 @@ static av_always_inline int get_bitsz(GetBitContext *s, int n)
 
 static inline unsigned int get_bits_le(GetBitContext *s, int n)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     av_assert2(n>0 && n<=32);
     if (n > s->bits_left) {
         refill_32(s);
@@ -439,7 +443,7 @@ static inline unsigned int get_bits_le(GetBitContext *s, int n)
 static inline unsigned int show_bits(GetBitContext *s, int n)
 {
     register int tmp;
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     if (n > s->bits_left)
         refill_32(s);
 
@@ -455,7 +459,7 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
 
 static inline void skip_bits(GetBitContext *s, int n)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     if (n < s->bits_left)
         skip_remaining(s, n);
     else {
@@ -482,7 +486,7 @@ static inline void skip_bits(GetBitContext *s, int n)
 
 static inline unsigned int get_bits1(GetBitContext *s)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     if (!s->bits_left)
         refill_64(s);
 
@@ -529,7 +533,7 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n)
     av_assert2(n>=0 && n<=32);
     if (!n) {
         return 0;
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     }
     return get_bits(s, n);
 #else
@@ -628,7 +632,7 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
     s->buffer_end         = buffer + buffer_size;
     s->index              = 0;
 
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     refill_64(s);
 #endif
 
@@ -758,7 +762,7 @@ static inline int set_idx(GetBitContext *s, int code, int *n, int *nb_bits,
 static av_always_inline int get_vlc2(GetBitContext *s, VLC_TYPE (*table)[2],
                                      int bits, int max_depth)
 {
-#ifdef CACHED_BITSTREAM_READER
+#if CACHED_BITSTREAM_READER
     int nb_bits;
     unsigned idx = show_bits(s, bits);
     int code = table[idx][0];
