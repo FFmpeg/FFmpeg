@@ -20,6 +20,7 @@
  */
 
 #include "idctdsp_mips.h"
+#include "xvididct_mips.h"
 
 #if HAVE_MSA
 static av_cold void idctdsp_init_msa(IDCTDSPContext *c, AVCodecContext *avctx,
@@ -48,8 +49,10 @@ static av_cold void idctdsp_init_mmi(IDCTDSPContext *c, AVCodecContext *avctx,
     if ((avctx->lowres != 1) && (avctx->lowres != 2) && (avctx->lowres != 3) &&
         (avctx->bits_per_raw_sample != 10) &&
         (avctx->bits_per_raw_sample != 12) &&
-        (avctx->idct_algo == FF_IDCT_AUTO)) {
-                c->idct = ff_simple_idct_mmi;
+        ((avctx->idct_algo == FF_IDCT_AUTO) || (avctx->idct_algo == FF_IDCT_SIMPLE))) {
+                c->idct_put = ff_simple_idct_put_8_mmi;
+                c->idct_add = ff_simple_idct_add_8_mmi;
+                c->idct = ff_simple_idct_8_mmi;
                 c->perm_type = FF_IDCT_PERM_NONE;
     }
 
