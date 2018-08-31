@@ -2494,22 +2494,19 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                "size=%"PRId64" 4CC=%s codec_type=%d\n", size,
                av_fourcc2str(format), st->codecpar->codec_type);
 
+        st->codecpar->codec_id = id;
         if (st->codecpar->codec_type==AVMEDIA_TYPE_VIDEO) {
-            st->codecpar->codec_id = id;
             mov_parse_stsd_video(c, pb, st, sc);
         } else if (st->codecpar->codec_type==AVMEDIA_TYPE_AUDIO) {
-            st->codecpar->codec_id = id;
             mov_parse_stsd_audio(c, pb, st, sc);
             if (st->codecpar->sample_rate < 0) {
                 av_log(c->fc, AV_LOG_ERROR, "Invalid sample rate %d\n", st->codecpar->sample_rate);
                 return AVERROR_INVALIDDATA;
             }
         } else if (st->codecpar->codec_type==AVMEDIA_TYPE_SUBTITLE){
-            st->codecpar->codec_id = id;
             mov_parse_stsd_subtitle(c, pb, st, sc,
                                     size - (avio_tell(pb) - start_pos));
         } else {
-            st->codecpar->codec_id = id;
             ret = mov_parse_stsd_data(c, pb, st, sc,
                                       size - (avio_tell(pb) - start_pos));
             if (ret < 0)
