@@ -1263,6 +1263,12 @@ Not required on receiver (set to 0),
 key size obtained from sender in HaiCrypt handshake.
 Default value is 0.
 
+@item pkt_size=@var{bytes}
+Set maximum SRT payload size, expressed in bytes. Default is -1 (automatic),
+which typically means 1316 as that is the libsrt default for live mode. Libsrt
+can also support payload sizes up to 1456 bytes. (MTU(1500) - UDP.hdr(28) -
+SRT.hdr(16))
+
 @item recv_buffer_size=@var{bytes}
 Set receive buffer size, expressed in bytes.
 

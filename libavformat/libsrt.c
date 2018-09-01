@@ -48,6 +48,7 @@ typedef struct SRTContext {
     int64_t listen_timeout;
     int recv_buffer_size;
     int send_buffer_size;
+    int pkt_size;
 
     int64_t maxbw;
     int pbkeylen;
@@ -73,6 +74,7 @@ static const AVOption libsrt_options[] = {
     { "listen_timeout", "Connection awaiting timeout",                                          OFFSET(listen_timeout),   AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "send_buffer_size", "Socket send buffer size (in bytes)",                                 OFFSET(send_buffer_size), AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",                              OFFSET(recv_buffer_size), AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
+    { "pkt_size",       "Maximum SRT packet size",                                              OFFSET(pkt_size),         AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
     { "maxbw",          "Maximum bandwidth (bytes per second) that the connection can use",     OFFSET(maxbw),            AV_OPT_TYPE_INT64,    { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "pbkeylen",       "Crypto key len in bytes {16,24,32} Default: 16 (128-bit)",             OFFSET(pbkeylen),         AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 32,        .flags = D|E },
     { "passphrase",     "Crypto PBKDF2 Passphrase size[0,10..64] 0:disable crypto",             OFFSET(passphrase),       AV_OPT_TYPE_STRING,   { .str = NULL },              .flags = D|E },
@@ -240,6 +242,15 @@ static int libsrt_setsockopt(URLContext *h, int fd, SRT_SOCKOPT optname, const c
     return 0;
 }
 
+static int libsrt_getsockopt(URLContext *h, int fd, SRT_SOCKOPT optname, const char * optnamestr, void * optval, int * optlen)
+{
+    if (srt_getsockopt(fd, 0, optname, optval, optlen) < 0) {
+        av_log(h, AV_LOG_ERROR, "failed to get option %s on socket: %s\n", optnamestr, srt_getlasterror_str());
+        return AVERROR(EIO);
+    }
+    return 0;
+}
+
 /* - The "POST" options can be altered any time on a connected socket.
      They MAY have also some meaning when set prior to connecting; such
      option is SRTO_RCVSYN, which makes connect/accept call asynchronous.
@@ -276,6 +287,7 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
         (tsbpddelay >= 0 && libsrt_setsockopt(h, fd, SRTO_TSBPDDELAY, "SRTO_TSBPDELAY", &tsbpddelay, sizeof(tsbpddelay)) < 0) ||
         (s->tlpktdrop >= 0 && libsrt_setsockopt(h, fd, SRTO_TLPKTDROP, "SRTO_TLPKDROP", &s->tlpktdrop, sizeof(s->tlpktdrop)) < 0) ||
         (s->nakreport >= 0 && libsrt_setsockopt(h, fd, SRTO_NAKREPORT, "SRTO_NAKREPORT", &s->nakreport, sizeof(s->nakreport)) < 0) ||
+        (s->pkt_size >= 0 && libsrt_setsockopt(h, fd, SRTO_PAYLOADSIZE, "SRTO_PAYLOADSIZE", &s->pkt_size, sizeof(s->pkt_size)) < 0) ||
         (connect_timeout >= 0 && libsrt_setsockopt(h, fd, SRTO_CONNTIMEO, "SRTO_CONNTIMEO", &connect_timeout, sizeof(connect_timeout)) <0 )) {
         return AVERROR(EIO);
     }
@@ -380,6 +392,16 @@ static int libsrt_setup(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
+    if (flags & AVIO_FLAG_WRITE) {
+        int packet_size = 0;
+        int optlen = sizeof(packet_size);
+        ret = libsrt_getsockopt(h, fd, SRTO_PAYLOADSIZE, "SRTO_PAYLOADSIZE", &packet_size, &optlen);
+        if (ret < 0)
+            goto fail1;
+        if (packet_size > 0)
+            h->max_packet_size = packet_size;
+    }
+
     h->is_streamed = 1;
     s->fd = fd;
 
@@ -441,6 +463,9 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         }
         if (av_find_info_tag(buf, sizeof(buf), "oheadbw", p)) {
             s->oheadbw = strtoll(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "pkt_size", p)) {
+            s->pkt_size = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "tsbpddelay", p)) {
             s->tsbpddelay = strtol(buf, NULL, 10);
