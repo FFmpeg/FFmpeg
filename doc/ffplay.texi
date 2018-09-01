@@ -60,6 +60,8 @@ Play @var{duration} seconds of audio/video.
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 @item -bytes
 Seek by bytes.
+@item -seek_interval
+Set custom interval, in seconds, for seeking using left/right keys. Default is 10 seconds.
 @item -nodisp
 Disable graphical display.
 @item -noborder

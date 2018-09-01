@@ -319,6 +319,7 @@ static int video_disable;
 static int subtitle_disable;
 static const char* wanted_stream_spec[AVMEDIA_TYPE_NB] = {0};
 static int seek_by_bytes = -1;
+static float seek_interval = 10;
 static int display_disable;
 static int borderless;
 static int startup_volume = 100;
@@ -3343,10 +3344,10 @@ static void event_loop(VideoState *cur_stream)
                 seek_chapter(cur_stream, -1);
                 break;
             case SDLK_LEFT:
-                incr = -10.0;
+                incr = seek_interval ? -seek_interval : -10.0;
                 goto do_seek;
             case SDLK_RIGHT:
-                incr = 10.0;
+                incr = seek_interval ? seek_interval : 10.0;
                 goto do_seek;
             case SDLK_UP:
                 incr = 60.0;
@@ -3582,6 +3583,7 @@ static const OptionDef options[] = {
     { "ss", HAS_ARG, { .func_arg = opt_seek }, "seek to a given position in seconds", "pos" },
     { "t", HAS_ARG, { .func_arg = opt_duration }, "play  \"duration\" seconds of audio/video", "duration" },
     { "bytes", OPT_INT | HAS_ARG, { &seek_by_bytes }, "seek by bytes 0=off 1=on -1=auto", "val" },
+    { "seek_interval", OPT_FLOAT | HAS_ARG, { &seek_interval }, "set seek interval for left/right keys, in seconds", "seconds" },
     { "nodisp", OPT_BOOL, { &display_disable }, "disable graphical display" },
     { "noborder", OPT_BOOL, { &borderless }, "borderless window" },
     { "volume", OPT_INT | HAS_ARG, { &startup_volume}, "set startup volume 0=min 100=max", "volume" },
@@ -3652,7 +3654,7 @@ void show_help_default(const char *opt, const char *arg)
            "c                   cycle program\n"
            "w                   cycle video filters or show modes\n"
            "s                   activate frame-step mode\n"
-           "left/right          seek backward/forward 10 seconds\n"
+           "left/right          seek backward/forward 10 seconds or to custom interval if -seek_interval is set\n"
            "down/up             seek backward/forward 1 minute\n"
            "page down/page up   seek backward/forward 10 minutes\n"
            "right mouse click   seek to percentage in file corresponding to fraction of width\n"
