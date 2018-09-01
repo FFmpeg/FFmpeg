@@ -297,14 +297,41 @@ static int decode_unit(SCPRContext *s, PixelModel *pixel, unsigned step, unsigne
     return 0;
 }
 
+static int decode_units(SCPRContext *s, unsigned *r, unsigned *g, unsigned *b,
+                        int *cx, int *cx1)
+{
+    const int cxshift = s->cxshift;
+    int ret;
+
+    ret = decode_unit(s, &s->pixel_model[0][*cx + *cx1], 400, r);
+    if (ret < 0)
+        return ret;
+
+    *cx1 = (*cx << 6) & 0xFC0;
+    *cx = *r >> cxshift;
+    ret = decode_unit(s, &s->pixel_model[1][*cx + *cx1], 400, g);
+    if (ret < 0)
+        return ret;
+
+    *cx1 = (*cx << 6) & 0xFC0;
+    *cx = *g >> cxshift;
+    ret = decode_unit(s, &s->pixel_model[2][*cx + *cx1], 400, b);
+    if (ret < 0)
+        return ret;
+
+    *cx1 = (*cx << 6) & 0xFC0;
+    *cx = *b >> cxshift;
+
+    return 0;
+}
+
 static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
 {
     SCPRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     int cx = 0, cx1 = 0, k = 0, clr = 0;
-    int run, r, g, b, off, y = 0, x = 0, z, ret;
-    unsigned backstep = linesize - avctx->width;
-    const int cxshift = s->cxshift;
+    int run, off, y = 0, x = 0, z, ret;
+    unsigned r, g, b, backstep = linesize - avctx->width;
     unsigned lx, ly, ptype;
 
     reinit_tables(s);
@@ -312,24 +339,9 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
     init_rangecoder(&s->rc, gb);
 
     while (k < avctx->width + 1) {
-        ret = decode_unit(s, &s->pixel_model[0][cx + cx1], 400, &r);
+        ret = decode_units(s, &r, &g, &b, &cx, &cx1);
         if (ret < 0)
             return ret;
-
-        cx1 = (cx << 6) & 0xFC0;
-        cx = r >> cxshift;
-        ret = decode_unit(s, &s->pixel_model[1][cx + cx1], 400, &g);
-        if (ret < 0)
-            return ret;
-
-        cx1 = (cx << 6) & 0xFC0;
-        cx = g >> cxshift;
-        ret = decode_unit(s, &s->pixel_model[2][cx + cx1], 400, &b);
-        if (ret < 0)
-            return ret;
-
-        cx1 = (cx << 6) & 0xFC0;
-        cx = b >> cxshift;
 
         ret = decode_value(s, s->run_model[0], 256, 400, &run);
         if (ret < 0)
@@ -361,19 +373,7 @@ static int decompress_i(AVCodecContext *avctx, uint32_t *dst, int linesize)
         if (ret < 0)
             return ret;
         if (ptype == 0) {
-            ret = decode_unit(s, &s->pixel_model[0][cx + cx1], 400, &r);
-            if (ret < 0)
-                return ret;
-
-            cx1 = (cx << 6) & 0xFC0;
-            cx = r >> cxshift;
-            ret = decode_unit(s, &s->pixel_model[1][cx + cx1], 400, &g);
-            if (ret < 0)
-                return ret;
-
-            cx1 = (cx << 6) & 0xFC0;
-            cx = g >> cxshift;
-            ret = decode_unit(s, &s->pixel_model[2][cx + cx1], 400, &b);
+            ret = decode_units(s, &r, &g, &b, &cx, &cx1);
             if (ret < 0)
                 return ret;
 
@@ -514,7 +514,6 @@ static int decompress_p(AVCodecContext *avctx,
     GetByteContext *gb = &s->gb;
     int ret, temp, min, max, x, y, cx = 0, cx1 = 0;
     int backstep = linesize - avctx->width;
-    const int cxshift = s->cxshift;
 
     if (bytestream2_get_byte(gb) == 0)
         return 0;
@@ -588,27 +587,15 @@ static int decompress_p(AVCodecContext *avctx,
                     }
                 }
             } else {
-                int run, r, g, b, z, bx = x * 16 + sx1, by = y * 16 + sy1;
-                unsigned clr, ptype = 0;
+                int run, z, bx = x * 16 + sx1, by = y * 16 + sy1;
+                unsigned r, g, b, clr, ptype = 0;
 
                 for (; by < y * 16 + sy2 && by < avctx->height;) {
                     ret = decode_value(s, s->op_model[ptype], 6, 1000, &ptype);
                     if (ret < 0)
                         return ret;
                     if (ptype == 0) {
-                        ret = decode_unit(s, &s->pixel_model[0][cx + cx1], 400, &r);
-                        if (ret < 0)
-                            return ret;
-
-                        cx1 = (cx << 6) & 0xFC0;
-                        cx = r >> cxshift;
-                        ret = decode_unit(s, &s->pixel_model[1][cx + cx1], 400, &g);
-                        if (ret < 0)
-                            return ret;
-
-                        cx1 = (cx << 6) & 0xFC0;
-                        cx = g >> cxshift;
-                        ret = decode_unit(s, &s->pixel_model[2][cx + cx1], 400, &b);
+                        ret = decode_units(s, &r, &g, &b, &cx, &cx1);
                         if (ret < 0)
                             return ret;
 
