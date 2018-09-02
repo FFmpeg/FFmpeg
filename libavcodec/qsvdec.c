@@ -110,6 +110,16 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
+static inline unsigned int qsv_fifo_item_size(void)
+{
+    return sizeof(mfxSyncPoint*) + sizeof(QSVFrame*);
+}
+
+static inline unsigned int qsv_fifo_size(const AVFifoBuffer* fifo)
+{
+    return av_fifo_size(fifo) / qsv_fifo_item_size();
+}
+
 static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
     const AVPixFmtDescriptor *desc;
@@ -125,8 +135,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return AVERROR_BUG;
 
     if (!q->async_fifo) {
-        q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                      (sizeof(mfxSyncPoint*) + sizeof(QSVFrame*)));
+        q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
         if (!q->async_fifo)
             return AVERROR(ENOMEM);
     }
@@ -384,7 +393,7 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         av_freep(&sync);
     }
 
-    if (!av_fifo_space(q->async_fifo) ||
+    if ((qsv_fifo_size(q->async_fifo) >= q->async_depth) ||
         (!avpkt->size && av_fifo_size(q->async_fifo))) {
         AVFrame *src_frame;
 

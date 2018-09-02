@@ -788,7 +788,7 @@ static int qsv_init_opaque_alloc(AVCodecContext *avctx, QSVEncContext *q)
     mfxFrameSurface1 *surfaces;
     int nb_surfaces, i;
 
-    nb_surfaces = qsv->nb_opaque_surfaces + q->req.NumFrameSuggested + q->async_depth;
+    nb_surfaces = qsv->nb_opaque_surfaces + q->req.NumFrameSuggested;
 
     q->opaque_alloc_buf = av_buffer_allocz(sizeof(*surfaces) * nb_surfaces);
     if (!q->opaque_alloc_buf)
@@ -859,6 +859,16 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
     return 0;
 }
 
+static inline unsigned int qsv_fifo_item_size(void)
+{
+    return sizeof(AVPacket) + sizeof(mfxSyncPoint*) + sizeof(mfxBitstream*);
+}
+
+static inline unsigned int qsv_fifo_size(const AVFifoBuffer* fifo)
+{
+    return av_fifo_size(fifo)/qsv_fifo_item_size();
+}
+
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 {
     int iopattern = 0;
@@ -867,8 +877,7 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
 
     q->param.AsyncDepth = q->async_depth;
 
-    q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                  (sizeof(AVPacket) + sizeof(mfxSyncPoint*) + sizeof(mfxBitstream*)));
+    q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
     if (!q->async_fifo)
         return AVERROR(ENOMEM);
 
@@ -1265,7 +1274,7 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
     if (ret < 0)
         return ret;
 
-    if (!av_fifo_space(q->async_fifo) ||
+    if ((qsv_fifo_size(q->async_fifo) >= q->async_depth) ||
         (!frame && av_fifo_size(q->async_fifo))) {
         AVPacket new_pkt;
         mfxBitstream *bs;
