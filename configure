@@ -899,12 +899,12 @@ add_cxxflags(){
     append CXXFLAGS $($cflags_filter "$@")
 }
 
-add_asflags(){
-    append ASFLAGS $($asflags_filter "$@")
-}
-
 add_objcflags(){
     append OBJCFLAGS $($objcflags_filter "$@")
+}
+
+add_asflags(){
+    append ASFLAGS $($asflags_filter "$@")
 }
 
 add_ldflags(){
@@ -919,12 +919,12 @@ add_ldsoflags(){
     append LDSOFLAGS $($ldflags_filter "$@")
 }
 
-add_stripflags(){
-    append ASMSTRIPFLAGS "$@"
-}
-
 add_extralibs(){
     prepend extralibs $($ldflags_filter "$@")
+}
+
+add_stripflags(){
+    append ASMSTRIPFLAGS "$@"
 }
 
 add_host_cppflags(){
