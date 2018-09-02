@@ -1484,8 +1484,7 @@ require(){
 require_cc(){
     log require_cc "$@"
     name="$1"
-    shift
-    test_code cc "$@" || die "ERROR: $name failed"
+    check_cc "$@" || die "ERROR: $name failed"
 }
 
 require_cpp(){
@@ -1504,8 +1503,8 @@ require_header(){
 
 require_cpp_condition(){
     log require_cpp_condition "$@"
-    condition="$2"
-    test_cpp_condition "$@" || die "ERROR: $condition not satisfied"
+    condition="$3"
+    check_cpp_condition "$@" || die "ERROR: $condition not satisfied"
 }
 
 require_pkg_config(){
@@ -6161,10 +6160,10 @@ enabled libwebp           && {
 enabled libx264           && { check_pkg_config libx264 x264 "stdint.h x264.h" x264_encoder_encode ||
                                { require libx264 "stdint.h x264.h" x264_encoder_encode "-lx264 $pthreads_extralibs $libm_extralibs" &&
                                  warn "using libx264 without pkg-config"; } } &&
-                             require_cpp_condition x264.h "X264_BUILD >= 118" &&
+                             require_cpp_condition libx264 x264.h "X264_BUILD >= 118" &&
                              check_cpp_condition libx262 x264.h "X264_MPEG2"
 enabled libx265           && require_pkg_config libx265 x265 x265.h x265_api_get &&
-                             require_cpp_condition x265.h "X265_BUILD >= 68"
+                             require_cpp_condition libx265 x265.h "X265_BUILD >= 68"
 enabled libxavs           && require libxavs "stdint.h xavs.h" xavs_encoder_encode "-lxavs $pthreads_extralibs $libm_extralibs"
 enabled libxvid           && require libxvid xvid.h xvid_global -lxvidcore
 enabled libzimg           && require_pkg_config libzimg "zimg >= 2.7.0" zimg.h zimg_get_api_version
