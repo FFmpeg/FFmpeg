@@ -248,6 +248,7 @@ extern AVCodec ff_r10k_encoder;
 extern AVCodec ff_r10k_decoder;
 extern AVCodec ff_r210_encoder;
 extern AVCodec ff_r210_decoder;
+extern AVCodec ff_rasc_decoder;
 extern AVCodec ff_rawvideo_encoder;
 extern AVCodec ff_rawvideo_decoder;
 extern AVCodec ff_rl2_decoder;

@@ -22,6 +22,7 @@ version <next>:
 - MatchWare Screen Capture Codec decoder
 - WinCam Motion Video decoder
 - 1D LUT filter (lut1d)
+- RemotelyAnywhere Screen Capture decoder
 
 
 version 4.0:

@@ -1682,6 +1682,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("WinCAM Motion Video"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_RASC,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "rasc",
+        .long_name = NULL_IF_CONFIG_SMALL("RemotelyAnywhere Screen Capture"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {
