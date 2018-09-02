@@ -1191,8 +1191,8 @@ check_stripflags(){
     test_stripflags "$@" && add_stripflags "$@"
 }
 
-check_header(){
-    log check_header "$@"
+check_headers(){
+    log check_headers "$@"
     headers=$1
     shift
     disable_sanitized $headers
@@ -1495,10 +1495,10 @@ require_cpp(){
     check_lib_cpp "$headers" "$classes" "$@" || die "ERROR: $name not found"
 }
 
-require_header(){
-    log require_header "$@"
+require_headers(){
+    log require_headers "$@"
     headers="$1"
-    check_header "$@" || die "ERROR: $headers not found"
+    check_headers "$@" || die "ERROR: $headers not found"
 }
 
 require_cpp_condition(){
@@ -5154,7 +5154,7 @@ case $target_os in
         enabled x86_64 && objformat="macho64" || objformat="macho32"
         enabled_any pic shared x86_64 ||
             { check_cflags -mdynamic-no-pic && add_asflags -mdynamic-no-pic; }
-        check_header dispatch/dispatch.h &&
+        check_headers dispatch/dispatch.h &&
             add_cppflags '-I\$(SRC_PATH)/compat/dispatch_semaphore'
         if test -n "$sysroot"; then
             is_in -isysroot $cc $CPPFLAGS $CFLAGS || check_cppflags -isysroot $sysroot
@@ -5639,7 +5639,7 @@ elif enabled mips; then
 
     enabled mipsfpu && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f2"' '-mhard-float'
     enabled mipsfpu && (enabled mips32r5 || enabled mips32r6 || enabled mips64r6) && check_inline_asm_flags mipsfpu '"cvt.d.l $f0, $f1"' '-mfp64'
-    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_header msa.h || disable msa
+    enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_headers msa.h || disable msa
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
 
@@ -5784,9 +5784,9 @@ if ! disabled network; then
     check_type "sys/types.h sys/socket.h" socklen_t
 
     # Prefer arpa/inet.h over winsock2
-    if check_header arpa/inet.h ; then
+    if check_headers arpa/inet.h ; then
         check_func closesocket
-    elif check_header winsock2.h ; then
+    elif check_headers winsock2.h ; then
         check_func_headers winsock2.h closesocket -lws2 &&
             network_extralibs="-lws2" ||
         { check_func_headers winsock2.h closesocket -lws2_32 &&
@@ -5874,29 +5874,29 @@ check_func_headers glob.h glob
 enabled xlib &&
     check_lib xlib "X11/Xlib.h X11/extensions/Xvlib.h" XvGetPortAttribute -lXv -lX11 -lXext
 
-check_header direct.h
-check_header dirent.h
-check_header dxgidebug.h
-check_header dxva.h
-check_header dxva2api.h -D_WIN32_WINNT=0x0600
-check_header io.h
-check_header linux/perf_event.h
-check_header libcrystalhd/libcrystalhd_if.h
-check_header malloc.h
-check_header net/udplite.h
-check_header poll.h
-check_header sys/param.h
-check_header sys/resource.h
-check_header sys/select.h
-check_header sys/time.h
-check_header sys/un.h
-check_header termios.h
-check_header unistd.h
-check_header valgrind/valgrind.h
+check_headers direct.h
+check_headers dirent.h
+check_headers dxgidebug.h
+check_headers dxva.h
+check_headers dxva2api.h -D_WIN32_WINNT=0x0600
+check_headers io.h
+check_headers linux/perf_event.h
+check_headers libcrystalhd/libcrystalhd_if.h
+check_headers malloc.h
+check_headers net/udplite.h
+check_headers poll.h
+check_headers sys/param.h
+check_headers sys/resource.h
+check_headers sys/select.h
+check_headers sys/time.h
+check_headers sys/un.h
+check_headers termios.h
+check_headers unistd.h
+check_headers valgrind/valgrind.h
 check_func_headers VideoToolbox/VTCompressionSession.h VTCompressionSessionPrepareToEncodeFrames -framework VideoToolbox
-check_header windows.h
-check_header X11/extensions/XvMClib.h
-check_header asm/types.h
+check_headers windows.h
+check_headers X11/extensions/XvMClib.h
+check_headers asm/types.h
 
 # it seems there are versions of clang in some distros that try to use the
 # gcc headers, which explodes for stdatomic
@@ -6031,14 +6031,14 @@ done
 # these are off by default, so fail if requested and not available
 enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
-enabled decklink          && { require_header DeckLinkAPI.h &&
+enabled decklink          && { require_headers DeckLinkAPI.h &&
                                { test_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a060100" || die "ERROR: Decklink API version must be >= 10.6.1."; } }
-enabled libndi_newtek     && require_header Processing.NDI.Lib.h
-enabled frei0r            && require_header frei0r.h
+enabled libndi_newtek     && require_headers Processing.NDI.Lib.h
+enabled frei0r            && require_headers frei0r.h
 enabled gmp               && require gmp gmp.h mpz_export -lgmp
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init
-enabled jni               && { [ $target_os = "android" ] && check_header jni.h && enabled pthreads || die "ERROR: jni not found"; }
-enabled ladspa            && require_header ladspa.h
+enabled jni               && { [ $target_os = "android" ] && check_headers jni.h && enabled pthreads || die "ERROR: jni not found"; }
+enabled ladspa            && require_headers ladspa.h
 enabled libaom            && require_pkg_config libaom "aom >= 1.0.0" aom/aom_codec.h aom_codec_version
 enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
 enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
@@ -6087,7 +6087,7 @@ enabled libnpp            && { check_lib libnpp npp.h nppGetLibVersion -lnppig -
                                die "ERROR: libnpp not found"; }
 enabled libopencore_amrnb && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
 enabled libopencore_amrwb && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
-enabled libopencv         && { check_header opencv2/core/core_c.h &&
+enabled libopencv         && { check_headers opencv2/core/core_c.h &&
                                { check_pkg_config libopencv opencv opencv2/core/core_c.h cvCreateImageHeader ||
                                  require libopencv opencv2/core/core_c.h cvCreateImageHeader -lopencv_core -lopencv_imgproc; } ||
                                require_pkg_config libopencv opencv opencv/cxcore.h cvCreateImageHeader; }
@@ -6202,9 +6202,9 @@ enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL
                                check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled omx               && require_header OMX_Core.h
-enabled omx_rpi           && { check_header OMX_Core.h ||
-                               { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_header OMX_Core.h ; } ||
+enabled omx               && require_headers OMX_Core.h
+enabled omx_rpi           && { check_headers OMX_Core.h ||
+                               { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_headers OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; } && enable omx
 enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                check_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
@@ -6282,8 +6282,8 @@ pod2man --help     > /dev/null 2>&1 && enable pod2man   || disable pod2man
 rsync --help 2> /dev/null | grep -q 'contimeout' && enable rsync_contimeout || disable rsync_contimeout
 
 # check V4L2 codecs available in the API
-check_header linux/fb.h
-check_header linux/videodev2.h
+check_headers linux/fb.h
+check_headers linux/videodev2.h
 test_code cc linux/videodev2.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 check_cc v4l2_m2m linux/videodev2.h "int i = V4L2_CAP_VIDEO_M2M_MPLANE | V4L2_CAP_VIDEO_M2M | V4L2_BUF_FLAG_LAST;"
 check_cc vc1_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VC1_ANNEX_G;"
@@ -6296,7 +6296,7 @@ check_cc h264_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_H264;"
 check_cc vp8_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP8;"
 check_cc vp9_v4l2_m2m linux/videodev2.h "int i = V4L2_PIX_FMT_VP9;"
 
-check_header sys/videoio.h
+check_headers sys/videoio.h
 test_code cc sys/videoio.h "struct v4l2_frmsizeenum vfse; vfse.discrete.width = 0;" && enable_sanitized struct_v4l2_frmivalenum_discrete
 
 check_lib user32 "windows.h winuser.h" GetShellWindow -luser32
@@ -6308,10 +6308,10 @@ check_cpp_condition vfwcap_defines vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER"
 check_type "dshow.h" IBaseFilter
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
-check_header "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
-    check_header "machine/ioctl_meteor.h machine/ioctl_bt848.h"                 ||
-    check_header "dev/video/meteor/ioctl_meteor.h dev/video/bktr/ioctl_bt848.h" ||
-    check_header "dev/ic/bt8xx.h"
+check_headers "dev/bktr/ioctl_meteor.h dev/bktr/ioctl_bt848.h"                   ||
+    check_headers "machine/ioctl_meteor.h machine/ioctl_bt848.h"                 ||
+    check_headers "dev/video/meteor/ioctl_meteor.h dev/video/bktr/ioctl_bt848.h" ||
+    check_headers "dev/ic/bt8xx.h"
 
 if check_struct sys/soundcard.h audio_buf_info bytes; then
     enable_sanitized sys/soundcard.h
