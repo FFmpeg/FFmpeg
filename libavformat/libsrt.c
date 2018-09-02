@@ -68,11 +68,13 @@ typedef struct SRTContext {
     int iptos;
     int64_t inputbw;
     int oheadbw;
-    int64_t tsbpddelay;
+    int64_t latency;
     int tlpktdrop;
     int nakreport;
     int64_t connect_timeout;
     int payload_size;
+    int64_t rcvlatency;
+    int64_t peerlatency;
     enum SRTMode mode;
 } SRTContext;
 
@@ -97,7 +99,10 @@ static const AVOption libsrt_options[] = {
     { "iptos",          "IP Type of Service",                                                   OFFSET(iptos),            AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 255,       .flags = D|E },
     { "inputbw",        "Estimated input stream rate",                                          OFFSET(inputbw),          AV_OPT_TYPE_INT64,    { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "oheadbw",        "MaxBW ceiling based on % over input stream rate",                      OFFSET(oheadbw),          AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 100,       .flags = D|E },
-    { "tsbpddelay",     "TsbPd receiver delay to absorb burst of missed packet retransmission", OFFSET(tsbpddelay),       AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "latency",        "receiver delay to absorb bursts of missed packet retransmissions",     OFFSET(latency),          AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "tsbpddelay",     "deprecated, same effect as latency option",                            OFFSET(latency),          AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "rcvlatency",     "receive latency",                                                      OFFSET(rcvlatency),       AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
+    { "peerlatency",    "peer latency",                                                         OFFSET(peerlatency),      AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
     { "tlpktdrop",      "Enable receiver pkt drop",                                             OFFSET(tlpktdrop),        AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 1,         .flags = D|E },
     { "nakreport",      "Enable receiver to send periodic NAK reports",                         OFFSET(nakreport),        AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 1,         .flags = D|E },
     { "connect_timeout", "Connect timeout. Caller default: 3000, rendezvous (x 10)",            OFFSET(connect_timeout),  AV_OPT_TYPE_INT64, { .i64 = -1 }, -1, INT64_MAX, .flags = D|E },
@@ -286,7 +291,9 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
 {
     SRTContext *s = h->priv_data;
     int yes = 1;
-    int tsbpddelay = s->tsbpddelay / 1000;
+    int latency = s->latency / 1000;
+    int rcvlatency = s->rcvlatency / 1000;
+    int peerlatency = s->peerlatency / 1000;
     int connect_timeout = s->connect_timeout;
 
     if ((s->mode == SRT_MODE_RENDEZVOUS && libsrt_setsockopt(h, fd, SRTO_RENDEZVOUS, "SRTO_RENDEZVOUS", &yes, sizeof(yes)) < 0) ||
@@ -297,7 +304,9 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
         (s->ffs >= 0 && libsrt_setsockopt(h, fd, SRTO_FC, "SRTO_FC", &s->ffs, sizeof(s->ffs)) < 0) ||
         (s->ipttl >= 0 && libsrt_setsockopt(h, fd, SRTO_IPTTL, "SRTO_UPTTL", &s->ipttl, sizeof(s->ipttl)) < 0) ||
         (s->iptos >= 0 && libsrt_setsockopt(h, fd, SRTO_IPTOS, "SRTO_IPTOS", &s->iptos, sizeof(s->iptos)) < 0) ||
-        (tsbpddelay >= 0 && libsrt_setsockopt(h, fd, SRTO_TSBPDDELAY, "SRTO_TSBPDELAY", &tsbpddelay, sizeof(tsbpddelay)) < 0) ||
+        (s->latency >= 0 && libsrt_setsockopt(h, fd, SRTO_LATENCY, "SRTO_LATENCY", &latency, sizeof(latency)) < 0) ||
+        (s->rcvlatency >= 0 && libsrt_setsockopt(h, fd, SRTO_RCVLATENCY, "SRTO_RCVLATENCY", &rcvlatency, sizeof(rcvlatency)) < 0) ||
+        (s->peerlatency >= 0 && libsrt_setsockopt(h, fd, SRTO_PEERLATENCY, "SRTO_PEERLATENCY", &peerlatency, sizeof(peerlatency)) < 0) ||
         (s->tlpktdrop >= 0 && libsrt_setsockopt(h, fd, SRTO_TLPKTDROP, "SRTO_TLPKDROP", &s->tlpktdrop, sizeof(s->tlpktdrop)) < 0) ||
         (s->nakreport >= 0 && libsrt_setsockopt(h, fd, SRTO_NAKREPORT, "SRTO_NAKREPORT", &s->nakreport, sizeof(s->nakreport)) < 0) ||
         (connect_timeout >= 0 && libsrt_setsockopt(h, fd, SRTO_CONNTIMEO, "SRTO_CONNTIMEO", &connect_timeout, sizeof(connect_timeout)) <0 )) ||
@@ -477,8 +486,17 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "oheadbw", p)) {
             s->oheadbw = strtoll(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "latency", p)) {
+            s->latency = strtol(buf, NULL, 10);
+        }
         if (av_find_info_tag(buf, sizeof(buf), "tsbpddelay", p)) {
-            s->tsbpddelay = strtol(buf, NULL, 10);
+            s->latency = strtol(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "rcvlatency", p)) {
+            s->rcvlatency = strtol(buf, NULL, 10);
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "peerlatency", p)) {
+            s->peerlatency = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "tlpktdrop", p)) {
             s->tlpktdrop = strtol(buf, NULL, 10);

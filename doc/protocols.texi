@@ -1210,6 +1210,17 @@ IP Type of Service. Applies to sender only. Default value is 0xB8.
 @item ipttl=@var{ttl}
 IP Time To Live. Applies to sender only. Default value is 64.
 
+@item latency
+Timestamp-based Packet Delivery Delay.
+Used to absorb bursts of missed packet retransmissions.
+This flag sets both @option{rcvlatency} and @option{peerlatency}
+to the same value. Note that prior to version 1.3.0
+this is the only flag to set the latency, however
+this is effectively equivalent to setting @option{peerlatency},
+when side is sender and @option{rcvlatency}
+when side is receiver, and the bidirectional stream
+sending is not supported.
+
 @item listen_timeout
 Set socket listen timeout.
 
@@ -1270,6 +1281,10 @@ use a bigger maximum frame size, though not greater than
 @item pkt_size=@var{bytes}
 Alias for @samp{payload_size}.
 
+@item peerlatency
+The latency value (as described in @option{rcvlatency}) that is
+set by the sender side as a minimum value for the receiver.
+
 @item pbkeylen=@var{bytes}
 Sender encryption key length, in bytes.
 Only can be set to 0, 16, 24 and 32.
@@ -1277,6 +1292,18 @@ Enable sender encryption if not 0.
 Not required on receiver (set to 0),
 key size obtained from sender in HaiCrypt handshake.
 Default value is 0.
+
+@item rcvlatency
+The time that should elapse since the moment when the
+packet was sent and the moment when it's delivered to
+the receiver application in the receiving function.
+This time should be a buffer time large enough to cover
+the time spent for sending, unexpectedly extended RTT
+time, and the time needed to retransmit the lost UDP
+packet. The effective latency value will be the maximum
+of this options' value and the value of @option{peerlatency}
+set by the peer side. Before version 1.3.0 this option
+is only available as @option{latency}.
 
 @item recv_buffer_size=@var{bytes}
 Set receive buffer size, expressed in bytes.
@@ -1301,10 +1328,6 @@ receiving peer, the sender drops the older packets that
 have no chance of being delivered in time. It was
 automatically enabled in the sender if the receiver
 supports it.
-
-@item tsbpddelay
-Timestamp-based Packet Delivery Delay.
-Used to absorb burst of missed packet retransmission.
 
 @end table
 
