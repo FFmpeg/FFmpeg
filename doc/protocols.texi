@@ -1255,6 +1255,21 @@ only if @option{pbkeylen} is non-zero. It is used on
 the receiver only if the received data is encrypted.
 The configured passphrase cannot be recovered (write-only).
 
+@item payload_size=@var{bytes}
+Sets the maximum declared size of a packet transferred
+during the single call to the sending function in Live
+mode. Use 0 if this value isn't used (which is default in
+file mode).
+Default is -1 (automatic), which typically means MPEG-TS;
+if you are going to use SRT
+to send any different kind of payload, such as, for example,
+wrapping a live stream in very small frames, then you can
+use a bigger maximum frame size, though not greater than
+1456 bytes.
+
+@item pkt_size=@var{bytes}
+Alias for @samp{payload_size}.
+
 @item pbkeylen=@var{bytes}
 Sender encryption key length, in bytes.
 Only can be set to 0, 16, 24 and 32.
@@ -1262,12 +1277,6 @@ Enable sender encryption if not 0.
 Not required on receiver (set to 0),
 key size obtained from sender in HaiCrypt handshake.
 Default value is 0.
-
-@item pkt_size=@var{bytes}
-Set maximum SRT payload size, expressed in bytes. Default is -1 (automatic),
-which typically means 1316 as that is the libsrt default for live mode. Libsrt
-can also support payload sizes up to 1456 bytes. (MTU(1500) - UDP.hdr(28) -
-SRT.hdr(16))
 
 @item recv_buffer_size=@var{bytes}
 Set receive buffer size, expressed in bytes.
