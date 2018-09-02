@@ -557,20 +557,12 @@ OBJS-$(CONFIG_YOP_DEMUXER)               += yop.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpegdec.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpegenc.o
 
-# external libraries
+# external library muxers/demuxers
 OBJS-$(CONFIG_AVISYNTH_DEMUXER)          += avisynth.o
 OBJS-$(CONFIG_CHROMAPRINT_MUXER)         += chromaprint.o
 OBJS-$(CONFIG_LIBGME_DEMUXER)            += libgme.o
 OBJS-$(CONFIG_LIBMODPLUG_DEMUXER)        += libmodplug.o
 OBJS-$(CONFIG_LIBOPENMPT_DEMUXER)        += libopenmpt.o
-OBJS-$(CONFIG_LIBRTMP_PROTOCOL)          += librtmp.o
-OBJS-$(CONFIG_LIBRTMPE_PROTOCOL)         += librtmp.o
-OBJS-$(CONFIG_LIBRTMPS_PROTOCOL)         += librtmp.o
-OBJS-$(CONFIG_LIBRTMPT_PROTOCOL)         += librtmp.o
-OBJS-$(CONFIG_LIBRTMPTE_PROTOCOL)        += librtmp.o
-OBJS-$(CONFIG_LIBSRT_PROTOCOL)           += libsrt.o
-OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o
-OBJS-$(CONFIG_LIBSMBCLIENT_PROTOCOL)     += libsmbclient.o
 OBJS-$(CONFIG_VAPOURSYNTH_DEMUXER)       += vapoursynth.o
 
 # protocols I/O
@@ -618,6 +610,16 @@ OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o $(TLS-OBJS-yes)
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_UDPLITE_PROTOCOL)          += udp.o
 OBJS-$(CONFIG_UNIX_PROTOCOL)             += unix.o
+
+# external library protocols
+OBJS-$(CONFIG_LIBRTMP_PROTOCOL)          += librtmp.o
+OBJS-$(CONFIG_LIBRTMPE_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPS_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPT_PROTOCOL)         += librtmp.o
+OBJS-$(CONFIG_LIBRTMPTE_PROTOCOL)        += librtmp.o
+OBJS-$(CONFIG_LIBSMBCLIENT_PROTOCOL)     += libsmbclient.o
+OBJS-$(CONFIG_LIBSRT_PROTOCOL)           += libsrt.o
+OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o
 
 # libavdevice dependencies
 OBJS-$(CONFIG_IEC61883_INDEV)            += dv.o
