@@ -111,8 +111,6 @@ static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *
     seq_params->high_bitdepth = get_bits1(gb);
     if (seq_params->seq_profile == FF_PROFILE_AV1_PROFESSIONAL && seq_params->high_bitdepth)
         seq_params->twelve_bit = get_bits1(gb);
-    else
-        seq_params->twelve_bit = 0;
 
     if (seq_params->seq_profile == FF_PROFILE_AV1_HIGH)
         seq_params->monochrome = 0;
@@ -184,6 +182,8 @@ static int parse_sequence_header(AV1SequenceParameters *seq_params, const uint8_
     ret = init_get_bits(&gb, buf, size_bits);
     if (ret < 0)
         return ret;
+
+    memset(seq_params, 0, sizeof(*seq_params));
 
     seq_params->seq_profile = get_bits(&gb, 3);
 
