@@ -877,17 +877,17 @@ static int sls_flag_check_duration_size_index(HLSContext *hls)
 
     if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_DURATION) {
          av_log(hls, AV_LOG_ERROR,
-                "second_level_segment_duration hls_flag requires use_localtime to be true\n");
+                "second_level_segment_duration hls_flag requires strftime to be true\n");
          ret = AVERROR(EINVAL);
     }
     if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_SIZE) {
          av_log(hls, AV_LOG_ERROR,
-                "second_level_segment_size hls_flag requires use_localtime to be true\n");
+                "second_level_segment_size hls_flag requires strfime to be true\n");
          ret = AVERROR(EINVAL);
     }
     if (hls->flags & HLS_SECOND_LEVEL_SEGMENT_INDEX) {
         av_log(hls, AV_LOG_ERROR,
-               "second_level_segment_index hls_flag requires use_localtime to be true\n");
+               "second_level_segment_index hls_flag requires strftime to be true\n");
         ret = AVERROR(EINVAL);
     }
 
@@ -1513,7 +1513,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             vs->basename, 'd', vs->sequence) < 1) {
 #endif
                 av_free(filename);
-                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -use_localtime 1 with it\n", vs->basename);
+                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s', you can try to use -strftime 1 with it\n", vs->basename);
                 return AVERROR(EINVAL);
         }
         ff_format_set_url(oc, filename);
@@ -1529,7 +1529,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             tm = localtime_r(&now0, &tmpbuf);
             ff_format_set_url(oc, buf);
             if (!strftime(oc->url, bufsize, vs->basename, tm)) {
-                av_log(oc, AV_LOG_ERROR, "Could not get segment filename with use_localtime\n");
+                av_log(oc, AV_LOG_ERROR, "Could not get segment filename with strftime\n");
                 return AVERROR(EINVAL);
             }
 
@@ -1561,7 +1561,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
                    vs->basename, 'd', vs->sequence) < 1) {
 #endif
                 av_free(filename);
-                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -use_localtime 1 with it\n", vs->basename);
+                av_log(oc, AV_LOG_ERROR, "Invalid segment filename template '%s' you can try to use -strftime 1 with it\n", vs->basename);
                 return AVERROR(EINVAL);
             }
             ff_format_set_url(oc, filename);
@@ -2863,8 +2863,14 @@ static const AVOption options[] = {
     {"second_level_segment_size", "include segment size in segment filenames when use_localtime", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SECOND_LEVEL_SEGMENT_SIZE }, 0, UINT_MAX,   E, "flags"},
     {"periodic_rekey", "reload keyinfo file periodically for re-keying", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_PERIODIC_REKEY }, 0, UINT_MAX,   E, "flags"},
     {"independent_segments", "add EXT-X-INDEPENDENT-SEGMENTS, whenever applicable", 0, AV_OPT_TYPE_CONST, { .i64 = HLS_INDEPENDENT_SEGMENTS }, 0, UINT_MAX, E, "flags"},
-    {"use_localtime", "set filename expansion with strftime at segment creation", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
-    {"use_localtime_mkdir", "create last directory component in strftime-generated filename", OFFSET(use_localtime_mkdir), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+#if FF_API_HLS_USE_LOCALTIME
+    {"use_localtime", "set filename expansion with strftime at segment creation(will be deprecated )", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+#endif
+    {"strftime", "set filename expansion with strftime at segment creation", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+#if FF_API_HLS_USE_LOCALTIME
+    {"use_localtime_mkdir", "create last directory component in strftime-generated filename(will be deprecated)", OFFSET(use_localtime_mkdir), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
+#endif
+    {"strftime_mkdir", "create last directory component in strftime-generated filename", OFFSET(use_localtime_mkdir), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"hls_playlist_type", "set the HLS playlist type", OFFSET(pl_type), AV_OPT_TYPE_INT, {.i64 = PLAYLIST_TYPE_NONE }, 0, PLAYLIST_TYPE_NB-1, E, "pl_type" },
     {"event", "EVENT playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_EVENT }, INT_MIN, INT_MAX, E, "pl_type" },
     {"vod", "VOD playlist", 0, AV_OPT_TYPE_CONST, {.i64 = PLAYLIST_TYPE_VOD }, INT_MIN, INT_MAX, E, "pl_type" },
