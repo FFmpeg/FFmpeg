@@ -1327,6 +1327,7 @@ cleanup:
     for (i = 0 ; i < c->n_videos; i++) {
         if (strlen(c->videos[i]->id) < 20) {
             strcpy(c->info.video_id[i], c->videos[i]->id);
+            c->info.video_bandwidth[i] = c->videos[i]->bandwidth;
             if (c->videos[i]->ctx)
                 strcpy(c->info.cur_video_id, c->videos[i]->id);
         }
@@ -1334,6 +1335,7 @@ cleanup:
     for (i = 0 ; i < c->n_audios; i++) {
         if (strlen(c->audios[i]->id) < 20) {
             strcpy(c->info.audio_id[i], c->audios[i]->id);
+            c->info.audio_bandwidth[i] = c->audios[i]->bandwidth;
             if (c->audios[i]->ctx)
                 strcpy(c->info.cur_audio_id, c->audios[i]->id);
         }
@@ -2512,7 +2514,7 @@ static const AVOption dash_options[] = {
     {"disable_retry", "disable_retry", OFFSET(disable_retry), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
     {"disable_video", "disable_video", OFFSET(disable_video), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
     {"disable_audio", "disable_audio", OFFSET(disable_audio), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
-    { "dashapplication", "AVApplicationContext", OFFSET(app_ctx_intptr), AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, FLAGS},
+    { "ijkapplication", "AVApplicationContext", OFFSET(app_ctx_intptr), AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, FLAGS},
     {NULL}
 };
 

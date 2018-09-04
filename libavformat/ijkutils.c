@@ -97,3 +97,4 @@ AVInputFormat ff_##x##_demuxer = {                                  \
 
 IJK_DUMMY_DEMUXER(ijklivehook);
 IJK_DUMMY_DEMUXER(ijkswitch);
+IJK_DUMMY_DEMUXER(ijkdash);

@@ -48,6 +48,8 @@
 #define AVAPP_SWITCH_CTRL_FAIL        0x40002
 #define AVAPP_SWITCH_CTRL_RETRY       0x40003
 #define AVAPP_SWITCH_CTRL_SUCCESS     0x40004
+#define AVAPP_SWITCH_CTRL_BUFFERSTART 0x40005
+#define AVAPP_SWITCH_CTRL_BUFFEREND   0x40006
 
 #define AVAPP_CTRL_GET_DASH_STREAM_INFO  0x30001
 #define AVAPP_CTRL_SET_DASH_VIDEO_STREAM 0x30002
@@ -60,6 +62,8 @@ typedef struct AVAppDashStream
 {
     int audio_stream_nb;
     int video_stream_nb;
+    int64_t video_bandwidth[20];
+    int64_t audio_bandwidth[20];
     char video_id[20][MAX_PKT_STREAM_ID_LEN];
     char audio_id[20][MAX_PKT_STREAM_ID_LEN];
     char cur_video_id[MAX_PKT_STREAM_ID_LEN];
@@ -73,6 +77,7 @@ typedef struct AVAppDashChange
     int64_t next_sap;
     int error;
     int retry;
+    int auto_switch;
 } AVAppDashChange;
 
 
@@ -128,10 +133,13 @@ typedef struct AVAppSwitchControl{
     char vid[MAX_PKT_STREAM_ID_LEN];
     char aid[MAX_PKT_STREAM_ID_LEN];
 
+    int auto_switch_enable;
     int64_t latest_pts;
+    int64_t switch_ts;
     int64_t switch_sap;
-    int64_t current_sap;
-    int64_t next_sap;
+
+    double buffer_level;
+
     int current_serial;
     int next_serial;
     int64_t max_differ;
@@ -141,6 +149,7 @@ typedef struct AVAppSwitchControl{
 
     AVAppDashChange change_info;
     int (*start_switch)(void *);
+    void * opaque;
 } AVAppSwitchControl;
 
 typedef struct AVApplicationContext AVApplicationContext;
