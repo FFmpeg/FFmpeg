@@ -864,6 +864,7 @@ static int write_manifest(AVFormatContext *s, int final)
     if (c->hls_playlist && !c->master_playlist_created) {
         char filename_hls[1024];
         const char *audio_group = "A1";
+        char audio_codec_str[128] = "\0";
         int is_default = 1;
         int max_audio_bitrate = 0;
 
@@ -895,21 +896,31 @@ static int write_manifest(AVFormatContext *s, int final)
                                          playlist_file, i, is_default);
             max_audio_bitrate = FFMAX(st->codecpar->bit_rate +
                                       os->muxer_overhead, max_audio_bitrate);
+            if (!av_strnstr(audio_codec_str, os->codec_str, sizeof(audio_codec_str))) {
+                if (strlen(audio_codec_str))
+                    av_strlcat(audio_codec_str, ",", sizeof(audio_codec_str));
+                av_strlcat(audio_codec_str, os->codec_str, sizeof(audio_codec_str));
+            }
             is_default = 0;
         }
 
         for (i = 0; i < s->nb_streams; i++) {
             char playlist_file[64];
+            char codec_str[128];
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
             char *agroup = NULL;
             int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
+            av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
             if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && max_audio_bitrate) {
                 agroup = (char *)audio_group;
                 stream_bitrate += max_audio_bitrate;
+                av_strlcat(codec_str, ",", sizeof(codec_str));
+                av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
             }
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
-            ff_hls_write_stream_info(st, out, stream_bitrate, playlist_file, agroup, NULL, NULL);
+            ff_hls_write_stream_info(st, out, stream_bitrate, playlist_file, agroup,
+                                     codec_str, NULL);
         }
         avio_close(out);
         if (use_rename)
