@@ -132,6 +132,7 @@ typedef struct DASHContext {
     uint64_t media_presentation_duration;
     uint64_t suggested_presentation_delay;
     uint64_t availability_start_time;
+    uint64_t availability_end_time;
     uint64_t publish_time;
     uint64_t minimum_update_period;
     uint64_t time_shift_buffer_depth;
@@ -1191,6 +1192,8 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 
             if (!av_strcasecmp(attr->name, (const char *)"availabilityStartTime")) {
                 c->availability_start_time = get_utc_date_time_insec(s, (const char *)val);
+            } else if (!av_strcasecmp(attr->name, (const char *)"availabilityEndTime")) {
+                c->availability_end_time = get_utc_date_time_insec(s, (const char *)val);
             } else if (!av_strcasecmp(attr->name, (const char *)"publishTime")) {
                 c->publish_time = get_utc_date_time_insec(s, (const char *)val);
             } else if (!av_strcasecmp(attr->name, (const char *)"minimumUpdatePeriod")) {
