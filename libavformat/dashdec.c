@@ -1577,7 +1577,7 @@ static int read_from_url(struct representation *pls, struct fragment *seg,
     if (seg->size >= 0)
         buf_size = FFMIN(buf_size, pls->cur_seg_size - pls->cur_seg_offset);
 
-        ret = avio_read(pls->input, buf, buf_size);
+    ret = avio_read(pls->input, buf, buf_size);
     if (ret > 0)
         pls->cur_seg_offset += ret;
 
