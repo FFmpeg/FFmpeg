@@ -1568,14 +1568,8 @@ static struct fragment *get_current_fragment(struct representation *pls)
     return seg;
 }
 
-enum ReadFromURLMode {
-    READ_NORMAL,
-    READ_COMPLETE,
-};
-
 static int read_from_url(struct representation *pls, struct fragment *seg,
-                         uint8_t *buf, int buf_size,
-                         enum ReadFromURLMode mode)
+                         uint8_t *buf, int buf_size)
 {
     int ret;
 
@@ -1583,14 +1577,7 @@ static int read_from_url(struct representation *pls, struct fragment *seg,
     if (seg->size >= 0)
         buf_size = FFMIN(buf_size, pls->cur_seg_size - pls->cur_seg_offset);
 
-    if (mode == READ_COMPLETE) {
         ret = avio_read(pls->input, buf, buf_size);
-        if (ret < buf_size) {
-            av_log(pls->parent, AV_LOG_WARNING, "Could not read complete fragment.\n");
-        }
-    } else {
-        ret = avio_read(pls->input, buf, buf_size);
-    }
     if (ret > 0)
         pls->cur_seg_offset += ret;
 
@@ -1666,7 +1653,7 @@ static int update_init_section(struct representation *pls)
     av_fast_malloc(&pls->init_sec_buf, &pls->init_sec_buf_size, sec_size);
 
     ret = read_from_url(pls, pls->init_section, pls->init_sec_buf,
-                        pls->init_sec_buf_size, READ_COMPLETE);
+                        pls->init_sec_buf_size);
     ff_format_io_close(pls->parent, &pls->input);
 
     if (ret < 0)
@@ -1737,7 +1724,7 @@ restart:
         ret = AVERROR_EOF;
         goto end;
     }
-    ret = read_from_url(v, v->cur_seg, buf, buf_size, READ_NORMAL);
+    ret = read_from_url(v, v->cur_seg, buf, buf_size);
     if (ret > 0)
         goto end;
 
