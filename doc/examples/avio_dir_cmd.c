@@ -143,8 +143,6 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    /* register codecs and formats and other lavf/lavc components*/
-    av_register_all();
     avformat_network_init();
 
     op = argv[1];

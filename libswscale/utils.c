@@ -137,6 +137,8 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_GRAY10LE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY12BE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY12LE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY14BE]    = { 1, 1 },
+    [AV_PIX_FMT_GRAY14LE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16BE]    = { 1, 1 },
     [AV_PIX_FMT_GRAY16LE]    = { 1, 1 },
     [AV_PIX_FMT_YUV440P]     = { 1, 1 },
@@ -254,8 +256,10 @@ static const FormatEntry format_entries[AV_PIX_FMT_NB] = {
     [AV_PIX_FMT_AYUV64LE]    = { 1, 1},
     [AV_PIX_FMT_P010LE]      = { 1, 1 },
     [AV_PIX_FMT_P010BE]      = { 1, 1 },
-    [AV_PIX_FMT_P016LE]      = { 1, 0 },
-    [AV_PIX_FMT_P016BE]      = { 1, 0 },
+    [AV_PIX_FMT_P016LE]      = { 1, 1 },
+    [AV_PIX_FMT_P016BE]      = { 1, 1 },
+    [AV_PIX_FMT_GRAYF32LE]   = { 1, 1 },
+    [AV_PIX_FMT_GRAYF32BE]   = { 1, 1 },
 };
 
 int sws_isSupportedInput(enum AVPixelFormat pix_fmt)
@@ -1024,6 +1028,8 @@ static int handle_jpeg(enum AVPixelFormat *format)
     case AV_PIX_FMT_GRAY10BE:
     case AV_PIX_FMT_GRAY12LE:
     case AV_PIX_FMT_GRAY12BE:
+    case AV_PIX_FMT_GRAY14LE:
+    case AV_PIX_FMT_GRAY14BE:
     case AV_PIX_FMT_GRAY16LE:
     case AV_PIX_FMT_GRAY16BE:
     case AV_PIX_FMT_YA16BE:
@@ -1169,6 +1175,7 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
     const AVPixFmtDescriptor *desc_dst;
     int ret = 0;
     enum AVPixelFormat tmpFmt;
+    static const float float_mult = 1.0f / 255.0f;
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
@@ -1533,6 +1540,19 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
         }
     }
 
+    if (unscaled && c->srcBpc == 8 && dstFormat == AV_PIX_FMT_GRAYF32){
+        for (i = 0; i < 256; ++i){
+            c->uint2float_lut[i] = (float)i * float_mult;
+        }
+    }
+
+    // float will be converted to uint16_t
+    if ((srcFormat == AV_PIX_FMT_GRAYF32BE || srcFormat == AV_PIX_FMT_GRAYF32LE) &&
+        (!unscaled || unscaled && dstFormat != srcFormat && (srcFormat != AV_PIX_FMT_GRAYF32 ||
+        dstFormat != AV_PIX_FMT_GRAY8))){
+        c->srcBpc = 16;
+    }
+
     if (CONFIG_SWSCALE_ALPHA && isALPHA(srcFormat) && !isALPHA(dstFormat)) {
         enum AVPixelFormat tmpFormat = alphaless_fmt(srcFormat);
 
@@ -1789,7 +1809,9 @@ av_cold int sws_init_context(SwsContext *c, SwsFilter *srcFilter,
 
     /* unscaled special cases */
     if (unscaled && !usesHFilter && !usesVFilter &&
-        (c->srcRange == c->dstRange || isAnyRGB(dstFormat))) {
+        (c->srcRange == c->dstRange || isAnyRGB(dstFormat) ||
+         srcFormat == AV_PIX_FMT_GRAYF32 && dstFormat == AV_PIX_FMT_GRAY8 ||
+         srcFormat == AV_PIX_FMT_GRAY8 && dstFormat == AV_PIX_FMT_GRAYF32)) {
         ff_get_unscaled_swscale(c);
 
         if (c->swscale) {

@@ -47,7 +47,8 @@ We cannot provide help for scripts and/or third-party tools.
 @anchor{How do I ask a question or send a message to a mailing list?}
 @section How do I ask a question or send a message to a mailing list?
 
-All you have to do is send an email:
+First you must @ref{How do I subscribe?, subscribe}. Then all you have to do is
+send an email:
 
 @itemize
 @item
@@ -57,48 +58,17 @@ ffmpeg-user mailing list.
 @item
 Email @email{libav-user@@ffmpeg.org} to send a message to the
 libav-user mailing list.
+
+@item
+Email @email{ffmpeg-devel@@ffmpeg.org} to send a message to the
+ffmpeg-devel mailing list.
 @end itemize
 
-If you are not subscribed to the mailing list then your question must be
-manually approved. Approval may take several days, but the wait is
-usually less. If you want the message to be sent with no delay then you
-must subscribe first. See @ref{How do I subscribe?}
-
-Please do not send a message, subscribe, and re-send the message: this
-results in duplicates, causes more work for the admins, and may lower
-your chance at getting an answer. However, you may do so if you first
-@ref{How do I delete my message in the moderation queue?, delete your original message from the moderation queue}.
+Note that the ffmpeg-devel mailing list does not require you to subscribe
+to send a message or patch, but ffmpeg-user and libav-user do require
+subscription.
 
 @chapter Subscribing / Unsubscribing
-
-@section What does subscribing do?
-
-Subscribing allows two things:
-
-@itemize
-@item
-Your messages will show up in the mailing list without waiting in the
-moderation queue and needing to be manually approved by a mailing list
-admin.
-
-@item
-You will receive all messages to the mailing list including replies to
-your messages. Non-subscribed users do not receive any messages.
-@end itemize
-
-@section Do I need to subscribe?
-
-No. You can still send a message to the mailing list without
-subscribing. See @ref{How do I ask a question or send a message to a mailing list?}
-
-However, your message will need to be manually approved by a mailing
-list admin, and you will not receive any mailing list messages or
-replies.
-
-You can ask to be CCd in your message, but replying users will
-sometimes forget to do so.
-
-You may also view and reply to messages via the @ref{Where are the archives?, archives}.
 
 @anchor{How do I subscribe?}
 @section How do I subscribe?
@@ -134,8 +104,6 @@ must be manually approved by a mailing list admin:
 These are:
 
 @itemize
-@item
-Messages from users who are @strong{not} subscribed.
 
 @item
 Messages that exceed the @ref{What is the message size limit?, message size limit}.
@@ -148,13 +116,12 @@ or is abusive towards others).
 
 @section How long does it take for my message in the moderation queue to be approved?
 
-The queue is usually checked once or twice a day, but on occasion
-several days may pass before someone checks the queue.
+The queue is usually checked daily to several times a week.
 
 @anchor{How do I delete my message in the moderation queue?}
 @section How do I delete my message in the moderation queue?
 
-You should have received an email with the subject @emph{Your message to ffmpeg-user awaits moderator approval}.
+You should have received an email with the subject @emph{Your message to <mailing list name> awaits moderator approval}.
 A link is in the message that will allow you to delete your message
 unless a mailing list admin already approved or rejected it.
 
@@ -174,6 +141,9 @@ several months will be split into separate months in the archives.
 Click the email link at the top of the message just under the subject
 title. The link will provide the proper headers to keep the message
 within the thread.
+
+Note that you must be subscribed to send a message to the ffmpeg-user or
+libav-user mailing lists.
 
 @section How do I search the archives?
 
@@ -203,9 +173,8 @@ Instead, use trimmed interleaved/inline replies (@url{https://lists.ffmpeg.org/p
 @anchor{What is the message size limit?}
 @section What is the message size limit?
 
-The message size limit is 500 kilobytes for the user lists and 1000
-kilobytes for ffmpeg-devel. Please provide links to larger files instead
-of attaching them.
+The message size limit is 1000 kilobytes. Please provide links to larger files
+instead of attaching them.
 
 @section Where can I upload sample files?
 

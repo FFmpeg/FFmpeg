@@ -49,6 +49,8 @@ isNBPS:
   gray10le
   gray12be
   gray12le
+  gray14be
+  gray14le
   gray9be
   gray9le
   nv20be
@@ -121,8 +123,10 @@ isBE:
   gbrpf32be
   gray10be
   gray12be
+  gray14be
   gray16be
   gray9be
+  grayf32be
   nv20be
   p010be
   p016be
@@ -403,10 +407,14 @@ Gray:
   gray10le
   gray12be
   gray12le
+  gray14be
+  gray14le
   gray16be
   gray16le
   gray9be
   gray9le
+  grayf32be
+  grayf32le
   ya16be
   ya16le
   ya8

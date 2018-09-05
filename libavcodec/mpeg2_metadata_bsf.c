@@ -167,7 +167,8 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
 
         err = ff_cbs_insert_unit_content(ctx->cbc, frag, se_pos + 1,
                                          MPEG2_START_EXTENSION,
-                                         &ctx->sequence_display_extension);
+                                         &ctx->sequence_display_extension,
+                                         NULL);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to insert new sequence "
                    "display extension.\n");
@@ -187,7 +188,7 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
-        goto fail;
+        return err;
 
     err = ff_cbs_read_packet(ctx->cbc, frag, in);
     if (err < 0) {
@@ -208,15 +209,15 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     }
 
     err = av_packet_copy_props(out, in);
-    if (err < 0) {
-        av_packet_unref(out);
+    if (err < 0)
         goto fail;
-    }
 
     err = 0;
 fail:
     ff_cbs_fragment_uninit(ctx->cbc, frag);
 
+    if (err < 0)
+        av_packet_unref(out);
     av_packet_free(&in);
 
     return err;
@@ -265,27 +266,28 @@ static void mpeg2_metadata_close(AVBSFContext *bsf)
 }
 
 #define OFFSET(x) offsetof(MPEG2MetadataContext, x)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_BSF_PARAM)
 static const AVOption mpeg2_metadata_options[] = {
     { "display_aspect_ratio", "Set display aspect ratio (table 6-3)",
         OFFSET(display_aspect_ratio), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, 65535 },
+        { .dbl = 0.0 }, 0, 65535, FLAGS },
 
     { "frame_rate", "Set frame rate",
         OFFSET(frame_rate), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, UINT_MAX },
+        { .dbl = 0.0 }, 0, UINT_MAX, FLAGS },
 
     { "video_format", "Set video format (table 6-6)",
         OFFSET(video_format), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 7 },
+        { .i64 = -1 }, -1, 7, FLAGS },
     { "colour_primaries", "Set colour primaries (table 6-7)",
         OFFSET(colour_primaries), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "transfer_characteristics", "Set transfer characteristics (table 6-8)",
         OFFSET(transfer_characteristics), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "matrix_coefficients", "Set matrix coefficients (table 6-9)",
         OFFSET(matrix_coefficients), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
 
     { NULL }
 };

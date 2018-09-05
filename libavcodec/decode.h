@@ -64,6 +64,8 @@ typedef struct FrameDecodeData {
  */
 int ff_decode_get_packet(AVCodecContext *avctx, AVPacket *pkt);
 
+int ff_decode_bsfs_init(AVCodecContext *avctx);
+
 void ff_decode_bsfs_uninit(AVCodecContext *avctx);
 
 /**

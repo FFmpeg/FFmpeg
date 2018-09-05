@@ -162,6 +162,7 @@ typedef struct MixContext {
     int active_inputs;          /**< number of input currently active */
     int duration_mode;          /**< mode for determining duration */
     float dropout_transition;   /**< transition time when an input drops out */
+    char *weights_str;          /**< string for custom weights for every input */
 
     int nb_channels;            /**< number of channels */
     int sample_rate;            /**< sample rate */
@@ -169,7 +170,9 @@ typedef struct MixContext {
     AVAudioFifo **fifos;        /**< audio fifo for each input */
     uint8_t *input_state;       /**< current state of each input */
     float *input_scale;         /**< mixing scale factor for each input */
-    float scale_norm;           /**< normalization factor for all inputs */
+    float *weights;             /**< custom weights for every input */
+    float weight_sum;           /**< sum of custom weights for every input */
+    float *scale_norm;          /**< normalization factor for every input */
     int64_t next_pts;           /**< calculated pts for next output frame */
     FrameList *frame_list;      /**< list of frame info for the first input */
 } MixContext;
@@ -188,6 +191,8 @@ static const AVOption amix_options[] = {
     { "dropout_transition", "Transition time, in seconds, for volume "
                             "renormalization when an input stream ends.",
             OFFSET(dropout_transition), AV_OPT_TYPE_FLOAT, { .dbl = 2.0 }, 0, INT_MAX, A|F },
+    { "weights", "Set weight for each input.",
+            OFFSET(weights_str), AV_OPT_TYPE_STRING, {.str="1 1"}, 0, 0, A|F },
     { NULL }
 };
 
@@ -202,16 +207,26 @@ AVFILTER_DEFINE_CLASS(amix);
  */
 static void calculate_scales(MixContext *s, int nb_samples)
 {
+    float weight_sum = 0.f;
     int i;
 
-    if (s->scale_norm > s->active_inputs) {
-        s->scale_norm -= nb_samples / (s->dropout_transition * s->sample_rate);
-        s->scale_norm = FFMAX(s->scale_norm, s->active_inputs);
+    for (i = 0; i < s->nb_inputs; i++)
+        if (s->input_state[i] & INPUT_ON)
+            weight_sum += s->weights[i];
+
+    for (i = 0; i < s->nb_inputs; i++) {
+        if (s->input_state[i] & INPUT_ON) {
+            if (s->scale_norm[i] > weight_sum / s->weights[i]) {
+                s->scale_norm[i] -= ((s->weight_sum / s->weights[i]) / s->nb_inputs) *
+                                    nb_samples / (s->dropout_transition * s->sample_rate);
+                s->scale_norm[i] = FFMAX(s->scale_norm[i], weight_sum / s->weights[i]);
+            }
+        }
     }
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (s->input_state[i] & INPUT_ON)
-            s->input_scale[i] = 1.0f / s->scale_norm;
+            s->input_scale[i] = 1.0f / s->scale_norm[i];
         else
             s->input_scale[i] = 0.0f;
     }
@@ -251,9 +266,11 @@ static int config_output(AVFilterLink *outlink)
     s->active_inputs = s->nb_inputs;
 
     s->input_scale = av_mallocz_array(s->nb_inputs, sizeof(*s->input_scale));
-    if (!s->input_scale)
+    s->scale_norm  = av_mallocz_array(s->nb_inputs, sizeof(*s->scale_norm));
+    if (!s->input_scale || !s->scale_norm)
         return AVERROR(ENOMEM);
-    s->scale_norm = s->active_inputs;
+    for (i = 0; i < s->nb_inputs; i++)
+        s->scale_norm[i] = s->weight_sum / s->weights[i];
     calculate_scales(s, 0);
 
     av_get_channel_layout_string(buf, sizeof(buf), -1, outlink->channel_layout);
@@ -408,6 +425,8 @@ static int activate(AVFilterContext *ctx)
     AVFrame *buf = NULL;
     int i, ret;
 
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+
     for (i = 0; i < s->nb_inputs; i++) {
         AVFilterLink *inlink = ctx->inputs[i];
 
@@ -487,6 +506,8 @@ static int activate(AVFilterContext *ctx)
 static av_cold int init(AVFilterContext *ctx)
 {
     MixContext *s = ctx->priv;
+    char *p, *arg, *saveptr = NULL;
+    float last_weight = 1.f;
     int i, ret;
 
     for (i = 0; i < s->nb_inputs; i++) {
@@ -507,6 +528,26 @@ static av_cold int init(AVFilterContext *ctx)
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
+    s->weights = av_mallocz_array(s->nb_inputs, sizeof(*s->weights));
+    if (!s->weights)
+        return AVERROR(ENOMEM);
+
+    p = s->weights_str;
+    for (i = 0; i < s->nb_inputs; i++) {
+        if (!(arg = av_strtok(p, " ", &saveptr)))
+            break;
+
+        p = NULL;
+        sscanf(arg, "%f", &last_weight);
+        s->weights[i] = last_weight;
+        s->weight_sum += last_weight;
+    }
+
+    for (; i < s->nb_inputs; i++) {
+        s->weights[i] = last_weight;
+        s->weight_sum += last_weight;
+    }
+
     return 0;
 }
 
@@ -524,6 +565,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->frame_list);
     av_freep(&s->input_state);
     av_freep(&s->input_scale);
+    av_freep(&s->scale_norm);
+    av_freep(&s->weights);
     av_freep(&s->fdsp);
 
     for (i = 0; i < ctx->nb_inputs; i++)

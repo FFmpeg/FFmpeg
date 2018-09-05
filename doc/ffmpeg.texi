@@ -216,16 +216,208 @@ filters is obviously also impossible, since filters work on uncompressed data.
 @chapter Stream selection
 @c man begin STREAM SELECTION
 
-By default, @command{ffmpeg} includes only one stream of each type (video, audio, subtitle)
-present in the input files and adds them to each output file.  It picks the
-"best" of each based upon the following criteria: for video, it is the stream
-with the highest resolution, for audio, it is the stream with the most channels, for
-subtitles, it is the first subtitle stream. In the case where several streams of
-the same type rate equally, the stream with the lowest index is chosen.
+@command{ffmpeg} provides the @code{-map} option for manual control of stream selection in each
+output file. Users can skip @code{-map} and let ffmpeg perform automatic stream selection as
+described below. The @code{-vn / -an / -sn / -dn} options can be used to skip inclusion of
+video, audio, subtitle and data streams respectively, whether manually mapped or automatically
+selected, except for those streams which are outputs of complex filtergraphs.
 
-You can disable some of those defaults by using the @code{-vn/-an/-sn/-dn} options. For
-full manual control, use the @code{-map} option, which disables the defaults just
-described.
+@section Description
+The sub-sections that follow describe the various rules that are involved in stream selection.
+The examples that follow next show how these rules are applied in practice.
+
+While every effort is made to accurately reflect the behavior of the program, FFmpeg is under
+continuous development and the code may have changed since the time of this writing.
+
+@subsection Automatic stream selection
+
+In the absence of any map options for a particular output file, ffmpeg inspects the output
+format to check which type of streams can be included in it, viz. video, audio and/or
+subtitles. For each acceptable stream type, ffmpeg will pick one stream, when available,
+from among all the inputs.
+
+It will select that stream based upon the following criteria:
+@itemize
+@item
+for video, it is the stream with the highest resolution,
+@item
+for audio, it is the stream with the most channels,
+@item
+for subtitles, it is the first subtitle stream found but there's a caveat.
+The output format's default subtitle encoder can be either text-based or image-based,
+and only a subtitle stream of the same type will be chosen.
+@end itemize
+
+In the case where several streams of the same type rate equally, the stream with the lowest
+index is chosen.
+
+Data or attachment streams are not automatically selected and can only be included
+using @code{-map}.
+@subsection Manual stream selection
+
+When @code{-map} is used, only user-mapped streams are included in that output file,
+with one possible exception for filtergraph outputs described below.
+
+@subsection Complex filtergraphs
+
+If there are any complex filtergraph output streams with unlabeled pads, they will be added
+to the first output file. This will lead to a fatal error if the stream type is not supported
+by the output format. In the absence of the map option, the inclusion of these streams leads
+to the automatic stream selection of their types being skipped. If map options are present,
+these filtergraph streams are included in addition to the mapped streams.
+
+Complex filtergraph output streams with labeled pads must be mapped once and exactly once.
+
+@subsection Stream handling
+
+Stream handling is independent of stream selection, with an exception for subtitles described
+below. Stream handling is set via the @code{-codec} option addressed to streams within a
+specific @emph{output} file. In particular, codec options are applied by ffmpeg after the
+stream selection process and thus do not influence the latter. If no @code{-codec} option is
+specified for a stream type, ffmpeg will select the default encoder registered by the output
+file muxer.
+
+An exception exists for subtitles. If a subtitle encoder is specified for an output file, the
+first subtitle stream found of any type, text or image, will be included. ffmpeg does not validate
+if the specified encoder can convert the selected stream or if the converted stream is acceptable
+within the output format. This applies generally as well: when the user sets an encoder manually,
+the stream selection process cannot check if the encoded stream can be muxed into the output file.
+If it cannot, ffmpeg will abort and @emph{all} output files will fail to be processed.
+
+@section Examples
+
+The following examples illustrate the behavior, quirks and limitations of ffmpeg's stream
+selection methods.
+
+They assume the following three input files.
+
+@verbatim
+
+input file 'A.avi'
+      stream 0: video 640x360
+      stream 1: audio 2 channels
+
+input file 'B.mp4'
+      stream 0: video 1920x1080
+      stream 1: audio 2 channels
+      stream 2: subtitles (text)
+      stream 3: audio 5.1 channels
+      stream 4: subtitles (text)
+
+input file 'C.mkv'
+      stream 0: video 1280x720
+      stream 1: audio 2 channels
+      stream 2: subtitles (image)
+@end verbatim
+
+@subsubheading Example: automatic stream selection
+@example
+ffmpeg -i A.avi -i B.mp4 out1.mkv out2.wav -map 1:a -c:a copy out3.mov
+@end example
+There are three output files specified, and for the first two, no @code{-map} options
+are set, so ffmpeg will select streams for these two files automatically.
+
+@file{out1.mkv} is a Matroska container file and accepts video, audio and subtitle streams,
+so ffmpeg will try to select one of each type.@*
+For video, it will select @code{stream 0} from @file{B.mp4}, which has the highest
+resolution among all the input video streams.@*
+For audio, it will select @code{stream 3} from @file{B.mp4}, since it has the greatest
+number of channels.@*
+For subtitles, it will select @code{stream 2} from @file{B.mp4}, which is the first subtitle
+stream from among @file{A.avi} and @file{B.mp4}.
+
+@file{out2.wav} accepts only audio streams, so only @code{stream 3} from @file{B.mp4} is
+selected.
+
+For @file{out3.mov}, since a @code{-map} option is set, no automatic stream selection will
+occur. The @code{-map 1:a} option will select all audio streams from the second input
+@file{B.mp4}. No other streams will be included in this output file.
+
+For the first two outputs, all included streams will be transcoded. The encoders chosen will
+be the default ones registered by each output format, which may not match the codec of the
+selected input streams.
+
+For the third output, codec option for audio streams has been set
+to @code{copy}, so no decoding-filtering-encoding operations will occur, or @emph{can} occur.
+Packets of selected streams shall be conveyed from the input file and muxed within the output
+file.
+
+@subsubheading Example: automatic subtitles selection
+@example
+ffmpeg -i C.mkv out1.mkv -c:s dvdsub -an out2.mkv
+@end example
+Although @file{out1.mkv} is a Matroska container file which accepts subtitle streams, only a
+video and audio stream shall be selected. The subtitle stream of @file{C.mkv} is image-based
+and the default subtitle encoder of the Matroska muxer is text-based, so a transcode operation
+for the subtitles is expected to fail and hence the stream isn't selected. However, in
+@file{out2.mkv}, a subtitle encoder is specified in the command and so, the subtitle stream is
+selected, in addition to the video stream. The presence of @code{-an} disables audio stream
+selection for @file{out2.mkv}.
+
+@subsubheading Example: unlabeled filtergraph outputs
+@example
+ffmpeg -i A.avi -i C.mkv -i B.mp4 -filter_complex "overlay" out1.mp4 out2.srt
+@end example
+A filtergraph is setup here using the @code{-filter_complex} option and consists of a single
+video filter. The @code{overlay} filter requires exactly two video inputs, but none are
+specified, so the first two available video streams are used, those of @file{A.avi} and
+@file{C.mkv}. The output pad of the filter has no label and so is sent to the first output file
+@file{out1.mp4}. Due to this, automatic selection of the video stream is skipped, which would
+have selected the stream in @file{B.mp4}. The audio stream with most channels viz. @code{stream 3}
+in @file{B.mp4}, is chosen automatically. No subtitle stream is chosen however, since the MP4
+format has no default subtitle encoder registered, and the user hasn't specified a subtitle encoder.
+
+The 2nd output file, @file{out2.srt}, only accepts text-based subtitle streams. So, even though
+the first subtitle stream available belongs to @file{C.mkv}, it is image-based and hence skipped.
+The selected stream, @code{stream 2} in @file{B.mp4}, is the first text-based subtitle stream.
+
+@subsubheading Example: labeled filtergraph outputs
+@example
+ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex "[1:v]hue=s=0[outv];overlay;aresample" \
+       -map '[outv]' -an        out1.mp4 \
+                                out2.mkv \
+       -map '[outv]' -map 1:a:0 out3.mkv
+@end example
+
+The above command will fail, as the output pad labelled @code{[outv]} has been mapped twice.
+None of the output files shall be processed.
+
+@example
+ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex "[1:v]hue=s=0[outv];overlay;aresample" \
+       -an        out1.mp4 \
+                  out2.mkv \
+       -map 1:a:0 out3.mkv
+@end example
+
+This command above will also fail as the hue filter output has a label, @code{[outv]},
+and hasn't been mapped anywhere.
+
+The command should be modified as follows,
+@example
+ffmpeg -i A.avi -i B.mp4 -i C.mkv -filter_complex "[1:v]hue=s=0,split=2[outv1][outv2];overlay;aresample" \
+        -map '[outv1]' -an        out1.mp4 \
+                                  out2.mkv \
+        -map '[outv2]' -map 1:a:0 out3.mkv
+@end example
+The video stream from @file{B.mp4} is sent to the hue filter, whose output is cloned once using
+the split filter, and both outputs labelled. Then a copy each is mapped to the first and third
+output files.
+
+The overlay filter, requiring two video inputs, uses the first two unused video streams. Those
+are the streams from @file{A.avi} and @file{C.mkv}. The overlay output isn't labelled, so it is
+sent to the first output file @file{out1.mp4}, regardless of the presence of the @code{-map} option.
+
+The aresample filter is sent the first unused audio stream, that of @file{A.avi}. Since this filter
+output is also unlabelled, it too is mapped to the first output file. The presence of @code{-an}
+only suppresses automatic or manual stream selection of audio streams, not outputs sent from
+filtergraphs. Both these mapped streams shall be ordered before the mapped stream in @file{out1.mp4}.
+
+The video, audio and subtitle streams mapped to @code{out2.mkv} are entirely determined by
+automatic stream selection.
+
+@file{out3.mkv} consists of the cloned video output from the hue filter and the first audio
+stream from @file{B.mp4}.
+@*
 
 @c man end STREAM SELECTION
 
@@ -316,7 +508,7 @@ input until the timestamps reach @var{position}.
 @var{position} must be a time duration specification,
 see @ref{time duration syntax,,the Time duration section in the ffmpeg-utils(1) manual,ffmpeg-utils}.
 
-@item -sseof @var{position} (@emph{input/output})
+@item -sseof @var{position} (@emph{input})
 
 Like the @code{-ss} option but relative to the "end of file". That is negative
 values are earlier in the file, 0 is at EOF.
@@ -375,21 +567,30 @@ The following dispositions are recognized:
 @item hearing_impaired
 @item visual_impaired
 @item clean_effects
+@item attached_pic
 @item captions
 @item descriptions
+@item dependent
 @item metadata
 @end table
 
 For example, to make the second audio stream the default stream:
 @example
-ffmpeg -i in.mkv -disposition:a:1 default out.mkv
+ffmpeg -i in.mkv -c copy -disposition:a:1 default out.mkv
 @end example
 
 To make the second subtitle stream the default stream and remove the default
 disposition from the first subtitle stream:
 @example
-ffmpeg -i INPUT -disposition:s:0 0 -disposition:s:1 default OUTPUT
+ffmpeg -i in.mkv -c copy -disposition:s:0 0 -disposition:s:1 default out.mkv
 @end example
+
+To add an embedded cover/thumbnail:
+@example
+ffmpeg -i in.mp4 -i IMAGE -map 0 -map 1 -c copy -c:v:1 png -disposition:v:1 attached_pic out.mp4
+@end example
+
+Not all muxers support embedded thumbnails, and those who do, only support a few formats, like JPEG or PNG.
 
 @item -program [title=@var{title}:][program_num=@var{program_num}:]st=@var{stream}[:st=@var{stream}...] (@emph{output})
 
@@ -412,6 +613,10 @@ they do not conflict with the standard, as in:
 @example
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
+
+@item -dn (@emph{output})
+Disable data recording. For full manual control see the @code{-map}
+option.
 
 @item -dframes @var{number} (@emph{output})
 Set the number of data frames to output. This is an obsolete alias for
@@ -571,7 +776,8 @@ stored at container level, but not the aspect ratio stored in encoded
 frames, if it exists.
 
 @item -vn (@emph{output})
-Disable video recording.
+Disable video recording. For full manual control see the @code{-map}
+option.
 
 @item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
@@ -618,8 +824,6 @@ as the input (or graph output) and automatic conversions are disabled.
 
 @item -sws_flags @var{flags} (@emph{input/output})
 Set SwScaler flags.
-@item -vdt @var{n}
-Discard threshold.
 
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 Rate control override for specific intervals, formatted as "int,int,int"
@@ -886,7 +1090,8 @@ default to the number of input audio channels. For input streams
 this option only makes sense for audio grabbing devices and raw demuxers
 and is mapped to the corresponding demuxer options.
 @item -an (@emph{output})
-Disable audio recording.
+Disable audio recording. For full manual control see the @code{-map}
+option.
 @item -acodec @var{codec} (@emph{input/output})
 Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
@@ -921,7 +1126,8 @@ stereo but not 6 channels as 5.1. The default is to always try to guess. Use
 @item -scodec @var{codec} (@emph{input/output})
 Set the subtitle codec. This is an alias for @code{-codec:s}.
 @item -sn (@emph{output})
-Disable subtitle recording.
+Disable subtitle recording. For full manual control see the @code{-map}
+option.
 @item -sbsf @var{bitstream_filter}
 Deprecated, see -bsf
 @end table
@@ -1147,12 +1353,12 @@ disable any chapter copying.
 
 @item -benchmark (@emph{global})
 Show benchmarking information at the end of an encode.
-Shows CPU time used and maximum memory consumption.
+Shows real, system and user time used and maximum memory consumption.
 Maximum memory consumption is not supported on all systems,
 it will usually display as 0 if not supported.
 @item -benchmark_all (@emph{global})
 Show benchmarking information during the encode.
-Shows CPU time used in various steps (audio/video encode/decode).
+Shows real, system and user time used in various steps (audio/video encode/decode).
 @item -timelimit @var{duration} (@emph{global})
 Exit after ffmpeg has been running for @var{duration} seconds.
 @item -dump (@emph{global})

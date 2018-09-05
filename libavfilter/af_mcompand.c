@@ -456,7 +456,7 @@ static int config_output(AVFilterLink *outlink)
 
         new_nb_items += sscanf(tstr2, "%lf", &s->bands[i].topfreq) == 1;
         if (s->bands[i].topfreq < 0 || s->bands[i].topfreq >= outlink->sample_rate / 2) {
-            av_log(ctx, AV_LOG_ERROR, "crossover_frequency should be >=0 and lower than half of sample rate\n");
+            av_log(ctx, AV_LOG_ERROR, "crossover_frequency: %f, should be >=0 and lower than half of sample rate: %d.\n", s->bands[i].topfreq, outlink->sample_rate / 2);
             uninit(ctx);
             return AVERROR(EINVAL);
         }

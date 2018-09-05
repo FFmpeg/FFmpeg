@@ -107,7 +107,7 @@ static void filter181(int16_t *data, int width, int height, ptrdiff_t stride)
             dc = -prev_dc +
                  data[x     + y * stride] * 8 -
                  data[x + 1 + y * stride];
-            dc = (dc * 10923 + 32768) >> 16;
+            dc = (av_clip(dc, INT_MIN/10923, INT_MAX/10923 - 32768) * 10923 + 32768) >> 16;
             prev_dc = data[x + y * stride];
             data[x + y * stride] = dc;
         }
@@ -123,7 +123,7 @@ static void filter181(int16_t *data, int width, int height, ptrdiff_t stride)
             dc = -prev_dc +
                  data[x +  y      * stride] * 8 -
                  data[x + (y + 1) * stride];
-            dc = (dc * 10923 + 32768) >> 16;
+            dc = (av_clip(dc, INT_MIN/10923, INT_MAX/10923 - 32768) * 10923 + 32768) >> 16;
             prev_dc = data[x + y * stride];
             data[x + y * stride] = dc;
         }

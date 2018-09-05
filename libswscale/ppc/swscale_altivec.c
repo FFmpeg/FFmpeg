@@ -339,6 +339,7 @@ av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
     }
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) &&
         dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
+        dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE &&
         !c->needAlpha) {
         c->yuv2planeX = yuv2planeX_altivec;
     }

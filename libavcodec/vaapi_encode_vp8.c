@@ -32,14 +32,16 @@
 
 
 typedef struct VAAPIEncodeVP8Context {
+    VAAPIEncodeContext common;
+
+    // User options.
+    int loop_filter_level;
+    int loop_filter_sharpness;
+
+    // Derived settings.
     int q_index_i;
     int q_index_p;
 } VAAPIEncodeVP8Context;
-
-typedef struct VAAPIEncodeVP8Options {
-    int loop_filter_level;
-    int loop_filter_sharpness;
-} VAAPIEncodeVP8Options;
 
 
 #define vseq_var(name)     vseq->name, name
@@ -73,9 +75,8 @@ static int vaapi_encode_vp8_init_sequence_params(AVCodecContext *avctx)
 static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
                                                 VAAPIEncodePicture *pic)
 {
-    VAAPIEncodeContext              *ctx = avctx->priv_data;
+    VAAPIEncodeVP8Context          *priv = avctx->priv_data;
     VAEncPictureParameterBufferVP8 *vpic = pic->codec_picture_params;
-    VAAPIEncodeVP8Options           *opt = ctx->codec_options;
     int i;
 
     vpic->reconstructed_frame = pic->recon_surface;
@@ -116,8 +117,8 @@ static int vaapi_encode_vp8_init_picture_params(AVCodecContext *avctx,
     vpic->pic_flags.bits.version = 0;
     vpic->pic_flags.bits.loop_filter_type = 0;
     for (i = 0; i < 4; i++)
-        vpic->loop_filter_level[i] = opt->loop_filter_level;
-    vpic->sharpness_level = opt->loop_filter_sharpness;
+        vpic->loop_filter_level[i] = priv->loop_filter_level;
+    vpic->sharpness_level = priv->loop_filter_sharpness;
 
     vpic->clamp_qindex_low  = 0;
     vpic->clamp_qindex_high = 127;
@@ -130,8 +131,7 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
                                               int index, int *type,
                                               char *data, size_t *data_len)
 {
-    VAAPIEncodeContext     *ctx = avctx->priv_data;
-    VAAPIEncodeVP8Context *priv = ctx->priv_data;
+    VAAPIEncodeVP8Context *priv = avctx->priv_data;
     VAQMatrixBufferVP8 quant;
     int i, q;
 
@@ -142,6 +142,8 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     *type     = VAQMatrixBufferType;
     *data_len = sizeof(quant);
+
+    memset(&quant, 0, sizeof(quant));
 
     if (pic->type == PICTURE_TYPE_P)
         q = priv->q_index_p;
@@ -159,8 +161,7 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext     *ctx = avctx->priv_data;
-    VAAPIEncodeVP8Context *priv = ctx->priv_data;
+    VAAPIEncodeVP8Context *priv = avctx->priv_data;
 
     priv->q_index_p = av_clip(avctx->global_quality, 0, VP8_MAX_QUANT);
     if (avctx->i_quant_factor > 0.0)
@@ -176,8 +177,6 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
 
 static const VAAPIEncodeType vaapi_encode_type_vp8 = {
     .configure             = &vaapi_encode_vp8_configure,
-
-    .priv_data_size        = sizeof(VAAPIEncodeVP8Context),
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP8),
     .init_sequence_params  = &vaapi_encode_vp8_init_sequence_params,
@@ -223,8 +222,7 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
     return ff_vaapi_encode_init(avctx);
 }
 
-#define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \
-                   offsetof(VAAPIEncodeVP8Options, x))
+#define OFFSET(x) offsetof(VAAPIEncodeVP8Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_vp8_options[] = {
     { "loop_filter_level", "Loop filter level",
@@ -254,8 +252,7 @@ AVCodec ff_vp8_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("VP8 (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VP8,
-    .priv_data_size = (sizeof(VAAPIEncodeContext) +
-                       sizeof(VAAPIEncodeVP8Options)),
+    .priv_data_size = sizeof(VAAPIEncodeVP8Context),
     .init           = &vaapi_encode_vp8_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &ff_vaapi_encode_close,

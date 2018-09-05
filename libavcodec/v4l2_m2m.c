@@ -222,8 +222,6 @@ int ff_v4l2_m2m_codec_reinit(V4L2m2mContext* s)
     }
 
     /* 5. complete reinit */
-    sem_destroy(&s->refsync);
-    sem_init(&s->refsync, 0, 0);
     s->draining = 0;
     s->reinit = 0;
 
@@ -241,24 +239,26 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
     if (atomic_load(&s->refcount))
         while(sem_wait(&s->refsync) == -1 && errno == EINTR);
 
-    /* close the driver */
-    ff_v4l2_m2m_codec_end(s->avctx);
+    ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
+    if (ret) {
+        av_log(s->avctx, AV_LOG_ERROR, "output VIDIOC_STREAMOFF\n");
+        goto error;
+    }
+
+    ret = ff_v4l2_context_set_status(&s->capture, VIDIOC_STREAMOFF);
+    if (ret) {
+            av_log(s->avctx, AV_LOG_ERROR, "capture VIDIOC_STREAMOFF\n");
+            goto error;
+    }
+
+    /* release and unmmap the buffers */
+    ff_v4l2_context_release(&s->output);
+    ff_v4l2_context_release(&s->capture);
 
     /* start again now that we know the stream dimensions */
     s->draining = 0;
     s->reinit = 0;
 
-    s->fd = open(s->devname, O_RDWR | O_NONBLOCK, 0);
-    if (s->fd < 0)
-        return AVERROR(errno);
-
-    ret = v4l2_prepare_contexts(s);
-    if (ret < 0)
-        goto error;
-
-    /* if a full re-init was requested - probe didn't run - we need to populate
-     * the format for each context
-     */
     ret = ff_v4l2_context_get_format(&s->output);
     if (ret) {
         av_log(log_ctx, AV_LOG_DEBUG, "v4l2 output format not supported\n");
@@ -301,19 +301,25 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
     return 0;
 
 error:
-    if (close(s->fd) < 0) {
-        ret = AVERROR(errno);
-        av_log(log_ctx, AV_LOG_ERROR, "error closing %s (%s)\n",
-            s->devname, av_err2str(AVERROR(errno)));
-    }
-    s->fd = -1;
-
     return ret;
+}
+
+static void v4l2_m2m_destroy_context(void *opaque, uint8_t *context)
+{
+    V4L2m2mContext *s = (V4L2m2mContext*)context;
+
+    ff_v4l2_context_release(&s->capture);
+    sem_destroy(&s->refsync);
+
+    close(s->fd);
+
+    av_free(s);
 }
 
 int ff_v4l2_m2m_codec_end(AVCodecContext *avctx)
 {
-    V4L2m2mContext* s = avctx->priv_data;
+    V4L2m2mPriv *priv = avctx->priv_data;
+    V4L2m2mContext* s = priv->context;
     int ret;
 
     ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
@@ -326,17 +332,8 @@ int ff_v4l2_m2m_codec_end(AVCodecContext *avctx)
 
     ff_v4l2_context_release(&s->output);
 
-    if (atomic_load(&s->refcount))
-        av_log(avctx, AV_LOG_ERROR, "ff_v4l2m2m_codec_end leaving pending buffers\n");
-
-    ff_v4l2_context_release(&s->capture);
-    sem_destroy(&s->refsync);
-
-    /* release the hardware */
-    if (close(s->fd) < 0 )
-        av_log(avctx, AV_LOG_ERROR, "failure closing %s (%s)\n", s->devname, av_err2str(AVERROR(errno)));
-
-    s->fd = -1;
+    s->self_ref = NULL;
+    av_buffer_unref(&priv->context_ref);
 
     return 0;
 }
@@ -348,7 +345,7 @@ int ff_v4l2_m2m_codec_init(AVCodecContext *avctx)
     char node[PATH_MAX];
     DIR *dirp;
 
-    V4L2m2mContext *s = avctx->priv_data;
+    V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     s->avctx = avctx;
 
     dirp = opendir("/dev");
@@ -380,4 +377,30 @@ int ff_v4l2_m2m_codec_init(AVCodecContext *avctx)
     av_log(s->avctx, AV_LOG_INFO, "Using device %s\n", node);
 
     return v4l2_configure_contexts(s);
+}
+
+int ff_v4l2_m2m_create_context(AVCodecContext *avctx, V4L2m2mContext **s)
+{
+    V4L2m2mPriv *priv = avctx->priv_data;
+
+    *s = av_mallocz(sizeof(V4L2m2mContext));
+    if (!*s)
+        return AVERROR(ENOMEM);
+
+    priv->context_ref = av_buffer_create((uint8_t *) *s, sizeof(V4L2m2mContext),
+                                         &v4l2_m2m_destroy_context, NULL, 0);
+    if (!priv->context_ref) {
+        av_freep(s);
+        return AVERROR(ENOMEM);
+    }
+
+    /* assign the context */
+    priv->context = *s;
+
+    /* populate it */
+    priv->context->capture.num_buffers = priv->num_capture_buffers;
+    priv->context->output.num_buffers  = priv->num_output_buffers;
+    priv->context->self_ref = priv->context_ref;
+
+    return 0;
 }

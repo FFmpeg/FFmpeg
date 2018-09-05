@@ -26,9 +26,9 @@
 #if HAVE_IO_H
 #include <io.h>
 #endif
-#if HAVE_WINCRYPT
+#if HAVE_BCRYPT
 #include <windows.h>
-#include <wincrypt.h>
+#include <bcrypt.h>
 #endif
 #include <fcntl.h>
 #include <math.h>
@@ -121,13 +121,14 @@ uint32_t av_get_random_seed(void)
 {
     uint32_t seed;
 
-#if HAVE_WINCRYPT
-    HCRYPTPROV provider;
-    if (CryptAcquireContext(&provider, NULL, NULL, PROV_RSA_FULL,
-                            CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
-        BOOL ret = CryptGenRandom(provider, sizeof(seed), (PBYTE) &seed);
-        CryptReleaseContext(provider, 0);
-        if (ret)
+#if HAVE_BCRYPT
+    BCRYPT_ALG_HANDLE algo_handle;
+    NTSTATUS ret = BCryptOpenAlgorithmProvider(&algo_handle, BCRYPT_RNG_ALGORITHM,
+                                               MS_PRIMITIVE_PROVIDER, 0);
+    if (BCRYPT_SUCCESS(ret)) {
+        NTSTATUS ret = BCryptGenRandom(algo_handle, (UCHAR*)&seed, sizeof(seed), 0);
+        BCryptCloseAlgorithmProvider(algo_handle, 0);
+        if (BCRYPT_SUCCESS(ret))
             return seed;
     }
 #endif

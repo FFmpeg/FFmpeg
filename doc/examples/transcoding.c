@@ -172,6 +172,9 @@ static int open_output_file(const char *filename)
                 enc_ctx->time_base = (AVRational){1, enc_ctx->sample_rate};
             }
 
+            if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
+                enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+
             /* Third parameter can be used to pass settings to encoder */
             ret = avcodec_open2(enc_ctx, encoder, NULL);
             if (ret < 0) {
@@ -183,8 +186,6 @@ static int open_output_file(const char *filename)
                 av_log(NULL, AV_LOG_ERROR, "Failed to copy encoder parameters to output stream #%u\n", i);
                 return ret;
             }
-            if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-                enc_ctx->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
             out_stream->time_base = enc_ctx->time_base;
             stream_ctx[i].enc_ctx = enc_ctx;
@@ -516,9 +517,6 @@ int main(int argc, char **argv)
         av_log(NULL, AV_LOG_ERROR, "Usage: %s <input file> <output file>\n", argv[0]);
         return 1;
     }
-
-    av_register_all();
-    avfilter_register_all();
 
     if ((ret = open_input_file(argv[1])) < 0)
         goto end;

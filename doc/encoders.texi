@@ -64,7 +64,6 @@ to find an optimal combination by adding or subtracting a specific value from
 all quantizers and adjusting some individual quantizer a little.  Will tune
 itself based on whether @option{aac_is}, @option{aac_ms} and @option{aac_pns}
 are enabled.
-This is the default choice for a coder.
 
 @item anmr
 Average noise to mask ratio (ANMR) trellis-based solution.
@@ -77,10 +76,10 @@ Not currently recommended.
 @item fast
 Constant quantizer method.
 
-This method sets a constant quantizer for all bands. This is the fastest of all
-the methods and has no rate control or support for @option{aac_is} or
-@option{aac_pns}.
-Not recommended.
+Uses a cheaper version of twoloop algorithm that doesn't try to do as many
+clever adjustments. Worse with low bitrates (less than 64kbps), but is better
+and much faster at higher bitrates.
+This is the default choice for a coder
 
 @end table
 
@@ -981,6 +980,11 @@ fewer.
 Other values include 0 for mono and stereo, 1 for surround sound with masking
 and LFE bandwidth optimizations, and 255 for independent streams with an
 unspecified channel layout.
+
+@item apply_phase_inv (N.A.) (requires libopus >= 1.2)
+If set to 0, disables the use of phase inversion for intensity stereo,
+improving the quality of mono downmixes, but slightly reducing normal stereo
+quality. The default is 1 (phase inversion enabled).
 
 @end table
 
@@ -2155,6 +2159,12 @@ Set the x265 preset.
 @item tune
 Set the x265 tune parameter.
 
+@item profile
+Set profile restrictions.
+
+@item crf
+Set the quality for constant quality mode.
+
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
 of I-frame. This option forces it to choose an IDR-frame.
@@ -2355,6 +2365,11 @@ Never write it.
 @itemx always
 Always write it.
 @end table
+@item video_format @var{integer}
+Specifies the video_format written into the sequence display extension
+indicating the source of the video pictures. The default is @samp{unspecified},
+can be @samp{component}, @samp{pal}, @samp{ntsc}, @samp{secam} or @samp{mac}.
+For maximum compatibility, use @samp{component}.
 @end table
 
 @section png

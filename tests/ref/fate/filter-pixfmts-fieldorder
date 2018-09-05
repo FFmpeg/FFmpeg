@@ -41,10 +41,14 @@ gray10be            c26c73de96b630f1207ff589b6553ebd
 gray10le            16e4db1d611ec3fa5c9fd8fbdbf1ffcc
 gray12be            1c3285c150e1dddcf0fbee405cfb068e
 gray12le            a57b6199f5690add0ac0150fa95c4988
+gray14be            1e3d0d0421cf84eac93d7ab1964207ff
+gray14le            04899f53627203bd1fe3f17fb0de199c
 gray16be            293a36548ce16543494790f8f7f76a05
 gray16le            84f83f5fcbb5d458efb8395a50a3797e
 gray9be             ec877f5bcf0ea275a6f36c12cc9adf11
 gray9le             fba944fde7923d5089f4f52d12988b9e
+grayf32be           1aa7960131f880c54fe3c77f13448674
+grayf32le           4029ac9d197f255794c1b9e416520fc7
 rgb0                2e3d8c91c7a83d451593dfd06607ff39
 rgb24               b82577f8215d3dc2681be60f1da247af
 rgb444be            1c3afc3a0c53c51139c76504f59bb1f4

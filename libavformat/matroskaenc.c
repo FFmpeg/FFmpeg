@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 
+#include "av1.h"
 #include "avc.h"
 #include "hevc.h"
 #include "avformat.h"
@@ -769,6 +770,13 @@ static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
         ff_isom_write_hvcc(dyn_cp, par->extradata,
                            par->extradata_size, 0);
         return 0;
+    case AV_CODEC_ID_AV1:
+        if (par->extradata_size)
+            return ff_isom_write_av1c(dyn_cp, par->extradata,
+                                      par->extradata_size);
+        else
+            put_ebml_void(pb, 4 + 3);
+        break;
     case AV_CODEC_ID_ALAC:
         if (par->extradata_size < 36) {
             av_log(s, AV_LOG_ERROR,
@@ -1304,8 +1312,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         if(   st->avg_frame_rate.num > 0 && st->avg_frame_rate.den > 0
            && av_cmp_q(av_inv_q(st->avg_frame_rate), st->time_base) > 0)
             put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->avg_frame_rate.den / st->avg_frame_rate.num);
-        else
-            put_ebml_uint(pb, MATROSKA_ID_TRACKDEFAULTDURATION, 1000000000LL * st->time_base.num / st->time_base.den);
 
         if (!native_id &&
             ff_codec_get_tag(ff_codec_movvideo_tags, par->codec_id) &&
@@ -2001,6 +2007,8 @@ static int mkv_write_header(AVFormatContext *s)
     }
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
         mkv->cues_pos = avio_tell(pb);
+        if (mkv->reserve_cues_space == 1)
+            mkv->reserve_cues_space++;
         put_ebml_void(pb, mkv->reserve_cues_space);
     }
 
@@ -2120,6 +2128,8 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
              (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
         /* extradata is Annex B, assume the bitstream is too and convert it */
         ff_hevc_annexb2mp4_buf(pkt->data, &data, &size, 0, NULL);
+    else if (par->codec_id == AV_CODEC_ID_AV1)
+        ff_av1_filter_obus_buf(pkt->data, &data, &size);
     else if (par->codec_id == AV_CODEC_ID_WAVPACK) {
         int ret = mkv_strip_wavpack(pkt->data, &data, &size);
         if (ret < 0) {
@@ -2318,6 +2328,37 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
             avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
             avcodec_parameters_free(&codecpriv_par);
         }
+        break;
+    // FIXME: Remove the following once libaom starts propagating extradata during init()
+    //        See https://bugs.chromium.org/p/aomedia/issues/detail?id=2012
+    case AV_CODEC_ID_AV1:
+        if (side_data_size && (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live &&
+            !par->extradata_size) {
+            AVIOContext *dyn_cp;
+            uint8_t *codecpriv;
+            int codecpriv_size;
+            int64_t curpos;
+            ret = avio_open_dyn_buf(&dyn_cp);
+            if (ret < 0)
+                return ret;
+            ff_isom_write_av1c(dyn_cp, side_data, side_data_size);
+            codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
+            if (!codecpriv_size) {
+                av_free(codecpriv);
+                return AVERROR_INVALIDDATA;
+            }
+            curpos = avio_tell(mkv->tracks_bc);
+            avio_seek(mkv->tracks_bc, track->codecpriv_offset, SEEK_SET);
+            // Do not write the OBUs as we don't have space saved for them
+            put_ebml_binary(mkv->tracks_bc, MATROSKA_ID_CODECPRIVATE, codecpriv, 4);
+            av_free(codecpriv);
+            avio_seek(mkv->tracks_bc, curpos, SEEK_SET);
+            ret = ff_alloc_extradata(par, side_data_size);
+            if (ret < 0)
+                return ret;
+            memcpy(par->extradata, side_data, side_data_size);
+        } else if (!par->extradata_size)
+            return AVERROR_INVALIDDATA;
         break;
     default:
         if (side_data_size)

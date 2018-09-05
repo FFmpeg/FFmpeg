@@ -54,20 +54,11 @@ void ff_tls_deinit(void)
 #endif
 }
 
-int ff_network_inited_globally;
-
 int ff_network_init(void)
 {
 #if HAVE_WINSOCK2_H
     WSADATA wsaData;
-#endif
 
-    if (!ff_network_inited_globally)
-        av_log(NULL, AV_LOG_WARNING, "Using network protocols without global "
-                                     "network initialization. Please use "
-                                     "avformat_network_init(), this will "
-                                     "become mandatory later.\n");
-#if HAVE_WINSOCK2_H
     if (WSAStartup(MAKEWORD(1,1), &wsaData))
         return 0;
 #endif
@@ -203,8 +194,11 @@ int ff_socket(int af, int type, int proto)
 #endif
     }
 #ifdef SO_NOSIGPIPE
-    if (fd != -1)
-        setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &(int){1}, sizeof(int));
+    if (fd != -1) {
+        if (setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &(int){1}, sizeof(int))) {
+             av_log(NULL, AV_LOG_WARNING, "setsockopt(SO_NOSIGPIPE) failed\n");
+        }
+    }
 #endif
     return fd;
 }
@@ -354,4 +348,11 @@ int ff_http_match_no_proxy(const char *no_proxy, const char *hostname)
     }
     av_free(buf);
     return ret;
+}
+
+void ff_log_net_error(void *ctx, int level, const char* prefix)
+{
+    char errbuf[100];
+    av_strerror(ff_neterrno(), errbuf, sizeof(errbuf));
+    av_log(ctx, level, "%s: %s\n", prefix, errbuf);
 }

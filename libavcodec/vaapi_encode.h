@@ -113,9 +113,6 @@ typedef struct VAAPIEncodeContext {
     // Everything above this point must be set before calling
     // ff_vaapi_encode_init().
 
-    // Codec-specific state.
-    void *priv_data;
-
     // Configuration attributes to use when creating va_config.
     VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];
     int          nb_config_attributes;
@@ -205,18 +202,10 @@ typedef struct VAAPIEncodeContext {
     int gop_counter;
     int p_counter;
     int end_of_stream;
-
-    // Codec-local options are allocated to follow this structure in
-    // memory (in the AVCodec definition, set priv_data_size to
-    // sizeof(VAAPIEncodeContext) + sizeof(VAAPIEncodeFooOptions)).
-    void *codec_options;
-    char codec_options_data[0];
 } VAAPIEncodeContext;
 
 
 typedef struct VAAPIEncodeType {
-    size_t priv_data_size;
-
     // Perform any extra codec-specific configuration after the
     // codec context is initialised (set up the private data and
     // add any necessary global parameters).

@@ -566,13 +566,14 @@ void ff_celt_bitalloc(CeltFrame *f, OpusRangeCoder *rc, int encode)
     int bits2[CELT_MAX_BANDS];
 
     /* Spread */
-    if (opus_rc_tell(rc) + 4 <= f->framebits)
+    if (opus_rc_tell(rc) + 4 <= f->framebits) {
         if (encode)
             ff_opus_rc_enc_cdf(rc, f->spread, ff_celt_model_spread);
         else
             f->spread = ff_opus_rc_dec_cdf(rc, ff_celt_model_spread);
-    else
+    } else {
         f->spread = CELT_SPREAD_NORMAL;
+    }
 
     /* Initialize static allocation caps */
     for (i = 0; i < CELT_MAX_BANDS; i++)

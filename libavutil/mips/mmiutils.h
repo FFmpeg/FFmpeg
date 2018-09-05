@@ -201,6 +201,55 @@
 
 #endif /* HAVE_LOONGSON2 */
 
+/**
+ * backup register
+ */
+#define BACKUP_REG \
+  double temp_backup_reg[8];                                    \
+  if (_MIPS_SIM == _ABI64)                                      \
+    __asm__ volatile (                                          \
+      "gssqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
+      "gssqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
+      "gssqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
+      "gssqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );                                                          \
+  else                                                          \
+    __asm__ volatile (                                          \
+      "gssqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
+      "gssqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
+      "gssqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );
+
+/**
+ * recover register
+ */
+#define RECOVER_REG \
+  if (_MIPS_SIM == _ABI64)                                      \
+    __asm__ volatile (                                          \
+      "gslqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
+      "gslqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
+      "gslqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
+      "gslqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );                                                          \
+  else                                                          \
+    __asm__ volatile (                                          \
+      "gslqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
+      "gslqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
+      "gslqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );
+
 #define TRANSPOSE_4H(m1, m2, m3, m4, t1, t2, t3, t4, t5, r1, zero, shift) \
         "li         "#r1",  0x93                                    \n\t" \
         "xor        "#zero","#zero","#zero"                         \n\t" \

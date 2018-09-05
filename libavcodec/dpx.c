@@ -51,7 +51,7 @@ static unsigned int read32(const uint8_t **ptr, int is_big)
 }
 
 static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big)
+                                  int * n_datum, int is_big, int shift)
 {
     if (*n_datum)
         (*n_datum)--;
@@ -60,9 +60,41 @@ static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
         *n_datum = 2;
     }
 
-    *lbuf = (*lbuf << 10) | (*lbuf >> 22);
+    *lbuf = *lbuf << 10 | *lbuf >> shift & 0x3FFFFF;
 
     return *lbuf & 0x3FF;
+}
+
+static uint16_t read12in32(const uint8_t **ptr, uint32_t * lbuf,
+                                  int * n_datum, int is_big)
+{
+    if (*n_datum)
+        (*n_datum)--;
+    else {
+        *lbuf = read32(ptr, is_big);
+        *n_datum = 7;
+    }
+
+    switch (*n_datum){
+    case 7: return *lbuf & 0xFFF;
+    case 6: return (*lbuf >> 12) & 0xFFF;
+    case 5: {
+            uint32_t c = *lbuf >> 24;
+            *lbuf = read32(ptr, is_big);
+            c |= *lbuf << 8;
+            return c & 0xFFF;
+            }
+    case 4: return (*lbuf >> 4) & 0xFFF;
+    case 3: return (*lbuf >> 16) & 0xFFF;
+    case 2: {
+            uint32_t c = *lbuf >> 28;
+            *lbuf = read32(ptr, is_big);
+            c |= *lbuf << 4;
+            return c & 0xFFF;
+            }
+    case 1: return (*lbuf >> 8) & 0xFFF;
+    default: return *lbuf >> 20;
+    }
 }
 
 static int decode_frame(AVCodecContext *avctx,
@@ -138,10 +170,6 @@ static int decode_frame(AVCodecContext *avctx,
     packing = read16(&buf, endian);
     encoding = read16(&buf, endian);
 
-    if (packing > 1) {
-        avpriv_report_missing_feature(avctx, "Packing %d", packing);
-        return AVERROR_PATCHWELCOME;
-    }
     if (encoding) {
         avpriv_report_missing_feature(avctx, "Encoding %d", encoding);
         return AVERROR_PATCHWELCOME;
@@ -200,11 +228,18 @@ static int decode_frame(AVCodecContext *avctx,
         stride = (avctx->width * elements + 2) / 3 * 4;
         break;
     case 12:
-        if (!packing) {
-            av_log(avctx, AV_LOG_ERROR, "Packing to 16bit required\n");
-            return -1;
+        stride = avctx->width * elements;
+        if (packing) {
+            stride *= 2;
+        } else {
+            stride *= 3;
+            if (stride % 8) {
+                stride /= 8;
+                stride++;
+                stride *= 8;
+            }
+            stride /= 2;
         }
-        stride = 2 * avctx->width * elements;
         break;
     case 16:
         stride = 2 * avctx->width * elements;
@@ -325,17 +360,18 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
+            int shift = packing == 1 ? 22 : 20;
             for (y = 0; y < avctx->width; y++) {
                 *dst[2]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 *dst[0]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 *dst[1]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian);
+                                       &n_datum, endian, shift);
                 if (elements == 4)
                     *dst[3]++ =
                     read10in32(&buf, &rgbBuffer,
-                               &n_datum, endian);
+                               &n_datum, endian, shift);
             }
             n_datum = 0;
             for (i = 0; i < elements; i++)
@@ -348,16 +384,31 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
+            int shift = packing == 1 ? 4 : 0;
             for (y = 0; y < avctx->width; y++) {
-                if (elements >= 3)
-                    *dst[2]++ = read16(&buf, endian) >> 4;
-                *dst[0] = read16(&buf, endian) >> 4;
-                dst[0]++;
-                if (elements >= 2)
-                    *dst[1]++ = read16(&buf, endian) >> 4;
-                if (elements == 4)
-                    *dst[3]++ = read16(&buf, endian) >> 4;
+                if (packing) {
+                    if (elements >= 3)
+                        *dst[2]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    *dst[0]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements >= 2)
+                        *dst[1]++ = read16(&buf, endian) >> shift & 0xFFF;
+                    if (elements == 4)
+                        *dst[3]++ = read16(&buf, endian) >> shift & 0xFFF;
+                } else {
+                    if (elements >= 3)
+                        *dst[2]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                    *dst[0]++ = read12in32(&buf, &rgbBuffer,
+                                           &n_datum, endian);
+                    if (elements >= 2)
+                        *dst[1]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                    if (elements == 4)
+                        *dst[3]++ = read12in32(&buf, &rgbBuffer,
+                                               &n_datum, endian);
+                }
             }
+            n_datum = 0;
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
             // Jump to next aligned position

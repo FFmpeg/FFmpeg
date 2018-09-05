@@ -467,8 +467,6 @@ rate control
 macroblock (MB) type
 @item qp
 per-block quantization parameter (QP)
-@item mv
-motion vector
 @item dct_coeff
 
 @item green_metadata
@@ -478,18 +476,12 @@ display complexity metadata for the upcoming frame, GoP or for a given duration.
 
 @item startcode
 
-@item pts
-
 @item er
 error recognition
 @item mmco
 memory management control operations (H.264)
 @item bugs
 
-@item vis_qp
-visualize quantization parameter (QP), lower QP are tinted greener
-@item vis_mb_type
-visualize block types
 @item buffers
 picture buffer allocations
 @item thread_ops
@@ -993,10 +985,6 @@ Set chroma qp offset from luma.
 
 @item trellis @var{integer} (@emph{encoding,audio,video})
 Set rate-distortion optimal quantization.
-
-@item sc_factor @var{integer} (@emph{encoding,video})
-Set value multiplied by qscale for each frame and added to
-scene_change_score.
 
 @item mv0_threshold @var{integer} (@emph{encoding,video})
 @item b_sensitivity @var{integer} (@emph{encoding,video})

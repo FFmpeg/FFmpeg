@@ -70,12 +70,12 @@ typedef struct TeletextContext
     int             handler_ret;
 
     vbi_decoder *   vbi;
-#ifdef DEBUG
-    vbi_export *    ex;
-#endif
     vbi_sliced      sliced[MAX_SLICES];
 
     int             readorder;
+    uint8_t         subtitle_map[2048];
+    int             last_pgno;
+    int             last_p5;
 } TeletextContext;
 
 static int chop_spaces_utf8(const unsigned char* t, int len)
@@ -284,16 +284,14 @@ static void handler(vbi_event *ev, void *user_data)
     vbi_page page;
     int res;
     char pgno_str[12];
-    vbi_subno subno;
-    vbi_page_type vpt;
     int chop_top;
-    char *lang;
+    int is_subtitle_page = ctx->subtitle_map[ev->ev.ttx_page.pgno & 0x7ff];
 
     snprintf(pgno_str, sizeof pgno_str, "%03x", ev->ev.ttx_page.pgno);
     av_log(ctx, AV_LOG_DEBUG, "decoded page %s.%02x\n",
            pgno_str, ev->ev.ttx_page.subno & 0xFF);
 
-    if (strcmp(ctx->pgno, "*") && !strstr(ctx->pgno, pgno_str))
+    if (strcmp(ctx->pgno, "*") && (strcmp(ctx->pgno, "subtitle") || !is_subtitle_page) && !strstr(ctx->pgno, pgno_str))
         return;
     if (ctx->handler_ret < 0)
         return;
@@ -306,18 +304,7 @@ static void handler(vbi_event *ev, void *user_data)
     if (!res)
         return;
 
-#ifdef DEBUG
-    fprintf(stderr, "\nSaving res=%d dy0=%d dy1=%d...\n",
-            res, page.dirty.y0, page.dirty.y1);
-    fflush(stderr);
-
-    if (!vbi_export_stdio(ctx->ex, stderr, &page))
-        fprintf(stderr, "failed: %s\n", vbi_export_errstr(ctx->ex));
-#endif
-
-    vpt = vbi_classify_page(ctx->vbi, ev->ev.ttx_page.pgno, &subno, &lang);
-    chop_top = ctx->chop_top ||
-        ((page.rows > 1) && (vpt == VBI_SUBTITLE_PAGE));
+    chop_top = ctx->chop_top || ((page.rows > 1) && is_subtitle_page);
 
     av_log(ctx, AV_LOG_DEBUG, "%d x %d page chop:%d\n",
            page.columns, page.rows, chop_top);
@@ -369,11 +356,37 @@ static int slice_to_vbi_lines(TeletextContext *ctx, uint8_t* buf, int size)
             else {
                 int line_offset  = buf[2] & 0x1f;
                 int field_parity = buf[2] & 0x20;
-                int i;
+                uint8_t *p = ctx->sliced[lines].data;
+                int i, pmag;
                 ctx->sliced[lines].id = VBI_SLICED_TELETEXT_B;
                 ctx->sliced[lines].line = (line_offset > 0 ? (line_offset + (field_parity ? 0 : 313)) : 0);
                 for (i = 0; i < 42; i++)
-                    ctx->sliced[lines].data[i] = vbi_rev8(buf[4 + i]);
+                    p[i] = vbi_rev8(buf[4 + i]);
+                /* Unfortunately libzvbi does not expose page flags, and
+                 * vbi_classify_page only checks MIP, so we have to manually
+                 * decode the page flags and store the results. */
+                pmag = vbi_unham16p(p);
+                if (pmag >= 0 && pmag >> 3 == 0) {   // We found a row 0 header
+                    int page = vbi_unham16p(p + 2);
+                    int flags1 = vbi_unham16p(p + 6);
+                    int flags2 = vbi_unham16p(p + 8);
+                    if (page >= 0 && flags1 >= 0 && flags2 >= 0) {
+                        int pgno = ((pmag & 7) << 8) + page;
+                        // Check for disabled NEWSFLASH flag and enabled SUBTITLE and SUPRESS_HEADER flags
+                        ctx->subtitle_map[pgno] = (!(flags1 & 0x40) && flags1 & 0x80 && flags2 & 0x01);
+                        // Propagate ERASE_PAGE flag for repeated page headers to work around a libzvbi bug
+                        if (ctx->subtitle_map[pgno] && pgno == ctx->last_pgno) {
+                            int last_byte9 = vbi_unham8(ctx->last_p5);
+                            if (last_byte9 >= 0 && last_byte9 & 0x8) {
+                                int byte9 = vbi_unham8(p[5]);
+                                if (byte9 >= 0)
+                                    p[5] = vbi_ham8(byte9 | 0x8);
+                            }
+                        }
+                        ctx->last_pgno = pgno;
+                        ctx->last_p5 = p[5];
+                    }
+                }
                 lines++;
             }
         }
@@ -421,13 +434,6 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
             ff_dlog(avctx, "ctx=%p buf_size=%d lines=%u pkt_pts=%7.3f\n",
                     ctx, pkt->size, lines, (double)pkt->pts/90000.0);
             if (lines > 0) {
-#ifdef DEBUG
-                int i;
-                av_log(avctx, AV_LOG_DEBUG, "line numbers:");
-                for(i = 0; i < lines; i++)
-                    av_log(avctx, AV_LOG_DEBUG, " %d", ctx->sliced[i].line);
-                av_log(avctx, AV_LOG_DEBUG, "\n");
-#endif
                 vbi_decode(ctx->vbi, ctx->sliced, lines, 0.0);
                 ctx->lines_processed += lines;
             }
@@ -501,16 +507,11 @@ static int teletext_init_decoder(AVCodecContext *avctx)
 
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
+    ctx->last_pgno = -1;
 
     if (ctx->opacity == -1)
         ctx->opacity = ctx->transparent_bg ? 0 : 255;
 
-#ifdef DEBUG
-    {
-        char *t;
-        ctx->ex = vbi_export_new("text", &t);
-    }
-#endif
     av_log(avctx, AV_LOG_VERBOSE, "page filter: %s\n", ctx->pgno);
     return (ctx->format_id == 1) ? ff_ass_subtitle_header_default(avctx) : 0;
 }
@@ -527,6 +528,8 @@ static int teletext_close_decoder(AVCodecContext *avctx)
     vbi_decoder_delete(ctx->vbi);
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
+    ctx->last_pgno = -1;
+    memset(ctx->subtitle_map, 0, sizeof(ctx->subtitle_map));
     if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
         ctx->readorder = 0;
     return 0;
@@ -540,7 +543,7 @@ static void teletext_flush(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(TeletextContext, x)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    {"txt_page",        "list of teletext page numbers to decode, * is all", OFFSET(pgno),           AV_OPT_TYPE_STRING, {.str = "*"},      0, 0,        SD},
+    {"txt_page",        "page numbers to decode, subtitle for subtitles, * for all", OFFSET(pgno),   AV_OPT_TYPE_STRING, {.str = "*"},      0, 0,        SD},
     {"txt_chop_top",    "discards the top teletext line",                    OFFSET(chop_top),       AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
     {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format_id),      AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD,  "txt_format"},
     {"bitmap",          NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 0},        0, 0,        SD,  "txt_format"},
@@ -548,7 +551,7 @@ static const AVOption options[] = {
     {"txt_left",        "x offset of generated bitmaps",                     OFFSET(x_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_top",         "y offset of generated bitmaps",                     OFFSET(y_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
-    {"txt_duration",    "display duration of teletext pages in msecs",       OFFSET(sub_duration),   AV_OPT_TYPE_INT,    {.i64 = 30000},    0, 86400000, SD},
+    {"txt_duration",    "display duration of teletext pages in msecs",       OFFSET(sub_duration),   AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 86400000, SD},
     {"txt_transparent", "force transparent background of the teletext",      OFFSET(transparent_bg), AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD},
     {"txt_opacity",     "set opacity of the transparent background",         OFFSET(opacity),        AV_OPT_TYPE_INT,    {.i64 = -1},      -1, 255,      SD},
     { NULL },

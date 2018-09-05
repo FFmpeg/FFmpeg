@@ -69,7 +69,7 @@ static av_cold int shuffleplanes_config_input(AVFilterLink *inlink)
         }
 
         if ((desc->flags & AV_PIX_FMT_FLAG_PAL ||
-             desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) &&
+             desc->flags & FF_PSEUDOPAL) &&
             (i == 1) != (s->map[i] == 1)) {
             av_log(ctx, AV_LOG_ERROR,
                    "Cannot map between a palette plane and a data plane.\n");
@@ -158,10 +158,9 @@ static const AVFilterPad shuffleplanes_outputs[] = {
 AVFilter ff_vf_shuffleplanes = {
     .name         = "shuffleplanes",
     .description  = NULL_IF_CONFIG_SMALL("Shuffle video planes."),
-
     .priv_size    = sizeof(ShufflePlanesContext),
     .priv_class   = &shuffleplanes_class,
-
     .inputs       = shuffleplanes_inputs,
     .outputs      = shuffleplanes_outputs,
+    .flags        = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

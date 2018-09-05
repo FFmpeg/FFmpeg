@@ -2,6 +2,28 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- deblock filter
+- tmix filter
+- amplify filter
+- fftdnoiz filter
+- aderivative and aintegral audio filters
+- pal75bars and pal100bars video filter sources
+- support mbedTLS based TLS
+- adeclick filter
+- adeclip filter
+- libtensorflow backend for DNN based filters like srcnn
+- vc1 decoder is now bit-exact
+- ATRAC9 decoder
+- lensfun wrapper filter
+- colorconstancy filter
+- AVS2 video decoder via libdavs2
+- IMM4 video decoder
+- Brooktree ProSumer video decoder
+- MatchWare Screen Capture Codec decoder
+- WinCam Motion Video decoder
+
+
+version 4.0:
 - Bitstream filters for editing metadata in H.264, HEVC and MPEG-2 streams
 - Dropped support for OpenJPEG versions 2.0 and below. Using OpenJPEG now
   requires 2.1 (or later) and pkg-config.
@@ -11,9 +33,9 @@ version <next>:
 - TiVo ty/ty+ demuxer
 - Intel QSV-accelerated MJPEG encoding
 - PCE support for extended channel layouts in the AAC encoder
-- native aptX encoder and decoder
-- Raw aptX muxer and demuxer
-- NVIDIA NVDEC-accelerated H.264, HEVC, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
+- native aptX and aptX HD encoder and decoder
+- Raw aptX and aptX HD muxer and demuxer
+- NVIDIA NVDEC-accelerated H.264, HEVC, MJPEG, MPEG-1/2/4, VC1, VP8/9 hwaccel decoding
 - Intel QSV-accelerated overlay filter
 - mcompand audio filter
 - acontrast audio filter
@@ -21,7 +43,7 @@ version <next>:
 - video mix filter
 - video normalize filter
 - audio lv2 wrapper filter
-- VAAPI VP8 decoding
+- VAAPI MJPEG and VP8 decoding
 - AMD AMF H.264 and HEVC encoders
 - video fillborders filter
 - video setrange filter
@@ -38,6 +60,23 @@ version <next>:
 - Removed the ffserver program
 - Removed the ffmenc and ffmdec muxer and demuxer
 - VideoToolbox HEVC encoder and hwaccel
+- VAAPI-accelerated ProcAmp (color balance), denoise and sharpness filters
+- Add android_camera indev
+- codec2 en/decoding via libcodec2
+- muxer/demuxer for raw codec2 files and .c2 files
+- Moved nvidia codec headers into an external repository.
+  They can be found at http://git.videolan.org/?p=ffmpeg/nv-codec-headers.git
+- native SBC encoder and decoder
+- drmeter audio filter
+- hapqa_extract bitstream filter
+- filter_units bitstream filter
+- AV1 Support through libaom
+- E-AC-3 dependent frames support
+- bitstream filter for extracting E-AC-3 core
+- Haivision SRT protocol via libsrt
+- segafilm muxer
+- vfrdet filter
+- SRCNN filter
 
 
 version 3.4:

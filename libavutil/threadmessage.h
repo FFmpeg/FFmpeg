@@ -96,6 +96,14 @@ void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
                                            void (*free_func)(void *msg));
 
 /**
+ * Return the current number of messages in the queue.
+ *
+ * @return the current number of messages or AVERROR(ENOSYS) if lavu was built
+ *         without thread support
+ */
+int av_thread_message_queue_nb_elems(AVThreadMessageQueue *mq);
+
+/**
  * Flush the message queue
  *
  * This function is mostly equivalent to reading and free-ing every message

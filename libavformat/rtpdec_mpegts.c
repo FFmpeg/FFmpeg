@@ -89,7 +89,7 @@ static int mpegts_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_mpegts_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_mpegts_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_DATA,
     .priv_data_size    = sizeof(PayloadContext),
     .parse_packet      = mpegts_handle_packet,

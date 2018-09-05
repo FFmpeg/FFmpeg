@@ -139,7 +139,7 @@ static int read_header(AVFormatContext *ctx)
 
     /* Open device for capture */
     ad->device =
-        alcCaptureOpenDevice(ctx->filename[0] ? ctx->filename : NULL,
+        alcCaptureOpenDevice(ctx->url[0] ? ctx->url : NULL,
                              ad->sample_rate,
                              ad->sample_format,
                              ad->sample_rate); /* Maximum 1 second of sample data to be read at once */

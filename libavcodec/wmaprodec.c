@@ -107,8 +107,8 @@
 #define MAX_BANDS      29                                    ///< max number of scale factor bands
 #define MAX_FRAMESIZE  32768                                 ///< maximum compressed frame size
 #define XMA_MAX_STREAMS         8
-#define XMA_MAX_CHANNELS        8
 #define XMA_MAX_CHANNELS_STREAM 2
+#define XMA_MAX_CHANNELS        (XMA_MAX_STREAMS * XMA_MAX_CHANNELS_STREAM)
 
 #define WMAPRO_BLOCK_MIN_BITS  6                                           ///< log2 of min block size
 #define WMAPRO_BLOCK_MAX_BITS 13                                           ///< log2 of max block size

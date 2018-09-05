@@ -913,8 +913,16 @@ static void ivi_output_plane(IVIPlaneDesc *plane, uint8_t *dst, ptrdiff_t dst_pi
         return;
 
     for (y = 0; y < plane->height; y++) {
-        for (x = 0; x < plane->width; x++)
-            dst[x] = av_clip_uint8(src[x] + 128);
+        int m = 0;
+        int w = plane->width;
+        for (x = 0; x < w; x++) {
+            int t = src[x] + 128;
+            dst[x] = t;
+            m |= t;
+        }
+        if (m & ~255)
+            for (x = 0; x < w; x++)
+                dst[x] = av_clip_uint8(src[x] + 128);
         src += pitch;
         dst += dst_pitch;
     }

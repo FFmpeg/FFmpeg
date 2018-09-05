@@ -321,10 +321,12 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
         }
     }
 
-    pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
-    if (!pic->slices) {
-        err = AVERROR(ENOMEM);
-        goto fail;
+    if (pic->nb_slices > 0) {
+        pic->slices = av_mallocz_array(pic->nb_slices, sizeof(*pic->slices));
+        if (!pic->slices) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
     }
     for (i = 0; i < pic->nb_slices; i++) {
         slice = &pic->slices[i];
@@ -760,6 +762,8 @@ static int vaapi_encode_truncate_gop(AVCodecContext *avctx)
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic, *last_pic, *next;
 
+    av_assert0(!ctx->pic_start || ctx->pic_start->input_available);
+
     // Find the last picture we actually have input for.
     for (pic = ctx->pic_start; pic; pic = pic->next) {
         if (!pic->input_available)
@@ -768,8 +772,6 @@ static int vaapi_encode_truncate_gop(AVCodecContext *avctx)
     }
 
     if (pic) {
-        av_assert0(last_pic);
-
         if (last_pic->type == PICTURE_TYPE_B) {
             // Some fixing up is required.  Change the type of this
             // picture to P, then modify preceding B references which
@@ -958,6 +960,20 @@ fail:
     return err;
 }
 
+static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx,
+                                                  VAEncMiscParameterBuffer *buffer,
+                                                  size_t size)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    av_assert0(ctx->nb_global_params < MAX_GLOBAL_PARAMS);
+
+    ctx->global_params     [ctx->nb_global_params] = buffer;
+    ctx->global_params_size[ctx->nb_global_params] = size;
+
+    ++ctx->nb_global_params;
+}
+
 static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
@@ -1094,10 +1110,10 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
                 goto fail;
             }
             if (avctx->max_b_frames > 0 && ref_l1 < 1) {
-                av_log(avctx, AV_LOG_ERROR, "B frames are not "
-                       "supported (%#x).\n", attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
+                av_log(avctx, AV_LOG_WARNING, "B frames are not "
+                       "supported (%#x) by the underlying driver.\n",
+                       attr[i].value);
+                avctx->max_b_frames = 0;
             }
         }
         break;
@@ -1180,20 +1196,16 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         .min_qp            = (avctx->qmin > 0 ? avctx->qmin : 0),
         .basic_unit_size   = 0,
     };
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->rc_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->rc_params);
+    vaapi_encode_add_global_param(avctx, &ctx->rc_params.misc,
+                                  sizeof(ctx->rc_params));
 
     ctx->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
     ctx->hrd_params.hrd = (VAEncMiscParameterHRD) {
         .initial_buffer_fullness = hrd_initial_buffer_fullness,
         .buffer_size             = hrd_buffer_size,
     };
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->hrd_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->hrd_params);
+    vaapi_encode_add_global_param(avctx, &ctx->hrd_params.misc,
+                                  sizeof(ctx->hrd_params));
 
     if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
         av_reduce(&fr_num, &fr_den,
@@ -1206,10 +1218,8 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     ctx->fr_params.fr.framerate = (unsigned int)fr_den << 16 | fr_num;
 
 #if VA_CHECK_VERSION(0, 40, 0)
-    ctx->global_params[ctx->nb_global_params] =
-        &ctx->fr_params.misc;
-    ctx->global_params_size[ctx->nb_global_params++] =
-        sizeof(ctx->fr_params);
+    vaapi_encode_add_global_param(avctx, &ctx->fr_params.misc,
+                                  sizeof(ctx->fr_params));
 #endif
 
     return 0;
@@ -1370,16 +1380,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->codec_options = ctx->codec_options_data;
-
     ctx->va_config  = VA_INVALID_ID;
     ctx->va_context = VA_INVALID_ID;
-
-    ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
-    if (!ctx->priv_data) {
-        err = AVERROR(ENOMEM);
-        goto fail;
-    }
 
     ctx->input_frames_ref = av_buffer_ref(avctx->hw_frames_ctx);
     if (!ctx->input_frames_ref) {
@@ -1473,10 +1475,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
             ctx->quality_params.quality.quality_level =
                 avctx->compression_level;
 
-            ctx->global_params[ctx->nb_global_params] =
-                &ctx->quality_params.misc;
-            ctx->global_params_size[ctx->nb_global_params++] =
-                sizeof(ctx->quality_params);
+            vaapi_encode_add_global_param(avctx, &ctx->quality_params.misc,
+                                          sizeof(ctx->quality_params));
         }
 #else
         av_log(avctx, AV_LOG_WARNING, "The encode compression level "
@@ -1562,6 +1562,8 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         vaapi_encode_free(avctx, pic);
     }
 
+    av_buffer_pool_uninit(&ctx->output_buffer_pool);
+
     if (ctx->va_context != VA_INVALID_ID) {
         vaDestroyContext(ctx->hwctx->display, ctx->va_context);
         ctx->va_context = VA_INVALID_ID;
@@ -1572,16 +1574,12 @@ av_cold int ff_vaapi_encode_close(AVCodecContext *avctx)
         ctx->va_config = VA_INVALID_ID;
     }
 
-    av_buffer_pool_uninit(&ctx->output_buffer_pool);
-
     av_freep(&ctx->codec_sequence_params);
     av_freep(&ctx->codec_picture_params);
 
     av_buffer_unref(&ctx->recon_frames_ref);
     av_buffer_unref(&ctx->input_frames_ref);
     av_buffer_unref(&ctx->device_ref);
-
-    av_freep(&ctx->priv_data);
 
     return 0;
 }

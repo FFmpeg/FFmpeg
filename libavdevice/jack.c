@@ -150,8 +150,8 @@ static int start_jack(AVFormatContext *context)
     jack_status_t status;
     int i, test;
 
-    /* Register as a JACK client, using the context filename as client name. */
-    self->client = jack_client_open(context->filename, JackNullOption, &status);
+    /* Register as a JACK client, using the context url as client name. */
+    self->client = jack_client_open(context->url, JackNullOption, &status);
     if (!self->client) {
         av_log(context, AV_LOG_ERROR, "Unable to register as a JACK client\n");
         return AVERROR(EIO);
@@ -174,7 +174,7 @@ static int start_jack(AVFormatContext *context)
                                             JackPortIsInput, 0);
         if (!self->ports[i]) {
             av_log(context, AV_LOG_ERROR, "Unable to register port %s:%s\n",
-                   context->filename, str);
+                   context->url, str);
             jack_client_close(self->client);
             return AVERROR(EIO);
         }

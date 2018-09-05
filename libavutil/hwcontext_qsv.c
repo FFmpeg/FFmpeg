@@ -234,8 +234,8 @@ static int qsv_init_child_ctx(AVHWFramesContext *ctx)
     child_frames_ctx->format            = device_priv->child_pix_fmt;
     child_frames_ctx->sw_format         = ctx->sw_format;
     child_frames_ctx->initial_pool_size = ctx->initial_pool_size;
-    child_frames_ctx->width             = ctx->width;
-    child_frames_ctx->height            = ctx->height;
+    child_frames_ctx->width             = FFALIGN(ctx->width, 16);
+    child_frames_ctx->height            = FFALIGN(ctx->height, 16);
 
 #if CONFIG_DXVA2
     if (child_device_ctx->type == AV_HWDEVICE_TYPE_DXVA2) {
@@ -307,12 +307,13 @@ static int qsv_init_surface(AVHWFramesContext *ctx, mfxFrameSurface1 *surf)
         surf->Info.ChromaFormat   = MFX_CHROMAFORMAT_YUV444;
 
     surf->Info.FourCC         = fourcc;
-    surf->Info.Width          = ctx->width;
+    surf->Info.Width          = FFALIGN(ctx->width, 16);
     surf->Info.CropW          = ctx->width;
-    surf->Info.Height         = ctx->height;
+    surf->Info.Height         = FFALIGN(ctx->height, 16);
     surf->Info.CropH          = ctx->height;
     surf->Info.FrameRateExtN  = 25;
     surf->Info.FrameRateExtD  = 1;
+    surf->Info.PicStruct      = MFX_PICSTRUCT_PROGRESSIVE;
 
     return 0;
 }
@@ -1035,6 +1036,10 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         goto fail;
     }
 
+    av_log(ctx, AV_LOG_VERBOSE,
+           "Initialize MFX session: API version is %d.%d, implementation version is %d.%d\n",
+           MFX_VERSION_MAJOR, MFX_VERSION_MINOR, ver.Major, ver.Minor);
+
     MFXClose(hwctx->session);
 
     err = MFXInit(implementation, &ver, &hwctx->session);
@@ -1053,6 +1058,11 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         goto fail;
     }
 
+    ret = MFXQueryVersion(hwctx->session,&ver);
+    if (ret == MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_VERBOSE, "MFX compile/runtime API: %d.%d/%d.%d\n",
+               MFX_VERSION_MAJOR, MFX_VERSION_MINOR, ver.Major, ver.Minor);
+    }
     return 0;
 
 fail:

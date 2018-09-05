@@ -193,6 +193,9 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
     pthread_cond_init(&ctx->cond, NULL);
     ctx->frames_buffer_available_spots = ctx->frames_buffer;
 
+    av_log(avctx, AV_LOG_DEBUG, "output: %s, preroll: %d, frames buffer size: %d\n",
+           avctx->url, ctx->frames_preroll, ctx->frames_buffer);
+
     /* The device expects the framerate to be fixed. */
     avpriv_set_pts_info(st, 64, st->time_base.num, st->time_base.den);
 
@@ -321,7 +324,7 @@ static int decklink_write_video_packet(AVFormatContext *avctx, AVPacket *pkt)
     pthread_mutex_unlock(&ctx->mutex);
 
     /* Schedule frame for playback. */
-    hr = ctx->dlo->ScheduleVideoFrame((struct IDeckLinkVideoFrame *) frame,
+    hr = ctx->dlo->ScheduleVideoFrame((class IDeckLinkVideoFrame *) frame,
                                       pkt->pts * ctx->bmd_tb_num,
                                       ctx->bmd_tb_num, ctx->bmd_tb_den);
     /* Pass ownership to DeckLink, or release on failure */
@@ -400,14 +403,14 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
-    ret = ff_decklink_init_device(avctx, avctx->filename);
+    ret = ff_decklink_init_device(avctx, avctx->url);
     if (ret < 0)
         return ret;
 
     /* Get output device. */
     if (ctx->dl->QueryInterface(IID_IDeckLinkOutput, (void **) &ctx->dlo) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not open output device from '%s'\n",
-               avctx->filename);
+               avctx->url);
         ret = AVERROR(EIO);
         goto error;
     }

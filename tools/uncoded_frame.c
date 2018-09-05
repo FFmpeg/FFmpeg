@@ -62,9 +62,7 @@ int main(int argc, char **argv)
     out_dev_name = argv + 2;
     nb_out_dev = argc - 2;
 
-    av_register_all();
     avdevice_register_all();
-    avfilter_register_all();
 
     /* Create input graph */
     if (!(in_graph = avfilter_graph_alloc())) {
@@ -141,7 +139,7 @@ int main(int argc, char **argv)
             goto fail;
         }
         if (!(st->mux->oformat->flags & AVFMT_NOFILE)) {
-            ret = avio_open2(&st->mux->pb, st->mux->filename, AVIO_FLAG_WRITE,
+            ret = avio_open2(&st->mux->pb, st->mux->url, AVIO_FLAG_WRITE,
                              NULL, NULL);
             if (ret < 0) {
                 av_log(st->mux, AV_LOG_ERROR, "Failed to init output: %s\n",

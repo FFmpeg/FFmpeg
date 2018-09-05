@@ -244,6 +244,16 @@ file subdir/file-2.wav
 @end example
 @end itemize
 
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
 @section flv, live_flv
 
 Adobe Flash Video Format demuxer.
@@ -259,6 +269,12 @@ ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
 @table @option
 @item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
+
+@item -flv_ignore_prevtag @var{bool}
+Ignore the size of previous tag value.
+
+@item -flv_full_metadata @var{bool}
+Output all context of the onMetadata.
 @end table
 
 @section gif
@@ -528,6 +544,9 @@ This demuxer accepts the following options:
 Set size limit for looking up a new synchronization. Default value is
 65536.
 
+@item skip_unknown_pmt
+Skip PMTs for programs not defined in the PAT. Default value is 0.
+
 @item fix_teletext_pts
 Override teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
@@ -542,6 +561,10 @@ Show the detected raw packet size, cannot be set by the user.
 Scan and combine all PMTs. The value is an integer with value from -1
 to 1 (-1 means automatic setting, 1 means enabled, 0 means
 disabled). Default value is -1.
+
+@item merge_pmt_versions
+Re-use existing streams when a PMT's version is updated and elementary
+streams move to different PIDs. Default value is 0.
 @end table
 
 @section mpjpeg

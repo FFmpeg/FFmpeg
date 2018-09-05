@@ -91,22 +91,13 @@ static int tta_write_header(AVFormatContext *s)
 static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVPacketList *pktl = av_mallocz(sizeof(*pktl));
     int ret;
 
-    if (!pktl)
-        return AVERROR(ENOMEM);
-
-    ret = av_packet_ref(&pktl->pkt, pkt);
+    ret = ff_packet_list_put(&tta->queue, &tta->queue_end, pkt,
+                             FF_PACKETLIST_FLAG_REF_PACKET);
     if (ret < 0) {
-        av_free(pktl);
         return ret;
     }
-    if (tta->queue_end)
-        tta->queue_end->next = pktl;
-    else
-        tta->queue = pktl;
-    tta->queue_end = pktl;
 
     avio_wl32(tta->seek_table, pkt->size);
     tta->nb_samples += pkt->duration;
@@ -131,16 +122,13 @@ static int tta_write_packet(AVFormatContext *s, AVPacket *pkt)
 static void tta_queue_flush(AVFormatContext *s)
 {
     TTAMuxContext *tta = s->priv_data;
-    AVPacketList *pktl;
+    AVPacket pkt;
 
-    while (pktl = tta->queue) {
-        AVPacket *pkt = &pktl->pkt;
-        avio_write(s->pb, pkt->data, pkt->size);
-        av_packet_unref(pkt);
-        tta->queue = pktl->next;
-        av_free(pktl);
+    while (tta->queue) {
+        ff_packet_list_get(&tta->queue, &tta->queue_end, &pkt);
+        avio_write(s->pb, pkt.data, pkt.size);
+        av_packet_unref(&pkt);
     }
-    tta->queue_end = NULL;
 }
 
 static int tta_write_trailer(AVFormatContext *s)

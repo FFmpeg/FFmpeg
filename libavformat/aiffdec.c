@@ -81,11 +81,10 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
             av_free(str);
             return;
         }
-        size += (size&1)-res;
+        size -= res;
         str[res] = 0;
         av_dict_set(&s->metadata, key, str, AV_DICT_DONT_STRDUP_VAL);
-    }else
-        size+= size&1;
+    }
 
     avio_skip(s->pb, size);
 }

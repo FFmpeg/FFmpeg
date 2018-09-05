@@ -300,7 +300,7 @@ static void asfrtp_close_context(PayloadContext *asf)
 }
 
 #define RTP_ASF_HANDLER(n, s, t) \
-RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
+const RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \

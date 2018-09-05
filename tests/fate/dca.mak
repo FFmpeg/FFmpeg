@@ -75,5 +75,10 @@ fate-dts_es: CMD = pcm -i $(TARGET_SAMPLES)/dts/dts_es.dts
 fate-dts_es: CMP = oneoff
 fate-dts_es: REF = $(SAMPLES)/dts/dts_es_2.pcm
 
+FATE_DCA-$(call ALLYES, DTS_DEMUXER DTS_MUXER DCA_CORE_BSF) += fate-dca-core-bsf
+fate-dca-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/dts/master_audio_7.1_24bit.dts -c:a copy -bsf:a dca_core -fflags +bitexact -f dts
+fate-dca-core-bsf: CMP = oneline
+fate-dca-core-bsf: REF = ca22b00d8c641cd168e2f7ca8d2f340e
+
 FATE_SAMPLES_AUDIO += $(FATE_DCA-yes)
 fate-dca: $(FATE_DCA-yes)

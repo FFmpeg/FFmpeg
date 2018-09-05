@@ -224,7 +224,7 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #   define AV_RN(s, p) (((const union unaligned_##s *) (p))->l)
 #   define AV_WN(s, p, v) ((((union unaligned_##s *) (p))->l) = (v))
 
-#elif defined(_MSC_VER) && (defined(_M_ARM) || defined(_M_X64)) && AV_HAVE_FAST_UNALIGNED
+#elif defined(_MSC_VER) && (defined(_M_ARM) || defined(_M_X64) || defined(_M_ARM64)) && AV_HAVE_FAST_UNALIGNED
 
 #   define AV_RN(s, p) (*((const __unaligned uint##s##_t*)(p)))
 #   define AV_WN(s, p, v) (*((__unaligned uint##s##_t*)(p)) = (v))

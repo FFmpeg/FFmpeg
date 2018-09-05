@@ -363,8 +363,6 @@ int main(int argc, char **argv)
     struct Tracks tracks = { 0 };
     int i;
 
-    av_register_all();
-
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-out")) {
             out = argv[i + 1];

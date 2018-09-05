@@ -39,10 +39,6 @@ int main(void){
             skip = 0;
         }
         av_log(NULL, AV_LOG_INFO, "pix fmt %s yuv_plan:%d avg_bpp:%d\n", desc->name, is_yuv_planar(desc), av_get_padded_bits_per_pixel(desc));
-        if ((!(desc->flags & AV_PIX_FMT_FLAG_ALPHA)) != (desc->nb_components != 2 && desc->nb_components != 4)) {
-            av_log(NULL, AV_LOG_ERROR, "Alpha flag mismatch\n");
-            err = 1;
-        }
     }
     return err;
 }

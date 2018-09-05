@@ -157,6 +157,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Read number of tiles, and allocate the array */
     tiles_nb = bytestream2_get_le16(gbc);
+
+    if (tiles_nb == 0) {
+        av_log(avctx, AV_LOG_DEBUG, "no tiles\n");
+        return avpkt->size;
+    }
+
     av_fast_malloc(&ctx->tiles, &ctx->tiles_size,
                    tiles_nb * sizeof(*ctx->tiles));
     if (!ctx->tiles) {

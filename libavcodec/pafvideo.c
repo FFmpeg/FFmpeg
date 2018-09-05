@@ -78,6 +78,7 @@ static av_cold int paf_video_init(AVCodecContext *avctx)
 {
     PAFVideoDecContext *c = avctx->priv_data;
     int i;
+    int ret;
 
     c->width  = avctx->width;
     c->height = avctx->height;
@@ -90,6 +91,9 @@ static av_cold int paf_video_init(AVCodecContext *avctx)
     }
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
+    ret = av_image_check_size2(avctx->width, FFALIGN(avctx->height, 256), avctx->max_pixels, avctx->pix_fmt, 0, avctx);
+    if (ret < 0)
+        return ret;
 
     c->pic = av_frame_alloc();
     if (!c->pic)

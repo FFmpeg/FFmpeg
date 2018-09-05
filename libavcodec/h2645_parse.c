@@ -28,6 +28,7 @@
 
 #include "bytestream.h"
 #include "hevc.h"
+#include "h264.h"
 #include "h2645_parse.h"
 
 int ff_h2645_extract_rbsp(const uint8_t *src, int length,
@@ -53,8 +54,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
             i++
 #if HAVE_FAST_64BIT
     for (i = 0; i + 1 < length; i += 9) {
-        if (!((~AV_RN64A(src + i) &
-               (AV_RN64A(src + i) - 0x0100010001000101ULL)) &
+        if (!((~AV_RN64(src + i) &
+               (AV_RN64(src + i) - 0x0100010001000101ULL)) &
               0x8000800080008080ULL))
             continue;
         FIND_FIRST_ZERO;
@@ -63,8 +64,8 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length,
     }
 #else
     for (i = 0; i + 1 < length; i += 5) {
-        if (!((~AV_RN32A(src + i) &
-               (AV_RN32A(src + i) - 0x01000101U)) &
+        if (!((~AV_RN32(src + i) &
+               (AV_RN32(src + i) - 0x01000101U)) &
               0x80008080U))
             continue;
         FIND_FIRST_ZERO;
@@ -145,36 +146,118 @@ nsc:
     return si;
 }
 
-static const char *nal_unit_name(int nal_type)
+static const char *hevc_nal_type_name[64] = {
+    "TRAIL_N", // HEVC_NAL_TRAIL_N
+    "TRAIL_R", // HEVC_NAL_TRAIL_R
+    "TSA_N", // HEVC_NAL_TSA_N
+    "TSA_R", // HEVC_NAL_TSA_R
+    "STSA_N", // HEVC_NAL_STSA_N
+    "STSA_R", // HEVC_NAL_STSA_R
+    "RADL_N", // HEVC_NAL_RADL_N
+    "RADL_R", // HEVC_NAL_RADL_R
+    "RASL_N", // HEVC_NAL_RASL_N
+    "RASL_R", // HEVC_NAL_RASL_R
+    "RSV_VCL_N10", // HEVC_NAL_VCL_N10
+    "RSV_VCL_R11", // HEVC_NAL_VCL_R11
+    "RSV_VCL_N12", // HEVC_NAL_VCL_N12
+    "RSV_VLC_R13", // HEVC_NAL_VCL_R13
+    "RSV_VCL_N14", // HEVC_NAL_VCL_N14
+    "RSV_VCL_R15", // HEVC_NAL_VCL_R15
+    "BLA_W_LP", // HEVC_NAL_BLA_W_LP
+    "BLA_W_RADL", // HEVC_NAL_BLA_W_RADL
+    "BLA_N_LP", // HEVC_NAL_BLA_N_LP
+    "IDR_W_RADL", // HEVC_NAL_IDR_W_RADL
+    "IDR_N_LP", // HEVC_NAL_IDR_N_LP
+    "CRA_NUT", // HEVC_NAL_CRA_NUT
+    "IRAP_IRAP_VCL22", // HEVC_NAL_IRAP_VCL22
+    "IRAP_IRAP_VCL23", // HEVC_NAL_IRAP_VCL23
+    "RSV_VCL24", // HEVC_NAL_RSV_VCL24
+    "RSV_VCL25", // HEVC_NAL_RSV_VCL25
+    "RSV_VCL26", // HEVC_NAL_RSV_VCL26
+    "RSV_VCL27", // HEVC_NAL_RSV_VCL27
+    "RSV_VCL28", // HEVC_NAL_RSV_VCL28
+    "RSV_VCL29", // HEVC_NAL_RSV_VCL29
+    "RSV_VCL30", // HEVC_NAL_RSV_VCL30
+    "RSV_VCL31", // HEVC_NAL_RSV_VCL31
+    "VPS", // HEVC_NAL_VPS
+    "SPS", // HEVC_NAL_SPS
+    "PPS", // HEVC_NAL_PPS
+    "AUD", // HEVC_NAL_AUD
+    "EOS_NUT", // HEVC_NAL_EOS_NUT
+    "EOB_NUT", // HEVC_NAL_EOB_NUT
+    "FD_NUT", // HEVC_NAL_FD_NUT
+    "SEI_PREFIX", // HEVC_NAL_SEI_PREFIX
+    "SEI_SUFFIX", // HEVC_NAL_SEI_SUFFIX
+    "RSV_NVCL41", // HEVC_NAL_RSV_NVCL41
+    "RSV_NVCL42", // HEVC_NAL_RSV_NVCL42
+    "RSV_NVCL43", // HEVC_NAL_RSV_NVCL43
+    "RSV_NVCL44", // HEVC_NAL_RSV_NVCL44
+    "RSV_NVCL45", // HEVC_NAL_RSV_NVCL45
+    "RSV_NVCL46", // HEVC_NAL_RSV_NVCL46
+    "RSV_NVCL47", // HEVC_NAL_RSV_NVCL47
+    "UNSPEC48", // HEVC_NAL_UNSPEC48
+    "UNSPEC49", // HEVC_NAL_UNSPEC49
+    "UNSPEC50", // HEVC_NAL_UNSPEC50
+    "UNSPEC51", // HEVC_NAL_UNSPEC51
+    "UNSPEC52", // HEVC_NAL_UNSPEC52
+    "UNSPEC53", // HEVC_NAL_UNSPEC53
+    "UNSPEC54", // HEVC_NAL_UNSPEC54
+    "UNSPEC55", // HEVC_NAL_UNSPEC55
+    "UNSPEC56", // HEVC_NAL_UNSPEC56
+    "UNSPEC57", // HEVC_NAL_UNSPEC57
+    "UNSPEC58", // HEVC_NAL_UNSPEC58
+    "UNSPEC59", // HEVC_NAL_UNSPEC59
+    "UNSPEC60", // HEVC_NAL_UNSPEC60
+    "UNSPEC61", // HEVC_NAL_UNSPEC61
+    "UNSPEC62", // HEVC_NAL_UNSPEC62
+    "UNSPEC63", // HEVC_NAL_UNSPEC63
+};
+
+static const char *hevc_nal_unit_name(int nal_type)
 {
-    switch(nal_type) {
-    case HEVC_NAL_TRAIL_N    : return "TRAIL_N";
-    case HEVC_NAL_TRAIL_R    : return "TRAIL_R";
-    case HEVC_NAL_TSA_N      : return "TSA_N";
-    case HEVC_NAL_TSA_R      : return "TSA_R";
-    case HEVC_NAL_STSA_N     : return "STSA_N";
-    case HEVC_NAL_STSA_R     : return "STSA_R";
-    case HEVC_NAL_RADL_N     : return "RADL_N";
-    case HEVC_NAL_RADL_R     : return "RADL_R";
-    case HEVC_NAL_RASL_N     : return "RASL_N";
-    case HEVC_NAL_RASL_R     : return "RASL_R";
-    case HEVC_NAL_BLA_W_LP   : return "BLA_W_LP";
-    case HEVC_NAL_BLA_W_RADL : return "BLA_W_RADL";
-    case HEVC_NAL_BLA_N_LP   : return "BLA_N_LP";
-    case HEVC_NAL_IDR_W_RADL : return "IDR_W_RADL";
-    case HEVC_NAL_IDR_N_LP   : return "IDR_N_LP";
-    case HEVC_NAL_CRA_NUT    : return "CRA_NUT";
-    case HEVC_NAL_VPS        : return "VPS";
-    case HEVC_NAL_SPS        : return "SPS";
-    case HEVC_NAL_PPS        : return "PPS";
-    case HEVC_NAL_AUD        : return "AUD";
-    case HEVC_NAL_EOS_NUT    : return "EOS_NUT";
-    case HEVC_NAL_EOB_NUT    : return "EOB_NUT";
-    case HEVC_NAL_FD_NUT     : return "FD_NUT";
-    case HEVC_NAL_SEI_PREFIX : return "SEI_PREFIX";
-    case HEVC_NAL_SEI_SUFFIX : return "SEI_SUFFIX";
-    default : return "?";
-    }
+    av_assert0(nal_type >= 0 && nal_type < 64);
+    return hevc_nal_type_name[nal_type];
+}
+
+static const char *h264_nal_type_name[32] = {
+    "Unspecified 0", //H264_NAL_UNSPECIFIED
+    "Coded slice of a non-IDR picture", // H264_NAL_SLICE
+    "Coded slice data partition A", // H264_NAL_DPA
+    "Coded slice data partition B", // H264_NAL_DPB
+    "Coded slice data partition C", // H264_NAL_DPC
+    "IDR", // H264_NAL_IDR_SLICE
+    "SEI", // H264_NAL_SEI
+    "SPS", // H264_NAL_SPS
+    "PPS", // H264_NAL_PPS
+    "AUD", // H264_NAL_AUD
+    "End of sequence", // H264_NAL_END_SEQUENCE
+    "End of stream", // H264_NAL_END_STREAM
+    "Filler data", // H264_NAL_FILLER_DATA
+    "SPS extension", // H264_NAL_SPS_EXT
+    "Prefix", // H264_NAL_PREFIX
+    "Subset SPS", // H264_NAL_SUB_SPS
+    "Depth parameter set", // H264_NAL_DPS
+    "Reserved 17", // H264_NAL_RESERVED17
+    "Reserved 18", // H264_NAL_RESERVED18
+    "Auxiliary coded picture without partitioning", // H264_NAL_AUXILIARY_SLICE
+    "Slice extension", // H264_NAL_EXTEN_SLICE
+    "Slice extension for a depth view or a 3D-AVC texture view", // H264_NAL_DEPTH_EXTEN_SLICE
+    "Reserved 22", // H264_NAL_RESERVED22
+    "Reserved 23", // H264_NAL_RESERVED23
+    "Unspecified 24", // H264_NAL_UNSPECIFIED24
+    "Unspecified 25", // H264_NAL_UNSPECIFIED25
+    "Unspecified 26", // H264_NAL_UNSPECIFIED26
+    "Unspecified 27", // H264_NAL_UNSPECIFIED27
+    "Unspecified 28", // H264_NAL_UNSPECIFIED28
+    "Unspecified 29", // H264_NAL_UNSPECIFIED29
+    "Unspecified 30", // H264_NAL_UNSPECIFIED30
+    "Unspecified 31", // H264_NAL_UNSPECIFIED31
+};
+
+static const char *h264_nal_unit_name(int nal_type)
+{
+    av_assert0(nal_type >= 0 && nal_type < 32);
+    return h264_nal_type_name[nal_type];
 }
 
 static int get_bit_length(H2645NAL *nal, int skip_trailing_zeros)
@@ -223,7 +306,7 @@ static int hevc_parse_nal_header(H2645NAL *nal, void *logctx)
 
     av_log(logctx, AV_LOG_DEBUG,
            "nal_unit_type: %d(%s), nuh_layer_id: %d, temporal_id: %d\n",
-           nal->type, nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
+           nal->type, hevc_nal_unit_name(nal->type), nuh_layer_id, nal->temporal_id);
 
     return nuh_layer_id == 0;
 }
@@ -239,8 +322,8 @@ static int h264_parse_nal_header(H2645NAL *nal, void *logctx)
     nal->type    = get_bits(gb, 5);
 
     av_log(logctx, AV_LOG_DEBUG,
-           "nal_unit_type: %d, nal_ref_idc: %d\n",
-           nal->type, nal->ref_idc);
+           "nal_unit_type: %d(%s), nal_ref_idc: %d\n",
+           nal->type, h264_nal_unit_name(nal->type), nal->ref_idc);
 
     return 1;
 }
@@ -371,7 +454,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = hevc_parse_nal_header(nal, logctx);
         else
             ret = h264_parse_nal_header(nal, logctx);
-        if (ret <= 0 || nal->size <= 0) {
+        if (ret <= 0 || nal->size <= 0 || nal->size_bits <= 0) {
             if (ret < 0) {
                 av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
                        nal->type);

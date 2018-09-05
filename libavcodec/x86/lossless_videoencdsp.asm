@@ -25,6 +25,8 @@
 
 %include "libavutil/x86/x86util.asm"
 
+cextern pb_80
+
 SECTION .text
 
 ; void ff_diff_bytes(uint8_t *dst, const uint8_t *src1, const uint8_t *src2,
@@ -149,3 +151,44 @@ DIFF_BYTES_PROLOGUE
     DIFF_BYTES_BODY    u, u
 %undef i
 %endif
+
+
+;--------------------------------------------------------------------------------------------------
+;void sub_left_predict(uint8_t *dst, uint8_t *src, ptrdiff_t stride, ptrdiff_t width, int height)
+;--------------------------------------------------------------------------------------------------
+
+INIT_XMM avx
+cglobal sub_left_predict, 5,6,5, dst, src, stride, width, height, x
+    mova             m1, [pb_80] ; prev initial
+    add            dstq, widthq
+    add            srcq, widthq
+    lea              xd, [widthq-1]
+    neg          widthq
+    and              xd, 15
+    pinsrb           m4, m1, xd, 15
+    mov              xq, widthq
+
+    .loop:
+        movu                     m0, [srcq + widthq]
+        palignr                  m2, m0, m1, 15
+        movu                     m1, [srcq + widthq + 16]
+        palignr                  m3, m1, m0, 15
+        psubb                    m2, m0, m2
+        psubb                    m3, m1, m3
+        movu        [dstq + widthq], m2
+        movu   [dstq + widthq + 16], m3
+        add                  widthq, 2 * 16
+        jl .loop
+
+    add   srcq, strideq
+    sub   dstq, xq ; dst + width
+    test    xd, 16
+    jz .mod32
+    mova    m1, m0
+
+.mod32:
+    pshufb    m1, m4
+    mov   widthq, xq
+    dec  heightd
+    jg .loop
+    RET

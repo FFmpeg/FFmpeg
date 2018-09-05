@@ -71,6 +71,7 @@ static int mp3_read_probe(AVProbeData *p)
     int max_frames, first_frames = 0;
     int whole_used = 0;
     int frames, ret;
+    int framesizes, max_framesizes;
     uint32_t header;
     const uint8_t *buf, *buf0, *buf2, *end;
 
@@ -80,11 +81,12 @@ static int mp3_read_probe(AVProbeData *p)
         buf0++;
 
     max_frames = 0;
+    max_framesizes = 0;
     buf = buf0;
 
     for(; buf < end; buf= buf2+1) {
         buf2 = buf;
-        for(frames = 0; buf2 < end; frames++) {
+        for(framesizes = frames = 0; buf2 < end; frames++) {
             MPADecodeHeader h;
 
             header = AV_RB32(buf2);
@@ -92,8 +94,10 @@ static int mp3_read_probe(AVProbeData *p)
             if (ret != 0)
                 break;
             buf2 += h.frame_size;
+            framesizes += h.frame_size;
         }
         max_frames = FFMAX(max_frames, frames);
+        max_framesizes = FFMAX(max_framesizes, framesizes);
         if(buf == buf0) {
             first_frames= frames;
             if (buf2 == end + sizeof(uint32_t))
@@ -103,12 +107,12 @@ static int mp3_read_probe(AVProbeData *p)
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
     if   (first_frames>=7) return AVPROBE_SCORE_EXTENSION + 1;
-    else if(max_frames>200)return AVPROBE_SCORE_EXTENSION;
-    else if(max_frames>=4 && max_frames >= p->buf_size/10000) return AVPROBE_SCORE_EXTENSION / 2;
+    else if(max_frames>200 && p->buf_size < 2*max_framesizes)return AVPROBE_SCORE_EXTENSION;
+    else if(max_frames>=4 && p->buf_size < 2*max_framesizes) return AVPROBE_SCORE_EXTENSION / 2;
     else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
                            return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
     else if(first_frames > 1 && whole_used) return 5;
-    else if(max_frames>=1 && max_frames >= p->buf_size/10000) return 1;
+    else if(max_frames>=1 && p->buf_size < 10*max_framesizes) return 1;
     else                   return 0;
 //mpegps_mp3_unrecognized_format.mpg has max_frames=3
 }

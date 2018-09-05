@@ -110,7 +110,7 @@ static void svq3_close_context(PayloadContext *sv)
     ffio_free_dyn_buf(&sv->pktbuf);
 }
 
-RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_svq3_dynamic_handler = {
     .enc_name         = "X-SV3V-ES",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_NONE,      // see if (config_packet) above

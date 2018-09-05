@@ -34,6 +34,36 @@
 #define DECKLINK_BOOL bool
 #endif
 
+#ifdef _WIN32
+static char *dup_wchar_to_utf8(wchar_t *w)
+{
+    char *s = NULL;
+    int l = WideCharToMultiByte(CP_UTF8, 0, w, -1, 0, 0, 0, 0);
+    s = (char *) av_malloc(l);
+    if (s)
+        WideCharToMultiByte(CP_UTF8, 0, w, -1, s, l, 0, 0);
+    return s;
+}
+#define DECKLINK_STR    OLECHAR *
+#define DECKLINK_STRDUP dup_wchar_to_utf8
+#define DECKLINK_FREE(s) SysFreeString(s)
+#elif defined(__APPLE__)
+static char *dup_cfstring_to_utf8(CFStringRef w)
+{
+    char s[256];
+    CFStringGetCString(w, s, 255, kCFStringEncodingUTF8);
+    return av_strdup(s);
+}
+#define DECKLINK_STR    const __CFString *
+#define DECKLINK_STRDUP dup_cfstring_to_utf8
+#define DECKLINK_FREE(s) CFRelease(s)
+#else
+#define DECKLINK_STR    const char *
+#define DECKLINK_STRDUP av_strdup
+/* free() is needed for a string returned by the DeckLink SDL. */
+#define DECKLINK_FREE(s) free((void *) s)
+#endif
+
 class decklink_output_callback;
 class decklink_input_callback;
 
@@ -56,7 +86,6 @@ struct decklink_ctx {
     IDeckLinkConfiguration *cfg;
     IDeckLinkAttributes *attr;
     decklink_output_callback *output_callback;
-    decklink_input_callback *input_callback;
 
     /* DeckLink mode information */
     BMDTimeValue bmd_tb_den;
@@ -64,6 +93,7 @@ struct decklink_ctx {
     BMDDisplayMode bmd_mode;
     BMDVideoConnection video_input;
     BMDAudioConnection audio_input;
+    BMDTimecodeFormat tc_format;
     int bmd_width;
     int bmd_height;
     int bmd_field_dominance;
@@ -138,6 +168,17 @@ static const BMDVideoConnection decklink_video_connection_map[] = {
     bmdVideoConnectionComponent,
     bmdVideoConnectionComposite,
     bmdVideoConnectionSVideo,
+};
+
+static const BMDTimecodeFormat decklink_timecode_format_map[] = {
+    (BMDTimecodeFormat)0,
+    bmdTimecodeRP188VITC1,
+    bmdTimecodeRP188VITC2,
+    bmdTimecodeRP188LTC,
+    bmdTimecodeRP188Any,
+    bmdTimecodeVITC,
+    bmdTimecodeVITCField2,
+    bmdTimecodeSerial,
 };
 
 HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName);

@@ -37,8 +37,9 @@ static int ivf_write_header(AVFormatContext *s)
     }
     par = s->streams[0]->codecpar;
     if (par->codec_type != AVMEDIA_TYPE_VIDEO ||
-        !(par->codec_id == AV_CODEC_ID_VP8 || par->codec_id == AV_CODEC_ID_VP9 ||
-          par->codec_id == AV_CODEC_ID_AV1)) {
+        !(par->codec_id == AV_CODEC_ID_AV1 ||
+          par->codec_id == AV_CODEC_ID_VP8 ||
+          par->codec_id == AV_CODEC_ID_VP9)) {
         av_log(s, AV_LOG_ERROR, "Currently only VP8, VP9 and AV1 are supported!\n");
         return AVERROR(EINVAL);
     }

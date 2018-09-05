@@ -31,10 +31,8 @@ If everything went right, you should get a foobar.png with Lena edge-detected.
 That's it, your new playground is ready.
 
 Some little details about what's going on:
-libavfilter/allfilters.c:avfilter_register_all() is called at runtime to create
-a list of the available filters, but it's important to know that this file is
-also parsed by the configure script, which in turn will define variables for
-the build system and the C:
+libavfilter/allfilters.c:this file is parsed by the configure script, which in turn
+will define variables for the build system and the C:
 
     --- after running configure ---
 

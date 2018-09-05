@@ -83,7 +83,7 @@
 #define FF_QSCALE_TYPE_H264  2
 #define FF_QSCALE_TYPE_VP56  3
 
-#define FF_SANE_NB_CHANNELS 64U
+#define FF_SANE_NB_CHANNELS 256U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
@@ -234,12 +234,6 @@ extern const uint8_t ff_log2_run[41];
 int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int avpriv_toupper4(unsigned int x);
-
-/**
- * does needed setup of pkt_pts/pos and such for (re)get_buffer();
- */
-int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
-
 
 void ff_color_frame(AVFrame *frame, const int color[4]);
 

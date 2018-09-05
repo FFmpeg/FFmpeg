@@ -33,6 +33,7 @@
 #endif
 
 #include "libavutil/avstring.h"
+#include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "avio_internal.h"
@@ -975,19 +976,21 @@ static void id3v2_parse(AVIOContext *pb, AVDictionary **metadata,
                 }
             }
             if (unsync || tunsync) {
-                int64_t end = avio_tell(pb) + tlen;
-                uint8_t *b;
+                uint8_t *b = buffer;
+                uint8_t *t = buffer;
+                uint8_t *end = t + tlen;
 
-                b = buffer;
-                while (avio_tell(pb) < end && b - buffer < tlen && !pb->eof_reached) {
-                    *b++ = avio_r8(pb);
-                    if (*(b - 1) == 0xff && avio_tell(pb) < end - 1 &&
-                        b - buffer < tlen &&
-                        !pb->eof_reached ) {
-                        uint8_t val = avio_r8(pb);
-                        *b++ = val ? val : avio_r8(pb);
-                    }
+                if (avio_read(pb, buffer, tlen) != tlen) {
+                    av_log(s, AV_LOG_ERROR, "Failed to read tag data\n");
+                    goto seek;
                 }
+
+                while (t != end) {
+                    *b++ = *t++;
+                    if (t != end && t[-1] == 0xff && !t[0])
+                        t++;
+                }
+
                 ffio_init_context(&pb_local, buffer, b - buffer, 0, NULL, NULL, NULL,
                                   NULL);
                 tlen = b - buffer;
@@ -1223,4 +1226,51 @@ int ff_id3v2_parse_chapters(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
 end:
     av_freep(&chapters);
     return ret;
+}
+
+int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta **extra_meta)
+{
+    ID3v2ExtraMeta *cur;
+    int dict_flags = AV_DICT_DONT_OVERWRITE | AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL;
+
+    for (cur = *extra_meta; cur; cur = cur->next) {
+        if (!strcmp(cur->tag, "PRIV")) {
+            ID3v2ExtraMetaPRIV *priv = cur->data;
+            AVBPrint bprint;
+            char *escaped, *key;
+            int i, ret;
+
+            if ((key = av_asprintf(ID3v2_PRIV_METADATA_PREFIX "%s", priv->owner)) == NULL) {
+                return AVERROR(ENOMEM);
+            }
+
+            av_bprint_init(&bprint, priv->datasize + 1, AV_BPRINT_SIZE_UNLIMITED);
+
+            for (i = 0; i < priv->datasize; i++) {
+                if (priv->data[i] < 32 || priv->data[i] > 126 || priv->data[i] == '\\') {
+                    av_bprintf(&bprint, "\\x%02x", priv->data[i]);
+                } else {
+                    av_bprint_chars(&bprint, priv->data[i], 1);
+                }
+            }
+
+            if ((ret = av_bprint_finalize(&bprint, &escaped)) < 0) {
+                av_free(key);
+                return ret;
+            }
+
+            if ((ret = av_dict_set(metadata, key, escaped, dict_flags)) < 0) {
+                av_free(key);
+                av_free(escaped);
+                return ret;
+            }
+        }
+    }
+
+    return 0;
+}
+
+int ff_id3v2_parse_priv(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
+{
+    return ff_id3v2_parse_priv_dict(&s->metadata, extra_meta);
 }

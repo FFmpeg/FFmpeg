@@ -130,7 +130,7 @@ static int mjpeg_probe(AVProbeData *p)
     int nb_invalid = 0;
     int nb_frames = 0;
 
-    for (i=0; i<p->buf_size-2; i++) {
+    for (i = 0; i < p->buf_size - 1; i++) {
         int c;
         if (p->buf[i] != 0xFF)
             continue;

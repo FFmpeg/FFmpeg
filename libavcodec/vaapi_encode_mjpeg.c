@@ -56,6 +56,8 @@ static const unsigned char vaapi_encode_mjpeg_quant_chrominance[64] = {
 };
 
 typedef struct VAAPIEncodeMJPEGContext {
+    VAAPIEncodeContext common;
+
     int quality;
     int component_subsample_h[3];
     int component_subsample_v[3];
@@ -83,8 +85,7 @@ static av_cold void vaapi_encode_mjpeg_copy_huffman(unsigned char *dst_lengths,
 
 static av_cold void vaapi_encode_mjpeg_init_tables(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext          *priv = ctx->priv_data;
+    VAAPIEncodeMJPEGContext          *priv = avctx->priv_data;
     VAQMatrixBufferJPEG             *quant = &priv->quant_tables;
     VAHuffmanTableBufferJPEGBaseline *huff = &priv->huffman_tables;
     int i;
@@ -133,10 +134,9 @@ static int vaapi_encode_mjpeg_write_image_header(AVCodecContext *avctx,
                                                  VAAPIEncodeSlice *slice,
                                                  char *data, size_t *data_len)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
+    VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
     VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
     VAEncSliceParameterBufferJPEG *vslice = slice->codec_slice_params;
-    VAAPIEncodeMJPEGContext         *priv = ctx->priv_data;
     PutBitContext pbc;
     int t, i, quant_scale;
 
@@ -242,8 +242,7 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
                                                  int index, int *type,
                                                  char *data, size_t *data_len)
 {
-    VAAPIEncodeContext       *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext *priv = ctx->priv_data;
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
 
     if (index == 0) {
         // Write quantisation tables.
@@ -270,9 +269,8 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
 static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
                                                   VAAPIEncodePicture *pic)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
+    VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
     VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
-    VAAPIEncodeMJPEGContext         *priv = ctx->priv_data;
 
     vpic->reconstructed_picture = pic->recon_surface;
     vpic->coded_buf = pic->output_buffer;
@@ -336,7 +334,7 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
 static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext       *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext *priv = ctx->priv_data;
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
 
     priv->quality = avctx->global_quality;
     if (priv->quality < 1 || priv->quality > 100) {
@@ -362,8 +360,6 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
-    .priv_data_size        = sizeof(VAAPIEncodeMJPEGContext),
-
     .configure             = &vaapi_encode_mjpeg_configure,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),
@@ -417,7 +413,7 @@ AVCodec ff_mjpeg_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
-    .priv_data_size = sizeof(VAAPIEncodeContext),
+    .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),
     .init           = &vaapi_encode_mjpeg_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &ff_vaapi_encode_close,

@@ -47,6 +47,7 @@ typedef struct MJpegDecodeContext {
     AVClass *class;
     AVCodecContext *avctx;
     GetBitContext gb;
+    int buf_size;
 
     int start_code; /* current start code */
     int buffer_size;
@@ -137,6 +138,19 @@ typedef struct MJpegDecodeContext {
     int *iccdatalens;
     int iccnum;
     int iccread;
+
+    // Raw stream data for hwaccel use.
+    const uint8_t *raw_image_buffer;
+    size_t         raw_image_buffer_size;
+    const uint8_t *raw_scan_buffer;
+    size_t         raw_scan_buffer_size;
+
+    uint8_t raw_huffman_lengths[2][4][16];
+    uint8_t raw_huffman_values[2][4][256];
+
+    enum AVPixelFormat hwaccel_sw_pix_fmt;
+    enum AVPixelFormat hwaccel_pix_fmt;
+    void *hwaccel_picture_private;
 } MJpegDecodeContext;
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);

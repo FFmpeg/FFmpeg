@@ -325,7 +325,7 @@ static int parse_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .enc_name           = "MP4V-ES",
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = AV_CODEC_ID_MPEG4,
@@ -334,7 +334,7 @@ RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .parse_sdp_a_line   = parse_sdp_line,
 };
 
-RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {
     .enc_name           = "mpeg4-generic",
     .codec_type         = AVMEDIA_TYPE_AUDIO,
     .codec_id           = AV_CODEC_ID_AAC,

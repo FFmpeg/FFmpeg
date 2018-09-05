@@ -42,7 +42,6 @@ int main(int argc, char **argv)
     AVDictionary *in_opts = NULL;
     AVDictionary *out_opts = NULL;
 
-    av_register_all();
     avformat_network_init();
 
     for (i = 1; i < argc; i++) {

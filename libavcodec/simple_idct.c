@@ -30,6 +30,8 @@
 #include "mathops.h"
 #include "simple_idct.h"
 
+#define IN_IDCT_DEPTH 16
+
 #define BIT_DEPTH 8
 #include "simple_idct_template.c"
 #undef BIT_DEPTH
@@ -46,6 +48,13 @@
 #define BIT_DEPTH 12
 #include "simple_idct_template.c"
 #undef BIT_DEPTH
+#undef IN_IDCT_DEPTH
+
+#define IN_IDCT_DEPTH 32
+#define BIT_DEPTH 10
+#include "simple_idct_template.c"
+#undef BIT_DEPTH
+#undef IN_IDCT_DEPTH
 
 /* 2x4x8 idct */
 
@@ -115,7 +124,7 @@ void ff_simple_idct248_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 
     /* IDCT8 on each line */
     for(i=0; i<8; i++) {
-        idctRowCondDC_8(block + i*8, 0);
+        idctRowCondDC_int16_8bit(block + i*8, 0);
     }
 
     /* IDCT4 and store */
@@ -188,7 +197,7 @@ void ff_simple_idct84_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 
     /* IDCT8 on each line */
     for(i=0; i<4; i++) {
-        idctRowCondDC_8(block + i*8, 0);
+        idctRowCondDC_int16_8bit(block + i*8, 0);
     }
 
     /* IDCT4 and store */
@@ -208,7 +217,7 @@ void ff_simple_idct48_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 
     /* IDCT8 and store */
     for(i=0; i<4; i++){
-        idctSparseColAdd_8(dest + i, line_size, block + i);
+        idctSparseColAdd_int16_8bit(dest + i, line_size, block + i);
     }
 }
 

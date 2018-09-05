@@ -231,8 +231,6 @@ int main(int argc, char* argv[])
     AVFormatContext *fmt_ctx = NULL;
     AVFormatContext *fmt_ctx_no_decode = NULL;
 
-    av_register_all();
-
     if (argc < 2) {
         av_log(NULL, AV_LOG_ERROR, "Usage: %s <input>\n", argv[0]);
         return -1;

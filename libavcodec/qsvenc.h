@@ -45,14 +45,18 @@
 #define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN__)
+#define QSV_HAVE_AVBR   QSV_VERSION_ATLEAST(1, 3)
 #define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_VCM    QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_QVBR   QSV_VERSION_ATLEAST(1, 11)
+#define QSV_HAVE_MF     0
 #else
+#define QSV_HAVE_AVBR   0
 #define QSV_HAVE_ICQ    0
 #define QSV_HAVE_VCM    0
 #define QSV_HAVE_QVBR   0
+#define QSV_HAVE_MF     QSV_VERSION_ATLEAST(1, 25)
 #endif
 
 #if !QSV_HAVE_LA_DS
@@ -63,7 +67,7 @@
 #endif
 
 #define QSV_COMMON_OPTS \
-{ "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 0, INT_MAX, VE },                          \
+{ "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 1, INT_MAX, VE },                          \
 { "avbr_accuracy",    "Accuracy of the AVBR ratecontrol",    OFFSET(qsv.avbr_accuracy),    AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },                             \
 { "avbr_convergence", "Convergence of the AVBR ratecontrol", OFFSET(qsv.avbr_convergence), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },                             \
 { "preset", NULL, OFFSET(qsv.preset), AV_OPT_TYPE_INT, { .i64 = MFX_TARGETUSAGE_BALANCED }, MFX_TARGETUSAGE_BEST_QUALITY, MFX_TARGETUSAGE_BEST_SPEED,   VE, "preset" }, \
@@ -74,7 +78,6 @@
 { "slow",        NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_3  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "slower",      NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_2  },            INT_MIN, INT_MAX, VE, "preset" },                                                \
 { "veryslow",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_TARGETUSAGE_BEST_QUALITY  }, INT_MIN, INT_MAX, VE, "preset" },                                                \
-{ "vcm",      "Use the video conferencing mode ratecontrol",  OFFSET(qsv.vcm),      AV_OPT_TYPE_INT, { .i64 = 0  },  0, 1,         VE },                                \
 { "rdo",            "Enable rate distortion optimization",    OFFSET(qsv.rdo),            AV_OPT_TYPE_INT, { .i64 = -1 }, -1,          1, VE },                         \
 { "max_frame_size", "Maximum encoded frame size in bytes",    OFFSET(qsv.max_frame_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE },                         \
 { "max_slice_size", "Maximum encoded slice size in bytes",    OFFSET(qsv.max_slice_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, UINT16_MAX, VE },                         \
@@ -106,12 +109,15 @@ typedef struct QSVEncContext {
 #if QSV_HAVE_CO2
     mfxExtCodingOption2 extco2;
 #endif
-
+#if QSV_HAVE_MF
+    mfxExtMultiFrameParam   extmfp;
+    mfxExtMultiFrameControl extmfc;
+#endif
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2];
+    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2 + (QSV_HAVE_MF * 2)];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
@@ -136,6 +142,8 @@ typedef struct QSVEncContext {
     int max_frame_size;
     int max_slice_size;
 
+    int aud;
+
     int single_sei_nal_unit;
     int max_dec_frame_buffering;
     int trellis;
@@ -154,6 +162,10 @@ typedef struct QSVEncContext {
     int recovery_point_sei;
 
     int a53_cc;
+
+#if QSV_HAVE_MF
+    int mfmode;
+#endif
     char *load_plugins;
     SetEncodeCtrlCB *set_encode_ctrl_cb;
 } QSVEncContext;

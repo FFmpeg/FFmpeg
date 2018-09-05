@@ -35,6 +35,7 @@ typedef struct H264RedundantPPSContext {
 
     int global_pic_init_qp;
     int current_pic_init_qp;
+    int extradata_pic_init_qp;
 } H264RedundantPPSContext;
 
 
@@ -145,6 +146,7 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
                 h264_redundant_pps_fixup_pps(ctx, au->units[i].content);
         }
 
+        ctx->extradata_pic_init_qp = ctx->current_pic_init_qp;
         err = ff_cbs_write_extradata(ctx->output, bsf->par_out, au);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
@@ -155,6 +157,12 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
     }
 
     return 0;
+}
+
+static void h264_redundant_pps_flush(AVBSFContext *bsf)
+{
+    H264RedundantPPSContext *ctx = bsf->priv_data;
+    ctx->current_pic_init_qp = ctx->extradata_pic_init_qp;
 }
 
 static void h264_redundant_pps_close(AVBSFContext *bsf)
@@ -172,6 +180,7 @@ const AVBitStreamFilter ff_h264_redundant_pps_bsf = {
     .name           = "h264_redundant_pps",
     .priv_data_size = sizeof(H264RedundantPPSContext),
     .init           = &h264_redundant_pps_init,
+    .flush          = &h264_redundant_pps_flush,
     .close          = &h264_redundant_pps_close,
     .filter         = &h264_redundant_pps_filter,
     .codec_ids      = h264_redundant_pps_codec_ids,

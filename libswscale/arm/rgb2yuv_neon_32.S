@@ -18,6 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+#if HAVE_AS_DN_DIRECTIVE
 #include "rgb2yuv_neon_common.S"
 
 /* downsampled R16G16B16 x8 */
@@ -117,3 +119,4 @@ alias_qw    c8x8x2, q10
 
 
     loop_420sp  rgbx, nv12, init, kernel_420_16x2, 32
+#endif

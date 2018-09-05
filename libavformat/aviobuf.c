@@ -87,6 +87,8 @@ int ffio_init_context(AVIOContext *s,
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
+    memset(s, 0, sizeof(AVIOContext));
+
     s->buffer      = buffer;
     s->orig_buffer_size =
     s->buffer_size = buffer_size;
@@ -135,7 +137,7 @@ AVIOContext *avio_alloc_context(
                   int (*write_packet)(void *opaque, uint8_t *buf, int buf_size),
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
-    AVIOContext *s = av_mallocz(sizeof(AVIOContext));
+    AVIOContext *s = av_malloc(sizeof(AVIOContext));
     if (!s)
         return NULL;
     ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
@@ -821,6 +823,60 @@ int ff_get_line(AVIOContext *s, char *buf, int maxlen)
     return i;
 }
 
+int ff_get_chomp_line(AVIOContext *s, char *buf, int maxlen)
+{
+    int len = ff_get_line(s, buf, maxlen);
+    while (len > 0 && av_isspace(buf[len - 1]))
+        buf[--len] = '\0';
+    return len;
+}
+
+int64_t ff_read_line_to_bprint(AVIOContext *s, AVBPrint *bp)
+{
+    int len, end;
+    int64_t read = 0;
+    char tmp[1024];
+    char c;
+
+    do {
+        len = 0;
+        do {
+            c = avio_r8(s);
+            end = (c == '\r' || c == '\n' || c == '\0');
+            if (!end)
+                tmp[len++] = c;
+        } while (!end && len < sizeof(tmp));
+        av_bprint_append_data(bp, tmp, len);
+        read += len;
+    } while (!end);
+
+    if (c == '\r' && avio_r8(s) != '\n' && !avio_feof(s))
+        avio_skip(s, -1);
+
+    if (!c && s->error)
+        return s->error;
+
+    if (!c && !read && avio_feof(s))
+        return AVERROR_EOF;
+
+    return read;
+}
+
+int64_t ff_read_line_to_bprint_overwrite(AVIOContext *s, AVBPrint *bp)
+{
+    int64_t ret;
+
+    av_bprint_clear(bp);
+    ret = ff_read_line_to_bprint(s, bp);
+    if (ret < 0)
+        return ret;
+
+    if (!av_bprint_is_complete(bp))
+        return AVERROR(ENOMEM);
+
+    return bp->len;
+}
+
 int avio_get_str(AVIOContext *s, int maxlen, char *buf, int buflen)
 {
     int i;
@@ -1146,9 +1202,9 @@ int avio_close(AVIOContext *s)
     av_freep(&s->opaque);
     av_freep(&s->buffer);
     if (s->write_flag)
-        av_log(s, AV_LOG_DEBUG, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
+        av_log(s, AV_LOG_VERBOSE, "Statistics: %d seeks, %d writeouts\n", s->seek_count, s->writeout_count);
     else
-        av_log(s, AV_LOG_DEBUG, "Statistics: %"PRId64" bytes read, %d seeks\n", s->bytes_read, s->seek_count);
+        av_log(s, AV_LOG_VERBOSE, "Statistics: %"PRId64" bytes read, %d seeks\n", s->bytes_read, s->seek_count);
     av_opt_free(s);
 
     avio_context_free(&s);

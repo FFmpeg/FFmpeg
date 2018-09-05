@@ -31,5 +31,7 @@ extern const AVProfile ff_mpeg2_video_profiles[];
 extern const AVProfile ff_mpeg4_video_profiles[];
 extern const AVProfile ff_vc1_profiles[];
 extern const AVProfile ff_vp9_profiles[];
+extern const AVProfile ff_av1_profiles[];
+extern const AVProfile ff_sbc_profiles[];
 
 #endif /* AVCODEC_PROFILES_H */

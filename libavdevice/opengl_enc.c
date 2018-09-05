@@ -1070,7 +1070,7 @@ static av_cold int opengl_write_header(AVFormatContext *h)
         opengl->window_height = opengl->height;
 
     if (!opengl->window_title && !opengl->no_window)
-        opengl->window_title = av_strdup(h->filename);
+        opengl->window_title = av_strdup(h->url);
 
     if ((ret = opengl_create_window(h)))
         goto fail;

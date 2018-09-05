@@ -30,16 +30,14 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
+#include "colorspace.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-
-#define REFERENCE_WHITE 100.0f
 
 enum TonemapAlgorithm {
     TONEMAP_NONE,
@@ -51,11 +49,6 @@ enum TonemapAlgorithm {
     TONEMAP_MOBIUS,
     TONEMAP_MAX,
 };
-
-typedef struct LumaCoefficients {
-    double cr, cg, cb;
-} LumaCoefficients;
-
 
 static const struct LumaCoefficients luma_coefficients[AVCOL_SPC_NB] = {
     [AVCOL_SPC_FCC]        = { 0.30,   0.59,   0.11   },
@@ -75,7 +68,7 @@ typedef struct TonemapContext {
     double desat;
     double peak;
 
-    const LumaCoefficients *coeffs;
+    const struct LumaCoefficients *coeffs;
 } TonemapContext;
 
 static const enum AVPixelFormat pix_fmts[] = {
@@ -112,31 +105,6 @@ static av_cold int init(AVFilterContext *ctx)
         s->param = 1.0f;
 
     return 0;
-}
-
-static double determine_signal_peak(AVFrame *in)
-{
-    AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
-    double peak = 0;
-
-    if (sd) {
-        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
-        peak = clm->MaxCLL / REFERENCE_WHITE;
-    }
-
-    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
-    if (!peak && sd) {
-        AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
-        if (metadata->has_luminance)
-            peak = av_q2d(metadata->max_luminance) / REFERENCE_WHITE;
-    }
-
-    /* smpte2084 needs the side data above to work correctly
-     * if missing, assume that the original transfer was arib-std-b67 */
-    if (!peak)
-        peak = 12;
-
-    return peak;
 }
 
 static float hable(float in)
@@ -260,7 +228,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 
     /* read peak from side data if not passed in */
     if (!peak) {
-        peak = determine_signal_peak(in);
+        peak = ff_determine_signal_peak(in);
         av_log(s, AV_LOG_DEBUG, "Computed signal peak: %f\n", peak);
     }
 
@@ -296,6 +264,8 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     av_frame_free(&in);
+
+    ff_update_hdr_metadata(out, peak);
 
     return ff_filter_frame(outlink, out);
 }

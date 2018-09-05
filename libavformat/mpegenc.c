@@ -353,7 +353,8 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             if (!s->is_mpeg2 &&
                 (st->codecpar->codec_id == AV_CODEC_ID_AC3 ||
                  st->codecpar->codec_id == AV_CODEC_ID_DTS ||
-                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE))
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD))
                  av_log(ctx, AV_LOG_WARNING,
                         "%s in MPEG-1 system streams is not widely supported, "
                         "consider using the vob or the dvd muxer "
@@ -363,16 +364,30 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->id = ac3_id++;
             } else if (st->codecpar->codec_id == AV_CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE) {
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
+                       st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+                if (st->codecpar->bits_per_coded_sample != 16) {
+                    av_log(ctx, AV_LOG_ERROR, "Only 16 bit LPCM streams can be muxed.\n");
+                    goto fail;
+                }
                 stream->id = lpcm_id++;
                 for (j = 0; j < 4; j++) {
                     if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
                         break;
                 }
-                if (j == 4)
+                if (j == 4) {
+                    int sr;
+                    av_log(ctx, AV_LOG_ERROR, "Invalid sampling rate for PCM stream.\n");
+                    av_log(ctx, AV_LOG_INFO, "Allowed sampling rates:");
+                    for (sr = 0; sr < 4; sr++)
+                         av_log(ctx, AV_LOG_INFO, " %d", lpcm_freq_tab[sr]);
+                    av_log(ctx, AV_LOG_INFO, "\n");
                     goto fail;
-                if (st->codecpar->channels > 8)
-                    return -1;
+                }
+                if (st->codecpar->channels > 8) {
+                    av_log(ctx, AV_LOG_ERROR, "At most 8 channels allowed for LPCM streams.\n");
+                    goto fail;
+                }
                 stream->lpcm_header[0] = 0x0c;
                 stream->lpcm_header[1] = (st->codecpar->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
@@ -397,7 +412,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->max_buffer_size = 6 * 1024 + props->buffer_size / 8;
             else {
                 av_log(ctx, AV_LOG_WARNING,
-                       "VBV buffer size not set, using default size of 130KB\n"
+                       "VBV buffer size not set, using default size of 230KB\n"
                        "If you want the mpeg file to be compliant to some specification\n"
                        "Like DVD, VCD or others, make sure you set the correct buffer size\n");
                 // FIXME: this is probably too small as default
@@ -1150,6 +1165,19 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         return AVERROR(ENOMEM);
     pkt_desc->pts            = pts;
     pkt_desc->dts            = dts;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+        if (size < 3) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid packet size %d\n", size);
+            return AVERROR(EINVAL);
+        }
+
+        /* Skip first 3 bytes of packet data, which comprise PCM header
+           and will be written fresh by this muxer. */
+        buf += 3;
+        size -= 3;
+    }
+
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
     if (!stream->predecode_packet)

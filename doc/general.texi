@@ -17,6 +17,28 @@ for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to
 @command{./configure}.
 
+@section libdavs2
+
+FFmpeg can make use of the davs2 library for AVS2-P2/IEEE1857.4 video decoding.
+
+Go to @url{https://github.com/pkuvcl/davs2} and follow the instructions for
+installing the library. Then pass @code{--enable-libdavs2} to configure to
+enable it.
+
+@float NOTE
+libdavs2 is under the GNU Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
+details), you must upgrade FFmpeg's license to GPL in order to use it.
+@end float
+
+@section Alliance for Open Media libaom
+
+FFmpeg can make use of the libaom library for AV1 decoding.
+
+Go to @url{http://aomedia.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libaom} to configure to
+enable it.
+
 @section OpenJPEG
 
 FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to
@@ -38,9 +60,10 @@ upgrade FFmpeg's license to LGPL version 3 (or if you have enabled
 GPL components, GPL version 3) by passing @code{--enable-version3} to configure in
 order to use it.
 
-The Fraunhofer AAC library is licensed under a license incompatible to the GPL
-and is not known to be compatible to the LGPL. Therefore, you have to pass
-@code{--enable-nonfree} to configure to use it.
+The license of the Fraunhofer AAC library is incompatible with the GPL.
+Therefore, for GPL builds, you have to pass @code{--enable-nonfree} to
+configure in order to use it. To the best of our knowledge, it is
+compatible with the LGPL.
 @end float
 
 @subsection OpenCORE AMR
@@ -63,7 +86,7 @@ Then pass @code{--enable-libvo-amrwbenc} to configure to enable it.
 
 @subsection Fraunhofer AAC library
 
-FFmpeg can make use of the Fraunhofer AAC library for AAC encoding.
+FFmpeg can make use of the Fraunhofer AAC library for AAC decoding & encoding.
 
 Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
@@ -84,6 +107,24 @@ FFmpeg can make use of the TwoLAME library for MP2 encoding.
 Go to @url{http://www.twolame.org/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libtwolame} to configure to enable it.
+
+@section libcodec2 / codec2 general
+
+FFmpeg can make use of libcodec2 for codec2 encoding and decoding.
+There is currently no native decoder, so libcodec2 must be used for decoding.
+
+Go to @url{http://freedv.org/}, download "Codec 2 source archive".
+Build and install using CMake. Debian users can install the libcodec2-dev package instead.
+Once libcodec2 is installed you can pass @code{--enable-libcodec2} to configure to enable it.
+
+The easiest way to use codec2 is with .c2 files, since they contain the mode information required for decoding.
+To encode such a file, use a .c2 file extension and give the libcodec2 encoder the -mode option:
+@code{ffmpeg -i input.wav -mode 700C output.c2}.
+Playback is as simple as @code{ffplay output.c2}.
+For a list of supported modes, run @code{ffmpeg -h encoder=libcodec2}.
+Raw codec2 files are also supported.
+To make sense of them the mode in use needs to be specified as a format option:
+@code{ffmpeg -f codec2raw -mode 1300 -i input.raw output.wav}.
 
 @section libvpx
 
@@ -225,6 +266,18 @@ The dispatcher is open source and can be downloaded from
 with the @code{--enable-libmfx} option and @code{pkg-config} needs to be able to
 locate the dispatcher's @code{.pc} files.
 
+@section AMD VCE
+
+FFmpeg can use the AMD Advanced Media Framework library for accelerated H.264
+and HEVC encoding on VCE enabled hardware under Windows.
+
+To enable support you must obtain the AMF framework header files from
+@url{https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git}.
+
+Create an @code{AMF/} directory in the system include path.
+Copy the contents of @code{AMF/amf/public/include/} into that directory.
+Then configure FFmpeg with @code{--enable-amf}.
+
 
 @chapter Supported File Formats, Codecs or Features
 
@@ -290,6 +343,10 @@ library:
 @item BRSTM                     @tab   @tab X
     @tab Audio format used on the Nintendo Wii.
 @item BWF                       @tab X @tab X
+@item codec2 (raw)              @tab X @tab X
+    @tab Must be given -mode format option to decode correctly.
+@item codec2 (.c2 files)        @tab X @tab X
+    @tab Contains header with version and mode info, simplifying playback.
 @item CRI ADX                   @tab X @tab X
     @tab Audio-only format used in console video games.
 @item Discworld II BMV          @tab   @tab X
@@ -443,6 +500,7 @@ library:
 @item raw AMR-NB                @tab   @tab X
 @item raw AMR-WB                @tab   @tab X
 @item raw aptX                  @tab X @tab X
+@item raw aptX HD               @tab X @tab X
 @item raw Chinese AVS video     @tab X @tab X
 @item raw CRI ADX               @tab X @tab X
 @item raw Dirac                 @tab X @tab X
@@ -466,6 +524,7 @@ library:
 @item raw NULL                  @tab X @tab
 @item raw video                 @tab X @tab X
 @item raw id RoQ                @tab X @tab
+@item raw SBC                   @tab X @tab X
 @item raw Shorten               @tab   @tab X
 @item raw TAK                   @tab   @tab X
 @item raw TrueHD                @tab X @tab X
@@ -515,7 +574,7 @@ library:
 @item SAP                       @tab X @tab X
 @item SBG                       @tab   @tab X
 @item SDP                       @tab   @tab X
-@item Sega FILM/CPK             @tab   @tab X
+@item Sega FILM/CPK             @tab X @tab X
     @tab Used in many Sega Saturn console games.
 @item Silicon Graphics Movie    @tab   @tab X
 @item Sierra SOL                @tab   @tab X
@@ -683,6 +742,8 @@ following image formats are supported:
 @item Autodesk Animator Flic video  @tab     @tab  X
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
+@item AV1                    @tab     @tab  E
+    @tab Supported through external library libaom
 @item Avid 1:1 10-bit RGB Packer  @tab  X  @tab  X
     @tab fourcc: AVrp
 @item AVS (Audio Video Standard) video  @tab     @tab  X
@@ -756,6 +817,7 @@ following image formats are supported:
     @tab fourcc: G2M2, G2M3
 @item Go2Webinar             @tab     @tab  X
     @tab fourcc: G2M4
+@item Gremlin Digital Video  @tab     @tab  X
 @item H.261                  @tab  X  @tab  X
 @item H.263 / H.263-1996     @tab  X  @tab  X
 @item H.263+ / H.263-1998 / H.263 version 2  @tab  X  @tab  X
@@ -776,6 +838,7 @@ following image formats are supported:
     @tab IFF interleaved bitmap
 @item IFF ByteRun1           @tab     @tab  X
     @tab IFF run length encoded bitmap
+@item Infinity IMM4          @tab     @tab  X
 @item Intel H.263            @tab     @tab  X
 @item Intel Indeo 2          @tab     @tab  X
 @item Intel Indeo 3          @tab     @tab  X
@@ -997,13 +1060,18 @@ following image formats are supported:
     @tab QuickTime fourcc 'alac'
 @item aptX                   @tab  X  @tab  X
     @tab Used in Bluetooth A2DP
+@item aptX HD                @tab  X  @tab  X
+    @tab Used in Bluetooth A2DP
 @item ATRAC1                 @tab     @tab  X
 @item ATRAC3                 @tab     @tab  X
 @item ATRAC3+                @tab     @tab  X
+@item ATRAC9                 @tab     @tab  X
 @item Bink Audio             @tab     @tab  X
     @tab Used in Bink and Smacker files in many games.
 @item CELT                   @tab     @tab  E
     @tab decoding supported through external library libcelt
+@item codec2                 @tab  E  @tab  E
+    @tab en/decoding supported through external library libcodec2
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
 @item Digital Speech Standard - Standard Play mode (DSS SP) @tab     @tab  X
@@ -1102,6 +1170,8 @@ following image formats are supported:
     @tab Real low bitrate AC-3 codec
 @item RealAudio Lossless     @tab     @tab  X
 @item RealAudio SIPR / ACELP.NET @tab     @tab  X
+@item SBC (low-complexity subband codec) @tab  X  @tab  X
+    @tab Used in Bluetooth A2DP
 @item Shorten                @tab     @tab  X
 @item Sierra VMD audio       @tab     @tab  X
     @tab Used in Sierra VMD files.

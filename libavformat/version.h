@@ -32,7 +32,7 @@
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
 // Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  58
-#define LIBAVFORMAT_VERSION_MINOR   3
+#define LIBAVFORMAT_VERSION_MINOR  18
 #define LIBAVFORMAT_VERSION_MICRO 100
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
@@ -70,6 +70,9 @@
 #ifndef FF_API_HLS_WRAP
 #define FF_API_HLS_WRAP                 (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_HLS_USE_LOCALTIME
+#define FF_API_HLS_USE_LOCALTIME        (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
 #ifndef FF_API_LAVF_KEEPSIDE_FLAG
 #define FF_API_LAVF_KEEPSIDE_FLAG       (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
@@ -81,6 +84,24 @@
 #endif
 #ifndef FF_API_OLD_AVIO_EOF_0
 #define FF_API_OLD_AVIO_EOF_0           (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_LAVF_FFSERVER
+#define FF_API_LAVF_FFSERVER            (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_FORMAT_FILENAME
+#define FF_API_FORMAT_FILENAME          (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_OLD_RTSP_OPTIONS
+#define FF_API_OLD_RTSP_OPTIONS         (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_NEXT
+#define FF_API_NEXT                     (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_DASH_MIN_SEG_DURATION
+#define FF_API_DASH_MIN_SEG_DURATION    (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
+#ifndef FF_API_LAVF_MP4A_LATM
+#define FF_API_LAVF_MP4A_LATM           (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
 
 

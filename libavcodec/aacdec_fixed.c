@@ -385,7 +385,7 @@ static void apply_dependent_coupling_fixed(AACContext *ac,
                         for (k = offsets[i]; k < offsets[i + 1]; k++) {
                             tmp = (int)(((int64_t)src[group * 128 + k] * c + \
                                        (int64_t)0x1000000000) >> 37);
-                            dest[group * 128 + k] += (tmp + round) >> shift;
+                            dest[group * 128 + k] += (tmp + (int64_t)round) >> shift;
                         }
                     }
                 }
@@ -417,7 +417,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
     int i, c, shift, round, tmp;
     const int gain = cce->coup.gain[index][0];
     const int *src = cce->ch[0].ret;
-    int *dest = target->ret;
+    unsigned int *dest = target->ret;
     const int len = 1024 << (ac->oc[1].m4ac.sbr == 1);
 
     c = cce_scale_fixed[gain & 7];
@@ -436,7 +436,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
     else {
       for (i = 0; i < len; i++) {
           tmp = (int)(((int64_t)src[i] * c + (int64_t)0x1000000000) >> 37);
-          dest[i] += tmp * (1 << shift);
+          dest[i] += tmp * (1U << shift);
       }
     }
 }

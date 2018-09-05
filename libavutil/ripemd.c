@@ -510,7 +510,11 @@ av_cold int av_ripemd_init(AVRIPEMD *ctx, int bits)
     return 0;
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_ripemd_update(AVRIPEMD* ctx, const uint8_t* data, unsigned int len)
+#else
+void av_ripemd_update(AVRIPEMD* ctx, const uint8_t* data, size_t len)
+#endif
 {
     unsigned int i, j;
 

@@ -69,6 +69,7 @@ typedef struct CDGraphicsContext {
     int hscroll;
     int vscroll;
     int transparency;
+    int cleared;
 } CDGraphicsContext;
 
 static av_cold int cdg_decode_init(AVCodecContext *avctx)
@@ -287,9 +288,10 @@ static int cdg_decode_frame(AVCodecContext *avctx,
 
     if ((ret = ff_reget_buffer(avctx, cc->frame)) < 0)
         return ret;
-    if (!avctx->frame_number) {
+    if (!cc->cleared) {
         memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);
         memset(cc->frame->data[1], 0, AVPALETTE_SIZE);
+        cc->cleared = 1;
     }
 
     command = bytestream2_get_byte(&gb);

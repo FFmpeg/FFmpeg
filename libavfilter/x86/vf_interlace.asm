@@ -39,6 +39,20 @@ SECTION .text
 
     pcmpeq%1 m6, m6
 
+    test hq, mmsize
+    je .loop
+
+    ;process 1 * mmsize
+    movu m0, [mrefq+hq]
+    pavg%1 m0, [prefq+hq]
+    pxor m0, m6
+    pxor m2, m6, [srcq+hq]
+    pavg%1 m0, m2
+    pxor m0, m6
+    mova [dstq+hq], m0
+    add hq, mmsize
+    jge .end
+
 .loop:
     movu m0, [mrefq+hq]
     movu m1, [mrefq+hq+mmsize]
@@ -57,7 +71,9 @@ SECTION .text
 
     add hq, 2*mmsize
     jl .loop
-REP_RET
+
+.end:
+    REP_RET
 %endmacro
 
 %macro LOWPASS_LINE 0
@@ -200,6 +216,11 @@ LOWPASS_LINE
 
 INIT_XMM avx
 LOWPASS_LINE
+
+%if HAVE_AVX2_EXTERNAL
+INIT_YMM avx2
+LOWPASS_LINE
+%endif
 
 INIT_XMM sse2
 LOWPASS_LINE_COMPLEX

@@ -24,17 +24,33 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/opt.h"
+#include "libavutil/mastering_display_metadata.h"
 
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h265.h"
 #include "hevc.h"
+#include "hevc_sei.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "vaapi_encode.h"
 
+enum {
+    SEI_MASTERING_DISPLAY       = 0x08,
+    SEI_CONTENT_LIGHT_LEVEL     = 0x10,
+};
 
 typedef struct VAAPIEncodeH265Context {
+    VAAPIEncodeContext common;
+
+    // User options.
+    int qp;
+    int aud;
+    int profile;
+    int level;
+    int sei;
+
+    // Derived settings.
     unsigned int ctu_width;
     unsigned int ctu_height;
 
@@ -42,12 +58,7 @@ typedef struct VAAPIEncodeH265Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
-    H265RawAUD aud;
-    H265RawVPS vps;
-    H265RawSPS sps;
-    H265RawPPS pps;
-    H265RawSlice slice;
-
+    // Stream state.
     int64_t last_idr_frame;
     int pic_order_cnt;
 
@@ -55,25 +66,29 @@ typedef struct VAAPIEncodeH265Context {
     int slice_type;
     int pic_type;
 
+    // Writer structures.
+    H265RawAUD   raw_aud;
+    H265RawVPS   raw_vps;
+    H265RawSPS   raw_sps;
+    H265RawPPS   raw_pps;
+    H265RawSEI   raw_sei;
+    H265RawSlice raw_slice;
+
+    H265RawSEIMasteringDisplayColourVolume sei_mastering_display;
+    H265RawSEIContentLightLevelInfo        sei_content_light_level;
+
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
     int aud_needed;
+    int sei_needed;
 } VAAPIEncodeH265Context;
-
-typedef struct VAAPIEncodeH265Options {
-    int qp;
-    int aud;
-    int profile;
-    int level;
-} VAAPIEncodeH265Options;
 
 
 static int vaapi_encode_h265_write_access_unit(AVCodecContext *avctx,
                                                char *data, size_t *data_len,
                                                CodedBitstreamFragment *au)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
     int err;
 
     err = ff_cbs_write_fragment_data(priv->cbc, au);
@@ -99,13 +114,12 @@ static int vaapi_encode_h265_add_nal(AVCodecContext *avctx,
                                      CodedBitstreamFragment *au,
                                      void *nal_unit)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
     H265RawNALUnitHeader *header = nal_unit;
     int err;
 
     err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
-                                     header->nal_unit_type, nal_unit);
+                                     header->nal_unit_type, nal_unit, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
                "type = %d.\n", header->nal_unit_type);
@@ -118,27 +132,26 @@ static int vaapi_encode_h265_add_nal(AVCodecContext *avctx,
 static int vaapi_encode_h265_write_sequence_header(AVCodecContext *avctx,
                                                    char *data, size_t *data_len)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
     if (priv->aud_needed) {
-        err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+        err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_aud);
         if (err < 0)
             goto fail;
         priv->aud_needed = 0;
     }
 
-    err = vaapi_encode_h265_add_nal(avctx, au, &priv->vps);
+    err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_vps);
     if (err < 0)
         goto fail;
 
-    err = vaapi_encode_h265_add_nal(avctx, au, &priv->sps);
+    err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_sps);
     if (err < 0)
         goto fail;
 
-    err = vaapi_encode_h265_add_nal(avctx, au, &priv->pps);
+    err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_pps);
     if (err < 0)
         goto fail;
 
@@ -153,19 +166,18 @@ static int vaapi_encode_h265_write_slice_header(AVCodecContext *avctx,
                                                 VAAPIEncodeSlice *slice,
                                                 char *data, size_t *data_len)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
     if (priv->aud_needed) {
-        err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+        err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_aud);
         if (err < 0)
             goto fail;
         priv->aud_needed = 0;
     }
 
-    err = vaapi_encode_h265_add_nal(avctx, au, &priv->slice);
+    err = vaapi_encode_h265_add_nal(avctx, au, &priv->raw_slice);
     if (err < 0)
         goto fail;
 
@@ -175,13 +187,79 @@ fail:
     return err;
 }
 
+static int vaapi_encode_h265_write_extra_header(AVCodecContext *avctx,
+                                                VAAPIEncodePicture *pic,
+                                                int index, int *type,
+                                                char *data, size_t *data_len)
+{
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
+    CodedBitstreamFragment   *au = &priv->current_access_unit;
+    int err, i;
+
+    if (priv->sei_needed) {
+        H265RawSEI *sei = &priv->raw_sei;
+
+        if (priv->aud_needed) {
+            err = vaapi_encode_h265_add_nal(avctx, au, &priv->aud);
+            if (err < 0)
+                goto fail;
+            priv->aud_needed = 0;
+        }
+
+        *sei = (H265RawSEI) {
+            .nal_unit_header = {
+                .nal_unit_type         = HEVC_NAL_SEI_PREFIX,
+                .nuh_layer_id          = 0,
+                .nuh_temporal_id_plus1 = 1,
+            },
+        };
+
+        i = 0;
+
+        if (priv->sei_needed & SEI_MASTERING_DISPLAY) {
+            sei->payload[i].payload_type = HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO;
+            sei->payload[i].payload.mastering_display = priv->sei_mastering_display;
+            ++i;
+        }
+
+        if (priv->sei_needed & SEI_CONTENT_LIGHT_LEVEL) {
+            sei->payload[i].payload_type = HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO;
+            sei->payload[i].payload.content_light_level = priv->sei_content_light_level;
+            ++i;
+        }
+
+        sei->payload_count = i;
+        av_assert0(sei->payload_count > 0);
+
+        err = vaapi_encode_h265_add_nal(avctx, au, sei);
+        if (err < 0)
+            goto fail;
+        priv->sei_needed = 0;
+
+        err = vaapi_encode_h265_write_access_unit(avctx, data, data_len, au);
+        if (err < 0)
+            goto fail;
+
+        ff_cbs_fragment_uninit(priv->cbc, au);
+
+        *type = VAEncPackedHeaderRawData;
+        return 0;
+    } else {
+        return AVERROR_EOF;
+    }
+
+fail:
+    ff_cbs_fragment_uninit(priv->cbc, au);
+    return err;
+}
+
 static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 {
     VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context           *priv = ctx->priv_data;
-    H265RawVPS                        *vps = &priv->vps;
-    H265RawSPS                        *sps = &priv->sps;
-    H265RawPPS                        *pps = &priv->pps;
+    VAAPIEncodeH265Context           *priv = avctx->priv_data;
+    H265RawVPS                        *vps = &priv->raw_vps;
+    H265RawSPS                        *sps = &priv->raw_sps;
+    H265RawPPS                        *pps = &priv->raw_pps;
     H265RawVUI                        *vui = &sps->vui;
     VAEncSequenceParameterBufferHEVC *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferHEVC  *vpic = ctx->codec_picture_params;
@@ -537,9 +615,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
                                                  VAAPIEncodePicture *pic)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context          *priv = ctx->priv_data;
-    VAAPIEncodeH265Options           *opt = ctx->codec_options;
+    VAAPIEncodeH265Context          *priv = avctx->priv_data;
     VAEncPictureParameterBufferHEVC *vpic = pic->codec_picture_params;
     int i;
 
@@ -575,16 +651,90 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
     }
     priv->pic_order_cnt = pic->display_order - priv->last_idr_frame;
 
-    if (opt->aud) {
+    if (priv->aud) {
         priv->aud_needed = 1;
-        priv->aud.nal_unit_header = (H265RawNALUnitHeader) {
-            .nal_unit_type         = HEVC_NAL_AUD,
-            .nuh_layer_id          = 0,
-            .nuh_temporal_id_plus1 = 1,
+        priv->raw_aud = (H265RawAUD) {
+            .nal_unit_header = {
+                .nal_unit_type         = HEVC_NAL_AUD,
+                .nuh_layer_id          = 0,
+                .nuh_temporal_id_plus1 = 1,
+            },
+            .pic_type = priv->pic_type,
         };
-        priv->aud.pic_type = priv->pic_type;
     } else {
         priv->aud_needed = 0;
+    }
+
+    priv->sei_needed = 0;
+
+    // Only look for the metadata on I/IDR frame on the output. We
+    // may force an IDR frame on the output where the medadata gets
+    // changed on the input frame.
+    if ((priv->sei & SEI_MASTERING_DISPLAY) &&
+        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+
+        if (sd) {
+            AVMasteringDisplayMetadata *mdm =
+                (AVMasteringDisplayMetadata *)sd->data;
+
+            // SEI is needed when both the primaries and luminance are set
+            if (mdm->has_primaries && mdm->has_luminance) {
+                H265RawSEIMasteringDisplayColourVolume *mdcv =
+                    &priv->sei_mastering_display;
+                const int mapping[3] = {1, 2, 0};
+                const int chroma_den = 50000;
+                const int luma_den   = 10000;
+
+                for (i = 0; i < 3; i++) {
+                    const int j = mapping[i];
+                    mdcv->display_primaries_x[i] =
+                        FFMIN(lrint(chroma_den *
+                                    av_q2d(mdm->display_primaries[j][0])),
+                              chroma_den);
+                    mdcv->display_primaries_y[i] =
+                        FFMIN(lrint(chroma_den *
+                                    av_q2d(mdm->display_primaries[j][1])),
+                              chroma_den);
+                }
+
+                mdcv->white_point_x =
+                    FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[0])),
+                          chroma_den);
+                mdcv->white_point_y =
+                    FFMIN(lrint(chroma_den * av_q2d(mdm->white_point[1])),
+                          chroma_den);
+
+                mdcv->max_display_mastering_luminance =
+                    lrint(luma_den * av_q2d(mdm->max_luminance));
+                mdcv->min_display_mastering_luminance =
+                    FFMIN(lrint(luma_den * av_q2d(mdm->min_luminance)),
+                          mdcv->max_display_mastering_luminance);
+
+                priv->sei_needed |= SEI_MASTERING_DISPLAY;
+            }
+        }
+    }
+
+    if ((priv->sei & SEI_CONTENT_LIGHT_LEVEL) &&
+        (pic->type == PICTURE_TYPE_I || pic->type == PICTURE_TYPE_IDR)) {
+        AVFrameSideData *sd =
+            av_frame_get_side_data(pic->input_image,
+                                   AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+        if (sd) {
+            AVContentLightMetadata *clm =
+                (AVContentLightMetadata *)sd->data;
+            H265RawSEIContentLightLevelInfo *clli =
+                &priv->sei_content_light_level;
+
+            clli->max_content_light_level     = FFMIN(clm->MaxCLL,  65535);
+            clli->max_pic_average_light_level = FFMIN(clm->MaxFALL, 65535);
+
+            priv->sei_needed |= SEI_CONTENT_LIGHT_LEVEL;
+        }
     }
 
     vpic->decoded_curr_pic = (VAPictureHEVC) {
@@ -652,10 +802,10 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
                                                VAAPIEncodeSlice *slice)
 {
     VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context           *priv = ctx->priv_data;
-    const H265RawSPS                  *sps = &priv->sps;
-    const H265RawPPS                  *pps = &priv->pps;
-    H265RawSliceHeader                 *sh = &priv->slice.header;
+    VAAPIEncodeH265Context           *priv = avctx->priv_data;
+    const H265RawSPS                  *sps = &priv->raw_sps;
+    const H265RawPPS                  *pps = &priv->raw_pps;
+    H265RawSliceHeader                 *sh = &priv->raw_slice.header;
     VAEncPictureParameterBufferHEVC  *vpic = pic->codec_picture_params;
     VAEncSliceParameterBufferHEVC  *vslice = slice->codec_slice_params;
     int i;
@@ -767,8 +917,6 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
         .num_ref_idx_l0_active_minus1 = sh->num_ref_idx_l0_active_minus1,
         .num_ref_idx_l1_active_minus1 = sh->num_ref_idx_l1_active_minus1,
-        .ref_pic_list0[0]             = vpic->reference_frames[0],
-        .ref_pic_list1[0]             = vpic->reference_frames[1],
 
         .luma_log2_weight_denom         = sh->luma_log2_weight_denom,
         .delta_chroma_log2_weight_denom = sh->delta_chroma_log2_weight_denom,
@@ -802,6 +950,25 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         },
     };
 
+    for (i = 0; i < FF_ARRAY_ELEMS(vslice->ref_pic_list0); i++) {
+        vslice->ref_pic_list0[i].picture_id = VA_INVALID_ID;
+        vslice->ref_pic_list0[i].flags      = VA_PICTURE_HEVC_INVALID;
+        vslice->ref_pic_list1[i].picture_id = VA_INVALID_ID;
+        vslice->ref_pic_list1[i].flags      = VA_PICTURE_HEVC_INVALID;
+    }
+
+    av_assert0(pic->nb_refs <= 2);
+    if (pic->nb_refs >= 1) {
+        // Backward reference for P- or B-frame.
+        av_assert0(pic->type == PICTURE_TYPE_P ||
+                   pic->type == PICTURE_TYPE_B);
+        vslice->ref_pic_list0[0] = vpic->reference_frames[0];
+    }
+    if (pic->nb_refs >= 2) {
+        // Forward reference for B-frame.
+        av_assert0(pic->type == PICTURE_TYPE_B);
+        vslice->ref_pic_list1[0] = vpic->reference_frames[1];
+    }
 
     return 0;
 }
@@ -809,8 +976,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
-    VAAPIEncodeH265Options  *opt = ctx->codec_options;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
     int err;
 
     err = ff_cbs_init(&priv->cbc, AV_CODEC_ID_HEVC, avctx);
@@ -825,7 +991,7 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
            ctx->surface_height, priv->ctu_width, priv->ctu_height);
 
     if (ctx->va_rc_mode == VA_RC_CQP) {
-        priv->fixed_qp_p = opt->qp;
+        priv->fixed_qp_p = priv->qp;
         if (avctx->i_quant_factor > 0.0)
             priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
                                         avctx->i_quant_offset) + 0.5);
@@ -860,8 +1026,6 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
-    .priv_data_size        = sizeof(VAAPIEncodeH265Context),
-
     .configure             = &vaapi_encode_h265_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferHEVC),
@@ -878,20 +1042,21 @@ static const VAAPIEncodeType vaapi_encode_type_h265 = {
 
     .slice_header_type     = VAEncPackedHeaderHEVC_Slice,
     .write_slice_header    = &vaapi_encode_h265_write_slice_header,
+
+    .write_extra_header    = &vaapi_encode_h265_write_extra_header,
 };
 
 static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext     *ctx = avctx->priv_data;
-    VAAPIEncodeH265Options *opt =
-        (VAAPIEncodeH265Options*)ctx->codec_options_data;
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
 
     ctx->codec = &vaapi_encode_type_h265;
 
     if (avctx->profile == FF_PROFILE_UNKNOWN)
-        avctx->profile = opt->profile;
+        avctx->profile = priv->profile;
     if (avctx->level == FF_LEVEL_UNKNOWN)
-        avctx->level = opt->level;
+        avctx->level = priv->level;
 
     switch (avctx->profile) {
     case FF_PROFILE_HEVC_MAIN:
@@ -926,7 +1091,8 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 
     ctx->va_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
-        VA_ENC_PACKED_HEADER_SLICE;     // Slice headers.
+        VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
+        VA_ENC_PACKED_HEADER_MISC;      // SEI
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);
@@ -936,17 +1102,14 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 
 static av_cold int vaapi_encode_h265_close(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodeH265Context *priv = ctx->priv_data;
+    VAAPIEncodeH265Context *priv = avctx->priv_data;
 
-    if (priv)
-        ff_cbs_close(&priv->cbc);
+    ff_cbs_close(&priv->cbc);
 
     return ff_vaapi_encode_close(avctx);
 }
 
-#define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \
-                   offsetof(VAAPIEncodeH265Options, x))
+#define OFFSET(x) offsetof(VAAPIEncodeH265Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h265_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
@@ -986,6 +1149,17 @@ static const AVOption vaapi_encode_h265_options[] = {
     { LEVEL("6.2", 186) },
 #undef LEVEL
 
+    { "sei", "Set SEI to include",
+      OFFSET(sei), AV_OPT_TYPE_FLAGS,
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
+      0, INT_MAX, FLAGS, "sei" },
+    { "hdr",
+      "Include HDR metadata for mastering display colour volume "
+      "and content light level information",
+      0, AV_OPT_TYPE_CONST,
+      { .i64 = SEI_MASTERING_DISPLAY | SEI_CONTENT_LIGHT_LEVEL },
+      INT_MIN, INT_MAX, FLAGS, "sei" },
+
     { NULL },
 };
 
@@ -1012,8 +1186,7 @@ AVCodec ff_hevc_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("H.265/HEVC (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
-    .priv_data_size = (sizeof(VAAPIEncodeContext) +
-                       sizeof(VAAPIEncodeH265Options)),
+    .priv_data_size = sizeof(VAAPIEncodeH265Context),
     .init           = &vaapi_encode_h265_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_h265_close,

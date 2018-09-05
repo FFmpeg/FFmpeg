@@ -62,12 +62,23 @@ typedef struct KLVPacket {
     UID key;
     int64_t offset;
     uint64_t length;
+    int64_t next_klv;
 } KLVPacket;
+
+typedef enum {
+    NormalWrap = 0,
+    D10D11Wrap,
+    RawAWrap,
+    RawVWrap
+} MXFWrappingIndicatorType;
 
 typedef struct MXFCodecUL {
     UID uid;
     unsigned matching_len;
     int id;
+    const char *desc;
+    unsigned wrapping_indicator_pos;
+    MXFWrappingIndicatorType wrapping_indicator_type;
 } MXFCodecUL;
 
 typedef struct {

@@ -47,6 +47,19 @@ static const uint8_t vaapi_encode_h264_sei_identifier_uuid[16] = {
 };
 
 typedef struct VAAPIEncodeH264Context {
+    VAAPIEncodeContext common;
+
+    // User options.
+    int qp;
+    int quality;
+    int low_power;
+    int coder;
+    int aud;
+    int sei;
+    int profile;
+    int level;
+
+    // Derived settings.
     int mb_width;
     int mb_height;
 
@@ -54,18 +67,7 @@ typedef struct VAAPIEncodeH264Context {
     int fixed_qp_p;
     int fixed_qp_b;
 
-    H264RawAUD aud;
-    H264RawSPS sps;
-    H264RawPPS pps;
-    H264RawSEI sei;
-    H264RawSlice slice;
-
-    H264RawSEIBufferingPeriod buffering_period;
-    H264RawSEIPicTiming pic_timing;
-    H264RawSEIRecoveryPoint recovery_point;
-    H264RawSEIUserDataUnregistered identifier;
-    char *identifier_string;
-
+    // Stream state.
     int frame_num;
     int pic_order_cnt;
     int next_frame_num;
@@ -78,32 +80,33 @@ typedef struct VAAPIEncodeH264Context {
     int cpb_delay;
     int dpb_delay;
 
+    // Writer structures.
     CodedBitstreamContext *cbc;
     CodedBitstreamFragment current_access_unit;
+
+    H264RawAUD   raw_aud;
+    H264RawSPS   raw_sps;
+    H264RawPPS   raw_pps;
+    H264RawSEI   raw_sei;
+    H264RawSlice raw_slice;
+
+    H264RawSEIBufferingPeriod      sei_buffering_period;
+    H264RawSEIPicTiming            sei_pic_timing;
+    H264RawSEIRecoveryPoint        sei_recovery_point;
+    H264RawSEIUserDataUnregistered sei_identifier;
+    char                          *sei_identifier_string;
+
     int aud_needed;
     int sei_needed;
     int sei_cbr_workaround_needed;
 } VAAPIEncodeH264Context;
-
-typedef struct VAAPIEncodeH264Options {
-    int qp;
-    int quality;
-    int low_power;
-    // Entropy encoder type.
-    int coder;
-    int aud;
-    int sei;
-    int profile;
-    int level;
-} VAAPIEncodeH264Options;
 
 
 static int vaapi_encode_h264_write_access_unit(AVCodecContext *avctx,
                                                char *data, size_t *data_len,
                                                CodedBitstreamFragment *au)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     int err;
 
     err = ff_cbs_write_fragment_data(priv->cbc, au);
@@ -129,13 +132,12 @@ static int vaapi_encode_h264_add_nal(AVCodecContext *avctx,
                                      CodedBitstreamFragment *au,
                                      void *nal_unit)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     H264RawNALUnitHeader *header = nal_unit;
     int err;
 
     err = ff_cbs_insert_unit_content(priv->cbc, au, -1,
-                                     header->nal_unit_type, nal_unit);
+                                     header->nal_unit_type, nal_unit, NULL);
     if (err < 0) {
         av_log(avctx, AV_LOG_ERROR, "Failed to add NAL unit: "
                "type = %d.\n", header->nal_unit_type);
@@ -148,23 +150,22 @@ static int vaapi_encode_h264_add_nal(AVCodecContext *avctx,
 static int vaapi_encode_h264_write_sequence_header(AVCodecContext *avctx,
                                                    char *data, size_t *data_len)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
     if (priv->aud_needed) {
-        err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+        err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_aud);
         if (err < 0)
             goto fail;
         priv->aud_needed = 0;
     }
 
-    err = vaapi_encode_h264_add_nal(avctx, au, &priv->sps);
+    err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_sps);
     if (err < 0)
         goto fail;
 
-    err = vaapi_encode_h264_add_nal(avctx, au, &priv->pps);
+    err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_pps);
     if (err < 0)
         goto fail;
 
@@ -179,19 +180,18 @@ static int vaapi_encode_h264_write_slice_header(AVCodecContext *avctx,
                                                 VAAPIEncodeSlice *slice,
                                                 char *data, size_t *data_len)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err;
 
     if (priv->aud_needed) {
-        err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+        err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_aud);
         if (err < 0)
             goto fail;
         priv->aud_needed = 0;
     }
 
-    err = vaapi_encode_h264_add_nal(avctx, au, &priv->slice);
+    err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_slice);
     if (err < 0)
         goto fail;
 
@@ -206,49 +206,53 @@ static int vaapi_encode_h264_write_extra_header(AVCodecContext *avctx,
                                                 int index, int *type,
                                                 char *data, size_t *data_len)
 {
-    VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
-    VAAPIEncodeH264Options  *opt = ctx->codec_options;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     CodedBitstreamFragment   *au = &priv->current_access_unit;
     int err, i;
 
     if (priv->sei_needed) {
+        H264RawSEI *sei = &priv->raw_sei;
+
         if (priv->aud_needed) {
-            err = vaapi_encode_h264_add_nal(avctx, au, &priv->aud);
+            err = vaapi_encode_h264_add_nal(avctx, au, &priv->raw_aud);
             if (err < 0)
                 goto fail;
             priv->aud_needed = 0;
         }
 
-        memset(&priv->sei, 0, sizeof(priv->sei));
-        priv->sei.nal_unit_header.nal_unit_type = H264_NAL_SEI;
+        *sei = (H264RawSEI) {
+            .nal_unit_header = {
+                .nal_unit_type = H264_NAL_SEI,
+            },
+        };
 
         i = 0;
-        if (pic->encode_order == 0 && opt->sei & SEI_IDENTIFIER) {
-            priv->sei.payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
-            priv->sei.payload[i].payload.user_data_unregistered = priv->identifier;
+
+        if (priv->sei_needed & SEI_IDENTIFIER) {
+            sei->payload[i].payload_type = H264_SEI_TYPE_USER_DATA_UNREGISTERED;
+            sei->payload[i].payload.user_data_unregistered = priv->sei_identifier;
             ++i;
         }
-        if (opt->sei & SEI_TIMING) {
+        if (priv->sei_needed & SEI_TIMING) {
             if (pic->type == PICTURE_TYPE_IDR) {
-                priv->sei.payload[i].payload_type = H264_SEI_TYPE_BUFFERING_PERIOD;
-                priv->sei.payload[i].payload.buffering_period = priv->buffering_period;
+                sei->payload[i].payload_type = H264_SEI_TYPE_BUFFERING_PERIOD;
+                sei->payload[i].payload.buffering_period = priv->sei_buffering_period;
                 ++i;
             }
-            priv->sei.payload[i].payload_type = H264_SEI_TYPE_PIC_TIMING;
-            priv->sei.payload[i].payload.pic_timing = priv->pic_timing;
+            sei->payload[i].payload_type = H264_SEI_TYPE_PIC_TIMING;
+            sei->payload[i].payload.pic_timing = priv->sei_pic_timing;
             ++i;
         }
-        if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
-            priv->sei.payload[i].payload_type = H264_SEI_TYPE_RECOVERY_POINT;
-            priv->sei.payload[i].payload.recovery_point = priv->recovery_point;
+        if (priv->sei_needed & SEI_RECOVERY_POINT) {
+            sei->payload[i].payload_type = H264_SEI_TYPE_RECOVERY_POINT;
+            sei->payload[i].payload.recovery_point = priv->sei_recovery_point;
             ++i;
         }
 
-        priv->sei.payload_count = i;
-        av_assert0(priv->sei.payload_count > 0);
+        sei->payload_count = i;
+        av_assert0(sei->payload_count > 0);
 
-        err = vaapi_encode_h264_add_nal(avctx, au, &priv->sei);
+        err = vaapi_encode_h264_add_nal(avctx, au, sei);
         if (err < 0)
             goto fail;
         priv->sei_needed = 0;
@@ -286,10 +290,9 @@ fail:
 static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 {
     VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context           *priv = ctx->priv_data;
-    VAAPIEncodeH264Options            *opt = ctx->codec_options;
-    H264RawSPS                        *sps = &priv->sps;
-    H264RawPPS                        *pps = &priv->pps;
+    VAAPIEncodeH264Context           *priv = avctx->priv_data;
+    H264RawSPS                        *sps = &priv->raw_sps;
+    H264RawPPS                        *pps = &priv->raw_pps;
     VAEncSequenceParameterBufferH264 *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferH264  *vpic = ctx->codec_picture_params;
 
@@ -412,8 +415,9 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         sps->vui.fixed_frame_rate_flag = 0;
     }
 
-    if (opt->sei & SEI_TIMING) {
+    if (priv->sei & SEI_TIMING) {
         H264RawHRD *hrd = &sps->vui.nal_hrd_parameters;
+        H264RawSEIBufferingPeriod *bp = &priv->sei_buffering_period;
 
         sps->vui.nal_hrd_parameters_present_flag = 1;
 
@@ -440,13 +444,13 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         hrd->dpb_output_delay_length_minus1          = 7;
         hrd->time_offset_length                      = 0;
 
-        priv->buffering_period.seq_parameter_set_id = sps->seq_parameter_set_id;
+        bp->seq_parameter_set_id = sps->seq_parameter_set_id;
 
         // This calculation can easily overflow 32 bits.
-        priv->buffering_period.nal.initial_cpb_removal_delay[0] = 90000 *
+        bp->nal.initial_cpb_removal_delay[0] = 90000 *
             (uint64_t)ctx->hrd_params.hrd.initial_buffer_fullness /
             ctx->hrd_params.hrd.buffer_size;
-        priv->buffering_period.nal.initial_cpb_removal_delay_offset[0] = 0;
+        bp->nal.initial_cpb_removal_delay_offset[0] = 0;
     } else {
         sps->vui.nal_hrd_parameters_present_flag = 0;
         sps->vui.low_delay_hrd_flag = 1 - sps->vui.fixed_frame_rate_flag;
@@ -469,7 +473,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         !(sps->profile_idc == FF_PROFILE_H264_BASELINE ||
           sps->profile_idc == FF_PROFILE_H264_EXTENDED ||
           sps->profile_idc == FF_PROFILE_H264_CAVLC_444);
-    if (!opt->coder && pps->entropy_coding_mode_flag)
+    if (!priv->coder && pps->entropy_coding_mode_flag)
         pps->entropy_coding_mode_flag = 0;
 
     pps->num_ref_idx_l0_default_active_minus1 = 0;
@@ -577,9 +581,8 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
                                                  VAAPIEncodePicture *pic)
 {
     VAAPIEncodeContext               *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context          *priv = ctx->priv_data;
-    VAAPIEncodeH264Options           *opt = ctx->codec_options;
-    H264RawSPS                       *sps = &priv->sps;
+    VAAPIEncodeH264Context          *priv = avctx->priv_data;
+    H264RawSPS                       *sps = &priv->raw_sps;
     VAEncPictureParameterBufferH264 *vpic = pic->codec_picture_params;
     int i;
 
@@ -620,36 +623,44 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     priv->pic_order_cnt = pic->display_order - priv->last_idr_frame;
     priv->dpb_delay     = pic->display_order - pic->encode_order + 1;
 
-    if (opt->aud) {
+    if (priv->aud) {
         priv->aud_needed = 1;
-        priv->aud.nal_unit_header.nal_unit_type = H264_NAL_AUD;
-        priv->aud.primary_pic_type = priv->primary_pic_type;
+        priv->raw_aud = (H264RawAUD) {
+            .nal_unit_header = {
+                .nal_unit_type = H264_NAL_AUD,
+            },
+            .primary_pic_type  = priv->primary_pic_type,
+        };
     } else {
         priv->aud_needed = 0;
     }
 
-    if (opt->sei & SEI_IDENTIFIER && pic->encode_order == 0)
-        priv->sei_needed = 1;
+    priv->sei_needed = 0;
+
+    if (priv->sei & SEI_IDENTIFIER && pic->encode_order == 0)
+        priv->sei_needed |= SEI_IDENTIFIER;
 #if !CONFIG_VAAPI_1
     if (ctx->va_rc_mode == VA_RC_CBR)
         priv->sei_cbr_workaround_needed = 1;
 #endif
 
-    if (opt->sei & SEI_TIMING) {
-        memset(&priv->pic_timing, 0, sizeof(priv->pic_timing));
+    if (priv->sei & SEI_TIMING) {
+        priv->sei_pic_timing = (H264RawSEIPicTiming) {
+            .cpb_removal_delay = 2 * priv->cpb_delay,
+            .dpb_output_delay  = 2 * priv->dpb_delay,
+        };
 
-        priv->pic_timing.cpb_removal_delay = 2 * priv->cpb_delay;
-        priv->pic_timing.dpb_output_delay  = 2 * priv->dpb_delay;
-
-        priv->sei_needed = 1;
+        priv->sei_needed |= SEI_TIMING;
     }
 
-    if (opt->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
-        priv->recovery_point.recovery_frame_cnt = 0;
-        priv->recovery_point.exact_match_flag   = 1;
-        priv->recovery_point.broken_link_flag   = ctx->b_per_p > 0;
+    if (priv->sei & SEI_RECOVERY_POINT && pic->type == PICTURE_TYPE_I) {
+        priv->sei_recovery_point = (H264RawSEIRecoveryPoint) {
+            .recovery_frame_cnt = 0,
+            .exact_match_flag   = 1,
+            .broken_link_flag   = ctx->b_per_p > 0,
+        };
 
-        priv->sei_needed = 1;
+        priv->sei_needed |= SEI_RECOVERY_POINT;
     }
 
     vpic->CurrPic = (VAPictureH264) {
@@ -698,11 +709,10 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
                                                VAAPIEncodePicture *pic,
                                                VAAPIEncodeSlice *slice)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context          *priv = ctx->priv_data;
-    H264RawSPS                       *sps = &priv->sps;
-    H264RawPPS                       *pps = &priv->pps;
-    H264RawSliceHeader                *sh = &priv->slice.header;
+    VAAPIEncodeH264Context          *priv = avctx->priv_data;
+    H264RawSPS                       *sps = &priv->raw_sps;
+    H264RawPPS                       *pps = &priv->raw_pps;
+    H264RawSliceHeader                *sh = &priv->raw_slice.header;
     VAEncPictureParameterBufferH264 *vpic = pic->codec_picture_params;
     VAEncSliceParameterBufferH264 *vslice = slice->codec_slice_params;
     int i;
@@ -778,8 +788,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
 static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext      *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
-    VAAPIEncodeH264Options  *opt = ctx->codec_options;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
     int err;
 
     err = ff_cbs_init(&priv->cbc, AV_CODEC_ID_H264, avctx);
@@ -790,7 +799,7 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
     priv->mb_height = FFALIGN(avctx->height, 16) / 16;
 
     if (ctx->va_rc_mode == VA_RC_CQP) {
-        priv->fixed_qp_p = opt->qp;
+        priv->fixed_qp_p = priv->qp;
         if (avctx->i_quant_factor > 0.0)
             priv->fixed_qp_idr = (int)((priv->fixed_qp_p * avctx->i_quant_factor +
                                         avctx->i_quant_offset) + 0.5);
@@ -802,7 +811,7 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         else
             priv->fixed_qp_b = priv->fixed_qp_p;
 
-        opt->sei &= ~SEI_TIMING;
+        priv->sei &= ~SEI_TIMING;
 
         av_log(avctx, AV_LOG_DEBUG, "Using fixed QP = "
                "%d / %d / %d for IDR- / P- / B-frames.\n",
@@ -824,17 +833,17 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
     }
 
     if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
-        avctx->compression_level = opt->quality;
+        avctx->compression_level = priv->quality;
 
-    if (opt->sei & SEI_IDENTIFIER) {
+    if (priv->sei & SEI_IDENTIFIER) {
         const char *lavc  = LIBAVCODEC_IDENT;
         const char *vaapi = VA_VERSION_S;
         const char *driver;
         int len;
 
-        memcpy(priv->identifier.uuid_iso_iec_11578,
+        memcpy(priv->sei_identifier.uuid_iso_iec_11578,
                vaapi_encode_h264_sei_identifier_uuid,
-               sizeof(priv->identifier.uuid_iso_iec_11578));
+               sizeof(priv->sei_identifier.uuid_iso_iec_11578));
 
         driver = vaQueryVendorString(ctx->hwctx->display);
         if (!driver)
@@ -842,15 +851,15 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 
         len = snprintf(NULL, 0, "%s / VAAPI %s / %s", lavc, vaapi, driver);
         if (len >= 0) {
-            priv->identifier_string = av_malloc(len + 1);
-            if (!priv->identifier_string)
+            priv->sei_identifier_string = av_malloc(len + 1);
+            if (!priv->sei_identifier_string)
                 return AVERROR(ENOMEM);
 
-            snprintf(priv->identifier_string, len + 1,
+            snprintf(priv->sei_identifier_string, len + 1,
                      "%s / VAAPI %s / %s", lavc, vaapi, driver);
 
-            priv->identifier.data = priv->identifier_string;
-            priv->identifier.data_length = len + 1;
+            priv->sei_identifier.data        = priv->sei_identifier_string;
+            priv->sei_identifier.data_length = len + 1;
         }
     }
 
@@ -858,8 +867,6 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
 }
 
 static const VAAPIEncodeType vaapi_encode_type_h264 = {
-    .priv_data_size        = sizeof(VAAPIEncodeH264Context),
-
     .configure             = &vaapi_encode_h264_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),
@@ -882,16 +889,15 @@ static const VAAPIEncodeType vaapi_encode_type_h264 = {
 
 static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext     *ctx = avctx->priv_data;
-    VAAPIEncodeH264Options *opt =
-        (VAAPIEncodeH264Options*)ctx->codec_options_data;
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
 
     ctx->codec = &vaapi_encode_type_h264;
 
     if (avctx->profile == FF_PROFILE_UNKNOWN)
-        avctx->profile = opt->profile;
+        avctx->profile = priv->profile;
     if (avctx->level == FF_LEVEL_UNKNOWN)
-        avctx->level = opt->level;
+        avctx->level = priv->level;
 
     switch (avctx->profile) {
     case FF_PROFILE_H264_BASELINE:
@@ -936,7 +942,7 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
                avctx->profile);
         return AVERROR(EINVAL);
     }
-    if (opt->low_power) {
+    if (priv->low_power) {
 #if VA_CHECK_VERSION(0, 39, 2)
         ctx->va_entrypoint = VAEntrypointEncSliceLP;
 #else
@@ -972,19 +978,15 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 
 static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAAPIEncodeH264Context *priv = ctx->priv_data;
+    VAAPIEncodeH264Context *priv = avctx->priv_data;
 
-    if (priv) {
-        ff_cbs_close(&priv->cbc);
-        av_freep(&priv->identifier_string);
-    }
+    ff_cbs_close(&priv->cbc);
+    av_freep(&priv->sei_identifier_string);
 
     return ff_vaapi_encode_close(avctx);
 }
 
-#define OFFSET(x) (offsetof(VAAPIEncodeContext, codec_options_data) + \
-                   offsetof(VAAPIEncodeH264Options, x))
+#define OFFSET(x) offsetof(VAAPIEncodeH264Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h264_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
@@ -1083,8 +1085,7 @@ AVCodec ff_h264_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("H.264/AVC (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_H264,
-    .priv_data_size = (sizeof(VAAPIEncodeContext) +
-                       sizeof(VAAPIEncodeH264Options)),
+    .priv_data_size = sizeof(VAAPIEncodeH264Context),
     .init           = &vaapi_encode_h264_init,
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_h264_close,

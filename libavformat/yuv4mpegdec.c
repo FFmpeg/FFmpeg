@@ -41,6 +41,7 @@ static int yuv4_read_header(AVFormatContext *s)
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NONE, alt_pix_fmt = AV_PIX_FMT_NONE;
     enum AVChromaLocation chroma_sample_location = AVCHROMA_LOC_UNSPECIFIED;
     enum AVFieldOrder field_order = AV_FIELD_UNKNOWN;
+    enum AVColorRange color_range = AVCOL_RANGE_UNSPECIFIED;
     AVStream *st;
 
     for (i = 0; i < MAX_YUV4_HEADER; i++) {
@@ -220,6 +221,12 @@ static int yuv4_read_header(AVFormatContext *s)
                     alt_pix_fmt = AV_PIX_FMT_YUV422P;
                 else if (strncmp("444", tokstart, 3) == 0)
                     alt_pix_fmt = AV_PIX_FMT_YUV444P;
+            } else if (strncmp("COLORRANGE=", tokstart, 11) == 0) {
+              tokstart += 11;
+              if (strncmp("FULL",tokstart, 4) == 0)
+                  color_range = AVCOL_RANGE_JPEG;
+              else if (strncmp("LIMITED", tokstart, 7) == 0)
+                  color_range = AVCOL_RANGE_MPEG;
             }
             while (tokstart < header_end && *tokstart != 0x20)
                 tokstart++;
@@ -263,6 +270,7 @@ static int yuv4_read_header(AVFormatContext *s)
     st->codecpar->codec_id            = AV_CODEC_ID_RAWVIDEO;
     st->sample_aspect_ratio           = (AVRational){ aspectn, aspectd };
     st->codecpar->chroma_location     = chroma_sample_location;
+    st->codecpar->color_range         = color_range;
     st->codecpar->field_order         = field_order;
     s->packet_size = av_image_get_buffer_size(st->codecpar->format, width, height, 1) + Y4M_FRAME_MAGIC_LEN;
     if ((int) s->packet_size < 0)
@@ -314,7 +322,13 @@ static int yuv4_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int yuv4_read_seek(AVFormatContext *s, int stream_index,
                           int64_t pts, int flags)
 {
-    if (avio_seek(s->pb, pts * s->packet_size + s->internal->data_offset, SEEK_SET) < 0)
+    int64_t pos;
+
+    if (flags & AVSEEK_FLAG_BACKWARD)
+        pts = FFMAX(0, pts - 1);
+    pos = pts * s->packet_size;
+
+    if (avio_seek(s->pb, pos + s->internal->data_offset, SEEK_SET) < 0)
         return -1;
     return 0;
 }

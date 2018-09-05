@@ -81,15 +81,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     switch ((buf[0] >> 1) & 7) {
         case 0: { // lzo compression
             int outlen = c->decomp_size, inlen = buf_size - 2;
-            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen))
+            if (av_lzo1x_decode(c->decomp_buf, &outlen, &buf[2], &inlen) || outlen) {
                 av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
+                return AVERROR_INVALIDDATA;
+            }
             break;
         }
         case 1: { // zlib compression
 #if CONFIG_ZLIB
             unsigned long dlen = c->decomp_size;
-            if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK)
+            if (uncompress(c->decomp_buf, &dlen, &buf[2], buf_size - 2) != Z_OK) {
                 av_log(avctx, AV_LOG_ERROR, "error during zlib decompression\n");
+                return AVERROR_INVALIDDATA;
+            }
             break;
 #else
             av_log(avctx, AV_LOG_ERROR, "compiled without zlib support\n");

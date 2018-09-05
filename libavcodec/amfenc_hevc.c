@@ -295,7 +295,6 @@ static av_cold int amf_encode_init_hevc(AVCodecContext *avctx)
 static const AVCodecDefault defaults[] = {
     { "refs",       "-1"  },
     { "aspect",     "0"   },
-    { "sar",        "0"   },
     { "b",          "2M"  },
     { "g",          "250" },
     { "slices",     "1"   },
@@ -307,7 +306,7 @@ static const AVClass hevc_amf_class = {
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,
 };
-//TODO declare as HW encoder when available
+
 AVCodec ff_hevc_amf_encoder = {
     .name           = "hevc_amf",
     .long_name      = NULL_IF_CONFIG_SMALL("AMD AMF HEVC encoder"),
@@ -320,7 +319,8 @@ AVCodec ff_hevc_amf_encoder = {
     .priv_data_size = sizeof(AmfContext),
     .priv_class     = &hevc_amf_class,
     .defaults       = defaults,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .pix_fmts       = ff_amf_pix_fmts,
+    .wrapper_name   = "amf",
 };

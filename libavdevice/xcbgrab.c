@@ -629,14 +629,14 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
     XCBGrabContext *c = s->priv_data;
     int screen_num, ret;
     const xcb_setup_t *setup;
-    char *display_name = av_strdup(s->filename);
+    char *display_name = av_strdup(s->url);
 
     if (!display_name)
         return AVERROR(ENOMEM);
 
-    if (!sscanf(s->filename, "%[^+]+%d,%d", display_name, &c->x, &c->y)) {
+    if (!sscanf(s->url, "%[^+]+%d,%d", display_name, &c->x, &c->y)) {
         *display_name = 0;
-        sscanf(s->filename, "+%d,%d", &c->x, &c->y);
+        sscanf(s->url, "+%d,%d", &c->x, &c->y);
     }
 
     c->conn = xcb_connect(display_name[0] ? display_name : NULL, &screen_num);
@@ -644,7 +644,7 @@ static av_cold int xcbgrab_read_header(AVFormatContext *s)
 
     if ((ret = xcb_connection_has_error(c->conn))) {
         av_log(s, AV_LOG_ERROR, "Cannot open display %s, error %d.\n",
-               s->filename[0] ? s->filename : "default", ret);
+               s->url[0] ? s->url : "default", ret);
         return AVERROR(EIO);
     }
 

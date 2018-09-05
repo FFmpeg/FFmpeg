@@ -148,16 +148,11 @@ To target 32 bits replace @code{x86_64} with @code{i686} in the command above.
 
 @section Microsoft Visual C++ or Intel C++ Compiler for Windows
 
-FFmpeg can be built with MSVC 2012 or earlier using a C99-to-C89 conversion utility
-and wrapper, or with MSVC 2013 and ICL natively.
+FFmpeg can be built with MSVC 2013 or later.
 
 You will need the following prerequisites:
 
 @itemize
-@item @uref{https://github.com/libav/c99-to-c89/, C99-to-C89 Converter & Wrapper}
-(if using MSVC 2012 or earlier)
-@item @uref{http://code.google.com/p/msinttypes/, msinttypes}
-(if using MSVC 2012 or earlier)
 @item @uref{http://msys2.github.io/, MSYS2}
 @item @uref{http://www.nasm.us/, NASM}
 (Also available via MSYS2's package manager.)
@@ -166,16 +161,13 @@ You will need the following prerequisites:
 To set up a proper environment in MSYS2, you need to run @code{msys_shell.bat} from
 the Visual Studio or Intel Compiler command prompt.
 
-Place @code{yasm.exe} somewhere in your @code{PATH}. If using MSVC 2012 or
-earlier, place @code{c99wrap.exe} and @code{c99conv.exe} somewhere in your
-@code{PATH} as well.
+Place @code{yasm.exe} somewhere in your @code{PATH}.
 
 Next, make sure any other headers and libs you want to use, such as zlib, are
 located in a spot that the compiler can see. Do so by modifying the @code{LIB}
 and @code{INCLUDE} environment variables to include the @strong{Windows-style}
 paths to these directories. Alternatively, you can try to use the
-@code{--extra-cflags}/@code{--extra-ldflags} configure options. If using MSVC
-2012 or earlier, place @code{inttypes.h} somewhere the compiler can see too.
+@code{--extra-cflags}/@code{--extra-ldflags} configure options.
 
 Finally, run:
 
@@ -217,8 +209,6 @@ can see.
 
 @item FFmpeg has been tested with the following on i686 and x86_64:
 @itemize
-@item Visual Studio 2010 Pro and Express
-@item Visual Studio 2012 Pro and Express
 @item Visual Studio 2013 Pro and Express
 @item Intel Composer XE 2013
 @item Intel Composer XE 2013 SP1

@@ -17,12 +17,15 @@
 /dict
 /display
 /error
+/encryption_info
 /eval
 /fifo
 /file
 /hash
 /hmac
+/hwdevice
 /imgutils
+/integer
 /lfg
 /lls
 /log

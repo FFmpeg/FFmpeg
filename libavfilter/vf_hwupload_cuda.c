@@ -59,6 +59,7 @@ static int cudaupload_query_formats(AVFilterContext *ctx)
     static const enum AVPixelFormat input_pix_fmts[] = {
         AV_PIX_FMT_NV12, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P,
         AV_PIX_FMT_P010, AV_PIX_FMT_P016, AV_PIX_FMT_YUV444P16,
+        AV_PIX_FMT_0RGB32, AV_PIX_FMT_0BGR32,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat output_pix_fmts[] = {

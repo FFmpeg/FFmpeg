@@ -96,7 +96,7 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     if (flags & AVIO_FLAG_READ)
         return AVERROR(ENOSYS);
 
-    av_bprint_init(&bp, 0, 1);
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
 
     // Build header strings
     cat_header(&bp, "Ice-Name", s->name);

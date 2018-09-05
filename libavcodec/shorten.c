@@ -177,7 +177,7 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
             buffer[i] = 0;
     } else if (s->bitshift != 0) {
         for (i = 0; i < s->blocksize; i++)
-            buffer[i] <<= s->bitshift;
+            buffer[i] *= 1U << s->bitshift;
     }
 }
 
@@ -234,11 +234,11 @@ static int decode_aiff_header(AVCodecContext *avctx, const uint8_t *header,
 
     while (bytestream2_get_le32(&gb) != MKTAG('C', 'O', 'M', 'M')) {
         len = bytestream2_get_be32(&gb);
-        bytestream2_skip(&gb, len + (len & 1));
-        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18) {
+        if (len < 0 || bytestream2_get_bytes_left(&gb) < 18LL + len + (len&1)) {
             av_log(avctx, AV_LOG_ERROR, "no COMM chunk found\n");
             return AVERROR_INVALIDDATA;
         }
+        bytestream2_skip(&gb, len + (len & 1));
     }
     len = bytestream2_get_be32(&gb);
 
@@ -389,9 +389,9 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     for (i = 0; i < s->blocksize; i++) {
         sum = init_sum;
         for (j = 0; j < pred_order; j++)
-            sum += coeffs[j] * s->decoded[channel][i - j - 1];
+            sum += coeffs[j] * (unsigned)s->decoded[channel][i - j - 1];
         s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) +
-                                 (sum >> qshift);
+                                 (unsigned)(sum >> qshift);
     }
 
     /* add offset to current samples */
@@ -450,6 +450,10 @@ static int read_header(ShortenContext *s)
             return AVERROR_INVALIDDATA;
         }
         s->nmean = get_uint(s, 0);
+        if (s->nmean > 32768U) {
+            av_log(s->avctx, AV_LOG_ERROR, "nmean is: %d\n", s->nmean);
+            return AVERROR_INVALIDDATA;
+        }
 
         skip_bytes = get_uint(s, NSKIPSIZE);
         if ((unsigned)skip_bytes > get_bits_left(&s->gb)/8) {
@@ -619,6 +623,11 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             switch (cmd) {
             case FN_VERBATIM:
                 len = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
+                if (len < 0 || len > get_bits_left(&s->gb)) {
+                    av_log(avctx, AV_LOG_ERROR, "verbatim length %d invalid\n",
+                           len);
+                    return AVERROR_INVALIDDATA;
+                }
                 while (len--)
                     get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
                 break;
@@ -678,7 +687,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
             else {
                 int32_t sum = (s->version < 2) ? 0 : s->nmean / 2;
                 for (i = 0; i < s->nmean; i++)
-                    sum += s->offset[channel][i];
+                    sum += (unsigned)s->offset[channel][i];
                 coffset = sum / s->nmean;
                 if (s->version >= 2)
                     coffset = s->bitshift == 0 ? coffset : coffset >> s->bitshift - 1 >> 1;
@@ -696,7 +705,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
 
             /* update means with info from the current block */
             if (s->nmean > 0) {
-                int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
+                int64_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
                 for (i = 0; i < s->blocksize; i++)
                     sum += s->decoded[channel][i];
 
@@ -706,7 +715,7 @@ static int shorten_decode_frame(AVCodecContext *avctx, void *data,
                 if (s->version < 2)
                     s->offset[channel][s->nmean - 1] = sum / s->blocksize;
                 else
-                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) << s->bitshift;
+                    s->offset[channel][s->nmean - 1] = s->bitshift == 32 ? 0 : (sum / s->blocksize) * (1LL << s->bitshift);
             }
 
             /* copy wrap samples for use with next block */

@@ -71,6 +71,7 @@
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/intreadwrite.h"
 
 #define NMSEDEC_BITS 7
 #define NMSEDEC_FRACBITS (NMSEDEC_BITS-1)
@@ -1054,14 +1055,38 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         bytestream_put_byte(&s->buf, 1);
         bytestream_put_byte(&s->buf, 0);
         bytestream_put_byte(&s->buf, 0);
-        if (s->ncomponents == 1) {
-            bytestream_put_be32(&s->buf, 17);
-        } else if (avctx->pix_fmt == AV_PIX_FMT_RGB24) {
+        if (avctx->pix_fmt == AV_PIX_FMT_RGB24 || avctx->pix_fmt == AV_PIX_FMT_PAL8) {
             bytestream_put_be32(&s->buf, 16);
+        } else if (s->ncomponents == 1) {
+            bytestream_put_be32(&s->buf, 17);
         } else {
             bytestream_put_be32(&s->buf, 18);
         }
         update_size(chunkstart, s->buf);
+        if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+            int i;
+            uint8_t *palette = pict->data[1];
+            chunkstart = s->buf;
+            bytestream_put_be32(&s->buf, 0);
+            bytestream_put_buffer(&s->buf, "pclr", 4);
+            bytestream_put_be16(&s->buf, AVPALETTE_COUNT);
+            bytestream_put_byte(&s->buf, 3); // colour channels
+            bytestream_put_be24(&s->buf, 0x070707); //colour depths
+            for (i = 0; i < AVPALETTE_COUNT; i++) {
+                bytestream_put_be24(&s->buf, HAVE_BIGENDIAN ? AV_RB24(palette + 1) : AV_RL24(palette));
+                palette += 4;
+            }
+            update_size(chunkstart, s->buf);
+            chunkstart = s->buf;
+            bytestream_put_be32(&s->buf, 0);
+            bytestream_put_buffer(&s->buf, "cmap", 4);
+            for (i = 0; i < 3; i++) {
+                bytestream_put_be16(&s->buf, 0); // component
+                bytestream_put_byte(&s->buf, 1); // palette mapping
+                bytestream_put_byte(&s->buf, i); // index
+            }
+            update_size(chunkstart, s->buf);
+        }
         update_size(jp2hstart, s->buf);
 
         jp2cstart = s->buf;
@@ -1124,6 +1149,12 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8 && (s->pred != FF_DWT97_INT || s->format != CODEC_JP2)) {
+        av_log(s->avctx, AV_LOG_WARNING, "Forcing lossless jp2 for pal8\n");
+        s->pred = FF_DWT97_INT;
+        s->format = CODEC_JP2;
+    }
+
     // defaults:
     // TODO: implement setting non-standard precinct size
     memset(codsty->log2_prec_widths , 15, sizeof(codsty->log2_prec_widths ));
@@ -1154,7 +1185,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (avctx->pix_fmt == AV_PIX_FMT_RGB24){
         s->ncomponents = 3;
-    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8){
+    } else if (avctx->pix_fmt == AV_PIX_FMT_GRAY8 || avctx->pix_fmt == AV_PIX_FMT_PAL8){
         s->ncomponents = 1;
     } else{ // planar YUV
         s->planar = 1;
@@ -1223,6 +1254,7 @@ AVCodec ff_jpeg2000_encoder = {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_YUV444P, AV_PIX_FMT_GRAY8,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
+        AV_PIX_FMT_PAL8,
         AV_PIX_FMT_NONE
     },
     .priv_class     = &j2k_class,

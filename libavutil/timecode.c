@@ -214,7 +214,7 @@ int av_timecode_init_from_string(AVTimecode *tc, AVRational rate, const char *st
     tc->start = (hh*3600 + mm*60 + ss) * tc->fps + ff;
     if (tc->flags & AV_TIMECODE_FLAG_DROPFRAME) { /* adjust frame number */
         int tmins = 60*hh + mm;
-        tc->start -= 2 * (tmins - tmins/10);
+        tc->start -= (tc->fps == 30 ? 2 : 4) * (tmins - tmins/10);
     }
     return 0;
 }

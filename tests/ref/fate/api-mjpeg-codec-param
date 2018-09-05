@@ -81,7 +81,7 @@ stream=0, decode=0
     nssew=8
     skip_top=0
     skip_bottom=0
-    profile=-99
+    profile=192
     level=-99
     lowres=0
     skip_threshold=0
@@ -137,6 +137,7 @@ stream=0, decode=0
     video_size=400x225
     max_pixels=2147483647
     hwaccel_flags=0x00000001
+    extra_hw_frames=-1
 stream=0, decode=1
     b=0
     ab=0
@@ -220,7 +221,7 @@ stream=0, decode=1
     nssew=8
     skip_top=0
     skip_bottom=0
-    profile=-99
+    profile=192
     level=-99
     lowres=0
     skip_threshold=0
@@ -276,3 +277,4 @@ stream=0, decode=1
     video_size=400x225
     max_pixels=2147483647
     hwaccel_flags=0x00000001
+    extra_hw_frames=-1

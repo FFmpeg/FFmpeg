@@ -1862,6 +1862,7 @@ AVCodec ff_vorbis_decoder = {
     .decode          = vorbis_decode_frame,
     .flush           = vorbis_decode_flush,
     .capabilities    = AV_CODEC_CAP_DR1,
+    .caps_internal   = FF_CODEC_CAP_INIT_CLEANUP,
     .channel_layouts = ff_vorbis_channel_layouts,
     .sample_fmts     = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                        AV_SAMPLE_FMT_NONE },

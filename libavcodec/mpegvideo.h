@@ -45,6 +45,7 @@
 #include "mpegpicture.h"
 #include "mpegvideodsp.h"
 #include "mpegvideoencdsp.h"
+#include "mpegvideodata.h"
 #include "pixblockdsp.h"
 #include "put_bits.h"
 #include "ratecontrol.h"
@@ -71,6 +72,8 @@
 #define SLICE_MAX_START_CODE    0x000001af
 #define EXT_START_CODE          0x000001b5
 #define USER_START_CODE         0x000001b2
+#define SLICE_START_CODE        0x000001b7
+
 
 /**
  * MpegEncContext.
@@ -366,7 +369,7 @@ typedef struct MpegEncContext {
     uint8_t *mb_info_ptr;
     int mb_info_size;
     int ehc_mode;
-    int rc_strategy;
+    int rc_strategy;                ///< deprecated
 
     /* H.263+ specific */
     int umvplus;                    ///< == H.263+ && unrestricted_mv
@@ -378,6 +381,8 @@ typedef struct MpegEncContext {
     int custom_pcf;
 
     /* MPEG-4 specific */
+    int studio_profile;
+    int dct_precision;
     ///< number of bits to represent the fractional part of time (encoder only)
     int time_increment_bits;
     int last_time_base;
@@ -464,6 +469,13 @@ typedef struct MpegEncContext {
     int intra_vlc_format;
     int alternate_scan;
     int seq_disp_ext;
+    int video_format;
+#define VIDEO_FORMAT_COMPONENT   0
+#define VIDEO_FORMAT_PAL         1
+#define VIDEO_FORMAT_NTSC        2
+#define VIDEO_FORMAT_SECAM       3
+#define VIDEO_FORMAT_MAC         4
+#define VIDEO_FORMAT_UNSPECIFIED 5
     int repeat_first_field;
     int chroma_420_type;
     int chroma_format;
@@ -494,7 +506,12 @@ typedef struct MpegEncContext {
 
     int16_t (*block)[64]; ///< points to one of the following blocks
     int16_t (*blocks)[12][64]; // for HQ mode we need to keep the best block
-    int (*decode_mb)(struct MpegEncContext *s, int16_t block[6][64]); // used by some codecs to avoid a switch()
+    int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
+
+    int32_t (*block32)[12][64];
+    int dpcm_direction;          // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
+    int16_t (*dpcm_macroblock)[3][256];
+
 #define SLICE_OK         0
 #define SLICE_ERROR     -1
 #define SLICE_END       -2 ///<end marker found
@@ -572,12 +589,6 @@ typedef struct MpegEncContext {
 #define FF_MPV_FLAG_NAQ          0x0010
 #define FF_MPV_FLAG_MV0          0x0020
 
-enum rc_strategy {
-    MPV_RC_STRATEGY_FFMPEG,
-    MPV_RC_STRATEGY_XVID,
-    NB_MPV_RC_STRATEGY
-};
-
 #define FF_MPV_OPT_CMP_FUNC \
 { "sad",    "Sum of absolute differences, fast", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SAD }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
 { "sse",    "Sum of squared errors", 0, AV_OPT_TYPE_CONST, {.i64 = FF_CMP_SSE }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS, "cmp_func" }, \
@@ -631,9 +642,9 @@ FF_MPV_OPT_CMP_FUNC, \
 {"lmax", "maximum Lagrange factor (VBR)",                           FF_MPV_OFFSET(lmax), AV_OPT_TYPE_INT, {.i64 = 31*FF_QP2LAMBDA }, 0, INT_MAX, FF_MPV_OPT_FLAGS },            \
 {"ibias", "intra quant bias",                                       FF_MPV_OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
 {"pbias", "inter quant bias",                                       FF_MPV_OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.i64 = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS },   \
-{"rc_strategy", "ratecontrol method",                               FF_MPV_OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = MPV_RC_STRATEGY_FFMPEG }, 0, NB_MPV_RC_STRATEGY-1, FF_MPV_OPT_FLAGS, "rc_strategy" },   \
-    { "ffmpeg", "default native rate control", 0, AV_OPT_TYPE_CONST, { .i64 = MPV_RC_STRATEGY_FFMPEG }, 0, 0, FF_MPV_OPT_FLAGS, "rc_strategy" }, \
-    { "xvid",   "libxvid (2 pass only)",       0, AV_OPT_TYPE_CONST, { .i64 = MPV_RC_STRATEGY_XVID },   0, 0, FF_MPV_OPT_FLAGS, "rc_strategy" }, \
+{"rc_strategy", "ratecontrol method",                               FF_MPV_OFFSET(rc_strategy), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 1, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" },   \
+    { "ffmpeg", "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
+    { "xvid",   "deprecated, does nothing", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FF_MPV_OPT_FLAGS | AV_OPT_FLAG_DEPRECATED, "rc_strategy" }, \
 {"motion_est", "motion estimation algorithm",                       FF_MPV_OFFSET(motion_est), AV_OPT_TYPE_INT, {.i64 = FF_ME_EPZS }, FF_ME_ZERO, FF_ME_XONE, FF_MPV_OPT_FLAGS, "motion_est" },   \
 { "zero", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_ZERO }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
 { "epzs", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = FF_ME_EPZS }, 0, 0, FF_MPV_OPT_FLAGS, "motion_est" }, \
@@ -722,7 +733,8 @@ void ff_mpv_motion(MpegEncContext *s,
                    qpel_mc_func (*qpix_op)[16]);
 
 static inline void ff_update_block_index(MpegEncContext *s){
-    const int block_size= 8 >> s->avctx->lowres;
+    const int bytes_per_pixel = 1 + (s->avctx->bits_per_raw_sample > 8);
+    const int block_size= (8*bytes_per_pixel) >> s->avctx->lowres;
 
     s->block_index[0]+=2;
     s->block_index[1]+=2;
@@ -731,8 +743,8 @@ static inline void ff_update_block_index(MpegEncContext *s){
     s->block_index[4]++;
     s->block_index[5]++;
     s->dest[0]+= 2*block_size;
-    s->dest[1]+= block_size;
-    s->dest[2]+= block_size;
+    s->dest[1]+= (2 >> s->chroma_x_shift) * block_size;
+    s->dest[2]+= (2 >> s->chroma_x_shift) * block_size;
 }
 
 static inline int get_bits_diff(MpegEncContext *s){
@@ -742,6 +754,15 @@ static inline int get_bits_diff(MpegEncContext *s){
     s->last_bits = bits;
 
     return bits - last;
+}
+
+static inline int mpeg_get_qscale(MpegEncContext *s)
+{
+    int qscale = get_bits(&s->gb, 5);
+    if (s->q_scale_type)
+        return ff_mpeg2_non_linear_qscale[qscale];
+    else
+        return qscale << 1;
 }
 
 #endif /* AVCODEC_MPEGVIDEO_H */

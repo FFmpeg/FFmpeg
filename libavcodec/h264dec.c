@@ -609,9 +609,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
-        if (!h->first_field)
+        if (!h->first_field) {
             h->cur_pic_ptr = NULL;
-        ff_h264_sei_uninit(&h->sei);
+            ff_h264_sei_uninit(&h->sei);
+        }
     }
 
     if (h->nal_length_size == 4) {
@@ -837,9 +838,6 @@ static int output_frame(H264Context *h, AVFrame *dst, H264Picture *srcp)
 {
     AVFrame *src = srcp->f;
     int ret;
-
-    if (src->format == AV_PIX_FMT_VIDEOTOOLBOX && src->buf[0]->size == 1)
-        return AVERROR_INVALIDDATA;
 
     ret = av_frame_ref(dst, src);
     if (ret < 0)

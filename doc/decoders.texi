@@ -47,6 +47,12 @@ top-field-first is assumed
 
 @end table
 
+@section libdavs2
+
+AVS2-P2/IEEE1857.4 video decoder wrapper.
+
+This decoder allows libavcodec to decode AVS2 streams with davs2 library.
+
 @c man end VIDEO DECODERS
 
 @chapter Audio Decoders
@@ -248,8 +254,9 @@ configuration. You need to explicitly configure the build with
 
 @table @option
 @item txt_page
-List of teletext page numbers to decode. You may use the special * string to
-match all pages. Pages that do not match the specified list are dropped.
+List of teletext page numbers to decode. Pages that do not match the specified
+list are dropped. You may use the special @code{*} string to match all pages,
+or @code{subtitle} to match all subtitle pages.
 Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
@@ -272,7 +279,8 @@ present between the subtitle lines because of double-sized teletext characters.
 Default value is 1.
 @item txt_duration
 Sets the display duration of the decoded teletext pages or subtitles in
-milliseconds. Default value is 30000 which is 30 seconds.
+milliseconds. Default value is -1 which means infinity or until the next
+subtitle event comes.
 @item txt_transparent
 Force transparent background of the generated teletext bitmaps. Default value
 is 0 which means an opaque background.

@@ -22,7 +22,8 @@
 #define AVCODEC_HEVC_H
 
 /**
- * Table 7-3: NAL unit type codes
+ * Table 7-1 – NAL unit type codes and NAL unit type classes in
+ * T-REC-H.265-201802
  */
 enum HEVCNALUnitType {
     HEVC_NAL_TRAIL_N    = 0,
@@ -66,6 +67,29 @@ enum HEVCNALUnitType {
     HEVC_NAL_FD_NUT     = 38,
     HEVC_NAL_SEI_PREFIX = 39,
     HEVC_NAL_SEI_SUFFIX = 40,
+    HEVC_NAL_RSV_NVCL41 = 41,
+    HEVC_NAL_RSV_NVCL42 = 42,
+    HEVC_NAL_RSV_NVCL43 = 43,
+    HEVC_NAL_RSV_NVCL44 = 44,
+    HEVC_NAL_RSV_NVCL45 = 45,
+    HEVC_NAL_RSV_NVCL46 = 46,
+    HEVC_NAL_RSV_NVCL47 = 47,
+    HEVC_NAL_UNSPEC48   = 48,
+    HEVC_NAL_UNSPEC49   = 49,
+    HEVC_NAL_UNSPEC50   = 50,
+    HEVC_NAL_UNSPEC51   = 51,
+    HEVC_NAL_UNSPEC52   = 52,
+    HEVC_NAL_UNSPEC53   = 53,
+    HEVC_NAL_UNSPEC54   = 54,
+    HEVC_NAL_UNSPEC55   = 55,
+    HEVC_NAL_UNSPEC56   = 56,
+    HEVC_NAL_UNSPEC57   = 57,
+    HEVC_NAL_UNSPEC58   = 58,
+    HEVC_NAL_UNSPEC59   = 59,
+    HEVC_NAL_UNSPEC60   = 60,
+    HEVC_NAL_UNSPEC61   = 61,
+    HEVC_NAL_UNSPEC62   = 62,
+    HEVC_NAL_UNSPEC63   = 63,
 };
 
 enum HEVCSliceType {

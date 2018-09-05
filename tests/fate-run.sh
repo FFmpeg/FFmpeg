@@ -25,6 +25,7 @@ cmp_unit=${15:-2}
 gen=${16:-no}
 hwaccel=${17:-none}
 report_type=${18:-standard}
+keep=${19:-0}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -86,6 +87,10 @@ runecho(){
 
 probefmt(){
     run ffprobe${PROGSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
+}
+
+probetags(){
+    run ffprobe${PROGSUF} -show_entries format_tags -v 0 "$@"
 }
 
 runlocal(){
@@ -218,6 +223,22 @@ transcode(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
+    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+        -f framecrc - || return
+}
+
+stream_remux(){
+    src_fmt=$1
+    srcfile=$2
+    enc_fmt=$3
+    stream_maps=$4
+    final_decode=$5
+    encfile="${outdir}/${test}.${enc_fmt}"
+    test "$7" = -keep || cleanfiles="$cleanfiles $encfile"
+    tsrcfile=$(target_path $srcfile)
+    tencfile=$(target_path $encfile)
+    ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
+        -f $enc_fmt -y $tencfile || return
     ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
 }
@@ -408,7 +429,9 @@ if test $err != 0 && test $gen != "no" ; then
 fi
 
 if test $err = 0; then
-    rm -f $outfile $errfile $cmpfile $cleanfiles
+    if test $keep = 0; then
+        rm -f $outfile $errfile $cmpfile $cleanfiles
+    fi
 elif test $gen = "no"; then
     echo "Test $test failed. Look at $errfile for details."
     test "${V:-0}" -gt 0 && cat $errfile

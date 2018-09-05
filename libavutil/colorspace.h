@@ -107,4 +107,16 @@ static inline int C_JPEG_TO_CCIR(int y) {
 (((FIX(0.50000*224.0/255.0) * r1 - FIX(0.41869*224.0/255.0) * g1 -           \
    FIX(0.08131*224.0/255.0) * b1 + (ONE_HALF << shift) - 1) >> (SCALEBITS + shift)) + 128)
 
+#define RGB_TO_Y_JPEG(r, g, b) \
+(FFMIN((FIX(0.29900) * (r) + FIX(0.58700) * (g) + \
+  FIX(0.11400) * (b) + (ONE_HALF)) >> SCALEBITS, 255))
+
+#define RGB_TO_U_JPEG(r1, g1, b1)\
+(((- FIX(0.16874) * r1 - FIX(0.33126) * g1 + \
+     FIX(0.50000) * b1 + (ONE_HALF) - 1) >> (SCALEBITS)) + 128)
+
+#define RGB_TO_V_JPEG(r1, g1, b1)\
+(((FIX(0.50000) * r1 - FIX(0.41869) * g1 - \
+   FIX(0.08131) * b1 + (ONE_HALF) - 1) >> (SCALEBITS)) + 128)
+
 #endif /* AVUTIL_COLORSPACE_H */

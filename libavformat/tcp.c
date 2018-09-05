@@ -42,6 +42,9 @@ typedef struct TCPContext {
     int recv_buffer_size;
     int send_buffer_size;
     int tcp_nodelay;
+#if !HAVE_WINSOCK2_H
+    int tcp_mss;
+#endif /* !HAVE_WINSOCK2_H */
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -54,6 +57,9 @@ static const AVOption options[] = {
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
+#if !HAVE_WINSOCK2_H
+    { "tcp_mss",     "Maximum segment size for outgoing TCP packets",          OFFSET(tcp_mss),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+#endif /* !HAVE_WINSOCK2_H */
     { NULL }
 };
 
@@ -145,14 +151,27 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     /* Set the socket's send or receive buffer sizes, if specified.
        If unspecified or setting fails, system default is used. */
     if (s->recv_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+        if (setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size))) {
+            ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_RCVBUF)");
+        }
     }
     if (s->send_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
+        if (setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size))) {
+            ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(SO_SNDBUF)");
+        }
     }
     if (s->tcp_nodelay > 0) {
-        setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay));
+        if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay))) {
+            ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(TCP_NODELAY)");
+        }
     }
+#if !HAVE_WINSOCK2_H
+    if (s->tcp_mss > 0) {
+        if (setsockopt (fd, IPPROTO_TCP, TCP_MAXSEG, &s->tcp_mss, sizeof (s->tcp_mss))) {
+            ff_log_net_error(h, AV_LOG_WARNING, "setsockopt(TCP_MAXSEG)");
+        }
+    }
+#endif /* !HAVE_WINSOCK2_H */
 
     if (s->listen == 2) {
         // multi-client
@@ -208,8 +227,10 @@ static int tcp_accept(URLContext *s, URLContext **c)
         return ret;
     cc = (*c)->priv_data;
     ret = ff_accept(sc->fd, sc->listen_timeout, s);
-    if (ret < 0)
+    if (ret < 0) {
+        ffurl_closep(c);
         return ret;
+    }
     cc->fd = ret;
     return 0;
 }

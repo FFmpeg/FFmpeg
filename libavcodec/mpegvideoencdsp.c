@@ -81,7 +81,7 @@ static int pix_sum_c(uint8_t *pix, int line_size)
 static int pix_norm1_c(uint8_t *pix, int line_size)
 {
     int s = 0, i, j;
-    uint32_t *sq = ff_square_tab + 256;
+    const uint32_t *sq = ff_square_tab + 256;
 
     for (i = 0; i < 16; i++) {
         for (j = 0; j < 16; j += 8) {

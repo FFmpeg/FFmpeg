@@ -31,6 +31,7 @@
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 
 #include "avcodec.h"
 #include "qsv_internal.h"
@@ -193,6 +194,35 @@ int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame)
             return i;
     }
     return AVERROR_BUG;
+}
+
+enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type)
+{
+    enum AVPictureType type;
+    switch (mfx_pic_type & 0x7) {
+    case MFX_FRAMETYPE_I:
+        if (mfx_pic_type & MFX_FRAMETYPE_S)
+            type = AV_PICTURE_TYPE_SI;
+        else
+            type = AV_PICTURE_TYPE_I;
+        break;
+    case MFX_FRAMETYPE_B:
+        type = AV_PICTURE_TYPE_B;
+        break;
+    case MFX_FRAMETYPE_P:
+        if (mfx_pic_type & MFX_FRAMETYPE_S)
+            type = AV_PICTURE_TYPE_SP;
+        else
+            type = AV_PICTURE_TYPE_P;
+        break;
+    case MFX_FRAMETYPE_UNKNOWN:
+        type = AV_PICTURE_TYPE_NONE;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    return type;
 }
 
 static int qsv_load_plugins(mfxSession session, const char *load_plugins,
@@ -389,7 +419,7 @@ static mfxStatus qsv_frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
         mfxFrameInfo      *i  = &req->Info;
         mfxFrameInfo      *i1 = &frames_hwctx->surfaces[0].Info;
 
-        if (i->Width  != i1->Width  || i->Height != i1->Height ||
+        if (i->Width  > i1->Width  || i->Height > i1->Height ||
             i->FourCC != i1->FourCC || i->ChromaFormat != i1->ChromaFormat) {
             av_log(ctx->logctx, AV_LOG_ERROR, "Mismatching surface properties in an "
                    "allocation request: %dx%d %d %d vs %dx%d %d %d\n",
@@ -593,10 +623,12 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
                                       "Error setting a HW handle");
     }
 
-    err = MFXJoinSession(parent_session, session);
-    if (err != MFX_ERR_NONE)
-        return ff_qsv_print_error(avctx, err,
-                                  "Error joining session");
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(parent_session, session);
+        if (err != MFX_ERR_NONE)
+            return ff_qsv_print_error(avctx, err,
+                                      "Error joining session");
+    }
 
     ret = qsv_load_plugins(session, load_plugins, avctx);
     if (ret < 0) {

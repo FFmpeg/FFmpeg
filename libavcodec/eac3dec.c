@@ -303,13 +303,7 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
     /* An E-AC-3 stream can have multiple independent streams which the
        application can select from. each independent stream can also contain
        dependent streams which are used to add or replace channels. */
-    if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
-        if (!s->eac3_frame_dependent_found) {
-            s->eac3_frame_dependent_found = 1;
-            avpriv_request_sample(s->avctx, "Dependent substream decoding");
-        }
-        return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
-    } else if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
+    if (s->frame_type == EAC3_FRAME_TYPE_RESERVED) {
         av_log(s->avctx, AV_LOG_ERROR, "Reserved frame type\n");
         return AAC_AC3_PARSE_ERROR_FRAME_TYPE;
     }
@@ -355,7 +349,8 @@ static int ff_eac3_parse_header(AC3DecodeContext *s)
     /* dependent stream channel map */
     if (s->frame_type == EAC3_FRAME_TYPE_DEPENDENT) {
         if (get_bits1(gbc)) {
-            skip_bits(gbc, 16); // skip custom channel map
+            s->channel_map = get_bits(gbc, 16);
+            av_log(s->avctx, AV_LOG_DEBUG, "channel_map: %0X\n", s->channel_map);
         }
     }
 

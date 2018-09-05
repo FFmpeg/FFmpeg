@@ -342,10 +342,6 @@ static av_cold int init(AVFilterContext *ctx)
 {
     DeshakeContext *deshake = ctx->priv;
 
-    deshake->sad = av_pixelutils_get_sad_fn(4, 4, 1, deshake); // 16x16, 2nd source unaligned
-    if (!deshake->sad)
-        return AVERROR(EINVAL);
-
     deshake->refcount = 20; // XXX: add to options?
     deshake->blocksize /= 2;
     deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
@@ -424,6 +420,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
     const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
+    int aligned;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -431,6 +428,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
+
+    aligned = !((intptr_t)in->data[0] & 15 | in->linesize[0] & 15);
+    deshake->sad = av_pixelutils_get_sad_fn(4, 4, aligned, deshake); // 16x16, 2nd source unaligned
+    if (!deshake->sad)
+        return AVERROR(EINVAL);
 
     if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
         // Find the most likely global motion for the current frame

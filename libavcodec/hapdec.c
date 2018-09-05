@@ -43,31 +43,6 @@
 #include "texturedsp.h"
 #include "thread.h"
 
-/* The first three bytes are the size of the section past the header, or zero
- * if the length is stored in the next long word. The fourth byte in the first
- * long word indicates the type of the current section. */
-static int parse_section_header(GetByteContext *gbc, int *section_size,
-                                enum HapSectionType *section_type)
-{
-    if (bytestream2_get_bytes_left(gbc) < 4)
-        return AVERROR_INVALIDDATA;
-
-    *section_size = bytestream2_get_le24(gbc);
-    *section_type = bytestream2_get_byte(gbc);
-
-    if (*section_size == 0) {
-        if (bytestream2_get_bytes_left(gbc) < 4)
-            return AVERROR_INVALIDDATA;
-
-        *section_size = bytestream2_get_le32(gbc);
-    }
-
-    if (*section_size > bytestream2_get_bytes_left(gbc) || *section_size < 0)
-        return AVERROR_INVALIDDATA;
-    else
-        return 0;
-}
-
 static int hap_parse_decode_instructions(HapContext *ctx, int size)
 {
     GetByteContext *gbc = &ctx->gbc;
@@ -78,7 +53,7 @@ static int hap_parse_decode_instructions(HapContext *ctx, int size)
 
     while (size > 0) {
         int stream_remaining = bytestream2_get_bytes_left(gbc);
-        ret = parse_section_header(gbc, &section_size, &section_type);
+        ret = ff_hap_parse_section_header(gbc, &section_size, &section_type);
         if (ret != 0)
             return ret;
 
@@ -159,7 +134,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
     const char *compressorstr;
     int i, ret;
 
-    ret = parse_section_header(gbc, &ctx->texture_section_size, &section_type);
+    ret = ff_hap_parse_section_header(gbc, &ctx->texture_section_size, &section_type);
     if (ret != 0)
         return ret;
 
@@ -190,7 +165,7 @@ static int hap_parse_frame_header(AVCodecContext *avctx)
             }
             break;
         case HAP_COMP_COMPLEX:
-            ret = parse_section_header(gbc, &section_size, &section_type);
+            ret = ff_hap_parse_section_header(gbc, &section_size, &section_type);
             if (ret == 0 && section_type != HAP_ST_DECODE_INSTRUCTIONS)
                 ret = AVERROR_INVALIDDATA;
             if (ret == 0)
@@ -342,7 +317,7 @@ static int hap_decode(AVCodecContext *avctx, void *data,
 
     /* check for multi texture header */
     if (ctx->texture_count == 2) {
-        ret = parse_section_header(&ctx->gbc, &section_size, &section_type);
+        ret = ff_hap_parse_section_header(&ctx->gbc, &section_size, &section_type);
         if (ret != 0)
             return ret;
         if ((section_type & 0x0F) != 0x0D) {

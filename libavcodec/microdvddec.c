@@ -99,7 +99,7 @@ static char *microdvd_load_tags(struct microdvd_tag *tags, char *s)
         case 'Y':
             tag.persistent = MICRODVD_PERSISTENT_ON;
         case 'y':
-            while (*s && *s != '}') {
+            while (*s && *s != '}' && s - start < 256) {
                 int style_index = indexof(MICRODVD_STYLES, *s);
 
                 if (style_index >= 0)

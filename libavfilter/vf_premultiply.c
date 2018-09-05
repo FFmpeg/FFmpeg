@@ -28,6 +28,10 @@
 #include "internal.h"
 #include "video.h"
 
+typedef struct ThreadData {
+    AVFrame *m, *a, *d;
+} ThreadData;
+
 typedef struct PreMultiplyContext {
     const AVClass *class;
     int width[4], height[4];
@@ -272,7 +276,7 @@ static void unpremultiply8offset(const uint8_t *msrc, const uint8_t *asrc,
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
             if (asrc[x] > 0 && asrc[x] < 255)
-                dst[x] = FFMIN((msrc[x] - offset) * 255 / asrc[x] + offset, 255);
+                dst[x] = FFMIN(FFMAX(msrc[x] - offset, 0) * 255 / asrc[x] + offset, 255);
             else
                 dst[x] = msrc[x];
         }
@@ -350,7 +354,7 @@ static void unpremultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
             if (asrc[x] > 0 && asrc[x] < max)
-                dst[x] = FFMAX(FFMIN((msrc[x] - offset) * (unsigned)max / asrc[x] + offset, max), 0);
+                dst[x] = FFMAX(FFMIN(FFMAX(msrc[x] - offset, 0) * (unsigned)max / asrc[x] + offset, max), 0);
             else
                 dst[x] = msrc[x];
         }
@@ -359,6 +363,41 @@ static void unpremultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
         msrc += mlinesize / 2;
         asrc += alinesize / 2;
     }
+}
+
+static int premultiply_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    PreMultiplyContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *out = td->d;
+    AVFrame *alpha = td->a;
+    AVFrame *base = td->m;
+    int p;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        const int slice_start = (s->height[p] * jobnr) / nb_jobs;
+        const int slice_end = (s->height[p] * (jobnr+1)) / nb_jobs;
+
+        if (!((1 << p) & s->planes) || p == 3) {
+            av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],
+                                out->linesize[p],
+                                base->data[p] + slice_start * base->linesize[p],
+                                base->linesize[p],
+                                s->linesize[p], slice_end - slice_start);
+            continue;
+        }
+
+        s->premultiply[p](base->data[p] + slice_start * base->linesize[p],
+                          s->inplace ? alpha->data[3] + slice_start * alpha->linesize[3] :
+                                       alpha->data[0] + slice_start * alpha->linesize[0],
+                          out->data[p] + slice_start * out->linesize[p],
+                          base->linesize[p], s->inplace ? alpha->linesize[3] : alpha->linesize[0],
+                          out->linesize[p],
+                          s->width[p], slice_end - slice_start,
+                          s->half, s->inverse ? s->max : s->depth, s->offset);
+    }
+
+    return 0;
 }
 
 static int filter_frame(AVFilterContext *ctx,
@@ -372,7 +411,8 @@ static int filter_frame(AVFilterContext *ctx,
         if (!*out)
             return AVERROR(ENOMEM);
     } else {
-        int p, full, limited;
+        ThreadData td;
+        int full, limited;
 
         *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!*out)
@@ -476,20 +516,11 @@ static int filter_frame(AVFilterContext *ctx,
             }
         }
 
-        for (p = 0; p < s->nb_planes; p++) {
-            if (!((1 << p) & s->planes) || p == 3) {
-                av_image_copy_plane((*out)->data[p], (*out)->linesize[p], base->data[p], base->linesize[p],
-                                    s->linesize[p], s->height[p]);
-                continue;
-            }
-
-            s->premultiply[p](base->data[p], s->inplace ? alpha->data[3] : alpha->data[0],
-                              (*out)->data[p],
-                              base->linesize[p], s->inplace ? alpha->linesize[3] : alpha->linesize[0],
-                              (*out)->linesize[p],
-                              s->width[p], s->height[p],
-                              s->half, s->inverse ? s->max : s->depth, s->offset);
-        }
+        td.d = *out;
+        td.a = alpha;
+        td.m = base;
+        ctx->internal->execute(ctx, premultiply_slice, &td, NULL, FFMIN(s->height[0],
+                                                                        ff_filter_get_nb_threads(ctx)));
     }
 
     return 0;
@@ -695,7 +726,8 @@ AVFilter ff_vf_premultiply = {
     .outputs       = premultiply_outputs,
     .priv_class    = &premultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS,
+                     AVFILTER_FLAG_DYNAMIC_INPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_PREMULTIPLY_FILTER */
@@ -717,7 +749,8 @@ AVFilter ff_vf_unpremultiply = {
     .outputs       = premultiply_outputs,
     .priv_class    = &unpremultiply_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
-                     AVFILTER_FLAG_DYNAMIC_INPUTS,
+                     AVFILTER_FLAG_DYNAMIC_INPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif /* CONFIG_UNPREMULTIPLY_FILTER */
