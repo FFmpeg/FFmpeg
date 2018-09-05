@@ -275,6 +275,34 @@
         "punpcklwd  "#m3",  "#t2",  "#t4"                           \n\t" \
         "punpckhwd  "#m4",  "#t2",  "#t4"                           \n\t"
 
+/**
+ * brief: Parallel SRA for 8 byte packaged data.
+ * fr_i0: src
+ * fr_i1: SRA number(SRAB number + 8)
+ * fr_t0, fr_t1: temporary register
+ * fr_d0: dst
+ */
+#define PSRAB_MMI(fr_i0, fr_i1, fr_t0, fr_t1, fr_d0)                      \
+        "punpcklbh    "#fr_t0",   "#fr_t0",   "#fr_i0"              \n\t" \
+        "punpckhbh    "#fr_t1",   "#fr_t1",   "#fr_i0"              \n\t" \
+        "psrah        "#fr_t0",   "#fr_t0",   "#fr_i1"              \n\t" \
+        "psrah        "#fr_t1",   "#fr_t1",   "#fr_i1"              \n\t" \
+        "packsshb     "#fr_d0",   "#fr_t0",   "#fr_t1"              \n\t"
+
+/**
+ * brief: Parallel SRL for 8 byte packaged data.
+ * fr_i0: src
+ * fr_i1: SRL number(SRLB number + 8)
+ * fr_t0, fr_t1: temporary register
+ * fr_d0: dst
+ */
+#define PSRLB_MMI(fr_i0, fr_i1, fr_t0, fr_t1, fr_d0)                      \
+        "punpcklbh    "#fr_t0",   "#fr_t0",   "#fr_i0"              \n\t" \
+        "punpckhbh    "#fr_t1",   "#fr_t1",   "#fr_i0"              \n\t" \
+        "psrlh        "#fr_t0",   "#fr_t0",   "#fr_i1"              \n\t" \
+        "psrlh        "#fr_t1",   "#fr_t1",   "#fr_i1"              \n\t" \
+        "packsshb     "#fr_d0",   "#fr_t0",   "#fr_t1"              \n\t"
+
 
 #define PSRAH_4_MMI(fp1, fp2, fp3, fp4, shift)                              \
         "psrah      "#fp1",     "#fp1",     "#shift"                \n\t"   \
