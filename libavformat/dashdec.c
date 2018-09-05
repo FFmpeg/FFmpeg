@@ -919,18 +919,22 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             if (presentation_timeoffset_val) {
                 rep->presentation_timeoffset = (int64_t) strtoll(presentation_timeoffset_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->presentation_timeoffset = [%"PRId64"]\n", rep->presentation_timeoffset);
                 xmlFree(presentation_timeoffset_val);
             }
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
                 xmlFree(duration_val);
             }
             if (timescale_val) {
                 rep->fragment_timescale = (int64_t) strtoll(timescale_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
                 xmlFree(timescale_val);
             }
             if (startnumber_val) {
                 rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
                 xmlFree(startnumber_val);
             }
             if (adaptionset_supplementalproperty_node) {
@@ -988,10 +992,12 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             timescale_val = get_val_from_nodes_tab(segmentlists_tab, 2, "timescale");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
                 xmlFree(duration_val);
             }
             if (timescale_val) {
                 rep->fragment_timescale = (int64_t) strtoll(timescale_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
                 xmlFree(timescale_val);
             }
             fragmenturl_node = xmlFirstElementChild(representation_segmentlist_node);
@@ -1219,20 +1225,28 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 
             if (!av_strcasecmp(attr->name, (const char *)"availabilityStartTime")) {
                 c->availability_start_time = get_utc_date_time_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->availability_start_time = [%"PRId64"]\n", c->availability_start_time);
             } else if (!av_strcasecmp(attr->name, (const char *)"availabilityEndTime")) {
                 c->availability_end_time = get_utc_date_time_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->availability_end_time = [%"PRId64"]\n", c->availability_end_time);
             } else if (!av_strcasecmp(attr->name, (const char *)"publishTime")) {
                 c->publish_time = get_utc_date_time_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->publish_time = [%"PRId64"]\n", c->publish_time);
             } else if (!av_strcasecmp(attr->name, (const char *)"minimumUpdatePeriod")) {
                 c->minimum_update_period = get_duration_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->minimum_update_period = [%"PRId64"]\n", c->minimum_update_period);
             } else if (!av_strcasecmp(attr->name, (const char *)"timeShiftBufferDepth")) {
                 c->time_shift_buffer_depth = get_duration_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->time_shift_buffer_depth = [%"PRId64"]\n", c->time_shift_buffer_depth);
             } else if (!av_strcasecmp(attr->name, (const char *)"minBufferTime")) {
                 c->min_buffer_time = get_duration_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->min_buffer_time = [%"PRId64"]\n", c->min_buffer_time);
             } else if (!av_strcasecmp(attr->name, (const char *)"suggestedPresentationDelay")) {
                 c->suggested_presentation_delay = get_duration_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->suggested_presentation_delay = [%"PRId64"]\n", c->suggested_presentation_delay);
             } else if (!av_strcasecmp(attr->name, (const char *)"mediaPresentationDuration")) {
                 c->media_presentation_duration = get_duration_insec(s, (const char *)val);
+                av_log(s, AV_LOG_TRACE, "c->media_presentation_duration = [%"PRId64"]\n", c->media_presentation_duration);
             }
             attr = attr->next;
             xmlFree(val);
@@ -1314,8 +1328,10 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
 
     if (c->is_live) {
         if (pls->n_fragments) {
+            av_log(s, AV_LOG_TRACE, "in n_fragments mode\n");
             num = pls->first_seq_no;
         } else if (pls->n_timelines) {
+            av_log(s, AV_LOG_TRACE, "in n_timelines mode\n");
             start_time_offset = get_segment_start_time_based_on_timeline(pls, 0xFFFFFFFF) - 60 * pls->fragment_timescale; // 60 seconds before end
             num = calc_next_seg_no_from_timelines(pls, start_time_offset);
             if (num == -1)
@@ -1323,6 +1339,7 @@ static int64_t calc_cur_seg_no(AVFormatContext *s, struct representation *pls)
             else
                 num += pls->first_seq_no;
         } else if (pls->fragment_duration){
+            av_log(s, AV_LOG_TRACE, "in fragment_duration mode fragment_timescale = %"PRId64", presentation_timeoffset = %"PRId64"\n", pls->fragment_timescale, pls->presentation_timeoffset);
             if (pls->presentation_timeoffset) {
                 num = pls->presentation_timeoffset * pls->fragment_timescale / pls->fragment_duration;
             } else if (c->publish_time > 0 && !c->availability_start_time) {
@@ -1343,6 +1360,7 @@ static int64_t calc_min_seg_no(AVFormatContext *s, struct representation *pls)
     int64_t num = 0;
 
     if (c->is_live && pls->fragment_duration) {
+        av_log(s, AV_LOG_TRACE, "in live mode\n");
         num = pls->first_seq_no + (((get_current_time_in_sec() - c->availability_start_time) - c->time_shift_buffer_depth) * pls->fragment_timescale) / pls->fragment_duration;
     } else {
         num = pls->first_seq_no;
