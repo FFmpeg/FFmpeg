@@ -133,6 +133,8 @@ typedef struct AVAppSwitchControl{
     char vid[MAX_PKT_STREAM_ID_LEN];
     char aid[MAX_PKT_STREAM_ID_LEN];
 
+    int min_qn;
+    int max_qn;
     int auto_switch_enable;
     int64_t latest_pts;
     int64_t switch_ts;
