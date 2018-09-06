@@ -28,6 +28,7 @@ FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-guess-delay-1 \
                    fate-mov-guess-delay-2 \
                    fate-mov-guess-delay-3 \
+                   fate-mov-mp4-with-mov-in24-ver \
 
 FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
@@ -121,3 +122,5 @@ fate-mov-guess-delay-3: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stre
 fate-mov-faststart-4gb-overflow: CMD = run tools/qt-faststart$(EXESUF) $(TARGET_SAMPLES)/mov/faststart-4gb-overflow.mov faststart-4gb-overflow-output.mov > /dev/null ; md5sum faststart-4gb-overflow-output.mov | cut -d " " -f1 ; rm faststart-4gb-overflow-output.mov
 fate-mov-faststart-4gb-overflow: CMP = oneline
 fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
+
+fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4
