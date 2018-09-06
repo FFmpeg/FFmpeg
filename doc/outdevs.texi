@@ -150,6 +150,10 @@ Defaults to @option{false}.
 Amount of time to preroll video in seconds.
 Defaults to @option{0.5}.
 
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
 @end table
 
 @subsection Examples

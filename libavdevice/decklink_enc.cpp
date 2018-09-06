@@ -395,6 +395,7 @@ av_cold int ff_decklink_write_header(AVFormatContext *avctx)
     ctx->list_devices = cctx->list_devices;
     ctx->list_formats = cctx->list_formats;
     ctx->preroll      = cctx->preroll;
+    ctx->duplex_mode  = cctx->duplex_mode;
     cctx->ctx = ctx;
 
     /* List available devices and exit. */
