@@ -473,6 +473,12 @@ static av_cold int dnxhd_encode_init(AVCodecContext *avctx)
         ctx->m.mb_height /= 2;
     }
 
+    if (ctx->interlaced && ctx->profile != FF_PROFILE_DNXHD) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Interlaced encoding is not supported for DNxHR profiles.\n");
+        return AVERROR(EINVAL);
+    }
+
     ctx->m.mb_num = ctx->m.mb_height * ctx->m.mb_width;
 
     if (ctx->cid_table->frame_size == DNXHD_VARIABLE) {
