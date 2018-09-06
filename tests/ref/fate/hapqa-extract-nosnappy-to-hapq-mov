@@ -17,7 +17,6 @@ data_hash=adler32:b3ccc147
 [STREAM]
 index=0
 codec_name=hap
-codec_long_name=Vidvox Hap
 profile=unknown
 codec_type=video
 codec_time_base=1/25
