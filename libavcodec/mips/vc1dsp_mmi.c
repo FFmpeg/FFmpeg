@@ -1857,8 +1857,8 @@ static void OPNAME ## vc1_shift2_mmi(uint8_t *dst, const uint8_t *src,      \
         : RESTRICT_ASM_LOW32            RESTRICT_ASM_ADDRT                  \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [offset]"r"(offset),          [offset_x2n]"r"(-2*offset),         \
-          [stride]"g"(stride),          [rnd]"m"(rnd),                      \
-          [stride1]"g"(stride-offset),                                      \
+          [stride]"r"(stride),          [rnd]"m"(rnd),                      \
+          [stride1]"r"(stride-offset),                                      \
           [ff_pw_9]"m"(ff_pw_9)                                             \
         : "$8", "$9", "$10", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10",     \
           "$f12", "$f14", "$f16", "memory"                                  \
@@ -2082,7 +2082,7 @@ OPNAME ## vc1_## NAME ## _mmi(uint8_t *dst, const uint8_t *src,             \
           [h]"+r"(h),                                                       \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [offset_x1]"r"(offset),       [offset_x2]"r"(2*offset),           \
-          [offset_x3]"r"(3*offset),     [stride]"g"(stride),                \
+          [offset_x3]"r"(3*offset),     [stride]"r"(stride),                \
           [rnd]"m"(rnd),                                                    \
           [ff_pw_53]"m"(ff_pw_53),      [ff_pw_18]"m"(ff_pw_18),            \
           [ff_pw_3]"f"(ff_pw_3)                                             \
