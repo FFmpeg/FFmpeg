@@ -40,14 +40,12 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
     switch(backend_type){
     case DNN_NATIVE:
         dnn_module->load_model = &ff_dnn_load_model_native;
-        dnn_module->load_default_model = &ff_dnn_load_default_model_native;
         dnn_module->execute_model = &ff_dnn_execute_model_native;
         dnn_module->free_model = &ff_dnn_free_model_native;
         break;
     case DNN_TF:
     #if (CONFIG_LIBTENSORFLOW == 1)
         dnn_module->load_model = &ff_dnn_load_model_tf;
-        dnn_module->load_default_model = &ff_dnn_load_default_model_tf;
         dnn_module->execute_model = &ff_dnn_execute_model_tf;
         dnn_module->free_model = &ff_dnn_free_model_tf;
     #else

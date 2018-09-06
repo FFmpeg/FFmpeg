@@ -33,12 +33,9 @@
 #include "libswscale/swscale.h"
 #include "dnn_interface.h"
 
-typedef enum {SRCNN, ESPCN} SRModel;
-
 typedef struct SRContext {
     const AVClass *class;
 
-    SRModel model_type;
     char *model_filename;
     DNNBackendType backend_type;
     DNNModule *dnn_module;
@@ -52,16 +49,13 @@ typedef struct SRContext {
 #define OFFSET(x) offsetof(SRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption sr_options[] = {
-    { "model", "specifies what DNN model to use", OFFSET(model_type), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, 1, FLAGS, "model_type" },
-    { "srcnn", "Super-Resolution Convolutional Neural Network model (scale factor should be specified for custom SRCNN model)", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "model_type" },
-    { "espcn", "Efficient Sub-Pixel Convolutional Neural Network model", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "model_type" },
     { "dnn_backend", "DNN backend used for model execution", OFFSET(backend_type), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, 1, FLAGS, "backend" },
     { "native", "native backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "backend" },
 #if (CONFIG_LIBTENSORFLOW == 1)
     { "tensorflow", "tensorflow backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "backend" },
 #endif
-    {"scale_factor", "scale factor for SRCNN model", OFFSET(scale_factor), AV_OPT_TYPE_INT, { .i64 = 2 }, 2, 4, FLAGS},
-    { "model_filename", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
+    { "scale_factor", "scale factor for SRCNN model", OFFSET(scale_factor), AV_OPT_TYPE_INT, { .i64 = 2 }, 2, 4, FLAGS },
+    { "model", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { NULL }
 };
 
@@ -77,15 +71,8 @@ static av_cold int init(AVFilterContext *context)
         return AVERROR(ENOMEM);
     }
     if (!sr_context->model_filename){
-        av_log(context, AV_LOG_VERBOSE, "model file for network was not specified, using default network for x2 upsampling\n");
-        sr_context->scale_factor = 2;
-        switch (sr_context->model_type){
-        case SRCNN:
-            sr_context->model = (sr_context->dnn_module->load_default_model)(DNN_SRCNN);
-            break;
-        case ESPCN:
-            sr_context->model = (sr_context->dnn_module->load_default_model)(DNN_ESPCN);
-        }
+        av_log(context, AV_LOG_ERROR, "model file for network was not specified\n");
+        return AVERROR(EIO);
     }
     else{
         sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
@@ -126,15 +113,8 @@ static int config_props(AVFilterLink *inlink)
     DNNReturnType result;
     int sws_src_h, sws_src_w, sws_dst_h, sws_dst_w;
 
-    switch (sr_context->model_type){
-    case SRCNN:
-        sr_context->input.width = inlink->w * sr_context->scale_factor;
-        sr_context->input.height = inlink->h * sr_context->scale_factor;
-        break;
-    case ESPCN:
-        sr_context->input.width = inlink->w;
-        sr_context->input.height = inlink->h;
-    }
+    sr_context->input.width = inlink->w * sr_context->scale_factor;
+    sr_context->input.height = inlink->h * sr_context->scale_factor;
     sr_context->input.channels = 1;
 
     result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, &sr_context->output);
@@ -143,6 +123,16 @@ static int config_props(AVFilterLink *inlink)
         return AVERROR(EIO);
     }
     else{
+        if (sr_context->input.height != sr_context->output.height || sr_context->input.width != sr_context->output.width){
+            sr_context->input.width = inlink->w;
+            sr_context->input.height = inlink->h;
+            result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, &sr_context->output);
+            if (result != DNN_SUCCESS){
+                av_log(context, AV_LOG_ERROR, "could not set input and output for the model\n");
+                return AVERROR(EIO);
+            }
+            sr_context->scale_factor = 0;
+        }
         outlink->h = sr_context->output.height;
         outlink->w = sr_context->output.width;
         sr_context->sws_contexts[1] = sws_getContext(sr_context->input.width, sr_context->input.height, AV_PIX_FMT_GRAY8,
@@ -157,8 +147,7 @@ static int config_props(AVFilterLink *inlink)
             av_log(context, AV_LOG_ERROR, "could not create SwsContext for conversions\n");
             return AVERROR(ENOMEM);
         }
-        switch (sr_context->model_type){
-        case SRCNN:
+        if (sr_context->scale_factor){
             sr_context->sws_contexts[0] = sws_getContext(inlink->w, inlink->h, inlink->format,
                                                          outlink->w, outlink->h, outlink->format,
                                                          SWS_BICUBIC, NULL, NULL, NULL);
@@ -167,8 +156,8 @@ static int config_props(AVFilterLink *inlink)
                 return AVERROR(ENOMEM);
             }
             sr_context->sws_slice_h = inlink->h;
-            break;
-        case ESPCN:
+        }
+        else{
             if (inlink->format != AV_PIX_FMT_GRAY8){
                 sws_src_h = sr_context->input.height;
                 sws_src_w = sr_context->input.width;
@@ -233,15 +222,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_copy_props(out, in);
     out->height = sr_context->output.height;
     out->width = sr_context->output.width;
-    switch (sr_context->model_type){
-    case SRCNN:
+    if (sr_context->scale_factor){
         sws_scale(sr_context->sws_contexts[0], (const uint8_t **)in->data, in->linesize,
                   0, sr_context->sws_slice_h, out->data, out->linesize);
 
         sws_scale(sr_context->sws_contexts[1], (const uint8_t **)out->data, out->linesize,
                   0, out->height, (uint8_t * const*)(&sr_context->input.data), &sr_context->sws_input_linesize);
-        break;
-    case ESPCN:
+    }
+    else{
         if (sr_context->sws_contexts[0]){
             sws_scale(sr_context->sws_contexts[0], (const uint8_t **)(in->data + 1), in->linesize + 1,
                       0, sr_context->sws_slice_h, out->data + 1, out->linesize + 1);

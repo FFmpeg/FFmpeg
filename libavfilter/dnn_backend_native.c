@@ -24,40 +24,6 @@
  */
 
 #include "dnn_backend_native.h"
-#include "dnn_srcnn.h"
-#include "dnn_espcn.h"
-#include "libavformat/avio.h"
-
-typedef enum {INPUT, CONV, DEPTH_TO_SPACE} LayerType;
-
-typedef enum {RELU, TANH, SIGMOID} ActivationFunc;
-
-typedef struct Layer{
-    LayerType type;
-    float *output;
-    void *params;
-} Layer;
-
-typedef struct ConvolutionalParams{
-    int32_t input_num, output_num, kernel_size;
-    ActivationFunc activation;
-    float *kernel;
-    float *biases;
-} ConvolutionalParams;
-
-typedef struct InputParams{
-    int height, width, channels;
-} InputParams;
-
-typedef struct DepthToSpaceParams{
-    int block_size;
-} DepthToSpaceParams;
-
-// Represents simple feed-forward convolutional network.
-typedef struct ConvolutionalNetwork{
-    Layer *layers;
-    int32_t layers_num;
-} ConvolutionalNetwork;
 
 static DNNReturnType set_input_output_native(void *model, DNNData *input, DNNData *output)
 {
@@ -134,7 +100,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     AVIOContext *model_file_context;
     int file_size, dnn_size, kernel_size, i;
     int32_t layer;
-    LayerType layer_type;
+    DNNLayerType layer_type;
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
 
@@ -244,118 +210,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     if (dnn_size != file_size){
         ff_dnn_free_model_native(&model);
         return NULL;
-    }
-
-    model->set_input_output = &set_input_output_native;
-
-    return model;
-}
-
-static int set_up_conv_layer(Layer *layer, const float *kernel, const float *biases, ActivationFunc activation,
-                             int32_t input_num, int32_t output_num, int32_t size)
-{
-    ConvolutionalParams *conv_params;
-    int kernel_size;
-
-    conv_params = av_malloc(sizeof(ConvolutionalParams));
-    if (!conv_params){
-        return DNN_ERROR;
-    }
-    conv_params->activation = activation;
-    conv_params->input_num = input_num;
-    conv_params->output_num = output_num;
-    conv_params->kernel_size = size;
-    kernel_size = input_num * output_num * size * size;
-    conv_params->kernel = av_malloc(kernel_size * sizeof(float));
-    conv_params->biases = av_malloc(conv_params->output_num * sizeof(float));
-    if (!conv_params->kernel || !conv_params->biases){
-        av_freep(&conv_params->kernel);
-        av_freep(&conv_params->biases);
-        av_freep(&conv_params);
-        return DNN_ERROR;
-    }
-    memcpy(conv_params->kernel, kernel, kernel_size * sizeof(float));
-    memcpy(conv_params->biases, biases, output_num * sizeof(float));
-    layer->type = CONV;
-    layer->params = conv_params;
-
-    return DNN_SUCCESS;
-}
-
-DNNModel *ff_dnn_load_default_model_native(DNNDefaultModel model_type)
-{
-    DNNModel *model = NULL;
-    ConvolutionalNetwork *network = NULL;
-    DepthToSpaceParams *depth_to_space_params;
-    int32_t layer;
-
-    model = av_malloc(sizeof(DNNModel));
-    if (!model){
-        return NULL;
-    }
-
-    network = av_malloc(sizeof(ConvolutionalNetwork));
-    if (!network){
-        av_freep(&model);
-        return NULL;
-    }
-    model->model = (void *)network;
-
-    switch (model_type){
-    case DNN_SRCNN:
-        network->layers_num = 4;
-        break;
-    case DNN_ESPCN:
-        network->layers_num = 5;
-        break;
-    default:
-        av_freep(&network);
-        av_freep(&model);
-        return NULL;
-    }
-
-    network->layers = av_malloc(network->layers_num * sizeof(Layer));
-    if (!network->layers){
-        av_freep(&network);
-        av_freep(&model);
-        return NULL;
-    }
-
-    for (layer = 0; layer < network->layers_num; ++layer){
-        network->layers[layer].output = NULL;
-        network->layers[layer].params = NULL;
-    }
-    network->layers[0].type = INPUT;
-    network->layers[0].params = av_malloc(sizeof(InputParams));
-    if (!network->layers[0].params){
-        ff_dnn_free_model_native(&model);
-        return NULL;
-    }
-
-    switch (model_type){
-    case DNN_SRCNN:
-        if (set_up_conv_layer(network->layers + 1, srcnn_conv1_kernel, srcnn_conv1_bias, RELU, 1, 64, 9) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 2, srcnn_conv2_kernel, srcnn_conv2_bias, RELU, 64, 32, 1) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 3, srcnn_conv3_kernel, srcnn_conv3_bias, RELU, 32, 1, 5) != DNN_SUCCESS){
-            ff_dnn_free_model_native(&model);
-            return NULL;
-        }
-        break;
-    case DNN_ESPCN:
-        if (set_up_conv_layer(network->layers + 1, espcn_conv1_kernel, espcn_conv1_bias, TANH, 1, 64, 5) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 2, espcn_conv2_kernel, espcn_conv2_bias, TANH, 64, 32, 3) != DNN_SUCCESS ||
-            set_up_conv_layer(network->layers + 3, espcn_conv3_kernel, espcn_conv3_bias, SIGMOID, 32, 4, 3) != DNN_SUCCESS){
-            ff_dnn_free_model_native(&model);
-            return NULL;
-        }
-        network->layers[4].type = DEPTH_TO_SPACE;
-        depth_to_space_params = av_malloc(sizeof(DepthToSpaceParams));
-        if (!depth_to_space_params){
-            ff_dnn_free_model_native(&model);
-            return NULL;
-        }
-        depth_to_space_params->block_size = 2;
-        network->layers[4].params = depth_to_space_params;
     }
 
     model->set_input_output = &set_input_output_native;

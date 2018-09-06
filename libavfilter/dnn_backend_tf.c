@@ -24,8 +24,7 @@
  */
 
 #include "dnn_backend_tf.h"
-#include "dnn_srcnn.h"
-#include "dnn_espcn.h"
+#include "dnn_backend_native.h"
 #include "libavformat/avio.h"
 
 #include <tensorflow/c/c_api.h>
@@ -156,32 +155,14 @@ static DNNReturnType set_input_output_tf(void *model, DNNData *input, DNNData *o
     return DNN_SUCCESS;
 }
 
-DNNModel *ff_dnn_load_model_tf(const char *model_filename)
+static DNNReturnType load_tf_model(TFModel *tf_model, const char *model_filename)
 {
-    DNNModel *model = NULL;
-    TFModel *tf_model = NULL;
     TF_Buffer *graph_def;
     TF_ImportGraphDefOptions *graph_opts;
 
-    model = av_malloc(sizeof(DNNModel));
-    if (!model){
-        return NULL;
-    }
-
-    tf_model = av_malloc(sizeof(TFModel));
-    if (!tf_model){
-        av_freep(&model);
-        return NULL;
-    }
-    tf_model->session = NULL;
-    tf_model->input_tensor = NULL;
-    tf_model->output_data = NULL;
-
     graph_def = read_graph(model_filename);
     if (!graph_def){
-        av_freep(&tf_model);
-        av_freep(&model);
-        return NULL;
+        return DNN_ERROR;
     }
     tf_model->graph = TF_NewGraph();
     tf_model->status = TF_NewStatus();
@@ -192,25 +173,177 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename)
     if (TF_GetCode(tf_model->status) != TF_OK){
         TF_DeleteGraph(tf_model->graph);
         TF_DeleteStatus(tf_model->status);
-        av_freep(&tf_model);
-        av_freep(&model);
-        return NULL;
+        return DNN_ERROR;
     }
 
-    model->model = (void *)tf_model;
-    model->set_input_output = &set_input_output_tf;
-
-    return model;
+    return DNN_SUCCESS;
 }
 
-static TF_Operation *add_pad_op(TFModel *tf_model, TF_Operation *input_op, int32_t pad)
+#define NAME_BUFFER_SIZE 256
+
+static DNNReturnType add_conv_layer(TFModel *tf_model, TF_Operation *transpose_op, TF_Operation **cur_op,
+                                    ConvolutionalParams* params, const int layer)
+{
+    TF_Operation *op;
+    TF_OperationDescription *op_desc;
+    TF_Output input;
+    int64_t strides[] = {1, 1, 1, 1};
+    TF_Tensor *tensor;
+    int64_t dims[4];
+    int dims_len;
+    char name_buffer[NAME_BUFFER_SIZE];
+    int32_t size;
+
+    size = params->input_num * params->output_num * params->kernel_size * params->kernel_size;
+    input.index = 0;
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "conv_kernel%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "Const", name_buffer);
+    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
+    dims[0] = params->output_num;
+    dims[1] = params->kernel_size;
+    dims[2] = params->kernel_size;
+    dims[3] = params->input_num;
+    dims_len = 4;
+    tensor = TF_AllocateTensor(TF_FLOAT, dims, dims_len, size * sizeof(float));
+    memcpy(TF_TensorData(tensor), params->kernel, size * sizeof(float));
+    TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+    op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "transpose%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "Transpose", name_buffer);
+    input.oper = op;
+    TF_AddInput(op_desc, input);
+    input.oper = transpose_op;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    TF_SetAttrType(op_desc, "Tperm", TF_INT32);
+    op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "conv2d%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "Conv2D", name_buffer);
+    input.oper = *cur_op;
+    TF_AddInput(op_desc, input);
+    input.oper = op;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    TF_SetAttrIntList(op_desc, "strides", strides, 4);
+    TF_SetAttrString(op_desc, "padding", "VALID", 5);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "conv_biases%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "Const", name_buffer);
+    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
+    dims[0] = params->output_num;
+    dims_len = 1;
+    tensor = TF_AllocateTensor(TF_FLOAT, dims, dims_len, params->output_num * sizeof(float));
+    memcpy(TF_TensorData(tensor), params->biases, params->output_num * sizeof(float));
+    TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+    op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "bias_add%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "BiasAdd", name_buffer);
+    input.oper = *cur_op;
+    TF_AddInput(op_desc, input);
+    input.oper = op;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "activation%d", layer);
+    switch (params->activation){
+    case RELU:
+        op_desc = TF_NewOperation(tf_model->graph, "Relu", name_buffer);
+        break;
+    case TANH:
+        op_desc = TF_NewOperation(tf_model->graph, "Tanh", name_buffer);
+        break;
+    case SIGMOID:
+        op_desc = TF_NewOperation(tf_model->graph, "Sigmoid", name_buffer);
+        break;
+    default:
+        return DNN_ERROR;
+    }
+    input.oper = *cur_op;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    return DNN_SUCCESS;
+}
+
+static DNNReturnType add_depth_to_space_layer(TFModel *tf_model, TF_Operation **cur_op,
+                                              DepthToSpaceParams *params, const int layer)
 {
     TF_OperationDescription *op_desc;
+    TF_Output input;
+    char name_buffer[NAME_BUFFER_SIZE];
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "depth_to_space%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "DepthToSpace", name_buffer);
+    input.oper = *cur_op;
+    input.index = 0;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    TF_SetAttrInt(op_desc, "block_size", params->block_size);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    return DNN_SUCCESS;
+}
+
+static int calculate_pad(const ConvolutionalNetwork *conv_network)
+{
+    ConvolutionalParams *params;
+    int32_t layer;
+    int pad = 0;
+
+    for (layer = 0; layer < conv_network->layers_num; ++layer){
+        if (conv_network->layers[layer].type == CONV){
+            params = (ConvolutionalParams *)conv_network->layers[layer].params;
+            pad += params->kernel_size >> 1;
+        }
+    }
+
+    return pad;
+}
+
+static DNNReturnType add_pad_op(TFModel *tf_model, TF_Operation **cur_op, const int32_t pad)
+{
     TF_Operation *op;
     TF_Tensor *tensor;
+    TF_OperationDescription *op_desc;
     TF_Output input;
     int32_t *pads;
     int64_t pads_shape[] = {4, 2};
+
+    input.index = 0;
 
     op_desc = TF_NewOperation(tf_model->graph, "Const", "pads");
     TF_SetAttrType(op_desc, "dtype", TF_INT32);
@@ -222,68 +355,73 @@ static TF_Operation *add_pad_op(TFModel *tf_model, TF_Operation *input_op, int32
     pads[6] = 0;   pads[7] = 0;
     TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
+        return DNN_ERROR;
     }
     op = TF_FinishOperation(op_desc, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
+        return DNN_ERROR;
     }
 
     op_desc = TF_NewOperation(tf_model->graph, "MirrorPad", "mirror_pad");
-    input.oper = input_op;
-    input.index = 0;
+    input.oper = *cur_op;
     TF_AddInput(op_desc, input);
     input.oper = op;
     TF_AddInput(op_desc, input);
     TF_SetAttrType(op_desc, "T", TF_FLOAT);
     TF_SetAttrType(op_desc, "Tpaddings", TF_INT32);
     TF_SetAttrString(op_desc, "mode", "SYMMETRIC", 9);
-    op = TF_FinishOperation(op_desc, tf_model->status);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
+        return DNN_ERROR;
     }
 
-    return op;
+    return DNN_SUCCESS;
 }
 
-static TF_Operation *add_const_op(TFModel *tf_model, const float *values, const int64_t *dims, int dims_len, const char *name)
+static DNNReturnType load_native_model(TFModel *tf_model, const char *model_filename)
 {
-    int dim;
-    TF_OperationDescription *op_desc;
-    TF_Tensor *tensor;
-    size_t len;
-
-    op_desc = TF_NewOperation(tf_model->graph, "Const", name);
-    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
-    len = sizeof(float);
-    for (dim = 0; dim < dims_len; ++dim){
-        len *= dims[dim];
-    }
-    tensor = TF_AllocateTensor(TF_FLOAT, dims, dims_len, len);
-    memcpy(TF_TensorData(tensor), values, len);
-    TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
-    if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
-    }
-
-    return TF_FinishOperation(op_desc, tf_model->status);
-}
-
-static TF_Operation* add_conv_layers(TFModel *tf_model, const float **consts, const int64_t **consts_dims,
-                                     const int *consts_dims_len, const char **activations,
-                                     TF_Operation *input_op, int layers_num)
-{
-    int i;
+    int32_t layer;
     TF_OperationDescription *op_desc;
     TF_Operation *op;
     TF_Operation *transpose_op;
-    TF_Output input;
-    int64_t strides[] = {1, 1, 1, 1};
-    int32_t *transpose_perm;
     TF_Tensor *tensor;
+    TF_Output input;
+    int32_t *transpose_perm;
     int64_t transpose_perm_shape[] = {4};
-    #define NAME_BUFF_SIZE 256
-    char name_buffer[NAME_BUFF_SIZE];
+    int64_t input_shape[] = {1, -1, -1, -1};
+    int32_t pad;
+    DNNReturnType layer_add_res;
+    DNNModel *native_model = NULL;
+    ConvolutionalNetwork *conv_network;
+
+    native_model = ff_dnn_load_model_native(model_filename);
+    if (!native_model){
+        return DNN_ERROR;
+    }
+
+    conv_network = (ConvolutionalNetwork *)native_model->model;
+    pad = calculate_pad(conv_network);
+    tf_model->graph = TF_NewGraph();
+    tf_model->status = TF_NewStatus();
+
+#define CLEANUP_ON_ERROR(tf_model) \
+    { \
+        TF_DeleteGraph(tf_model->graph); \
+        TF_DeleteStatus(tf_model->status); \
+        return DNN_ERROR; \
+    }
+
+    op_desc = TF_NewOperation(tf_model->graph, "Placeholder", "x");
+    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
+    TF_SetAttrShape(op_desc, "shape", input_shape, 4);
+    op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        CLEANUP_ON_ERROR(tf_model);
+    }
+
+    if (add_pad_op(tf_model, &op, pad) != DNN_SUCCESS){
+        CLEANUP_ON_ERROR(tf_model);
+    }
 
     op_desc = TF_NewOperation(tf_model->graph, "Const", "transpose_perm");
     TF_SetAttrType(op_desc, "dtype", TF_INT32);
@@ -295,153 +433,48 @@ static TF_Operation* add_conv_layers(TFModel *tf_model, const float **consts, co
     transpose_perm[3] = 0;
     TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
+        CLEANUP_ON_ERROR(tf_model);
     }
     transpose_op = TF_FinishOperation(op_desc, tf_model->status);
+
+    for (layer = 0; layer < conv_network->layers_num; ++layer){
+        switch (conv_network->layers[layer].type){
+        case INPUT:
+            break;
+        case CONV:
+            layer_add_res = add_conv_layer(tf_model, transpose_op, &op,
+                                           (ConvolutionalParams *)conv_network->layers[layer].params, layer);
+            break;
+        case DEPTH_TO_SPACE:
+            layer_add_res = add_depth_to_space_layer(tf_model, &op,
+                                                     (DepthToSpaceParams *)conv_network->layers[layer].params, layer);
+            break;
+        default:
+            CLEANUP_ON_ERROR(tf_model);
+        }
+
+        if (layer_add_res != DNN_SUCCESS){
+            CLEANUP_ON_ERROR(tf_model);
+        }
+    }
+
+    op_desc = TF_NewOperation(tf_model->graph, "Identity", "y");
+    input.oper = op;
+    TF_AddInput(op_desc, input);
+    TF_FinishOperation(op_desc, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        return NULL;
+        CLEANUP_ON_ERROR(tf_model);
     }
 
-    input.index = 0;
-    for (i = 0; i < layers_num; ++i){
-        snprintf(name_buffer, NAME_BUFF_SIZE, "conv_kernel%d", i);
-        op = add_const_op(tf_model, consts[i << 1], consts_dims[i << 1], consts_dims_len[i << 1], name_buffer);
-        if (TF_GetCode(tf_model->status) != TF_OK || op == NULL){
-            return NULL;
-        }
+    ff_dnn_free_model_native(&native_model);
 
-        snprintf(name_buffer, NAME_BUFF_SIZE, "transpose%d", i);
-        op_desc = TF_NewOperation(tf_model->graph, "Transpose", name_buffer);
-        input.oper = op;
-        TF_AddInput(op_desc, input);
-        input.oper = transpose_op;
-        TF_AddInput(op_desc, input);
-        TF_SetAttrType(op_desc, "T", TF_FLOAT);
-        TF_SetAttrType(op_desc, "Tperm", TF_INT32);
-        op = TF_FinishOperation(op_desc, tf_model->status);
-        if (TF_GetCode(tf_model->status) != TF_OK){
-            return NULL;
-        }
-
-        snprintf(name_buffer, NAME_BUFF_SIZE, "conv2d%d", i);
-        op_desc = TF_NewOperation(tf_model->graph, "Conv2D", name_buffer);
-        input.oper = input_op;
-        TF_AddInput(op_desc, input);
-        input.oper = op;
-        TF_AddInput(op_desc, input);
-        TF_SetAttrType(op_desc, "T", TF_FLOAT);
-        TF_SetAttrIntList(op_desc, "strides", strides, 4);
-        TF_SetAttrString(op_desc, "padding", "VALID", 5);
-        input_op = TF_FinishOperation(op_desc, tf_model->status);
-        if (TF_GetCode(tf_model->status) != TF_OK){
-            return NULL;
-        }
-
-        snprintf(name_buffer, NAME_BUFF_SIZE, "conv_biases%d", i);
-        op = add_const_op(tf_model, consts[(i << 1) + 1], consts_dims[(i << 1) + 1], consts_dims_len[(i << 1) + 1], name_buffer);
-        if (TF_GetCode(tf_model->status) != TF_OK || op == NULL){
-            return NULL;
-        }
-
-        snprintf(name_buffer, NAME_BUFF_SIZE, "bias_add%d", i);
-        op_desc = TF_NewOperation(tf_model->graph, "BiasAdd", name_buffer);
-        input.oper = input_op;
-        TF_AddInput(op_desc, input);
-        input.oper = op;
-        TF_AddInput(op_desc, input);
-        TF_SetAttrType(op_desc, "T", TF_FLOAT);
-        input_op = TF_FinishOperation(op_desc, tf_model->status);
-        if (TF_GetCode(tf_model->status) != TF_OK){
-            return NULL;
-        }
-
-        snprintf(name_buffer, NAME_BUFF_SIZE, "activation%d", i);
-        op_desc = TF_NewOperation(tf_model->graph, activations[i], name_buffer);
-        input.oper = input_op;
-        TF_AddInput(op_desc, input);
-        TF_SetAttrType(op_desc, "T", TF_FLOAT);
-        input_op = TF_FinishOperation(op_desc, tf_model->status);
-        if (TF_GetCode(tf_model->status) != TF_OK){
-            return NULL;
-        }
-    }
-
-    return input_op;
+    return DNN_SUCCESS;
 }
 
-DNNModel *ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
+DNNModel *ff_dnn_load_model_tf(const char *model_filename)
 {
     DNNModel *model = NULL;
     TFModel *tf_model = NULL;
-    TF_OperationDescription *op_desc;
-    TF_Operation *op;
-    TF_Output input;
-    static const int64_t input_shape[] = {1, -1, -1, 1};
-    static const char tanh[] = "Tanh";
-    static const char sigmoid[] = "Sigmoid";
-    static const char relu[] = "Relu";
-
-    static const float *srcnn_consts[] = {
-        srcnn_conv1_kernel,
-        srcnn_conv1_bias,
-        srcnn_conv2_kernel,
-        srcnn_conv2_bias,
-        srcnn_conv3_kernel,
-        srcnn_conv3_bias
-    };
-    static const long int *srcnn_consts_dims[] = {
-        srcnn_conv1_kernel_dims,
-        srcnn_conv1_bias_dims,
-        srcnn_conv2_kernel_dims,
-        srcnn_conv2_bias_dims,
-        srcnn_conv3_kernel_dims,
-        srcnn_conv3_bias_dims
-    };
-    static const int srcnn_consts_dims_len[] = {
-        4,
-        1,
-        4,
-        1,
-        4,
-        1
-    };
-    static const char *srcnn_activations[] = {
-        relu,
-        relu,
-        relu
-    };
-
-    static const float *espcn_consts[] = {
-        espcn_conv1_kernel,
-        espcn_conv1_bias,
-        espcn_conv2_kernel,
-        espcn_conv2_bias,
-        espcn_conv3_kernel,
-        espcn_conv3_bias
-    };
-    static const long int *espcn_consts_dims[] = {
-        espcn_conv1_kernel_dims,
-        espcn_conv1_bias_dims,
-        espcn_conv2_kernel_dims,
-        espcn_conv2_bias_dims,
-        espcn_conv3_kernel_dims,
-        espcn_conv3_bias_dims
-    };
-    static const int espcn_consts_dims_len[] = {
-        4,
-        1,
-        4,
-        1,
-        4,
-        1
-    };
-    static const char *espcn_activations[] = {
-        tanh,
-        tanh,
-        sigmoid
-    };
-
-    input.index = 0;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -457,70 +490,13 @@ DNNModel *ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
     tf_model->input_tensor = NULL;
     tf_model->output_data = NULL;
 
-    tf_model->graph = TF_NewGraph();
-    tf_model->status = TF_NewStatus();
+    if (load_tf_model(tf_model, model_filename) != DNN_SUCCESS){
+        if (load_native_model(tf_model, model_filename) != DNN_SUCCESS){
+            av_freep(&tf_model);
+            av_freep(&model);
 
-    #define CLEANUP_ON_ERROR(tf_model, model) { \
-        TF_DeleteGraph(tf_model->graph); \
-        TF_DeleteStatus(tf_model->status); \
-        av_freep(&tf_model); \
-        av_freep(&model); \
-        return NULL; \
-    }
-
-    op_desc = TF_NewOperation(tf_model->graph, "Placeholder", "x");
-    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
-    TF_SetAttrShape(op_desc, "shape", input_shape, 4);
-    op = TF_FinishOperation(op_desc, tf_model->status);
-    if (TF_GetCode(tf_model->status) != TF_OK){
-        CLEANUP_ON_ERROR(tf_model, model);
-    }
-
-    switch (model_type){
-    case DNN_SRCNN:
-        op = add_pad_op(tf_model, op, 6);
-        if (!op){
-            CLEANUP_ON_ERROR(tf_model, model);
+            return NULL;
         }
-        op = add_conv_layers(tf_model, srcnn_consts,
-                             srcnn_consts_dims, srcnn_consts_dims_len,
-                             srcnn_activations, op, 3);
-        if (!op){
-            CLEANUP_ON_ERROR(tf_model, model);
-        }
-        break;
-    case DNN_ESPCN:
-        op = add_pad_op(tf_model, op, 4);
-        if (!op){
-            CLEANUP_ON_ERROR(tf_model, model);
-        }
-        op = add_conv_layers(tf_model, espcn_consts,
-                             espcn_consts_dims, espcn_consts_dims_len,
-                             espcn_activations, op, 3);
-        if (!op){
-            CLEANUP_ON_ERROR(tf_model, model);
-        }
-
-        op_desc = TF_NewOperation(tf_model->graph, "DepthToSpace", "depth_to_space");
-        input.oper = op;
-        TF_AddInput(op_desc, input);
-        TF_SetAttrType(op_desc, "T", TF_FLOAT);
-        TF_SetAttrInt(op_desc, "block_size", 2);
-        op = TF_FinishOperation(op_desc, tf_model->status);
-        if (TF_GetCode(tf_model->status) != TF_OK){
-            CLEANUP_ON_ERROR(tf_model, model);
-        }
-        break;
-    default:
-        CLEANUP_ON_ERROR(tf_model, model);
-    }
-
-    op_desc = TF_NewOperation(tf_model->graph, "Identity", "y");
-    input.oper = op;
-    TF_AddInput(op_desc, input);
-    TF_FinishOperation(op_desc, tf_model->status);
-    if (TF_GetCode(tf_model->status) != TF_OK){
-        CLEANUP_ON_ERROR(tf_model, model);
     }
 
     model->model = (void *)tf_model;
@@ -528,6 +504,8 @@ DNNModel *ff_dnn_load_default_model_tf(DNNDefaultModel model_type)
 
     return model;
 }
+
+
 
 DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model)
 {
@@ -572,7 +550,7 @@ void ff_dnn_free_model_tf(DNNModel **model)
             TF_DeleteTensor(tf_model->input_tensor);
         }
         if (tf_model->output_data){
-            av_freep(&(tf_model->output_data->data));
+            av_freep(&tf_model->output_data->data);
         }
         av_freep(&tf_model);
         av_freep(model);

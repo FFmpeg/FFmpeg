@@ -15593,7 +15593,17 @@ option may cause flicker since the B-Frames have often larger QP. Default is
 @section sr
 
 Scale the input by applying one of the super-resolution methods based on
-convolutional neural networks.
+convolutional neural networks. Supported models:
+
+@itemize
+@item
+Super-Resolution Convolutional Neural Network model (SRCNN).
+See @url{https://arxiv.org/abs/1501.00092}.
+
+@item
+Efficient Sub-Pixel Convolutional Neural Network model (ESPCN).
+See @url{https://arxiv.org/abs/1609.05158}.
+@end itemize
 
 Training scripts as well as scripts for model generation are provided in
 the repository at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
@@ -15601,22 +15611,6 @@ the repository at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
 The filter accepts the following options:
 
 @table @option
-@item model
-Specify which super-resolution model to use. This option accepts the following values:
-
-@table @samp
-@item srcnn
-Super-Resolution Convolutional Neural Network model.
-See @url{https://arxiv.org/abs/1501.00092}.
-
-@item espcn
-Efficient Sub-Pixel Convolutional Neural Network model.
-See @url{https://arxiv.org/abs/1609.05158}.
-
-@end table
-
-Default value is @samp{srcnn}.
-
 @item dnn_backend
 Specify which DNN backend to use for model loading and execution. This option accepts
 the following values:
@@ -15630,23 +15624,20 @@ TensorFlow backend. To enable this backend you
 need to install the TensorFlow for C library (see
 @url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
 @code{--enable-libtensorflow}
-
 @end table
 
 Default value is @samp{native}.
 
-@item scale_factor
-Set scale factor for SRCNN model, for which custom model file was provided.
-Allowed values are @code{2}, @code{3} and @code{4}. Default value is @code{2}.
-Scale factor is necessary for SRCNN model, because it accepts input upscaled
-using bicubic upscaling with proper scale factor.
-
-@item model_filename
+@item model
 Set path to model file specifying network architecture and its parameters.
 Note that different backends use different file formats. TensorFlow backend
 can load files for both formats, while native backend can load files for only
 its format.
 
+@item scale_factor
+Set scale factor for SRCNN model. Allowed values are @code{2}, @code{3} and @code{4}.
+Default value is @code{2}. Scale factor is necessary for SRCNN model, because it accepts
+input upscaled using bicubic upscaling with proper scale factor.
 @end table
 
 @anchor{subtitles}

@@ -30,8 +30,6 @@ typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
 typedef enum {DNN_NATIVE, DNN_TF} DNNBackendType;
 
-typedef enum {DNN_SRCNN, DNN_ESPCN} DNNDefaultModel;
-
 typedef struct DNNData{
     float *data;
     int width, height, channels;
@@ -49,8 +47,6 @@ typedef struct DNNModel{
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
     DNNModel *(*load_model)(const char *model_filename);
-    // Loads one of the default models
-    DNNModel *(*load_default_model)(DNNDefaultModel model_type);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
     DNNReturnType (*execute_model)(const DNNModel *model);
     // Frees memory allocated for model.

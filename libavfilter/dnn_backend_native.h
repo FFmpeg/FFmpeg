@@ -28,10 +28,40 @@
 #define AVFILTER_DNN_BACKEND_NATIVE_H
 
 #include "dnn_interface.h"
+#include "libavformat/avio.h"
+
+typedef enum {INPUT, CONV, DEPTH_TO_SPACE} DNNLayerType;
+
+typedef enum {RELU, TANH, SIGMOID} DNNActivationFunc;
+
+typedef struct Layer{
+    DNNLayerType type;
+    float *output;
+    void *params;
+} Layer;
+
+typedef struct ConvolutionalParams{
+    int32_t input_num, output_num, kernel_size;
+    DNNActivationFunc activation;
+    float *kernel;
+    float *biases;
+} ConvolutionalParams;
+
+typedef struct InputParams{
+    int height, width, channels;
+} InputParams;
+
+typedef struct DepthToSpaceParams{
+    int block_size;
+} DepthToSpaceParams;
+
+// Represents simple feed-forward convolutional network.
+typedef struct ConvolutionalNetwork{
+    Layer *layers;
+    int32_t layers_num;
+} ConvolutionalNetwork;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename);
-
-DNNModel *ff_dnn_load_default_model_native(DNNDefaultModel model_type);
 
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model);
 
