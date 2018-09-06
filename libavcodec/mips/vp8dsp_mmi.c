@@ -44,58 +44,6 @@
         "punpcklbh  "#dst_r",   "#src",         %[db_2]             \n\t"   \
         "punpckhbh  "#dst_l",   "#src",         %[db_2]             \n\t"
 
-#define MMI_TRANSPOSE8x8_UB_UB(src_0, src_1, src_2, src_3,                  \
-                               src_4, src_5, src_6, src_7,                  \
-                               dst_0, dst_1, dst_2, dst_3,                  \
-                               dst_4, dst_5, dst_6, dst_7)                  \
-        "li         %[it_1],    0xe4                                \n\t"   \
-        "dmtc1      %[it_1],    %[db_1]                             \n\t"   \
-        "pshufh     %[db_2],    "#src_0",       %[db_1]             \n\t"   \
-        "punpcklbh  "#dst_0",   "#src_0",       "#src_1"            \n\t"   \
-        "punpckhbh  "#dst_1",   %[db_2],        "#src_1"            \n\t"   \
-        "pshufh     %[db_2],    "#src_2",       %[db_1]             \n\t"   \
-        "punpcklbh  "#dst_2",   "#src_2",       "#src_3"            \n\t"   \
-        "punpckhbh  "#dst_3",   %[db_2],        "#src_3"            \n\t"   \
-        "pshufh     %[db_2],    "#src_4",       %[db_1]             \n\t"   \
-        "punpcklbh  "#dst_4",   "#src_4",       "#src_5"            \n\t"   \
-        "punpckhbh  "#dst_5",   %[db_2],        "#src_5"            \n\t"   \
-        "pshufh     %[db_2],    "#src_6",       %[db_1]             \n\t"   \
-        "punpcklbh  "#dst_6",   "#src_6",       "#src_7"            \n\t"   \
-        "punpckhbh  "#dst_7",   %[db_2],        "#src_7"            \n\t"   \
-                                                                            \
-        "pshufh     %[db_2],    "#dst_0",       %[db_1]             \n\t"   \
-        "punpcklhw  "#dst_0",   "#dst_0",       "#dst_2"            \n\t"   \
-        "punpckhhw  "#dst_2",   %[db_2],        "#dst_2"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_1",       %[db_1]             \n\t"   \
-        "punpcklhw  "#dst_1",   "#dst_1",       "#dst_3"            \n\t"   \
-        "punpckhhw  "#dst_3",   %[db_2],        "#dst_3"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_4",       %[db_1]             \n\t"   \
-        "punpcklhw  "#dst_4",   "#dst_4",       "#dst_6"            \n\t"   \
-        "punpckhhw  "#dst_6",   %[db_2],        "#dst_6"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_5",       %[db_1]             \n\t"   \
-        "punpcklhw  "#dst_5",   "#dst_5",       "#dst_7"            \n\t"   \
-        "punpckhhw  "#dst_7",   %[db_2],        "#dst_7"            \n\t"   \
-                                                                            \
-        "pshufh     %[db_2],    "#dst_0",       %[db_1]             \n\t"   \
-        "punpcklwd  "#dst_0",   "#dst_0",       "#dst_4"            \n\t"   \
-        "punpckhwd  "#dst_4",   %[db_2],        "#dst_4"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_1",       %[db_1]             \n\t"   \
-        "punpcklwd  "#dst_1",   "#dst_1",       "#dst_5"            \n\t"   \
-        "punpckhwd  "#dst_5",   %[db_2],        "#dst_5"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_2",       %[db_1]             \n\t"   \
-        "punpcklwd  "#dst_2",   "#dst_2",       "#dst_6"            \n\t"   \
-        "punpckhwd  "#dst_6",   %[db_2],        "#dst_6"            \n\t"   \
-        "pshufh     %[db_2],    "#dst_3",       %[db_1]             \n\t"   \
-        "punpcklwd  "#dst_3",   "#dst_3",       "#dst_7"            \n\t"   \
-        "punpckhwd  "#dst_7",   %[db_2],        "#dst_7"            \n\t"   \
-                                                                            \
-        "pshufh     %[db_2],    "#dst_1",       %[db_1]             \n\t"   \
-        "pshufh     "#dst_1",   "#dst_4",       %[db_1]             \n\t"   \
-        "pshufh     "#dst_4",   %[db_2],        %[db_1]             \n\t"   \
-        "pshufh     %[db_2],    "#dst_3",       %[db_1]             \n\t"   \
-        "pshufh     "#dst_3",   "#dst_6",       %[db_1]             \n\t"   \
-        "pshufh     "#dst_6",   %[db_2],        %[db_1]             \n\t"
-
 #define MMI_VP8_LOOP_FILTER                                                 \
         /* Calculation of hev */                                            \
         "dmtc1      %[thresh],  %[ftmp3]                            \n\t"   \
@@ -952,16 +900,14 @@ static av_always_inline void vp8_h_loop_filter8_mmi(uint8_t *dst,
         "gsldlc1    %[q3],        0x03(%[tmp0])                   \n\t"
         "gsldrc1    %[q3],        -0x04(%[tmp0])                  \n\t"
         /* Matrix transpose */
-        MMI_TRANSPOSE8x8_UB_UB(%[p3], %[p2], %[p1], %[p0],
-                               %[q0], %[q1], %[q2], %[q3],
-                               %[p3], %[p2], %[p1], %[p0],
-                               %[q0], %[q1], %[q2], %[q3])
+        TRANSPOSE_8B(%[p3], %[p2], %[p1], %[p0],
+                     %[q0], %[q1], %[q2], %[q3],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
         MMI_VP8_LOOP_FILTER
         /* Matrix transpose */
-        MMI_TRANSPOSE8x8_UB_UB(%[p3], %[p2], %[p1], %[p0],
-                               %[q0], %[q1], %[q2], %[q3],
-                               %[p3], %[p2], %[p1], %[p0],
-                               %[q0], %[q1], %[q2], %[q3])
+        TRANSPOSE_8B(%[p3], %[p2], %[p1], %[p0],
+                     %[q0], %[q1], %[q2], %[q3],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
         /* Move to dst */
         "gssdlc1    %[p3],        0x03(%[dst])                    \n\t"
         "gssdrc1    %[p3],        -0x04(%[dst])                   \n\t"
@@ -1233,8 +1179,7 @@ void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
         MMI_SDC1(%[ftmp0], %[block], 0x18)
 
         TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp0], %[ftmp10])
+                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8])
 
         // t[0 4  8 12]
         "paddh      %[ftmp5],   %[ftmp1],       %[ftmp3]            \n\t"
@@ -1269,8 +1214,7 @@ void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
         "psrah      %[ftmp4],   %[ftmp4],       %[ftmp11]           \n\t"
 
         TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp0], %[ftmp10])
+                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8])
 
         MMI_LWC1(%[ftmp5], %[dst0], 0x00)
         MMI_LWC1(%[ftmp6], %[dst1], 0x00)

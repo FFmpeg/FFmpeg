@@ -248,8 +248,7 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
                                0xfff70004, 0xfff0000f, %[ff_pw_4])
 
         TRANSPOSE_4H(%[ftmp15], %[ftmp16], %[ftmp17], %[ftmp18],
-                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[tmp0],  %[ftmp6], %[ftmp7])
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
         MMI_SDC1(%[ftmp15], %[dst], 0x00)
         MMI_SDC1(%[ftmp16], %[dst], 0x10)
@@ -257,8 +256,7 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
         MMI_SDC1(%[ftmp18], %[dst], 0x30)
 
         TRANSPOSE_4H(%[ftmp19], %[ftmp20], %[ftmp21], %[ftmp22],
-                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[tmp0],  %[ftmp6], %[ftmp7])
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
         MMI_SDC1(%[ftmp19], %[dst], 0x08)
         MMI_SDC1(%[ftmp20], %[dst], 0x18)
@@ -301,8 +299,7 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
                                0xfff70004, 0xfff0000f, %[ff_pw_4])
 
         TRANSPOSE_4H(%[ftmp15], %[ftmp16], %[ftmp17], %[ftmp18],
-                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[tmp0],  %[ftmp6], %[ftmp7])
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
         MMI_SDC1(%[ftmp15], %[dst], 0x40)
         MMI_SDC1(%[ftmp16], %[dst], 0x50)
@@ -310,8 +307,7 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
         MMI_SDC1(%[ftmp18], %[dst], 0x70)
 
         TRANSPOSE_4H(%[ftmp19], %[ftmp20], %[ftmp21], %[ftmp22],
-                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[tmp0],  %[ftmp6], %[ftmp7])
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
         MMI_SDC1(%[ftmp19], %[dst], 0x48)
         MMI_SDC1(%[ftmp20], %[dst], 0x58)
