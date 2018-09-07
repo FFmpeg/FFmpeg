@@ -242,6 +242,14 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         memcpy(buf, side_data->data, side_data->size);
     }
 
+    side_data = av_frame_get_side_data(pic, AV_FRAME_DATA_AFD);
+    if (side_data && side_data->size) {
+        uint8_t *buf = av_packet_new_side_data(pkt, AV_PKT_DATA_AFD, side_data->size);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        memcpy(buf, side_data->data, side_data->size);
+    }
+
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
     return 0;
