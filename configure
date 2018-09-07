@@ -239,6 +239,7 @@ External library support:
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
   --enable-libilbc         enable iLBC de/encoding via libilbc [no]
   --enable-libjack         enable JACK audio sound server [no]
+  --enable-libklvanc       enable Kernel Labs VANC processing [no]
   --enable-libkvazaar      enable HEVC encoding via libkvazaar [no]
   --enable-liblensfun      enable lensfun lens correction [no]
   --enable-libmodplug      enable ModPlug via libmodplug [no]
@@ -1720,6 +1721,7 @@ EXTERNAL_LIBRARY_LIST="
     libiec61883
     libilbc
     libjack
+    libklvanc
     libkvazaar
     libmodplug
     libmp3lame
@@ -3234,6 +3236,7 @@ decklink_deps_any="libdl LoadLibrary"
 decklink_indev_deps="decklink threads"
 decklink_indev_extralibs="-lstdc++"
 decklink_outdev_deps="decklink threads"
+decklink_outdev_suggest="libklvanc"
 decklink_outdev_extralibs="-lstdc++"
 libndi_newtek_indev_deps="libndi_newtek"
 libndi_newtek_indev_extralibs="-lndi"
@@ -6069,6 +6072,7 @@ enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
                                    check_lib libgsm "${gsm_hdr}" gsm_create -lgsm && break;
                                done || die "ERROR: libgsm not found"; }
 enabled libilbc           && require libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc $pthreads_extralibs
+enabled libklvanc         && require libklvanc libklvanc/vanc.h klvanc_context_create -lklvanc
 enabled libkvazaar        && require_pkg_config libkvazaar "kvazaar >= 0.8.1" kvazaar.h kvz_api_get
 enabled liblensfun        && require_pkg_config liblensfun lensfun lensfun.h lf_db_new
 # While it may appear that require is being used as a pkg-config
