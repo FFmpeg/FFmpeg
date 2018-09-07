@@ -167,6 +167,7 @@ typedef struct DASHContext {
     AVApplicationContext *app_ctx;
     int64_t         app_ctx_intptr;
     AVAppDashStream info;
+    int dash_audio_read_len;
 } DASHContext;
 
 static int dash_call_inject(AVFormatContext *s);
@@ -1891,6 +1892,9 @@ static int read_data(void *opaque, uint8_t *buf, int buf_size)
         return AVERROR_EOF;
     }
     DASHContext *c = v->parent->priv_data;
+    if (c->disable_video && c->dash_audio_read_len > 0) {
+        buf_size = c->dash_audio_read_len;
+    }
 
 restart:
     if (!v->input) {
@@ -2515,6 +2519,7 @@ static const AVOption dash_options[] = {
     {"disable_video", "disable_video", OFFSET(disable_video), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
     {"disable_audio", "disable_audio", OFFSET(disable_audio), AV_OPT_TYPE_INT, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS},
     { "ijkapplication", "AVApplicationContext", OFFSET(app_ctx_intptr), AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, FLAGS},
+    { "dash_audio_read_len", "audio read len", OFFSET(dash_audio_read_len), AV_OPT_TYPE_INT, { .i64 = -1 }, INT_MIN, INT_MAX, FLAGS},
     {NULL}
 };
 
