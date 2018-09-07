@@ -529,7 +529,7 @@ static int decompress_p(AVCodecContext *avctx,
         return ret;
 
     max += temp << 8;
-    if (min > max)
+    if (min > max || min >= s->nbcount)
         return AVERROR_INVALIDDATA;
 
     memset(s->blocks, 0, sizeof(*s->blocks) * s->nbcount);
@@ -541,6 +541,8 @@ static int decompress_p(AVCodecContext *avctx,
         ret |= decode_value(s, s->count_model, 256, 20, &count);
         if (ret < 0)
             return ret;
+        if (count <= 0)
+            return AVERROR_INVALIDDATA;
 
         while (min < s->nbcount && count-- > 0) {
             s->blocks[min++] = fill;
