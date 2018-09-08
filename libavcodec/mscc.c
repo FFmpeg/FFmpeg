@@ -261,6 +261,7 @@ AVCodec ff_mscc_decoder = {
     .close            = decode_close,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_srgc_decoder = {
@@ -273,4 +274,5 @@ AVCodec ff_srgc_decoder = {
     .close            = decode_close,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
