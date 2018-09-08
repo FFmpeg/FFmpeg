@@ -85,8 +85,18 @@ static av_cold int rscc_init(AVCodecContext *avctx)
 
     /* Get pixel format and the size of the pixel */
     if (avctx->codec_tag == MKTAG('I', 'S', 'C', 'C')) {
-        avctx->pix_fmt = AV_PIX_FMT_BGRA;
-        ctx->component_size = 4;
+        if (avctx->extradata && avctx->extradata_size == 4) {
+            if ((avctx->extradata[0] >> 1) & 1) {
+                avctx->pix_fmt = AV_PIX_FMT_BGRA;
+                ctx->component_size = 4;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_BGR24;
+                ctx->component_size = 3;
+            }
+        } else {
+            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            ctx->component_size = 4;
+        }
     } else if (avctx->codec_tag == MKTAG('R', 'S', 'C', 'C')) {
         ctx->component_size = avctx->bits_per_coded_sample / 8;
         switch (avctx->bits_per_coded_sample) {
