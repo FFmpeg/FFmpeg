@@ -253,7 +253,7 @@ static av_cold int qdmc_decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     QDMCContext *s = avctx->priv_data;
-    int fft_size, fft_order, size, g, j, x;
+    int ret, fft_size, fft_order, size, g, j, x;
     GetByteContext b;
 
     ff_thread_once(&init_static_once, qdmc_init_static_data);
@@ -338,7 +338,9 @@ static av_cold int qdmc_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_fft_init(&s->fft_ctx, fft_order, 1);
+    ret = ff_fft_init(&s->fft_ctx, fft_order, 1);
+    if (ret < 0)
+        return ret;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
