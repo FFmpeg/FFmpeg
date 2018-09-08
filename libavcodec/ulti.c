@@ -62,7 +62,8 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int ulti_decode_end(AVCodecContext *avctx){
+static av_cold int ulti_decode_end(AVCodecContext *avctx)
+{
     UltimotionDecodeContext *s = avctx->priv_data;
 
     av_frame_free(&s->frame);
