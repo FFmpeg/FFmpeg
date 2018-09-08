@@ -209,7 +209,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int zret;
 
     switch (avctx->bits_per_coded_sample) {
-    case 16: avctx->pix_fmt = AV_PIX_FMT_RGB565; break;
+    case 16: avctx->pix_fmt = AV_PIX_FMT_RGB565LE; break;
     case 24: avctx->pix_fmt = AV_PIX_FMT_BGR24;  break;
     case 32: avctx->pix_fmt = AV_PIX_FMT_BGRA;   break;
     default: av_log(avctx, AV_LOG_ERROR, "Unsupported bits_per_coded_sample: %d\n",
