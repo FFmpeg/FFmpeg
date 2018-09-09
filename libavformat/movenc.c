@@ -6255,14 +6255,6 @@ static int mov_init(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "%s only supported in MP4.\n", avcodec_get_name(track->par->codec_id));
                     return AVERROR(EINVAL);
                 }
-                if (track->par->codec_id == AV_CODEC_ID_AV1 &&
-                    s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-                    av_log(s, AV_LOG_ERROR,
-                           "av1 in MP4 support is experimental, add "
-                           "'-strict %d' if you want to use it.\n",
-                           FF_COMPLIANCE_EXPERIMENTAL);
-                    return AVERROR_EXPERIMENTAL;
-                }
             } else if (track->par->codec_id == AV_CODEC_ID_VP8) {
                 /* altref frames handling is not defined in the spec as of version v1.0,
                  * so just forbid muxing VP8 streams altogether until a new version does */

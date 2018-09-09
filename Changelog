@@ -24,6 +24,7 @@ version <next>:
 - 1D LUT filter (lut1d)
 - RemotelyAnywhere Screen Capture decoder
 - cue and acue filters
+- support for AV1 in MP4
 
 
 version 4.0:
