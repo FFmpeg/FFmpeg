@@ -546,6 +546,7 @@ static int lag_decode_frame(AVCodecContext *avctx,
     int ret;
 
     p->key_frame = 1;
+    p->pict_type = AV_PICTURE_TYPE_I;
 
     frametype = buf[0];
 
