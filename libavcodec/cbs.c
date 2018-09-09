@@ -29,6 +29,9 @@
 
 
 static const CodedBitstreamType *cbs_type_table[] = {
+#if CONFIG_CBS_AV1
+    &ff_cbs_type_av1,
+#endif
 #if CONFIG_CBS_H264
     &ff_cbs_type_h264,
 #endif
@@ -47,6 +50,9 @@ static const CodedBitstreamType *cbs_type_table[] = {
 };
 
 const enum AVCodecID ff_cbs_all_codec_ids[] = {
+#if CONFIG_CBS_AV1
+    AV_CODEC_ID_AV1,
+#endif
 #if CONFIG_CBS_H264
     AV_CODEC_ID_H264,
 #endif

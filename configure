@@ -2271,6 +2271,7 @@ CONFIG_EXTRA="
     bswapdsp
     cabac
     cbs
+    cbs_av1
     cbs_h264
     cbs_h265
     cbs_jpeg
@@ -2535,6 +2536,7 @@ w32threads_deps="atomics_native"
 threads_if_any="$THREADS_LIST"
 
 # subsystems
+cbs_av1_select="cbs"
 cbs_h264_select="cbs golomb"
 cbs_h265_select="cbs golomb"
 cbs_jpeg_select="cbs"

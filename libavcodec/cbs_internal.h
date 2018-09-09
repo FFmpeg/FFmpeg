@@ -86,6 +86,7 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define MAX_UINT_BITS(length) ((UINT64_C(1) << (length)) - 1)
 
 
+extern const CodedBitstreamType ff_cbs_type_av1;
 extern const CodedBitstreamType ff_cbs_type_h264;
 extern const CodedBitstreamType ff_cbs_type_h265;
 extern const CodedBitstreamType ff_cbs_type_jpeg;
