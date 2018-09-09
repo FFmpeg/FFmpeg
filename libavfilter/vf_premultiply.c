@@ -464,6 +464,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY14:
             case AV_PIX_FMT_GRAY16:
                 s->premultiply[0] = limited ? unpremultiply16offset : unpremultiply16;
                 break;
@@ -510,6 +511,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY14:
             case AV_PIX_FMT_GRAY16:
                 s->premultiply[0] = limited ? premultiply16offset : premultiply16;
                 break;
