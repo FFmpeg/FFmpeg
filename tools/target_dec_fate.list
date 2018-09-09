@@ -1,0 +1,6 @@
+544/clusterfuzz-testcase-5936536407244800.f8bd9b24_8ba77916_70c2c7be_3df6a2ea_96cd9f14          target_dec_interplay_video_fuzzer
+724/clusterfuzz-testcase-6738249571631104                                                       target_dec_pictor_fuzzer
+1214/clusterfuzz-testcase-minimized-6130606599569408                                            target_dec_h264_fuzzer
+5264/clusterfuzz-testcase-minimized-4621956621008896                                            target_dec_indeo5_fuzzer
+7279/clusterfuzz-testcase-minimized-ffmpeg_AV_CODEC_ID_G2M_fuzzer-5977332473921536              target_dec_g2m_fuzzer
+10053/clusterfuzz-testcase-minimized-ffmpeg_AV_CODEC_ID_PROSUMER_fuzzer-5636993883570176        target_dec_prosumer_fuzzer
