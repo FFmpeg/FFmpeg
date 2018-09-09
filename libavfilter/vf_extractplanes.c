@@ -110,6 +110,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA422P9LE,
         AV_PIX_FMT_YUVA444P9LE,
         AV_PIX_FMT_GBRP9LE,
+        AV_PIX_FMT_GBRP14LE,
+        AV_PIX_FMT_YUV420P14LE,
+        AV_PIX_FMT_YUV422P14LE,
+        AV_PIX_FMT_YUV444P14LE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat in_pixfmts_be[] = {
@@ -156,6 +160,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVA422P9BE,
         AV_PIX_FMT_YUVA444P9BE,
         AV_PIX_FMT_GBRP9BE,
+        AV_PIX_FMT_GBRP14BE,
+        AV_PIX_FMT_YUV420P14BE,
+        AV_PIX_FMT_YUV422P14BE,
+        AV_PIX_FMT_YUV444P14BE,
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat out8_pixfmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
