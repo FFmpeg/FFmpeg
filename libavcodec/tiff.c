@@ -1403,6 +1403,8 @@ static av_cold int tiff_init(AVCodecContext *avctx)
     s->subsampling[1] = 1;
     s->avctx  = avctx;
     ff_lzw_decode_open(&s->lzw);
+    if (!s->lzw)
+        return AVERROR(ENOMEM);
     ff_ccitt_unpack_init();
 
     return 0;
