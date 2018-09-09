@@ -916,6 +916,91 @@ static void gbr24ptopacked32(const uint8_t *src[], int srcStride[],
     }
 }
 
+static void gbraptopacked32(const uint8_t *src[], int srcStride[],
+                            uint8_t *dst, int dstStride, int srcSliceH,
+                            int alpha_first, int width)
+{
+    int x, h, i;
+    for (h = 0; h < srcSliceH; h++) {
+        uint8_t *dest = dst + dstStride * h;
+
+        if (alpha_first) {
+            for (x = 0; x < width; x++) {
+                *dest++ = src[3][x];
+                *dest++ = src[0][x];
+                *dest++ = src[1][x];
+                *dest++ = src[2][x];
+            }
+        } else {
+            for (x = 0; x < width; x++) {
+                *dest++ = src[0][x];
+                *dest++ = src[1][x];
+                *dest++ = src[2][x];
+                *dest++ = src[3][x];
+            }
+        }
+
+        for (i = 0; i < 4; i++)
+            src[i] += srcStride[i];
+    }
+}
+
+static int planarRgbaToRgbWrapper(SwsContext *c, const uint8_t *src[],
+                                  int srcStride[], int srcSliceY, int srcSliceH,
+                                  uint8_t *dst[], int dstStride[])
+{
+    int alpha_first = 0;
+    const uint8_t *src102[] = { src[1], src[0], src[2], src[3] };
+    const uint8_t *src201[] = { src[2], src[0], src[1], src[3] };
+    int stride102[] = { srcStride[1], srcStride[0], srcStride[2], srcStride[3] };
+    int stride201[] = { srcStride[2], srcStride[0], srcStride[1], srcStride[3] };
+
+    if (c->srcFormat != AV_PIX_FMT_GBRAP) {
+        av_log(c, AV_LOG_ERROR, "unsupported planar RGB conversion %s -> %s\n",
+               av_get_pix_fmt_name(c->srcFormat),
+               av_get_pix_fmt_name(c->dstFormat));
+        return srcSliceH;
+    }
+
+    switch (c->dstFormat) {
+    case AV_PIX_FMT_BGR24:
+        gbr24ptopacked24(src102, stride102,
+                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                         srcSliceH, c->srcW);
+        break;
+
+    case AV_PIX_FMT_RGB24:
+        gbr24ptopacked24(src201, stride201,
+                         dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                         srcSliceH, c->srcW);
+        break;
+
+    case AV_PIX_FMT_ARGB:
+        alpha_first = 1;
+    case AV_PIX_FMT_RGBA:
+        gbraptopacked32(src201, stride201,
+                        dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                        srcSliceH, alpha_first, c->srcW);
+        break;
+
+    case AV_PIX_FMT_ABGR:
+        alpha_first = 1;
+    case AV_PIX_FMT_BGRA:
+        gbraptopacked32(src102, stride102,
+                        dst[0] + srcSliceY * dstStride[0], dstStride[0],
+                        srcSliceH, alpha_first, c->srcW);
+        break;
+
+    default:
+        av_log(c, AV_LOG_ERROR,
+               "unsupported planar RGB conversion %s -> %s\n",
+               av_get_pix_fmt_name(c->srcFormat),
+               av_get_pix_fmt_name(c->dstFormat));
+    }
+
+    return srcSliceH;
+}
+
 static int planarRgbToRgbWrapper(SwsContext *c, const uint8_t *src[],
                                  int srcStride[], int srcSliceY, int srcSliceH,
                                  uint8_t *dst[], int dstStride[])
@@ -1836,6 +1921,9 @@ void ff_get_unscaled_swscale(SwsContext *c)
 
     if (srcFormat == AV_PIX_FMT_GBRP && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swscale = planarRgbToRgbWrapper;
+
+    if (srcFormat == AV_PIX_FMT_GBRAP && isByteRGB(dstFormat))
+        c->swscale = planarRgbaToRgbWrapper;
 
     if ((srcFormat == AV_PIX_FMT_RGB48LE  || srcFormat == AV_PIX_FMT_RGB48BE  ||
          srcFormat == AV_PIX_FMT_BGR48LE  || srcFormat == AV_PIX_FMT_BGR48BE  ||
