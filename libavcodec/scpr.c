@@ -136,7 +136,7 @@ static int decode(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigned
     rc->range *= freq;
 
     while (rc->range < TOP && bytestream2_get_bytes_left(gb) > 0) {
-        unsigned byte = bytestream2_get_byte(gb);
+        unsigned byte = bytestream2_get_byteu(gb);
         rc->code = (rc->code << 8) | byte;
         rc->range <<= 8;
     }
@@ -172,7 +172,7 @@ static int decode0(GetByteContext *gb, RangeCoder *rc, unsigned cumFreq, unsigne
     rc->range = rc->range * (uint64_t)(freq + cumFreq) / total_freq - (t + 1);
 
     while (rc->range < TOP && bytestream2_get_bytes_left(gb) > 0) {
-        unsigned byte = bytestream2_get_byte(gb);
+        unsigned byte = bytestream2_get_byteu(gb);
         rc->code = (rc->code << 8) | byte;
         rc->code1 <<= 8;
         rc->range <<= 8;
