@@ -25,6 +25,7 @@
 #include "bsf.h"
 
 extern const AVBitStreamFilter ff_aac_adtstoasc_bsf;
+extern const AVBitStreamFilter ff_av1_metadata_bsf;
 extern const AVBitStreamFilter ff_chomp_bsf;
 extern const AVBitStreamFilter ff_dump_extradata_bsf;
 extern const AVBitStreamFilter ff_dca_core_bsf;
