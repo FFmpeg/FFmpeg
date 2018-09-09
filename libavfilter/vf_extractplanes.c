@@ -82,76 +82,49 @@ AVFILTER_DEFINE_CLASS(extractplanes);
         AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,          \
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP
 
+#define HIGHDEPTH_FORMATS(suf)                                 \
+        AV_PIX_FMT_YA16##suf, AV_PIX_FMT_GRAY16##suf,          \
+        AV_PIX_FMT_YUV420P16##suf, AV_PIX_FMT_YUVA420P16##suf, \
+        AV_PIX_FMT_YUV422P16##suf, AV_PIX_FMT_YUVA422P16##suf, \
+        AV_PIX_FMT_YUV444P16##suf, AV_PIX_FMT_YUVA444P16##suf, \
+        AV_PIX_FMT_RGB48##suf, AV_PIX_FMT_BGR48##suf,          \
+        AV_PIX_FMT_RGBA64##suf, AV_PIX_FMT_BGRA64##suf,        \
+        AV_PIX_FMT_GBRP16##suf, AV_PIX_FMT_GBRAP16##suf,       \
+        AV_PIX_FMT_YUV420P10##suf,                             \
+        AV_PIX_FMT_YUV422P10##suf,                             \
+        AV_PIX_FMT_YUV444P10##suf,                             \
+        AV_PIX_FMT_YUV440P10##suf,                             \
+        AV_PIX_FMT_YUVA420P10##suf,                            \
+        AV_PIX_FMT_YUVA422P10##suf,                            \
+        AV_PIX_FMT_YUVA444P10##suf,                            \
+        AV_PIX_FMT_YUV420P12##suf,                             \
+        AV_PIX_FMT_YUV422P12##suf,                             \
+        AV_PIX_FMT_YUV444P12##suf,                             \
+        AV_PIX_FMT_YUV440P12##suf,                             \
+        AV_PIX_FMT_GBRP10##suf, AV_PIX_FMT_GBRAP10##suf,       \
+        AV_PIX_FMT_GBRP12##suf, AV_PIX_FMT_GBRAP12##suf,       \
+        AV_PIX_FMT_YUV420P9##suf,                              \
+        AV_PIX_FMT_YUV422P9##suf,                              \
+        AV_PIX_FMT_YUV444P9##suf,                              \
+        AV_PIX_FMT_YUVA420P9##suf,                             \
+        AV_PIX_FMT_YUVA422P9##suf,                             \
+        AV_PIX_FMT_YUVA444P9##suf,                             \
+        AV_PIX_FMT_GBRP9##suf,                                 \
+        AV_PIX_FMT_GBRP14##suf,                                \
+        AV_PIX_FMT_YUV420P14##suf,                             \
+        AV_PIX_FMT_YUV422P14##suf,                             \
+        AV_PIX_FMT_YUV444P14##suf
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat in_pixfmts_le[] = {
         EIGHTBIT_FORMATS,
-        AV_PIX_FMT_YA16LE, AV_PIX_FMT_GRAY16LE,
-        AV_PIX_FMT_YUV420P16LE, AV_PIX_FMT_YUVA420P16LE,
-        AV_PIX_FMT_YUV422P16LE, AV_PIX_FMT_YUVA422P16LE,
-        AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
-        AV_PIX_FMT_RGB48LE, AV_PIX_FMT_BGR48LE,
-        AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_BGRA64LE,
-        AV_PIX_FMT_GBRP16LE, AV_PIX_FMT_GBRAP16LE,
-        AV_PIX_FMT_YUV420P10LE,
-        AV_PIX_FMT_YUV422P10LE,
-        AV_PIX_FMT_YUV444P10LE,
-        AV_PIX_FMT_YUV440P10LE,
-        AV_PIX_FMT_YUVA420P10LE,
-        AV_PIX_FMT_YUVA422P10LE,
-        AV_PIX_FMT_YUVA444P10LE,
-        AV_PIX_FMT_YUV420P12LE,
-        AV_PIX_FMT_YUV422P12LE,
-        AV_PIX_FMT_YUV444P12LE,
-        AV_PIX_FMT_YUV440P12LE,
-        AV_PIX_FMT_GBRP10LE, AV_PIX_FMT_GBRAP10LE,
-        AV_PIX_FMT_GBRP12LE, AV_PIX_FMT_GBRAP12LE,
-        AV_PIX_FMT_YUV420P9LE,
-        AV_PIX_FMT_YUV422P9LE,
-        AV_PIX_FMT_YUV444P9LE,
-        AV_PIX_FMT_YUVA420P9LE,
-        AV_PIX_FMT_YUVA422P9LE,
-        AV_PIX_FMT_YUVA444P9LE,
-        AV_PIX_FMT_GBRP9LE,
-        AV_PIX_FMT_GBRP14LE,
-        AV_PIX_FMT_YUV420P14LE,
-        AV_PIX_FMT_YUV422P14LE,
-        AV_PIX_FMT_YUV444P14LE,
+        HIGHDEPTH_FORMATS(LE),
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat in_pixfmts_be[] = {
         EIGHTBIT_FORMATS,
-        AV_PIX_FMT_YA16BE, AV_PIX_FMT_GRAY16BE,
-        AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_YUVA420P16BE,
-        AV_PIX_FMT_YUV422P16BE, AV_PIX_FMT_YUVA422P16BE,
-        AV_PIX_FMT_YUV444P16BE, AV_PIX_FMT_YUVA444P16BE,
-        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_BGR48BE,
-        AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_BGRA64BE,
-        AV_PIX_FMT_GBRP16BE, AV_PIX_FMT_GBRAP16BE,
-        AV_PIX_FMT_YUV420P10BE,
-        AV_PIX_FMT_YUV422P10BE,
-        AV_PIX_FMT_YUV444P10BE,
-        AV_PIX_FMT_YUV440P10BE,
-        AV_PIX_FMT_YUVA420P10BE,
-        AV_PIX_FMT_YUVA422P10BE,
-        AV_PIX_FMT_YUVA444P10BE,
-        AV_PIX_FMT_YUV420P12BE,
-        AV_PIX_FMT_YUV422P12BE,
-        AV_PIX_FMT_YUV444P12BE,
-        AV_PIX_FMT_YUV440P12BE,
-        AV_PIX_FMT_GBRP10BE, AV_PIX_FMT_GBRAP10BE,
-        AV_PIX_FMT_GBRP12BE, AV_PIX_FMT_GBRAP12BE,
-        AV_PIX_FMT_YUV420P9BE,
-        AV_PIX_FMT_YUV422P9BE,
-        AV_PIX_FMT_YUV444P9BE,
-        AV_PIX_FMT_YUVA420P9BE,
-        AV_PIX_FMT_YUVA422P9BE,
-        AV_PIX_FMT_YUVA444P9BE,
-        AV_PIX_FMT_GBRP9BE,
-        AV_PIX_FMT_GBRP14BE,
-        AV_PIX_FMT_YUV420P14BE,
-        AV_PIX_FMT_YUV422P14BE,
-        AV_PIX_FMT_YUV444P14BE,
+        HIGHDEPTH_FORMATS(BE),
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat out8_pixfmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
