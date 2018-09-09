@@ -451,6 +451,8 @@ static av_cold int gif_decode_init(AVCodecContext *avctx)
     if (!s->frame)
         return AVERROR(ENOMEM);
     ff_lzw_decode_open(&s->lzw);
+    if (!s->lzw)
+        return AVERROR(ENOMEM);
     return 0;
 }
 
