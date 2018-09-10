@@ -580,10 +580,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->side_data            = NULL;
     dst->side_data_elems      = 0;
     for (i = 0; i < src->side_data_elems; i++) {
-         enum AVPacketSideDataType type = src->side_data[i].type;
-         int size          = src->side_data[i].size;
-         uint8_t *src_data = src->side_data[i].data;
-         uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
+        enum AVPacketSideDataType type = src->side_data[i].type;
+        int size          = src->side_data[i].size;
+        uint8_t *src_data = src->side_data[i].data;
+        uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
 
         if (!dst_data) {
             av_packet_free_side_data(dst);
