@@ -17,6 +17,20 @@ for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to
 @command{./configure}.
 
+@section libxavs2
+
+FFmpeg can make use of the xavs2 library for AVS2-P2/IEEE1857.4 video encoding.
+
+Go to @url{https://github.com/pkuvcl/xavs2} and follow the instructions for
+installing the library. Then pass @code{--enable-libxavs2} to configure to
+enable it.
+
+@float NOTE
+libxavs2 is under the GNU Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
+details), you must upgrade FFmpeg's license to GPL in order to use it.
+@end float
+
 @section libdavs2
 
 FFmpeg can make use of the davs2 library for AVS2-P2/IEEE1857.4 video decoding.

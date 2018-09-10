@@ -26,6 +26,7 @@ version <next>:
 - cue and acue filters
 - support for AV1 in MP4
 - transpose_npp filter
+- AVS2 video encoder via libxavs2
 
 
 version 4.0:
