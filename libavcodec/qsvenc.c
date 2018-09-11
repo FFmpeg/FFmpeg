@@ -1145,7 +1145,7 @@ static void print_interlace_msg(AVCodecContext *avctx, QSVEncContext *q)
             q->param.mfx.CodecLevel > MFX_LEVEL_AVC_41)
             av_log(avctx, AV_LOG_WARNING,
                    "Interlaced coding is supported"
-                   " at Main/High Profile Level 2.1-4.1\n");
+                   " at Main/High Profile Level 2.2-4.0\n");
     }
 }
 
