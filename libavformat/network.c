@@ -165,14 +165,17 @@ static int ff_poll_interrupt(struct pollfd *p, nfds_t nfds, int timeout,
         if (ff_check_interrupt(cb))
             return AVERROR_EXIT;
         ret = poll(p, nfds, POLLING_TIME);
-        if (ret != 0)
+        if (ret != 0) {
+            if (ret < 0)
+                ret = ff_neterrno();
+            if (ret == AVERROR(EINTR))
+                continue;
             break;
+        }
     } while (timeout <= 0 || runs-- > 0);
 
     if (!ret)
         return AVERROR(ETIMEDOUT);
-    if (ret < 0)
-        return ff_neterrno();
     return ret;
 }
 
