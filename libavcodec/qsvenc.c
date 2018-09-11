@@ -1012,7 +1012,6 @@ static void clear_unused_frames(QSVEncContext *q)
     while (cur) {
         if (cur->used && !cur->surface.Data.Locked) {
             free_encoder_ctrl_payloads(&cur->enc_ctrl);
-            av_frame_unref(cur->frame);
             cur->used = 0;
         }
         cur = cur->next;
@@ -1085,16 +1084,23 @@ static int submit_frame(QSVEncContext *q, const AVFrame *frame,
         }
     } else {
         /* make a copy if the input is not padded as libmfx requires */
-        if (frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) {
+        /* and to make allocation continious for data[0]/data[1] */
+         if ((frame->height & 31 || frame->linesize[0] & (q->width_align - 1)) ||
+            (frame->data[1] - frame->data[0] != frame->linesize[0] * FFALIGN(qf->frame->height, q->height_align))) {
             qf->frame->height = FFALIGN(frame->height, q->height_align);
             qf->frame->width  = FFALIGN(frame->width, q->width_align);
 
-            ret = ff_get_buffer(q->avctx, qf->frame, AV_GET_BUFFER_FLAG_REF);
-            if (ret < 0)
-                return ret;
+            qf->frame->format = frame->format;
+
+            if (!qf->frame->data[0]) {
+                ret = av_frame_get_buffer(qf->frame, q->width_align);
+                if (ret < 0)
+                    return ret;
+            }
 
             qf->frame->height = frame->height;
             qf->frame->width  = frame->width;
+
             ret = av_frame_copy(qf->frame, frame);
             if (ret < 0) {
                 av_frame_unref(qf->frame);
