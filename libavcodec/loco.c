@@ -235,8 +235,11 @@ static int decode_frame(AVCodecContext *avctx,
         ADVANCE_BY_DECODED;
         decoded = loco_decode_plane(l, p->data[2] + p->linesize[2]*(avctx->height-1), avctx->width, avctx->height,
                                     -p->linesize[2], buf, buf_size);
-        if (avctx->width & 1)
+        if (avctx->width & 1) {
+            rotate_faulty_loco(p->data[0] + p->linesize[0]*(avctx->height-1), avctx->width, avctx->height, -p->linesize[0]);
             rotate_faulty_loco(p->data[1] + p->linesize[1]*(avctx->height-1), avctx->width, avctx->height, -p->linesize[1]);
+            rotate_faulty_loco(p->data[2] + p->linesize[2]*(avctx->height-1), avctx->width, avctx->height, -p->linesize[2]);
+        }
         break;
     case LOCO_CRGBA:
     case LOCO_RGBA:
