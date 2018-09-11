@@ -95,6 +95,9 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
     int ret, linesize[3];
     AVFrame *avframe = data;
     DECODING_STATE state;
+#if OPENH264_VER_AT_LEAST(1, 7)
+    int opt;
+#endif
 
     if (!avpkt->data) {
 #if OPENH264_VER_AT_LEAST(1, 9)
@@ -137,6 +140,12 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
 FF_DISABLE_DEPRECATION_WARNINGS
     avframe->pkt_pts = avpkt->pts;
 FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+#if OPENH264_VER_AT_LEAST(1, 7)
+    (*s->decoder)->GetOption(s->decoder, DECODER_OPTION_PROFILE, &opt);
+    avctx->profile = opt;
+    (*s->decoder)->GetOption(s->decoder, DECODER_OPTION_LEVEL, &opt);
+    avctx->level = opt;
 #endif
 
     *got_frame = 1;
