@@ -211,7 +211,8 @@ void av_frame_free(AVFrame **frame)
 static int get_video_buffer(AVFrame *frame, int align)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    int ret, i;
+    int ret, i, padded_height;
+    int plane_padding = FFMAX(16 + 16/*STRIDE_ALIGN*/, align);
 
     if (!desc)
         return AVERROR(EINVAL);
@@ -236,23 +237,22 @@ static int get_video_buffer(AVFrame *frame, int align)
             frame->linesize[i] = FFALIGN(frame->linesize[i], align);
     }
 
-    for (i = 0; i < 4 && frame->linesize[i]; i++) {
-        int h = FFALIGN(frame->height, 32);
-        if (i == 1 || i == 2)
-            h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    padded_height = FFALIGN(frame->height, 32);
+    if ((ret = av_image_fill_pointers(frame->data, frame->format, padded_height,
+                                      NULL, frame->linesize)) < 0)
+        return ret;
 
-        frame->buf[i] = av_buffer_alloc(frame->linesize[i] * h + 16 + 16/*STRIDE_ALIGN*/ - 1);
-        if (!frame->buf[i])
-            goto fail;
+    frame->buf[0] = av_buffer_alloc(ret + 4*plane_padding);
+    if (!frame->buf[0])
+        goto fail;
 
-        frame->data[i] = frame->buf[i]->data;
-    }
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & FF_PSEUDOPAL) {
-        av_buffer_unref(&frame->buf[1]);
-        frame->buf[1] = av_buffer_alloc(AVPALETTE_SIZE);
-        if (!frame->buf[1])
-            goto fail;
-        frame->data[1] = frame->buf[1]->data;
+    if (av_image_fill_pointers(frame->data, frame->format, padded_height,
+                               frame->buf[0]->data, frame->linesize) < 0)
+        goto fail;
+
+    for (i = 1; i < 4; i++) {
+        if (frame->data[i])
+            frame->data[i] += i * plane_padding;
     }
 
     frame->extended_data = frame->data;
