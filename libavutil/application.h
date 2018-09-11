@@ -158,7 +158,9 @@ typedef struct AVApplicationContext AVApplicationContext;
 struct AVApplicationContext {
     const AVClass *av_class;    /**< information for av_log(). Set by av_application_open(). */
     void *opaque;               /**< user data. */
-
+    int dash_audio_read_len;
+    int dash_audio_recv_buffer_size;
+    int dash_video_recv_buffer_size;
     int (*func_on_app_event)(AVApplicationContext *h, int event_type ,void *obj, size_t size);
     int (*func_app_ctrl)(int what, int64_t arg0, void *obj, size_t size);
 };

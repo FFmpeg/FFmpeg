@@ -59,6 +59,8 @@ typedef struct TCPContext {
     int fastopen;
     int tcp_connected;
     int fastopen_success;
+    int dash_audio_tcp;
+    int dash_video_tcp;
 } TCPContext;
 
 #define FAST_OPEN_FLAG 0x20000000
@@ -81,6 +83,8 @@ static const AVOption options[] = {
     { "dns_cache_timeout", "dns cache TTL (in microseconds)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
     { "dns_cache_clear", "clear dns cache",   OFFSET(dns_cache_clear), AV_OPT_TYPE_INT, { .i64 = 0},       -1, INT_MAX, .flags = D|E },
     { "fastopen", "enable fastopen",          OFFSET(fastopen), AV_OPT_TYPE_INT, { .i64 = 0},       0, INT_MAX, .flags = D|E },
+    { "dash_audio_tcp", "dash audio tcp", OFFSET(dash_audio_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
+    { "dash_video_tcp", "dash video tcp", OFFSET(dash_video_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
     { NULL }
 };
 
@@ -455,6 +459,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
 
+    if (s->app_ctx) {
+        if (s->dash_audio_tcp && s->app_ctx->dash_audio_recv_buffer_size > 0 && s->app_ctx->dash_audio_recv_buffer_size != s->recv_buffer_size) {
+            s->recv_buffer_size = s->app_ctx->dash_audio_recv_buffer_size;
+        } else if (s->dash_video_tcp && s->app_ctx->dash_video_recv_buffer_size > 0 && s->app_ctx->dash_video_recv_buffer_size != s->recv_buffer_size) {
+            s->recv_buffer_size = s->app_ctx->dash_video_recv_buffer_size;
+        }
+    }
+
     /* Set the socket's send or receive buffer sizes, if specified.
        If unspecified or setting fails, system default is used. */
     if (s->recv_buffer_size > 0) {
@@ -765,8 +777,18 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
     ret = recv(s->fd, buf, size, 0);
     if (ret == 0)
         return AVERROR_EOF;
-    if (ret > 0)
+    if (ret > 0) {
+        if (s->app_ctx) {
+            if (s->dash_audio_tcp && s->app_ctx->dash_audio_recv_buffer_size > 0 && s->app_ctx->dash_audio_recv_buffer_size != s->recv_buffer_size) {
+                s->recv_buffer_size = s->app_ctx->dash_audio_recv_buffer_size;
+                setsockopt (s->fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+            } else if (s->dash_video_tcp && s->app_ctx->dash_video_recv_buffer_size > 0 && s->app_ctx->dash_video_recv_buffer_size != s->recv_buffer_size) {
+                s->recv_buffer_size = s->app_ctx->dash_video_recv_buffer_size;
+                setsockopt (s->fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
+            }
+        }
         av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
+    }
     return ret < 0 ? ff_neterrno() : ret;
 }
 
