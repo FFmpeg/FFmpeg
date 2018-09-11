@@ -25,9 +25,12 @@
 #include "avcodec.h"
 #include "internal.h"
 
-/* The version macro is introduced the same time as the setting enum was
- * changed, so this check should suffice. */
-#ifndef AACDECODER_LIB_VL0
+#define FDKDEC_VER_AT_LEAST(vl0, vl1) \
+    (defined(AACDECODER_LIB_VL0) && \
+        ((AACDECODER_LIB_VL0 > vl0) || \
+         (AACDECODER_LIB_VL0 == vl0 && AACDECODER_LIB_VL1 >= vl1)))
+
+#if !FDKDEC_VER_AT_LEAST(2, 5) // < 2.5.10
 #define AAC_PCM_MAX_OUTPUT_CHANNELS AAC_PCM_OUTPUT_CHANNELS
 #endif
 
@@ -72,7 +75,7 @@ static const AVOption fdk_aac_dec_options[] = {
                      OFFSET(drc_level),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 127, AD, NULL    },
     { "drc_heavy", "Dynamic Range Control: heavy compression, where [1] is on (RF mode) and [0] is off",
                      OFFSET(drc_heavy),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
-#ifdef AACDECODER_LIB_VL0
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     { "level_limit", "Signal level limiting", OFFSET(level_limit), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, 1, AD },
 #endif
     { NULL }
@@ -296,7 +299,7 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         }
     }
 
-#ifdef AACDECODER_LIB_VL0
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     if (aacDecoder_SetParam(s->handle, AAC_PCM_LIMITER_ENABLE, s->level_limit) != AAC_DEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set in signal level limiting in the decoder\n");
         return AVERROR_UNKNOWN;

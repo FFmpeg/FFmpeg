@@ -159,7 +159,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     case 6: mode = MODE_1_2_2_1; sce = 2; cpe = 2; break;
 /* The version macro is introduced the same time as the 7.1 support, so this
    should suffice. */
-#ifdef AACENCODER_LIB_VL0
+#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
     case 8:
         sce = 2;
         cpe = 3;
@@ -295,7 +295,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = info.frameLength;
-#if FDKENC_VER_AT_LEAST(4, 0)
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
     avctx->initial_padding = info.nDelay;
 #else
     avctx->initial_padding = info.encoderDelay;
@@ -416,7 +416,7 @@ static const uint64_t aac_channel_layout[] = {
     AV_CH_LAYOUT_4POINT0,
     AV_CH_LAYOUT_5POINT0_BACK,
     AV_CH_LAYOUT_5POINT1_BACK,
-#ifdef AACENCODER_LIB_VL0
+#if FDKENC_VER_AT_LEAST(3, 4) // 3.4.12
     AV_CH_LAYOUT_7POINT1_WIDE_BACK,
     AV_CH_LAYOUT_7POINT1,
 #endif
