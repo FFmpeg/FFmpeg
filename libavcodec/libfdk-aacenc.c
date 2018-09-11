@@ -26,6 +26,11 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 
+#define FDKENC_VER_AT_LEAST(vl0, vl1) \
+    (defined(AACENCODER_LIB_VL0) && \
+        ((AACENCODER_LIB_VL0 > vl0) || \
+         (AACENCODER_LIB_VL0 == vl0 && AACENCODER_LIB_VL1 >= vl1)))
+
 typedef struct AACContext {
     const AVClass *class;
     HANDLE_AACENCODER handle;
@@ -290,7 +295,11 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     avctx->frame_size = info.frameLength;
+#if FDKENC_VER_AT_LEAST(4, 0)
+    avctx->initial_padding = info.nDelay;
+#else
     avctx->initial_padding = info.encoderDelay;
+#endif
     ff_af_queue_init(avctx, &s->afq);
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
@@ -323,27 +332,34 @@ static int aac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     int out_buffer_size, out_buffer_element_size;
     void *in_ptr, *out_ptr;
     int ret;
+    uint8_t dummy_buf[1];
     AACENC_ERROR err;
 
     /* handle end-of-stream small frame and flushing */
     if (!frame) {
+        /* Must be a non-null pointer, even if it's a dummy. We could use
+         * the address of anything else on the stack as well. */
+        in_ptr               = dummy_buf;
+        in_buffer_size       = 0;
+
         in_args.numInSamples = -1;
     } else {
-        in_ptr                   = frame->data[0];
-        in_buffer_size           = 2 * avctx->channels * frame->nb_samples;
-        in_buffer_element_size   = 2;
+        in_ptr               = frame->data[0];
+        in_buffer_size       = 2 * avctx->channels * frame->nb_samples;
 
-        in_args.numInSamples     = avctx->channels * frame->nb_samples;
-        in_buf.numBufs           = 1;
-        in_buf.bufs              = &in_ptr;
-        in_buf.bufferIdentifiers = &in_buffer_identifier;
-        in_buf.bufSizes          = &in_buffer_size;
-        in_buf.bufElSizes        = &in_buffer_element_size;
+        in_args.numInSamples = avctx->channels * frame->nb_samples;
 
         /* add current frame to the queue */
         if ((ret = ff_af_queue_add(&s->afq, frame)) < 0)
             return ret;
     }
+
+    in_buffer_element_size   = 2;
+    in_buf.numBufs           = 1;
+    in_buf.bufs              = &in_ptr;
+    in_buf.bufferIdentifiers = &in_buffer_identifier;
+    in_buf.bufSizes          = &in_buffer_size;
+    in_buf.bufElSizes        = &in_buffer_element_size;
 
     /* The maximum packet size is 6144 bits aka 768 bytes per channel. */
     if ((ret = ff_alloc_packet2(avctx, avpkt, FFMAX(8192, 768 * avctx->channels), 0)) < 0)
