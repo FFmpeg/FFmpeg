@@ -121,6 +121,8 @@ typedef struct AVAppHttpEvent
     int      error;
     int      http_code;
     int64_t  filesize;
+    int64_t  start_time;
+    int64_t  end_time;
 } AVAppHttpEvent;
 
 typedef struct AVAppIOTraffic
@@ -171,10 +173,12 @@ void av_application_close(AVApplicationContext *h);
 void av_application_closep(AVApplicationContext **ph);
 
 void av_application_on_http_event(AVApplicationContext *h, int event_type, AVAppHttpEvent *event);
-void av_application_will_http_open(AVApplicationContext *h, void *obj, const char *url);
-void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code, int64_t filesize);
-void av_application_will_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset);
-void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int error, int http_code);
+void av_application_will_http_open(AVApplicationContext *h, void *obj, const char *url, int64_t start_time, int64_t end_time);
+void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code,
+                                  int64_t filesize, int64_t start_time, int64_t end_time);
+void av_application_will_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int64_t start_time, int64_t end_time);
+void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int error,
+                                  int http_code, int64_t start_time, int64_t end_time);
 
 void av_application_did_io_tcp_read(AVApplicationContext *h, void *obj, int bytes);
 

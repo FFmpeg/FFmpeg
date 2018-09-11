@@ -536,6 +536,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
 {
     HTTPContext *s = h->priv_data;
     int ret;
+    int64_t start_time = 0, end_time = 0;
 
     s->app_ctx = (AVApplicationContext *)(intptr_t)s->app_ctx_intptr;
 
@@ -568,9 +569,11 @@ static int http_open(URLContext *h, const char *uri, int flags,
     if (s->listen) {
         return http_listen(h, uri, flags, options);
     }
-    av_application_will_http_open(s->app_ctx, (void*)h, uri);
+    start_time = av_gettime();
+    av_application_will_http_open(s->app_ctx, (void*)h, uri, start_time, end_time);
     ret = http_open_cnx(h, options);
-    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize);
+    end_time = av_gettime();
+    av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize, start_time, end_time);
     if (ret < 0)
         av_dict_free(&s->chained_options);
     return ret;
@@ -1691,6 +1694,7 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     uint8_t old_buf[BUFFER_SIZE];
     int old_buf_size, ret;
     AVDictionary *options = NULL;
+    int64_t start_time = 0, end_time = 0;
 
     if (whence == AVSEEK_SIZE)
         return s->filesize;
@@ -1720,9 +1724,11 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
     s->hd = NULL;
 
     /* if it fails, continue on old connection */
-    av_application_will_http_seek(s->app_ctx, (void*)h, s->location, off);
+    start_time = av_gettime();
+    av_application_will_http_seek(s->app_ctx, (void*)h, s->location, off, start_time, end_time);
     if ((ret = http_open_cnx(h, &options)) < 0) {
-        av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code);
+        end_time = av_gettime();
+        av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code, start_time, end_time);
         av_dict_free(&options);
         memcpy(s->buffer, old_buf, old_buf_size);
         s->buf_ptr = s->buffer;
@@ -1731,7 +1737,8 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
         s->off     = old_off;
         return ret;
     }
-    av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code);
+    end_time = av_gettime();
+    av_application_did_http_seek(s->app_ctx, (void*)h, s->location, off, ret, s->http_code, start_time, end_time);
     av_dict_free(&options);
     ffurl_close(old_hd);
     return off;

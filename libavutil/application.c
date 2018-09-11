@@ -67,7 +67,7 @@ void av_application_on_http_event(AVApplicationContext *h, int event_type, AVApp
         h->func_on_app_event(h, event_type, (void *)event, sizeof(AVAppHttpEvent));
 }
 
-void av_application_will_http_open(AVApplicationContext *h, void *obj, const char *url)
+void av_application_will_http_open(AVApplicationContext *h, void *obj, const char *url, int64_t start_time, int64_t end_time)
 {
     AVAppHttpEvent event = {0};
 
@@ -76,11 +76,13 @@ void av_application_will_http_open(AVApplicationContext *h, void *obj, const cha
 
     event.obj        = obj;
     av_strlcpy(event.url, url, sizeof(event.url));
+    event.start_time = start_time;
+    event.end_time = end_time;
 
     av_application_on_http_event(h, AVAPP_EVENT_WILL_HTTP_OPEN, &event);
 }
 
-void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code, int64_t filesize)
+void av_application_did_http_open(AVApplicationContext *h, void *obj, const char *url, int error, int http_code, int64_t filesize, int64_t start_time, int64_t end_time)
 {
     AVAppHttpEvent event = {0};
 
@@ -92,11 +94,13 @@ void av_application_did_http_open(AVApplicationContext *h, void *obj, const char
     event.error     = error;
     event.http_code = http_code;
     event.filesize  = filesize;
+    event.start_time = start_time;
+    event.end_time = end_time;
 
     av_application_on_http_event(h, AVAPP_EVENT_DID_HTTP_OPEN, &event);
 }
 
-void av_application_will_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset)
+void av_application_will_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int64_t start_time, int64_t end_time)
 {
     AVAppHttpEvent event = {0};
 
@@ -106,11 +110,13 @@ void av_application_will_http_seek(AVApplicationContext *h, void *obj, const cha
     event.obj        = obj;
     event.offset     = offset;
     av_strlcpy(event.url, url, sizeof(event.url));
+    event.start_time = start_time;
+    event.end_time = end_time;
 
     av_application_on_http_event(h, AVAPP_EVENT_WILL_HTTP_SEEK, &event);
 }
 
-void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int error, int http_code)
+void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char *url, int64_t offset, int error, int http_code, int64_t start_time, int64_t end_time)
 {
     AVAppHttpEvent event = {0};
 
@@ -122,6 +128,8 @@ void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char
     av_strlcpy(event.url, url, sizeof(event.url));
     event.error     = error;
     event.http_code = http_code;
+    event.start_time = start_time;
+    event.end_time = end_time;
 
     av_application_on_http_event(h, AVAPP_EVENT_DID_HTTP_SEEK, &event);
 }
