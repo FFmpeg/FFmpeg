@@ -660,6 +660,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 q->extco2.AdaptiveB = q->adaptive_b ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 #endif
 
+#if QSV_VERSION_ATLEAST(1, 9)
+            if (avctx->qmin >= 0 && avctx->qmax >= 0 && avctx->qmin > avctx->qmax) {
+                av_log(avctx, AV_LOG_ERROR, "qmin and or qmax are set but invalid, please make sure min <= max\n");
+                return AVERROR(EINVAL);
+            }
+            if (avctx->qmin >= 0) {
+                q->extco2.MinQPI = avctx->qmin > 51 ? 51 : avctx->qmin;
+                q->extco2.MinQPP = q->extco2.MinQPB = q->extco2.MinQPI;
+            }
+            if (avctx->qmax >= 0) {
+                q->extco2.MaxQPI = avctx->qmax > 51 ? 51 : avctx->qmax;
+                q->extco2.MaxQPP = q->extco2.MaxQPB = q->extco2.MaxQPI;
+            }
+#endif
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
         }
 #endif

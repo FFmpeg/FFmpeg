@@ -170,6 +170,8 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     // same as the x264 default
     { "g",         "250"   },
     { "bf",        "3"     },
+    { "qmin",      "-1"    },
+    { "qmax",      "-1"    },
 #if FF_API_CODER_TYPE
     { "coder",     "-1"    },
 #endif
