@@ -36,6 +36,7 @@ typedef struct AACContext {
     HANDLE_AACENCODER handle;
     int afterburner;
     int eld_sbr;
+    int eld_v2;
     int signaling;
     int latm;
     int header_period;
@@ -47,6 +48,9 @@ typedef struct AACContext {
 static const AVOption aac_enc_options[] = {
     { "afterburner", "Afterburner (improved quality)", offsetof(AACContext, afterburner), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { "eld_sbr", "Enable SBR for ELD (for SBR in other configurations, use the -profile parameter)", offsetof(AACContext, eld_sbr), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
+    { "eld_v2", "Enable ELDv2 (LD-MPS extension for ELD stereo signals)", offsetof(AACContext, eld_v2), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+#endif
     { "signaling", "SBR/PS signaling style", offsetof(AACContext, signaling), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 2, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, "signaling" },
     { "default", "Choose signaling implicitly (explicit hierarchical by default, implicit if global header is disabled)", 0, AV_OPT_TYPE_CONST, { .i64 = -1 }, 0, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, "signaling" },
     { "implicit", "Implicit backwards compatible signaling", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, "signaling" },
@@ -152,7 +156,28 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
 
     switch (avctx->channels) {
     case 1: mode = MODE_1;       sce = 1; cpe = 0; break;
-    case 2: mode = MODE_2;       sce = 0; cpe = 1; break;
+    case 2:
+#if FDKENC_VER_AT_LEAST(4, 0) // 4.0.0
+      // (profile + 1) to map from profile range to AOT range
+      if (aot == FF_PROFILE_AAC_ELD + 1 && s->eld_v2) {
+          if ((err = aacEncoder_SetParam(s->handle, AACENC_CHANNELMODE,
+                                         128)) != AACENC_OK) {
+              av_log(avctx, AV_LOG_ERROR, "Unable to enable ELDv2: %s\n",
+                     aac_get_error(err));
+              goto error;
+          } else {
+            mode = MODE_212;
+            sce = 1;
+            cpe = 0;
+          }
+      } else
+#endif
+      {
+        mode = MODE_2;
+        sce = 0;
+        cpe = 1;
+      }
+      break;
     case 3: mode = MODE_1_2;     sce = 1; cpe = 1; break;
     case 4: mode = MODE_1_2_1;   sce = 2; cpe = 1; break;
     case 5: mode = MODE_1_2_2;   sce = 1; cpe = 2; break;
