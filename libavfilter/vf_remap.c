@@ -126,85 +126,48 @@ fail:
  * pixels are copied from source to target using :
  * Target_frame[y][x] = Source_frame[ ymap[y][x] ][ [xmap[y][x] ];
  */
-static int remap_planar_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    const ThreadData *td = (ThreadData*)arg;
-    const AVFrame *in  = td->in;
-    const AVFrame *xin = td->xin;
-    const AVFrame *yin = td->yin;
-    const AVFrame *out = td->out;
-
-    const int slice_start = (out->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;
-
-    const int xlinesize = xin->linesize[0] / 2;
-    const int ylinesize = yin->linesize[0] / 2;
-    int x , y, plane;
-
-    for (plane = 0; plane < td->nb_planes ; plane++) {
-        const int dlinesize  = out->linesize[plane];
-        const uint8_t *src   = in->data[plane];
-        uint8_t *dst         = out->data[plane] + slice_start * dlinesize;
-        const int slinesize  = in->linesize[plane];
-        const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;
-        const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;
-
-        for (y = slice_start; y < slice_end; y++) {
-            for (x = 0; x < out->width; x++) {
-                if (ymap[x] < in->height && xmap[x] < in->width) {
-                    dst[x] = src[ymap[x] * slinesize + xmap[x]];
-                } else {
-                    dst[x] = 0;
-                }
-            }
-            dst  += dlinesize;
-            xmap += xlinesize;
-            ymap += ylinesize;
-        }
-    }
-
-    return 0;
+#define DEFINE_REMAP_PLANAR_FUNC(name, bits, div)                                           \
+static int remap_planar##bits##_##name##_slice(AVFilterContext *ctx, void *arg,             \
+                                               int jobnr, int nb_jobs)                      \
+{                                                                                           \
+    const ThreadData *td = (ThreadData*)arg;                                                \
+    const AVFrame *in  = td->in;                                                            \
+    const AVFrame *xin = td->xin;                                                           \
+    const AVFrame *yin = td->yin;                                                           \
+    const AVFrame *out = td->out;                                                           \
+    const int slice_start = (out->height *  jobnr   ) / nb_jobs;                            \
+    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;                            \
+    const int xlinesize = xin->linesize[0] / 2;                                             \
+    const int ylinesize = yin->linesize[0] / 2;                                             \
+    int x , y, plane;                                                                       \
+                                                                                            \
+    for (plane = 0; plane < td->nb_planes ; plane++) {                                      \
+        const int dlinesize  = out->linesize[plane] / div;                                  \
+        const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                \
+        uint##bits##_t *dst = (uint##bits##_t *)out->data[plane] + slice_start * dlinesize; \
+        const int slinesize  = in->linesize[plane] / div;                                   \
+        const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;    \
+        const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;    \
+                                                                                            \
+        for (y = slice_start; y < slice_end; y++) {                                         \
+            for (x = 0; x < out->width; x++) {                                              \
+                if (ymap[x] < in->height && xmap[x] < in->width) {                          \
+                    dst[x] = src[ymap[x] * slinesize + xmap[x]];                            \
+                } else {                                                                    \
+                    dst[x] = 0;                                                             \
+                }                                                                           \
+            }                                                                               \
+            dst  += dlinesize;                                                              \
+            xmap += xlinesize;                                                              \
+            ymap += ylinesize;                                                              \
+        }                                                                                   \
+    }                                                                                       \
+                                                                                            \
+    return 0;                                                                               \
 }
 
-static int remap_planar16_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    const ThreadData *td = (ThreadData*)arg;
-    const AVFrame *in  = td->in;
-    const AVFrame *xin = td->xin;
-    const AVFrame *yin = td->yin;
-    const AVFrame *out = td->out;
-
-    const int slice_start = (out->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;
-
-    const int xlinesize = xin->linesize[0] / 2;
-    const int ylinesize = yin->linesize[0] / 2;
-    int x , y, plane;
-
-    for (plane = 0; plane < td->nb_planes ; plane++) {
-        const int dlinesize  = out->linesize[plane] / 2;
-        const uint16_t *src  = (const uint16_t *)in->data[plane];
-        uint16_t *dst        = (uint16_t *)out->data[plane] + slice_start * dlinesize;
-        const int slinesize  = in->linesize[plane] / 2;
-        const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;
-        const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;
-
-        for (y = slice_start; y < slice_end; y++) {
-            for (x = 0; x < out->width; x++) {
-                if (ymap[x] < in->height && xmap[x] < in->width) {
-                    dst[x] = src[ymap[x] * slinesize + xmap[x]];
-                } else {
-                    dst[x] = 0;
-                }
-            }
-            dst  += dlinesize;
-            xmap += xlinesize;
-            ymap += ylinesize;
-        }
-    }
-
-    return 0;
-}
+DEFINE_REMAP_PLANAR_FUNC(nearest, 8, 1)
+DEFINE_REMAP_PLANAR_FUNC(nearest, 16, 2)
 
 /**
  * remap_packed algorithm expects pixels with both padded bits (step) and
@@ -212,85 +175,48 @@ static int remap_planar16_slice(AVFilterContext *ctx, void *arg, int jobnr, int 
  * pixels are copied from source to target using :
  * Target_frame[y][x] = Source_frame[ ymap[y][x] ][ [xmap[y][x] ];
  */
-static int remap_packed_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    const ThreadData *td = (ThreadData*)arg;
-    const AVFrame *in  = td->in;
-    const AVFrame *xin = td->xin;
-    const AVFrame *yin = td->yin;
-    const AVFrame *out = td->out;
-
-    const int slice_start = (out->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;
-
-    const int dlinesize  = out->linesize[0];
-    const int slinesize  = in->linesize[0];
-    const int xlinesize  = xin->linesize[0] / 2;
-    const int ylinesize  = yin->linesize[0] / 2;
-    const uint8_t *src   = in->data[0];
-    uint8_t *dst         = out->data[0] + slice_start * dlinesize;
-    const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;
-    const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;
-    const int step       = td->step;
-    int c, x, y;
-
-    for (y = slice_start; y < slice_end; y++) {
-        for (x = 0; x < out->width; x++) {
-            for (c = 0; c < td->nb_components; c++) {
-                if (ymap[x] < in->height && xmap[x] < in->width) {
-                    dst[x * step + c] = src[ymap[x] * slinesize + xmap[x] * step + c];
-                } else {
-                    dst[x * step + c] = 0;
-                }
-            }
-        }
-        dst  += dlinesize;
-        xmap += xlinesize;
-        ymap += ylinesize;
-    }
-
-    return 0;
+#define DEFINE_REMAP_PACKED_FUNC(name, bits, div)                                           \
+static int remap_packed##bits##_##name##_slice(AVFilterContext *ctx, void *arg,             \
+                                               int jobnr, int nb_jobs)                      \
+{                                                                                           \
+    const ThreadData *td = (ThreadData*)arg;                                                \
+    const AVFrame *in  = td->in;                                                            \
+    const AVFrame *xin = td->xin;                                                           \
+    const AVFrame *yin = td->yin;                                                           \
+    const AVFrame *out = td->out;                                                           \
+    const int slice_start = (out->height *  jobnr   ) / nb_jobs;                            \
+    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;                            \
+    const int dlinesize  = out->linesize[0] / div;                                          \
+    const int slinesize  = in->linesize[0] / div;                                           \
+    const int xlinesize  = xin->linesize[0] / 2;                                            \
+    const int ylinesize  = yin->linesize[0] / 2;                                            \
+    const uint##bits##_t *src = (const uint##bits##_t *)in->data[0];                        \
+    uint##bits##_t *dst = (uint##bits##_t *)out->data[0] + slice_start * dlinesize;         \
+    const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;        \
+    const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;        \
+    const int step       = td->step / div;                                                  \
+    int c, x, y;                                                                            \
+                                                                                            \
+    for (y = slice_start; y < slice_end; y++) {                                             \
+        for (x = 0; x < out->width; x++) {                                                  \
+            for (c = 0; c < td->nb_components; c++) {                                       \
+                if (ymap[x] < in->height && xmap[x] < in->width) {                          \
+                    dst[x * step + c] = src[ymap[x] * slinesize + xmap[x] * step + c];      \
+                } else {                                                                    \
+                    dst[x * step + c] = 0;                                                  \
+                }                                                                           \
+            }                                                                               \
+        }                                                                                   \
+        dst  += dlinesize;                                                                  \
+        xmap += xlinesize;                                                                  \
+        ymap += ylinesize;                                                                  \
+    }                                                                                       \
+                                                                                            \
+    return 0;                                                                               \
 }
 
-static int remap_packed16_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    const ThreadData *td = (ThreadData*)arg;
-    const AVFrame *in  = td->in;
-    const AVFrame *xin = td->xin;
-    const AVFrame *yin = td->yin;
-    const AVFrame *out = td->out;
-
-    const int slice_start = (out->height *  jobnr   ) / nb_jobs;
-    const int slice_end   = (out->height * (jobnr+1)) / nb_jobs;
-
-    const int dlinesize  = out->linesize[0] / 2;
-    const int slinesize  = in->linesize[0] / 2;
-    const int xlinesize  = xin->linesize[0] / 2;
-    const int ylinesize  = yin->linesize[0] / 2;
-    const uint16_t *src  = (const uint16_t *)in->data[0];
-    uint16_t *dst        = (uint16_t *)out->data[0] + slice_start * dlinesize;
-    const uint16_t *xmap = (const uint16_t *)xin->data[0] + slice_start * xlinesize;
-    const uint16_t *ymap = (const uint16_t *)yin->data[0] + slice_start * ylinesize;
-    const int step       = td->step / 2;
-    int c, x, y;
-
-    for (y = slice_start; y < slice_end; y++) {
-        for (x = 0; x < out->width; x++) {
-            for (c = 0; c < td->nb_components; c++) {
-                if (ymap[x] < in->height && xmap[x] < in->width) {
-                    dst[x * step + c] = src[ymap[x] * slinesize + xmap[x] * step + c];
-                } else {
-                    dst[x * step + c] = 0;
-                }
-            }
-        }
-        dst  += dlinesize;
-        xmap += xlinesize;
-        ymap += ylinesize;
-    }
-
-    return 0;
-}
+DEFINE_REMAP_PACKED_FUNC(nearest, 8, 1)
+DEFINE_REMAP_PACKED_FUNC(nearest, 16, 2)
 
 static int config_input(AVFilterLink *inlink)
 {
@@ -303,15 +229,15 @@ static int config_input(AVFilterLink *inlink)
 
     if (desc->comp[0].depth == 8) {
         if (s->nb_planes > 1 || s->nb_components == 1) {
-            s->remap_slice = remap_planar_slice;
+            s->remap_slice = remap_planar8_nearest_slice;
         } else {
-            s->remap_slice = remap_packed_slice;
+            s->remap_slice = remap_packed8_nearest_slice;
         }
     } else {
         if (s->nb_planes > 1 || s->nb_components == 1) {
-            s->remap_slice = remap_planar16_slice;
+            s->remap_slice = remap_planar16_nearest_slice;
         } else {
-            s->remap_slice = remap_packed16_slice;
+            s->remap_slice = remap_packed16_nearest_slice;
         }
     }
 
