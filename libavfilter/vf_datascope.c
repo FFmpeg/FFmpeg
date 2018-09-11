@@ -506,7 +506,7 @@ static int pixscope_config_input(AVFilterLink *inlink)
     }
 
     s->ww = 300;
-    s->wh = 300 * 1.6180;
+    s->wh = 300 * 1.6;
     s->x = s->xpos * (inlink->w - 1);
     s->y = s->ypos * (inlink->h - 1);
     if (s->x + s->w >= inlink->w || s->y + s->h >= inlink->h) {
