@@ -146,6 +146,9 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end = buf+buf_size;
     int ret;
 
+    if ((avctx->width / FONT_WIDTH) * (avctx->height / s->font_height) / 256 > buf_size)
+        return AVERROR_INVALIDDATA;
+
     s->x = s->y = 0;
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
