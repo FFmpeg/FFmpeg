@@ -2012,6 +2012,13 @@ static int mkv_write_header(AVFormatContext *s)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+
+    if (s->metadata_header_padding > 0) {
+        if (s->metadata_header_padding == 1)
+            s->metadata_header_padding++;
+        put_ebml_void(pb, s->metadata_header_padding);
+    }
+
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && mkv->reserve_cues_space) {
         mkv->cues_pos = avio_tell(pb);
         if (mkv->reserve_cues_space == 1)
