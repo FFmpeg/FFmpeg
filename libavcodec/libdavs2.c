@@ -50,7 +50,7 @@ static av_cold int davs2_init(AVCodecContext *avctx)
 
     if (!cad->decoder) {
         av_log(avctx, AV_LOG_ERROR, "decoder created error.");
-        return AVERROR(EINVAL);
+        return AVERROR_EXTERNAL;
     }
 
     av_log(avctx, AV_LOG_VERBOSE, "decoder created. %p\n", cad->decoder);
@@ -84,7 +84,7 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
 
         if (!frame->buf[plane]){
             av_log(avctx, AV_LOG_ERROR, "dump error: alloc failed.\n");
-            return AVERROR(EINVAL);
+            return AVERROR(ENOMEM);
         }
 
         frame->data[plane]     = frame->buf[plane]->data;
@@ -142,7 +142,7 @@ static int davs2_decode_frame(AVCodecContext *avctx, void *data,
 
     if (ret == DAVS2_ERROR) {
         av_log(avctx, AV_LOG_ERROR, "Decoder error: can't read packet\n");
-        return AVERROR(EINVAL);
+        return AVERROR_EXTERNAL;
     }
 
     ret = davs2_decoder_recv_frame(cad->decoder, &cad->headerset, &cad->out_frame);
