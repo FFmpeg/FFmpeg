@@ -148,6 +148,9 @@ static av_cold int pulse_read_header(AVFormatContext *s)
                                 pd->channels };
 
     pa_buffer_attr attr = { -1 };
+    pa_channel_map cmap;
+
+    pa_channel_map_init_extend(&cmap, pd->channels, PA_CHANNEL_MAP_WAVEEX);
 
     st = avformat_new_stream(s, NULL);
 
@@ -202,7 +205,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
         pa_threaded_mainloop_wait(pd->mainloop);
     }
 
-    if (!(pd->stream = pa_stream_new(pd->context, pd->stream_name, &ss, NULL))) {
+    if (!(pd->stream = pa_stream_new(pd->context, pd->stream_name, &ss, &cmap))) {
         ret = AVERROR(pa_context_errno(pd->context));
         goto unlock_and_fail;
     }
