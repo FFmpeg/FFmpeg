@@ -96,11 +96,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->width < FONT_WIDTH || avctx->height < s->font_height)
         return AVERROR_INVALIDDATA;
 
-
-    s->frame = av_frame_alloc();
-    if (!s->frame)
-        return AVERROR(ENOMEM);
-
     return 0;
 }
 
@@ -149,8 +144,9 @@ static int decode_frame(AVCodecContext *avctx,
     if ((avctx->width / FONT_WIDTH) * (avctx->height / s->font_height) / 256 > buf_size)
         return AVERROR_INVALIDDATA;
 
+    s->frame = data;
     s->x = s->y = 0;
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_get_buffer(avctx, s->frame, 0)) < 0)
         return ret;
     s->frame->pict_type           = AV_PICTURE_TYPE_I;
     s->frame->palette_has_changed = 1;
@@ -208,19 +204,8 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    if ((ret = av_frame_ref(data, s->frame)) < 0)
-        return ret;
     *got_frame      = 1;
     return buf_size;
-}
-
-static av_cold int decode_end(AVCodecContext *avctx)
-{
-    XbinContext *s = avctx->priv_data;
-
-    av_frame_free(&s->frame);
-
-    return 0;
 }
 
 #if CONFIG_BINTEXT_DECODER
@@ -231,7 +216,6 @@ AVCodec ff_bintext_decoder = {
     .id             = AV_CODEC_ID_BINTEXT,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
@@ -244,7 +228,6 @@ AVCodec ff_xbin_decoder = {
     .id             = AV_CODEC_ID_XBIN,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
@@ -257,7 +240,6 @@ AVCodec ff_idf_decoder = {
     .id             = AV_CODEC_ID_IDF,
     .priv_data_size = sizeof(XbinContext),
     .init           = decode_init,
-    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
