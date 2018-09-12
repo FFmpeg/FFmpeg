@@ -2761,9 +2761,6 @@ Set the Speed level from 0 to 9 (default 0). Higher is better but slower.
 Set the log level from -1 to 3 (default 0). -1: none, 0: error,
 1: warning, 2: info, 3: debug.
 
-@item hierarchical_ref
-Set the hierarchical reference or not (default true).
-
 @item xavs2-params
 Set xavs2 options using a list of @var{key}=@var{value} couples separated
 by ":".

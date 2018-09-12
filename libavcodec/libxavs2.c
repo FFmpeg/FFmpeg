@@ -78,8 +78,6 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    xavs2_opt_set2("rec",   "%d", 0);
-
     xavs2_opt_set2("width",     "%d", avctx->width);
     xavs2_opt_set2("height",    "%d", avctx->height);
     xavs2_opt_set2("bframes",   "%d", avctx->max_b_frames);
@@ -92,7 +90,6 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
     xavs2_opt_set2("thread_frames",     "%d", avctx->thread_count);
     xavs2_opt_set2("thread_rows",       "%d", cae->lcu_row_threads);
-    xavs2_opt_set2("hierarchical_ref",  "%d", cae->hierarchical_reference);
 
     xavs2_opt_set2("OpenGOP",  "%d", 1);
 
@@ -261,7 +258,6 @@ static const AVOption options[] = {
     { "min_qp"          ,   "min qp for rate control" ,                 OFFSET(min_qp)          , AV_OPT_TYPE_INT, {.i64 = 20 },  0,      63,  VE },
     { "speed_level"     ,   "Speed level, higher is better but slower", OFFSET(preset_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  0,       9,  VE },
     { "log_level"       ,   "log level: -1: none, 0: error, 1: warning, 2: info, 3: debug", OFFSET(log_level)    , AV_OPT_TYPE_INT, {.i64 =  0 },  -1,       3,  VE },
-    { "hierarchical_ref",   "hierarchical reference" ,                  OFFSET(hierarchical_reference)    , AV_OPT_TYPE_BOOL,    {.i64 =  1 }, 0, 1,  VE },
     { "xavs2-params"    ,   "set the xavs2 configuration using a :-separated list of key=value parameters", OFFSET(xavs2_opts), AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { NULL },
 };
