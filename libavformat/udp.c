@@ -41,6 +41,7 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
+#include "ip.h"
 
 #ifdef __APPLE__
 #include "TargetConditionals.h"
@@ -109,6 +110,7 @@ typedef struct UDPContext {
     struct sockaddr_storage local_addr_storage;
     char *sources;
     char *block;
+    IPSourceFilters filters;
 } UDPContext;
 
 #define OFFSET(x) offsetof(UDPContext, x)
@@ -236,39 +238,9 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
     return 0;
 }
 
-static struct addrinfo *udp_resolve_host(URLContext *h,
-                                         const char *hostname, int port,
-                                         int type, int family, int flags)
-{
-    struct addrinfo hints = { 0 }, *res = 0;
-    int error;
-    char sport[16];
-    const char *node = 0, *service = "0";
-
-    if (port > 0) {
-        snprintf(sport, sizeof(sport), "%d", port);
-        service = sport;
-    }
-    if ((hostname) && (hostname[0] != '\0') && (hostname[0] != '?')) {
-        node = hostname;
-    }
-    hints.ai_socktype = type;
-    hints.ai_family   = family;
-    hints.ai_flags = flags;
-    if ((error = getaddrinfo(node, service, &hints, &res))) {
-        res = NULL;
-        av_log(h, AV_LOG_ERROR, "getaddrinfo(%s, %s): %s\n",
-               node ? node : "unknown",
-               service,
-               gai_strerror(error));
-    }
-
-    return res;
-}
-
 static int udp_set_multicast_sources(URLContext *h,
                                      int sockfd, struct sockaddr *addr,
-                                     int addr_len, char **sources,
+                                     int addr_len, struct sockaddr_storage *sources,
                                      int nb_sources, int include)
 {
 #if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32) && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
@@ -278,16 +250,10 @@ static int udp_set_multicast_sources(URLContext *h,
     for (i = 0; i < nb_sources; i++) {
         struct group_source_req mreqs;
         int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
-        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
-                                                       SOCK_DGRAM, AF_UNSPEC,
-                                                       0);
-        if (!sourceaddr)
-            return AVERROR(ENOENT);
 
         mreqs.gsr_interface = 0;
         memcpy(&mreqs.gsr_group, addr, addr_len);
-        memcpy(&mreqs.gsr_source, sourceaddr->ai_addr, sourceaddr->ai_addrlen);
-        freeaddrinfo(sourceaddr);
+        memcpy(&mreqs.gsr_source, &sources[i], sizeof(*sources));
 
         if (setsockopt(sockfd, level,
                        include ? MCAST_JOIN_SOURCE_GROUP : MCAST_BLOCK_SOURCE,
@@ -308,22 +274,14 @@ static int udp_set_multicast_sources(URLContext *h,
     }
     for (i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
-        struct addrinfo *sourceaddr = udp_resolve_host(h, sources[i], 0,
-                                                       SOCK_DGRAM, AF_UNSPEC,
-                                                       0);
-        if (!sourceaddr)
-            return AVERROR(ENOENT);
-        if (sourceaddr->ai_addr->sa_family != AF_INET) {
-            freeaddrinfo(sourceaddr);
-            av_log(NULL, AV_LOG_ERROR, "%s is of incorrect protocol family\n",
-                   sources[i]);
+        if (sources[i].ss_family != AF_INET) {
+            av_log(NULL, AV_LOG_ERROR, "Source/block address %d is of incorrect protocol family\n", i + 1);
             return AVERROR(EINVAL);
         }
 
         mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
         mreqs.imr_interface.s_addr = INADDR_ANY;
-        mreqs.imr_sourceaddr.s_addr = ((struct sockaddr_in *)sourceaddr->ai_addr)->sin_addr.s_addr;
-        freeaddrinfo(sourceaddr);
+        mreqs.imr_sourceaddr.s_addr = ((struct sockaddr_in *)&sources[i])->sin_addr.s_addr;
 
         if (setsockopt(sockfd, IPPROTO_IP,
                        include ? IP_ADD_SOURCE_MEMBERSHIP : IP_BLOCK_SOURCE,
@@ -347,7 +305,7 @@ static int udp_set_url(URLContext *h,
     struct addrinfo *res0;
     int addr_len;
 
-    res0 = udp_resolve_host(h, hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
+    res0 = ff_ip_resolve_host(h, hostname, port, SOCK_DGRAM, AF_UNSPEC, 0);
     if (!res0) return AVERROR(EIO);
     memcpy(addr, res0->ai_addr, res0->ai_addrlen);
     addr_len = res0->ai_addrlen;
@@ -366,7 +324,7 @@ static int udp_socket_create(URLContext *h, struct sockaddr_storage *addr,
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_resolve_host(h, (localaddr && localaddr[0]) ? localaddr : NULL,
+    res0 = ff_ip_resolve_host(h, (localaddr && localaddr[0]) ? localaddr : NULL,
                             s->local_port,
                             SOCK_DGRAM, family, AI_PASSIVE);
     if (!res0)
@@ -646,27 +604,6 @@ end:
 
 #endif
 
-static int parse_source_list(char *buf, char **sources, int *num_sources,
-                             int max_sources)
-{
-    char *source_start;
-
-    source_start = buf;
-    while (1) {
-        char *next = strchr(source_start, ',');
-        if (next)
-            *next = '\0';
-        sources[*num_sources] = av_strdup(source_start);
-        if (!sources[*num_sources])
-            return AVERROR(ENOMEM);
-        source_start = next + 1;
-        (*num_sources)++;
-        if (*num_sources >= max_sources || !next)
-            break;
-    }
-    return 0;
-}
-
 /* put it in UDP context */
 /* return non zero if error */
 static int udp_open(URLContext *h, const char *uri, int flags)
@@ -679,8 +616,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     struct sockaddr_storage my_addr;
     socklen_t len;
-    int i, num_include_sources = 0, num_exclude_sources = 0;
-    char *include_sources[32], *exclude_sources[32];
 
     h->is_streamed = 1;
 
@@ -689,15 +624,12 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
 
     if (s->sources) {
-        if (parse_source_list(s->sources, include_sources,
-                              &num_include_sources,
-                              FF_ARRAY_ELEMS(include_sources)))
+        if (ff_ip_parse_sources(h, s->sources, &s->filters) < 0)
             goto fail;
     }
 
     if (s->block) {
-        if (parse_source_list(s->block, exclude_sources, &num_exclude_sources,
-                              FF_ARRAY_ELEMS(exclude_sources)))
+        if (ff_ip_parse_blocks(h, s->block, &s->filters) < 0)
             goto fail;
     }
 
@@ -766,13 +698,11 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             av_strlcpy(localaddr, buf, sizeof(localaddr));
         }
         if (av_find_info_tag(buf, sizeof(buf), "sources", p)) {
-            if (parse_source_list(buf, include_sources, &num_include_sources,
-                                  FF_ARRAY_ELEMS(include_sources)))
+            if (ff_ip_parse_sources(h, buf, &s->filters) < 0)
                 goto fail;
         }
         if (av_find_info_tag(buf, sizeof(buf), "block", p)) {
-            if (parse_source_list(buf, exclude_sources, &num_exclude_sources,
-                                  FF_ARRAY_ELEMS(exclude_sources)))
+            if (ff_ip_parse_blocks(h, buf, &s->filters) < 0)
                 goto fail;
         }
         if (!is_output && av_find_info_tag(buf, sizeof(buf), "timeout", p))
@@ -875,27 +805,23 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         }
         if (h->flags & AVIO_FLAG_READ) {
             /* input */
-            if (num_include_sources && num_exclude_sources) {
-                av_log(h, AV_LOG_ERROR, "Simultaneously including and excluding multicast sources is not supported\n");
-                goto fail;
-            }
-            if (num_include_sources) {
+            if (s->filters.nb_include_addrs) {
                 if (udp_set_multicast_sources(h, udp_fd,
                                               (struct sockaddr *)&s->dest_addr,
                                               s->dest_addr_len,
-                                              include_sources,
-                                              num_include_sources, 1) < 0)
+                                              s->filters.include_addrs,
+                                              s->filters.nb_include_addrs, 1) < 0)
                     goto fail;
             } else {
                 if (udp_join_multicast_group(udp_fd, (struct sockaddr *)&s->dest_addr,(struct sockaddr *)&s->local_addr_storage) < 0)
                     goto fail;
             }
-            if (num_exclude_sources) {
+            if (s->filters.nb_exclude_addrs) {
                 if (udp_set_multicast_sources(h, udp_fd,
                                               (struct sockaddr *)&s->dest_addr,
                                               s->dest_addr_len,
-                                              exclude_sources,
-                                              num_exclude_sources, 0) < 0)
+                                              s->filters.exclude_addrs,
+                                              s->filters.nb_exclude_addrs, 0) < 0)
                     goto fail;
             }
         }
@@ -932,11 +858,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
     }
-
-    for (i = 0; i < num_include_sources; i++)
-        av_freep(&include_sources[i]);
-    for (i = 0; i < num_exclude_sources; i++)
-        av_freep(&exclude_sources[i]);
 
     s->udp_fd = udp_fd;
 
@@ -987,10 +908,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (udp_fd >= 0)
         closesocket(udp_fd);
     av_fifo_freep(&s->fifo);
-    for (i = 0; i < num_include_sources; i++)
-        av_freep(&include_sources[i]);
-    for (i = 0; i < num_exclude_sources; i++)
-        av_freep(&exclude_sources[i]);
+    ff_ip_reset_filters(&s->filters);
     return AVERROR(EIO);
 }
 
@@ -1144,6 +1062,7 @@ static int udp_close(URLContext *h)
 #endif
     closesocket(s->udp_fd);
     av_fifo_freep(&s->fifo);
+    ff_ip_reset_filters(&s->filters);
     return 0;
 }
 
