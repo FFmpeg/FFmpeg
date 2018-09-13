@@ -688,7 +688,7 @@ static void do_output16(BM3DContext *s, uint8_t *dst, int dst_linesize,
                 sum_den += den;
             }
 
-            dstp[j] = av_clip_uintp2(sum_num / sum_den, depth);
+            dstp[j] = av_clip_uintp2_c(sum_num / sum_den, depth);
         }
     }
 }
