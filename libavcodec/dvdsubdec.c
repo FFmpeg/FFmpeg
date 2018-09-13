@@ -82,10 +82,7 @@ static int decode_run_8bit(GetBitContext *gb, int *color)
 {
     int len;
     int has_run = get_bits1(gb);
-    if (get_bits1(gb))
-        *color = get_bits(gb, 8);
-    else
-        *color = get_bits(gb, 2);
+    *color = get_bits(gb, 2 + 6*get_bits1(gb));
     if (has_run) {
         if (get_bits1(gb)) {
             len = get_bits(gb, 7);
