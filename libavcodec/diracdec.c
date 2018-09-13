@@ -548,6 +548,8 @@ static inline int codeblock(DiracContext *s, SubBand *b,
         }
     } else {
         for (y = top; y < bottom; y++) {
+            if (get_bits_left(gb) < 1)
+                return AVERROR_INVALIDDATA;
             for (x = left; x < right; x++) {
                 int val = coeff_unpack_golomb(gb, qfactor, qoffset);
                 if (b->pshift) {
