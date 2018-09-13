@@ -124,6 +124,8 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
             len = decode_run_8bit(&gb, &color);
         else
             len = decode_run_2bit(&gb, &color);
+        if (len != INT_MAX && len > w - x)
+            return AVERROR_INVALIDDATA;
         len = FFMIN(len, w - x);
         memset(d + x, color, len);
         x += len;
