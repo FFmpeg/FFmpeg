@@ -539,7 +539,7 @@ static inline int get_amv(Mpeg4DecContext *ctx, int n)
         len >>= s->quarter_sample;
 
     if (s->real_sprite_warping_points == 1) {
-        if (ctx->divx_version == 500 && ctx->divx_build == 413)
+        if (ctx->divx_version == 500 && ctx->divx_build == 413 && a >= s->quarter_sample)
             sum = s->sprite_offset[0][n] / (1 << (a - s->quarter_sample));
         else
             sum = RSHIFT(s->sprite_offset[0][n] * (1 << s->quarter_sample), a);
