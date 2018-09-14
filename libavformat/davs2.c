@@ -33,12 +33,12 @@
 
 static int avs2_probe(AVProbeData *p)
 {
-    if (AV_RB32(p->buf) != 0x1B0){
-        return 0;
-    }
     uint32_t code= -1, hds=0, pic=0, seq=0;
     uint8_t state=0;
     const uint8_t *ptr = p->buf, *end = p->buf + p->buf_size, *sqb=0;
+    if (AV_RB32(p->buf) != 0x1B0){
+        return 0;
+    }
 
     while (ptr < end) {
         ptr = avpriv_find_start_code(ptr, end, &code);
