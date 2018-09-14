@@ -25,10 +25,13 @@
 #include "avcodec.h"
 #include "internal.h"
 
+#ifdef AACDECODER_LIB_VL0
 #define FDKDEC_VER_AT_LEAST(vl0, vl1) \
-    (defined(AACDECODER_LIB_VL0) && \
-        ((AACDECODER_LIB_VL0 > vl0) || \
-         (AACDECODER_LIB_VL0 == vl0 && AACDECODER_LIB_VL1 >= vl1)))
+    ((AACDECODER_LIB_VL0 > vl0) || \
+     (AACDECODER_LIB_VL0 == vl0 && AACDECODER_LIB_VL1 >= vl1))
+#else
+#define FDKDEC_VER_AT_LEAST(vl0, vl1) 0
+#endif
 
 #if !FDKDEC_VER_AT_LEAST(2, 5) // < 2.5.10
 #define AAC_PCM_MAX_OUTPUT_CHANNELS AAC_PCM_OUTPUT_CHANNELS

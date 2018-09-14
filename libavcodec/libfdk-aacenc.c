@@ -26,10 +26,13 @@
 #include "audio_frame_queue.h"
 #include "internal.h"
 
+#ifdef AACENCODER_LIB_VL0
 #define FDKENC_VER_AT_LEAST(vl0, vl1) \
-    (defined(AACENCODER_LIB_VL0) && \
-        ((AACENCODER_LIB_VL0 > vl0) || \
-         (AACENCODER_LIB_VL0 == vl0 && AACENCODER_LIB_VL1 >= vl1)))
+    ((AACENCODER_LIB_VL0 > vl0) || \
+     (AACENCODER_LIB_VL0 == vl0 && AACENCODER_LIB_VL1 >= vl1))
+#else
+#define FDKENC_VER_AT_LEAST(vl0, vl1) 0
+#endif
 
 typedef struct AACContext {
     const AVClass *class;
