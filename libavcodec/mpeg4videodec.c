@@ -1968,6 +1968,10 @@ static int mpeg4_decode_dpcm_macroblock(MpegEncContext *s, int16_t macroblock[25
             if (rice_prefix_code == 11)
                 dpcm_residual = get_bits(&s->gb, s->avctx->bits_per_raw_sample);
             else {
+                if (rice_prefix_code == 12) {
+                    av_log(s->avctx, AV_LOG_ERROR, "Forbidden rice_prefix_code\n");
+                    return AVERROR_INVALIDDATA;
+                }
                 rice_suffix_code = get_bitsz(&s->gb, rice_parameter);
                 dpcm_residual = (rice_prefix_code << rice_parameter) + rice_suffix_code;
             }
