@@ -911,8 +911,10 @@ static int write_manifest(AVFormatContext *s, int final)
             OutputStream *os = &c->streams[i];
             char *agroup = NULL;
             int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
+            if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                continue;
             av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
-            if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && max_audio_bitrate) {
+            if (max_audio_bitrate) {
                 agroup = (char *)audio_group;
                 stream_bitrate += max_audio_bitrate;
                 av_strlcat(codec_str, ",", sizeof(codec_str));
