@@ -158,6 +158,7 @@ extern AVCodec ff_hymt_decoder;
 extern AVCodec ff_idcin_decoder;
 extern AVCodec ff_iff_ilbm_decoder;
 extern AVCodec ff_imm4_decoder;
+extern AVCodec ff_imm5_decoder;
 extern AVCodec ff_indeo2_decoder;
 extern AVCodec ff_indeo3_decoder;
 extern AVCodec ff_indeo4_decoder;
