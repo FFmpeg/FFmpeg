@@ -459,6 +459,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     EBUR128Context *ebur128 = ctx->priv;
     AVFilterPad pad;
+    int ret;
 
     if (ebur128->loglevel != AV_LOG_INFO &&
         ebur128->loglevel != AV_LOG_VERBOSE) {
@@ -495,7 +496,11 @@ static av_cold int init(AVFilterContext *ctx)
         };
         if (!pad.name)
             return AVERROR(ENOMEM);
-        ff_insert_outpad(ctx, 0, &pad);
+        ret = ff_insert_outpad(ctx, 0, &pad);
+        if (ret < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
     pad = (AVFilterPad){
         .name         = av_asprintf("out%d", ebur128->do_video),
@@ -504,7 +509,11 @@ static av_cold int init(AVFilterContext *ctx)
     };
     if (!pad.name)
         return AVERROR(ENOMEM);
-    ff_insert_outpad(ctx, ebur128->do_video, &pad);
+    ret = ff_insert_outpad(ctx, ebur128->do_video, &pad);
+    if (ret < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
 
     /* summary */
     av_log(ctx, AV_LOG_VERBOSE, "EBU +%d scale\n", ebur128->meter);
