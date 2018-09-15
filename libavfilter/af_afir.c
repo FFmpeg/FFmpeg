@@ -631,9 +631,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&s->fdsp);
 
-    av_freep(&ctx->output_pads[0].name);
-    if (s->response)
-        av_freep(&ctx->output_pads[1].name);
+    for (int i = 0; i < ctx->nb_outputs; i++)
+        av_freep(&ctx->output_pads[i].name);
     av_frame_free(&s->video);
 }
 
@@ -658,6 +657,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
     AVFilterPad pad, vpad;
+    int ret;
 
     pad = (AVFilterPad){
         .name          = av_strdup("default"),
@@ -679,10 +679,19 @@ static av_cold int init(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
     }
 
-    ff_insert_outpad(ctx, 0, &pad);
+    ret = ff_insert_outpad(ctx, 0, &pad);
+    if (ret < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
 
-    if (s->response)
-        ff_insert_outpad(ctx, 1, &vpad);
+    if (s->response) {
+        ret = ff_insert_outpad(ctx, 1, &vpad);
+        if (ret < 0) {
+            av_freep(&vpad.name);
+            return ret;
+        }
+    }
 
     s->fcmul_add = fcmul_add_c;
 
