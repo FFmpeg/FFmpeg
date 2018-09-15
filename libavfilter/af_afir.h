@@ -69,7 +69,7 @@ typedef struct AudioFIRContext {
     float **block;
     FFTComplex **coeff;
 
-    AVAudioFifo *fifo[2];
+    AVAudioFifo *fifo;
     AVFrame *in[2];
     AVFrame *buffer;
     AVFrame *video;
