@@ -456,7 +456,7 @@ static int read_header(ShortenContext *s)
         }
 
         skip_bytes = get_uint(s, NSKIPSIZE);
-        if ((unsigned)skip_bytes > get_bits_left(&s->gb)/8) {
+        if ((unsigned)skip_bytes > FFMAX(get_bits_left(&s->gb), 0)/8) {
             av_log(s->avctx, AV_LOG_ERROR, "invalid skip_bytes: %d\n", skip_bytes);
             return AVERROR_INVALIDDATA;
         }
