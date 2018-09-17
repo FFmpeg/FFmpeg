@@ -31,6 +31,7 @@ version <next>:
 - Block-Matching 3d (bm3d) denoising filter
 - acrossover filter
 - ilbc decoder
+- audio denoiser as afftdn filter
 
 
 version 4.0:

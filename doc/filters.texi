@@ -974,6 +974,96 @@ afade=t=out:st=875:d=25
 @end example
 @end itemize
 
+@section afftdn
+Denoise audio samples with FFT.
+
+A description of the accepted parameters follows.
+
+@table @option
+@item nr
+Set the noise reduction in dB, allowed range is 0.01 to 97.
+Default value is 12 dB.
+
+@item nf
+Set the noise floor in dB, allowed range is -80 to -20.
+Default value is -50 dB.
+
+@item nt
+Set the noise type.
+
+It accepts the following values:
+@table @option
+@item w
+Select white noise.
+
+@item v
+Select vinyl noise.
+
+@item s
+Select shellac noise.
+
+@item c
+Select custom noise, defined in @code{bn} option.
+
+Default value is white noise.
+@end table
+
+@item bn
+Set custom band noise for every one of 15 bands.
+Bands are separated by ' ' or '|'.
+
+@item rf
+Set the residual floor in dB, allowed range is -80 to -20.
+Default value is -38 dB.
+
+@item tn
+Enable noise tracking. By default is disabled.
+With this enabled, noise floor is automatically adjusted.
+
+@item tr
+Enable residual tracking. By default is disabled.
+
+@item om
+Set the output mode.
+
+It accepts the following values:
+@table @option
+@item i
+Pass input unchanged.
+
+@item o
+Pass noise filtered out.
+
+@item n
+Pass only noise.
+
+Default value is @var{o}.
+@end table
+@end table
+
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item sample_noise, sn
+Start or stop measuring noise profile.
+Syntax for the command is : "start" or "stop" string.
+After measuring noise profile is stopped it will be
+automatically applied in filtering.
+
+@item noise_reduction, nr
+Change noise reduction. Argument is single float number.
+Syntax for the command is : "@var{noise_reduction}"
+
+@item noise_floor, nf
+Change noise floor. Argument is single float number.
+Syntax for the command is : "@var{noise_floor}"
+
+@item output_mode, om
+Change output mode operation.
+Syntax for the command is : "i", "o" or "n" string.
+@end table
+
 @section afftfilt
 Apply arbitrary expressions to samples in frequency domain.
 
