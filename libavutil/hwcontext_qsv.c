@@ -862,6 +862,10 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     mfxSyncPoint sync = NULL;
     mfxStatus err;
     int ret = 0;
+    /* make a copy if the input is not padded as libmfx requires */
+    AVFrame tmp_frame, *src_frame;
+    int realigned = 0;
+
 
     while (!s->session_upload_init && !s->session_upload && !ret) {
 #if HAVE_PTHREADS
@@ -887,16 +891,36 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     if (ret < 0)
         return ret;
 
+
+    if (src->height & 16 || src->linesize[0] & 16) {
+        realigned = 1;
+        memset(&tmp_frame, 0, sizeof(tmp_frame));
+        tmp_frame.format         = src->format;
+        tmp_frame.width          = FFALIGN(src->width, 16);
+        tmp_frame.height         = FFALIGN(src->height, 16);
+        ret = av_frame_get_buffer(&tmp_frame, 32);
+        if (ret < 0)
+            return ret;
+
+        ret = av_frame_copy(&tmp_frame, src);
+        if (ret < 0) {
+            av_frame_unref(&tmp_frame);
+            return ret;
+        }
+    }
+
+    src_frame = realigned ? &tmp_frame : src;
+
     if (!s->session_upload) {
         if (s->child_frames_ref)
-            return qsv_transfer_data_child(ctx, dst, src);
+            return qsv_transfer_data_child(ctx, dst, src_frame);
 
         av_log(ctx, AV_LOG_ERROR, "Surface upload not possible\n");
         return AVERROR(ENOSYS);
     }
 
     in.Info = out->Info;
-    map_frame_to_surface(src, &in);
+    map_frame_to_surface(src_frame, &in);
 
     do {
         err = MFXVideoVPP_RunFrameVPPAsync(s->session_upload, &in, out, NULL, &sync);
@@ -916,6 +940,9 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
         av_log(ctx, AV_LOG_ERROR, "Error synchronizing the operation\n");
         return AVERROR_UNKNOWN;
     }
+
+    if (realigned)
+        av_frame_unref(&tmp_frame);
 
     return 0;
 }
