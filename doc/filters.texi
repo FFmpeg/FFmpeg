@@ -1932,6 +1932,8 @@ Flat_factor
 Peak_count
 Bit_depth
 Dynamic_range
+Zero_crossings
+Zero_crossings_rate
 
 and for Overall:
 DC_offset
@@ -2009,6 +2011,12 @@ Overall bit depth of audio. Number of bits used for each sample.
 
 @item Dynamic range
 Measured dynamic range of audio in dB.
+
+@item Zero crossings
+Number of points where the waveform crosses the zero level axis.
+
+@item Zero crossings rate
+Rate of Zero crossings and number of audio samples.
 @end table
 
 @section atempo
