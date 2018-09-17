@@ -525,6 +525,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             return AVERROR_INVALIDDATA;
         }
         memcpy(c->decomp_buf, buf, len);
+        c->decomp_len = len;
     } else { // ZLIB-compressed data
         c->zstream.total_in = c->zstream.total_out = 0;
         c->zstream.next_in = (uint8_t*)buf;
