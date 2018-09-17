@@ -831,9 +831,12 @@ const char *av_frame_side_data_name(enum AVFrameSideDataType type)
     case AV_FRAME_DATA_MASTERING_DISPLAY_METADATA:  return "Mastering display metadata";
     case AV_FRAME_DATA_CONTENT_LIGHT_LEVEL:         return "Content light level metadata";
     case AV_FRAME_DATA_GOP_TIMECODE:                return "GOP timecode";
+    case AV_FRAME_DATA_SPHERICAL:                   return "Spherical Mapping";
     case AV_FRAME_DATA_ICC_PROFILE:                 return "ICC profile";
+#if FF_API_FRAME_QP
     case AV_FRAME_DATA_QP_TABLE_PROPERTIES:         return "QP table properties";
     case AV_FRAME_DATA_QP_TABLE_DATA:               return "QP table data";
+#endif
     }
     return NULL;
 }
