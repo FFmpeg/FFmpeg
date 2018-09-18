@@ -215,6 +215,15 @@ insert the string ``hello'' associated with the given UUID.
 @item delete_filler
 Deletes both filler NAL units and filler SEI messages.
 
+@item level
+Set the level in the SPS.  Refer to H.264 section A.3 and tables A-1
+to A-5.
+
+The argument must be the name of a level (for example, @samp{4.2}), a
+level_idc value (for example, @samp{42}), or the special name @samp{auto}
+indicating that the filter should attempt to guess the level from the
+input stream properties.
+
 @end table
 
 @section h264_mp4toannexb
