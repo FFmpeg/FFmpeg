@@ -491,8 +491,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
     sps->vui.bitstream_restriction_flag    = 1;
     sps->vui.motion_vectors_over_pic_boundaries_flag = 1;
-    sps->vui.log2_max_mv_length_horizontal = 16;
-    sps->vui.log2_max_mv_length_vertical   = 16;
+    sps->vui.log2_max_mv_length_horizontal = 15;
+    sps->vui.log2_max_mv_length_vertical   = 15;
     sps->vui.max_num_reorder_frames        = (ctx->b_per_p > 0);
     sps->vui.max_dec_frame_buffering       = sps->max_num_ref_frames;
 
