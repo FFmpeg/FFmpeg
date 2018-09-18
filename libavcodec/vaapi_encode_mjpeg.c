@@ -554,7 +554,8 @@ AVCodec ff_mjpeg_vaapi_encoder = {
     .encode2        = &ff_vaapi_encode2,
     .close          = &vaapi_encode_mjpeg_close,
     .priv_class     = &vaapi_encode_mjpeg_class,
-    .capabilities   = AV_CODEC_CAP_HARDWARE,
+    .capabilities   = AV_CODEC_CAP_HARDWARE |
+                      AV_CODEC_CAP_INTRA_ONLY,
     .defaults       = vaapi_encode_mjpeg_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,
