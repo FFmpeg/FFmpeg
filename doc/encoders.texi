@@ -2663,6 +2663,16 @@ Include access unit delimiters in the stream (not included by default).
 Set @emph{general_tier_flag}.  This may affect the level chosen for the stream
 if it is not explicitly specified.
 
+@item sei
+Set SEI message types to include.
+Some combination of the following values:
+@table @samp
+@item hdr
+Include HDR metadata if the input frames have it
+(@emph{mastering_display_colour_volume} and @emph{content_light_level}
+messages).
+@end table
+
 @end table
 
 @item mjpeg_vaapi
