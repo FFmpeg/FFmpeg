@@ -207,9 +207,16 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     pic->nb_param_buffers = 0;
 
-    if (pic->encode_order == 0) {
-        // Global parameter buffers are set on the first picture only.
+    if (pic->type == PICTURE_TYPE_IDR && ctx->codec->init_sequence_params) {
+        err = vaapi_encode_make_param_buffer(avctx, pic,
+                                             VAEncSequenceParameterBufferType,
+                                             ctx->codec_sequence_params,
+                                             ctx->codec->sequence_params_size);
+        if (err < 0)
+            goto fail;
+    }
 
+    if (pic->type == PICTURE_TYPE_IDR) {
         for (i = 0; i < ctx->nb_global_params; i++) {
             err = vaapi_encode_make_param_buffer(avctx, pic,
                                                  VAEncMiscParameterBufferType,
@@ -218,15 +225,6 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
             if (err < 0)
                 goto fail;
         }
-    }
-
-    if (pic->type == PICTURE_TYPE_IDR && ctx->codec->init_sequence_params) {
-        err = vaapi_encode_make_param_buffer(avctx, pic,
-                                             VAEncSequenceParameterBufferType,
-                                             ctx->codec_sequence_params,
-                                             ctx->codec->sequence_params_size);
-        if (err < 0)
-            goto fail;
     }
 
     if (ctx->codec->init_picture_params) {
