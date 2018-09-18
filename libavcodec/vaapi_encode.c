@@ -671,7 +671,7 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
 
     if (ctx->input_order == 0 || ctx->force_idr ||
-        ctx->gop_counter >= avctx->gop_size) {
+        ctx->gop_counter >= ctx->gop_size) {
         pic->type = PICTURE_TYPE_IDR;
         ctx->force_idr = 0;
         ctx->gop_counter = 1;
@@ -694,7 +694,7 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
         // encode-after it, but not exceeding the GOP size.
 
         for (i = 0; i < ctx->b_per_p &&
-             ctx->gop_counter < avctx->gop_size; i++) {
+             ctx->gop_counter < ctx->gop_size; i++) {
             pic = vaapi_encode_alloc();
             if (!pic)
                 goto fail;
@@ -1213,7 +1213,6 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
     int i;
 
     VAConfigAttrib attr[] = {
-        { VAConfigAttribEncMaxRefFrames  },
         { VAConfigAttribEncPackedHeaders },
     };
 
@@ -1236,24 +1235,6 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             continue;
         }
         switch (attr[i].type) {
-        case VAConfigAttribEncMaxRefFrames:
-        {
-            unsigned int ref_l0 = attr[i].value & 0xffff;
-            unsigned int ref_l1 = (attr[i].value >> 16) & 0xffff;
-
-            if (avctx->gop_size > 1 && ref_l0 < 1) {
-                av_log(avctx, AV_LOG_ERROR, "P frames are not "
-                       "supported (%#x).\n", attr[i].value);
-                return AVERROR(EINVAL);
-            }
-            if (avctx->max_b_frames > 0 && ref_l1 < 1) {
-                av_log(avctx, AV_LOG_WARNING, "B frames are not "
-                       "supported (%#x) by the underlying driver.\n",
-                       attr[i].value);
-                avctx->max_b_frames = 0;
-            }
-        }
-        break;
         case VAConfigAttribEncPackedHeaders:
             if (ctx->va_packed_headers & ~attr[i].value) {
                 // This isn't fatal, but packed headers are always
@@ -1469,6 +1450,54 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAStatus vas;
+    VAConfigAttrib attr = { VAConfigAttribEncMaxRefFrames };
+    uint32_t ref_l0, ref_l1;
+
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile,
+                                ctx->va_entrypoint,
+                                &attr, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query reference frames "
+               "attribute: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+        ref_l0 = ref_l1 = 0;
+    } else {
+        ref_l0 = attr.value       & 0xffff;
+        ref_l1 = attr.value >> 16 & 0xffff;
+    }
+
+    if (avctx->gop_size <= 1) {
+        av_log(avctx, AV_LOG_VERBOSE, "Using intra frames only.\n");
+        ctx->gop_size = 1;
+    } else if (ref_l0 < 1) {
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support any "
+               "reference frames.\n");
+        return AVERROR(EINVAL);
+    } else if (ref_l1 < 1 || avctx->max_b_frames < 1) {
+        av_log(avctx, AV_LOG_VERBOSE, "Using intra and P-frames "
+               "(supported references: %d / %d).\n", ref_l0, ref_l1);
+        ctx->gop_size = avctx->gop_size;
+        ctx->p_per_i  = INT_MAX;
+        ctx->b_per_p  = 0;
+    } else {
+        av_log(avctx, AV_LOG_VERBOSE, "Using intra, P- and B-frames "
+               "(supported references: %d / %d).\n", ref_l0, ref_l1);
+        ctx->gop_size = avctx->gop_size;
+        ctx->p_per_i  = INT_MAX;
+        ctx->b_per_p  = avctx->max_b_frames;
+    }
+
+    return 0;
+}
+
 static av_cold int vaapi_encode_init_quality(AVCodecContext *avctx)
 {
 #if VA_CHECK_VERSION(0, 36, 0)
@@ -1640,7 +1669,7 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     ctx->recon_frames->height    = ctx->surface_height;
     // At most three IDR/I/P frames and two runs of B frames can be in
     // flight at any one time.
-    ctx->recon_frames->initial_pool_size = 3 + 2 * avctx->max_b_frames;
+    ctx->recon_frames->initial_pool_size = 3 + 2 * ctx->b_per_p;
 
     err = av_hwframe_ctx_init(ctx->recon_frames_ref);
     if (err < 0) {
@@ -1692,6 +1721,10 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
         goto fail;
 
     err = vaapi_encode_init_rate_control(avctx);
+    if (err < 0)
+        goto fail;
+
+    err = vaapi_encode_init_gop_structure(avctx);
     if (err < 0)
         goto fail;
 
@@ -1749,13 +1782,9 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     }
 
     ctx->input_order  = 0;
-    ctx->output_delay = avctx->max_b_frames;
+    ctx->output_delay = ctx->b_per_p;
     ctx->decode_delay = 1;
     ctx->output_order = - ctx->output_delay - 1;
-
-    // Currently we never generate I frames, only IDR.
-    ctx->p_per_i = INT_MAX;
-    ctx->b_per_p = avctx->max_b_frames;
 
     if (ctx->codec->sequence_params_size > 0) {
         ctx->codec_sequence_params =

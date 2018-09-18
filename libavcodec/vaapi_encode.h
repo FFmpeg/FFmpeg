@@ -224,6 +224,7 @@ typedef struct VAAPIEncodeContext {
     int64_t         ts_ring[MAX_REORDER_DELAY * 3];
 
     // Frame type decision.
+    int gop_size;
     int p_per_i;
     int b_per_p;
     int force_idr;

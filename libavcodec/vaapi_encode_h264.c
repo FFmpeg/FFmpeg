@@ -493,8 +493,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     *vseq = (VAEncSequenceParameterBufferH264) {
         .seq_parameter_set_id = sps->seq_parameter_set_id,
         .level_idc        = sps->level_idc,
-        .intra_period     = avctx->gop_size,
-        .intra_idr_period = avctx->gop_size,
+        .intra_period     = ctx->gop_size,
+        .intra_idr_period = ctx->gop_size,
         .ip_period        = ctx->b_per_p + 1,
 
         .bits_per_second       = ctx->va_bit_rate,

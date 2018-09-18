@@ -66,7 +66,7 @@ static int vaapi_encode_vp8_init_sequence_params(AVCodecContext *avctx)
 
     if (!(ctx->va_rc_mode & VA_RC_CQP)) {
         vseq->bits_per_second = ctx->va_bit_rate;
-        vseq->intra_period    = avctx->gop_size;
+        vseq->intra_period    = ctx->gop_size;
     }
 
     return 0;
@@ -197,11 +197,6 @@ static const VAAPIEncodeType vaapi_encode_type_vp8 = {
 static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-
-    if (avctx->max_b_frames > 0) {
-        av_log(avctx, AV_LOG_ERROR, "B-frames are not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    }
 
     ctx->codec = &vaapi_encode_type_vp8;
 

@@ -509,8 +509,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         .general_level_idc   = vps->profile_tier_level.general_level_idc,
         .general_tier_flag   = vps->profile_tier_level.general_tier_flag,
 
-        .intra_period     = avctx->gop_size,
-        .intra_idr_period = avctx->gop_size,
+        .intra_period     = ctx->gop_size,
+        .intra_idr_period = ctx->gop_size,
         .ip_period        = ctx->b_per_p + 1,
         .bits_per_second  = ctx->va_bit_rate,
 

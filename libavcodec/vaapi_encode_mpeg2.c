@@ -355,7 +355,7 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
 
 
     *vseq = (VAEncSequenceParameterBufferMPEG2) {
-        .intra_period = avctx->gop_size,
+        .intra_period = ctx->gop_size,
         .ip_period    = ctx->b_per_p + 1,
 
         .picture_width  = avctx->width,

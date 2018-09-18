@@ -72,7 +72,7 @@ static int vaapi_encode_vp9_init_sequence_params(AVCodecContext *avctx)
 
     if (!(ctx->va_rc_mode & VA_RC_CQP)) {
         vseq->bits_per_second = ctx->va_bit_rate;
-        vseq->intra_period    = avctx->gop_size;
+        vseq->intra_period    = ctx->gop_size;
     }
 
     vpic->frame_width_src  = avctx->width;
@@ -86,6 +86,7 @@ static int vaapi_encode_vp9_init_sequence_params(AVCodecContext *avctx)
 static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
                                                 VAAPIEncodePicture *pic)
 {
+    VAAPIEncodeContext              *ctx = avctx->priv_data;
     VAAPIEncodeVP9Context          *priv = avctx->priv_data;
     VAEncPictureParameterBufferVP9 *vpic = pic->codec_picture_params;
     int i;
@@ -102,7 +103,7 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
         break;
     case PICTURE_TYPE_P:
         av_assert0(pic->nb_refs == 1);
-        if (avctx->max_b_frames > 0) {
+        if (ctx->b_per_p > 0) {
             if (priv->last_ref_dir) {
                 vpic->ref_flags.bits.ref_frame_ctrl_l0  = 2;
                 vpic->ref_flags.bits.ref_gf_idx         = 1;
@@ -174,7 +175,7 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     vpic->filter_level    = priv->loop_filter_level;
     vpic->sharpness_level = priv->loop_filter_sharpness;
 
-    if (avctx->max_b_frames > 0 && pic->type == PICTURE_TYPE_P)
+    if (ctx->b_per_p > 0 && pic->type == PICTURE_TYPE_P)
         priv->last_ref_dir = !priv->last_ref_dir;
 
     return 0;

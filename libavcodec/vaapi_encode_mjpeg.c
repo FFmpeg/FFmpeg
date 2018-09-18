@@ -401,6 +401,7 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {
     { "global_quality", "80" },
     { "b",              "0"  },
+    { "g",              "1"  },
     { NULL },
 };
 
