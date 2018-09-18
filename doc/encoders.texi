@@ -2659,6 +2659,10 @@ Include recovery points where appropriate (@emph{recovery_point} messages).
 @item aud
 Include access unit delimiters in the stream (not included by default).
 
+@item tier
+Set @emph{general_tier_flag}.  This may affect the level chosen for the stream
+if it is not explicitly specified.
+
 @end table
 
 @item mjpeg_vaapi

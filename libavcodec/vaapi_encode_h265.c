@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "cbs.h"
 #include "cbs_h265.h"
+#include "h265_profile_level.h"
 #include "hevc.h"
 #include "hevc_sei.h"
 #include "internal.h"
@@ -48,6 +49,7 @@ typedef struct VAAPIEncodeH265Context {
     int qp;
     int aud;
     int profile;
+    int tier;
     int level;
     int sei;
 
@@ -314,7 +316,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     ptl->general_profile_space = 0;
     ptl->general_profile_idc   = avctx->profile;
-    ptl->general_tier_flag     = 0;
+    ptl->general_tier_flag     = priv->tier;
 
     if (chroma_format == 1) {
         ptl->general_profile_compatibility_flag[1] = bit_depth ==  8;
@@ -339,7 +341,25 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     ptl->general_lower_bit_rate_constraint_flag = 1;
 
-    ptl->general_level_idc = avctx->level;
+    if (avctx->level != FF_LEVEL_UNKNOWN) {
+        ptl->general_level_idc = avctx->level;
+    } else {
+        const H265LevelDescriptor *level;
+
+        level = ff_h265_guess_level(ptl, avctx->bit_rate,
+                                    ctx->surface_width, ctx->surface_height,
+                                    1, 1, 1, (ctx->b_per_p > 0) + 1);
+        if (level) {
+            av_log(avctx, AV_LOG_VERBOSE, "Using level %s.\n", level->name);
+            ptl->general_level_idc = level->level_idc;
+        } else {
+            av_log(avctx, AV_LOG_VERBOSE, "Stream will not conform to "
+                   "any normal level; using level 8.5.\n");
+            ptl->general_level_idc = 255;
+            // The tier flag must be set in level 8.5.
+            ptl->general_tier_flag = 1;
+        }
+    }
 
     vps->vps_sub_layer_ordering_info_present_flag = 0;
     vps->vps_max_dec_pic_buffering_minus1[0]      = (ctx->b_per_p > 0) + 1;
@@ -1103,6 +1123,12 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
 
+    if (avctx->level != FF_LEVEL_UNKNOWN && avctx->level & ~0xff) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid level %d: must fit "
+               "in 8-bit unsigned integer.\n", avctx->level);
+        return AVERROR(EINVAL);
+    }
+
     ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
@@ -1145,9 +1171,17 @@ static const AVOption vaapi_encode_h265_options[] = {
     { PROFILE("rext",               FF_PROFILE_HEVC_REXT) },
 #undef PROFILE
 
+    { "tier", "Set tier (general_tier_flag)",
+      OFFSET(tier), AV_OPT_TYPE_INT,
+      { .i64 = 0 }, 0, 1, FLAGS, "tier" },
+    { "main", NULL, 0, AV_OPT_TYPE_CONST,
+      { .i64 = 0 }, 0, 0, FLAGS, "tier" },
+    { "high", NULL, 0, AV_OPT_TYPE_CONST,
+      { .i64 = 1 }, 0, 0, FLAGS, "tier" },
+
     { "level", "Set level (general_level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = 153 }, 0x00, 0xff, FLAGS, "level" },
+      { .i64 = FF_LEVEL_UNKNOWN }, FF_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "level"
