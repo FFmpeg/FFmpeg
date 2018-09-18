@@ -52,7 +52,6 @@ typedef struct VAAPIEncodeH264Context {
     // User options.
     int qp;
     int quality;
-    int low_power;
     int coder;
     int aud;
     int sei;
@@ -936,8 +935,6 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    ctx->low_power = priv->low_power;
-
     if (avctx->bit_rate > 0) {
         if (avctx->rc_max_rate == avctx->bit_rate)
             ctx->va_rc_mode = VA_RC_CBR;
@@ -970,13 +967,12 @@ static av_cold int vaapi_encode_h264_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeH264Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h264_options[] = {
+    VAAPI_ENCODE_COMMON_OPTIONS,
+
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
       OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8, FLAGS },
-    { "low_power", "Use low-power encoding mode (experimental: only supported "
-      "on some platforms, does not support all features)",
-      OFFSET(low_power), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 1, FLAGS },
     { "coder", "Entropy coder type",
       OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
         { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },

@@ -2599,6 +2599,18 @@ Size / quality tradeoff: higher values are smaller / worse quality.
 @option{b_qoffset} / @option{b_quant_offset}
 @end itemize
 
+All encoders support the following options:
+@itemize
+@item
+@option{low_power}
+
+Some drivers/platforms offer a second encoder for some codecs intended to use
+less power than the default encoder; setting this option will attempt to use
+that encoder.  Note that it may support a reduced feature set, so some other
+options may not be available in this mode.
+@end itemize
+
+Each encoder also has its own specific options:
 @table @option
 
 @item h264_vaapi
@@ -2606,8 +2618,6 @@ Size / quality tradeoff: higher values are smaller / worse quality.
 @option{level} sets the value of @emph{level_idc}.
 
 @table @option
-@item low_power
-Use low-power encoding mode.
 @item coder
 Set entropy encoder (default is @emph{cabac}).  Possible values:
 

@@ -1099,6 +1099,8 @@ static av_cold int vaapi_encode_h265_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeH265Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_h265_options[] = {
+    VAAPI_ENCODE_COMMON_OPTIONS,
+
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 25 }, 0, 52, FLAGS },
 

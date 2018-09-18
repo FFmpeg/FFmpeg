@@ -228,6 +228,7 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(VAAPIEncodeVP8Context, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_vp8_options[] = {
+    VAAPI_ENCODE_COMMON_OPTIONS,
     { "loop_filter_level", "Loop filter level",
       OFFSET(loop_filter_level), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, 63, FLAGS },
     { "loop_filter_sharpness", "Loop filter sharpness",
