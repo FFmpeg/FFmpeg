@@ -23,6 +23,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
+#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
 #include "libavutil/mastering_display_metadata.h"
 
@@ -260,9 +261,12 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     H265RawVPS                        *vps = &priv->raw_vps;
     H265RawSPS                        *sps = &priv->raw_sps;
     H265RawPPS                        *pps = &priv->raw_pps;
+    H265RawProfileTierLevel           *ptl = &vps->profile_tier_level;
     H265RawVUI                        *vui = &sps->vui;
     VAEncSequenceParameterBufferHEVC *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferHEVC  *vpic = ctx->codec_picture_params;
+    const AVPixFmtDescriptor *desc;
+    int chroma_format, bit_depth;
     int i;
 
     memset(&priv->current_access_unit, 0,
@@ -271,6 +275,25 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     memset(vps, 0, sizeof(*vps));
     memset(sps, 0, sizeof(*sps));
     memset(pps, 0, sizeof(*pps));
+
+
+    desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
+    av_assert0(desc);
+    if (desc->nb_components == 1) {
+        chroma_format = 0;
+    } else {
+        if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 1) {
+            chroma_format = 1;
+        } else if (desc->log2_chroma_w == 1 && desc->log2_chroma_h == 0) {
+            chroma_format = 2;
+        } else if (desc->log2_chroma_w == 0 && desc->log2_chroma_h == 0) {
+            chroma_format = 3;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Chroma format of input pixel format "
+                   "%s is not supported.\n", desc->name);
+        }
+    }
+    bit_depth = desc->comp[0].depth;
 
 
     // VPS
@@ -289,19 +312,34 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     vps->vps_max_sub_layers_minus1     = 0;
     vps->vps_temporal_id_nesting_flag  = 1;
 
-    vps->profile_tier_level = (H265RawProfileTierLevel) {
-        .general_profile_space = 0,
-        .general_profile_idc   = avctx->profile,
-        .general_tier_flag     = 0,
+    ptl->general_profile_space = 0;
+    ptl->general_profile_idc   = avctx->profile;
+    ptl->general_tier_flag     = 0;
 
-        .general_progressive_source_flag    = 1,
-        .general_interlaced_source_flag     = 0,
-        .general_non_packed_constraint_flag = 1,
-        .general_frame_only_constraint_flag = 1,
+    if (chroma_format == 1) {
+        ptl->general_profile_compatibility_flag[1] = bit_depth ==  8;
+        ptl->general_profile_compatibility_flag[2] = bit_depth <= 10;
+    }
+    ptl->general_profile_compatibility_flag[4] = 1;
 
-        .general_level_idc     = avctx->level,
-    };
-    vps->profile_tier_level.general_profile_compatibility_flag[avctx->profile & 31] = 1;
+    ptl->general_progressive_source_flag    = 1;
+    ptl->general_interlaced_source_flag     = 0;
+    ptl->general_non_packed_constraint_flag = 1;
+    ptl->general_frame_only_constraint_flag = 1;
+
+    ptl->general_max_12bit_constraint_flag = bit_depth <= 12;
+    ptl->general_max_10bit_constraint_flag = bit_depth <= 10;
+    ptl->general_max_8bit_constraint_flag  = bit_depth ==  8;
+
+    ptl->general_max_422chroma_constraint_flag  = chroma_format <= 2;
+    ptl->general_max_420chroma_constraint_flag  = chroma_format <= 1;
+    ptl->general_max_monochrome_constraint_flag = chroma_format == 0;
+
+    ptl->general_intra_constraint_flag = ctx->gop_size == 1;
+
+    ptl->general_lower_bit_rate_constraint_flag = 1;
+
+    ptl->general_level_idc = avctx->level;
 
     vps->vps_sub_layer_ordering_info_present_flag = 0;
     vps->vps_max_dec_pic_buffering_minus1[0]      = (ctx->b_per_p > 0) + 1;
@@ -343,7 +381,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
     sps->sps_seq_parameter_set_id = 0;
 
-    sps->chroma_format_idc          = 1; // YUV 4:2:0.
+    sps->chroma_format_idc          = chroma_format;
     sps->separate_colour_plane_flag = 0;
 
     sps->pic_width_in_luma_samples  = ctx->surface_width;
@@ -362,9 +400,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         sps->conformance_window_flag = 0;
     }
 
-    sps->bit_depth_luma_minus8 =
-        avctx->profile == FF_PROFILE_HEVC_MAIN_10 ? 2 : 0;
-    sps->bit_depth_chroma_minus8 = sps->bit_depth_luma_minus8;
+    sps->bit_depth_luma_minus8   = bit_depth - 8;
+    sps->bit_depth_chroma_minus8 = bit_depth - 8;
 
     sps->log2_max_pic_order_cnt_lsb_minus4 = 8;
 
@@ -1023,8 +1060,10 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
 
 static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
     { FF_PROFILE_HEVC_MAIN,     8, 3, 1, 1, VAProfileHEVCMain       },
+    { FF_PROFILE_HEVC_REXT,     8, 3, 1, 1, VAProfileHEVCMain       },
 #if VA_CHECK_VERSION(0, 37, 0)
     { FF_PROFILE_HEVC_MAIN_10, 10, 3, 1, 1, VAProfileHEVCMain10     },
+    { FF_PROFILE_HEVC_REXT,    10, 3, 1, 1, VAProfileHEVCMain10     },
 #endif
     { FF_PROFILE_UNKNOWN }
 };
@@ -1103,6 +1142,7 @@ static const AVOption vaapi_encode_h265_options[] = {
       { .i64 = value }, 0, 0, FLAGS, "profile"
     { PROFILE("main",               FF_PROFILE_HEVC_MAIN) },
     { PROFILE("main10",             FF_PROFILE_HEVC_MAIN_10) },
+    { PROFILE("rext",               FF_PROFILE_HEVC_REXT) },
 #undef PROFILE
 
     { "level", "Set level (general_level_idc)",
