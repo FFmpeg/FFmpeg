@@ -199,7 +199,7 @@ static int FUNC(vui_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
         infer(log2_max_mv_length_vertical,   15);
 
         if ((sps->profile_idc ==  44 || sps->profile_idc ==  86 ||
-             sps->profile_idc == 110 || sps->profile_idc == 110 ||
+             sps->profile_idc == 100 || sps->profile_idc == 110 ||
              sps->profile_idc == 122 || sps->profile_idc == 244) &&
             sps->constraint_set3_flag) {
             infer(max_num_reorder_frames,  0);
