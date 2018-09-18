@@ -389,9 +389,7 @@ static const struct {
     MAP(VC1,         VC1_MAIN,        VC1Main     ),
     MAP(VC1,         VC1_COMPLEX,     VC1Advanced ),
     MAP(VC1,         VC1_ADVANCED,    VC1Advanced ),
-#if VA_CHECK_VERSION(0, 35, 0)
     MAP(VP8,         UNKNOWN,       VP8Version0_3 ),
-#endif
 #if VA_CHECK_VERSION(0, 38, 0)
     MAP(VP9,         VP9_0,           VP9Profile0 ),
 #endif
