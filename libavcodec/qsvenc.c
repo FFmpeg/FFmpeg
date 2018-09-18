@@ -1028,6 +1028,9 @@ static void clear_unused_frames(QSVEncContext *q)
     QSVFrame *cur = q->work_frames;
     while (cur) {
         if (cur->used && !cur->surface.Data.Locked) {
+            if (cur->frame->format == AV_PIX_FMT_QSV) {
+                av_frame_unref(cur->frame);
+            }
             cur->used = 0;
         }
         cur = cur->next;
