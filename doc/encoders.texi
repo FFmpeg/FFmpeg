@@ -2662,8 +2662,21 @@ Include access unit delimiters in the stream (not included by default).
 @end table
 
 @item mjpeg_vaapi
-Always encodes using the standard quantisation and huffman tables -
-@option{global_quality} scales the standard quantisation table (range 1-100).
+Only baseline DCT encoding is supported.  The encoder always uses the standard
+quantisation and huffman tables - @option{global_quality} scales the standard
+quantisation table (range 1-100).
+
+For YUV, 4:2:0, 4:2:2 and 4:4:4 subsampling modes are supported.  RGB is also
+supported, and will create an RGB JPEG.
+
+@table @option
+@item jfif
+Include JFIF header in each frame (not included by default).
+@item huffman
+Include standard huffman tables (on by default).  Turning this off will save
+a few hundred bytes in each output frame, but may lose compatibility with some
+JPEG decoders which don't fully handle MJPEG.
+@end table
 
 @item mpeg2_vaapi
 @option{profile} and @option{level} set the value of @emph{profile_and_level_indication}.
