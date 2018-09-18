@@ -974,69 +974,251 @@ static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx,
     ++ctx->nb_global_params;
 }
 
-static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
+typedef struct VAAPIEncodeRTFormat {
+    const char *name;
+    unsigned int value;
+    int depth;
+    int nb_components;
+    int log2_chroma_w;
+    int log2_chroma_h;
+} VAAPIEncodeRTFormat;
+
+static const VAAPIEncodeRTFormat vaapi_encode_rt_formats[] = {
+    { "YUV400",    VA_RT_FORMAT_YUV400,        8, 1,      },
+    { "YUV420",    VA_RT_FORMAT_YUV420,        8, 3, 1, 1 },
+    { "YUV422",    VA_RT_FORMAT_YUV422,        8, 3, 1, 0 },
+    { "YUV444",    VA_RT_FORMAT_YUV444,        8, 3, 0, 0 },
+    { "YUV411",    VA_RT_FORMAT_YUV411,        8, 3, 2, 0 },
+#if VA_CHECK_VERSION(0, 38, 1)
+    { "YUV420_10", VA_RT_FORMAT_YUV420_10BPP, 10, 3, 1, 1 },
+#endif
+};
+
+static const VAEntrypoint vaapi_encode_entrypoints_normal[] = {
+    VAEntrypointEncSlice,
+    VAEntrypointEncPicture,
+#if VA_CHECK_VERSION(0, 39, 2)
+    VAEntrypointEncSliceLP,
+#endif
+    0
+};
+#if VA_CHECK_VERSION(0, 39, 2)
+static const VAEntrypoint vaapi_encode_entrypoints_low_power[] = {
+    VAEntrypointEncSliceLP,
+    0
+};
+#endif
+
+static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
 {
-    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAAPIEncodeContext      *ctx = avctx->priv_data;
+    VAProfile    *va_profiles    = NULL;
+    VAEntrypoint *va_entrypoints = NULL;
     VAStatus vas;
-    int i, n, err;
-    VAProfile    *profiles    = NULL;
-    VAEntrypoint *entrypoints = NULL;
-    VAConfigAttrib attr[] = {
-        { VAConfigAttribRTFormat         },
-        { VAConfigAttribRateControl      },
-        { VAConfigAttribEncMaxRefFrames  },
-        { VAConfigAttribEncPackedHeaders },
-    };
+    const VAEntrypoint *usable_entrypoints;
+    const VAAPIEncodeProfile *profile;
+    const AVPixFmtDescriptor *desc;
+    VAConfigAttrib rt_format_attr;
+    const VAAPIEncodeRTFormat *rt_format;
+    const char *profile_string, *entrypoint_string;
+    int i, j, n, depth, err;
+
+
+    if (ctx->low_power) {
+#if VA_CHECK_VERSION(0, 39, 2)
+        usable_entrypoints = vaapi_encode_entrypoints_low_power;
+#else
+        av_log(avctx, AV_LOG_ERROR, "Low-power encoding is not "
+               "supported with this VAAPI version.\n");
+        return AVERROR(EINVAL);
+#endif
+    } else {
+        usable_entrypoints = vaapi_encode_entrypoints_normal;
+    }
+
+    desc = av_pix_fmt_desc_get(ctx->input_frames->sw_format);
+    if (!desc) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid input pixfmt (%d).\n",
+               ctx->input_frames->sw_format);
+        return AVERROR(EINVAL);
+    }
+    depth = desc->comp[0].depth;
+    for (i = 1; i < desc->nb_components; i++) {
+        if (desc->comp[i].depth != depth) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid input pixfmt (%s).\n",
+                   desc->name);
+            return AVERROR(EINVAL);
+        }
+    }
+    av_log(avctx, AV_LOG_VERBOSE, "Input surface format is %s.\n",
+           desc->name);
 
     n = vaMaxNumProfiles(ctx->hwctx->display);
-    profiles = av_malloc_array(n, sizeof(VAProfile));
-    if (!profiles) {
+    va_profiles = av_malloc_array(n, sizeof(VAProfile));
+    if (!va_profiles) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    vas = vaQueryConfigProfiles(ctx->hwctx->display, profiles, &n);
+    vas = vaQueryConfigProfiles(ctx->hwctx->display, va_profiles, &n);
     if (vas != VA_STATUS_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to query profiles: %d (%s).\n",
+        av_log(avctx, AV_LOG_ERROR, "Failed to query profiles: %d (%s).\n",
                vas, vaErrorStr(vas));
-        err = AVERROR(ENOSYS);
+        err = AVERROR_EXTERNAL;
         goto fail;
     }
-    for (i = 0; i < n; i++) {
-        if (profiles[i] == ctx->va_profile)
-            break;
+
+    av_assert0(ctx->codec->profiles);
+    for (i = 0; (ctx->codec->profiles[i].av_profile !=
+                 FF_PROFILE_UNKNOWN); i++) {
+        profile = &ctx->codec->profiles[i];
+        if (depth               != profile->depth ||
+            desc->nb_components != profile->nb_components)
+            continue;
+        if (desc->nb_components > 1 &&
+            (desc->log2_chroma_w != profile->log2_chroma_w ||
+             desc->log2_chroma_h != profile->log2_chroma_h))
+            continue;
+        if (avctx->profile != profile->av_profile &&
+            avctx->profile != FF_PROFILE_UNKNOWN)
+            continue;
+
+#if VA_CHECK_VERSION(1, 0, 0)
+        profile_string = vaProfileStr(profile->va_profile);
+#else
+        profile_string = "(no profile names)";
+#endif
+
+        for (j = 0; j < n; j++) {
+            if (va_profiles[j] == profile->va_profile)
+                break;
+        }
+        if (j >= n) {
+            av_log(avctx, AV_LOG_VERBOSE, "Matching profile %d is "
+                   "not supported by driver.\n", profile->va_profile);
+            continue;
+        }
+
+        ctx->profile = profile;
+        break;
     }
-    if (i >= n) {
-        av_log(ctx, AV_LOG_ERROR, "Encoding profile not found (%d).\n",
-               ctx->va_profile);
+    if (!ctx->profile) {
+        av_log(avctx, AV_LOG_ERROR, "No usable encoding profile found.\n");
         err = AVERROR(ENOSYS);
         goto fail;
     }
 
+    avctx->profile  = profile->av_profile;
+    ctx->va_profile = profile->va_profile;
+    av_log(avctx, AV_LOG_VERBOSE, "Using VAAPI profile %s (%d).\n",
+           profile_string, ctx->va_profile);
+
     n = vaMaxNumEntrypoints(ctx->hwctx->display);
-    entrypoints = av_malloc_array(n, sizeof(VAEntrypoint));
-    if (!entrypoints) {
+    va_entrypoints = av_malloc_array(n, sizeof(VAEntrypoint));
+    if (!va_entrypoints) {
         err = AVERROR(ENOMEM);
         goto fail;
     }
     vas = vaQueryConfigEntrypoints(ctx->hwctx->display, ctx->va_profile,
-                                   entrypoints, &n);
+                                   va_entrypoints, &n);
     if (vas != VA_STATUS_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to query entrypoints for "
-               "profile %u: %d (%s).\n", ctx->va_profile,
-               vas, vaErrorStr(vas));
-        err = AVERROR(ENOSYS);
+        av_log(avctx, AV_LOG_ERROR, "Failed to query entrypoints for "
+               "profile %s (%d): %d (%s).\n", profile_string,
+               ctx->va_profile, vas, vaErrorStr(vas));
+        err = AVERROR_EXTERNAL;
         goto fail;
     }
+
     for (i = 0; i < n; i++) {
-        if (entrypoints[i] == ctx->va_entrypoint)
+        for (j = 0; usable_entrypoints[j]; j++) {
+            if (va_entrypoints[i] == usable_entrypoints[j])
+                break;
+        }
+        if (usable_entrypoints[j])
             break;
     }
     if (i >= n) {
-        av_log(ctx, AV_LOG_ERROR, "Encoding entrypoint not found "
-               "(%d / %d).\n", ctx->va_profile, ctx->va_entrypoint);
+        av_log(avctx, AV_LOG_ERROR, "No usable encoding entrypoint found "
+               "for profile %s (%d).\n", profile_string, ctx->va_profile);
         err = AVERROR(ENOSYS);
         goto fail;
     }
+
+    ctx->va_entrypoint = va_entrypoints[i];
+#if VA_CHECK_VERSION(1, 0, 0)
+    entrypoint_string = vaEntrypointStr(ctx->va_entrypoint);
+#else
+    entrypoint_string = "(no entrypoint names)";
+#endif
+    av_log(avctx, AV_LOG_VERBOSE, "Using VAAPI entrypoint %s (%d).\n",
+           entrypoint_string, ctx->va_entrypoint);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(vaapi_encode_rt_formats); i++) {
+        rt_format = &vaapi_encode_rt_formats[i];
+        if (rt_format->depth         == depth &&
+            rt_format->nb_components == profile->nb_components &&
+            rt_format->log2_chroma_w == profile->log2_chroma_w &&
+            rt_format->log2_chroma_h == profile->log2_chroma_h)
+            break;
+    }
+    if (i >= FF_ARRAY_ELEMS(vaapi_encode_rt_formats)) {
+        av_log(avctx, AV_LOG_ERROR, "No usable render target format "
+               "found for profile %s (%d) entrypoint %s (%d).\n",
+               profile_string, ctx->va_profile,
+               entrypoint_string, ctx->va_entrypoint);
+        err = AVERROR(ENOSYS);
+        goto fail;
+    }
+
+    rt_format_attr = (VAConfigAttrib) { VAConfigAttribRTFormat };
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile, ctx->va_entrypoint,
+                                &rt_format_attr, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query RT format "
+               "config attribute: %d (%s).\n", vas, vaErrorStr(vas));
+        err = AVERROR_EXTERNAL;
+        goto fail;
+    }
+
+    if (rt_format_attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+        av_log(avctx, AV_LOG_VERBOSE, "RT format config attribute not "
+               "supported by driver: assuming surface RT format %s "
+               "is valid.\n", rt_format->name);
+    } else if (!(rt_format_attr.value & rt_format->value)) {
+        av_log(avctx, AV_LOG_ERROR, "Surface RT format %s not supported "
+               "by driver for encoding profile %s (%d) entrypoint %s (%d).\n",
+               rt_format->name, profile_string, ctx->va_profile,
+               entrypoint_string, ctx->va_entrypoint);
+        err = AVERROR(ENOSYS);
+        goto fail;
+    } else {
+        av_log(avctx, AV_LOG_VERBOSE, "Using VAAPI render target "
+               "format %s (%#x).\n", rt_format->name, rt_format->value);
+        ctx->config_attributes[ctx->nb_config_attributes++] =
+            (VAConfigAttrib) {
+            .type  = VAConfigAttribRTFormat,
+            .value = rt_format->value,
+        };
+    }
+
+    err = 0;
+fail:
+    av_freep(&va_profiles);
+    av_freep(&va_entrypoints);
+    return err;
+}
+
+static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAStatus vas;
+    int i;
+
+    VAConfigAttrib attr[] = {
+        { VAConfigAttribRateControl      },
+        { VAConfigAttribEncMaxRefFrames  },
+        { VAConfigAttribEncPackedHeaders },
+    };
 
     vas = vaGetConfigAttributes(ctx->hwctx->display,
                                 ctx->va_profile, ctx->va_entrypoint,
@@ -1057,20 +1239,6 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             continue;
         }
         switch (attr[i].type) {
-        case VAConfigAttribRTFormat:
-            if (!(ctx->va_rt_format & attr[i].value)) {
-                av_log(avctx, AV_LOG_ERROR, "Surface RT format %#x "
-                       "is not supported (mask %#x).\n",
-                       ctx->va_rt_format, attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
-            }
-            ctx->config_attributes[ctx->nb_config_attributes++] =
-                (VAConfigAttrib) {
-                .type  = VAConfigAttribRTFormat,
-                .value = ctx->va_rt_format,
-            };
-            break;
         case VAConfigAttribRateControl:
             // Hack for backward compatibility: CBR was the only
             // usable RC mode for a long time, so old drivers will
@@ -1089,8 +1257,7 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_ERROR, "Rate control mode %#x "
                        "is not supported (mask: %#x).\n",
                        ctx->va_rc_mode, attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
             ctx->config_attributes[ctx->nb_config_attributes++] =
                 (VAConfigAttrib) {
@@ -1106,8 +1273,7 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             if (avctx->gop_size > 1 && ref_l0 < 1) {
                 av_log(avctx, AV_LOG_ERROR, "P frames are not "
                        "supported (%#x).\n", attr[i].value);
-                err = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
             if (avctx->max_b_frames > 0 && ref_l1 < 1) {
                 av_log(avctx, AV_LOG_WARNING, "B frames are not "
@@ -1139,11 +1305,7 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
         }
     }
 
-    err = 0;
-fail:
-    av_freep(&profiles);
-    av_freep(&entrypoints);
-    return err;
+    return 0;
 }
 
 static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
@@ -1397,6 +1559,10 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     }
     ctx->device = (AVHWDeviceContext*)ctx->device_ref->data;
     ctx->hwctx = ctx->device->hwctx;
+
+    err = vaapi_encode_profile_entrypoint(avctx);
+    if (err < 0)
+        goto fail;
 
     err = vaapi_encode_config_attributes(avctx);
     if (err < 0)

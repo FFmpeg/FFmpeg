@@ -1025,7 +1025,17 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
+    { FF_PROFILE_HEVC_MAIN,     8, 3, 1, 1, VAProfileHEVCMain       },
+#if VA_CHECK_VERSION(0, 37, 0)
+    { FF_PROFILE_HEVC_MAIN_10, 10, 3, 1, 1, VAProfileHEVCMain10     },
+#endif
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
+    .profiles              = vaapi_encode_h265_profiles,
+
     .configure             = &vaapi_encode_h265_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferHEVC),
@@ -1057,29 +1067,6 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
         avctx->profile = priv->profile;
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
-
-    switch (avctx->profile) {
-    case FF_PROFILE_HEVC_MAIN:
-    case FF_PROFILE_UNKNOWN:
-        ctx->va_profile = VAProfileHEVCMain;
-        ctx->va_rt_format = VA_RT_FORMAT_YUV420;
-        break;
-    case FF_PROFILE_HEVC_MAIN_10:
-#ifdef VA_RT_FORMAT_YUV420_10BPP
-        ctx->va_profile = VAProfileHEVCMain10;
-        ctx->va_rt_format = VA_RT_FORMAT_YUV420_10BPP;
-        break;
-#else
-        av_log(avctx, AV_LOG_ERROR, "10-bit encoding is not "
-               "supported with this VAAPI version.\n");
-        return AVERROR(ENOSYS);
-#endif
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown H.265 profile %d.\n",
-               avctx->profile);
-        return AVERROR(EINVAL);
-    }
-    ctx->va_entrypoint = VAEntrypointEncSlice;
 
     if (avctx->bit_rate > 0) {
         if (avctx->rc_max_rate == avctx->bit_rate)
@@ -1120,7 +1107,7 @@ static const AVOption vaapi_encode_h265_options[] = {
 
     { "profile", "Set profile (general_profile_idc)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = FF_PROFILE_HEVC_MAIN }, 0x00, 0xff, FLAGS, "profile" },
+      { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xff, FLAGS, "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "profile"

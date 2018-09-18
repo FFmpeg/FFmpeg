@@ -203,7 +203,15 @@ static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_vp9_profiles[] = {
+    { FF_PROFILE_VP9_0,  8, 3, 1, 1, VAProfileVP9Profile0 },
+    { FF_PROFILE_VP9_2, 10, 3, 1, 1, VAProfileVP9Profile2 },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_vp9 = {
+    .profiles              = vaapi_encode_vp9_profiles,
+
     .configure             = &vaapi_encode_vp9_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP9),
@@ -218,31 +226,6 @@ static av_cold int vaapi_encode_vp9_init(AVCodecContext *avctx)
     VAAPIEncodeContext *ctx = avctx->priv_data;
 
     ctx->codec = &vaapi_encode_type_vp9;
-
-    switch (avctx->profile) {
-    case FF_PROFILE_VP9_0:
-    case FF_PROFILE_UNKNOWN:
-        ctx->va_profile = VAProfileVP9Profile0;
-        ctx->va_rt_format = VA_RT_FORMAT_YUV420;
-        break;
-    case FF_PROFILE_VP9_1:
-        av_log(avctx, AV_LOG_ERROR, "VP9 profile 1 is not "
-               "supported.\n");
-        return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_VP9_2:
-        ctx->va_profile = VAProfileVP9Profile2;
-        ctx->va_rt_format = VA_RT_FORMAT_YUV420_10BPP;
-        break;
-    case FF_PROFILE_VP9_3:
-        av_log(avctx, AV_LOG_ERROR, "VP9 profile 3 is not "
-               "supported.\n");
-        return AVERROR_PATCHWELCOME;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown VP9 profile %d.\n",
-               avctx->profile);
-        return AVERROR(EINVAL);
-    }
-    ctx->va_entrypoint = VAEntrypointEncSlice;
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         ctx->va_rc_mode = VA_RC_CQP;
@@ -276,7 +259,6 @@ static const AVOption vaapi_encode_vp9_options[] = {
 };
 
 static const AVCodecDefault vaapi_encode_vp9_defaults[] = {
-    { "profile",        "0"   },
     { "b",              "0"   },
     { "bf",             "0"   },
     { "g",              "250" },

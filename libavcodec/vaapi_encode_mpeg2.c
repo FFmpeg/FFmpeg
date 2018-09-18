@@ -552,7 +552,15 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_mpeg2_profiles[] = {
+    { FF_PROFILE_MPEG2_MAIN,   8, 3, 1, 1, VAProfileMPEG2Main   },
+    { FF_PROFILE_MPEG2_SIMPLE, 8, 3, 1, 1, VAProfileMPEG2Simple },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_mpeg2 = {
+    .profiles              = vaapi_encode_mpeg2_profiles,
+
     .configure             = &vaapi_encode_mpeg2_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferMPEG2),
@@ -577,31 +585,6 @@ static av_cold int vaapi_encode_mpeg2_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_mpeg2;
 
-    switch (avctx->profile) {
-    case FF_PROFILE_MPEG2_SIMPLE:
-        ctx->va_profile = VAProfileMPEG2Simple;
-        break;
-    case FF_PROFILE_MPEG2_MAIN:
-        ctx->va_profile = VAProfileMPEG2Main;
-        break;
-    case FF_PROFILE_MPEG2_422:
-        av_log(avctx, AV_LOG_ERROR, "MPEG-2 4:2:2 profile "
-               "is not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_MPEG2_HIGH:
-        av_log(avctx, AV_LOG_ERROR, "MPEG-2 high profile "
-               "is not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_MPEG2_SS:
-    case FF_PROFILE_MPEG2_SNR_SCALABLE:
-        av_log(avctx, AV_LOG_ERROR, "MPEG-2 scalable profiles "
-               "are not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown MPEG-2 profile %d.\n",
-               avctx->profile);
-        return AVERROR(EINVAL);
-    }
     switch (avctx->level) {
     case 4: // High
     case 6: // High 1440
@@ -620,8 +603,6 @@ static av_cold int vaapi_encode_mpeg2_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->va_entrypoint = VAEntrypointEncSlice;
-    ctx->va_rt_format  = VA_RT_FORMAT_YUV420;
     ctx->va_rc_mode    = VA_RC_CQP;
 
     ctx->va_packed_headers = VA_ENC_PACKED_HEADER_SEQUENCE |
@@ -643,7 +624,6 @@ static av_cold int vaapi_encode_mpeg2_close(AVCodecContext *avctx)
 }
 
 static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
-    { "profile",        "4"   },
     { "level",          "4"   },
     { "bf",             "1"   },
     { "g",              "120" },

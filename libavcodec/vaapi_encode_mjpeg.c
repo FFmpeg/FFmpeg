@@ -359,7 +359,15 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+            8, 3, 1, 1, VAProfileJPEGBaseline },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
+    .profiles              = vaapi_encode_mjpeg_profiles,
+
     .configure             = &vaapi_encode_mjpeg_configure,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),
@@ -379,11 +387,6 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
     VAAPIEncodeContext *ctx = avctx->priv_data;
 
     ctx->codec = &vaapi_encode_type_mjpeg;
-
-    ctx->va_profile    = VAProfileJPEGBaseline;
-    ctx->va_entrypoint = VAEntrypointEncPicture;
-
-    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
 
     ctx->va_rc_mode = VA_RC_CQP;
 

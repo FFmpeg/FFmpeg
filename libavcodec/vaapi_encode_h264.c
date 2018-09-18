@@ -866,7 +866,17 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_h264_profiles[] = {
+    { FF_PROFILE_H264_HIGH, 8, 3, 1, 1, VAProfileH264High },
+    { FF_PROFILE_H264_MAIN, 8, 3, 1, 1, VAProfileH264Main },
+    { FF_PROFILE_H264_CONSTRAINED_BASELINE,
+                            8, 3, 1, 1, VAProfileH264ConstrainedBaseline },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_h264 = {
+    .profiles              = vaapi_encode_h264_profiles,
+
     .configure             = &vaapi_encode_h264_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),
@@ -899,30 +909,17 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
 
+    // Reject unsupported profiles.
     switch (avctx->profile) {
     case FF_PROFILE_H264_BASELINE:
         av_log(avctx, AV_LOG_WARNING, "H.264 baseline profile is not "
                "supported, using constrained baseline profile instead.\n");
         avctx->profile = FF_PROFILE_H264_CONSTRAINED_BASELINE;
-    case FF_PROFILE_H264_CONSTRAINED_BASELINE:
-        ctx->va_profile = VAProfileH264ConstrainedBaseline;
-        if (avctx->max_b_frames != 0) {
-            avctx->max_b_frames = 0;
-            av_log(avctx, AV_LOG_WARNING, "H.264 constrained baseline profile "
-                   "doesn't support encoding with B frames, disabling them.\n");
-        }
-        break;
-    case FF_PROFILE_H264_MAIN:
-        ctx->va_profile = VAProfileH264Main;
         break;
     case FF_PROFILE_H264_EXTENDED:
         av_log(avctx, AV_LOG_ERROR, "H.264 extended profile "
                "is not supported.\n");
         return AVERROR_PATCHWELCOME;
-    case FF_PROFILE_UNKNOWN:
-    case FF_PROFILE_H264_HIGH:
-        ctx->va_profile = VAProfileH264High;
-        break;
     case FF_PROFILE_H264_HIGH_10:
     case FF_PROFILE_H264_HIGH_10_INTRA:
         av_log(avctx, AV_LOG_ERROR, "H.264 10-bit profiles "
@@ -937,25 +934,9 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "H.264 non-4:2:0 profiles "
                "are not supported.\n");
         return AVERROR_PATCHWELCOME;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown H.264 profile %d.\n",
-               avctx->profile);
-        return AVERROR(EINVAL);
-    }
-    if (priv->low_power) {
-#if VA_CHECK_VERSION(0, 39, 2)
-        ctx->va_entrypoint = VAEntrypointEncSliceLP;
-#else
-        av_log(avctx, AV_LOG_ERROR, "Low-power encoding is not "
-               "supported with this VAAPI version.\n");
-        return AVERROR(EINVAL);
-#endif
-    } else {
-        ctx->va_entrypoint = VAEntrypointEncSlice;
     }
 
-    // Only 8-bit encode is supported.
-    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
+    ctx->low_power = priv->low_power;
 
     if (avctx->bit_rate > 0) {
         if (avctx->rc_max_rate == avctx->bit_rate)
@@ -1022,7 +1003,7 @@ static const AVOption vaapi_encode_h264_options[] = {
 
     { "profile", "Set profile (profile_idc and constraint_set*_flag)",
       OFFSET(profile), AV_OPT_TYPE_INT,
-      { .i64 = FF_PROFILE_H264_HIGH }, 0x0000, 0xffff, FLAGS, "profile" },
+      { .i64 = FF_PROFILE_UNKNOWN }, FF_PROFILE_UNKNOWN, 0xffff, FLAGS, "profile" },
 
 #define PROFILE(name, value)  name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "profile"

@@ -2565,6 +2565,9 @@ The following standard libavcodec options are used:
 @option{bf} / @option{max_b_frames}
 @item
 @option{profile}
+
+If not set, this will be determined automatically from the format of the input
+frames and the profiles supported by the driver.
 @item
 @option{level}
 @item

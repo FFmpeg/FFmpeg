@@ -175,7 +175,14 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_vp8_profiles[] = {
+    { 0 /* VP8 has no profiles */, 8, 3, 1, 1, VAProfileVP8Version0_3 },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_vp8 = {
+    .profiles              = vaapi_encode_vp8_profiles,
+
     .configure             = &vaapi_encode_vp8_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP8),
@@ -197,10 +204,6 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
     }
 
     ctx->codec = &vaapi_encode_type_vp8;
-
-    ctx->va_profile    = VAProfileVP8Version0_3;
-    ctx->va_entrypoint = VAEntrypointEncSlice;
-    ctx->va_rt_format  = VA_RT_FORMAT_YUV420;
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
         ctx->va_rc_mode = VA_RC_CQP;

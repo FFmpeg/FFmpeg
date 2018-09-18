@@ -23,6 +23,10 @@
 
 #include <va/va.h>
 
+#if VA_CHECK_VERSION(1, 0, 0)
+#include <va/va_str.h>
+#endif
+
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
 
@@ -86,18 +90,32 @@ typedef struct VAAPIEncodePicture {
     VAAPIEncodeSlice *slices;
 } VAAPIEncodePicture;
 
+typedef struct VAAPIEncodeProfile {
+    // lavc profile value (FF_PROFILE_*).
+    int       av_profile;
+    // Supported bit depth.
+    int       depth;
+    // Number of components.
+    int       nb_components;
+    // Chroma subsampling in width dimension.
+    int       log2_chroma_w;
+    // Chroma subsampling in height dimension.
+    int       log2_chroma_h;
+    // VAAPI profile value.
+    VAProfile va_profile;
+} VAAPIEncodeProfile;
+
 typedef struct VAAPIEncodeContext {
     const AVClass *class;
 
     // Codec-specific hooks.
     const struct VAAPIEncodeType *codec;
 
-    // Encoding profile (VAProfileXXX).
-    VAProfile       va_profile;
-    // Encoding entrypoint (usually VAEntryointEncSlice).
-    VAEntrypoint    va_entrypoint;
-    // Surface colour/sampling format (usually VA_RT_FORMAT_YUV420).
-    unsigned int    va_rt_format;
+    // Global options.
+
+    // Use low power encoding mode.
+    int             low_power;
+
     // Rate control mode.
     unsigned int    va_rc_mode;
     // Supported packed headers (initially the desired set, modified
@@ -112,6 +130,14 @@ typedef struct VAAPIEncodeContext {
 
     // Everything above this point must be set before calling
     // ff_vaapi_encode_init().
+
+    // Chosen encoding profile details.
+    const VAAPIEncodeProfile *profile;
+
+    // Encoding profile (VAProfile*).
+    VAProfile       va_profile;
+    // Encoding entrypoint (VAEntryoint*).
+    VAEntrypoint    va_entrypoint;
 
     // Configuration attributes to use when creating va_config.
     VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];
@@ -204,8 +230,11 @@ typedef struct VAAPIEncodeContext {
     int end_of_stream;
 } VAAPIEncodeContext;
 
-
 typedef struct VAAPIEncodeType {
+    // List of supported profiles and corresponding VAAPI profiles.
+    // (Must end with FF_PROFILE_UNKNOWN.)
+    const VAAPIEncodeProfile *profiles;
+
     // Perform any extra codec-specific configuration after the
     // codec context is initialised (set up the private data and
     // add any necessary global parameters).
