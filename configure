@@ -2273,6 +2273,7 @@ CONFIG_EXTRA="
     cbs
     cbs_h264
     cbs_h265
+    cbs_jpeg
     cbs_mpeg2
     cbs_vp9
     dirac_parse
@@ -2536,6 +2537,7 @@ threads_if_any="$THREADS_LIST"
 # subsystems
 cbs_h264_select="cbs golomb"
 cbs_h265_select="cbs golomb"
+cbs_jpeg_select="cbs"
 cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
 dct_select="rdft"
