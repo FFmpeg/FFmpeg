@@ -200,8 +200,10 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_vp8;
 
-    // Packed headers are not currently supported.
-    ctx->va_packed_headers = 0;
+    // No packed headers are currently desired.  VP8 has no metadata
+    // which would be useful to write, and no existing driver supports
+    // adding them anyway.
+    ctx->desired_packed_headers = 0;
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);

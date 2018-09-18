@@ -1064,7 +1064,7 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
 
-    ctx->va_packed_headers =
+    ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
         VA_ENC_PACKED_HEADER_MISC;      // SEI

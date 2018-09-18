@@ -930,7 +930,7 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    ctx->va_packed_headers =
+    ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // SPS and PPS.
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
         VA_ENC_PACKED_HEADER_MISC;      // SEI.

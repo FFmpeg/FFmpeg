@@ -1206,60 +1206,6 @@ fail:
     return err;
 }
 
-static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
-{
-    VAAPIEncodeContext *ctx = avctx->priv_data;
-    VAStatus vas;
-    int i;
-
-    VAConfigAttrib attr[] = {
-        { VAConfigAttribEncPackedHeaders },
-    };
-
-    vas = vaGetConfigAttributes(ctx->hwctx->display,
-                                ctx->va_profile, ctx->va_entrypoint,
-                                attr, FF_ARRAY_ELEMS(attr));
-    if (vas != VA_STATUS_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to fetch config "
-               "attributes: %d (%s).\n", vas, vaErrorStr(vas));
-        return AVERROR(EINVAL);
-    }
-
-    for (i = 0; i < FF_ARRAY_ELEMS(attr); i++) {
-        if (attr[i].value == VA_ATTRIB_NOT_SUPPORTED) {
-            // Unfortunately we have to treat this as "don't know" and hope
-            // for the best, because the Intel MJPEG encoder returns this
-            // for all the interesting attributes.
-            av_log(avctx, AV_LOG_DEBUG, "Attribute (%d) is not supported.\n",
-                   attr[i].type);
-            continue;
-        }
-        switch (attr[i].type) {
-        case VAConfigAttribEncPackedHeaders:
-            if (ctx->va_packed_headers & ~attr[i].value) {
-                // This isn't fatal, but packed headers are always
-                // preferable because they are under our control.
-                // When absent, the driver is generating them and some
-                // features may not work (e.g. VUI or SEI in H.264).
-                av_log(avctx, AV_LOG_WARNING, "Warning: some packed "
-                       "headers are not supported (want %#x, got %#x).\n",
-                       ctx->va_packed_headers, attr[i].value);
-                ctx->va_packed_headers &= attr[i].value;
-            }
-            ctx->config_attributes[ctx->nb_config_attributes++] =
-                (VAConfigAttrib) {
-                .type  = VAConfigAttribEncPackedHeaders,
-                .value = ctx->va_packed_headers,
-            };
-            break;
-        default:
-            av_assert0(0 && "Unexpected config attribute.");
-        }
-    }
-
-    return 0;
-}
-
 static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
@@ -1498,6 +1444,66 @@ static av_cold int vaapi_encode_init_gop_structure(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int vaapi_encode_init_packed_headers(AVCodecContext *avctx)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAStatus vas;
+    VAConfigAttrib attr = { VAConfigAttribEncPackedHeaders };
+
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile,
+                                ctx->va_entrypoint,
+                                &attr, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query packed headers "
+               "attribute: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+        if (ctx->desired_packed_headers) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not support any "
+                   "packed headers (wanted %#x).\n",
+                   ctx->desired_packed_headers);
+        } else {
+            av_log(avctx, AV_LOG_VERBOSE, "Driver does not support any "
+                   "packed headers (none wanted).\n");
+        }
+        ctx->va_packed_headers = 0;
+    } else {
+        if (ctx->desired_packed_headers & ~attr.value) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not support some "
+                   "wanted packed headers (wanted %#x, found %#x).\n",
+                   ctx->desired_packed_headers, attr.value);
+        } else {
+            av_log(avctx, AV_LOG_VERBOSE, "All wanted packed headers "
+                   "available (wanted %#x, found %#x).\n",
+                   ctx->desired_packed_headers, attr.value);
+        }
+        ctx->va_packed_headers = ctx->desired_packed_headers & attr.value;
+    }
+
+    if (ctx->va_packed_headers) {
+        ctx->config_attributes[ctx->nb_config_attributes++] =
+            (VAConfigAttrib) {
+            .type  = VAConfigAttribEncPackedHeaders,
+            .value = ctx->va_packed_headers,
+        };
+    }
+
+    if ( (ctx->desired_packed_headers & VA_ENC_PACKED_HEADER_SEQUENCE) &&
+        !(ctx->va_packed_headers      & VA_ENC_PACKED_HEADER_SEQUENCE) &&
+         (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER)) {
+        av_log(avctx, AV_LOG_WARNING, "Driver does not support packed "
+               "sequence headers, but a global header is requested.\n");
+        av_log(avctx, AV_LOG_WARNING, "No global header will be written: "
+               "this may result in a stream which is not usable for some "
+               "purposes (e.g. not muxable to some containers).\n");
+    }
+
+    return 0;
+}
+
 static av_cold int vaapi_encode_init_quality(AVCodecContext *avctx)
 {
 #if VA_CHECK_VERSION(0, 36, 0)
@@ -1728,7 +1734,7 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     if (err < 0)
         goto fail;
 
-    err = vaapi_encode_config_attributes(avctx);
+    err = vaapi_encode_init_packed_headers(avctx);
     if (err < 0)
         goto fail;
 
@@ -1817,7 +1823,8 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     ctx->issue_mode = ISSUE_MODE_MAXIMISE_THROUGHPUT;
 
     if (ctx->va_packed_headers & VA_ENC_PACKED_HEADER_SEQUENCE &&
-        ctx->codec->write_sequence_header) {
+        ctx->codec->write_sequence_header &&
+        avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         char data[MAX_PARAM_BUFFER_SIZE];
         size_t bit_len = 8 * sizeof(data);
 
