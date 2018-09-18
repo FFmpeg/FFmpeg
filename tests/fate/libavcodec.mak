@@ -46,6 +46,11 @@ fate-dct8x8: libavcodec/tests/dct$(EXESUF)
 fate-dct8x8: CMD = run libavcodec/tests/dct
 fate-dct8x8: CMP = null
 
+FATE_LIBAVCODEC-$(CONFIG_H264_VAAPI_ENCODER) += fate-h264-levels
+fate-h264-levels: libavcodec/tests/h264_levels$(EXESUF)
+fate-h264-levels: CMD = run libavcodec/tests/h264_levels
+fate-h264-levels: REF = /dev/null
+
 FATE_LIBAVCODEC-$(CONFIG_IIRFILTER) += fate-iirfilter
 fate-iirfilter: libavcodec/tests/iirfilter$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/tests/iirfilter
