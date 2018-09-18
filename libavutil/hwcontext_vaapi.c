@@ -279,11 +279,14 @@ static const struct {
     const char *match_string;
     unsigned int quirks;
 } vaapi_driver_quirks_table[] = {
+#if !VA_CHECK_VERSION(1, 0, 0)
+    // The i965 driver did not conform before version 2.0.
     {
         "Intel i965 (Quick Sync)",
         "i965",
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS,
     },
+#endif
     {
         "Intel iHD",
         "ubit",
@@ -344,29 +347,37 @@ static int vaapi_device_init(AVHWDeviceContext *hwdev)
         }
     }
 
+    vendor_string = vaQueryVendorString(hwctx->display);
+    if (vendor_string)
+        av_log(hwdev, AV_LOG_VERBOSE, "VAAPI driver: %s.\n", vendor_string);
+
     if (hwctx->driver_quirks & AV_VAAPI_DRIVER_QUIRK_USER_SET) {
-        av_log(hwdev, AV_LOG_VERBOSE, "Not detecting driver: "
-               "quirks set by user.\n");
+        av_log(hwdev, AV_LOG_VERBOSE, "Using quirks set by user (%#x).\n",
+               hwctx->driver_quirks);
     } else {
         // Detect the driver in use and set quirk flags if necessary.
-        vendor_string = vaQueryVendorString(hwctx->display);
         hwctx->driver_quirks = 0;
         if (vendor_string) {
             for (i = 0; i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table); i++) {
                 if (strstr(vendor_string,
                            vaapi_driver_quirks_table[i].match_string)) {
-                    av_log(hwdev, AV_LOG_VERBOSE, "Matched \"%s\" as known "
-                           "driver \"%s\".\n", vendor_string,
-                           vaapi_driver_quirks_table[i].friendly_name);
+                    av_log(hwdev, AV_LOG_VERBOSE, "Matched driver string "
+                           "as known nonstandard driver \"%s\", setting "
+                           "quirks (%#x).\n",
+                           vaapi_driver_quirks_table[i].friendly_name,
+                           vaapi_driver_quirks_table[i].quirks);
                     hwctx->driver_quirks |=
                         vaapi_driver_quirks_table[i].quirks;
                     break;
                 }
             }
             if (!(i < FF_ARRAY_ELEMS(vaapi_driver_quirks_table))) {
-                av_log(hwdev, AV_LOG_VERBOSE, "Unknown driver \"%s\", "
-                       "assuming standard behaviour.\n", vendor_string);
+                av_log(hwdev, AV_LOG_VERBOSE, "Driver not found in known "
+                       "nonstandard list, using standard behaviour.\n");
             }
+        } else {
+            av_log(hwdev, AV_LOG_VERBOSE, "Driver has no vendor string, "
+                   "assuming standard behaviour.\n");
         }
     }
 
