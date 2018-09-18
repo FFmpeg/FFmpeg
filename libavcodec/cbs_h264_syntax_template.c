@@ -213,6 +213,46 @@ static int FUNC(vui_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(vui_parameters_default)(CodedBitstreamContext *ctx,
+                                        RWContext *rw, H264RawVUI *current,
+                                        H264RawSPS *sps)
+{
+    infer(aspect_ratio_idc, 0);
+
+    infer(video_format,             5);
+    infer(video_full_range_flag,    0);
+    infer(colour_primaries,         2);
+    infer(transfer_characteristics, 2);
+    infer(matrix_coefficients,      2);
+
+    infer(chroma_sample_loc_type_top_field,    0);
+    infer(chroma_sample_loc_type_bottom_field, 0);
+
+    infer(fixed_frame_rate_flag, 0);
+    infer(low_delay_hrd_flag,    1);
+
+    infer(pic_struct_present_flag, 0);
+
+    infer(motion_vectors_over_pic_boundaries_flag, 1);
+    infer(max_bytes_per_pic_denom, 2);
+    infer(max_bits_per_mb_denom,   1);
+    infer(log2_max_mv_length_horizontal, 15);
+    infer(log2_max_mv_length_vertical,   15);
+
+    if ((sps->profile_idc ==  44 || sps->profile_idc ==  86 ||
+         sps->profile_idc == 100 || sps->profile_idc == 110 ||
+         sps->profile_idc == 122 || sps->profile_idc == 244) &&
+        sps->constraint_set3_flag) {
+        infer(max_num_reorder_frames,  0);
+        infer(max_dec_frame_buffering, 0);
+    } else {
+        infer(max_num_reorder_frames,  H264_MAX_DPB_FRAMES);
+        infer(max_dec_frame_buffering, H264_MAX_DPB_FRAMES);
+    }
+
+    return 0;
+}
+
 static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
                      H264RawSPS *current)
 {
@@ -317,6 +357,8 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(vui_parameters_present_flag);
     if (current->vui_parameters_present_flag)
         CHECK(FUNC(vui_parameters)(ctx, rw, &current->vui, current));
+    else
+        CHECK(FUNC(vui_parameters_default)(ctx, rw, &current->vui, current));
 
     CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
 
