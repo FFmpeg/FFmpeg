@@ -1436,6 +1436,9 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         .initial_qp        = 0,
         .min_qp            = (avctx->qmin > 0 ? avctx->qmin : 0),
         .basic_unit_size   = 0,
+#if VA_CHECK_VERSION(1, 1, 0)
+        .max_qp            = (avctx->qmax > 0 ? avctx->qmax : 0),
+#endif
     };
     vaapi_encode_add_global_param(avctx, &ctx->rc_params.misc,
                                   sizeof(ctx->rc_params));

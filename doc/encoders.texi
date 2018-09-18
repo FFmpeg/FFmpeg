@@ -2588,7 +2588,8 @@ Speed / quality tradeoff: higher values are faster / worse quality.
 Size / quality tradeoff: higher values are smaller / worse quality.
 @item
 @option{qmin}
-(only: @option{qmax} is not supported)
+@item
+@option{qmax}
 @item
 @option{i_qfactor} / @option{i_quant_factor}
 @item

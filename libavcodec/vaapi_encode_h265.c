@@ -1148,6 +1148,8 @@ static const AVCodecDefault vaapi_encode_h265_defaults[] = {
     { "i_qoffset",      "0"   },
     { "b_qfactor",      "6/5" },
     { "b_qoffset",      "0"   },
+    { "qmin",           "-1"  },
+    { "qmax",           "-1"  },
     { NULL },
 };
 

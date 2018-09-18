@@ -253,6 +253,8 @@ static const AVCodecDefault vaapi_encode_vp9_defaults[] = {
     { "bf",             "0"   },
     { "g",              "250" },
     { "global_quality", "100" },
+    { "qmin",           "-1"  },
+    { "qmax",           "-1"  },
     { NULL },
 };
 

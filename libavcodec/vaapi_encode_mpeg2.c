@@ -672,6 +672,8 @@ static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
     { "b_qfactor",      "6/5" },
     { "b_qoffset",      "0"   },
     { "global_quality", "10"  },
+    { "qmin",           "-1"  },
+    { "qmax",           "-1"  },
     { NULL },
 };
 

@@ -230,6 +230,8 @@ static const AVCodecDefault vaapi_encode_vp8_defaults[] = {
     { "bf",             "0"   },
     { "g",              "120" },
     { "global_quality", "40"  },
+    { "qmin",           "-1"  },
+    { "qmax",           "-1"  },
     { NULL },
 };
 
