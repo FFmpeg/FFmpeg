@@ -30,6 +30,7 @@
 #include "cbs.h"
 #include "cbs_h264.h"
 #include "h264.h"
+#include "h264_levels.h"
 #include "h264_sei.h"
 #include "internal.h"
 #include "vaapi_encode.h"
@@ -294,6 +295,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     H264RawPPS                        *pps = &priv->raw_pps;
     VAEncSequenceParameterBufferH264 *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferH264  *vpic = ctx->codec_picture_params;
+    int dpb_frames;
 
     memset(&priv->current_access_unit, 0,
            sizeof(priv->current_access_unit));
@@ -319,7 +321,32 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         sps->constraint_set5_flag = ctx->b_per_p == 0;
     }
 
-    sps->level_idc = avctx->level;
+    if (ctx->gop_size == 1)
+        dpb_frames = 0;
+    else
+        dpb_frames = 1 + (ctx->b_per_p > 0);
+
+    if (avctx->level != FF_LEVEL_UNKNOWN) {
+        sps->level_idc = avctx->level;
+    } else {
+        const H264LevelDescriptor *level;
+
+        level = ff_h264_guess_level(sps->profile_idc,
+                                    avctx->bit_rate,
+                                    priv->mb_width  * 16,
+                                    priv->mb_height * 16,
+                                    dpb_frames);
+        if (level) {
+            av_log(avctx, AV_LOG_VERBOSE, "Using level %s.\n", level->name);
+            if (level->constraint_set3_flag)
+                sps->constraint_set3_flag = 1;
+            sps->level_idc = level->level_idc;
+        } else {
+            av_log(avctx, AV_LOG_WARNING, "Stream will not conform "
+                   "to any level: using level 6.2.\n");
+            sps->level_idc = 62;
+        }
+    }
 
     sps->seq_parameter_set_id = 0;
     sps->chroma_format_idc    = 1;
@@ -329,8 +356,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     sps->log2_max_pic_order_cnt_lsb_minus4 =
         av_clip(av_log2(ctx->b_per_p + 1) - 2, 0, 12);
 
-    sps->max_num_ref_frames =
-        ctx->gop_size == 1 ? 0 : 1 + (ctx->b_per_p > 0);
+    sps->max_num_ref_frames = dpb_frames;
 
     sps->pic_width_in_mbs_minus1        = priv->mb_width  - 1;
     sps->pic_height_in_map_units_minus1 = priv->mb_height - 1;
@@ -938,6 +964,12 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (avctx->level != FF_LEVEL_UNKNOWN && avctx->level & ~0xff) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid level %d: must fit "
+               "in 8-bit unsigned integer.\n", avctx->level);
+        return AVERROR(EINVAL);
+    }
+
     ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // SPS and PPS.
         VA_ENC_PACKED_HEADER_SLICE    | // Slice headers.
@@ -1005,7 +1037,7 @@ static const AVOption vaapi_encode_h264_options[] = {
 
     { "level", "Set level (level_idc)",
       OFFSET(level), AV_OPT_TYPE_INT,
-      { .i64 = 51 }, 0x00, 0xff, FLAGS, "level" },
+      { .i64 = FF_LEVEL_UNKNOWN }, FF_LEVEL_UNKNOWN, 0xff, FLAGS, "level" },
 
 #define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
       { .i64 = value }, 0, 0, FLAGS, "level"
