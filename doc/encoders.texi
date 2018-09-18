@@ -2631,11 +2631,35 @@ Use CABAC.
 @item cavlc
 Use CAVLC.
 @end table
+
+@item aud
+Include access unit delimiters in the stream (not included by default).
+
+@item sei
+Set SEI message types to include.
+Some combination of the following values:
+@table @samp
+@item identifier
+Include a @emph{user_data_unregistered} message containing information about
+the encoder.
+@item timing
+Include picture timing parameters (@emph{buffering_period} and
+@emph{pic_timing} messages).
+@item recovery_point
+Include recovery points where appropriate (@emph{recovery_point} messages).
+@end table
+
 @end table
 
 @item hevc_vaapi
 @option{profile} and @option{level} set the values of
 @emph{general_profile_idc} and @emph{general_level_idc} respectively.
+
+@table @option
+@item aud
+Include access unit delimiters in the stream (not included by default).
+
+@end table
 
 @item mjpeg_vaapi
 Always encodes using the standard quantisation and huffman tables -
