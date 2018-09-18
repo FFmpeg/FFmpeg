@@ -305,10 +305,19 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     sps->nal_unit_header.nal_unit_type = H264_NAL_SPS;
 
     sps->profile_idc = avctx->profile & 0xff;
-    sps->constraint_set1_flag =
-        !!(avctx->profile & FF_PROFILE_H264_CONSTRAINED);
-    sps->constraint_set3_flag =
-        !!(avctx->profile & FF_PROFILE_H264_INTRA);
+
+    if (avctx->profile == FF_PROFILE_H264_CONSTRAINED_BASELINE ||
+        avctx->profile == FF_PROFILE_H264_MAIN)
+        sps->constraint_set1_flag = 1;
+
+    if (avctx->profile == FF_PROFILE_H264_HIGH)
+        sps->constraint_set3_flag = ctx->gop_size == 1;
+
+    if (avctx->profile == FF_PROFILE_H264_MAIN ||
+        avctx->profile == FF_PROFILE_H264_HIGH) {
+        sps->constraint_set4_flag = 1;
+        sps->constraint_set5_flag = ctx->b_per_p == 0;
+    }
 
     sps->level_idc = avctx->level;
 
@@ -321,8 +330,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         av_clip(av_log2(ctx->b_per_p + 1) - 2, 0, 12);
 
     sps->max_num_ref_frames =
-        (avctx->profile & FF_PROFILE_H264_INTRA) ? 0 :
-        1 + (ctx->b_per_p > 0);
+        ctx->gop_size == 1 ? 0 : 1 + (ctx->b_per_p > 0);
 
     sps->pic_width_in_mbs_minus1        = priv->mb_width  - 1;
     sps->pic_height_in_map_units_minus1 = priv->mb_height - 1;
