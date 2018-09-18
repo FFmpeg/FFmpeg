@@ -188,8 +188,8 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
     memset(pce,  0, sizeof(*pce));
 
 
-    if (avctx->bit_rate > 0) {
-        priv->bit_rate = (avctx->bit_rate + 399) / 400;
+    if (ctx->va_bit_rate > 0) {
+        priv->bit_rate = (ctx->va_bit_rate + 399) / 400;
     } else {
         // Unknown (not a bitrate-targetting mode), so just use the
         // highest value.
@@ -361,7 +361,7 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
         .picture_width  = avctx->width,
         .picture_height = avctx->height,
 
-        .bits_per_second          = avctx->bit_rate,
+        .bits_per_second          = ctx->va_bit_rate,
         .frame_rate               = av_q2d(priv->frame_rate),
         .aspect_ratio_information = sh->aspect_ratio_information,
         .vbv_buffer_size          = priv->vbv_buffer_size,
@@ -615,8 +615,6 @@ static av_cold int vaapi_encode_mpeg2_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    ctx->va_rc_mode    = VA_RC_CQP;
-
     ctx->va_packed_headers = VA_ENC_PACKED_HEADER_SEQUENCE |
                              VA_ENC_PACKED_HEADER_PICTURE;
 
@@ -666,6 +664,7 @@ static const AVOption vaapi_encode_mpeg2_options[] = {
 };
 
 static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
+    { "b",              "0"   },
     { "bf",             "1"   },
     { "g",              "120" },
     { "i_qfactor",      "1"   },

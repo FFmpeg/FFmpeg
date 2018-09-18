@@ -2643,8 +2643,6 @@ Always encodes using the standard quantisation and huffman tables -
 @item mpeg2_vaapi
 @option{profile} and @option{level} set the value of @emph{profile_and_level_indication}.
 
-No rate control is supported.
-
 @item vp8_vaapi
 B-frames are not supported.
 

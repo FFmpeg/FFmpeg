@@ -512,7 +512,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         .intra_period     = avctx->gop_size,
         .intra_idr_period = avctx->gop_size,
         .ip_period        = ctx->b_per_p + 1,
-        .bits_per_second   = avctx->bit_rate,
+        .bits_per_second  = ctx->va_bit_rate,
 
         .pic_width_in_luma_samples  = sps->pic_width_in_luma_samples,
         .pic_height_in_luma_samples = sps->pic_height_in_luma_samples,
@@ -1014,10 +1014,6 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
         priv->fixed_qp_p   = 30;
         priv->fixed_qp_b   = 30;
 
-        av_log(avctx, AV_LOG_DEBUG, "Using %s-bitrate = %"PRId64" bps.\n",
-               ctx->va_rc_mode == VA_RC_CBR ? "constant" : "variable",
-               avctx->bit_rate);
-
     } else {
         av_assert0(0 && "Invalid RC mode.");
     }
@@ -1067,14 +1063,6 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
         avctx->profile = priv->profile;
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
-
-    if (avctx->bit_rate > 0) {
-        if (avctx->rc_max_rate == avctx->bit_rate)
-            ctx->va_rc_mode = VA_RC_CBR;
-        else
-            ctx->va_rc_mode = VA_RC_VBR;
-    } else
-        ctx->va_rc_mode = VA_RC_CQP;
 
     ctx->va_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // VPS, SPS and PPS.

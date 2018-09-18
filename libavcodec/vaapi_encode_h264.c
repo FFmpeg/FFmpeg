@@ -425,9 +425,9 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         // Try to scale these to a sensible range so that the
         // golomb encode of the value is not overlong.
         hrd->bit_rate_scale =
-            av_clip_uintp2(av_log2(avctx->bit_rate) - 15 - 6, 4);
+            av_clip_uintp2(av_log2(ctx->va_bit_rate) - 15 - 6, 4);
         hrd->bit_rate_value_minus1[0] =
-            (avctx->bit_rate >> hrd->bit_rate_scale + 6) - 1;
+            (ctx->va_bit_rate >> hrd->bit_rate_scale + 6) - 1;
 
         hrd->cpb_size_scale =
             av_clip_uintp2(av_log2(ctx->hrd_params.hrd.buffer_size) - 15 - 4, 4);
@@ -497,7 +497,7 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         .intra_idr_period = avctx->gop_size,
         .ip_period        = ctx->b_per_p + 1,
 
-        .bits_per_second       = avctx->bit_rate,
+        .bits_per_second       = ctx->va_bit_rate,
         .max_num_ref_frames    = sps->max_num_ref_frames,
         .picture_width_in_mbs  = sps->pic_width_in_mbs_minus1 + 1,
         .picture_height_in_mbs = sps->pic_height_in_map_units_minus1 + 1,
@@ -823,10 +823,6 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         priv->fixed_qp_p   = 26;
         priv->fixed_qp_b   = 26;
 
-        av_log(avctx, AV_LOG_DEBUG, "Using %s-bitrate = %"PRId64" bps.\n",
-               ctx->va_rc_mode == VA_RC_CBR ? "constant" : "variable",
-               avctx->bit_rate);
-
     } else {
         av_assert0(0 && "Invalid RC mode.");
     }
@@ -933,14 +929,6 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
                "are not supported.\n");
         return AVERROR_PATCHWELCOME;
     }
-
-    if (avctx->bit_rate > 0) {
-        if (avctx->rc_max_rate == avctx->bit_rate)
-            ctx->va_rc_mode = VA_RC_CBR;
-        else
-            ctx->va_rc_mode = VA_RC_VBR;
-    } else
-        ctx->va_rc_mode = VA_RC_CQP;
 
     ctx->va_packed_headers =
         VA_ENC_PACKED_HEADER_SEQUENCE | // SPS and PPS.

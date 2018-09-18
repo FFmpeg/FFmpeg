@@ -388,8 +388,6 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_mjpeg;
 
-    ctx->va_rc_mode = VA_RC_CQP;
-
     // The JPEG image header - see note above.
     ctx->va_packed_headers =
         VA_ENC_PACKED_HEADER_RAW_DATA;
@@ -402,6 +400,7 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
 
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {
     { "global_quality", "80" },
+    { "b",              "0"  },
     { NULL },
 };
 

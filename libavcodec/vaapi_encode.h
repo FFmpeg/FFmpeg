@@ -116,8 +116,6 @@ typedef struct VAAPIEncodeContext {
     // Use low power encoding mode.
     int             low_power;
 
-    // Rate control mode.
-    unsigned int    va_rc_mode;
     // Supported packed headers (initially the desired set, modified
     // later to what is actually supported).
     unsigned int    va_packed_headers;
@@ -138,6 +136,10 @@ typedef struct VAAPIEncodeContext {
     VAProfile       va_profile;
     // Encoding entrypoint (VAEntryoint*).
     VAEntrypoint    va_entrypoint;
+    // Rate control mode.
+    unsigned int    va_rc_mode;
+    // Bitrate for codec-specific encoder parameters.
+    unsigned int    va_bit_rate;
 
     // Configuration attributes to use when creating va_config.
     VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];

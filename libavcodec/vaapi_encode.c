@@ -1213,7 +1213,6 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
     int i;
 
     VAConfigAttrib attr[] = {
-        { VAConfigAttribRateControl      },
         { VAConfigAttribEncMaxRefFrames  },
         { VAConfigAttribEncPackedHeaders },
     };
@@ -1237,32 +1236,6 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
             continue;
         }
         switch (attr[i].type) {
-        case VAConfigAttribRateControl:
-            // Hack for backward compatibility: CBR was the only
-            // usable RC mode for a long time, so old drivers will
-            // only have it.  Normal default options may now choose
-            // VBR and then fail, however, so override it here with
-            // CBR if that is the only supported mode.
-            if (ctx->va_rc_mode == VA_RC_VBR &&
-                !(attr[i].value & VA_RC_VBR) &&
-                (attr[i].value & VA_RC_CBR)) {
-                av_log(avctx, AV_LOG_WARNING, "VBR rate control is "
-                       "not supported with this driver version; "
-                       "using CBR instead.\n");
-                ctx->va_rc_mode = VA_RC_CBR;
-            }
-            if (!(ctx->va_rc_mode & attr[i].value)) {
-                av_log(avctx, AV_LOG_ERROR, "Rate control mode %#x "
-                       "is not supported (mask: %#x).\n",
-                       ctx->va_rc_mode, attr[i].value);
-                return AVERROR(EINVAL);
-            }
-            ctx->config_attributes[ctx->nb_config_attributes++] =
-                (VAConfigAttrib) {
-                .type  = VAConfigAttribRateControl,
-                .value = ctx->va_rc_mode,
-            };
-            break;
         case VAConfigAttribEncMaxRefFrames:
         {
             unsigned int ref_l0 = attr[i].value & 0xffff;
@@ -1309,43 +1282,151 @@ static av_cold int vaapi_encode_config_attributes(AVCodecContext *avctx)
 static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
-    int rc_bits_per_second;
-    int rc_target_percentage;
-    int rc_window_size;
-    int hrd_buffer_size;
-    int hrd_initial_buffer_fullness;
+    int64_t rc_bits_per_second;
+    int     rc_target_percentage;
+    int     rc_window_size;
+    int64_t hrd_buffer_size;
+    int64_t hrd_initial_buffer_fullness;
     int fr_num, fr_den;
+    VAConfigAttrib rc_attr = { VAConfigAttribRateControl };
+    VAStatus vas;
 
-    if (avctx->bit_rate > INT32_MAX) {
-        av_log(avctx, AV_LOG_ERROR, "Target bitrate of 2^31 bps or "
-               "higher is not supported.\n");
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile, ctx->va_entrypoint,
+                                &rc_attr, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query rate control "
+               "config attribute: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (rc_attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+        av_log(avctx, AV_LOG_VERBOSE, "Driver does not report any "
+               "supported rate control modes: assuming constant-quality.\n");
+        ctx->va_rc_mode = VA_RC_CQP;
+        return 0;
+    }
+    if (avctx->flags & AV_CODEC_FLAG_QSCALE ||
+        avctx->bit_rate <= 0) {
+        if (rc_attr.value & VA_RC_CQP) {
+            av_log(avctx, AV_LOG_VERBOSE, "Using constant-quality mode.\n");
+            ctx->va_rc_mode = VA_RC_CQP;
+            if (avctx->bit_rate > 0 || avctx->rc_max_rate > 0) {
+                av_log(avctx, AV_LOG_WARNING, "Bitrate target parameters "
+                       "ignored in constant-quality mode.\n");
+            }
+            return 0;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Driver does not support "
+                   "constant-quality mode (%#x).\n", rc_attr.value);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    if (!(rc_attr.value & (VA_RC_CBR | VA_RC_VBR))) {
+        av_log(avctx, AV_LOG_ERROR, "Driver does not support any "
+               "bitrate-targetted rate control modes.\n");
         return AVERROR(EINVAL);
     }
 
     if (avctx->rc_buffer_size)
         hrd_buffer_size = avctx->rc_buffer_size;
+    else if (avctx->rc_max_rate > 0)
+        hrd_buffer_size = avctx->rc_max_rate;
     else
         hrd_buffer_size = avctx->bit_rate;
-    if (avctx->rc_initial_buffer_occupancy)
+    if (avctx->rc_initial_buffer_occupancy) {
+        if (avctx->rc_initial_buffer_occupancy > hrd_buffer_size) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid RC buffer settings: "
+                   "must have initial buffer size (%d) < "
+                   "buffer size (%"PRId64").\n",
+                   avctx->rc_initial_buffer_occupancy, hrd_buffer_size);
+            return AVERROR(EINVAL);
+        }
         hrd_initial_buffer_fullness = avctx->rc_initial_buffer_occupancy;
-    else
-        hrd_initial_buffer_fullness = hrd_buffer_size * 3 / 4;
-
-    if (ctx->va_rc_mode == VA_RC_CBR) {
-        rc_bits_per_second   = avctx->bit_rate;
-        rc_target_percentage = 100;
-        rc_window_size       = 1000;
     } else {
-        if (avctx->rc_max_rate < avctx->bit_rate) {
-            // Max rate is unset or invalid, just use the normal bitrate.
+        hrd_initial_buffer_fullness = hrd_buffer_size * 3 / 4;
+    }
+
+    if (avctx->rc_max_rate && avctx->rc_max_rate < avctx->bit_rate) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid bitrate settings: must have "
+               "bitrate (%"PRId64") <= maxrate (%"PRId64").\n",
+               avctx->bit_rate, avctx->rc_max_rate);
+        return AVERROR(EINVAL);
+    }
+
+    if (avctx->rc_max_rate > avctx->bit_rate) {
+        if (!(rc_attr.value & VA_RC_VBR)) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not support "
+                   "VBR mode (%#x), using CBR mode instead.\n",
+                   rc_attr.value);
+            ctx->va_rc_mode = VA_RC_CBR;
+
             rc_bits_per_second   = avctx->bit_rate;
             rc_target_percentage = 100;
         } else {
+            ctx->va_rc_mode = VA_RC_VBR;
+
             rc_bits_per_second   = avctx->rc_max_rate;
-            rc_target_percentage = (avctx->bit_rate * 100) / rc_bits_per_second;
+            rc_target_percentage = (avctx->bit_rate * 100) /
+                                   avctx->rc_max_rate;
         }
-        rc_window_size = (hrd_buffer_size * 1000) / avctx->bit_rate;
+
+    } else if (avctx->rc_max_rate == avctx->bit_rate) {
+        if (!(rc_attr.value & VA_RC_CBR)) {
+            av_log(avctx, AV_LOG_WARNING, "Driver does not support "
+                   "CBR mode (%#x), using VBR mode instead.\n",
+                   rc_attr.value);
+            ctx->va_rc_mode = VA_RC_VBR;
+        } else {
+            ctx->va_rc_mode = VA_RC_CBR;
+        }
+
+        rc_bits_per_second   = avctx->bit_rate;
+        rc_target_percentage = 100;
+
+    } else {
+        if (rc_attr.value & VA_RC_VBR) {
+            ctx->va_rc_mode = VA_RC_VBR;
+
+            // We only have a target bitrate, but VAAPI requires that a
+            // maximum rate be supplied as well.  Since the user has
+            // offered no particular constraint, arbitrarily pick a
+            // maximum rate of double the target rate.
+            rc_bits_per_second   = 2 * avctx->bit_rate;
+            rc_target_percentage = 50;
+        } else {
+            ctx->va_rc_mode = VA_RC_CBR;
+
+            rc_bits_per_second   = avctx->bit_rate;
+            rc_target_percentage = 100;
+        }
     }
+
+    rc_window_size = (hrd_buffer_size * 1000) / rc_bits_per_second;
+
+    av_log(avctx, AV_LOG_VERBOSE, "RC mode: %s, %d%% of %"PRId64" bps "
+           "over %d ms.\n", ctx->va_rc_mode == VA_RC_VBR ? "VBR" : "CBR",
+           rc_target_percentage, rc_bits_per_second, rc_window_size);
+    av_log(avctx, AV_LOG_VERBOSE, "RC buffer: %"PRId64" bits, "
+           "initial fullness %"PRId64" bits.\n",
+           hrd_buffer_size, hrd_initial_buffer_fullness);
+
+    if (rc_bits_per_second          > UINT32_MAX ||
+        hrd_buffer_size             > UINT32_MAX ||
+        hrd_initial_buffer_fullness > UINT32_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "RC parameters of 2^32 or "
+               "greater are not supported by VAAPI.\n");
+        return AVERROR(EINVAL);
+    }
+
+    ctx->va_bit_rate = rc_bits_per_second;
+
+    ctx->config_attributes[ctx->nb_config_attributes++] =
+        (VAConfigAttrib) {
+        .type  = VAConfigAttribRateControl,
+        .value = ctx->va_rc_mode,
+    };
 
     ctx->rc_params.misc.type = VAEncMiscParameterTypeRateControl;
     ctx->rc_params.rc = (VAEncMiscParameterRateControl) {
@@ -1607,6 +1688,10 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     if (err < 0)
         goto fail;
 
+    err = vaapi_encode_init_rate_control(avctx);
+    if (err < 0)
+        goto fail;
+
     err = vaapi_encode_config_attributes(avctx);
     if (err < 0)
         goto fail;
@@ -1652,12 +1737,6 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     if (!ctx->output_buffer_pool) {
         err = AVERROR(ENOMEM);
         goto fail;
-    }
-
-    if (ctx->va_rc_mode & ~VA_RC_CQP) {
-        err = vaapi_encode_init_rate_control(avctx);
-        if (err < 0)
-            goto fail;
     }
 
     if (ctx->codec->configure) {

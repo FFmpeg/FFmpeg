@@ -65,7 +65,7 @@ static int vaapi_encode_vp8_init_sequence_params(AVCodecContext *avctx)
     vseq->kf_auto = 0;
 
     if (!(ctx->va_rc_mode & VA_RC_CQP)) {
-        vseq->bits_per_second = avctx->bit_rate;
+        vseq->bits_per_second = ctx->va_bit_rate;
         vseq->intra_period    = avctx->gop_size;
     }
 
@@ -204,17 +204,6 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
     }
 
     ctx->codec = &vaapi_encode_type_vp8;
-
-    if (avctx->flags & AV_CODEC_FLAG_QSCALE) {
-        ctx->va_rc_mode = VA_RC_CQP;
-    } else if (avctx->bit_rate > 0) {
-        if (avctx->rc_max_rate == avctx->bit_rate)
-            ctx->va_rc_mode = VA_RC_CBR;
-        else
-            ctx->va_rc_mode = VA_RC_VBR;
-    } else {
-        ctx->va_rc_mode = VA_RC_CQP;
-    }
 
     // Packed headers are not currently supported.
     ctx->va_packed_headers = 0;
