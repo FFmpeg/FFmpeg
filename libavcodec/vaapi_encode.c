@@ -1387,6 +1387,51 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int vaapi_encode_init_quality(AVCodecContext *avctx)
+{
+#if VA_CHECK_VERSION(0, 36, 0)
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+    VAStatus vas;
+    VAConfigAttrib attr = { VAConfigAttribEncQualityRange };
+    int quality = avctx->compression_level;
+
+    vas = vaGetConfigAttributes(ctx->hwctx->display,
+                                ctx->va_profile,
+                                ctx->va_entrypoint,
+                                &attr, 1);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query quality "
+               "config attribute: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+
+    if (attr.value == VA_ATTRIB_NOT_SUPPORTED) {
+        if (quality != 0) {
+            av_log(avctx, AV_LOG_WARNING, "Quality attribute is not "
+                   "supported: will use default quality level.\n");
+        }
+    } else {
+        if (quality > attr.value) {
+            av_log(avctx, AV_LOG_WARNING, "Invalid quality level: "
+                   "valid range is 0-%d, using %d.\n",
+                   attr.value, attr.value);
+            quality = attr.value;
+        }
+
+        ctx->quality_params.misc.type = VAEncMiscParameterTypeQualityLevel;
+        ctx->quality_params.quality.quality_level = quality;
+
+        vaapi_encode_add_global_param(avctx, &ctx->quality_params.misc,
+                                      sizeof(ctx->quality_params));
+    }
+#else
+    av_log(avctx, AV_LOG_WARNING, "The encode quality option is "
+           "not supported with this VAAPI version.\n");
+#endif
+
+    return 0;
+}
+
 static void vaapi_encode_free_output_buffer(void *opaque,
                                             uint8_t *data)
 {
@@ -1568,6 +1613,12 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
     if (err < 0)
         goto fail;
 
+    if (avctx->compression_level >= 0) {
+        err = vaapi_encode_init_quality(avctx);
+        if (err < 0)
+            goto fail;
+    }
+
     vas = vaCreateConfig(ctx->hwctx->display,
                          ctx->va_profile, ctx->va_entrypoint,
                          ctx->config_attributes, ctx->nb_config_attributes,
@@ -1615,39 +1666,6 @@ av_cold int ff_vaapi_encode_init(AVCodecContext *avctx)
         err = ctx->codec->configure(avctx);
         if (err < 0)
             goto fail;
-    }
-
-    if (avctx->compression_level >= 0) {
-#if VA_CHECK_VERSION(0, 36, 0)
-        VAConfigAttrib attr = { VAConfigAttribEncQualityRange };
-
-        vas = vaGetConfigAttributes(ctx->hwctx->display,
-                                    ctx->va_profile,
-                                    ctx->va_entrypoint,
-                                    &attr, 1);
-        if (vas != VA_STATUS_SUCCESS) {
-            av_log(avctx, AV_LOG_WARNING, "Failed to query quality "
-                   "attribute: will use default compression level.\n");
-        } else {
-            if (avctx->compression_level > attr.value) {
-                av_log(avctx, AV_LOG_WARNING, "Invalid compression "
-                       "level: valid range is 0-%d, using %d.\n",
-                       attr.value, attr.value);
-                avctx->compression_level = attr.value;
-            }
-
-            ctx->quality_params.misc.type =
-                VAEncMiscParameterTypeQualityLevel;
-            ctx->quality_params.quality.quality_level =
-                avctx->compression_level;
-
-            vaapi_encode_add_global_param(avctx, &ctx->quality_params.misc,
-                                          sizeof(ctx->quality_params));
-        }
-#else
-        av_log(avctx, AV_LOG_WARNING, "The encode compression level "
-               "option is not supported with this VAAPI version.\n");
-#endif
     }
 
     ctx->input_order  = 0;

@@ -831,9 +831,6 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         av_assert0(0 && "Invalid RC mode.");
     }
 
-    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
-        avctx->compression_level = priv->quality;
-
     if (priv->sei & SEI_IDENTIFIER) {
         const char *lavc  = LIBAVCODEC_IDENT;
         const char *vaapi = VA_VERSION_S;
@@ -907,6 +904,8 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
         avctx->profile = priv->profile;
     if (avctx->level == FF_LEVEL_UNKNOWN)
         avctx->level = priv->level;
+    if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
+        avctx->compression_level = priv->quality;
 
     // Reject unsupported profiles.
     switch (avctx->profile) {
@@ -972,7 +971,7 @@ static const AVOption vaapi_encode_h264_options[] = {
     { "qp", "Constant QP (for P-frames; scaled by qfactor/qoffset for I/B)",
       OFFSET(qp), AV_OPT_TYPE_INT, { .i64 = 20 }, 0, 52, FLAGS },
     { "quality", "Set encode quality (trades off against speed, higher is faster)",
-      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, 8, FLAGS },
+      OFFSET(quality), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, FLAGS },
     { "coder", "Entropy coder type",
       OFFSET(coder), AV_OPT_TYPE_INT, { .i64 = 1 }, 0, 1, FLAGS, "coder" },
         { "cavlc", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, INT_MIN, INT_MAX, FLAGS, "coder" },
