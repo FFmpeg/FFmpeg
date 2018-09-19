@@ -343,7 +343,7 @@ void ff_dnn_free_model_native(DNNModel **model)
             }
             av_freep(&network->layers[layer].params);
         }
-        av_freep(network);
+        av_freep(&network);
         av_freep(model);
     }
 }
