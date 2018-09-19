@@ -177,7 +177,7 @@ static int dec_enc(AVPacket *pkt, AVCodec *enc_codec)
             }
             /* set AVCodecContext Parameters for encoder, here we keep them stay
              * the same as decoder.
-             * xxx: now the the sample can't handle resolution change case.
+             * xxx: now the sample can't handle resolution change case.
              */
             encoder_ctx->time_base = av_inv_q(decoder_ctx->framerate);
             encoder_ctx->pix_fmt   = AV_PIX_FMT_VAAPI;
