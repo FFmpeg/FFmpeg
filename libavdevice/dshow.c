@@ -999,11 +999,11 @@ dshow_add_device(AVFormatContext *avctx,
                 if (par->height < 0) {
                     par->height *= -1;
                 } else {
-                par->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
-                if (par->extradata) {
-                    par->extradata_size = 9;
-                    memcpy(par->extradata, "BottomUp", 9);
-                }
+                    par->extradata = av_malloc(9 + AV_INPUT_BUFFER_PADDING_SIZE);
+                    if (par->extradata) {
+                        par->extradata_size = 9;
+                        memcpy(par->extradata, "BottomUp", 9);
+                    }
                 }
             }
         }
