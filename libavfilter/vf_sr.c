@@ -227,7 +227,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                   0, sr_context->sws_slice_h, out->data, out->linesize);
 
         sws_scale(sr_context->sws_contexts[1], (const uint8_t **)out->data, out->linesize,
-                  0, out->height, (uint8_t * const*)(&sr_context->input.data), &sr_context->sws_input_linesize);
+                  0, out->height, (uint8_t * const*)(&sr_context->input.data),
+                  (const int [4]){sr_context->sws_input_linesize, 0, 0, 0});
     }
     else{
         if (sr_context->sws_contexts[0]){
@@ -238,7 +239,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         }
 
         sws_scale(sr_context->sws_contexts[1], (const uint8_t **)in->data, in->linesize,
-                  0, in->height, (uint8_t * const*)(&sr_context->input.data), &sr_context->sws_input_linesize);
+                  0, in->height, (uint8_t * const*)(&sr_context->input.data),
+                  (const int [4]){sr_context->sws_input_linesize, 0, 0, 0});
     }
     av_frame_free(&in);
 
@@ -248,7 +250,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(EIO);
     }
 
-    sws_scale(sr_context->sws_contexts[2], (const uint8_t **)(&sr_context->output.data), &sr_context->sws_output_linesize,
+    sws_scale(sr_context->sws_contexts[2], (const uint8_t **)(&sr_context->output.data),
+              (const int[4]){sr_context->sws_output_linesize, 0, 0, 0},
               0, out->height, (uint8_t * const*)out->data, out->linesize);
 
     return ff_filter_frame(outlink, out);
