@@ -284,7 +284,7 @@ void ff_vc1_i_loop_filter(VC1Context *v)
      * bottom edge of this MB, before moving over and running the H loop
      * filter on the left and internal vertical borders. Therefore, the loop
      * filter trails by one row and one column relative to the overlap filter
-     * and two rows and two colums relative to the decoding loop. */
+     * and two rows and two columns relative to the decoding loop. */
     if (!s->first_slice_line) {
         dest = s->dest[0] - 16 * s->linesize - 16;
         flags = s->mb_y == s->start_mb_y + 1 ? TOP_EDGE : 0;
@@ -485,7 +485,7 @@ void ff_vc1_p_loop_filter(VC1Context *v)
      * we wait for the next loop filter iteration to do H loop filter on all
      * applicable vertical borders of this MB. Therefore, the loop filter
      * trails by one row and one column relative to the overlap filter and two
-     * rows and two colums relative to the decoding loop. */
+     * rows and two columns relative to the decoding loop. */
     if (s->mb_y >= s->start_mb_y + 2) {
         if (s->mb_x) {
             dest = s->dest[0] - 32 * s->linesize - 16;
@@ -923,7 +923,7 @@ void ff_vc1_p_intfr_loop_filter(VC1Context *v)
      * we wait for the loop filter iteration on the next row and next column to
      * do H loop filter on all applicable vertical borders of this MB.
      * Therefore, the loop filter trails by two rows and one column relative to
-     * the overlap filter and two rows and two colums relative to the decoding
+     * the overlap filter and two rows and two columns relative to the decoding
      * loop. */
     if (s->mb_x) {
         if (s->mb_y >= s->start_mb_y + 1) {
