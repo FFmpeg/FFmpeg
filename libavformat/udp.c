@@ -458,13 +458,15 @@ static void *circular_buffer_task_rx( void *_URLContext)
     }
     while(1) {
         int len;
+        struct sockaddr_storage addr;
+        socklen_t addr_len = sizeof(addr);
 
         pthread_mutex_unlock(&s->mutex);
         /* Blocking operations are always cancellation points;
            see "General Information" / "Thread Cancelation Overview"
            in Single Unix. */
         pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &old_cancelstate);
-        len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
+        len = recvfrom(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0, (struct sockaddr *)&addr, &addr_len);
         pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, &old_cancelstate);
         pthread_mutex_lock(&s->mutex);
         if (len < 0) {
@@ -474,6 +476,8 @@ static void *circular_buffer_task_rx( void *_URLContext)
             }
             continue;
         }
+        if (ff_ip_check_source_lists(&addr, &s->filters))
+            continue;
         AV_WL32(s->tmp, len);
 
         if(av_fifo_space(s->fifo) < len + 4) {
@@ -926,6 +930,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
 {
     UDPContext *s = h->priv_data;
     int ret;
+    struct sockaddr_storage addr;
+    socklen_t addr_len = sizeof(addr);
 #if HAVE_PTHREAD_CANCEL
     int avail, nonblock = h->flags & AVIO_FLAG_NONBLOCK;
 
@@ -976,9 +982,12 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
         if (ret < 0)
             return ret;
     }
-    ret = recv(s->udp_fd, buf, size, 0);
-
-    return ret < 0 ? ff_neterrno() : ret;
+    ret = recvfrom(s->udp_fd, buf, size, 0, (struct sockaddr *)&addr, &addr_len);
+    if (ret < 0)
+        return ff_neterrno();
+    if (ff_ip_check_source_lists(&addr, &s->filters))
+        return AVERROR(EINTR);
+    return ret;
 }
 
 static int udp_write(URLContext *h, const uint8_t *buf, int size)

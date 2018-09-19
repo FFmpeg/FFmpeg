@@ -1569,12 +1569,12 @@ For receiving, this gives the benefit of only receiving packets from
 the specified peer address/port.
 
 @item sources=@var{address}[,@var{address}]
-Only receive packets sent to the multicast group from one of the
-specified sender IP addresses.
+Only receive packets sent from the specified addresses. In case of multicast,
+also subscribe to multicast traffic coming from these addresses only.
 
 @item block=@var{address}[,@var{address}]
-Ignore packets sent to the multicast group from the specified
-sender IP addresses.
+Ignore packets sent from the specified addresses. In case of multicast, also
+exclude the source addresses in the multicast subscription.
 
 @item fifo_size=@var{units}
 Set the UDP receiving circular buffer size, expressed as a number of
