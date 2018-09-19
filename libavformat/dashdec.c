@@ -1326,18 +1326,18 @@ cleanup:
     c->info.audio_stream_nb =  c->n_audios;
     for (i = 0 ; i < c->n_videos; i++) {
         if (strlen(c->videos[i]->id) < 20) {
-            strcpy(c->info.video_id[i], c->videos[i]->id);
+            c->info.video_id[i] = atoi(c->videos[i]->id);
             c->info.video_bandwidth[i] = c->videos[i]->bandwidth;
             if (c->videos[i]->ctx)
-                strcpy(c->info.cur_video_id, c->videos[i]->id);
+                c->info.cur_video_id = c->info.video_id[i];
         }
     }
     for (i = 0 ; i < c->n_audios; i++) {
         if (strlen(c->audios[i]->id) < 20) {
-            strcpy(c->info.audio_id[i], c->audios[i]->id);
+            c->info.audio_id[i] = atoi(c->audios[i]->id);
             c->info.audio_bandwidth[i] = c->audios[i]->bandwidth;
             if (c->audios[i]->ctx)
-                strcpy(c->info.cur_audio_id, c->audios[i]->id);
+                c->info.cur_audio_id = c->info.audio_id[i];
         }
     }
     if (c->app_ctx) {

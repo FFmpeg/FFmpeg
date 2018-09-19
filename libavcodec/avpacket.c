@@ -575,7 +575,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->side_data_elems      = 0;
     dst->current_sap          = src->current_sap;
     dst->next_sap             = src->next_sap;
-    strncpy(dst->stream_id, src->stream_id, MAX_PKT_STREAM_ID_LEN);
+    dst->stream_id            = src->stream_id;
     dst->serial               = src->serial;
 
     for (i = 0; i < src->side_data_elems; i++) {

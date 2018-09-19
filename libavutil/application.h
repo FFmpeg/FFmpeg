@@ -64,16 +64,16 @@ typedef struct AVAppDashStream
     int video_stream_nb;
     int64_t video_bandwidth[20];
     int64_t audio_bandwidth[20];
-    char video_id[20][MAX_PKT_STREAM_ID_LEN];
-    char audio_id[20][MAX_PKT_STREAM_ID_LEN];
-    char cur_video_id[MAX_PKT_STREAM_ID_LEN];
-    char cur_audio_id[MAX_PKT_STREAM_ID_LEN];
+    int video_id[20];
+    int audio_id[20];
+    int cur_video_id;
+    int cur_audio_id;
 } AVAppDashStream;
 
 typedef struct AVAppDashChange
 {
-    char cur_video_id[MAX_PKT_STREAM_ID_LEN];
-    char next_video_id[MAX_PKT_STREAM_ID_LEN];
+    int cur_video_id;
+    int next_video_id;
     int64_t next_sap;
     int error;
     int retry;
@@ -132,8 +132,8 @@ typedef struct AVAppIOTraffic
 } AVAppIOTraffic;
 
 typedef struct AVAppSwitchControl{
-    char vid[MAX_PKT_STREAM_ID_LEN];
-    char aid[MAX_PKT_STREAM_ID_LEN];
+    int vid;
+    int aid;
 
     int min_qn;
     int max_qn;

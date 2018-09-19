@@ -1429,8 +1429,8 @@ typedef struct AVPacket {
     int64_t dts;
     uint8_t *data;
     int   size;
-#define MAX_PKT_STREAM_ID_LEN 20
-    char  stream_id[MAX_PKT_STREAM_ID_LEN];
+
+    int   stream_id;
     int   serial;
     int   stream_index;
     /**
