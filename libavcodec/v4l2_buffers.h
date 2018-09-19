@@ -72,7 +72,7 @@ typedef struct V4L2Buffer {
  * @param[in] buf The V4L2Buffer to get the information from
  *
  * @returns 0 in case of success, AVERROR(EINVAL) if the number of planes is incorrect,
- * AVERROR(ENOMEM) if the AVBufferRef cant be created.
+ * AVERROR(ENOMEM) if the AVBufferRef can't be created.
  */
 int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *buf);
 
@@ -83,7 +83,7 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *buf);
  * @param[in] buf The V4L2Buffer to get the information from
  *
  * @returns 0 in case of success, AVERROR(EINVAL) if the number of planes is incorrect,
- * AVERROR(ENOMEM) if the AVBufferRef cant be created.
+ * AVERROR(ENOMEM) if the AVBufferRef can't be created.
  *
  */
 int ff_v4l2_buffer_buf_to_avpkt(AVPacket *pkt, V4L2Buffer *buf);
