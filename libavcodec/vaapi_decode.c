@@ -200,12 +200,8 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
         ff_vaapi_decode_destroy_buffers(avctx, pic);
 
-    pic->nb_param_buffers = 0;
-    pic->nb_slices        = 0;
-    pic->slices_allocated = 0;
-    av_freep(&pic->slice_buffers);
-
-    return 0;
+    err = 0;
+    goto exit;
 
 fail_with_picture:
     vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
@@ -216,6 +212,12 @@ fail_with_picture:
 fail:
     ff_vaapi_decode_destroy_buffers(avctx, pic);
 fail_at_end:
+exit:
+    pic->nb_param_buffers = 0;
+    pic->nb_slices        = 0;
+    pic->slices_allocated = 0;
+    av_freep(&pic->slice_buffers);
+
     return err;
 }
 
