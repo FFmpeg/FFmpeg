@@ -413,7 +413,7 @@ static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
 
     for (i = 0; i < nb + 1; i++) {
         if (fabs(coeffs[2 * i + 1]) > FLT_EPSILON) {
-            av_log(ctx, AV_LOG_ERROR, "coeff: %lf of z^%d is not real; poles/zeros are not complex conjugates.\n",
+            av_log(ctx, AV_LOG_ERROR, "coeff: %f of z^%d is not real; poles/zeros are not complex conjugates.\n",
                    coeffs[2 * i + 1], i);
             return AVERROR(EINVAL);
         }
@@ -592,7 +592,7 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->biquads[current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : iir->g);
             iir->biquads[current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : iir->g);
 
-            av_log(ctx, AV_LOG_VERBOSE, "a=%lf %lf %lf:b=%lf %lf %lf\n",
+            av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
                    iir->biquads[current_biquad].a0,
                    iir->biquads[current_biquad].a1,
                    iir->biquads[current_biquad].a2,
