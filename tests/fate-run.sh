@@ -162,7 +162,6 @@ video_filter(){
     filters=$1
     shift
     label=${test#filter-}
-    raw_src="${target_path}/tests/vsynth1/%02d.pgm"
     printf '%-20s' $label
     avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src \
         $FLAGS $ENC_OPTS -vf "$filters" -c:v rawvideo -frames:v 5 $* -f nut md5:
