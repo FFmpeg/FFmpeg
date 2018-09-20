@@ -267,7 +267,8 @@ audio track.
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}.
+Defaults to @option{false}. Alternatively you can use the @code{-sources}
+option of ffmpeg to list the available input devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
