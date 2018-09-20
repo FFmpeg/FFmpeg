@@ -250,7 +250,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         return AVERROR(EIO);
     }
 
-    sws_scale(sr_context->sws_contexts[2], (const uint8_t **)(&sr_context->output.data),
+    sws_scale(sr_context->sws_contexts[2], (const uint8_t *[4]){(const uint8_t *)sr_context->output.data, 0, 0, 0},
               (const int[4]){sr_context->sws_output_linesize, 0, 0, 0},
               0, out->height, (uint8_t * const*)out->data, out->linesize);
 
