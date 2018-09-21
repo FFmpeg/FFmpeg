@@ -1249,19 +1249,19 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
                 }
             }
         } else if (par->codec_id == AV_CODEC_ID_WEBVTT) {
-        if (st->disposition & AV_DISPOSITION_CAPTIONS) {
-            codec_id = "D_WEBVTT/CAPTIONS";
-            native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
-        } else if (st->disposition & AV_DISPOSITION_DESCRIPTIONS) {
-            codec_id = "D_WEBVTT/DESCRIPTIONS";
-            native_id = MATROSKA_TRACK_TYPE_METADATA;
-        } else if (st->disposition & AV_DISPOSITION_METADATA) {
-            codec_id = "D_WEBVTT/METADATA";
-            native_id = MATROSKA_TRACK_TYPE_METADATA;
-        } else {
-            codec_id = "D_WEBVTT/SUBTITLES";
-            native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
-        }
+            if (st->disposition & AV_DISPOSITION_CAPTIONS) {
+                codec_id = "D_WEBVTT/CAPTIONS";
+                native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
+            } else if (st->disposition & AV_DISPOSITION_DESCRIPTIONS) {
+                codec_id = "D_WEBVTT/DESCRIPTIONS";
+                native_id = MATROSKA_TRACK_TYPE_METADATA;
+            } else if (st->disposition & AV_DISPOSITION_METADATA) {
+                codec_id = "D_WEBVTT/METADATA";
+                native_id = MATROSKA_TRACK_TYPE_METADATA;
+            } else {
+                codec_id = "D_WEBVTT/SUBTITLES";
+                native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
+            }
         }
 
         if (!native_id) {
