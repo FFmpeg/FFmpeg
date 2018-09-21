@@ -1429,7 +1429,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
         return AVERROR(EINVAL);
     }
 
-    if (mkv->mode != MODE_WEBM || par->codec_id != AV_CODEC_ID_WEBVTT) {
+    if (par->codec_id != AV_CODEC_ID_WEBVTT) {
         mkv->tracks[i].codecpriv_offset = avio_tell(pb);
         ret = mkv_write_codecprivate(s, pb, par, native_id, qt_id);
         if (ret < 0)
