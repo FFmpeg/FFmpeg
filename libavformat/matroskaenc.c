@@ -2735,7 +2735,6 @@ static int mkv_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
 
 static const AVCodecTag additional_audio_tags[] = {
     { AV_CODEC_ID_ALAC,      0XFFFFFFFF },
-    { AV_CODEC_ID_EAC3,      0XFFFFFFFF },
     { AV_CODEC_ID_MLP,       0xFFFFFFFF },
     { AV_CODEC_ID_OPUS,      0xFFFFFFFF },
     { AV_CODEC_ID_PCM_S16BE, 0xFFFFFFFF },
@@ -2754,8 +2753,6 @@ static const AVCodecTag additional_video_tags[] = {
     { AV_CODEC_ID_RV10,      0xFFFFFFFF },
     { AV_CODEC_ID_RV20,      0xFFFFFFFF },
     { AV_CODEC_ID_RV30,      0xFFFFFFFF },
-    { AV_CODEC_ID_RV40,      0xFFFFFFFF },
-    { AV_CODEC_ID_VP9,       0xFFFFFFFF },
     { AV_CODEC_ID_NONE,      0xFFFFFFFF }
 };
 
