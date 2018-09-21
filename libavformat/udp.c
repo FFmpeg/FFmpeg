@@ -246,36 +246,40 @@ static int udp_set_multicast_sources(URLContext *h,
                                      struct sockaddr_storage *sources,
                                      int nb_sources, int include)
 {
-#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32) && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
-    /* These ones are available in the microsoft SDK, but don't seem to work
-     * as on linux, so just prefer the v4-only approach there for now. */
-    int i;
-    for (i = 0; i < nb_sources; i++) {
-        struct group_source_req mreqs;
-        int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
-
-        //TODO: Interface index should be looked up from local_addr
-        mreqs.gsr_interface = 0;
-        memcpy(&mreqs.gsr_group, addr, addr_len);
-        memcpy(&mreqs.gsr_source, &sources[i], sizeof(*sources));
-
-        if (setsockopt(sockfd, level,
-                       include ? MCAST_JOIN_SOURCE_GROUP : MCAST_BLOCK_SOURCE,
-                       (const void *)&mreqs, sizeof(mreqs)) < 0) {
-            if (include)
-                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_SOURCE_GROUP)");
-            else
-                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_BLOCK_SOURCE)");
-            return ff_neterrno();
-        }
-    }
-#elif HAVE_STRUCT_IP_MREQ_SOURCE && defined(IP_BLOCK_SOURCE)
     int i;
     if (addr->sa_family != AF_INET) {
+#if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE)
+        /* For IPv4 prefer the old approach, as that alone works reliably on
+         * Windows and it also supports supplying the interface based on its
+         * address. */
+        int i;
+        for (i = 0; i < nb_sources; i++) {
+            struct group_source_req mreqs;
+            int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
+
+            //TODO: Interface index should be looked up from local_addr
+            mreqs.gsr_interface = 0;
+            memcpy(&mreqs.gsr_group, addr, addr_len);
+            memcpy(&mreqs.gsr_source, &sources[i], sizeof(*sources));
+
+            if (setsockopt(sockfd, level,
+                           include ? MCAST_JOIN_SOURCE_GROUP : MCAST_BLOCK_SOURCE,
+                           (const void *)&mreqs, sizeof(mreqs)) < 0) {
+                if (include)
+                    ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_JOIN_SOURCE_GROUP)");
+                else
+                    ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(MCAST_BLOCK_SOURCE)");
+                return ff_neterrno();
+            }
+        }
+        return 0;
+#else
         av_log(NULL, AV_LOG_ERROR,
                "Setting multicast sources only supported for IPv4\n");
         return AVERROR(EINVAL);
+#endif
     }
+#if HAVE_STRUCT_IP_MREQ_SOURCE && defined(IP_BLOCK_SOURCE)
     for (i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
         if (sources[i].ss_family != AF_INET) {
