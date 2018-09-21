@@ -2680,6 +2680,16 @@ static int mkv_query_codec(enum AVCodecID codec_id, int std_compliance)
     return 0;
 }
 
+static int webm_query_codec(enum AVCodecID codec_id, int std_compliance)
+{
+    int i;
+    for (i = 0; ff_webm_codec_tags[i].id != AV_CODEC_ID_NONE; i++)
+        if (ff_webm_codec_tags[i].id == codec_id)
+            return 1;
+
+    return 0;
+}
+
 static int mkv_init(struct AVFormatContext *s)
 {
     int i;
@@ -2832,6 +2842,7 @@ AVOutputFormat ff_webm_muxer = {
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
+    .query_codec       = webm_query_codec,
     .check_bitstream   = mkv_check_bitstream,
     .flags             = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS |
                          AVFMT_TS_NONSTRICT | AVFMT_ALLOW_FLUSH,
