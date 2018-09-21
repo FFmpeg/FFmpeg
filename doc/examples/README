@@ -1,7 +1,7 @@
 FFmpeg examples README
 ----------------------
 
-Both following use cases rely on pkg-config and make, thus make sure
+Both following use cases rely on the pkg-config and make, thus make sure
 that you have them installed and working on your system.
 
 
