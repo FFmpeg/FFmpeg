@@ -1238,8 +1238,17 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     if (st->disposition & AV_DISPOSITION_FORCED)
         put_ebml_uint(pb, MATROSKA_ID_TRACKFLAGFORCED, 1);
 
-    if (mkv->mode == MODE_WEBM && par->codec_id == AV_CODEC_ID_WEBVTT) {
+    if (mkv->mode == MODE_WEBM) {
         const char *codec_id;
+        if (par->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+            for (j = 0; ff_webm_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
+                if (ff_webm_codec_tags[j].id == par->codec_id) {
+                    codec_id = ff_webm_codec_tags[j].str;
+                    native_id = 1;
+                    break;
+                }
+            }
+        } else if (par->codec_id == AV_CODEC_ID_WEBVTT) {
         if (st->disposition & AV_DISPOSITION_CAPTIONS) {
             codec_id = "D_WEBVTT/CAPTIONS";
             native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
@@ -1253,6 +1262,14 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
             codec_id = "D_WEBVTT/SUBTITLES";
             native_id = MATROSKA_TRACK_TYPE_SUBTITLE;
         }
+        }
+
+        if (!native_id) {
+            av_log(s, AV_LOG_ERROR,
+                   "Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.\n");
+            return AVERROR(EINVAL);
+        }
+
         put_ebml_string(pb, MATROSKA_ID_CODECID, codec_id);
     } else {
         // look for a codec ID string specific to mkv to use,
@@ -1292,17 +1309,6 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     }
     if (par->codec_id == AV_CODEC_ID_OPUS) {
         put_ebml_uint(pb, MATROSKA_ID_SEEKPREROLL, OPUS_SEEK_PREROLL);
-    }
-
-    if (mkv->mode == MODE_WEBM && !(par->codec_id == AV_CODEC_ID_VP8 ||
-                                    par->codec_id == AV_CODEC_ID_VP9 ||
-                                    par->codec_id == AV_CODEC_ID_AV1 ||
-                                    par->codec_id == AV_CODEC_ID_OPUS ||
-                                    par->codec_id == AV_CODEC_ID_VORBIS ||
-                                    par->codec_id == AV_CODEC_ID_WEBVTT)) {
-        av_log(s, AV_LOG_ERROR,
-               "Only VP8 or VP9 or AV1 video and Vorbis or Opus audio and WebVTT subtitles are supported for WebM.\n");
-        return AVERROR(EINVAL);
     }
 
     switch (par->codec_type) {
