@@ -1708,9 +1708,9 @@ dependent_frame:
                     int i;
 
                     for (i = 0; i < 64; i++) {
-                        if ((1LL << i) & ff_eac3_custom_channel_map_locations[ch][1]) {
+                        if ((1ULL << i) & ff_eac3_custom_channel_map_locations[ch][1]) {
                             int index = av_get_channel_layout_channel_index(channel_layout,
-                                                                            1LL << i);
+                                                                            1ULL << i);
                             if (index < 0)
                                 return AVERROR_INVALIDDATA;
                             if (extend >= channel_map_size)
