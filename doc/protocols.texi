@@ -1544,9 +1544,8 @@ packet bursts.
 Override the local UDP port to bind with.
 
 @item localaddr=@var{addr}
-Choose the local IP address. This is useful e.g. if sending multicast
-and the host has multiple interfaces, where the user can choose
-which interface to send on by specifying the IP address of that interface.
+Local IP address of a network interface used for sending packets or joining
+multicast groups.
 
 @item pkt_size=@var{size}
 Set the size in bytes of UDP packets.
