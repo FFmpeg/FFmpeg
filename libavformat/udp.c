@@ -196,6 +196,7 @@ static int udp_join_multicast_group(int sockfd, struct sockaddr *addr,struct soc
         struct ipv6_mreq mreq6;
 
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
+        //TODO: Interface index should be looked up from local_addr
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_ADD_MEMBERSHIP)");
@@ -228,6 +229,7 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
         struct ipv6_mreq mreq6;
 
         memcpy(&mreq6.ipv6mr_multiaddr, &(((struct sockaddr_in6 *)addr)->sin6_addr), sizeof(struct in6_addr));
+        //TODO: Interface index should be looked up from local_addr
         mreq6.ipv6mr_interface= 0;
         if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_DROP_MEMBERSHIP, &mreq6, sizeof(mreq6)) < 0) {
             ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IPV6_DROP_MEMBERSHIP)");
@@ -240,7 +242,8 @@ static int udp_leave_multicast_group(int sockfd, struct sockaddr *addr,struct so
 
 static int udp_set_multicast_sources(URLContext *h,
                                      int sockfd, struct sockaddr *addr,
-                                     int addr_len, struct sockaddr_storage *sources,
+                                     int addr_len, struct sockaddr_storage *local_addr,
+                                     struct sockaddr_storage *sources,
                                      int nb_sources, int include)
 {
 #if HAVE_STRUCT_GROUP_SOURCE_REQ && defined(MCAST_BLOCK_SOURCE) && !defined(_WIN32) && (!defined(TARGET_OS_TV) || !TARGET_OS_TV)
@@ -251,6 +254,7 @@ static int udp_set_multicast_sources(URLContext *h,
         struct group_source_req mreqs;
         int level = addr->sa_family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6;
 
+        //TODO: Interface index should be looked up from local_addr
         mreqs.gsr_interface = 0;
         memcpy(&mreqs.gsr_group, addr, addr_len);
         memcpy(&mreqs.gsr_source, &sources[i], sizeof(*sources));
@@ -280,7 +284,10 @@ static int udp_set_multicast_sources(URLContext *h,
         }
 
         mreqs.imr_multiaddr.s_addr = ((struct sockaddr_in *)addr)->sin_addr.s_addr;
-        mreqs.imr_interface.s_addr = INADDR_ANY;
+        if (local_addr)
+            mreqs.imr_interface= ((struct sockaddr_in *)local_addr)->sin_addr;
+        else
+            mreqs.imr_interface.s_addr= INADDR_ANY;
         mreqs.imr_sourceaddr.s_addr = ((struct sockaddr_in *)&sources[i])->sin_addr.s_addr;
 
         if (setsockopt(sockfd, IPPROTO_IP,
@@ -812,7 +819,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             if (s->filters.nb_include_addrs) {
                 if (udp_set_multicast_sources(h, udp_fd,
                                               (struct sockaddr *)&s->dest_addr,
-                                              s->dest_addr_len,
+                                              s->dest_addr_len, &s->local_addr_storage,
                                               s->filters.include_addrs,
                                               s->filters.nb_include_addrs, 1) < 0)
                     goto fail;
@@ -823,7 +830,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             if (s->filters.nb_exclude_addrs) {
                 if (udp_set_multicast_sources(h, udp_fd,
                                               (struct sockaddr *)&s->dest_addr,
-                                              s->dest_addr_len,
+                                              s->dest_addr_len, &s->local_addr_storage,
                                               s->filters.exclude_addrs,
                                               s->filters.nb_exclude_addrs, 0) < 0)
                     goto fail;
