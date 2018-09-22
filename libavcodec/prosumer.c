@@ -134,13 +134,11 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
 
 static void vertical_predict(uint32_t *dst, int offset, const uint32_t *src, int stride, int height)
 {
-    uint32_t x = (0x7F7F7F7F >> 1) & 0x7F7F7F7F;
-
     dst += offset >> 2;
 
     for (int i = 0; i < height; i++) {
         for (int j = 0; j < stride >> 2; j++) {
-            dst[j] = (((src[j] >> 3) + (x & dst[j])) << 3) & 0xFCFCFCFC;
+            dst[j] = (((src[j] >> 3) + (0x3F3F3F3F & dst[j])) << 3) & 0xFCFCFCFC;
         }
 
         dst += stride >> 2;
