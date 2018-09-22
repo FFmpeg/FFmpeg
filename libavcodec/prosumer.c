@@ -279,12 +279,12 @@ static const uint16_t table[] = {
     0x0001
 };
 
-static void fill_elements(uint32_t idx, uint32_t shift, int size, uint32_t *e0, uint32_t *e1)
+static void fill_elements(uint32_t idx, uint32_t shift, uint32_t *e0, uint32_t *e1)
 {
     uint32_t b, h = idx << (32 - shift);
 
     for (int j = 0; j < 2; j++) {
-        for (int i = 0; i < size; i++) {
+        for (int i = 0; i < 43; i++) {
             b = 4 * TB(i);
             if (shift >= b && ((h & (0xFFF00000u << (12 - b))) >> 20) == table[2 * i + 1]) {
                 if (table[2 * i] >> 8 == 0x80u) {
@@ -322,7 +322,7 @@ static void fill_lut(uint32_t *lut)
                 uint32_t f = 0xFFFFFFFFu;
                 c &= 0xFFFFFFu;
                 if ((c & 0xFF00u) != 0x8000u)
-                    fill_elements(j, d, 365, &c, &f);
+                    fill_elements(j, d, &c, &f);
                 lut[2 * a + 2 * j] = c;
                 lut[2 * a + 2 * j + 1] = f;
             }
