@@ -280,36 +280,31 @@ static const uint32_t table[] = {
 
 static void fill_elements(uint32_t idx, uint32_t shift, int size, uint32_t *e0, uint32_t *e1)
 {
-    uint32_t a = 1, b, g = 1, h = idx << (32 - shift);
+    uint32_t b, h = idx << (32 - shift);
 
     for (int i = 0; i < size; i++) {
-        if (!a || !g)
-            break;
         b = 4 * (table[2 * i + 1] & 0xF);
         if (shift >= b && (h & (0xFFF00000u << (12 - b))) == (table[2 * i + 1] & 0xFFFF0000u)) {
             if (table[2 * i] >> 8 == 0x80u) {
-                g = 0;
+                return;
             } else {
-                a = 0;
                 *e1 = table[2 * i];
                 *e0 = (*e0 & 0xFFFFFFu) | (((12 + b - shift) & 0xFFFFFFFCu | 0x40u) << 22);
                 shift -= b;
                 h <<= b;
+                break;
             }
         }
     }
-    a = 1;
     for (int i = 0; i < size; i++) {
-        if (!a || !g)
-            break;
         b = 4 * (table[2 * i + 1] & 0xF);
         if (shift >= b && (h & (0xFFF00000u << (12 - b))) == (table[2 * i + 1] & 0xFFFF0000u)) {
-            if ((table[2 * i] >> 8) == 0x80u) {
-                g = 0;
+            if (table[2 * i] >> 8 == 0x80u) {
+                return;
             } else {
-                a = 0;
                 *e1 |= table[2 * i] << 16;
                 *e0 = (*e0 & 0xFFFFFFu) | (((12 + b - shift) & 0xFFFFFFFCu | 0x80u) << 22);
+                break;
             }
         }
     }
