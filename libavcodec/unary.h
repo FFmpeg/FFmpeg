@@ -28,7 +28,20 @@
  * @param gb GetBitContext
  * @param[in] stop The bitstop value (unary code of 1's or 0's)
  * @param[in] len Maximum length
- * @return Unary length/index
+ * @return unary 0 based code index. This is also the length in bits of the
+ * code excluding the stop bit.
+ * (in case len=1)
+ * 1            0
+ * 0            1
+ * (in case len=2)
+ * 1            0
+ * 01           1
+ * 00           2
+ * (in case len=3)
+ * 1            0
+ * 01           1
+ * 001          2
+ * 000          3
  */
 static inline int get_unary(GetBitContext *gb, int stop, int len)
 {
