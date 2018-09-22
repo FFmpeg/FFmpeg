@@ -322,9 +322,6 @@ static void fill_lut(uint32_t *lut)
         uint32_t b = a & 0xFFu;
         uint32_t c, d, e;
 
-        if (b > 3)
-            continue;
-
         c = (b << 16) | table[i-1];
         d = 4 * (3 - b);
         e = (((0xFFF00000u << d) & a) >> 20) & 0xFFF;
