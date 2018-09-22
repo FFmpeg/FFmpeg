@@ -230,39 +230,6 @@ typedef struct HLSContext {
     int64_t timeout;
 } HLSContext;
 
-static int mkdir_p(const char *path) {
-    int ret = 0;
-    char *temp = av_strdup(path);
-    char *pos = temp;
-    char tmp_ch = '\0';
-
-    if (!path || !temp) {
-        return -1;
-    }
-
-    if (!strncmp(temp, "/", 1) || !strncmp(temp, "\\", 1)) {
-        pos++;
-    } else if (!strncmp(temp, "./", 2) || !strncmp(temp, ".\\", 2)) {
-        pos += 2;
-    }
-
-    for ( ; *pos != '\0'; ++pos) {
-        if (*pos == '/' || *pos == '\\') {
-            tmp_ch = *pos;
-            *pos = '\0';
-            ret = mkdir(temp, 0755);
-            *pos = tmp_ch;
-        }
-    }
-
-    if ((*(pos - 1) != '/') || (*(pos - 1) != '\\')) {
-        ret = mkdir(temp, 0755);
-    }
-
-    av_free(temp);
-    return ret;
-}
-
 static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
                           AVDictionary **options) {
     HLSContext *hls = s->priv_data;
@@ -1545,7 +1512,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
                     return AVERROR(ENOMEM);
                 }
                 dir = av_dirname(fn_copy);
-                if (mkdir_p(dir) == -1 && errno != EEXIST) {
+                if (ff_mkdir_p(dir) == -1 && errno != EEXIST) {
                     av_log(oc, AV_LOG_ERROR, "Could not create directory %s with use_localtime_mkdir\n", dir);
                     av_free(fn_copy);
                     return AVERROR(errno);
@@ -1776,7 +1743,7 @@ static int format_name(char *buf, int buf_len, int index)
         }
 
         dir = av_dirname(mod_buf_dup);
-        if (mkdir_p(dir) == -1 && errno != EEXIST) {
+        if (ff_mkdir_p(dir) == -1 && errno != EEXIST) {
             ret = AVERROR(errno);
             goto fail;
         }
