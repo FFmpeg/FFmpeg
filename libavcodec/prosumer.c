@@ -290,14 +290,13 @@ static void fill_elements(uint32_t idx, uint32_t shift, int size, uint32_t *e0, 
                 if (table[2 * i] >> 8 == 0x80u) {
                     return;
                 } else {
+                    *e0 = (*e0 & 0xFFFFFFu) | (((12 + b - shift)  | (0x40u<<j)) << 22);
                     if (j == 0) {
                         *e1 = table[2 * i];
-                        *e0 = (*e0 & 0xFFFFFFu) | (((12 + b - shift) & 0xFFFFFFFCu | 0x40u) << 22);
                         shift -= b;
                         h <<= b;
                     } else {
                         *e1 |= (unsigned)table[2 * i] << 16;
-                        *e0 = (*e0 & 0xFFFFFFu) | (((12 + b - shift) & 0xFFFFFFFCu | 0x80u) << 22);
                     }
                     break;
                 }
