@@ -39,7 +39,7 @@ typedef struct ProSumerContext {
     unsigned stride;
     unsigned size;
     uint32_t lut[0x10000];
-    uint8_t *table_b;
+    uint8_t *initial_line;
     uint8_t *decbuffer;
 } ProSumerContext;
 
@@ -132,7 +132,7 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
     return 0;
 }
 
-static void do_shift(uint32_t *dst, int offset, const uint32_t *src, int stride, int height)
+static void vertical_predict(uint32_t *dst, int offset, const uint32_t *src, int stride, int height)
 {
     uint32_t x = (0x7F7F7F7F >> 1) & 0x7F7F7F7F;
 
@@ -163,8 +163,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_init_writer(&s->pb, s->decbuffer, s->size);
 
     decompress(&s->gb, AV_RL32(avpkt->data + 28) >> 1, &s->pb, s->lut);
-    do_shift((uint32_t *)s->decbuffer, 0, (uint32_t *)s->table_b, s->stride, 1);
-    do_shift((uint32_t *)s->decbuffer, s->stride, (uint32_t *)s->decbuffer, s->stride, avctx->height - 1);
+    vertical_predict((uint32_t *)s->decbuffer, 0, (uint32_t *)s->initial_line, s->stride, 1);
+    vertical_predict((uint32_t *)s->decbuffer, s->stride, (uint32_t *)s->decbuffer, s->stride, avctx->height - 1);
 
     ret = ff_get_buffer(avctx, frame, 0);
     if (ret < 0)
@@ -344,11 +344,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV411P;
 
-    s->table_b = av_malloc(s->stride);
+    s->initial_line = av_malloc(s->stride);
     s->decbuffer = av_malloc(s->size);
-    if (!s->table_b || !s->decbuffer)
+    if (!s->initial_line || !s->decbuffer)
         return AVERROR(ENOMEM);
-    memset(s->table_b, 0x80u, s->stride);
+    memset(s->initial_line, 0x80u, s->stride);
 
     fill_lut(s->lut);
 
@@ -359,7 +359,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 {
     ProSumerContext *s = avctx->priv_data;
 
-    av_freep(&s->table_b);
+    av_freep(&s->initial_line);
     av_freep(&s->decbuffer);
 
     return 0;
