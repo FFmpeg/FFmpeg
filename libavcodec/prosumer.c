@@ -132,7 +132,7 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
     return 0;
 }
 
-static void do_shift(uint32_t *dst, int offset, uint32_t *src, int stride, int height)
+static void do_shift(uint32_t *dst, int offset, const uint32_t *src, int stride, int height)
 {
     uint32_t x = (0x7F7F7F7F >> 1) & 0x7F7F7F7F;
 
@@ -174,7 +174,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         uint8_t *y = &frame->data[0][i * frame->linesize[0]];
         uint8_t *u = &frame->data[1][i * frame->linesize[1]];
         uint8_t *v = &frame->data[2][i * frame->linesize[2]];
-        uint8_t *src = s->decbuffer + (avctx->height - 1 - i) * s->stride;
+        const uint8_t *src = s->decbuffer + (avctx->height - 1 - i) * s->stride;
 
         for (int j = 0; j < avctx->width; j += 8) {
             *(u++) = *src++;
