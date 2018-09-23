@@ -733,8 +733,6 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     vpic->pic_fields.bits.idr_pic_flag       = (pic->type == PICTURE_TYPE_IDR);
     vpic->pic_fields.bits.reference_pic_flag = (pic->type != PICTURE_TYPE_B);
 
-    pic->nb_slices = 1;
-
     return 0;
 }
 
@@ -758,8 +756,7 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
         sh->nal_unit_header.nal_ref_idc   = pic->type != PICTURE_TYPE_B;
     }
 
-    // Only one slice per frame.
-    sh->first_mb_in_slice = 0;
+    sh->first_mb_in_slice = slice->block_start;
     sh->slice_type        = priv->slice_type;
 
     sh->pic_parameter_set_id = pps->pic_parameter_set_id;
@@ -780,8 +777,8 @@ static int vaapi_encode_h264_init_slice_params(AVCodecContext *avctx,
         sh->slice_qp_delta = priv->fixed_qp_idr - (pps->pic_init_qp_minus26 + 26);
 
 
-    vslice->macroblock_address = sh->first_mb_in_slice;
-    vslice->num_macroblocks    = priv->mb_width * priv->mb_height;
+    vslice->macroblock_address = slice->block_start;
+    vslice->num_macroblocks    = slice->block_size;
 
     vslice->macroblock_info = VA_INVALID_ID;
 
@@ -903,6 +900,8 @@ static const VAAPIEncodeProfile vaapi_encode_h264_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_h264 = {
     .profiles              = vaapi_encode_h264_profiles,
 
+    .flags                 = FLAG_SLICE_CONTROL,
+
     .configure             = &vaapi_encode_h264_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferH264),
@@ -977,6 +976,8 @@ static av_cold int vaapi_encode_h264_init(AVCodecContext *avctx)
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);
+
+    ctx->slice_block_height = ctx->slice_block_width = 16;
 
     return ff_vaapi_encode_init(avctx);
 }
