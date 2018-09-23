@@ -52,6 +52,10 @@ enum {
 
 typedef struct VAAPIEncodeSlice {
     int             index;
+    int             row_start;
+    int             row_size;
+    int             block_start;
+    int             block_size;
     void           *priv_data;
     void           *codec_slice_params;
 } VAAPIEncodeSlice;
@@ -124,6 +128,10 @@ typedef struct VAAPIEncodeContext {
     // block size is required by the codec.
     int             surface_width;
     int             surface_height;
+
+    // The block size for slice calculations.
+    int             slice_block_width;
+    int             slice_block_height;
 
     // Everything above this point must be set before calling
     // ff_vaapi_encode_init().
@@ -224,6 +232,12 @@ typedef struct VAAPIEncodeContext {
     int64_t         dts_pts_diff;
     int64_t         ts_ring[MAX_REORDER_DELAY * 3];
 
+    // Slice structure.
+    int slice_block_rows;
+    int slice_block_cols;
+    int nb_slices;
+    int slice_size;
+
     // Frame type decision.
     int gop_size;
     int p_per_i;
@@ -234,10 +248,18 @@ typedef struct VAAPIEncodeContext {
     int end_of_stream;
 } VAAPIEncodeContext;
 
+enum {
+    // Codec supports controlling the subdivision of pictures into slices.
+    FLAG_SLICE_CONTROL         = 1 << 0,
+};
+
 typedef struct VAAPIEncodeType {
     // List of supported profiles and corresponding VAAPI profiles.
     // (Must end with FF_PROFILE_UNKNOWN.)
     const VAAPIEncodeProfile *profiles;
+
+    // Codec feature flags.
+    int flags;
 
     // Perform any extra codec-specific configuration after the
     // codec context is initialised (set up the private data and

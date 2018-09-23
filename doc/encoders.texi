@@ -2598,6 +2598,8 @@ Size / quality tradeoff: higher values are smaller / worse quality.
 @option{b_qfactor} / @option{b_quant_factor}
 @item
 @option{b_qoffset} / @option{b_quant_offset}
+@item
+@option{slices}
 @end itemize
 
 All encoders support the following options:
