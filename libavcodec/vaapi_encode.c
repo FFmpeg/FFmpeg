@@ -1277,7 +1277,8 @@ static av_cold int vaapi_encode_init_rate_control(AVCodecContext *avctx)
         ctx->va_rc_mode = VA_RC_CQP;
         return 0;
     }
-    if (avctx->flags & AV_CODEC_FLAG_QSCALE ||
+    if (ctx->codec->flags & FLAG_CONSTANT_QUALITY_ONLY ||
+        avctx->flags & AV_CODEC_FLAG_QSCALE ||
         avctx->bit_rate <= 0) {
         if (rc_attr.value & VA_RC_CQP) {
             av_log(avctx, AV_LOG_VERBOSE, "Using constant-quality mode.\n");

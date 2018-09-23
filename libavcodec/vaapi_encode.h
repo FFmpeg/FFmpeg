@@ -251,6 +251,8 @@ typedef struct VAAPIEncodeContext {
 enum {
     // Codec supports controlling the subdivision of pictures into slices.
     FLAG_SLICE_CONTROL         = 1 << 0,
+    // Codec only supports constant quality (no rate control).
+    FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
 };
 
 typedef struct VAAPIEncodeType {

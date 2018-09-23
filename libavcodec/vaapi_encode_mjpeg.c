@@ -476,6 +476,8 @@ static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .profiles              = vaapi_encode_mjpeg_profiles,
 
+    .flags                 = FLAG_CONSTANT_QUALITY_ONLY,
+
     .configure             = &vaapi_encode_mjpeg_configure,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),
