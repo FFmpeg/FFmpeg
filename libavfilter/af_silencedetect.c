@@ -57,7 +57,8 @@ static const AVOption silencedetect_options[] = {
     { "noise",     "set noise tolerance",              OFFSET(noise),     AV_OPT_TYPE_DOUBLE, {.dbl=0.001},          0, DBL_MAX,  FLAGS },
     { "d",         "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
     { "duration",  "set minimum duration in seconds",  OFFSET(duration),  AV_OPT_TYPE_DOUBLE, {.dbl=2.},             0, 24*60*60, FLAGS },
-    { "mono",      "check each channel separately",    OFFSET(mono),      AV_OPT_TYPE_BOOL,   {.i64=0.},             0, 1, FLAGS },
+    { "mono",      "check each channel separately",    OFFSET(mono),      AV_OPT_TYPE_BOOL,   {.i64=0.},             0, 1,        FLAGS },
+    { "m",         "check each channel separately",    OFFSET(mono),      AV_OPT_TYPE_BOOL,   {.i64=0.},             0, 1,        FLAGS },
     { NULL }
 };
 
