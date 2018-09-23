@@ -54,9 +54,6 @@ typedef struct VAAPIEncodeH265Context {
     int sei;
 
     // Derived settings.
-    unsigned int ctu_width;
-    unsigned int ctu_height;
-
     int fixed_qp_idr;
     int fixed_qp_p;
     int fixed_qp_b;
@@ -349,7 +346,8 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
 
         level = ff_h265_guess_level(ptl, avctx->bit_rate,
                                     ctx->surface_width, ctx->surface_height,
-                                    1, 1, 1, (ctx->b_per_p > 0) + 1);
+                                    ctx->nb_slices, 1, 1,
+                                    (ctx->b_per_p > 0) + 1);
         if (level) {
             av_log(avctx, AV_LOG_VERBOSE, "Using level %s.\n", level->name);
             ptl->general_level_idc = level->level_idc;
@@ -850,8 +848,6 @@ static int vaapi_encode_h265_init_picture_params(AVCodecContext *avctx,
         av_assert0(0 && "invalid picture type");
     }
 
-    pic->nb_slices = 1;
-
     return 0;
 }
 
@@ -876,9 +872,8 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
     sh->slice_pic_parameter_set_id      = pps->pps_pic_parameter_set_id;
 
-    // Currently we only support one slice per frame.
-    sh->first_slice_segment_in_pic_flag = 1;
-    sh->slice_segment_address           = 0;
+    sh->first_slice_segment_in_pic_flag = slice->index == 0;
+    sh->slice_segment_address           = slice->block_start;
 
     sh->slice_type = priv->slice_type;
 
@@ -968,7 +963,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
     *vslice = (VAEncSliceParameterBufferHEVC) {
         .slice_segment_address = sh->slice_segment_address,
-        .num_ctu_in_slice      = priv->ctu_width * priv->ctu_height,
+        .num_ctu_in_slice      = slice->block_size,
 
         .slice_type                 = sh->slice_type,
         .slice_pic_parameter_set_id = sh->slice_pic_parameter_set_id,
@@ -989,7 +984,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         .slice_tc_offset_div2   = sh->slice_tc_offset_div2,
 
         .slice_fields.bits = {
-            .last_slice_of_pic_flag       = 1,
+            .last_slice_of_pic_flag       = slice->index == pic->nb_slices - 1,
             .dependent_slice_segment_flag = sh->dependent_slice_segment_flag,
             .colour_plane_id              = sh->colour_plane_id,
             .slice_temporal_mvp_enabled_flag =
@@ -1041,13 +1036,6 @@ static av_cold int vaapi_encode_h265_configure(AVCodecContext *avctx)
     if (err < 0)
         return err;
 
-    priv->ctu_width     = FFALIGN(ctx->surface_width,  32) / 32;
-    priv->ctu_height    = FFALIGN(ctx->surface_height, 32) / 32;
-
-    av_log(avctx, AV_LOG_VERBOSE, "Input %ux%u -> Surface %ux%u -> CTU %ux%u.\n",
-           avctx->width, avctx->height, ctx->surface_width,
-           ctx->surface_height, priv->ctu_width, priv->ctu_height);
-
     if (ctx->va_rc_mode == VA_RC_CQP) {
         priv->fixed_qp_p = priv->qp;
         if (avctx->i_quant_factor > 0.0)
@@ -1091,6 +1079,8 @@ static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
 
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
     .profiles              = vaapi_encode_h265_profiles,
+
+    .flags                 = FLAG_SLICE_CONTROL,
 
     .configure             = &vaapi_encode_h265_configure,
 
@@ -1137,6 +1127,9 @@ static av_cold int vaapi_encode_h265_init(AVCodecContext *avctx)
 
     ctx->surface_width  = FFALIGN(avctx->width,  16);
     ctx->surface_height = FFALIGN(avctx->height, 16);
+
+    // CTU size is currently hard-coded to 32.
+    ctx->slice_block_width = ctx->slice_block_height = 32;
 
     return ff_vaapi_encode_init(avctx);
 }
