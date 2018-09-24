@@ -46,7 +46,7 @@ static int ivf_write_header(AVFormatContext *s)
     avio_write(pb, "DKIF", 4);
     avio_wl16(pb, 0); // version
     avio_wl16(pb, 32); // header length
-    avio_wl32(pb, par->codec_tag ? par->codec_tag :
+    avio_wl32(pb,
               par->codec_id == AV_CODEC_ID_VP9 ? AV_RL32("VP90") :
               par->codec_id == AV_CODEC_ID_VP8 ? AV_RL32("VP80") : AV_RL32("AV01"));
     avio_wl16(pb, par->width);
