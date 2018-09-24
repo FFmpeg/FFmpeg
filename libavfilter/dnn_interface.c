@@ -52,6 +52,11 @@ DNNModule *ff_get_dnn_module(DNNBackendType backend_type)
         av_freep(&dnn_module);
         return NULL;
     #endif
+        break;
+    default:
+        av_log(NULL, AV_LOG_ERROR, "Module backend_type is not native or tensorflow\n");
+        av_freep(&dnn_module);
+        return NULL;
     }
 
     return dnn_module;
