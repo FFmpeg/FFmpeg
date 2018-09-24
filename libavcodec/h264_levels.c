@@ -105,7 +105,7 @@ const H264LevelDescriptor *ff_h264_guess_level(int profile_idc,
         if (level->constraint_set3_flag && no_cs3f)
             continue;
 
-        if (bitrate > level->max_br * h264_get_br_factor(profile_idc))
+        if (bitrate > (int64_t)level->max_br * h264_get_br_factor(profile_idc))
             continue;
 
         if (width_mbs  * height_mbs > level->max_fs)
