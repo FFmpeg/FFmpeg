@@ -224,7 +224,7 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
             max_br = level->max_br_main;
         if (!max_br)
             continue;
-        if (bitrate > profile->cpb_nal_factor * hbr_factor * max_br)
+        if (bitrate > (int64_t)profile->cpb_nal_factor * hbr_factor * max_br)
             continue;
 
         if (pic_size < (level->max_luma_ps >> 2))
