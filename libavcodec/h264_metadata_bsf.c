@@ -226,10 +226,10 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
 
             if (sps->vui.nal_hrd_parameters_present_flag) {
                 bit_rate = (sps->vui.nal_hrd_parameters.bit_rate_value_minus1[0] + 1) *
-                     (1 << (sps->vui.nal_hrd_parameters.bit_rate_scale + 6));
+                    (INT64_C(1) << (sps->vui.nal_hrd_parameters.bit_rate_scale + 6));
             } else if (sps->vui.vcl_hrd_parameters_present_flag) {
                 bit_rate = (sps->vui.vcl_hrd_parameters.bit_rate_value_minus1[0] + 1) *
-                     (1 << (sps->vui.vcl_hrd_parameters.bit_rate_scale + 6));
+                    (INT64_C(1) << (sps->vui.vcl_hrd_parameters.bit_rate_scale + 6));
                 // Adjust for VCL vs. NAL limits.
                 bit_rate = bit_rate * 6 / 5;
             } else {
