@@ -135,7 +135,7 @@ static int unpack_frame(ILBCContext *s)
     frame->lsf[1] = get_bits(gb, 7);
     frame->lsf[2] = get_bits(gb, 7);
 
-    if (s->mode = 20) {
+    if (s->mode == 20) {
         frame->start          = get_bits(gb, 2);
         frame->state_first    = get_bits1(gb);
         frame->ifm            = get_bits(gb, 6);
