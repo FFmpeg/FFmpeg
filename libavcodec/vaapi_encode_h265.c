@@ -293,6 +293,7 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
         } else {
             av_log(avctx, AV_LOG_ERROR, "Chroma format of input pixel format "
                    "%s is not supported.\n", desc->name);
+            return AVERROR(EINVAL);
         }
     }
     bit_depth = desc->comp[0].depth;
