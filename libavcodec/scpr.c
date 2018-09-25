@@ -516,7 +516,7 @@ static int decompress_p(AVCodecContext *avctx,
     int backstep = linesize - avctx->width;
 
     if (bytestream2_get_byte(gb) == 0)
-        return 0;
+        return 1;
     bytestream2_skip(gb, 1);
     init_rangecoder(&s->rc, gb);
 
@@ -813,6 +813,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                            s->current_frame->linesize[0] / 4,
                            (uint32_t *)s->last_frame->data[0],
                            s->last_frame->linesize[0] / 4);
+        if (ret == 1)
+            return avpkt->size;
     } else {
         return AVERROR_PATCHWELCOME;
     }
