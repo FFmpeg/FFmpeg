@@ -113,6 +113,8 @@ static int decode_frame(AVCodecContext *avctx,
             bytestream2_skip(&bgb, 4);
             w = bytestream2_get_le16(&bgb);
             h = bytestream2_get_le16(&bgb);
+            if (x + bpp * (int64_t)w * h > INT_MAX)
+                return AVERROR_INVALIDDATA;
             x += bpp * w * h;
         }
 
@@ -140,6 +142,8 @@ static int decode_frame(AVCodecContext *avctx,
             bytestream2_skip(&gb, 4);
             w = bytestream2_get_le16(&gb);
             h = bytestream2_get_le16(&gb);
+            if (x + bpp * (int64_t)w * h > INT_MAX)
+                return AVERROR_INVALIDDATA;
             x += bpp * w * h;
         }
 
