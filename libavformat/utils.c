@@ -3489,13 +3489,9 @@ static int extract_extradata_init(AVStream *st)
 
     i->extract_extradata.bsf->time_base_in = st->time_base;
 
-    /* if init fails here, we assume extracting extradata is just not
-     * supported for this codec, so we return success */
     ret = av_bsf_init(i->extract_extradata.bsf);
-    if (ret < 0) {
-        av_bsf_free(&i->extract_extradata.bsf);
-        ret = 0;
-    }
+    if (ret < 0)
+        goto fail;
 
 finish:
     i->extract_extradata.inited = 1;
