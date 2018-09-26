@@ -691,6 +691,7 @@ static int config_input(AVFilterLink *inlink)
         case SHELLAC_NOISE:
             for (i = 0; i < 15; i++)
                 dnch->band_noise[i] = get_band_noise(s, i, 1.0, 500.0, 1.0E10) + FFMAX(i - 12, -5);
+            break;
         case CUSTOM_NOISE:
             read_custom_noise(s, ch);
             break;
