@@ -3544,7 +3544,9 @@ static int extract_extradata(AVStream *st, AVPacket *pkt)
                                             &extradata_size);
 
         if (extradata) {
-            sti->avctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+            av_assert0(!sti->avctx->extradata);
+            if ((unsigned)extradata_size < FF_MAX_EXTRADATA_SIZE)
+                sti->avctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!sti->avctx->extradata) {
                 av_packet_unref(pkt_ref);
                 return AVERROR(ENOMEM);
