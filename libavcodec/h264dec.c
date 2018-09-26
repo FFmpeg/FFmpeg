@@ -657,11 +657,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 goto end;
             }
             if(!idr_cleared) {
-                if (h->current_slice && (avctx->active_thread_type & FF_THREAD_SLICE)) {
-                    av_log(h, AV_LOG_ERROR, "invalid mixed IDR / non IDR frames cannot be decoded in slice multithreading mode\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto end;
-                }
                 idr(h); // FIXME ensure we don't lose some frames if there is reordering
             }
             idr_cleared = 1;
