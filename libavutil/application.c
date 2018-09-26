@@ -231,3 +231,29 @@ void av_application_on_dash_info(AVApplicationContext *h, int event_type, AVAppD
     if (h && h->func_on_app_event)
         h->func_on_app_event(h, event_type, (void *)info, sizeof(AVAppDashChange));
 }
+
+void av_application_on_dns_will_open(AVApplicationContext *h, char *hostname) {
+    if (h && h->func_on_app_event) {
+        AVAppDnsEvent event = {0};
+        if (hostname != NULL) {
+            strcpy(event.host, hostname);
+        }
+        h->func_on_app_event(h, AVAPP_EVENT_WILL_DNS_OPEN, (void *)&event, sizeof(AVAppDnsEvent));
+    }
+}
+
+void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int hit_cache, int64_t dns_time) {
+    if (h && h->func_on_app_event) {
+        AVAppDnsEvent event = {0};
+        if (hostname != NULL && ip != NULL) {
+            strcpy(event.host, hostname);
+            strcpy(event.ip, ip);
+            if (!strcmp(event.host, event.ip)) {
+                event.is_ip = 1;
+            }
+            event.hit_cache = hit_cache;
+            event.dns_time = dns_time;
+        }
+        h->func_on_app_event(h, AVAPP_EVENT_DID_DNS_OPEN, (void *)&event, sizeof(AVAppDnsEvent));
+    }
+}

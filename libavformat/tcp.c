@@ -356,6 +356,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char portstr[10];
     AVAppTcpIOControl control = {0};
     DnsCacheEntry *dns_entry = NULL;
+    int64_t dns_time = 0;
 
     if (s->open_timeout < 0) {
         s->open_timeout = 15000000;
@@ -414,7 +415,8 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             dns_entry = get_dns_cache_reference(uri);
         }
     }
-
+    av_application_on_dns_will_open(s->app_ctx, hostname);
+    dns_time = av_gettime();
     if (!dns_entry) {
 #ifdef HAVE_PTHREADS
         ret = ijk_tcp_getaddrinfo_nonblock(hostname, portstr, &hints, &ai, s->addrinfo_timeout, &h->interrupt_callback, s->addrinfo_one_by_one);
@@ -439,6 +441,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         av_log(NULL, AV_LOG_INFO, "hit dns cache uri = %s\n", uri);
         cur_ai = dns_entry->res;
     }
+    dns_time = (av_gettime() - dns_time) / 1000;
 
  restart:
 #if HAVE_STRUCT_SOCKADDR_IN6
@@ -516,6 +519,11 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
                 add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
                 av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
+            }
+            if (dns_entry) {
+                av_application_on_dns_did_open(s->app_ctx, hostname, control.ip, 1, dns_time);
+            } else {
+                av_application_on_dns_did_open(s->app_ctx, hostname, control.ip, 0, dns_time);
             }
             av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
         }

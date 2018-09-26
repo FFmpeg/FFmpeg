@@ -29,6 +29,9 @@
 #define AVAPP_EVENT_WILL_HTTP_SEEK  3 //AVAppHttpEvent
 #define AVAPP_EVENT_DID_HTTP_SEEK   4 //AVAppHttpEvent
 
+#define AVAPP_EVENT_WILL_DNS_OPEN  5 //AVAppDnsEvent
+#define AVAPP_EVENT_DID_DNS_OPEN   6 //AVAppDnsEvent
+
 #define AVAPP_EVENT_ASYNC_STATISTIC     0x11000 //AVAppAsyncStatistic
 #define AVAPP_EVENT_ASYNC_READ_SPEED    0x11001 //AVAppAsyncReadSpeed
 #define AVAPP_EVENT_IO_TRAFFIC          0x12204 //AVAppIOTraffic
@@ -156,6 +159,15 @@ typedef struct AVAppSwitchControl{
     void * opaque;
 } AVAppSwitchControl;
 
+typedef struct AVAppDnsEvent
+{
+    char host[1024];
+    char ip[96];
+    int  is_ip;
+    int  hit_cache;
+    int64_t  dns_time;
+} AVAppDnsEvent;
+
 typedef struct AVApplicationContext AVApplicationContext;
 struct AVApplicationContext {
     const AVClass *av_class;    /**< information for av_log(). Set by av_application_open(). */
@@ -194,5 +206,7 @@ void av_application_on_async_read_speed(AVApplicationContext *h, AVAppAsyncReadS
 
 void av_application_on_dash_info(AVApplicationContext *h, int event_type, AVAppDashChange *info);
 
+void av_application_on_dns_will_open(AVApplicationContext *h, char *hostname);
+void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int hit_cache, int64_t dns_time);
 
 #endif /* AVUTIL_APPLICATION_H */
