@@ -703,6 +703,16 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         return S_OK;
     }
 
+    // Drop the frames till system's timestamp aligns with the configured value.
+    if (0 == ctx->frameCount && cctx->timestamp_align) {
+        AVRational remainder = av_make_q(av_gettime() % cctx->timestamp_align, 1000000);
+        AVRational frame_duration = av_inv_q(ctx->video_st->r_frame_rate);
+        if (av_cmp_q(remainder, frame_duration) > 0) {
+            ++ctx->dropped;
+            return S_OK;
+        }
+    }
+
     ctx->frameCount++;
     if (ctx->audio_pts_source == PTS_SRC_WALLCLOCK || ctx->video_pts_source == PTS_SRC_WALLCLOCK)
         wallclock = av_gettime_relative();

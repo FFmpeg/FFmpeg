@@ -56,6 +56,7 @@ struct decklink_cctx {
     int raw_format;
     int64_t queue_size;
     int copyts;
+    int64_t timestamp_align;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */

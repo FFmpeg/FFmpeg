@@ -371,6 +371,20 @@ If set to @option{true}, timestamps are forwarded as they are without removing
 the initial offset.
 Defaults to @option{false}.
 
+@item timestamp_align
+Capture start time alignment in seconds. If set to nonzero, input frames are
+dropped till the system timestamp aligns with configured value.
+Alignment difference of upto one frame duration is tolerated.
+This is useful for maintaining input synchronization across N different
+hardware devices deployed for 'N-way' redundancy. The system time of different
+hardware devices should be synchronized with protocols such as NTP or PTP,
+before using this option.
+Note that this method is not foolproof. In some border cases input
+synchronization may not happen due to thread scheduling jitters in the OS.
+Either sync could go wrong by 1 frame or in a rarer case
+@option{timestamp_align} seconds.
+Defaults to @samp{0}.
+
 @end table
 
 @subsection Examples
