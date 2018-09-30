@@ -74,7 +74,7 @@ static av_cold int gdv_decode_init(AVCodecContext *avctx)
 
 static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, int scale_h)
 {
-    int i, j, y, x;
+    int j, y, x;
 
     if ((gdv->scale_v == scale_v) && (gdv->scale_h == scale_h)) {
         return;
