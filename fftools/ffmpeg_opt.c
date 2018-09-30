@@ -1149,8 +1149,10 @@ static int open_input_file(OptionsContext *o, const char *filename)
             int dts_heuristic = 0;
             for (i=0; i<ic->nb_streams; i++) {
                 const AVCodecParameters *par = ic->streams[i]->codecpar;
-                if (par->video_delay)
+                if (par->video_delay) {
                     dts_heuristic = 1;
+                    break;
+                }
             }
             if (dts_heuristic) {
                 seek_timestamp -= 3*AV_TIME_BASE / 23;
