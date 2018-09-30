@@ -315,7 +315,7 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         }
     }
 
-    is_dummy_buf = (is_dummy_buf && (dummy_buf == buf));
+    is_dummy_buf &= (dummy_buf == buf);
 
     if (!is_dummy_buf)
         parse_nal_units(s, buf, buf_size, avctx);
