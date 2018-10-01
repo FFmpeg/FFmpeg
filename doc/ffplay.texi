@@ -74,6 +74,10 @@ as 100.
 Force format.
 @item -window_title @var{title}
 Set window title (default is the input filename).
+@item -left @var{title}
+Set the x position for the left of the window (default is a centered window).
+@item -top @var{title}
+Set the y position for the top of the window (default is a centered window).
 @item -loop @var{number}
 Loops movie playback <number> times. 0 means forever.
 @item -showmode @var{mode}
