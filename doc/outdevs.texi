@@ -398,6 +398,10 @@ Set the SDL window size, can be a string of the form
 If not specified it defaults to the size of the input video,
 downscaled according to the aspect ratio.
 
+@item window_x
+@item window_y
+Set the position of the window on the screen.
+
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
 Default value is zero.

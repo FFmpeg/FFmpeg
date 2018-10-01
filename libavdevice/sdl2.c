@@ -40,6 +40,7 @@ typedef struct {
     SDL_Renderer *renderer;
     char *window_title;
     int window_width, window_height;  /**< size of the window */
+    int window_x, window_y;           /**< position of the window */
     int window_fullscreen;
     int window_borderless;
     int enable_quit_action;
@@ -155,8 +156,6 @@ static int sdl2_write_trailer(AVFormatContext *s)
     return 0;
 }
 
-#define SDL_BASE_FLAGS (SDL_SWSURFACE|SDL_WINDOW_RESIZABLE)
-
 static int sdl2_write_header(AVFormatContext *s)
 {
     SDLContext *sdl = s->priv_data;
@@ -196,8 +195,9 @@ static int sdl2_write_header(AVFormatContext *s)
     }
 
     /* resize texture to width and height from the codec context information */
-    flags = SDL_BASE_FLAGS | (sdl->window_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
-                             (sdl->window_borderless ? SDL_WINDOW_BORDERLESS : 0);
+    flags = SDL_WINDOW_HIDDEN |
+            (sdl->window_fullscreen ? SDL_WINDOW_FULLSCREEN : 0) |
+            (sdl->window_borderless ? SDL_WINDOW_BORDERLESS : SDL_WINDOW_RESIZABLE);
 
     /* initialization */
     if (!sdl->inited){
@@ -216,6 +216,8 @@ static int sdl2_write_header(AVFormatContext *s)
     }
 
     SDL_SetWindowTitle(sdl->window, sdl->window_title);
+    SDL_SetWindowPosition(sdl->window, sdl->window_x, sdl->window_y);
+    SDL_ShowWindow(sdl->window);
 
     sdl->texture = SDL_CreateTexture(sdl->renderer, sdl->texture_fmt, SDL_TEXTUREACCESS_STREAMING,
                                      codecpar->width, codecpar->height);
@@ -337,6 +339,8 @@ static int sdl2_write_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption options[] = {
     { "window_title",      "set SDL window title",       OFFSET(window_title), AV_OPT_TYPE_STRING,     { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size",       "set SDL window forced size", OFFSET(window_width), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_x",          "set SDL window x position",  OFFSET(window_x),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_y",          "set SDL window y position",  OFFSET(window_y),     AV_OPT_TYPE_INT,        { .i64 = SDL_WINDOWPOS_CENTERED }, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_fullscreen", "set SDL window fullscreen",  OFFSET(window_fullscreen), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_borderless", "set SDL window border off",  OFFSET(window_borderless), AV_OPT_TYPE_BOOL,  { .i64 = 0 },    0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_enable_quit", "set if quit action is available", OFFSET(enable_quit_action), AV_OPT_TYPE_INT, {.i64=1},   0, 1, AV_OPT_FLAG_ENCODING_PARAM },
