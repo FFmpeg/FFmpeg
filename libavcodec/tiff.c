@@ -1303,6 +1303,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     planes = s->planar ? s->bppcount : 1;
     for (plane = 0; plane < planes; plane++) {
+        int remaining = avpkt->size;
         stride = p->linesize[plane];
         dst = p->data[plane];
         for (i = 0; i < s->height; i += s->rps) {
@@ -1318,10 +1319,11 @@ static int decode_frame(AVCodecContext *avctx,
             else
                 soff = s->stripoff;
 
-            if (soff > avpkt->size || ssize > avpkt->size - soff) {
+            if (soff > avpkt->size || ssize > avpkt->size - soff || ssize > remaining) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
                 return AVERROR_INVALIDDATA;
             }
+            remaining -= ssize;
             if ((ret = tiff_unpack_strip(s, p, dst, stride, avpkt->data + soff, ssize, i,
                                          FFMIN(s->rps, s->height - i))) < 0) {
                 if (avctx->err_recognition & AV_EF_EXPLODE)
