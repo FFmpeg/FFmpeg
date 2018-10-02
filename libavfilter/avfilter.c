@@ -1458,6 +1458,11 @@ int ff_inlink_check_available_frame(AVFilterLink *link)
     return ff_framequeue_queued_frames(&link->fifo) > 0;
 }
 
+int ff_inlink_queued_samples(AVFilterLink *link)
+{
+    return ff_framequeue_queued_samples(&link->fifo);
+}
+
 int ff_inlink_check_available_samples(AVFilterLink *link, unsigned min)
 {
     uint64_t samples = ff_framequeue_queued_samples(&link->fifo);
