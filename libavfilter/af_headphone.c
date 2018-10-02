@@ -20,7 +20,6 @@
 
 #include <math.h>
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
@@ -79,7 +78,6 @@ typedef struct HeadphoneContext {
 
     AVFloatDSPContext *fdsp;
     struct headphone_inputs {
-        AVAudioFifo *fifo;
         AVFrame     *frame;
         int          ir_len;
         int          delay_l;
@@ -328,20 +326,13 @@ static int headphone_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     return 0;
 }
 
-static int read_ir(AVFilterLink *inlink, int input_number, AVFrame *frame)
+static int check_ir(AVFilterLink *inlink, int input_number)
 {
     AVFilterContext *ctx = inlink->dst;
     HeadphoneContext *s = ctx->priv;
-    int ir_len, max_ir_len, ret;
+    int ir_len, max_ir_len;
 
-    ret = av_audio_fifo_write(s->in[input_number].fifo, (void **)frame->extended_data,
-                             frame->nb_samples);
-    av_frame_free(&frame);
-
-    if (ret < 0)
-        return ret;
-
-    ir_len = av_audio_fifo_size(s->in[input_number].fifo);
+    ir_len = ff_inlink_queued_samples(inlink);
     max_ir_len = 65536;
     if (ir_len > max_ir_len) {
         av_log(ctx, AV_LOG_ERROR, "Too big length of IRs: %d > %d.\n", ir_len, max_ir_len);
@@ -457,14 +448,6 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         goto fail;
     }
 
-    for (i = 0; i < s->nb_inputs - 1; i++) {
-        s->in[i + 1].frame = ff_get_audio_buffer(ctx->inputs[i + 1], s->ir_len);
-        if (!s->in[i + 1].frame) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-    }
-
     if (s->type == TIME_DOMAIN) {
         s->temp_src[0] = av_calloc(FFALIGN(ir_len, 16), sizeof(float));
         s->temp_src[1] = av_calloc(FFALIGN(ir_len, 16), sizeof(float));
@@ -490,7 +473,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
         int delay_r = s->in[i + 1].delay_r;
         float *ptr;
 
-        av_audio_fifo_read(s->in[i + 1].fifo, (void **)s->in[i + 1].frame->extended_data, len);
+        ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &s->in[i + 1].frame);
+        if (ret < 0)
+            return ret;
         ptr = (float *)s->in[i + 1].frame->extended_data[0];
 
         if (s->hrir_fmt == HRIR_STEREO) {
@@ -577,6 +562,8 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
                 }
             }
         }
+
+        av_frame_free(&s->in[i + 1].frame);
     }
 
     if (s->type == TIME_DOMAIN) {
@@ -623,27 +610,15 @@ static int activate(AVFilterContext *ctx)
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
     if (!s->eof_hrirs) {
         for (i = 1; i < s->nb_inputs; i++) {
-            AVFrame *ir = NULL;
-            int64_t pts;
-            int status;
-
             if (s->in[i].eof)
                 continue;
 
-            if ((ret = ff_inlink_consume_frame(ctx->inputs[i], &ir)) > 0) {
-                ret = read_ir(ctx->inputs[i], i, ir);
-                if (ret < 0)
-                    return ret;
-            }
-            if (ret < 0)
+            if ((ret = check_ir(ctx->inputs[i], i)) < 0)
                 return ret;
 
             if (!s->in[i].eof) {
-                if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {
-                    if (status == AVERROR_EOF) {
-                        s->in[i].eof = 1;
-                    }
-                }
+                if (ff_outlink_get_status(ctx->inputs[i]) == AVERROR_EOF)
+                    s->in[i].eof = 1;
             }
         }
 
@@ -659,6 +634,7 @@ static int activate(AVFilterContext *ctx)
                         ff_inlink_request_frame(ctx->inputs[i]);
                 }
             }
+
             return 0;
         } else {
             s->eof_hrirs = 1;
@@ -803,7 +779,6 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     HeadphoneContext *s = ctx->priv;
     AVFilterLink *inlink = ctx->inputs[0];
-    int i;
 
     if (s->hrir_fmt == HRIR_MULTI) {
         AVFilterLink *hrir_link = ctx->inputs[1];
@@ -814,11 +789,6 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    for (i = 0; i < s->nb_inputs; i++) {
-        s->in[i].fifo = av_audio_fifo_alloc(ctx->inputs[i]->format, ctx->inputs[i]->channels, 1024);
-        if (!s->in[i].fifo)
-            return AVERROR(ENOMEM);
-    }
     s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
 
     return 0;
@@ -848,8 +818,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fdsp);
 
     for (i = 0; i < s->nb_inputs; i++) {
-        av_frame_free(&s->in[i].frame);
-        av_audio_fifo_free(s->in[i].fifo);
         if (ctx->input_pads && i)
             av_freep(&ctx->input_pads[i].name);
     }
