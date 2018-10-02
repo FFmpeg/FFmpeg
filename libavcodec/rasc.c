@@ -95,10 +95,10 @@ static int init_frames(AVCodecContext *avctx)
     int ret;
 
     av_frame_unref(s->frame1);
+    av_frame_unref(s->frame2);
     if ((ret = ff_get_buffer(avctx, s->frame1, 0)) < 0)
         return ret;
 
-    av_frame_unref(s->frame2);
     if ((ret = ff_get_buffer(avctx, s->frame2, 0)) < 0)
         return ret;
 
