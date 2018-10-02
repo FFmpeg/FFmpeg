@@ -272,9 +272,9 @@ static int decode_move(AVCodecContext *avctx,
         if (!s->frame2->data[0] || !s->frame1->data[0])
             return AVERROR_INVALIDDATA;
 
-        b1 = s->frame1->data[0] + s->frame1->linesize[0] * (start_y + h) + start_x * s->bpp;
-        b2 = s->frame2->data[0] + s->frame2->linesize[0] * (start_y + h) + start_x * s->bpp;
-        e2 = s->frame2->data[0] + s->frame2->linesize[0] * (mov_y + h) + mov_x * s->bpp;
+        b1 = s->frame1->data[0] + s->frame1->linesize[0] * (start_y + h - 1) + start_x * s->bpp;
+        b2 = s->frame2->data[0] + s->frame2->linesize[0] * (start_y + h - 1) + start_x * s->bpp;
+        e2 = s->frame2->data[0] + s->frame2->linesize[0] * (mov_y + h - 1) + mov_x * s->bpp;
 
         if (type == 2) {
             for (int j = 0; j < h; j++) {
