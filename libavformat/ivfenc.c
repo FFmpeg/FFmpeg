@@ -97,6 +97,8 @@ static int ivf_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_VP9)
         ret = ff_stream_add_bitstream_filter(st, "vp9_superframe", NULL);
+    else if (st->codecpar->codec_id == AV_CODEC_ID_AV1)
+        ret = ff_stream_add_bitstream_filter(st, "av1_metadata", "td=insert");
 
     return ret;
 }
