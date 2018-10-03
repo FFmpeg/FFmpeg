@@ -25,7 +25,6 @@
 
 #include <float.h>
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/intreadwrite.h"
@@ -279,10 +278,10 @@ end:
 static int convert_coeffs(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
-    int i, ch, n, N;
+    int ret, i, ch, n, N;
     float power = 0;
 
-    s->nb_taps = av_audio_fifo_size(s->fifo);
+    s->nb_taps = ff_inlink_queued_samples(ctx->inputs[1]);
     if (s->nb_taps <= 0)
         return AVERROR(EINVAL);
 
@@ -321,15 +320,15 @@ static int convert_coeffs(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
     }
 
-    s->in[1] = ff_get_audio_buffer(ctx->inputs[1], s->nb_taps);
-    if (!s->in[1])
-        return AVERROR(ENOMEM);
-
     s->buffer = ff_get_audio_buffer(ctx->inputs[0], s->part_size * 3);
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
-    av_audio_fifo_read(s->fifo, (void **)s->in[1]->extended_data, s->nb_taps);
+    ret = ff_inlink_consume_samples(ctx->inputs[1], s->nb_taps, s->nb_taps, &s->in[1]);
+    if (ret < 0)
+        return ret;
+    if (ret == 0)
+        return AVERROR_BUG;
 
     if (s->response)
         draw_response(ctx, s->video);
@@ -421,19 +420,13 @@ static int convert_coeffs(AVFilterContext *ctx)
     return 0;
 }
 
-static int read_ir(AVFilterLink *link, AVFrame *frame)
+static int check_ir(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *ctx = link->dst;
     AudioFIRContext *s = ctx->priv;
-    int nb_taps, max_nb_taps, ret;
+    int nb_taps, max_nb_taps;
 
-    ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data,
-                             frame->nb_samples);
-    av_frame_free(&frame);
-    if (ret < 0)
-        return ret;
-
-    nb_taps = av_audio_fifo_size(s->fifo);
+    nb_taps = ff_inlink_queued_samples(link);
     max_nb_taps = s->max_ir_len * ctx->outputs[0]->sample_rate;
     if (nb_taps > max_nb_taps) {
         av_log(ctx, AV_LOG_ERROR, "Too big number of coefficients: %d > %d.\n", nb_taps, max_nb_taps);
@@ -457,19 +450,12 @@ static int activate(AVFilterContext *ctx)
     if (!s->eof_coeffs) {
         AVFrame *ir = NULL;
 
-        if ((ret = ff_inlink_consume_frame(ctx->inputs[1], &ir)) > 0) {
-            ret = read_ir(ctx->inputs[1], ir);
-            if (ret < 0)
-                return ret;
-        }
+        ret = check_ir(ctx->inputs[1], ir);
         if (ret < 0)
             return ret;
 
-        if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
-            if (status == AVERROR_EOF) {
-                s->eof_coeffs = 1;
-            }
-        }
+        if (ff_outlink_get_status(ctx->inputs[1]) == AVERROR_EOF)
+            s->eof_coeffs = 1;
 
         if (!s->eof_coeffs) {
             if (ff_outlink_frame_wanted(ctx->outputs[0]))
@@ -593,10 +579,6 @@ static int config_output(AVFilterLink *outlink)
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
 
-    s->fifo = av_audio_fifo_alloc(ctx->inputs[1]->format, ctx->inputs[1]->channels, 1024);
-    if (!s->fifo)
-        return AVERROR(ENOMEM);
-
     s->sum = av_calloc(outlink->channels, sizeof(*s->sum));
     s->coeff = av_calloc(ctx->inputs[1]->channels, sizeof(*s->coeff));
     s->block = av_calloc(ctx->inputs[0]->channels, sizeof(*s->block));
@@ -656,8 +638,6 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_frame_free(&s->in[1]);
     av_frame_free(&s->buffer);
-
-    av_audio_fifo_free(s->fifo);
 
     av_freep(&s->fdsp);
 
