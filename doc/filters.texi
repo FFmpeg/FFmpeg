@@ -1147,7 +1147,7 @@ afftfilt="1-clip((b/nb)*b,0,1)"
 Apply an arbitrary Frequency Impulse Response filter.
 
 This filter is designed for applying long FIR filters,
-up to 30 seconds long.
+up to 60 seconds long.
 
 It can be used as component for digital crossover filters,
 room equalization, cross talk cancellation, wavefield synthesis,
@@ -1172,7 +1172,26 @@ Set wet gain. This sets final output gain.
 Set Impulse Response filter length. Default is 1, which means whole IR is processed.
 
 @item again
-Enable applying gain measured from power of IR.
+Enable applying gain measured from power of IR. For approach to use for measuring power
+of IR see next option.
+
+@item gtype
+Set which approach to use for auto gain measurement.
+
+@table @option
+@item peak
+select peak gain, very conservative approach. This is default value.
+
+@item dc
+select DC gain, limited application.
+
+@item gn
+select gain to noise approach, this is most popular one.
+@end table
+
+@item irgain
+Set gain to be applied to IR coefficients before filtering.
+Allowed range is 0 to 1. This can be set even with @var{again} used.
 
 @item maxir
 Set max allowed Impulse Response filter duration in seconds. Default is 30 seconds.
