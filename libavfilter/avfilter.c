@@ -1370,7 +1370,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
      and request_frame() to acknowledge status changes), to run once more
      and check if enough input was present for several frames.
 
-   Exemples of scenarios to consider:
+   Examples of scenarios to consider:
 
    - buffersrc: activate if frame_wanted_out to notify the application;
      activate when the application adds a frame to push it immediately.
@@ -1396,7 +1396,7 @@ static int ff_filter_activate_default(AVFilterContext *filter)
    - If an input has frames in fifo and frame_wanted_out == 0, dequeue a
      frame and call filter_frame().
 
-     Ratinale: filter frames as soon as possible instead of leaving them
+     Rationale: filter frames as soon as possible instead of leaving them
      queued; frame_wanted_out < 0 is not possible since the old API does not
      set it nor provides any similar feedback; frame_wanted_out > 0 happens
      when min_samples > 0 and there are not enough samples queued.
