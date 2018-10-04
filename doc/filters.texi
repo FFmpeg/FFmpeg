@@ -20719,6 +20719,12 @@ Set which data to display. Can be @code{magnitude}, default or @code{phase}.
 @item rotation
 Set color rotation, must be in [-1.0, 1.0] range.
 Default value is @code{0}.
+
+@item start
+Set start frequency from which to display spectrogram. Default is @code{0}.
+
+@item stop
+Set stop frequency to which to display spectrogram. Default is @code{0}.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that
