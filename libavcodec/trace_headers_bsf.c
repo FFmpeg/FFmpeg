@@ -49,15 +49,11 @@ static int trace_headers_init(AVBSFContext *bsf)
         av_log(bsf, AV_LOG_INFO, "Extradata\n");
 
         err = ff_cbs_read_extradata(ctx->cbc, &ps, bsf->par_in);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
-            return err;
-        }
 
         ff_cbs_fragment_uninit(ctx->cbc, &ps);
     }
 
-    return 0;
+    return err;
 }
 
 static void trace_headers_close(AVBSFContext *bsf)
@@ -97,14 +93,12 @@ static int trace_headers(AVBSFContext *bsf, AVPacket *pkt)
     av_log(bsf, AV_LOG_INFO, "Packet: %d bytes%s.\n", pkt->size, tmp);
 
     err = ff_cbs_read_packet(ctx->cbc, &au, pkt);
-    if (err < 0) {
-        av_packet_unref(pkt);
-        return err;
-    }
 
     ff_cbs_fragment_uninit(ctx->cbc, &au);
 
-    return 0;
+    if (err < 0)
+        av_packet_unref(pkt);
+    return err;
 }
 
 const AVBitStreamFilter ff_trace_headers_bsf = {
