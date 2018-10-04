@@ -86,13 +86,9 @@ static int av1_metadata_update_sequence_header(AVBSFContext *bsf,
     }
 
     if (ctx->chroma_sample_position >= 0) {
-        if (clc->mono_chrome) {
+        if (clc->mono_chrome || !clc->subsampling_x || !clc->subsampling_y) {
             av_log(bsf, AV_LOG_WARNING, "Warning: chroma_sample_position "
-                   "is not meaningful for monochrome streams.\n");
-        } else if (clc->subsampling_x == 0 &&
-                   clc->subsampling_y == 0) {
-            av_log(bsf, AV_LOG_WARNING, "Warning: chroma_sample_position "
-                   "is not meaningful for non-chroma-subsampled streams.\n");
+                   "can only be set for 4:2:0 streams.\n");
         } else {
             clc->chroma_sample_position = ctx->chroma_sample_position;
         }
