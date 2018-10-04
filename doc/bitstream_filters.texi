@@ -37,6 +37,58 @@ raw ADTS AAC or an MPEG-TS container to MP4A-LATM, to an FLV file, or
 to MOV/MP4 files and related formats such as 3GP or M4A. Please note
 that it is auto-inserted for MP4A-LATM and MOV/MP4 and related formats.
 
+@section av1_metadata
+
+Modify metadata embedded in an AV1 stream.
+
+@table @option
+@item td
+Insert or remove temporal delimiter OBUs in all temporal units of the
+stream.
+
+@table @samp
+@item insert
+Insert a TD at the beginning of every TU which does not already have one.
+@item remove
+Remove the TD from the beginning of every TU which has one.
+@end table
+
+@item color_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the color description fields in the stream (see AV1 section 6.4.2).
+
+@item color_range
+Set the color range in the stream (see AV1 section 6.4.2; note that
+this cannot be set for streams using BT.709 primaries, sRGB transfer
+characteristic and identity (RGB) matrix coefficients).
+@table @samp
+@item tv
+Limited range.
+@item pc
+Full range.
+@end table
+
+@item chroma_sample_position
+Set the chroma sample location in the stream (see AV1 section 6.4.2).
+This can only be set for 4:2:0 streams.
+
+@table @samp
+@item vertical
+Left position (matching the default in MPEG-2 and H.264).
+@item colocated
+Top-left position.
+@end table
+
+@item tick_rate
+Set the tick rate (@emph{num_units_in_display_tick / time_scale}) in
+the timing info in the sequence header.
+@item num_ticks_per_picture
+Set the number of ticks in each picture, to indicate that the stream
+has a fixed framerate.  Ignored if @option{tick_rate} is not also set.
+
+@end table
+
 @section chomp
 
 Remove zero padding at the end of a packet.
