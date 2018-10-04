@@ -1193,6 +1193,10 @@ select gain to noise approach, this is most popular one.
 Set gain to be applied to IR coefficients before filtering.
 Allowed range is 0 to 1. This can be set even with @var{again} used.
 
+@item irfmt
+Set format of IR stream. Can be @code{mono} or @code{input}.
+Default is @code{input}.
+
 @item maxir
 Set max allowed Impulse Response filter duration in seconds. Default is 30 seconds.
 Allowed range is 0.1 to 60 seconds.

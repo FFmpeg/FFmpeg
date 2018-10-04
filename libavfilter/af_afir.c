@@ -533,7 +533,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,
         AV_PIX_FMT_NONE
     };
-    int ret, i;
+    int ret;
 
     if (s->response) {
         AVFilterLink *videolink = ctx->outputs[1];
@@ -543,12 +543,25 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     layouts = ff_all_channel_counts();
-    if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
-        return ret;
+    if (!layouts)
+        return AVERROR(ENOMEM);
 
-    for (i = 0; i < 2; i++) {
-        layouts = ff_all_channel_counts();
-        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[i]->out_channel_layouts)) < 0)
+    if (s->ir_format) {
+        ret = ff_set_common_channel_layouts(ctx, layouts);
+        if (ret < 0)
+            return ret;
+    } else {
+        AVFilterChannelLayouts *mono = NULL;
+
+        ret = ff_add_channel_layout(&mono, AV_CH_LAYOUT_MONO);
+        if (ret)
+            return ret;
+
+        if ((ret = ff_channel_layouts_ref(layouts, &ctx->inputs[0]->out_channel_layouts)) < 0)
+            return ret;
+        if ((ret = ff_channel_layouts_ref(layouts, &ctx->outputs[0]->in_channel_layouts)) < 0)
+            return ret;
+        if ((ret = ff_channel_layouts_ref(mono, &ctx->inputs[1]->out_channel_layouts)) < 0)
             return ret;
     }
 
@@ -564,14 +577,6 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioFIRContext *s = ctx->priv;
-
-    if (ctx->inputs[0]->channels != ctx->inputs[1]->channels &&
-        ctx->inputs[1]->channels != 1) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Second input must have same number of channels as first input or "
-               "exactly 1 channel.\n");
-        return AVERROR(EINVAL);
-    }
 
     s->one2many = ctx->inputs[1]->channels == 1;
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
@@ -739,6 +744,9 @@ static const AVOption afir_options[] = {
     {  "dc",    "DC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF, "gtype" },
     {  "gn",    "gain to noise",     0,                  AV_OPT_TYPE_CONST, {.i64=2},    0,  0, AF, "gtype" },
     { "irgain", "set IR gain",       OFFSET(ir_gain),    AV_OPT_TYPE_FLOAT, {.dbl=1},    0,  1, AF },
+    { "irfmt",  "set IR format",     OFFSET(ir_format),  AV_OPT_TYPE_INT,   {.i64=1},    0,  1, AF, "irfmt" },
+    {  "mono",  "single channel",    0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF, "irfmt" },
+    {  "input", "same as input",     0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF, "irfmt" },
     { "maxir",  "set max IR length", OFFSET(max_ir_len), AV_OPT_TYPE_FLOAT, {.dbl=30}, 0.1, 60, AF },
     { "response", "show IR frequency response", OFFSET(response), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
