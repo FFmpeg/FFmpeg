@@ -340,12 +340,12 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
         FFTComplex *h = s->fft_scratch[ch];
         int L = s->buf_size;
         int N = s->win_size;
-        int M = s->win_size;
+        int M = s->win_size / 2;
 
-        phi = 2.0 * M_PI * (s->stop - s->start) / (double)inlink->sample_rate / (s->win_size - 1);
+        phi = 2.0 * M_PI * (s->stop - s->start) / (double)inlink->sample_rate / (M - 1);
         theta = 2.0 * M_PI * s->start / (double)inlink->sample_rate;
 
-        for (int n = 0; n < s->win_size; n++) {
+        for (int n = 0; n < M; n++) {
             h[n].re = cos(n * n / 2.0 * phi);
             h[n].im = sin(n * n / 2.0 * phi);
         }
