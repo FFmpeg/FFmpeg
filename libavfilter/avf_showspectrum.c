@@ -1128,6 +1128,8 @@ static const AVOption showspectrumpic_options[] = {
     { "gain", "set scale gain", OFFSET(gain), AV_OPT_TYPE_FLOAT, {.dbl = 1}, 0, 128, FLAGS },
     { "legend", "draw legend", OFFSET(legend), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
+    { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
+    { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { NULL }
 };
 
@@ -1240,6 +1242,11 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
 
             drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
             drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
+            if (s->stop) {
+                char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+                drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
+                av_freep(&text);
+            }
 
             av_freep(&text);
 
@@ -1283,7 +1290,8 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (y = 0; y < h; y += 40) {
-                        float hertz = y * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(h)));
+                        float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
+                        float hertz = s->start + y * range / (float)(1 << (int)ceil(log2(h)));
                         char *units;
 
                         if (hertz == 0)
@@ -1348,7 +1356,8 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
                         dst[x] = 200;
                     }
                     for (x = 0; x < w - 79; x += 80) {
-                        float hertz = x * (inlink->sample_rate / 2) / (float)(1 << (int)ceil(log2(w)));
+                        float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
+                        float hertz = s->start + x * range / (float)(1 << (int)ceil(log2(w)));
                         char *units;
 
                         if (hertz == 0)
