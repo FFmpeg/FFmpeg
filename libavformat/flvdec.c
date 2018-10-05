@@ -143,7 +143,9 @@ static AVStream *create_stream(AVFormatContext *s, int codec_type)
     st->codecpar->codec_type = codec_type;
     if (s->nb_streams>=3 ||(   s->nb_streams==2
                            && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE
-                           && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE))
+                           && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE
+                           && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_DATA
+                           && s->streams[1]->codecpar->codec_type != AVMEDIA_TYPE_DATA))
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     if (codec_type == AVMEDIA_TYPE_AUDIO) {
         st->codecpar->bit_rate = flv->audio_bit_rate;
@@ -1001,7 +1003,7 @@ retry:
                 int type;
                 meta_pos = avio_tell(s->pb);
                 type = flv_read_metabody(s, next);
-                if (type == 0 && dts == 0 || type < 0 || type == TYPE_UNKNOWN) {
+                if (type == 0 && dts == 0 || type < 0) {
                     if (type < 0 && flv->validate_count &&
                         flv->validate_index[0].pos     > next &&
                         flv->validate_index[0].pos - 4 < next
@@ -1015,6 +1017,8 @@ retry:
                     return flv_data_packet(s, pkt, dts, next);
                 } else if (type == TYPE_ONCAPTION) {
                     return flv_data_packet(s, pkt, dts, next);
+                } else if (type == TYPE_UNKNOWN) {
+                    stream_type = FLV_STREAM_TYPE_DATA;
                 }
                 avio_seek(s->pb, meta_pos, SEEK_SET);
             }
@@ -1054,10 +1058,13 @@ skip:
             } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
                     break;
+            } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+                if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+                    break;
             }
         }
         if (i == s->nb_streams) {
-            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE};
+            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_DATA};
             st = create_stream(s, stream_types[stream_type]);
             if (!st)
                 return AVERROR(ENOMEM);
@@ -1153,6 +1160,8 @@ retry_duration:
         size -= ret;
     } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
         st->codecpar->codec_id = AV_CODEC_ID_TEXT;
+    } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+        st->codecpar->codec_id = AV_CODEC_ID_NONE; // Opaque AMF data
     }
 
     if (st->codecpar->codec_id == AV_CODEC_ID_AAC ||
@@ -1253,7 +1262,8 @@ retry_duration:
 
     if (    stream_type == FLV_STREAM_TYPE_AUDIO ||
             ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY) ||
-            stream_type == FLV_STREAM_TYPE_SUBTITLE)
+            stream_type == FLV_STREAM_TYPE_SUBTITLE ||
+            stream_type == FLV_STREAM_TYPE_DATA)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
 leave:
