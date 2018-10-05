@@ -996,7 +996,7 @@ retry:
             if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
                 goto skip;
         } else if (type == FLV_TAG_TYPE_META) {
-            stream_type=FLV_STREAM_TYPE_DATA;
+            stream_type=FLV_STREAM_TYPE_SUBTITLE;
             if (size > 13 + 1 + 4) { // Header-type metadata stuff
                 int type;
                 meta_pos = avio_tell(s->pb);
@@ -1051,7 +1051,7 @@ skip:
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                     (s->video_codec_id || flv_same_video_codec(st->codecpar, flags)))
                     break;
-            } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+            } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
                 if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
                     break;
             }
@@ -1151,7 +1151,7 @@ retry_duration:
         if (ret < 0)
             return ret;
         size -= ret;
-    } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+    } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
         st->codecpar->codec_id = AV_CODEC_ID_TEXT;
     }
 
@@ -1253,7 +1253,7 @@ retry_duration:
 
     if (    stream_type == FLV_STREAM_TYPE_AUDIO ||
             ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY) ||
-            stream_type == FLV_STREAM_TYPE_DATA)
+            stream_type == FLV_STREAM_TYPE_SUBTITLE)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
 leave:
