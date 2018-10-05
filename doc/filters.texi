@@ -20640,6 +20640,8 @@ each channel is displayed using the fruit color scheme
 each channel is displayed using the cool color scheme
 @item magma
 each channel is displayed using the magma color scheme
+@item green
+each channel is displayed using the green color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -20797,6 +20799,8 @@ each channel is displayed using the fruit color scheme
 each channel is displayed using the cool color scheme
 @item magma
 each channel is displayed using the magma color scheme
+@item green
+each channel is displayed using the green color scheme
 @end table
 Default value is @samp{intensity}.
 
