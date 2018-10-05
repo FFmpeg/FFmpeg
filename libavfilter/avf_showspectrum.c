@@ -446,7 +446,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
     if (s->legend) {
-        s->start_x = log10(inlink->sample_rate) * 25;
+        s->start_x = (log10(inlink->sample_rate) + 1) * 25;
         s->start_y = 64;
         outlink->w += s->start_x * 2;
         outlink->h += s->start_y * 2;
