@@ -725,7 +725,7 @@ static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext 
     *payload_size = i + current->data_length;
 #endif
 
-    allocate(current->data, current->data_length);
+    allocate(current->data, current->data_length + AV_INPUT_BUFFER_PADDING_SIZE);
     for (j = 0; j < current->data_length; j++)
         xu(8, itu_t_t35_payload_byte[i], current->data[j], 0x00, 0xff, 1, i + j);
 
