@@ -135,6 +135,8 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
+    avctx->internal->skip_samples = s->frame_len * 2;
+
     return 0;
 }
 
@@ -829,7 +831,20 @@ static int wma_decode_superframe(AVCodecContext *avctx, void *data,
     ff_tlog(avctx, "***decode_superframe:\n");
 
     if (buf_size == 0) {
+        if (s->eof_done)
+            return 0;
+
+        frame->nb_samples = s->frame_len;
+        if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+            return ret;
+
+        for (i = 0; i < s->avctx->channels; i++)
+            memcpy(frame->extended_data[i], &s->frame_out[i][0],
+                   frame->nb_samples * sizeof(s->frame_out[i][0]));
+
         s->last_superframe_len = 0;
+        s->eof_done = 1;
+        *got_frame_ptr = 1;
         return 0;
     }
     if (buf_size < avctx->block_align) {
@@ -975,6 +990,9 @@ static av_cold void flush(AVCodecContext *avctx)
 
     s->last_bitoffset      =
     s->last_superframe_len = 0;
+
+    s->eof_done = 0;
+    avctx->internal->skip_samples = s->frame_len * 2;
 }
 
 #if CONFIG_WMAV1_DECODER
@@ -988,7 +1006,7 @@ const AVCodec ff_wmav1_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
@@ -1005,7 +1023,7 @@ const AVCodec ff_wmav2_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
-    .capabilities   = AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
