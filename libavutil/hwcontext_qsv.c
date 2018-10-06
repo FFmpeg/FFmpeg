@@ -833,7 +833,7 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     mfxSyncPoint sync = NULL;
     mfxStatus err;
-    int ret;
+    int ret = 0;
 
     while (!s->session_upload_init && !s->session_upload && !ret) {
 #if HAVE_PTHREADS
