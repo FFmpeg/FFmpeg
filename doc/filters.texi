@@ -20727,6 +20727,9 @@ Set start frequency from which to display spectrogram. Default is @code{0}.
 
 @item stop
 Set stop frequency to which to display spectrogram. Default is @code{0}.
+
+@item fps
+Set upper frame rate limit. Default is @code{auto}, unlimited.
 @end table
 
 The usage is very similar to the showwaves filter; see the examples in that

@@ -34,10 +34,12 @@
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/xga_font_data.h"
 #include "audio.h"
 #include "video.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "window_func.h"
 
@@ -51,6 +53,9 @@ enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 typedef struct ShowSpectrumContext {
     const AVClass *class;
     int w, h;
+    char *rate_str;
+    AVRational auto_frame_rate;
+    AVRational frame_rate;
     AVFrame *outpicref;
     int nb_display_channels;
     int orientation;
@@ -79,11 +84,13 @@ typedef struct ShowSpectrumContext {
     double win_scale;
     float overlap;
     float gain;
+    int consumed;
     int hop_size;
     float *combine_buffer;      ///< color combining buffer (3 * h items)
     float **color_buffer;       ///< color buffer (3 * h * ch items)
     AVAudioFifo *fifo;
     int64_t pts;
+    int64_t old_pts;
     int single_pic;
     int legend;
     int start_x, start_y;
@@ -155,6 +162,7 @@ static const AVOption showspectrum_options[] = {
     { "rotation", "color rotation", OFFSET(rotation), AV_OPT_TYPE_FLOAT, {.dbl = 0}, -1, 1, FLAGS },
     { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
+    { "fps",   "set video rate",  OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = "auto"}, 0, 0, FLAGS },
     { NULL }
 };
 
@@ -436,8 +444,6 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(EINVAL);
     }
 
-    s->pts = AV_NOPTS_VALUE;
-
     if (!strcmp(ctx->filter->name, "showspectrumpic"))
         s->single_pic = 1;
 
@@ -602,11 +608,20 @@ static int config_output(AVFilterLink *outlink)
         (s->orientation == HORIZONTAL && s->xpos >= s->h))
         s->xpos = 0;
 
-    outlink->frame_rate = av_make_q(inlink->sample_rate, s->win_size * (1.-s->overlap));
+    s->auto_frame_rate = av_make_q(inlink->sample_rate, s->hop_size);
     if (s->orientation == VERTICAL && s->sliding == FULLFRAME)
-        outlink->frame_rate.den *= s->w;
+        s->auto_frame_rate.den *= s->w;
     if (s->orientation == HORIZONTAL && s->sliding == FULLFRAME)
-        outlink->frame_rate.den *= s->h;
+        s->auto_frame_rate.den *= s->h;
+    if (!s->single_pic && strcmp(s->rate_str, "auto")) {
+        int ret = av_parse_video_rate(&s->frame_rate, s->rate_str);
+        if (ret < 0)
+            return ret;
+    } else {
+        s->frame_rate = s->auto_frame_rate;
+    }
+    outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     if (s->orientation == VERTICAL) {
         s->combine_buffer =
@@ -945,7 +960,7 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     }
 
     if (s->sliding != FULLFRAME || s->xpos == 0)
-        outpicref->pts = insamples->pts;
+        outpicref->pts = av_rescale_q(insamples->pts, inlink->time_base, outlink->time_base);
 
     s->xpos++;
     if (s->orientation == VERTICAL && s->xpos >= s->w)
@@ -953,70 +968,57 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
     if (s->orientation == HORIZONTAL && s->xpos >= s->h)
         s->xpos = 0;
     if (!s->single_pic && (s->sliding != FULLFRAME || s->xpos == 0)) {
-        ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
-        if (ret < 0)
-            return ret;
+        if (s->old_pts < outpicref->pts) {
+            s->old_pts = outpicref->pts;
+            ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
+            if (ret < 0)
+                return ret;
+            return 0;
+        }
     }
 
-    return s->win_size;
+    return 1;
 }
 
 #if CONFIG_SHOWSPECTRUM_FILTER
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    ShowSpectrumContext *s = outlink->src->priv;
-    AVFilterLink *inlink = outlink->src->inputs[0];
-    unsigned i;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    ShowSpectrumContext *s = ctx->priv;
     int ret;
 
-    ret = ff_request_frame(inlink);
-    if (ret == AVERROR_EOF && s->sliding == FULLFRAME && s->xpos > 0 &&
-        s->outpicref) {
-        if (s->orientation == VERTICAL) {
-            for (i = 0; i < outlink->h; i++) {
-                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
-                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
-                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
-            }
-        } else {
-            for (i = s->xpos; i < outlink->h; i++) {
-                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0],   0, outlink->w);
-                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1], 128, outlink->w);
-                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2], 128, outlink->w);
-            }
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (av_audio_fifo_size(s->fifo) < s->win_size) {
+        AVFrame *frame = NULL;
+
+        ret = ff_inlink_consume_frame(inlink, &frame);
+        if (ret < 0)
+            return ret;
+        if (ret > 0) {
+            s->pts = frame->pts;
+            s->consumed = 0;
+
+            av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
+            av_frame_free(&frame);
         }
-        ret = ff_filter_frame(outlink, s->outpicref);
-        s->outpicref = NULL;
     }
 
-    return ret;
-}
+    if (s->outpicref && av_audio_fifo_size(s->fifo) >= s->win_size) {
+        AVFrame *fin = ff_get_audio_buffer(inlink, s->win_size);
+        if (!fin)
+            return AVERROR(ENOMEM);
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
-{
-    AVFilterContext *ctx = inlink->dst;
-    ShowSpectrumContext *s = ctx->priv;
-    AVFrame *fin = NULL;
-    int ret = 0, consumed = 0;
-
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = insamples->pts - av_audio_fifo_size(s->fifo);
-
-    av_audio_fifo_write(s->fifo, (void **)insamples->extended_data, insamples->nb_samples);
-    av_frame_free(&insamples);
-    while (av_audio_fifo_size(s->fifo) >= s->win_size) {
-        fin = ff_get_audio_buffer(inlink, s->win_size);
-        if (!fin) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
+        fin->pts = s->pts + s->consumed;
+        s->consumed += s->hop_size;
+        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data,
+                                 FFMIN(s->win_size, av_audio_fifo_size(s->fifo)));
+        if (ret < 0) {
+            av_frame_free(&fin);
+            return ret;
         }
-
-        fin->pts = s->pts + consumed;
-        consumed += s->hop_size;
-        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
-        if (ret < 0)
-            goto fail;
 
         av_assert0(fin->nb_samples == s->win_size);
 
@@ -1031,21 +1033,53 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
         ret = plot_spectrum_column(inlink, fin);
         av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->hop_size);
-        if (ret < 0)
-            goto fail;
+        if (ret <= 0)
+            return ret;
     }
 
-fail:
-    s->pts = AV_NOPTS_VALUE;
-    av_frame_free(&fin);
-    return ret;
+    if (ff_outlink_get_status(inlink) == AVERROR_EOF &&
+        s->sliding == FULLFRAME &&
+        s->xpos > 0 && s->outpicref) {
+        int64_t pts;
+
+        if (s->orientation == VERTICAL) {
+            for (int i = 0; i < outlink->h; i++) {
+                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0] + s->xpos,   0, outlink->w - s->xpos);
+                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1] + s->xpos, 128, outlink->w - s->xpos);
+                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2] + s->xpos, 128, outlink->w - s->xpos);
+            }
+        } else {
+            for (int i = s->xpos; i < outlink->h; i++) {
+                memset(s->outpicref->data[0] + i * s->outpicref->linesize[0],   0, outlink->w);
+                memset(s->outpicref->data[1] + i * s->outpicref->linesize[1], 128, outlink->w);
+                memset(s->outpicref->data[2] + i * s->outpicref->linesize[2], 128, outlink->w);
+            }
+        }
+        s->outpicref->pts += s->consumed;
+        pts = s->outpicref->pts;
+        ret = ff_filter_frame(outlink, s->outpicref);
+        s->outpicref = NULL;
+        ff_outlink_set_status(outlink, AVERROR_EOF, pts);
+        return 0;
+    }
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    if (ff_outlink_frame_wanted(outlink) && av_audio_fifo_size(s->fifo) < s->win_size) {
+        ff_inlink_request_frame(inlink);
+        return 0;
+    }
+
+    if (av_audio_fifo_size(s->fifo) >= s->win_size) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
+    }
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad showspectrum_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -1055,7 +1089,6 @@ static const AVFilterPad showspectrum_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -1068,6 +1101,7 @@ AVFilter ff_avf_showspectrum = {
     .priv_size     = sizeof(ShowSpectrumContext),
     .inputs        = showspectrum_inputs,
     .outputs       = showspectrum_outputs,
+    .activate      = activate,
     .priv_class    = &showspectrum_class,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
 };
