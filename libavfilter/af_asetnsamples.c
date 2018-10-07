@@ -71,8 +71,10 @@ static int activate(AVFilterContext *ctx)
             return ff_filter_frame(outlink, frame);
 
         pad_frame = ff_get_audio_buffer(outlink, s->nb_out_samples);
-        if (!pad_frame)
+        if (!pad_frame) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
 
         av_samples_copy(pad_frame->extended_data, frame->extended_data,
                         0, 0, frame->nb_samples, frame->channels, frame->format);
