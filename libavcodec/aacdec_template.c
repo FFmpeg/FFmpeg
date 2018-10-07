@@ -3161,12 +3161,15 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 
         if (elem_type < TYPE_DSE) {
             if (che_presence[elem_type][elem_id]) {
-                av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d duplicate\n",
+                int error = che_presence[elem_type][elem_id] > 1;
+                av_log(ac->avctx, error ? AV_LOG_ERROR : AV_LOG_DEBUG, "channel element %d.%d duplicate\n",
                        elem_type, elem_id);
-                err = AVERROR_INVALIDDATA;
-                goto fail;
+                if (error) {
+                    err = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
             }
-            che_presence[elem_type][elem_id] = 1;
+            che_presence[elem_type][elem_id]++;
 
             if (!(che=get_che(ac, elem_type, elem_id))) {
                 av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n",
