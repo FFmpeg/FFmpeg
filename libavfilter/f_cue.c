@@ -51,7 +51,9 @@ static int activate(AVFilterContext *ctx)
         }
         if (s->status == 1) {
             if (pts - s->first_pts < s->preroll) {
-                ff_inlink_consume_frame(inlink, &frame);
+                int ret = ff_inlink_consume_frame(inlink, &frame);
+                if (ret < 0)
+                    return ret;
                 return ff_filter_frame(outlink, frame);
             }
             s->first_pts = pts;
@@ -70,7 +72,9 @@ static int activate(AVFilterContext *ctx)
             s->status++;
         }
         if (s->status == 4) {
-            ff_inlink_consume_frame(inlink, &frame);
+            int ret = ff_inlink_consume_frame(inlink, &frame);
+            if (ret < 0)
+                return ret;
             return ff_filter_frame(outlink, frame);
         }
     }
