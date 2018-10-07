@@ -955,6 +955,8 @@ select inverted half of sine wave
 select double-exponential seat
 @item desi
 select double-exponential sigmoid
+@item losi
+select logistic sigmoid
 @end table
 @end table
 
