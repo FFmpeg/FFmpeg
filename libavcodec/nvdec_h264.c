@@ -166,7 +166,7 @@ static int nvdec_h264_frame_params(AVCodecContext *avctx,
 {
     const H264Context *h = avctx->priv_data;
     const SPS       *sps = h->ps.sps;
-    return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->ref_frame_count + sps->num_reorder_frames);
+    return ff_nvdec_frame_params(avctx, hw_frames_ctx, sps->ref_frame_count + sps->num_reorder_frames, 0);
 }
 
 const AVHWAccel ff_h264_nvdec_hwaccel = {

@@ -298,7 +298,7 @@ int ff_nvdec_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Unsupported chroma format\n");
         return AVERROR(ENOSYS);
     }
-    chroma_444 = cuvid_chroma_format == cudaVideoChromaFormat_444;
+    chroma_444 = ctx->supports_444 && cuvid_chroma_format == cudaVideoChromaFormat_444;
 
     if (!avctx->hw_frames_ctx) {
         ret = ff_decode_get_hw_frames_ctx(avctx, AV_HWDEVICE_TYPE_CUDA);
@@ -587,7 +587,8 @@ static AVBufferRef *nvdec_alloc_dummy(int size)
 
 int ff_nvdec_frame_params(AVCodecContext *avctx,
                           AVBufferRef *hw_frames_ctx,
-                          int dpb_size)
+                          int dpb_size,
+                          int supports_444)
 {
     AVHWFramesContext *frames_ctx = (AVHWFramesContext*)hw_frames_ctx->data;
     const AVPixFmtDescriptor *sw_desc;
@@ -608,7 +609,7 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_VERBOSE, "Unsupported chroma format\n");
         return AVERROR(EINVAL);
     }
-    chroma_444 = cuvid_chroma_format == cudaVideoChromaFormat_444;
+    chroma_444 = supports_444 && cuvid_chroma_format == cudaVideoChromaFormat_444;
 
     frames_ctx->format            = AV_PIX_FMT_CUDA;
     frames_ctx->width             = (avctx->coded_width + 1) & ~1;

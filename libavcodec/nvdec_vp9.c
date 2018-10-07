@@ -166,7 +166,7 @@ static int nvdec_vp9_frame_params(AVCodecContext *avctx,
                                   AVBufferRef *hw_frames_ctx)
 {
     // VP9 uses a fixed size pool of 8 possible reference frames
-    return ff_nvdec_frame_params(avctx, hw_frames_ctx, 8);
+    return ff_nvdec_frame_params(avctx, hw_frames_ctx, 8, 0);
 }
 
 const AVHWAccel ff_vp9_nvdec_hwaccel = {
