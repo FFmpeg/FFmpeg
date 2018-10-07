@@ -91,6 +91,7 @@ typedef struct ShowSpectrumContext {
     AVAudioFifo *fifo;
     int64_t pts;
     int64_t old_pts;
+    int old_len;
     int single_pic;
     int legend;
     int start_x, start_y;
@@ -163,6 +164,7 @@ static const AVOption showspectrum_options[] = {
     { "start", "start frequency", OFFSET(start), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "stop",  "stop frequency",  OFFSET(stop),  AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT32_MAX, FLAGS },
     { "fps",   "set video rate",  OFFSET(rate_str), AV_OPT_TYPE_STRING, {.str = "auto"}, 0, 0, FLAGS },
+    { "legend", "draw legend", OFFSET(legend), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, FLAGS },
     { NULL }
 };
 
@@ -430,6 +432,346 @@ static int run_channel_fft(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
     return 0;
 }
 
+static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
+{
+    const uint8_t *font;
+    int font_height;
+    int i;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (i = 0; txt[i]; i++) {
+        int char_y, mask;
+
+        if (o) {
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
+                uint8_t *p = pic->data[0] + (y + i * 10) * pic->linesize[0] + x;
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
+                        p[char_y] = ~p[char_y];
+                    p += pic->linesize[0];
+                }
+            }
+        } else {
+            uint8_t *p = pic->data[0] + y*pic->linesize[0] + (x + i*8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        *p = ~(*p);
+                    p++;
+                }
+                p += pic->linesize[0] - 8;
+            }
+        }
+    }
+}
+
+static void color_range(ShowSpectrumContext *s, int ch,
+                        float *yf, float *uf, float *vf)
+{
+    switch (s->mode) {
+    case COMBINED:
+        // reduce range by channel count
+        *yf = 256.0f / s->nb_display_channels;
+        switch (s->color_mode) {
+        case RAINBOW:
+        case MORELAND:
+        case NEBULAE:
+        case FIRE:
+        case FIERY:
+        case FRUIT:
+        case COOL:
+        case GREEN:
+        case MAGMA:
+        case INTENSITY:
+            *uf = *yf;
+            *vf = *yf;
+            break;
+        case CHANNEL:
+            /* adjust saturation for mixed UV coloring */
+            /* this factor is correct for infinite channels, an approximation otherwise */
+            *uf = *yf * M_PI;
+            *vf = *yf * M_PI;
+            break;
+        default:
+            av_assert0(0);
+        }
+        break;
+    case SEPARATE:
+        // full range
+        *yf = 256.0f;
+        *uf = 256.0f;
+        *vf = 256.0f;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    if (s->color_mode == CHANNEL) {
+        if (s->nb_display_channels > 1) {
+            *uf *= 0.5 * sin((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
+            *vf *= 0.5 * cos((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
+        } else {
+            *uf *= 0.5 * sin(M_PI * s->rotation);
+            *vf *= 0.5 * cos(M_PI * s->rotation + M_PI_2);
+        }
+    } else {
+        *uf += *uf * sin(M_PI * s->rotation);
+        *vf += *vf * cos(M_PI * s->rotation + M_PI_2);
+    }
+
+    *uf *= s->saturation;
+    *vf *= s->saturation;
+}
+
+static void pick_color(ShowSpectrumContext *s,
+                       float yf, float uf, float vf,
+                       float a, float *out)
+{
+    if (s->color_mode > CHANNEL) {
+        const int cm = s->color_mode;
+        float y, u, v;
+        int i;
+
+        for (i = 1; i < FF_ARRAY_ELEMS(color_table[cm]) - 1; i++)
+            if (color_table[cm][i].a >= a)
+                break;
+        // i now is the first item >= the color
+        // now we know to interpolate between item i - 1 and i
+        if (a <= color_table[cm][i - 1].a) {
+            y = color_table[cm][i - 1].y;
+            u = color_table[cm][i - 1].u;
+            v = color_table[cm][i - 1].v;
+        } else if (a >= color_table[cm][i].a) {
+            y = color_table[cm][i].y;
+            u = color_table[cm][i].u;
+            v = color_table[cm][i].v;
+        } else {
+            float start = color_table[cm][i - 1].a;
+            float end = color_table[cm][i].a;
+            float lerpfrac = (a - start) / (end - start);
+            y = color_table[cm][i - 1].y * (1.0f - lerpfrac)
+              + color_table[cm][i].y * lerpfrac;
+            u = color_table[cm][i - 1].u * (1.0f - lerpfrac)
+              + color_table[cm][i].u * lerpfrac;
+            v = color_table[cm][i - 1].v * (1.0f - lerpfrac)
+              + color_table[cm][i].v * lerpfrac;
+        }
+
+        out[0] = y * yf;
+        out[1] = u * uf;
+        out[2] = v * vf;
+    } else {
+        out[0] = a * yf;
+        out[1] = a * uf;
+        out[2] = a * vf;
+    }
+}
+
+static char *get_time(AVFilterContext *ctx, float seconds, int x)
+{
+    char *units;
+
+    if (x == 0)
+        units = av_asprintf("0");
+    else if (log10(seconds) > 6)
+        units = av_asprintf("%.2fh", seconds / (60 * 60));
+    else if (log10(seconds) > 3)
+        units = av_asprintf("%.2fm", seconds / 60);
+    else
+        units = av_asprintf("%.2fs", seconds);
+    return units;
+}
+
+static int draw_legend(AVFilterContext *ctx, int samples)
+{
+    ShowSpectrumContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    int ch, y, x = 0, sz = s->orientation == VERTICAL ? s->w : s->h;
+    int multi = (s->mode == SEPARATE && s->color_mode == CHANNEL);
+    float spp = samples / (float)sz;
+    char *text;
+    uint8_t *dst;
+    char chlayout_str[128];
+
+    av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), inlink->channels,
+                                 inlink->channel_layout);
+
+    text = av_asprintf("%d Hz | %s", inlink->sample_rate, chlayout_str);
+
+    drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
+    drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
+    if (s->stop) {
+        char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+        drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
+        av_freep(&text);
+    }
+
+    av_freep(&text);
+
+    dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
+    for (x = 0; x < s->w + 1; x++)
+        dst[x] = 200;
+    dst = s->outpicref->data[0] + (s->start_y + s->h) * s->outpicref->linesize[0] + s->start_x - 1;
+    for (x = 0; x < s->w + 1; x++)
+        dst[x] = 200;
+    for (y = 0; y < s->h + 2; y++) {
+        dst = s->outpicref->data[0] + (y + s->start_y - 1) * s->outpicref->linesize[0];
+        dst[s->start_x - 1] = 200;
+        dst[s->start_x + s->w] = 200;
+    }
+    if (s->orientation == VERTICAL) {
+        int h = s->mode == SEPARATE ? s->h / s->nb_display_channels : s->h;
+        int hh = s->mode == SEPARATE ? -(s->h % s->nb_display_channels) + 1 : 1;
+        for (ch = 0; ch < (s->mode == SEPARATE ? s->nb_display_channels : 1); ch++) {
+            for (y = 0; y < h; y += 20) {
+                dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
+                dst[s->start_x - 2] = 200;
+                dst[s->start_x + s->w + 1] = 200;
+            }
+            for (y = 0; y < h; y += 40) {
+                dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
+                dst[s->start_x - 3] = 200;
+                dst[s->start_x + s->w + 2] = 200;
+            }
+            dst = s->outpicref->data[0] + (s->start_y - 2) * s->outpicref->linesize[0] + s->start_x;
+            for (x = 0; x < s->w; x+=40)
+                dst[x] = 200;
+            dst = s->outpicref->data[0] + (s->start_y - 3) * s->outpicref->linesize[0] + s->start_x;
+            for (x = 0; x < s->w; x+=80)
+                dst[x] = 200;
+            dst = s->outpicref->data[0] + (s->h + s->start_y + 1) * s->outpicref->linesize[0] + s->start_x;
+            for (x = 0; x < s->w; x+=40) {
+                dst[x] = 200;
+            }
+            dst = s->outpicref->data[0] + (s->h + s->start_y + 2) * s->outpicref->linesize[0] + s->start_x;
+            for (x = 0; x < s->w; x+=80) {
+                dst[x] = 200;
+            }
+            for (y = 0; y < h; y += 40) {
+                float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
+                float hertz = s->start + y * range / (float)(1 << (int)ceil(log2(h)));
+                char *units;
+
+                if (hertz == 0)
+                    units = av_asprintf("DC");
+                else
+                    units = av_asprintf("%.2f", hertz);
+                if (!units)
+                    return AVERROR(ENOMEM);
+
+                drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, h * (ch + 1) + s->start_y - y - 4 - hh, units, 0);
+                av_free(units);
+            }
+        }
+
+        for (x = 0; x < s->w && s->single_pic; x+=80) {
+            float seconds = x * spp / inlink->sample_rate;
+            char *units = get_time(ctx, seconds, x);
+
+            drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->h + s->start_y + 6, units, 0);
+            drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->start_y - 12, units, 0);
+            av_free(units);
+        }
+
+        drawtext(s->outpicref, outlink->w / 2 - 4 * 4, outlink->h - s->start_y / 2, "TIME", 0);
+        drawtext(s->outpicref, s->start_x / 7, outlink->h / 2 - 14 * 4, "FREQUENCY (Hz)", 1);
+    } else {
+        int w = s->mode == SEPARATE ? s->w / s->nb_display_channels : s->w;
+        for (y = 0; y < s->h; y += 20) {
+            dst = s->outpicref->data[0] + (s->start_y + y) * s->outpicref->linesize[0];
+            dst[s->start_x - 2] = 200;
+            dst[s->start_x + s->w + 1] = 200;
+        }
+        for (y = 0; y < s->h; y += 40) {
+            dst = s->outpicref->data[0] + (s->start_y + y) * s->outpicref->linesize[0];
+            dst[s->start_x - 3] = 200;
+            dst[s->start_x + s->w + 2] = 200;
+        }
+        for (ch = 0; ch < (s->mode == SEPARATE ? s->nb_display_channels : 1); ch++) {
+            dst = s->outpicref->data[0] + (s->start_y - 2) * s->outpicref->linesize[0] + s->start_x + w * ch;
+            for (x = 0; x < w; x+=40)
+                dst[x] = 200;
+            dst = s->outpicref->data[0] + (s->start_y - 3) * s->outpicref->linesize[0] + s->start_x + w * ch;
+            for (x = 0; x < w; x+=80)
+                dst[x] = 200;
+            dst = s->outpicref->data[0] + (s->h + s->start_y + 1) * s->outpicref->linesize[0] + s->start_x + w * ch;
+            for (x = 0; x < w; x+=40) {
+                dst[x] = 200;
+            }
+            dst = s->outpicref->data[0] + (s->h + s->start_y + 2) * s->outpicref->linesize[0] + s->start_x + w * ch;
+            for (x = 0; x < w; x+=80) {
+                dst[x] = 200;
+            }
+            for (x = 0; x < w - 79; x += 80) {
+                float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
+                float hertz = s->start + x * range / (float)(1 << (int)ceil(log2(w)));
+                char *units;
+
+                if (hertz == 0)
+                    units = av_asprintf("DC");
+                else
+                    units = av_asprintf("%.2f", hertz);
+                if (!units)
+                    return AVERROR(ENOMEM);
+
+                drawtext(s->outpicref, s->start_x - 4 * strlen(units) + x + w * ch, s->start_y - 12, units, 0);
+                drawtext(s->outpicref, s->start_x - 4 * strlen(units) + x + w * ch, s->h + s->start_y + 6, units, 0);
+                av_free(units);
+            }
+        }
+        for (y = 0; y < s->h && s->single_pic; y+=40) {
+            float seconds = y * spp / inlink->sample_rate;
+            char *units = get_time(ctx, seconds, x);
+
+            drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, s->start_y + y - 4, units, 0);
+            av_free(units);
+        }
+        drawtext(s->outpicref, s->start_x / 7, outlink->h / 2 - 4 * 4, "TIME", 1);
+        drawtext(s->outpicref, outlink->w / 2 - 14 * 4, outlink->h - s->start_y / 2, "FREQUENCY (Hz)", 0);
+    }
+
+    for (ch = 0; ch < (multi ? s->nb_display_channels : 1); ch++) {
+        int h = multi ? s->h / s->nb_display_channels : s->h;
+
+        for (y = 0; y < h; y++) {
+            float out[3] = { 0., 127.5, 127.5};
+            int chn;
+
+            for (chn = 0; chn < (s->mode == SEPARATE ? 1 : s->nb_display_channels); chn++) {
+                float yf, uf, vf;
+                int channel = (multi) ? s->nb_display_channels - ch - 1 : chn;
+                float lout[3];
+
+                color_range(s, channel, &yf, &uf, &vf);
+                pick_color(s, yf, uf, vf, y / (float)h, lout);
+                out[0] += lout[0];
+                out[1] += lout[1];
+                out[2] += lout[2];
+            }
+            memset(s->outpicref->data[0]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[0] + s->w + s->start_x + 20, av_clip_uint8(out[0]), 10);
+            memset(s->outpicref->data[1]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[1] + s->w + s->start_x + 20, av_clip_uint8(out[1]), 10);
+            memset(s->outpicref->data[2]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[2] + s->w + s->start_x + 20, av_clip_uint8(out[2]), 10);
+        }
+
+        for (y = 0; ch == 0 && y < h; y += h / 10) {
+            float value = 120.0 * log10(1. - y / (float)h);
+            char *text;
+
+            if (value < -120)
+                break;
+            text = av_asprintf("%.0f dB", value);
+            if (!text)
+                continue;
+            drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
+            av_free(text);
+        }
+    }
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -602,6 +944,9 @@ static int config_output(AVFilterLink *outlink)
             memset(outpicref->data[2] + i * outpicref->linesize[2], 128, outlink->w);
         }
         outpicref->color_range = AVCOL_RANGE_JPEG;
+
+        if (!s->single_pic && s->legend)
+            draw_legend(ctx, 0);
     }
 
     if ((s->orientation == VERTICAL   && s->xpos >= s->w) ||
@@ -700,108 +1045,6 @@ static void scale_magnitudes(ShowSpectrumContext *s, float scale)
 
         for (y = 0; y < h; y++)
             magnitudes[y] *= scale;
-    }
-}
-
-static void color_range(ShowSpectrumContext *s, int ch,
-                        float *yf, float *uf, float *vf)
-{
-    switch (s->mode) {
-    case COMBINED:
-        // reduce range by channel count
-        *yf = 256.0f / s->nb_display_channels;
-        switch (s->color_mode) {
-        case RAINBOW:
-        case MORELAND:
-        case NEBULAE:
-        case FIRE:
-        case FIERY:
-        case FRUIT:
-        case COOL:
-        case GREEN:
-        case MAGMA:
-        case INTENSITY:
-            *uf = *yf;
-            *vf = *yf;
-            break;
-        case CHANNEL:
-            /* adjust saturation for mixed UV coloring */
-            /* this factor is correct for infinite channels, an approximation otherwise */
-            *uf = *yf * M_PI;
-            *vf = *yf * M_PI;
-            break;
-        default:
-            av_assert0(0);
-        }
-        break;
-    case SEPARATE:
-        // full range
-        *yf = 256.0f;
-        *uf = 256.0f;
-        *vf = 256.0f;
-        break;
-    default:
-        av_assert0(0);
-    }
-
-    if (s->color_mode == CHANNEL) {
-        if (s->nb_display_channels > 1) {
-            *uf *= 0.5 * sin((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
-            *vf *= 0.5 * cos((2 * M_PI * ch) / s->nb_display_channels + M_PI * s->rotation);
-        } else {
-            *uf *= 0.5 * sin(M_PI * s->rotation);
-            *vf *= 0.5 * cos(M_PI * s->rotation + M_PI_2);
-        }
-    } else {
-        *uf += *uf * sin(M_PI * s->rotation);
-        *vf += *vf * cos(M_PI * s->rotation + M_PI_2);
-    }
-
-    *uf *= s->saturation;
-    *vf *= s->saturation;
-}
-
-static void pick_color(ShowSpectrumContext *s,
-                       float yf, float uf, float vf,
-                       float a, float *out)
-{
-    if (s->color_mode > CHANNEL) {
-        const int cm = s->color_mode;
-        float y, u, v;
-        int i;
-
-        for (i = 1; i < FF_ARRAY_ELEMS(color_table[cm]) - 1; i++)
-            if (color_table[cm][i].a >= a)
-                break;
-        // i now is the first item >= the color
-        // now we know to interpolate between item i - 1 and i
-        if (a <= color_table[cm][i - 1].a) {
-            y = color_table[cm][i - 1].y;
-            u = color_table[cm][i - 1].u;
-            v = color_table[cm][i - 1].v;
-        } else if (a >= color_table[cm][i].a) {
-            y = color_table[cm][i].y;
-            u = color_table[cm][i].u;
-            v = color_table[cm][i].v;
-        } else {
-            float start = color_table[cm][i - 1].a;
-            float end = color_table[cm][i].a;
-            float lerpfrac = (a - start) / (end - start);
-            y = color_table[cm][i - 1].y * (1.0f - lerpfrac)
-              + color_table[cm][i].y * lerpfrac;
-            u = color_table[cm][i - 1].u * (1.0f - lerpfrac)
-              + color_table[cm][i].u * lerpfrac;
-            v = color_table[cm][i - 1].v * (1.0f - lerpfrac)
-              + color_table[cm][i].v * lerpfrac;
-        }
-
-        out[0] = y * yf;
-        out[1] = u * uf;
-        out[2] = v * vf;
-    } else {
-        out[0] = a * yf;
-        out[1] = a * uf;
-        out[2] = a * vf;
     }
 }
 
@@ -904,8 +1147,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         if (s->sliding == SCROLL) {
             for (plane = 0; plane < 3; plane++) {
                 for (y = 0; y < s->h; y++) {
-                    uint8_t *p = outpicref->data[plane] +
-                                 y * outpicref->linesize[plane];
+                    uint8_t *p = outpicref->data[plane] + s->start_x +
+                                 (y + s->start_y) * outpicref->linesize[plane];
                     memmove(p, p + 1, s->w - 1);
                 }
             }
@@ -913,8 +1156,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         } else if (s->sliding == RSCROLL) {
             for (plane = 0; plane < 3; plane++) {
                 for (y = 0; y < s->h; y++) {
-                    uint8_t *p = outpicref->data[plane] +
-                                 y * outpicref->linesize[plane];
+                    uint8_t *p = outpicref->data[plane] + s->start_x +
+                                 (y + s->start_y) * outpicref->linesize[plane];
                     memmove(p + 1, p, s->w - 1);
                 }
             }
@@ -933,8 +1176,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         if (s->sliding == SCROLL) {
             for (plane = 0; plane < 3; plane++) {
                 for (y = 1; y < s->h; y++) {
-                    memmove(outpicref->data[plane] + (y-1) * outpicref->linesize[plane],
-                            outpicref->data[plane] + (y  ) * outpicref->linesize[plane],
+                    memmove(outpicref->data[plane] + (y-1 + s->start_y) * outpicref->linesize[plane] + s->start_x,
+                            outpicref->data[plane] + (y   + s->start_y) * outpicref->linesize[plane] + s->start_x,
                             s->w);
                 }
             }
@@ -942,8 +1185,8 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         } else if (s->sliding == RSCROLL) {
             for (plane = 0; plane < 3; plane++) {
                 for (y = s->h - 1; y >= 1; y--) {
-                    memmove(outpicref->data[plane] + (y  ) * outpicref->linesize[plane],
-                            outpicref->data[plane] + (y-1) * outpicref->linesize[plane],
+                    memmove(outpicref->data[plane] + (y   + s->start_y) * outpicref->linesize[plane] + s->start_x,
+                            outpicref->data[plane] + (y-1 + s->start_y) * outpicref->linesize[plane] + s->start_x,
                             s->w);
                 }
             }
@@ -969,6 +1212,31 @@ static int plot_spectrum_column(AVFilterLink *inlink, AVFrame *insamples)
         s->xpos = 0;
     if (!s->single_pic && (s->sliding != FULLFRAME || s->xpos == 0)) {
         if (s->old_pts < outpicref->pts) {
+            if (s->legend) {
+                char *units = get_time(ctx, insamples->pts /(float)inlink->sample_rate, x);
+
+                if (s->orientation == VERTICAL) {
+                    for (y = 0; y < 10; y++) {
+                        memset(s->outpicref->data[0] + outlink->w / 2 - 4 * s->old_len +
+                               (outlink->h - s->start_y / 2 - 20 + y) * s->outpicref->linesize[0], 0, 10 * s->old_len);
+                    }
+                    drawtext(s->outpicref,
+                             outlink->w / 2 - 4 * strlen(units),
+                             outlink->h - s->start_y / 2 - 20,
+                             units, 0);
+                } else  {
+                    for (y = 0; y < 10 * s->old_len; y++) {
+                        memset(s->outpicref->data[0] + s->start_x / 7 + 20 +
+                               (outlink->h / 2 - 4 * s->old_len + y) * s->outpicref->linesize[0], 0, 10);
+                    }
+                    drawtext(s->outpicref,
+                             s->start_x / 7 + 20,
+                             outlink->h / 2 - 4 * strlen(units),
+                             units, 1);
+                }
+                s->old_len = strlen(units);
+                av_free(units);
+            }
             s->old_pts = outpicref->pts;
             ret = ff_filter_frame(outlink, av_frame_clone(s->outpicref));
             if (ret < 0)
@@ -1031,6 +1299,7 @@ static int activate(AVFilterContext *ctx)
             ctx->internal->execute(ctx, calc_channel_phases, NULL, NULL, s->nb_display_channels);
 
         ret = plot_spectrum_column(inlink, fin);
+
         av_frame_free(&fin);
         av_audio_fifo_drain(s->fifo, s->hop_size);
         if (ret <= 0)
@@ -1169,40 +1438,6 @@ static const AVOption showspectrumpic_options[] = {
 
 AVFILTER_DEFINE_CLASS(showspectrumpic);
 
-static void drawtext(AVFrame *pic, int x, int y, const char *txt, int o)
-{
-    const uint8_t *font;
-    int font_height;
-    int i;
-
-    font = avpriv_cga_font,   font_height =  8;
-
-    for (i = 0; txt[i]; i++) {
-        int char_y, mask;
-
-        if (o) {
-            for (char_y = font_height - 1; char_y >= 0; char_y--) {
-                uint8_t *p = pic->data[0] + (y + i * 10) * pic->linesize[0] + x;
-                for (mask = 0x80; mask; mask >>= 1) {
-                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
-                        p[char_y] = ~p[char_y];
-                    p += pic->linesize[0];
-                }
-            }
-        } else {
-            uint8_t *p = pic->data[0] + y*pic->linesize[0] + (x + i*8);
-            for (char_y = 0; char_y < font_height; char_y++) {
-                for (mask = 0x80; mask; mask >>= 1) {
-                    if (font[txt[i] * font_height + char_y] & mask)
-                        *p = ~(*p);
-                    p++;
-                }
-                p += pic->linesize[0] - 8;
-            }
-        }
-    }
-}
-
 static int showspectrumpic_request_frame(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -1214,7 +1449,7 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
     samples = av_audio_fifo_size(s->fifo);
     if (ret == AVERROR_EOF && s->outpicref && samples > 0) {
         int consumed = 0;
-        int y, x = 0, sz = s->orientation == VERTICAL ? s->w : s->h;
+        int x = 0, sz = s->orientation == VERTICAL ? s->w : s->h;
         int ch, spf, spb;
         AVFrame *fin;
 
@@ -1262,209 +1497,8 @@ static int showspectrumpic_request_frame(AVFilterLink *outlink)
         av_frame_free(&fin);
         s->outpicref->pts = 0;
 
-        if (s->legend) {
-            int multi = (s->mode == SEPARATE && s->color_mode == CHANNEL);
-            float spp = samples / (float)sz;
-            char *text;
-            uint8_t *dst;
-            char chlayout_str[128];
-
-            av_get_channel_layout_string(chlayout_str, sizeof(chlayout_str), inlink->channels,
-                                         inlink->channel_layout);
-
-            text = av_asprintf("%d Hz | %s", inlink->sample_rate, chlayout_str);
-
-            drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
-            drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
-            if (s->stop) {
-                char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
-                drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
-                av_freep(&text);
-            }
-
-            av_freep(&text);
-
-            dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
-            for (x = 0; x < s->w + 1; x++)
-                dst[x] = 200;
-            dst = s->outpicref->data[0] + (s->start_y + s->h) * s->outpicref->linesize[0] + s->start_x - 1;
-            for (x = 0; x < s->w + 1; x++)
-                dst[x] = 200;
-            for (y = 0; y < s->h + 2; y++) {
-                dst = s->outpicref->data[0] + (y + s->start_y - 1) * s->outpicref->linesize[0];
-                dst[s->start_x - 1] = 200;
-                dst[s->start_x + s->w] = 200;
-            }
-            if (s->orientation == VERTICAL) {
-                int h = s->mode == SEPARATE ? s->h / s->nb_display_channels : s->h;
-                int hh = s->mode == SEPARATE ? -(s->h % s->nb_display_channels) + 1 : 1;
-                for (ch = 0; ch < (s->mode == SEPARATE ? s->nb_display_channels : 1); ch++) {
-                    for (y = 0; y < h; y += 20) {
-                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
-                        dst[s->start_x - 2] = 200;
-                        dst[s->start_x + s->w + 1] = 200;
-                    }
-                    for (y = 0; y < h; y += 40) {
-                        dst = s->outpicref->data[0] + (s->start_y + h * (ch + 1) - y - hh) * s->outpicref->linesize[0];
-                        dst[s->start_x - 3] = 200;
-                        dst[s->start_x + s->w + 2] = 200;
-                    }
-                    dst = s->outpicref->data[0] + (s->start_y - 2) * s->outpicref->linesize[0] + s->start_x;
-                    for (x = 0; x < s->w; x+=40)
-                        dst[x] = 200;
-                    dst = s->outpicref->data[0] + (s->start_y - 3) * s->outpicref->linesize[0] + s->start_x;
-                    for (x = 0; x < s->w; x+=80)
-                        dst[x] = 200;
-                    dst = s->outpicref->data[0] + (s->h + s->start_y + 1) * s->outpicref->linesize[0] + s->start_x;
-                    for (x = 0; x < s->w; x+=40) {
-                        dst[x] = 200;
-                    }
-                    dst = s->outpicref->data[0] + (s->h + s->start_y + 2) * s->outpicref->linesize[0] + s->start_x;
-                    for (x = 0; x < s->w; x+=80) {
-                        dst[x] = 200;
-                    }
-                    for (y = 0; y < h; y += 40) {
-                        float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
-                        float hertz = s->start + y * range / (float)(1 << (int)ceil(log2(h)));
-                        char *units;
-
-                        if (hertz == 0)
-                            units = av_asprintf("DC");
-                        else
-                            units = av_asprintf("%.2f", hertz);
-                        if (!units)
-                            return AVERROR(ENOMEM);
-
-                        drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, h * (ch + 1) + s->start_y - y - 4 - hh, units, 0);
-                        av_free(units);
-                    }
-                }
-
-                for (x = 0; x < s->w; x+=80) {
-                    float seconds = x * spp / inlink->sample_rate;
-                    char *units;
-
-                    if (x == 0)
-                        units = av_asprintf("0");
-                    else if (log10(seconds) > 6)
-                        units = av_asprintf("%.2fh", seconds / (60 * 60));
-                    else if (log10(seconds) > 3)
-                        units = av_asprintf("%.2fm", seconds / 60);
-                    else
-                        units = av_asprintf("%.2fs", seconds);
-                    if (!units)
-                        return AVERROR(ENOMEM);
-
-                    drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->h + s->start_y + 6, units, 0);
-                    drawtext(s->outpicref, s->start_x + x - 4 * strlen(units), s->start_y - 12, units, 0);
-                    av_free(units);
-                }
-
-                drawtext(s->outpicref, outlink->w / 2 - 4 * 4, outlink->h - s->start_y / 2, "TIME", 0);
-                drawtext(s->outpicref, s->start_x / 7, outlink->h / 2 - 14 * 4, "FREQUENCY (Hz)", 1);
-            } else {
-                int w = s->mode == SEPARATE ? s->w / s->nb_display_channels : s->w;
-                for (y = 0; y < s->h; y += 20) {
-                    dst = s->outpicref->data[0] + (s->start_y + y) * s->outpicref->linesize[0];
-                    dst[s->start_x - 2] = 200;
-                    dst[s->start_x + s->w + 1] = 200;
-                }
-                for (y = 0; y < s->h; y += 40) {
-                    dst = s->outpicref->data[0] + (s->start_y + y) * s->outpicref->linesize[0];
-                    dst[s->start_x - 3] = 200;
-                    dst[s->start_x + s->w + 2] = 200;
-                }
-                for (ch = 0; ch < (s->mode == SEPARATE ? s->nb_display_channels : 1); ch++) {
-                    dst = s->outpicref->data[0] + (s->start_y - 2) * s->outpicref->linesize[0] + s->start_x + w * ch;
-                    for (x = 0; x < w; x+=40)
-                        dst[x] = 200;
-                    dst = s->outpicref->data[0] + (s->start_y - 3) * s->outpicref->linesize[0] + s->start_x + w * ch;
-                    for (x = 0; x < w; x+=80)
-                        dst[x] = 200;
-                    dst = s->outpicref->data[0] + (s->h + s->start_y + 1) * s->outpicref->linesize[0] + s->start_x + w * ch;
-                    for (x = 0; x < w; x+=40) {
-                        dst[x] = 200;
-                    }
-                    dst = s->outpicref->data[0] + (s->h + s->start_y + 2) * s->outpicref->linesize[0] + s->start_x + w * ch;
-                    for (x = 0; x < w; x+=80) {
-                        dst[x] = 200;
-                    }
-                    for (x = 0; x < w - 79; x += 80) {
-                        float range = s->stop ? s->stop - s->start : inlink->sample_rate / 2;
-                        float hertz = s->start + x * range / (float)(1 << (int)ceil(log2(w)));
-                        char *units;
-
-                        if (hertz == 0)
-                            units = av_asprintf("DC");
-                        else
-                            units = av_asprintf("%.2f", hertz);
-                        if (!units)
-                            return AVERROR(ENOMEM);
-
-                        drawtext(s->outpicref, s->start_x - 4 * strlen(units) + x + w * ch, s->start_y - 12, units, 0);
-                        drawtext(s->outpicref, s->start_x - 4 * strlen(units) + x + w * ch, s->h + s->start_y + 6, units, 0);
-                        av_free(units);
-                    }
-                }
-                for (y = 0; y < s->h; y+=40) {
-                    float seconds = y * spp / inlink->sample_rate;
-                    char *units;
-
-                    if (x == 0)
-                        units = av_asprintf("0");
-                    else if (log10(seconds) > 6)
-                        units = av_asprintf("%.2fh", seconds / (60 * 60));
-                    else if (log10(seconds) > 3)
-                        units = av_asprintf("%.2fm", seconds / 60);
-                    else
-                        units = av_asprintf("%.2fs", seconds);
-                    if (!units)
-                        return AVERROR(ENOMEM);
-
-                    drawtext(s->outpicref, s->start_x - 8 * strlen(units) - 4, s->start_y + y - 4, units, 0);
-                    av_free(units);
-                }
-                drawtext(s->outpicref, s->start_x / 7, outlink->h / 2 - 4 * 4, "TIME", 1);
-                drawtext(s->outpicref, outlink->w / 2 - 14 * 4, outlink->h - s->start_y / 2, "FREQUENCY (Hz)", 0);
-            }
-
-            for (ch = 0; ch < (multi ? s->nb_display_channels : 1); ch++) {
-                int h = multi ? s->h / s->nb_display_channels : s->h;
-
-                for (y = 0; y < h; y++) {
-                    float out[3] = { 0., 127.5, 127.5};
-                    int chn;
-
-                    for (chn = 0; chn < (s->mode == SEPARATE ? 1 : s->nb_display_channels); chn++) {
-                        float yf, uf, vf;
-                        int channel = (multi) ? s->nb_display_channels - ch - 1 : chn;
-                        float lout[3];
-
-                        color_range(s, channel, &yf, &uf, &vf);
-                        pick_color(s, yf, uf, vf, y / (float)h, lout);
-                        out[0] += lout[0];
-                        out[1] += lout[1];
-                        out[2] += lout[2];
-                    }
-                    memset(s->outpicref->data[0]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[0] + s->w + s->start_x + 20, av_clip_uint8(out[0]), 10);
-                    memset(s->outpicref->data[1]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[1] + s->w + s->start_x + 20, av_clip_uint8(out[1]), 10);
-                    memset(s->outpicref->data[2]+(s->start_y + h * (ch + 1) - y - 1) * s->outpicref->linesize[2] + s->w + s->start_x + 20, av_clip_uint8(out[2]), 10);
-                }
-
-                for (y = 0; ch == 0 && y < h; y += h / 10) {
-                    float value = 120.0 * log10(1. - y / (float)h);
-                    char *text;
-
-                    if (value < -120)
-                        break;
-                    text = av_asprintf("%.0f dB", value);
-                    if (!text)
-                        continue;
-                    drawtext(s->outpicref, s->w + s->start_x + 35, s->start_y + y - 5, text, 0);
-                    av_free(text);
-                }
-            }
-        }
+        if (s->legend)
+            draw_legend(ctx, samples);
 
         ret = ff_filter_frame(outlink, s->outpicref);
         s->outpicref = NULL;
