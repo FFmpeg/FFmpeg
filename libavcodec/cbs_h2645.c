@@ -871,6 +871,9 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
         }
         break;
 
+    case H264_NAL_END_SEQUENCE:
+        return 0;
+
     default:
         return AVERROR(ENOSYS);
     }
