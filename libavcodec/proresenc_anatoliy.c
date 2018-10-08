@@ -49,8 +49,8 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_UNKNOWN }
 };
 
-static const int qp_start_table[4] = { 4, 1, 1, 1 };
-static const int qp_end_table[4]   = { 8, 9, 6, 6 };
+static const int qp_start_table[4] = { 8, 3, 2, 1 };
+static const int qp_end_table[4]   = { 13, 9, 6, 6 };
 static const int bitrate_table[5]  = { 1000, 2100, 3500, 5400 };
 
 static const uint8_t QMAT_LUMA[4][64] = {
