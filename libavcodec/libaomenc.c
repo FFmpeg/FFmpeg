@@ -68,6 +68,8 @@ static const char *const ctlidstr[] = {
     [AOME_SET_CQ_LEVEL]         = "AOME_SET_CQ_LEVEL",
     [AOME_SET_ENABLEAUTOALTREF] = "AOME_SET_ENABLEAUTOALTREF",
     [AOME_SET_STATIC_THRESHOLD] = "AOME_SET_STATIC_THRESHOLD",
+    [AV1E_SET_CHROMA_SUBSAMPLING_X] = "AV1E_SET_CHROMA_SUBSAMPLING_X",
+    [AV1E_SET_CHROMA_SUBSAMPLING_Y] = "AV1E_SET_CHROMA_SUBSAMPLING_Y",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -197,7 +199,7 @@ static av_cold int aom_init(AVCodecContext *avctx)
     AOMContext *ctx = avctx->priv_data;
     struct aom_codec_enc_cfg enccfg = { 0 };
     AVCPBProperties *cpb_props;
-    int res;
+    int res, h_shift, v_shift;
     const struct aom_codec_iface *iface = &aom_codec_av1_cx_algo;
 
     av_log(avctx, AV_LOG_INFO, "%s\n", aom_codec_version_str());
@@ -332,6 +334,13 @@ static av_cold int aom_init(AVCodecContext *avctx)
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     codecctl_int(avctx, AOME_SET_CQ_LEVEL, ctx->crf);
 
+    res = av_pix_fmt_get_chroma_sub_sample(avctx->pix_fmt, &h_shift, &v_shift);
+    if (res < 0)
+        return res;
+
+    codecctl_int(avctx, AV1E_SET_CHROMA_SUBSAMPLING_X, h_shift);
+    codecctl_int(avctx, AV1E_SET_CHROMA_SUBSAMPLING_Y, v_shift);
+
     // provide dummy value to initialize wrapper, values will be updated each _encode()
     aom_img_wrap(&ctx->rawimg, ff_aom_pixfmt_to_imgfmt(avctx->pix_fmt),
                  avctx->width, avctx->height, 1, (unsigned char *)1);
@@ -339,6 +348,29 @@ static av_cold int aom_init(AVCodecContext *avctx)
     cpb_props = ff_add_cpb_side_data(avctx);
     if (!cpb_props)
         return AVERROR(ENOMEM);
+
+    if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
+        aom_fixed_buf_t *seq = aom_codec_get_global_headers(&ctx->encoder);
+        if (!seq)
+            return AVERROR_UNKNOWN;
+
+        avctx->extradata = av_malloc(seq->sz + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata) {
+            free(seq->buf);
+            free(seq);
+            return AVERROR(ENOMEM);
+        }
+        avctx->extradata_size = seq->sz;
+        memcpy(avctx->extradata, seq->buf, seq->sz);
+        memset(avctx->extradata + seq->sz, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+
+        /* Doxy says: "The caller owns the memory associated with this buffer.
+         *             Memory is allocated using malloc(), and should be freed
+         *             via call to free()"
+         */
+        free(seq->buf);
+        free(seq);
+    }
 
     if (enccfg.rc_end_usage == AOM_CBR ||
         enccfg.g_pass != AOM_RC_ONE_PASS) {

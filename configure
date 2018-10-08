@@ -4664,7 +4664,13 @@ enabled cuvid             && require cuvid cuviddec.h cuvidCreateDecoder -lnvcuv
 enabled frei0r            && require_headers frei0r.h
 enabled gnutls            && require_pkg_config gnutls gnutls gnutls/gnutls.h gnutls_global_init &&
                              check_lib gmp gmp.h mpz_export -lgmp
-enabled libaom            && require_pkg_config libaom "aom >= 0.1.0" aom/aom_codec.h aom_codec_version
+enabled libaom            && {
+    enabled libaom_av1_decoder && require_pkg_config libaom_av1_decoder "aom >= 1.0.0" "aom/aom_decoder.h aom/aomdx.h" aom_codec_av1_dx
+    enabled libaom_av1_encoder && {
+        require_pkg_config libaom_av1_encoder "aom >= 1.0.0" "aom/aom_encoder.h aom/aomcx.h" aom_codec_av1_cx &&
+            require_cpp_condition libaom_av1_encoder aom/aom_encoder.h "defined AOM_FRAME_IS_INTRAONLY";
+    }
+}
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
