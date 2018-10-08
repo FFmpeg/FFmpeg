@@ -553,7 +553,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     if (avctx->profile == FF_PROFILE_PRORES_444) {
         *buf++ = 0xC2; // 444, not interlaced
     } else {
-        *buf++ = 0x83; // 422, not interlaced
+        *buf++ = 0x82; // 422, not interlaced
     }
     *buf++ = 0;
     *buf++ = pict->color_primaries;
