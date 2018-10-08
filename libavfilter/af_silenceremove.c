@@ -81,10 +81,10 @@ typedef struct SilenceRemoveContext {
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_AUDIO_PARAM
 static const AVOption silenceremove_options[] = {
     { "start_periods",   NULL, OFFSET(start_periods),   AV_OPT_TYPE_INT,      {.i64=0},     0,    9000, FLAGS },
-    { "start_duration",  NULL, OFFSET(start_duration),  AV_OPT_TYPE_DURATION, {.i64=0},     0,    9000, FLAGS },
+    { "start_duration",  NULL, OFFSET(start_duration),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, FLAGS },
     { "start_threshold", NULL, OFFSET(start_threshold), AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0, DBL_MAX, FLAGS },
     { "stop_periods",    NULL, OFFSET(stop_periods),    AV_OPT_TYPE_INT,      {.i64=0}, -9000,    9000, FLAGS },
-    { "stop_duration",   NULL, OFFSET(stop_duration),   AV_OPT_TYPE_DURATION, {.i64=0},     0,    9000, FLAGS },
+    { "stop_duration",   NULL, OFFSET(stop_duration),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, FLAGS },
     { "stop_threshold",  NULL, OFFSET(stop_threshold),  AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0, DBL_MAX, FLAGS },
     { "leave_silence",   NULL, OFFSET(leave_silence),   AV_OPT_TYPE_BOOL,     {.i64=0},     0,       1, FLAGS },
     { "detection",       NULL, OFFSET(detection),       AV_OPT_TYPE_INT,      {.i64=1},     0,       1, FLAGS, "detection" },
