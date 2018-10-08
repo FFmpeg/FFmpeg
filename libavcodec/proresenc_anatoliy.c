@@ -29,6 +29,7 @@
 #include "avcodec.h"
 #include "dct.h"
 #include "internal.h"
+#include "proresdata.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "fdctdsp.h"
@@ -51,17 +52,6 @@ static const AVProfile profiles[] = {
 static const int qp_start_table[4] = { 4, 1, 1, 1 };
 static const int qp_end_table[4]   = { 8, 9, 6, 6 };
 static const int bitrate_table[5]  = { 1000, 2100, 3500, 5400 };
-
-static const uint8_t progressive_scan[64] = {
-     0,  1,  8,  9,  2,  3, 10, 11,
-    16, 17, 24, 25, 18, 19, 26, 27,
-     4,  5, 12, 20, 13,  6,  7, 14,
-    21, 28, 29, 22, 15, 23, 30, 31,
-    32, 33, 40, 48, 41, 34, 35, 42,
-    49, 56, 57, 50, 43, 36, 37, 44,
-    51, 58, 59, 52, 45, 38, 39, 46,
-    53, 60, 61, 54, 47, 55, 62, 63
-};
 
 static const uint8_t QMAT_LUMA[4][64] = {
     {
@@ -237,7 +227,7 @@ static void encode_ac_coeffs(AVCodecContext *avctx, PutBitContext *pb,
 
     int run = 0, level, code, i, j;
     for (i = 1; i < 64; i++) {
-        int indp = progressive_scan[i];
+        int indp = ff_prores_progressive_scan[i];
         for (j = 0; j < blocks_per_slice; j++) {
             int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
             if (val) {
