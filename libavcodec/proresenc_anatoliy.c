@@ -501,9 +501,9 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_be16(&buf, avctx->height);
     *buf++ = 0x83; // {10}(422){00}{00}(frame){11}
     *buf++ = 0;
-    *buf++ = 2;
-    *buf++ = 2;
-    *buf++ = 6;
+    *buf++ = pict->color_primaries;
+    *buf++ = pict->color_trc;
+    *buf++ = pict->colorspace;
     *buf++ = 32;
     *buf++ = 0;
     *buf++ = 3;
