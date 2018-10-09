@@ -12,6 +12,10 @@ FATE_API_SAMPLES_LIBAVFORMAT-$(call DEMDEC, H264, H264) += fate-api-h264
 fate-api-h264: $(APITESTSDIR)/api-h264-test$(EXESUF)
 fate-api-h264: CMD = run $(APITESTSDIR)/api-h264-test $(TARGET_SAMPLES)/h264-conformance/SVA_NL2_E.264
 
+FATE_API_SAMPLES_LIBAVFORMAT-$(call DEMDEC, H264, H264) += fate-api-h264-slice
+fate-api-h264-slice: $(APITESTSDIR)/api-h264-slice-test$(EXESUF)
+fate-api-h264-slice: CMD = run $(APITESTSDIR)/api-h264-slice-test 2 $(TARGET_SAMPLES)/h264/crew_cif.nal api-h264-slice.h264
+
 FATE_API_LIBAVFORMAT-$(call DEMDEC, FLV, FLV) += fate-api-seek
 fate-api-seek: $(APITESTSDIR)/api-seek-test$(EXESUF) fate-lavf-flv_fmt
 fate-api-seek: CMD = run $(APITESTSDIR)/api-seek-test $(TARGET_PATH)/tests/data/lavf/lavf.flv 0 720
