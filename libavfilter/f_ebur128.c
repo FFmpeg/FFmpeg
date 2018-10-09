@@ -735,7 +735,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 loudness_3000 -= ebur128->pan_law;
             }
 
-#define LOG_FMT "M:%6.1f S:%6.1f     I:%6.1f LUFS     LRA:%6.1f LU"
+#define LOG_FMT "TARGET:%d     M:%6.1f S:%6.1f     I:%6.1f LUFS     LRA:%6.1f LU"
 
             /* push one video frame */
             if (ebur128->do_video) {
@@ -768,7 +768,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 /* draw textual info */
                 drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
                          LOG_FMT "     ", // padding to erase trailing characters
-                         loudness_400, loudness_3000,
+                         ebur128->target, loudness_400, loudness_3000,
                          ebur128->integrated_loudness, ebur128->loudness_range);
 
                 /* set pts and push frame */
@@ -811,7 +811,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
             av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
                    av_ts2timestr(pts, &outlink->time_base),
-                   loudness_400, loudness_3000,
+                   ebur128->target, loudness_400, loudness_3000,
                    ebur128->integrated_loudness, ebur128->loudness_range);
 
 #define PRINT_PEAKS(str, sp, ptype) do {                            \
