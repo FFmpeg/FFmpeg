@@ -489,8 +489,6 @@ static int ftp_list_nlst(FTPContext *s)
     return 0;
 }
 
-static int ftp_has_feature(FTPContext *s, const char *feature_name);
-
 static int ftp_list(FTPContext *s)
 {
     int ret;
