@@ -19281,7 +19281,8 @@ time graph to observe the loudness evolution. The graphic contains the logged
 message mentioned above, so it is not printed anymore when this option is set,
 unless the verbose logging is set. The main graphing area contains the
 short-term loudness (3 seconds of analysis), and the gauge on the right is for
-the momentary loudness (400 milliseconds).
+the momentary loudness (400 milliseconds), but can optionally be configured
+to instead display short-term loudness (see @var{gauge}).
 
 More information about the Loudness Recommendation EBU R128 on
 @url{http://tech.ebu.ch/loudness}.
@@ -19364,6 +19365,12 @@ Set a specific target level (in LUFS) used as relative zero in the visualization
 This parameter is optional and has a default value of -23LUFS as specified
 by EBU R128. However, material published online may prefer a level of -16LUFS
 (e.g. for use with podcasts or video platforms).
+
+@item gauge
+Set the value displayed by the gauge. Valid values are @code{momentary} and s
+@code{shortterm}. By default the momentary value will be used, but in certain
+scenarios it may be more useful to observe the short term value instead (e.g.
+live mixing).
 @end table
 
 @subsection Examples

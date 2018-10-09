@@ -143,6 +143,7 @@ typedef struct EBUR128Context {
     int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
     double pan_law;                 ///< pan law value used to calculate dual-mono measurements
     int target;                     ///< target level in LUFS used to set relative zero LU in visualization
+    int gauge_type;                 ///< whether gauge shows momentary or short
 } EBUR128Context;
 
 enum {
@@ -150,6 +151,12 @@ enum {
     PEAK_MODE_SAMPLES_PEAKS = 1<<1,
     PEAK_MODE_TRUE_PEAKS    = 1<<2,
 };
+
+enum {
+    GAUGE_TYPE_MOMENTARY = 0,
+    GAUGE_TYPE_SHORTTERM = 1,
+};
+
 
 #define OFFSET(x) offsetof(EBUR128Context, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
@@ -170,6 +177,11 @@ static const AVOption ebur128_options[] = {
     { "dualmono", "treat mono input files as dual-mono", OFFSET(dual_mono), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|F },
     { "panlaw", "set a specific pan law for dual-mono files", OFFSET(pan_law), AV_OPT_TYPE_DOUBLE, {.dbl = -3.01029995663978}, -10.0, 0.0, A|F },
     { "target", "set a specific target level in LUFS (-23 to 0)", OFFSET(target), AV_OPT_TYPE_INT, {.i64 = -23}, -23, 0, V|F },
+    { "gauge", "set gauge display type", OFFSET(gauge_type), AV_OPT_TYPE_INT, {.i64 = 0 }, GAUGE_TYPE_MOMENTARY, GAUGE_TYPE_SHORTTERM, V|F, "gaugetype" },
+        { "momentary",   "display momentary value",   0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_MOMENTARY}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "m",           "display momentary value",   0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_MOMENTARY}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "shortterm",   "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "s",           "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
     { NULL },
 };
 
@@ -741,9 +753,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             if (ebur128->do_video) {
                 int x, y, ret;
                 uint8_t *p;
+                double gauge_value;
+
+                if (ebur128->gauge_type == GAUGE_TYPE_MOMENTARY) {
+                    gauge_value = loudness_400 - ebur128->target;
+                } else {
+                    gauge_value = loudness_3000 - ebur128->target;
+                }
 
                 const int y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 - ebur128->target);
-                const int y_loudness_lu_gauge = lu_to_y(ebur128, loudness_400  - ebur128->target);
+                const int y_loudness_lu_gauge = lu_to_y(ebur128, gauge_value);
 
                 /* draw the graph using the short-term loudness */
                 p = pic->data[0] + ebur128->graph.y*pic->linesize[0] + ebur128->graph.x*3;
@@ -755,7 +774,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     p += pic->linesize[0];
                 }
 
-                /* draw the gauge using the momentary loudness */
+                /* draw the gauge using either momentary or short-term loudness */
                 p = pic->data[0] + ebur128->gauge.y*pic->linesize[0] + ebur128->gauge.x*3;
                 for (y = 0; y < ebur128->gauge.h; y++) {
                     const uint8_t *c = get_graph_color(ebur128, y_loudness_lu_gauge, y);
