@@ -19284,6 +19284,9 @@ short-term loudness (3 seconds of analysis), and the gauge on the right is for
 the momentary loudness (400 milliseconds), but can optionally be configured
 to instead display short-term loudness (see @var{gauge}).
 
+The green area marks a  +/- 1LU target range around the target loudness
+(-23LUFS by default, unless modified through @var{target}).
+
 More information about the Loudness Recommendation EBU R128 on
 @url{http://tech.ebu.ch/loudness}.
 
