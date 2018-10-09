@@ -2110,10 +2110,12 @@ static void check_decode_result(InputStream *ist, int *got_output, int ret)
     if (ret < 0 && exit_on_error)
         exit_program(1);
 
-    if (exit_on_error && *got_output && ist) {
+    if (*got_output && ist) {
         if (ist->decoded_frame->decode_error_flags || (ist->decoded_frame->flags & AV_FRAME_FLAG_CORRUPT)) {
-            av_log(NULL, AV_LOG_FATAL, "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->url, ist->st->index);
-            exit_program(1);
+            av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+                   "%s: corrupt decoded frame in stream %d\n", input_files[ist->file_index]->ctx->url, ist->st->index);
+            if (exit_on_error)
+                exit_program(1);
         }
     }
 }
@@ -4350,9 +4352,11 @@ static int process_input(int file_index)
     if (ist->discard)
         goto discard_packet;
 
-    if (exit_on_error && (pkt.flags & AV_PKT_FLAG_CORRUPT)) {
-        av_log(NULL, AV_LOG_FATAL, "%s: corrupt input packet in stream %d\n", is->url, pkt.stream_index);
-        exit_program(1);
+    if (pkt.flags & AV_PKT_FLAG_CORRUPT) {
+        av_log(NULL, exit_on_error ? AV_LOG_FATAL : AV_LOG_WARNING,
+               "%s: corrupt input packet in stream %d\n", is->url, pkt.stream_index);
+        if (exit_on_error)
+            exit_program(1);
     }
 
     if (debug_ts) {
