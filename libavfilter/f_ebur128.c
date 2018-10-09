@@ -146,6 +146,7 @@ typedef struct EBUR128Context {
     double pan_law;                 ///< pan law value used to calculate dual-mono measurements
     int target;                     ///< target level in LUFS used to set relative zero LU in visualization
     int gauge_type;                 ///< whether gauge shows momentary or short
+    int scale;                      ///< display scale type of statistics
 } EBUR128Context;
 
 enum {
@@ -159,6 +160,10 @@ enum {
     GAUGE_TYPE_SHORTTERM = 1,
 };
 
+enum {
+    SCALE_TYPE_ABSOLUTE = 0,
+    SCALE_TYPE_RELATIVE = 1,
+};
 
 #define OFFSET(x) offsetof(EBUR128Context, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM
@@ -184,6 +189,11 @@ static const AVOption ebur128_options[] = {
         { "m",           "display momentary value",   0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_MOMENTARY}, INT_MIN, INT_MAX, V|F, "gaugetype" },
         { "shortterm",   "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
         { "s",           "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+    { "scale", "sets display method for the stats", OFFSET(scale), AV_OPT_TYPE_INT, {.i64 = 0}, SCALE_TYPE_ABSOLUTE, SCALE_TYPE_RELATIVE, V|F, "scaletype" },
+        { "absolute",   "display absolute values (LUFS)",          0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_ABSOLUTE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "LUFS",       "display absolute values (LUFS)",          0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_ABSOLUTE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "relative",   "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "LU",         "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
     { NULL },
 };
 
@@ -760,7 +770,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 loudness_3000 -= ebur128->pan_law;
             }
 
-#define LOG_FMT "TARGET:%d     M:%6.1f S:%6.1f     I:%6.1f LUFS     LRA:%6.1f LU"
+#define LOG_FMT "TARGET:%d LUFS    M:%6.1f S:%6.1f     I:%6.1f %s       LRA:%6.1f LU"
 
             /* push one video frame */
             if (ebur128->do_video) {
@@ -798,10 +808,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
 
                 /* draw textual info */
-                drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
-                         LOG_FMT "     ", // padding to erase trailing characters
-                         ebur128->target, loudness_400, loudness_3000,
-                         ebur128->integrated_loudness, ebur128->loudness_range);
+                if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
+                    drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
+                             LOG_FMT "     ", // padding to erase trailing characters
+                             ebur128->target, loudness_400, loudness_3000,
+                             ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
+                } else {
+                    drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
+                             LOG_FMT "     ", // padding to erase trailing characters
+                             ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
+                             ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
+                }
 
                 /* set pts and push frame */
                 pic->pts = pts;
@@ -841,10 +858,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 SET_META_PEAK(true,   TRUE);
             }
 
-            av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
-                   av_ts2timestr(pts, &outlink->time_base),
-                   ebur128->target, loudness_400, loudness_3000,
-                   ebur128->integrated_loudness, ebur128->loudness_range);
+            if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
+                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
+                       av_ts2timestr(pts, &outlink->time_base),
+                       ebur128->target, loudness_400, loudness_3000,
+                       ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
+            } else {
+                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
+                       av_ts2timestr(pts, &outlink->time_base),
+                       ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
+                       ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
+            }
 
 #define PRINT_PEAKS(str, sp, ptype) do {                            \
     if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {       \

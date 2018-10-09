@@ -19374,6 +19374,11 @@ Set the value displayed by the gauge. Valid values are @code{momentary} and s
 @code{shortterm}. By default the momentary value will be used, but in certain
 scenarios it may be more useful to observe the short term value instead (e.g.
 live mixing).
+
+@item scale
+Sets the display scale for the loudness. Valid parameters are @code{absolute}
+(in LUFS) or @code{relative} (LU) relative to the target. This only affects the
+video output, not the summary or continuous log output.
 @end table
 
 @subsection Examples
