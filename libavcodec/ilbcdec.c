@@ -631,15 +631,16 @@ static void add_vector_and_shift(int16_t *out, const int16_t *in1,
 static void create_augmented_vector(int index, int16_t *buffer, int16_t *cbVec)
 {
     int16_t cbVecTmp[4];
-    int16_t ilow = index - 4;
+    int interpolation_length = FFMIN(4, index);
+    int16_t ilow = index - interpolation_length;
 
     memcpy(cbVec, buffer - index, index * 2);
 
-    vector_multiplication(&cbVec[ilow], buffer - index - 4, alpha, 4, 15);
-    vector_rmultiplication(cbVecTmp, buffer - 4, &alpha[3], 4, 15);
-    add_vector_and_shift(&cbVec[ilow], &cbVec[ilow], cbVecTmp, 4, 0);
+    vector_multiplication(&cbVec[ilow], buffer - index - interpolation_length, alpha, interpolation_length, 15);
+    vector_rmultiplication(cbVecTmp, buffer - interpolation_length, &alpha[interpolation_length - 1], interpolation_length, 15);
+    add_vector_and_shift(&cbVec[ilow], &cbVec[ilow], cbVecTmp, interpolation_length, 0);
 
-    memcpy(cbVec + index, buffer - index, (SUBL - index) * sizeof(*cbVec));
+    memcpy(cbVec + index, buffer - index, FFMIN(SUBL - index, index) * sizeof(*cbVec));
 }
 
 static void get_codebook(int16_t * cbvec,   /* (o) Constructed codebook vector */
