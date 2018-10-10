@@ -477,6 +477,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_RASC,         MKTAG('R', 'A', 'S', 'C') },
     { AV_CODEC_ID_HYMT,         MKTAG('H', 'Y', 'M', 'T') },
     { AV_CODEC_ID_ARBC,         MKTAG('A', 'R', 'B', 'C') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '2') },
+    { AV_CODEC_ID_AGM,          MKTAG('A', 'G', 'M', '3') },
     { AV_CODEC_ID_NONE,         0 }
 };
 
