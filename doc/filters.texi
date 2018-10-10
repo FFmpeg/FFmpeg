@@ -1173,14 +1173,15 @@ Set wet gain. This sets final output gain.
 @item length
 Set Impulse Response filter length. Default is 1, which means whole IR is processed.
 
-@item again
-Enable applying gain measured from power of IR. For approach to use for measuring power
-of IR see next option.
-
 @item gtype
+Enable applying gain measured from power of IR.
+
 Set which approach to use for auto gain measurement.
 
 @table @option
+@item none
+Do not apply any gain.
+
 @item peak
 select peak gain, very conservative approach. This is default value.
 

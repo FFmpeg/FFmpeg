@@ -335,38 +335,39 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     s->gain = 1;
 
-    if (s->again) {
-        switch (s->gtype) {
-        case 0:
-            for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-                float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+    switch (s->gtype) {
+    case -1:
+        /* nothinkg to do */
+        break;
+    case 0:
+        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
+            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
 
-                for (i = 0; i < s->nb_taps; i++)
-                    power += FFABS(time[i]);
-            }
-            s->gain = ctx->inputs[1]->channels / power;
-            break;
-        case 1:
-            for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-                float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
-
-                for (i = 0; i < s->nb_taps; i++)
-                    power += time[i];
-            }
-            s->gain = ctx->inputs[1]->channels / power;
-            break;
-        case 2:
-            for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
-                float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
-
-                for (i = 0; i < s->nb_taps; i++)
-                    power += time[i] * time[i];
-            }
-            s->gain = sqrtf(ch / power);
-            break;
-        default:
-            return AVERROR_BUG;
+            for (i = 0; i < s->nb_taps; i++)
+                power += FFABS(time[i]);
         }
+        s->gain = ctx->inputs[1]->channels / power;
+        break;
+    case 1:
+        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
+            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+
+            for (i = 0; i < s->nb_taps; i++)
+                power += time[i];
+        }
+        s->gain = ctx->inputs[1]->channels / power;
+        break;
+    case 2:
+        for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
+            float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+
+            for (i = 0; i < s->nb_taps; i++)
+                power += time[i] * time[i];
+        }
+        s->gain = sqrtf(ch / power);
+        break;
+    default:
+        return AVERROR_BUG;
     }
 
     s->gain = FFMIN(s->gain * s->ir_gain, 1.f);
@@ -738,8 +739,8 @@ static const AVOption afir_options[] = {
     { "dry",    "set dry gain",      OFFSET(dry_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AF },
     { "wet",    "set wet gain",      OFFSET(wet_gain),   AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 10, AF },
     { "length", "set IR length",     OFFSET(length),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0,  1, AF },
-    { "again",  "enable auto gain",  OFFSET(again),      AV_OPT_TYPE_BOOL,  {.i64=1},    0,  1, AF },
-    { "gtype",  "set auto gain type",OFFSET(gtype),      AV_OPT_TYPE_INT,   {.i64=0},    0,  2, AF, "gtype" },
+    { "gtype",  "set IR auto gain type",OFFSET(gtype),   AV_OPT_TYPE_INT,   {.i64=0},   -1,  2, AF, "gtype" },
+    {  "none",  "without auto gain", 0,                  AV_OPT_TYPE_CONST, {.i64=-1},   0,  0, AF, "gtype" },
     {  "peak",  "peak gain",         0,                  AV_OPT_TYPE_CONST, {.i64=0},    0,  0, AF, "gtype" },
     {  "dc",    "DC gain",           0,                  AV_OPT_TYPE_CONST, {.i64=1},    0,  0, AF, "gtype" },
     {  "gn",    "gain to noise",     0,                  AV_OPT_TYPE_CONST, {.i64=2},    0,  0, AF, "gtype" },
