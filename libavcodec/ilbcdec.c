@@ -381,7 +381,7 @@ static void get_lsp_poly(int16_t *lsp, int32_t *f)
             tmp = ((high * lsp[k]) * 4) + (((low * lsp[k]) >> 15) * 4);
 
             f[l] += f[l - 2];
-            f[l] -= tmp;
+            f[l] -= (unsigned)tmp;
         }
 
         f[l] -= lsp[k] * (1 << 10);
@@ -402,16 +402,16 @@ static void lsf2poly(int16_t *a, int16_t *lsf)
     get_lsp_poly(&lsp[1], f[1]);
 
     for (i = 5; i > 0; i--) {
-        f[0][i] += f[0][i - 1];
-        f[1][i] -= f[1][i - 1];
+        f[0][i] += (unsigned)f[0][i - 1];
+        f[1][i] -= (unsigned)f[1][i - 1];
     }
 
     a[0] = 4096;
     for (i = 5; i > 0; i--) {
-        tmp = f[0][6 - i] + f[1][6 - i];
+        tmp = f[0][6 - i] + (unsigned)f[1][6 - i];
         a[6 - i] = (tmp + 4096) >> 13;
 
-        tmp = f[0][6 - i] - f[1][6 - i];
+        tmp = f[0][6 - i] - (unsigned)f[1][6 - i];
         a[5 + i] = (tmp + 4096) >> 13;
     }
 }
@@ -508,10 +508,10 @@ static void filter_arfq12(const int16_t *data_in,
         int output = 0, sum = 0;
 
         for (j = coefficients_length - 1; j > 0; j--) {
-            sum += coefficients[j] * data_out[i - j];
+            sum += (unsigned)(coefficients[j] * data_out[i - j]);
         }
 
-        output = coefficients[0] * data_in[i] - sum;
+        output = coefficients[0] * data_in[i] - (unsigned)sum;
         output = av_clip(output, -134217728, 134215679);
 
         data_out[i] = (output + 2048) >> 12;
@@ -901,12 +901,12 @@ static int16_t get_size_in_bits(uint32_t n)
 
 static int32_t scale_dot_product(const int16_t *v1, const int16_t *v2, int length, int scaling)
 {
-    int32_t sum = 0;
+    int64_t sum = 0;
 
     for (int i = 0; i < length; i++)
         sum += (v1[i] * v2[i]) >> scaling;
 
-    return sum;
+    return av_clipl_int32(sum);
 }
 
 static void correlation(int32_t *corr, int32_t *ener, int16_t *buffer,
