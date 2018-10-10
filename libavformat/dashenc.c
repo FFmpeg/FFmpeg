@@ -247,7 +247,9 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
     else
         return;
 
-    tag = av_codec_get_tag(tags, par->codec_id);
+    tag = par->codec_tag;
+    if (!tag)
+        tag = av_codec_get_tag(tags, par->codec_id);
     if (!tag)
         return;
     if (size < 5)
