@@ -376,15 +376,15 @@ static void get_lsp_poly(int16_t *lsp, int32_t *f)
 
         for (j = i; j > 1; j--, l--) {
             high = f[l - 1] >> 16;
-            low = (f[l - 1] - (high << 16)) >> 1;
+            low = (f[l - 1] - (high * (1 << 16))) >> 1;
 
-            tmp = ((high * lsp[k]) << 2) + (((low * lsp[k]) >> 15) << 2);
+            tmp = ((high * lsp[k]) * 4) + (((low * lsp[k]) >> 15) * 4);
 
             f[l] += f[l - 2];
             f[l] -= tmp;
         }
 
-        f[l] -= lsp[k] << 10;
+        f[l] -= lsp[k] * (1 << 10);
         l += i;
     }
 }
@@ -1269,7 +1269,7 @@ static int xcorr_coeff(int16_t *target, int16_t *regressor,
             /* Calculate the total number of (dynamic) right shifts that have
                been performed on (cross_corr*cross_corr)/energy
              */
-            totscale = energy_scale - (cross_corr_scale << 1);
+            totscale = energy_scale - (cross_corr_scale * 2);
 
             /* Calculate the shift difference in order to be able to compare the two
                (cross_corr*cross_corr)/energy in the same domain
@@ -1322,7 +1322,7 @@ static void hp_output(int16_t *signal, const int16_t *ba, int16_t *y,
         tmp = (tmp >> 15);
         tmp += SPL_MUL_16_16(y[0], ba[3]);    /* (-a[1])*y[i-1] (high part) */
         tmp += SPL_MUL_16_16(y[2], ba[4]);    /* (-a[2])*y[i-2] (high part) */
-        tmp = (tmp << 1);
+        tmp = (tmp * 2);
 
         tmp += SPL_MUL_16_16(signal[i], ba[0]);       /* b[0]*x[0] */
         tmp += SPL_MUL_16_16(x[0], ba[1]);    /* b[1]*x[i-1] */
@@ -1345,11 +1345,11 @@ static void hp_output(int16_t *signal, const int16_t *ba, int16_t *y,
         } else if (tmp < -268435456) {
             tmp = INT32_MIN;
         } else {
-            tmp = tmp << 3;
+            tmp = tmp * 8;
         }
 
         y[0] = tmp >> 16;
-        y[1] = (tmp - (y[0] << 16)) >> 1;
+        y[1] = (tmp - (y[0] * (1 << 16))) >> 1;
     }
 }
 
