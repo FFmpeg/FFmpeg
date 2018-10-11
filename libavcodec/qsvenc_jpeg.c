@@ -64,6 +64,7 @@ static av_cold int qsv_enc_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(QSVMJPEGEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
+    { "async_depth", "Maximum processing parallelism", OFFSET(qsv.async_depth), AV_OPT_TYPE_INT, { .i64 = ASYNC_DEPTH_DEFAULT }, 1, INT_MAX, VE },
     { NULL },
 };
 
