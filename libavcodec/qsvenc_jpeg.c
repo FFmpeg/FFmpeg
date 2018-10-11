@@ -75,6 +75,11 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault qsv_enc_defaults[] = {
+    { "global_quality",  "80" },
+    { NULL },
+};
+
 AVCodec ff_mjpeg_qsv_encoder = {
     .name           = "mjpeg_qsv",
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (Intel Quick Sync Video acceleration)"),
@@ -89,5 +94,6 @@ AVCodec ff_mjpeg_qsv_encoder = {
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
+    .defaults       = qsv_enc_defaults,
     .wrapper_name   = "qsv",
 };
