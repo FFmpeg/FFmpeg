@@ -144,6 +144,7 @@ DECLARE_ALIGNED(8, extern const uint64_t, ff_bgr2UVOffset);
 
 #endif /* HAVE_INLINE_ASM */
 
+void ff_shuffle_bytes_2103_mmxext(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_2103_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_0321_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
 void ff_shuffle_bytes_1230_ssse3(const uint8_t *src, uint8_t *dst, int src_size);
@@ -176,6 +177,9 @@ av_cold void rgb2rgb_init_x86(void)
         rgb2rgb_init_avx();
 #endif /* HAVE_INLINE_ASM */
 
+    if (EXTERNAL_MMXEXT(cpu_flags)) {
+        shuffle_bytes_2103 = ff_shuffle_bytes_2103_mmxext;
+    }
     if (EXTERNAL_SSE2(cpu_flags)) {
 #if ARCH_X86_64
         uyvytoyuv422 = ff_uyvytoyuv422_sse2;
