@@ -85,6 +85,9 @@ typedef struct X264Context {
     int noise_reduction;
 
     char *x264_params;
+
+    int nb_reordered_opaque, next_reordered_opaque;
+    int64_t *reordered_opaque;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -240,6 +243,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     x264_nal_t *nal;
     int nnal, i, ret;
     x264_picture_t pic_out;
+    int64_t *out_opaque;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -258,6 +262,11 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         }
 
         x4->pic.i_pts  = frame->pts;
+
+        x4->reordered_opaque[x4->next_reordered_opaque] = frame->reordered_opaque;
+        x4->pic.opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
+        x4->next_reordered_opaque++;
+        x4->next_reordered_opaque %= x4->nb_reordered_opaque;
 
         switch (frame->pict_type) {
         case AV_PICTURE_TYPE_I:
@@ -287,6 +296,15 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
     pkt->pts = pic_out.i_pts;
     pkt->dts = pic_out.i_dts;
+
+    out_opaque = pic_out.opaque;
+    if (out_opaque >= x4->reordered_opaque &&
+        out_opaque < &x4->reordered_opaque[x4->nb_reordered_opaque]) {
+        ctx->reordered_opaque = *out_opaque;
+    } else {
+        // Unexpected opaque pointer on picture output
+        ctx->reordered_opaque = 0;
+    }
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -331,6 +349,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&x4->sei);
+    av_freep(&x4->reordered_opaque);
 
     if (x4->enc) {
         x264_encoder_close(x4->enc);
@@ -663,6 +682,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     cpb_props->max_bitrate = x4->params.rc.i_vbv_max_bitrate * 1000;
     cpb_props->avg_bitrate = x4->params.rc.i_bitrate         * 1000;
 
+    // Overestimate the reordered opaque buffer size, in case a runtime
+    // reconfigure would increase the delay (which it shouldn't).
+    x4->nb_reordered_opaque = x264_encoder_maximum_delayed_frames(x4->enc) + 17;
+    x4->reordered_opaque    = av_malloc_array(x4->nb_reordered_opaque,
+                                              sizeof(*x4->reordered_opaque));
+    if (!x4->reordered_opaque)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -850,7 +877,8 @@ AVCodec ff_libx264_encoder = {
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &class,
     .defaults         = x264_defaults,
     .init_static_data = X264_init_static,
@@ -877,7 +905,8 @@ AVCodec ff_libx262_encoder = {
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &X262_class,
     .defaults         = x264_defaults,
     .pix_fmts         = pix_fmts_8bit,
