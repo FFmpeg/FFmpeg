@@ -1072,6 +1072,13 @@ typedef struct RcOverride{
 #define AV_CODEC_CAP_HYBRID              (1 << 19)
 
 /**
+ * This codec takes the reordered_opaque field from input AVFrames
+ * and returns it in the corresponding field in AVCodecContext after
+ * encoding.
+ */
+#define AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE (1 << 20)
+
+/**
  * Pan Scan area.
  * This specifies the area which should be displayed.
  * Note there may be multiple such areas for one frame.
@@ -2677,7 +2684,10 @@ typedef struct AVCodecContext {
     /**
      * opaque 64-bit number (generally a PTS) that will be reordered and
      * output in AVFrame.reordered_opaque
-     * - encoding: unused
+     * - encoding: Set by libavcodec to the reordered_opaque of the input
+     *             frame corresponding to the last returned packet. Only
+     *             supported by encoders with the
+     *             AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE capability.
      * - decoding: Set by user.
      */
     int64_t reordered_opaque;
