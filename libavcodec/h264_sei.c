@@ -84,8 +84,10 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
             return AVERROR_INVALIDDATA;
 
         num_clock_ts = sei_num_clock_ts_table[h->pic_struct];
+        h->timecode_cnt = 0;
         for (i = 0; i < num_clock_ts; i++) {
             if (get_bits(gb, 1)) {                      /* clock_timestamp_flag */
+                H264SEITimeCode *tc = &h->timecode[h->timecode_cnt++];
                 unsigned int full_timestamp_flag;
                 unsigned int counting_type, cnt_dropped_flag;
                 h->ct_type |= 1 << get_bits(gb, 2);
@@ -95,20 +97,21 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
                 skip_bits(gb, 1);                       /* discontinuity_flag */
                 cnt_dropped_flag = get_bits(gb, 1);      /* cnt_dropped_flag */
                 if (cnt_dropped_flag && counting_type > 1 && counting_type < 7)
-                    h->tc_dropframe = 1;
-                h->tc_frames = get_bits(gb, 8);         /* n_frames */
+                    tc->dropframe = 1;
+                tc->frame = get_bits(gb, 8);         /* n_frames */
                 if (full_timestamp_flag) {
-                    h->fulltc_received = 1;
-                    h->tc_seconds = get_bits(gb, 6); /* seconds_value 0..59 */
-                    h->tc_minutes = get_bits(gb, 6); /* minutes_value 0..59 */
-                    h->tc_hours = get_bits(gb, 5);   /* hours_value 0..23 */
+                    tc->full = 1;
+                    tc->seconds = get_bits(gb, 6); /* seconds_value 0..59 */
+                    tc->minutes = get_bits(gb, 6); /* minutes_value 0..59 */
+                    tc->hours = get_bits(gb, 5);   /* hours_value 0..23 */
                 } else {
+                    tc->seconds = tc->minutes = tc->hours = tc->full = 0;
                     if (get_bits(gb, 1)) {             /* seconds_flag */
-                        h->tc_seconds = get_bits(gb, 6);
+                        tc->seconds = get_bits(gb, 6);
                         if (get_bits(gb, 1)) {         /* minutes_flag */
-                            h->tc_minutes = get_bits(gb, 6);
+                            tc->minutes = get_bits(gb, 6);
                             if (get_bits(gb, 1))       /* hours_flag */
-                                h->tc_minutes = get_bits(gb, 5);
+                                tc->hours = get_bits(gb, 5);
                         }
                     }
                 }
