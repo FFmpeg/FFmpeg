@@ -45,12 +45,13 @@ typedef struct IMM4Context {
     int factor;
     unsigned sindex;
 
+    ScanTable intra_scantable;
     DECLARE_ALIGNED(32, int16_t, block)[6][64];
     IDCTDSPContext idsp;
 } IMM4Context;
 
 static const uint8_t intra_cb[] = {
-    12, 9, 6
+    24, 18, 12
 };
 
 static const uint8_t inter_cb[] = {
@@ -140,6 +141,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
                         int block, int factor, int flag)
 {
     IMM4Context *s = avctx->priv_data;
+    const uint8_t *scantable = s->intra_scantable.permutated;
     int i, last, len, factor2;
 
     for (i = !flag; i < 64; i++) {
@@ -162,7 +164,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
         i += len;
         if (i >= 64)
             break;
-        s->block[block][i] = factor * factor2;
+        s->block[block][scantable[i]] = factor * factor2;
         if (last)
             break;
     }
@@ -174,6 +176,7 @@ static int decode_blocks(AVCodecContext *avctx, GetBitContext *gb,
                          unsigned cbp, int flag)
 {
     IMM4Context *s = avctx->priv_data;
+    const uint8_t *scantable = s->intra_scantable.permutated;
     int ret, i;
 
     memset(s->block, 0, sizeof(s->block));
@@ -186,7 +189,7 @@ static int decode_blocks(AVCodecContext *avctx, GetBitContext *gb,
                 x = 128;
             x *= 8;
 
-            s->block[i][0] = x;
+            s->block[i][scantable[0]] = x;
         }
 
         if (cbp & (1 << (5 - i))) {
@@ -204,7 +207,7 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
     IMM4Context *s = avctx->priv_data;
     int ret, x, y;
 
-    s->factor = intra_cb[s->sindex] * 2;
+    s->factor = intra_cb[s->sindex];
 
     for (y = 0; y < avctx->height; y += 16) {
         for (x = 0; x < avctx->width; x += 16) {
@@ -397,9 +400,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     s->changed_size = 1;
     skip_bits_long(gb, 24 * 8);
     type = get_bits_long(gb, 32);
-    s->sindex = get_bits_long(gb, 32);
-    if (s->sindex > 2)
-        return AVERROR_INVALIDDATA;
+    skip_bits(gb, 16);
+    s->sindex = get_bits(gb, 16);
+    s->sindex = FFMIN(s->sindex, 2);
 
     switch (type) {
     case 0x19781977:
@@ -461,10 +464,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     static AVOnce init_static_once = AV_ONCE_INIT;
     IMM4Context *s = avctx->priv_data;
+    uint8_t table[64];
 
-    avctx->idct_algo = FF_IDCT_FAAN;
+    for (int i = 0; i < 64; i++)
+        table[i] = i;
+
     ff_bswapdsp_init(&s->bdsp);
     ff_idctdsp_init(&s->idsp, avctx);
+    ff_init_scantable(s->idsp.idct_permutation, &s->intra_scantable, table);
 
     s->prev_frame = av_frame_alloc();
     if (!s->prev_frame)
