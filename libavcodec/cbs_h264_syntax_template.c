@@ -584,6 +584,12 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     sps = h264->active_sps;
+    if (!sps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "No active SPS for pic_timestamp.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (sps->vui.nal_hrd_parameters_present_flag)
         time_offset_length = sps->vui.nal_hrd_parameters.time_offset_length;
     else if (sps->vui.vcl_hrd_parameters_present_flag)
