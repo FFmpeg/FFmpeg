@@ -1293,7 +1293,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
 
             /* This is tricky: the dts must be incremented by the duration
              * of the frame we are displaying, i.e. the last I- or P-frame. */
-            if (st->last_IP_duration == 0)
+            if (st->last_IP_duration == 0 && (uint64_t)pkt->duration <= INT32_MAX)
                 st->last_IP_duration = pkt->duration;
             if (pkt->dts != AV_NOPTS_VALUE)
                 st->cur_dts = pkt->dts + st->last_IP_duration;
@@ -1305,7 +1305,8 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
                 next_pts != AV_NOPTS_VALUE)
                 pkt->pts = next_dts;
 
-            st->last_IP_duration = pkt->duration;
+            if ((uint64_t)pkt->duration <= INT32_MAX)
+                st->last_IP_duration = pkt->duration;
             st->last_IP_pts      = pkt->pts;
             /* Cannot compute PTS if not present (we can compute it only
              * by knowing the future. */
