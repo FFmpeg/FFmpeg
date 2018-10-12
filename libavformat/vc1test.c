@@ -122,5 +122,6 @@ AVInputFormat ff_vc1t_demuxer = {
     .read_probe     = vc1t_probe,
     .read_header    = vc1t_read_header,
     .read_packet    = vc1t_read_packet,
+    .extensions     = "rcv",
     .flags          = AVFMT_GENERIC_INDEX,
 };
