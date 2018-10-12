@@ -177,6 +177,9 @@ PCMDEF(alaw, "PCM A-law",
 PCMDEF(mulaw, "PCM mu-law",
        "ul", AV_CODEC_ID_PCM_MULAW)
 
+PCMDEF(vidc, "PCM Archimedes VIDC",
+       NULL, AV_CODEC_ID_PCM_VIDC)
+
 static const AVOption sln_options[] = {
     { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 8000}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "channels",    "", offsetof(PCMAudioDemuxerContext, channels),    AV_OPT_TYPE_INT, {.i64 = 1}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },

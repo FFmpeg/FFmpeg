@@ -1936,6 +1936,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("PCM 24.0 floating point little-endian"),
         .props     = AV_CODEC_PROP_LOSSLESS,
     },
+    {
+        .id        = AV_CODEC_ID_PCM_VIDC,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "pcm_vidc",
+        .long_name = NULL_IF_CONFIG_SMALL("PCM Archimedes VIDC"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various ADPCM codecs */
     {

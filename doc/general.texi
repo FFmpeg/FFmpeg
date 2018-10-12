@@ -545,6 +545,7 @@ library:
 @item raw VC-1                  @tab X @tab X
 @item raw PCM A-law             @tab X @tab X
 @item raw PCM mu-law            @tab X @tab X
+@item raw PCM Archimedes VIDC   @tab X @tab X
 @item raw PCM signed 8 bit      @tab X @tab X
 @item raw PCM signed 16 bit big-endian  @tab X @tab X
 @item raw PCM signed 16 bit little-endian  @tab X @tab X
@@ -1147,6 +1148,7 @@ following image formats are supported:
     @tab encoding supported through external library libopus
 @item PCM A-law              @tab  X  @tab  X
 @item PCM mu-law             @tab  X  @tab  X
+@item PCM Archimedes VIDC    @tab  X  @tab  X
 @item PCM signed 8-bit planar  @tab  X  @tab  X
 @item PCM signed 16-bit big-endian planar  @tab  X  @tab  X
 @item PCM signed 16-bit little-endian planar  @tab  X  @tab  X

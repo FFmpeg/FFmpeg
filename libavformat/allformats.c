@@ -289,6 +289,8 @@ extern AVInputFormat  ff_pcm_alaw_demuxer;
 extern AVOutputFormat ff_pcm_alaw_muxer;
 extern AVInputFormat  ff_pcm_mulaw_demuxer;
 extern AVOutputFormat ff_pcm_mulaw_muxer;
+extern AVInputFormat  ff_pcm_vidc_demuxer;
+extern AVOutputFormat ff_pcm_vidc_muxer;
 extern AVInputFormat  ff_pcm_f64be_demuxer;
 extern AVOutputFormat ff_pcm_f64be_muxer;
 extern AVInputFormat  ff_pcm_f64le_demuxer;
