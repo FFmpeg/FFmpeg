@@ -32,6 +32,7 @@
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
 #include "libavutil/timestamp.h"
+#include "libavutil/timecode.h"
 
 #include "avfilter.h"
 #include "internal.h"
@@ -174,6 +175,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         case AV_FRAME_DATA_STEREO3D:
             dump_stereo3d(ctx, sd);
             break;
+        case AV_FRAME_DATA_S12M_TIMECODE: {
+            uint32_t *tc = (uint32_t*)sd->data;
+            for (int j = 1; j < tc[0]; j++) {
+                char tcbuf[AV_TIMECODE_STR_SIZE];
+                av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
+                av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0] - 1 ? ", " : "");
+            }
+            break;
+        }
         case AV_FRAME_DATA_DISPLAYMATRIX:
             av_log(ctx, AV_LOG_INFO, "displaymatrix: rotation of %.2f degrees",
                    av_display_rotation_get((int32_t *)sd->data));
