@@ -2122,7 +2122,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
     uint8_t *vs_pack, *vsc_pack;
-    int ul_index, frame_size, stype, pal;
+    int ul_index, stype, pal;
     const AVDVProfile *profile;
 
     if (mxf->header_written)
@@ -2153,7 +2153,6 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     switch (stype) {
     case 0x18: // DV100 720p
         ul_index = INDEX_DV100_720_50 + pal;
-        frame_size = pal ? 288000 : 240000;
         if (sc->interlaced) {
             av_log(s, AV_LOG_ERROR, "source marked as interlaced but codec profile is progressive\n");
             sc->interlaced = 0;
@@ -2161,20 +2160,16 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         break;
     case 0x14: // DV100 1080i
         ul_index = INDEX_DV100_1080_50 + pal;
-        frame_size = pal ? 576000 : 480000;
         break;
     case 0x04: // DV50
         ul_index = INDEX_DV50_525_60 + pal;
-        frame_size = pal ? 288000 : 240000;
         break;
     default: // DV25
         if (profile && profile->pix_fmt == AV_PIX_FMT_YUV420P && pal) {
             ul_index = INDEX_DV25_525_60_IEC + pal;
-            frame_size = pal ? 144000 : 120000;
             break;
         }
         ul_index = INDEX_DV25_525_60 + pal;
-        frame_size = pal ? 144000 : 120000;
     }
 
     sc->index = ul_index;
