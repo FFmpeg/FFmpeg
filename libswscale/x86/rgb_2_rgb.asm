@@ -2,6 +2,7 @@
 ;* Copyright Nick Kurshev
 ;* Copyright Michael (michaelni@gmx.at)
 ;* Copyright 2018 Jokyo Images
+;* Copyright Ivo van Poorten
 ;*
 ;* This file is part of FFmpeg.
 ;*
