@@ -1194,7 +1194,7 @@ select gain to noise approach, this is most popular one.
 
 @item irgain
 Set gain to be applied to IR coefficients before filtering.
-Allowed range is 0 to 1. This can be set even with @var{again} used.
+Allowed range is 0 to 1. This gain is applied after any gain applied with @var{gtype} option.
 
 @item irfmt
 Set format of IR stream. Can be @code{mono} or @code{input}.
