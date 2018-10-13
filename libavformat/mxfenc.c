@@ -2033,7 +2033,7 @@ AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    int i, cid;
+    int cid;
     uint8_t* header_cid;
     int frame_size = 0;
 
@@ -2122,7 +2122,7 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
     uint8_t *vs_pack, *vsc_pack;
-    int i, ul_index, frame_size, stype, pal;
+    int ul_index, frame_size, stype, pal;
     const AVDVProfile *profile;
 
     if (mxf->header_written)
