@@ -73,6 +73,8 @@ rgba64be            c910444019f4cfbf4d995227af55da8d
 rgba64le            0c810d8b3a6bca10321788e1cb145340
 xyz12be             25f90259ff8a226befdaec3dfe82996e
 xyz12le             926c0791d59aaff61b2778e8ada3316d
+ya16be              632b2e6e8e20c3edcfe99356fa7fca9e
+ya16le              e2ff5a2fb969c70dcc862937f9224873
 ya8                 4ad5920716de3d2fbbc49f95adb60345
 yuv410p             c49fd0c55c41185b1580aac77211992b
 yuv411p             c416371077dce13d31bf1dc706111ae7
