@@ -413,7 +413,6 @@ Muxers/Demuxers:
   flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
-  hls.c                                 Anssi Hannula
   hlsenc.c                              Christian Suloway, Steven Liu
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
