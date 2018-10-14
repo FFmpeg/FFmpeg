@@ -583,6 +583,8 @@ static int mediacodec_dec_parse_video_format(AVCodecContext *avctx, MediaCodecDe
     } else if (strstr(s->codec_name, "OMX.SEC.avc.dec")) {
         s->slice_height = avctx->height;
         s->stride = avctx->width;
+    } else if (strstr(s->codec_name, "OMX.MTK.VIDEO.DECODER.MPEG2")) {
+        s->slice_height = s->height;
     } else if (s->slice_height == 0) {
         s->slice_height = s->height;
     }
