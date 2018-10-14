@@ -367,13 +367,17 @@ static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
     AVPacket filter_packet = { 0 };
     AVPacket filtered_packet = { 0 };
     int ret = 0, eret = 0, is_flush = ctx->decoder_flushing;
+    int delay = ctx->cuparseinfo.ulMaxDisplayDelay;
 
     av_log(avctx, AV_LOG_TRACE, "cuvid_decode_packet\n");
 
     if (is_flush && avpkt && avpkt->size)
         return AVERROR_EOF;
 
-    if ((av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + 2 > ctx->nb_surfaces && avpkt && avpkt->size)
+    if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
+        delay *= 2;
+
+    if ((av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + delay >= ctx->nb_surfaces && avpkt && avpkt->size)
         return AVERROR(EAGAIN);
 
     if (ctx->bsf && avpkt && avpkt->size) {
