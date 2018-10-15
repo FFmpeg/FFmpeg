@@ -49,6 +49,7 @@ typedef struct SilenceRemoveContext {
     double start_threshold;
     int64_t start_silence;
     int64_t start_silence_opt;
+    int start_mode;
 
     int stop_periods;
     int64_t stop_duration;
@@ -56,6 +57,7 @@ typedef struct SilenceRemoveContext {
     double stop_threshold;
     int64_t stop_silence;
     int64_t stop_silence_opt;
+    int stop_mode;
 
     double *start_holdoff;
     double *start_silence_hold;
@@ -96,10 +98,14 @@ static const AVOption silenceremove_options[] = {
     { "start_duration",  NULL, OFFSET(start_duration_opt),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "start_threshold", NULL, OFFSET(start_threshold),     AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "start_silence",   NULL, OFFSET(start_silence_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "start_mode",      NULL, OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
+    {   "any",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "mode" },
+    {   "all",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "mode" },
     { "stop_periods",    NULL, OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
     { "stop_duration",   NULL, OFFSET(stop_duration_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "stop_threshold",  NULL, OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "stop_silence",    NULL, OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "stop_mode",       NULL, OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
     { "detection",       NULL, OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=1},     0,         1, AF, "detection" },
     {   "peak",          0,    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "detection" },
     {   "rms",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "detection" },
@@ -320,9 +326,16 @@ silence_trim:
             break;
 
         for (i = 0; i < nbs; i++) {
-            threshold = 0;
-            for (j = 0; j < inlink->channels; j++) {
-                threshold |= s->compute(s, ibuf[j]) > s->start_threshold;
+            if (s->start_mode) {
+                threshold = 0;
+                for (j = 0; j < inlink->channels; j++) {
+                    threshold |= s->compute(s, ibuf[j]) > s->start_threshold;
+                }
+            } else {
+                threshold = 1;
+                for (j = 0; j < inlink->channels; j++) {
+                    threshold &= s->compute(s, ibuf[j]) > s->start_threshold;
+                }
             }
 
             if (threshold) {
@@ -428,9 +441,17 @@ silence_copy:
 
         if (s->stop_periods) {
             for (i = 0; i < nbs; i++) {
-                threshold = 1;
-                for (j = 0; j < inlink->channels; j++)
-                    threshold &= s->compute(s, ibuf[j]) > s->stop_threshold;
+                if (s->stop_mode) {
+                    threshold = 0;
+                    for (j = 0; j < inlink->channels; j++) {
+                        threshold |= s->compute(s, ibuf[j]) > s->stop_threshold;
+                    }
+                } else {
+                    threshold = 1;
+                    for (j = 0; j < inlink->channels; j++) {
+                        threshold &= s->compute(s, ibuf[j]) > s->stop_threshold;
+                    }
+                }
 
                 if (threshold && s->stop_holdoff_end && !s->stop_silence) {
                     s->mode = SILENCE_COPY_FLUSH;
