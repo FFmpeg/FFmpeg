@@ -94,22 +94,22 @@ typedef struct SilenceRemoveContext {
 #define AF AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_AUDIO_PARAM
 
 static const AVOption silenceremove_options[] = {
-    { "start_periods",   NULL, OFFSET(start_periods),       AV_OPT_TYPE_INT,      {.i64=0},     0,      9000, AF },
-    { "start_duration",  NULL, OFFSET(start_duration_opt),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "start_threshold", NULL, OFFSET(start_threshold),     AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
-    { "start_silence",   NULL, OFFSET(start_silence_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "start_mode",      NULL, OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
-    {   "any",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "mode" },
-    {   "all",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "mode" },
-    { "stop_periods",    NULL, OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
-    { "stop_duration",   NULL, OFFSET(stop_duration_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "stop_threshold",  NULL, OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
-    { "stop_silence",    NULL, OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "stop_mode",       NULL, OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
-    { "detection",       NULL, OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=1},     0,         1, AF, "detection" },
-    {   "peak",          0,    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "detection" },
-    {   "rms",           0,    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "detection" },
-    { "window",          NULL, OFFSET(window_ratio),        AV_OPT_TYPE_DOUBLE,   {.dbl=0.02},  0,        10, AF },
+    { "start_periods",   NULL,                                                 OFFSET(start_periods),       AV_OPT_TYPE_INT,      {.i64=0},     0,      9000, AF },
+    { "start_duration",  "set start duration of non-silence part",             OFFSET(start_duration_opt),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "start_threshold", "set threshold for start silence detection",          OFFSET(start_threshold),     AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
+    { "start_silence",   "set start duration of silence part to keep",         OFFSET(start_silence_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "start_mode",      "set which channel will trigger trimming from start", OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
+    {   "any",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "mode" },
+    {   "all",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "mode" },
+    { "stop_periods",    NULL,                                                 OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
+    { "stop_duration",   "set stop duration of non-silence part",              OFFSET(stop_duration_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "stop_threshold",  "set threshold for stop silence detection",           OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
+    { "stop_silence",    "set stop duration of silence part to keep",          OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
+    { "stop_mode",       "set which channel will trigger trimming from end",   OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
+    { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=1},     0,         1, AF, "detection" },
+    {   "peak",          "use absolute values of samples",                     0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "detection" },
+    {   "rms",           "use squared values of samples",                      0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "detection" },
+    { "window",          "set duration of window in seconds",                  OFFSET(window_ratio),        AV_OPT_TYPE_DOUBLE,   {.dbl=0.02},  0,        10, AF },
     { NULL }
 };
 
