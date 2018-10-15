@@ -30,6 +30,11 @@
 #include "avfilter.h"
 #include "internal.h"
 
+enum SilenceDetect {
+    D_PEAK,
+    D_RMS,
+};
+
 enum SilenceMode {
     SILENCE_TRIM,
     SILENCE_TRIM_FLUSH,
@@ -106,9 +111,9 @@ static const AVOption silenceremove_options[] = {
     { "stop_threshold",  "set threshold for stop silence detection",           OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "stop_silence",    "set stop duration of silence part to keep",          OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "stop_mode",       "set which channel will trigger trimming from end",   OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
-    { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=1},     0,         1, AF, "detection" },
-    {   "peak",          "use absolute values of samples",                     0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "detection" },
-    {   "rms",           "use squared values of samples",                      0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "detection" },
+    { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=D_RMS}, D_PEAK,D_RMS, AF, "detection" },
+    {   "peak",          "use absolute values of samples",                     0,                           AV_OPT_TYPE_CONST,    {.i64=D_PEAK},0,         0, AF, "detection" },
+    {   "rms",           "use squared values of samples",                      0,                           AV_OPT_TYPE_CONST,    {.i64=D_RMS}, 0,         0, AF, "detection" },
     { "window",          "set duration of window in seconds",                  OFFSET(window_ratio),        AV_OPT_TYPE_DOUBLE,   {.dbl=0.02},  0,        10, AF },
     { NULL }
 };
@@ -169,11 +174,11 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     switch (s->detection) {
-    case 0:
+    case D_PEAK:
         s->update = update_peak;
         s->compute = compute_peak;
         break;
-    case 1:
+    case D_RMS:
         s->update = update_rms;
         s->compute = compute_rms;
         break;
