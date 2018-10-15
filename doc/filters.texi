@@ -4343,6 +4343,19 @@ you may wish to increase the value to account for background noise.
 Can be specified in dB (in case "dB" is appended to the specified value)
 or amplitude ratio. Default value is @code{0}.
 
+@item start_silence
+Specify max duration of silence at beginning that will be kept after
+trimming. Default is 0, which is equal to trimming all samples detected
+as silence.
+
+@item start_mode
+Specify mode of detection of silence end in start of multi-channel audio.
+Can be @var{any} or @var{all}. Default is @var{any}.
+With @var{any}, any sample that is detected as non-silence will cause
+stopped trimming of silence.
+With @var{all}, only if all channels are detected as non-silence will cause
+stopped trimming of silence.
+
 @item stop_periods
 Set the count for trimming silence from the end of audio.
 To remove silence from the middle of a file, specify a @var{stop_periods}
@@ -4364,11 +4377,18 @@ the end of audio.
 Can be specified in dB (in case "dB" is appended to the specified value)
 or amplitude ratio. Default value is @code{0}.
 
-@item leave_silence
-This indicates that @var{stop_duration} length of audio should be left intact
-at the beginning of each period of silence.
-For example, if you want to remove long pauses between words but do not want
-to remove the pauses completely. Default value is @code{0}.
+@item stop_silence
+Specify max duration of silence at end that will be kept after
+trimming. Default is 0, which is equal to trimming all samples detected
+as silence.
+
+@item stop_mode
+Specify mode of detection of silence start in end of multi-channel audio.
+Can be @var{any} or @var{all}. Default is @var{any}.
+With @var{any}, any sample that is detected as non-silence will cause
+stopped trimming of silence.
+With @var{all}, only if all channels are detected as non-silence will cause
+stopped trimming of silence.
 
 @item detection
 Set how is silence detected. Can be @code{rms} or @code{peak}. Second is faster
@@ -4376,7 +4396,8 @@ and works better with digital silence which is exactly 0.
 Default value is @code{rms}.
 
 @item window
-Set ratio used to calculate size of window for detecting silence.
+Set duration in number of seconds used to calculate size of window in number
+of samples for detecting silence.
 Default value is @code{0.02}. Allowed range is from @code{0} to @code{10}.
 @end table
 
@@ -4388,14 +4409,14 @@ The following example shows how this filter can be used to start a recording
 that does not contain the delay at the start which usually occurs between
 pressing the record button and the start of the performance:
 @example
-silenceremove=1:5:0.02
+silenceremove=start_periods=1:start_duration=5:start_threshold=0.02
 @end example
 
 @item
 Trim all silence encountered from beginning to end where there is more than 1
 second of silence in audio:
 @example
-silenceremove=0:0:0:-1:1:-90dB
+silenceremove=stop_periods=-1:stop_duration=1:stop_threshold=-90dB
 @end example
 @end itemize
 
