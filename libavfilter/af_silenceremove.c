@@ -321,31 +321,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     switch (s->mode) {
     case SILENCE_TRIM:
 silence_trim:
-        nbs = in->nb_samples - nb_samples_read / inlink->channels;
+        nbs = in->nb_samples - nb_samples_read / outlink->channels;
         if (!nbs)
             break;
 
         for (i = 0; i < nbs; i++) {
             if (s->start_mode) {
                 threshold = 0;
-                for (j = 0; j < inlink->channels; j++) {
+                for (j = 0; j < outlink->channels; j++) {
                     threshold |= s->compute(s, ibuf[j]) > s->start_threshold;
                 }
             } else {
                 threshold = 1;
-                for (j = 0; j < inlink->channels; j++) {
+                for (j = 0; j < outlink->channels; j++) {
                     threshold &= s->compute(s, ibuf[j]) > s->start_threshold;
                 }
             }
 
             if (threshold) {
-                for (j = 0; j < inlink->channels; j++) {
+                for (j = 0; j < outlink->channels; j++) {
                     s->update(s, *ibuf);
                     s->start_holdoff[s->start_holdoff_end++] = *ibuf++;
                 }
-                nb_samples_read += inlink->channels;
+                nb_samples_read += outlink->channels;
 
-                if (s->start_holdoff_end >= s->start_duration * inlink->channels) {
+                if (s->start_holdoff_end >= s->start_duration * outlink->channels) {
                     if (++s->start_found_periods >= s->start_periods) {
                         s->mode = SILENCE_TRIM_FLUSH;
                         goto silence_trim_flush;
@@ -359,19 +359,19 @@ silence_trim:
             } else {
                 s->start_holdoff_end = 0;
 
-                for (j = 0; j < inlink->channels; j++) {
+                for (j = 0; j < outlink->channels; j++) {
                     s->update(s, ibuf[j]);
                     if (s->start_silence) {
                         s->start_silence_hold[s->start_silence_offset++] = ibuf[j];
-                        s->start_silence_end = FFMIN(s->start_silence_end + 1, inlink->channels * s->start_silence);
-                        if (s->start_silence_offset >= inlink->channels * s->start_silence) {
+                        s->start_silence_end = FFMIN(s->start_silence_end + 1, outlink->channels * s->start_silence);
+                        if (s->start_silence_offset >= outlink->channels * s->start_silence) {
                             s->start_silence_offset = 0;
                         }
                     }
                 }
 
-                ibuf += inlink->channels;
-                nb_samples_read += inlink->channels;
+                ibuf += outlink->channels;
+                nb_samples_read += outlink->channels;
             }
         }
         break;
@@ -379,11 +379,11 @@ silence_trim:
     case SILENCE_TRIM_FLUSH:
 silence_trim_flush:
         nbs  = s->start_holdoff_end - s->start_holdoff_offset;
-        nbs -= nbs % inlink->channels;
+        nbs -= nbs % outlink->channels;
         if (!nbs)
             break;
 
-        out = ff_get_audio_buffer(inlink, nbs / inlink->channels + s->start_silence_end / inlink->channels);
+        out = ff_get_audio_buffer(outlink, nbs / outlink->channels + s->start_silence_end / outlink->channels);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
@@ -428,11 +428,11 @@ silence_trim_flush:
 
     case SILENCE_COPY:
 silence_copy:
-        nbs = in->nb_samples - nb_samples_read / inlink->channels;
+        nbs = in->nb_samples - nb_samples_read / outlink->channels;
         if (!nbs)
             break;
 
-        out = ff_get_audio_buffer(inlink, nbs);
+        out = ff_get_audio_buffer(outlink, nbs);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
@@ -443,12 +443,12 @@ silence_copy:
             for (i = 0; i < nbs; i++) {
                 if (s->stop_mode) {
                     threshold = 0;
-                    for (j = 0; j < inlink->channels; j++) {
+                    for (j = 0; j < outlink->channels; j++) {
                         threshold |= s->compute(s, ibuf[j]) > s->stop_threshold;
                     }
                 } else {
                     threshold = 1;
-                    for (j = 0; j < inlink->channels; j++) {
+                    for (j = 0; j < outlink->channels; j++) {
                         threshold &= s->compute(s, ibuf[j]) > s->stop_threshold;
                     }
                 }
@@ -458,28 +458,28 @@ silence_copy:
                     flush(s, out, outlink, &nb_samples_written, &ret, 0);
                     goto silence_copy_flush;
                 } else if (threshold) {
-                    for (j = 0; j < inlink->channels; j++) {
+                    for (j = 0; j < outlink->channels; j++) {
                         s->update(s, *ibuf);
                         *obuf++ = *ibuf++;
                     }
-                    nb_samples_read    += inlink->channels;
-                    nb_samples_written += inlink->channels;
+                    nb_samples_read    += outlink->channels;
+                    nb_samples_written += outlink->channels;
                 } else if (!threshold) {
-                    for (j = 0; j < inlink->channels; j++) {
+                    for (j = 0; j < outlink->channels; j++) {
                         s->update(s, *ibuf);
                         if (s->stop_silence) {
                             s->stop_silence_hold[s->stop_silence_offset++] = *ibuf;
-                            s->stop_silence_end = FFMIN(s->stop_silence_end + 1, inlink->channels * s->stop_silence);
-                            if (s->stop_silence_offset >= inlink->channels * s->stop_silence) {
+                            s->stop_silence_end = FFMIN(s->stop_silence_end + 1, outlink->channels * s->stop_silence);
+                            if (s->stop_silence_offset >= outlink->channels * s->stop_silence) {
                                 s->stop_silence_offset = 0;
                             }
                         }
 
                         s->stop_holdoff[s->stop_holdoff_end++] = *ibuf++;
                     }
-                    nb_samples_read += inlink->channels;
+                    nb_samples_read += outlink->channels;
 
-                    if (s->stop_holdoff_end >= s->stop_duration * inlink->channels) {
+                    if (s->stop_holdoff_end >= s->stop_duration * outlink->channels) {
                         if (++s->stop_found_periods >= s->stop_periods) {
                             s->stop_holdoff_offset = 0;
                             s->stop_holdoff_end = 0;
@@ -509,7 +509,7 @@ silence_copy:
             }
             flush(s, out, outlink, &nb_samples_written, &ret, 0);
         } else {
-            memcpy(obuf, ibuf, sizeof(double) * nbs * inlink->channels);
+            memcpy(obuf, ibuf, sizeof(double) * nbs * outlink->channels);
 
             out->pts = s->next_pts;
             s->next_pts += av_rescale_q(out->nb_samples,
@@ -523,11 +523,11 @@ silence_copy:
     case SILENCE_COPY_FLUSH:
 silence_copy_flush:
         nbs  = s->stop_holdoff_end - s->stop_holdoff_offset;
-        nbs -= nbs % inlink->channels;
+        nbs -= nbs % outlink->channels;
         if (!nbs)
             break;
 
-        out = ff_get_audio_buffer(inlink, nbs / inlink->channels);
+        out = ff_get_audio_buffer(outlink, nbs / outlink->channels);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
