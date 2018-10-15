@@ -35,6 +35,11 @@ enum SilenceDetect {
     D_RMS,
 };
 
+enum ThresholdMode {
+    T_ANY,
+    T_ALL,
+};
+
 enum SilenceMode {
     SILENCE_TRIM,
     SILENCE_TRIM_FLUSH,
@@ -103,14 +108,14 @@ static const AVOption silenceremove_options[] = {
     { "start_duration",  "set start duration of non-silence part",             OFFSET(start_duration_opt),  AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "start_threshold", "set threshold for start silence detection",          OFFSET(start_threshold),     AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "start_silence",   "set start duration of silence part to keep",         OFFSET(start_silence_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "start_mode",      "set which channel will trigger trimming from start", OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
-    {   "any",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=0},     0,         0, AF, "mode" },
-    {   "all",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=1},     0,         0, AF, "mode" },
+    { "start_mode",      "set which channel will trigger trimming from start", OFFSET(start_mode),          AV_OPT_TYPE_INT,      {.i64=T_ANY}, T_ANY, T_ALL, AF, "mode" },
+    {   "any",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=T_ANY}, 0,         0, AF, "mode" },
+    {   "all",           0,                                                    0,                           AV_OPT_TYPE_CONST,    {.i64=T_ALL}, 0,         0, AF, "mode" },
     { "stop_periods",    NULL,                                                 OFFSET(stop_periods),        AV_OPT_TYPE_INT,      {.i64=0}, -9000,      9000, AF },
     { "stop_duration",   "set stop duration of non-silence part",              OFFSET(stop_duration_opt),   AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
     { "stop_threshold",  "set threshold for stop silence detection",           OFFSET(stop_threshold),      AV_OPT_TYPE_DOUBLE,   {.dbl=0},     0,   DBL_MAX, AF },
     { "stop_silence",    "set stop duration of silence part to keep",          OFFSET(stop_silence_opt),    AV_OPT_TYPE_DURATION, {.i64=0},     0, INT32_MAX, AF },
-    { "stop_mode",       "set which channel will trigger trimming from end",   OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=0},     0,         1, AF, "mode" },
+    { "stop_mode",       "set which channel will trigger trimming from end",   OFFSET(stop_mode),           AV_OPT_TYPE_INT,      {.i64=T_ANY}, T_ANY, T_ALL, AF, "mode" },
     { "detection",       "set how silence is detected",                        OFFSET(detection),           AV_OPT_TYPE_INT,      {.i64=D_RMS}, D_PEAK,D_RMS, AF, "detection" },
     {   "peak",          "use absolute values of samples",                     0,                           AV_OPT_TYPE_CONST,    {.i64=D_PEAK},0,         0, AF, "detection" },
     {   "rms",           "use squared values of samples",                      0,                           AV_OPT_TYPE_CONST,    {.i64=D_RMS}, 0,         0, AF, "detection" },
@@ -331,7 +336,7 @@ silence_trim:
             break;
 
         for (i = 0; i < nbs; i++) {
-            if (s->start_mode) {
+            if (s->start_mode == T_ANY) {
                 threshold = 0;
                 for (j = 0; j < outlink->channels; j++) {
                     threshold |= s->compute(s, ibuf[j]) > s->start_threshold;
@@ -446,7 +451,7 @@ silence_copy:
 
         if (s->stop_periods) {
             for (i = 0; i < nbs; i++) {
-                if (s->stop_mode) {
+                if (s->stop_mode == T_ANY) {
                     threshold = 0;
                     for (j = 0; j < outlink->channels; j++) {
                         threshold |= s->compute(s, ibuf[j]) > s->stop_threshold;
