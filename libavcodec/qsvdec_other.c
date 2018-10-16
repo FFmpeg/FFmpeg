@@ -132,9 +132,11 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
             /* no more data */
             if (av_fifo_size(s->packet_fifo) < sizeof(AVPacket))
                 return avpkt->size ? avpkt->size : ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, avpkt);
-
-            av_packet_unref(&s->input_ref);
-            av_fifo_generic_read(s->packet_fifo, &s->input_ref, sizeof(s->input_ref), NULL);
+            /* in progress of reinit, no read from fifo and keep the buffer_pkt */
+            if (!s->qsv.reinit_flag) {
+                av_packet_unref(&s->input_ref);
+                av_fifo_generic_read(s->packet_fifo, &s->input_ref, sizeof(s->input_ref), NULL);
+            }
         }
 
         ret = ff_qsv_process_data(avctx, &s->qsv, frame, got_frame, &s->input_ref);
@@ -145,6 +147,8 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
             return ret;
         }
+        if (s->qsv.reinit_flag)
+            continue;
 
         s->input_ref.size -= ret;
         s->input_ref.data += ret;

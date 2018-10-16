@@ -372,6 +372,8 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ++q->zero_consume_run;
         if (q->zero_consume_run > 1)
             ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
+    } else if (!*sync && bs.DataOffset) {
+        ++q->buffered_count;
     } else {
         q->zero_consume_run = 0;
     }
@@ -526,6 +528,16 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                                            AV_PIX_FMT_NONE,
                                            AV_PIX_FMT_NONE };
         enum AVPixelFormat qsv_format;
+        AVPacket zero_pkt = {0};
+
+        if (q->buffered_count) {
+            q->reinit_flag = 1;
+            /* decode zero-size pkt to flush the buffered pkt before reinit */
+            q->buffered_count--;
+            return qsv_decode(avctx, q, frame, got_frame, &zero_pkt);
+        }
+
+        q->reinit_flag = 0;
 
         qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
         if (qsv_format < 0) {
