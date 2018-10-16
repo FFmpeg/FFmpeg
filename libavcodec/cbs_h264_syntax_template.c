@@ -1375,3 +1375,21 @@ static int FUNC(filler)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+static int FUNC(end_of_sequence)(CodedBitstreamContext *ctx, RWContext *rw,
+                                 H264RawNALUnitHeader *current)
+{
+    HEADER("End of Sequence");
+
+    return FUNC(nal_unit_header)(ctx, rw, current,
+                                 1 << H264_NAL_END_SEQUENCE);
+}
+
+static int FUNC(end_of_stream)(CodedBitstreamContext *ctx, RWContext *rw,
+                               H264RawNALUnitHeader *current)
+{
+    HEADER("End of Stream");
+
+    return FUNC(nal_unit_header)(ctx, rw, current,
+                                 1 << H264_NAL_END_STREAM);
+}

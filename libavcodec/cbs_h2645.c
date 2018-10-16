@@ -872,7 +872,21 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
         break;
 
     case H264_NAL_END_SEQUENCE:
-        return 0;
+    case H264_NAL_END_STREAM:
+        {
+            err = ff_cbs_alloc_unit_content(ctx, unit,
+                                            sizeof(H264RawNALUnitHeader),
+                                            NULL);
+            if (err < 0)
+                return err;
+
+            err = (unit->type == H264_NAL_END_SEQUENCE ?
+                   cbs_h264_read_end_of_sequence :
+                   cbs_h264_read_end_of_stream)(ctx, &gbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
 
     default:
         return AVERROR(ENOSYS);
@@ -1142,6 +1156,22 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
     case H264_NAL_FILLER_DATA:
         {
             err = cbs_h264_write_filler(ctx, pbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case H264_NAL_END_SEQUENCE:
+        {
+            err = cbs_h264_write_end_of_sequence(ctx, pbc, unit->content);
+            if (err < 0)
+                return err;
+        }
+        break;
+
+    case H264_NAL_END_STREAM:
+        {
+            err = cbs_h264_write_end_of_stream(ctx, pbc, unit->content);
             if (err < 0)
                 return err;
         }
