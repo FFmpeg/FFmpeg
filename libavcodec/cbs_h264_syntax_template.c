@@ -551,10 +551,9 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
-                                   H264RawSEIPicTimestamp *current)
+                                   H264RawSEIPicTimestamp *current,
+                                   const H264RawSPS *sps)
 {
-    CodedBitstreamH264Context *h264 = ctx->priv_data;
-    const H264RawSPS *sps;
     uint8_t time_offset_length;
     int err;
 
@@ -581,13 +580,6 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
                     u(5, hours_value, 0, 23);
             }
         }
-    }
-
-    sps = h264->active_sps;
-    if (!sps) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR,
-               "No active SPS for pic_timestamp.\n");
-        return AVERROR_INVALIDDATA;
     }
 
     if (sps->vui.nal_hrd_parameters_present_flag)
@@ -669,7 +661,8 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
         for (i = 0; i < num_clock_ts[current->pic_struct]; i++) {
             flags(clock_timestamp_flag[i], 1, i);
             if (current->clock_timestamp_flag[i])
-                CHECK(FUNC(sei_pic_timestamp)(ctx, rw, &current->timestamp[i]));
+                CHECK(FUNC(sei_pic_timestamp)(ctx, rw,
+                                              &current->timestamp[i], sps));
         }
     }
 
