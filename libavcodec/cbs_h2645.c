@@ -319,7 +319,8 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #define byte_alignment(rw) (get_bits_count(rw) % 8)
 
 #define allocate(name, size) do { \
-        name ## _ref = av_buffer_allocz(size); \
+        name ## _ref = av_buffer_allocz(size + \
+                                        AV_INPUT_BUFFER_PADDING_SIZE); \
         if (!name ## _ref) \
             return AVERROR(ENOMEM); \
         name = name ## _ref->data; \
