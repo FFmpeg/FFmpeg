@@ -402,7 +402,7 @@ static int mpeg4_decode_sprite_trajectory(Mpeg4DecContext *ctx, GetBitContext *g
                 llabs(sprite_offset[0][i] + sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
                 llabs(sprite_offset[0][i] + sprite_delta[i][0] * (w+16LL) + sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
                 llabs(sprite_delta[i][0] * (w+16LL)) >= INT_MAX ||
-                llabs(sprite_delta[i][1] * (w+16LL)) >= INT_MAX ||
+                llabs(sprite_delta[i][1] * (h+16LL)) >= INT_MAX ||
                 llabs(sd[0]) >= INT_MAX ||
                 llabs(sd[1]) >= INT_MAX ||
                 llabs(sprite_offset[0][i] + sd[0] * (w+16LL)) >= INT_MAX ||
