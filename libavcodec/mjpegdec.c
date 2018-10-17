@@ -594,6 +594,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
         break;
     case 0x22111100:
+    case 0x23111100:
     case 0x42111100:
     case 0x24111100:
         if (s->bits <= 8) s->avctx->pix_fmt = s->cs_itu601 ? AV_PIX_FMT_YUV420P : AV_PIX_FMT_YUVJ420P;
@@ -607,6 +608,10 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
             if (s->bits > 8)
                 goto unk_pixfmt;
             s->upscale_v[1] = s->upscale_v[2] = 1;
+        } else if (pix_fmt_id == 0x23111100) {
+            if (s->bits > 8)
+                goto unk_pixfmt;
+            s->upscale_v[1] = s->upscale_v[2] = 2;
         }
         break;
     case 0x41111100:
@@ -2528,7 +2533,7 @@ the_end:
                 w = AV_CEIL_RSHIFT(w, hshift);
                 h = AV_CEIL_RSHIFT(h, vshift);
             }
-            if (s->upscale_v[p])
+            if (s->upscale_v[p] == 1)
                 h = (h+1)>>1;
             av_assert0(w > 0);
             for (i = 0; i < h; i++) {
@@ -2592,9 +2597,9 @@ the_end:
             }
             dst = &((uint8_t *)s->picture_ptr->data[p])[(h - 1) * s->linesize[p]];
             for (i = h - 1; i; i--) {
-                uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i / 2 * s->linesize[p]];
-                uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) / 2 * s->linesize[p]];
-                if (src1 == src2 || i == h - 1) {
+                uint8_t *src1 = &((uint8_t *)s->picture_ptr->data[p])[i * s->upscale_v[p] / (s->upscale_v[p] + 1) * s->linesize[p]];
+                uint8_t *src2 = &((uint8_t *)s->picture_ptr->data[p])[(i + 1) * s->upscale_v[p] / (s->upscale_v[p] + 1) * s->linesize[p]];
+                if (s->upscale_v[p] != 2 && (src1 == src2 || i == h - 1)) {
                     memcpy(dst, src1, w);
                 } else {
                     for (index = 0; index < w; index++)
