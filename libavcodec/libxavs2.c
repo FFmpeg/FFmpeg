@@ -91,7 +91,7 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     xavs2_opt_set2("ThreadFrames",      "%d", avctx->thread_count);
     xavs2_opt_set2("ThreadRows",        "%d", cae->lcu_row_threads);
 
-    xavs2_opt_set2("OpenGOP",  "%d", 1);
+    xavs2_opt_set2("OpenGOP",  "%d", !(avctx->flags & AV_CODEC_FLAG_CLOSED_GOP));
 
     if (cae->xavs2_opts) {
         AVDictionary *dict    = NULL;
