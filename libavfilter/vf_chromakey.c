@@ -38,6 +38,9 @@ typedef struct ChromakeyContext {
 
     int hsub_log2;
     int vsub_log2;
+
+    int (*do_slice)(AVFilterContext *ctx, void *arg,
+                    int jobnr, int nb_jobs);
 } ChromakeyContext;
 
 static uint8_t do_chromakey_pixel(ChromakeyContext *ctx, uint8_t u[9], uint8_t v[9])
@@ -103,12 +106,45 @@ static int do_chromakey_slice(AVFilterContext *avctx, void *arg, int jobnr, int 
     return 0;
 }
 
+static int do_chromahold_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
+{
+    ChromakeyContext *ctx = avctx->priv;
+    AVFrame *frame = arg;
+    const int slice_start = ((frame->height >> ctx->vsub_log2) * jobnr) / nb_jobs;
+    const int slice_end = ((frame->height >> ctx->vsub_log2) * (jobnr + 1)) / nb_jobs;
+
+    int x, y, alpha;
+
+    for (y = slice_start; y < slice_end; ++y) {
+        for (x = 0; x < frame->width >> ctx->hsub_log2; ++x) {
+            int u = frame->data[1][frame->linesize[1] * y + x];
+            int v = frame->data[2][frame->linesize[2] * y + x];
+            double diff;
+            int du, dv;
+
+            du = u - ctx->chromakey_uv[0];
+            dv = v - ctx->chromakey_uv[1];
+
+            diff = sqrt((du * du + dv * dv) / (255.0 * 255.0));
+
+            alpha = diff > ctx->similarity;
+            if (alpha) {
+                frame->data[1][frame->linesize[1] * y + x] = 128;
+                frame->data[2][frame->linesize[2] * y + x] = 128;
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *avctx = link->dst;
+    ChromakeyContext *ctx = avctx->priv;
     int res;
 
-    if (res = avctx->internal->execute(avctx, do_chromakey_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
+    if (res = avctx->internal->execute(avctx, ctx->do_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
         return res;
 
     return ff_filter_frame(avctx->outputs[0], frame);
@@ -130,6 +166,12 @@ static av_cold int initialize_chromakey(AVFilterContext *avctx)
         ctx->chromakey_uv[1] = RGB_TO_V(ctx->chromakey_rgba);
     }
 
+    if (!strcmp(avctx->filter->name, "chromakey")) {
+        ctx->do_slice = do_chromakey_slice;
+    } else {
+        ctx->do_slice = do_chromahold_slice;
+    }
+
     return 0;
 }
 
@@ -142,9 +184,19 @@ static av_cold int query_formats(AVFilterContext *avctx)
         AV_PIX_FMT_NONE
     };
 
+    static const enum AVPixelFormat hold_pixel_fmts[] = {
+        AV_PIX_FMT_YUV420P,
+        AV_PIX_FMT_YUV422P,
+        AV_PIX_FMT_YUV444P,
+        AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUVA422P,
+        AV_PIX_FMT_YUVA444P,
+        AV_PIX_FMT_NONE
+    };
+
     AVFilterFormats *formats = NULL;
 
-    formats = ff_make_format_list(pixel_fmts);
+    formats = ff_make_format_list(!strcmp(avctx->filter->name, "chromahold") ? hold_pixel_fmts : pixel_fmts);
     if (!formats)
         return AVERROR(ENOMEM);
 
@@ -204,5 +256,45 @@ AVFilter ff_vf_chromakey = {
     .query_formats = query_formats,
     .inputs        = chromakey_inputs,
     .outputs       = chromakey_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+static const AVOption chromahold_options[] = {
+    { "color", "set the chromahold key color", OFFSET(chromakey_rgba), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "similarity", "set the chromahold similarity value", OFFSET(similarity), AV_OPT_TYPE_FLOAT, { .dbl = 0.01 }, 0.01, 1.0, FLAGS },
+    { "yuv", "color parameter is in yuv instead of rgb", OFFSET(is_yuv), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
+    { NULL }
+};
+
+static const AVFilterPad chromahold_inputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+        .needs_writable = 1,
+        .filter_frame   = filter_frame,
+        .config_props   = config_input,
+    },
+    { NULL }
+};
+
+static const AVFilterPad chromahold_outputs[] = {
+    {
+        .name           = "default",
+        .type           = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(chromahold);
+
+AVFilter ff_vf_chromahold = {
+    .name          = "chromahold",
+    .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray."),
+    .priv_size     = sizeof(ChromakeyContext),
+    .priv_class    = &chromahold_class,
+    .init          = initialize_chromakey,
+    .query_formats = query_formats,
+    .inputs        = chromahold_inputs,
+    .outputs       = chromahold_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };

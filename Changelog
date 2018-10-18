@@ -35,6 +35,7 @@ version <next>:
 - AV1 parser
 - SER demuxer
 - sinc audio filter source
+- chromahold filter
 
 
 version 4.0:

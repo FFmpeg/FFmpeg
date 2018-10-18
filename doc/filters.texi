@@ -6163,6 +6163,26 @@ Only deinterlace frames marked as interlaced.
 The default value is @code{all}.
 @end table
 
+@section chromahold
+Remove all color information for all colors except for certain one.
+
+The filter accepts the following options:
+
+@table @option
+@item color
+The color which will not be replaced with neutral chroma.
+
+@item similarity
+Similarity percentage with the above color.
+0.01 matches only the exact key color, while 1.0 matches everything.
+
+@item yuv
+Signals that the color passed is already in YUV instead of RGB.
+
+Literal colors like "green" or "red" don't make sense with this enabled anymore.
+This can be used to pass exact YUV values as hexadecimal numbers.
+@end table
+
 @section chromakey
 YUV colorspace color/chroma keying.
 
