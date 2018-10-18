@@ -510,10 +510,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         lf_lens_destroy(lensfun->lens);
     if (lensfun->modifier)
         lf_modifier_destroy(lensfun->modifier);
-    if (lensfun->distortion_coords)
-        av_free(lensfun->distortion_coords);
-    if (lensfun->interpolation)
-        av_free(lensfun->interpolation);
+    av_freep(&lensfun->distortion_coords);
+    av_freep(&lensfun->interpolation);
 }
 
 static const AVFilterPad lensfun_inputs[] = {
