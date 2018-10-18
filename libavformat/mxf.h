@@ -48,6 +48,7 @@ enum MXFMetadataSetType {
     EssenceGroup,
     TaggedValue,
     TapeDescriptor,
+    AVCSubDescriptor,
 };
 
 enum MXFFrameLayout {

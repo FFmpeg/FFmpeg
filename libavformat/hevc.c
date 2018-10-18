@@ -643,40 +643,6 @@ static int hvcc_parse_pps(GetBitContext *gb,
     return 0;
 }
 
-static uint8_t *nal_unit_extract_rbsp(const uint8_t *src, uint32_t src_len,
-                                      uint32_t *dst_len)
-{
-    uint8_t *dst;
-    uint32_t i, len;
-
-    dst = av_malloc(src_len + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!dst)
-        return NULL;
-
-    /* NAL unit header (2 bytes) */
-    i = len = 0;
-    while (i < 2 && i < src_len)
-        dst[len++] = src[i++];
-
-    while (i + 2 < src_len)
-        if (!src[i] && !src[i + 1] && src[i + 2] == 3) {
-            dst[len++] = src[i++];
-            dst[len++] = src[i++];
-            i++; // remove emulation_prevention_three_byte
-        } else
-            dst[len++] = src[i++];
-
-    while (i < src_len)
-        dst[len++] = src[i++];
-
-    memset(dst + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-
-    *dst_len = len;
-    return dst;
-}
-
-
-
 static void nal_unit_parse_header(GetBitContext *gb, uint8_t *nal_type)
 {
     skip_bits1(gb); // forbidden_zero_bit
@@ -753,7 +719,7 @@ static int hvcc_add_nal_unit(uint8_t *nal_buf, uint32_t nal_size,
     uint8_t *rbsp_buf;
     uint32_t rbsp_size;
 
-    rbsp_buf = nal_unit_extract_rbsp(nal_buf, nal_size, &rbsp_size);
+    rbsp_buf = ff_nal_unit_extract_rbsp(nal_buf, nal_size, &rbsp_size, 2);
     if (!rbsp_buf) {
         ret = AVERROR(ENOMEM);
         goto end;
