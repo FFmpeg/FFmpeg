@@ -85,8 +85,8 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     xavs2_opt_set2("Log",       "%d", cae->log_level);
     xavs2_opt_set2("Preset",    "%d", cae->preset_level);
 
-    /* not the same parameter as the IntraPeriod in xavs2 log */
-    xavs2_opt_set2("IntraPeriod",       "%d", avctx->gop_size);
+    xavs2_opt_set2("IntraPeriodMax",    "%d", avctx->gop_size);
+    xavs2_opt_set2("IntraPeriodMin",    "%d", avctx->gop_size);
 
     xavs2_opt_set2("ThreadFrames",      "%d", avctx->thread_count);
     xavs2_opt_set2("ThreadRows",        "%d", cae->lcu_row_threads);
