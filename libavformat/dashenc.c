@@ -1253,7 +1253,7 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
         }
 
         av_dict_free(&http_opts);
-        dashenc_io_close(s, &out, filename);
+        ff_format_io_close(s, &out);
     } else if (unlink(filename) < 0) {
         av_log(s, AV_LOG_ERROR, "failed to delete %s: %s\n", filename, strerror(errno));
     }
