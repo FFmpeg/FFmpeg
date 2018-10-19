@@ -17393,6 +17393,35 @@ and ones with constant delta pts.
 If there was frames with variable delta, than it will also show min and max delta
 encountered.
 
+@section vibrance
+
+Boost or alter saturation.
+
+The filter accepts the following options:
+@table @option
+@item intensity
+Set strength of boost if positive value or strength of alter if negative value.
+Default is 0. Allowed range is from -2 to 2.
+
+@item rbal
+Set the red balance. Default is 1. Allowed range is from -10 to 10.
+
+@item gbal
+Set the green balance. Default is 1. Allowed range is from -10 to 10.
+
+@item bbal
+Set the blue balance. Default is 1. Allowed range is from -10 to 10.
+
+@item rlum
+Set the red luma coefficient.
+
+@item glum
+Set the green luma coefficient.
+
+@item blum
+Set the blue luma coefficient.
+@end table
+
 @anchor{vignette}
 @section vignette
 

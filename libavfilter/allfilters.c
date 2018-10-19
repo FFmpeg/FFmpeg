@@ -375,6 +375,7 @@ extern AVFilter ff_vf_vaguedenoiser;
 extern AVFilter ff_vf_vectorscope;
 extern AVFilter ff_vf_vflip;
 extern AVFilter ff_vf_vfrdet;
+extern AVFilter ff_vf_vibrance;
 extern AVFilter ff_vf_vidstabdetect;
 extern AVFilter ff_vf_vidstabtransform;
 extern AVFilter ff_vf_vignette;

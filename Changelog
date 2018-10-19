@@ -37,6 +37,7 @@ version <next>:
 - sinc audio filter source
 - chromahold filter
 - setparams filter
+- vibrance filter
 
 
 version 4.0:
