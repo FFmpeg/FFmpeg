@@ -77,7 +77,7 @@ static IDeckLinkIterator *decklink_create_iterator(AVFormatContext *avctx)
     return iter;
 }
 
-int decklink_get_attr_string(IDeckLink *dl, BMDDeckLinkAttributeID cfg_id, const char **s)
+static int decklink_get_attr_string(IDeckLink *dl, BMDDeckLinkAttributeID cfg_id, const char **s)
 {
     DECKLINK_STR tmp;
     HRESULT hr;
