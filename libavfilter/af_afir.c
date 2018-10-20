@@ -211,8 +211,9 @@ static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t col
 static void draw_response(AVFilterContext *ctx, AVFrame *out)
 {
     AudioFIRContext *s = ctx->priv;
-    float *mag, *phase, min = FLT_MAX, max = FLT_MIN;
-    int prev_ymag = -1, prev_yphase = -1;
+    float *mag, *phase, *delay, min = FLT_MAX, max = FLT_MIN;
+    float min_delay = FLT_MAX, max_delay = FLT_MIN;
+    int prev_ymag = -1, prev_yphase = -1, prev_ydelay = -1;
     char text[32];
     int channel, i, x;
 
@@ -220,44 +221,56 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
 
     phase = av_malloc_array(s->w, sizeof(*phase));
     mag = av_malloc_array(s->w, sizeof(*mag));
-    if (!mag || !phase)
+    delay = av_malloc_array(s->w, sizeof(*delay));
+    if (!mag || !phase || !delay)
         goto end;
 
     channel = av_clip(s->ir_channel, 0, s->in[1]->channels - 1);
     for (i = 0; i < s->w; i++) {
         const float *src = (const float *)s->in[1]->extended_data[channel];
         double w = i * M_PI / (s->w - 1);
-        double real = 0.;
-        double imag = 0.;
+        double div, real_num = 0., imag_num = 0., real = 0., imag = 0.;
 
         for (x = 0; x < s->nb_taps; x++) {
             real += cos(-x * w) * src[x];
             imag += sin(-x * w) * src[x];
+            real_num += cos(-x * w) * src[x] * x;
+            imag_num += sin(-x * w) * src[x] * x;
         }
 
         mag[i] = hypot(real, imag);
         phase[i] = atan2(imag, real);
+        div = real * real + imag * imag;
+        delay[i] = (real_num * real + imag_num * imag) / div;
         min = fminf(min, mag[i]);
         max = fmaxf(max, mag[i]);
+        min_delay = fminf(min_delay, delay[i]);
+        max_delay = fmaxf(max_delay, delay[i]);
     }
 
     for (i = 0; i < s->w; i++) {
         int ymag = mag[i] / max * (s->h - 1);
+        int ydelay = (delay[i] - min_delay) / (max_delay - min_delay) * (s->h - 1);
         int yphase = (0.5 * (1. + phase[i] / M_PI)) * (s->h - 1);
 
         ymag = s->h - 1 - av_clip(ymag, 0, s->h - 1);
         yphase = s->h - 1 - av_clip(yphase, 0, s->h - 1);
+        ydelay = s->h - 1 - av_clip(ydelay, 0, s->h - 1);
 
         if (prev_ymag < 0)
             prev_ymag = ymag;
         if (prev_yphase < 0)
             prev_yphase = yphase;
+        if (prev_ydelay < 0)
+            prev_ydelay = ydelay;
 
         draw_line(out, i,   ymag, FFMAX(i - 1, 0),   prev_ymag, 0xFFFF00FF);
         draw_line(out, i, yphase, FFMAX(i - 1, 0), prev_yphase, 0xFF00FF00);
+        draw_line(out, i, ydelay, FFMAX(i - 1, 0), prev_ydelay, 0xFF00FFFF);
 
         prev_ymag   = ymag;
         prev_yphase = yphase;
+        prev_ydelay = ydelay;
     }
 
     if (s->w > 400 && s->h > 100) {
@@ -268,9 +281,18 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
         drawtext(out, 2, 12, "Min Magnitude:", 0xDDDDDDDD);
         snprintf(text, sizeof(text), "%.2f", min);
         drawtext(out, 15 * 8 + 2, 12, text, 0xDDDDDDDD);
+
+        drawtext(out, 2, 22, "Max Delay:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", max_delay);
+        drawtext(out, 11 * 8 + 2, 22, text, 0xDDDDDDDD);
+
+        drawtext(out, 2, 32, "Min Delay:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", min_delay);
+        drawtext(out, 11 * 8 + 2, 32, text, 0xDDDDDDDD);
     }
 
 end:
+    av_free(delay);
     av_free(phase);
     av_free(mag);
 }
@@ -337,7 +359,7 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     switch (s->gtype) {
     case -1:
-        /* nothinkg to do */
+        /* nothing to do */
         break;
     case 0:
         for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {

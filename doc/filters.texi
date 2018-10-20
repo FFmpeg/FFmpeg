@@ -1205,7 +1205,7 @@ Set max allowed Impulse Response filter duration in seconds. Default is 30 secon
 Allowed range is 0.1 to 60 seconds.
 
 @item response
-Show IR frequency reponse, magnitude and phase in additional video stream.
+Show IR frequency reponse, magnitude(magenta) and phase(green) and group delay(yellow) in additional video stream.
 By default it is disabled.
 
 @item channel
