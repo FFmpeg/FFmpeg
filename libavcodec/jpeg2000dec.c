@@ -1162,7 +1162,7 @@ static int jpeg2000_decode_packets_po_iteration(Jpeg2000DecoderContext *s, Jpeg2
             step_x = 32;
             step_y = 32;
 
-            if (RSpoc > FFMIN(codsty->nreslevels, REpoc))
+            if (RSpoc >= FFMIN(codsty->nreslevels, REpoc))
                 continue;
 
             for (reslevelno = RSpoc; reslevelno < FFMIN(codsty->nreslevels, REpoc); reslevelno++) {
