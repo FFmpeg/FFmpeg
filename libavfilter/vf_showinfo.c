@@ -95,6 +95,39 @@ static void dump_stereo3d(AVFilterContext *ctx, AVFrameSideData *sd)
         av_log(ctx, AV_LOG_INFO, " (inverted)");
 }
 
+static void dump_color_property(AVFilterContext *ctx, AVFrame *frame)
+{
+    const char *color_range_str     = av_color_range_name(frame->color_range);
+    const char *colorspace_str      = av_color_space_name(frame->colorspace);
+    const char *color_primaries_str = av_color_primaries_name(frame->color_primaries);
+    const char *color_trc_str       = av_color_transfer_name(frame->color_trc);
+
+    if (!color_range_str || frame->color_range == AVCOL_RANGE_UNSPECIFIED) {
+        av_log(ctx, AV_LOG_INFO, "color_range:unknown");
+    } else {
+        av_log(ctx, AV_LOG_INFO, "color_range:%s", color_range_str);
+    }
+
+    if (!colorspace_str || frame->colorspace == AVCOL_SPC_UNSPECIFIED) {
+        av_log(ctx, AV_LOG_INFO, " color_space:unknown");
+    } else {
+        av_log(ctx, AV_LOG_INFO, " color_space:%s", colorspace_str);
+    }
+
+    if (!color_primaries_str || frame->color_primaries == AVCOL_PRI_UNSPECIFIED) {
+        av_log(ctx, AV_LOG_INFO, " color_primaries:unknown");
+    } else {
+        av_log(ctx, AV_LOG_INFO, " color_primaries:%s", color_primaries_str);
+    }
+
+    if (!color_trc_str || frame->color_trc == AVCOL_TRC_UNSPECIFIED) {
+        av_log(ctx, AV_LOG_INFO, " color_trc:unknown");
+    } else {
+        av_log(ctx, AV_LOG_INFO, " color_trc:%s", color_trc_str);
+    }
+    av_log(ctx, AV_LOG_INFO, "\n");
+}
+
 static void update_sample_stats(const uint8_t *src, int len, int64_t *sum, int64_t *sum2)
 {
     int i;
@@ -199,6 +232,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         av_log(ctx, AV_LOG_INFO, "\n");
     }
+
+    dump_color_property(ctx, frame);
 
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
