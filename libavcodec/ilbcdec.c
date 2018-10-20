@@ -1372,7 +1372,7 @@ static int ilbc_decode_frame(AVCodecContext *avctx, void *data,
 
     if (unpack_frame(s))
         mode = 0;
-    if (s->frame.start < 1)
+    if (s->frame.start < 1 || s->frame.start > 5)
         mode = 0;
 
     if (mode) {
