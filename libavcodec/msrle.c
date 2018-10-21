@@ -95,6 +95,9 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
+    if (buf_size < 2) //Minimally a end of picture code should be there
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
         return ret;
 
