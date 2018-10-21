@@ -36,6 +36,7 @@ version <next>:
 - SER demuxer
 - sinc audio filter source
 - chromahold filter
+- setparams filter
 
 
 version 4.0:

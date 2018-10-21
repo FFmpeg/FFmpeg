@@ -14967,6 +14967,52 @@ Mark the frame as progressive.
 @end table
 @end table
 
+@anchor{setparams}
+@section setparams
+
+Force frame parameter for the output video frame.
+
+The @code{setparams} filter marks interlace and color range for the
+output frames. It does not change the input frame, but only sets the
+corresponding property, which affects how the frame is treated by
+filters/encoders.
+
+@table @option
+@item field_mode
+Available values are:
+
+@table @samp
+@item auto
+Keep the same field property (default).
+
+@item bff
+Mark the frame as bottom-field-first.
+
+@item tff
+Mark the frame as top-field-first.
+
+@item prog
+Mark the frame as progressive.
+@end table
+
+@item range
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color range property (default).
+
+@item unspecified, unknown
+Mark the frame as unspecified color range.
+
+@item limited, tv, mpeg
+Mark the frame as limited range.
+
+@item full, pc, jpeg
+Mark the frame as full range.
+@end table
+@end table
+
 @section showinfo
 
 Show a line containing various information for each input video frame.

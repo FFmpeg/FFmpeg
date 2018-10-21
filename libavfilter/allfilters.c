@@ -327,6 +327,7 @@ extern AVFilter ff_vf_sendcmd;
 extern AVFilter ff_vf_separatefields;
 extern AVFilter ff_vf_setdar;
 extern AVFilter ff_vf_setfield;
+extern AVFilter ff_vf_setparams;
 extern AVFilter ff_vf_setpts;
 extern AVFilter ff_vf_setrange;
 extern AVFilter ff_vf_setsar;
