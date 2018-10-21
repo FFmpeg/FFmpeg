@@ -45,6 +45,7 @@ version 4.1:
 - xstack filter
 - pcm vidc decoder and encoder
 - (a)graphmonitor filter
+- yadif_cuda filter
 
 
 version 4.0:
