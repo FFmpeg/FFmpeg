@@ -355,8 +355,11 @@ static int flush_init_segment(AVFormatContext *s, OutputStream *os)
         return ret;
 
     os->pos = os->init_range_length = range_length;
-    if (!c->single_file)
-        ff_format_io_close(s, &os->out);
+    if (!c->single_file) {
+        char filename[1024];
+        snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
+        dashenc_io_close(s, &os->out, filename);
+    }
     return 0;
 }
 
