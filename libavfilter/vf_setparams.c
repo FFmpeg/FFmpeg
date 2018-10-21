@@ -163,7 +163,7 @@ static const AVFilterPad outputs[] = {
 
 AVFilter ff_vf_setparams = {
     .name        = "setparams",
-    .description = NULL_IF_CONFIG_SMALL("Force field, or color range for the output video frame."),
+    .description = NULL_IF_CONFIG_SMALL("Force field, or color property for the output video frame."),
     .priv_size   = sizeof(SetParamsContext),
     .priv_class  = &setparams_class,
     .inputs      = inputs,
