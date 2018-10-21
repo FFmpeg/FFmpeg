@@ -27,7 +27,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda_internal.h"
+#include "libavutil/hwcontext_cuda.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
