@@ -915,6 +915,7 @@ static int write_manifest(AVFormatContext *s, int final)
             AVStream *st = s->streams[i];
             OutputStream *os = &c->streams[i];
             char *agroup = NULL;
+            char *codec_str_ptr = NULL;
             int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
             if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
                 continue;
@@ -925,10 +926,13 @@ static int write_manifest(AVFormatContext *s, int final)
                 av_strlcat(codec_str, ",", sizeof(codec_str));
                 av_strlcat(codec_str, audio_codec_str, sizeof(codec_str));
             }
+            if (st->codecpar->codec_id != AV_CODEC_ID_HEVC) {
+                codec_str_ptr = codec_str;
+            }
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
             ff_hls_write_stream_info(st, c->m3u8_out, stream_bitrate,
                                      playlist_file, agroup,
-                                     codec_str, NULL);
+                                     codec_str_ptr, NULL);
         }
         dashenc_io_close(s, &c->m3u8_out, temp_filename);
         if (use_rename)
