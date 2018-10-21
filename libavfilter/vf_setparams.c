@@ -193,6 +193,9 @@ static av_cold int init_setrange(AVFilterContext *ctx)
     SetParamsContext *s = ctx->priv;
 
     s->field_mode = MODE_AUTO;/* set field mode to auto */
+    s->color_primaries = -1;
+    s->color_trc       = -1;
+    s->colorspace      = -1;
     return 0;
 }
 
@@ -224,6 +227,9 @@ static av_cold int init_setfield(AVFilterContext *ctx)
     SetParamsContext *s = ctx->priv;
 
     s->color_range = -1;/* set range mode to auto */
+    s->color_primaries = -1;
+    s->color_trc       = -1;
+    s->colorspace      = -1;
     return 0;
 }
 
