@@ -17992,6 +17992,64 @@ Only deinterlace frames marked as interlaced.
 The default value is @code{all}.
 @end table
 
+@section yadif_cuda
+
+Deinterlace the input video using the @ref{yadif} algorithm, but implemented
+in CUDA so that it can work as part of a GPU accelerated pipeline with nvdec
+and/or nvenc.
+
+It accepts the following parameters:
+
+
+@table @option
+
+@item mode
+The interlacing mode to adopt. It accepts one of the following values:
+
+@table @option
+@item 0, send_frame
+Output one frame for each frame.
+@item 1, send_field
+Output one frame for each field.
+@item 2, send_frame_nospatial
+Like @code{send_frame}, but it skips the spatial interlacing check.
+@item 3, send_field_nospatial
+Like @code{send_field}, but it skips the spatial interlacing check.
+@end table
+
+The default value is @code{send_frame}.
+
+@item parity
+The picture field parity assumed for the input interlaced video. It accepts one
+of the following values:
+
+@table @option
+@item 0, tff
+Assume the top field is first.
+@item 1, bff
+Assume the bottom field is first.
+@item -1, auto
+Enable automatic detection of field parity.
+@end table
+
+The default value is @code{auto}.
+If the interlacing is unknown or the decoder does not export this information,
+top field first will be assumed.
+
+@item deint
+Specify which frames to deinterlace. Accept one of the following
+values:
+
+@table @option
+@item 0, all
+Deinterlace all frames.
+@item 1, interlaced
+Only deinterlace frames marked as interlaced.
+@end table
+
+The default value is @code{all}.
+@end table
+
 @section zoompan
 
 Apply Zoom & Pan effect.
