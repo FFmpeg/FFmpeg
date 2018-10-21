@@ -35,6 +35,9 @@ typedef struct SetParamsContext {
     const AVClass *class;
     int field_mode;
     int color_range;
+    int color_primaries;
+    int color_trc;
+    int colorspace;
 } SetParamsContext;
 
 #define OFFSET(x) offsetof(SetParamsContext, x)
@@ -57,6 +60,58 @@ static const AVOption setparams_options[] = {
     {"full",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, FLAGS, "range"},
     {"pc",                           NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, FLAGS, "range"},
     {"jpeg",                         NULL,   0, AV_OPT_TYPE_CONST, {.i64=AVCOL_RANGE_JPEG},         0, 0, FLAGS, "range"},
+
+    {"color_primaries", "select color primaries", OFFSET(color_primaries), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_PRI_NB-1, FLAGS, "color_primaries"},
+    {"auto", "keep the same color primaries",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"bt709",                           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT709},        INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"unknown",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_UNSPECIFIED},  INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"bt470m",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470M},       INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"bt470bg",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT470BG},      INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"smpte170m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE170M},    INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"smpte240m",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE240M},    INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"film",                            NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_FILM},         INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"bt2020",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_BT2020},       INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"smpte428",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE428},     INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"smpte431",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE431},     INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"smpte432",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_SMPTE432},     INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+    {"jedec-p22",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_PRI_JEDEC_P22},    INT_MIN, INT_MAX, FLAGS, "color_primaries"},
+
+    {"color_trc", "select color transfer", OFFSET(color_trc), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_TRC_NB-1, FLAGS, "color_trc"},
+    {"auto", "keep the same color transfer",  0, AV_OPT_TYPE_CONST, {.i64=-1},                     INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt709",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT709},        INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"unknown",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_UNSPECIFIED},  INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt470m",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA22},      INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt470bg",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_GAMMA28},      INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"smpte170m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE170M},    INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"smpte240m",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE240M},    INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"linear",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LINEAR},       INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"log100",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LOG},          INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"log316",                         NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_LOG_SQRT},     INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"iec61966-2-4",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_4}, INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt1361e",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT1361_ECG},   INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"iec61966-2-1",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_IEC61966_2_1}, INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt2020-10",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_10},    INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"bt2020-12",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT2020_12},    INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"smpte2084",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE2084},    INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"smpte428",                       NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE428},     INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"arib-std-b67",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67}, INT_MIN, INT_MAX, FLAGS, "color_trc"},
+
+    {"colorspace", "select colorspace", OFFSET(color_trc), AV_OPT_TYPE_INT, {.i64=-1}, -1, AVCOL_SPC_NB-1, FLAGS, "colorspace"},
+    {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                          INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"gbr",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_RGB},               INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"bt709",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT709},             INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"unknown",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_UNSPECIFIED},       INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"fcc",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_FCC},               INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"bt470bg",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT470BG},           INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"smpte170m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE170M},         INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"smpte240m",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE240M},         INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"ycgco",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_YCGCO},             INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"bt2020nc",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_NCL},        INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"bt2020c",                    NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_BT2020_CL},         INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"smpte2085",                  NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_SMPTE2085},         INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"chroma-derived-nc",          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_CHROMA_DERIVED_NCL},INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"chroma-derived-c",           NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_CHROMA_DERIVED_CL}, INT_MIN, INT_MAX, FLAGS, "colorspace"},
+    {"ictcp",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_SPC_ICTCP},             INT_MIN, INT_MAX, FLAGS, "colorspace"},
     {NULL}
 };
 
@@ -78,6 +133,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     /* set range */
     if (s->color_range >= 0)
         frame->color_range = s->color_range;
+
+    /* set color prim, trc, space */
+    if (s->color_primaries >= 0)
+        frame->color_primaries = s->color_primaries;
+    if (s->color_trc >= 0)
+        frame->color_trc = s->color_trc;
+    if (s->colorspace >= 0)
+        frame->colorspace = s->colorspace;
     return ff_filter_frame(ctx->outputs[0], frame);
 }
 

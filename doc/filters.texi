@@ -15011,6 +15011,79 @@ Mark the frame as limited range.
 @item full, pc, jpeg
 Mark the frame as full range.
 @end table
+
+@item color_primaries
+Set the color primaries.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color primaries property (default).
+
+@item bt709
+@item unknown
+@item bt470m
+@item bt470bg
+@item smpte170m
+@item smpte240m
+@item film
+@item bt2020
+@item smpte428
+@item smpte431
+@item smpte432
+@item jedec-p22
+@end table
+
+@item color_trc
+Set the color transfert.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color trc property (default).
+
+@item bt709
+@item unknown
+@item bt470m
+@item bt470bg
+@item smpte170m
+@item smpte240m
+@item linear
+@item log100
+@item log316
+@item iec61966-2-4
+@item bt1361e
+@item iec61966-2-1
+@item bt2020-10
+@item bt2020-12
+@item smpte2084
+@item smpte428
+@item arib-std-b67
+@end table
+
+@item colorspace
+Set the colorspace.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same colorspace property (default).
+
+@item gbr
+@item bt709
+@item unknown
+@item fcc
+@item bt470bg
+@item smpte170m
+@item smpte240m
+@item ycgco
+@item bt2020nc
+@item bt2020c
+@item smpte2085
+@item chroma-derived-nc
+@item chroma-derived-c
+@item ictcp
+@end table
 @end table
 
 @section showinfo
