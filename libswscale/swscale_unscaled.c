@@ -1821,6 +1821,14 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t *src[],
                     srcPtr += srcStride[plane];
                     dstPtr += dstStride[plane];
                 }
+            } else if (isFloat(c->srcFormat) && isFloat(c->dstFormat) &&
+                       isBE(c->srcFormat) != isBE(c->dstFormat)) { /* swap float plane */
+                for (i = 0; i < height; i++) {
+                    for (j = 0; j < length; j++)
+                        ((uint32_t *) dstPtr)[j] = av_bswap32(((const uint32_t *) srcPtr)[j]);
+                    srcPtr += srcStride[plane];
+                    dstPtr += dstStride[plane];
+                }
             } else if (dstStride[plane] == srcStride[plane] &&
                        srcStride[plane] > 0 && srcStride[plane] == length) {
                 memcpy(dst[plane] + dstStride[plane] * y, src[plane],
