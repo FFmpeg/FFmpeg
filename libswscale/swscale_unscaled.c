@@ -423,7 +423,7 @@ static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels,
     }
 }
 
-static int packed_16bpc_bswap(SwsContext *c, const uint8_t *src[],
+static int bswap_16bpc(SwsContext *c, const uint8_t *src[],
                               int srcStride[], int srcSliceY, int srcSliceH,
                               uint8_t *dst[], int dstStride[])
 {
@@ -2023,7 +2023,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P12) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P14) ||
         IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, AV_PIX_FMT_YUV444P16))
-        c->swscale = packed_16bpc_bswap;
+        c->swscale = bswap_16bpc;
 
     if (usePal(srcFormat) && isByteRGB(dstFormat))
         c->swscale = palToRgbWrapper;
