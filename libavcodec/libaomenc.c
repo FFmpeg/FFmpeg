@@ -34,6 +34,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
+#include "av1.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "profiles.h"
@@ -74,6 +75,10 @@ typedef struct AOMEncoderContext {
     uint64_t sse[4];
     int have_sse; /**< true if we have pending sse[] */
     uint64_t frame_number;
+    int tile_cols, tile_rows;
+    int tile_cols_log2, tile_rows_log2;
+    aom_superblock_size_t superblock_size;
+    int uniform_tiles;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -85,6 +90,9 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_COLOR_PRIMARIES]  = "AV1E_SET_COLOR_PRIMARIES",
     [AV1E_SET_MATRIX_COEFFICIENTS] = "AV1E_SET_MATRIX_COEFFICIENTS",
     [AV1E_SET_TRANSFER_CHARACTERISTICS] = "AV1E_SET_TRANSFER_CHARACTERISTICS",
+    [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
+    [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
+    [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -149,6 +157,10 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "kf_mode:",     cfg->kf_mode,
            width, "kf_min_dist:", cfg->kf_min_dist,
            width, "kf_max_dist:", cfg->kf_max_dist);
+    av_log(avctx, level, "tile settings\n"
+                         "  %*s%d\n  %*s%d\n",
+           width, "tile_width_count:",  cfg->tile_width_count,
+           width, "tile_height_count:", cfg->tile_height_count);
     av_log(avctx, level, "\n");
 }
 
@@ -288,6 +300,169 @@ static void set_color_range(AVCodecContext *avctx)
     }
 
     codecctl_int(avctx, AV1E_SET_COLOR_RANGE, aom_cr);
+}
+
+static int count_uniform_tiling(int dim, int sb_size, int tiles_log2)
+{
+    int sb_dim   = (dim + sb_size - 1) / sb_size;
+    int tile_dim = (sb_dim + (1 << tiles_log2) - 1) >> tiles_log2;
+    av_assert0(tile_dim > 0);
+    return (sb_dim + tile_dim - 1) / tile_dim;
+}
+
+static int choose_tiling(AVCodecContext *avctx,
+                         struct aom_codec_enc_cfg *enccfg)
+{
+    AOMContext *ctx = avctx->priv_data;
+    int sb_128x128_possible, sb_size, sb_width, sb_height;
+    int uniform_rows, uniform_cols;
+    int uniform_64x64_possible, uniform_128x128_possible;
+    int tile_size, rounding, i;
+
+    if (ctx->tile_cols_log2 >= 0)
+        ctx->tile_cols = 1 << ctx->tile_cols_log2;
+    if (ctx->tile_rows_log2 >= 0)
+        ctx->tile_rows = 1 << ctx->tile_rows_log2;
+
+    if (ctx->tile_cols == 0) {
+        ctx->tile_cols = (avctx->width + AV1_MAX_TILE_WIDTH - 1) /
+            AV1_MAX_TILE_WIDTH;
+        if (ctx->tile_cols > 1) {
+            av_log(avctx, AV_LOG_DEBUG, "Automatically using %d tile "
+                   "columns to fill width.\n", ctx->tile_cols);
+        }
+    }
+    av_assert0(ctx->tile_cols > 0);
+    if (ctx->tile_rows == 0) {
+        int max_tile_width =
+            FFALIGN((FFALIGN(avctx->width, 128) +
+                     ctx->tile_cols - 1) / ctx->tile_cols, 128);
+        ctx->tile_rows =
+            (max_tile_width * FFALIGN(avctx->height, 128) +
+             AV1_MAX_TILE_AREA - 1) / AV1_MAX_TILE_AREA;
+        if (ctx->tile_rows > 1) {
+            av_log(avctx, AV_LOG_DEBUG, "Automatically using %d tile "
+                   "rows to fill area.\n", ctx->tile_rows);
+        }
+    }
+    av_assert0(ctx->tile_rows > 0);
+
+    if ((avctx->width  + 63) / 64 < ctx->tile_cols ||
+        (avctx->height + 63) / 64 < ctx->tile_rows) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: frame not "
+               "large enough to fit specified tile arrangement.\n");
+        return AVERROR(EINVAL);
+    }
+    if (ctx->tile_cols > AV1_MAX_TILE_COLS ||
+        ctx->tile_rows > AV1_MAX_TILE_ROWS) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: AV1 does "
+               "not allow more than %dx%d tiles.\n",
+               AV1_MAX_TILE_COLS, AV1_MAX_TILE_ROWS);
+        return AVERROR(EINVAL);
+    }
+    if (avctx->width / ctx->tile_cols > AV1_MAX_TILE_WIDTH) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: AV1 does "
+               "not allow tiles of width greater than %d.\n",
+               AV1_MAX_TILE_WIDTH);
+        return AVERROR(EINVAL);
+    }
+
+    ctx->superblock_size = AOM_SUPERBLOCK_SIZE_DYNAMIC;
+
+    if (ctx->tile_cols == 1 && ctx->tile_rows == 1) {
+        av_log(avctx, AV_LOG_DEBUG, "Using a single tile.\n");
+        return 0;
+    }
+
+    sb_128x128_possible =
+        (avctx->width  + 127) / 128 >= ctx->tile_cols &&
+        (avctx->height + 127) / 128 >= ctx->tile_rows;
+
+    ctx->tile_cols_log2 = ctx->tile_cols == 1 ? 0 :
+        av_log2(ctx->tile_cols - 1) + 1;
+    ctx->tile_rows_log2 = ctx->tile_rows == 1 ? 0 :
+        av_log2(ctx->tile_rows - 1) + 1;
+
+    uniform_cols = count_uniform_tiling(avctx->width,
+                                        64, ctx->tile_cols_log2);
+    uniform_rows = count_uniform_tiling(avctx->height,
+                                        64, ctx->tile_rows_log2);
+    av_log(avctx, AV_LOG_DEBUG, "Uniform with 64x64 superblocks "
+           "-> %dx%d tiles.\n", uniform_cols, uniform_rows);
+    uniform_64x64_possible = uniform_cols == ctx->tile_cols &&
+                             uniform_rows == ctx->tile_rows;
+
+    if (sb_128x128_possible) {
+        uniform_cols = count_uniform_tiling(avctx->width,
+                                            128, ctx->tile_cols_log2);
+        uniform_rows = count_uniform_tiling(avctx->height,
+                                            128, ctx->tile_rows_log2);
+        av_log(avctx, AV_LOG_DEBUG, "Uniform with 128x128 superblocks "
+               "-> %dx%d tiles.\n", uniform_cols, uniform_rows);
+        uniform_128x128_possible = uniform_cols == ctx->tile_cols &&
+                                   uniform_rows == ctx->tile_rows;
+    } else {
+        av_log(avctx, AV_LOG_DEBUG, "128x128 superblocks not possible.\n");
+        uniform_128x128_possible = 0;
+    }
+
+    ctx->uniform_tiles = 1;
+    if (uniform_64x64_possible && uniform_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with dynamic "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        return 0;
+    }
+    if (uniform_64x64_possible && !sb_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with 64x64 "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_64X64;
+        return 0;
+    }
+    if (uniform_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with 128x128 "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_128X128;
+        return 0;
+    }
+    ctx->uniform_tiles = 0;
+
+    if (sb_128x128_possible) {
+        sb_size = 128;
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_128X128;
+    } else {
+        sb_size = 64;
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_64X64;
+    }
+    av_log(avctx, AV_LOG_DEBUG, "Using fixed tiling with %dx%d "
+           "superblocks (tile_cols = %d, tile_rows = %d).\n",
+           sb_size, sb_size, ctx->tile_cols, ctx->tile_rows);
+
+    enccfg->tile_width_count  = ctx->tile_cols;
+    enccfg->tile_height_count = ctx->tile_rows;
+
+    sb_width  = (avctx->width  + sb_size - 1) / sb_size;
+    sb_height = (avctx->height + sb_size - 1) / sb_size;
+
+    tile_size = sb_width / ctx->tile_cols;
+    rounding  = sb_width % ctx->tile_cols;
+    for (i = 0; i < ctx->tile_cols; i++) {
+        enccfg->tile_widths[i] = tile_size +
+            (i < rounding / 2 ||
+             i > ctx->tile_cols - 1 - (rounding + 1) / 2);
+    }
+
+    tile_size = sb_height / ctx->tile_rows;
+    rounding  = sb_height % ctx->tile_rows;
+    for (i = 0; i < ctx->tile_rows; i++) {
+        enccfg->tile_heights[i] = tile_size +
+            (i < rounding / 2 ||
+             i > ctx->tile_rows - 1 - (rounding + 1) / 2);
+    }
+
+    return 0;
 }
 
 static av_cold int aom_init(AVCodecContext *avctx,
@@ -442,6 +617,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
     enccfg.g_error_resilient = ctx->error_resilient;
 
+    res = choose_tiling(avctx, &enccfg);
+    if (res < 0)
+        return res;
+
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
     res = aom_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
@@ -464,6 +643,12 @@ static av_cold int aom_init(AVCodecContext *avctx,
     codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
     codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
     set_color_range(avctx);
+
+    codecctl_int(avctx, AV1E_SET_SUPERBLOCK_SIZE, ctx->superblock_size);
+    if (ctx->uniform_tiles) {
+        codecctl_int(avctx, AV1E_SET_TILE_COLUMNS, ctx->tile_cols_log2);
+        codecctl_int(avctx, AV1E_SET_TILE_ROWS,    ctx->tile_rows_log2);
+    }
 
     // provide dummy value to initialize wrapper, values will be updated each _encode()
     aom_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
@@ -796,6 +981,9 @@ static const AVOption options[] = {
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "drop-threshold",   "Frame drop threshold", offsetof(AOMContext, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE },
     { "noise-sensitivity", "Noise sensitivity", OFFSET(noise_sensitivity), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 4, VE},
+    { "tiles",            "Tile columns x rows", OFFSET(tile_cols), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, VE },
+    { "tile-columns",     "Log2 of number of tile columns to use", OFFSET(tile_cols_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
+    { "tile-rows",        "Log2 of number of tile rows to use",    OFFSET(tile_rows_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { NULL }
 };
 
