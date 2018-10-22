@@ -1,6 +1,73 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.0.3:
+- avcodec/jpeg2000dec: Fix off by 1 error in JPEG2000_PGOD_CPRL handling
+- avcodec/mpeg4videodec: Fix typo in sprite delta check
+- avcodec/h264_cavlc: Check mb_skip_run
+- avcodec/ra144: Fix integer overflow in add_wav()
+- avformat/utils: Never store negative values in last_IP_duration
+- avformat/utils: Fix integer overflow in discontinuity check
+- Revert "avcodec/cbs_h264: silence errors about end_of_seq nalus"
+- avcodec/cbs: ensure user_data is padded for GBC parsing
+- avcodec/cbs: fix crash in sei_pic_timestamp
+- avcodec/cbs_h264: silence errors about end_of_seq nalus
+- avcodec/cuviddec: properly take deinterlacing and display delay into account for buffer_full check
+- avcodec/h2645_parse: skip NALUs with no content after stripping all the trailing zeros
+- configure: <fflib>_deps: validate, reduce sensitivity
+- configure: speed up check_deps()
+- configure: speed up print_enabled_components()
+- configure: speed up flatten_extralibs_wrapper()
+- avformat/utils: Fix potential integer overflow in extract_extradata()
+- avcodec/unary: Improve get_unary() docs
+- avcodec/gdv: Replace divisions by shifts in rescale()
+- avcodec/ac3dec: Fix shift signedness in mask creation
+- avcodec/eac3dec: Check that channel_map does not contain more than EAC3_MAX_CHANNELS
+- doc/examples/vaapi_transcode: Fix the typo
+- avcodec/dvdsubdec: Sanity check len in decode_rle()
+- avcodec/mpeg4videodec: Fix undefined shift in get_amv()
+- avcodec/zmbv: Check that the decompressed data size is correct
+- avcodec/zmbv: Update decomp_len in raw frames
+- avcodec/shorten: Fix bitstream end check in read_header()
+- avcodec/dvdsubdec: Avoid branch in decode_run_8bit()
+- avcodec/h264_refs: Document last if() in ff_h264_execute_ref_pic_marking()
+- avcodec/ra144: Fix undefined integer overflow in add_wav()
+- avcodec/indeo4: Check dimensions in decode_pic_hdr()
+- avformat/mov: Error on too large stsd entry counts.
+- examples: Fix use of AV_CODEC_FLAG_GLOBAL_HEADER
+- avcodec/hq_hqa: Check remaining input bits in hqa_decode_mb()
+- avcodec/vb: Check for end of bytestream before reading blocktype
+- avcodec/snowdec: Fix integer overflow with motion vector residual
+- avcodec/mpeg4videodec: Fix slice end detection in mpeg4_decode_studio_mb()
+- avformat/nsvdec: Do not parse multiple NSVf
+- avformat/dashdec: Fix strlen(rep_id_val) with it being NULL
+- avformat/mlvdec: read_string() received unsigned size, make the argument unsigned
+- avformat/rmdec: Fix EOF check in the stream loop in ivr_read_header()
+- avcodec/scpr: Check for min > max in decompress_p()
+- avcodec/shorten: Fix signed 32bit overflow in shift in shorten_decode_frame()
+- avcodec/shorten: Fix integer overflow in residual/LPC combination
+- avcodec/shorten: Check verbatim length
+- avcodec/mpegaudio_parser: Initialize poutbuf*
+- avcodec/aacpsdsp_template: Fix integer overflow in ps_stereo_interpolate_c()
+- avformat/flvenc: Check audio packet size
+- lavc/svq3: Fix regression decoding some files.
+- avcodec/mlp_parser: Check if synccode is within buffer
+- avcodec/qtrle: Check remaining bytestream in qtrle_decode_XYbpp()
+- avcodec/diracdec: Check bytes count in else branch in decode_lowdelay() too
+- avcodec/diracdec: Check slice numbers for overflows in relation to picture dimensions
+- avcodec/diracdec: Change frame_number to 64bit as its a 32bit from the bitstream and we also have a -1 special case
+- avcodec/dirac_dwt_template: Fix several integer overflows in horizontal_compose_daub97i()
+- avcodec/diracdec: Prevent integer overflow in intermediate in global_mv()
+- swresample/swresample: Fix input channel count in resample_first computation
+- avutil/pixfmt: Document chroma plane size for odd resolutions
+- lavf/libsmbclient: return AVERROR_EOF for EOF.
+- lavc/videotoolboxenc: Fix compilation on osx 10.10.5 Yosemite
+- avcodec/mediacodecdec: fix SEGV on modern nvidia decoders
+- avcodec/bitstream_filters: check the input argument of av_bsf_get_by_name() for NULL
+- avformat/librtmp: fix returning EOF from Read/Write
+- avcodec/videotoolboxenc: fix undefined behavior with rc_max_rate=0
+
+
 version 4.0.2:
 - avcodec/dvdsub_parser: Allocate input padding
 - avcodec/dvdsub_parser: Init output buf/size
