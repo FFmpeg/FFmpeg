@@ -71,6 +71,12 @@ fate-vc1_sa20021: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SA20021.vc1
 FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_ilaced_twomv
 fate-vc1_ilaced_twomv: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vc1/ilaced_twomv.vc1
 
+FATE_VC1-$(CONFIG_VC1T_DEMUXER) += fate-vc1test_smm0005
+fate-vc1test_smm0005: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SMM0005.rcv
+
+FATE_VC1-$(CONFIG_VC1T_DEMUXER) += fate-vc1test_smm0015
+fate-vc1test_smm0015: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SMM0015.rcv
+
 FATE_VC1-$(CONFIG_MOV_DEMUXER) += fate-vc1-ism
 fate-vc1-ism: CMD = framecrc -i $(TARGET_SAMPLES)/isom/vc1-wmapro.ism -an
 
