@@ -74,7 +74,7 @@ AVInteger av_mul_i(AVInteger a, AVInteger b){
 
         if(a.v[i])
             for(j=i; j<AV_INTEGER_SIZE && j-i<=nb; j++){
-                carry= (carry>>16) + out.v[j] + a.v[i]*b.v[j-i];
+                carry= (carry>>16) + out.v[j] + a.v[i]*(unsigned)b.v[j-i];
                 out.v[j]= carry;
             }
     }
