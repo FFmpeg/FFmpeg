@@ -1306,10 +1306,10 @@ set by the peer side. Before version 1.3.0 this option
 is only available as @option{latency}.
 
 @item recv_buffer_size=@var{bytes}
-Set receive buffer size, expressed in bytes.
+Set UDP receive buffer size, expressed in bytes.
 
 @item send_buffer_size=@var{bytes}
-Set send buffer size, expressed in bytes.
+Set UDP send buffer size, expressed in bytes.
 
 @item rw_timeout
 Set raise error timeout for read/write optations.
@@ -1328,6 +1328,87 @@ receiving peer, the sender drops the older packets that
 have no chance of being delivered in time. It was
 automatically enabled in the sender if the receiver
 supports it.
+
+@item sndbuf=@var{bytes}
+Set send buffer size, expressed in bytes.
+
+@item rcvbuf=@var{bytes}
+Set receive buffer size, expressed in bytes.
+
+Receive buffer must not be greater than @option{ffs}.
+
+@item lossmaxttl=@var{packets}
+The value up to which the Reorder Tolerance may grow. When
+Reorder Tolerance is > 0, then packet loss report is delayed
+until that number of packets come in. Reorder Tolerance
+increases every time a "belated" packet has come, but it
+wasn't due to retransmission (that is, when UDP packets tend
+to come out of order), with the difference between the latest
+sequence and this packet's sequence, and not more than the
+value of this option. By default it's 0, which means that this
+mechanism is turned off, and the loss report is always sent
+immediately upon experiencing a "gap" in sequences.
+
+@item minversion
+The minimum SRT version that is required from the peer. A connection
+to a peer that does not satisfy the minimum version requirement
+will be rejected.
+
+The version format in hex is 0xXXYYZZ for x.y.z in human readable
+form.
+
+@item streamid=@var{string}
+A string limited to 512 characters that can be set on the socket prior
+to connecting. This stream ID will be able to be retrieved by the
+listener side from the socket that is returned from srt_accept and
+was connected by a socket with that set stream ID. SRT does not enforce
+any special interpretation of the contents of this string.
+This option doesn’t make sense in Rendezvous connection; the result
+might be that simply one side will override the value from the other
+side and it’s the matter of luck which one would win
+
+@item smoother=@var{live|file}
+The type of Smoother used for the transmission for that socket, which
+is responsible for the transmission and congestion control. The Smoother
+type must be exactly the same on both connecting parties, otherwise
+the connection is rejected.
+
+@item messageapi=@var{1|0}
+When set, this socket uses the Message API, otherwise it uses Buffer
+API. Note that in live mode (see @option{transtype}) there’s only
+message API available. In File mode you can chose to use one of two modes:
+
+Stream API (default, when this option is false). In this mode you may
+send as many data as you wish with one sending instruction, or even use
+dedicated functions that read directly from a file. The internal facility
+will take care of any speed and congestion control. When receiving, you
+can also receive as many data as desired, the data not extracted will be
+waiting for the next call. There is no boundary between data portions in
+the Stream mode.
+
+Message API. In this mode your single sending instruction passes exactly
+one piece of data that has boundaries (a message). Contrary to Live mode,
+this message may span across multiple UDP packets and the only size
+limitation is that it shall fit as a whole in the sending buffer. The
+receiver shall use as large buffer as necessary to receive the message,
+otherwise the message will not be given up. When the message is not
+complete (not all packets received or there was a packet loss) it will
+not be given up.
+
+@item transtype=@var{live|file}
+Sets the transmission type for the socket, in particular, setting this
+option sets multiple other parameters to their default values as required
+for a particular transmission type.
+
+live: Set options as for live transmission. In this mode, you should
+send by one sending instruction only so many data that fit in one UDP packet,
+and limited to the value defined first in @option{payload_size} (1316 is
+default in this mode). There is no speed control in this mode, only the
+bandwidth control, if configured, in order to not exceed the bandwidth with
+the overhead transmission (retransmitted and control packets).
+
+file: Set options as for non-live transmission. See @option{messageapi}
+for further explanations
 
 @end table
 
