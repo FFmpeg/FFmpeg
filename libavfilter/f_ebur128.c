@@ -777,6 +777,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 int x, y, ret;
                 uint8_t *p;
                 double gauge_value;
+                int y_loudness_lu_graph, y_loudness_lu_gauge;
 
                 if (ebur128->gauge_type == GAUGE_TYPE_MOMENTARY) {
                     gauge_value = loudness_400 - ebur128->target;
@@ -784,8 +785,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     gauge_value = loudness_3000 - ebur128->target;
                 }
 
-                const int y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 - ebur128->target);
-                const int y_loudness_lu_gauge = lu_to_y(ebur128, gauge_value);
+                y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 - ebur128->target);
+                y_loudness_lu_gauge = lu_to_y(ebur128, gauge_value);
 
                 /* draw the graph using the short-term loudness */
                 p = pic->data[0] + ebur128->graph.y*pic->linesize[0] + ebur128->graph.x*3;
