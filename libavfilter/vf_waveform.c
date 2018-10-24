@@ -3025,6 +3025,9 @@ static int config_output(AVFilterLink *outlink)
             comp++;
     }
     s->acomp = comp;
+    if (s->acomp == 0)
+        return AVERROR(EINVAL);
+
     s->odesc = av_pix_fmt_desc_get(outlink->format);
     s->dcomp = s->odesc->nb_components;
 
