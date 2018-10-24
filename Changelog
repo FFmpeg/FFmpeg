@@ -38,6 +38,7 @@ version <next>:
 - chromahold filter
 - setparams filter
 - vibrance filter
+- decoding S12M timecode in h264
 
 
 version 4.0:
