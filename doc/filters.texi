@@ -17798,6 +17798,61 @@ Set the scaling dimension: @code{2} for @code{2xBR}, @code{3} for
 Default is @code{3}.
 @end table
 
+@section xstack
+Stack video inputs into custom layout.
+
+All streams must be of same pixel format.
+
+The filter accept the following option:
+
+@table @option
+@item inputs
+Set number of input streams. Default is 2.
+
+@item layout
+Specify layout of inputs.
+This option requires the desired layout configuration to be explicitly set by the user.
+This sets position of each video input in output. Each input
+is separated by '|'.
+The first number represents the column, and the second number represents the row.
+Numbers start at 0 and are separated by '_'. Optionally one can use wX and hX,
+where X is video input from which to take width or height.
+Multiple values can be used when separated by '+'. In such
+case values are summed together.
+
+@item shortest
+If set to 1, force the output to terminate when the shortest input
+terminates. Default value is 0.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Display 4 inputs into 2x2 grid,
+note that if inputs are of different sizes unused gaps might appear,
+as not all of output video is used.
+@example
+xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0
+@end example
+
+@item
+Display 4 inputs into 1x4 grid,
+note that if inputs are of different sizes unused gaps might appear,
+as not all of output video is used.
+@example
+xstack=inputs=4:layout=0_0|0_h0|0_h0+h1|0_h0+h1+h2
+@end example
+
+@item
+Display 9 inputs into 3x3 grid,
+note that if inputs are of different sizes unused gaps might appear,
+as not all of output video is used.
+@example
+xstack=inputs=9:layout=w3_0|w3_h0+h2|w3_h0|0_h4|0_0|w3+w1_0|0_h1+h2|w3+w1_h0|w3+w1_h1+h2
+@end example
+@end itemize
+
 @anchor{yadif}
 @section yadif
 

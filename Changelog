@@ -39,6 +39,7 @@ version <next>:
 - setparams filter
 - vibrance filter
 - decoding S12M timecode in h264
+- xstack filter
 
 
 version 4.0:
