@@ -802,8 +802,8 @@ static void draw_trace8(OscilloscopeContext *s, AVFrame *frame)
             if ((1 << c) & s->components) {
                 int x = i * s->width / s->nb_values;
                 int px = (i - 1) * s->width / s->nb_values;
-                int py = s->height - s->values[i-1].p[c] * s->height / 256;
-                int y = s->height - s->values[i].p[c] * s->height / 256;
+                int py = s->height - s->values[i-1].p[s->rgba_map[c]] * s->height / 256;
+                int y = s->height - s->values[i].p[s->rgba_map[c]] * s->height / 256;
 
                 draw_line(&s->draw, s->ox + x, s->oy + y, s->ox + px, s->oy + py, frame, s->colors[c]);
             }
@@ -821,8 +821,8 @@ static void draw_trace16(OscilloscopeContext *s, AVFrame *frame)
             if ((1 << c) & s->components) {
                 int x = i * s->width / s->nb_values;
                 int px = (i - 1) * s->width / s->nb_values;
-                int py = s->height - s->values[i-1].p[c] * s->height / s->max;
-                int y = s->height - s->values[i].p[c] * s->height / s->max;
+                int py = s->height - s->values[i-1].p[s->rgba_map[c]] * s->height / s->max;
+                int y = s->height - s->values[i].p[s->rgba_map[c]] * s->height / s->max;
 
                 draw_line(&s->draw, s->ox + x, s->oy + y, s->ox + px, s->oy + py, frame, s->colors[c]);
             }
@@ -996,9 +996,9 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     for (i = 0; i < s->nb_values; i++) {
         for (c = 0; c < s->nb_comps; c++) {
             if ((1 << c) & s->components) {
-                max[c] = FFMAX(max[c], s->values[i].p[c]);
-                min[c] = FFMIN(min[c], s->values[i].p[c]);
-                average[c] += s->values[i].p[c];
+                max[c] = FFMAX(max[c], s->values[i].p[s->rgba_map[c]]);
+                min[c] = FFMIN(min[c], s->values[i].p[s->rgba_map[c]]);
+                average[c] += s->values[i].p[s->rgba_map[c]];
             }
         }
     }
@@ -1013,7 +1013,7 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 const char yuva[4] = { 'Y', 'U', 'V', 'A' };
                 char text[128];
 
-                snprintf(text, sizeof(text), "%c avg:%.1f min:%d max:%d\n", s->is_rgb ? rgba[c] : yuva[c], average[s->rgba_map[c]], min[s->rgba_map[c]], max[s->rgba_map[c]]);
+                snprintf(text, sizeof(text), "%c avg:%.1f min:%d max:%d\n", s->is_rgb ? rgba[c] : yuva[c], average[c], min[c], max[c]);
                 draw_text(&s->draw, frame, &s->white, s->ox +  2 + 280 * i++, s->oy + s->height + 4, text, 0);
             }
         }
