@@ -411,6 +411,8 @@ try_again:
                                 av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
                                 goto try_again;
+                            } else if (!strncmp(line, "TITLE", 5)) {
+                                goto try_again;
                             }
                         } while (skip_line(line));
                         if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
@@ -1050,6 +1052,8 @@ try_again:
                         sscanf(line + 19, "%f %f", min, max);
                         min[1] = min[2] = min[0];
                         max[1] = max[2] = max[0];
+                        goto try_again;
+                    } else if (!strncmp(line, "TITLE", 5)) {
                         goto try_again;
                     }
                 } while (skip_line(line));
