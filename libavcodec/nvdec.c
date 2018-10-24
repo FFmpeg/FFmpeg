@@ -149,8 +149,12 @@ static void nvdec_decoder_free(void *opaque, uint8_t *data)
 {
     NVDECDecoder *decoder = (NVDECDecoder*)data;
 
-    if (decoder->decoder)
+    if (decoder->decoder) {
+        CUcontext dummy;
+        decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
         decoder->cvdl->cuvidDestroyDecoder(decoder->decoder);
+        decoder->cudl->cuCtxPopCurrent(&dummy);
+    }
 
     av_buffer_unref(&decoder->hw_device_ref);
 
