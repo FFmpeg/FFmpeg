@@ -444,6 +444,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     const AVPixFmtDescriptor *desc;
     float quant;
     int ret;
+    mfxVersion ver;
 
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
     if (ret < 0)
@@ -611,8 +612,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco;
 
-#if QSV_HAVE_CO2
         if (avctx->codec_id == AV_CODEC_ID_H264) {
+#if QSV_HAVE_CO2
             q->extco2.Header.BufferId     = MFX_EXTBUFF_CODING_OPTION2;
             q->extco2.Header.BufferSz     = sizeof(q->extco2);
 
@@ -641,11 +642,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             q->extco2.Trellis = q->trellis;
 #endif
 
-#if QSV_HAVE_LA_DS
+#if QSV_VERSION_ATLEAST(1, 8)
             q->extco2.LookAheadDS = q->look_ahead_downsampling;
-#endif
 
-#if QSV_HAVE_BREF_TYPE
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS
             if (avctx->b_frame_strategy >= 0)
@@ -675,11 +674,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
 #endif
             q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco2;
-        }
 #endif
+
 #if QSV_HAVE_MF
-        if (avctx->codec_id == AV_CODEC_ID_H264) {
-            mfxVersion    ver;
             ret = MFXQueryVersion(q->session,&ver);
             if (ret >= MFX_ERR_NONE && QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
                 q->extmfp.Header.BufferId     = MFX_EXTBUFF_MULTI_FRAME_PARAM;
@@ -689,8 +686,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 av_log(avctx,AV_LOG_VERBOSE,"MFMode:%d\n", q->extmfp.MFMode);
                 q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extmfp;
             }
-        }
 #endif
+        }
     }
 
     if (!check_enc_param(avctx,q)) {
