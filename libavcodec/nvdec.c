@@ -601,7 +601,11 @@ int ff_nvdec_frame_params(AVCodecContext *avctx,
     frames_ctx->format            = AV_PIX_FMT_CUDA;
     frames_ctx->width             = (avctx->coded_width + 1) & ~1;
     frames_ctx->height            = (avctx->coded_height + 1) & ~1;
-    frames_ctx->initial_pool_size = dpb_size;
+    /*
+     * We add two extra frames to the pool to account for deinterlacing filters
+     * holding onto their frames.
+     */
+    frames_ctx->initial_pool_size = dpb_size + 2;
 
     frames_ctx->free = nvdec_free_dummy;
     frames_ctx->pool = av_buffer_pool_init(0, nvdec_alloc_dummy);
