@@ -654,6 +654,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if QSV_VERSION_ATLEAST(1, 8)
             q->extco2.LookAheadDS = q->look_ahead_downsampling;
+            q->extco2.RepeatPPS   = q->repeat_pps ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
 
 #if FF_API_PRIVATE_OPT
 FF_DISABLE_DEPRECATION_WARNINGS

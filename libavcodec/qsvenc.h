@@ -162,6 +162,8 @@ typedef struct QSVEncContext {
     int int_ref_qp_delta;
     int recovery_point_sei;
 
+    int repeat_pps;
+
     int a53_cc;
 
 #if QSV_HAVE_MF
