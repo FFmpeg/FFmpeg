@@ -446,6 +446,12 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     int ret;
     mfxVersion ver;
 
+    ret = MFXQueryVersion(q->session,&ver);
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
     if (ret < 0)
         return AVERROR_BUG;
@@ -494,10 +500,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     q->param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
     q->param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
 
-    // TODO:  detect version of MFX--if the minor version is greater than
-    // or equal to 19, then can use the same alignment settings as H.264
-    // for HEVC
-    q->width_align = avctx->codec_id == AV_CODEC_ID_HEVC ? 32 : 16;
+    // If the minor version is greater than or equal to 19,
+    // then can use the same alignment settings as H.264 for HEVC
+    q->width_align = (avctx->codec_id != AV_CODEC_ID_HEVC ||
+                      QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 19)) ? 16 : 32;
     q->param.mfx.FrameInfo.Width = FFALIGN(avctx->width, q->width_align);
 
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -677,8 +683,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 #if QSV_HAVE_MF
-            ret = MFXQueryVersion(q->session,&ver);
-            if (ret >= MFX_ERR_NONE && QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+            if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
                 q->extmfp.Header.BufferId     = MFX_EXTBUFF_MULTI_FRAME_PARAM;
                 q->extmfp.Header.BufferSz     = sizeof(q->extmfp);
 
