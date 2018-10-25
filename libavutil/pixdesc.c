@@ -31,19 +31,22 @@
 #include "intreadwrite.h"
 #include "version.h"
 
-void av_read_image_line(uint16_t *dst,
+void av_read_image_line2(void *dst,
                         const uint8_t *data[4], const int linesize[4],
                         const AVPixFmtDescriptor *desc,
                         int x, int y, int c, int w,
-                        int read_pal_component)
+                        int read_pal_component,
+                        int dst_element_size)
 {
     AVComponentDescriptor comp = desc->comp[c];
     int plane = comp.plane;
     int depth = comp.depth;
-    int mask  = (1 << depth) - 1;
+    unsigned mask  = (1ULL << depth) - 1;
     int shift = comp.shift;
     int step  = comp.step;
     int flags = desc->flags;
+    uint16_t *dst16 = dst;
+    uint32_t *dst32 = dst;
 
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
         int skip = x * step + comp.offset;
@@ -57,38 +60,56 @@ void av_read_image_line(uint16_t *dst,
             shift -= step;
             p -= shift >> 3;
             shift &= 7;
-            *dst++ = val;
+            if (dst_element_size == 4) *dst32++ = val;
+            else                       *dst16++ = val;
         }
     } else {
         const uint8_t *p = data[plane] + y * linesize[plane] +
                            x * step + comp.offset;
         int is_8bit = shift + depth <= 8;
+        int is_16bit= shift + depth <=16;
 
         if (is_8bit)
             p += !!(flags & AV_PIX_FMT_FLAG_BE);
 
         while (w--) {
-            int val = is_8bit ? *p :
-                flags & AV_PIX_FMT_FLAG_BE ? AV_RB16(p) : AV_RL16(p);
+            unsigned val;
+            if     (is_8bit)  val = *p;
+            else if(is_16bit) val = flags & AV_PIX_FMT_FLAG_BE ? AV_RB16(p) : AV_RL16(p);
+            else              val = flags & AV_PIX_FMT_FLAG_BE ? AV_RB32(p) : AV_RL32(p);
             val = (val >> shift) & mask;
             if (read_pal_component)
                 val = data[1][4 * val + c];
             p += step;
-            *dst++ = val;
+            if (dst_element_size == 4) *dst32++ = val;
+            else                       *dst16++ = val;
         }
     }
 }
 
-void av_write_image_line(const uint16_t *src,
+void av_read_image_line(uint16_t *dst,
+                        const uint8_t *data[4], const int linesize[4],
+                        const AVPixFmtDescriptor *desc,
+                        int x, int y, int c, int w,
+                        int read_pal_component)
+{
+    av_read_image_line2(dst, data, linesize, desc,x, y, c, w,
+                        read_pal_component,
+                        2);
+}
+
+void av_write_image_line2(const void *src,
                          uint8_t *data[4], const int linesize[4],
                          const AVPixFmtDescriptor *desc,
-                         int x, int y, int c, int w)
+                         int x, int y, int c, int w, int src_element_size)
 {
     AVComponentDescriptor comp = desc->comp[c];
     int plane = comp.plane;
     int depth = comp.depth;
     int step  = comp.step;
     int flags = desc->flags;
+    const uint32_t *src32 = src;
+    const uint16_t *src16 = src;
 
     if (flags & AV_PIX_FMT_FLAG_BITSTREAM) {
         int skip = x * step + comp.offset;
@@ -96,7 +117,7 @@ void av_write_image_line(const uint16_t *src,
         int shift = 8 - depth - (skip & 7);
 
         while (w--) {
-            *p |= *src++ << shift;
+            *p |= (src_element_size == 4 ? *src32++ : *src16++) << shift;
             shift -= step;
             p -= shift >> 3;
             shift &= 7;
@@ -109,22 +130,41 @@ void av_write_image_line(const uint16_t *src,
         if (shift + depth <= 8) {
             p += !!(flags & AV_PIX_FMT_FLAG_BE);
             while (w--) {
-                *p |= (*src++ << shift);
+                *p |= ((src_element_size == 4 ? *src32++ : *src16++) << shift);
                 p += step;
             }
         } else {
             while (w--) {
-                if (flags & AV_PIX_FMT_FLAG_BE) {
-                    uint16_t val = AV_RB16(p) | (*src++ << shift);
-                    AV_WB16(p, val);
+                unsigned s = (src_element_size == 4 ? *src32++ : *src16++);
+                if (shift + depth <= 16) {
+                    if (flags & AV_PIX_FMT_FLAG_BE) {
+                        uint16_t val = AV_RB16(p) | (s << shift);
+                        AV_WB16(p, val);
+                    } else {
+                        uint16_t val = AV_RL16(p) | (s << shift);
+                        AV_WL16(p, val);
+                    }
                 } else {
-                    uint16_t val = AV_RL16(p) | (*src++ << shift);
-                    AV_WL16(p, val);
+                    if (flags & AV_PIX_FMT_FLAG_BE) {
+                        uint32_t val = AV_RB32(p) | (s << shift);
+                        AV_WB32(p, val);
+                    } else {
+                        uint32_t val = AV_RL32(p) | (s << shift);
+                        AV_WL32(p, val);
+                    }
                 }
                 p += step;
             }
         }
     }
+}
+
+void av_write_image_line(const uint16_t *src,
+                         uint8_t *data[4], const int linesize[4],
+                         const AVPixFmtDescriptor *desc,
+                         int x, int y, int c, int w)
+{
+    av_write_image_line2(src, data, linesize, desc, x, y, c, w, 2);
 }
 
 #if FF_API_PLUS1_MINUS1

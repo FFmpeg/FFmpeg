@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-XX-XX - xxxxxxxxxx - lavu 56.21.100 - pixdesc.h
+  Add av_read_image_line2(), av_write_image_line2()
+
 2018-10-24 - xxxxxxxxxx - lavu 56.20.100 - frame.h
   Add AV_FRAME_DATA_S12M_TIMECODE
 
