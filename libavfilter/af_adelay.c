@@ -23,6 +23,7 @@
 #include "libavutil/samplefmt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct ChanDelay {
@@ -38,8 +39,10 @@ typedef struct AudioDelayContext {
     ChanDelay *chandelay;
     int nb_delays;
     int block_align;
-    unsigned max_delay;
+    int64_t padding;
+    int64_t max_delay;
     int64_t next_pts;
+    int eof;
 
     void (*delay_channel)(ChanDelay *d, int nb_samples,
                           const uint8_t *src, uint8_t *dst);
@@ -158,6 +161,21 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
+    s->padding = s->chandelay[0].delay;
+    for (i = 1; i < s->nb_delays; i++) {
+        ChanDelay *d = &s->chandelay[i];
+
+        s->padding = FFMIN(s->padding, d->delay);
+    }
+
+    if (s->padding) {
+        for (i = 0; i < s->nb_delays; i++) {
+            ChanDelay *d = &s->chandelay[i];
+
+            d->delay -= s->padding;
+        }
+    }
+
     for (i = 0; i < s->nb_delays; i++) {
         ChanDelay *d = &s->chandelay[i];
 
@@ -210,21 +228,57 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->delay_channel(d, frame->nb_samples, src, dst);
     }
 
-    s->next_pts = frame->pts + av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
+    out_frame->pts = s->next_pts;
+    s->next_pts += av_rescale_q(frame->nb_samples, (AVRational){1, inlink->sample_rate}, inlink->time_base);
     av_frame_free(&frame);
     return ff_filter_frame(ctx->outputs[0], out_frame);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AudioDelayContext *s = ctx->priv;
-    int ret;
+    AVFrame *frame = NULL;
+    int ret, status;
+    int64_t pts;
 
-    ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF && !ctx->is_disabled && s->max_delay) {
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (s->padding) {
+        int nb_samples = FFMIN(s->padding, 2048);
+
+        frame = ff_get_audio_buffer(outlink, nb_samples);
+        if (!frame)
+            return AVERROR(ENOMEM);
+        s->padding -= nb_samples;
+
+        av_samples_set_silence(frame->extended_data, 0,
+                               frame->nb_samples,
+                               outlink->channels,
+                               frame->format);
+
+        frame->pts = s->next_pts;
+        if (s->next_pts != AV_NOPTS_VALUE)
+            s->next_pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+
+        return ff_filter_frame(outlink, frame);
+    }
+
+    ret = ff_inlink_consume_frame(inlink, &frame);
+    if (ret < 0)
+        return ret;
+
+    if (ret > 0)
+        return filter_frame(inlink, frame);
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF)
+            s->eof = 1;
+    }
+
+    if (s->eof && s->max_delay) {
         int nb_samples = FFMIN(s->max_delay, 2048);
-        AVFrame *frame;
 
         frame = ff_get_audio_buffer(outlink, nb_samples);
         if (!frame)
@@ -237,13 +291,18 @@ static int request_frame(AVFilterLink *outlink)
                                frame->format);
 
         frame->pts = s->next_pts;
-        if (s->next_pts != AV_NOPTS_VALUE)
-            s->next_pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
-
-        ret = filter_frame(ctx->inputs[0], frame);
+        return filter_frame(inlink, frame);
     }
 
-    return ret;
+    if (s->eof && s->max_delay == 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->next_pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -262,16 +321,14 @@ static const AVFilterPad adelay_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
 static const AVFilterPad adelay_outputs[] = {
     {
-        .name          = "default",
-        .request_frame = request_frame,
-        .type          = AVMEDIA_TYPE_AUDIO,
+        .name = "default",
+        .type = AVMEDIA_TYPE_AUDIO,
     },
     { NULL }
 };
@@ -282,6 +339,7 @@ AVFilter ff_af_adelay = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioDelayContext),
     .priv_class    = &adelay_class,
+    .activate      = activate,
     .uninit        = uninit,
     .inputs        = adelay_inputs,
     .outputs       = adelay_outputs,
