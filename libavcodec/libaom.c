@@ -44,8 +44,6 @@ enum AVPixelFormat ff_aom_imgfmt_to_pixfmt(aom_img_fmt_t img, int depth)
         return AV_PIX_FMT_YUV422P;
     case AOM_IMG_FMT_I444:
         return AV_PIX_FMT_YUV444P;
-    case AOM_IMG_FMT_444A:
-        return AV_PIX_FMT_YUVA444P;
     HIGH_DEPTH(420)
     HIGH_DEPTH(422)
     HIGH_DEPTH(444)
@@ -65,8 +63,6 @@ aom_img_fmt_t ff_aom_pixfmt_to_imgfmt(enum AVPixelFormat pix)
         return AOM_IMG_FMT_I422;
     case AV_PIX_FMT_YUV444P:
         return AOM_IMG_FMT_I444;
-    case AV_PIX_FMT_YUVA444P:
-        return AOM_IMG_FMT_444A;
     case AV_PIX_FMT_YUV420P10:
         return AOM_IMG_FMT_I42016;
     case AV_PIX_FMT_YUV422P10:
