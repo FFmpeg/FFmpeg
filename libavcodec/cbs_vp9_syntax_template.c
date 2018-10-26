@@ -65,6 +65,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile == 1 || profile == 3) {
             infer(subsampling_x, 0);
             infer(subsampling_y, 0);
+            f(1, color_config_reserved_zero);
         }
     }
 
