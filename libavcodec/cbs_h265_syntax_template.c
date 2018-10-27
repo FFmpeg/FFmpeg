@@ -163,10 +163,64 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     for (i = 0; i < max_num_sub_layers_minus1; i++) {
-        if (current->sub_layer_profile_present_flag[i])
-            return AVERROR_PATCHWELCOME;
+        if (current->sub_layer_profile_present_flag[i]) {
+            us(2, sub_layer_profile_space[i], 0, 0, 1, i);
+            flags(sub_layer_tier_flag[i],           1, i);
+            us(5, sub_layer_profile_idc[i], 0, 31,  1, i);
+
+            for (j = 0; j < 32; j++)
+                flags(sub_layer_profile_compatibility_flag[i][j], 2, i, j);
+
+            flags(sub_layer_progressive_source_flag[i],    1, i);
+            flags(sub_layer_interlaced_source_flag[i],     1, i);
+            flags(sub_layer_non_packed_constraint_flag[i], 1, i);
+            flags(sub_layer_frame_only_constraint_flag[i], 1, i);
+
+#define profile_compatible(x) (current->sub_layer_profile_idc[i] == (x) ||   \
+                               current->sub_layer_profile_compatibility_flag[i][x])
+            if (profile_compatible(4) || profile_compatible(5) ||
+                profile_compatible(6) || profile_compatible(7) ||
+                profile_compatible(8) || profile_compatible(9) ||
+                profile_compatible(10)) {
+                flags(sub_layer_max_12bit_constraint_flag[i],        1, i);
+                flags(sub_layer_max_10bit_constraint_flag[i],        1, i);
+                flags(sub_layer_max_8bit_constraint_flag[i],         1, i);
+                flags(sub_layer_max_422chroma_constraint_flag[i],    1, i);
+                flags(sub_layer_max_420chroma_constraint_flag[i],    1, i);
+                flags(sub_layer_max_monochrome_constraint_flag[i],   1, i);
+                flags(sub_layer_intra_constraint_flag[i],            1, i);
+                flags(sub_layer_one_picture_only_constraint_flag[i], 1, i);
+                flags(sub_layer_lower_bit_rate_constraint_flag[i],   1, i);
+
+                if (profile_compatible(5)) {
+                    flags(sub_layer_max_14bit_constraint_flag[i], 1, i);
+                    fixed(24, sub_layer_reserved_zero_33bits, 0);
+                    fixed( 9, sub_layer_reserved_zero_33bits, 0);
+                } else {
+                    fixed(24, sub_layer_reserved_zero_34bits, 0);
+                    fixed(10, sub_layer_reserved_zero_34bits, 0);
+                }
+            } else if (profile_compatible(2)) {
+                fixed(7, sub_layer_reserved_zero_7bits, 0);
+                flags(sub_layer_one_picture_only_constraint_flag[i], 1, i);
+                fixed(24, sub_layer_reserved_zero_43bits, 0);
+                fixed(11, sub_layer_reserved_zero_43bits, 0);
+            } else {
+                fixed(24, sub_layer_reserved_zero_43bits, 0);
+                fixed(19, sub_layer_reserved_zero_43bits, 0);
+            }
+
+            if (profile_compatible(1) || profile_compatible(2) ||
+                profile_compatible(3) || profile_compatible(4) ||
+                profile_compatible(5) || profile_compatible(9)) {
+                flags(sub_layer_inbld_flag[i], 1, i);
+            } else {
+                fixed(1, sub_layer_reserved_zero_bit, 0);
+            }
+#undef profile_compatible
+        }
         if (current->sub_layer_level_present_flag[i])
-            return AVERROR_PATCHWELCOME;
+            us(8, sub_layer_level_idc[i], 0, 255, 1, i);
     }
 
     return 0;

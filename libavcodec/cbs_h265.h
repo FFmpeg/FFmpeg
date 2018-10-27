@@ -71,7 +71,31 @@ typedef struct H265RawProfileTierLevel {
     uint8_t sub_layer_profile_present_flag[HEVC_MAX_SUB_LAYERS];
     uint8_t sub_layer_level_present_flag[HEVC_MAX_SUB_LAYERS];
 
-    // TODO: much of that again for each sub-layer.
+    uint8_t sub_layer_profile_space[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_tier_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_profile_idc[HEVC_MAX_SUB_LAYERS];
+
+    uint8_t sub_layer_profile_compatibility_flag[HEVC_MAX_SUB_LAYERS][32];
+
+    uint8_t sub_layer_progressive_source_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_interlaced_source_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_non_packed_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_frame_only_constraint_flag[HEVC_MAX_SUB_LAYERS];
+
+    uint8_t sub_layer_max_12bit_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_10bit_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_8bit_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_422chroma_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_420chroma_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_monochrome_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_intra_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_one_picture_only_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_lower_bit_rate_constraint_flag[HEVC_MAX_SUB_LAYERS];
+    uint8_t sub_layer_max_14bit_constraint_flag[HEVC_MAX_SUB_LAYERS];
+
+    uint8_t sub_layer_inbld_flag[HEVC_MAX_SUB_LAYERS];
+
+    uint8_t sub_layer_level_idc[HEVC_MAX_SUB_LAYERS];
 } H265RawProfileTierLevel;
 
 typedef struct H265RawSubLayerHRDParameters {
