@@ -513,6 +513,8 @@ static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
     const H264RawSPS *sps;
     int err, i, length;
 
+    HEADER("Buffering Period");
+
     ue(seq_parameter_set_id, 0, 31);
 
     sps = h264->sps[current->seq_parameter_set_id];
@@ -605,6 +607,8 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     const H264RawSPS *sps;
     int err;
 
+    HEADER("Picture Timing");
+
     sps = h264->active_sps;
     if (!sps) {
         // If there is exactly one possible SPS but it is not yet active
@@ -674,6 +678,8 @@ static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err, i;
 
+    HEADER("Pan-Scan Rectangle");
+
     ue(pan_scan_rect_id, 0, UINT32_MAX - 1);
     flag(pan_scan_rect_cancel_flag);
 
@@ -698,6 +704,8 @@ static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext 
                                           uint32_t *payload_size)
 {
     int err, i, j;
+
+    HEADER("User Data Registered ITU-T T.35");
 
     u(8, itu_t_t35_country_code, 0x00, 0xff);
     if (current->itu_t_t35_country_code != 0xff)
@@ -731,6 +739,8 @@ static int FUNC(sei_user_data_unregistered)(CodedBitstreamContext *ctx, RWContex
 {
     int err, i;
 
+    HEADER("User Data Unregistered");
+
 #ifdef READ
     if (*payload_size < 16) {
         av_log(ctx->log_ctx, AV_LOG_ERROR,
@@ -758,6 +768,8 @@ static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err;
 
+    HEADER("Recovery Point");
+
     ue(recovery_frame_cnt, 0, 65535);
     flag(exact_match_flag);
     flag(broken_link_flag);
@@ -770,6 +782,8 @@ static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *
                                          H264RawSEIDisplayOrientation *current)
 {
     int err;
+
+    HEADER("Display Orientation");
 
     flag(display_orientation_cancel_flag);
     if (!current->display_orientation_cancel_flag) {
@@ -787,6 +801,8 @@ static int FUNC(sei_mastering_display_colour_volume)(CodedBitstreamContext *ctx,
                                                      H264RawSEIMasteringDisplayColourVolume *current)
 {
     int err, c;
+
+    HEADER("Mastering Display Colour Volume");
 
     for (c = 0; c < 3; c++) {
         us(16, display_primaries_x[c], 0, 50000, 1, c);
