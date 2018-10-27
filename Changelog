@@ -41,6 +41,7 @@ version <next>:
 - decoding S12M timecode in h264
 - xstack filter
 - pcm vidc decoder and encoder
+- (a)graphmonitor filter
 
 
 version 4.0:

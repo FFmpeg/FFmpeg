@@ -240,6 +240,7 @@ OBJS-$(CONFIG_FSPP_FILTER)                   += vf_fspp.o
 OBJS-$(CONFIG_GBLUR_FILTER)                  += vf_gblur.o
 OBJS-$(CONFIG_GEQ_FILTER)                    += vf_geq.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
+OBJS-$(CONFIG_GRAPHMONITOR_FILTER)           += f_graphmonitor.o
 OBJS-$(CONFIG_GREYEDGE_FILTER)               += vf_colorconstancy.o
 OBJS-$(CONFIG_HALDCLUT_FILTER)               += vf_lut3d.o framesync.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
@@ -437,6 +438,7 @@ OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 # multimedia filters
 OBJS-$(CONFIG_ABITSCOPE_FILTER)              += avf_abitscope.o
 OBJS-$(CONFIG_ADRAWGRAPH_FILTER)             += f_drawgraph.o
+OBJS-$(CONFIG_AGRAPHMONITOR_FILTER)          += f_graphmonitor.o
 OBJS-$(CONFIG_AHISTOGRAM_FILTER)             += avf_ahistogram.o
 OBJS-$(CONFIG_APHASEMETER_FILTER)            += avf_aphasemeter.o
 OBJS-$(CONFIG_AVECTORSCOPE_FILTER)           += avf_avectorscope.o

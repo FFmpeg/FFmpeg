@@ -10300,6 +10300,63 @@ gradfun=radius=8
 
 @end itemize
 
+@section graphmonitor, agraphmonitor
+Show various filtergraph stats.
+
+With this filter one can debug complete filtergraph.
+Especially issues with links filling with queued frames.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Set video output size. Default is @var{hd720}.
+
+@item opacity, o
+Set video opacity. Default is @var{0.9}. Allowed range is from @var{0} to @var{1}.
+
+@item mode, m
+Set output mode, can be @var{fulll} or @var{compact}.
+In @var{compact} mode only filters with some queued frames have displayed stats.
+
+@item flags, f
+Set flags which enable which stats are shown in video.
+
+Available values for flags are:
+@table @samp
+@item queue
+Display number of queued frames in each link.
+
+@item frame_count_in
+Display number of frames taken from filter.
+
+@item frame_count_out
+Display number of frames given out from filter.
+
+@item pts
+Display current filtered frame pts.
+
+@item time
+Display current filtered frame time.
+
+@item timebase
+Display time base for filter link.
+
+@item format
+Display used format for filter link.
+
+@item size
+Display video size or number of audio channels in case of audio used by filter link.
+
+@item rate
+Display video frame rate or sample rate in case of audio used by filter link.
+@end table
+
+@item rate, r
+Set upper limit for video rate of output stream, Default value is @var{25}.
+This guarantee that output video frame rate will not be higher than this value.
+@end table
+
 @section greyedge
 A color constancy variation filter which estimates scene illumination via grey edge algorithm
 and corrects the scene colors accordingly.

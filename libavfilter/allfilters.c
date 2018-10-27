@@ -227,6 +227,7 @@ extern AVFilter ff_vf_fspp;
 extern AVFilter ff_vf_gblur;
 extern AVFilter ff_vf_geq;
 extern AVFilter ff_vf_gradfun;
+extern AVFilter ff_vf_graphmonitor;
 extern AVFilter ff_vf_greyedge;
 extern AVFilter ff_vf_haldclut;
 extern AVFilter ff_vf_hflip;
@@ -418,6 +419,7 @@ extern AVFilter ff_vsink_nullsink;
 /* multimedia filters */
 extern AVFilter ff_avf_abitscope;
 extern AVFilter ff_avf_adrawgraph;
+extern AVFilter ff_avf_agraphmonitor;
 extern AVFilter ff_avf_ahistogram;
 extern AVFilter ff_avf_aphasemeter;
 extern AVFilter ff_avf_avectorscope;
