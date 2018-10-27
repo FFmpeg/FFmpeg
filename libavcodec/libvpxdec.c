@@ -47,8 +47,7 @@ static av_cold int vpx_init(AVCodecContext *avctx,
 {
     VPxContext *ctx = avctx->priv_data;
     struct vpx_codec_dec_cfg deccfg = {
-        /* token partitions+1 would be a decent choice */
-        .threads = FFMIN(avctx->thread_count, 16)
+        .threads = FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 16)
     };
 
     av_log(avctx, AV_LOG_INFO, "%s\n", vpx_codec_version_str());
