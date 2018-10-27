@@ -46,7 +46,7 @@ fate-dct8x8: libavcodec/tests/dct$(EXESUF)
 fate-dct8x8: CMD = run libavcodec/tests/dct
 fate-dct8x8: CMP = null
 
-FATE_LIBAVCODEC-$(CONFIG_H264_VAAPI_ENCODER) += fate-h264-levels
+FATE_LIBAVCODEC-$(CONFIG_H264_METADATA_BSF) += fate-h264-levels
 fate-h264-levels: libavcodec/tests/h264_levels$(EXESUF)
 fate-h264-levels: CMD = run libavcodec/tests/h264_levels
 fate-h264-levels: REF = /dev/null
