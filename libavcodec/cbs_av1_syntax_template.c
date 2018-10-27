@@ -417,8 +417,8 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     int i, err;
 
     for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
-        flag(found_ref);
-        if (current->found_ref) {
+        flags(found_ref[i], 1, i);
+        if (current->found_ref[i]) {
             AV1ReferenceFrameState *ref =
                 &priv->ref[current->ref_frame_idx[i]];
 
@@ -439,7 +439,7 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
         }
     }
 
-    if (current->found_ref == 0) {
+    if (i >= AV1_REFS_PER_FRAME) {
         CHECK(FUNC(frame_size)(ctx, rw, current));
         CHECK(FUNC(render_size)(ctx, rw, current));
     } else {

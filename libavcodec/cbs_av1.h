@@ -161,7 +161,7 @@ typedef struct AV1RawFrameHeader {
     uint8_t  render_width_minus_1;
     uint8_t  render_height_minus_1;
 
-    uint8_t found_ref;
+    uint8_t found_ref[AV1_REFS_PER_FRAME];
 
     uint8_t refresh_frame_flags;
     uint8_t allow_intrabc;
