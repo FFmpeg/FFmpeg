@@ -130,6 +130,11 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
                 fixed(24, general_reserved_zero_34bits, 0);
                 fixed(10, general_reserved_zero_34bits, 0);
             }
+        } else if (profile_compatible(2)) {
+            fixed(7, general_reserved_zero_7bits, 0);
+            flag(general_one_picture_only_constraint_flag);
+            fixed(24, general_reserved_zero_35bits, 0);
+            fixed(11, general_reserved_zero_35bits, 0);
         } else {
             fixed(24, general_reserved_zero_43bits, 0);
             fixed(19, general_reserved_zero_43bits, 0);
