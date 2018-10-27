@@ -55,7 +55,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile == 1 || profile == 3) {
             f(1, subsampling_x);
             f(1, subsampling_y);
-            f(1, color_config_reserved_zero);
+            fixed(1, reserved_zero, 0);
         } else {
             infer(subsampling_x, 1);
             infer(subsampling_y, 1);
@@ -65,7 +65,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile == 1 || profile == 3) {
             infer(subsampling_x, 0);
             infer(subsampling_y, 0);
-            f(1, color_config_reserved_zero);
+            fixed(1, reserved_zero, 0);
         }
     }
 
@@ -258,7 +258,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
     f(1, profile_high_bit);
     profile = (current->profile_high_bit << 1) + current->profile_low_bit;
     if (profile == 3)
-        f(1, profile_reserved_zero);
+        fixed(1, reserved_zero, 0);
 
     f(1, show_existing_frame);
     if (current->show_existing_frame) {

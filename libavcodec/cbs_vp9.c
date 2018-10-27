@@ -314,6 +314,12 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
         current->name = prob; \
     } while (0)
 
+#define fixed(width, name, value) do { \
+        av_unused uint32_t fixed_value = value; \
+        CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
+                                   0, &fixed_value, value, value)); \
+    } while (0)
+
 #define infer(name, value) do { \
         current->name = value; \
     } while (0)
@@ -331,6 +337,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #undef fle
 #undef delta_q
 #undef prob
+#undef fixed
 #undef infer
 #undef byte_alignment
 
@@ -370,6 +377,11 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
             xf(8, name.prob, current->name, subs, __VA_ARGS__); \
     } while (0)
 
+#define fixed(width, name, value) do { \
+        CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
+                                    0, value, value, value)); \
+    } while (0)
+
 #define infer(name, value) do { \
         if (current->name != (value)) { \
             av_log(ctx->log_ctx, AV_LOG_WARNING, "Warning: " \
@@ -392,6 +404,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #undef fle
 #undef delta_q
 #undef prob
+#undef fixed
 #undef infer
 #undef byte_alignment
 
