@@ -103,7 +103,7 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame,
             frame_cnt, frame_cnt,
             (frame->width * frame->height + 2 * (frame->height >> desc->log2_chroma_h) * (frame->width >> desc->log2_chroma_w)), sum);
         frame_cnt += 1;
-        av_free(hash);
+        av_hash_freep(&hash);
         av_free(sum);
     }
 }
