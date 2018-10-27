@@ -490,8 +490,23 @@ static void cbs_h265_free_slice(void *unit, uint8_t *content)
 static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
 {
     switch (payload->payload_type) {
+    case HEVC_SEI_TYPE_BUFFERING_PERIOD:
+    case HEVC_SEI_TYPE_PICTURE_TIMING:
+    case HEVC_SEI_TYPE_PAN_SCAN_RECT:
+    case HEVC_SEI_TYPE_RECOVERY_POINT:
+    case HEVC_SEI_TYPE_DISPLAY_ORIENTATION:
+    case HEVC_SEI_TYPE_ACTIVE_PARAMETER_SETS:
+    case HEVC_SEI_TYPE_DECODED_PICTURE_HASH:
+    case HEVC_SEI_TYPE_TIME_CODE:
     case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
     case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
+    case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
+        break;
+    case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
+        av_buffer_unref(&payload->payload.user_data_registered.data_ref);
+        break;
+    case HEVC_SEI_TYPE_USER_DATA_UNREGISTERED:
+        av_buffer_unref(&payload->payload.user_data_unregistered.data_ref);
         break;
     default:
         av_buffer_unref(&payload->payload.other.data_ref);
@@ -1029,6 +1044,7 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
         break;
 
     case HEVC_NAL_SEI_PREFIX:
+    case HEVC_NAL_SEI_SUFFIX:
         {
             err = ff_cbs_alloc_unit_content(ctx, unit, sizeof(H265RawSEI),
                                             &cbs_h265_free_sei);
@@ -1036,7 +1052,8 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
-            err = cbs_h265_read_sei(ctx, &gbc, unit->content);
+            err = cbs_h265_read_sei(ctx, &gbc, unit->content,
+                                    unit->type == HEVC_NAL_SEI_PREFIX);
 
             if (err < 0)
                 return err;
@@ -1318,8 +1335,10 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
         break;
 
     case HEVC_NAL_SEI_PREFIX:
+    case HEVC_NAL_SEI_SUFFIX:
         {
-            err = cbs_h265_write_sei(ctx, pbc, unit->content);
+            err = cbs_h265_write_sei(ctx, pbc, unit->content,
+                                     unit->type == HEVC_NAL_SEI_PREFIX);
 
             if (err < 0)
                 return err;
