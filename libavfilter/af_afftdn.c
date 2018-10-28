@@ -1381,7 +1381,8 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
         if (!strcmp(args, "start")) {
             s->sample_noise_start = 1;
             s->sample_noise_end = 0;
-        } else if (!strcmp(args, "end")) {
+        } else if (!strcmp(args, "end") ||
+                   !strcmp(args, "stop")) {
             s->sample_noise_start = 0;
             s->sample_noise_end = 1;
         }
