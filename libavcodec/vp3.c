@@ -568,7 +568,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                 if (current_fragment != -1) {
                     int coded = s->superblock_coding[i];
 
-                    if (s->superblock_coding[i] == SB_PARTIALLY_CODED) {
+                    if (coded == SB_PARTIALLY_CODED) {
                         /* fragment may or may not be coded; this is the case
                          * that cares about the fragment coding runs */
                         if (current_run-- == 0) {
