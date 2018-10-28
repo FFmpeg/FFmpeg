@@ -389,18 +389,20 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             {  80, 33 }, {  18, 11 }, {  15, 11 }, {  64, 33 },
             { 160, 99 }, {   4,  3 }, {   3,  2 }, {   2,  1 },
         };
-        int i;
+        int num, den, i;
+        av_reduce(&num, &den, avctx->sample_aspect_ratio.num,
+                  avctx->sample_aspect_ratio.den, 65535);
         for (i = 0; i < FF_ARRAY_ELEMS(sar_idc); i++) {
-            if (avctx->sample_aspect_ratio.num == sar_idc[i].num &&
-                avctx->sample_aspect_ratio.den == sar_idc[i].den) {
+            if (num == sar_idc[i].num &&
+                den == sar_idc[i].den) {
                 sps->vui.aspect_ratio_idc = i;
                 break;
             }
         }
         if (i >= FF_ARRAY_ELEMS(sar_idc)) {
             sps->vui.aspect_ratio_idc = 255;
-            sps->vui.sar_width  = avctx->sample_aspect_ratio.num;
-            sps->vui.sar_height = avctx->sample_aspect_ratio.den;
+            sps->vui.sar_width  = num;
+            sps->vui.sar_height = den;
         }
         sps->vui.aspect_ratio_info_present_flag = 1;
     }
