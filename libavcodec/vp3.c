@@ -544,8 +544,21 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                                          : s->y_superblock_count);
         int num_coded_frags = 0;
 
+        if (s->keyframe) {
+            for (i = sb_start; i < sb_end; i++) {
+                /* iterate through all 16 fragments in a superblock */
+                for (j = 0; j < 16; j++) {
+                    /* if the fragment is in bounds, check its coding status */
+                    current_fragment = s->superblock_fragments[i * 16 + j];
+                    if (current_fragment != -1) {
+                        s->coded_fragment_list[plane][num_coded_frags++] =
+                            current_fragment;
+                    }
+                }
+            }
+        } else {
         for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
-            if (s->keyframe == 0 && get_bits_left(gb) < plane0_num_coded_frags >> 2) {
+            if (get_bits_left(gb) < plane0_num_coded_frags >> 2) {
                 return AVERROR_INVALIDDATA;
             }
             /* iterate through all 16 fragments in a superblock */
@@ -579,6 +592,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
                     }
                 }
             }
+        }
         }
         if (!plane)
             plane0_num_coded_frags = num_coded_frags;
