@@ -1496,7 +1496,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         tmpsize = av_image_fill_pointers(data, avctx->pix_fmt, h,
                                          NULL, linesize);
         if (tmpsize < 0)
-            return -1;
+            return tmpsize;
 
         for (i = 0; i < 3 && data[i + 1]; i++)
             size[i] = data[i + 1] - data[i];
