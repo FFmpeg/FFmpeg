@@ -223,6 +223,10 @@ typedef struct Vp3DecodeContext {
      * which of the fragments are coded */
     int *coded_fragment_list[3];
 
+    int *kf_coded_fragment_list;
+    int *nkf_coded_fragment_list;
+    int num_kf_coded_fragment[3];
+
     VLC dc_vlc[16];
     VLC ac_vlc_1[16];
     VLC ac_vlc_2[16];
@@ -271,7 +275,8 @@ static av_cold void free_tables(AVCodecContext *avctx)
 
     av_freep(&s->superblock_coding);
     av_freep(&s->all_fragments);
-    av_freep(&s->coded_fragment_list[0]);
+    av_freep(&s->nkf_coded_fragment_list);
+    av_freep(&s->kf_coded_fragment_list);
     av_freep(&s->dct_tokens_base);
     av_freep(&s->superblock_fragments);
     av_freep(&s->macroblock_coding);
@@ -538,6 +543,9 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     s->total_num_coded_frags = 0;
     memset(s->macroblock_coding, MODE_COPY, s->macroblock_count);
 
+    s->coded_fragment_list[0] = s->keyframe ? s->kf_coded_fragment_list
+                                            : s->nkf_coded_fragment_list;
+
     for (plane = 0; plane < 3; plane++) {
         int sb_start = superblock_starts[plane];
         int sb_end   = sb_start + (plane ? s->c_superblock_count
@@ -545,17 +553,21 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
         int num_coded_frags = 0;
 
         if (s->keyframe) {
-            for (i = sb_start; i < sb_end; i++) {
-                /* iterate through all 16 fragments in a superblock */
-                for (j = 0; j < 16; j++) {
-                    /* if the fragment is in bounds, check its coding status */
-                    current_fragment = s->superblock_fragments[i * 16 + j];
-                    if (current_fragment != -1) {
-                        s->coded_fragment_list[plane][num_coded_frags++] =
-                            current_fragment;
+            if (s->num_kf_coded_fragment[plane] == -1) {
+                for (i = sb_start; i < sb_end; i++) {
+                    /* iterate through all 16 fragments in a superblock */
+                    for (j = 0; j < 16; j++) {
+                        /* if the fragment is in bounds, check its coding status */
+                        current_fragment = s->superblock_fragments[i * 16 + j];
+                        if (current_fragment != -1) {
+                            s->coded_fragment_list[plane][num_coded_frags++] =
+                                current_fragment;
+                        }
                     }
                 }
-            }
+                s->num_kf_coded_fragment[plane] = num_coded_frags;
+            } else
+                num_coded_frags = s->num_kf_coded_fragment[plane];
         } else {
         for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
             if (get_bits_left(gb) < plane0_num_coded_frags >> 2) {
@@ -1705,7 +1717,9 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     s->superblock_coding = av_mallocz(s->superblock_count);
     s->all_fragments     = av_mallocz_array(s->fragment_count, sizeof(Vp3Fragment));
 
-    s->coded_fragment_list[0] = av_mallocz_array(s->fragment_count, sizeof(int));
+    s-> kf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
+    s->nkf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
+    memset(s-> num_kf_coded_fragment, -1, sizeof(s-> num_kf_coded_fragment));
 
     s->dct_tokens_base = av_mallocz_array(s->fragment_count,
                                           64 * sizeof(*s->dct_tokens_base));
@@ -1717,7 +1731,8 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     s->macroblock_coding    = av_mallocz(s->macroblock_count + 1);
 
     if (!s->superblock_coding    || !s->all_fragments          ||
-        !s->dct_tokens_base      || !s->coded_fragment_list[0] ||
+        !s->dct_tokens_base      || !s->kf_coded_fragment_list ||
+        !s->nkf_coded_fragment_list ||
         !s->superblock_fragments || !s->macroblock_coding      ||
         !s->motion_val[0]        || !s->motion_val[1]) {
         vp3_decode_end(avctx);
@@ -2271,6 +2286,8 @@ static int vp3_init_thread_copy(AVCodecContext *avctx)
     s->superblock_coding      = NULL;
     s->all_fragments          = NULL;
     s->coded_fragment_list[0] = NULL;
+    s-> kf_coded_fragment_list= NULL;
+    s->nkf_coded_fragment_list= NULL;
     s->dct_tokens_base        = NULL;
     s->superblock_fragments   = NULL;
     s->macroblock_coding      = NULL;
