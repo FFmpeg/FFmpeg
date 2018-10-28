@@ -20,3 +20,9 @@ fate-prores-alpha_skip: CMD = framecrc -flags +bitexact -skip_alpha 1 -i $(TARGE
 fate-prores-transparency: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/prores/prores4444_with_transparency.mov -pix_fmt yuva444p10le
 fate-prores-transparency_skip: CMD = framecrc -flags +bitexact -skip_alpha 1 -i $(TARGET_SAMPLES)/prores/prores4444_with_transparency.mov -pix_fmt yuv444p10le
 fate-prores-gray:      CMD = framecrc -flags +bitexact -c:a aac_fixed -i $(TARGET_SAMPLES)/prores/gray.mov -pix_fmt yuv422p10le
+
+#Test bsf prores-metadata
+FATE_PRORES_METADATA_BSF += fate-prores-metadata
+fate-prores-metadata: CMD = md5 -i $(TARGET_SAMPLES)/prores/Sequence_1-Apple_ProRes_422_Proxy.mov -c:v copy -bsf:v prores_metadata=color_primaries=bt470bg:color_trc=bt709:colorspace=smpte170m -f mov
+
+FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER PRORES_METADATA_BSF) += $(FATE_PRORES_METADATA_BSF)
