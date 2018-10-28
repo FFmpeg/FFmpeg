@@ -101,7 +101,7 @@ static int mpegaudio_parse(AVCodecParserContext *s1,
                             "MP3ADU full parser");
                         *poutbuf = NULL;
                         *poutbuf_size = 0;
-                        return 0; /* parsers must not return error codes */
+                        return buf_size; /* parsers must not return error codes */
                     }
 
                     break;
