@@ -1163,15 +1163,13 @@ static int output_frame(AVFilterLink *inlink)
     ThreadData td;
     int ret = 0;
 
-    if (!in) {
-        in = ff_get_audio_buffer(outlink, s->window_length);
-        if (!in)
-            return AVERROR(ENOMEM);
-    }
+    in = ff_get_audio_buffer(outlink, s->window_length);
+    if (!in)
+        return AVERROR(ENOMEM);
 
     ret = av_audio_fifo_peek(s->fifo, (void **)in->extended_data, s->window_length);
     if (ret < 0)
-        return ret;
+        goto end;
 
     if (s->track_noise) {
         for (int ch = 0; ch < inlink->channels; ch++) {
@@ -1248,7 +1246,9 @@ static int output_frame(AVFilterLink *inlink)
                 dst[m] = orig[m] - src[m];
             break;
         default:
-            return AVERROR_BUG;
+            av_frame_free(&out);
+            ret = AVERROR_BUG;
+            goto end;
         }
         memmove(src, src + s->sample_advance, (s->window_length - s->sample_advance) * sizeof(*src));
         memset(src + (s->window_length - s->sample_advance), 0, s->sample_advance * sizeof(*src));
