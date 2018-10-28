@@ -243,11 +243,13 @@ static int get_video_buffer(AVFrame *frame, int align)
         return ret;
 
     frame->buf[0] = av_buffer_alloc(ret + 4*plane_padding);
-    if (!frame->buf[0])
+    if (!frame->buf[0]) {
+        ret = AVERROR(ENOMEM);
         goto fail;
+    }
 
-    if (av_image_fill_pointers(frame->data, frame->format, padded_height,
-                               frame->buf[0]->data, frame->linesize) < 0)
+    if ((ret = av_image_fill_pointers(frame->data, frame->format, padded_height,
+                                      frame->buf[0]->data, frame->linesize)) < 0)
         goto fail;
 
     for (i = 1; i < 4; i++) {
@@ -260,7 +262,7 @@ static int get_video_buffer(AVFrame *frame, int align)
     return 0;
 fail:
     av_frame_unref(frame);
-    return AVERROR(ENOMEM);
+    return ret;
 }
 
 static int get_audio_buffer(AVFrame *frame, int align)
