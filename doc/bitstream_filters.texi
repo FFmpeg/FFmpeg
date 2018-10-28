@@ -530,6 +530,72 @@ ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @section null
 This bitstream filter passes the packets through unchanged.
 
+@section prores_metadata
+
+Modify color property metadata embedded in prores stream.
+
+@table @option
+@item color_primaries
+Set the color primaries.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color primaries property (default).
+
+@item unknown
+@item bt709
+@item bt470bg
+BT601 625
+
+@item smpte170m
+BT601 525
+
+@item bt2020
+@item smpte431
+DCI P3
+
+@item smpte432
+P3 D65
+
+@end table
+
+@item transfer_characteristics
+Set the color transfert.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same transfer characteristics property (default).
+
+@item unknown
+@item bt709
+BT 601, BT 709, BT 2020
+@end table
+
+
+@item matrix_coefficients
+Set the matrix coefficient.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same transfer characteristics property (default).
+
+@item unknown
+@item bt709
+@item smpte170m
+BT 601
+
+@item bt2020nc
+@end table
+@end table
+
+Set Rec709 colorspace for each frame of the file
+@example
+ffmpeg -i INPUT -c copy -bsf:v prores_metadata=color_primaries=bt709:color_trc=bt709:colorspace=bt709 output.mov
+@end example
+
 @section remove_extra
 
 Remove extradata from packets.

@@ -47,6 +47,7 @@ extern const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf;
 extern const AVBitStreamFilter ff_mov2textsub_bsf;
 extern const AVBitStreamFilter ff_noise_bsf;
 extern const AVBitStreamFilter ff_null_bsf;
+extern const AVBitStreamFilter ff_prores_metadata_bsf;
 extern const AVBitStreamFilter ff_remove_extradata_bsf;
 extern const AVBitStreamFilter ff_text2movsub_bsf;
 extern const AVBitStreamFilter ff_trace_headers_bsf;
