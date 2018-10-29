@@ -545,8 +545,8 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
         av_assert0(0 && "Invalid RC mode.");
     }
 
-    ctx->slice_block_rows = FFALIGN(avctx->width,  16) / 16;
-    ctx->slice_block_cols = FFALIGN(avctx->height, 16) / 16;
+    ctx->slice_block_rows = FFALIGN(avctx->height, 16) / 16;
+    ctx->slice_block_cols = FFALIGN(avctx->width,  16) / 16;
 
     ctx->nb_slices  = ctx->slice_block_rows;
     ctx->slice_size = 1;
