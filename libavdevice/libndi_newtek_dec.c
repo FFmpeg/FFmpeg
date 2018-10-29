@@ -33,6 +33,7 @@ struct NDIContext {
     int find_sources;
     int64_t wait_sources;
     int allow_video_fields;
+    char *extra_ips;
 
     /* Runtime */
     NDIlib_recv_create_t *recv;
@@ -99,7 +100,7 @@ static int ndi_find_sources(AVFormatContext *avctx, const char *name, NDIlib_sou
     struct NDIContext *ctx = avctx->priv_data;
     const NDIlib_source_t *ndi_srcs = NULL;
     const NDIlib_find_create_t find_create_desc = { .show_local_sources = true,
-        .p_groups = NULL, .p_extra_ips = NULL };
+        .p_groups = NULL, .p_extra_ips = ctx->extra_ips };
 
     if (!ctx->ndi_find)
         ctx->ndi_find = NDIlib_find_create2(&find_create_desc);
@@ -317,6 +318,7 @@ static const AVOption options[] = {
     { "find_sources", "Find available sources"  , OFFSET(find_sources), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
     { "wait_sources", "Time to wait until the number of online sources have changed"  , OFFSET(wait_sources), AV_OPT_TYPE_DURATION, { .i64 = 1000000 }, 100000, 20000000, DEC },
     { "allow_video_fields", "When this flag is FALSE, all video that you receive will be progressive"  , OFFSET(allow_video_fields), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, DEC },
+    { "extra_ips", "List of comma separated ip addresses to scan for remote sources",       OFFSET(extra_ips), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, DEC },
     { NULL },
 };
 

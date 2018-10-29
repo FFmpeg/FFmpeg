@@ -1078,6 +1078,10 @@ Defaults to @option{0.5}.
 When this flag is @option{false}, all video that you receive will be progressive.
 Defaults to @option{true}.
 
+@item extra_ips
+If is set to list of comma separated ip addresses, scan for sources not only
+using mDNS but also use unicast ip addresses specified by this list.
+
 @end table
 
 @subsection Examples
@@ -1091,10 +1095,23 @@ ffmpeg -f libndi_newtek -find_sources 1 -i dummy
 @end example
 
 @item
+List local and remote input devices:
+@example
+ffmpeg -f libndi_newtek -extra_ips "192.168.10.10" -find_sources 1 -i dummy
+@end example
+
+@item
 Restream to NDI:
 @example
 ffmpeg -f libndi_newtek -i "DEV-5.INTERNAL.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
 @end example
+
+@item
+Restream remote NDI to local NDI:
+@example
+ffmpeg -f libndi_newtek -extra_ips "192.168.10.10" -i "DEV-5.REMOTE.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
+@end example
+
 
 @end itemize
 
