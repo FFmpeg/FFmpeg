@@ -1433,6 +1433,7 @@ typedef struct AVPacket {
     int   stream_id;
     int   serial;
     int   stream_index;
+    enum AVCodecID codec_id;
     /**
      * A combination of AV_PKT_FLAG values
      */

@@ -7235,7 +7235,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(NULL, AV_LOG_ERROR, "search_frag_timestamp fail! stream %d pkt->dts = %lld\n", st->index, pkt->dts);
         }
     }
-
+    pkt->codec_id     = st->codecpar->codec_id;
     return 0;
 }
 

@@ -1258,6 +1258,7 @@ retry_duration:
             stream_type == FLV_STREAM_TYPE_DATA)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
+        pkt->codec_id     = st->codecpar->codec_id;
 leave:
     last = avio_rb32(s->pb);
     if (last != orig_size + 11 && last != orig_size + 10 &&
