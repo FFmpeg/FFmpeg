@@ -10607,6 +10607,7 @@ A floating point number which specifies chroma temporal strength. It defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}.
 @end table
 
+@anchor{hwdownload}
 @section hwdownload
 
 Download hardware frames to system memory.
@@ -10697,6 +10698,7 @@ ways if there are any additional constraints on that filter's output.
 Do not use it without fully understanding the implications of its use.
 @end table
 
+@anchor{hwupload}
 @section hwupload
 
 Upload system memory frames to hardware surfaces.
@@ -18458,6 +18460,490 @@ pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
 @c man end VIDEO FILTERS
+
+@chapter OpenCL Video Filters
+@c man begin OPENCL VIDEO FILTERS
+
+Below is a description of the currently available OpenCL video filters.
+
+To enable compilation of these filters you need to configure FFmpeg with
+@code{--enable-opencl}.
+
+Running OpenCL filters requires you to initialize a hardware device and to pass that device to all filters in any filter graph.
+@table @option
+
+@item -init_hw_device opencl[=@var{name}][:@var{device}[,@var{key=value}...]]
+Initialise a new hardware device of type @var{opencl} called @var{name}, using the
+given device parameters.
+
+@item -filter_hw_device @var{name}
+Pass the hardware device called @var{name} to all filters in any filter graph.
+
+@end table
+
+For more detailed information see @url{https://www.ffmpeg.org/ffmpeg.html#Advanced-Video-options}
+
+@itemize
+@item
+Example of choosing the first device on the second platform and running avgblur_opencl filter with default parameters on it.
+@example
+-init_hw_device opencl=gpu:1.0 -filter_hw_device gpu -i INPUT -vf "hwupload, avgblur_opencl, hwdownload" OUTPUT
+@end example
+@end itemize
+
+Since OpenCL filters are not able to access frame data in normal memory, all frame data needs to be uploaded(@ref{hwupload}) to hardware surfaces connected to the appropriate device before being used and then downloaded(@ref{hwdownload}) back to normal memory. Note that @ref{hwupload} will upload to a surface with the same layout as the software frame, so it may be necessary to add a @ref{format} filter immediately before to get the input into the right format and @ref{hwdownload} does not support all formats on the output - it may be necessary to insert an additional @ref{format} filter immediately following in the graph to get the output in a supported format.
+
+@section avgblur_opencl
+
+Apply average blur filter.
+
+The filter accepts the following options:
+
+@table @option
+@item sizeX
+Set horizontal radius size.
+Range is @code{[1, 1024]} and default value is @code{1}.
+
+@item planes
+Set which planes to filter. Default value is @code{0xf}, by which all planes are processed.
+
+@item sizeY
+Set vertical radius size. Range is @code{[1, 1024]} and default value is @code{0}. If zero, @code{sizeX} value will be used.
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply average blur filter with horizontal and vertical size of 3, setting each pixel of the output to the average value of the 7x7 region centered on it in the input. For pixels on the edges of the image, the region does not extend beyond the image boundaries, and so out-of-range coordinates are not used in the calculations.
+@example
+-i INPUT -vf "hwupload, avgblur_opencl=3, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section boxblur_opencl
+
+Apply a boxblur algorithm to the input video.
+
+It accepts the following parameters:
+
+@table @option
+
+@item luma_radius, lr
+@item luma_power, lp
+@item chroma_radius, cr
+@item chroma_power, cp
+@item alpha_radius, ar
+@item alpha_power, ap
+
+@end table
+
+A description of the accepted options follows.
+
+@table @option
+@item luma_radius, lr
+@item chroma_radius, cr
+@item alpha_radius, ar
+Set an expression for the box radius in pixels used for blurring the
+corresponding input plane.
+
+The radius value must be a non-negative number, and must not be
+greater than the value of the expression @code{min(w,h)/2} for the
+luma and alpha planes, and of @code{min(cw,ch)/2} for the chroma
+planes.
+
+Default value for @option{luma_radius} is "2". If not specified,
+@option{chroma_radius} and @option{alpha_radius} default to the
+corresponding value set for @option{luma_radius}.
+
+The expressions can contain the following constants:
+@table @option
+@item w
+@item h
+The input width and height in pixels.
+
+@item cw
+@item ch
+The input chroma image width and height in pixels.
+
+@item hsub
+@item vsub
+The horizontal and vertical chroma subsample values. For example, for the
+pixel format "yuv422p", @var{hsub} is 2 and @var{vsub} is 1.
+@end table
+
+@item luma_power, lp
+@item chroma_power, cp
+@item alpha_power, ap
+Specify how many times the boxblur filter is applied to the
+corresponding plane.
+
+Default value for @option{luma_power} is 2. If not specified,
+@option{chroma_power} and @option{alpha_power} default to the
+corresponding value set for @option{luma_power}.
+
+A value of 0 will disable the effect.
+@end table
+
+@subsection Examples
+
+Apply boxblur filter, setting each pixel of the output to the average value of box-radiuses @var{luma_radius}, @var{chroma_radius}, @var{alpha_radius} for each plane respectively. The filter will apply @var{luma_power}, @var{chroma_power}, @var{alpha_power} times onto the corresponding plane. For pixels on the edges of the image, the radius does not extend beyond the image boundaries, and so out-of-range coordinates are not used in the calculations.
+
+@itemize
+@item
+Apply a boxblur filter with the luma, chroma, and alpha radius
+set to 2 and luma, chroma, and alpha power set to 3. The filter will run 3 times with box-radius set to 2 for every plane of the image.
+@example
+-i INPUT -vf "hwupload, boxblur_opencl=luma_radius=2:luma_power=3, hwdownload" OUTPUT
+-i INPUT -vf "hwupload, boxblur_opencl=2:3, hwdownload" OUTPUT
+@end example
+
+@item
+Apply a boxblur filter with luma radius set to 2, luma_power to 1, chroma_radius to 4, chroma_power to 5, alpha_radius to 3 and alpha_power to 7.
+
+For the luma plane, a 2x2 box radius will be run once.
+
+For the chroma plane, a 4x4 box radius will be run 5 times.
+
+For the alpha plane, a 3x3 box radius will be run 7 times.
+@example
+-i INPUT -vf "hwupload, boxblur_opencl=2:1:4:5:3:7, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section convolution_opencl
+
+Apply convolution of 3x3, 5x5, 7x7 matrix.
+
+The filter accepts the following options:
+
+@table @option
+@item 0m
+@item 1m
+@item 2m
+@item 3m
+Set matrix for each plane.
+Matrix is sequence of 9, 25 or 49 signed numbers.
+Default value for each plane is @code{0 0 0 0 1 0 0 0 0}.
+
+@item 0rdiv
+@item 1rdiv
+@item 2rdiv
+@item 3rdiv
+Set multiplier for calculated value for each plane.
+If unset or 0, it will be sum of all matrix elements.
+The option value must be an float number greater or equal to @code{0.0}. Default value is @code{1.0}.
+
+@item 0bias
+@item 1bias
+@item 2bias
+@item 3bias
+Set bias for each plane. This value is added to the result of the multiplication.
+Useful for making the overall image brighter or darker.
+The option value must be an float number greater or equal to @code{0.0}. Default value is @code{0.0}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Apply sharpen:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0:0 -1 0 -1 5 -1 0 -1 0, hwdownload" OUTPUT
+@end example
+
+@item
+Apply blur:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1 1 1 1 1 1 1 1 1:1/9:1/9:1/9:1/9, hwdownload" OUTPUT
+@end example
+
+@item
+Apply edge enhance:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:0 0 0 -1 1 0 0 0 0:5:1:1:1:0:128:128:128, hwdownload" OUTPUT
+@end example
+
+@item
+Apply edge detect:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:0 1 0 1 -4 1 0 1 0:5:5:5:1:0:128:128:128, hwdownload" OUTPUT
+@end example
+
+@item
+Apply laplacian edge detector which includes diagonals:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:1 1 1 1 -8 1 1 1 1:5:5:5:1:0:128:128:0, hwdownload" OUTPUT
+@end example
+
+@item
+Apply emboss:
+@example
+-i INPUT -vf "hwupload, convolution_opencl=-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2:-2 -1 0 -1 1 1 0 1 2, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section dilation_opencl
+
+Apply dilation effect to the video.
+
+This filter replaces the pixel by the local(3x3) maximum.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Limit the maximum change for each plane. Range is @code{[0, 65535]} and default value is @code{65535}.
+If @code{0}, plane will remain unchanged.
+
+@item coordinates
+Flag which specifies the pixel to refer to.
+Range is @code{[0, 255]} and default value is @code{255}, i.e. all eight pixels are used.
+
+Flags to local 3x3 coordinates region centered on @code{x}:
+
+    1 2 3
+
+    4 x 5
+
+    6 7 8
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply dilation filter with threshold0 set to 30, threshold1 set 40, threshold2 set to 50 and coordinates set to 231, setting each pixel of the output to the local maximum between pixels: 1, 2, 3, 6, 7, 8 of the 3x3 region centered on it in the input. If the difference between input pixel and local maximum is more then threshold of the corresponding plane, output pixel will be set to input pixel + threshold of corresponding plane.
+@example
+-i INPUT -vf "hwupload, dilation_opencl=30:40:50:coordinates=231, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section erosion_opencl
+
+Apply erosion effect to the video.
+
+This filter replaces the pixel by the local(3x3) minimum.
+
+It accepts the following options:
+
+@table @option
+@item threshold0
+@item threshold1
+@item threshold2
+@item threshold3
+Limit the maximum change for each plane. Range is @code{[0, 65535]} and default value is @code{65535}.
+If @code{0}, plane will remain unchanged.
+
+@item coordinates
+Flag which specifies the pixel to refer to.
+Range is @code{[0, 255]} and default value is @code{255}, i.e. all eight pixels are used.
+
+Flags to local 3x3 coordinates region centered on @code{x}:
+
+    1 2 3
+
+    4 x 5
+
+    6 7 8
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply erosion filter with threshold0 set to 30, threshold1 set 40, threshold2 set to 50 and coordinates set to 231, setting each pixel of the output to the local minimum between pixels: 1, 2, 3, 6, 7, 8 of the 3x3 region centered on it in the input. If the difference between input pixel and local minimum is more then threshold of the corresponding plane, output pixel will be set to input pixel - threshold of corresponding plane.
+@example
+-i INPUT -vf "hwupload, erosion_opencl=30:40:50:coordinates=231, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section overlay_opencl
+
+Overlay one video on top of another.
+
+It takes two inputs and has one output. The first input is the "main" video on which the second input is overlaid.
+This filter requires same memory layout for all the inputs. So, format conversion may be needed.
+
+The filter accepts the following options:
+
+@table @option
+
+@item x
+Set the x coordinate of the overlaid video on the main video.
+Default value is @code{0}.
+
+@item y
+Set the x coordinate of the overlaid video on the main video.
+Default value is @code{0}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Overlay an image LOGO at the top-left corner of the INPUT video. Both inputs are yuv420p format.
+@example
+-i INPUT -i LOGO -filter_complex "[0:v]hwupload[a], [1:v]format=yuv420p, hwupload[b], [a][b]overlay_opencl, hwdownload" OUTPUT
+@end example
+@item
+The inputs have same memory layout for color channels , the overlay has additional alpha plane, like INPUT is yuv420p, and the LOGO is yuva420p.
+@example
+-i INPUT -i LOGO -filter_complex "[0:v]hwupload[a], [1:v]format=yuva420p, hwupload[b], [a][b]overlay_opencl, hwdownload" OUTPUT
+@end example
+
+@end itemize
+
+@section prewitt_opencl
+
+Apply the Prewitt operator (@url{https://en.wikipedia.org/wiki/Prewitt_operator}) to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes to filter. Default value is @code{0xf}, by which all planes are processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+Range is @code{[0.0, 65535]} and default value is @code{1.0}.
+
+@item delta
+Set value which will be added to filtered result.
+Range is @code{[-65535, 65535]} and default value is @code{0.0}.
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply the Prewitt operator with scale set to 2 and delta set to 10.
+@example
+-i INPUT -vf "hwupload, prewitt_opencl=scale=2:delta=10, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section roberts_opencl
+Apply the Roberts cross operator (@url{https://en.wikipedia.org/wiki/Roberts_cross}) to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes to filter. Default value is @code{0xf}, by which all planes are processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+Range is @code{[0.0, 65535]} and default value is @code{1.0}.
+
+@item delta
+Set value which will be added to filtered result.
+Range is @code{[-65535, 65535]} and default value is @code{0.0}.
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply the Roberts cross operator with scale set to 2 and delta set to 10
+@example
+-i INPUT -vf "hwupload, roberts_opencl=scale=2:delta=10, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section sobel_opencl
+
+Apply the Sobel operator (@url{https://en.wikipedia.org/wiki/Sobel_operator}) to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes to filter. Default value is @code{0xf}, by which all planes are processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+Range is @code{[0.0, 65535]} and default value is @code{1.0}.
+
+@item delta
+Set value which will be added to filtered result.
+Range is @code{[-65535, 65535]} and default value is @code{0.0}.
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Apply sobel operator with scale set to 2 and delta set to 10
+@example
+-i INPUT -vf "hwupload, sobel_opencl=scale=2:delta=10, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section unsharp_opencl
+
+Sharpen or blur the input video.
+
+It accepts the following parameters:
+
+@table @option
+@item luma_msize_x, lx
+Set the luma matrix horizontal size.
+Range is @code{[1, 23]} and default value is @code{5}.
+
+@item luma_msize_y, ly
+Set the luma matrix vertical size.
+Range is @code{[1, 23]} and default value is @code{5}.
+
+@item luma_amount, la
+Set the luma effect strength.
+Range is @code{[-10, 10]} and default value is @code{1.0}.
+
+Negative values will blur the input video, while positive values will
+sharpen it, a value of zero will disable the effect.
+
+@item chroma_msize_x, cx
+Set the chroma matrix horizontal size.
+Range is @code{[1, 23]} and default value is @code{5}.
+
+@item chroma_msize_y, cy
+Set the chroma matrix vertical size.
+Range is @code{[1, 23]} and default value is @code{5}.
+
+@item chroma_amount, ca
+Set the chroma effect strength.
+Range is @code{[-10, 10]} and default value is @code{0.0}.
+
+Negative values will blur the input video, while positive values will
+sharpen it, a value of zero will disable the effect.
+
+@end table
+
+All parameters are optional and default to the equivalent of the
+string '5:5:1.0:5:5:0.0'.
+
+@subsection Examples
+
+@itemize
+@item
+Apply strong luma sharpen effect:
+@example
+-i INPUT -vf "hwupload, unsharp_opencl=luma_msize_x=7:luma_msize_y=7:luma_amount=2.5, hwdownload" OUTPUT
+@end example
+
+@item
+Apply a strong blur of both luma and chroma parameters:
+@example
+-i INPUT -vf "hwupload, unsharp_opencl=7:7:-2:7:7:-2, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@c man end OPENCL VIDEO FILTERS
 
 @chapter Video Sources
 @c man begin VIDEO SOURCES
