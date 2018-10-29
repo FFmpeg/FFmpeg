@@ -16650,6 +16650,7 @@ tmix=frames=3:weights="-1 2 -1":scale=1
 @end example
 @end itemize
 
+@anchor{tonemap}
 @section tonemap
 Tone map colors from different dynamic ranges.
 
@@ -18882,6 +18883,101 @@ Range is @code{[-65535, 65535]} and default value is @code{0.0}.
 Apply sobel operator with scale set to 2 and delta set to 10
 @example
 -i INPUT -vf "hwupload, sobel_opencl=scale=2:delta=10, hwdownload" OUTPUT
+@end example
+@end itemize
+
+@section tonemap_opencl
+
+Perform HDR(PQ/HLG) to SDR conversion with tone-mapping.
+
+It accepts the following parameters:
+
+@table @option
+@item tonemap
+Specify the tone-mapping operator to be used. Same as tonemap option in @ref{tonemap}.
+
+@item param
+Tune the tone mapping algorithm. same as param option in @ref{tonemap}.
+
+@item desat
+Apply desaturation for highlights that exceed this level of brightness. The
+higher the parameter, the more color information will be preserved. This
+setting helps prevent unnaturally blown-out colors for super-highlights, by
+(smoothly) turning into white instead. This makes images feel more natural,
+at the cost of reducing information about out-of-range colors.
+
+The default value is 0.5, and the algorithm here is a little different from
+the cpu version tonemap currently. A setting of 0.0 disables this option.
+
+@item threshold
+The tonemapping algorithm parameters is fine-tuned per each scene. And a threshold
+is used to detect whether the scene has changed or not. If the distance beween
+the current frame average brightness and the current running average exceeds
+a threshold value, we would re-calculate scene average and peak brightness.
+The default value is 0.2.
+
+@item format
+Specify the output pixel format.
+
+Currently supported formats are:
+@table @var
+@item p010
+@item nv12
+@end table
+
+@item range, r
+Set the output color range.
+
+Possible values are:
+@table @var
+@item tv/mpeg
+@item pc/jpeg
+@end table
+
+Default is same as input.
+
+@item primaries, p
+Set the output color primaries.
+
+Possible values are:
+@table @var
+@item bt709
+@item bt2020
+@end table
+
+Default is same as input.
+
+@item transfer, t
+Set the output transfer characteristics.
+
+Possible values are:
+@table @var
+@item bt709
+@item bt2020
+@end table
+
+Default is bt709.
+
+@item matrix, m
+Set the output colorspace matrix.
+
+Possible value are:
+@table @var
+@item bt709
+@item bt2020
+@end table
+
+Default is same as input.
+
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Convert HDR(PQ/HLG) video to bt2020-transfer-characteristic p010 format using linear operator.
+@example
+-i INPUT -vf "format=p010,hwupload,tonemap_opencl=t=bt2020:tonemap=linear:format=p010,hwdownload,format=p010" OUTPUT
 @end example
 @end itemize
 
