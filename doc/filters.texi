@@ -10121,6 +10121,8 @@ Default is @code{-1}.
 
 @section geq
 
+Apply generic equation to each pixel.
+
 The filter accepts the following options:
 
 @table @option
