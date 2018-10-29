@@ -569,42 +569,42 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
             } else
                 num_coded_frags = s->num_kf_coded_fragment[plane];
         } else {
-        for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
-            if (get_bits_left(gb) < plane0_num_coded_frags >> 2) {
-                return AVERROR_INVALIDDATA;
-            }
-            /* iterate through all 16 fragments in a superblock */
-            for (j = 0; j < 16; j++) {
-                /* if the fragment is in bounds, check its coding status */
-                current_fragment = s->superblock_fragments[i * 16 + j];
-                if (current_fragment != -1) {
-                    int coded = s->superblock_coding[i];
+            for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
+                if (get_bits_left(gb) < plane0_num_coded_frags >> 2) {
+                    return AVERROR_INVALIDDATA;
+                }
+                /* iterate through all 16 fragments in a superblock */
+                for (j = 0; j < 16; j++) {
+                    /* if the fragment is in bounds, check its coding status */
+                    current_fragment = s->superblock_fragments[i * 16 + j];
+                    if (current_fragment != -1) {
+                        int coded = s->superblock_coding[i];
 
-                    if (coded == SB_PARTIALLY_CODED) {
-                        /* fragment may or may not be coded; this is the case
-                         * that cares about the fragment coding runs */
-                        if (current_run-- == 0) {
-                            bit        ^= 1;
-                            current_run = get_vlc2(gb, s->fragment_run_length_vlc.table, 5, 2);
+                        if (coded == SB_PARTIALLY_CODED) {
+                            /* fragment may or may not be coded; this is the case
+                             * that cares about the fragment coding runs */
+                            if (current_run-- == 0) {
+                                bit        ^= 1;
+                                current_run = get_vlc2(gb, s->fragment_run_length_vlc.table, 5, 2);
+                            }
+                            coded = bit;
                         }
-                        coded = bit;
-                    }
 
-                    if (coded) {
-                        /* default mode; actual mode will be decoded in
-                         * the next phase */
-                        s->all_fragments[current_fragment].coding_method =
-                            MODE_INTER_NO_MV;
-                        s->coded_fragment_list[plane][num_coded_frags++] =
-                            current_fragment;
-                    } else {
-                        /* not coded; copy this fragment from the prior frame */
-                        s->all_fragments[current_fragment].coding_method =
-                            MODE_COPY;
+                        if (coded) {
+                            /* default mode; actual mode will be decoded in
+                             * the next phase */
+                            s->all_fragments[current_fragment].coding_method =
+                                MODE_INTER_NO_MV;
+                            s->coded_fragment_list[plane][num_coded_frags++] =
+                                current_fragment;
+                        } else {
+                            /* not coded; copy this fragment from the prior frame */
+                            s->all_fragments[current_fragment].coding_method =
+                                MODE_COPY;
+                        }
                     }
                 }
             }
-        }
         }
         if (!plane)
             plane0_num_coded_frags = num_coded_frags;
