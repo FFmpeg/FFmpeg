@@ -181,6 +181,13 @@ typedef struct VP9RawSuperframe {
     VP9RawSuperframeIndex index;
 } VP9RawSuperframe;
 
+typedef struct VP9ReferenceFrameState {
+    int frame_width;    // RefFrameWidth
+    int frame_height;   // RefFrameHeight
+    int subsampling_x;  // RefSubsamplingX
+    int subsampling_y;  // RefSubsamplingY
+    int bit_depth;      // RefBitDepth
+} VP9ReferenceFrameState;
 
 typedef struct CodedBitstreamVP9Context {
     // Frame dimensions in 8x8 mode info blocks.
@@ -189,6 +196,15 @@ typedef struct CodedBitstreamVP9Context {
     // Frame dimensions in 64x64 superblocks.
     uint16_t sb64_cols;
     uint16_t sb64_rows;
+
+    int frame_width;
+    int frame_height;
+
+    uint8_t subsampling_x;
+    uint8_t subsampling_y;
+    int bit_depth;
+
+    VP9ReferenceFrameState ref[VP9_NUM_REF_FRAMES];
 
     // Write buffer.
     uint8_t *write_buffer;
