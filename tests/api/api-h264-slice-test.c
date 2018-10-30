@@ -48,7 +48,7 @@
 
 static int header = 0;
 
-static void decode(AVCodecContext *dec_ctx, AVFrame *frame,
+static int decode(AVCodecContext *dec_ctx, AVFrame *frame,
            AVPacket *pkt)
 {
     static uint64_t frame_cnt = 0;
@@ -57,20 +57,20 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame,
     ret = avcodec_send_packet(dec_ctx, pkt);
     if (ret < 0) {
         fprintf(stderr, "Error sending a packet for decoding: %s\n", av_err2str(ret));
-        exit(1);
+        return ret;
     }
 
     while (ret >= 0) {
         const AVPixFmtDescriptor *desc;
-        char *sum;
+        char sum[AV_HASH_MAX_SIZE * 2 + 1];
         struct AVHashContext *hash;
 
         ret = avcodec_receive_frame(dec_ctx, frame);
         if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-            return;
+            return 0;
         } else if (ret < 0) {
             fprintf(stderr, "Error during decoding: %s\n", av_err2str(ret));
-            exit(1);
+            return ret;
         }
 
         if (!header) {
@@ -87,9 +87,10 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame,
             header = 1;
         }
         desc = av_pix_fmt_desc_get(dec_ctx->pix_fmt);
-        av_hash_alloc(&hash, "md5");
+        if ((ret = av_hash_alloc(&hash, "md5")) < 0) {
+            return ret;
+        }
         av_hash_init(hash);
-        sum = av_mallocz(av_hash_get_size(hash) * 2 + 1);
 
         for (int i = 0; i < frame->height; i++)
             av_hash_update(hash, &frame->data[0][i * frame->linesize[0]], frame->width);
@@ -104,25 +105,25 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame,
             (frame->width * frame->height + 2 * (frame->height >> desc->log2_chroma_h) * (frame->width >> desc->log2_chroma_w)), sum);
         frame_cnt += 1;
         av_hash_freep(&hash);
-        av_free(sum);
     }
+    return 0;
 }
 
 int main(int argc, char **argv)
 {
-    const AVCodec *codec;
+    const AVCodec *codec = NULL;
     AVCodecContext *c = NULL;
-    AVFrame *frame;
+    AVFrame *frame = NULL;
     unsigned int threads;
     AVPacket *pkt;
-    FILE *fd;
+    FILE *file = NULL;
     char nal[MAX_SLICES * UINT16_MAX + AV_INPUT_BUFFER_PADDING_SIZE];
-    int nals = 0;
+    int nals = 0, ret = 0;
     char *p = nal;
 
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <threads> <input file> <output file>\n", argv[0]);
-        exit(1);
+        return -1;
     }
 
     if (!(threads = strtoul(argv[1], NULL, 0)))
@@ -134,17 +135,20 @@ int main(int argc, char **argv)
     setmode(fileno(stdout), O_BINARY);
 #endif
 
-    if (!(pkt = av_packet_alloc()))
-        exit(1);
+    if (!(pkt = av_packet_alloc())) {
+        return -1;
+    }
 
     if (!(codec = avcodec_find_decoder(AV_CODEC_ID_H264))) {
         fprintf(stderr, "Codec not found\n");
-        exit(1);
+        ret = -1;
+        goto err;
     }
 
     if (!(c = avcodec_alloc_context3(codec))) {
         fprintf(stderr, "Could not allocate video codec context\n");
-        exit(1);
+        ret = -1;
+        goto err;
     }
 
     c->width  = 352;
@@ -154,15 +158,16 @@ int main(int argc, char **argv)
     c->thread_type = FF_THREAD_SLICE;
     c->thread_count = threads;
 
-    if (avcodec_open2(c, codec, NULL) < 0) {
+    if ((ret = avcodec_open2(c, codec, NULL)) < 0) {
         fprintf(stderr, "Could not open codec\n");
-        exit(1);
+        goto err;
     }
 
 #if HAVE_THREADS
     if (c->active_thread_type != FF_THREAD_SLICE) {
         fprintf(stderr, "Couldn't activate slice threading: %d\n", c->active_thread_type);
-        exit(1);
+        ret = -1;
+        goto err;
     }
 #else
     fprintf(stderr, "WARN: not using threads, only checking decoding slice NALUs\n");
@@ -170,31 +175,37 @@ int main(int argc, char **argv)
 
     if (!(frame = av_frame_alloc())) {
         fprintf(stderr, "Could not allocate video frame\n");
-        exit(1);
+        ret = -1;
+        goto err;
     }
 
-    if (!(fd = fopen(argv[2], "rb"))) {
+    if (!(file = fopen(argv[2], "rb"))) {
         fprintf(stderr, "Couldn't open NALU file: %s\n", argv[2]);
-        exit(1);
+        ret = -1;
+        goto err;
     }
 
     while(1) {
         uint16_t size = 0;
-        size_t ret = fread(&size, 1, sizeof(uint16_t), fd);
+        size_t ret = fread(&size, 1, sizeof(uint16_t), file);
         if (ret != sizeof(uint16_t))
             break;
+
         size = ntohs(size);
-        ret = fread(p, 1, size, fd);
+        ret = fread(p, 1, size, file);
         if (ret != size) {
             perror("Couldn't read data");
-            exit(1);
+            goto err;
         }
         p += ret;
 
         if (++nals >= threads) {
+            int decret = 0;
             pkt->data = nal;
             pkt->size = p - nal;
-            decode(c, frame, pkt);
+            if ((decret = decode(c, frame, pkt)) < 0) {
+                goto err;
+            }
             memset(nal, 0, MAX_SLICES * UINT16_MAX + AV_INPUT_BUFFER_PADDING_SIZE);
             nals = 0;
             p = nal;
@@ -204,15 +215,19 @@ int main(int argc, char **argv)
     if (nals) {
         pkt->data = nal;
         pkt->size = p - nal;
-        decode(c, frame, pkt);
+        if ((ret = decode(c, frame, pkt)) < 0) {
+            goto err;
+        }
     }
 
-    decode(c, frame, NULL);
+    ret = decode(c, frame, NULL);
 
-    fclose(fd);
-    avcodec_free_context(&c);
+err:
+    if (file)
+        fclose(file);
     av_frame_free(&frame);
+    avcodec_free_context(&c);
     av_packet_free(&pkt);
 
-    return 0;
+    return ret;
 }
