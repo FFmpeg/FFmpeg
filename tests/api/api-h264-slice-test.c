@@ -180,15 +180,12 @@ int main(int argc, char **argv)
 
     while(1) {
         uint16_t size = 0;
-        ssize_t ret = fread(&size, 1, sizeof(uint16_t), fd);
-        if (ret < 0) {
-            perror("Couldn't read size");
-            exit(1);
-        } else if (ret != sizeof(uint16_t))
+        size_t ret = fread(&size, 1, sizeof(uint16_t), fd);
+        if (ret != sizeof(uint16_t))
             break;
         size = ntohs(size);
         ret = fread(p, 1, size, fd);
-        if (ret < 0 || ret != size) {
+        if (ret != size) {
             perror("Couldn't read data");
             exit(1);
         }
