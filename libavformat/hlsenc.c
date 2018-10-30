@@ -2205,6 +2205,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_flush(oc->pb);
                 range_length = avio_close_dyn_buf(oc->pb, &buffer);
                 avio_write(vs->out, buffer, range_length);
+                av_free(buffer);
                 vs->init_range_length = range_length;
                 avio_open_dyn_buf(&oc->pb);
                 vs->packets_written = 0;
