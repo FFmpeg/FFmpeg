@@ -2233,10 +2233,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 }
         }
 
-        if (vs->fmp4_init_mode) {
-            vs->number--;
-        }
-
         if (hls->segment_type == SEGMENT_TYPE_FMP4) {
             if (hls->flags & HLS_SINGLE_FILE) {
                 ret = flush_dynbuf(vs, &range_length);
