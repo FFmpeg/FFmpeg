@@ -147,7 +147,6 @@ typedef struct VariantStream {
 
     char *fmp4_init_filename;
     char *base_output_dirname;
-    int fmp4_init_mode;
 
     AVStream **streams;
     char codec_attr[128];
@@ -733,7 +732,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     vs->packets_written = 1;
     vs->start_pos = 0;
     vs->new_start = 1;
-    vs->fmp4_init_mode = 0;
 
     if (hls->segment_type == SEGMENT_TYPE_FMP4) {
         if (hls->max_seg_size > 0) {
@@ -743,7 +741,6 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
 
         vs->packets_written = 0;
         vs->init_range_length = 0;
-        vs->fmp4_init_mode = !byterange_mode;
         set_http_options(s, &options, hls);
         if ((ret = avio_open_dyn_buf(&oc->pb)) < 0)
             return ret;
@@ -2291,7 +2288,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             vs->start_pos += vs->size;
         }
 
-        vs->fmp4_init_mode = 0;
         if (hls->flags & HLS_SINGLE_FILE) {
             vs->number++;
         } else if (hls->max_seg_size > 0) {
