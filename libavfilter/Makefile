@@ -383,6 +383,7 @@ OBJS-$(CONFIG_TMIX_FILTER)                   += vf_mix.o framesync.o
 OBJS-$(CONFIG_TONEMAP_FILTER)                += vf_tonemap.o colorspace.o
 OBJS-$(CONFIG_TONEMAP_OPENCL_FILTER)         += vf_tonemap_opencl.o colorspace.o opencl.o \
                                                 opencl/tonemap.o opencl/colorspace_common.o
+OBJS-$(CONFIG_TPAD_FILTER)                   += vf_tpad.o
 OBJS-$(CONFIG_TRANSPOSE_FILTER)              += vf_transpose.o
 OBJS-$(CONFIG_TRANSPOSE_NPP_FILTER)          += vf_transpose_npp.o
 OBJS-$(CONFIG_TRIM_FILTER)                   += trim.o
