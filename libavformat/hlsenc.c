@@ -2380,6 +2380,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
             if (ret < 0) {
                 goto failed;
             }
+            vs->size = range_length;
             ff_format_io_close(s, &vs->out);
         }
 
@@ -2388,8 +2389,6 @@ failed:
         if (oc->pb) {
             if (hls->segment_type != SEGMENT_TYPE_FMP4) {
                 vs->size = avio_tell(vs->avf->pb) - vs->start_pos;
-            } else {
-                vs->size = avio_tell(vs->avf->pb);
             }
             if (hls->segment_type != SEGMENT_TYPE_FMP4)
                 ff_format_io_close(s, &oc->pb);
