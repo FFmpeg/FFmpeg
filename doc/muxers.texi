@@ -764,17 +764,17 @@ Possible values:
 
 @table @samp
 @item mpegts
-If this flag is set, the hls segment files will format to mpegts.
-the mpegts files is used in all hls versions.
+Output segment files in MPEG-2 Transport Stream format. This is
+compatible with all HLS versions.
 
 @item fmp4
-If this flag is set, the hls segment files will format to fragment mp4 looks like dash.
-the fmp4 files is used in hls after version 7.
+Output segment files in fragmented MP4 format, similar to MPEG-DASH.
+fmp4 files may be used in HLS version 7 and above.
 
 @end table
 
 @item hls_fmp4_init_filename @var{filename}
-set filename to the fragment files header file, default filename is @file{init.mp4}.
+Set filename to the fragment files header file, default filename is @file{init.mp4}.
 
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
