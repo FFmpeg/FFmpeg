@@ -190,6 +190,8 @@ typedef struct VP9ReferenceFrameState {
 } VP9ReferenceFrameState;
 
 typedef struct CodedBitstreamVP9Context {
+    int profile;
+
     // Frame dimensions in 8x8 mode info blocks.
     uint16_t mi_cols;
     uint16_t mi_rows;

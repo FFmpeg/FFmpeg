@@ -278,15 +278,14 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                                      VP9RawFrameHeader *current)
 {
     CodedBitstreamVP9Context *vp9 = ctx->priv_data;
-    int profile, i;
-    int err;
+    int err, i;
 
     f(2, frame_marker);
 
     f(1, profile_low_bit);
     f(1, profile_high_bit);
-    profile = (current->profile_high_bit << 1) + current->profile_low_bit;
-    if (profile == 3)
+    vp9->profile = (current->profile_high_bit << 1) + current->profile_low_bit;
+    if (vp9->profile == 3)
         fixed(1, reserved_zero, 0);
 
     f(1, show_existing_frame);
@@ -304,7 +303,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (current->frame_type == VP9_KEY_FRAME) {
         CHECK(FUNC(frame_sync_code)(ctx, rw, current));
-        CHECK(FUNC(color_config)(ctx, rw, current, profile));
+        CHECK(FUNC(color_config)(ctx, rw, current, vp9->profile));
         CHECK(FUNC(frame_size)(ctx, rw, current));
         CHECK(FUNC(render_size)(ctx, rw, current));
 
@@ -324,8 +323,8 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
          if (current->intra_only == 1) {
              CHECK(FUNC(frame_sync_code)(ctx, rw, current));
 
-             if (profile > 0) {
-                 CHECK(FUNC(color_config)(ctx, rw, current, profile));
+             if (vp9->profile > 0) {
+                 CHECK(FUNC(color_config)(ctx, rw, current, vp9->profile));
              } else {
                  infer(color_space,   1);
                  infer(subsampling_x, 1);
