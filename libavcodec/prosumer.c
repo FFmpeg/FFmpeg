@@ -62,7 +62,7 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
         if ((b & 0xFF00u) != 0x8000u || (b & 0xFFu)) {
             if ((b & 0xFF00u) != 0x8000u) {
                 bytestream2_put_le16(pb, b);
-            } else if (b & 0xFFu) {
+            } else {
                 idx = 0;
                 for (int i = 0; i < (b & 0xFFu); i++)
                     bytestream2_put_le32(pb, 0);
