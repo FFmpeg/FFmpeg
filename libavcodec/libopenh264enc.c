@@ -164,6 +164,47 @@ FF_ENABLE_DEPRECATION_WARNINGS
     param.sSpatialLayers[0].iSpatialBitrate     = param.iTargetBitrate;
     param.sSpatialLayers[0].iMaxSpatialBitrate  = param.iMaxBitrate;
 
+#if OPENH264_VER_AT_LEAST(1, 7)
+    if (avctx->sample_aspect_ratio.num && avctx->sample_aspect_ratio.den) {
+        // Table E-1.
+        static const AVRational sar_idc[] = {
+            {   0,  0 }, // Unspecified (never written here).
+            {   1,  1 }, {  12, 11 }, {  10, 11 }, {  16, 11 },
+            {  40, 33 }, {  24, 11 }, {  20, 11 }, {  32, 11 },
+            {  80, 33 }, {  18, 11 }, {  15, 11 }, {  64, 33 },
+            { 160, 99 }, // Last 3 are unknown to openh264: {   4,  3 }, {   3,  2 }, {   2,  1 },
+        };
+        static const ESampleAspectRatio asp_idc[] = {
+            ASP_UNSPECIFIED,
+            ASP_1x1,      ASP_12x11,   ASP_10x11,   ASP_16x11,
+            ASP_40x33,    ASP_24x11,   ASP_20x11,   ASP_32x11,
+            ASP_80x33,    ASP_18x11,   ASP_15x11,   ASP_64x33,
+            ASP_160x99,
+        };
+        int num, den, i;
+
+        av_reduce(&num, &den, avctx->sample_aspect_ratio.num,
+                  avctx->sample_aspect_ratio.den, 65535);
+
+        for (i = 1; i < FF_ARRAY_ELEMS(sar_idc); i++) {
+            if (num == sar_idc[i].num &&
+                den == sar_idc[i].den)
+                break;
+        }
+        if (i == FF_ARRAY_ELEMS(sar_idc)) {
+            param.sSpatialLayers[0].eAspectRatio = ASP_EXT_SAR;
+            param.sSpatialLayers[0].sAspectRatioExtWidth = num;
+            param.sSpatialLayers[0].sAspectRatioExtHeight = den;
+        } else {
+            param.sSpatialLayers[0].eAspectRatio = asp_idc[i];
+        }
+        param.sSpatialLayers[0].bAspectRatioPresent = true;
+    }
+    else {
+        param.sSpatialLayers[0].bAspectRatioPresent = false;
+    }
+#endif
+
     if ((avctx->slices > 1) && (s->max_nal_size)) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid combination -slices %d and -max_nal_size %d.\n",
