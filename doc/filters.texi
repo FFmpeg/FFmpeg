@@ -11379,6 +11379,28 @@ Set maximal size in number of frames. Default is 0.
 Set first frame of loop. Default is 0.
 @end table
 
+@subsection Examples
+
+@itemize
+@item
+Loop single first frame infinitely:
+@example
+loop=loop=-1:size=1:start=0
+@end example
+
+@item
+Loop single first frame 10 times:
+@example
+loop=loop=10:size=1:start=0
+@end example
+
+@item
+Loop 10 first frames 5 times:
+@example
+loop=loop=5:size=10:start=0
+@end example
+@end itemize
+
 @section lut1d
 
 Apply a 1D LUT to an input video.
