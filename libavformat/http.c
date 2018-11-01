@@ -649,7 +649,7 @@ static int check_http_code(URLContext *h, int http_code, const char *end)
     HTTPContext *s = h->priv_data;
     /* error codes are 4xx and 5xx, but regard 401 as a success, so we
      * don't abort until all headers have been parsed. */
-    if (http_code >= 400 && http_code < 600 &&
+    if (http_code >= 400 &&
         (http_code != 401 || s->auth_state.auth_type != HTTP_AUTH_NONE) &&
         (http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
         end += strspn(end, SPACE_CHARS);
