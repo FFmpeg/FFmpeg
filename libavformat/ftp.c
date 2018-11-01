@@ -783,13 +783,13 @@ static int ftp_read(URLContext *h, unsigned char *buf, int size)
     if (s->state == DISCONNECTED) {
         /* optimization */
         if (s->position >= s->filesize)
-            return 0;
+            return AVERROR_EOF;
         if ((err = ftp_connect_data_connection(h)) < 0)
             return err;
     }
     if (s->state == READY) {
         if (s->position >= s->filesize)
-            return 0;
+            return AVERROR_EOF;
         if ((err = ftp_retrieve(s)) < 0)
             return err;
     }
