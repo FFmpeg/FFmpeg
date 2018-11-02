@@ -2,6 +2,10 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.0.3:
+- avutil/integer: Fix integer overflow in av_mul_i()
+- avcodec/msrle: Check that the input is large enough to contain a end of picture code
+- avformat/ftp: return AVERROR_EOF for EOF
+- avcodec/libx264: remove FF_CODEC_CAP_INIT_THREADSAFE flag
 - avcodec/jpeg2000dec: Fix off by 1 error in JPEG2000_PGOD_CPRL handling
 - avcodec/mpeg4videodec: Fix typo in sprite delta check
 - avcodec/h264_cavlc: Check mb_skip_run
