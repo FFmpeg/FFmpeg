@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -44,6 +45,7 @@ typedef struct LoopContext {
     int64_t ignored_samples;
 
     int loop;
+    int eof;
     int64_t size;
     int64_t start;
     int64_t pts;
@@ -330,25 +332,44 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ret;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
-    int ret = 0;
+    AVFrame *frame = NULL;
+    int ret, status;
+    int64_t pts;
 
-    if ((!s->size) ||
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!s->eof && (s->nb_frames < s->size || !s->loop)) {
+        ret = ff_inlink_consume_frame(inlink, &frame);
+        if (ret < 0)
+            return ret;
+        if (ret > 0)
+            return filter_frame(inlink, frame);
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF)
+            s->eof = 1;
+    }
+
+    if (s->eof && (s->loop == 0 || s->nb_frames < s->size)) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->duration);
+        return 0;
+    }
+
+    if (!s->eof && (!s->size ||
         (s->nb_frames < s->size) ||
-        (s->nb_frames >= s->size && s->loop == 0)) {
-        ret = ff_request_frame(ctx->inputs[0]);
-    } else {
-        ret = push_frame(ctx);
+        (s->nb_frames >= s->size && s->loop == 0))) {
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+    } else if (s->loop && s->nb_frames == s->size) {
+        return push_frame(ctx);
     }
 
-    if (ret == AVERROR_EOF && s->nb_frames > 0 && s->loop != 0) {
-        ret = push_frame(ctx);
-    }
-
-    return ret;
+    return FFERROR_NOT_READY;
 }
 
 static const AVOption loop_options[] = {
@@ -362,18 +383,16 @@ AVFILTER_DEFINE_CLASS(loop);
 
 static const AVFilterPad inputs[] = {
     {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
 
 static const AVFilterPad outputs[] = {
     {
-        .name          = "default",
-        .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
     },
     { NULL }
 };
@@ -385,6 +404,7 @@ AVFilter ff_vf_loop = {
     .priv_class  = &loop_class,
     .init        = init,
     .uninit      = uninit,
+    .activate    = activate,
     .inputs      = inputs,
     .outputs     = outputs,
 };
