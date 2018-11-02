@@ -267,7 +267,7 @@ static int push_frame(AVFilterContext *ctx)
 {
     AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
-    int64_t pts;
+    int64_t pts, duration;
     int ret;
 
     AVFrame *out = av_frame_clone(s->frames[s->current_frame]);
@@ -275,7 +275,11 @@ static int push_frame(AVFilterContext *ctx)
     if (!out)
         return AVERROR(ENOMEM);
     out->pts += s->duration - s->start_pts;
-    pts = out->pts + out->pkt_duration;
+    if (out->pkt_duration)
+        duration = out->pkt_duration;
+    else
+        duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+    pts = out->pts + duration;
     ret = ff_filter_frame(outlink, out);
     s->current_frame++;
 
@@ -295,6 +299,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     LoopContext *s = ctx->priv;
+    int64_t duration;
     int ret = 0;
 
     if (inlink->frame_count_out >= s->start && s->size > 0 && s->loop != 0) {
@@ -307,7 +312,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                 return AVERROR(ENOMEM);
             }
             s->nb_frames++;
-            s->duration = frame->pts + frame->pkt_duration;
+            if (frame->pkt_duration)
+                duration = frame->pkt_duration;
+            else
+                duration = av_rescale_q(1, av_inv_q(outlink->frame_rate), outlink->time_base);
+            s->duration = frame->pts + duration;
             ret = ff_filter_frame(outlink, frame);
         } else {
             av_frame_free(&frame);
