@@ -1,0 +1,15 @@
+
+              ┌────────────────────────────────────────┐
+              │ RELEASE NOTES for FFmpeg 5.0 "Lorentz" │
+              └────────────────────────────────────────┘
+
+   The FFmpeg Project proudly presents FFmpeg 5.0 "Lorentz", about 9
+   months after the release of FFmpeg 4.4.
+
+   A complete Changelog is available at the root of the project, and the
+   complete Git history on https://git.ffmpeg.org/gitweb/ffmpeg.git
+
+   We hope you will like this release as much as we enjoyed working on it, and
+   as usual, if you have any questions about it, or any FFmpeg related topic,
+   feel free to join us on the #ffmpeg IRC channel (on irc.libera.chat) or ask
+   on the mailing-lists.
