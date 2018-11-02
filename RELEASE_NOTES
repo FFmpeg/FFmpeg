@@ -1,0 +1,15 @@
+
+              ┌────────────────────────────────────┐
+              │ RELEASE NOTES for FFmpeg 4.2 "Ada" │
+              └────────────────────────────────────┘
+
+   The FFmpeg Project proudly presents FFmpeg 4.2 "Ada", about 8
+   months after the release of FFmpeg 4.1.
+
+   A complete Changelog is available at the root of the project, and the
+   complete Git history on https://git.ffmpeg.org/gitweb/ffmpeg.git
+
+   We hope you will like this release as much as we enjoyed working on it, and
+   as usual, if you have any questions about it, or any FFmpeg related topic,
+   feel free to join us on the #ffmpeg IRC channel (on irc.freenode.net) or ask
+   on the mailing-lists.
