@@ -32,8 +32,6 @@ typedef struct DAVS2Context {
     davs2_param_t    param;      // decoding parameters
     davs2_packet_t   packet;     // input bitstream
 
-    int decoded_frames;
-
     davs2_picture_t  out_frame;  // output data, frame data
     davs2_seq_info_t headerset;  // output data, sequence header
 
@@ -102,7 +100,6 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
     frame->pict_type = pic->type;
     frame->format    = avctx->pix_fmt;
 
-    cad->decoded_frames++;
     return 1;
 }
 
