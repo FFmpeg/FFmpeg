@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "fdctdsp.h"
 #include "put_bits.h"
+#include "profiles.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "proresdata.h"
@@ -1431,4 +1432,5 @@ AVCodec ff_prores_ks_encoder = {
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
                       },
     .priv_class     = &proresenc_class,
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };

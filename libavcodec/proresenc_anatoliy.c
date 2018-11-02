@@ -30,18 +30,13 @@
 #include "avcodec.h"
 #include "dct.h"
 #include "internal.h"
+#include "profiles.h"
 #include "proresdata.h"
 #include "put_bits.h"
 #include "bytestream.h"
 #include "fdctdsp.h"
 
 #define DEFAULT_SLICE_MB_WIDTH 8
-
-#define FF_PROFILE_PRORES_PROXY     0
-#define FF_PROFILE_PRORES_LT        1
-#define FF_PROFILE_PRORES_STANDARD  2
-#define FF_PROFILE_PRORES_HQ        3
-#define FF_PROFILE_PRORES_4444      4
 
 static const AVProfile profiles[] = {
     { FF_PROFILE_PRORES_PROXY,    "apco"},
@@ -679,7 +674,7 @@ AVCodec ff_prores_aw_encoder = {
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
-    .profiles       = profiles
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };
 
 AVCodec ff_prores_encoder = {
@@ -693,5 +688,5 @@ AVCodec ff_prores_encoder = {
     .encode2        = prores_encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
-    .profiles       = profiles
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };

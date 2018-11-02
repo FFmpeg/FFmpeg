@@ -33,6 +33,7 @@
 #include "get_bits.h"
 #include "idctdsp.h"
 #include "internal.h"
+#include "profiles.h"
 #include "simple_idct.h"
 #include "proresdec.h"
 #include "proresdata.h"
@@ -730,4 +731,5 @@ AVCodec ff_prores_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS | AV_CODEC_CAP_FRAME_THREADS,
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };

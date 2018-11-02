@@ -33,5 +33,6 @@ extern const AVProfile ff_vc1_profiles[];
 extern const AVProfile ff_vp9_profiles[];
 extern const AVProfile ff_av1_profiles[];
 extern const AVProfile ff_sbc_profiles[];
+extern const AVProfile ff_prores_profiles[];
 
 #endif /* AVCODEC_PROFILES_H */

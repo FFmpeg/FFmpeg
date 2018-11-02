@@ -151,4 +151,14 @@ const AVProfile ff_sbc_profiles[] = {
     { FF_PROFILE_UNKNOWN },
 };
 
+const AVProfile ff_prores_profiles[] = {
+    { FF_PROFILE_PRORES_PROXY,    "Proxy"    },
+    { FF_PROFILE_PRORES_LT,       "LT"       },
+    { FF_PROFILE_PRORES_STANDARD, "Standard" },
+    { FF_PROFILE_PRORES_HQ,       "HQ"       },
+    { FF_PROFILE_PRORES_4444,     "4444"     },
+    { FF_PROFILE_PRORES_XQ,       "XQ"       },
+    { FF_PROFILE_UNKNOWN }
+};
+
 #endif /* !CONFIG_SMALL */

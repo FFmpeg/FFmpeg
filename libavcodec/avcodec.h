@@ -2971,6 +2971,13 @@ typedef struct AVCodecContext {
 
 #define FF_PROFILE_SBC_MSBC                         1
 
+#define FF_PROFILE_PRORES_PROXY     0
+#define FF_PROFILE_PRORES_LT        1
+#define FF_PROFILE_PRORES_STANDARD  2
+#define FF_PROFILE_PRORES_HQ        3
+#define FF_PROFILE_PRORES_4444      4
+#define FF_PROFILE_PRORES_XQ        5
+
     /**
      * level
      * - encoding: Set by user.
