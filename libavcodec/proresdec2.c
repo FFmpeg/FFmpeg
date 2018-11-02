@@ -62,6 +62,30 @@ static av_cold int decode_init(AVCodecContext *avctx)
     permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
     permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
+    switch (avctx->codec_tag) {
+    case MKTAG('a','p','c','o'):
+        avctx->profile = FF_PROFILE_PRORES_PROXY;
+        break;
+    case MKTAG('a','p','c','s'):
+        avctx->profile = FF_PROFILE_PRORES_LT;
+        break;
+    case MKTAG('a','p','c','n'):
+        avctx->profile = FF_PROFILE_PRORES_STANDARD;
+        break;
+    case MKTAG('a','p','c','h'):
+        avctx->profile = FF_PROFILE_PRORES_HQ;
+        break;
+    case MKTAG('a','p','4','h'):
+        avctx->profile = FF_PROFILE_PRORES_4444;
+        break;
+    case MKTAG('a','p','4','x'):
+        avctx->profile = FF_PROFILE_PRORES_XQ;
+        break;
+    default:
+        avctx->profile = FF_PROFILE_UNKNOWN;
+        av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
+    }
+
     return 0;
 }
 
