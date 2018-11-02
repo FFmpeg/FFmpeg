@@ -41,14 +41,14 @@
 #define FF_PROFILE_PRORES_LT        1
 #define FF_PROFILE_PRORES_STANDARD  2
 #define FF_PROFILE_PRORES_HQ        3
-#define FF_PROFILE_PRORES_444       4
+#define FF_PROFILE_PRORES_4444      4
 
 static const AVProfile profiles[] = {
     { FF_PROFILE_PRORES_PROXY,    "apco"},
     { FF_PROFILE_PRORES_LT,       "apcs"},
     { FF_PROFILE_PRORES_STANDARD, "apcn"},
     { FF_PROFILE_PRORES_HQ,       "apch"},
-    { FF_PROFILE_PRORES_444,      "ap4h"},
+    { FF_PROFILE_PRORES_4444,     "ap4h"},
     { FF_PROFILE_UNKNOWN }
 };
 
@@ -550,7 +550,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, "fmpg", 4);
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
-    if (avctx->profile == FF_PROFILE_PRORES_444) {
+    if (avctx->profile == FF_PROFILE_PRORES_4444) {
         *buf++ = 0xC2; // 444, not interlaced
     } else {
         *buf++ = 0x82; // 422, not interlaced
@@ -605,13 +605,13 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_INFO,
                 "encoding with ProRes standard (apcn) profile\n");
         } else if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
-            avctx->profile = FF_PROFILE_PRORES_444;
+            avctx->profile = FF_PROFILE_PRORES_4444;
             av_log(avctx, AV_LOG_INFO,
-                   "encoding with ProRes 444 (ap4h) profile\n");
+                   "encoding with ProRes 4444 (ap4h) profile\n");
         }
 
     } else if (avctx->profile < FF_PROFILE_PRORES_PROXY
-            || avctx->profile > FF_PROFILE_PRORES_444) {
+            || avctx->profile > FF_PROFILE_PRORES_4444) {
         av_log(
                 avctx,
                 AV_LOG_ERROR,
@@ -622,13 +622,13 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes 444 (ap4h) profile, need YUV444P10 input\n");
         return AVERROR(EINVAL);
-    }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10) && (avctx->profile < FF_PROFILE_PRORES_444)){
+    }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10) && (avctx->profile < FF_PROFILE_PRORES_4444)){
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes Proxy/LT/422/422 HQ (apco, apcs, apcn, ap4h) profile, need YUV422P10 input\n");
         return AVERROR(EINVAL);
     }
 
-    if (avctx->profile < FF_PROFILE_PRORES_444) { /* 422 versions */
+    if (avctx->profile < FF_PROFILE_PRORES_4444) { /* 422 versions */
         ctx->is_422 = 1;
         if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
             ctx->fill_y = av_malloc(4 * (DEFAULT_SLICE_MB_WIDTH << 8));
