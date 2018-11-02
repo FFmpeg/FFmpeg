@@ -201,9 +201,11 @@ __inline__ __device__ void yadif_double(T *dst,
     T m = tex2D<T>(cur, xo + 2, yo + 1);
     T n = tex2D<T>(cur, xo + 3, yo + 1);
 
-    T spatial_pred = {
-        spatial_predictor(a.x, b.x, c.x, d.x, e.x, f.x, g.x, h.x, i.x, j.x, k.x, l.x, m.x, n.x),
-        spatial_predictor(a.y, b.y, c.y, d.y, e.y, f.y, g.y, h.y, i.y, j.y, k.y, l.y, m.y, n.y) };
+    T spatial_pred;
+    spatial_pred.x =
+        spatial_predictor(a.x, b.x, c.x, d.x, e.x, f.x, g.x, h.x, i.x, j.x, k.x, l.x, m.x, n.x);
+    spatial_pred.y =
+        spatial_predictor(a.y, b.y, c.y, d.y, e.y, f.y, g.y, h.y, i.y, j.y, k.y, l.y, m.y, n.y);
 
     // Calculate temporal prediction
     int is_second_field = !(parity ^ tff);
@@ -226,11 +228,12 @@ __inline__ __device__ void yadif_double(T *dst,
     T K = tex2D<T>(next2, xo,  yo - 1);
     T L = tex2D<T>(next2, xo,  yo + 1);
 
-    spatial_pred = {
+    spatial_pred.x =
         temporal_predictor(A.x, B.x, C.x, D.x, E.x, F.x, G.x, H.x, I.x, J.x, K.x, L.x,
-                           spatial_pred.x, skip_spatial_check),
+                           spatial_pred.x, skip_spatial_check);
+    spatial_pred.y =
         temporal_predictor(A.y, B.y, C.y, D.y, E.y, F.y, G.y, H.y, I.y, J.y, K.y, L.y,
-                           spatial_pred.y, skip_spatial_check) };
+                           spatial_pred.y, skip_spatial_check);
 
     dst[yo*dst_pitch+xo] = spatial_pred;
 }
