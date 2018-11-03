@@ -1692,6 +1692,8 @@ Corpus VBR mode is a variant of standard VBR where the complexity distribution
 midpoint is passed in rather than calculated for a specific clip or chunk.
 
 The valid range is [0, 10000]. 0 (default) uses standard VBR.
+@item enable-tpl @var{boolean}
+Enable temporal dependency model.
 @end table
 
 @end table
