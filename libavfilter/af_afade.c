@@ -23,9 +23,6 @@
  * fade audio filter
  */
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
-
 #include "libavutil/audio_fifo.h"
 #include "libavutil/opt.h"
 #include "audio.h"
@@ -472,8 +469,8 @@ static int activate(AVFilterContext *ctx)
         return ff_filter_frame(outlink, in);
     }
 
-    if (ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) > s->nb_samples) {
-        nb_samples = ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) - s->nb_samples;
+    if (ff_inlink_queued_samples(ctx->inputs[0]) > s->nb_samples) {
+        nb_samples = ff_inlink_queued_samples(ctx->inputs[0]) - s->nb_samples;
         if (nb_samples > 0) {
             ret = ff_inlink_consume_samples(ctx->inputs[0], nb_samples, nb_samples, &in);
             if (ret < 0) {
@@ -484,7 +481,7 @@ static int activate(AVFilterContext *ctx)
         s->pts += av_rescale_q(in->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
         return ff_filter_frame(outlink, in);
-    } else if (ff_framequeue_queued_samples(&ctx->inputs[1]->fifo) >= s->nb_samples) {
+    } else if (ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples) {
         if (s->overlap) {
             out = ff_get_audio_buffer(outlink, s->nb_samples);
             if (!out)
@@ -554,10 +551,10 @@ static int activate(AVFilterContext *ctx)
             return ff_filter_frame(outlink, out);
         }
     } else if (ff_outlink_frame_wanted(ctx->outputs[0])) {
-        if (!s->cf0_eof && ctx->inputs[0]->status_in) {
+        if (!s->cf0_eof && ff_outlink_get_status(ctx->inputs[0])) {
             s->cf0_eof = 1;
         }
-        if (ctx->inputs[1]->status_in) {
+        if (ff_outlink_get_status(ctx->inputs[1])) {
             ff_outlink_set_status(ctx->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
             return 0;
         }
