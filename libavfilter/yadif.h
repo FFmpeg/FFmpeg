@@ -41,6 +41,12 @@ enum YADIFDeint {
     YADIF_DEINT_INTERLACED = 1, ///< only deinterlace frames marked as interlaced
 };
 
+enum YADIFCurrentField {
+    YADIF_FIELD_BACK_END = -1, ///< The last frame in a sequence
+    YADIF_FIELD_END      =  0, ///< The first or last field in a sequence
+    YADIF_FIELD_NORMAL   =  1, ///< A normal field in the middle of a sequence
+};
+
 typedef struct YADIFContext {
     const AVClass *class;
 
@@ -70,6 +76,14 @@ typedef struct YADIFContext {
     int eof;
     uint8_t *temp_line;
     int temp_line_size;
+
+    /*
+     * An algorithm that treats first and/or last fields in a sequence
+     * differently can use this to detect those cases. It is the algorithm's
+     * responsibility to set the value to YADIF_FIELD_NORMAL after processing
+     * the first field.
+     */
+    int current_field;  ///< YADIFCurrentField
 } YADIFContext;
 
 void ff_yadif_init_x86(YADIFContext *yadif);

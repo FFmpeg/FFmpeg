@@ -44,6 +44,8 @@ static int return_frame(AVFilterContext *ctx, int is_second)
 
         av_frame_copy_props(yadif->out, yadif->cur);
         yadif->out->interlaced_frame = 0;
+        if (yadif->current_field == YADIF_FIELD_BACK_END)
+            yadif->current_field = YADIF_FIELD_END;
     }
 
     yadif->filter(ctx, yadif->out, tff ^ !is_second, tff);
@@ -103,9 +105,12 @@ int ff_yadif_filter_frame(AVFilterLink *link, AVFrame *frame)
     yadif->cur  = yadif->next;
     yadif->next = frame;
 
-    if (!yadif->cur &&
-        !(yadif->cur = av_frame_clone(yadif->next)))
-        return AVERROR(ENOMEM);
+    if (!yadif->cur) {
+        yadif->cur = av_frame_clone(yadif->next);
+        if (!yadif->cur)
+            return AVERROR(ENOMEM);
+        yadif->current_field = YADIF_FIELD_END;
+    }
 
     if (checkstride(yadif, yadif->next, yadif->cur)) {
         av_log(ctx, AV_LOG_VERBOSE, "Reallocating frame due to differing stride\n");
@@ -173,6 +178,7 @@ int ff_yadif_request_frame(AVFilterLink *link)
         if (!next)
             return AVERROR(ENOMEM);
 
+        yadif->current_field = YADIF_FIELD_BACK_END;
         next->pts = yadif->next->pts * 2 - yadif->cur->pts;
 
         ff_yadif_filter_frame(ctx->inputs[0], next);
