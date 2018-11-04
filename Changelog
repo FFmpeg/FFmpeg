@@ -6,6 +6,7 @@ version <next>:
 - AV1 decoding support through libdav1d
 - dedot filter
 - chromashift and rgbashift filters
+- freezedetect filter
 
 
 version 4.1:

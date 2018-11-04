@@ -238,6 +238,7 @@ OBJS-$(CONFIG_FPS_FILTER)                    += vf_fps.o
 OBJS-$(CONFIG_FRAMEPACK_FILTER)              += vf_framepack.o
 OBJS-$(CONFIG_FRAMERATE_FILTER)              += vf_framerate.o
 OBJS-$(CONFIG_FRAMESTEP_FILTER)              += vf_framestep.o
+OBJS-$(CONFIG_FREEZEDETECT_FILTER)           += vf_freezedetect.o
 OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o
 OBJS-$(CONFIG_FSPP_FILTER)                   += vf_fspp.o
 OBJS-$(CONFIG_GBLUR_FILTER)                  += vf_gblur.o
