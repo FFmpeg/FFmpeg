@@ -216,10 +216,11 @@ static void filter_edge_16bit(void *dst1, void *prev1, void *cur1, void *next1,
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     BWDIFContext *s = ctx->priv;
+    YADIFContext *yadif = &s->yadif;
     ThreadData *td  = arg;
-    int linesize = s->cur->linesize[td->plane];
-    int clip_max = (1 << (s->csp->comp[td->plane].depth)) - 1;
-    int df = (s->csp->comp[td->plane].depth + 7) / 8;
+    int linesize = yadif->cur->linesize[td->plane];
+    int clip_max = (1 << (yadif->csp->comp[td->plane].depth)) - 1;
+    int df = (yadif->csp->comp[td->plane].depth + 7) / 8;
     int refs = linesize / df;
     int slice_start = (td->h *  jobnr   ) / nb_jobs;
     int slice_end   = (td->h * (jobnr+1)) / nb_jobs;
@@ -227,11 +228,11 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 
     for (y = slice_start; y < slice_end; y++) {
         if ((y ^ td->parity) & 1) {
-            uint8_t *prev = &s->prev->data[td->plane][y * linesize];
-            uint8_t *cur  = &s->cur ->data[td->plane][y * linesize];
-            uint8_t *next = &s->next->data[td->plane][y * linesize];
+            uint8_t *prev = &yadif->prev->data[td->plane][y * linesize];
+            uint8_t *cur  = &yadif->cur ->data[td->plane][y * linesize];
+            uint8_t *next = &yadif->next->data[td->plane][y * linesize];
             uint8_t *dst  = &td->frame->data[td->plane][y * td->frame->linesize[td->plane]];
-            if (!s->inter_field) {
+            if (yadif->current_field == YADIF_FIELD_END) {
                 s->filter_intra(dst, cur, td->w, (y + df) < td->h ? refs : -refs,
                                 y > (df - 1) ? -refs : refs,
                                 (y + 3*df) < td->h ? 3 * refs : -refs,
@@ -252,7 +253,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             }
         } else {
             memcpy(&td->frame->data[td->plane][y * td->frame->linesize[td->plane]],
-                   &s->cur->data[td->plane][y * linesize], td->w * df);
+                   &yadif->cur->data[td->plane][y * linesize], td->w * df);
         }
     }
     return 0;
@@ -262,16 +263,17 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
                    int parity, int tff)
 {
     BWDIFContext *bwdif = ctx->priv;
+    YADIFContext *yadif = &bwdif->yadif;
     ThreadData td = { .frame = dstpic, .parity = parity, .tff = tff };
     int i;
 
-    for (i = 0; i < bwdif->csp->nb_components; i++) {
+    for (i = 0; i < yadif->csp->nb_components; i++) {
         int w = dstpic->width;
         int h = dstpic->height;
 
         if (i == 1 || i == 2) {
-            w = AV_CEIL_RSHIFT(w, bwdif->csp->log2_chroma_w);
-            h = AV_CEIL_RSHIFT(h, bwdif->csp->log2_chroma_h);
+            w = AV_CEIL_RSHIFT(w, yadif->csp->log2_chroma_w);
+            h = AV_CEIL_RSHIFT(h, yadif->csp->log2_chroma_h);
         }
 
         td.w     = w;
@@ -280,186 +282,21 @@ static void filter(AVFilterContext *ctx, AVFrame *dstpic,
 
         ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(h, ff_filter_get_nb_threads(ctx)));
     }
-    if (!bwdif->inter_field) {
-        bwdif->inter_field = 1;
+    if (yadif->current_field == YADIF_FIELD_END) {
+        yadif->current_field = YADIF_FIELD_NORMAL;
     }
 
     emms_c();
 }
 
-static int return_frame(AVFilterContext *ctx, int is_second)
-{
-    BWDIFContext *bwdif = ctx->priv;
-    AVFilterLink *link  = ctx->outputs[0];
-    int tff, ret;
-
-    if (bwdif->parity == -1) {
-        tff = bwdif->cur->interlaced_frame ?
-              bwdif->cur->top_field_first : 1;
-    } else {
-        tff = bwdif->parity ^ 1;
-    }
-
-    if (is_second) {
-        bwdif->out = ff_get_video_buffer(link, link->w, link->h);
-        if (!bwdif->out)
-            return AVERROR(ENOMEM);
-
-        av_frame_copy_props(bwdif->out, bwdif->cur);
-        bwdif->out->interlaced_frame = 0;
-        if (bwdif->inter_field < 0)
-            bwdif->inter_field = 0;
-    }
-
-    filter(ctx, bwdif->out, tff ^ !is_second, tff);
-
-    if (is_second) {
-        int64_t cur_pts  = bwdif->cur->pts;
-        int64_t next_pts = bwdif->next->pts;
-
-        if (next_pts != AV_NOPTS_VALUE && cur_pts != AV_NOPTS_VALUE) {
-            bwdif->out->pts = cur_pts + next_pts;
-        } else {
-            bwdif->out->pts = AV_NOPTS_VALUE;
-        }
-    }
-    ret = ff_filter_frame(ctx->outputs[0], bwdif->out);
-
-    bwdif->frame_pending = (bwdif->mode&1) && !is_second;
-    return ret;
-}
-
-static int checkstride(BWDIFContext *bwdif, const AVFrame *a, const AVFrame *b)
-{
-    int i;
-    for (i = 0; i < bwdif->csp->nb_components; i++)
-        if (a->linesize[i] != b->linesize[i])
-            return 1;
-    return 0;
-}
-
-static void fixstride(AVFilterLink *link, AVFrame *f)
-{
-    AVFrame *dst = ff_default_get_video_buffer(link, f->width, f->height);
-    if(!dst)
-        return;
-    av_frame_copy_props(dst, f);
-    av_image_copy(dst->data, dst->linesize,
-                  (const uint8_t **)f->data, f->linesize,
-                  dst->format, dst->width, dst->height);
-    av_frame_unref(f);
-    av_frame_move_ref(f, dst);
-    av_frame_free(&dst);
-}
-
-static int filter_frame(AVFilterLink *link, AVFrame *frame)
-{
-    AVFilterContext *ctx = link->dst;
-    BWDIFContext *bwdif = ctx->priv;
-
-    av_assert0(frame);
-
-    if (bwdif->frame_pending)
-        return_frame(ctx, 1);
-
-    if (bwdif->prev)
-        av_frame_free(&bwdif->prev);
-    bwdif->prev = bwdif->cur;
-    bwdif->cur  = bwdif->next;
-    bwdif->next = frame;
-
-    if (!bwdif->cur) {
-        bwdif->cur = av_frame_clone(bwdif->next);
-        if (!bwdif->cur)
-            return AVERROR(ENOMEM);
-        bwdif->inter_field = 0;
-    }
-
-    if (checkstride(bwdif, bwdif->next, bwdif->cur)) {
-        av_log(ctx, AV_LOG_VERBOSE, "Reallocating frame due to differing stride\n");
-        fixstride(link, bwdif->next);
-    }
-    if (checkstride(bwdif, bwdif->next, bwdif->cur))
-        fixstride(link, bwdif->cur);
-    if (bwdif->prev && checkstride(bwdif, bwdif->next, bwdif->prev))
-        fixstride(link, bwdif->prev);
-    if (checkstride(bwdif, bwdif->next, bwdif->cur) || (bwdif->prev && checkstride(bwdif, bwdif->next, bwdif->prev))) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to reallocate frame\n");
-        return -1;
-    }
-
-    if (!bwdif->prev)
-        return 0;
-
-    if ((bwdif->deint && !bwdif->cur->interlaced_frame) ||
-        ctx->is_disabled ||
-        (bwdif->deint && !bwdif->prev->interlaced_frame && bwdif->prev->repeat_pict) ||
-        (bwdif->deint && !bwdif->next->interlaced_frame && bwdif->next->repeat_pict)
-    ) {
-        bwdif->out  = av_frame_clone(bwdif->cur);
-        if (!bwdif->out)
-            return AVERROR(ENOMEM);
-
-        av_frame_free(&bwdif->prev);
-        if (bwdif->out->pts != AV_NOPTS_VALUE)
-            bwdif->out->pts *= 2;
-        return ff_filter_frame(ctx->outputs[0], bwdif->out);
-    }
-
-    bwdif->out = ff_get_video_buffer(ctx->outputs[0], link->w, link->h);
-    if (!bwdif->out)
-        return AVERROR(ENOMEM);
-
-    av_frame_copy_props(bwdif->out, bwdif->cur);
-    bwdif->out->interlaced_frame = 0;
-
-    if (bwdif->out->pts != AV_NOPTS_VALUE)
-        bwdif->out->pts *= 2;
-
-    return return_frame(ctx, 0);
-}
-
-static int request_frame(AVFilterLink *link)
-{
-    AVFilterContext *ctx = link->src;
-    BWDIFContext *bwdif = ctx->priv;
-    int ret;
-
-    if (bwdif->frame_pending) {
-        return_frame(ctx, 1);
-        return 0;
-    }
-
-    if (bwdif->eof)
-        return AVERROR_EOF;
-
-    ret  = ff_request_frame(link->src->inputs[0]);
-
-    if (ret == AVERROR_EOF && bwdif->cur) {
-        AVFrame *next = av_frame_clone(bwdif->next);
-
-        if (!next)
-            return AVERROR(ENOMEM);
-
-        bwdif->inter_field = -1;
-        next->pts = bwdif->next->pts * 2 - bwdif->cur->pts;
-
-        filter_frame(link->src->inputs[0], next);
-        bwdif->eof = 1;
-    } else if (ret < 0) {
-        return ret;
-    }
-
-    return 0;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BWDIFContext *bwdif = ctx->priv;
+    YADIFContext *yadif = &bwdif->yadif;
 
-    av_frame_free(&bwdif->prev);
-    av_frame_free(&bwdif->cur );
-    av_frame_free(&bwdif->next);
+    av_frame_free(&yadif->prev);
+    av_frame_free(&yadif->cur );
+    av_frame_free(&yadif->next);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -496,13 +333,14 @@ static int config_props(AVFilterLink *link)
 {
     AVFilterContext *ctx = link->src;
     BWDIFContext *s = link->src->priv;
+    YADIFContext *yadif = &s->yadif;
 
     link->time_base.num = link->src->inputs[0]->time_base.num;
     link->time_base.den = link->src->inputs[0]->time_base.den * 2;
     link->w             = link->src->inputs[0]->w;
     link->h             = link->src->inputs[0]->h;
 
-    if(s->mode&1)
+    if(yadif->mode&1)
         link->frame_rate = av_mul_q(link->src->inputs[0]->frame_rate, (AVRational){2,1});
 
     if (link->w < 3 || link->h < 3) {
@@ -510,8 +348,9 @@ static int config_props(AVFilterLink *link)
         return AVERROR(EINVAL);
     }
 
-    s->csp = av_pix_fmt_desc_get(link->format);
-    if (s->csp->comp[0].depth > 8) {
+    yadif->csp = av_pix_fmt_desc_get(link->format);
+    yadif->filter = filter;
+    if (yadif->csp->comp[0].depth > 8) {
         s->filter_intra = filter_intra_16bit;
         s->filter_line  = filter_line_c_16bit;
         s->filter_edge  = filter_edge_16bit;
@@ -528,24 +367,24 @@ static int config_props(AVFilterLink *link)
 }
 
 
-#define OFFSET(x) offsetof(BWDIFContext, x)
+#define OFFSET(x) offsetof(YADIFContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 #define CONST(name, help, val, unit) { name, help, 0, AV_OPT_TYPE_CONST, {.i64=val}, INT_MIN, INT_MAX, FLAGS, unit }
 
 static const AVOption bwdif_options[] = {
-    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=BWDIF_MODE_SEND_FIELD}, 0, 1, FLAGS, "mode"},
-    CONST("send_frame", "send one frame for each frame", BWDIF_MODE_SEND_FRAME, "mode"),
-    CONST("send_field", "send one frame for each field", BWDIF_MODE_SEND_FIELD, "mode"),
+    { "mode",   "specify the interlacing mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64=YADIF_MODE_SEND_FIELD}, 0, 1, FLAGS, "mode"},
+    CONST("send_frame", "send one frame for each frame", YADIF_MODE_SEND_FRAME, "mode"),
+    CONST("send_field", "send one frame for each field", YADIF_MODE_SEND_FIELD, "mode"),
 
-    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=BWDIF_PARITY_AUTO}, -1, 1, FLAGS, "parity" },
-    CONST("tff",  "assume top field first",    BWDIF_PARITY_TFF,  "parity"),
-    CONST("bff",  "assume bottom field first", BWDIF_PARITY_BFF,  "parity"),
-    CONST("auto", "auto detect parity",        BWDIF_PARITY_AUTO, "parity"),
+    { "parity", "specify the assumed picture field parity", OFFSET(parity), AV_OPT_TYPE_INT, {.i64=YADIF_PARITY_AUTO}, -1, 1, FLAGS, "parity" },
+    CONST("tff",  "assume top field first",    YADIF_PARITY_TFF,  "parity"),
+    CONST("bff",  "assume bottom field first", YADIF_PARITY_BFF,  "parity"),
+    CONST("auto", "auto detect parity",        YADIF_PARITY_AUTO, "parity"),
 
-    { "deint", "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=BWDIF_DEINT_ALL}, 0, 1, FLAGS, "deint" },
-    CONST("all",        "deinterlace all frames",                       BWDIF_DEINT_ALL,        "deint"),
-    CONST("interlaced", "only deinterlace frames marked as interlaced", BWDIF_DEINT_INTERLACED, "deint"),
+    { "deint", "specify which frames to deinterlace", OFFSET(deint), AV_OPT_TYPE_INT, {.i64=YADIF_DEINT_ALL}, 0, 1, FLAGS, "deint" },
+    CONST("all",        "deinterlace all frames",                       YADIF_DEINT_ALL,        "deint"),
+    CONST("interlaced", "only deinterlace frames marked as interlaced", YADIF_DEINT_INTERLACED, "deint"),
 
     { NULL }
 };
@@ -556,7 +395,7 @@ static const AVFilterPad avfilter_vf_bwdif_inputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
+        .filter_frame  = ff_yadif_filter_frame,
     },
     { NULL }
 };
@@ -565,7 +404,7 @@ static const AVFilterPad avfilter_vf_bwdif_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .request_frame = request_frame,
+        .request_frame = ff_yadif_request_frame,
         .config_props  = config_props,
     },
     { NULL }
