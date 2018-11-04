@@ -399,7 +399,10 @@ typedef struct CodedBitstreamAV1Context {
     AV1RawSequenceHeader *sequence_header;
     AVBufferRef          *sequence_header_ref;
 
-    int seen_frame_header;
+    int     seen_frame_header;
+    AVBufferRef *frame_header_ref;
+    uint8_t     *frame_header;
+    size_t       frame_header_size;
 
     int temporal_id;
     int spatial_id;
