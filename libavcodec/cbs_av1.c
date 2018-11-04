@@ -1179,7 +1179,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
         if (err < 0)
             return err;
         end_pos = put_bits_count(pbc);
-        obu->obu_size = (end_pos - start_pos + 7) / 8;
+        obu->obu_size = header_size = (end_pos - start_pos + 7) / 8;
     } else {
         // Empty OBU.
         obu->obu_size = 0;
