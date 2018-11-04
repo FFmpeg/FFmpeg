@@ -1463,17 +1463,49 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
-                                  AV1RawFrameHeader *current)
+                                  AV1RawFrameHeader *current, int redundant,
+                                  AVBufferRef *rw_buffer_ref)
 {
     CodedBitstreamAV1Context *priv = ctx->priv_data;
-    int err;
-
-    HEADER("Frame Header");
+    int start_pos, fh_bits, fh_bytes, err;
+    uint8_t *fh_start;
 
     if (priv->seen_frame_header) {
-        // Nothing to do.
+        if (!redundant) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid repeated "
+                   "frame header OBU.\n");
+            return AVERROR_INVALIDDATA;
+        } else {
+            GetBitContext fh;
+            size_t i, b;
+            uint32_t val;
+
+            HEADER("Redundant Frame Header");
+
+            av_assert0(priv->frame_header_ref && priv->frame_header);
+
+            init_get_bits(&fh, priv->frame_header,
+                          priv->frame_header_size);
+            for (i = 0; i < priv->frame_header_size; i += 8) {
+                b = FFMIN(priv->frame_header_size - i, 8);
+                val = get_bits(&fh, b);
+                xf(b, frame_header_copy[i],
+                   val, val, val, 1, i / 8);
+            }
+        }
     } else {
+        if (redundant)
+            HEADER("Redundant Frame Header (used as Frame Header)");
+        else
+            HEADER("Frame Header");
+
         priv->seen_frame_header = 1;
+
+#ifdef READ
+        start_pos = get_bits_count(rw);
+#else
+        start_pos = put_bits_count(rw);
+#endif
 
         CHECK(FUNC(uncompressed_header)(ctx, rw, current));
 
@@ -1481,6 +1513,40 @@ static int FUNC(frame_header_obu)(CodedBitstreamContext *ctx, RWContext *rw,
             priv->seen_frame_header = 0;
         } else {
             priv->seen_frame_header = 1;
+
+            av_buffer_unref(&priv->frame_header_ref);
+
+#ifdef READ
+            fh_bits  = get_bits_count(rw) - start_pos;
+            fh_start = (uint8_t*)rw->buffer + start_pos / 8;
+#else
+            // Need to flush the bitwriter so that we can copy its output,
+            // but use a copy so we don't affect the caller's structure.
+            {
+                PutBitContext tmp = *rw;
+                flush_put_bits(&tmp);
+            }
+
+            fh_bits  = put_bits_count(rw) - start_pos;
+            fh_start = rw->buf + start_pos / 8;
+#endif
+            fh_bytes = (fh_bits + 7) / 8;
+
+            priv->frame_header_size = fh_bits;
+
+            if (rw_buffer_ref) {
+                priv->frame_header_ref = av_buffer_ref(rw_buffer_ref);
+                if (!priv->frame_header_ref)
+                    return AVERROR(ENOMEM);
+                priv->frame_header = fh_start;
+            } else {
+                priv->frame_header_ref =
+                    av_buffer_alloc(fh_bytes + AV_INPUT_BUFFER_PADDING_SIZE);
+                if (!priv->frame_header_ref)
+                    return AVERROR(ENOMEM);
+                priv->frame_header = priv->frame_header_ref->data;
+                memcpy(priv->frame_header, fh_start, fh_bytes);
+            }
         }
     }
 
@@ -1524,11 +1590,13 @@ static int FUNC(tile_group_obu)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(frame_obu)(CodedBitstreamContext *ctx, RWContext *rw,
-                           AV1RawFrame *current)
+                           AV1RawFrame *current,
+                           AVBufferRef *rw_buffer_ref)
 {
     int err;
 
-    CHECK(FUNC(frame_header_obu)(ctx, rw, &current->header));
+    CHECK(FUNC(frame_header_obu)(ctx, rw, &current->header,
+                                 0, rw_buffer_ref));
 
     CHECK(FUNC(byte_alignment)(ctx, rw));
 

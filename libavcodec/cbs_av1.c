@@ -996,7 +996,10 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
     case AV1_OBU_REDUNDANT_FRAME_HEADER:
         {
             err = cbs_av1_read_frame_header_obu(ctx, &gbc,
-                                                &obu->obu.frame_header);
+                                                &obu->obu.frame_header,
+                                                obu->header.obu_type ==
+                                                AV1_OBU_REDUNDANT_FRAME_HEADER,
+                                                unit->data_ref);
             if (err < 0)
                 return err;
         }
@@ -1016,7 +1019,8 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
         break;
     case AV1_OBU_FRAME:
         {
-            err = cbs_av1_read_frame_obu(ctx, &gbc, &obu->obu.frame);
+            err = cbs_av1_read_frame_obu(ctx, &gbc, &obu->obu.frame,
+                                         unit->data_ref);
             if (err < 0)
                 return err;
 
@@ -1124,7 +1128,10 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
     case AV1_OBU_REDUNDANT_FRAME_HEADER:
         {
             err = cbs_av1_write_frame_header_obu(ctx, pbc,
-                                                 &obu->obu.frame_header);
+                                                 &obu->obu.frame_header,
+                                                 obu->header.obu_type ==
+                                                 AV1_OBU_REDUNDANT_FRAME_HEADER,
+                                                 NULL);
             if (err < 0)
                 return err;
         }
@@ -1141,7 +1148,7 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
         break;
     case AV1_OBU_FRAME:
         {
-            err = cbs_av1_write_frame_obu(ctx, pbc, &obu->obu.frame);
+            err = cbs_av1_write_frame_obu(ctx, pbc, &obu->obu.frame, NULL);
             if (err < 0)
                 return err;
 
@@ -1302,6 +1309,7 @@ static void cbs_av1_close(CodedBitstreamContext *ctx)
     CodedBitstreamAV1Context *priv = ctx->priv_data;
 
     av_buffer_unref(&priv->sequence_header_ref);
+    av_buffer_unref(&priv->frame_header_ref);
 
     av_freep(&priv->write_buffer);
 }
