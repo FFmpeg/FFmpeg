@@ -23,7 +23,6 @@
  * fade audio filter
  */
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -40,9 +39,7 @@ typedef struct AudioFadeContext {
     int64_t start_time;
     int overlap;
     int cf0_eof;
-    int prev_size;
     int crossfade_is_over;
-    AVAudioFifo *fifo[2];
     int64_t pts;
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
