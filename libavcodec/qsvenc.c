@@ -263,6 +263,10 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
                print_threestate(co->NalHrdConformance), print_threestate(co->SingleSeiNalUnit),
                print_threestate(co->VuiVclHrdParameters), print_threestate(co->VuiNalHrdParameters));
     }
+
+    av_log(avctx, AV_LOG_VERBOSE, "FrameRateExtD: %"PRIu32"; FrameRateExtN: %"PRIu32" \n",
+           info->FrameInfo.FrameRateExtD, info->FrameInfo.FrameRateExtN);
+
 }
 
 static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
