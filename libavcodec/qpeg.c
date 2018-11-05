@@ -85,6 +85,12 @@ static void qpeg_decode_intra(QpegContext *qctx, uint8_t *dst,
                     filled = 0;
                     dst -= stride;
                     rows_to_go--;
+                    while (run - i > width && rows_to_go > 0) {
+                        memset(dst, p, width);
+                        dst -= stride;
+                        rows_to_go--;
+                        i += width;
+                    }
                     if(rows_to_go <= 0)
                         break;
                 }
