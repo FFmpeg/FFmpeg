@@ -101,6 +101,9 @@ static const AVOption options[] = {
     { "off"    , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_MF_DISABLED }, INT_MIN, INT_MAX,     VE, "mfmode" },
     { "auto"   , NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_MF_AUTO     }, INT_MIN, INT_MAX,     VE, "mfmode" },
 #endif
+#if QSV_HAVE_VDENC
+    { "low_power", "enable low power mode (experimental, many limitations by mfx version, HW platform, BRC modes, etc.", OFFSET(qsv.low_power), AV_OPT_TYPE_INT, { .i64 =  0 }, 0, 1, VE},
+#endif
 
     { NULL },
 };

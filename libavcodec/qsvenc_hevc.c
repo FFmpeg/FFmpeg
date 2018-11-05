@@ -238,6 +238,9 @@ static const AVOption options[] = {
     { "main",    NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_HEVC_MAIN    }, INT_MIN, INT_MAX,     VE, "profile" },
     { "main10",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_HEVC_MAIN10  }, INT_MIN, INT_MAX,     VE, "profile" },
     { "mainsp",  NULL, 0, AV_OPT_TYPE_CONST, { .i64 = MFX_PROFILE_HEVC_MAINSP  }, INT_MIN, INT_MAX,     VE, "profile" },
+#if QSV_HAVE_VDENC
+    { "low_power", "enable low power mode (experimental, many limitations by mfx version, HW platform, BRC modes, etc.", OFFSET(qsv.low_power), AV_OPT_TYPE_INT, { .i64 =  0 },  0,  1, VE },
+#endif
 
     { NULL },
 };

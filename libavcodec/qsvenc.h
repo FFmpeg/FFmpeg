@@ -44,6 +44,7 @@
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
 #define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
+#define QSV_HAVE_VDENC  QSV_VERSION_ATLEAST(1, 15)
 
 #if defined(_WIN32)
 #define QSV_HAVE_AVBR   QSV_VERSION_ATLEAST(1, 3)
@@ -159,6 +160,7 @@ typedef struct QSVEncContext {
     int int_ref_cycle_size;
     int int_ref_qp_delta;
     int recovery_point_sei;
+    int low_power;
 
 #if QSV_HAVE_MF
     int mfmode;
