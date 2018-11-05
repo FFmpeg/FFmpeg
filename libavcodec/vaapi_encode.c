@@ -1135,8 +1135,9 @@ static av_cold int vaapi_encode_profile_entrypoint(AVCodecContext *avctx)
                 break;
         }
         if (j >= n) {
-            av_log(avctx, AV_LOG_VERBOSE, "Matching profile %d is "
-                   "not supported by driver.\n", profile->va_profile);
+            av_log(avctx, AV_LOG_VERBOSE, "Compatible profile %s (%d) "
+                   "is not supported by driver.\n", profile_string,
+                   profile->va_profile);
             continue;
         }
 
