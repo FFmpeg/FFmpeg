@@ -190,6 +190,7 @@ External library support:
   --enable-libaom            AV1 video encoding/decoding
   --enable-libbs2b           Bauer stereophonic-to-binaural DSP
   --enable-libcdio           audio CD input
+  --enable-libdav1d          AV1 video decoding
   --enable-libdc1394         IEEE 1394/Firewire camera input
   --enable-libdcadec         DCA audio decoding
   --enable-libfaac           AAC audio encoding
@@ -1357,6 +1358,7 @@ EXTERNAL_LIBRARY_LIST="
     gnutls
     libaom
     libbs2b
+    libdav1d
     libdc1394
     libdcadec
     libfontconfig
@@ -2372,6 +2374,7 @@ avisynth_demuxer_deps_any="avisynth avxsynth"
 avisynth_demuxer_select="riffdec"
 libaom_av1_decoder_deps="libaom"
 libaom_av1_encoder_deps="libaom"
+libdav1d_decoder_deps="libdav1d"
 libdcadec_decoder_deps="libdcadec"
 libfaac_encoder_deps="libfaac"
 libfaac_encoder_select="audio_frame_queue"
@@ -4673,6 +4676,7 @@ enabled libaom            && {
 }
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.0.1" dav1d/dav1d.h dav1d_version
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
 enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && require_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen

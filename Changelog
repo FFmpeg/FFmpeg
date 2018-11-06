@@ -25,6 +25,7 @@ version <next>:
 - Dropped support for building for Windows XP. The minimum supported Windows
   version is Windows Vista.
 - support mbedTLS-based TLS
+- AV1 Support through libdav1d
 
 
 version 12:

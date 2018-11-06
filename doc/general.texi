@@ -18,11 +18,15 @@ explicitly requested by passing the appropriate flags to
 
 @section Alliance for Open Media libaom
 
-Libav can make use of the libaom library for AV1 decoding.
+Libav can make use of the libaom and libdav1d libraries for AV1 decoding.
 
 Go to @url{http://aomedia.org/} and follow the instructions for
-installing the library. Then pass @code{--enable-libaom} to configure to
+installing libaom. Then pass @code{--enable-libaom} to configure to
 enable it.
+
+Go to @url{https://code.videolan.org/videolan/dav1d/} and follow the
+instructions for installing libdav1d. Then pass @code{--enable-libdav1d}
+to configure to enable it.
 
 @section OpenCORE and VisualOn libraries
 
@@ -625,8 +629,8 @@ following image formats are supported:
 @item Autodesk Animator Flic video  @tab     @tab  X
 @item Autodesk RLE           @tab     @tab  X
     @tab fourcc: AASC
-@item AV1                    @tab     @tab  E
-    @tab Supported through external library libaom
+@item AV1                    @tab  E  @tab  E
+    @tab Supported through external libraries libaom and libdav1d
 @item AVS (Audio Video Standard) video  @tab     @tab  X
     @tab Video encoding used by the Creature Shock game.
 @item Beam Software VB       @tab     @tab  X
