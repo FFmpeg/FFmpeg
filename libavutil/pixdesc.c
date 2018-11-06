@@ -483,6 +483,27 @@ static const AVPixFmtDescriptor av_pix_fmt_descriptors[AV_PIX_FMT_NB] = {
         },
         .flags = AV_PIX_FMT_FLAG_RGB | AV_PIX_FMT_FLAG_ALPHA,
     },
+    [AV_PIX_FMT_GRAY10BE] = {
+        .name = "gray10be",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 10, 1, 9, 1 },       /* Y */
+        },
+        .flags = AV_PIX_FMT_FLAG_BE,
+        .alias = "y10be",
+    },
+    [AV_PIX_FMT_GRAY10LE] = {
+        .name = "gray10le",
+        .nb_components = 1,
+        .log2_chroma_w = 0,
+        .log2_chroma_h = 0,
+        .comp = {
+            { 0, 2, 0, 0, 10, 1, 9, 1 },       /* Y */
+        },
+        .alias = "y10le",
+    },
     [AV_PIX_FMT_GRAY12BE] = {
         .name = "gray12be",
         .nb_components = 1,
@@ -1958,6 +1979,7 @@ enum AVPixelFormat av_pix_fmt_swap_endianness(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_ ## fmt ## LE: return AV_PIX_FMT_ ## fmt ## BE
 
     switch (pix_fmt) {
+    PIX_FMT_SWAP_ENDIANNESS(GRAY10);
     PIX_FMT_SWAP_ENDIANNESS(GRAY12);
     PIX_FMT_SWAP_ENDIANNESS(GRAY16);
     PIX_FMT_SWAP_ENDIANNESS(YA16);
