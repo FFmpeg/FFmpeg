@@ -21717,6 +21717,8 @@ each channel is displayed using the magma color scheme
 each channel is displayed using the green color scheme
 @item viridis
 each channel is displayed using the viridis color scheme
+@item plasma
+each channel is displayed using the plasma color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -21885,6 +21887,8 @@ each channel is displayed using the magma color scheme
 each channel is displayed using the green color scheme
 @item viridis
 each channel is displayed using the viridis color scheme
+@item plasma
+each channel is displayed using the plasma color scheme
 @end table
 Default value is @samp{intensity}.
 
