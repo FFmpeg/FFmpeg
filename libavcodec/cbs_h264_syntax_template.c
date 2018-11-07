@@ -1190,11 +1190,10 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
                    "in the same access unit.\n");
             return AVERROR_INVALIDDATA;
         }
+        idr_pic_flag = h264->last_slice_nal_unit_type == H264_NAL_IDR_SLICE;
     } else {
-        h264->last_slice_nal_unit_type =
-            current->nal_unit_header.nal_unit_type;
+        idr_pic_flag = current->nal_unit_header.nal_unit_type == H264_NAL_IDR_SLICE;
     }
-    idr_pic_flag = h264->last_slice_nal_unit_type == H264_NAL_IDR_SLICE;
 
     ue(first_mb_in_slice, 0, H264_MAX_MB_PIC_SIZE - 1);
     ue(slice_type, 0, 9);
@@ -1272,6 +1271,13 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (pps->redundant_pic_cnt_present_flag)
         ue(redundant_pic_cnt, 0, 127);
+    else
+        infer(redundant_pic_cnt, 0);
+
+    if (current->nal_unit_header.nal_unit_type != H264_NAL_AUXILIARY_SLICE
+        && !current->redundant_pic_cnt)
+        h264->last_slice_nal_unit_type =
+            current->nal_unit_header.nal_unit_type;
 
     if (slice_type_b)
         flag(direct_spatial_mv_pred_flag);
