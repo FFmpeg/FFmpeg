@@ -155,11 +155,13 @@ typedef struct {
     uint8_t* fill_y;
     uint8_t* fill_u;
     uint8_t* fill_v;
+    uint8_t* fill_a;
 
     int qmat_luma[16][64];
     int qmat_chroma[16][64];
 
     int is_422;
+    int need_alpha;
 } ProresContext;
 
 static void encode_codeword(PutBitContext *pb, int val, int codebook)
@@ -361,6 +363,80 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
     return *y_data_size + *u_data_size + *v_data_size;
 }
 
+static void put_alpha_diff(PutBitContext *pb, int cur, int prev)
+{
+    const int abits = 16;
+    const int dbits = 7;
+    const int dsize = 1 << dbits - 1;
+    int diff = cur - prev;
+
+    diff = av_mod_uintp2(diff, abits);
+    if (diff >= (1 << abits) - dsize)
+        diff -= 1 << abits;
+    if (diff < -dsize || diff > dsize || !diff) {
+        put_bits(pb, 1, 1);
+        put_bits(pb, abits, diff);
+    } else {
+        put_bits(pb, 1, 0);
+        put_bits(pb, dbits - 1, FFABS(diff) - 1);
+        put_bits(pb, 1, diff < 0);
+    }
+}
+
+static inline void put_alpha_run(PutBitContext *pb, int run)
+{
+    if (run) {
+        put_bits(pb, 1, 0);
+        if (run < 0x10)
+            put_bits(pb, 4, run);
+        else
+            put_bits(pb, 15, run);
+    } else {
+        put_bits(pb, 1, 1);
+    }
+}
+
+static av_always_inline int encode_alpha_slice_data(AVCodecContext *avctx, int8_t * src_a,
+                                                   unsigned mb_count, uint8_t *buf, unsigned data_size, unsigned* a_data_size)
+{
+    const int abits = 16;
+    const int mask  = (1 << abits) - 1;
+    const int num_coeffs = mb_count * 256;
+    int prev = mask, cur;
+    int idx = 0;
+    int run = 0;
+    int16_t * blocks = (int16_t *)src_a;
+    PutBitContext pb;
+    init_put_bits(&pb, buf, data_size);
+
+    cur = blocks[idx++];
+    put_alpha_diff(&pb, cur, prev);
+    prev = cur;
+    do {
+        cur = blocks[idx++];
+        if (cur != prev) {
+            put_alpha_run (&pb, run);
+            put_alpha_diff(&pb, cur, prev);
+            prev = cur;
+            run  = 0;
+        } else {
+            run++;
+        }
+    } while (idx < num_coeffs);
+    if (run)
+        put_alpha_run(&pb, run);
+    flush_put_bits(&pb);
+    *a_data_size = put_bits_count(&pb) >> 3;
+
+    if (put_bits_left(&pb) < 0) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Underestimated required buffer size.\n");
+        return AVERROR_BUG;
+    } else {
+        return 0;
+    }
+}
+
 static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
         unsigned stride, unsigned width, unsigned height, uint16_t *dst,
         unsigned dst_width, unsigned dst_height)
@@ -391,15 +467,46 @@ static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
     }
 }
 
+/* reorganize alpha data and convert 10b -> 16b */
+static void subimage_alpha_with_fill(uint16_t *src, unsigned x, unsigned y,
+                               unsigned stride, unsigned width, unsigned height, uint16_t *dst,
+                               unsigned dst_width, unsigned dst_height)
+{
+    int box_width = FFMIN(width - x, dst_width);
+    int box_height = FFMIN(height - y, dst_height);
+    int i, j, src_stride = stride >> 1;
+    uint16_t last_pix, *last_line;
+
+    src += y * src_stride + x;
+    for (i = 0; i < box_height; ++i) {
+        for (j = 0; j < box_width; ++j) {
+            dst[j] = src[j] << 6; /* 10b to 16b */
+        }
+        last_pix = dst[j - 1] << 6; /* 10b to 16b */
+        for (; j < dst_width; j++)
+            dst[j] = last_pix;
+        src += src_stride;
+        dst += dst_width;
+    }
+    last_line = dst - dst_width;
+    for (; i < dst_height; i++) {
+        for (j = 0; j < dst_width; ++j) {
+            dst[j] = last_line[j];
+        }
+        dst += dst_width;
+    }
+}
+
 static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
         int mb_y, unsigned mb_count, uint8_t *buf, unsigned data_size,
         int unsafe, int *qp)
 {
-    int luma_stride, chroma_stride;
-    int hdr_size = 6, slice_size;
-    uint8_t *dest_y, *dest_u, *dest_v;
-    unsigned y_data_size = 0, u_data_size = 0, v_data_size = 0;
+    int luma_stride, chroma_stride, alpha_stride = 0;
     ProresContext* ctx = avctx->priv_data;
+    int hdr_size = 6 + (ctx->need_alpha * 2); /* v data size is write when there is alpha */
+    int ret = 0, slice_size;
+    uint8_t *dest_y, *dest_u, *dest_v;
+    unsigned y_data_size = 0, u_data_size = 0, v_data_size = 0, a_data_size = 0;
     FDCTDSPContext *fdsp = &ctx->fdsp;
     int tgt_bits   = (mb_count * bitrate_table[avctx->profile]) >> 2;
     int low_bytes  = (tgt_bits - (tgt_bits >> 3)) >> 3; // 12% bitrate fluctuation
@@ -411,6 +518,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
 
     luma_stride   = pic->linesize[0];
     chroma_stride = pic->linesize[1];
+
+    if (ctx->need_alpha)
+        alpha_stride = pic->linesize[3];
 
     dest_y = pic->data[0] + (mb_y << 4) * luma_stride   + (mb_x << 5);
     dest_u = pic->data[1] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
@@ -431,7 +541,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
         calc_plane_dct(fdsp, ctx->fill_u, blocks_u, mb_count << (5 - ctx->is_422), mb_count, 1, ctx->is_422);
         calc_plane_dct(fdsp, ctx->fill_v, blocks_v, mb_count << (5 - ctx->is_422), mb_count, 1, ctx->is_422);
 
-        encode_slice_data(avctx, blocks_y, blocks_u, blocks_v,
+        slice_size = encode_slice_data(avctx, blocks_y, blocks_u, blocks_v,
                           mb_count, buf + hdr_size, data_size - hdr_size,
                           &y_data_size, &u_data_size, &v_data_size,
                           *qp);
@@ -470,7 +580,21 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
     AV_WB16(buf + 2, y_data_size);
     AV_WB16(buf + 4, u_data_size);
 
-    return hdr_size + y_data_size + u_data_size + v_data_size;
+    if (ctx->need_alpha) {
+        AV_WB16(buf + 6, v_data_size); /* write v data size only if there is alpha */
+
+        subimage_alpha_with_fill((uint16_t *) pic->data[3], mb_x << 4, mb_y << 4,
+                           alpha_stride, avctx->width, avctx->height,
+                           (uint16_t *) ctx->fill_a, mb_count << 4, 16);
+        ret = encode_alpha_slice_data(avctx, ctx->fill_a, mb_count,
+                                      buf + hdr_size + slice_size,
+                                      data_size - hdr_size - slice_size, &a_data_size);
+    }
+
+    if (ret != 0) {
+        return ret;
+    }
+    return hdr_size + y_data_size + u_data_size + v_data_size + a_data_size;
 }
 
 static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
@@ -505,6 +629,9 @@ static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
 
             sl_size = encode_slice(avctx, pic, mb_x, mb_y, slice_mb_count,
                     sl_data, sl_data_size, unsafe_bot || unsafe_right, &qp);
+            if (sl_size < 0){
+                return sl_size;
+            }
 
             bytestream_put_be16(&sl_data_sizes, sl_size);
             sl_data           += sl_size;
@@ -536,6 +663,9 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     buf = pkt->data;
     pic_size = prores_encode_picture(avctx, pict, buf + header_size + 8,
             pkt->size - header_size - 8);
+    if (pic_size < 0) {
+        return pic_size;
+    }
 
     bytestream_put_be32(&buf, pic_size + 8 + header_size);
     bytestream_put_buffer(&buf, "icpf", 4);
@@ -589,6 +719,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
     ProresContext* ctx = avctx->priv_data;
 
     avctx->bits_per_raw_sample = 10;
+    ctx->need_alpha = 0;
 
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
@@ -611,8 +742,14 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
             avctx->profile = FF_PROFILE_PRORES_4444;
             av_log(avctx, AV_LOG_INFO,
                    "encoding with ProRes 4444 (ap4h) profile\n");
+        } else if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P10) {
+            avctx->profile = FF_PROFILE_PRORES_4444;
+            av_log(avctx, AV_LOG_INFO,
+                   "encoding with ProRes 4444+ (ap4h) profile\n");
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Unknown pixel format\n");
+            return AVERROR(EINVAL);
         }
-
     } else if (avctx->profile < FF_PROFILE_PRORES_PROXY
             || avctx->profile > FF_PROFILE_PRORES_4444) {
         av_log(
@@ -625,7 +762,8 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes 444 (ap4h) profile, need YUV444P10 input\n");
         return AVERROR(EINVAL);
-    }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10) && (avctx->profile < FF_PROFILE_PRORES_4444)){
+    }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10)
+                && (avctx->profile < FF_PROFILE_PRORES_4444)){
         av_log(avctx, AV_LOG_ERROR,
                "encoding with ProRes Proxy/LT/422/422 HQ (apco, apcs, apcn, ap4h) profile, need YUV422P10 input\n");
         return AVERROR(EINVAL);
@@ -649,6 +787,12 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
             ctx->fill_u = ctx->fill_y + (DEFAULT_SLICE_MB_WIDTH << 9);
             ctx->fill_v = ctx->fill_u + (DEFAULT_SLICE_MB_WIDTH << 9);
         }
+        if (avctx->pix_fmt == AV_PIX_FMT_YUVA444P10) {
+            ctx->need_alpha = 1;
+            ctx->fill_a = av_malloc(DEFAULT_SLICE_MB_WIDTH << 9); /* 8 blocks x 16px x 16px x sizeof (uint16) */
+            if (!ctx->fill_a)
+                return AVERROR(ENOMEM);
+        }
     }
 
     ff_fdctdsp_init(&ctx->fdsp, avctx);
@@ -667,6 +811,7 @@ static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
     ProresContext* ctx = avctx->priv_data;
     av_freep(&ctx->fill_y);
+    av_freep(&ctx->fill_a);
 
     return 0;
 }
@@ -680,7 +825,7 @@ AVCodec ff_prores_aw_encoder = {
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };
@@ -694,7 +839,7 @@ AVCodec ff_prores_encoder = {
     .init           = prores_encode_init,
     .close          = prores_encode_close,
     .encode2        = prores_encode_frame,
-    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_NONE},
+    .pix_fmts       = (const enum AVPixelFormat[]){AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE},
     .capabilities   = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };
