@@ -512,9 +512,7 @@ static int activate(AVFilterContext *ctx)
     if (s->response && s->have_coeffs) {
         if (ff_outlink_frame_wanted(ctx->outputs[1])) {
             s->video->pts = s->pts;
-            ret = ff_filter_frame(ctx->outputs[1], av_frame_clone(s->video));
-            if (ret < 0)
-                return ret;
+            return ff_filter_frame(ctx->outputs[1], av_frame_clone(s->video));
         }
     }
 
