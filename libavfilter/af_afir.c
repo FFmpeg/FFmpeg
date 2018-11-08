@@ -503,11 +503,8 @@ static int activate(AVFilterContext *ctx)
         ret = ff_inlink_consume_samples(ctx->inputs[0], s->part_size, s->part_size, &in);
     }
 
-    if (ret > 0) {
+    if (ret > 0)
         ret = fir_frame(s, in, outlink);
-        if (ret < 0)
-            return ret;
-    }
 
     if (ret < 0)
         return ret;
