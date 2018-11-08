@@ -475,7 +475,7 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
         ret = ff_inlink_consume_samples(ctx->inputs[i + 1], len, len, &s->in[i + 1].frame);
         if (ret < 0)
-            return ret;
+            goto fail;
         ptr = (float *)s->in[i + 1].frame->extended_data[0];
 
         if (s->hrir_fmt == HRIR_STEREO) {
