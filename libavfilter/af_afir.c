@@ -510,10 +510,18 @@ static int activate(AVFilterContext *ctx)
         return ret;
 
     if (s->response && s->have_coeffs) {
-        if (ff_outlink_frame_wanted(ctx->outputs[1])) {
-            s->video->pts = s->pts;
+        int64_t old_pts = s->video->pts;
+        int64_t new_pts = av_rescale_q(s->pts, ctx->inputs[0]->time_base, ctx->outputs[1]->time_base);
+
+        if (ff_outlink_frame_wanted(ctx->outputs[1]) && old_pts < new_pts) {
+            s->video->pts = new_pts;
             return ff_filter_frame(ctx->outputs[1], av_frame_clone(s->video));
         }
+    }
+
+    if (ff_inlink_queued_samples(ctx->inputs[0]) >= s->part_size) {
+        ff_filter_set_ready(ctx, 10);
+        return 0;
     }
 
     if (ff_inlink_acknowledge_status(ctx->inputs[0], &status, &pts)) {
@@ -525,17 +533,20 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[0])) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
 
-    if (s->response && ff_outlink_frame_wanted(ctx->outputs[1])) {
+    if (s->response &&
+        ff_outlink_frame_wanted(ctx->outputs[1]) &&
+        !ff_outlink_get_status(ctx->inputs[0])) {
         ff_inlink_request_frame(ctx->inputs[0]);
         return 0;
     }
 
-    return 0;
+    return FFERROR_NOT_READY;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -677,6 +688,8 @@ static int config_video(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->frame_rate = s->frame_rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     av_frame_free(&s->video);
     s->video = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -769,6 +782,7 @@ static const AVOption afir_options[] = {
     { "response", "show IR frequency response", OFFSET(response), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",    OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
+    { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
     { NULL }
 };
 

@@ -1214,6 +1214,9 @@ displayed. This option is used only when @var{response} is enabled.
 
 @item size
 Set video stream size. This option is used only when @var{response} is enabled.
+
+@item rate
+Set video stream frame rate. This option is used only when @var{response} is enabled.
 @end table
 
 @subsection Examples
