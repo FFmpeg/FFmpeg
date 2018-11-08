@@ -46,7 +46,7 @@
 enum DisplayMode  { COMBINED, SEPARATE, NB_MODES };
 enum DataMode     { D_MAGNITUDE, D_PHASE, NB_DMODES };
 enum DisplayScale { LINEAR, SQRT, CBRT, LOG, FOURTHRT, FIFTHRT, NB_SCALES };
-enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, COOL, MAGMA, GREEN, VIRIDIS, PLASMA, CIVIDIS, NB_CLMODES };
+enum ColorMode    { CHANNEL, INTENSITY, RAINBOW, MORELAND, NEBULAE, FIRE, FIERY, FRUIT, COOL, MAGMA, GREEN, VIRIDIS, PLASMA, CIVIDIS, TERRAIN, NB_CLMODES };
 enum SlideMode    { REPLACE, SCROLL, FULLFRAME, RSCROLL, NB_SLIDES };
 enum Orientation  { VERTICAL, HORIZONTAL, NB_ORIENTATIONS };
 
@@ -126,6 +126,7 @@ static const AVOption showspectrum_options[] = {
         { "viridis",   "viridis based coloring",          0, AV_OPT_TYPE_CONST, {.i64=VIRIDIS},   0, 0, FLAGS, "color" },
         { "plasma",    "plasma based coloring",           0, AV_OPT_TYPE_CONST, {.i64=PLASMA},    0, 0, FLAGS, "color" },
         { "cividis",   "cividis based coloring",          0, AV_OPT_TYPE_CONST, {.i64=CIVIDIS},   0, 0, FLAGS, "color" },
+        { "terrain",   "terrain based coloring",          0, AV_OPT_TYPE_CONST, {.i64=TERRAIN},   0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=SQRT}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
         { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },
@@ -282,6 +283,12 @@ static const struct ColorTable {
     { 0.76,          0x89/255.,   (0x75 -128)/255.,    (0x84 -128)/255. },
     { 0.90,          0xCE/255.,   (0x35 -128)/255.,    (0x95 -128)/255. },
     {    1,                  1,                  0,                  0. }},
+    [TERRAIN] = {
+    {    0,                  0,                  0,                   0 },
+    { 0.15,                  0,                 .5,                   0 },
+    { 0.60,                  1,                -.5,                 -.5 },
+    { 0.85,                  1,                -.5,                  .5 },
+    {    1,                  1,                  0,                   0 }},
 };
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -514,6 +521,7 @@ static void color_range(ShowSpectrumContext *s, int ch,
         case VIRIDIS:
         case PLASMA:
         case CIVIDIS:
+        case TERRAIN:
         case MAGMA:
         case INTENSITY:
             *uf = *yf;
@@ -1431,6 +1439,7 @@ static const AVOption showspectrumpic_options[] = {
         { "viridis",   "viridis based coloring",          0, AV_OPT_TYPE_CONST, {.i64=VIRIDIS},   0, 0, FLAGS, "color" },
         { "plasma",    "plasma based coloring",           0, AV_OPT_TYPE_CONST, {.i64=PLASMA},    0, 0, FLAGS, "color" },
         { "cividis",   "cividis based coloring",          0, AV_OPT_TYPE_CONST, {.i64=CIVIDIS},   0, 0, FLAGS, "color" },
+        { "terrain",   "terrain based coloring",          0, AV_OPT_TYPE_CONST, {.i64=TERRAIN},   0, 0, FLAGS, "color" },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LOG}, 0, NB_SCALES-1, FLAGS, "scale" },
         { "lin",  "linear",      0, AV_OPT_TYPE_CONST, {.i64=LINEAR}, 0, 0, FLAGS, "scale" },
         { "sqrt", "square root", 0, AV_OPT_TYPE_CONST, {.i64=SQRT},   0, 0, FLAGS, "scale" },

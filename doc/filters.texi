@@ -21724,6 +21724,8 @@ each channel is displayed using the viridis color scheme
 each channel is displayed using the plasma color scheme
 @item cividis
 each channel is displayed using the cividis color scheme
+@item terrain
+each channel is displayed using the terrain color scheme
 @end table
 
 Default value is @samp{channel}.
@@ -21896,6 +21898,8 @@ each channel is displayed using the viridis color scheme
 each channel is displayed using the plasma color scheme
 @item cividis
 each channel is displayed using the cividis color scheme
+@item terrain
+each channel is displayed using the terrain color scheme
 @end table
 Default value is @samp{intensity}.
 
