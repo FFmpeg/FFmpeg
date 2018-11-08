@@ -554,7 +554,15 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     *buf++ = pict->color_primaries;
     *buf++ = pict->color_trc;
     *buf++ = pict->colorspace;
+    if (avctx->profile >= FF_PROFILE_PRORES_4444) {
+        if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10) {
+            *buf++ = 0xA0;/* src b64a and no alpha */
+        } else {
+            *buf++ = 0xA2;/* src b64a and 16b alpha */
+        }
+    } else {
     *buf++ = 32;
+    }
     *buf++ = 0;
     *buf++ = 3;
 
