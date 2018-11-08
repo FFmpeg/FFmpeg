@@ -541,7 +541,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, "icpf", 4);
 
     bytestream_put_be16(&buf, header_size);
-    bytestream_put_be16(&buf, 0);
+    bytestream_put_be16(&buf, 0); /* version */
     bytestream_put_buffer(&buf, "fmpg", 4);
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
@@ -550,7 +550,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     } else {
         *buf++ = 0x82; // 422, not interlaced
     }
-    *buf++ = 0;
+    *buf++ = 0; /* reserved */
     *buf++ = pict->color_primaries;
     *buf++ = pict->color_trc;
     *buf++ = pict->colorspace;
@@ -561,10 +561,10 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             *buf++ = 0xA2;/* src b64a and 16b alpha */
         }
     } else {
-    *buf++ = 32;
+        *buf++ = 32;/* src v210 and no alpha */
     }
-    *buf++ = 0;
-    *buf++ = 3;
+    *buf++ = 0; /* reserved */
+    *buf++ = 3; /* luma and chroma matrix present */
 
     bytestream_put_buffer(&buf, QMAT_LUMA[avctx->profile],   64);
     bytestream_put_buffer(&buf, QMAT_CHROMA[avctx->profile], 64);
