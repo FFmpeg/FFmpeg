@@ -310,8 +310,8 @@ static int convert_coeffs(AVFilterContext *ctx)
     if (s->nb_taps <= 0)
         return AVERROR(EINVAL);
 
-    for (n = 4; (1 << n) < s->nb_taps; n++);
-    N = FFMIN(n, 16);
+    for (n = av_log2(s->minp); (1 << n) < s->nb_taps; n++);
+    N = FFMIN(n, av_log2(s->maxp));
     s->ir_length = 1 << n;
     s->fft_length = (1 << (N + 1)) + 1;
     s->part_size = 1 << (N - 1);
@@ -786,6 +786,8 @@ static const AVOption afir_options[] = {
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",    OFFSET(w),          AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
     { "rate",   "set video rate",    OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
+    { "minp",   "set min partition size", OFFSET(minp),  AV_OPT_TYPE_INT,   {.i64=16},    16, 65536, AF },
+    { "maxp",   "set max partition size", OFFSET(maxp),  AV_OPT_TYPE_INT,   {.i64=65536}, 16, 65536, AF },
     { NULL }
 };
 
