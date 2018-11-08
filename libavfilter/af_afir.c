@@ -126,8 +126,10 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
 
     if (!s->want_skip) {
         out = ff_get_audio_buffer(outlink, s->nb_samples);
-        if (!out)
+        if (!out) {
+            av_frame_free(&in);
             return AVERROR(ENOMEM);
+        }
     }
 
     if (s->pts == AV_NOPTS_VALUE)
@@ -148,6 +150,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
         s->index = 0;
 
     av_frame_free(&in);
+    s->in[0] = NULL;
 
     if (s->want_skip == 1) {
         s->want_skip = 0;
