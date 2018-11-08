@@ -63,6 +63,7 @@ typedef struct AudioIIRContext {
     int response;
     int w, h;
     int ir_channel;
+    AVRational rate;
 
     AVFrame *video;
 
@@ -939,11 +940,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->response) {
         AVFilterLink *outlink = ctx->outputs[1];
+        int64_t old_pts = s->video->pts;
+        int64_t new_pts = av_rescale_q(out->pts, ctx->inputs[0]->time_base, outlink->time_base);
 
-        s->video->pts = out->pts;
-        ret = ff_filter_frame(outlink, av_frame_clone(s->video));
-        if (ret < 0)
-            return ret;
+        if (new_pts > old_pts) {
+            s->video->pts = new_pts;
+            ret = ff_filter_frame(outlink, av_frame_clone(s->video));
+            if (ret < 0)
+                return ret;
+        }
     }
 
     return ff_filter_frame(outlink, out);
@@ -957,6 +962,8 @@ static int config_video(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->frame_rate = s->rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     return 0;
 }
@@ -1070,6 +1077,7 @@ static const AVOption aiir_options[] = {
     { "response", "show IR frequency response",    OFFSET(response), AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",                  OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
+    { "rate",   "set video rate",                  OFFSET(rate),     AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
     { NULL },
 };
 
