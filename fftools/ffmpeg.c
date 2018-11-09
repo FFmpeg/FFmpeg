@@ -1196,6 +1196,8 @@ static void do_video_out(OutputFile *of,
   /* duplicates frame if needed */
   for (i = 0; i < nb_frames; i++) {
     AVFrame *in_picture;
+    int forced_keyframe = 0;
+    double pts_time;
     av_init_packet(&pkt);
     pkt.data = NULL;
     pkt.size = 0;
@@ -1212,10 +1214,6 @@ static void do_video_out(OutputFile *of,
 
     if (!check_recording_time(ost))
         return;
-
-    {
-        int forced_keyframe = 0;
-        double pts_time;
 
         if (enc->flags & (AV_CODEC_FLAG_INTERLACED_DCT | AV_CODEC_FLAG_INTERLACED_ME) &&
             ost->top_field_first >= 0)
@@ -1324,7 +1322,6 @@ static void do_video_out(OutputFile *of,
                 fprintf(ost->logfile, "%s", enc->stats_out);
             }
         }
-    }
     ost->sync_opts++;
     /*
      * For video, number of frames in == number of packets out.
