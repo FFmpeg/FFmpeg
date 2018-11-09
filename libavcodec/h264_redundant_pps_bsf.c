@@ -79,7 +79,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_cbs_read_packet(ctx->input, au, in);
     if (err < 0)
-        return err;
+        goto fail;
 
     au_has_sps = 0;
     for (i = 0; i < au->nb_units; i++) {
@@ -88,11 +88,15 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
         if (nal->type == H264_NAL_SPS)
             au_has_sps = 1;
         if (nal->type == H264_NAL_PPS) {
-            h264_redundant_pps_fixup_pps(ctx, nal->content);
+            err = h264_redundant_pps_fixup_pps(ctx, nal->content);
+            if (err < 0)
+                goto fail;
             if (!au_has_sps) {
                 av_log(bsf, AV_LOG_VERBOSE, "Deleting redundant PPS "
                        "at %"PRId64".\n", in->pts);
-                ff_cbs_delete_unit(ctx->input, au, i);
+                err = ff_cbs_delete_unit(ctx->input, au, i);
+                if (err < 0)
+                    goto fail;
             }
         }
         if (nal->type == H264_NAL_SLICE ||
@@ -104,17 +108,21 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_cbs_write_packet(ctx->output, out, au);
     if (err < 0)
-        return err;
+        goto fail;
 
-    ff_cbs_fragment_uninit(ctx->output, au);
 
     err = av_packet_copy_props(out, in);
     if (err < 0)
-        return err;
+        goto fail;
 
+    err = 0;
+fail:
+    ff_cbs_fragment_uninit(ctx->output, au);
     av_packet_free(&in);
+    if (err < 0)
+        av_packet_unref(out);
 
-    return 0;
+    return err;
 }
 
 static int h264_redundant_pps_init(AVBSFContext *bsf)
@@ -137,24 +145,28 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
         err = ff_cbs_read_extradata(ctx->input, au, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
-            return err;
+            goto fail;
         }
 
         for (i = 0; i < au->nb_units; i++) {
-            if (au->units[i].type == H264_NAL_PPS)
-                h264_redundant_pps_fixup_pps(ctx, au->units[i].content);
+            if (au->units[i].type == H264_NAL_PPS) {
+                err = h264_redundant_pps_fixup_pps(ctx, au->units[i].content);
+                if (err < 0)
+                    goto fail;
+            }
         }
 
         err = ff_cbs_write_extradata(ctx->output, bsf->par_out, au);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
-            return err;
+            goto fail;
         }
-
-        ff_cbs_fragment_uninit(ctx->output, au);
     }
 
-    return 0;
+    err = 0;
+fail:
+    ff_cbs_fragment_uninit(ctx->output, au);
+    return err;
 }
 
 static void h264_redundant_pps_close(AVBSFContext *bsf)
