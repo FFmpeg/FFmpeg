@@ -373,7 +373,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     /* subtract offset from previous samples to use in prediction */
     if (command == FN_QLPC && coffset)
         for (i = -pred_order; i < 0; i++)
-            s->decoded[channel][i] -= coffset;
+            s->decoded[channel][i] -= (unsigned)coffset;
 
     /* decode residual and do LPC prediction */
     init_sum = pred_order ? (command == FN_QLPC ? s->lpcqoffset : 0) : coffset;
@@ -388,7 +388,7 @@ static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
     /* add offset to current samples */
     if (command == FN_QLPC && coffset)
         for (i = 0; i < s->blocksize; i++)
-            s->decoded[channel][i] += coffset;
+            s->decoded[channel][i] += (unsigned)coffset;
 
     return 0;
 }
