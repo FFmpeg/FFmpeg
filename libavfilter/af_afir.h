@@ -66,8 +66,6 @@ typedef struct AudioFIRContext {
     int nb_coef_channels;
     int one2many;
     int nb_samples;
-    int want_skip;
-    int need_padding;
 
     RDFTContext **rdft, **irdft;
     float **sum;
