@@ -428,8 +428,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Frame size change is unsupported.\n");
             return AVERROR_INVALIDDATA;
         }
-        avctx->width = width;
-        avctx->height = height;
+        ret = ff_set_dimensions(avctx, width, height);
+        if (ret < 0)
+            return ret;
     }
 
     s->changed_size = 1;
