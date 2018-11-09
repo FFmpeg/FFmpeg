@@ -474,6 +474,8 @@ static int activate(AVFilterContext *ctx)
         if (!s->eof_coeffs) {
             if (ff_outlink_frame_wanted(ctx->outputs[0]))
                 ff_inlink_request_frame(ctx->inputs[1]);
+            else if (s->response && ff_outlink_frame_wanted(ctx->outputs[1]))
+                ff_inlink_request_frame(ctx->inputs[1]);
             return 0;
         }
     }
