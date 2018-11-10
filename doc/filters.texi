@@ -11442,8 +11442,12 @@ Available values are:
 Use values from the nearest defined point.
 @item linear
 Interpolate values using the linear interpolation.
+@item cosine
+Interpolate values using the cosine interpolation.
 @item cubic
 Interpolate values using the cubic interpolation.
+@item spline
+Interpolate values using the spline interpolation.
 @end table
 @end table
 
