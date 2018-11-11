@@ -73,34 +73,45 @@ static int build_vlc(VLC *vlc, const uint8_t *bits_table,
                               huff_code, 2, 2, huff_sym, 2, 2, use_static);
 }
 
-static int build_basic_mjpeg_vlc(MJpegDecodeContext *s)
+static int init_default_huffman_tables(MJpegDecodeContext *s)
 {
-    int ret;
+    static const struct {
+        int class;
+        int index;
+        const uint8_t *bits;
+        const uint8_t *values;
+        int codes;
+        int length;
+    } ht[] = {
+        { 0, 0, avpriv_mjpeg_bits_dc_luminance,
+                avpriv_mjpeg_val_dc, 12, 12 },
+        { 0, 1, avpriv_mjpeg_bits_dc_chrominance,
+                avpriv_mjpeg_val_dc, 12, 12 },
+        { 1, 0, avpriv_mjpeg_bits_ac_luminance,
+                avpriv_mjpeg_val_ac_luminance,   251, 162 },
+        { 1, 1, avpriv_mjpeg_bits_ac_chrominance,
+                avpriv_mjpeg_val_ac_chrominance, 251, 162 },
+        { 2, 0, avpriv_mjpeg_bits_ac_luminance,
+                avpriv_mjpeg_val_ac_luminance,   251, 162 },
+        { 2, 1, avpriv_mjpeg_bits_ac_chrominance,
+                avpriv_mjpeg_val_ac_chrominance, 251, 162 },
+    };
+    int i, ret;
 
-    if ((ret = build_vlc(&s->vlcs[0][0], avpriv_mjpeg_bits_dc_luminance,
-                         avpriv_mjpeg_val_dc, 12, 0, 0)) < 0)
-        return ret;
+    for (i = 0; i < FF_ARRAY_ELEMS(ht); i++) {
+        ret = build_vlc(&s->vlcs[ht[i].class][ht[i].index],
+                        ht[i].bits, ht[i].values, ht[i].codes,
+                        0, ht[i].class == 1);
+        if (ret < 0)
+            return ret;
 
-    if ((ret = build_vlc(&s->vlcs[0][1], avpriv_mjpeg_bits_dc_chrominance,
-                         avpriv_mjpeg_val_dc, 12, 0, 0)) < 0)
-        return ret;
-
-    if ((ret = build_vlc(&s->vlcs[1][0], avpriv_mjpeg_bits_ac_luminance,
-                         avpriv_mjpeg_val_ac_luminance, 251, 0, 1)) < 0)
-        return ret;
-
-    if ((ret = build_vlc(&s->vlcs[1][1], avpriv_mjpeg_bits_ac_chrominance,
-                         avpriv_mjpeg_val_ac_chrominance, 251, 0, 1)) < 0)
-        return ret;
-
-    if ((ret = build_vlc(&s->vlcs[2][0], avpriv_mjpeg_bits_ac_luminance,
-                         avpriv_mjpeg_val_ac_luminance, 251, 0, 0)) < 0)
-        return ret;
-
-    if ((ret = build_vlc(&s->vlcs[2][1], avpriv_mjpeg_bits_ac_chrominance,
-                         avpriv_mjpeg_val_ac_chrominance, 251, 0, 0)) < 0)
-        return ret;
-
+        if (ht[i].class < 2) {
+            memcpy(s->raw_huffman_lengths[ht[i].class][ht[i].index],
+                   ht[i].bits + 1, 16);
+            memcpy(s->raw_huffman_values[ht[i].class][ht[i].index],
+                   ht[i].values, ht[i].length);
+        }
+    }
 
     return 0;
 }
@@ -151,7 +162,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
     avctx->colorspace = AVCOL_SPC_BT470BG;
     s->hwaccel_pix_fmt = s->hwaccel_sw_pix_fmt = AV_PIX_FMT_NONE;
 
-    if ((ret = build_basic_mjpeg_vlc(s)) < 0)
+    if ((ret = init_default_huffman_tables(s)) < 0)
         return ret;
 
     if (s->extern_huff) {
@@ -161,7 +172,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         if (ff_mjpeg_decode_dht(s)) {
             av_log(avctx, AV_LOG_ERROR,
                    "error using external huffman table, switching back to internal\n");
-            build_basic_mjpeg_vlc(s);
+            init_default_huffman_tables(s);
         }
     }
     if (avctx->field_order == AV_FIELD_BB) { /* quicktime icefloe 019 */
