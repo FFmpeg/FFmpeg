@@ -1082,7 +1082,7 @@ Set frequency domain imaginary expression for each separate channel
 separated by '|'. If not set, @var{real} option is used.
 
 Each expression in @var{real} and @var{imag} can contain the following
-constants:
+constants and functions:
 
 @table @option
 @item sr
@@ -1102,6 +1102,18 @@ number of channels
 
 @item pts
 current frame pts
+
+@item re
+current real part of frequency bin
+
+@item im
+current imaginary part of frequency bin
+
+@item real(b, ch)
+Return the value of real part of frequency bin at location (@var{bin},@var{channel})
+
+@item imag(b, ch)
+Return the value of imaginary part of frequency bin at location (@var{bin},@var{channel})
 @end table
 
 @item win_size
@@ -1139,7 +1151,7 @@ window function will be picked. Default is @code{0.75}.
 @item
 Leave almost only low frequencies in audio:
 @example
-afftfilt="1-clip((b/nb)*b,0,1)"
+afftfilt="'real=re * (1-clip((b/nb)*b,0,1))':imag='im * (1-clip((b/nb)*b,0,1))'"
 @end example
 @end itemize
 
