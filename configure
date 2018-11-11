@@ -5468,6 +5468,8 @@ EOF
     elif test_${pfx}cpp_condition sys/version.h "defined __DJGPP__"; then
         eval ${pfx}libc_type=djgpp
         add_cppflags -U__STRICT_ANSI__
+        add_cflags "-include $source_path/compat/djgpp/math.h"
+        add_compat djgpp/math.o
     fi
     test_${pfx}cc <<EOF
 #include <time.h>
