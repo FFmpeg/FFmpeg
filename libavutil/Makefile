@@ -94,6 +94,7 @@ OBJS = adler32.o                                                        \
        aes_ctr.o                                                        \
        audio_fifo.o                                                     \
        avstring.o                                                       \
+       avsscanf.o                                                       \
        base64.o                                                         \
        blowfish.o                                                       \
        bprint.o                                                         \
