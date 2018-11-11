@@ -189,30 +189,26 @@ static int cbs_av1_read_su(CodedBitstreamContext *ctx, GetBitContext *gbc,
                            int width, const char *name,
                            const int *subscripts, int32_t *write_to)
 {
-    uint32_t magnitude;
-    int position, sign;
+    int position;
     int32_t value;
 
     if (ctx->trace_enable)
         position = get_bits_count(gbc);
 
-    if (get_bits_left(gbc) < width + 1) {
+    if (get_bits_left(gbc) < width) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid signed value at "
                "%s: bitstream ended.\n", name);
         return AVERROR_INVALIDDATA;
     }
 
-    magnitude = get_bits(gbc, width);
-    sign      = get_bits1(gbc);
-    value     = sign ? -(int32_t)magnitude : magnitude;
+    value = get_sbits(gbc, width);
 
     if (ctx->trace_enable) {
         char bits[33];
         int i;
         for (i = 0; i < width; i++)
-            bits[i] = magnitude >> (width - i - 1) & 1 ? '1' : '0';
-        bits[i] = sign ? '1' : '0';
-        bits[i + 1] = 0;
+            bits[i] = value & (1 << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
 
         ff_cbs_trace_syntax_element(ctx, position,
                                     name, subscripts, bits, value);
@@ -226,29 +222,21 @@ static int cbs_av1_write_su(CodedBitstreamContext *ctx, PutBitContext *pbc,
                             int width, const char *name,
                             const int *subscripts, int32_t value)
 {
-    uint32_t magnitude;
-    int sign;
-
-    if (put_bits_left(pbc) < width + 1)
+    if (put_bits_left(pbc) < width)
         return AVERROR(ENOSPC);
-
-    sign      = value < 0;
-    magnitude = sign ? -value : value;
 
     if (ctx->trace_enable) {
         char bits[33];
         int i;
         for (i = 0; i < width; i++)
-            bits[i] = magnitude >> (width - i - 1) & 1 ? '1' : '0';
-        bits[i] = sign ? '1' : '0';
-        bits[i + 1] = 0;
+            bits[i] = value & (1 << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
 
         ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
                                     name, subscripts, bits, value);
     }
 
-    put_bits(pbc, width, magnitude);
-    put_bits(pbc, 1, sign);
+    put_sbits(pbc, width, value);
 
     return 0;
 }
