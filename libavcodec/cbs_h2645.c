@@ -1050,6 +1050,64 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int cbs_h2645_write_slice_data(CodedBitstreamContext *ctx,
+                                      PutBitContext *pbc, const uint8_t *data,
+                                      size_t data_size, int data_bit_start)
+{
+    size_t rest  = data_size - (data_bit_start + 7) / 8;
+    const uint8_t *pos = data + data_bit_start / 8;
+
+    av_assert0(data_bit_start >= 0 &&
+               8 * data_size > data_bit_start);
+
+    if (data_size * 8 + 8 > put_bits_left(pbc))
+        return AVERROR(ENOSPC);
+
+    if (!rest)
+        goto rbsp_stop_one_bit;
+
+    // First copy the remaining bits of the first byte
+    // The above check ensures that we do not accidentally
+    // copy beyond the rbsp_stop_one_bit.
+    if (data_bit_start % 8)
+        put_bits(pbc, 8 - data_bit_start % 8,
+                 *pos++ & MAX_UINT_BITS(8 - data_bit_start % 8));
+
+    if (put_bits_count(pbc) % 8 == 0) {
+        // If the writer is aligned at this point,
+        // memcpy can be used to improve performance.
+        // This happens normally for CABAC.
+        flush_put_bits(pbc);
+        memcpy(put_bits_ptr(pbc), pos, rest);
+        skip_put_bytes(pbc, rest);
+    } else {
+        // If not, we have to copy manually.
+        // rbsp_stop_one_bit forces us to special-case
+        // the last byte.
+        uint8_t temp;
+        int i;
+
+        for (; rest > 4; rest -= 4, pos += 4)
+            put_bits32(pbc, AV_RB32(pos));
+
+        for (; rest > 1; rest--, pos++)
+            put_bits(pbc, 8, *pos);
+
+    rbsp_stop_one_bit:
+        temp = rest ? *pos : *pos & MAX_UINT_BITS(8 - data_bit_start % 8);
+
+        av_assert0(temp);
+        i = ff_ctz(*pos);
+        temp = temp >> i;
+        i = rest ? (8 - i) : (8 - i - data_bit_start % 8);
+        put_bits(pbc, i, temp);
+        if (put_bits_count(pbc) % 8)
+            put_bits(pbc, 8 - put_bits_count(pbc) % 8, 0);
+    }
+
+    return 0;
+}
+
 static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
                                    CodedBitstreamUnit *unit,
                                    PutBitContext *pbc)
@@ -1100,37 +1158,17 @@ static int cbs_h264_write_nal_unit(CodedBitstreamContext *ctx,
     case H264_NAL_AUXILIARY_SLICE:
         {
             H264RawSlice *slice = unit->content;
-            GetBitContext gbc;
-            int bits_left, end, zeroes;
 
             err = cbs_h264_write_slice_header(ctx, pbc, &slice->header);
             if (err < 0)
                 return err;
 
             if (slice->data) {
-                if (slice->data_size * 8 + 8 > put_bits_left(pbc))
-                    return AVERROR(ENOSPC);
-
-                init_get_bits(&gbc, slice->data, slice->data_size * 8);
-                skip_bits_long(&gbc, slice->data_bit_start);
-
-                // Copy in two-byte blocks, but stop before copying the
-                // rbsp_stop_one_bit in the final byte.
-                while (get_bits_left(&gbc) > 23)
-                    put_bits(pbc, 16, get_bits(&gbc, 16));
-
-                bits_left = get_bits_left(&gbc);
-                end = get_bits(&gbc, bits_left);
-
-                // rbsp_stop_one_bit must be present here.
-                av_assert0(end);
-                zeroes = ff_ctz(end);
-                if (bits_left > zeroes + 1)
-                    put_bits(pbc, bits_left - zeroes - 1,
-                             end >> (zeroes + 1));
-                put_bits(pbc, 1, 1);
-                while (put_bits_count(pbc) % 8 != 0)
-                    put_bits(pbc, 1, 0);
+                err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
+                                                 slice->data_size,
+                                                 slice->data_bit_start);
+                if (err < 0)
+                    return err;
             } else {
                 // No slice data - that was just the header.
                 // (Bitstream may be unaligned!)
@@ -1254,37 +1292,17 @@ static int cbs_h265_write_nal_unit(CodedBitstreamContext *ctx,
     case HEVC_NAL_CRA_NUT:
         {
             H265RawSlice *slice = unit->content;
-            GetBitContext gbc;
-            int bits_left, end, zeroes;
 
             err = cbs_h265_write_slice_segment_header(ctx, pbc, &slice->header);
             if (err < 0)
                 return err;
 
             if (slice->data) {
-                if (slice->data_size * 8 + 8 > put_bits_left(pbc))
-                    return AVERROR(ENOSPC);
-
-                init_get_bits(&gbc, slice->data, slice->data_size * 8);
-                skip_bits_long(&gbc, slice->data_bit_start);
-
-                // Copy in two-byte blocks, but stop before copying the
-                // rbsp_stop_one_bit in the final byte.
-                while (get_bits_left(&gbc) > 23)
-                    put_bits(pbc, 16, get_bits(&gbc, 16));
-
-                bits_left = get_bits_left(&gbc);
-                end = get_bits(&gbc, bits_left);
-
-                // rbsp_stop_one_bit must be present here.
-                av_assert0(end);
-                zeroes = ff_ctz(end);
-                if (bits_left > zeroes + 1)
-                    put_bits(pbc, bits_left - zeroes - 1,
-                             end >> (zeroes + 1));
-                put_bits(pbc, 1, 1);
-                while (put_bits_count(pbc) % 8 != 0)
-                    put_bits(pbc, 1, 0);
+                err = cbs_h2645_write_slice_data(ctx, pbc, slice->data,
+                                                 slice->data_size,
+                                                 slice->data_bit_start);
+                if (err < 0)
+                    return err;
             } else {
                 // No slice data - that was just the header.
             }
