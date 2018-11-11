@@ -5297,7 +5297,6 @@ case $target_os in
         network_extralibs="-lsocket"
         objformat="coff"
         enable dos_paths
-        add_cppflags -U__STRICT_ANSI__
         ;;
     linux)
         enable section_data_rel_ro
@@ -5466,6 +5465,9 @@ EOF
     elif test_${pfx}cpp_condition sys/brand.h "defined LABELED_BRAND_NAME"; then
         eval ${pfx}libc_type=solaris
         add_${pfx}cppflags -D__EXTENSIONS__ -D_XOPEN_SOURCE=600
+    elif test_${pfx}cpp_condition sys/version.h "defined __DJGPP__"; then
+        eval ${pfx}libc_type=djgpp
+        add_cppflags -U__STRICT_ANSI__
     fi
     test_${pfx}cc <<EOF
 #include <time.h>
