@@ -384,7 +384,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
     float max[3] = {1.0, 1.0, 1.0};
 
     while (fgets(line, sizeof(line), f)) {
-        if (!strncmp(line, "LUT_3D_SIZE ", 12)) {
+        if (!strncmp(line, "LUT_3D_SIZE", 11)) {
             int i, j, k;
             const int size = strtol(line + 12, NULL, 0);
 
@@ -1027,7 +1027,7 @@ static int parse_cube_1d(AVFilterContext *ctx, FILE *f)
     float max[3] = {1.0, 1.0, 1.0};
 
     while (fgets(line, sizeof(line), f)) {
-        if (!strncmp(line, "LUT_1D_SIZE ", 12)) {
+        if (!strncmp(line, "LUT_1D_SIZE", 11)) {
             const int size = strtol(line + 12, NULL, 0);
             int i;
 
