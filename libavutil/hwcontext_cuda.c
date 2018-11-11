@@ -21,6 +21,7 @@
 #include "hwcontext.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_cuda_internal.h"
+#include "cuda_check.h"
 #include "mem.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
@@ -42,6 +43,8 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_0BGR32,
 };
+
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(device_ctx, cu, x)
 
 static int cuda_frames_get_constraints(AVHWDeviceContext *ctx,
                                        const void *hwconfig,
@@ -70,48 +73,48 @@ static int cuda_frames_get_constraints(AVHWDeviceContext *ctx,
 
 static void cuda_buffer_free(void *opaque, uint8_t *data)
 {
-    AVHWFramesContext *ctx = opaque;
-    AVCUDADeviceContext *hwctx = ctx->device_ctx->hwctx;
-    CudaFunctions *cu = hwctx->internal->cuda_dl;
+    AVHWFramesContext        *ctx = opaque;
+    AVHWDeviceContext *device_ctx = ctx->device_ctx;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
     CUcontext dummy;
 
-    cu->cuCtxPushCurrent(hwctx->cuda_ctx);
+    CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
 
-    cu->cuMemFree((CUdeviceptr)data);
+    CHECK_CU(cu->cuMemFree((CUdeviceptr)data));
 
-    cu->cuCtxPopCurrent(&dummy);
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 }
 
 static AVBufferRef *cuda_pool_alloc(void *opaque, int size)
 {
-    AVHWFramesContext     *ctx = opaque;
-    AVCUDADeviceContext *hwctx = ctx->device_ctx->hwctx;
-    CudaFunctions          *cu = hwctx->internal->cuda_dl;
+    AVHWFramesContext        *ctx = opaque;
+    AVHWDeviceContext *device_ctx = ctx->device_ctx;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
     AVBufferRef *ret = NULL;
     CUcontext dummy = NULL;
     CUdeviceptr data;
-    CUresult err;
+    int err;
 
-    err = cu->cuCtxPushCurrent(hwctx->cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error setting current CUDA context\n");
+    err = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
+    if (err < 0)
         return NULL;
-    }
 
-    err = cu->cuMemAlloc(&data, size);
-    if (err != CUDA_SUCCESS)
+    err = CHECK_CU(cu->cuMemAlloc(&data, size));
+    if (err < 0)
         goto fail;
 
     ret = av_buffer_create((uint8_t*)data, size, cuda_buffer_free, ctx, 0);
     if (!ret) {
-        cu->cuMemFree(data);
+        CHECK_CU(cu->cuMemFree(data));
         goto fail;
     }
 
 fail:
-    cu->cuCtxPopCurrent(&dummy);
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     return ret;
 }
 
@@ -194,17 +197,17 @@ static int cuda_transfer_get_formats(AVHWFramesContext *ctx,
 static int cuda_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
                                    const AVFrame *src)
 {
-    CUDAFramesContext           *priv = ctx->internal->priv;
-    AVCUDADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    CudaFunctions                 *cu = device_hwctx->internal->cuda_dl;
+    CUDAFramesContext       *priv = ctx->internal->priv;
+    AVHWDeviceContext *device_ctx = ctx->device_ctx;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
     CUcontext dummy;
-    CUresult err;
-    int i;
+    int i, ret;
 
-    err = cu->cuCtxPushCurrent(device_hwctx->cuda_ctx);
-    if (err != CUDA_SUCCESS)
-        return AVERROR_UNKNOWN;
+    ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < FF_ARRAY_ELEMS(src->data) && src->data[i]; i++) {
         CUDA_MEMCPY2D cpy = {
@@ -218,20 +221,17 @@ static int cuda_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
             .Height        = src->height >> (i ? priv->shift_height : 0),
         };
 
-        err = cu->cuMemcpy2DAsync(&cpy, device_hwctx->stream);
-        if (err != CUDA_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Error transferring the data from the CUDA frame\n");
-            return AVERROR_UNKNOWN;
-        }
+        ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, hwctx->stream));
+        if (ret < 0)
+            goto exit;
     }
 
-    err = cu->cuStreamSynchronize(device_hwctx->stream);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing CUDA stream\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
+    if (ret < 0)
+        goto exit;
 
-    cu->cuCtxPopCurrent(&dummy);
+exit:
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
     return 0;
 }
@@ -239,17 +239,17 @@ static int cuda_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
                                  const AVFrame *src)
 {
-    CUDAFramesContext           *priv = ctx->internal->priv;
-    AVCUDADeviceContext *device_hwctx = ctx->device_ctx->hwctx;
-    CudaFunctions                 *cu = device_hwctx->internal->cuda_dl;
+    CUDAFramesContext       *priv = ctx->internal->priv;
+    AVHWDeviceContext *device_ctx = ctx->device_ctx;
+    AVCUDADeviceContext    *hwctx = device_ctx->hwctx;
+    CudaFunctions             *cu = hwctx->internal->cuda_dl;
 
     CUcontext dummy;
-    CUresult err;
-    int i;
+    int i, ret;
 
-    err = cu->cuCtxPushCurrent(device_hwctx->cuda_ctx);
-    if (err != CUDA_SUCCESS)
-        return AVERROR_UNKNOWN;
+    ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
+    if (ret < 0)
+        return ret;
 
     for (i = 0; i < FF_ARRAY_ELEMS(src->data) && src->data[i]; i++) {
         CUDA_MEMCPY2D cpy = {
@@ -263,31 +263,29 @@ static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
             .Height        = src->height >> (i ? priv->shift_height : 0),
         };
 
-        err = cu->cuMemcpy2DAsync(&cpy, device_hwctx->stream);
-        if (err != CUDA_SUCCESS) {
-            av_log(ctx, AV_LOG_ERROR, "Error transferring the data to the CUDA frame\n");
-            return AVERROR_UNKNOWN;
-        }
+        ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, hwctx->stream));
+        if (ret < 0)
+            goto exit;
     }
 
-    err = cu->cuStreamSynchronize(device_hwctx->stream);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error synchronizing CUDA stream\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
+    if (ret < 0)
+        goto exit;
 
-    cu->cuCtxPopCurrent(&dummy);
+exit:
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
     return 0;
 }
 
-static void cuda_device_uninit(AVHWDeviceContext *ctx)
+static void cuda_device_uninit(AVHWDeviceContext *device_ctx)
 {
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
+    AVCUDADeviceContext *hwctx = device_ctx->hwctx;
 
     if (hwctx->internal) {
+        CudaFunctions *cu = hwctx->internal->cuda_dl;
         if (hwctx->internal->is_allocated && hwctx->cuda_ctx) {
-            hwctx->internal->cuda_dl->cuCtxDestroy(hwctx->cuda_ctx);
+            CHECK_CU(cu->cuCtxDestroy(hwctx->cuda_ctx));
             hwctx->cuda_ctx = NULL;
         }
         cuda_free_functions(&hwctx->internal->cuda_dl);
@@ -322,53 +320,47 @@ error:
     return ret;
 }
 
-static int cuda_device_create(AVHWDeviceContext *ctx, const char *device,
+static int cuda_device_create(AVHWDeviceContext *device_ctx,
+                              const char *device,
                               AVDictionary *opts, int flags)
 {
-    AVCUDADeviceContext *hwctx = ctx->hwctx;
+    AVCUDADeviceContext *hwctx = device_ctx->hwctx;
     CudaFunctions *cu;
     CUdevice cu_device;
     CUcontext dummy;
-    CUresult err;
-    int device_idx = 0;
+    int ret, device_idx = 0;
 
     if (device)
         device_idx = strtol(device, NULL, 0);
 
-    if (cuda_device_init(ctx) < 0)
+    if (cuda_device_init(device_ctx) < 0)
         goto error;
 
     cu = hwctx->internal->cuda_dl;
 
-    err = cu->cuInit(0);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Could not initialize the CUDA driver API\n");
+    ret = CHECK_CU(cu->cuInit(0));
+    if (ret < 0)
         goto error;
-    }
 
-    err = cu->cuDeviceGet(&cu_device, device_idx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Could not get the device number %d\n", device_idx);
+    ret = CHECK_CU(cu->cuDeviceGet(&cu_device, device_idx));
+    if (ret < 0)
         goto error;
-    }
 
-    err = cu->cuCtxCreate(&hwctx->cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, cu_device);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error creating a CUDA context\n");
+    ret = CHECK_CU(cu->cuCtxCreate(&hwctx->cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, cu_device));
+    if (ret < 0)
         goto error;
-    }
 
     // Setting stream to NULL will make functions automatically use the default CUstream
     hwctx->stream = NULL;
 
-    cu->cuCtxPopCurrent(&dummy);
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
     hwctx->internal->is_allocated = 1;
 
     return 0;
 
 error:
-    cuda_device_uninit(ctx);
+    cuda_device_uninit(device_ctx);
     return AVERROR_UNKNOWN;
 }
 

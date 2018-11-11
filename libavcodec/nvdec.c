@@ -26,6 +26,7 @@
 #include "libavutil/error.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/pixfmt.h"
 
@@ -49,6 +50,8 @@ typedef struct NVDECFramePool {
     unsigned int dpb_size;
     unsigned int nb_allocated;
 } NVDECFramePool;
+
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(logctx, decoder->cudl, x)
 
 static int map_avcodec_id(enum AVCodecID id)
 {
@@ -86,7 +89,7 @@ static int map_chroma_format(enum AVPixelFormat pix_fmt)
 static int nvdec_test_capabilities(NVDECDecoder *decoder,
                                    CUVIDDECODECREATEINFO *params, void *logctx)
 {
-    CUresult err;
+    int ret;
     CUVIDDECODECAPS caps = { 0 };
 
     caps.eCodecType      = params->CodecType;
@@ -105,11 +108,9 @@ static int nvdec_test_capabilities(NVDECDecoder *decoder,
         return 0;
     }
 
-    err = decoder->cvdl->cuvidGetDecoderCaps(&caps);
-    if (err != CUDA_SUCCESS) {
-        av_log(logctx, AV_LOG_ERROR, "Failed querying decoder capabilities\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(decoder->cvdl->cuvidGetDecoderCaps(&caps));
+    if (ret < 0)
+        return ret;
 
     av_log(logctx, AV_LOG_VERBOSE, "NVDEC capabilities:\n");
     av_log(logctx, AV_LOG_VERBOSE, "format supported: %s, max_mb_count: %d\n",
@@ -150,10 +151,11 @@ static void nvdec_decoder_free(void *opaque, uint8_t *data)
     NVDECDecoder *decoder = (NVDECDecoder*)data;
 
     if (decoder->decoder) {
+        void *logctx = decoder->hw_device_ref->data;
         CUcontext dummy;
-        decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
-        decoder->cvdl->cuvidDestroyDecoder(decoder->decoder);
-        decoder->cudl->cuCtxPopCurrent(&dummy);
+        CHECK_CU(decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx));
+        CHECK_CU(decoder->cvdl->cuvidDestroyDecoder(decoder->decoder));
+        CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
     }
 
     av_buffer_unref(&decoder->hw_device_ref);
@@ -173,7 +175,6 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
     NVDECDecoder *decoder;
 
     CUcontext dummy;
-    CUresult err;
     int ret;
 
     decoder = av_mallocz(sizeof(*decoder));
@@ -202,25 +203,21 @@ static int nvdec_decoder_create(AVBufferRef **out, AVBufferRef *hw_device_ref,
         goto fail;
     }
 
-    err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx));
+    if (ret < 0)
         goto fail;
-    }
 
     ret = nvdec_test_capabilities(decoder, params, logctx);
     if (ret < 0) {
-        decoder->cudl->cuCtxPopCurrent(&dummy);
+        CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
         goto fail;
     }
 
-    err = decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params);
+    ret = CHECK_CU(decoder->cvdl->cuvidCreateDecoder(&decoder->decoder, params));
 
-    decoder->cudl->cuCtxPopCurrent(&dummy);
+    CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
 
-    if (err != CUDA_SUCCESS) {
-        av_log(logctx, AV_LOG_ERROR, "Error creating a NVDEC decoder: %d\n", err);
-        ret = AVERROR_UNKNOWN;
+    if (ret < 0) {
         goto fail;
     }
 
@@ -364,21 +361,18 @@ static void nvdec_unmap_mapped_frame(void *opaque, uint8_t *data)
 {
     NVDECFrame *unmap_data = (NVDECFrame*)data;
     NVDECDecoder *decoder = (NVDECDecoder*)unmap_data->decoder_ref->data;
+    void *logctx = decoder->hw_device_ref->data;
     CUdeviceptr devptr = (CUdeviceptr)opaque;
-    CUresult err;
+    int ret;
     CUcontext dummy;
 
-    err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        av_log(NULL, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
+    ret = CHECK_CU(decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx));
+    if (ret < 0)
         goto finish;
-    }
 
-    err = decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr);
-    if (err != CUDA_SUCCESS)
-        av_log(NULL, AV_LOG_ERROR, "cuvidUnmapVideoFrame failed\n");
+    CHECK_CU(decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr));
 
-    decoder->cudl->cuCtxPopCurrent(&dummy);
+    CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
 
 finish:
     av_buffer_unref(&unmap_data->idx_ref);
@@ -395,7 +389,6 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     CUVIDPROCPARAMS vpp = { 0 };
     NVDECFrame *unmap_data = NULL;
 
-    CUresult err;
     CUcontext dummy;
     CUdeviceptr devptr;
 
@@ -406,18 +399,15 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
     vpp.progressive_frame = 1;
     vpp.output_stream = decoder->stream;
 
-    err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
-    if (err != CUDA_SUCCESS)
-        return AVERROR_UNKNOWN;
+    ret = CHECK_CU(decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx));
+    if (ret < 0)
+        return ret;
 
-    err = decoder->cvdl->cuvidMapVideoFrame(decoder->decoder, cf->idx, &devptr,
-                                            &pitch, &vpp);
-    if (err != CUDA_SUCCESS) {
-        av_log(logctx, AV_LOG_ERROR, "Error mapping a picture with CUVID: %d\n",
-               err);
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(decoder->cvdl->cuvidMapVideoFrame(decoder->decoder,
+                                                     cf->idx, &devptr,
+                                                     &pitch, &vpp));
+    if (ret < 0)
         goto finish;
-    }
 
     unmap_data = av_mallocz(sizeof(*unmap_data));
     if (!unmap_data) {
@@ -447,14 +437,14 @@ static int nvdec_retrieve_data(void *logctx, AVFrame *frame)
 
 copy_fail:
     if (!frame->buf[1]) {
-        decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr);
+        CHECK_CU(decoder->cvdl->cuvidUnmapVideoFrame(decoder->decoder, devptr));
         av_freep(&unmap_data);
     } else {
         av_buffer_unref(&frame->buf[1]);
     }
 
 finish:
-    decoder->cudl->cuCtxPopCurrent(&dummy);
+    CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
     return ret;
 }
 
@@ -504,9 +494,9 @@ int ff_nvdec_end_frame(AVCodecContext *avctx)
 {
     NVDECContext     *ctx = avctx->internal->hwaccel_priv_data;
     NVDECDecoder *decoder = (NVDECDecoder*)ctx->decoder_ref->data;
+    void *logctx          = avctx;
     CUVIDPICPARAMS    *pp = &ctx->pic_params;
 
-    CUresult err;
     CUcontext dummy;
 
     int ret = 0;
@@ -516,20 +506,16 @@ int ff_nvdec_end_frame(AVCodecContext *avctx)
     pp->nNumSlices        = ctx->nb_slices;
     pp->pSliceDataOffsets = ctx->slice_offsets;
 
-    err = decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx);
-    if (err != CUDA_SUCCESS)
-        return AVERROR_UNKNOWN;
+    ret = CHECK_CU(decoder->cudl->cuCtxPushCurrent(decoder->cuda_ctx));
+    if (ret < 0)
+        return ret;
 
-    err = decoder->cvdl->cuvidDecodePicture(decoder->decoder, &ctx->pic_params);
-    if (err != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Error decoding a picture with NVDEC: %d\n",
-               err);
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(decoder->cvdl->cuvidDecodePicture(decoder->decoder, &ctx->pic_params));
+    if (ret < 0)
         goto finish;
-    }
 
 finish:
-    decoder->cudl->cuCtxPopCurrent(&dummy);
+    CHECK_CU(decoder->cudl->cuCtxPopCurrent(&dummy));
 
     return ret;
 }

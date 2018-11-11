@@ -21,6 +21,7 @@
 #include <cuda.h>
 #include "libavutil/avassert.h"
 #include "libavutil/hwcontext_cuda.h"
+#include "libavutil/cuda_check.h"
 #include "internal.h"
 #include "yadif.h"
 
@@ -48,28 +49,7 @@ typedef struct DeintCUDAContext {
 #define BLOCKX 32
 #define BLOCKY 16
 
-static int check_cu(AVFilterContext *avctx, CUresult err, const char *func)
-{
-    const char *err_name;
-    const char *err_string;
-
-    av_log(avctx, AV_LOG_TRACE, "Calling %s\n", func);
-
-    if (err == CUDA_SUCCESS)
-        return 0;
-
-    cuGetErrorName(err, &err_name);
-    cuGetErrorString(err, &err_string);
-
-    av_log(avctx, AV_LOG_ERROR, "%s failed", func);
-    if (err_name && err_string)
-        av_log(avctx, AV_LOG_ERROR, " -> %s: %s", err_name, err_string);
-    av_log(avctx, AV_LOG_ERROR, "\n");
-
-    return AVERROR_EXTERNAL;
-}
-
-#define CHECK_CU(x) check_cu(ctx, (x), #x)
+#define CHECK_CU(x) FF_CUDA_CHECK(ctx, x)
 
 static CUresult call_kernel(AVFilterContext *ctx, CUfunction func,
                             CUdeviceptr prev, CUdeviceptr cur, CUdeviceptr next,
@@ -85,7 +65,7 @@ static CUresult call_kernel(AVFilterContext *ctx, CUfunction func,
 {
     DeintCUDAContext *s = ctx->priv;
     CUtexObject tex_prev = 0, tex_cur = 0, tex_next = 0;
-    CUresult err;
+    int ret;
     int skip_spatial_check = s->yadif.mode&2;
 
     void *args[] = { &dst, &tex_prev, &tex_cur, &tex_next,
@@ -108,24 +88,21 @@ static CUresult call_kernel(AVFilterContext *ctx, CUfunction func,
     };
 
     res_desc.res.pitch2D.devPtr = (CUdeviceptr)prev;
-    err = CHECK_CU(cuTexObjectCreate(&tex_prev, &res_desc, &tex_desc, NULL));
-    if (err != CUDA_SUCCESS) {
+    ret = CHECK_CU(cuTexObjectCreate(&tex_prev, &res_desc, &tex_desc, NULL));
+    if (ret < 0)
         goto exit;
-    }
 
     res_desc.res.pitch2D.devPtr = (CUdeviceptr)cur;
-    err = CHECK_CU(cuTexObjectCreate(&tex_cur, &res_desc, &tex_desc, NULL));
-    if (err != CUDA_SUCCESS) {
+    ret = CHECK_CU(cuTexObjectCreate(&tex_cur, &res_desc, &tex_desc, NULL));
+    if (ret < 0)
         goto exit;
-    }
 
     res_desc.res.pitch2D.devPtr = (CUdeviceptr)next;
-    err = CHECK_CU(cuTexObjectCreate(&tex_next, &res_desc, &tex_desc, NULL));
-    if (err != CUDA_SUCCESS) {
+    ret = CHECK_CU(cuTexObjectCreate(&tex_next, &res_desc, &tex_desc, NULL));
+    if (ret < 0)
         goto exit;
-    }
 
-    err = CHECK_CU(cuLaunchKernel(func,
+    ret = CHECK_CU(cuLaunchKernel(func,
                                   DIV_UP(dst_width, BLOCKX), DIV_UP(dst_height, BLOCKY), 1,
                                   BLOCKX, BLOCKY, 1,
                                   0, s->stream, args, NULL));
@@ -138,7 +115,7 @@ exit:
     if (tex_next)
         CHECK_CU(cuTexObjectDestroy(tex_next));
 
-    return err;
+    return ret;
 }
 
 static void filter(AVFilterContext *ctx, AVFrame *dst,
@@ -147,13 +124,11 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
     DeintCUDAContext *s = ctx->priv;
     YADIFContext *y = &s->yadif;
     CUcontext dummy;
-    CUresult err;
-    int i;
+    int i, ret;
 
-    err = CHECK_CU(cuCtxPushCurrent(s->cu_ctx));
-    if (err != CUDA_SUCCESS) {
-        goto exit;
-    }
+    ret = CHECK_CU(cuCtxPushCurrent(s->cu_ctx));
+    if (ret < 0)
+        return;
 
     for (i = 0; i < y->csp->nb_components; i++) {
         CUfunction func;
@@ -204,10 +179,7 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
                     parity, tff);
     }
 
-    err = CHECK_CU(cuStreamSynchronize(s->stream));
-    if (err != CUDA_SUCCESS) {
-        goto exit;
-    }
+    CHECK_CU(cuStreamSynchronize(s->stream));
 
 exit:
     CHECK_CU(cuCtxPopCurrent(&dummy));
@@ -283,7 +255,6 @@ static int config_output(AVFilterLink *link)
     YADIFContext *y = &s->yadif;
     int ret = 0;
     CUcontext dummy;
-    CUresult err;
 
     av_assert0(s->input_frames);
     s->device_ref = av_buffer_ref(s->input_frames->device_ref);
@@ -342,41 +313,29 @@ static int config_output(AVFilterLink *link)
     y->csp = av_pix_fmt_desc_get(output_frames->sw_format);
     y->filter = filter;
 
-    err = CHECK_CU(cuCtxPushCurrent(s->cu_ctx));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_EXTERNAL;
+    ret = CHECK_CU(cuCtxPushCurrent(s->cu_ctx));
+    if (ret < 0)
         goto exit;
-    }
 
-    err = CHECK_CU(cuModuleLoadData(&s->cu_module, vf_yadif_cuda_ptx));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_INVALIDDATA;
+    ret = CHECK_CU(cuModuleLoadData(&s->cu_module, vf_yadif_cuda_ptx));
+    if (ret < 0)
         goto exit;
-    }
 
-    err = CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "yadif_uchar"));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_INVALIDDATA;
+    ret = CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "yadif_uchar"));
+    if (ret < 0)
         goto exit;
-    }
 
-    err = CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "yadif_uchar2"));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_INVALIDDATA;
+    ret = CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "yadif_uchar2"));
+    if (ret < 0)
         goto exit;
-    }
 
-    err= CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "yadif_ushort"));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_INVALIDDATA;
+    ret = CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "yadif_ushort"));
+    if (ret < 0)
         goto exit;
-    }
 
-    err = CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "yadif_ushort2"));
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_INVALIDDATA;
+    ret = CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "yadif_ushort2"));
+    if (ret < 0)
         goto exit;
-    }
 
 exit:
     CHECK_CU(cuCtxPopCurrent(&dummy));

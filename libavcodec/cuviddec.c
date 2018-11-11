@@ -25,6 +25,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -95,29 +96,7 @@ typedef struct CuvidParsedFrame
     int is_deinterlacing;
 } CuvidParsedFrame;
 
-static int check_cu(AVCodecContext *avctx, CUresult err, const char *func)
-{
-    CuvidContext *ctx = avctx->priv_data;
-    const char *err_name;
-    const char *err_string;
-
-    av_log(avctx, AV_LOG_TRACE, "Calling %s\n", func);
-
-    if (err == CUDA_SUCCESS)
-        return 0;
-
-    ctx->cudl->cuGetErrorName(err, &err_name);
-    ctx->cudl->cuGetErrorString(err, &err_string);
-
-    av_log(avctx, AV_LOG_ERROR, "%s failed", func);
-    if (err_name && err_string)
-        av_log(avctx, AV_LOG_ERROR, " -> %s: %s", err_name, err_string);
-    av_log(avctx, AV_LOG_ERROR, "\n");
-
-    return AVERROR_EXTERNAL;
-}
-
-#define CHECK_CU(x) check_cu(avctx, (x), #x)
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(avctx, ctx->cudl, x)
 
 static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* format)
 {

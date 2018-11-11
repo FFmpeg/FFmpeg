@@ -28,6 +28,7 @@
 #include "libavutil/common.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -51,6 +52,8 @@ static const enum AVPixelFormat supported_formats[] = {
 #define NUM_BUFFERS 2
 #define BLOCKX 32
 #define BLOCKY 16
+
+#define CHECK_CU(x) FF_CUDA_CHECK(ctx, x)
 
 typedef struct CUDAScaleContext {
     const AVClass *class;
@@ -255,55 +258,48 @@ static av_cold int cudascale_config_props(AVFilterLink *outlink)
     AVHWFramesContext     *frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
-    CUresult err;
     int w, h;
     int ret;
 
     extern char vf_scale_cuda_ptx[];
 
-    err = cuCtxPushCurrent(cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error pushing cuda context\n");
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    if (ret < 0)
         goto fail;
-    }
 
-    err = cuModuleLoadData(&s->cu_module, vf_scale_cuda_ptx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error loading module data\n");
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(cuModuleLoadData(&s->cu_module, vf_scale_cuda_ptx));
+    if (ret < 0)
         goto fail;
-    }
 
-    cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Subsample_Bilinear_uchar");
-    cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Subsample_Bilinear_uchar2");
-    cuModuleGetFunction(&s->cu_func_uchar4, s->cu_module, "Subsample_Bilinear_uchar4");
-    cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Subsample_Bilinear_ushort");
-    cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Subsample_Bilinear_ushort2");
-    cuModuleGetFunction(&s->cu_func_ushort4, s->cu_module, "Subsample_Bilinear_ushort4");
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Subsample_Bilinear_uchar"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Subsample_Bilinear_uchar2"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar4, s->cu_module, "Subsample_Bilinear_uchar4"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Subsample_Bilinear_ushort"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Subsample_Bilinear_ushort2"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort4, s->cu_module, "Subsample_Bilinear_ushort4"));
 
-    cuModuleGetTexRef(&s->cu_tex_uchar, s->cu_module, "uchar_tex");
-    cuModuleGetTexRef(&s->cu_tex_uchar2, s->cu_module, "uchar2_tex");
-    cuModuleGetTexRef(&s->cu_tex_uchar4, s->cu_module, "uchar4_tex");
-    cuModuleGetTexRef(&s->cu_tex_ushort, s->cu_module, "ushort_tex");
-    cuModuleGetTexRef(&s->cu_tex_ushort2, s->cu_module, "ushort2_tex");
-    cuModuleGetTexRef(&s->cu_tex_ushort4, s->cu_module, "ushort4_tex");
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar, s->cu_module, "uchar_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar2, s->cu_module, "uchar2_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar4, s->cu_module, "uchar4_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort, s->cu_module, "ushort_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort2, s->cu_module, "ushort2_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort4, s->cu_module, "ushort4_tex"));
 
-    cuTexRefSetFlags(s->cu_tex_uchar, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_uchar2, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_uchar4, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_ushort, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_ushort2, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_ushort4, CU_TRSF_READ_AS_INTEGER);
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar2, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar4, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort2, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort4, CU_TRSF_READ_AS_INTEGER));
 
-    cuTexRefSetFilterMode(s->cu_tex_uchar, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_uchar2, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_uchar4, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_ushort, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_ushort2, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_ushort4, CU_TR_FILTER_MODE_LINEAR);
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar2, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar4, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort2, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort4, CU_TR_FILTER_MODE_LINEAR));
 
-    cuCtxPopCurrent(&dummy);
+    CHECK_CU(cuCtxPopCurrent(&dummy));
 
     if ((ret = ff_scale_eval_dimensions(s,
                                         s->w_expr, s->h_expr,
@@ -339,7 +335,7 @@ fail:
     return ret;
 }
 
-static int call_resize_kernel(CUDAScaleContext *s, CUfunction func, CUtexref tex, int channels,
+static int call_resize_kernel(CUDAScaleContext *ctx, CUfunction func, CUtexref tex, int channels,
                               uint8_t *src_dptr, int src_width, int src_height, int src_pitch,
                               uint8_t *dst_dptr, int dst_width, int dst_height, int dst_pitch,
                               int pixel_size)
@@ -358,8 +354,9 @@ static int call_resize_kernel(CUDAScaleContext *s, CUfunction func, CUtexref tex
         desc.Format = CU_AD_FORMAT_UNSIGNED_INT16;
     }
 
-    cuTexRefSetAddress2D_v3(tex, &desc, src_devptr, src_pitch * pixel_size);
-    cuLaunchKernel(func, DIV_UP(dst_width, BLOCKX), DIV_UP(dst_height, BLOCKY), 1, BLOCKX, BLOCKY, 1, 0, 0, args_uchar, NULL);
+    CHECK_CU(cuTexRefSetAddress2D_v3(tex, &desc, src_devptr, src_pitch * pixel_size));
+    CHECK_CU(cuLaunchKernel(func, DIV_UP(dst_width, BLOCKX), DIV_UP(dst_height, BLOCKY), 1,
+                            BLOCKX, BLOCKY, 1, 0, 0, args_uchar, NULL));
 
     return 0;
 }
@@ -470,7 +467,6 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
     AVCUDADeviceContext *device_hwctx = frames_ctx->device_ctx->hwctx;
 
     AVFrame *out = NULL;
-    CUresult err;
     CUcontext dummy;
     int ret = 0;
 
@@ -480,15 +476,13 @@ static int cudascale_filter_frame(AVFilterLink *link, AVFrame *in)
         goto fail;
     }
 
-    err = cuCtxPushCurrent(device_hwctx->cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        ret = AVERROR_UNKNOWN;
+    ret = CHECK_CU(cuCtxPushCurrent(device_hwctx->cuda_ctx));
+    if (ret < 0)
         goto fail;
-    }
 
     ret = cudascale_scale(ctx, out, in);
 
-    cuCtxPopCurrent(&dummy);
+    CHECK_CU(cuCtxPopCurrent(&dummy));
     if (ret < 0)
         goto fail;
 

@@ -157,7 +157,7 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
        tea.o                                                            \
 
-OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
+OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o cuda_check.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
@@ -175,7 +175,8 @@ OBJS += $(COMPAT_OBJS:%=../compat/%)
 SLIBOBJS-$(HAVE_GNU_WINDRES)            += avutilres.o
 
 SKIPHEADERS-$(HAVE_CUDA_H)             += hwcontext_cuda.h
-SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h
+SKIPHEADERS-$(CONFIG_CUDA)             += hwcontext_cuda_internal.h     \
+                                          cuda_check.h
 SKIPHEADERS-$(CONFIG_D3D11VA)          += hwcontext_d3d11va.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += hwcontext_dxva2.h
 SKIPHEADERS-$(CONFIG_QSV)              += hwcontext_qsv.h

@@ -24,11 +24,14 @@
 
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "internal.h"
+
+#define CHECK_CU(x) FF_CUDA_CHECK(ctx, x)
 
 #define HIST_SIZE (3*256)
 #define DIV_UP(a, b) ( ((a) + (b) - 1) / (b) )
@@ -154,7 +157,7 @@ static AVFrame *get_best_frame(AVFilterContext *ctx)
     return picref;
 }
 
-static int thumbnail_kernel(ThumbnailCudaContext *s, CUfunction func, CUtexref tex, int channels,
+static int thumbnail_kernel(ThumbnailCudaContext *ctx, CUfunction func, CUtexref tex, int channels,
     int *histogram, uint8_t *src_dptr, int src_width, int src_height, int src_pitch, int pixel_size)
 {
     CUdeviceptr src_devptr = (CUdeviceptr)src_dptr;
@@ -171,8 +174,10 @@ static int thumbnail_kernel(ThumbnailCudaContext *s, CUfunction func, CUtexref t
         desc.Format = CU_AD_FORMAT_UNSIGNED_INT16;
     }
 
-    cuTexRefSetAddress2D_v3(tex, &desc, src_devptr, src_pitch);
-    cuLaunchKernel(func, DIV_UP(src_width, BLOCKX), DIV_UP(src_height, BLOCKY), 1, BLOCKX, BLOCKY, 1, 0, 0, args, NULL);
+    CHECK_CU(cuTexRefSetAddress2D_v3(tex, &desc, src_devptr, src_pitch));
+    CHECK_CU(cuLaunchKernel(func,
+                            DIV_UP(src_width, BLOCKX), DIV_UP(src_height, BLOCKY), 1,
+                            BLOCKX, BLOCKY, 1, 0, 0, args, NULL));
 
     return 0;
 }
@@ -235,7 +240,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     int *hist = s->frames[s->n].histogram;
     AVHWFramesContext *hw_frames_ctx = (AVHWFramesContext*)s->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = hw_frames_ctx->device_ctx->hwctx;
-    CUresult err;
     CUcontext dummy;
     CUDA_MEMCPY2D cpy = { 0 };
     int ret = 0;
@@ -243,11 +247,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     // keep a reference of each frame
     s->frames[s->n].buf = frame;
 
-    err = cuCtxPushCurrent(device_hwctx->cuda_ctx);
-    if (err != CUDA_SUCCESS)
-        return AVERROR_UNKNOWN;
+    ret = CHECK_CU(cuCtxPushCurrent(device_hwctx->cuda_ctx));
+    if (ret < 0)
+        return ret;
 
-    cuMemsetD8(s->data, 0, HIST_SIZE * sizeof(int));
+    CHECK_CU(cuMemsetD8(s->data, 0, HIST_SIZE * sizeof(int)));
 
     thumbnail(ctx, (int*)s->data, frame);
 
@@ -260,11 +264,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     cpy.WidthInBytes = HIST_SIZE * sizeof(int);
     cpy.Height = 1;
 
-    err = cuMemcpy2D(&cpy);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error transferring the data from the CUDA frame\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cuMemcpy2D(&cpy));
+    if (ret < 0)
+        return ret;
 
     if (hw_frames_ctx->sw_format == AV_PIX_FMT_NV12 || hw_frames_ctx->sw_format == AV_PIX_FMT_YUV420P ||
         hw_frames_ctx->sw_format == AV_PIX_FMT_P010LE || hw_frames_ctx->sw_format == AV_PIX_FMT_P016LE)
@@ -274,7 +276,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             hist[i] = 4 * hist[i];
     }
 
-    cuCtxPopCurrent(&dummy);
+    CHECK_CU(cuCtxPopCurrent(&dummy));
     if (ret < 0)
         return ret;
 
@@ -292,12 +294,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     ThumbnailCudaContext *s = ctx->priv;
 
     if (s->data) {
-        cuMemFree(s->data);
+        CHECK_CU(cuMemFree(s->data));
         s->data = 0;
     }
 
     if (s->cu_module) {
-        cuModuleUnload(s->cu_module);
+        CHECK_CU(cuModuleUnload(s->cu_module));
         s->cu_module = NULL;
     }
 
@@ -340,49 +342,43 @@ static int config_props(AVFilterLink *inlink)
     AVHWFramesContext     *hw_frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = hw_frames_ctx->device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
-    CUresult err;
+    int ret;
 
     extern char vf_thumbnail_cuda_ptx[];
 
-    err = cuCtxPushCurrent(cuda_ctx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error pushing cuda context\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    if (ret < 0)
+        return ret;
 
-    err = cuModuleLoadData(&s->cu_module, vf_thumbnail_cuda_ptx);
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error loading module data\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cuModuleLoadData(&s->cu_module, vf_thumbnail_cuda_ptx));
+    if (ret < 0)
+        return ret;
 
-    cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Thumbnail_uchar");
-    cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Thumbnail_uchar2");
-    cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Thumbnail_ushort");
-    cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Thumbnail_ushort2");
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Thumbnail_uchar"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Thumbnail_uchar2"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Thumbnail_ushort"));
+    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Thumbnail_ushort2"));
 
-    cuModuleGetTexRef(&s->cu_tex_uchar, s->cu_module, "uchar_tex");
-    cuModuleGetTexRef(&s->cu_tex_uchar2, s->cu_module, "uchar2_tex");
-    cuModuleGetTexRef(&s->cu_tex_ushort, s->cu_module, "ushort_tex");
-    cuModuleGetTexRef(&s->cu_tex_ushort2, s->cu_module, "ushort2_tex");
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar, s->cu_module, "uchar_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar2, s->cu_module, "uchar2_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort, s->cu_module, "ushort_tex"));
+    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort2, s->cu_module, "ushort2_tex"));
 
-    cuTexRefSetFlags(s->cu_tex_uchar, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_uchar2, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_ushort, CU_TRSF_READ_AS_INTEGER);
-    cuTexRefSetFlags(s->cu_tex_ushort2, CU_TRSF_READ_AS_INTEGER);
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar2, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort, CU_TRSF_READ_AS_INTEGER));
+    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort2, CU_TRSF_READ_AS_INTEGER));
 
-    cuTexRefSetFilterMode(s->cu_tex_uchar, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_uchar2, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_ushort, CU_TR_FILTER_MODE_LINEAR);
-    cuTexRefSetFilterMode(s->cu_tex_ushort2, CU_TR_FILTER_MODE_LINEAR);
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar2, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort, CU_TR_FILTER_MODE_LINEAR));
+    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort2, CU_TR_FILTER_MODE_LINEAR));
 
-    err = cuMemAlloc(&s->data, HIST_SIZE * sizeof(int));
-    if (err != CUDA_SUCCESS) {
-        av_log(ctx, AV_LOG_ERROR, "Error allocating cuda memory\n");
-        return AVERROR_UNKNOWN;
-    }
+    ret = CHECK_CU(cuMemAlloc(&s->data, HIST_SIZE * sizeof(int)));
+    if (ret < 0)
+        return ret;
 
-    cuCtxPopCurrent(&dummy);
+    CHECK_CU(cuCtxPopCurrent(&dummy));
 
     s->hw_frames_ctx = ctx->inputs[0]->hw_frames_ctx;
 
