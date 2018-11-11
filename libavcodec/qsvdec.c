@@ -501,6 +501,8 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         if (!q->avctx_internal)
             return AVERROR(ENOMEM);
 
+        q->avctx_internal->codec_id = avctx->codec_id;
+
         q->parser = av_parser_init(avctx->codec_id);
         if (!q->parser)
             return AVERROR(ENOMEM);
