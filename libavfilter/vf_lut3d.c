@@ -367,7 +367,7 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
                 struct rgbvec *vec = &lut3d->lut[k][j][i];
                 if (k != 0 || j != 0 || i != 0)
                     NEXT_LINE(skip_line(line));
-                if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
+                if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                     return AVERROR_INVALIDDATA;
             }
         }
@@ -407,7 +407,7 @@ try_again:
                                 else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
                                 if (!vals)
                                     return AVERROR_INVALIDDATA;
-                                sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                                av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
                                 av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
                                 goto try_again;
@@ -415,7 +415,7 @@ try_again:
                                 goto try_again;
                             }
                         } while (skip_line(line));
-                        if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
+                        if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                             return AVERROR_INVALIDDATA;
                         vec->r *= max[0] - min[0];
                         vec->g *= max[1] - min[1];
@@ -448,7 +448,7 @@ static int parse_3dl(AVFilterContext *ctx, FILE *f)
                 struct rgbvec *vec = &lut3d->lut[k][j][i];
 
                 NEXT_LINE(skip_line(line));
-                if (sscanf(line, "%d %d %d", &r, &g, &b) != 3)
+                if (av_sscanf(line, "%d %d %d", &r, &g, &b) != 3)
                     return AVERROR_INVALIDDATA;
                 vec->r = r / scale;
                 vec->g = g / scale;
@@ -512,7 +512,7 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
                 float val[3];
 
                 NEXT_LINE(0);
-                if (sscanf(line, "%f %f %f", val, val + 1, val + 2) != 3)
+                if (av_sscanf(line, "%f %f %f", val, val + 1, val + 2) != 3)
                     return AVERROR_INVALIDDATA;
                 vec->r = val[rgb_map[0]] * scale;
                 vec->g = val[rgb_map[1]] * scale;
@@ -1046,12 +1046,12 @@ try_again:
                         else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
                         if (!vals)
                             return AVERROR_INVALIDDATA;
-                        sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                        av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
                         av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                min[0], min[1], min[2], max[0], max[1], max[2]);
                         goto try_again;
                     } else if (!strncmp(line, "LUT_1D_INPUT_RANGE ", 19)) {
-                        sscanf(line + 19, "%f %f", min, max);
+                        av_sscanf(line + 19, "%f %f", min, max);
                         min[1] = min[2] = min[0];
                         max[1] = max[2] = max[0];
                         goto try_again;
@@ -1059,7 +1059,7 @@ try_again:
                         goto try_again;
                     }
                 } while (skip_line(line));
-                if (sscanf(line, "%f %f %f", &lut1d->lut[0][i], &lut1d->lut[1][i], &lut1d->lut[2][i]) != 3)
+                if (av_sscanf(line, "%f %f %f", &lut1d->lut[0][i], &lut1d->lut[1][i], &lut1d->lut[2][i]) != 3)
                     return AVERROR_INVALIDDATA;
                 lut1d->lut[0][i] *= max[0] - min[0];
                 lut1d->lut[1][i] *= max[1] - min[1];
