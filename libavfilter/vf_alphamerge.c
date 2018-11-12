@@ -154,13 +154,11 @@ static int activate(AVFilterContext *ctx)
     }
 
     if (s->main_frame && s->alpha_frame) {
-        if (ret > 0) {
-            draw_frame(ctx, s->main_frame, s->alpha_frame);
-            ret = ff_filter_frame(outlink, s->main_frame);
-            av_frame_free(&s->alpha_frame);
-            s->main_frame = NULL;
-            return ret;
-        }
+        draw_frame(ctx, s->main_frame, s->alpha_frame);
+        ret = ff_filter_frame(outlink, s->main_frame);
+        av_frame_free(&s->alpha_frame);
+        s->main_frame = NULL;
+        return ret;
     }
 
     FF_FILTER_FORWARD_STATUS(ctx->inputs[0], outlink);
