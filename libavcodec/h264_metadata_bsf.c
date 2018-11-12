@@ -222,7 +222,7 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
         if (ctx->level == LEVEL_AUTO) {
             const H264LevelDescriptor *desc;
             int64_t bit_rate;
-            int width, height;
+            int width, height, dpb_frames;
 
             if (sps->vui.nal_hrd_parameters_present_flag) {
                 bit_rate = (sps->vui.nal_hrd_parameters.bit_rate_value_minus1[0] + 1) *
@@ -236,13 +236,16 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
                 bit_rate = 0;
             }
 
+            // Don't use max_dec_frame_buffering if it is only inferred.
+            dpb_frames = sps->vui.bitstream_restriction_flag ?
+                sps->vui.max_dec_frame_buffering : H264_MAX_DPB_FRAMES;
+
             width  = 16 * (sps->pic_width_in_mbs_minus1 + 1);
             height = 16 * (sps->pic_height_in_map_units_minus1 + 1) *
                 (2 - sps->frame_mbs_only_flag);
 
             desc = ff_h264_guess_level(sps->profile_idc, bit_rate,
-                                       width, height,
-                                       sps->vui.max_dec_frame_buffering);
+                                       width, height, dpb_frames);
             if (desc) {
                 level_idc = desc->level_idc;
             } else {
