@@ -258,7 +258,7 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
             if (sps->profile_idc == 66 ||
                 sps->profile_idc == 77 ||
                 sps->profile_idc == 88) {
-                sps->level_idc = 10;
+                sps->level_idc = 11;
                 sps->constraint_set3_flag = 1;
             } else {
                 sps->level_idc = 9;
