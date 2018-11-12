@@ -289,14 +289,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
         for (ch = 0; ch < inlink->channels; ch++) {
             FFTComplex *fft_data = s->fft_data[ch];
-            FFTComplex *fft_temp = s->fft_temp[ch];
-            float *buf = (float *)s->buffer->extended_data[ch];
-            int x;
-
-            values[VAR_CHANNEL] = ch;
 
             av_fft_permute(s->fft, fft_data);
             av_fft_calc(s->fft, fft_data);
+        }
+
+        for (ch = 0; ch < inlink->channels; ch++) {
+            FFTComplex *fft_data = s->fft_data[ch];
+            FFTComplex *fft_temp = s->fft_temp[ch];
+            float *buf = (float *)s->buffer->extended_data[ch];
+            int x;
+            values[VAR_CHANNEL] = ch;
 
             for (n = 0; n <= window_size / 2; n++) {
                 float fr, fi;
