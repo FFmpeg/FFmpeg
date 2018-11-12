@@ -142,6 +142,7 @@ static int config_input(AVFilterLink *inlink)
     char *args;
     const char *last_expr = "1";
 
+    s->pts  = AV_NOPTS_VALUE;
     s->fft  = av_fft_init(s->fft_bits, 0);
     s->ifft = av_fft_init(s->fft_bits, 1);
     if (!s->fft || !s->ifft)
@@ -250,6 +251,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     AVFrame *out, *in = NULL;
     int ch, n, ret, i, j, k;
     int start = s->start, end = s->end;
+
+    if (s->pts == AV_NOPTS_VALUE)
+        s->pts = frame->pts;
 
     ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
     av_frame_free(&frame);
