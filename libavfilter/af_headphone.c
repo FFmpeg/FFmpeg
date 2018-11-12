@@ -587,6 +587,9 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
 fail:
 
+    for (i = 0; i < s->nb_inputs - 1; i++)
+        av_frame_free(&s->in[i + 1].frame);
+
     av_freep(&data_ir_l);
     av_freep(&data_ir_r);
 
