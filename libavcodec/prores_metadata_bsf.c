@@ -115,7 +115,7 @@ static int prores_metadata_init(AVBSFContext *bsf)
     switch (ctx->matrix_coefficients) {
     case -1:
     case 0:
-    case AVCOL_PRI_BT709:
+    case AVCOL_SPC_BT709:
     case AVCOL_SPC_SMPTE170M:
     case AVCOL_SPC_BT2020_NCL:
         break;
