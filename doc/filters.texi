@@ -7761,6 +7761,30 @@ had noise.
 
 The @code{deconvolve} filter also supports the @ref{framesync} options.
 
+@section dedot
+
+Reduce cross-luminance (dot-crawl) and cross-color (rainbows) from video.
+
+It accepts the following options:
+
+@table @option
+@item m
+Set mode of operation. Can be combination of @var{dotcrawl} for cross-luminance reduction and/or
+@var{rainbows} for cross-color reduction.
+
+@item lt
+Set spatial luma threshold. Lower values increases reduction of cross-luminance.
+
+@item tl
+Set tolerance for temporal luma. Higher values increases reduction of cross-luminance.
+
+@item tc
+Set tolerance for chroma temporal variation. Higher values increases reduction of cross-color.
+
+@item ct
+Set temporal chroma threshold. Lower values increases reduction of cross-color.
+@end table
+
 @section deflate
 
 Apply deflate effect to the video.

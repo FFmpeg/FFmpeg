@@ -182,6 +182,7 @@ extern AVFilter ff_vf_deband;
 extern AVFilter ff_vf_deblock;
 extern AVFilter ff_vf_decimate;
 extern AVFilter ff_vf_deconvolve;
+extern AVFilter ff_vf_dedot;
 extern AVFilter ff_vf_deflate;
 extern AVFilter ff_vf_deflicker;
 extern AVFilter ff_vf_deinterlace_qsv;

@@ -194,6 +194,7 @@ OBJS-$(CONFIG_DEBAND_FILTER)                 += vf_deband.o
 OBJS-$(CONFIG_DEBLOCK_FILTER)                += vf_deblock.o
 OBJS-$(CONFIG_DECIMATE_FILTER)               += vf_decimate.o
 OBJS-$(CONFIG_DECONVOLVE_FILTER)             += vf_convolve.o framesync.o
+OBJS-$(CONFIG_DEDOT_FILTER)                  += vf_dedot.o
 OBJS-$(CONFIG_DEFLATE_FILTER)                += vf_neighbor.o
 OBJS-$(CONFIG_DEFLICKER_FILTER)              += vf_deflicker.o
 OBJS-$(CONFIG_DEINTERLACE_QSV_FILTER)        += vf_deinterlace_qsv.o
