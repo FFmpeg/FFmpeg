@@ -11688,6 +11688,10 @@ set second pixel component expression
 set third pixel component expression
 @item c3
 set fourth pixel component expression, corresponds to the alpha component
+
+@item d
+set output bit depth, only available for @code{lut2} filter. By default is 0,
+which means bit depth is automatically picked from first input format.
 @end table
 
 Each of them specifies the expression to use for computing the lookup table for
