@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libvpx.h"
 #include "profiles.h"
+#include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
@@ -97,6 +98,8 @@ typedef struct VPxEncoderContext {
     int max_intra_rate;
     int rc_undershoot_pct;
     int rc_overshoot_pct;
+
+    char *vp8_ts_parameters;
 
     // VP9-only
     int lossless;
@@ -169,6 +172,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
 {
     int width = -30;
     int level = AV_LOG_DEBUG;
+    int i;
 
     av_log(avctx, level, "vpx_codec_enc_cfg\n");
     av_log(avctx, level, "generic settings\n"
@@ -208,6 +212,25 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            "  %*s%u\n  %*s%u\n",
            width, "rc_undershoot_pct:", cfg->rc_undershoot_pct,
            width, "rc_overshoot_pct:",  cfg->rc_overshoot_pct);
+    av_log(avctx, level, "temporal layering settings\n"
+           "  %*s%u\n", width, "ts_number_layers:", cfg->ts_number_layers);
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_target_bitrate:");
+    for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+        av_log(avctx, level, "%u ", cfg->ts_target_bitrate[i]);
+    av_log(avctx, level, "\n");
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_rate_decimator:");
+    for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+        av_log(avctx, level, "%u ", cfg->ts_rate_decimator[i]);
+    av_log(avctx, level, "\n");
+    av_log(avctx, level,
+           "\n  %*s%u\n", width, "ts_periodicity:", cfg->ts_periodicity);
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_layer_id:");
+    for (i = 0; i < VPX_TS_MAX_PERIODICITY; i++)
+        av_log(avctx, level, "%u ", cfg->ts_layer_id[i]);
+    av_log(avctx, level, "\n");
     av_log(avctx, level, "decoder buffer model\n"
             "  %*s%u\n  %*s%u\n  %*s%u\n",
             width, "rc_buf_sz:",         cfg->rc_buf_sz,
@@ -322,6 +345,40 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
+    return 0;
+}
+
+static void vp8_ts_parse_int_array(int *dest, char *value, size_t value_len, int max_entries)
+{
+    int dest_idx = 0;
+    char *saveptr = NULL;
+    char *token = av_strtok(value, ",", &saveptr);
+
+    while (token && dest_idx < max_entries)
+    {
+        dest[dest_idx++] = strtoul(token, NULL, 10);
+        token = av_strtok(NULL, ",", &saveptr);
+    }
+}
+
+static int vp8_ts_param_parse(struct vpx_codec_enc_cfg *enccfg, char *key, char *value)
+{
+    size_t value_len = strlen(value);
+
+    if (!value_len)
+        return -1;
+
+    if (!strcmp(key, "ts_number_layers"))
+        enccfg->ts_number_layers = strtoul(value, &value, 10);
+    else if (!strcmp(key, "ts_target_bitrate"))
+        vp8_ts_parse_int_array(enccfg->ts_target_bitrate, value, value_len, VPX_TS_MAX_LAYERS);
+    else if (!strcmp(key, "ts_rate_decimator"))
+      vp8_ts_parse_int_array(enccfg->ts_rate_decimator, value, value_len, VPX_TS_MAX_LAYERS);
+    else if (!strcmp(key, "ts_periodicity"))
+        enccfg->ts_periodicity = strtoul(value, &value, 10);
+    else if (!strcmp(key, "ts_layer_id"))
+        vp8_ts_parse_int_array(enccfg->ts_layer_id, value, value_len, VPX_TS_MAX_PERIODICITY);
+
     return 0;
 }
 
@@ -639,6 +696,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
         enccfg.g_profile = avctx->profile;
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;
+
+    if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && ctx->vp8_ts_parameters) {
+        AVDictionary *dict    = NULL;
+        AVDictionaryEntry* en = NULL;
+
+        if (!av_dict_parse_string(&dict, ctx->vp8_ts_parameters, "=", ":", 0)) {
+            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
+                if (vp8_ts_param_parse(&enccfg, en->key, en->value) < 0)
+                    av_log(avctx, AV_LOG_WARNING,
+                           "Error parsing option '%s = %s'.\n",
+                           en->key, en->value);
+            }
+
+            av_dict_free(&dict);
+        }
+    }
 
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
@@ -1030,6 +1103,12 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
+        if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && frame->metadata) {
+            AVDictionaryEntry* en = av_dict_get(frame->metadata, "vp8-flags", NULL, 0);
+            if (en) {
+                flags |= strtoul(en->value, NULL, 10);
+            }
+        }
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
@@ -1122,6 +1201,8 @@ static const AVOption vp8_options[] = {
     { "auto-alt-ref",    "Enable use of alternate reference "
                          "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
+    { "ts-parameters",   "Temporal scaling configuration using a "
+                         ":-separated list of key=value parameters",    OFFSET(vp8_ts_parameters), AV_OPT_TYPE_STRING, {.str=NULL},  0,  0, VE},
     LEGACY_OPTIONS
     { NULL }
 };

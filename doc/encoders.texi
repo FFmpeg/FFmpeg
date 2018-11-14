@@ -1764,6 +1764,34 @@ Set number of frames to look ahead for frametype and ratecontrol.
 @item error-resilient
 Enable error resiliency features.
 
+@item VP8-specific options
+@table @option
+@item ts-parameters
+Sets the temporal scalability configuration using a :-separated list of
+key=value pairs. For example, to specify temporal scalability parameters
+with @code{ffmpeg}:
+@example
+ffmpeg -i INPUT -c:v libvpx -ts-parameters ts_number_layers=3:\
+ts_target_bitrate=250000,500000,1000000:ts_rate_decimator=4,2,1:\
+ts_periodicity=4:ts_layer_id=0,2,1,2 OUTPUT
+@end example
+Below is a brief explanation of each of the parameters, please
+refer to @code{struct vpx_codec_enc_cfg} in @code{vpx/vpx_encoder.h} for more
+details.
+@table @option
+@item ts_number_layers
+Number of temporal coding layers.
+@item ts_target_bitrate
+Target bitrate for each temporal layer.
+@item ts_rate_decimator
+Frame rate decimation factor for each temporal layer.
+@item ts_periodicity
+Length of the sequence defining frame temporal layer membership.
+@item ts_layer_id
+Template defining the membership of frames to temporal layers.
+@end table
+@end table
+
 @item VP9-specific options
 @table @option
 @item lossless
