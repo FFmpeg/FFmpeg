@@ -140,12 +140,18 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             }
 
             av_fifo_generic_write(dav1d->cache, &pkt, sizeof(pkt), libdav1d_fifo_write);
-        } else {
-            data = NULL;
         }
     }
 
-    res = dav1d_decode(dav1d->c, data, &p);
+    res = dav1d_send_data(dav1d->c, data);
+    if (res < 0) {
+        if (res == -EINVAL)
+            res = AVERROR_INVALIDDATA;
+        if (res != -EAGAIN)
+            return res;
+    }
+
+    res = dav1d_get_picture(dav1d->c, &p);
     if (res < 0) {
         if (res == -EINVAL)
             res = AVERROR_INVALIDDATA;
