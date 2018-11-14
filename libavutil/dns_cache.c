@@ -21,10 +21,7 @@
 #include "libavutil/dns_cache.h"
 #include "libavutil/time.h"
 #include "libavformat/network.h"
-
-#if HAVE_PTHREADS
-#include <pthread.h>
-#endif
+#include "libavutil/thread.h"
 
 typedef struct DnsCacheContext DnsCacheContext;
 typedef struct DnsCacheContext {
@@ -123,12 +120,7 @@ DnsCacheEntry *get_dns_cache_reference(const char *uri) {
     if (cur_time < 0 || !uri || strlen(uri) == 0) {
         return NULL;
     }
-
-    if (!context || !context->initialized) {
-#if HAVE_PTHREADS
-        pthread_once(&key_once, inner_init);
-#endif
-    }
+    ff_thread_once(&key_once, inner_init);
 
     if (context && context->initialized) {
         pthread_mutex_lock(&context->dns_dictionary_mutex);
@@ -227,3 +219,25 @@ int add_dns_cache_entry(const char *uri, struct addrinfo *cur_ai, int64_t timeou
 fail:
     return -1;
 }
+
+int remove_all_dns_cache_entry() {
+    AVDictionaryEntry *t = NULL;
+    DnsCacheEntry *dns_cache_entry = NULL;
+
+    ff_thread_once(&key_once, inner_init);
+    if (context && context->initialized) {
+        pthread_mutex_lock(&context->dns_dictionary_mutex);
+        while((t = av_dict_get(context->dns_dictionary, "", t, AV_DICT_IGNORE_SUFFIX))){
+            dns_cache_entry = (DnsCacheEntry *) (intptr_t) strtoll(t->value, NULL, 10);
+            if (dns_cache_entry){
+                free_private_addrinfo(&dns_cache_entry->res);
+                av_freep(&dns_cache_entry);
+            }
+        }
+        if (context->dns_dictionary)
+          av_dict_free(&context->dns_dictionary);
+        pthread_mutex_unlock(&context->dns_dictionary_mutex);
+    }
+    return 0;
+}
+
