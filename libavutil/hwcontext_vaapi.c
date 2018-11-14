@@ -1598,6 +1598,23 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
         return AVERROR(EINVAL);
     }
 
+    ent = av_dict_get(opts, "driver", NULL, 0);
+    if (ent) {
+#if VA_CHECK_VERSION(0, 38, 0)
+        VAStatus vas;
+        vas = vaSetDriverName(display, ent->value);
+        if (vas != VA_STATUS_SUCCESS) {
+            av_log(ctx, AV_LOG_ERROR, "Failed to set driver name to "
+                   "%s: %d (%s).\n", ent->value, vas, vaErrorStr(vas));
+            vaTerminate(display);
+            return AVERROR_EXTERNAL;
+        }
+#else
+        av_log(ctx, AV_LOG_WARNING, "Driver name setting is not "
+               "supported with this VAAPI version.\n");
+#endif
+    }
+
     return vaapi_device_connect(ctx, display);
 }
 
