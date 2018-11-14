@@ -676,6 +676,11 @@ static int decode_component(DiracContext *s, int comp)
             b->length = get_interleaved_ue_golomb(&s->gb);
             if (b->length) {
                 b->quant = get_interleaved_ue_golomb(&s->gb);
+                if (b->quant > (DIRAC_MAX_QUANT_INDEX - 1)) {
+                    av_log(s->avctx, AV_LOG_ERROR, "Unsupported quant %d\n", b->quant);
+                    b->quant = 0;
+                    return AVERROR_INVALIDDATA;
+                }
                 align_get_bits(&s->gb);
                 b->coeff_data = s->gb.buffer + get_bits_count(&s->gb)/8;
                 b->length = FFMIN(b->length, FFMAX(get_bits_left(&s->gb)/8, 0));
