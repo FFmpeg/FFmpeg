@@ -155,6 +155,7 @@ typedef struct AVAppSwitchControl{
     int retry_counter;
 
     AVAppDashChange change_info;
+    int active_reconnect;
     int (*start_switch)(void *);
     void * opaque;
 } AVAppSwitchControl;
