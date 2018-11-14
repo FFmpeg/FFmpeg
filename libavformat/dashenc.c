@@ -143,6 +143,7 @@ static struct codec_string {
     { AV_CODEC_ID_VP9, "vp9" },
     { AV_CODEC_ID_VORBIS, "vorbis" },
     { AV_CODEC_ID_OPUS, "opus" },
+    { AV_CODEC_ID_FLAC, "flac" },
     { 0, NULL }
 };
 
