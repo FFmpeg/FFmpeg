@@ -23,6 +23,8 @@
  * multimedia converter based on the FFmpeg libraries
  */
 
+#define _GNU_SOURCE // needed for thread_setname_np
+
 #include "config.h"
 #include <ctype.h>
 #include <string.h>
@@ -4087,8 +4089,9 @@ static int init_input_thread(int i)
     int ret;
     InputFile *f = input_files[i];
 
-    if (nb_input_files == 1)
-        return 0;
+    /* we want to force a seperate input thread even with only one input */
+    //if (nb_input_files == 1)
+    //    return 0;
 
     if (f->ctx->pb ? !f->ctx->pb->seekable :
         strcmp(f->ctx->iformat->name, "lavfi"))
@@ -4103,6 +4106,7 @@ static int init_input_thread(int i)
         av_thread_message_queue_free(&f->in_thread_queue);
         return AVERROR(ret);
     }
+    pthread_setname_np(f->thread, "ffmpeg-input");
 
     return 0;
 }
@@ -4141,7 +4145,8 @@ static int get_input_packet(InputFile *f, AVPacket *pkt)
     }
 
 #if HAVE_THREADS
-    if (nb_input_files > 1)
+    /* we use a seperate input thread even with only one input */
+    // if (nb_input_files > 1)
         return get_input_packet_mt(f, pkt);
 #endif
     return av_read_frame(f->ctx, pkt);
