@@ -484,7 +484,7 @@ static inline void tm2_high_chroma(int *data, int stride, int *last, unsigned *C
     }
 }
 
-static inline void tm2_low_chroma(int *data, int stride, int *clast, int *CD, int *deltas, int bx)
+static inline void tm2_low_chroma(int *data, int stride, int *clast, unsigned *CD, int *deltas, int bx)
 {
     int t;
     int l;
@@ -494,8 +494,8 @@ static inline void tm2_low_chroma(int *data, int stride, int *clast, int *CD, in
         prev = clast[-3];
     else
         prev = 0;
-    t        = (CD[0] + CD[1]) >> 1;
-    l        = (prev - CD[0] - CD[1] + clast[1]) >> 1;
+    t        = (int)(CD[0] + CD[1]) >> 1;
+    l        = (int)(prev - CD[0] - CD[1] + clast[1]) >> 1;
     CD[1]    = CD[0] + CD[1] - t;
     CD[0]    = t;
     clast[0] = l;
