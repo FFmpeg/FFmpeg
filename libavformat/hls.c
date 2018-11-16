@@ -1229,9 +1229,9 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
         }
         ret = 0;
     } else if (seg->key_type == KEY_SAMPLE_AES) {
-        av_log(pls->parent, AV_LOG_ERROR,
-               "SAMPLE-AES encryption is not supported yet\n");
-        ret = AVERROR_PATCHWELCOME;
+		av_strlcpy(pls->key_url, seg->key, sizeof(pls->key_url));
+		av_dict_set(&opts, "pssh", pls->key_url, 0);
+		ret = open_url(pls->parent, in, seg->url, c->avio_opts, opts, &is_http);
     }
     else
       ret = AVERROR(ENOSYS);
@@ -1737,6 +1737,25 @@ static int update_streams_from_subdemuxer(AVFormatContext *s, struct playlist *p
         err = set_stream_info_from_input_stream(st, pls, ist);
         if (err < 0)
             return err;
+
+		/* Copy side data if present */
+		if (ist->nb_side_data) {
+			st->side_data = av_mallocz_array(ist->nb_side_data,
+											  sizeof(AVPacketSideData));
+			if (!st->side_data)
+				return AVERROR(ENOMEM);
+			st->nb_side_data = ist->nb_side_data;
+
+			for (int i = 0; i < ist->nb_side_data; i++) {
+				uint8_t *data = av_memdup(ist->side_data[i].data,
+										  ist->side_data[i].size);
+				if (!data)
+					return AVERROR(ENOMEM);
+				st->side_data[i].type = ist->side_data[i].type;
+				st->side_data[i].size = ist->side_data[i].size;
+				st->side_data[i].data = data;
+			}
+		}
     }
 
     return 0;

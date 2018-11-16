@@ -1906,6 +1906,25 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
         st->id = i;
         avcodec_parameters_copy(st->codecpar, pls->ctx->streams[i]->codecpar);
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
+
+		/* Copy side data if present */
+		if (ist->nb_side_data) {
+			st->side_data = av_mallocz_array(ist->nb_side_data,
+											  sizeof(AVPacketSideData));
+			if (!st->side_data)
+				return AVERROR(ENOMEM);
+			st->nb_side_data = ist->nb_side_data;
+
+			for (int i = 0; i < ist->nb_side_data; i++) {
+				uint8_t *data = av_memdup(ist->side_data[i].data,
+										  ist->side_data[i].size);
+				if (!data)
+					return AVERROR(ENOMEM);
+				st->side_data[i].type = ist->side_data[i].type;
+				st->side_data[i].size = ist->side_data[i].size;
+				st->side_data[i].data = data;
+			}
+		}
     }
 
     return 0;
