@@ -7183,6 +7183,42 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 @end example
 @end itemize
 
+@section chromanr
+Reduce chrominance noise.
+
+The filter accepts the following options:
+
+@table @option
+@item thres
+Set threshold for averaging chrominance values.
+Sum of absolute difference of U and V pixel components or current
+pixel and neighbour pixels lower than this threshold will be used in
+averaging. Luma component is left unchanged and is copied to output.
+Default value is 30. Allowed range is from 1 to 200.
+
+@item sizew
+Set horizontal radius of rectangle used for averaging.
+Allowed range is from 1 to 100. Default value is 5.
+
+@item sizeh
+Set vertical radius of rectangle used for averaging.
+Allowed range is from 1 to 100. Default value is 5.
+
+@item stepw
+Set horizontal step when averaging. Default value is 1.
+Allowed range is from 1 to 50.
+Mostly useful to speed-up filtering.
+
+@item steph
+Set vertical step when averaging. Default value is 1.
+Allowed range is from 1 to 50.
+Mostly useful to speed-up filtering.
+@end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
 @section chromashift
 Shift chroma pixels horizontally and/or vertically.
 
