@@ -2942,6 +2942,7 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
                     s->max_ra = INT_MIN;
             }
 
+            s->overlap ++;
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
@@ -3020,6 +3021,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
     s->ref = NULL;
     s->last_eos = s->eos;
     s->eos = 0;
+    s->overlap = 0;
 
     /* split the input packet into NAL units, so we know the upper bound on the
      * number of slices in the frame */
@@ -3054,6 +3056,8 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
             continue;
 
         ret = decode_nal_unit(s, nal);
+        if (ret >= 0 && s->overlap > 2)
+            ret = AVERROR_INVALIDDATA;
         if (ret < 0) {
             av_log(s->avctx, AV_LOG_WARNING,
                    "Error parsing NAL unit #%d.\n", i);
