@@ -134,6 +134,38 @@ static int audio_write_frame(AVFormatContext *s1, int stream_index,
     return audio_write_packet(s1, &pkt);
 }
 
+static int alsa_control_message(AVFormatContext *h, int type,
+								 void *data, size_t data_size)
+{
+	AlsaData *s = h->priv_data;
+	snd_pcm_t *handle = s->h;
+	int ret = -ENOSYS;
+
+	switch(type) {
+	case AV_APP_TO_DEV_PAUSE:
+		return snd_pcm_pause(handle, 1);
+	case AV_APP_TO_DEV_PLAY:
+		return snd_pcm_pause(handle, 0);
+	case AV_APP_TO_DEV_TOGGLE_PAUSE:
+		return ret;
+	case AV_APP_TO_DEV_MUTE:
+		return ret;
+	case AV_APP_TO_DEV_UNMUTE:
+		return ret;
+	case AV_APP_TO_DEV_TOGGLE_MUTE:
+		return ret;
+	case AV_APP_TO_DEV_SET_VOLUME:
+		return ret;
+	case AV_APP_TO_DEV_GET_VOLUME:
+		return ret;
+	case AV_APP_TO_DEV_GET_MUTE:
+		return ret;
+	default:
+		break;
+	}
+	return AVERROR(ENOSYS);
+}
+
 static void
 audio_get_output_timestamp(AVFormatContext *s1, int stream,
     int64_t *dts, int64_t *wall)
@@ -169,6 +201,7 @@ AVOutputFormat ff_alsa_muxer = {
     .write_uncoded_frame = audio_write_frame,
     .get_device_list = audio_get_device_list,
     .get_output_timestamp = audio_get_output_timestamp,
+    .control_message = alsa_control_message,
     .flags          = AVFMT_NOFILE,
     .priv_class     = &alsa_muxer_class,
 };
