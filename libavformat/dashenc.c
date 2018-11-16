@@ -174,6 +174,8 @@ static int dashenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
         URLContext *http_url_context = ffio_geturlcontext(*pb);
         av_assert0(http_url_context);
         err = ff_http_do_new_request(http_url_context, filename);
+        if (err < 0)
+            ff_format_io_close(s, pb);
 #endif
     }
     return err;
@@ -182,6 +184,9 @@ static int dashenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
 static void dashenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
     DASHContext *c = s->priv_data;
     int http_base_proto = filename ? ff_is_http_proto(filename) : 0;
+
+    if (!*pb)
+        return;
 
     if (!http_base_proto || !c->http_persistent) {
         ff_format_io_close(s, pb);
@@ -356,7 +361,8 @@ static int flush_dynbuf(OutputStream *os, int *range_length)
     // write out to file
     *range_length = avio_close_dyn_buf(os->ctx->pb, &buffer);
     os->ctx->pb = NULL;
-    avio_write(os->out, buffer + os->written_len, *range_length - os->written_len);
+    if (os->out)
+        avio_write(os->out, buffer + os->written_len, *range_length - os->written_len);
     os->written_len = 0;
     av_free(buffer);
 
