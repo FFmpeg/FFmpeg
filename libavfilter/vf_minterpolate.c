@@ -826,7 +826,6 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
 static int detect_scene_change(MIContext *mi_ctx)
 {
     AVMotionEstContext *me_ctx = &mi_ctx->me_ctx;
-    int x, y;
     uint8_t *p1 = mi_ctx->frames[1].avf->data[0];
     ptrdiff_t linesize1 = mi_ctx->frames[1].avf->linesize[0];
     uint8_t *p2 = mi_ctx->frames[2].avf->data[0];
