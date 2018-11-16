@@ -2348,26 +2348,26 @@ static int hls_write_trailer(struct AVFormatContext *s)
             return AVERROR(ENOMEM);
         }
         if ( hls->segment_type == SEGMENT_TYPE_FMP4) {
+            int range_length = 0;
             if (!vs->init_range_length) {
+                uint8_t *buffer = NULL;
+                int range_length, byterange_mode;
                 av_write_frame(vs->avf, NULL); /* Flush any buffered data */
                 avio_flush(oc->pb);
 
-                uint8_t *buffer = NULL;
-                int range_length = avio_close_dyn_buf(oc->pb, &buffer);
+                range_length = avio_close_dyn_buf(oc->pb, &buffer);
                 avio_write(vs->out, buffer, range_length);
                 av_free(buffer);
                 vs->init_range_length = range_length;
                 avio_open_dyn_buf(&oc->pb);
                 vs->packets_written = 0;
                 vs->start_pos = range_length;
-                int byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
+                byterange_mode = (hls->flags & HLS_SINGLE_FILE) || (hls->max_seg_size > 0);
                 if (!byterange_mode) {
                     ff_format_io_close(s, &vs->out);
                     hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
                 }
             }
-
-            int range_length = 0;
             if (!(hls->flags & HLS_SINGLE_FILE)) {
                 ret = hlsenc_io_open(s, &vs->out, vs->avf->url, NULL);
                 if (ret < 0) {
