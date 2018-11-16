@@ -265,7 +265,7 @@ static int activate(AVFilterContext *ctx)
     AVFrame *frame = NULL;
     int64_t pts;
     int status;
-    int ret;
+    int ret = 0;
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
