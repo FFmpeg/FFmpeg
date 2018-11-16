@@ -1072,14 +1072,14 @@ Apply arbitrary expressions to samples in frequency domain.
 @table @option
 @item real
 Set frequency domain real expression for each separate channel separated
-by '|'. Default is "1".
+by '|'. Default is "re".
 If the number of input channels is greater than the number of
 expressions, the last specified expression is used for the remaining
 output channels.
 
 @item imag
 Set frequency domain imaginary expression for each separate channel
-separated by '|'. If not set, @var{real} option is used.
+separated by '|'. Default is "im".
 
 Each expression in @var{real} and @var{imag} can contain the following
 constants and functions:
@@ -1104,10 +1104,10 @@ number of channels
 current frame pts
 
 @item re
-current real part of frequency bin
+current real part of frequency bin of current channel
 
 @item im
-current imaginary part of frequency bin
+current imaginary part of frequency bin of current channel
 
 @item real(b, ch)
 Return the value of real part of frequency bin at location (@var{bin},@var{channel})
