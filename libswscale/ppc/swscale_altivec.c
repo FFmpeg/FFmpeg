@@ -324,6 +324,53 @@ static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
             }
         }
 }
+
+static void yuv2plane1_8_u(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset, int start)
+{
+    int i;
+    for (i = start; i < dstW; i++) {
+        int val = (src[i] + dither[(i + offset) & 7]) >> 7;
+        dest[i] = av_clip_uint8(val);
+    }
+}
+
+static void yuv2plane1_8_altivec(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
+{
+    const int dst_u = -(uintptr_t)dest & 15;
+    int i, j;
+    LOCAL_ALIGNED(16, int16_t, val, [16]);
+    const vector uint16_t shifts = (vector uint16_t) {7, 7, 7, 7, 7, 7, 7, 7};
+    vector int16_t vi, vileft, ditherleft, ditherright;
+    vector uint8_t vd;
+
+    for (j = 0; j < 16; j++) {
+        val[j] = dither[(dst_u + offset + j) & 7];
+    }
+
+    ditherleft = vec_ld(0, val);
+    ditherright = vec_ld(0, &val[8]);
+
+    yuv2plane1_8_u(src, dest, dst_u, dither, offset, 0);
+
+    for (i = dst_u; i < dstW - 15; i += 16) {
+
+        vi = vec_vsx_ld(0, &src[i]);
+        vi = vec_adds(ditherleft, vi);
+        vileft = vec_sra(vi, shifts);
+
+        vi = vec_vsx_ld(0, &src[i + 8]);
+        vi = vec_adds(ditherright, vi);
+        vi = vec_sra(vi, shifts);
+
+        vd = vec_packsu(vileft, vi);
+        vec_st(vd, 0, &dest[i]);
+    }
+
+    yuv2plane1_8_u(src, dest, dstW, dither, offset, i);
+}
+
 #endif /* HAVE_ALTIVEC */
 
 av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
@@ -365,6 +412,12 @@ av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
             break;
         case AV_PIX_FMT_RGB24:
             c->yuv2packedX = ff_yuv2rgb24_X_altivec;
+            break;
+        }
+
+        switch (c->dstBpc) {
+        case 8:
+            c->yuv2plane1 = yuv2plane1_8_altivec;
             break;
         }
     }
