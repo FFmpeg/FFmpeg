@@ -48,6 +48,7 @@ static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    int ret = 0;
     ProresContext *ctx = avctx->priv_data;
     uint8_t idct_permutation[64];
 
@@ -78,7 +79,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
-    ff_proresdsp_init(&ctx->prodsp, avctx);
+    ret = ff_proresdsp_init(&ctx->prodsp, avctx);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Fail to init proresdsp for bits per raw sample %d\n", avctx->bits_per_raw_sample);
+        return ret;
+    }
 
     ff_init_scantable_permutation(idct_permutation,
                                   ctx->prodsp.idct_permutation_type);
@@ -86,7 +91,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
     permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
-    return 0;
+    return ret;
 }
 
 static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,

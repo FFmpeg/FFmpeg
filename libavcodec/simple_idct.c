@@ -236,7 +236,7 @@ void ff_simple_idct44_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     }
 }
 
-void ff_prores_idct(int16_t *block, const int16_t *qmat)
+void ff_prores_idct_10(int16_t *block, const int16_t *qmat)
 {
     int i;
 
