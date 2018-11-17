@@ -46,6 +46,11 @@ static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[
         dst[i] = permutation[src[i]];
 }
 
+#define ALPHA_SHIFT_16_TO_10(alpha_val) (alpha_val >> 6)
+#define ALPHA_SHIFT_8_TO_10(alpha_val)  ((alpha_val << 2) | (alpha_val >> 6))
+#define ALPHA_SHIFT_16_TO_12(alpha_val) (alpha_val >> 4)
+#define ALPHA_SHIFT_8_TO_12(alpha_val)  ((alpha_val << 4) | (alpha_val >> 4))
+
 static void inline unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
                                 const int num_bits, const int decode_precision) {
     const int mask = (1 << num_bits) - 1;
@@ -67,9 +72,17 @@ static void inline unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs
             }
             alpha_val = (alpha_val + val) & mask;
             if (num_bits == 16) {
-                dst[idx++] = alpha_val >> 6;
+                if (decode_precision == 10) {
+                    dst[idx++] = ALPHA_SHIFT_16_TO_10(alpha_val);
+                } else { /* 12b */
+                    dst[idx++] = ALPHA_SHIFT_16_TO_12(alpha_val);
+                }
             } else {
-                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+                if (decode_precision == 10) {
+                    dst[idx++] = ALPHA_SHIFT_8_TO_10(alpha_val);
+                } else { /* 12b */
+                    dst[idx++] = ALPHA_SHIFT_8_TO_12(alpha_val);
+                }
             }
             if (idx >= num_coeffs)
                 break;
@@ -80,11 +93,21 @@ static void inline unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs
         if (idx + val > num_coeffs)
             val = num_coeffs - idx;
         if (num_bits == 16) {
-            for (i = 0; i < val; i++)
-                dst[idx++] = alpha_val >> 6;
+            for (i = 0; i < val; i++) {
+                if (decode_precision == 10) {
+                    dst[idx++] = ALPHA_SHIFT_16_TO_10(alpha_val);
+                } else { /* 12b */
+                    dst[idx++] = ALPHA_SHIFT_16_TO_12(alpha_val);
+                }
+            }
         } else {
-            for (i = 0; i < val; i++)
-                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+            for (i = 0; i < val; i++) {
+                if (decode_precision == 10) {
+                    dst[idx++] = ALPHA_SHIFT_8_TO_10(alpha_val);
+                } else { /* 12b */
+                    dst[idx++] = ALPHA_SHIFT_8_TO_12(alpha_val);
+                }
+            }
         }
     } while (idx < num_coeffs);
 }
@@ -96,6 +119,16 @@ static void unpack_alpha_10(GetBitContext *gb, uint16_t *dst, int num_coeffs,
         unpack_alpha(gb, dst, num_coeffs, 16, 10);
     } else { /* 8 bits alpha */
         unpack_alpha(gb, dst, num_coeffs, 8, 10);
+    }
+}
+
+static void unpack_alpha_12(GetBitContext *gb, uint16_t *dst, int num_coeffs,
+                            const int num_bits)
+{
+    if (num_bits == 16) {
+        unpack_alpha(gb, dst, num_coeffs, 16, 12);
+    } else { /* 8 bits alpha */
+        unpack_alpha(gb, dst, num_coeffs, 8, 12);
     }
 }
 
@@ -146,6 +179,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (avctx->bits_per_raw_sample == 10){
         ctx->unpack_alpha = unpack_alpha_10;
+    } else if (avctx->bits_per_raw_sample == 12){
+        ctx->unpack_alpha = unpack_alpha_12;
     } else {
         av_log(avctx, AV_LOG_ERROR, "Fail to set unpack_alpha for bits per raw sample %d\n", avctx->bits_per_raw_sample);
         return AVERROR_BUG;
