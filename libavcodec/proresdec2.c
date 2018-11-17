@@ -46,9 +46,8 @@ static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[
         dst[i] = permutation[src[i]];
 }
 
-static void unpack_alpha_10(GetBitContext *gb, uint16_t *dst, int num_coeffs,
-                            const int num_bits)
-{
+static void inline unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
+                                const int num_bits, const int decode_precision) {
     const int mask = (1 << num_bits) - 1;
     int i, idx, val, alpha_val;
 
@@ -86,9 +85,18 @@ static void unpack_alpha_10(GetBitContext *gb, uint16_t *dst, int num_coeffs,
         } else {
             for (i = 0; i < val; i++)
                 dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
-
         }
     } while (idx < num_coeffs);
+}
+
+static void unpack_alpha_10(GetBitContext *gb, uint16_t *dst, int num_coeffs,
+                            const int num_bits)
+{
+    if (num_bits == 16) {
+        unpack_alpha(gb, dst, num_coeffs, 16, 10);
+    } else { /* 8 bits alpha */
+        unpack_alpha(gb, dst, num_coeffs, 8, 10);
+    }
 }
 
 static av_cold int decode_init(AVCodecContext *avctx)
