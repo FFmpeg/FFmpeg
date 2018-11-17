@@ -87,6 +87,9 @@ typedef struct OutputStream {
     int bit_rate;
     SegmentType segment_type;  /* segment type selected for this particular stream */
     const char *format_name;
+    const char *single_file_name;  /* file names selected for this particular stream */
+    const char *init_seg_name;
+    const char *media_seg_name;
 
     char codec_str[100];
     int written_len;
@@ -119,7 +122,7 @@ typedef struct DASHContext {
     int64_t total_duration;
     char availability_start_time[100];
     char dirname[1024];
-    const char *single_file_name;
+    const char *single_file_name;  /* file names as specified in options */
     const char *init_seg_name;
     const char *media_seg_name;
     const char *utc_timing_url;
@@ -200,7 +203,7 @@ static const char *get_format_str(SegmentType segment_type) {
     return NULL;
 }
 
-static inline SegmentType select_segment_type(SegmentType segment_type, AVCodecID codec_id)
+static inline SegmentType select_segment_type(SegmentType segment_type, enum AVCodecID codec_id)
 {
     if (segment_type == SEGMENT_TYPE_AUTO) {
         if (codec_id == AV_CODEC_ID_OPUS || codec_id == AV_CODEC_ID_VORBIS ||
@@ -425,6 +428,9 @@ static void dash_free(AVFormatContext *s)
         for (j = 0; j < os->nb_segments; j++)
             av_free(os->segments[j]);
         av_free(os->segments);
+        av_freep(&os->single_file_name);
+        av_freep(&os->init_seg_name);
+        av_freep(&os->media_seg_name);
     }
     av_freep(&c->streams);
 
@@ -451,7 +457,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
                 avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
                             os->availability_time_offset);
         }
-        avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", c->init_seg_name, c->media_seg_name, c->use_timeline ? start_number : 1);
+        avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", os->init_seg_name, os->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->use_timeline) {
             int64_t cur_time = 0;
             avio_printf(out, "\t\t\t\t\t<SegmentTimeline>\n");
@@ -1056,10 +1062,26 @@ static int dash_init(AVFormatContext *s)
         if (!ctx)
             return AVERROR(ENOMEM);
 
+        if (c->init_seg_name) {
+            os->init_seg_name = av_strireplace(c->init_seg_name, "$ext$", os->format_name);
+            if (!os->init_seg_name)
+                return AVERROR(ENOMEM);
+        }
+        if (c->media_seg_name) {
+            os->media_seg_name = av_strireplace(c->media_seg_name, "$ext$", os->format_name);
+            if (!os->media_seg_name)
+                return AVERROR(ENOMEM);
+        }
+        if (c->single_file_name) {
+            os->single_file_name = av_strireplace(c->single_file_name, "$ext$", os->format_name);
+            if (!os->single_file_name)
+                return AVERROR(ENOMEM);
+        }
+
         if (os->segment_type == SEGMENT_TYPE_WEBM) {
-            if ((!c->single_file && check_file_extension(c->init_seg_name, os->format_name) != 0) ||
-                (!c->single_file && check_file_extension(c->media_seg_name, os->format_name) != 0) ||
-                (c->single_file && check_file_extension(c->single_file_name, os->format_name) != 0)) {
+            if ((!c->single_file && check_file_extension(os->init_seg_name, os->format_name) != 0) ||
+                (!c->single_file && check_file_extension(os->media_seg_name, os->format_name) != 0) ||
+                (c->single_file && check_file_extension(os->single_file_name, os->format_name) != 0)) {
                 av_log(s, AV_LOG_WARNING,
                        "One or many segment file names doesn't end with .webm. "
                        "Override -init_seg_name and/or -media_seg_name and/or "
@@ -1090,12 +1112,12 @@ static int dash_init(AVFormatContext *s)
             return ret;
 
         if (c->single_file) {
-            if (c->single_file_name)
-                ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->single_file_name, i, 0, os->bit_rate, 0);
+            if (os->single_file_name)
+                ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), os->single_file_name, i, 0, os->bit_rate, 0);
             else
-                snprintf(os->initfile, sizeof(os->initfile), "%s-stream%d.m4s", basename, i);
+                snprintf(os->initfile, sizeof(os->initfile), "%s-stream%d.%s", basename, i, os->format_name);
         } else {
-            ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), c->init_seg_name, i, 0, os->bit_rate, 0);
+            ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), os->init_seg_name, i, 0, os->bit_rate, 0);
         }
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
         set_http_options(&opts, c);
@@ -1523,7 +1545,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         int use_rename = proto && !strcmp(proto, "file");
         os->filename[0] = os->full_path[0] = os->temp_path[0] = '\0';
         ff_dash_fill_tmpl_params(os->filename, sizeof(os->filename),
-                                 c->media_seg_name, pkt->stream_index,
+                                 os->media_seg_name, pkt->stream_index,
                                  os->segment_index, os->bit_rate, os->start_pts);
         snprintf(os->full_path, sizeof(os->full_path), "%s%s", c->dirname,
                  os->filename);
@@ -1622,8 +1644,8 @@ static const AVOption options[] = {
     { "use_timeline", "Use SegmentTimeline in SegmentTemplate", OFFSET(use_timeline), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
     { "single_file", "Store all segments in one file, accessed using byte ranges", OFFSET(single_file), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "single_file_name", "DASH-templated name to be used for baseURL. Implies storing all segments in one file, accessed using byte ranges", OFFSET(single_file_name), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
-    { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.m4s"}, 0, 0, E },
-    { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.m4s"}, 0, 0, E },
+    { "init_seg_name", "DASH-templated name to used for the initialization segment", OFFSET(init_seg_name), AV_OPT_TYPE_STRING, {.str = "init-stream$RepresentationID$.$ext$"}, 0, 0, E },
+    { "media_seg_name", "DASH-templated name to used for the media segments", OFFSET(media_seg_name), AV_OPT_TYPE_STRING, {.str = "chunk-stream$RepresentationID$-$Number%05d$.$ext$"}, 0, 0, E },
     { "utc_timing_url", "URL of the page that will return the UTC timestamp in ISO format", OFFSET(utc_timing_url), AV_OPT_TYPE_STRING, { 0 }, 0, 0, E },
     { "method", "set the HTTP method", OFFSET(method), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E },
     { "http_user_agent", "override User-Agent field in HTTP header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, E},
