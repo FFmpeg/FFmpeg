@@ -17,8 +17,8 @@
  */
 
 
-#ifndef FF_CUDA_CHECK_H
-#define FF_CUDA_CHECK_H
+#ifndef AVUTIL_CUDA_CHECK_H
+#define AVUTIL_CUDA_CHECK_H
 
 /**
  * Wrap a CUDA function call and print error information if it fails.
@@ -40,4 +40,4 @@ int ff_cuda_check(void *avctx,
 
 #define FF_CUDA_CHECK_DL(avclass, cudl, x) ff_cuda_check(avclass, cudl->cuGetErrorName, cudl->cuGetErrorString, (x), #x)
 
-#endif /* FF_CUDA_CHECK_H */
+#endif /* AVUTIL_CUDA_CHECK_H */
