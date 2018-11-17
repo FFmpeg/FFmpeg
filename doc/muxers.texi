@@ -289,10 +289,13 @@ Set container format (mp4/webm) options using a @code{:} separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
 
-@item dash_segment_type @var{dash_segment_type}
+@item -dash_segment_type @var{dash_segment_type}
 Possible values:
+@item auto
+If this flag is set, the dash segment files format will be selected based on the stream codec. This is the default mode.
+
 @item mp4
-If this flag is set, the dash segment files will be in in ISOBMFF format. This is the default format.
+If this flag is set, the dash segment files will be in in ISOBMFF format.
 
 @item webm
 If this flag is set, the dash segment files will be in in WebM format.
