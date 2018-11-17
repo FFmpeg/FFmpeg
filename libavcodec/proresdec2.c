@@ -53,15 +53,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = 10;
 
-    ff_blockdsp_init(&ctx->bdsp, avctx);
-    ff_proresdsp_init(&ctx->prodsp, avctx);
-
-    ff_init_scantable_permutation(idct_permutation,
-                                  ctx->prodsp.idct_permutation_type);
-
-    permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
-    permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
-
     switch (avctx->codec_tag) {
     case MKTAG('a','p','c','o'):
         avctx->profile = FF_PROFILE_PRORES_PROXY;
@@ -85,6 +76,15 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avctx->profile = FF_PROFILE_UNKNOWN;
         av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
     }
+
+    ff_blockdsp_init(&ctx->bdsp, avctx);
+    ff_proresdsp_init(&ctx->prodsp, avctx);
+
+    ff_init_scantable_permutation(idct_permutation,
+                                  ctx->prodsp.idct_permutation_type);
+
+    permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
+    permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
     return 0;
 }
