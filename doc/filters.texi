@@ -6253,6 +6253,23 @@ ffmpeg -f lavfi -i color=c=black:s=1280x720 -i video.mp4 -shortest -filter_compl
 @end example
 @end itemize
 
+@section chromashift
+Shift chroma pixels horizontally and/or vertically.
+
+The filter accepts the following options:
+@table @option
+@item cbh
+Set amount to shift chroma-blue horizontally.
+@item cbv
+Set amount to shift chroma-blue vertically.
+@item crh
+Set amount to shift chroma-red horizontally.
+@item crv
+Set amount to shift chroma-red vertically.
+@item edge
+Set edge mode, can be @var{smear}, default, or @var{warp}.
+@end table
+
 @section ciescope
 
 Display CIE color diagram with pixels overlaid onto it.
