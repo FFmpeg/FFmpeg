@@ -46,6 +46,51 @@ static void permute(uint8_t *dst, const uint8_t *src, const uint8_t permutation[
         dst[i] = permutation[src[i]];
 }
 
+static void unpack_alpha_10(GetBitContext *gb, uint16_t *dst, int num_coeffs,
+                            const int num_bits)
+{
+    const int mask = (1 << num_bits) - 1;
+    int i, idx, val, alpha_val;
+
+    idx       = 0;
+    alpha_val = mask;
+    do {
+        do {
+            if (get_bits1(gb)) {
+                val = get_bits(gb, num_bits);
+            } else {
+                int sign;
+                val  = get_bits(gb, num_bits == 16 ? 7 : 4);
+                sign = val & 1;
+                val  = (val + 2) >> 1;
+                if (sign)
+                    val = -val;
+            }
+            alpha_val = (alpha_val + val) & mask;
+            if (num_bits == 16) {
+                dst[idx++] = alpha_val >> 6;
+            } else {
+                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+            }
+            if (idx >= num_coeffs)
+                break;
+        } while (get_bits_left(gb)>0 && get_bits1(gb));
+        val = get_bits(gb, 4);
+        if (!val)
+            val = get_bits(gb, 11);
+        if (idx + val > num_coeffs)
+            val = num_coeffs - idx;
+        if (num_bits == 16) {
+            for (i = 0; i < val; i++)
+                dst[idx++] = alpha_val >> 6;
+        } else {
+            for (i = 0; i < val; i++)
+                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
+
+        }
+    } while (idx < num_coeffs);
+}
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     int ret = 0;
@@ -91,6 +136,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     permute(ctx->progressive_scan, ff_prores_progressive_scan, idct_permutation);
     permute(ctx->interlaced_scan, ff_prores_interlaced_scan, idct_permutation);
 
+    if (avctx->bits_per_raw_sample == 10){
+        ctx->unpack_alpha = unpack_alpha_10;
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Fail to set unpack_alpha for bits per raw sample %d\n", avctx->bits_per_raw_sample);
+        return AVERROR_BUG;
+    }
     return ret;
 }
 
@@ -466,51 +517,6 @@ static int decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     return 0;
 }
 
-static void unpack_alpha(GetBitContext *gb, uint16_t *dst, int num_coeffs,
-                         const int num_bits)
-{
-    const int mask = (1 << num_bits) - 1;
-    int i, idx, val, alpha_val;
-
-    idx       = 0;
-    alpha_val = mask;
-    do {
-        do {
-            if (get_bits1(gb)) {
-                val = get_bits(gb, num_bits);
-            } else {
-                int sign;
-                val  = get_bits(gb, num_bits == 16 ? 7 : 4);
-                sign = val & 1;
-                val  = (val + 2) >> 1;
-                if (sign)
-                    val = -val;
-            }
-            alpha_val = (alpha_val + val) & mask;
-            if (num_bits == 16) {
-                dst[idx++] = alpha_val >> 6;
-            } else {
-                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
-            }
-            if (idx >= num_coeffs)
-                break;
-        } while (get_bits_left(gb)>0 && get_bits1(gb));
-        val = get_bits(gb, 4);
-        if (!val)
-            val = get_bits(gb, 11);
-        if (idx + val > num_coeffs)
-            val = num_coeffs - idx;
-        if (num_bits == 16) {
-            for (i = 0; i < val; i++)
-                dst[idx++] = alpha_val >> 6;
-        } else {
-            for (i = 0; i < val; i++)
-                dst[idx++] = (alpha_val << 2) | (alpha_val >> 6);
-
-        }
-    } while (idx < num_coeffs);
-}
-
 /**
  * Decode alpha slice plane.
  */
@@ -530,9 +536,9 @@ static void decode_slice_alpha(ProresContext *ctx,
     init_get_bits(&gb, buf, buf_size << 3);
 
     if (ctx->alpha_info == 2) {
-        unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 16);
+        ctx->unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 16);
     } else {
-        unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 8);
+        ctx->unpack_alpha(&gb, blocks, blocks_per_slice * 4 * 64, 8);
     }
 
     block = blocks;
