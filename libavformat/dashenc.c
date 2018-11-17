@@ -833,12 +833,12 @@ static int write_manifest(AVFormatContext *s, int final)
     snprintf(temp_filename, sizeof(temp_filename), use_rename ? "%s.tmp" : "%s", s->url);
     set_http_options(&opts, c);
     ret = dashenc_io_open(s, &c->mpd_out, temp_filename, &opts);
+    av_dict_free(&opts);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
         return ret;
     }
     out = c->mpd_out;
-    av_dict_free(&opts);
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
     avio_printf(out, "<MPD xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n"
                 "\txmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
@@ -924,11 +924,11 @@ static int write_manifest(AVFormatContext *s, int final)
 
         set_http_options(&opts, c);
         ret = dashenc_io_open(s, &c->m3u8_out, temp_filename, &opts);
+        av_dict_free(&opts);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
             return ret;
         }
-        av_dict_free(&opts);
 
         ff_hls_write_playlist_version(c->m3u8_out, 7);
 
@@ -1122,9 +1122,9 @@ static int dash_init(AVFormatContext *s)
         snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
         set_http_options(&opts, c);
         ret = s->io_open(s, &os->out, filename, AVIO_FLAG_WRITE, &opts);
+        av_dict_free(&opts);
         if (ret < 0)
             return ret;
-        av_dict_free(&opts);
         os->init_start_pos = 0;
 
         if (c->format_options_str) {
@@ -1145,11 +1145,12 @@ static int dash_init(AVFormatContext *s)
             av_dict_set_int(&opts, "dash_track_number", i + 1, 0);
             av_dict_set_int(&opts, "live", 1, 0);
         }
-        if ((ret = avformat_init_output(ctx, &opts)) < 0)
+        ret = avformat_init_output(ctx, &opts);
+        av_dict_free(&opts);
+        if (ret < 0)
             return ret;
         os->ctx_inited = 1;
         avio_flush(ctx->pb);
-        av_dict_free(&opts);
 
         av_log(s, AV_LOG_VERBOSE, "Representation %d init segment will be written to: %s\n", i, filename);
 
@@ -1553,9 +1554,9 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
                  use_rename ? "%s.tmp" : "%s", os->full_path);
         set_http_options(&opts, c);
         ret = dashenc_io_open(s, &os->out, os->temp_path, &opts);
+        av_dict_free(&opts);
         if (ret < 0)
             return ret;
-        av_dict_free(&opts);
     }
 
     //write out the data immediately in streaming mode
