@@ -41,10 +41,12 @@ typedef struct NContext {
     int coordinates;
 
     int depth;
+    int max;
     int bpc;
 
     void (*filter)(uint8_t *dst, const uint8_t *p1, int width,
-                   int threshold, const uint8_t *coordinates[], int coord);
+                   int threshold, const uint8_t *coordinates[], int coord,
+                   int maxc);
 } NContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -74,7 +76,8 @@ static int query_formats(AVFilterContext *ctx)
 }
 
 static void erosion(uint8_t *dst, const uint8_t *p1, int width,
-                    int threshold, const uint8_t *coordinates[], int coord)
+                    int threshold, const uint8_t *coordinates[], int coord,
+                    int maxc)
 {
     int x, i;
 
@@ -94,7 +97,8 @@ static void erosion(uint8_t *dst, const uint8_t *p1, int width,
 }
 
 static void erosion16(uint8_t *dstp, const uint8_t *p1, int width,
-                      int threshold, const uint8_t *coordinates[], int coord)
+                      int threshold, const uint8_t *coordinates[], int coord,
+                      int maxc)
 {
     uint16_t *dst = (uint16_t *)dstp;
     int x, i;
@@ -115,7 +119,8 @@ static void erosion16(uint8_t *dstp, const uint8_t *p1, int width,
 }
 
 static void dilation(uint8_t *dst, const uint8_t *p1, int width,
-                     int threshold, const uint8_t *coordinates[], int coord)
+                     int threshold, const uint8_t *coordinates[], int coord,
+                     int maxc)
 {
     int x, i;
 
@@ -135,14 +140,15 @@ static void dilation(uint8_t *dst, const uint8_t *p1, int width,
 }
 
 static void dilation16(uint8_t *dstp, const uint8_t *p1, int width,
-                       int threshold, const uint8_t *coordinates[], int coord)
+                       int threshold, const uint8_t *coordinates[], int coord,
+                       int maxc)
 {
     uint16_t *dst = (uint16_t *)dstp;
     int x, i;
 
     for (x = 0; x < width; x++) {
         int max = AV_RN16A(&p1[x * 2]);
-        int limit = FFMIN(max + threshold, 255);
+        int limit = FFMIN(max + threshold, maxc);
 
         for (i = 0; i < 8; i++) {
             if (coord & (1 << i)) {
@@ -156,7 +162,8 @@ static void dilation16(uint8_t *dstp, const uint8_t *p1, int width,
 }
 
 static void deflate(uint8_t *dst, const uint8_t *p1, int width,
-                    int threshold, const uint8_t *coordinates[], int coord)
+                    int threshold, const uint8_t *coordinates[], int coord,
+                    int maxc)
 {
     int x, i;
 
@@ -171,7 +178,8 @@ static void deflate(uint8_t *dst, const uint8_t *p1, int width,
 }
 
 static void deflate16(uint8_t *dstp, const uint8_t *p1, int width,
-                      int threshold, const uint8_t *coordinates[], int coord)
+                      int threshold, const uint8_t *coordinates[], int coord,
+                      int maxc)
 {
     uint16_t *dst = (uint16_t *)dstp;
     int x, i;
@@ -182,12 +190,13 @@ static void deflate16(uint8_t *dstp, const uint8_t *p1, int width,
 
         for (i = 0; i < 8; sum += AV_RN16A(coordinates[i++] + x * 2));
 
-        dst[x] = FFMAX(FFMIN(sum / 8, p1[x]), limit);
+        dst[x] = FFMAX(FFMIN(sum / 8, AV_RN16A(&p1[2 * x])), limit);
     }
 }
 
 static void inflate(uint8_t *dst, const uint8_t *p1, int width,
-                    int threshold, const uint8_t *coordinates[], int coord)
+                    int threshold, const uint8_t *coordinates[], int coord,
+                    int maxc)
 {
     int x, i;
 
@@ -202,18 +211,19 @@ static void inflate(uint8_t *dst, const uint8_t *p1, int width,
 }
 
 static void inflate16(uint8_t *dstp, const uint8_t *p1, int width,
-                      int threshold, const uint8_t *coordinates[], int coord)
+                      int threshold, const uint8_t *coordinates[], int coord,
+                      int maxc)
 {
     uint16_t *dst = (uint16_t *)dstp;
     int x, i;
 
     for (x = 0; x < width; x++) {
         int sum = 0;
-        int limit = FFMIN(AV_RN16A(&p1[2 * x]) + threshold, 255);
+        int limit = FFMIN(AV_RN16A(&p1[2 * x]) + threshold, maxc);
 
         for (i = 0; i < 8; sum += AV_RN16A(coordinates[i++] + x * 2));
 
-        dst[x] = FFMIN(FFMAX(sum / 8, p1[x]), limit);
+        dst[x] = FFMIN(FFMAX(sum / 8, AV_RN16A(&p1[x * 2])), limit);
     }
 }
 
@@ -224,6 +234,7 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     s->depth = desc->comp[0].depth;
+    s->max = (1 << s->depth) - 1;
     s->bpc = (s->depth + 7) / 8;
 
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
@@ -285,9 +296,9 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                                                src + (width - 2) * bpc,                                                      src + (width - 2) * bpc,
                                                src + (width - 2) * bpc + ph * stride, src + (width - 1) * bpc + ph * stride, src + (width - 2) * bpc + ph * stride};
 
-            s->filter(dst,                     src,                     1,         threshold, coordinateslb, s->coordinates);
-            s->filter(dst          + 1  * bpc, src          + 1  * bpc, width - 2, threshold, coordinates,   s->coordinates);
-            s->filter(dst + (width - 1) * bpc, src + (width - 1) * bpc, 1,         threshold, coordinatesrb, s->coordinates);
+            s->filter(dst,                     src,                     1,         threshold, coordinateslb, s->coordinates, s->max);
+            s->filter(dst          + 1  * bpc, src          + 1  * bpc, width - 2, threshold, coordinates,   s->coordinates, s->max);
+            s->filter(dst + (width - 1) * bpc, src + (width - 1) * bpc, 1,         threshold, coordinatesrb, s->coordinates, s->max);
 
             src += stride;
             dst += dstride;
