@@ -53,6 +53,7 @@ void ff_simple_idct_int16_12bit(int16_t *block);
  * for larger scale of input coefficients.
  */
 void ff_prores_idct_10(int16_t *block, const int16_t *qmat);
+void ff_prores_idct_12(int16_t *block, const int16_t *qmat);
 
 void ff_simple_idct248_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block);
 
