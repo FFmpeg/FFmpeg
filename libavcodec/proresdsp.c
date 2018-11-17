@@ -57,8 +57,8 @@ static void prores_idct_put_10_c(uint16_t *out, ptrdiff_t linesize, int16_t *blo
 av_cold int ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
     if (avctx->bits_per_raw_sample == 10) {
-    dsp->idct_put = prores_idct_put_10_c;
-    dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
+        dsp->idct_put = prores_idct_put_10_c;
+        dsp->idct_permutation_type = FF_IDCT_PERM_NONE;
     } else {
         return AVERROR_BUG;
     }
