@@ -5,6 +5,7 @@ version <next>:
 - tpad filter
 - AV1 decoding support through libdav1d
 - dedot filter
+- chromashift and rgbashift filters
 
 
 version 4.1:

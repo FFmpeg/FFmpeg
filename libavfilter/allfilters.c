@@ -314,6 +314,7 @@ extern AVFilter ff_vf_removegrain;
 extern AVFilter ff_vf_removelogo;
 extern AVFilter ff_vf_repeatfields;
 extern AVFilter ff_vf_reverse;
+extern AVFilter ff_vf_rgbashift;
 extern AVFilter ff_vf_roberts;
 extern AVFilter ff_vf_roberts_opencl;
 extern AVFilter ff_vf_rotate;

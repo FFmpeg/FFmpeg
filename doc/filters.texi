@@ -14311,6 +14311,31 @@ trim=end=5,reverse
 @end example
 @end itemize
 
+@section rgbashift
+Shift R/G/B/A pixels horizontally and/or vertically.
+
+The filter accepts the following options:
+@table @option
+@item rh
+Set amount to shift red horizontally.
+@item rv
+Set amount to shift red vertically.
+@item gh
+Set amount to shift green horizontally.
+@item gv
+Set amount to shift green vertically.
+@item bh
+Set amount to shift blue horizontally.
+@item bv
+Set amount to shift blue vertically.
+@item ah
+Set amount to shift alpha horizontally.
+@item av
+Set amount to shift alpha vertically.
+@item edge
+Set edge mode, can be @var{smear}, default, or @var{warp}.
+@end table
+
 @section roberts
 Apply roberts cross operator to input video stream.
 

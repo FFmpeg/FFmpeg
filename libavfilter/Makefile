@@ -330,6 +330,7 @@ OBJS-$(CONFIG_REMOVEGRAIN_FILTER)            += vf_removegrain.o
 OBJS-$(CONFIG_REMOVELOGO_FILTER)             += bbox.o lswsutils.o lavfutils.o vf_removelogo.o
 OBJS-$(CONFIG_REPEATFIELDS_FILTER)           += vf_repeatfields.o
 OBJS-$(CONFIG_REVERSE_FILTER)                += f_reverse.o
+OBJS-$(CONFIG_RGBASHIFT_FILTER)              += vf_chromashift.o
 OBJS-$(CONFIG_ROBERTS_FILTER)                += vf_convolution.o
 OBJS-$(CONFIG_ROBERTS_OPENCL_FILTER)         += vf_convolution_opencl.o opencl.o \
                                                 opencl/convolution.o
