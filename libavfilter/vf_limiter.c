@@ -18,7 +18,6 @@
 
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
-#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
