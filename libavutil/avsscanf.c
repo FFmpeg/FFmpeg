@@ -349,9 +349,10 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
 
     /* Optimize small to mid-size integers (even in exp. notation) */
     if (lnz<9 && lnz<=rp && rp < 18) {
+        int bitlim;
         if (rp == 9) return sign * (double)x[0];
         if (rp < 9) return sign * (double)x[0] / p10s[8-rp];
-        int bitlim = bits-3*(int)(rp-9);
+        bitlim = bits-3*(int)(rp-9);
         if (bitlim>30 || x[0]>>bitlim==0)
             return sign * (double)x[0] * p10s[rp-10];
     }
