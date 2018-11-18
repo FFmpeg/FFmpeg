@@ -19,6 +19,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
 #include "avfilter.h"
@@ -149,9 +150,9 @@ static int config_input(AVFilterLink *inlink)
 
         p = NULL;
 
-        ret = sscanf(arg, "%d%c", &d->delay, &type);
+        ret = av_sscanf(arg, "%d%c", &d->delay, &type);
         if (ret != 2 || type != 'S') {
-            sscanf(arg, "%f", &delay);
+            av_sscanf(arg, "%f", &delay);
             d->delay = delay * inlink->sample_rate / 1000.0;
         }
 
