@@ -2,6 +2,11 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.3.9:
+- avcodec/pngdec: Check compression method
+- fftools/ffmpeg: Repair reinit_filter feature
+- avcodec/shorten: Fix integer overflow with offset
+- avcodec/cavsdec: Propagate error codes inside decode_mb_i()
+- avcodec/mpegaudio_parser: Consume more than 0 bytes in case of the unsupported mp3adu case
 - avutil/integer: Fix integer overflow in av_mul_i()
 - avcodec/msrle: Check that the input is large enough to contain a end of picture code
 - avcodec/jpeg2000dec: Fix off by 1 error in JPEG2000_PGOD_CPRL handling
