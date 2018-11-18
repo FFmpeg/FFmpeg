@@ -136,7 +136,7 @@ static int parse_channel_name(char **arg, int *rchannel, char *buf)
     int64_t layout, layout0;
 
     /* try to parse a channel name, e.g. "FL" */
-    if (sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
+    if (av_sscanf(*arg, "%7[A-Z]%n", buf, &len)) {
         layout0 = layout = av_get_channel_layout(buf);
         /* channel_id <- first set bit in layout */
         for (i = 32; i > 0; i >>= 1) {
@@ -174,11 +174,11 @@ static void parse_speaker_pos(AVFilterContext *ctx, int64_t in_channel_layout)
             av_log(ctx, AV_LOG_WARNING, "Failed to parse \'%s\' as channel name.\n", buf);
             continue;
         }
-        if (sscanf(arg, "%f %f", &azim, &elev) == 2) {
+        if (av_sscanf(arg, "%f %f", &azim, &elev) == 2) {
             s->vspkrpos[out_ch_id].set = 1;
             s->vspkrpos[out_ch_id].azim = azim;
             s->vspkrpos[out_ch_id].elev = elev;
-        } else if (sscanf(arg, "%f", &azim) == 1) {
+        } else if (av_sscanf(arg, "%f", &azim) == 1) {
             s->vspkrpos[out_ch_id].set = 1;
             s->vspkrpos[out_ch_id].azim = azim;
             s->vspkrpos[out_ch_id].elev = 0;
