@@ -138,13 +138,14 @@ static int config_props(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     LimiterContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int vsub, hsub, ret;
+    int depth, vsub, hsub, ret;
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if ((ret = av_image_fill_linesizes(s->linesize, inlink->format, inlink->w)) < 0)
         return ret;
 
+    depth = desc->comp[0].depth;
     hsub = desc->log2_chroma_w;
     vsub = desc->log2_chroma_h;
     s->height[1] = s->height[2] = AV_CEIL_RSHIFT(inlink->h, vsub);
@@ -152,10 +153,11 @@ static int config_props(AVFilterLink *inlink)
     s->width[1]  = s->width[2]  = AV_CEIL_RSHIFT(inlink->w, hsub);
     s->width[0]  = s->width[3]  = inlink->w;
 
-    if (desc->comp[0].depth == 8) {
+    s->max = FFMIN(s->max, (1 << depth) - 1);
+    s->min = FFMIN(s->min, (1 << depth) - 1);
+
+    if (depth == 8) {
         s->dsp.limiter = limiter8;
-        s->max = FFMIN(s->max, 255);
-        s->min = FFMIN(s->min, 255);
     } else {
         s->dsp.limiter = limiter16;
     }
