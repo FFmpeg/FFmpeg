@@ -5143,6 +5143,7 @@ case $target_os in
             echo "hwcap_1 = OVERRIDE;" > mapfile &&
             add_ldflags -Wl,-M,mapfile
         nm_default='nm -P -g'
+        striptype=""
         version_script='-M'
         VERSION_SCRIPT_POSTPROCESS_CMD='perl $(SRC_PATH)/compat/solaris/make_sunver.pl - $(OBJS)'
         ;;
