@@ -205,21 +205,21 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
 
-    switch (ctx->outputs[0]->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
-                                 frame->format);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        /* For layouts unknown on input but known on link after negotiation. */
-        if (!frame->channel_layout)
-            frame->channel_layout = s->channel_layout;
-        CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                 frame->channels, frame->format);
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
+        switch (ctx->outputs[0]->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
+                                     frame->format);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            /* For layouts unknown on input but known on link after negotiation. */
+            if (!frame->channel_layout)
+                frame->channel_layout = s->channel_layout;
+            CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
+                                     frame->channels, frame->format);
+            break;
+        default:
+            return AVERROR(EINVAL);
+        }
 
     }
 
