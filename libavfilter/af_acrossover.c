@@ -26,6 +26,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avstring.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 
@@ -95,8 +96,7 @@ static av_cold int init(AVFilterContext *ctx)
 
         p = NULL;
 
-        ret = sscanf(arg, "%f", &freq);
-
+        av_sscanf(arg, "%f", &freq);
         if (freq <= 0) {
             av_log(ctx, AV_LOG_ERROR, "Frequency %f must be positive number.\n", freq);
             return AVERROR(EINVAL);
