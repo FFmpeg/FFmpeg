@@ -108,7 +108,7 @@ static av_cold int init(AVFilterContext *ctx)
             break;
 
         p = NULL;
-        sscanf(arg, "%f", &s->weights[i]);
+        av_sscanf(arg, "%f", &s->weights[i]);
         s->wfactor += s->weights[i];
         last = i;
     }
