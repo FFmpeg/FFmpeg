@@ -564,7 +564,7 @@ static void read_custom_noise(AudioFFTDeNoiseContext *s, int ch)
 
         p = NULL;
 
-        ret = sscanf(arg, "%d", &band_noise[i]);
+        ret = av_sscanf(arg, "%d", &band_noise[i]);
         if (ret != 1) {
             av_log(s, AV_LOG_ERROR, "Custom band noise must be integer.\n");
             break;
@@ -1390,7 +1390,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                !strcmp(cmd, "noise_reduction")) {
         float nr;
 
-        if (sscanf(args, "%f", &nr) == 1) {
+        if (av_sscanf(args, "%f", &nr) == 1) {
             s->noise_reduction = av_clipf(nr, 0.01, 97);
             need_reset = 1;
         }
@@ -1398,7 +1398,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                !strcmp(cmd, "noise_floor")) {
         float nf;
 
-        if (sscanf(args, "%f", &nf) == 1) {
+        if (av_sscanf(args, "%f", &nf) == 1) {
             s->noise_floor = av_clipf(nf, -80, -20);
             need_reset = 1;
         }
