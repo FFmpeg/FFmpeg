@@ -20,6 +20,7 @@
 
 #include "float.h"
 
+#include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
@@ -215,7 +216,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         if (!e || !e->value)
             continue;
 
-        if (sscanf(e->value, "%f", &vf) != 1)
+        if (av_sscanf(e->value, "%f", &vf) != 1)
             continue;
 
         vf = av_clipf(vf, s->min, s->max);
