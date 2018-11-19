@@ -634,6 +634,10 @@ This can be useful for debugging low-level stream issues.
 
 Supports H.264, H.265, MPEG-2 and VP9.
 
+@section truehd_core
+
+Extract the core from a TrueHD stream, dropping ATMOS data.
+
 @section vp9_metadata
 
 Modify metadata embedded in a VP9 stream.

@@ -51,6 +51,7 @@ extern const AVBitStreamFilter ff_prores_metadata_bsf;
 extern const AVBitStreamFilter ff_remove_extradata_bsf;
 extern const AVBitStreamFilter ff_text2movsub_bsf;
 extern const AVBitStreamFilter ff_trace_headers_bsf;
+extern const AVBitStreamFilter ff_truehd_core_bsf;
 extern const AVBitStreamFilter ff_vp9_metadata_bsf;
 extern const AVBitStreamFilter ff_vp9_raw_reorder_bsf;
 extern const AVBitStreamFilter ff_vp9_superframe_bsf;

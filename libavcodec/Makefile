@@ -1085,6 +1085,7 @@ OBJS-$(CONFIG_PRORES_METADATA_BSF)        += prores_metadata_bsf.o
 OBJS-$(CONFIG_REMOVE_EXTRADATA_BSF)       += remove_extradata_bsf.o
 OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 OBJS-$(CONFIG_TRACE_HEADERS_BSF)          += trace_headers_bsf.o
+OBJS-$(CONFIG_TRUEHD_CORE_BSF)            += truehd_core_bsf.o mlp_parser.o mlp.o
 OBJS-$(CONFIG_VP9_METADATA_BSF)           += vp9_metadata_bsf.o
 OBJS-$(CONFIG_VP9_RAW_REORDER_BSF)        += vp9_raw_reorder_bsf.o
 OBJS-$(CONFIG_VP9_SUPERFRAME_BSF)         += vp9_superframe_bsf.o
