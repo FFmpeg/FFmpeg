@@ -39,7 +39,7 @@ typedef struct FFFILE {
     unsigned char *buf;
     unsigned char *rpos, *rend;
     unsigned char *shend;
-    off_t shlim, shcnt;
+    ptrdiff_t shlim, shcnt;
     void *cookie;
     size_t (*read)(struct FFFILE *, unsigned char *, size_t);
 } FFFILE;
@@ -82,7 +82,7 @@ static int ffuflow(FFFILE *f)
     return EOF;
 }
 
-static void ffshlim(FFFILE *f, off_t lim)
+static void ffshlim(FFFILE *f, ptrdiff_t lim)
 {
     f->shlim = lim;
     f->shcnt = f->buf - f->rpos;
@@ -96,7 +96,7 @@ static void ffshlim(FFFILE *f, off_t lim)
 static int ffshgetc(FFFILE *f)
 {
     int c;
-    off_t cnt = shcnt(f);
+    ptrdiff_t cnt = shcnt(f);
     if (f->shlim && cnt >= f->shlim || (c=ffuflow(f)) < 0) {
         f->shcnt = f->buf - f->rpos + cnt;
         f->shend = 0;
@@ -739,7 +739,7 @@ static int ff_vfscanf(FFFILE *f, const char *fmt, va_list ap)
     int matches=0;
     unsigned long long x;
     double y;
-    off_t pos = 0;
+    ptrdiff_t pos = 0;
     unsigned char scanset[257];
     size_t i;
 
