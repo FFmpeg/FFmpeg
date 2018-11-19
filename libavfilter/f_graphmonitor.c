@@ -211,7 +211,7 @@ static void draw_items(AVFilterContext *ctx, AVFrame *out,
         snprintf(buffer, sizeof(buffer)-1, " | queue: ");
         drawtext(out, xpos, ypos, buffer, s->white);
         xpos += strlen(buffer) * 8;
-        snprintf(buffer, sizeof(buffer)-1, "%"PRId64, frames);
+        snprintf(buffer, sizeof(buffer)-1, "%"SIZE_SPECIFIER, frames);
         drawtext(out, xpos, ypos, buffer, frames > 0 ? frames >= 10 ? frames >= 50 ? s->red : s->yellow : s->green : s->white);
         xpos += strlen(buffer) * 8;
     }
