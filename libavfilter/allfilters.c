@@ -266,6 +266,7 @@ extern AVFilter ff_vf_lutrgb;
 extern AVFilter ff_vf_lutyuv;
 extern AVFilter ff_vf_maskedclamp;
 extern AVFilter ff_vf_maskedmerge;
+extern AVFilter ff_vf_maskfun;
 extern AVFilter ff_vf_mcdeint;
 extern AVFilter ff_vf_mergeplanes;
 extern AVFilter ff_vf_mestimate;

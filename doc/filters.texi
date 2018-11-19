@@ -11914,6 +11914,33 @@ copied from first stream.
 By default value 0xf, all planes will be processed.
 @end table
 
+@section maskfun
+Create mask from input video.
+
+For example it is useful to create motion masks after @code{tblend} filter.
+
+This filter accepts the following options:
+
+@table @option
+@item low
+Set low threshold. Any pixel component lower or exact than this value will be set to 0.
+
+@item high
+Set high threshold. Any pixel component higher than this value will be set to max value
+allowed for current pixel format.
+
+@item planes
+Set planes to filter, by default all available planes are filtered.
+
+@item fill
+Fill all frame pixels with this value.
+
+@item sum
+Set max average pixel value for frame. If sum of all pixel components is higher that this
+average, output frame will be completely filled with value set by @var{fill} option.
+Typically useful for scene changes when used in combination with @code{tblend} filter.
+@end table
+
 @section mcdeint
 
 Apply motion-compensation deinterlacing.
