@@ -354,8 +354,7 @@ static void vp8_ts_parse_int_array(int *dest, char *value, size_t value_len, int
     char *saveptr = NULL;
     char *token = av_strtok(value, ",", &saveptr);
 
-    while (token && dest_idx < max_entries)
-    {
+    while (token && dest_idx < max_entries) {
         dest[dest_idx++] = strtoul(token, NULL, 10);
         token = av_strtok(NULL, ",", &saveptr);
     }
