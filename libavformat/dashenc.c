@@ -60,7 +60,7 @@ typedef struct Segment {
     int64_t start_pos;
     int range_length, index_length;
     int64_t time;
-    int duration;
+    int64_t duration;
     int n;
 } Segment;
 
@@ -475,7 +475,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
                     cur_time = seg->time;
                     avio_printf(out, "t=\"%"PRId64"\" ", seg->time);
                 }
-                avio_printf(out, "d=\"%d\" ", seg->duration);
+                avio_printf(out, "d=\"%"PRId64"\" ", seg->duration);
                 while (i + repeat + 1 < os->nb_segments &&
                        os->segments[i + repeat + 1]->duration == seg->duration &&
                        os->segments[i + repeat + 1]->time == os->segments[i + repeat]->time + os->segments[i + repeat]->duration)
@@ -1213,7 +1213,7 @@ static int dash_write_header(AVFormatContext *s)
 }
 
 static int add_segment(OutputStream *os, const char *file,
-                       int64_t time, int duration,
+                       int64_t time, int64_t duration,
                        int64_t start_pos, int64_t range_length,
                        int64_t index_length, int next_exp_index)
 {
