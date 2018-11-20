@@ -473,12 +473,12 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
     slice_start = (jmax * jobnr) / nb_jobs;
     slice_end = (jmax * (jobnr+1)) / nb_jobs;
 
-    sp = src->data[i] + slice_start * src->linesize[i];
+    sp = src->data[i] + (j + slice_start) * src->linesize[i];
     dp = dst->data[dst_plane]
-                      + (yp + slice_start) * dst->linesize[dst_plane]
+                      + (yp + j + slice_start) * dst->linesize[dst_plane]
                       + dst_offset;
-    ap = src->data[3] + (slice_start << vsub) * src->linesize[3];
-    dap = dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3];
+    ap = src->data[3] + (j + slice_start << vsub) * src->linesize[3];
+    dap = dst->data[3] + ((yp + j + slice_start) << vsub) * dst->linesize[3];
 
     for (j = j + slice_start; j < slice_end; j++) {
         k = FFMAX(-xp, 0);
