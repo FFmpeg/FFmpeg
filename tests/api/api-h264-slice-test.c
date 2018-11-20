@@ -117,9 +117,9 @@ int main(int argc, char **argv)
     unsigned int threads;
     AVPacket *pkt;
     FILE *file = NULL;
-    char nal[MAX_SLICES * UINT16_MAX + AV_INPUT_BUFFER_PADDING_SIZE];
+    char * nal = NULL;
     int nals = 0, ret = 0;
-    char *p = nal;
+    char *p;
 
     if (argc < 4) {
         fprintf(stderr, "Usage: %s <threads> <input file> <output file>\n", argv[0]);
@@ -138,6 +138,11 @@ int main(int argc, char **argv)
     if (!(pkt = av_packet_alloc())) {
         return -1;
     }
+
+    nal = av_malloc(MAX_SLICES * UINT16_MAX + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!nal)
+        goto err;
+    p = nal;
 
     if (!(codec = avcodec_find_decoder(AV_CODEC_ID_H264))) {
         fprintf(stderr, "Codec not found\n");
@@ -223,6 +228,8 @@ int main(int argc, char **argv)
     ret = decode(c, frame, NULL);
 
 err:
+    if (nal)
+        av_free(nal);
     if (file)
         fclose(file);
     av_frame_free(&frame);
