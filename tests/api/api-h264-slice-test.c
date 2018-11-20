@@ -41,10 +41,10 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 
-#include "libavformat/network.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/hash.h"
+#include "libavutil/bswap.h"
 
 static int header = 0;
 
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
         if (ret != sizeof(uint16_t))
             break;
 
-        size = ntohs(size);
+        size = av_be2ne16(size);
         ret = fread(p, 1, size, file);
         if (ret != size) {
             perror("Couldn't read data");
