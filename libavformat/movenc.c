@@ -541,7 +541,7 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
         return AVERROR(EINVAL);
 
     info = track->eac3_priv;
-    size = 2 + 4 * (info->num_ind_sub + 1);
+    size = 2 + ((34 * (info->num_ind_sub + 1) + 7) >> 3);
     buf = av_malloc(size);
     if (!buf) {
         size = AVERROR(ENOMEM);
