@@ -36,17 +36,25 @@ static void FUNC_NAME(SCENE_SAD_PARAMS) {                                     \
     *sum += sad[0];                                                           \
 }
 
+#if HAVE_X86ASM
 SCENE_SAD_FUNC(scene_sad_sse2, ff_scene_sad_sse2, 16);
+#if HAVE_AVX2_EXTERNAL
 SCENE_SAD_FUNC(scene_sad_avx2, ff_scene_sad_avx2, 32);
+#endif
+#endif
 
 ff_scene_sad_fn ff_scene_sad_get_fn_x86(int depth)
 {
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
     if (depth == 8) {
+#if HAVE_AVX2_EXTERNAL
         if (EXTERNAL_AVX2_FAST(cpu_flags))
             return scene_sad_avx2;
-        else if (EXTERNAL_SSE2(cpu_flags))
+#endif
+        if (EXTERNAL_SSE2(cpu_flags))
             return scene_sad_sse2;
     }
+#endif
     return NULL;
 }
