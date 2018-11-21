@@ -325,7 +325,7 @@ static int64_t get_best_effort_duration(ConcatFile *file, AVFormatContext *avf)
     if (avf->duration > 0)
         return avf->duration - (file->file_inpoint - file->file_start_time);
     if (file->next_dts != AV_NOPTS_VALUE)
-        return file->next_dts - (file->file_inpoint - file->file_start_time);
+        return file->next_dts - file->file_inpoint;
     return AV_NOPTS_VALUE;
 }
 
