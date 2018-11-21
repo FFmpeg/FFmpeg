@@ -355,14 +355,12 @@ static int open_file(AVFormatContext *avf, unsigned fileno)
         return ret;
     }
     cat->cur_file = file;
-    if (file->start_time == AV_NOPTS_VALUE)
-        file->start_time = !fileno ? 0 :
-                           cat->files[fileno - 1].start_time +
-                           cat->files[fileno - 1].duration;
+    file->start_time = !fileno ? 0 :
+                       cat->files[fileno - 1].start_time +
+                       cat->files[fileno - 1].duration;
     file->file_start_time = (cat->avf->start_time == AV_NOPTS_VALUE) ? 0 : cat->avf->start_time;
     file->file_inpoint = (file->inpoint == AV_NOPTS_VALUE) ? file->file_start_time : file->inpoint;
-    if (file->duration == AV_NOPTS_VALUE)
-        file->duration = get_best_effort_duration(file, cat->avf);
+    file->duration = get_best_effort_duration(file, cat->avf);
 
     if (cat->segment_time_metadata) {
         av_dict_set_int(&file->metadata, "lavf.concatdec.start_time", file->start_time, 0);
@@ -504,6 +502,7 @@ static int concat_read_header(AVFormatContext *avf)
                 break;
             cat->files[i].user_duration = cat->files[i].outpoint - cat->files[i].inpoint;
         }
+        cat->files[i].duration = cat->files[i].user_duration;
         time += cat->files[i].user_duration;
     }
     if (i == cat->nb_files) {
@@ -529,8 +528,7 @@ static int open_next_file(AVFormatContext *avf)
     ConcatContext *cat = avf->priv_data;
     unsigned fileno = cat->cur_file - cat->files;
 
-    if (cat->cur_file->duration == AV_NOPTS_VALUE)
-        cat->cur_file->duration = get_best_effort_duration(cat->cur_file, cat->avf);
+    cat->cur_file->duration = get_best_effort_duration(cat->cur_file, cat->avf);
 
     if (++fileno >= cat->nb_files) {
         cat->eof = 1;
