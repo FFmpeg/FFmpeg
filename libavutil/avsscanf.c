@@ -241,8 +241,6 @@ static long long scanexp(FFFILE *f, int pok)
 #define LD_B1B_MAX 9007199, 254740991
 #define KMAX 128
 #define MASK (KMAX-1)
-#define CONCAT2(x,y) x ## y
-#define CONCAT(x,y) CONCAT2(x,y)
 
 static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
 {
@@ -483,7 +481,7 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
     y -= bias;
 
     if ((e2+DBL_MANT_DIG & INT_MAX) > emax-5) {
-        if (fabs(y) >= CONCAT(0x1p, DBL_MANT_DIG)) {
+        if (fabs(y) >= pow(2, DBL_MANT_DIG)) {
             if (denormal && bits==DBL_MANT_DIG+e2-emin)
                 denormal = 0;
             y *= 0.5;
