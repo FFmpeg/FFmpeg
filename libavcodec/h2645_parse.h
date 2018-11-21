@@ -86,6 +86,12 @@ int ff_h2645_extract_rbsp(const uint8_t *src, int length, H2645RBSP *rbsp,
 
 /**
  * Split an input packet into NAL units.
+ *
+ * If data == raw_data holds true for a NAL unit of the returned pkt, then
+ * said NAL unit does not contain any emulation_prevention_three_byte and
+ * the data is contained in the input buffer pointed to by buf.
+ * Otherwise, the unescaped data is part of the rbsp_buffer described by the
+ * packet's H2645RBSP.
  */
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           void *logctx, int is_nalff, int nal_length_size,
