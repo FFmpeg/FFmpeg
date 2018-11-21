@@ -40,6 +40,7 @@ enum WV_FLAGS {
     WV_HBAL   = 0x0400,
     WV_MCINIT = 0x0800,
     WV_MCEND  = 0x1000,
+    WV_DSD    = 0x80000000,
 };
 
 static const int wv_rates[16] = {
@@ -95,6 +96,11 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid block header.\n");
         return ret;
+    }
+
+    if (wc->header.flags & WV_DSD) {
+        avpriv_report_missing_feature(ctx, "WV DSD");
+        return AVERROR_PATCHWELCOME;
     }
 
     if (wc->header.version < 0x402 || wc->header.version > 0x410) {
