@@ -52,7 +52,7 @@ static int pcm_read_header(AVFormatContext *s)
     if (mime_type && s->iformat->mime_type) {
         int rate = 0, channels = 0;
         size_t len = strlen(s->iformat->mime_type);
-        if (!strncmp(s->iformat->mime_type, mime_type, len)) {
+        if (!av_strncasecmp(s->iformat->mime_type, mime_type, len)) {
             uint8_t *options = mime_type + len;
             len = strlen(mime_type);
             while (options < mime_type + len) {
