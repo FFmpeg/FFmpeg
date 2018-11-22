@@ -563,12 +563,12 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
         put_bits(&pbc, 4, info->substream[i].num_dep_sub);
         if (!info->substream[i].num_dep_sub) {
             put_bits(&pbc, 1, 0); /* reserved */
-            size--;
         } else {
             put_bits(&pbc, 9, info->substream[i].chan_loc);
         }
     }
     flush_put_bits(&pbc);
+    size = put_bits_count(&pbc) >> 3;
 
     avio_wb32(pb, size + 8);
     ffio_wfourcc(pb, "dec3");
