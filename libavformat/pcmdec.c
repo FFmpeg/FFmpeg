@@ -142,10 +142,10 @@ PCMDEF(s24le, "PCM signed 24-bit little-endian",
        NULL, AV_CODEC_ID_PCM_S24LE)
 
 PCMDEF(s16be, "PCM signed 16-bit big-endian",
-       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE)
+       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE, .mime_type = "audio/L16")
 
 PCMDEF(s16le, "PCM signed 16-bit little-endian",
-       AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE, .mime_type = "audio/L16",)
+       AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE)
 
 PCMDEF(s8, "PCM signed 8-bit",
        "sb", AV_CODEC_ID_PCM_S8)
