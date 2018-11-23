@@ -99,6 +99,7 @@ enum {
     FLV_CODECID_PCM_MULAW            = 8 << FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_AAC                  = 10<< FLV_AUDIO_CODECID_OFFSET,
     FLV_CODECID_SPEEX                = 11<< FLV_AUDIO_CODECID_OFFSET,
+    FLV_CODEC_ID_OPUS                = 12<< FLV_AUDIO_CODECID_OFFSET,
 };
 
 enum {

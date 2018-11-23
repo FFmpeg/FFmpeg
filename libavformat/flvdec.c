@@ -210,6 +210,8 @@ static int flv_same_audio_codec(AVCodecParameters *apar, int flags)
     case FLV_CODECID_PCM_ALAW:
         return apar->sample_rate == 8000 &&
                apar->codec_id    == AV_CODEC_ID_PCM_ALAW;
+    case FLV_CODEC_ID_OPUS:
+        return apar->codec_id == AV_CODEC_ID_OPUS;
     default:
         return apar->codec_tag == (flv_codecid >> FLV_AUDIO_CODECID_OFFSET);
     }
@@ -267,6 +269,11 @@ static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream,
     case FLV_CODECID_PCM_ALAW:
         apar->sample_rate = 8000;
         apar->codec_id    = AV_CODEC_ID_PCM_ALAW;
+        break;
+    case FLV_CODEC_ID_OPUS:
+        apar->codec_id = AV_CODEC_ID_OPUS;
+        apar->sample_rate = 48000;
+        astream->need_parsing = AVSTREAM_PARSE_NONE;            //这个地方待定
         break;
     default:
         avpriv_request_sample(s, "Audio codec (%x)",

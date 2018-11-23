@@ -36,6 +36,7 @@
 #include "libavcodec/aacenctab.h"
 
 
+
 static const AVCodecTag flv_video_codec_ids[] = {
     { AV_CODEC_ID_FLV1,     FLV_CODECID_H263 },
     { AV_CODEC_ID_H263,     FLV_CODECID_REALH263 },
@@ -60,6 +61,7 @@ static const AVCodecTag flv_audio_codec_ids[] = {
     { AV_CODEC_ID_PCM_MULAW,  FLV_CODECID_PCM_MULAW  >> FLV_AUDIO_CODECID_OFFSET },
     { AV_CODEC_ID_PCM_ALAW,   FLV_CODECID_PCM_ALAW   >> FLV_AUDIO_CODECID_OFFSET },
     { AV_CODEC_ID_SPEEX,      FLV_CODECID_SPEEX      >> FLV_AUDIO_CODECID_OFFSET },
+    { AV_CODEC_ID_OPUS,       FLV_CODEC_ID_OPUS      >> FLV_AUDIO_CODECID_OFFSET },
     { AV_CODEC_ID_NONE,       0 }
 };
 
@@ -147,7 +149,8 @@ static int get_audio_flags(AVFormatContext *s, AVCodecParameters *par)
         switch (par->sample_rate) {
         case 48000:
             // 48khz mp3 is stored with 44k1 samplerate identifer
-            if (par->codec_id == AV_CODEC_ID_MP3) {
+            // hack:48Khz opus is stored with 44k1 samplerate identifer
+            if (par->codec_id == AV_CODEC_ID_MP3||par->codec_id == AV_CODEC_ID_OPUS) {
                 flags |= FLV_SAMPLERATE_44100HZ;
                 break;
             } else {
@@ -211,6 +214,9 @@ error:
     case AV_CODEC_ID_PCM_ALAW:
         flags = FLV_CODECID_PCM_ALAW  | FLV_SAMPLERATE_SPECIAL | FLV_SAMPLESSIZE_16BIT;
         break;
+    case AV_CODEC_ID_OPUS:
+        flags |= FLV_CODEC_ID_OPUS | FLV_SAMPLESSIZE_16BIT;
+        break;
     case 0:
         flags |= par->codec_tag << 4;
         break;
@@ -219,6 +225,7 @@ error:
                avcodec_get_name(par->codec_id));
         return AVERROR(EINVAL);
     }
+    av_log(s, AV_LOG_WARNING, "flags %x\n",flags);
 
     return flags;
 }
