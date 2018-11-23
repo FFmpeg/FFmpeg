@@ -1286,6 +1286,8 @@ static void do_video_out(OutputFile *of,
         ret = avcodec_send_frame(enc, in_picture);
         if (ret < 0)
             goto error;
+        // Make sure Closed Captions will not be duplicated
+        av_frame_remove_side_data(in_picture, AV_FRAME_DATA_A53_CC);
 
         while (1) {
             ret = avcodec_receive_packet(enc, &pkt);
