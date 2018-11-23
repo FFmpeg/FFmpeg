@@ -83,7 +83,7 @@ typedef struct AVDictionaryEntry {
     char *value;
 } AVDictionaryEntry;
 
-typedef struct AVDictionary AVDictionary;
+typedef struct AVDictionary AVDictionary;							//视频的元数据可以通过AVDictionary获取，元数据存储在AVDictionary 每个数据存储成key和value
 
 /**
  * Get a dictionary entry with matching key.

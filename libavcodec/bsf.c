@@ -181,7 +181,9 @@ void av_bsf_flush(AVBSFContext *ctx)
     if (ctx->filter->flush)
         ctx->filter->flush(ctx);
 }
-
+/**
+ * av_bsf_send_packet的作用就是把传过来的AVPacket放到指定的AVBSFContext内部，并将AVPacket置为空
+ */
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
     int ret;

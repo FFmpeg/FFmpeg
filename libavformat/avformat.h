@@ -863,7 +863,7 @@ typedef struct AVStreamInternal AVStreamInternal;
  * sizeof(AVStream) must not be used outside libav*.
  */
 typedef struct AVStream {
-    int index;    /**< stream index in AVFormatContext */
+    int index;    /**< stream index in AVFormatContext */               //标识该视频/音频流
     /**
      * Format-specific stream ID.
      * decoding: set by libavformat
@@ -875,7 +875,7 @@ typedef struct AVStream {
      * @deprecated use the codecpar struct instead
      */
     attribute_deprecated
-    AVCodecContext *codec;
+    AVCodecContext *codec;												//指向该视频、音频流的AVCCodecContext(他们是一一对应的关系)
 #endif
     void *priv_data;
 
@@ -891,7 +891,7 @@ typedef struct AVStream {
      *           written into the file (which may or may not be related to the
      *           user-provided one, depending on the format).
      */
-    AVRational time_base;
+    AVRational time_base;												//通过该值将pts dts转化为真正的时间
 
     /**
      * Decoding: pts of the first frame of the stream in presentation order, in stream time base.
@@ -911,7 +911,7 @@ typedef struct AVStream {
      * Encoding: May be set by the caller before avformat_write_header() to
      * provide a hint to the muxer about the estimated duration.
      */
-    int64_t duration;
+    int64_t duration;													//该视频、音频流的长度
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
@@ -926,7 +926,7 @@ typedef struct AVStream {
      */
     AVRational sample_aspect_ratio;
 
-    AVDictionary *metadata;
+    AVDictionary *metadata;												//元数据信息
 
     /**
      * Average framerate
@@ -935,7 +935,7 @@ typedef struct AVStream {
      *             avformat_find_stream_info().
      * - muxing: May be set by the caller before avformat_write_header().
      */
-    AVRational avg_frame_rate;
+    AVRational avg_frame_rate;											//帧率
 
     /**
      * For streams with AV_DISPOSITION_ATTACHED_PIC disposition, this packet
@@ -944,7 +944,7 @@ typedef struct AVStream {
      * decoding: set by libavformat, must not be modified by the caller.
      * encoding: unused
      */
-    AVPacket attached_pic;
+    AVPacket attached_pic;												//附带的图片，比如说一些MP3 AAC音频文件附带的专辑封面
 
     /**
      * An array of side data that applies to the whole stream (i.e. the
@@ -1220,7 +1220,7 @@ typedef struct AVStream {
      * Must not be accessed in any way by callers.
      */
     AVStreamInternal *internal;
-} AVStream;
+} AVStream;																//存储每一个视频音频流信息的结构体			
 
 #if FF_API_FORMAT_GET_SET
 /**
@@ -1346,7 +1346,7 @@ typedef struct AVFormatContext {
      *
      * Demuxing only, set by avformat_open_input().
      */
-    struct AVInputFormat *iformat;
+    struct AVInputFormat *iformat;											//输入数据的封装格式
 
     /**
      * The output container format.
@@ -1376,7 +1376,7 @@ typedef struct AVFormatContext {
      * iformat/oformat.flags. In such a case, the (de)muxer will handle
      * I/O in some other way and this field will be NULL.
      */
-    AVIOContext *pb;
+    AVIOContext *pb;														//输入数据的缓存
 
     /* stream info */
     /**
@@ -1390,7 +1390,7 @@ typedef struct AVFormatContext {
      *
      * Set by avformat_new_stream(), must not be modified by any other code.
      */
-    unsigned int nb_streams;
+    unsigned int nb_streams;												//音视频流的个数
     /**
      * A list of all streams in the file. New streams are created with
      * avformat_new_stream().
@@ -1402,7 +1402,7 @@ typedef struct AVFormatContext {
      *
      * Freed by libavformat in avformat_free_context().
      */
-    AVStream **streams;
+    AVStream **streams;														//音视频流
 
 #if FF_API_FORMAT_FILENAME
     /**
@@ -1449,14 +1449,14 @@ typedef struct AVFormatContext {
      *
      * Demuxing only, set by libavformat.
      */
-    int64_t duration;
+    int64_t duration;														//时长 单位是微秒
 
     /**
      * Total stream bitrate in bit/s, 0 if not
      * available. Never set it directly if the file_size and the
      * duration are known as FFmpeg can compute it automatically.
      */
-    int64_t bit_rate;
+    int64_t bit_rate;														//比特率
 
     unsigned int packet_size;
     int max_delay;
@@ -1574,7 +1574,7 @@ typedef struct AVFormatContext {
      *
      * Freed by libavformat in avformat_free_context().
      */
-    AVDictionary *metadata;
+    AVDictionary *metadata;													//元数据
 
     /**
      * Start time of the stream in real world time, in microseconds
@@ -1944,7 +1944,7 @@ typedef struct AVFormatContext {
      * - decoding: set by user
      */
     int skip_estimate_duration_from_pts;
-} AVFormatContext;
+} AVFormatContext;												//他是FFMPEG解封装（flv MP4 rmvb avi）功能的结构体
 
 #if FF_API_FORMAT_GET_SET
 /**

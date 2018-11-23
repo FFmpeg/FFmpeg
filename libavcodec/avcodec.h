@@ -4831,14 +4831,17 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
  * @warning The input buffer, avpkt->data must be AV_INPUT_BUFFER_PADDING_SIZE
  *          larger than the actual read bytes because some optimized bitstream
  *          readers read 32 or 64 bits at once and could read over the end.
+ * 输入的avpkt->data缓冲区必须必实际读取字节大 AV_INPUT_BUFFER_PADDING_SIZE，因为优化的字节流读取器必须每次读取32或者64比特
  *
  * @warning Do not mix this API with the legacy API (like avcodec_decode_video2())
  *          on the same AVCodecContext. It will return unexpected results now
  *          or in future libavcodec versions.
+ *不要和遗留的API混用，否则返回不可预知的错误
  *
  * @note The AVCodecContext MUST have been opened with @ref avcodec_open2()
  *       before packets may be fed to the decoder.
  *
+ * 再给decoder数据时，必许已经使用avccodec_open()打开
  * @param avctx codec context
  * @param[in] avpkt The input AVPacket. Usually, this will be a single video
  *                  frame, or several complete audio frames.
@@ -4857,7 +4860,10 @@ int avcodec_decode_subtitle2(AVCodecContext *avctx, AVSubtitle *sub,
  *                  unnecessary and will return AVERROR_EOF. If the decoder
  *                  still has frames buffered, it will return them after sending
  *                  a flush packet.
- *
+ * 输入AVPakcet.通常情况下，输入数据是一个单一的视频帧或者几个完整的音频帧。调用者保持packet的所有权，decoder并不修改packet，
+ * decoder将为packet data创建引用，如果没有引用计数的话讲拷贝一份。不像过去的api，包必须完整的解码出来。如果一个packet里面包含多个frame
+ * 在send 新frame之前要求多次调用avcodec_receive_frame()
+ * 可以传一个NULL进去，在这种情况下代表stream的结束，将flush所有的packet
  * @return 0 on success, otherwise negative error code:
  *      AVERROR(EAGAIN):   input is not accepted in the current state - user
  *                         must read output with avcodec_receive_frame() (once
@@ -5716,6 +5722,12 @@ typedef struct AVBSFInternal AVBSFInternal;
  * The fields in the struct will only be changed (by the caller or by the
  * filter) as described in their documentation, and are to be considered
  * immutable otherwise.
+ */
+
+/**
+ * Bitstream filtering is somehow less considered even if the are widely used under the hood to demux and mux many widely used formats
+ * It can be consider an optional final demuxing or muxing step since it works on encoded data and its main purpose is to reformat the data
+ * so it can be accepted by decoders consuming only a specific serialization of the many supported
  */
 typedef struct AVBSFContext {
     /**

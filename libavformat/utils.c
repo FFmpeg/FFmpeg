@@ -828,13 +828,13 @@ static int update_wrap_reference(AVFormatContext *s, AVStream *st, int stream_in
     return 1;
 }
 
-int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
+int ff_read_packet(AVFormatContext *s, AVPacket *pkt)					// Read a transport packet from a media file.
 {
     int ret, i, err;
     AVStream *st;
 
     for (;;) {
-        AVPacketList *pktl = s->internal->raw_packet_buffer;
+        AVPacketList *pktl = s->internal->raw_packet_buffer;            // AVPacketList 是一个AVPacket链表 一个是内容 另一个是指向下一个的指针
 
         if (pktl) {
             *pkt = pktl->pkt;
@@ -853,6 +853,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->data = NULL;
         pkt->size = 0;
         av_init_packet(pkt);
+        /*最关键的地方就是这里，read_packet是一个函数指针，指向当前的AVInputFormat的读取数据的函数
+         * 比如AVInputFormat ff_flv_demuxer中的read_packet指向 flv_read_packet*/
         ret = s->iformat->read_packet(s, pkt);
         if (ret < 0) {
             /* Some demuxers return FFERROR_REDO when they consume
@@ -911,7 +913,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (s->use_wallclock_as_timestamps)
             pkt->dts = pkt->pts = av_rescale_q(av_gettime(), AV_TIME_BASE_Q, st->time_base);
 
-        if (!pktl && st->request_probe <= 0)
+        if (!pktl && st->request_probe <= 0)                            //正常退出的地方
             return ret;
 
         err = ff_packet_list_put(&s->internal->raw_packet_buffer,
@@ -1458,6 +1460,11 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         int64_t next_dts = pkt->dts;
 
         av_init_packet(&out_pkt);
+		/*最终调用了av_parser_parse2函数 解析出来pkt  通过av_parser_parse2函数，分析出视频的一帧，或者音频的若干帧，返回 ，
+		下次再进入循环的时候，如果上次的数据没有完全取完，则st=s->cur_st.不会使null 即再次进入av_parser_parse2流程，而不是下面的av_read_packet
+		这样就保证了如果读取一次包含了N帧视频数据，则调用av_read_frame N次都不会读数据，而是返回第一次读取的数据 直到全部解析完毕*/
+
+		/*主要是通过av_parser_parse2 拿到AVPacket数据，跟av_read_frame类似 输入参数必须是指包含视频编码数据的裸流 （例如H264 HEVC码流文件） 而不能是包含封装格式的媒体数据*/
         len = av_parser_parse2(st->parser, st->internal->avctx,
                                &out_pkt.data, &out_pkt.size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
@@ -1566,7 +1573,10 @@ static int64_t ts_to_samples(AVStream *st, int64_t ts)
 {
     return av_rescale(ts, st->time_base.num * st->codecpar->sample_rate, st->time_base.den);
 }
-
+/*
+1 调用了ff_read_packet()相应的AVInputFormat读数据
+2 如果媒体音视频流需要使用AVCodecParser 则调用parser_packet()解析响应的AVPacket
+*/
 static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 {
     int ret = 0, i, got_packet = 0;
@@ -1580,6 +1590,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
         /* read next packet */
         ret = ff_read_packet(s, &cur_pkt);
+        av_log(s, AV_LOG_WARNING,"ret return value %d cur_pkt.stream_index %d pts=%s, dts=%s\n",ret,cur_pkt.stream_index,
+               av_ts2str(cur_pkt.pts),
+               av_ts2str(cur_pkt.dts));
+
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
@@ -1645,7 +1659,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                    cur_pkt.size, cur_pkt.duration, cur_pkt.flags);
 
         if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
-            st->parser = av_parser_init(st->codecpar->codec_id);
+            st->parser = av_parser_init(st->codecpar->codec_id);                    //选择分析器，根据code_id选择，以h264为例，code_id为AV_CODEC_ID_H264时，选择分析器为ff_h264_parser
             if (!st->parser) {
                 av_log(s, AV_LOG_VERBOSE, "parser not found for codec "
                        "%s, packets or times may be invalid.\n",
@@ -1671,7 +1685,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                    0, 0, AVINDEX_KEYFRAME);
             }
             got_packet = 1;
-        } else if (st->discard < AVDISCARD_ALL) {
+        } else if (st->discard < AVDISCARD_ALL) {//如果需要分析数据包的话，分析pkt包的数据，并将pkt添加到AVFormatContext ，将Pkt指针指向的数据存储到AVFormatContext
             if ((ret = parse_packet(s, &cur_pkt, cur_pkt.stream_index)) < 0)
                 return ret;
             st->codecpar->sample_rate = st->internal->avctx->sample_rate;
@@ -1772,7 +1786,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
     int ret;
     AVStream *st;
 
+    av_log(s,AV_LOG_WARNING," gents %d \n",genpts);
     if (!genpts) {
+		/*this bufffer is only needed  when packets were already buffered but not decoded ，for example to get the codec parameters in mpeg streams
+		一般情况下 调用的是 read_frame_internal 直接返回
+		*/
         ret = s->internal->packet_buffer
               ? ff_packet_list_get(&s->internal->packet_buffer,
                                         &s->internal->packet_buffer_end, pkt)

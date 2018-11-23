@@ -398,6 +398,7 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
  * the simple API. Certain decoders might consume partial packets without
  * returning any output, so this function needs to be called in a loop until it
  * returns EAGAIN.
+ * 某些解码器可能会消耗部分数据包而不返回任何输出，因此需要在循环中调用此函数，直到它返回EAGAIN
  **/
 static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
 {
@@ -410,6 +411,7 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
 
     if (!pkt->data && !avci->draining) {
         av_packet_unref(pkt);
+        //获取在av_bsf_send_packet时缓存的AVPacket
         ret = ff_decode_get_packet(avctx, pkt);
         if (ret < 0 && ret != AVERROR_EOF)
             return ret;
@@ -430,6 +432,7 @@ static int decode_simple_internal(AVCodecContext *avctx, AVFrame *frame)
     if (HAVE_THREADS && avctx->active_thread_type & FF_THREAD_FRAME) {
         ret = ff_thread_decode_frame(avctx, frame, &got_frame, pkt);
     } else {
+        //解码的关键函数，不同的编码格式对应不同的函数实现。以h264为例，对应的解码器为ff_h264_decoder，函数实现是h264_decode_frame
         ret = avctx->codec->decode(avctx, frame, &got_frame, pkt);
 
         if (!(avctx->codec->caps_internal & FF_CODEC_CAP_SETS_PKT_DTS))
@@ -641,7 +644,7 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
     av_assert0(!frame->buf[0]);
 
-    if (avctx->codec->receive_frame)
+    if (avctx->codec->receive_frame)//如果存在缓存，则直接获取，否则进行解码
         ret = avctx->codec->receive_frame(avctx, frame);
     else
         ret = decode_simple_receive_frame(avctx, frame);
@@ -673,7 +676,8 @@ static int decode_receive_frame_internal(AVCodecContext *avctx, AVFrame *frame)
 
     return ret;
 }
-
+/*支持将裸流数据输出给decoder 在函数内部会拷贝相关的AVCodecContext结构变量，将这些结构变量应用到解码的每一个包，
+ * 例如AVCodecContext.skip_frame参数通知decoder扔掉含该帧的包*/
 int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt)
 {
     AVCodecInternal *avci = avctx->internal;
@@ -687,20 +691,21 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
 
     if (avpkt && !avpkt->size && avpkt->data)
         return AVERROR(EINVAL);
-
+    //清空buffer的引用并重新初始化
     av_packet_unref(avci->buffer_pkt);
     if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
+        //增加对avpkt的引用并缓存在buffer中
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
         if (ret < 0)
             return ret;
     }
 
-    ret = av_bsf_send_packet(avci->filter.bsfs[0], avci->buffer_pkt);
+    ret = av_bsf_send_packet(avci->filter.bsfs[0], avci->buffer_pkt);               //bsf bitstream filter
     if (ret < 0) {
         av_packet_unref(avci->buffer_pkt);
         return ret;
     }
-
+    //如果有缓冲，调用decode_receive_frame_internal对缓冲数据进行解码
     if (!avci->buffer_frame->buf[0]) {
         ret = decode_receive_frame_internal(avctx, avci->buffer_frame);
         if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
@@ -746,7 +751,7 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
-
+    //如果存在缓存，则直接获取
     if (avci->buffer_frame->buf[0]) {
         av_frame_move_ref(frame, avci->buffer_frame);
     } else {

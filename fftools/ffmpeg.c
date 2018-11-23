@@ -2348,7 +2348,7 @@ static int decode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_
     int64_t best_effort_timestamp;
     int64_t dts = AV_NOPTS_VALUE;
     AVPacket avpkt;
-
+    av_log(ist->dec_ctx, AV_LOG_WARNING,"decode_video from here\n");
     // With fate-indeo3-2, we're getting 0-sized packets before EOF for some
     // reason. This seems like a semi-critical bug. Don't trigger EOF, and
     // skip the packet.
