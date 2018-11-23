@@ -1421,6 +1421,7 @@ again:
     planes = s->planar ? s->bppcount : 1;
     for (plane = 0; plane < planes; plane++) {
         int remaining = avpkt->size;
+        int decoded_height;
         stride = p->linesize[plane];
         dst = p->data[plane];
         for (i = 0; i < s->height; i += s->rps) {
@@ -1448,6 +1449,8 @@ again:
                 break;
             }
         }
+        decoded_height = FFMIN(i, s->height);
+
         if (s->predictor == 2) {
             if (s->photometric == TIFF_PHOTOMETRIC_YCBCR) {
                 av_log(s->avctx, AV_LOG_ERROR, "predictor == 2 with YUV is unsupported");
@@ -1464,7 +1467,7 @@ again:
                 s->avctx->pix_fmt == AV_PIX_FMT_YA16LE ||
                 s->avctx->pix_fmt == AV_PIX_FMT_GBRP16LE ||
                 s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16LE) {
-                for (i = 0; i < s->height; i++) {
+                for (i = 0; i < decoded_height; i++) {
                     for (j = soff; j < ssize; j += 2)
                         AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
                     dst += stride;
@@ -1475,13 +1478,13 @@ again:
                        s->avctx->pix_fmt == AV_PIX_FMT_YA16BE ||
                        s->avctx->pix_fmt == AV_PIX_FMT_GBRP16BE ||
                        s->avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
-                for (i = 0; i < s->height; i++) {
+                for (i = 0; i < decoded_height; i++) {
                     for (j = soff; j < ssize; j += 2)
                         AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
                     dst += stride;
                 }
             } else {
-                for (i = 0; i < s->height; i++) {
+                for (i = 0; i < decoded_height; i++) {
                     for (j = soff; j < ssize; j++)
                         dst[j] += dst[j - soff];
                     dst += stride;
