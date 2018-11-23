@@ -6472,7 +6472,7 @@ fi
 
 if enabled_all opencl vaapi ; then
     enabled opencl_drm_beignet && enable opencl_vaapi_beignet
-    check_type "CL/cl.h CL/va_ext.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
+    check_type "CL/cl.h CL/cl_va_api_media_sharing_intel.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
         enable opencl_vaapi_intel_media
 fi
 

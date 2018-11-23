@@ -50,7 +50,7 @@
 #include <mfx/mfxstructures.h>
 #endif
 #include <va/va.h>
-#include <CL/va_ext.h>
+#include <CL/cl_va_api_media_sharing_intel.h>
 #include "hwcontext_vaapi.h"
 #endif
 
