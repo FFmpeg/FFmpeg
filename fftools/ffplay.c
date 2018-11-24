@@ -1322,7 +1322,11 @@ static void sigterm_handler(int sig)
 static void set_default_window_size(int width, int height, AVRational sar)
 {
     SDL_Rect rect;
-    calculate_display_rect(&rect, 0, 0, INT_MAX, height, width, height, sar);
+    int max_width  = screen_width  ? screen_width  : INT_MAX;
+    int max_height = screen_height ? screen_height : INT_MAX;
+    if (max_width == INT_MAX && max_height == INT_MAX)
+        max_height = height;
+    calculate_display_rect(&rect, 0, 0, max_width, max_height, width, height, sar);
     default_width  = rect.w;
     default_height = rect.h;
 }
@@ -1331,13 +1335,8 @@ static int video_open(VideoState *is)
 {
     int w,h;
 
-    if (screen_width) {
-        w = screen_width;
-        h = screen_height;
-    } else {
-        w = default_width;
-        h = default_height;
-    }
+    w = screen_width ? screen_width : default_width;
+    h = screen_height ? screen_height : default_height;
 
     if (!window_title)
         window_title = input_filename;
