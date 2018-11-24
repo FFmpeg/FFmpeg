@@ -20,24 +20,34 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
+#include "libavutil/parseutils.h"
 #include "avio_internal.h"
 #include "avformat.h"
 #include "internal.h"
 
 typedef struct DHAVContext {
     unsigned type;
+    unsigned subtype;
+    unsigned channel;
+    unsigned frame_subnumber;
+    unsigned frame_number;
+    unsigned date;
+    unsigned timestamp;
     int width, height;
     int video_codec;
     int frame_rate;
-    int channels;
+    int audio_channels;
     int audio_codec;
     int sample_rate;
-    int64_t pts;
 
     int video_stream_index;
     int audio_stream_index;
 } DHAVContext;
+
+typedef struct DHAVStream {
+    int64_t last_timestamp;
+    int64_t pts;
+} DHAVStream;
 
 static int dhav_probe(AVProbeData *p)
 {
@@ -74,6 +84,42 @@ static int dhav_read_header(AVFormatContext *s)
     return 0;
 }
 
+static int64_t get_pts(AVFormatContext *s, DHAVStream *st)
+{
+    DHAVContext *dhav = s->priv_data;
+    /*
+    int year, month, day, hour, min, sec;
+    struct tm timeinfo;
+
+    sec   =   dhav->date        & 0x3F;
+    min   =  (dhav->date >>  6) & 0x3F;
+    hour  =  (dhav->date >> 12) & 0x1F;
+    day   =  (dhav->date >> 17) & 0x1F;
+    month =  (dhav->date >> 22) & 0x0F;
+    year  = ((dhav->date >> 26) & 0x3F) + 2000;
+
+    timeinfo.tm_year = year - 1900;
+    timeinfo.tm_mon  = month - 1;
+    timeinfo.tm_mday = day;
+    timeinfo.tm_hour = hour;
+    timeinfo.tm_min  = min;
+    timeinfo.tm_sec  = sec;*/
+
+    if (st->last_timestamp == AV_NOPTS_VALUE) {
+        st->last_timestamp = dhav->timestamp;
+    }
+
+    if (st->last_timestamp <= dhav->timestamp) {
+        st->pts += dhav->timestamp - st->last_timestamp;
+    } else {
+        st->pts += 65535 + dhav->timestamp - st->last_timestamp;
+    }
+
+    st->last_timestamp = dhav->timestamp;
+
+    return st->pts;
+}
+
 static const uint32_t sample_rates[] = {
     8000, 4000, 8000, 11025, 16000,
     20000, 22050, 32000, 44100, 48000,
@@ -108,7 +154,7 @@ static int parse_ext(AVFormatContext *s, int length)
             length -= 8;
             break;
         case 0x83:
-            dhav->channels = avio_r8(s->pb);
+            dhav->audio_channels = avio_r8(s->pb);
             dhav->audio_codec = avio_r8(s->pb);
             index = avio_r8(s->pb);
             if (index < FF_ARRAY_ELEMS(sample_rates)) {
@@ -124,7 +170,7 @@ static int parse_ext(AVFormatContext *s, int length)
             break;
         case 0x8c:
             avio_skip(s->pb, 1);
-            dhav->channels = avio_r8(s->pb);
+            dhav->audio_channels = avio_r8(s->pb);
             dhav->audio_codec = avio_r8(s->pb);
             index = avio_r8(s->pb);
             if (index < FF_ARRAY_ELEMS(sample_rates)) {
@@ -169,7 +215,7 @@ static int parse_ext(AVFormatContext *s, int length)
 static int read_chunk(AVFormatContext *s)
 {
     DHAVContext *dhav = s->priv_data;
-    unsigned size, skip;
+    unsigned frame_length, ext_length;
     int64_t start, end;
     int ret;
 
@@ -182,28 +228,31 @@ static int read_chunk(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
 
     dhav->type = avio_r8(s->pb);
-    avio_skip(s->pb, 3);
-    dhav->pts = avio_rl32(s->pb);
-    size = avio_rl32(s->pb);
-    if (size < 24)
+    dhav->subtype = avio_r8(s->pb);
+    dhav->channel = avio_r8(s->pb);
+    dhav->frame_subnumber = avio_r8(s->pb);
+    dhav->frame_number = avio_rl32(s->pb);
+    frame_length = avio_rl32(s->pb);
+
+    if (frame_length < 24)
         return AVERROR_INVALIDDATA;
     if (dhav->type == 0xf1) {
-        avio_skip(s->pb, size - 16);
+        avio_skip(s->pb, frame_length - 16);
         return 0;
     }
 
-    avio_rl32(s->pb);
-    avio_skip(s->pb, 2);
-    skip = avio_r8(s->pb);
-    avio_skip(s->pb, 1);
+    dhav->date = avio_rl32(s->pb);
+    dhav->timestamp = avio_rl16(s->pb);
+    ext_length = avio_r8(s->pb);
+    avio_skip(s->pb, 1); // checksum
 
-    ret = parse_ext(s, skip);
+    ret = parse_ext(s, ext_length);
     if (ret < 0)
         return ret;
 
     end = avio_tell(s->pb);
 
-    return size - 8 - (end - start);
+    return frame_length - 8 - (end - start);
 }
 
 static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
@@ -222,6 +271,7 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (dhav->type == 0xfd && dhav->video_stream_index == -1) {
         AVStream *st = avformat_new_stream(s, NULL);
+        DHAVStream *dst;
 
         if (!st)
             return AVERROR(ENOMEM);
@@ -238,11 +288,16 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         st->codecpar->width      = dhav->width;
         st->codecpar->height     = dhav->height;
+        st->priv_data = dst = av_mallocz(sizeof(DHAVStream));
+        if (!st->priv_data)
+            return AVERROR(ENOMEM);
+        dst->last_timestamp = AV_NOPTS_VALUE;
         dhav->video_stream_index = st->index;
 
-        avpriv_set_pts_info(st, 64, 1, dhav->frame_rate);
+        avpriv_set_pts_info(st, 64, 1, 1000);
     } else if (dhav->type == 0xf0 && dhav->audio_stream_index == -1) {
         AVStream *st = avformat_new_stream(s, NULL);
+        DHAVStream *dst;
 
         if (!st)
             return AVERROR(ENOMEM);
@@ -261,11 +316,15 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
         case 0x0d: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_MS;  break;
         default: avpriv_request_sample(s, "Unknown audio codec %X\n", dhav->audio_codec);
         }
-        st->codecpar->channels    = dhav->channels;
+        st->codecpar->channels    = dhav->audio_channels;
         st->codecpar->sample_rate = dhav->sample_rate;
+        st->priv_data = dst = av_mallocz(sizeof(DHAVStream));
+        if (!st->priv_data)
+            return AVERROR(ENOMEM);
+        dst->last_timestamp = AV_NOPTS_VALUE;
         dhav->audio_stream_index  = st->index;
 
-        avpriv_set_pts_info(st, 64, ret, dhav->sample_rate);
+        avpriv_set_pts_info(st, 64, 1, 1000);
     }
 
     ret = av_get_packet(s->pb, pkt, ret);
@@ -274,7 +333,8 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = dhav->type == 0xf0 ? dhav->audio_stream_index : dhav->video_stream_index;
     if (dhav->type != 0xfc)
         pkt->flags   |= AV_PKT_FLAG_KEY;
-    pkt->pts = dhav->pts;
+    if (pkt->stream_index >= 0)
+        pkt->pts = get_pts(s, s->streams[pkt->stream_index]->priv_data);
     pkt->duration = 1;
     pkt->pos = start;
     if (avio_rl32(s->pb) != MKTAG('d','h','a','v'))
@@ -284,6 +344,31 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static int dhav_read_seek(AVFormatContext *s, int stream_index,
+                          int64_t timestamp, int flags)
+{
+    AVStream *st = s->streams[stream_index];
+    int index = av_index_search_timestamp(st, timestamp, flags);
+    int64_t pts;
+
+    if (index < 0)
+        return -1;
+    if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
+        return -1;
+
+    pts = st->index_entries[index].timestamp;
+
+    for (int n = 0; n < s->nb_streams; n++) {
+        AVStream *st = s->streams[n];
+        DHAVStream *dst = st->priv_data;
+
+        dst->pts = pts;
+        dst->last_timestamp = AV_NOPTS_VALUE;
+    }
+
+    return 0;
+}
+
 AVInputFormat ff_dhav_demuxer = {
     .name           = "dhav",
     .long_name      = NULL_IF_CONFIG_SMALL("Video DAV"),
@@ -291,6 +376,7 @@ AVInputFormat ff_dhav_demuxer = {
     .read_probe     = dhav_probe,
     .read_header    = dhav_read_header,
     .read_packet    = dhav_read_packet,
+    .read_seek      = dhav_read_seek,
     .extensions     = "dav",
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
 };
