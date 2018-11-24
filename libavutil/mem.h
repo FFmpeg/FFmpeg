@@ -183,7 +183,7 @@ av_alloc_size(2, 3) void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
  *          The situation is undefined according to POSIX and may crash with
  *          some libc implementations.
  */
-av_alloc_size(2, 3) int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
+int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
 
 /**
  * Free a memory block which has been allocated with av_malloc(z)() or
