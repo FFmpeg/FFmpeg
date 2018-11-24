@@ -58,10 +58,12 @@ yuva420p16le        ff45de790e7bdd3c25d8aad51289aba9
 yuva420p9le         8ef1f3b3e01b5ce222e4caeec3dec396
 yuva422p            91dcecc4bfdff1f0db9ef8b9b5b9ac2a
 yuva422p10le        1ba292c74c8646fd077a6116142b1bc8
+yuva422p12le        df634ea77606d7a30e945aedb4c1e610
 yuva422p16le        383226550fe9c93d6e8bf0d45d1423d1
 yuva422p9le         0fb76788c905c6d448143aa3c5eae116
 yuva444p            fb60941a57596b277417a3c7c00aa194
 yuva444p10le        251ea4ead8300d752eb355a08cbb0352
+yuva444p12le        d6b2feb13cd8d07200d2cd309ea3639a
 yuva444p16le        5b65287e1862d2d9f1ad2cfdcde94661
 yuva444p9le         e6946c10b94c271e7ea24b3bcff314e1
 yuvj411p            87dbac57b211ab4823c1abbd702f1516
