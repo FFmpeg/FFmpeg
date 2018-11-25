@@ -507,7 +507,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
             }
             p = (char *)av_basename(vtt_dirname);
             *p = '\0';
-            sub_path_size = strlen(segment->sub_filename) + 1 + (vtt_dirname ? strlen(vtt_dirname) : 0);
+            sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname);
             sub_path = av_malloc(sub_path_size);
             if (!sub_path) {
                 ret = AVERROR(ENOMEM);
