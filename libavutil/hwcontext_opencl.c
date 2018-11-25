@@ -1726,10 +1726,13 @@ static void opencl_frames_uninit(AVHWFramesContext *hwfc)
     av_freep(&priv->mapped_frames);
 #endif
 
-    cle = clReleaseCommandQueue(priv->command_queue);
-    if (cle != CL_SUCCESS) {
-        av_log(hwfc, AV_LOG_ERROR, "Failed to release frame "
-               "command queue: %d.\n", cle);
+    if (priv->command_queue) {
+        cle = clReleaseCommandQueue(priv->command_queue);
+        if (cle != CL_SUCCESS) {
+            av_log(hwfc, AV_LOG_ERROR, "Failed to release frame "
+                   "command queue: %d.\n", cle);
+        }
+        priv->command_queue = NULL;
     }
 }
 
