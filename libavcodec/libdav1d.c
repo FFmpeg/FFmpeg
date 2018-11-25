@@ -22,7 +22,6 @@
 #include <dav1d/dav1d.h>
 
 #include "libavutil/avassert.h"
-#include "libavutil/fifo.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
@@ -33,7 +32,6 @@ typedef struct Libdav1dContext {
     AVClass *class;
     Dav1dContext *c;
 
-    AVFifoBuffer *cache;
     Dav1dData data;
     int tile_threads;
 } Libdav1dContext;
@@ -50,10 +48,6 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.n_tile_threads = dav1d->tile_threads;
     s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), 256);
 
-    dav1d->cache = av_fifo_alloc(8 * sizeof(AVPacket));
-    if (!dav1d->cache)
-        return AVERROR(ENOMEM);
-
     res = dav1d_open(&dav1d->c, &s);
     if (res < 0)
         return AVERROR(ENOMEM);
@@ -65,21 +59,8 @@ static void libdav1d_flush(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
 
-    av_fifo_reset(dav1d->cache);
     dav1d_data_unref(&dav1d->data);
     dav1d_flush(dav1d->c);
-}
-
-static int libdav1d_fifo_write(void *src, void *dst, int dst_size) {
-    AVPacket *pkt_dst = dst, *pkt_src = src;
-
-    av_assert2(dst_size >= sizeof(AVPacket));
-
-    pkt_src->buf = NULL;
-    av_packet_free_side_data(pkt_src);
-    *pkt_dst = *pkt_src;
-
-    return sizeof(AVPacket);
 }
 
 static void libdav1d_data_free(const uint8_t *data, void *opaque) {
@@ -115,31 +96,29 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dData *data = &dav1d->data;
-    AVPacket pkt = { 0 };
     Dav1dPicture p = { 0 };
     int res;
 
     if (!data->sz) {
+        AVPacket pkt = { 0 };
+
         res = ff_decode_get_packet(c, &pkt);
         if (res < 0 && res != AVERROR_EOF)
             return res;
 
         if (pkt.size) {
-            if (!av_fifo_space(dav1d->cache)) {
-                res = av_fifo_grow(dav1d->cache, 8 * sizeof(pkt));
-                if (res < 0) {
-                    av_packet_unref(&pkt);
-                    return res;
-                }
-            }
-
             res = dav1d_data_wrap(data, pkt.data, pkt.size, libdav1d_data_free, pkt.buf);
             if (res < 0) {
                 av_packet_unref(&pkt);
                 return res;
             }
 
-            av_fifo_generic_write(dav1d->cache, &pkt, sizeof(pkt), libdav1d_fifo_write);
+            data->m.timestamp = pkt.pts;
+            data->m.offset = pkt.pos;
+            data->m.duration = pkt.duration;
+
+            pkt.buf = NULL;
+            av_packet_unref(&pkt);
         }
     }
 
@@ -162,8 +141,6 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     }
 
     av_assert0(p.data[0] != NULL);
-
-    av_fifo_generic_read(dav1d->cache, &pkt, sizeof(pkt), NULL);
 
     frame->buf[0] = av_buffer_create(NULL, 0, libdav1d_frame_free,
                                      p.ref, AV_BUFFER_FLAG_READONLY);
@@ -189,7 +166,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             return res;
     }
 
-    switch (p.p.chr) {
+    switch (p.seq_hdr->chr) {
     case DAV1D_CHR_VERTICAL:
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_LEFT;
         break;
@@ -197,25 +174,25 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
         break;
     }
-    frame->colorspace = c->colorspace = (enum AVColorSpace) p.p.mtrx;
-    frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p.p.pri;
-    frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p.p.trc;
-    frame->color_range = c->color_range = p.p.fullrange ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    frame->colorspace = c->colorspace = (enum AVColorSpace) p.seq_hdr->mtrx;
+    frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p.seq_hdr->pri;
+    frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p.seq_hdr->trc;
+    frame->color_range = c->color_range = p.seq_hdr->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
     // match timestamps and packet size
-    frame->pts = frame->best_effort_timestamp = pkt.pts;
+    frame->pts = frame->best_effort_timestamp = p.m.timestamp;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = pkt.pts;
+    frame->pkt_pts = p.m.timestamp;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    frame->pkt_dts = pkt.dts;
-    frame->pkt_pos = pkt.pos;
-    frame->pkt_size = pkt.size;
-    frame->pkt_duration = pkt.duration;
-    frame->key_frame = p.p.type == DAV1D_FRAME_TYPE_KEY;
+    frame->pkt_dts = p.m.timestamp;
+    frame->pkt_pos = p.m.offset;
+    frame->pkt_size = p.m.size;
+    frame->pkt_duration = p.m.duration;
+    frame->key_frame = p.frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY;
 
-    switch (p.p.type) {
+    switch (p.frame_hdr->frame_type) {
     case DAV1D_FRAME_TYPE_KEY:
     case DAV1D_FRAME_TYPE_INTRA:
         frame->pict_type = AV_PICTURE_TYPE_I;
@@ -237,7 +214,6 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
 
-    av_fifo_freep(&dav1d->cache);
     dav1d_data_unref(&dav1d->data);
     dav1d_close(&dav1d->c);
 
