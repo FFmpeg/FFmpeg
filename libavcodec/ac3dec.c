@@ -1467,7 +1467,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     int buf_size, full_buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
     int blk, ch, err, offset, ret;
-    int got_independent_frame = 0;
+    int skip = 0, got_independent_frame = 0;
     const uint8_t *channel_map;
     uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
     const SHORTFLOAT *output[AC3_MAX_CHANNELS];
@@ -1477,6 +1477,14 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     s->superframe_size = 0;
 
     buf_size = full_buf_size;
+    while (buf_size > 2) {
+        if (AV_RB16(buf) != 0x770B && AV_RL16(buf) != 0x770B) {
+            buf += 1;
+            buf_size -= 1;
+            continue;
+        }
+        break;
+    }
     /* copy input buffer to decoder context to avoid reading past the end
        of the buffer, which can be caused by a damaged input stream. */
     if (buf_size >= 2 && AV_RB16(buf) == 0x770B) {
@@ -1637,6 +1645,11 @@ dependent_frame:
         AC3HeaderInfo hdr;
         int err;
 
+        if (buf_size - s->frame_size <= 16) {
+            skip = buf_size - s->frame_size;
+            goto skip;
+        }
+
         if ((ret = init_get_bits8(&s->gbc, buf + s->frame_size, buf_size - s->frame_size)) < 0)
             return ret;
 
@@ -1657,6 +1670,7 @@ dependent_frame:
             }
         }
     }
+skip:
 
     frame->decode_error_flags = err ? FF_DECODE_ERROR_INVALID_BITSTREAM : 0;
 
@@ -1796,9 +1810,9 @@ dependent_frame:
     *got_frame_ptr = 1;
 
     if (!s->superframe_size)
-        return FFMIN(full_buf_size, s->frame_size);
+        return FFMIN(full_buf_size, s->frame_size + skip);
 
-    return FFMIN(full_buf_size, s->superframe_size);
+    return FFMIN(full_buf_size, s->superframe_size + skip);
 }
 
 /**
