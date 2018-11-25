@@ -106,7 +106,7 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
         }
 
         frame->data[plane]     = frame->buf[plane]->data;
-        frame->linesize[plane] = pic->widths[plane];
+        frame->linesize[plane] = size_line;
 
         for (line = 0; line < pic->lines[plane]; ++line)
             memcpy(frame->data[plane] + line * size_line,
