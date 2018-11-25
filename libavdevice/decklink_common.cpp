@@ -171,6 +171,11 @@ int ff_decklink_set_configs(AVFormatContext *avctx,
         if (ret < 0)
             return ret;
     }
+    if (direction == DIRECTION_OUT && cctx->timing_offset != INT_MIN) {
+        res = ctx->cfg->SetInt(bmdDeckLinkConfigReferenceInputTimingOffset, cctx->timing_offset);
+        if (res != S_OK)
+            av_log(avctx, AV_LOG_WARNING, "Setting timing offset failed.\n");
+    }
     return 0;
 }
 

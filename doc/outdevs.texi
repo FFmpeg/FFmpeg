@@ -155,6 +155,10 @@ Defaults to @option{0.5}.
 Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
 Defaults to @samp{unset}.
 
+@item timing_offset
+Sets the genlock timing pixel offset on the used output.
+Defaults to @samp{unset}.
+
 @end table
 
 @subsection Examples
