@@ -76,13 +76,14 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_NONE
     };
     const enum AVPixelFormat *pix_fmts;
+    AVFilterFormats *fmts_list;
 
     if (!strcmp(ctx->filter->name, "rgbashift"))
         pix_fmts = rgb_pix_fmts;
     else
         pix_fmts = yuv_pix_fmts;
 
-    AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+    fmts_list = ff_make_format_list(pix_fmts);
     if (!fmts_list)
         return AVERROR(ENOMEM);
     return ff_set_common_formats(ctx, fmts_list);
