@@ -986,6 +986,7 @@ static const AVOption options[] = {
 };
 
 static const AVCodecDefault defaults[] = {
+    { "b",          "256*1000" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
     { "g",                "-1" },
