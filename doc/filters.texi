@@ -11399,7 +11399,9 @@ Set the file path to be used to store logs.
 Set the format of the log file (xml or json).
 
 @item enable_transform
-Enables transform for computing vmaf.
+This option can enable/disable the @code{score_transform} applied to the final predicted VMAF score,
+if you have specified score_transform option in the input parameter file passed to @code{run_vmaf_training.py}
+Default value: @code{false}
 
 @item phone_model
 Invokes the phone model which will generate VMAF scores higher than in the
@@ -11438,7 +11440,7 @@ ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf -f null -
 
 Example with options:
 @example
-ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf="psnr=1:enable-transform=1" -f null -
+ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf="psnr=1:log_fmt=json" -f null -
 @end example
 
 @section limiter
