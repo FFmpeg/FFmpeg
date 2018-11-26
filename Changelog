@@ -9,6 +9,7 @@ version <next>:
 - freezedetect filter
 - truehd_core bitstream filter
 - dhav demuxer
+- PCM-DVD encoder
 
 
 version 4.1:

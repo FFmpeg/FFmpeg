@@ -494,6 +494,7 @@ extern AVCodec ff_xma2_decoder;
 extern AVCodec ff_pcm_alaw_encoder;
 extern AVCodec ff_pcm_alaw_decoder;
 extern AVCodec ff_pcm_bluray_decoder;
+extern AVCodec ff_pcm_dvd_encoder;
 extern AVCodec ff_pcm_dvd_decoder;
 extern AVCodec ff_pcm_f16le_decoder;
 extern AVCodec ff_pcm_f24le_decoder;
