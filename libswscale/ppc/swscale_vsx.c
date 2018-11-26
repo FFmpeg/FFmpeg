@@ -31,13 +31,13 @@
 #include "yuv2rgb_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#if HAVE_ALTIVEC && HAVE_BIGENDIAN
+#if HAVE_VSX
 #define vzero vec_splat_s32(0)
 
+#if !HAVE_BIGENDIAN
 #define  GET_LS(a,b,c,s) {\
-        vector signed short l2  = vec_ld(((b) << 1) + 16, s);\
-        ls  = vec_perm(a, l2, c);\
-        a = l2;\
+        ls  = a;\
+        a = vec_vsx_ld(((b) << 1)  + 16, s);\
     }
 
 #define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {\
@@ -53,13 +53,10 @@
     } while (0)
 
 #define LOAD_FILTER(vf,f) {\
-        vector unsigned char perm0 = vec_lvsl(joffset, f);\
-        vf = vec_ld(joffset, f);\
-        vf = vec_perm(vf, vf, perm0);\
+        vf = vec_vsx_ld(joffset, f);\
 }
 #define LOAD_L1(ll1,s,p){\
-        p = vec_lvsl(xoffset, s);\
-        ll1   = vec_ld(xoffset, s);\
+        ll1  = vec_vsx_ld(xoffset, s);\
 }
 
 // The 3 above is 2 (filterSize == 4) + 1 (sizeof(short) == 2).
@@ -69,86 +66,99 @@
 // and we're going to use vec_mule, so we choose
 // carefully how to "unpack" the elements into the even slots.
 #define GET_VF4(a, vf, f) {\
-    vf = vec_ld(a<< 3, f);\
-    if ((a << 3) % 16)\
-        vf = vec_mergel(vf, (vector signed short)vzero);\
-    else\
-        vf = vec_mergeh(vf, (vector signed short)vzero);\
+    vf = (vector signed short)vec_vsx_ld(a << 3, f);\
+    vf = vec_mergeh(vf, (vector signed short)vzero);\
 }
-#define FIRST_LOAD(sv, pos, s, per) {\
-    sv = vec_ld(pos, s);\
-    per = vec_lvsl(pos, s);\
-}
-#define UPDATE_PTR(s0, d0, s1, d1) {\
-    d0 = s0;\
-    d1 = s1;\
-}
+#define FIRST_LOAD(sv, pos, s, per) {}
+#define UPDATE_PTR(s0, d0, s1, d1) {}
 #define LOAD_SRCV(pos, a, s, per, v0, v1, vf) {\
-    v1 = vec_ld(pos + a + 16, s);\
-    vf = vec_perm(v0, v1, per);\
+    vf = vec_vsx_ld(pos + a, s);\
 }
-#define LOAD_SRCV8(pos, a, s, per, v0, v1, vf) {\
-    if ((((uintptr_t)s + pos) % 16) > 8) {\
-        v1 = vec_ld(pos + a + 16, s);\
-    }\
-    vf = vec_perm(v0, src_v1, per);\
-}
+#define LOAD_SRCV8(pos, a, s, per, v0, v1, vf) LOAD_SRCV(pos, a, s, per, v0, v1, vf)
 #define GET_VFD(a, b, f, vf0, vf1, per, vf, off) {\
-    vf1 = vec_ld((a * 2 * filterSize) + (b * 2) + 16 + off, f);\
-    vf  = vec_perm(vf0, vf1, per);\
+    vf  = vec_vsx_ld((a * 2 * filterSize) + (b * 2) + off, f);\
 }
 
-#define FUNC(name) name ## _altivec
+#define FUNC(name) name ## _vsx
 #include "swscale_ppc_template.c"
 #undef FUNC
 
-#endif /* HAVE_ALTIVEC && HAVE_BIGENDIAN */
+#endif /* !HAVE_BIGENDIAN */
 
-av_cold void ff_sws_init_swscale_ppc(SwsContext *c)
+static void yuv2plane1_8_u(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset, int start)
 {
-#if HAVE_ALTIVEC
+    int i;
+    for (i = start; i < dstW; i++) {
+        int val = (src[i] + dither[(i + offset) & 7]) >> 7;
+        dest[i] = av_clip_uint8(val);
+    }
+}
+
+static void yuv2plane1_8_vsx(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
+{
+    const int dst_u = -(uintptr_t)dest & 15;
+    int i, j;
+    LOCAL_ALIGNED(16, int16_t, val, [16]);
+    const vector uint16_t shifts = (vector uint16_t) {7, 7, 7, 7, 7, 7, 7, 7};
+    vector int16_t vi, vileft, ditherleft, ditherright;
+    vector uint8_t vd;
+
+    for (j = 0; j < 16; j++) {
+        val[j] = dither[(dst_u + offset + j) & 7];
+    }
+
+    ditherleft = vec_ld(0, val);
+    ditherright = vec_ld(0, &val[8]);
+
+    yuv2plane1_8_u(src, dest, dst_u, dither, offset, 0);
+
+    for (i = dst_u; i < dstW - 15; i += 16) {
+
+        vi = vec_vsx_ld(0, &src[i]);
+        vi = vec_adds(ditherleft, vi);
+        vileft = vec_sra(vi, shifts);
+
+        vi = vec_vsx_ld(0, &src[i + 8]);
+        vi = vec_adds(ditherright, vi);
+        vi = vec_sra(vi, shifts);
+
+        vd = vec_packsu(vileft, vi);
+        vec_st(vd, 0, &dest[i]);
+    }
+
+    yuv2plane1_8_u(src, dest, dstW, dither, offset, i);
+}
+
+#endif /* HAVE_VSX */
+
+av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
+{
+#if HAVE_VSX
     enum AVPixelFormat dstFormat = c->dstFormat;
 
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_VSX))
         return;
 
-#if HAVE_BIGENDIAN
+#if !HAVE_BIGENDIAN
     if (c->srcBpc == 8 && c->dstBpc <= 14) {
-        c->hyScale = c->hcScale = hScale_real_altivec;
+        c->hyScale = c->hcScale = hScale_real_vsx;
     }
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) &&
         dstFormat != AV_PIX_FMT_NV12 && dstFormat != AV_PIX_FMT_NV21 &&
         dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE &&
         !c->needAlpha) {
-        c->yuv2planeX = yuv2planeX_altivec;
+        c->yuv2planeX = yuv2planeX_vsx;
     }
 #endif
 
-    /* The following list of supported dstFormat values should
-     * match what's found in the body of ff_yuv2packedX_altivec() */
     if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->needAlpha) {
-        switch (c->dstFormat) {
-        case AV_PIX_FMT_ABGR:
-            c->yuv2packedX = ff_yuv2abgr_X_altivec;
-            break;
-        case AV_PIX_FMT_BGRA:
-            c->yuv2packedX = ff_yuv2bgra_X_altivec;
-            break;
-        case AV_PIX_FMT_ARGB:
-            c->yuv2packedX = ff_yuv2argb_X_altivec;
-            break;
-        case AV_PIX_FMT_RGBA:
-            c->yuv2packedX = ff_yuv2rgba_X_altivec;
-            break;
-        case AV_PIX_FMT_BGR24:
-            c->yuv2packedX = ff_yuv2bgr24_X_altivec;
-            break;
-        case AV_PIX_FMT_RGB24:
-            c->yuv2packedX = ff_yuv2rgb24_X_altivec;
+        switch (c->dstBpc) {
+        case 8:
+            c->yuv2plane1 = yuv2plane1_8_vsx;
             break;
         }
     }
-#endif /* HAVE_ALTIVEC */
-
-    ff_sws_init_swscale_vsx(c);
+#endif /* HAVE_VSX */
 }
