@@ -505,7 +505,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     enccfg.g_h            = avctx->height;
     enccfg.g_timebase.num = avctx->time_base.num;
     enccfg.g_timebase.den = avctx->time_base.den;
-    enccfg.g_threads      = avctx->thread_count ? avctx->thread_count : av_cpu_count();
+    enccfg.g_threads      =
+        FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
 
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
