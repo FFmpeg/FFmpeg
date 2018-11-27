@@ -155,13 +155,21 @@ static av_cold int decode_init(AVCodecContext *avctx)
         break;
     case MKTAG('a','p','4','h'):
         avctx->profile = FF_PROFILE_PRORES_4444;
+        avctx->bits_per_raw_sample = 12;
         break;
     case MKTAG('a','p','4','x'):
         avctx->profile = FF_PROFILE_PRORES_XQ;
+        avctx->bits_per_raw_sample = 12;
         break;
     default:
         avctx->profile = FF_PROFILE_UNKNOWN;
         av_log(avctx, AV_LOG_WARNING, "Unknown prores profile %d\n", avctx->codec_tag);
+    }
+
+    if (avctx->bits_per_raw_sample == 10) {
+        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 10b decoding based on codec tag");
+    } else { /* 12b */
+        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 12b decoding based on codec tag");
     }
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
@@ -211,6 +219,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     width  = AV_RB16(buf + 8);
     height = AV_RB16(buf + 10);
+
     if (width != avctx->width || height != avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "picture resolution change: %dx%d -> %dx%d\n",
                avctx->width, avctx->height, width, height);
@@ -237,9 +246,17 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (ctx->alpha_info) {
-        avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUVA422P10;
+        if (avctx->bits_per_raw_sample == 10) {
+            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P10 : AV_PIX_FMT_YUVA422P10;
+        } else { /* 12b */
+            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUVA444P12 : AV_PIX_FMT_YUVA422P12;
+        }
     } else {
-        avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
+        if (avctx->bits_per_raw_sample == 10) {
+            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P10 : AV_PIX_FMT_YUV422P10;
+        } else { /* 12b */
+            avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? AV_PIX_FMT_YUV444P12 : AV_PIX_FMT_YUV422P12;
+        }
     }
 
     avctx->color_primaries = buf[14];
@@ -585,6 +602,7 @@ static void decode_slice_alpha(ProresContext *ctx,
     }
 
     block = blocks;
+
     for (i = 0; i < 16; i++) {
         memcpy(dst, block, 16 * blocks_per_slice * sizeof(*dst));
         dst   += dst_stride >> 1;
@@ -606,6 +624,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     LOCAL_ALIGNED_16(int16_t, qmat_chroma_scaled,[64]);
     int mb_x_shift;
     int ret;
+    uint16_t val_no_chroma;
 
     slice->ret = -1;
     //av_log(avctx, AV_LOG_INFO, "slice %d mb width %d mb x %d y %d\n",
@@ -643,7 +662,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         chroma_stride = pic->linesize[1] << 1;
     }
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10) {
+    if (avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10 ||
+        avctx->pix_fmt == AV_PIX_FMT_YUV444P12 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P12) {
         mb_x_shift = 5;
         log2_chroma_blocks_per_mb = 2;
     } else {
@@ -684,10 +704,15 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     else {
         size_t mb_max_x = slice->mb_count << (mb_x_shift - 1);
         size_t i, j;
+        if (avctx->bits_per_raw_sample == 10) {
+            val_no_chroma = 511;
+        } else { /* 12b */
+            val_no_chroma = 511 * 4;
+        }
         for (i = 0; i < 16; ++i)
             for (j = 0; j < mb_max_x; ++j) {
-                *(uint16_t*)(dest_u + (i * chroma_stride) + (j << 1)) = 511;
-                *(uint16_t*)(dest_v + (i * chroma_stride) + (j << 1)) = 511;
+                *(uint16_t*)(dest_u + (i * chroma_stride) + (j << 1)) = val_no_chroma;
+                *(uint16_t*)(dest_v + (i * chroma_stride) + (j << 1)) = val_no_chroma;
             }
     }
 
