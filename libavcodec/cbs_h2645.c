@@ -612,7 +612,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
 
         err = ff_h2645_packet_split(&priv->read_packet,
                                     frag->data + start, end - start,
-                                    ctx->log_ctx, 1, 2, AV_CODEC_ID_H264, 1);
+                                    ctx->log_ctx, 1, 2, AV_CODEC_ID_H264, 1, 0);
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to split AVCC SPS array.\n");
             return err;
@@ -636,7 +636,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
 
         err = ff_h2645_packet_split(&priv->read_packet,
                                     frag->data + start, end - start,
-                                    ctx->log_ctx, 1, 2, AV_CODEC_ID_H264, 1);
+                                    ctx->log_ctx, 1, 2, AV_CODEC_ID_H264, 1, 0);
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to split AVCC PPS array.\n");
             return err;
@@ -690,7 +690,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
 
             err = ff_h2645_packet_split(&priv->read_packet,
                                         frag->data + start, end - start,
-                                        ctx->log_ctx, 1, 2, AV_CODEC_ID_HEVC, 1);
+                                        ctx->log_ctx, 1, 2, AV_CODEC_ID_HEVC, 1, 0);
             if (err < 0) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to split "
                        "HVCC array %d (%d NAL units of type %d).\n",
@@ -709,7 +709,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
                                     frag->data, frag->data_size,
                                     ctx->log_ctx,
                                     priv->mp4, priv->nal_length_size,
-                                    codec_id, 1);
+                                    codec_id, 1, 0);
         if (err < 0)
             return err;
 

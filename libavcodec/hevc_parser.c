@@ -194,7 +194,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     ff_hevc_reset_sei(sei);
 
     ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, ctx->is_avc,
-                                ctx->nal_length_size, AV_CODEC_ID_HEVC, 1);
+                                ctx->nal_length_size, AV_CODEC_ID_HEVC, 1, 0);
     if (ret < 0)
         return ret;
 

@@ -359,7 +359,7 @@ static int decode_extradata_ps(const uint8_t *data, int size, H264ParamSets *ps,
     H2645Packet pkt = { 0 };
     int i, ret = 0;
 
-    ret = ff_h2645_packet_split(&pkt, data, size, logctx, is_avc, 2, AV_CODEC_ID_H264, 1);
+    ret = ff_h2645_packet_split(&pkt, data, size, logctx, is_avc, 2, AV_CODEC_ID_H264, 1, 0);
     if (ret < 0) {
         ret = 0;
         goto fail;
