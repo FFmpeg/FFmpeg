@@ -534,8 +534,12 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         snprintf(temp_filename_hls, sizeof(temp_filename_hls), use_rename ? "%s.tmp" : "%s", filename_hls);
 
         set_http_options(&http_opts, c);
-        dashenc_io_open(s, &c->m3u8_out, temp_filename_hls, &http_opts);
+        ret = dashenc_io_open(s, &c->m3u8_out, temp_filename_hls, &http_opts);
         av_dict_free(&http_opts);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename_hls);
+            return;
+        }
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
             double duration = (double) seg->duration / timescale;
