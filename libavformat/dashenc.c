@@ -1619,6 +1619,18 @@ static int dash_write_trailer(AVFormatContext *s)
             dashenc_delete_file(s, filename);
         }
         dashenc_delete_file(s, s->url);
+
+        if (c->hls_playlist && c->master_playlist_created) {
+            for (i = 0; i < s->nb_streams; i++) {
+                OutputStream *os = &c->streams[i];
+                if (os->segment_type == SEGMENT_TYPE_MP4) {
+                    get_hls_playlist_name(filename, sizeof(filename), c->dirname, i);
+                    dashenc_delete_file(s, filename);
+                }
+            }
+            snprintf(filename, sizeof(filename), "%smaster.m3u8", c->dirname);
+            dashenc_delete_file(s, filename);
+        }
     }
 
     return 0;
