@@ -1337,6 +1337,8 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
             pict_type = AV_PICTURE_TYPE_P;
         else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
             pict_type = AV_PICTURE_TYPE_B;
+        else
+            av_assert0(!"Uninitialized pict_type!");
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
