@@ -500,6 +500,9 @@ static int opencl_device_create_internal(AVHWDeviceContext *hwdev,
          *device_name_src   = NULL;
     int err, found, p, d;
 
+    av_assert0(selector->enumerate_platforms &&
+               selector->enumerate_devices);
+
     err = selector->enumerate_platforms(hwdev, &nb_platforms, &platforms,
                                         selector->context);
     if (err)
@@ -531,9 +534,9 @@ static int opencl_device_create_internal(AVHWDeviceContext *hwdev,
                 continue;
         }
 
-        err = opencl_enumerate_devices(hwdev, platforms[p], platform_name,
-                                       &nb_devices, &devices,
-                                       selector->context);
+        err = selector->enumerate_devices(hwdev, platforms[p], platform_name,
+                                          &nb_devices, &devices,
+                                          selector->context);
         if (err < 0)
             continue;
 
