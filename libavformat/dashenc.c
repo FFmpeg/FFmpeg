@@ -225,6 +225,7 @@ static inline SegmentType select_segment_type(SegmentType segment_type, enum AVC
 static int init_segment_types(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
+    int has_mp4_streams = 0;
     for (int i = 0; i < s->nb_streams; ++i) {
         OutputStream *os = &c->streams[i];
         SegmentType segment_type = select_segment_type(
@@ -235,6 +236,12 @@ static int init_segment_types(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Could not select DASH segment type for stream %d\n", i);
             return AVERROR_MUXER_NOT_FOUND;
         }
+        has_mp4_streams |= segment_type == SEGMENT_TYPE_MP4;
+    }
+
+    if (c->hls_playlist && !has_mp4_streams) {
+         av_log(s, AV_LOG_WARNING, "No mp4 streams, disabling HLS manifest generation\n");
+         c->hls_playlist = 0;
     }
 
     return 0;
@@ -510,7 +517,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         }
         avio_printf(out, "\t\t\t\t</SegmentList>\n");
     }
-    if (c->hls_playlist && start_index < os->nb_segments)
+    if (c->hls_playlist && start_index < os->nb_segments && os->segment_type == SEGMENT_TYPE_MP4)
     {
         int timescale = os->ctx->streams[0]->time_base.den;
         char temp_filename_hls[1024];
@@ -944,6 +951,8 @@ static int write_manifest(AVFormatContext *s, int final)
             OutputStream *os = &c->streams[i];
             if (st->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
+            if (os->segment_type != SEGMENT_TYPE_MP4)
+                continue;
             get_hls_playlist_name(playlist_file, sizeof(playlist_file), NULL, i);
             ff_hls_write_audio_rendition(c->m3u8_out, (char *)audio_group,
                                          playlist_file, i, is_default);
@@ -966,6 +975,8 @@ static int write_manifest(AVFormatContext *s, int final)
             char *codec_str_ptr = NULL;
             int stream_bitrate = st->codecpar->bit_rate + os->muxer_overhead;
             if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                continue;
+            if (os->segment_type != SEGMENT_TYPE_MP4)
                 continue;
             av_strlcpy(codec_str, os->codec_str, sizeof(codec_str));
             if (max_audio_bitrate) {
