@@ -138,6 +138,7 @@ typedef struct DASHContext {
     int index_correction;
     char *format_options_str;
     SegmentType segment_type_option;  /* segment type as specified in options */
+    int ignore_io_errors;
 } DASHContext;
 
 static struct codec_string {
@@ -853,7 +854,7 @@ static int write_manifest(AVFormatContext *s, int final)
     av_dict_free(&opts);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
-        return ret;
+        return c->ignore_io_errors ? 0 : ret;
     }
     out = c->mpd_out;
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -944,7 +945,7 @@ static int write_manifest(AVFormatContext *s, int final)
         av_dict_free(&opts);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
-            return ret;
+            return c->ignore_io_errors ? 0 : ret;
         }
 
         ff_hls_write_playlist_version(c->m3u8_out, 7);
@@ -1576,8 +1577,9 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         set_http_options(&opts, c);
         ret = dashenc_io_open(s, &os->out, os->temp_path, &opts);
         av_dict_free(&opts);
-        if (ret < 0)
-            return ret;
+        if (ret < 0) {
+            return c->ignore_io_errors ? 0 : ret;
+        }
     }
 
     //write out the data immediately in streaming mode
@@ -1588,9 +1590,11 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             write_styp(os->ctx->pb);
         avio_flush(os->ctx->pb);
         len = avio_get_dyn_buf (os->ctx->pb, &buf);
-        avio_write(os->out, buf + os->written_len, len - os->written_len);
+        if (os->out) {
+            avio_write(os->out, buf + os->written_len, len - os->written_len);
+            avio_flush(os->out);
+        }
         os->written_len = len;
-        avio_flush(os->out);
     }
 
     return ret;
@@ -1693,6 +1697,7 @@ static const AVOption options[] = {
     { "auto", "select segment file format based on codec", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_AUTO }, 0, UINT_MAX,   E, "segment_type"},
     { "mp4", "make segment file in ISOBMFF format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_MP4 }, 0, UINT_MAX,   E, "segment_type"},
     { "webm", "make segment file in WebM format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_WEBM }, 0, UINT_MAX,   E, "segment_type"},
+    { "ignore_io_errors", "Ignore IO errors during open and write. Useful for long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 

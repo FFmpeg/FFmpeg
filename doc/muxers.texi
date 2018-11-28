@@ -300,6 +300,9 @@ If this flag is set, the dash segment files will be in in ISOBMFF format.
 @item webm
 If this flag is set, the dash segment files will be in in WebM format.
 
+@item -ignore_io_errors @var{ignore_io_errors}
+Ignore IO errors during open and write. Useful for long-duration runs with network output.
+
 @end table
 
 @anchor{framecrc}
