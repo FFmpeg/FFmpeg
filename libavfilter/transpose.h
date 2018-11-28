@@ -15,17 +15,20 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#ifndef AVFILTER_TRANSPOSE_H
+#define AVFILTER_TRANSPOSE_H
 
-#ifndef AVFILTER_OPENCL_SOURCE_H
-#define AVFILTER_OPENCL_SOURCE_H
+enum PassthroughType {
+    TRANSPOSE_PT_TYPE_NONE,
+    TRANSPOSE_PT_TYPE_LANDSCAPE,
+    TRANSPOSE_PT_TYPE_PORTRAIT,
+};
 
-extern const char *ff_opencl_source_avgblur;
-extern const char *ff_opencl_source_colorspace_common;
-extern const char *ff_opencl_source_convolution;
-extern const char *ff_opencl_source_neighbor;
-extern const char *ff_opencl_source_overlay;
-extern const char *ff_opencl_source_tonemap;
-extern const char *ff_opencl_source_transpose;
-extern const char *ff_opencl_source_unsharp;
+enum TransposeDir {
+    TRANSPOSE_CCLOCK_FLIP,
+    TRANSPOSE_CLOCK,
+    TRANSPOSE_CCLOCK,
+    TRANSPOSE_CLOCK_FLIP,
+};
 
-#endif /* AVFILTER_OPENCL_SOURCE_H */
+#endif
