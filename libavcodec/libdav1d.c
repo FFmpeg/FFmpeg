@@ -84,14 +84,6 @@ static const enum AVPixelFormat pix_fmt[][2] = {
     [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10 },
 };
 
-// TODO: Update once 12bit support is added.
-static const int profile[] = {
-    [DAV1D_PIXEL_LAYOUT_I400] = FF_PROFILE_AV1_MAIN,
-    [DAV1D_PIXEL_LAYOUT_I420] = FF_PROFILE_AV1_MAIN,
-    [DAV1D_PIXEL_LAYOUT_I422] = FF_PROFILE_AV1_PROFESSIONAL,
-    [DAV1D_PIXEL_LAYOUT_I444] = FF_PROFILE_AV1_HIGH,
-};
-
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -156,7 +148,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[1] = p.stride[1];
     frame->linesize[2] = p.stride[1];
 
-    c->profile = profile[p.p.layout];
+    c->profile = p.seq_hdr->profile;
     frame->format = c->pix_fmt = pix_fmt[p.p.layout][p.p.bpc == 10];
     frame->width = p.p.w;
     frame->height = p.p.h;
