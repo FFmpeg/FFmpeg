@@ -441,8 +441,6 @@ static void dash_free(AVFormatContext *s)
         return;
     for (i = 0; i < s->nb_streams; i++) {
         OutputStream *os = &c->streams[i];
-        if (os->ctx && os->ctx_inited)
-            av_write_trailer(os->ctx);
         if (os->ctx && os->ctx->pb)
             ffio_free_dyn_buf(&os->ctx->pb);
         ff_format_io_close(s, &os->out);
@@ -1354,6 +1352,47 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
     }
 }
 
+static int dashenc_delete_segment_file(AVFormatContext *s, const char* file)
+{
+    DASHContext *c = s->priv_data;
+    size_t dirname_len, file_len;
+    char filename[1024];
+
+    dirname_len = strlen(c->dirname);
+    if (dirname_len >= sizeof(filename)) {
+        av_log(s, AV_LOG_WARNING, "Cannot delete segments as the directory path is too long: %"PRIu64" characters: %s\n",
+            (uint64_t)dirname_len, c->dirname);
+        return AVERROR(ENAMETOOLONG);
+    }
+
+    memcpy(filename, c->dirname, dirname_len);
+
+    file_len = strlen(file);
+    if ((dirname_len + file_len) >= sizeof(filename)) {
+        av_log(s, AV_LOG_WARNING, "Cannot delete segments as the path is too long: %"PRIu64" characters: %s%s\n",
+            (uint64_t)(dirname_len + file_len), c->dirname, file);
+        return AVERROR(ENAMETOOLONG);
+    }
+
+    memcpy(filename + dirname_len, file, file_len + 1); // include the terminating zero
+    dashenc_delete_file(s, filename);
+
+    return 0;
+}
+
+static inline void dashenc_delete_media_segments(AVFormatContext *s, OutputStream *os, int remove_count)
+{
+    for (int i = 0; i < remove_count; ++i) {
+        dashenc_delete_segment_file(s, os->segments[i]->file);
+
+        // Delete the segment regardless of whether the file was successfully deleted
+        av_free(os->segments[i]);
+    }
+
+    os->nb_segments -= remove_count;
+    memmove(os->segments, os->segments + remove_count, os->nb_segments * sizeof(*os->segments));
+}
+
 static int dash_flush(AVFormatContext *s, int final, int stream)
 {
     DASHContext *c = s->priv_data;
@@ -1443,23 +1482,12 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         os->pos += range_length;
     }
 
-    if (c->window_size || (final && c->remove_at_exit)) {
+    if (c->window_size) {
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
-            int j;
-            int remove = os->nb_segments - c->window_size - c->extra_window_size;
-            if (final && c->remove_at_exit)
-                remove = os->nb_segments;
-            if (remove > 0) {
-                for (j = 0; j < remove; j++) {
-                    char filename[1024];
-                    snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->segments[j]->file);
-                    dashenc_delete_file(s, filename);
-                    av_free(os->segments[j]);
-                }
-                os->nb_segments -= remove;
-                memmove(os->segments, os->segments + remove, os->nb_segments * sizeof(*os->segments));
-            }
+            int remove_count = os->nb_segments - c->window_size - c->extra_window_size;
+            if (remove_count > 0)
+                dashenc_delete_media_segments(s, os, remove_count);
         }
     }
 
@@ -1610,6 +1638,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 static int dash_write_trailer(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
+    int i;
 
     if (s->nb_streams > 0) {
         OutputStream *os = &c->streams[0];
@@ -1625,14 +1654,19 @@ static int dash_write_trailer(AVFormatContext *s)
     }
     dash_flush(s, 1, -1);
 
-    if (c->remove_at_exit) {
-        char filename[1024];
-        int i;
-        for (i = 0; i < s->nb_streams; i++) {
-            OutputStream *os = &c->streams[i];
-            snprintf(filename, sizeof(filename), "%s%s", c->dirname, os->initfile);
-            dashenc_delete_file(s, filename);
+    for (i = 0; i < s->nb_streams; ++i) {
+        OutputStream *os = &c->streams[i];
+        if (os->ctx && os->ctx_inited) {
+            av_write_trailer(os->ctx);
         }
+
+        if (c->remove_at_exit) {
+            dashenc_delete_media_segments(s, os, os->nb_segments);
+            dashenc_delete_segment_file(s, os->initfile);
+        }
+    }
+
+    if (c->remove_at_exit) {
         dashenc_delete_file(s, s->url);
 
         if (c->hls_playlist && c->master_playlist_created) {
