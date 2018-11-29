@@ -226,6 +226,10 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
     av_log(avctx, AV_LOG_VERBOSE, "\n");
 #endif
 
+#if QSV_HAVE_VDENC
+    av_log(avctx, AV_LOG_VERBOSE, "VDENC: %s\n", print_threestate(info->LowPower));
+#endif
+
 #if QSV_VERSION_ATLEAST(1, 8)
     av_log(avctx, AV_LOG_VERBOSE,
            "RepeatPPS: %s; NumMbPerSlice: %"PRIu16"; LookAheadDS: ",
@@ -475,6 +479,9 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         }
     }
 
+#if QSV_HAVE_VDENC
+    q->param.mfx.LowPower           = q->low_power ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+#endif
     q->param.mfx.CodecProfile       = q->profile;
     q->param.mfx.TargetUsage        = avctx->compression_level;
     q->param.mfx.GopPicSize         = FFMAX(0, avctx->gop_size);

@@ -44,6 +44,7 @@
 #define QSV_HAVE_LA     QSV_VERSION_ATLEAST(1, 7)
 #define QSV_HAVE_LA_DS  QSV_VERSION_ATLEAST(1, 8)
 #define QSV_HAVE_LA_HRD QSV_VERSION_ATLEAST(1, 11)
+#define QSV_HAVE_VDENC  QSV_VERSION_ATLEAST(1, 15)
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #define QSV_HAVE_AVBR   QSV_VERSION_ATLEAST(1, 3)
@@ -163,6 +164,7 @@ typedef struct QSVEncContext {
     int recovery_point_sei;
 
     int repeat_pps;
+    int low_power;
 
     int a53_cc;
 
