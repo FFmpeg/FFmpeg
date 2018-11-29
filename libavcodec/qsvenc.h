@@ -53,7 +53,7 @@
 #define QSV_HAVE_MF     0
 #else
 #define QSV_HAVE_AVBR   0
-#define QSV_HAVE_ICQ    0
+#define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 28)
 #define QSV_HAVE_VCM    0
 #define QSV_HAVE_QVBR   0
 #define QSV_HAVE_MF     QSV_VERSION_ATLEAST(1, 25)
