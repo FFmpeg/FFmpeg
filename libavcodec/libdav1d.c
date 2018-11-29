@@ -245,8 +245,7 @@ AVCodec ff_libdav1d_decoder = {
     .flush          = libdav1d_flush,
     .receive_frame  = libdav1d_receive_frame,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
-    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP |
-                      FF_CODEC_CAP_SETS_PKT_DTS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_SETS_PKT_DTS,
     .priv_class     = &libdav1d_class,
     .wrapper_name   = "libdav1d",
 };
