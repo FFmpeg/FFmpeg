@@ -4848,7 +4848,6 @@ elif enabled mips; then
                 enable fast_cmov
                 enable fast_unaligned
                 disable aligned_stack
-                disable mipsfpu
                 disable mipsdsp
                 disable mipsdspr2
                 # When gcc version less than 5.3.0, add -fno-expensive-optimizations flag.
