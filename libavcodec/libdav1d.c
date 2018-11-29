@@ -46,7 +46,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 
     dav1d_default_settings(&s);
     s.n_tile_threads = dav1d->tile_threads;
-    s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), 256);
+    s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), DAV1D_MAX_FRAME_THREADS);
 
     res = dav1d_open(&dav1d->c, &s);
     if (res < 0)
@@ -223,7 +223,7 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 #define OFFSET(x) offsetof(Libdav1dContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption libdav1d_options[] = {
-    { "tilethreads",  "Tile threads",  OFFSET(tile_threads),  AV_OPT_TYPE_INT, { .i64 = 1 }, 1,  64, VD, NULL },
+    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, DAV1D_MAX_TILE_THREADS, VD },
     { NULL }
 };
 
