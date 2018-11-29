@@ -1192,6 +1192,13 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
     if (qsv_frame) {
         surf = &qsv_frame->surface;
         enc_ctrl = &qsv_frame->enc_ctrl;
+        memset(enc_ctrl, 0, sizeof(mfxEncodeCtrl));
+
+        if (frame->pict_type == AV_PICTURE_TYPE_I) {
+            enc_ctrl->FrameType = MFX_FRAMETYPE_I | MFX_FRAMETYPE_REF;
+            if (q->forced_idr)
+                enc_ctrl->FrameType |= MFX_FRAMETYPE_IDR;
+        }
     }
 
     ret = av_new_packet(&new_pkt, q->packet_size);
