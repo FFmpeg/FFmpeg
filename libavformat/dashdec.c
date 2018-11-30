@@ -140,6 +140,8 @@ typedef struct DASHContext {
     struct representation **videos;
     int n_audios;
     struct representation **audios;
+    int n_subtitles;
+    struct representation **subtitles;
 
     /* MediaPresentationDescription Attribute */
     uint64_t media_presentation_duration;
@@ -394,6 +396,17 @@ static void free_audio_list(DASHContext *c)
     c->n_audios = 0;
 }
 
+static void free_subtitle_list(DASHContext *c)
+{
+    int i;
+    for (i = 0; i < c->n_subtitles; i++) {
+        struct representation *pls = c->subtitles[i];
+        free_representation(pls);
+    }
+    av_freep(&c->subtitles);
+    c->n_subtitles = 0;
+}
+
 static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
                     AVDictionary *opts, AVDictionary *opts2, int *is_http)
 {
@@ -565,6 +578,8 @@ static enum AVMediaType get_content_type(xmlNodePtr node)
                     type = AVMEDIA_TYPE_VIDEO;
                 } else if (av_stristr((const char *)val, "audio")) {
                     type = AVMEDIA_TYPE_AUDIO;
+                } else if (av_stristr((const char *)val, "text")) {
+                    type = AVMEDIA_TYPE_SUBTITLE;
                 }
                 xmlFree(val);
             }
@@ -818,6 +833,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                                          xmlNodePtr adaptionset_supplementalproperty_node)
 {
     int32_t ret = 0;
+    int32_t subtitle_rep_idx = 0;
     int32_t audio_rep_idx = 0;
     int32_t video_rep_idx = 0;
     DASHContext *c = s->priv_data;
@@ -854,7 +870,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
         type = get_content_type(adaptionset_node);
     if (type == AVMEDIA_TYPE_UNKNOWN) {
         av_log(s, AV_LOG_VERBOSE, "Parsing '%s' - skipp not supported representation type\n", url);
-    } else if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO) {
+    } else if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO || type == AVMEDIA_TYPE_SUBTITLE) {
         // convert selected representation to our internal struct
         rep = av_mallocz(sizeof(struct representation));
         if (!rep) {
@@ -1048,18 +1064,29 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                     av_log(s, AV_LOG_VERBOSE, "Ignoring invalid frame rate '%s'\n", rep_framerate_val);
             }
 
-            if (type == AVMEDIA_TYPE_VIDEO) {
-                rep->rep_idx = video_rep_idx;
-                dynarray_add(&c->videos, &c->n_videos, rep);
-            } else {
-                rep->rep_idx = audio_rep_idx;
-                dynarray_add(&c->audios, &c->n_audios, rep);
+            switch (type) {
+                case AVMEDIA_TYPE_VIDEO:
+                    rep->rep_idx = video_rep_idx;
+                    dynarray_add(&c->videos, &c->n_videos, rep);
+                    break;
+                case AVMEDIA_TYPE_AUDIO:
+                    rep->rep_idx = audio_rep_idx;
+                    dynarray_add(&c->audios, &c->n_audios, rep);
+                    break;
+                case AVMEDIA_TYPE_SUBTITLE:
+                    rep->rep_idx = subtitle_rep_idx;
+                    dynarray_add(&c->subtitles, &c->n_subtitles, rep);
+                    break;
+                default:
+                    av_log(s, AV_LOG_WARNING, "Unsupported the stream type %d\n", type);
+                    break;
             }
         }
     }
 
     video_rep_idx += type == AVMEDIA_TYPE_VIDEO;
     audio_rep_idx += type == AVMEDIA_TYPE_AUDIO;
+    subtitle_rep_idx += type == AVMEDIA_TYPE_SUBTITLE;
 
 end:
     if (rep_id_val)
@@ -1441,6 +1468,8 @@ static int refresh_manifest(AVFormatContext *s)
     struct representation **videos = c->videos;
     int n_audios = c->n_audios;
     struct representation **audios = c->audios;
+    int n_subtitles = c->n_subtitles;
+    struct representation **subtitles = c->subtitles;
     char *base_url = c->base_url;
 
     c->base_url = NULL;
@@ -1448,6 +1477,8 @@ static int refresh_manifest(AVFormatContext *s)
     c->videos = NULL;
     c->n_audios = 0;
     c->audios = NULL;
+    c->n_subtitles = 0;
+    c->subtitles = NULL;
     ret = parse_manifest(s, s->url, NULL);
     if (ret)
         goto finish;
@@ -1462,6 +1493,12 @@ static int refresh_manifest(AVFormatContext *s)
         av_log(c, AV_LOG_ERROR,
                "new manifest has mismatched no. of audio representations, %d -> %d\n",
                n_audios, c->n_audios);
+        return AVERROR_INVALIDDATA;
+    }
+    if (c->n_subtitles != n_subtitles) {
+        av_log(c, AV_LOG_ERROR,
+               "new manifest has mismatched no. of subtitles representations, %d -> %d\n",
+               n_subtitles, c->n_subtitles);
         return AVERROR_INVALIDDATA;
     }
 
@@ -1504,10 +1541,16 @@ finish:
         av_free(base_url);
     else
         c->base_url  = base_url;
+
+    if (c->subtitles)
+        free_subtitle_list(c);
     if (c->audios)
         free_audio_list(c);
     if (c->videos)
         free_video_list(c);
+
+    c->n_subtitles = n_subtitles;
+    c->subtitles = subtitles;
     c->n_audios = n_audios;
     c->audios = audios;
     c->n_videos = n_videos;
@@ -2001,6 +2044,23 @@ static int dash_read_header(AVFormatContext *s)
         ++stream_index;
     }
 
+    if (c->n_subtitles)
+        c->is_init_section_common_audio = is_common_init_section_exist(c->subtitles, c->n_subtitles);
+
+    for (i = 0; i < c->n_subtitles; i++) {
+        struct representation *cur_subtitle = c->subtitles[i];
+        if (i > 0 && c->is_init_section_common_audio) {
+            copy_init_section(cur_subtitle,c->subtitles[0]);
+        }
+        ret = open_demux_for_component(s, cur_subtitle);
+
+        if (ret)
+            goto fail;
+        cur_subtitle->stream_index = stream_index;
+        ++stream_index;
+    }
+
+
     if (!stream_index) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -2034,6 +2094,14 @@ static int dash_read_header(AVFormatContext *s)
             if (pls->id[0])
                 av_dict_set(&pls->assoc_stream->metadata, "id", pls->id, 0);
         }
+        for (i = 0; i < c->n_subtitles; i++) {
+            struct representation *pls = c->subtitles[i];
+            av_program_add_stream_index(s, 0, pls->stream_index);
+            pls->assoc_stream = s->streams[pls->stream_index];
+            if (pls->id[0])
+                av_dict_set(&pls->assoc_stream->metadata, "id", pls->id, 0);
+        }
+
     }
 
     return 0;
@@ -2076,6 +2144,7 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     recheck_discard_flags(s, c->videos, c->n_videos);
     recheck_discard_flags(s, c->audios, c->n_audios);
+    recheck_discard_flags(s, c->subtitles, c->n_subtitles);
 
     for (i = 0; i < c->n_videos; i++) {
         struct representation *pls = c->videos[i];
@@ -2088,6 +2157,16 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     for (i = 0; i < c->n_audios; i++) {
         struct representation *pls = c->audios[i];
+        if (!pls->ctx)
+            continue;
+        if (!cur || pls->cur_timestamp < mints) {
+            cur = pls;
+            mints = pls->cur_timestamp;
+        }
+    }
+
+    for (i = 0; i < c->n_subtitles; i++) {
+        struct representation *pls = c->subtitles[i];
         if (!pls->ctx)
             continue;
         if (!cur || pls->cur_timestamp < mints) {
@@ -2214,6 +2293,10 @@ static int dash_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     for (i = 0; i < c->n_audios; i++) {
         if (!ret)
             ret = dash_seek(s, c->audios[i], seek_pos_msec, flags, !c->audios[i]->ctx);
+    }
+    for (i = 0; i < c->n_subtitles; i++) {
+        if (!ret)
+            ret = dash_seek(s, c->subtitles[i], seek_pos_msec, flags, !c->subtitles[i]->ctx);
     }
 
     return ret;
