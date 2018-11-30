@@ -1347,8 +1347,13 @@ static void dashenc_delete_file(AVFormatContext *s, char *filename) {
 
         av_dict_free(&http_opts);
         ff_format_io_close(s, &out);
-    } else if (unlink(filename) < 0) {
-        av_log(s, AV_LOG_ERROR, "failed to delete %s: %s\n", filename, strerror(errno));
+    } else {
+        int res = avpriv_io_delete(filename);
+        if (res < 0) {
+            char errbuf[AV_ERROR_MAX_STRING_SIZE];
+            av_strerror(res, errbuf, sizeof(errbuf));
+            av_log(s, (res == AVERROR(ENOENT) ? AV_LOG_WARNING : AV_LOG_ERROR), "failed to delete %s: %s\n", filename, errbuf);
+        }
     }
 }
 
