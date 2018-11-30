@@ -209,6 +209,15 @@ static const char *get_format_str(SegmentType segment_type) {
     return NULL;
 }
 
+static int handle_io_open_error(AVFormatContext *s, int err, char *url) {
+    DASHContext *c = s->priv_data;
+    char errbuf[AV_ERROR_MAX_STRING_SIZE];
+    av_strerror(err, errbuf, sizeof(errbuf));
+    av_log(s, c->ignore_io_errors ? AV_LOG_WARNING : AV_LOG_ERROR,
+           "Unable to open %s for writing: %s\n", url, errbuf);
+    return c->ignore_io_errors ? 0 : err;
+}
+
 static inline SegmentType select_segment_type(SegmentType segment_type, enum AVCodecID codec_id)
 {
     if (segment_type == SEGMENT_TYPE_AUTO) {
@@ -538,7 +547,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         ret = dashenc_io_open(s, &c->m3u8_out, temp_filename_hls, &http_opts);
         av_dict_free(&http_opts);
         if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename_hls);
+            handle_io_open_error(s, ret, temp_filename_hls);
             return;
         }
         for (i = start_index; i < os->nb_segments; i++) {
@@ -853,8 +862,7 @@ static int write_manifest(AVFormatContext *s, int final)
     ret = dashenc_io_open(s, &c->mpd_out, temp_filename, &opts);
     av_dict_free(&opts);
     if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
-        return c->ignore_io_errors ? 0 : ret;
+        return handle_io_open_error(s, ret, temp_filename);
     }
     out = c->mpd_out;
     avio_printf(out, "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n");
@@ -944,8 +952,7 @@ static int write_manifest(AVFormatContext *s, int final)
         ret = dashenc_io_open(s, &c->m3u8_out, temp_filename, &opts);
         av_dict_free(&opts);
         if (ret < 0) {
-            av_log(s, AV_LOG_ERROR, "Unable to open %s for writing\n", temp_filename);
-            return c->ignore_io_errors ? 0 : ret;
+            return handle_io_open_error(s, ret, temp_filename);
         }
 
         ff_hls_write_playlist_version(c->m3u8_out, 7);
@@ -1578,7 +1585,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         ret = dashenc_io_open(s, &os->out, os->temp_path, &opts);
         av_dict_free(&opts);
         if (ret < 0) {
-            return c->ignore_io_errors ? 0 : ret;
+            return handle_io_open_error(s, ret, os->temp_path);
         }
     }
 
