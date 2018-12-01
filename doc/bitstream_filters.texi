@@ -632,7 +632,8 @@ Log trace output containing all syntax elements in the coded stream
 headers (everything above the level of individual coded blocks).
 This can be useful for debugging low-level stream issues.
 
-Supports H.264, H.265, MPEG-2 and VP9.
+Supports AV1, H.264, H.265, (M)JPEG, MPEG-2 and VP9, but depending
+on the build only a subset of these may be available.
 
 @section truehd_core
 
