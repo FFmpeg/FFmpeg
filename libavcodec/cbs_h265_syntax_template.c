@@ -1955,36 +1955,40 @@ static int FUNC(sei_time_code)(CodedBitstreamContext *ctx, RWContext *rw,
     u(2, num_clock_ts, 1, 3);
 
     for (i = 0; i < current->num_clock_ts; i++) {
-        flags(units_field_based_flag[i], 1, i);
-        us(5, counting_type[i], 0, 6,    1, i);
-        flags(full_timestamp_flag[i],    1, i);
-        flags(discontinuity_flag[i],     1, i);
-        flags(cnt_dropped_flag[i],       1, i);
+        flags(clock_timestamp_flag[i],   1, i);
 
-        us(9, n_frames[i], 0, MAX_UINT_BITS(9), 1, i);
+        if (current->clock_timestamp_flag[i]) {
+            flags(units_field_based_flag[i], 1, i);
+            us(5, counting_type[i], 0, 6,    1, i);
+            flags(full_timestamp_flag[i],    1, i);
+            flags(discontinuity_flag[i],     1, i);
+            flags(cnt_dropped_flag[i],       1, i);
 
-        if (current->full_timestamp_flag[i]) {
-            us(6, seconds_value[i], 0, 59, 1, i);
-            us(6, minutes_value[i], 0, 59, 1, i);
-            us(5, hours_value[i],   0, 23, 1, i);
-        } else {
-            flags(seconds_flag[i], 1, i);
-            if (current->seconds_flag[i]) {
+            us(9, n_frames[i], 0, MAX_UINT_BITS(9), 1, i);
+
+            if (current->full_timestamp_flag[i]) {
                 us(6, seconds_value[i], 0, 59, 1, i);
-                flags(minutes_flag[i], 1, i);
-                if (current->minutes_flag[i]) {
-                    us(6, minutes_value[i], 0, 59, 1, i);
-                    flags(hours_flag[i], 1, i);
-                    if (current->hours_flag[i])
-                        us(5, hours_value[i], 0, 23, 1, i);
+                us(6, minutes_value[i], 0, 59, 1, i);
+                us(5, hours_value[i],   0, 23, 1, i);
+            } else {
+                flags(seconds_flag[i], 1, i);
+                if (current->seconds_flag[i]) {
+                    us(6, seconds_value[i], 0, 59, 1, i);
+                    flags(minutes_flag[i], 1, i);
+                    if (current->minutes_flag[i]) {
+                        us(6, minutes_value[i], 0, 59, 1, i);
+                        flags(hours_flag[i], 1, i);
+                        if (current->hours_flag[i])
+                            us(5, hours_value[i], 0, 23, 1, i);
+                    }
                 }
             }
-        }
 
-        us(5, time_offset_length[i], 0, 31, 1, i);
-        if (current->time_offset_length[i] > 0)
-            us(current->time_offset_length[i], time_offset_value[i],
-               0, MAX_UINT_BITS(current->time_offset_length[i]), 1, i);
+            us(5, time_offset_length[i], 0, 31, 1, i);
+            if (current->time_offset_length[i] > 0)
+                us(current->time_offset_length[i], time_offset_value[i],
+                   0, MAX_UINT_BITS(current->time_offset_length[i]), 1, i);
+        }
     }
 
     return 0;
