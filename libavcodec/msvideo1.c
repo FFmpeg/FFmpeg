@@ -62,6 +62,9 @@ static av_cold int msvideo1_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
+    if (avctx->width < 4 || avctx->height < 4)
+        return AVERROR_INVALIDDATA;
+
     /* figure out the colorspace based on the presence of a palette */
     if (s->avctx->bits_per_coded_sample == 8) {
         s->mode_8bit = 1;
