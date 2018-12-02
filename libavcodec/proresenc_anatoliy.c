@@ -45,12 +45,13 @@ static const AVProfile profiles[] = {
     { FF_PROFILE_PRORES_STANDARD, "apcn"},
     { FF_PROFILE_PRORES_HQ,       "apch"},
     { FF_PROFILE_PRORES_4444,     "ap4h"},
+    { FF_PROFILE_PRORES_XQ,       "ap4x"},
     { FF_PROFILE_UNKNOWN }
 };
 
-static const int qp_start_table[5] = {  8, 3, 2, 1, 1};
-static const int qp_end_table[5]   = { 13, 9, 6, 6, 5};
-static const int bitrate_table[5]  = { 1000, 2100, 3500, 5400, 7000};
+static const int qp_start_table[6] = {  8, 3, 2, 1, 1, 1};
+static const int qp_end_table[6]   = { 13, 9, 6, 6, 5, 4};
+static const int bitrate_table[6]  = { 1000, 2100, 3500, 5400, 7000, 10000};
 
 static const int valid_primaries[9]  = { AVCOL_PRI_RESERVED0, AVCOL_PRI_BT709, AVCOL_PRI_UNSPECIFIED, AVCOL_PRI_BT470BG,
                                          AVCOL_PRI_SMPTE170M, AVCOL_PRI_BT2020, AVCOL_PRI_SMPTE431, AVCOL_PRI_SMPTE432,INT_MAX };
@@ -58,7 +59,7 @@ static const int valid_trc[4]        = { AVCOL_TRC_RESERVED0, AVCOL_TRC_BT709, A
 static const int valid_colorspace[5] = { AVCOL_SPC_BT709, AVCOL_SPC_UNSPECIFIED, AVCOL_SPC_SMPTE170M,
                                          AVCOL_SPC_BT2020_NCL, INT_MAX };
 
-static const uint8_t QMAT_LUMA[5][64] = {
+static const uint8_t QMAT_LUMA[6][64] = {
     {
          4,  7,  9, 11, 13, 14, 15, 63,
          7,  7, 11, 12, 14, 15, 63, 63,
@@ -104,10 +105,19 @@ static const uint8_t QMAT_LUMA[5][64] = {
         4,  4,  4,  4,  4,  5,  5,  6,
         4,  4,  4,  4,  5,  5,  6,  7,
         4,  4,  4,  4,  5,  6,  7,  7
+    }, { /* 444 XQ */
+        2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  2,
+        2,  2,  2,  2,  2,  2,  2,  3,
+        2,  2,  2,  2,  2,  2,  3,  3,
+        2,  2,  2,  2,  2,  3,  3,  3,
+        2,  2,  2,  2,  3,  3,  3,  4,
+        2,  2,  2,  2,  3,  3,  4,  4,
     }
 };
 
-static const uint8_t QMAT_CHROMA[5][64] = {
+static const uint8_t QMAT_CHROMA[6][64] = {
     {
          4,  7,  9, 11, 13, 14, 63, 63,
          7,  7, 11, 12, 14, 63, 63, 63,
@@ -145,6 +155,15 @@ static const uint8_t QMAT_CHROMA[5][64] = {
          4,  4,  4,  4,  5,  5,  6,  7,
          4,  4,  4,  4,  5,  6,  7,  7
     }, { /* 444 */
+        4,  4,  4,  4,  4,  4,  4,  4,
+        4,  4,  4,  4,  4,  4,  4,  4,
+        4,  4,  4,  4,  4,  4,  4,  4,
+        4,  4,  4,  4,  4,  4,  4,  5,
+        4,  4,  4,  4,  4,  4,  5,  5,
+        4,  4,  4,  4,  4,  5,  5,  6,
+        4,  4,  4,  4,  5,  5,  6,  7,
+        4,  4,  4,  4,  5,  6,  7,  7
+    }, { /* 444 xq */
         4,  4,  4,  4,  4,  4,  4,  4,
         4,  4,  4,  4,  4,  4,  4,  4,
         4,  4,  4,  4,  4,  4,  4,  4,
@@ -686,7 +705,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, ctx->vendor, 4);
     bytestream_put_be16(&buf, avctx->width);
     bytestream_put_be16(&buf, avctx->height);
-    if (avctx->profile == FF_PROFILE_PRORES_4444) {
+    if (avctx->profile >= FF_PROFILE_PRORES_4444) { /* 4444 or 4444 Xq */
         *buf++ = 0xC2; // 444, not interlaced
     } else {
         *buf++ = 0x82; // 422, not interlaced
@@ -768,16 +787,16 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
     } else if (avctx->profile < FF_PROFILE_PRORES_PROXY
-            || avctx->profile > FF_PROFILE_PRORES_4444) {
+            || avctx->profile > FF_PROFILE_PRORES_XQ) {
         av_log(
                 avctx,
                 AV_LOG_ERROR,
-                "unknown profile %d, use [0 - apco, 1 - apcs, 2 - apcn (default), 3 - apch, 4 - ap4h]\n",
+                "unknown profile %d, use [0 - apco, 1 - apcs, 2 - apcn (default), 3 - apch, 4 - ap4h, 5 - ap4x]\n",
                 avctx->profile);
         return AVERROR(EINVAL);
     } else if ((avctx->pix_fmt == AV_PIX_FMT_YUV422P10) && (avctx->profile > FF_PROFILE_PRORES_HQ)){
         av_log(avctx, AV_LOG_ERROR,
-               "encoding with ProRes 444 (ap4h) profile, need YUV444P10 input\n");
+               "encoding with ProRes 444/Xq (ap4h/ap4x) profile, need YUV444P10 input\n");
         return AVERROR(EINVAL);
     }  else if ((avctx->pix_fmt == AV_PIX_FMT_YUV444P10 || avctx->pix_fmt == AV_PIX_FMT_YUVA444P10)
                 && (avctx->profile < FF_PROFILE_PRORES_4444)){
