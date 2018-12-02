@@ -3608,6 +3608,7 @@ host_os=$target_os_default
 if test "$target_os_default" = aix; then
     arch_default=$(uname -p)
     strip_default="strip -X32_64"
+    nm_default="nm -g -X32_64"
 else
     arch_default=$(uname -m)
 fi
