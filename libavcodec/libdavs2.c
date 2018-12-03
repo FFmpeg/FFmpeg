@@ -58,7 +58,7 @@ static av_cold int davs2_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
+static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic, int *got_frame,
                              davs2_seq_info_t *headerset, int ret_type, AVFrame *frame)
 {
     DAVS2Context *cad    = avctx->priv_data;
@@ -66,8 +66,10 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
     int plane = 0;
     int line  = 0;
 
-    if (!headerset)
+    if (!headerset) {
+        *got_frame = 0;
         return 0;
+    }
 
     if (!pic || ret_type == DAVS2_GOT_HEADER) {
         avctx->width     = headerset->width;
@@ -76,6 +78,7 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
                            AV_PIX_FMT_YUV420P10 : AV_PIX_FMT_YUV420P;
 
         avctx->framerate = av_d2q(headerset->frame_rate,4096);
+        *got_frame = 0;
         return 0;
     }
 
@@ -122,7 +125,8 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
     frame->pts       = cad->out_frame.pts;
     frame->format    = avctx->pix_fmt;
 
-    return 1;
+    *got_frame = 1;
+    return 0;
 }
 
 static int send_delayed_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame)
@@ -136,7 +140,7 @@ static int send_delayed_frame(AVCodecContext *avctx, AVFrame *frame, int *got_fr
         return AVERROR_EXTERNAL;
     }
     if (ret == DAVS2_GOT_FRAME) {
-        *got_frame = davs2_dump_frames(avctx, &cad->out_frame, &cad->headerset, ret, frame);
+        ret = davs2_dump_frames(avctx, &cad->out_frame, got_frame, &cad->headerset, ret, frame);
         davs2_decoder_frame_unref(cad->decoder, &cad->out_frame);
     }
     return ret;
@@ -185,11 +189,11 @@ static int davs2_decode_frame(AVCodecContext *avctx, void *data,
     ret = davs2_decoder_recv_frame(cad->decoder, &cad->headerset, &cad->out_frame);
 
     if (ret != DAVS2_DEFAULT) {
-        *got_frame = davs2_dump_frames(avctx, &cad->out_frame, &cad->headerset, ret, frame);
+        ret = davs2_dump_frames(avctx, &cad->out_frame, got_frame, &cad->headerset, ret, frame);
         davs2_decoder_frame_unref(cad->decoder, &cad->out_frame);
     }
 
-    return buf_size;
+    return ret == 0 ? buf_size : ret;
 }
 
 AVCodec ff_libdavs2_decoder = {
