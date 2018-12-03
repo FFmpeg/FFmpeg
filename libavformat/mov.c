@@ -1907,6 +1907,11 @@ static int mov_read_glbl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (ret < 0)
         return ret;
     if (atom.type == MKTAG('h','v','c','C') && st->codecpar->codec_tag == MKTAG('d','v','h','1'))
+        /* HEVC-based Dolby Vision derived from hvc1.
+           Happens to match with an identifier
+           previously utilized for DV. Thus, if we have
+           the hvcC extradata box available as specified,
+           set codec to HEVC */
         st->codecpar->codec_id = AV_CODEC_ID_HEVC;
 
     return 0;
