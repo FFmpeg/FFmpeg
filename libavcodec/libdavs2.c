@@ -125,6 +125,23 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic,
     return 1;
 }
 
+static int send_delayed_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame)
+{
+    DAVS2Context *cad      = avctx->priv_data;
+    int           ret      = DAVS2_DEFAULT;
+
+    ret = davs2_decoder_flush(cad->decoder, &cad->headerset, &cad->out_frame);
+    if (ret == DAVS2_ERROR) {
+        av_log(avctx, AV_LOG_ERROR, "Decoder error: can't flush delayed frame\n");
+        return AVERROR_EXTERNAL;
+    }
+    if (ret == DAVS2_GOT_FRAME) {
+        *got_frame = davs2_dump_frames(avctx, &cad->out_frame, &cad->headerset, ret, frame);
+        davs2_decoder_frame_unref(cad->decoder, &cad->out_frame);
+    }
+    return ret;
+}
+
 static av_cold int davs2_end(AVCodecContext *avctx)
 {
     DAVS2Context *cad = avctx->priv_data;
@@ -147,8 +164,9 @@ static int davs2_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame      *frame    = data;
     int           ret      = DAVS2_DEFAULT;
 
+    /* end of stream, output what is still in the buffers */
     if (!buf_size) {
-        return 0;
+        return send_delayed_frame(avctx, frame, got_frame);
     }
 
     cad->packet.data = buf_ptr;
