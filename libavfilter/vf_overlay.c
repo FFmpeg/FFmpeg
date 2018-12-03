@@ -380,15 +380,15 @@ static av_always_inline void blend_slice_packed_rgb(AVFilterContext *ctx,
     uint8_t *S, *sp, *d, *dp;
 
     i = FFMAX(-y, 0);
-    imax = FFMIN(-y + dst_h, src_h);
+    imax = FFMIN3(-y + dst_h, FFMIN(src_h, dst_h), y + src_h);
 
-    slice_start = (imax * jobnr) / nb_jobs;
-    slice_end = (imax * (jobnr+1)) / nb_jobs;
+    slice_start = i + (imax * jobnr) / nb_jobs;
+    slice_end = i + (imax * (jobnr+1)) / nb_jobs;
 
-    sp = src->data[0] + (i + slice_start)     * src->linesize[0];
-    dp = dst->data[0] + (y + i + slice_start) * dst->linesize[0];
+    sp = src->data[0] + (slice_start)     * src->linesize[0];
+    dp = dst->data[0] + (y + slice_start) * dst->linesize[0];
 
-    for (i = i + slice_start; i < slice_end; i++) {
+    for (i = slice_start; i < slice_end; i++) {
         j = FFMAX(-x, 0);
         S = sp + j     * sstep;
         d = dp + (x+j) * dstep;
@@ -468,19 +468,19 @@ static av_always_inline void blend_plane(AVFilterContext *ctx,
     int slice_start, slice_end;
 
     j = FFMAX(-yp, 0);
-    jmax = FFMIN(-yp + dst_hp, src_hp);
+    jmax = FFMIN3(-yp + dst_hp, FFMIN(src_hp, dst_hp), yp + src_hp);
 
-    slice_start = (jmax * jobnr) / nb_jobs;
-    slice_end = (jmax * (jobnr+1)) / nb_jobs;
+    slice_start = j + (jmax * jobnr) / nb_jobs;
+    slice_end = j + (jmax * (jobnr+1)) / nb_jobs;
 
-    sp = src->data[i] + (j + slice_start) * src->linesize[i];
+    sp = src->data[i] + (slice_start) * src->linesize[i];
     dp = dst->data[dst_plane]
-                      + (yp + j + slice_start) * dst->linesize[dst_plane]
+                      + (yp + slice_start) * dst->linesize[dst_plane]
                       + dst_offset;
-    ap = src->data[3] + (j + slice_start << vsub) * src->linesize[3];
-    dap = dst->data[3] + ((yp + j + slice_start) << vsub) * dst->linesize[3];
+    ap = src->data[3] + (slice_start << vsub) * src->linesize[3];
+    dap = dst->data[3] + ((yp + slice_start) << vsub) * dst->linesize[3];
 
-    for (j = j + slice_start; j < slice_end; j++) {
+    for (j = slice_start; j < slice_end; j++) {
         k = FFMAX(-xp, 0);
         d = dp + (xp+k) * dst_step;
         s = sp + k;
@@ -961,13 +961,13 @@ static int do_blend(FFFrameSync *fs)
                s->var_values[VAR_Y], s->y);
     }
 
-    if (s->x < mainpic->width  && s->x + second->width  >= 0 ||
+    if (s->x < mainpic->width  && s->x + second->width  >= 0 &&
         s->y < mainpic->height && s->y + second->height >= 0) {
         ThreadData td;
 
         td.dst = mainpic;
         td.src = second;
-        ctx->internal->execute(ctx, s->blend_slice, &td, NULL, FFMIN(FFMIN(mainpic->height - s->y, second->height),
+        ctx->internal->execute(ctx, s->blend_slice, &td, NULL, FFMIN(FFMAX(1, FFMIN3(s->y + second->height, FFMIN(second->height, mainpic->height), mainpic->height - s->y)),
                                                                      ff_filter_get_nb_threads(ctx)));
     }
     return ff_filter_frame(ctx->outputs[0], mainpic);
