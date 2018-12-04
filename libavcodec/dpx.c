@@ -310,6 +310,9 @@ static int decode_frame(AVCodecContext *avctx,
     case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
+    case 6101:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+        break;
     case 6161:
         avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
         break;
@@ -362,12 +365,14 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[3]};
             int shift = packing == 1 ? 22 : 20;
             for (y = 0; y < avctx->width; y++) {
-                *dst[2]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
+                if (elements >= 3)
+                    *dst[2]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
                 *dst[0]++ = read10in32(&buf, &rgbBuffer,
                                        &n_datum, endian, shift);
-                *dst[1]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
+                if (elements >= 2)
+                    *dst[1]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
                 if (elements == 4)
                     *dst[3]++ =
                     read10in32(&buf, &rgbBuffer,
