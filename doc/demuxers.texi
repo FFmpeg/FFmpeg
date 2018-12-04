@@ -481,14 +481,26 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 
 The Game Music Emu library is a collection of video game music file emulators.
 
-See @url{http://code.google.com/p/game-music-emu/} for more information.
+See @url{https://bitbucket.org/mpyne/game-music-emu/overview} for more information.
 
-Some files have multiple tracks. The demuxer will pick the first track by
-default. The @option{track_index} option can be used to select a different
-track. Track indexes start at 0. The demuxer exports the number of tracks as
-@var{tracks} meta data entry.
+It accepts the following options:
 
-For very large files, the @option{max_size} option may have to be adjusted.
+@table @option
+
+@item track_index
+Set the index of which track to demux. The demuxer can only export one track.
+Track indexes start at 0. Default is to pick the first track. Number of tracks
+is exported as @var{tracks} metadata entry.
+
+@item sample_rate
+Set the sampling rate of the exported track. Range is 1000 to 999999. Default is 44100.
+
+@item max_size @emph{(bytes)}
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read.
+Default is 50 MiB.
+
+@end table
 
 @section libopenmpt
 

@@ -59,6 +59,12 @@ FFmpeg can make use of the Chromaprint library for generating audio fingerprints
 It is licensed under LGPL version 2.1. Pass @code{--enable-chromaprint} to configure to
 enable it. See @url{https://acoustid.org/chromaprint}.
 
+@section Game Music Emu
+
+FFmpeg can make use of the Game Music Emu library to read audio from supported video game
+music file formats. It is licensed under LGPL version 2.1. Pass @code{--enable-libgme} to configure to
+enable it. See @url{https://bitbucket.org/mpyne/game-music-emu/overview}.
+
 @section OpenJPEG
 
 FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to
