@@ -28,6 +28,7 @@
 #include "libavutil/display.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
@@ -37,6 +38,21 @@
 #include "avfilter.h"
 #include "internal.h"
 #include "video.h"
+
+typedef struct ShowInfoContext {
+    const AVClass *class;
+    int calculate_checksums;
+} ShowInfoContext;
+
+#define OFFSET(x) offsetof(ShowInfoContext, x)
+#define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+
+static const AVOption showinfo_options[] = {
+    { "checksum", "calculate checksums", OFFSET(calculate_checksums), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, VF },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(showinfo);
 
 static void dump_spherical(AVFilterContext *ctx, AVFrame *frame, AVFrameSideData *sd)
 {
@@ -141,13 +157,14 @@ static void update_sample_stats(const uint8_t *src, int len, int64_t *sum, int64
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx = inlink->dst;
+    ShowInfoContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     uint32_t plane_checksum[4] = {0}, checksum = 0;
     int64_t sum[4] = {0}, sum2[4] = {0};
     int32_t pixelcount[4] = {0};
     int i, plane, vsub = desc->log2_chroma_h;
 
-    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
+    for (plane = 0; plane < 4 && s->calculate_checksums && frame->data[plane] && frame->linesize[plane]; plane++) {
         uint8_t *data = frame->data[plane];
         int h = plane == 1 || plane == 2 ? AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
         int linesize = av_image_get_linesize(frame->format, frame->width, plane);
@@ -167,8 +184,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     av_log(ctx, AV_LOG_INFO,
            "n:%4"PRId64" pts:%7s pts_time:%-7s pos:%9"PRId64" "
-           "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
-           "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
+           "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c ",
            inlink->frame_count_out,
            av_ts2str(frame->pts), av_ts2timestr(frame->pts, &inlink->time_base), frame->pkt_pos,
            desc->name,
@@ -177,19 +193,25 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
            !frame->interlaced_frame ? 'P' :         /* Progressive  */
            frame->top_field_first   ? 'T' : 'B',    /* Top / Bottom */
            frame->key_frame,
-           av_get_picture_type_char(frame->pict_type),
-           checksum, plane_checksum[0]);
+           av_get_picture_type_char(frame->pict_type));
 
-    for (plane = 1; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-        av_log(ctx, AV_LOG_INFO, " %08"PRIX32, plane_checksum[plane]);
-    av_log(ctx, AV_LOG_INFO, "] mean:[");
-    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-        av_log(ctx, AV_LOG_INFO, "%"PRId64" ", (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
-    av_log(ctx, AV_LOG_INFO, "\b] stdev:[");
-    for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
-        av_log(ctx, AV_LOG_INFO, "%3.1f ",
-               sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
-    av_log(ctx, AV_LOG_INFO, "\b]\n");
+    if (s->calculate_checksums) {
+        av_log(ctx, AV_LOG_INFO,
+               "checksum:%08"PRIX32" plane_checksum:[%08"PRIX32,
+               checksum, plane_checksum[0]);
+
+        for (plane = 1; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
+            av_log(ctx, AV_LOG_INFO, " %08"PRIX32, plane_checksum[plane]);
+        av_log(ctx, AV_LOG_INFO, "] mean:[");
+        for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
+            av_log(ctx, AV_LOG_INFO, "%"PRId64" ", (sum[plane] + pixelcount[plane]/2) / pixelcount[plane]);
+        av_log(ctx, AV_LOG_INFO, "\b] stdev:[");
+        for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++)
+            av_log(ctx, AV_LOG_INFO, "%3.1f ",
+                   sqrt((sum2[plane] - sum[plane]*(double)sum[plane]/pixelcount[plane])/pixelcount[plane]));
+        av_log(ctx, AV_LOG_INFO, "\b]");
+    }
+    av_log(ctx, AV_LOG_INFO, "\n");
 
     for (i = 0; i < frame->nb_side_data; i++) {
         AVFrameSideData *sd = frame->side_data[i];
@@ -285,4 +307,6 @@ AVFilter ff_vf_showinfo = {
     .description = NULL_IF_CONFIG_SMALL("Show textual information for each video frame."),
     .inputs      = avfilter_vf_showinfo_inputs,
     .outputs     = avfilter_vf_showinfo_outputs,
+    .priv_size   = sizeof(ShowInfoContext),
+    .priv_class  = &showinfo_class,
 };

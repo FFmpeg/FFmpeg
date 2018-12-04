@@ -15304,6 +15304,13 @@ Keep the same colorspace property (default).
 Show a line containing various information for each input video frame.
 The input video is not modified.
 
+This filter supports the following options:
+
+@table @option
+@item checksum
+Calculate checksums of each plane. By default enabled.
+@end table
+
 The shown line contains a sequence of key/value pairs of the form
 @var{key}:@var{value}.
 
