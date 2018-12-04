@@ -53,6 +53,12 @@ Go to @url{http://aomedia.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libaom} to configure to
 enable it.
 
+@section Chromaprint
+
+FFmpeg can make use of the Chromaprint library for generating audio fingerprints.
+It is licensed under LGPL version 2.1. Pass @code{--enable-chromaprint} to configure to
+enable it. See @url{https://acoustid.org/chromaprint}.
+
 @section OpenJPEG
 
 FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to

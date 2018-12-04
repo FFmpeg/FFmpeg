@@ -94,21 +94,23 @@ compatibility with software that only supports a single audio stream in AVI
 @anchor{chromaprint}
 @section chromaprint
 
-Chromaprint fingerprinter
+Chromaprint fingerprinter.
 
-This muxer feeds audio data to the Chromaprint library, which generates
-a fingerprint for the provided audio data. It takes a single signed
-native-endian 16-bit raw audio stream.
+This muxer feeds audio data to the Chromaprint library,
+which generates a fingerprint for the provided audio data. See @url{https://acoustid.org/chromaprint}
+
+It takes a single signed native-endian 16-bit raw audio stream of at most 2 channels.
 
 @subsection Options
 
 @table @option
 @item silence_threshold
-Threshold for detecting silence, ranges from 0 to 32767. -1 for default
-(required for use with the AcoustID service).
+Threshold for detecting silence, ranges from -1 to 32767. -1 disables silence detection and
+is required for use with the AcoustID service. Default is -1.
 
 @item algorithm
-Algorithm index to fingerprint with.
+Version of algorithm to fingerprint with. Range is 0 to 4. Version 2 requires that silence
+detection be enabled. Default is 1.
 
 @item fp_format
 Format to output the fingerprint as. Accepts the following options:
@@ -120,7 +122,7 @@ Binary raw fingerprint
 Binary compressed fingerprint
 
 @item base64
-Base64 compressed fingerprint
+Base64 compressed fingerprint @emph{(default)}
 
 @end table
 
