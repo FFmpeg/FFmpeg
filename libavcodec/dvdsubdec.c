@@ -595,6 +595,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     }
 
     if (is_menu < 0) {
+        ctx->buf_size = 0;
     no_subtitle:
         reset_rects(sub);
         *data_size = 0;
