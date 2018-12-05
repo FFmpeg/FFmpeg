@@ -65,13 +65,18 @@ FFmpeg can make use of the Game Music Emu library to read audio from supported v
 music file formats. Pass @code{--enable-libgme} to configure to
 enable it. See @url{https://bitbucket.org/mpyne/game-music-emu/overview}.
 
+@section ModPlug
+
+FFmpeg can make use of this library, originating in Modplug-XMMS, to read from MOD-like music files.
+See @url{https://github.com/Konstanty/libmodplug}. Pass @code{--enable-libmodplug} to configure to
+enable it.
+
 @section OpenJPEG
 
 FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to
 @url{http://www.openjpeg.org/} to get the libraries and follow the installation
 instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjpeg} to
 @file{./configure}.
-
 
 @section OpenCORE, VisualOn, and Fraunhofer libraries
 
