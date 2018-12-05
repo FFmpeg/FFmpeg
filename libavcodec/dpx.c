@@ -106,6 +106,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     AVFrame *const p = data;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
+    uint32_t header_version, version = 0;
 
     unsigned int offset;
     int magic_num, endian;
@@ -140,6 +141,15 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
         return AVERROR_INVALIDDATA;
     }
+
+    header_version = read32(&buf, 0);
+    if (header_version == MKTAG('V','1','.','0'))
+        version = 1;
+    if (header_version == MKTAG('V','2','.','0'))
+        version = 2;
+    if (!version)
+        av_log(avctx, AV_LOG_WARNING, "Unknown header format version %s.\n",
+               av_fourcc2str(header_version));
 
     // Check encryption
     buf = avpkt->data + 660;
