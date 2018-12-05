@@ -680,6 +680,9 @@ static int decode_frame(AVCodecContext *avctx,
     while (bytestream2_get_bytes_left(gb) > 0) {
         unsigned type, size = 0;
 
+        if (bytestream2_get_bytes_left(gb) < 8)
+            return AVERROR_INVALIDDATA;
+
         type = bytestream2_get_le32(gb);
         if (type == KBND || type == BNDL) {
             intra = type == KBND;
