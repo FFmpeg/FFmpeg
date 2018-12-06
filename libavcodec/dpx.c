@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/imgutils.h"
@@ -107,6 +108,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *const p = data;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
     uint32_t header_version, version = 0;
+    char creator[101];
 
     unsigned int offset;
     int magic_num, endian;
@@ -359,6 +361,10 @@ static int decode_frame(AVCodecContext *avctx,
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
+
+    av_strlcpy(creator, avpkt->data + 160, 100);
+    creator[100] = '\0';
+    av_dict_set(&p->metadata, "Creator", creator, 0);
 
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
