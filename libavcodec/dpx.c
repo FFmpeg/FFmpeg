@@ -109,6 +109,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
     uint32_t header_version, version = 0;
     char creator[101];
+    char input_device[33];
 
     unsigned int offset;
     int magic_num, endian;
@@ -365,6 +366,10 @@ static int decode_frame(AVCodecContext *avctx,
     av_strlcpy(creator, avpkt->data + 160, 100);
     creator[100] = '\0';
     av_dict_set(&p->metadata, "Creator", creator, 0);
+
+    av_strlcpy(input_device, avpkt->data + 1556, 32);
+    input_device[32] = '\0';
+    av_dict_set(&p->metadata, "Input Device", input_device, 0);
 
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
