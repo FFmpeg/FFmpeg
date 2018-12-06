@@ -1330,6 +1330,10 @@ more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags skip_sidx
+Skip writing of sidx atom. When bitrate overhead due to sidx atom is high,
+this option could be used for cases where sidx atom is not mandatory.
+When global_sidx flag is enabled, this option will be ignored.
 @item -movflags faststart
 Run a second pass moving the index (moov atom) to the beginning of the file.
 This operation can take a while, and will not work in various situations such
