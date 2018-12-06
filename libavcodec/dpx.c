@@ -69,8 +69,8 @@ static uint16_t read10in32_gray(const uint8_t **ptr, uint32_t *lbuf,
     return temp;
 }
 
-static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big, int shift)
+static uint16_t read10in32(const uint8_t **ptr, uint32_t *lbuf,
+                           int *n_datum, int is_big, int shift)
 {
     if (*n_datum)
         (*n_datum)--;
@@ -84,8 +84,8 @@ static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
     return *lbuf & 0x3FF;
 }
 
-static uint16_t read12in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big)
+static uint16_t read12in32(const uint8_t **ptr, uint32_t *lbuf,
+                           int *n_datum, int is_big)
 {
     if (*n_datum)
         (*n_datum)--;
