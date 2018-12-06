@@ -22,6 +22,7 @@
 #ifndef AVCODEC_PRORESDEC_H
 #define AVCODEC_PRORESDEC_H
 
+#include "get_bits.h"
 #include "blockdsp.h"
 #include "proresdsp.h"
 
