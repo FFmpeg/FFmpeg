@@ -570,6 +570,8 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
 
         for (j = 0; j < c->pmb_height; j++) {
             for (i = 0; i < c->pmb_width; i++) {
+                if (get_bits_left(&c->gb) <= 0)
+                    return AVERROR_INVALIDDATA;
                 if (get_bits1(&c->gb)) {
                     MV mv = mvi_predict(&c->mvi, i, j, zero_mv);
 
