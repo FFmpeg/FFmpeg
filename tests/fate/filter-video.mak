@@ -782,7 +782,7 @@ fate-filter-meta-4560-rotate0: CMD = framecrc -flags +bitexact -c:a aac_fixed -i
 REFCMP_DEPS = FFMPEG LAVFI_INDEV TESTSRC2_FILTER AVGBLUR_FILTER METADATA_FILTER
 
 FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-rgb
-fate-filter-refcmp-psnr-rgb: CMD = refcmp_metadata psnr rgb24 0.001
+fate-filter-refcmp-psnr-rgb: CMD = refcmp_metadata psnr rgb24 0.002
 
 FATE_FILTER_SAMPLES-$(call ALLYES, $(REFCMP_DEPS) PSNR_FILTER) += fate-filter-refcmp-psnr-yuv
 fate-filter-refcmp-psnr-yuv: CMD = refcmp_metadata psnr yuv422p 0.0015
