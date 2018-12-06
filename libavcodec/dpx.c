@@ -323,6 +323,7 @@ static int decode_frame(AVCodecContext *avctx,
     case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
+    case 6100:
     case 6101:
         avctx->pix_fmt = AV_PIX_FMT_GRAY10;
         break;
