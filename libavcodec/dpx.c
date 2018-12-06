@@ -51,6 +51,24 @@ static unsigned int read32(const uint8_t **ptr, int is_big)
     return temp;
 }
 
+static uint16_t read10in32_gray(const uint8_t **ptr, uint32_t *lbuf,
+                                int *n_datum, int is_big, int shift)
+{
+    uint16_t temp;
+
+    if (*n_datum)
+        (*n_datum)--;
+    else {
+        *lbuf = read32(ptr, is_big);
+        *n_datum = 2;
+    }
+
+    temp = *lbuf >> shift & 0x3FF;
+    *lbuf = *lbuf >> 10;
+
+    return temp;
+}
+
 static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
                                   int * n_datum, int is_big, int shift)
 {
@@ -385,13 +403,17 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
-            int shift = packing == 1 ? 22 : 20;
+            int shift = elements > 1 ? packing == 1 ? 22 : 20 : packing == 1 ? 2 : 0;
             for (y = 0; y < avctx->width; y++) {
                 if (elements >= 3)
                     *dst[2]++ = read10in32(&buf, &rgbBuffer,
                                            &n_datum, endian, shift);
-                *dst[0]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
+                if (elements == 1)
+                    *dst[0]++ = read10in32_gray(&buf, &rgbBuffer,
+                                                &n_datum, endian, shift);
+                else
+                    *dst[0]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
                 if (elements >= 2)
                     *dst[1]++ = read10in32(&buf, &rgbBuffer,
                                            &n_datum, endian, shift);
