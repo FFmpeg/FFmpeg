@@ -422,7 +422,8 @@ static int decode_frame(AVCodecContext *avctx,
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian, shift);
             }
-            n_datum = 0;
+            if (memcmp(input_device, "Scanity", 7))
+                n_datum = 0;
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
         }
