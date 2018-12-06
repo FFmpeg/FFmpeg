@@ -1378,6 +1378,7 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         if (i == n) {
             av_log(avctx, AV_LOG_ERROR, "Invalid return from get_format(): "
                    "%s not in possible list.\n", desc->name);
+            ret = AV_PIX_FMT_NONE;
             break;
         }
 
