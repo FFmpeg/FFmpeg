@@ -17,21 +17,85 @@ for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to
 @command{./configure}.
 
-@section libxavs2
+@section Alliance for Open Media (AOM)
 
-FFmpeg can make use of the xavs2 library for AVS2-P2/IEEE1857.4 video encoding.
+FFmpeg can make use of the AOM library for AV1 decoding and encoding.
 
-Go to @url{https://github.com/pkuvcl/xavs2} and follow the instructions for
-installing the library. Then pass @code{--enable-libxavs2} to configure to
+Go to @url{http://aomedia.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libaom} to configure to
 enable it.
 
+@section AMD AMF/VCE
+
+FFmpeg can use the AMD Advanced Media Framework library under Windows
+for accelerated H.264 and HEVC encoding on hardware with Video Coding Engine (VCE).
+
+To enable support you must obtain the AMF framework header files from
+@url{https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git}.
+
+Create an @code{AMF/} directory in the system include path.
+Copy the contents of @code{AMF/amf/public/include/} into that directory.
+Then configure FFmpeg with @code{--enable-amf}.
+
+@section AviSynth
+
+FFmpeg can read AviSynth scripts as input. To enable support, pass
+@code{--enable-avisynth} to configure.  The correct headers are
+included in compat/avisynth/, which allows the user to enable support
+without needing to search for these headers themselves.
+
+For Windows, supported AviSynth variants are
+@url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
+@url{http://avs-plus.net, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
+
+For Linux and OS X, the supported AviSynth variant is
+@url{https://github.com/avxsynth/avxsynth, AvxSynth}.
+
 @float NOTE
-libxavs2 is under the GNU Public License Version 2 or later
-(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
-details), you must upgrade FFmpeg's license to GPL in order to use it.
+There is currently a regression in AviSynth+'s @code{capi.h} header as of
+October 2016, which interferes with the ability for builds of FFmpeg to use
+MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
+a known good version is installed by checking out a version from before
+the regression occurred:
+
+@code{git clone -b MT git://github.com/AviSynth/AviSynthPlus.git @*
+cd AviSynthPlus @*
+git checkout -b oldheader b4f292b4dbfad149697fb65c6a037bb3810813f9 @*
+make install PREFIX=/install/prefix}
 @end float
 
-@section libdavs2
+@float NOTE
+AviSynth and AvxSynth are loaded dynamically.  Distributors can build FFmpeg
+with @code{--enable-avisynth}, and the binaries will work regardless of the
+end user having AviSynth or AvxSynth installed - they'll only need to be
+installed to use AviSynth scripts (obviously).
+@end float
+
+@section Chromaprint
+
+FFmpeg can make use of the Chromaprint library for generating audio fingerprints.
+Pass @code{--enable-chromaprint} to configure to
+enable it. See @url{https://acoustid.org/chromaprint}.
+
+@section codec2
+
+FFmpeg can make use of the codec2 library for codec2 decoding and encoding.
+There is currently no native decoder, so libcodec2 must be used for decoding.
+
+Go to @url{http://freedv.org/}, download "Codec 2 source archive".
+Build and install using CMake. Debian users can install the libcodec2-dev package instead.
+Once libcodec2 is installed you can pass @code{--enable-libcodec2} to configure to enable it.
+
+The easiest way to use codec2 is with .c2 files, since they contain the mode information required for decoding.
+To encode such a file, use a .c2 file extension and give the libcodec2 encoder the -mode option:
+@code{ffmpeg -i input.wav -mode 700C output.c2}.
+Playback is as simple as @code{ffplay output.c2}.
+For a list of supported modes, run @code{ffmpeg -h encoder=libcodec2}.
+Raw codec2 files are also supported.
+To make sense of them the mode in use needs to be specified as a format option:
+@code{ffmpeg -f codec2raw -mode 1300 -i input.raw output.wav}.
+
+@section davs2
 
 FFmpeg can make use of the davs2 library for AVS2-P2/IEEE1857.4 video decoding.
 
@@ -45,38 +109,63 @@ libdavs2 is under the GNU Public License Version 2 or later
 details), you must upgrade FFmpeg's license to GPL in order to use it.
 @end float
 
-@section Alliance for Open Media libaom
-
-FFmpeg can make use of the libaom library for AV1 decoding.
-
-Go to @url{http://aomedia.org/} and follow the instructions for
-installing the library. Then pass @code{--enable-libaom} to configure to
-enable it.
-
-@section Chromaprint
-
-FFmpeg can make use of the Chromaprint library for generating audio fingerprints.
-Pass @code{--enable-chromaprint} to configure to
-enable it. See @url{https://acoustid.org/chromaprint}.
-
 @section Game Music Emu
 
 FFmpeg can make use of the Game Music Emu library to read audio from supported video game
 music file formats. Pass @code{--enable-libgme} to configure to
 enable it. See @url{https://bitbucket.org/mpyne/game-music-emu/overview}.
 
+@section Intel QuickSync Video
+
+FFmpeg can use Intel QuickSync Video (QSV) for accelerated decoding and encoding
+of multiple codecs. To use QSV, FFmpeg must be linked against the @code{libmfx}
+dispatcher, which loads the actual decoding libraries.
+
+The dispatcher is open source and can be downloaded from
+@url{https://github.com/lu-zero/mfx_dispatch.git}. FFmpeg needs to be configured
+with the @code{--enable-libmfx} option and @code{pkg-config} needs to be able to
+locate the dispatcher's @code{.pc} files.
+
+@section Kvazaar
+
+FFmpeg can make use of the Kvazaar library for HEVC encoding.
+
+Go to @url{https://github.com/ultravideo/kvazaar} and follow the
+instructions for installing the library. Then pass
+@code{--enable-libkvazaar} to configure to enable it.
+
+@section LAME
+
+FFmpeg can make use of the LAME library for MP3 encoding.
+
+Go to @url{http://lame.sourceforge.net/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libmp3lame} to configure to enable it.
+
+@section libilbc
+
+iLBC is a narrowband speech codec that has been made freely available
+by Google as part of the WebRTC project. libilbc is a packaging friendly
+copy of the iLBC codec. FFmpeg can make use of the libilbc library for
+iLBC decoding and encoding.
+
+Go to @url{https://github.com/TimothyGu/libilbc} and follow the instructions for
+installing the library. Then pass @code{--enable-libilbc} to configure to
+enable it.
+
+@section libvpx
+
+FFmpeg can make use of the libvpx library for VP8/VP9 decoding and encoding.
+
+Go to @url{http://www.webmproject.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libvpx} to configure to
+enable it.
+
 @section ModPlug
 
 FFmpeg can make use of this library, originating in Modplug-XMMS, to read from MOD-like music files.
 See @url{https://github.com/Konstanty/libmodplug}. Pass @code{--enable-libmodplug} to configure to
 enable it.
-
-@section OpenJPEG
-
-FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to
-@url{http://www.openjpeg.org/} to get the libraries and follow the installation
-instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjpeg} to
-@file{./configure}.
 
 @section OpenCORE, VisualOn, and Fraunhofer libraries
 
@@ -123,67 +212,9 @@ Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libfdk-aac} to configure to enable it.
 
-@section LAME
-
-FFmpeg can make use of the LAME library for MP3 encoding.
-
-Go to @url{http://lame.sourceforge.net/} and follow the
-instructions for installing the library.
-Then pass @code{--enable-libmp3lame} to configure to enable it.
-
-@section TwoLAME
-
-FFmpeg can make use of the TwoLAME library for MP2 encoding.
-
-Go to @url{http://www.twolame.org/} and follow the
-instructions for installing the library.
-Then pass @code{--enable-libtwolame} to configure to enable it.
-
-@section libcodec2 / codec2 general
-
-FFmpeg can make use of libcodec2 for codec2 encoding and decoding.
-There is currently no native decoder, so libcodec2 must be used for decoding.
-
-Go to @url{http://freedv.org/}, download "Codec 2 source archive".
-Build and install using CMake. Debian users can install the libcodec2-dev package instead.
-Once libcodec2 is installed you can pass @code{--enable-libcodec2} to configure to enable it.
-
-The easiest way to use codec2 is with .c2 files, since they contain the mode information required for decoding.
-To encode such a file, use a .c2 file extension and give the libcodec2 encoder the -mode option:
-@code{ffmpeg -i input.wav -mode 700C output.c2}.
-Playback is as simple as @code{ffplay output.c2}.
-For a list of supported modes, run @code{ffmpeg -h encoder=libcodec2}.
-Raw codec2 files are also supported.
-To make sense of them the mode in use needs to be specified as a format option:
-@code{ffmpeg -f codec2raw -mode 1300 -i input.raw output.wav}.
-
-@section libvpx
-
-FFmpeg can make use of the libvpx library for VP8/VP9 encoding.
-
-Go to @url{http://www.webmproject.org/} and follow the instructions for
-installing the library. Then pass @code{--enable-libvpx} to configure to
-enable it.
-
-@section libwavpack
-
-FFmpeg can make use of the libwavpack library for WavPack encoding.
-
-Go to @url{http://www.wavpack.com/} and follow the instructions for
-installing the library. Then pass @code{--enable-libwavpack} to configure to
-enable it.
-
-@section libxavs
-
-FFmpeg can make use of the libxavs library for Xavs encoding.
-
-Go to @url{http://xavs.sf.net/} and follow the instructions for
-installing the library. Then pass @code{--enable-libxavs} to configure to
-enable it.
-
 @section OpenH264
 
-FFmpeg can make use of the OpenH264 library for H.264 encoding and decoding.
+FFmpeg can make use of the OpenH264 library for H.264 decoding and encoding.
 
 Go to @url{http://www.openh264.org/} and follow the instructions for
 installing the library. Then pass @code{--enable-libopenh264} to configure to
@@ -195,6 +226,29 @@ and some other main/high profile features. (It currently only supports
 constrained baseline profile and CABAC.) Using it is mostly useful for
 testing and for taking advantage of Cisco's patent portfolio license
 (@url{http://www.openh264.org/BINARY_LICENSE.txt}).
+
+@section OpenJPEG
+
+FFmpeg can use the OpenJPEG libraries for decoding/encoding J2K videos.  Go to
+@url{http://www.openjpeg.org/} to get the libraries and follow the installation
+instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjpeg} to
+@file{./configure}.
+
+@section TwoLAME
+
+FFmpeg can make use of the TwoLAME library for MP2 encoding.
+
+Go to @url{http://www.twolame.org/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libtwolame} to configure to enable it.
+
+@section WavPack
+
+FFmpeg can make use of the libwavpack library for WavPack encoding.
+
+Go to @url{http://www.wavpack.com/} and follow the instructions for
+installing the library. Then pass @code{--enable-libwavpack} to configure to
+enable it.
 
 @section x264
 
@@ -224,91 +278,36 @@ x265 is under the GNU Public License Version 2 or later
 details), you must upgrade FFmpeg's license to GPL in order to use it.
 @end float
 
-@section kvazaar
+@section xavs
 
-FFmpeg can make use of the kvazaar library for HEVC encoding.
+FFmpeg can make use of the xavs library for AVS encoding.
 
-Go to @url{https://github.com/ultravideo/kvazaar} and follow the
-instructions for installing the library. Then pass
-@code{--enable-libkvazaar} to configure to enable it.
-
-@section libilbc
-
-iLBC is a narrowband speech codec that has been made freely available
-by Google as part of the WebRTC project. libilbc is a packaging friendly
-copy of the iLBC codec. FFmpeg can make use of the libilbc library for
-iLBC encoding and decoding.
-
-Go to @url{https://github.com/TimothyGu/libilbc} and follow the instructions for
-installing the library. Then pass @code{--enable-libilbc} to configure to
+Go to @url{http://xavs.sf.net/} and follow the instructions for
+installing the library. Then pass @code{--enable-libxavs} to configure to
 enable it.
 
-@section libzvbi
+@section xavs2
 
-libzvbi is a VBI decoding library which can be used by FFmpeg to decode DVB
+FFmpeg can make use of the xavs2 library for AVS2-P2/IEEE1857.4 video encoding.
+
+Go to @url{https://github.com/pkuvcl/xavs2} and follow the instructions for
+installing the library. Then pass @code{--enable-libxavs2} to configure to
+enable it.
+
+@float NOTE
+libxavs2 is under the GNU Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
+details), you must upgrade FFmpeg's license to GPL in order to use it.
+@end float
+
+@section ZVBI
+
+ZVBI is a VBI decoding library which can be used by FFmpeg to decode DVB
 teletext pages and DVB teletext subtitles.
 
 Go to @url{http://sourceforge.net/projects/zapping/} and follow the instructions for
 installing the library. Then pass @code{--enable-libzvbi} to configure to
 enable it.
-
-@section AviSynth
-
-FFmpeg can read AviSynth scripts as input. To enable support, pass
-@code{--enable-avisynth} to configure.  The correct headers are
-included in compat/avisynth/, which allows the user to enable support
-without needing to search for these headers themselves.
-
-For Windows, supported AviSynth variants are
-@url{http://avisynth.nl, AviSynth 2.6 RC1 or higher} for 32-bit builds and
-@url{http://avs-plus.net, AviSynth+ r1718 or higher} for 32-bit and 64-bit builds.
-
-For Linux and OS X, the supported AviSynth variant is
-@url{https://github.com/avxsynth/avxsynth, AvxSynth}.
-
-@float NOTE
-There is currently a regression in AviSynth+'s @code{capi.h} header as of
-October 2016, which interferes with the ability for builds of FFmpeg to use
-MSVC-built binaries of AviSynth. Until this is resolved, you can make sure
-a known good version is installed by checking out a version from before
-the regression occurred:
-
-@code{git clone -b MT git://github.com/AviSynth/AviSynthPlus.git @*
-cd AviSynthPlus @*
-git checkout -b oldheader b4f292b4dbfad149697fb65c6a037bb3810813f9 @*
-make install PREFIX=/install/prefix}
-@end float
-
-@float NOTE
-AviSynth and AvxSynth are loaded dynamically.  Distributors can build FFmpeg
-with @code{--enable-avisynth}, and the binaries will work regardless of the
-end user having AviSynth or AvxSynth installed - they'll only need to be
-installed to use AviSynth scripts (obviously).
-@end float
-
-@section Intel QuickSync Video
-
-FFmpeg can use Intel QuickSync Video (QSV) for accelerated encoding and decoding
-of multiple codecs. To use QSV, FFmpeg must be linked against the @code{libmfx}
-dispatcher, which loads the actual decoding libraries.
-
-The dispatcher is open source and can be downloaded from
-@url{https://github.com/lu-zero/mfx_dispatch.git}. FFmpeg needs to be configured
-with the @code{--enable-libmfx} option and @code{pkg-config} needs to be able to
-locate the dispatcher's @code{.pc} files.
-
-@section AMD VCE
-
-FFmpeg can use the AMD Advanced Media Framework library for accelerated H.264
-and HEVC encoding on VCE enabled hardware under Windows.
-
-To enable support you must obtain the AMF framework header files from
-@url{https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git}.
-
-Create an @code{AMF/} directory in the system include path.
-Copy the contents of @code{AMF/amf/public/include/} into that directory.
-Then configure FFmpeg with @code{--enable-amf}.
-
 
 @chapter Supported File Formats, Codecs or Features
 
