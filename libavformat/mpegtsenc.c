@@ -1523,7 +1523,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     int64_t dts = pkt->dts, pts = pkt->pts;
     int opus_samples = 0;
     int side_data_size;
-    char *side_data = NULL;
+    uint8_t *side_data = NULL;
     int stream_id = -1;
 
     side_data = av_packet_get_side_data(pkt,
