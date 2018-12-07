@@ -167,9 +167,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->bits_per_raw_sample == 10) {
-        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 10b decoding based on codec tag");
+        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 10b decoding based on codec tag.\n");
     } else { /* 12b */
-        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 12b decoding based on codec tag");
+        av_log(avctx, AV_LOG_DEBUG, "Auto bitdepth precision. Use 12b decoding based on codec tag.\n");
     }
 
     ff_blockdsp_init(&ctx->bdsp, avctx);
