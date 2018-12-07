@@ -1312,7 +1312,7 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_METADATA_UPDATE,
 
     /**
-     * MPEGTS stream ID, this is required to pass the stream ID
+     * MPEGTS stream ID as uint8_t, this is required to pass the stream ID
      * information from the demuxer to the corresponding muxer.
      */
     AV_PKT_DATA_MPEGTS_STREAM_ID,
