@@ -918,7 +918,7 @@ static void new_data_packet(const uint8_t *buffer, int len, AVPacket *pkt)
 
 static int new_pes_packet(PESContext *pes, AVPacket *pkt)
 {
-    char *sd;
+    uint8_t *sd;
 
     av_init_packet(pkt);
 
