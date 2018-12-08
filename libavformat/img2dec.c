@@ -29,6 +29,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/gif.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -1005,6 +1006,19 @@ static int xwd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2 + 1;
 }
 
+static int gif_probe(AVProbeData *p)
+{
+    /* check magick */
+    if (memcmp(p->buf, gif87a_sig, 6) && memcmp(p->buf, gif89a_sig, 6))
+        return 0;
+
+    /* width or height contains zero? */
+    if (!AV_RL16(&p->buf[6]) || !AV_RL16(&p->buf[8]))
+        return 0;
+
+    return AVPROBE_SCORE_MAX - 1;
+}
+
 #define IMAGEAUTO_DEMUXER(imgname, codecid)\
 static const AVClass imgname ## _class = {\
     .class_name = AV_STRINGIFY(imgname) " demuxer",\
@@ -1028,6 +1042,7 @@ IMAGEAUTO_DEMUXER(bmp,     AV_CODEC_ID_BMP)
 IMAGEAUTO_DEMUXER(dds,     AV_CODEC_ID_DDS)
 IMAGEAUTO_DEMUXER(dpx,     AV_CODEC_ID_DPX)
 IMAGEAUTO_DEMUXER(exr,     AV_CODEC_ID_EXR)
+IMAGEAUTO_DEMUXER(gif,     AV_CODEC_ID_GIF)
 IMAGEAUTO_DEMUXER(j2k,     AV_CODEC_ID_JPEG2000)
 IMAGEAUTO_DEMUXER(jpeg,    AV_CODEC_ID_MJPEG)
 IMAGEAUTO_DEMUXER(jpegls,  AV_CODEC_ID_JPEGLS)

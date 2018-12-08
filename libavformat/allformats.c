@@ -463,6 +463,7 @@ extern AVInputFormat  ff_image_bmp_pipe_demuxer;
 extern AVInputFormat  ff_image_dds_pipe_demuxer;
 extern AVInputFormat  ff_image_dpx_pipe_demuxer;
 extern AVInputFormat  ff_image_exr_pipe_demuxer;
+extern AVInputFormat  ff_image_gif_pipe_demuxer;
 extern AVInputFormat  ff_image_j2k_pipe_demuxer;
 extern AVInputFormat  ff_image_jpeg_pipe_demuxer;
 extern AVInputFormat  ff_image_jpegls_pipe_demuxer;
