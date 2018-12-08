@@ -41,6 +41,7 @@ extern AVCodecParser ff_dvdsub_parser;
 extern AVCodecParser ff_dvd_nav_parser;
 extern AVCodecParser ff_flac_parser;
 extern AVCodecParser ff_g729_parser;
+extern AVCodecParser ff_gif_parser;
 extern AVCodecParser ff_gsm_parser;
 extern AVCodecParser ff_h261_parser;
 extern AVCodecParser ff_h263_parser;
