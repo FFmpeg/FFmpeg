@@ -732,4 +732,20 @@ Example: convert the captions to a format most players understand:
 ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
 @end example
 
+@section vapoursynth
+
+Vapoursynth wrapper.
+
+Due to security concerns, Vapoursynth scripts will not
+be autodetected so the input format has to be forced. For ff* CLI tools,
+add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
+
+This demuxer accepts the following option:
+@table @option
+@item max_script_size
+The demuxer buffers the entire script into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of scripts that can be read.
+Default is 1 MiB.
+@end table
+
 @c man end DEMUXERS

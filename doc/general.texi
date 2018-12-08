@@ -242,6 +242,17 @@ Go to @url{http://www.twolame.org/} and follow the
 instructions for installing the library.
 Then pass @code{--enable-libtwolame} to configure to enable it.
 
+@section VapourSynth
+
+FFmpeg can read VapourSynth scripts as input. To enable support, pass
+@code{--enable-vapoursynth} to configure. Vapoursynth is detected via
+@code{pkg-config}. Versions 42 or greater supported.
+See @url{http://www.vapoursynth.com/}.
+
+Due to security concerns, Vapoursynth scripts will not
+be autodetected so the input format has to be forced. For ff* CLI tools,
+add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
+
 @section WavPack
 
 FFmpeg can make use of the libwavpack library for WavPack encoding.
