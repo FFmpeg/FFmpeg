@@ -78,6 +78,7 @@ typedef struct AOMEncoderContext {
     int tile_cols_log2, tile_rows_log2;
     aom_superblock_size_t superblock_size;
     int uniform_tiles;
+    int row_mt;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -92,6 +93,9 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
     [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
     [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
+#ifdef AOM_CTRL_AV1E_SET_ROW_MT
+    [AV1E_SET_ROW_MT]           = "AV1E_SET_ROW_MT",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -650,6 +654,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_TILE_ROWS,    ctx->tile_rows_log2);
     }
 
+#ifdef AOM_CTRL_AV1E_SET_ROW_MT
+    codecctl_int(avctx, AV1E_SET_ROW_MT, ctx->row_mt);
+#endif
+
     // provide dummy value to initialize wrapper, values will be updated each _encode()
     aom_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
                  (unsigned char*)1);
@@ -983,6 +991,7 @@ static const AVOption options[] = {
     { "tiles",            "Tile columns x rows", OFFSET(tile_cols), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, VE },
     { "tile-columns",     "Log2 of number of tile columns to use", OFFSET(tile_cols_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",        "Log2 of number of tile rows to use",    OFFSET(tile_rows_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
+    { "row-mt",           "Enable row based multi-threading",      OFFSET(row_mt),         AV_OPT_TYPE_BOOL, {.i64 = 0},  0, 1, VE},
     { NULL }
 };
 

@@ -1411,9 +1411,9 @@ to unconstrained variable bitrate.
 
 @item threads
 Set the number of threads to use while encoding.  This may require the
-@option{tiles} option to also be set to actually use the specified
-number of threads fully.  Defaults to the number of hardware threads
-supported by the host machine.
+@option{tiles} or @option{row-mt} options to also be set to actually
+use the specified number of threads fully. Defaults to the number of
+hardware threads supported by the host machine.
 
 @item profile
 Set the encoding profile.  Defaults to using the profile which matches
@@ -1476,6 +1476,9 @@ number of tiles required by the size of the input video (this is 1x1
 @item tile-columns tile-rows
 Set the number of tiles as log2 of the number of tile rows and columns.
 Provided for compatibility with libvpx/VP9.
+
+@item row-mt (Requires libaom >= 1.0.0-759-g90a15f4f2)
+Enable row based multi-threading. Disabled by default.
 
 @end table
 
