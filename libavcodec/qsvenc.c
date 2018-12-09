@@ -1344,8 +1344,13 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
             pict_type = AV_PICTURE_TYPE_P;
         else if (bs->FrameType & MFX_FRAMETYPE_B || bs->FrameType & MFX_FRAMETYPE_xB)
             pict_type = AV_PICTURE_TYPE_B;
-        else
-            av_assert0(!"Uninitialized pict_type!");
+        else if (bs->FrameType == MFX_FRAMETYPE_UNKNOWN) {
+            pict_type = AV_PICTURE_TYPE_NONE;
+            av_log(avctx, AV_LOG_WARNING, "Unkown FrameType, set pict_type to AV_PICTURE_TYPE_NONE.\n");
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Invalid FrameType:%d.\n", bs->FrameType);
+            return AVERROR_INVALIDDATA;
+        }
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
