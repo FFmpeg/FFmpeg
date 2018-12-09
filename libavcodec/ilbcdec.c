@@ -1303,7 +1303,8 @@ static int xcorr_coeff(int16_t *target, int16_t *regressor,
         pos += step;
 
         /* Do a +/- to get the next energy */
-        energy += step * ((*rp_end * *rp_end - *rp_beg * *rp_beg) >> shifts);
+        energy += (unsigned)step * ((*rp_end * *rp_end - *rp_beg * *rp_beg) >> shifts);
+
         rp_beg += step;
         rp_end += step;
     }
