@@ -1550,6 +1550,8 @@ static av_cold int tiff_end(AVCodecContext *avctx)
     ff_lzw_decode_close(&s->lzw);
     av_freep(&s->deinvert_buf);
     s->deinvert_buf_size = 0;
+    av_freep(&s->yuv_line);
+    s->yuv_line_size = 0;
     av_freep(&s->fax_buffer);
     s->fax_buffer_size = 0;
     return 0;
