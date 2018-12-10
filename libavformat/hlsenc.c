@@ -227,6 +227,7 @@ typedef struct HLSContext {
     AVIOContext *m3u8_out;
     AVIOContext *sub_m3u8_out;
     int64_t timeout;
+    int ignore_io_errors;
 } HLSContext;
 
 static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
@@ -496,8 +497,11 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         proto = avio_find_protocol_name(s->url);
         if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
             av_dict_set(&options, "method", "DELETE", 0);
-            if ((ret = vs->avf->io_open(vs->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0)
+            if ((ret = vs->avf->io_open(vs->avf, &out, path, AVIO_FLAG_WRITE, &options)) < 0) {
+                if (hls->ignore_io_errors)
+                    ret = 0;
                 goto fail;
+            }
             ff_format_io_close(vs->avf, &out);
         } else if (unlink(path) < 0) {
             av_log(hls, AV_LOG_ERROR, "failed to delete old segment %s: %s\n",
@@ -525,6 +529,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
             if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
                 if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
+                    if (hls->ignore_io_errors)
+                        ret = 0;
                     av_free(sub_path);
                     goto fail;
                 }
@@ -1380,8 +1386,11 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_temp_file ? "%s.tmp" : "%s", vs->m3u8_name);
-    if ((ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options)) < 0)
+    if ((ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options)) < 0) {
+        if (hls->ignore_io_errors)
+            ret = 0;
         goto fail;
+    }
 
     for (en = vs->segments; en; en = en->next) {
         if (target_duration <= en->duration)
@@ -1428,8 +1437,11 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         ff_hls_write_end_list(hls->m3u8_out);
 
     if( vs->vtt_m3u8_name ) {
-        if ((ret = hlsenc_io_open(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name, &options)) < 0)
+        if ((ret = hlsenc_io_open(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name, &options)) < 0) {
+            if (hls->ignore_io_errors)
+                ret = 0;
             goto fail;
+        }
         ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
                                      target_duration, sequence, PLAYLIST_TYPE_NONE);
         for (en = vs->segments; en; en = en->next) {
@@ -1452,7 +1464,6 @@ fail:
     hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
     if (use_temp_file)
         ff_rename(temp_filename, vs->m3u8_name, s);
-
     if (ret >= 0 && hls->master_pl_name)
         if (create_master_playlist(s, vs) < 0)
             av_log(s, AV_LOG_WARNING, "Master playlist creation failed\n");
@@ -1611,13 +1622,19 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
         if (err < 0)
             return err;
     } else if (c->segment_type != SEGMENT_TYPE_FMP4) {
-        if ((err = hlsenc_io_open(s, &oc->pb, oc->url, &options)) < 0)
+        if ((err = hlsenc_io_open(s, &oc->pb, oc->url, &options)) < 0) {
+            if (c->ignore_io_errors)
+                err = 0;
             goto fail;
+        }
     }
     if (vs->vtt_basename) {
         set_http_options(s, &options, c);
-        if ((err = hlsenc_io_open(s, &vtt_oc->pb, vtt_oc->url, &options)) < 0)
+        if ((err = hlsenc_io_open(s, &vtt_oc->pb, vtt_oc->url, &options)) < 0) {
+            if (c->ignore_io_errors)
+                err = 0;
             goto fail;
+        }
     }
     av_dict_free(&options);
 
@@ -2257,9 +2274,9 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 set_http_options(s, &options, hls);
                 ret = hlsenc_io_open(s, &vs->out, vs->avf->url, &options);
                 if (ret < 0) {
-                    av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n",
-                           vs->avf->url);
-                    return ret;
+                    av_log(s, hls->ignore_io_errors ? AV_LOG_WARNING : AV_LOG_ERROR,
+                           "Failed to open file '%s'\n", vs->avf->url);
+                    return hls->ignore_io_errors ? 0 : ret;
                 }
                 write_styp(vs->out);
                 ret = flush_dynbuf(vs, &range_length);
@@ -2334,8 +2351,11 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     vs->packets_written++;
-    if (oc->pb)
+    if (oc->pb) {
         ret = ff_write_chained(oc, stream_index, pkt, s, 0);
+        if (hls->ignore_io_errors)
+            ret = 0;
+    }
 
     return ret;
 }
@@ -2879,6 +2899,7 @@ static const AVOption options[] = {
     {"master_pl_publish_rate", "Publish master play list every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     {"http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
+    {"ignore_io_errors", "Ignore IO errors for stable long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 
