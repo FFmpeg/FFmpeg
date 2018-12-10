@@ -11,6 +11,7 @@ version <next>:
 - dhav demuxer
 - PCM-DVD encoder
 - GIF parser
+- vividas demuxer
 
 
 version 4.1:

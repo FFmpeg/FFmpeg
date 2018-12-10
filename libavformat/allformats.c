@@ -422,6 +422,7 @@ extern AVInputFormat  ff_vc1_demuxer;
 extern AVOutputFormat ff_vc1_muxer;
 extern AVInputFormat  ff_vc1t_demuxer;
 extern AVOutputFormat ff_vc1t_muxer;
+extern AVInputFormat  ff_vividas_demuxer;
 extern AVInputFormat  ff_vivo_demuxer;
 extern AVInputFormat  ff_vmd_demuxer;
 extern AVInputFormat  ff_vobsub_demuxer;
