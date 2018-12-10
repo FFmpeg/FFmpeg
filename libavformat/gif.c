@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavcodec/gif.h"
 
 /* XXX: random value that shouldn't be taken into effect if there is no
  * transparent color in the palette (the transparency bit will be set to 0) */
@@ -63,8 +64,7 @@ static int gif_image_write_header(AVIOContext *pb, AVStream *st,
             aspect = 0;
     }
 
-    avio_write(pb, "GIF", 3);
-    avio_write(pb, "89a", 3);
+    avio_write(pb, gif89a_sig, sizeof(gif89a_sig));
     avio_wl16(pb, st->codecpar->width);
     avio_wl16(pb, st->codecpar->height);
 
