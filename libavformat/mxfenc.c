@@ -2412,6 +2412,11 @@ static int mxf_write_header(AVFormatContext *s)
             sc->v_chroma_sub_sample = 2;
             sc->color_siting = 0xFF;
 
+            if (st->codecpar->sample_aspect_ratio.num && st->codecpar->sample_aspect_ratio.den) {
+                sc->aspect_ratio = av_mul_q(st->codecpar->sample_aspect_ratio,
+                                            av_make_q(st->codecpar->width, st->codecpar->height));
+            }
+
             if (pix_desc) {
                 sc->component_depth     = pix_desc->comp[0].depth;
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
