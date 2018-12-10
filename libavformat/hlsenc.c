@@ -241,6 +241,9 @@ static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
         URLContext *http_url_context = ffio_geturlcontext(*pb);
         av_assert0(http_url_context);
         err = ff_http_do_new_request(http_url_context, filename);
+        if (err < 0)
+            ff_format_io_close(s, pb);
+
 #endif
     }
     return err;
@@ -249,6 +252,8 @@ static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
 static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
     HLSContext *hls = s->priv_data;
     int http_base_proto = filename ? ff_is_http_proto(filename) : 0;
+    if (!*pb)
+        return;
     if (!http_base_proto || !hls->http_persistent || hls->key_info_file || hls->encrypt) {
         ff_format_io_close(s, pb);
 #if CONFIG_HTTP_PROTOCOL
@@ -2329,7 +2334,8 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     vs->packets_written++;
-    ret = ff_write_chained(oc, stream_index, pkt, s, 0);
+    if (oc->pb)
+        ret = ff_write_chained(oc, stream_index, pkt, s, 0);
 
     return ret;
 }
