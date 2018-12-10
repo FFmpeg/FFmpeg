@@ -123,4 +123,4 @@ fate-mov-faststart-4gb-overflow: CMD = run tools/qt-faststart$(EXESUF) $(TARGET_
 fate-mov-faststart-4gb-overflow: CMP = oneline
 fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
 
-fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4
+fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4
