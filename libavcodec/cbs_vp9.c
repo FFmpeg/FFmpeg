@@ -305,7 +305,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 
 #define prob(name, subs, ...) do { \
         uint8_t prob_coded; \
-        int8_t prob; \
+        uint8_t prob; \
         xf(1, name.prob_coded, prob_coded, subs, __VA_ARGS__); \
         if (prob_coded) \
             xf(8, name.prob, prob, subs, __VA_ARGS__); \
