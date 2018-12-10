@@ -293,7 +293,7 @@ static int ascii2index(const uint8_t *cpixel, int cpp)
         if (*p < ' ' || *p > 0xfe)
             return AVERROR_INVALIDDATA;
         n += (*p++ - ' ') * m;
-        m *= 220;
+        m *= 223;
     }
     return n;
 }
@@ -346,7 +346,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
 
     size = 1;
     for (i = 0; i < cpp; i++)
-        size *= 220;
+        size *= 223;
 
     if (ncolors <= 0 || ncolors > size) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of colors: %d\n", ncolors);
