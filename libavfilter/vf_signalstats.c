@@ -830,7 +830,7 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
 
             masky |= yuv;
             histy[yuv]++;
-            dify += abs(yuv - AV_RN16(prev->data[0] + pw + i * 2));
+            dify += abs(yuv - (int)AV_RN16(prev->data[0] + pw + i * 2));
         }
         w  += in->linesize[0];
         pw += prev->linesize[0];
@@ -848,9 +848,9 @@ static int filter_frame16(AVFilterLink *link, AVFrame *in)
             masku |= yuvu;
             maskv |= yuvv;
             histu[yuvu]++;
-            difu += abs(yuvu - AV_RN16(prev->data[1] + cpw + i * 2));
+            difu += abs(yuvu - (int)AV_RN16(prev->data[1] + cpw + i * 2));
             histv[yuvv]++;
-            difv += abs(yuvv - AV_RN16(prev->data[2] + cpw + i * 2));
+            difv += abs(yuvv - (int)AV_RN16(prev->data[2] + cpw + i * 2));
 
             histsat[p_sat[i]]++;
             histhue[((int16_t*)p_hue)[i]]++;
