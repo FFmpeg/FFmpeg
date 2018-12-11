@@ -787,7 +787,7 @@ ffplay -f iec61883 -i auto
 Grab and record the input of a FireWire DV/HDV device,
 using a packet buffer of 100000 packets if the source is HDV.
 @example
-ffmpeg -f iec61883 -i auto -hdvbuffer 100000 out.mpg
+ffmpeg -f iec61883 -i auto -dvbuffer 100000 out.mpg
 @end example
 
 @end itemize
