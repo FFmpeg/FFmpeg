@@ -39,17 +39,19 @@
 
 #include "put_bits.h"
 
+#define DEFAULT_TRANSPARENCY_INDEX 0x1f
+
 typedef struct GIFContext {
     const AVClass *class;
     LZWState *lzw;
     uint8_t *buf;
     int buf_size;
+    int is_first_frame;
     AVFrame *last_frame;
     int flags;
     uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
     int palette_loaded;
     int transparent_index;
-    uint8_t *pal_exdata;
     uint8_t *tmpl;                      ///< temporary line buffer
 } GIFContext;
 
@@ -57,6 +59,24 @@ enum {
     GF_OFFSETTING = 1<<0,
     GF_TRANSDIFF  = 1<<1,
 };
+
+static int get_palette_transparency_index(const uint32_t *palette)
+{
+    int transparent_color_index = -1;
+    unsigned i, smallest_alpha = 0xff;
+
+    if (!palette)
+        return -1;
+
+    for (i = 0; i < AVPALETTE_COUNT; i++) {
+        const uint32_t v = palette[i];
+        if (v >> 24 < smallest_alpha) {
+            smallest_alpha = v >> 24;
+            transparent_color_index = i;
+        }
+    }
+    return smallest_alpha < 128 ? transparent_color_index : -1;
+}
 
 static int pick_palette_entry(const uint8_t *buf, int linesize, int w, int h)
 {
@@ -83,7 +103,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     GIFContext *s = avctx->priv_data;
     int len = 0, height = avctx->height, width = avctx->width, x, y;
     int x_start = 0, y_start = 0, trans = s->transparent_index;
-    int honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
+    int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
     const uint8_t *ptr;
 
     /* Crop image */
@@ -137,6 +157,54 @@ static int gif_image_write_image(AVCodecContext *avctx,
                width, height, x_start, y_start, avctx->width, avctx->height);
     }
 
+    if (s->is_first_frame) { /* GIF header */
+        const uint32_t *global_palette = palette ? palette : s->palette;
+        const AVRational sar = avctx->sample_aspect_ratio;
+        int64_t aspect = 0;
+
+        if (sar.num > 0 && sar.den > 0) {
+            aspect = sar.num * 64LL / sar.den - 15;
+            if (aspect < 0 || aspect > 255)
+                aspect = 0;
+        }
+
+        bytestream_put_buffer(bytestream, gif89a_sig, sizeof(gif89a_sig));
+        bytestream_put_le16(bytestream, avctx->width);
+        bytestream_put_le16(bytestream, avctx->height);
+
+        bcid = get_palette_transparency_index(global_palette);
+
+        bytestream_put_byte(bytestream, 0xf7); /* flags: global clut, 256 entries */
+        bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid); /* background color index */
+        bytestream_put_byte(bytestream, aspect);
+        for (int i = 0; i < 256; i++) {
+            const uint32_t v = global_palette[i] & 0xffffff;
+            bytestream_put_be24(bytestream, v);
+        }
+
+        s->is_first_frame = 0;
+    }
+
+    if (honor_transparency && trans < 0) {
+        trans = pick_palette_entry(buf + y_start*linesize + x_start,
+                                   linesize, width, height);
+        if (trans < 0) // TODO, patch welcome
+            av_log(avctx, AV_LOG_DEBUG, "No available color, can not use transparency\n");
+    }
+    if (trans < 0)
+        honor_transparency = 0;
+
+    bcid = (honor_transparency && trans >= 0) ? trans : get_palette_transparency_index(palette);
+
+    /* graphic control extension */
+    bytestream_put_byte(bytestream, GIF_EXTENSION_INTRODUCER);
+    bytestream_put_byte(bytestream, GIF_GCE_EXT_LABEL);
+    bytestream_put_byte(bytestream, 0x04); /* block size */
+    bytestream_put_byte(bytestream, 1<<2 | (bcid >= 0));
+    bytestream_put_le16(bytestream, 5); // default delay
+    bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid);
+    bytestream_put_byte(bytestream, 0x00);
+
     /* image block */
     bytestream_put_byte(bytestream, GIF_IMAGE_SEPARATOR);
     bytestream_put_le16(bytestream, x_start);
@@ -154,24 +222,6 @@ static int gif_image_write_image(AVCodecContext *avctx,
             bytestream_put_be24(bytestream, v);
         }
     }
-
-    if (honor_transparency && trans < 0) {
-        trans = pick_palette_entry(buf + y_start*linesize + x_start,
-                                   linesize, width, height);
-        if (trans < 0) { // TODO, patch welcome
-            av_log(avctx, AV_LOG_DEBUG, "No available color, can not use transparency\n");
-        } else {
-            uint8_t *pal_exdata = s->pal_exdata;
-            if (!pal_exdata)
-                pal_exdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
-            if (!pal_exdata)
-                return AVERROR(ENOMEM);
-            memcpy(pal_exdata, s->palette, AVPALETTE_SIZE);
-            pal_exdata[trans*4 + 3*!HAVE_BIGENDIAN] = 0x00;
-        }
-    }
-    if (trans < 0)
-        honor_transparency = 0;
 
     bytestream_put_byte(bytestream, 0x08);
 
@@ -222,14 +272,9 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "GIF does not support resolutions above 65535x65535\n");
         return AVERROR(EINVAL);
     }
-#if FF_API_CODED_FRAME
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
-    avctx->coded_frame->key_frame = 1;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
 
     s->transparent_index = -1;
+    s->is_first_frame = 1;
 
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
     s->buf_size = avctx->width*avctx->height*2 + 1000;
@@ -242,25 +287,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_assert0(avctx->pix_fmt == AV_PIX_FMT_PAL8);
 
     return 0;
-}
-
-/* FIXME: duplicated with lavc */
-static int get_palette_transparency_index(const uint32_t *palette)
-{
-    int transparent_color_index = -1;
-    unsigned i, smallest_alpha = 0xff;
-
-    if (!palette)
-        return -1;
-
-    for (i = 0; i < AVPALETTE_COUNT; i++) {
-        const uint32_t v = palette[i];
-        if (v >> 24 < smallest_alpha) {
-            smallest_alpha = v >> 24;
-            transparent_color_index = i;
-        }
-    }
-    return smallest_alpha < 128 ? transparent_color_index : -1;
 }
 
 static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
@@ -277,22 +303,12 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     end        = pkt->data + pkt->size;
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
-        uint8_t *pal_exdata = av_packet_new_side_data(pkt, AV_PKT_DATA_PALETTE, AVPALETTE_SIZE);
-        if (!pal_exdata)
-            return AVERROR(ENOMEM);
-        memcpy(pal_exdata, pict->data[1], AVPALETTE_SIZE);
         palette = (uint32_t*)pict->data[1];
 
-        s->pal_exdata = pal_exdata;
-
-        /* The first palette with PAL8 will be used as generic palette by the
-         * muxer so we don't need to write it locally in the packet. We store
-         * it as a reference here in case it changes later. */
         if (!s->palette_loaded) {
             memcpy(s->palette, palette, AVPALETTE_SIZE);
             s->transparent_index = get_palette_transparency_index(palette);
             s->palette_loaded = 1;
-            palette = NULL;
         } else if (!memcmp(s->palette, palette, AVPALETTE_SIZE)) {
             palette = NULL;
         }
@@ -305,6 +321,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         if (!s->last_frame)
             return AVERROR(ENOMEM);
     }
+
     av_frame_unref(s->last_frame);
     ret = av_frame_ref(s->last_frame, (AVFrame*)pict);
     if (ret < 0)
