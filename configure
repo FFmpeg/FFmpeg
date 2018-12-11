@@ -4676,7 +4676,7 @@ enabled libaom            && {
 }
 enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 enabled libdc1394         && require_pkg_config libdc1394 libdc1394-2 dc1394/dc1394.h dc1394_new
-enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.0.1" dav1d/dav1d.h dav1d_version
+enabled libdav1d          && require_pkg_config libdav1d "dav1d >= 0.1.0" dav1d/dav1d.h dav1d_version
 enabled libdcadec         && require libdcadec libdcadec/dca_context.h dcadec_context_create -ldcadec
 enabled libfaac           && require libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac        && require_pkg_config libfdk_aac fdk-aac "fdk-aac/aacenc_lib.h" aacEncOpen
