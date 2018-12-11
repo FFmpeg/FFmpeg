@@ -2,6 +2,8 @@
  * Copyright (c) 2000 Fabrice Bellard
  * Copyright (c) 2002 Francois Revol
  * Copyright (c) 2006 Baptiste Coudurier
+ * Copyright (c) 2018 Bjorn Roche
+ * Copyright (c) 2018 Paul B Mahol
  *
  * first version by Francois Revol <revol@free.fr>
  *
@@ -60,6 +62,27 @@ enum {
     GF_TRANSDIFF  = 1<<1,
 };
 
+static int is_image_translucent(AVCodecContext *avctx,
+                                const uint8_t *buf, const int linesize)
+{
+    GIFContext *s = avctx->priv_data;
+    int trans = s->transparent_index;
+
+    if (trans < 0)
+        return 0;
+
+    for (int y = 0; y < avctx->height; y++) {
+        for (int x = 0; x < avctx->width; x++) {
+            if (buf[x] == trans) {
+                return 1;
+            }
+        }
+        buf += linesize;
+    }
+
+    return 0;
+}
+
 static int get_palette_transparency_index(const uint32_t *palette)
 {
     int transparent_color_index = -1;
@@ -94,17 +117,91 @@ static int pick_palette_entry(const uint8_t *buf, int linesize, int w, int h)
     return -1;
 }
 
-static int gif_image_write_image(AVCodecContext *avctx,
-                                 uint8_t **bytestream, uint8_t *end,
-                                 const uint32_t *palette,
+static void gif_crop_translucent(AVCodecContext *avctx,
                                  const uint8_t *buf, const int linesize,
-                                 AVPacket *pkt)
+                                 int *width, int *height,
+                                 int *x_start, int *y_start)
 {
     GIFContext *s = avctx->priv_data;
-    int len = 0, height = avctx->height, width = avctx->width, x, y;
-    int x_start = 0, y_start = 0, trans = s->transparent_index;
-    int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
-    const uint8_t *ptr;
+    int trans = s->transparent_index;
+
+    /* Crop image */
+    if ((s->flags & GF_OFFSETTING) && trans >= 0) {
+        const int w = avctx->width;
+        const int h = avctx->height;
+        int x_end = w - 1,
+            y_end = h - 1;
+
+        // crop top
+        while (*y_start < y_end) {
+            int is_trans = 1;
+            for (int i = 0; i < w; i++) {
+                if (buf[w * *y_start + i] != trans) {
+                    is_trans = 0;
+                    break;
+                }
+            }
+
+            if (!is_trans)
+                break;
+            (*y_start)++;
+        }
+
+        // crop bottom
+        while (y_end < h) {
+            int is_trans = 1;
+            for (int i = 0; i < w; i++) {
+                if (buf[w * y_end + i] != trans) {
+                    is_trans = 0;
+                    break;
+                }
+            }
+            if (!is_trans)
+                break;
+            y_end--;
+        }
+
+        // crop left
+        while (*x_start < x_end) {
+            int is_trans = 1;
+            for (int i = *y_start; i < y_end; i++) {
+                if (buf[w * i + *x_start] != trans) {
+                    is_trans = 0;
+                    break;
+                }
+            }
+            if (!is_trans)
+                break;
+            (*x_start)++;
+        }
+
+        // crop right
+        while (x_end < w) {
+            int is_trans = 1;
+            for (int i = *y_start; i < y_end; i++) {
+                if (buf[w * i + x_end] != trans) {
+                    is_trans = 0;
+                    break;
+                }
+            }
+            if (!is_trans)
+                break;
+            x_end--;
+        }
+
+        *height = y_end + 1 - *y_start;
+        *width  = x_end + 1 - *x_start;
+        av_log(avctx, AV_LOG_DEBUG,"%dx%d image at pos (%d;%d) [area:%dx%d]\n",
+               *width, *height, *x_start, *y_start, avctx->width, avctx->height);
+    }
+}
+
+static void gif_crop_opaque(AVCodecContext *avctx,
+                            const uint32_t *palette,
+                            const uint8_t *buf, const int linesize,
+                            int *width, int *height, int *x_start, int *y_start)
+{
+    GIFContext *s = avctx->priv_data;
 
     /* Crop image */
     if ((s->flags & GF_OFFSETTING) && s->last_frame && !palette) {
@@ -114,34 +211,34 @@ static int gif_image_write_image(AVCodecContext *avctx,
             y_end = avctx->height - 1;
 
         /* skip common lines */
-        while (y_start < y_end) {
-            if (memcmp(ref + y_start*ref_linesize, buf + y_start*linesize, width))
+        while (*y_start < y_end) {
+            if (memcmp(ref + *y_start*ref_linesize, buf + *y_start*linesize, *width))
                 break;
-            y_start++;
+            (*y_start)++;
         }
-        while (y_end > y_start) {
-            if (memcmp(ref + y_end*ref_linesize, buf + y_end*linesize, width))
+        while (y_end > *y_start) {
+            if (memcmp(ref + y_end*ref_linesize, buf + y_end*linesize, *width))
                 break;
             y_end--;
         }
-        height = y_end + 1 - y_start;
+        *height = y_end + 1 - *y_start;
 
         /* skip common columns */
-        while (x_start < x_end) {
+        while (*x_start < x_end) {
             int same_column = 1;
-            for (y = y_start; y <= y_end; y++) {
-                if (ref[y*ref_linesize + x_start] != buf[y*linesize + x_start]) {
+            for (int y = *y_start; y <= y_end; y++) {
+                if (ref[y*ref_linesize + *x_start] != buf[y*linesize + *x_start]) {
                     same_column = 0;
                     break;
                 }
             }
             if (!same_column)
                 break;
-            x_start++;
+            (*x_start)++;
         }
-        while (x_end > x_start) {
+        while (x_end > *x_start) {
             int same_column = 1;
-            for (y = y_start; y <= y_end; y++) {
+            for (int y = *y_start; y <= y_end; y++) {
                 if (ref[y*ref_linesize + x_end] != buf[y*linesize + x_end]) {
                     same_column = 0;
                     break;
@@ -151,10 +248,32 @@ static int gif_image_write_image(AVCodecContext *avctx,
                 break;
             x_end--;
         }
-        width = x_end + 1 - x_start;
+        *width = x_end + 1 - *x_start;
 
         av_log(avctx, AV_LOG_DEBUG,"%dx%d image at pos (%d;%d) [area:%dx%d]\n",
-               width, height, x_start, y_start, avctx->width, avctx->height);
+               *width, *height, *x_start, *y_start, avctx->width, avctx->height);
+    }
+}
+
+static int gif_image_write_image(AVCodecContext *avctx,
+                                 uint8_t **bytestream, uint8_t *end,
+                                 const uint32_t *palette,
+                                 const uint8_t *buf, const int linesize,
+                                 AVPacket *pkt)
+{
+    GIFContext *s = avctx->priv_data;
+    int disposal, len = 0, height = avctx->height, width = avctx->width, x, y;
+    int x_start = 0, y_start = 0, trans = s->transparent_index;
+    int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
+    const uint8_t *ptr;
+
+    if (!s->is_first_frame && is_image_translucent(avctx, buf, linesize)) {
+        gif_crop_translucent(avctx, buf, linesize, &width, &height, &x_start, &y_start);
+        honor_transparency = 0;
+        disposal = GCE_DISPOSAL_BACKGROUND;
+    } else {
+        gif_crop_opaque(avctx, palette, buf, linesize, &width, &height, &x_start, &y_start);
+        disposal = GCE_DISPOSAL_INPLACE;
     }
 
     if (s->is_first_frame) { /* GIF header */
@@ -191,16 +310,17 @@ static int gif_image_write_image(AVCodecContext *avctx,
         if (trans < 0) // TODO, patch welcome
             av_log(avctx, AV_LOG_DEBUG, "No available color, can not use transparency\n");
     }
+
     if (trans < 0)
         honor_transparency = 0;
 
-    bcid = (honor_transparency && trans >= 0) ? trans : get_palette_transparency_index(palette);
+    bcid = honor_transparency || disposal == GCE_DISPOSAL_BACKGROUND ? trans : get_palette_transparency_index(palette);
 
     /* graphic control extension */
     bytestream_put_byte(bytestream, GIF_EXTENSION_INTRODUCER);
     bytestream_put_byte(bytestream, GIF_GCE_EXT_LABEL);
     bytestream_put_byte(bytestream, 0x04); /* block size */
-    bytestream_put_byte(bytestream, 1<<2 | (bcid >= 0));
+    bytestream_put_byte(bytestream, disposal<<2 | (bcid >= 0));
     bytestream_put_le16(bytestream, 5); // default delay
     bytestream_put_byte(bytestream, bcid < 0 ? DEFAULT_TRANSPARENCY_INDEX : bcid);
     bytestream_put_byte(bytestream, 0x00);
