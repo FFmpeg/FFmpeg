@@ -99,7 +99,7 @@ static int gif_read_header(AVFormatContext *s)
     GIFDemuxContext *gdc = s->priv_data;
     AVIOContext     *pb  = s->pb;
     AVStream        *st;
-    int width, height, ret;
+    int width, height, ret, n;
 
     if ((ret = resync(pb)) < 0)
         return ret;
@@ -107,6 +107,8 @@ static int gif_read_header(AVFormatContext *s)
     gdc->delay  = gdc->default_delay;
     width  = avio_rl16(pb);
     height = avio_rl16(pb);
+    avio_skip(pb, 2);
+    n      = avio_r8(pb);
 
     if (width == 0 || height == 0)
         return AVERROR_INVALIDDATA;
@@ -122,6 +124,10 @@ static int gif_read_header(AVFormatContext *s)
     st->codecpar->codec_id   = AV_CODEC_ID_GIF;
     st->codecpar->width      = width;
     st->codecpar->height     = height;
+    if (n) {
+        st->codecpar->sample_aspect_ratio.num = n + 15;
+        st->codecpar->sample_aspect_ratio.den = 64;
+    }
 
     /* jump to start because gif decoder needs header data too */
     if (avio_seek(pb, 0, SEEK_SET) != 0)
