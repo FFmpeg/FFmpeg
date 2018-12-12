@@ -1341,11 +1341,10 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         new_pkt.pts  = av_rescale_q(bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);
         new_pkt.size = bs->DataLength;
 
-        if (bs->FrameType & MFX_FRAMETYPE_IDR ||
-            bs->FrameType & MFX_FRAMETYPE_xIDR)
+        if (bs->FrameType & MFX_FRAMETYPE_IDR || bs->FrameType & MFX_FRAMETYPE_xIDR) {
             new_pkt.flags |= AV_PKT_FLAG_KEY;
-
-        if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
+            pict_type = AV_PICTURE_TYPE_I;
+        } else if (bs->FrameType & MFX_FRAMETYPE_I || bs->FrameType & MFX_FRAMETYPE_xI)
             pict_type = AV_PICTURE_TYPE_I;
         else if (bs->FrameType & MFX_FRAMETYPE_P || bs->FrameType & MFX_FRAMETYPE_xP)
             pict_type = AV_PICTURE_TYPE_P;
