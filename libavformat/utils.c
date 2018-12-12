@@ -646,7 +646,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     if (id3v2_extra_meta) {
         if (!strcmp(s->iformat->name, "mp3") || !strcmp(s->iformat->name, "aac") ||
-            !strcmp(s->iformat->name, "tta")) {
+            !strcmp(s->iformat->name, "tta") || !strcmp(s->iformat->name, "wav")) {
             if ((ret = ff_id3v2_parse_apic(s, &id3v2_extra_meta)) < 0)
                 goto fail;
             if ((ret = ff_id3v2_parse_chapters(s, &id3v2_extra_meta)) < 0)
