@@ -305,6 +305,14 @@ If this flag is set, the dash segment files will be in in WebM format.
 @item -ignore_io_errors @var{ignore_io_errors}
 Ignore IO errors during open and write. Useful for long-duration runs with network output.
 
+@item -lhls @var{lhls}
+Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
+Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
+trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
+This option will also try to comply with the above open spec, till Apple's spec officially supports it.
+Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
+This is an experimental feature.
+
 @end table
 
 @anchor{framecrc}

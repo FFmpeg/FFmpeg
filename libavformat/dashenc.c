@@ -139,6 +139,7 @@ typedef struct DASHContext {
     char *format_options_str;
     SegmentType segment_type_option;  /* segment type as specified in options */
     int ignore_io_errors;
+    int lhls;
 } DASHContext;
 
 static struct codec_string {
@@ -418,7 +419,8 @@ static void get_start_index_number(OutputStream *os, DASHContext *c,
 }
 
 static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
-                                     int representation_id, int final) {
+                                     int representation_id, int final,
+                                     char *prefetch_url) {
     DASHContext *c = s->priv_data;
     int timescale = os->ctx->streams[0]->time_base.den;
     char temp_filename_hls[1024];
@@ -431,6 +433,11 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
     int i, start_index, start_number;
 
     get_start_index_number(os, c, &start_index, &start_number);
+
+    if (!c->hls_playlist || start_index >= os->nb_segments ||
+        os->segment_type != SEGMENT_TYPE_MP4)
+        return;
+
     get_hls_playlist_name(filename_hls, sizeof(filename_hls),
                           c->dirname, representation_id);
 
@@ -467,6 +474,9 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
             av_log(os->ctx, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
         }
     }
+
+    if (prefetch_url)
+        avio_printf(c->m3u8_out, "#EXT-X-PREFETCH:%s\n", prefetch_url);
 
     if (final)
         ff_hls_write_end_list(c->m3u8_out);
@@ -594,9 +604,8 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         }
         avio_printf(out, "\t\t\t\t</SegmentList>\n");
     }
-    if (c->hls_playlist && start_index < os->nb_segments && os->segment_type == SEGMENT_TYPE_MP4)
-    {
-        write_hls_media_playlist(os, s, representation_id, final);
+    if (!c->lhls || final) {
+        write_hls_media_playlist(os, s, representation_id, final, NULL);
     }
 
 }
@@ -1054,6 +1063,21 @@ static int dash_init(AVFormatContext *s)
         c->seg_duration = c->min_seg_duration;
     }
 #endif
+    if (c->lhls && s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(s, AV_LOG_ERROR,
+               "LHLS is experimental, Please set -strict experimental in order to enable it.\n");
+        return AVERROR_EXPERIMENTAL;
+    }
+
+    if (c->lhls && !c->streaming) {
+        av_log(s, AV_LOG_WARNING, "LHLS option will be ignored as streaming is not enabled\n");
+        c->lhls = 0;
+    }
+
+    if (c->lhls && !c->hls_playlist) {
+        av_log(s, AV_LOG_WARNING, "LHLS option will be ignored as hls_playlist is not enabled\n");
+        c->lhls = 0;
+    }
 
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
@@ -1635,6 +1659,10 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         if (ret < 0) {
             return handle_io_open_error(s, ret, os->temp_path);
         }
+        if (c->lhls) {
+            char *prefetch_url = use_rename ? NULL : os->filename;
+            write_hls_media_playlist(os, s, pkt->stream_index, 0, prefetch_url);
+        }
     }
 
     //write out the data immediately in streaming mode
@@ -1760,6 +1788,7 @@ static const AVOption options[] = {
     { "mp4", "make segment file in ISOBMFF format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_MP4 }, 0, UINT_MAX,   E, "segment_type"},
     { "webm", "make segment file in WebM format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_WEBM }, 0, UINT_MAX,   E, "segment_type"},
     { "ignore_io_errors", "Ignore IO errors during open and write. Useful for long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "lhls", "Enable Low-latency HLS(Experimental). Adds #EXT-X-PREFETCH tag with current segment's URI", OFFSET(lhls), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { NULL },
 };
 
