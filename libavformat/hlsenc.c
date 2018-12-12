@@ -787,7 +787,7 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
 
         av_dict_copy(&options, hls->format_options, 0);
         av_dict_set(&options, "fflags", "-autobsf", 0);
-        av_dict_set(&options, "movflags", "frag_custom+dash+delay_moov", 0);
+        av_dict_set(&options, "movflags", "+frag_custom+dash+delay_moov", AV_DICT_APPEND);
         ret = avformat_init_output(oc, &options);
         if (ret < 0)
             return ret;
@@ -2079,15 +2079,9 @@ static int hls_write_header(AVFormatContext *s)
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &hls->var_streams[i];
 
-        av_dict_copy(&options, hls->format_options, 0);
-        ret = avformat_write_header(vs->avf, &options);
-        if (av_dict_count(options)) {
-            av_log(s, AV_LOG_ERROR, "Some of provided format options in '%s' are not recognized\n", hls->format_options_str);
-            ret = AVERROR(EINVAL);
-            av_dict_free(&options);
-            goto fail;
-        }
-        av_dict_free(&options);
+        ret = avformat_write_header(vs->avf, NULL);
+        if (ret < 0)
+            return ret;
         //av_assert0(s->nb_streams == hls->avf->nb_streams);
         for (j = 0; j < vs->nb_streams; j++) {
             AVStream *inner_st;
