@@ -202,7 +202,7 @@ static const AVClass gif_muxer_class = {
 
 AVOutputFormat ff_gif_muxer = {
     .name           = "gif",
-    .long_name      = NULL_IF_CONFIG_SMALL("GIF Animation"),
+    .long_name      = NULL_IF_CONFIG_SMALL("CompuServe Graphics Interchange Format (GIF)"),
     .mime_type      = "image/gif",
     .extensions     = "gif",
     .priv_data_size = sizeof(GIFContext),
