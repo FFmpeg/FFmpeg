@@ -51,6 +51,7 @@ typedef struct GIFContext {
     int is_first_frame;
     AVFrame *last_frame;
     int flags;
+    int image;
     uint32_t palette[AVPALETTE_COUNT];  ///< local reference palette for !pal8
     int palette_loaded;
     int transparent_index;
@@ -422,6 +423,9 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     outbuf_ptr = pkt->data;
     end        = pkt->data + pkt->size;
 
+    if (s->image)
+        s->is_first_frame = 1;
+
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         palette = (uint32_t*)pict->data[1];
 
@@ -436,19 +440,22 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     gif_image_write_image(avctx, &outbuf_ptr, end, palette,
                           pict->data[0], pict->linesize[0], pkt);
-    if (!s->last_frame) {
+    if (!s->last_frame && !s->image) {
         s->last_frame = av_frame_alloc();
         if (!s->last_frame)
             return AVERROR(ENOMEM);
     }
 
-    av_frame_unref(s->last_frame);
-    ret = av_frame_ref(s->last_frame, (AVFrame*)pict);
-    if (ret < 0)
-        return ret;
+    if (!s->image) {
+        av_frame_unref(s->last_frame);
+        ret = av_frame_ref(s->last_frame, (AVFrame*)pict);
+        if (ret < 0)
+            return ret;
+    }
 
     pkt->size   = outbuf_ptr - pkt->data;
-    pkt->flags |= AV_PKT_FLAG_KEY;
+    if (s->is_first_frame)
+        pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
     return 0;
@@ -472,6 +479,7 @@ static const AVOption gif_options[] = {
     { "gifflags", "set GIF flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = GF_OFFSETTING|GF_TRANSDIFF}, 0, INT_MAX, FLAGS, "flags" },
         { "offsetting", "enable picture offsetting", 0, AV_OPT_TYPE_CONST, {.i64=GF_OFFSETTING}, INT_MIN, INT_MAX, FLAGS, "flags" },
         { "transdiff", "enable transparency detection between frames", 0, AV_OPT_TYPE_CONST, {.i64=GF_TRANSDIFF}, INT_MIN, INT_MAX, FLAGS, "flags" },
+    { "gifimage", "enable encoding only images per frame", OFFSET(image), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS, "flags" },
     { NULL }
 };
 
