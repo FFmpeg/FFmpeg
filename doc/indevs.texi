@@ -1050,6 +1050,21 @@ IIDC1394 input device, based on libdc1394 and libraw1394.
 
 Requires the configure option @code{--enable-libdc1394}.
 
+@subsection Options
+@table @option
+
+@item framerate
+Set the frame rate. Default is @code{ntsc}, corresponding to a frame
+rate of @code{30000/1001}.
+
+@item pixel_format
+Select the pixel format. Default is @code{uyvy422}.
+
+@item video_size
+Set the video size given as a string such as @code{640x480} or @code{hd720}.
+Default is @code{qvga}.
+@end table
+
 @section libndi_newtek
 
 The libndi_newtek input device provides capture capabilities for using NDI (Network
