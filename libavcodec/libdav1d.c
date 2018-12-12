@@ -79,11 +79,11 @@ static void libdav1d_frame_free(void *opaque, uint8_t *data) {
     dav1d_picture_unref(&p);
 }
 
-static const enum AVPixelFormat pix_fmt[][2] = {
-    [DAV1D_PIXEL_LAYOUT_I400] = { AV_PIX_FMT_GRAY8,   AV_PIX_FMT_GRAY10 },
-    [DAV1D_PIXEL_LAYOUT_I420] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P10 },
-    [DAV1D_PIXEL_LAYOUT_I422] = { AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10 },
-    [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10 },
+static const enum AVPixelFormat pix_fmt[][3] = {
+    [DAV1D_PIXEL_LAYOUT_I400] = { AV_PIX_FMT_GRAY8,   AV_PIX_FMT_GRAY10,    AV_PIX_FMT_GRAY12 },
+    [DAV1D_PIXEL_LAYOUT_I420] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12 },
+    [DAV1D_PIXEL_LAYOUT_I422] = { AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12 },
+    [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12 },
 };
 
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
@@ -151,7 +151,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[2] = p.stride[1];
 
     c->profile = p.seq_hdr->profile;
-    frame->format = c->pix_fmt = pix_fmt[p.p.layout][p.p.bpc == 10];
+    frame->format = c->pix_fmt = pix_fmt[p.p.layout][p.seq_hdr->hbd];
     frame->width = p.p.w;
     frame->height = p.p.h;
     if (c->width != p.p.w || c->height != p.p.h) {
