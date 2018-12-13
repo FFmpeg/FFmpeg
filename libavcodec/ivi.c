@@ -437,6 +437,14 @@ av_cold int ff_ivi_init_tiles(IVIPlaneDesc *planes,
 
         for (b = 0; b < planes[p].num_bands; b++) {
             band = &planes[p].bands[b];
+
+            if (band->tiles) {
+                int t;
+                for (t = 0; t < band->num_tiles; t++) {
+                    av_freep(&band->tiles[t].mbs);
+                }
+            }
+
             x_tiles = IVI_NUM_TILES(band->width, t_width);
             y_tiles = IVI_NUM_TILES(band->height, t_height);
             band->num_tiles = x_tiles * y_tiles;
