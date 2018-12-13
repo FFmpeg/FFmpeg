@@ -48,7 +48,6 @@ typedef struct GIFContext {
     LZWState *lzw;
     uint8_t *buf;
     int buf_size;
-    int is_first_frame;
     AVFrame *last_frame;
     int flags;
     int image;
@@ -268,7 +267,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
     const uint8_t *ptr;
 
-    if (!s->is_first_frame && is_image_translucent(avctx, buf, linesize)) {
+    if (!s->image && avctx->frame_number && is_image_translucent(avctx, buf, linesize)) {
         gif_crop_translucent(avctx, buf, linesize, &width, &height, &x_start, &y_start);
         honor_transparency = 0;
         disposal = GCE_DISPOSAL_BACKGROUND;
@@ -277,7 +276,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         disposal = GCE_DISPOSAL_INPLACE;
     }
 
-    if (s->is_first_frame) { /* GIF header */
+    if (s->image || !avctx->frame_number) { /* GIF header */
         const uint32_t *global_palette = palette ? palette : s->palette;
         const AVRational sar = avctx->sample_aspect_ratio;
         int64_t aspect = 0;
@@ -301,8 +300,6 @@ static int gif_image_write_image(AVCodecContext *avctx,
             const uint32_t v = global_palette[i] & 0xffffff;
             bytestream_put_be24(bytestream, v);
         }
-
-        s->is_first_frame = 0;
     }
 
     if (honor_transparency && trans < 0) {
@@ -395,7 +392,6 @@ static av_cold int gif_encode_init(AVCodecContext *avctx)
     }
 
     s->transparent_index = -1;
-    s->is_first_frame = 1;
 
     s->lzw = av_mallocz(ff_lzw_encode_state_size);
     s->buf_size = avctx->width*avctx->height*2 + 1000;
@@ -422,9 +418,6 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
     outbuf_ptr = pkt->data;
     end        = pkt->data + pkt->size;
-
-    if (s->image)
-        s->is_first_frame = 1;
 
     if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         palette = (uint32_t*)pict->data[1];
@@ -454,7 +447,7 @@ static int gif_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     pkt->size   = outbuf_ptr - pkt->data;
-    if (s->is_first_frame)
+    if (s->image || !avctx->frame_number)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;
 
