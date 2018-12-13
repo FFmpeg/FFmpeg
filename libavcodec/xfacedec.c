@@ -123,7 +123,7 @@ static int xface_decode_frame(AVCodecContext *avctx,
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
-    for (i = 0, k = 0; avpkt->data[i] && i < avpkt->size; i++) {
+    for (i = 0, k = 0; i < avpkt->size && avpkt->data[i]; i++) {
         c = avpkt->data[i];
 
         /* ignore invalid digits */
