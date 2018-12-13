@@ -180,6 +180,60 @@ static void yuv2plane1_nbps_vsx(const int16_t *src, uint16_t *dest, int dstW,
     yuv2plane1_nbps_u(src, dest, dstW, big_endian, output_bits, i);
 }
 
+#undef output_pixel
+
+#define output_pixel(pos, val, bias, signedness) \
+    if (big_endian) { \
+        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
+    } else { \
+        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
+    }
+
+static void yuv2plane1_16_u(const int32_t *src, uint16_t *dest, int dstW,
+                              int big_endian, int output_bits, int start)
+{
+    int i;
+    const int shift = 3;
+
+    for (i = start; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val, 0, uint);
+    }
+}
+
+static void yuv2plane1_16_vsx(const int32_t *src, uint16_t *dest, int dstW,
+                           int big_endian, int output_bits)
+{
+    const int dst_u = -(uintptr_t)dest & 7;
+    const int shift = 3;
+    const int add = (1 << (shift - 1));
+    const vector uint32_t vadd = (vector uint32_t) {add, add, add, add};
+    const vector uint16_t vswap = (vector uint16_t) vec_splat_u16(big_endian ? 8 : 0);
+    const vector uint32_t vshift = (vector uint32_t) vec_splat_u32(shift);
+    vector uint32_t v, v2;
+    vector uint16_t vd;
+    int i;
+
+    yuv2plane1_16_u(src, dest, dst_u, big_endian, output_bits, 0);
+
+    for (i = dst_u; i < dstW - 7; i += 8) {
+        v = vec_vsx_ld(0, (const uint32_t *) &src[i]);
+        v = vec_add(v, vadd);
+        v = vec_sr(v, vshift);
+
+        v2 = vec_vsx_ld(0, (const uint32_t *) &src[i + 4]);
+        v2 = vec_add(v2, vadd);
+        v2 = vec_sr(v2, vshift);
+
+        vd = vec_packsu(v, v2);
+        vd = vec_rl(vd, vswap);
+
+        vec_st(vd, 0, &dest[i]);
+    }
+
+    yuv2plane1_16_u(src, dest, dstW, big_endian, output_bits, i);
+}
+
 #define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t) \
 static void yuv2plane1_ ## bits ## BE_LE ## _vsx(const int16_t *src, \
                              uint8_t *dest, int dstW, \
@@ -197,6 +251,8 @@ yuv2NBPS(12, BE, 1, nbps, int16_t)
 yuv2NBPS(12, LE, 0, nbps, int16_t)
 yuv2NBPS(14, BE, 1, nbps, int16_t)
 yuv2NBPS(14, LE, 0, nbps, int16_t)
+yuv2NBPS(16, BE, 1, 16, int32_t)
+yuv2NBPS(16, LE, 0, 16, int32_t)
 
 #endif /* !HAVE_BIGENDIAN */
 
@@ -239,6 +295,9 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
             break;
         case 14:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_14BE_vsx  : yuv2plane1_14LE_vsx;
+            break;
+        case 16:
+            c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_vsx  : yuv2plane1_16LE_vsx;
             break;
 #endif
         }
