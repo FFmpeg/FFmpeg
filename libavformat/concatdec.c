@@ -692,6 +692,13 @@ static int real_seek(AVFormatContext *avf, int stream,
 
     left  = 0;
     right = cat->nb_files;
+
+    /* Always support seek to start */
+    if (ts <= 0)
+        right = 1;
+    else if (!cat->seekable)
+        return AVERROR(ESPIPE); /* XXX: can we use it? */
+
     while (right - left > 1) {
         int mid = (left + right) / 2;
         if (ts < cat->files[mid].start_time)
@@ -728,8 +735,6 @@ static int concat_seek(AVFormatContext *avf, int stream,
     AVFormatContext *cur_avf_saved = cat->avf;
     int ret;
 
-    if (!cat->seekable)
-        return AVERROR(ESPIPE); /* XXX: can we use it? */
     if (flags & (AVSEEK_FLAG_BYTE | AVSEEK_FLAG_FRAME))
         return AVERROR(ENOSYS);
     cat->avf = NULL;
