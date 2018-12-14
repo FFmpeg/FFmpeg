@@ -1,0 +1,25 @@
+From 753c743275dd6c562f0eb7abb006b9a1882e0642 Mon Sep 17 00:00:00 2001
+From: Tianhu Yang <tianhuyang@gmail.com>
+Date: Thu, 13 Dec 2018 15:47:49 -0800
+Subject: [PATCH] fix infinite retry issue for rtsp when the uri has
+ redirection
+
+---
+ libavformat/rtsp.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/libavformat/rtsp.c b/libavformat/rtsp.c
+index ceb770a3a4..6093424431 100644
+--- a/libavformat/rtsp.c
++++ b/libavformat/rtsp.c
+@@ -1920,6 +1920,7 @@ redirect:
+         }
+         ff_format_set_url(s, new_url);
+         rt->session_id[0] = '\0';
++        reply->status_code = 0;
+         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
+                reply->status_code,
+                s->url);
+-- 
+2.11.0 (Apple Git-81)
+

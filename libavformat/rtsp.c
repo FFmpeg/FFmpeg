@@ -1920,10 +1920,10 @@ redirect:
         }
         ff_format_set_url(s, new_url);
         rt->session_id[0] = '\0';
-        reply->status_code = 0;
         av_log(s, AV_LOG_INFO, "Status %d: Redirecting to %s\n",
                reply->status_code,
                s->url);
+        reply->status_code = 0;
         goto redirect;
     }
  fail2:
