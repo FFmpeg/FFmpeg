@@ -100,8 +100,6 @@ typedef struct {
 } G729FormatDescription;
 
 typedef struct {
-    AudioDSPContext adsp;
-
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
 
@@ -152,7 +150,13 @@ typedef struct {
 
     /// high-pass filter data (past output)
     int16_t hpf_z[2];
-}  G729Context;
+}  G729ChannelContext;
+
+typedef struct {
+    AudioDSPContext adsp;
+
+    G729ChannelContext *channel_context;
+} G729Context;
 
 static const G729FormatDescription format_g729_8k = {
     .ac_index_bits     = {8,5},
@@ -338,18 +342,25 @@ static int32_t scalarproduct_int16_c(const int16_t * v1, const int16_t * v2, int
 
 static av_cold int decoder_init(AVCodecContext * avctx)
 {
-    G729Context* ctx = avctx->priv_data;
-    int i,k;
+    G729Context *s = avctx->priv_data;
+    G729ChannelContext *ctx;
+    int c,i,k;
 
-    if (avctx->channels != 1) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo are supported (requested channels: %d).\n", avctx->channels);
         return AVERROR(EINVAL);
     }
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16P;
 
     /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
     avctx->frame_size = SUBFRAME_SIZE << 1;
 
+    ctx =
+    s->channel_context = av_mallocz(sizeof(G729ChannelContext) * avctx->channels);
+    if (!ctx)
+        return AVERROR(ENOMEM);
+
+    for (c = 0; c < avctx->channels; c++) {
     ctx->gain_coeff = 16384; // 1.0 in (1.14)
 
     for (k = 0; k < MA_NP + 1; k++) {
@@ -373,8 +384,11 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    ff_audiodsp_init(&ctx->adsp);
-    ctx->adsp.scalarproduct_int16 = scalarproduct_int16_c;
+    ctx++;
+    }
+
+    ff_audiodsp_init(&s->adsp);
+    s->adsp.scalarproduct_int16 = scalarproduct_int16_c;
 
     return 0;
 }
@@ -387,12 +401,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int16_t *out_frame;
     GetBitContext gb;
     const G729FormatDescription *format;
-    int frame_erasure = 0;    ///< frame erasure detected during decoding
-    int bad_pitch = 0;        ///< parity check failed
-    int i;
+    int c, i;
     int16_t *tmp;
     G729Formats packet_type;
-    G729Context *ctx = avctx->priv_data;
+    G729Context *s = avctx->priv_data;
+    G729ChannelContext *ctx = s->channel_context;
     int16_t lp[2][11];           // (3.12)
     uint8_t ma_predictor;     ///< switched MA predictor of LSP quantizer
     uint8_t quantizer_1st;    ///< first stage vector of quantizer
@@ -405,22 +418,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     int16_t synth[SUBFRAME_SIZE+10]; // fixed-codebook vector
     int j, ret;
     int gain_before, gain_after;
-    int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
     AVFrame *frame = data;
 
     frame->nb_samples = SUBFRAME_SIZE<<1;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
-    out_frame = (int16_t*) frame->data[0];
 
-    if (buf_size % 10 == 0) {
+    if (buf_size % (G729_8K_BLOCK_SIZE * avctx->channels) == 0) {
         packet_type = FORMAT_G729_8K;
         format = &format_g729_8k;
         //Reset voice decision
         ctx->onset = 0;
         ctx->voice_decision = DECISION_VOICE;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
-    } else if (buf_size == 8) {
+    } else if (buf_size == G729D_6K4_BLOCK_SIZE * avctx->channels) {
         packet_type = FORMAT_G729D_6K4;
         format = &format_g729d_6k4;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729D @ 6.4kbit/s");
@@ -428,6 +439,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         av_log(avctx, AV_LOG_ERROR, "Packet size %d is unknown.\n", buf_size);
         return AVERROR_INVALIDDATA;
     }
+
+    for (c = 0; c < avctx->channels; c++) {
+    int frame_erasure = 0; ///< frame erasure detected during decoding
+    int bad_pitch = 0;     ///< parity check failed
+    int is_periodic = 0;   ///< whether one of the subframes is declared as periodic or not
+    out_frame = (int16_t*)frame->data[c];
 
     for (i=0; i < buf_size; i++)
         frame_erasure |= buf[i];
@@ -570,7 +587,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             }
 
             /* Decode the fixed-codebook gain. */
-            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&ctx->adsp, gain_corr_factor,
+            ctx->past_gain_code[0] = ff_acelp_decode_gain_code(&s->adsp, gain_corr_factor,
                                                                fc, MR_ENERGY,
                                                                ctx->quant_energy,
                                                                ma_prediction_coeff,
@@ -660,7 +677,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
 
         /* Call postfilter and also update voicing decision for use in next frame. */
         ff_g729_postfilter(
-                &ctx->adsp,
+                &s->adsp,
                 &ctx->ht_prev_data,
                 &is_periodic,
                 &lp[i][0],
@@ -702,8 +719,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     /* Save signal for use in next frame. */
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
+    buf += packet_type == FORMAT_G729_8K ? G729_8K_BLOCK_SIZE : G729D_6K4_BLOCK_SIZE;
+    ctx++;
+    }
+
     *got_frame_ptr = 1;
-    return packet_type == FORMAT_G729_8K ? 10 : 8;
+    return packet_type == FORMAT_G729_8K ? G729_8K_BLOCK_SIZE * avctx->channels : G729D_6K4_BLOCK_SIZE * avctx->channels;
+}
+
+static av_cold int decode_close(AVCodecContext *avctx)
+{
+    G729Context *s = avctx->priv_data;
+    av_freep(&s->channel_context);
+
+    return 0;
 }
 
 AVCodec ff_g729_decoder = {
@@ -714,5 +743,6 @@ AVCodec ff_g729_decoder = {
     .priv_data_size = sizeof(G729Context),
     .init           = decoder_init,
     .decode         = decode_frame,
+    .close          = decode_close,
     .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
 };
