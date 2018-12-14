@@ -1016,9 +1016,9 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
     }
     stc = &nut->stream[*stream_id];
     if (flags & FLAG_CODED_PTS) {
-        int coded_pts = ffio_read_varlen(bc);
+        int64_t coded_pts = ffio_read_varlen(bc);
         // FIXME check last_pts validity?
-        if (coded_pts < (1 << stc->msb_pts_shift)) {
+        if (coded_pts < (1LL << stc->msb_pts_shift)) {
             *pts = ff_lsb2full(stc, coded_pts);
         } else
             *pts = coded_pts - (1LL << stc->msb_pts_shift);
