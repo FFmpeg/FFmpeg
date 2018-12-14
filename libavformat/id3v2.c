@@ -36,6 +36,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/png.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include "id3v1.h"
@@ -1156,7 +1157,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codecpar->codec_id   = apic->id;
 
-        if (AV_RB64(apic->buf->data) == 0x89504e470d0a1a0a)
+        if (AV_RB64(apic->buf->data) == PNGSIG)
             st->codecpar->codec_id = AV_CODEC_ID_PNG;
 
         if (apic->description[0])
