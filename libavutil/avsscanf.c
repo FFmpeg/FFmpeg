@@ -454,8 +454,8 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
 
     /* Calculate bias term to force rounding, move out lower bits */
     if (bits < DBL_MANT_DIG) {
-        bias = copysignl(scalbn(1, 2*DBL_MANT_DIG-bits-1), y);
-        frac = fmodl(y, scalbn(1, DBL_MANT_DIG-bits));
+        bias = copysign(scalbn(1, 2*DBL_MANT_DIG-bits-1), y);
+        frac = fmod(y, scalbn(1, DBL_MANT_DIG-bits));
         y -= frac;
         y += bias;
     }
@@ -473,7 +473,7 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
             else
                 frac += 0.75*sign;
         }
-        if (DBL_MANT_DIG-bits >= 2 && !fmodl(frac, 1))
+        if (DBL_MANT_DIG-bits >= 2 && !fmod(frac, 1))
             frac++;
     }
 
@@ -491,7 +491,7 @@ static double decfloat(FFFILE *f, int c, int bits, int emin, int sign, int pok)
             errno = ERANGE;
     }
 
-    return scalbnl(y, e2);
+    return scalbn(y, e2);
 }
 
 static double hexfloat(FFFILE *f, int bits, int emin, int sign, int pok)
@@ -595,7 +595,7 @@ static double hexfloat(FFFILE *f, int bits, int emin, int sign, int pok)
     }
 
     if (bits < DBL_MANT_DIG)
-        bias = copysignl(scalbn(1, 32+DBL_MANT_DIG-bits-1), sign);
+        bias = copysign(scalbn(1, 32+DBL_MANT_DIG-bits-1), sign);
 
     if (bits<32 && y && !(x&1)) x++, y=0;
 
@@ -604,7 +604,7 @@ static double hexfloat(FFFILE *f, int bits, int emin, int sign, int pok)
 
     if (!y) errno = ERANGE;
 
-    return scalbnl(y, e2);
+    return scalbn(y, e2);
 }
 
 static double fffloatscan(FFFILE *f, int prec, int pok)
