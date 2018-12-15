@@ -79,13 +79,23 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg->width  = avctx->width;
     cfg->height = avctx->height;
 
-    if (avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Could not set framerate for kvazaar: integer overflow\n");
-        return AVERROR(EINVAL);
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        if (avctx->ticks_per_frame > INT_MAX / avctx->framerate.den) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not set framerate for kvazaar: integer overflow\n");
+            return AVERROR(EINVAL);
+        }
+        cfg->framerate_num   = avctx->framerate.num;
+        cfg->framerate_denom = avctx->time_base.den * avctx->ticks_per_frame;
+    } else {
+        if (avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not set framerate for kvazaar: integer overflow\n");
+            return AVERROR(EINVAL);
+        }
+        cfg->framerate_num   = avctx->time_base.den;
+        cfg->framerate_denom = avctx->time_base.num * avctx->ticks_per_frame;
     }
-    cfg->framerate_num   = avctx->time_base.den;
-    cfg->framerate_denom = avctx->time_base.num * avctx->ticks_per_frame;
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width  = avctx->sample_aspect_ratio.num;
     cfg->vui.sar_height = avctx->sample_aspect_ratio.den;
