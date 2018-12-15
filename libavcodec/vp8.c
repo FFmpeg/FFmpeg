@@ -2268,7 +2268,7 @@ void filter_mb_simple(VP8Context *s, uint8_t *dst, VP8FilterStrength *f,
 
 #define MARGIN (16 << 2)
 static av_always_inline
-void vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
+int vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
                                     VP8Frame *prev_frame, int is_vp7)
 {
     VP8Context *s = avctx->priv_data;
@@ -2285,6 +2285,10 @@ void vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
 
         s->mv_bounds.mv_min.x = -MARGIN;
         s->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
+
+        if (vpX_rac_is_end(&s->c)) {
+            return AVERROR_INVALIDDATA;
+        }
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
             if (mb_y == 0)
                 AV_WN32A((mb - s->mb_width - 1)->intra4x4_pred_mode_top,
@@ -2298,18 +2302,19 @@ void vp78_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *curframe,
         s->mv_bounds.mv_min.y -= 64;
         s->mv_bounds.mv_max.y -= 64;
     }
+    return 0;
 }
 
-static void vp7_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
+static int vp7_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
                                    VP8Frame *prev_frame)
 {
-    vp78_decode_mv_mb_modes(avctx, cur_frame, prev_frame, IS_VP7);
+    return vp78_decode_mv_mb_modes(avctx, cur_frame, prev_frame, IS_VP7);
 }
 
-static void vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
+static int vp8_decode_mv_mb_modes(AVCodecContext *avctx, VP8Frame *cur_frame,
                                    VP8Frame *prev_frame)
 {
-    vp78_decode_mv_mb_modes(avctx, cur_frame, prev_frame, IS_VP8);
+    return vp78_decode_mv_mb_modes(avctx, cur_frame, prev_frame, IS_VP8);
 }
 
 #if HAVE_THREADS
@@ -2744,9 +2749,11 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 !s->segmentation.update_map)
                 ff_thread_await_progress(&prev_frame->tf, 1, 0);
             if (is_vp7)
-                vp7_decode_mv_mb_modes(avctx, curframe, prev_frame);
+                ret = vp7_decode_mv_mb_modes(avctx, curframe, prev_frame);
             else
-                vp8_decode_mv_mb_modes(avctx, curframe, prev_frame);
+                ret = vp8_decode_mv_mb_modes(avctx, curframe, prev_frame);
+            if (ret < 0)
+                goto err;
         }
 
         if (avctx->active_thread_type == FF_THREAD_FRAME)
