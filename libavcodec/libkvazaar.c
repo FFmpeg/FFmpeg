@@ -153,8 +153,8 @@ static av_cold int libkvazaar_close(AVCodecContext *avctx)
     LibkvazaarContext *ctx = avctx->priv_data;
 
     if (ctx->api) {
-      ctx->api->encoder_close(ctx->encoder);
-      ctx->api->config_destroy(ctx->config);
+        ctx->api->encoder_close(ctx->encoder);
+        ctx->api->config_destroy(ctx->config);
     }
 
     if (avctx->extradata)
@@ -180,7 +180,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 
     if (frame) {
         if (frame->width != ctx->config->width ||
-                frame->height != ctx->config->height) {
+            frame->height != ctx->config->height) {
             av_log(avctx, AV_LOG_ERROR,
                    "Changing video dimensions during encoding is not supported. "
                    "(changed from %dx%d to %dx%d)\n",
@@ -233,8 +233,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Failed to encode frame.\n");
         retval = AVERROR_INVALIDDATA;
         goto done;
-    }
-    else
+    } else
         retval = 0; /* kvazaar returns 1 on success */
 
     if (data_out) {
@@ -259,7 +258,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         // IRAP VCL NAL unit types span the range
         // [BLA_W_LP (16), RSV_IRAP_VCL23 (23)].
         if (frame_info.nal_unit_type >= KVZ_NAL_BLA_W_LP &&
-                frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
+            frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
             avpkt->flags |= AV_PKT_FLAG_KEY;
         }
 
