@@ -42,12 +42,16 @@
 
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
 {
-    G723_1_Context *p = avctx->priv_data;
+    G723_1_Context *s = avctx->priv_data;
+    G723_1_ChannelContext *p = &s->ch[0];
 
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
-    avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
-    avctx->channels       = 1;
-    p->pf_gain            = 1 << 12;
+    avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo are supported (requested channels: %d).\n", avctx->channels);
+        return AVERROR(EINVAL);
+    }
+    avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+    p->pf_gain = 1 << 12;
 
     memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
     memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
@@ -65,7 +69,7 @@ static av_cold int g723_1_decode_init(AVCodecContext *avctx)
  * @param buf         pointer to the input buffer
  * @param buf_size    size of the input buffer
  */
-static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
+static int unpack_bitstream(G723_1_ChannelContext *p, const uint8_t *buf,
                             int buf_size)
 {
     GetBitContext gb;
@@ -344,7 +348,7 @@ static void comp_ppf_gains(int lag, PPFParam *ppf, enum Rate cur_rate,
  * @param ppf       pitch postfilter parameters
  * @param cur_rate  current bitrate
  */
-static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
+static void comp_ppf_coeff(G723_1_ChannelContext *p, int offset, int pitch_lag,
                            PPFParam *ppf, enum Rate cur_rate)
 {
 
@@ -430,7 +434,7 @@ static void comp_ppf_coeff(G723_1_Context *p, int offset, int pitch_lag,
  *
  * @return residual interpolation index if voiced, 0 otherwise
  */
-static int comp_interp_index(G723_1_Context *p, int pitch_lag,
+static int comp_interp_index(G723_1_ChannelContext *p, int pitch_lag,
                              int *exc_eng, int *scale)
 {
     int offset = PITCH_MAX + 2 * SUBFRAME_LEN;
@@ -529,7 +533,7 @@ static void residual_interp(int16_t *buf, int16_t *out, int lag,
  * @param buf    postfiltered output vector
  * @param energy input energy coefficient
  */
-static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
+static void gain_scale(G723_1_ChannelContext *p, int16_t * buf, int energy)
 {
     int num, denom, gain, bits1, bits2;
     int i;
@@ -572,7 +576,7 @@ static void gain_scale(G723_1_Context *p, int16_t * buf, int energy)
  * @param buf input buffer
  * @param dst output buffer
  */
-static void formant_postfilter(G723_1_Context *p, int16_t *lpc,
+static void formant_postfilter(G723_1_ChannelContext *p, int16_t *lpc,
                                int16_t *buf, int16_t *dst)
 {
     int16_t filter_coef[2][LPC_ORDER];
@@ -655,7 +659,7 @@ static inline int cng_rand(int *state, int base)
     return (*state & 0x7FFF) * base >> 15;
 }
 
-static int estimate_sid_gain(G723_1_Context *p)
+static int estimate_sid_gain(G723_1_ChannelContext *p)
 {
     int i, shift, seg, seg2, t, val, val_add, x, y;
 
@@ -715,7 +719,7 @@ static int estimate_sid_gain(G723_1_Context *p)
     return val;
 }
 
-static void generate_noise(G723_1_Context *p)
+static void generate_noise(G723_1_ChannelContext *p)
 {
     int i, j, idx, t;
     int off[SUBFRAMES];
@@ -843,7 +847,7 @@ static void generate_noise(G723_1_Context *p)
 static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                int *got_frame_ptr, AVPacket *avpkt)
 {
-    G723_1_Context *p  = avctx->priv_data;
+    G723_1_Context *s  = avctx->priv_data;
     AVFrame *frame     = data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
@@ -855,9 +859,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t acb_vector[SUBFRAME_LEN];
     int16_t *out;
     int bad_frame = 0, i, j, ret;
-    int16_t *audio = p->audio;
 
-    if (buf_size < frame_size[dec_mode]) {
+    if (buf_size < frame_size[dec_mode] * avctx->channels) {
         if (buf_size)
             av_log(avctx, AV_LOG_WARNING,
                    "Expected %d bytes, got %d - skipping packet\n",
@@ -865,6 +868,14 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         *got_frame_ptr = 0;
         return buf_size;
     }
+
+    frame->nb_samples = FRAME_LEN;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+
+    for (int ch = 0; ch < avctx->channels; ch++) {
+    G723_1_ChannelContext *p = &s->ch[ch];
+    int16_t *audio = p->audio;
 
     if (unpack_bitstream(p, buf, buf_size) < 0) {
         bad_frame = 1;
@@ -874,11 +885,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             p->cur_frame_type = UNTRANSMITTED_FRAME;
     }
 
-    frame->nb_samples = FRAME_LEN;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
-    out = (int16_t *)frame->data[0];
+    out = (int16_t *)frame->extended_data[ch];
 
     if (p->cur_frame_type == ACTIVE_FRAME) {
         if (!bad_frame)
@@ -922,7 +929,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                                 &p->sid_gain, &p->cur_gain);
 
             /* Perform pitch postfiltering */
-            if (p->postfilter) {
+            if (s->postfilter) {
                 i = PITCH_MAX;
                 for (j = 0; j < SUBFRAMES; i += SUBFRAME_LEN, j++)
                     comp_ppf_coeff(p, i, p->pitch_lag[j >> 1],
@@ -992,16 +999,17 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                                     0, 1, 1 << 12);
     memcpy(p->synth_mem, p->audio + FRAME_LEN, LPC_ORDER * sizeof(*p->audio));
 
-    if (p->postfilter) {
+    if (s->postfilter) {
         formant_postfilter(p, lpc, p->audio, out);
     } else { // if output is not postfiltered it should be scaled by 2
         for (i = 0; i < FRAME_LEN; i++)
             out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
     }
+    }
 
     *got_frame_ptr = 1;
 
-    return frame_size[dec_mode];
+    return frame_size[dec_mode] * avctx->channels;
 }
 
 #define OFFSET(x) offsetof(G723_1_Context, x)

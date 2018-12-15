@@ -116,9 +116,7 @@ typedef struct FCBParam {
     int pulse_sign[PULSE_MAX];
 } FCBParam;
 
-typedef struct g723_1_context {
-    AVClass *class;
-
+typedef struct G723_1_ChannelContext {
     G723_1_Subframe subframe[4];
     enum FrameType cur_frame_type;
     enum FrameType past_frame_type;
@@ -144,8 +142,6 @@ typedef struct g723_1_context {
     int reflection_coef;
     int pf_gain;                 ///< formant postfilter
                                  ///< gain scaling unit memory
-    int postfilter;
-
     int16_t audio[FRAME_LEN + LPC_ORDER + PITCH_MAX + 4];
 
     /* encoder */
@@ -158,6 +154,13 @@ typedef struct g723_1_context {
     int16_t perf_iir_mem[LPC_ORDER];       ///< and iir memories
 
     int16_t harmonic_mem[PITCH_MAX];
+} G723_1_ChannelContext;
+
+typedef struct G723_1_Context {
+    AVClass *class;
+    int postfilter;
+
+    G723_1_ChannelContext ch[2];
 } G723_1_Context;
 
 
