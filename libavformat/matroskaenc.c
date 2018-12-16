@@ -693,7 +693,7 @@ static int put_flac_codecpriv(AVFormatContext *s,
         snprintf(buf, sizeof(buf), "0x%"PRIx64, par->channel_layout);
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
-        len = ff_vorbiscomment_length(dict, vendor);
+        len = ff_vorbiscomment_length(dict, vendor, NULL, 0);
         if (len >= ((1<<24) - 4))
             return AVERROR(EINVAL);
 
@@ -707,7 +707,7 @@ static int put_flac_codecpriv(AVFormatContext *s,
         AV_WB24(data + 1, len);
 
         p = data + 4;
-        ff_vorbiscomment_write(&p, &dict, vendor);
+        ff_vorbiscomment_write(&p, &dict, vendor, NULL, 0);
 
         avio_write(pb, data, len + 4);
 

@@ -291,7 +291,8 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 }
 
 static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
-                                        int *header_len, AVDictionary **m, int framing_bit)
+                                        int *header_len, AVDictionary **m, int framing_bit,
+                                        AVChapter **chapters, unsigned int nb_chapters)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     int64_t size;
@@ -299,7 +300,7 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
 
     ff_metadata_conv(m, ff_vorbiscomment_metadata_conv, NULL);
 
-    size = offset + ff_vorbiscomment_length(*m, vendor) + framing_bit;
+    size = offset + ff_vorbiscomment_length(*m, vendor, chapters, nb_chapters) + framing_bit;
     if (size > INT_MAX)
         return NULL;
     p = av_mallocz(size);
@@ -308,7 +309,7 @@ static uint8_t *ogg_write_vorbiscomment(int64_t offset, int bitexact,
     p0 = p;
 
     p += offset;
-    ff_vorbiscomment_write(&p, m, vendor);
+    ff_vorbiscomment_write(&p, m, vendor, chapters, nb_chapters);
     if (framing_bit)
         bytestream_put_byte(&p, 1);
 
@@ -342,7 +343,7 @@ static int ogg_build_flac_headers(AVCodecParameters *par,
     bytestream_put_buffer(&p, par->extradata, FLAC_STREAMINFO_SIZE);
 
     // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m, 0);
+    p = ogg_write_vorbiscomment(4, bitexact, &oggstream->header_len[1], m, 0, NULL, 0);
     if (!p)
         return AVERROR(ENOMEM);
     oggstream->header[1] = p;
@@ -373,7 +374,7 @@ static int ogg_build_speex_headers(AVCodecParameters *par,
     AV_WL32(&oggstream->header[0][68], 0);  // set extra_headers to 0
 
     // second packet: VorbisComment
-    p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m, 0);
+    p = ogg_write_vorbiscomment(0, bitexact, &oggstream->header_len[1], m, 0, NULL, 0);
     if (!p)
         return AVERROR(ENOMEM);
     oggstream->header[1] = p;
@@ -385,7 +386,8 @@ static int ogg_build_speex_headers(AVCodecParameters *par,
 
 static int ogg_build_opus_headers(AVCodecParameters *par,
                                   OGGStreamContext *oggstream, int bitexact,
-                                  AVDictionary **m)
+                                  AVDictionary **m, AVChapter **chapters,
+                                  unsigned int nb_chapters)
 {
     uint8_t *p;
 
@@ -401,7 +403,7 @@ static int ogg_build_opus_headers(AVCodecParameters *par,
     bytestream_put_buffer(&p, par->extradata, par->extradata_size);
 
     /* second packet: VorbisComment */
-    p = ogg_write_vorbiscomment(8, bitexact, &oggstream->header_len[1], m, 0);
+    p = ogg_write_vorbiscomment(8, bitexact, &oggstream->header_len[1], m, 0, chapters, nb_chapters);
     if (!p)
         return AVERROR(ENOMEM);
     oggstream->header[1] = p;
@@ -446,7 +448,7 @@ static int ogg_build_vp8_headers(AVFormatContext *s, AVStream *st,
 
     /* optional second packet: VorbisComment */
     if (av_dict_get(st->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
-        p = ogg_write_vorbiscomment(7, bitexact, &oggstream->header_len[1], &st->metadata, 0);
+        p = ogg_write_vorbiscomment(7, bitexact, &oggstream->header_len[1], &st->metadata, 0, NULL, 0);
         if (!p)
             return AVERROR(ENOMEM);
         oggstream->header[1] = p;
@@ -560,7 +562,7 @@ static int ogg_init(AVFormatContext *s)
         } else if (st->codecpar->codec_id == AV_CODEC_ID_OPUS) {
             int err = ogg_build_opus_headers(st->codecpar, oggstream,
                                              s->flags & AVFMT_FLAG_BITEXACT,
-                                             &st->metadata);
+                                             &st->metadata, s->chapters, s->nb_chapters);
             if (err) {
                 av_log(s, AV_LOG_ERROR, "Error writing Opus headers\n");
                 av_freep(&st->priv_data);
@@ -590,7 +592,7 @@ static int ogg_init(AVFormatContext *s)
 
             p = ogg_write_vorbiscomment(7, s->flags & AVFMT_FLAG_BITEXACT,
                                         &oggstream->header_len[1], &st->metadata,
-                                        framing_bit);
+                                        framing_bit, NULL, 0);
             oggstream->header[1] = p;
             if (!p)
                 return AVERROR(ENOMEM);
