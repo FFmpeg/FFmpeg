@@ -105,6 +105,9 @@ static int rpza_decode_stream(RpzaContext *s)
     /* Number of 4x4 blocks in frame. */
     total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
 
+    if (total_blocks / 32 > bytestream2_get_bytes_left(&s->gb))
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(s->avctx, s->frame)) < 0)
         return ret;
     pixels = (uint16_t *)s->frame->data[0];
