@@ -160,6 +160,8 @@ typedef struct AVAppSwitchControl{
     int active_reconnect;
     int (*start_switch)(void *);
     void * opaque;
+    int video_only;
+    int audio_only;
 } AVAppSwitchControl;
 
 typedef struct AVAppDnsEvent
