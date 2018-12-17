@@ -795,7 +795,7 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
 
     if (INT_MAX / 8 < size) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid fragment: "
-               "too large (%zu bytes).\n", size);
+               "too large (%"SIZE_SPECIFIER" bytes).\n", size);
         err = AVERROR_INVALIDDATA;
         goto fail;
     }
@@ -819,7 +819,7 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
 
         if (get_bits_left(&gbc) < 8) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU: fragment "
-                   "too short (%zu bytes).\n", size);
+                   "too short (%"SIZE_SPECIFIER" bytes).\n", size);
             err = AVERROR_INVALIDDATA;
             goto fail;
         }
@@ -835,7 +835,7 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
 
         if (size < obu_length) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU length: "
-                   "%"PRIu64", but only %zu bytes remaining in fragment.\n",
+                   "%"PRIu64", but only %"SIZE_SPECIFIER" bytes remaining in fragment.\n",
                    obu_length, size);
             err = AVERROR_INVALIDDATA;
             goto fail;
@@ -950,7 +950,7 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
     } else {
         if (unit->data_size < 1 + obu->header.obu_extension_flag) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU length: "
-                   "unit too short (%zu).\n", unit->data_size);
+                   "unit too short (%"SIZE_SPECIFIER").\n", unit->data_size);
             return AVERROR_INVALIDDATA;
         }
         obu->obu_size = unit->data_size - 1 - obu->header.obu_extension_flag;
@@ -1256,7 +1256,7 @@ static int cbs_av1_write_unit(CodedBitstreamContext *ctx,
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
                    "sufficiently large write buffer (last attempt "
-                   "%zu bytes).\n", priv->write_buffer_size);
+                   "%"SIZE_SPECIFIER" bytes).\n", priv->write_buffer_size);
             return err;
         }
     }

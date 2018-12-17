@@ -457,7 +457,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
         }
         if (pos + index_size != frag->data_size) {
             av_log(ctx->log_ctx, AV_LOG_WARNING, "Extra padding at "
-                   "end of superframe: %zu bytes.\n",
+                   "end of superframe: %"SIZE_SPECIFIER" bytes.\n",
                    frag->data_size - (pos + index_size));
         }
 
@@ -538,7 +538,7 @@ static int cbs_vp9_write_unit(CodedBitstreamContext *ctx,
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
                    "sufficiently large write buffer (last attempt "
-                   "%zu bytes).\n", priv->write_buffer_size);
+                   "%"SIZE_SPECIFIER" bytes).\n", priv->write_buffer_size);
             return err;
         }
     }
