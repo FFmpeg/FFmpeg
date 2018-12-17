@@ -65,10 +65,10 @@ static av_cold void idctdsp_init_mmi(IDCTDSPContext *c, AVCodecContext *avctx,
 av_cold void ff_idctdsp_init_mips(IDCTDSPContext *c, AVCodecContext *avctx,
                           unsigned high_bit_depth)
 {
-#if HAVE_MSA
-    idctdsp_init_msa(c, avctx, high_bit_depth);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     idctdsp_init_mmi(c, avctx, high_bit_depth);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    idctdsp_init_msa(c, avctx, high_bit_depth);
+#endif  // #if HAVE_MSA
 }
