@@ -144,7 +144,8 @@ static int program_opencl_run(AVFilterContext *avctx)
             goto fail;
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-               "(%zux%zu).\n", plane, global_work[0], global_work[1]);
+               "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+               plane, global_work[0], global_work[1]);
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, NULL, 0, NULL, NULL);
