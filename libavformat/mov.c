@@ -4957,6 +4957,8 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     avio_rb16(pb); // reserved
 
     item_count = avio_rb16(pb);
+    av_dict_set_int(&c->fc->metadata, "segment_count", (int)item_count, 0);
+    av_log(NULL, AV_LOG_INFO, "read sidx count = %d\n", (int)item_count);
 
     for (i = 0; i < item_count; i++) {
         int index;
