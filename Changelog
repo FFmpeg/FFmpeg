@@ -22,6 +22,7 @@ version <next>:
 - removed libndi-newtek
 - agm decoder
 - KUX demuxer
+- AV1 frame split bitstream filter
 
 
 version 4.1:
