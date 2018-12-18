@@ -43,7 +43,6 @@
 static av_cold int g723_1_decode_init(AVCodecContext *avctx)
 {
     G723_1_Context *s = avctx->priv_data;
-    G723_1_ChannelContext *p = &s->ch[0];
 
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16P;
     if (avctx->channels < 1 || avctx->channels > 2) {
@@ -51,13 +50,17 @@ static av_cold int g723_1_decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
     avctx->channel_layout = avctx->channels == 1 ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
-    p->pf_gain = 1 << 12;
+    for (int ch = 0; ch < avctx->channels; ch++) {
+        G723_1_ChannelContext *p = &s->ch[ch];
 
-    memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
-    memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
+        p->pf_gain = 1 << 12;
 
-    p->cng_random_seed = CNG_RANDOM_SEED;
-    p->past_frame_type = SID_FRAME;
+        memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(*p->prev_lsp));
+        memcpy(p->sid_lsp,  dc_lsp, LPC_ORDER * sizeof(*p->sid_lsp));
+
+        p->cng_random_seed = CNG_RANDOM_SEED;
+        p->past_frame_type = SID_FRAME;
+    }
 
     return 0;
 }
