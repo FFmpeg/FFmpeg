@@ -18,7 +18,7 @@
 
 /**
  * @file
- * Scene SAD funtions
+ * Scene SAD functions
  */
 
 #include "scene_sad.h"

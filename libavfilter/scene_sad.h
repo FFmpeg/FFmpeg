@@ -18,7 +18,7 @@
 
 /**
  * @file
- * Scene SAD funtions
+ * Scene SAD functions
  */
 
 #ifndef AVFILTER_SCENE_SAD_H
