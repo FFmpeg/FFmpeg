@@ -1467,7 +1467,7 @@ has refilled above the threshold.  Defaults to zero (no frames are
 dropped).
 
 @item tiles
-Set the number of tiles to encode the input video with, as colums x
+Set the number of tiles to encode the input video with, as columns x
 rows.  Larger numbers allow greater parallelism in both encoding and
 decoding, but may decrease coding efficiency.  Defaults to the minimum
 number of tiles required by the size of the input video (this is 1x1
