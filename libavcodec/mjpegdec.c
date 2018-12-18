@@ -313,7 +313,6 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     memset(s->upscale_h, 0, sizeof(s->upscale_h));
     memset(s->upscale_v, 0, sizeof(s->upscale_v));
 
-    /* XXX: verify len field validity */
     len     = get_bits(&s->gb, 16);
     bits    = get_bits(&s->gb, 8);
 
@@ -367,6 +366,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
                                       "bits/component or 16-bit gray");
         return AVERROR_PATCHWELCOME;
     }
+    if (len != 8 + 3 * nb_components) {
+        av_log(s->avctx, AV_LOG_ERROR, "decode_sof0: error, len(%d) mismatch %d components\n", len, nb_components);
+        return AVERROR_INVALIDDATA;
+    }
+
     s->nb_components = nb_components;
     s->h_max         = 1;
     s->v_max         = 1;
@@ -712,8 +716,6 @@ unk_pixfmt:
             s->width, s->height, s->linesize[0], s->linesize[1],
             s->interlaced, s->avctx->height);
 
-    if (len != (8 + (3 * nb_components)))
-        av_log(s->avctx, AV_LOG_DEBUG, "decode_sof0: error, len(%d) mismatch\n", len);
     }
 
     if ((s->rgb && !s->lossless && !s->ls) ||
