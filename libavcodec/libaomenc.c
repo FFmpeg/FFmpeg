@@ -195,7 +195,12 @@ static av_cold void free_frame_list(struct FrameListData *list)
 }
 
 static av_cold int codecctl_int(AVCodecContext *avctx,
-                                enum aome_enc_control_id id, int val)
+#ifdef UENUM1BYTE
+                                aome_enc_control_id id,
+#else
+                                enum aome_enc_control_id id,
+#endif
+                                int val)
 {
     AOMContext *ctx = avctx->priv_data;
     char buf[80];
@@ -291,7 +296,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
 
 static void set_color_range(AVCodecContext *avctx)
 {
-    enum aom_color_range aom_cr;
+    aom_color_range_t aom_cr;
     switch (avctx->color_range) {
     case AVCOL_RANGE_UNSPECIFIED:
     case AVCOL_RANGE_MPEG:       aom_cr = AOM_CR_STUDIO_RANGE; break;
