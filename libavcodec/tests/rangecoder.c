@@ -48,7 +48,7 @@ int main(void)
     for (i = 0; i < SIZE; i++)
         put_rac(&c, state, r[i] & 1);
 
-    ff_rac_terminate(&c);
+    ff_rac_terminate(&c, 0);
 
     ff_init_range_decoder(&c, b, SIZE);
 

@@ -48,7 +48,7 @@ typedef struct RangeCoder {
 
 void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size);
 void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size);
-int ff_rac_terminate(RangeCoder *c);
+int ff_rac_terminate(RangeCoder *c, int version);
 void ff_build_rac_states(RangeCoder *c, int factor, int max_p);
 
 static inline void renorm_encoder(RangeCoder *c)

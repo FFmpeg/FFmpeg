@@ -449,7 +449,7 @@ static int write_extradata(FFV1Context *f)
         put_symbol(c, state, f->intra = (f->avctx->gop_size < 2), 0);
     }
 
-    f->avctx->extradata_size = ff_rac_terminate(c);
+    f->avctx->extradata_size = ff_rac_terminate(c, 0);
     v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
     AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
     f->avctx->extradata_size += 4;
@@ -1065,9 +1065,7 @@ retry:
         encode_slice_header(f, fs);
     }
     if (fs->ac == AC_GOLOMB_RICE) {
-        if (f->version > 2)
-            put_rac(&fs->c, (uint8_t[]) { 129 }, 0);
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c) : 0;
+        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
         init_put_bits(&fs->pb,
                       fs->c.bytestream_start + fs->ac_byte_count,
                       fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
@@ -1232,9 +1230,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         int bytes;
 
         if (fs->ac != AC_GOLOMB_RICE) {
-            uint8_t state = 129;
-            put_rac(&fs->c, &state, 0);
-            bytes = ff_rac_terminate(&fs->c);
+            bytes = ff_rac_terminate(&fs->c, 1);
         } else {
             flush_put_bits(&fs->pb); // FIXME: nicer padding
             bytes = fs->ac_byte_count + (put_bits_count(&fs->pb) + 7) / 8;

@@ -106,8 +106,10 @@ void ff_build_rac_states(RangeCoder *c, int factor, int max_p)
 }
 
 /* Return the number of bytes written. */
-int ff_rac_terminate(RangeCoder *c)
+int ff_rac_terminate(RangeCoder *c, int version)
 {
+    if (version == 1)
+        put_rac(c, (uint8_t[]) { 129 }, 0);
     c->range = 0xFF;
     c->low  += 0xFF;
     renorm_encoder(c);
