@@ -380,7 +380,7 @@ Toolchain options:
   --host-cppflags=HCPPFLAGS use HCPPFLAGS when compiling for host
   --host-ld=HOSTLD         use host linker HOSTLD
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
-  --host-libs=HLIBS        use libs HLIBS when linking for host
+  --host-extralibs=HLIBS   use libs HLIBS when linking for host
   --host-os=OS             compiler host OS [$target_os]
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
   --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
