@@ -1317,7 +1317,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
         "1:                        \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
           NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
-        : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_sp
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
     int y;
