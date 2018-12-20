@@ -570,13 +570,22 @@ static int vaapi_encode_discard(AVCodecContext *avctx,
     return 0;
 }
 
-static VAAPIEncodePicture *vaapi_encode_alloc(void)
+static VAAPIEncodePicture *vaapi_encode_alloc(AVCodecContext *avctx)
 {
+    VAAPIEncodeContext *ctx = avctx->priv_data;
     VAAPIEncodePicture *pic;
 
     pic = av_mallocz(sizeof(*pic));
     if (!pic)
         return NULL;
+
+    if (ctx->codec->picture_priv_data_size > 0) {
+        pic->priv_data = av_mallocz(ctx->codec->picture_priv_data_size);
+        if (!pic->priv_data) {
+            av_freep(&pic);
+            return NULL;
+        }
+    }
 
     pic->input_surface = VA_INVALID_ID;
     pic->recon_surface = VA_INVALID_ID;
@@ -710,7 +719,7 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
         }
     }
 
-    pic = vaapi_encode_alloc();
+    pic = vaapi_encode_alloc(avctx);
     if (!pic)
         return AVERROR(ENOMEM);
 
@@ -739,7 +748,7 @@ static int vaapi_encode_get_next(AVCodecContext *avctx,
 
         for (i = 0; i < ctx->b_per_p &&
              ctx->gop_counter < ctx->gop_size; i++) {
-            pic = vaapi_encode_alloc();
+            pic = vaapi_encode_alloc(avctx);
             if (!pic)
                 goto fail;
 

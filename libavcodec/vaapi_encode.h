@@ -268,6 +268,10 @@ typedef struct VAAPIEncodeType {
     // add any necessary global parameters).
     int (*configure)(AVCodecContext *avctx);
 
+    // The size of any private data structure associated with each
+    // picture (can be zero if not required).
+    size_t picture_priv_data_size;
+
     // The size of the parameter structures:
     // sizeof(VAEnc{type}ParameterBuffer{codec}).
     size_t sequence_params_size;
