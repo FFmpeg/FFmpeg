@@ -1323,8 +1323,8 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
             if (!current->frame_refs_short_signaling)
                 fbs(3, ref_frame_idx[i], 1, i);
             if (seq->frame_id_numbers_present_flag) {
-                fb(seq->delta_frame_id_length_minus_2 + 2,
-                   delta_frame_id_minus1);
+                fbs(seq->delta_frame_id_length_minus_2 + 2,
+                    delta_frame_id_minus1[i], 1, i);
             }
         }
 
