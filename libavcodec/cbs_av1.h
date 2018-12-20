@@ -170,7 +170,7 @@ typedef struct AV1RawFrameHeader {
     uint8_t last_frame_idx;
     uint8_t golden_frame_idx;
     int8_t  ref_frame_idx[AV1_REFS_PER_FRAME];
-    uint8_t delta_frame_id_minus1;
+    uint32_t delta_frame_id_minus1[AV1_REFS_PER_FRAME];
 
     uint8_t allow_high_precision_mv;
     uint8_t is_filter_switchable;
