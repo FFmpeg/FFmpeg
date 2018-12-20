@@ -2436,6 +2436,7 @@ CMDLINE_SET="
     tempprefix
     toolchain
     valgrind
+    windres
     x86asmexe
 "
 
