@@ -92,6 +92,7 @@ typedef struct SOFAlizerContext {
     float elevation;     /* elevation of virtual loudspeakers (in deg.) */
     float radius;        /* distance virtual loudspeakers to listener (in metres) */
     int type;            /* processing type */
+    int framesize;       /* size of buffer */
 
     VirtualSpeaker vspkrpos[64];
 
@@ -662,7 +663,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     /* buffer length is longest IR plus max. delay -> next power of 2
        (32 - count leading zeros gives required exponent)  */
     s->buffer_length = 1 << (32 - ff_clz(n_max));
-    s->n_fft = n_fft = 1 << (32 - ff_clz(n_max + sample_rate));
+    s->n_fft = n_fft = 1 << (32 - ff_clz(n_max + s->framesize));
 
     if (s->type == FREQUENCY_DOMAIN) {
         av_fft_end(s->fft[0]);
@@ -823,7 +824,7 @@ static int config_input(AVFilterLink *inlink)
     if (s->type == FREQUENCY_DOMAIN) {
         inlink->partial_buf_size =
         inlink->min_samples =
-        inlink->max_samples = inlink->sample_rate;
+        inlink->max_samples = s->framesize;
     }
 
     /* gain -3 dB per channel, -6 dB to get LFE on a similar level */
@@ -881,6 +882,7 @@ static const AVOption sofalizer_options[] = {
     { "freq",      "frequency domain", 0,               AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
     { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
     { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},   -9, 9, .flags = FLAGS },
+    { "framesize", "set frame size", OFFSET(framesize), AV_OPT_TYPE_INT,    {.i64=1024},1024,96000, .flags = FLAGS },
     { NULL }
 };
 

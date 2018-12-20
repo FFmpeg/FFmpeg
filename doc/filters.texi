@@ -4506,6 +4506,11 @@ Descriptions with unrecognised channel names are ignored.
 
 @item lfegain
 Set custom gain for LFE channels. Value is in dB. Default is 0.
+
+@item framesize
+Set custom frame size in number of samples. Default is 1024.
+Allowed range is from 1024 to 96000. Only used if option @samp{type}
+is set to @var{freq}.
 @end table
 
 @subsection Examples
