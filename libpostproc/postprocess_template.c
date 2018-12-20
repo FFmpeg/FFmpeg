@@ -1184,10 +1184,10 @@ FIND_MIN_MAX((%0, %1, 8))
 #endif
         "movq %%mm6, %%mm0                      \n\t" // max
         "psubb %%mm7, %%mm6                     \n\t" // max - min
-        "push %4                              \n\t"
-        "movd %%mm6, %k4                        \n\t"
-        "cmpb "MANGLE(deringThreshold)", %b4    \n\t"
-        "pop %4                               \n\t"
+        "push %%"REG_a"                      \n\t"
+        "movd %%mm6, %%eax                      \n\t"
+        "cmpb "MANGLE(deringThreshold)", %%al   \n\t"
+        "pop %%"REG_a"                       \n\t"
         " jb 1f                                 \n\t"
         PAVGB(%%mm0, %%mm7)                           // a=(max + min)/2
         "punpcklbw %%mm7, %%mm7                 \n\t"
