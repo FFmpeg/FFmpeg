@@ -6556,14 +6556,14 @@ static int cenc_decrypt(MOVContext *c, MOVStreamContext *sc, AVEncryptionInfo *s
     return 0;
 }
 
-static int cenc_filter(MOVContext *mov, MOVStreamContext *sc, AVPacket *pkt, int current_index)
+static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPacket *pkt, int current_index)
 {
     MOVFragmentStreamInfo *frag_stream_info;
     MOVEncryptionIndex *encryption_index;
     AVEncryptionInfo *encrypted_sample;
     int encrypted_index, ret;
 
-    frag_stream_info = get_current_frag_stream_info(&mov->frag_index);
+    frag_stream_info = get_frag_stream_info(&mov->frag_index, mov->frag_index.current, st->id);
     encrypted_index = current_index;
     encryption_index = NULL;
     if (frag_stream_info) {
@@ -7793,7 +7793,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (mov->aax_mode)
         aax_filter(pkt->data, pkt->size, mov);
 
-    ret = cenc_filter(mov, sc, pkt, current_index);
+    ret = cenc_filter(mov, st, sc, pkt, current_index);
     if (ret < 0)
         return ret;
 
