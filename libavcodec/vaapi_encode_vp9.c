@@ -32,6 +32,10 @@
 #define VP9_MAX_QUANT 255
 
 
+typedef struct VAAPIEncodeVP9Picture {
+    int slot;
+} VAAPIEncodeVP9Picture;
+
 typedef struct VAAPIEncodeVP9Context {
     VAAPIEncodeContext common;
 
@@ -43,20 +47,7 @@ typedef struct VAAPIEncodeVP9Context {
     int q_idx_idr;
     int q_idx_p;
     int q_idx_b;
-
-    // Stream state.
-
-    // Reference direction for B-like frames:
-    // 0 - most recent P/IDR frame is last.
-    // 1 - most recent P frame is golden.
-    int last_ref_dir;
 } VAAPIEncodeVP9Context;
-
-
-#define vseq_var(name)     vseq->name, name
-#define vseq_field(name)   vseq->seq_fields.bits.name, name
-#define vpic_var(name)     vpic->name, name
-#define vpic_field(name)   vpic->pic_fields.bits.name, name
 
 
 static int vaapi_encode_vp9_init_sequence_params(AVCodecContext *avctx)
@@ -88,6 +79,7 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
 {
     VAAPIEncodeContext              *ctx = avctx->priv_data;
     VAAPIEncodeVP9Context          *priv = avctx->priv_data;
+    VAAPIEncodeVP9Picture          *hpic = pic->priv_data;
     VAEncPictureParameterBufferVP9 *vpic = pic->codec_picture_params;
     int i;
 
@@ -98,65 +90,71 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
     case PICTURE_TYPE_IDR:
         av_assert0(pic->nb_refs == 0);
         vpic->ref_flags.bits.force_kf = 1;
-        vpic->refresh_frame_flags = 0x01;
-        priv->last_ref_dir = 0;
+        vpic->refresh_frame_flags = 0xff;
+        hpic->slot = 0;
         break;
     case PICTURE_TYPE_P:
         av_assert0(pic->nb_refs == 1);
-        if (ctx->b_per_p > 0) {
-            if (priv->last_ref_dir) {
-                vpic->ref_flags.bits.ref_frame_ctrl_l0  = 2;
-                vpic->ref_flags.bits.ref_gf_idx         = 1;
-                vpic->ref_flags.bits.ref_gf_sign_bias   = 1;
-                vpic->refresh_frame_flags = 0x01;
+        {
+            VAAPIEncodeVP9Picture *href = pic->refs[0]->priv_data;
+            av_assert0(href->slot == 0 || href->slot == 1);
+
+            if (ctx->max_b_depth > 0) {
+                hpic->slot = !href->slot;
+                vpic->refresh_frame_flags = 1 << hpic->slot | 0xfc;
             } else {
-                vpic->ref_flags.bits.ref_frame_ctrl_l0  = 1;
-                vpic->ref_flags.bits.ref_last_idx       = 0;
-                vpic->ref_flags.bits.ref_last_sign_bias = 1;
-                vpic->refresh_frame_flags = 0x02;
+                hpic->slot = 0;
+                vpic->refresh_frame_flags = 0xff;
             }
-        } else {
             vpic->ref_flags.bits.ref_frame_ctrl_l0  = 1;
-            vpic->ref_flags.bits.ref_last_idx       = 0;
+            vpic->ref_flags.bits.ref_last_idx       = href->slot;
             vpic->ref_flags.bits.ref_last_sign_bias = 1;
-            vpic->refresh_frame_flags = 0x01;
         }
         break;
     case PICTURE_TYPE_B:
         av_assert0(pic->nb_refs == 2);
-        if (priv->last_ref_dir) {
+        {
+            VAAPIEncodeVP9Picture *href0 = pic->refs[0]->priv_data,
+                                  *href1 = pic->refs[1]->priv_data;
+            av_assert0(href0->slot < pic->b_depth + 1 &&
+                       href1->slot < pic->b_depth + 1);
+
+            if (pic->b_depth == ctx->max_b_depth) {
+                // Unreferenced frame.
+                vpic->refresh_frame_flags = 0x00;
+                hpic->slot = 8;
+            } else {
+                vpic->refresh_frame_flags = 0xfe << pic->b_depth & 0xff;
+                hpic->slot = 1 + pic->b_depth;
+            }
             vpic->ref_flags.bits.ref_frame_ctrl_l0  = 1;
             vpic->ref_flags.bits.ref_frame_ctrl_l1  = 2;
-            vpic->ref_flags.bits.ref_last_idx       = 0;
+            vpic->ref_flags.bits.ref_last_idx       = href0->slot;
             vpic->ref_flags.bits.ref_last_sign_bias = 1;
-            vpic->ref_flags.bits.ref_gf_idx         = 1;
+            vpic->ref_flags.bits.ref_gf_idx         = href1->slot;
             vpic->ref_flags.bits.ref_gf_sign_bias   = 0;
-        } else {
-            vpic->ref_flags.bits.ref_frame_ctrl_l0  = 2;
-            vpic->ref_flags.bits.ref_frame_ctrl_l1  = 1;
-            vpic->ref_flags.bits.ref_last_idx       = 0;
-            vpic->ref_flags.bits.ref_last_sign_bias = 0;
-            vpic->ref_flags.bits.ref_gf_idx         = 1;
-            vpic->ref_flags.bits.ref_gf_sign_bias   = 1;
         }
-        vpic->refresh_frame_flags = 0x00;
         break;
     default:
         av_assert0(0 && "invalid picture type");
     }
+    if (vpic->refresh_frame_flags == 0x00) {
+        av_log(avctx, AV_LOG_DEBUG, "Pic %"PRId64" not stored.\n",
+               pic->display_order);
+    } else {
+        av_log(avctx, AV_LOG_DEBUG, "Pic %"PRId64" stored in slot %d.\n",
+               pic->display_order, hpic->slot);
+    }
 
     for (i = 0; i < FF_ARRAY_ELEMS(vpic->reference_frames); i++)
         vpic->reference_frames[i] = VA_INVALID_SURFACE;
-    if (pic->type == PICTURE_TYPE_P) {
-        av_assert0(pic->refs[0]);
-        vpic->reference_frames[priv->last_ref_dir] =
-            pic->refs[0]->recon_surface;
-    } else if (pic->type == PICTURE_TYPE_B) {
-        av_assert0(pic->refs[0] && pic->refs[1]);
-        vpic->reference_frames[!priv->last_ref_dir] =
-            pic->refs[0]->recon_surface;
-        vpic->reference_frames[priv->last_ref_dir] =
-            pic->refs[1]->recon_surface;
+
+    for (i = 0; i < pic->nb_refs; i++) {
+        VAAPIEncodePicture *ref_pic = pic->refs[i];
+        int slot;
+        slot = ((VAAPIEncodeVP9Picture*)ref_pic->priv_data)->slot;
+        av_assert0(vpic->reference_frames[slot] == VA_INVALID_SURFACE);
+        vpic->reference_frames[slot] = ref_pic->recon_surface;
     }
 
     vpic->pic_flags.bits.frame_type = (pic->type != PICTURE_TYPE_IDR);
@@ -174,9 +172,6 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
 
     vpic->filter_level    = priv->loop_filter_level;
     vpic->sharpness_level = priv->loop_filter_sharpness;
-
-    if (ctx->b_per_p > 0 && pic->type == PICTURE_TYPE_P)
-        priv->last_ref_dir = !priv->last_ref_dir;
 
     return 0;
 }
@@ -213,7 +208,10 @@ static const VAAPIEncodeProfile vaapi_encode_vp9_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_vp9 = {
     .profiles              = vaapi_encode_vp9_profiles,
 
-    .flags                 = FLAG_B_PICTURES,
+    .flags                 = FLAG_B_PICTURES |
+                             FLAG_B_PICTURE_REFERENCES,
+
+    .picture_priv_data_size = sizeof(VAAPIEncodeVP9Picture),
 
     .configure             = &vaapi_encode_vp9_configure,
 
