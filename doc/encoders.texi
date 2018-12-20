@@ -2807,15 +2807,24 @@ Size / quality tradeoff: higher values are smaller / worse quality.
 @end itemize
 
 All encoders support the following options:
-@itemize
-@item
-@option{low_power}
-
+@table @option
+@item low_power
 Some drivers/platforms offer a second encoder for some codecs intended to use
 less power than the default encoder; setting this option will attempt to use
 that encoder.  Note that it may support a reduced feature set, so some other
 options may not be available in this mode.
-@end itemize
+
+@item idr_interval
+Set the number of normal intra frames between full-refresh (IDR) frames in
+open-GOP mode.  The intra frames are still IRAPs, but will not include global
+headers and may have non-decodable leading pictures.
+
+@item b_depth
+Set the B-frame reference depth.  When set to one (the default), all B-frames
+will refer only to P- or I-frames.  When set to greater values multiple layers
+of B-frames will be present, frames in each layer only referring to frames in
+higher layers.
+@end table
 
 Each encoder also has its own specific options:
 @table @option

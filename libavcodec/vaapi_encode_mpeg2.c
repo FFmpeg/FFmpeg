@@ -563,6 +563,8 @@ static const VAAPIEncodeProfile vaapi_encode_mpeg2_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_mpeg2 = {
     .profiles              = vaapi_encode_mpeg2_profiles,
 
+    .flags                 = FLAG_B_PICTURES,
+
     .configure             = &vaapi_encode_mpeg2_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferMPEG2),
@@ -689,7 +691,8 @@ AVCodec ff_mpeg2_vaapi_encoder = {
     .id             = AV_CODEC_ID_MPEG2VIDEO,
     .priv_data_size = sizeof(VAAPIEncodeMPEG2Context),
     .init           = &vaapi_encode_mpeg2_init,
-    .encode2        = &ff_vaapi_encode2,
+    .send_frame     = &ff_vaapi_encode_send_frame,
+    .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &vaapi_encode_mpeg2_close,
     .priv_class     = &vaapi_encode_mpeg2_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,

@@ -230,6 +230,8 @@ static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
     const uint8_t *components;
     int t, i, quant_scale, len;
 
+    av_assert0(pic->type == PICTURE_TYPE_IDR);
+
     desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
     av_assert0(desc);
     if (desc->flags & AV_PIX_FMT_FLAG_RGB)
@@ -476,7 +478,8 @@ static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
     .profiles              = vaapi_encode_mjpeg_profiles,
 
-    .flags                 = FLAG_CONSTANT_QUALITY_ONLY,
+    .flags                 = FLAG_CONSTANT_QUALITY_ONLY |
+                             FLAG_INTRA_ONLY,
 
     .configure             = &vaapi_encode_mjpeg_configure,
 
@@ -535,7 +538,6 @@ static const AVOption vaapi_encode_mjpeg_options[] = {
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {
     { "global_quality", "80" },
     { "b",              "0"  },
-    { "g",              "1"  },
     { NULL },
 };
 
@@ -553,7 +555,8 @@ AVCodec ff_mjpeg_vaapi_encoder = {
     .id             = AV_CODEC_ID_MJPEG,
     .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),
     .init           = &vaapi_encode_mjpeg_init,
-    .encode2        = &ff_vaapi_encode2,
+    .send_frame     = &ff_vaapi_encode_send_frame,
+    .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &vaapi_encode_mjpeg_close,
     .priv_class     = &vaapi_encode_mjpeg_class,
     .capabilities   = AV_CODEC_CAP_HARDWARE |

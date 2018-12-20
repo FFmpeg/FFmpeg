@@ -38,6 +38,7 @@ struct VAAPIEncodePicture;
 enum {
     MAX_CONFIG_ATTRIBUTES  = 4,
     MAX_GLOBAL_PARAMS      = 4,
+    MAX_DPB_SIZE           = 16,
     MAX_PICTURE_REFERENCES = 2,
     MAX_REORDER_DELAY      = 16,
     MAX_PARAM_BUFFER_SIZE  = 1024,
@@ -66,9 +67,10 @@ typedef struct VAAPIEncodePicture {
     int64_t         display_order;
     int64_t         encode_order;
     int64_t         pts;
+    int             force_idr;
 
     int             type;
-    int             input_available;
+    int             b_depth;
     int             encode_issued;
     int             encode_complete;
 
@@ -87,8 +89,26 @@ typedef struct VAAPIEncodePicture {
     void           *priv_data;
     void           *codec_picture_params;
 
-    int          nb_refs;
+    // Whether this picture is a reference picture.
+    int             is_reference;
+
+    // The contents of the DPB after this picture has been decoded.
+    // This will contain the picture itself if it is a reference picture,
+    // but not if it isn't.
+    int                     nb_dpb_pics;
+    struct VAAPIEncodePicture *dpb[MAX_DPB_SIZE];
+    // The reference pictures used in decoding this picture.  If they are
+    // used by later pictures they will also appear in the DPB.
+    int                     nb_refs;
     struct VAAPIEncodePicture *refs[MAX_PICTURE_REFERENCES];
+    // The previous reference picture in encode order.  Must be in at least
+    // one of the reference list and DPB list.
+    struct VAAPIEncodePicture *prev;
+    // Reference count for other pictures referring to this one through
+    // the above pointers, directly from incomplete pictures and indirectly
+    // through completed pictures.
+    int             ref_count[2];
+    int             ref_removed[2];
 
     int          nb_slices;
     VAAPIEncodeSlice *slices;
@@ -119,6 +139,12 @@ typedef struct VAAPIEncodeContext {
 
     // Use low power encoding mode.
     int             low_power;
+
+    // Number of I frames between IDR frames.
+    int             idr_interval;
+
+    // Desired B frame reference depth.
+    int             desired_b_depth;
 
     // Desired packed headers.
     unsigned int    desired_packed_headers;
@@ -207,25 +233,20 @@ typedef struct VAAPIEncodeContext {
 
     // Current encoding window, in display (input) order.
     VAAPIEncodePicture *pic_start, *pic_end;
+    // The next picture to use as the previous reference picture in
+    // encoding order.
+    VAAPIEncodePicture *next_prev;
 
     // Next input order index (display order).
     int64_t         input_order;
     // Number of frames that output is behind input.
     int64_t         output_delay;
+    // Next encode order index.
+    int64_t         encode_order;
     // Number of frames decode output will need to be delayed.
     int64_t         decode_delay;
-    // Next output order index (encode order).
+    // Next output order index (in encode order).
     int64_t         output_order;
-
-    enum {
-        // All encode operations are done independently (synchronise
-        // immediately after every operation).
-        ISSUE_MODE_SERIALISE_EVERYTHING = 0,
-        // Overlap as many operations as possible.
-        ISSUE_MODE_MAXIMISE_THROUGHPUT,
-        // Overlap operations only when satisfying parallel dependencies.
-        ISSUE_MODE_MINIMISE_LATENCY,
-    } issue_mode;
 
     // Timestamp handling.
     int64_t         first_pts;
@@ -240,11 +261,14 @@ typedef struct VAAPIEncodeContext {
 
     // Frame type decision.
     int gop_size;
+    int closed_gop;
+    int gop_per_idr;
     int p_per_i;
+    int max_b_depth;
     int b_per_p;
     int force_idr;
+    int idr_counter;
     int gop_counter;
-    int p_counter;
     int end_of_stream;
 } VAAPIEncodeContext;
 
@@ -253,6 +277,15 @@ enum {
     FLAG_SLICE_CONTROL         = 1 << 0,
     // Codec only supports constant quality (no rate control).
     FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
+    // Codec is intra-only.
+    FLAG_INTRA_ONLY            = 1 << 2,
+    // Codec supports B-pictures.
+    FLAG_B_PICTURES            = 1 << 3,
+    // Codec supports referencing B-pictures.
+    FLAG_B_PICTURE_REFERENCES  = 1 << 4,
+    // Codec supports non-IDR key pictures (that is, key pictures do
+    // not necessarily empty the DPB).
+    FLAG_NON_IDR_KEY_PICTURES  = 1 << 5,
 };
 
 typedef struct VAAPIEncodeType {
@@ -327,6 +360,9 @@ typedef struct VAAPIEncodeType {
 int ff_vaapi_encode2(AVCodecContext *avctx, AVPacket *pkt,
                      const AVFrame *input_image, int *got_packet);
 
+int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame);
+int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt);
+
 int ff_vaapi_encode_init(AVCodecContext *avctx);
 int ff_vaapi_encode_close(AVCodecContext *avctx);
 
@@ -336,7 +372,15 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
       "Use low-power encoding mode (only available on some platforms; " \
       "may not support all encoding features)", \
       OFFSET(common.low_power), AV_OPT_TYPE_BOOL, \
-      { .i64 = 0 }, 0, 1, FLAGS }
+      { .i64 = 0 }, 0, 1, FLAGS }, \
+    { "idr_interval", \
+      "Distance (in I-frames) between IDR frames", \
+      OFFSET(common.idr_interval), AV_OPT_TYPE_INT, \
+      { .i64 = 0 }, 0, INT_MAX, FLAGS }, \
+    { "b_depth", \
+      "Maximum B-frame reference depth", \
+      OFFSET(common.desired_b_depth), AV_OPT_TYPE_INT, \
+      { .i64 = 1 }, 1, INT_MAX, FLAGS }
 
 
 #endif /* AVCODEC_VAAPI_ENCODE_H */

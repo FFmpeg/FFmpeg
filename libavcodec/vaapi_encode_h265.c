@@ -1082,7 +1082,9 @@ static const VAAPIEncodeProfile vaapi_encode_h265_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_h265 = {
     .profiles              = vaapi_encode_h265_profiles,
 
-    .flags                 = FLAG_SLICE_CONTROL,
+    .flags                 = FLAG_SLICE_CONTROL |
+                             FLAG_B_PICTURES |
+                             FLAG_NON_IDR_KEY_PICTURES,
 
     .configure             = &vaapi_encode_h265_configure,
 
@@ -1237,7 +1239,8 @@ AVCodec ff_hevc_vaapi_encoder = {
     .id             = AV_CODEC_ID_HEVC,
     .priv_data_size = sizeof(VAAPIEncodeH265Context),
     .init           = &vaapi_encode_h265_init,
-    .encode2        = &ff_vaapi_encode2,
+    .send_frame     = &ff_vaapi_encode_send_frame,
+    .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &vaapi_encode_h265_close,
     .priv_class     = &vaapi_encode_h265_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,

@@ -213,6 +213,8 @@ static const VAAPIEncodeProfile vaapi_encode_vp9_profiles[] = {
 static const VAAPIEncodeType vaapi_encode_type_vp9 = {
     .profiles              = vaapi_encode_vp9_profiles,
 
+    .flags                 = FLAG_B_PICTURES,
+
     .configure             = &vaapi_encode_vp9_configure,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP9),
@@ -275,7 +277,8 @@ AVCodec ff_vp9_vaapi_encoder = {
     .id             = AV_CODEC_ID_VP9,
     .priv_data_size = sizeof(VAAPIEncodeVP9Context),
     .init           = &vaapi_encode_vp9_init,
-    .encode2        = &ff_vaapi_encode2,
+    .send_frame     = &ff_vaapi_encode_send_frame,
+    .receive_packet = &ff_vaapi_encode_receive_packet,
     .close          = &ff_vaapi_encode_close,
     .priv_class     = &vaapi_encode_vp9_class,
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HARDWARE,
