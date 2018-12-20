@@ -1867,9 +1867,6 @@ static av_cold int vaapi_encode_create_recon_frames(AVCodecContext *avctx)
     ctx->recon_frames->sw_format = recon_format;
     ctx->recon_frames->width     = ctx->surface_width;
     ctx->recon_frames->height    = ctx->surface_height;
-    // At most three IDR/I/P frames and two runs of B frames can be in
-    // flight at any one time.
-    ctx->recon_frames->initial_pool_size = 3 + 2 * ctx->b_per_p;
 
     err = av_hwframe_ctx_init(ctx->recon_frames_ref);
     if (err < 0) {
