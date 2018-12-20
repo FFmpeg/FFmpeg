@@ -113,6 +113,7 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
 {
     struct SOFAlizerContext *s = ctx->priv;
     struct MYSOFA_HRTF *mysofa;
+    char *license;
     int ret;
 
     mysofa = mysofa_load(filename, &ret);
@@ -125,6 +126,9 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
         return AVERROR(EINVAL);
     *samplingrate = mysofa->DataSamplingRate.values[0];
     s->sofa.n_samples = mysofa->N;
+    license = mysofa_getAttribute(mysofa->attributes, (char *)"License");
+    if (license)
+        av_log(ctx, AV_LOG_INFO, "SOFA license: %s\n", license);
     mysofa_free(mysofa);
 
     return 0;
