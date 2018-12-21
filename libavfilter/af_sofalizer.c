@@ -351,8 +351,8 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
         }
 
         /* clippings counter */
-        if (fabs(dst[0]) > 1)
-            *n_clippings += 1;
+        if (fabsf(dst[0]) > 1)
+            n_clippings[0]++;
 
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
         dst += 2;
@@ -469,7 +469,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     /* go through all samples of current output buffer: count clippings */
     for (i = 0; i < out->nb_samples; i++) {
         /* clippings counter */
-        if (fabs(*dst) > 1) { /* if current output sample > 1 */
+        if (fabsf(dst[0]) > 1) { /* if current output sample > 1 */
             n_clippings[0]++;
         }
 
