@@ -219,8 +219,8 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             temp_ir += FFALIGN(ir_len, 16);
         }
 
-        if (fabs(*dst) > 1)
-            *n_clippings += 1;
+        if (fabsf(dst[0]) > 1)
+            n_clippings[0]++;
 
         dst += 2;
         src += in_channels;
@@ -314,7 +314,7 @@ static int headphone_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     }
 
     for (i = 0; i < out->nb_samples; i++) {
-        if (fabs(*dst) > 1) {
+        if (fabsf(dst[0]) > 1) {
             n_clippings[0]++;
         }
 
