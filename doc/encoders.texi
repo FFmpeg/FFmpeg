@@ -1767,6 +1767,10 @@ Set number of frames to look ahead for frametype and ratecontrol.
 @item error-resilient
 Enable error resiliency features.
 
+@item sharpness @var{integer}
+Increase sharpness at the expense of lower PSNR.
+The valid range is [0, 7].
+
 @item VP8-specific options
 @table @option
 @item ts-parameters
