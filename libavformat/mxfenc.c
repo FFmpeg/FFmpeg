@@ -2332,8 +2332,9 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
     return !!sc->codec_ul;
 }
 
-static uint64_t mxf_parse_timestamp(time_t timestamp)
+static uint64_t mxf_parse_timestamp(int64_t timestamp64)
 {
+    time_t timestamp = timestamp64 / 1000000;
     struct tm tmbuf;
     struct tm *time = gmtime_r(&timestamp, &tmbuf);
     if (!time)
@@ -2343,7 +2344,8 @@ static uint64_t mxf_parse_timestamp(time_t timestamp)
            (uint64_t) time->tm_mday       << 32 |
                       time->tm_hour       << 24 |
                       time->tm_min        << 16 |
-                      time->tm_sec        << 8;
+                      time->tm_sec        << 8  |
+                      (timestamp64 % 1000000) / 4000;
 }
 
 static void mxf_gen_umid(AVFormatContext *s)
@@ -2580,7 +2582,7 @@ static int mxf_write_header(AVFormatContext *s)
             sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
-    if (ff_parse_creation_time_metadata(s, &timestamp, 1) > 0)
+    if (ff_parse_creation_time_metadata(s, &timestamp, 0) > 0)
         mxf->timestamp = mxf_parse_timestamp(timestamp);
     mxf->duration = -1;
 
