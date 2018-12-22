@@ -121,11 +121,11 @@ static unsigned recover_key(unsigned char sample[4], unsigned expected_size)
         ((sample[3]^plaintext[3])<<24);
 }
 
-static void xor_block(void *p1, void *p2, unsigned size, int key, int *key_ptr)
+static void xor_block(void *p1, void *p2, unsigned size, int key, unsigned *key_ptr)
 {
-    int *d1 = p1;
-    int *d2 = p2;
-    int k = *key_ptr;
+    unsigned *d1 = p1;
+    unsigned *d2 = p2;
+    unsigned k = *key_ptr;
 
     size >>= 2;
 
