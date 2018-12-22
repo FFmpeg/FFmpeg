@@ -43,7 +43,8 @@
 
 typedef struct MySofa {  /* contains data of one SOFA file */
     struct MYSOFA_EASY *easy;
-    int n_samples;       /* length of one impulse response (IR) */
+    int ir_samples;      /* length of one impulse response (IR) */
+    int n_samples;       /* ir_samples to next power of 2 */
     float *lir, *rir;    /* IRs (time-domain) */
     int max_delay;
 } MySofa;
@@ -126,7 +127,8 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     if (mysofa->DataSamplingRate.elements != 1)
         return AVERROR(EINVAL);
     *samplingrate = mysofa->DataSamplingRate.values[0];
-    s->sofa.n_samples = mysofa->N;
+    s->sofa.ir_samples = mysofa->N;
+    s->sofa.n_samples = 1 << (32 - ff_clz(s->sofa.ir_samples));
     license = mysofa_getAttribute(mysofa->attributes, (char *)"License");
     if (license)
         av_log(ctx, AV_LOG_INFO, "SOFA license: %s\n", license);
@@ -291,7 +293,8 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     int *n_clippings = &td->n_clippings[jobnr];
     float *ringbuffer = td->ringbuffer[jobnr];
     float *temp_src = td->temp_src[jobnr];
-    const int n_samples = s->sofa.n_samples; /* length of one IR */
+    const int ir_samples = s->sofa.ir_samples; /* length of one IR */
+    const int n_samples = s->sofa.n_samples;
     const float *src = (const float *)in->data[0]; /* get pointer to audio input buffer */
     float *dst = (float *)out->data[0]; /* get pointer to audio output buffer */
     const int in_channels = s->n_conv; /* number of input channels */
@@ -327,7 +330,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 /* LFE is an input channel but requires no convolution */
                 /* apply gain to LFE signal and add to output buffer */
                 *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
-                temp_ir += FFALIGN(n_samples, 32);
+                temp_ir += n_samples;
                 continue;
             }
 
@@ -346,8 +349,8 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             }
 
             /* multiply signal and IR, and add up the results */
-            dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, n_samples);
-            temp_ir += FFALIGN(n_samples, 32);
+            dst[0] += s->fdsp->scalarproduct_float(temp_ir, temp_src, FFALIGN(ir_samples, 32));
+            temp_ir += n_samples;
         }
 
         /* clippings counter */
@@ -563,6 +566,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
 {
     struct SOFAlizerContext *s = ctx->priv;
     int n_samples;
+    int ir_samples;
     int n_conv = s->n_conv; /* no. channels to convolve */
     int n_fft;
     float delay_l; /* broadband delay for each IR */
@@ -588,9 +592,10 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     }
 
     n_samples = s->sofa.n_samples;
+    ir_samples = s->sofa.ir_samples;
 
-    s->data_ir[0] = av_calloc(FFALIGN(n_samples, 32), sizeof(float) * s->n_conv);
-    s->data_ir[1] = av_calloc(FFALIGN(n_samples, 32), sizeof(float) * s->n_conv);
+    s->data_ir[0] = av_calloc(n_samples, sizeof(float) * s->n_conv);
+    s->data_ir[1] = av_calloc(n_samples, sizeof(float) * s->n_conv);
     s->delay[0] = av_calloc(s->n_conv, sizeof(int));
     s->delay[1] = av_calloc(s->n_conv, sizeof(int));
 
@@ -600,16 +605,16 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     }
 
     /* get temporary IR for L and R channel */
-    data_ir_l = av_calloc(n_conv * FFALIGN(n_samples, 32), sizeof(*data_ir_l));
-    data_ir_r = av_calloc(n_conv * FFALIGN(n_samples, 32), sizeof(*data_ir_r));
+    data_ir_l = av_calloc(n_conv * n_samples, sizeof(*data_ir_l));
+    data_ir_r = av_calloc(n_conv * n_samples, sizeof(*data_ir_r));
     if (!data_ir_r || !data_ir_l) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
     if (s->type == TIME_DOMAIN) {
-        s->temp_src[0] = av_calloc(FFALIGN(n_samples, 32), sizeof(float));
-        s->temp_src[1] = av_calloc(FFALIGN(n_samples, 32), sizeof(float));
+        s->temp_src[0] = av_calloc(n_samples, sizeof(float));
+        s->temp_src[1] = av_calloc(n_samples, sizeof(float));
         if (!s->temp_src[0] || !s->temp_src[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -644,8 +649,8 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
 
         /* get id of IR closest to desired position */
         mysofa_getfilter_float(s->sofa.easy, coordinates[0], coordinates[1], coordinates[2],
-                               data_ir_l + FFALIGN(n_samples, 32) * i,
-                               data_ir_r + FFALIGN(n_samples, 32) * i,
+                               data_ir_l + n_samples * i,
+                               data_ir_r + n_samples * i,
                                &delay_l, &delay_r);
 
         s->delay[0][i] = delay_l * sample_rate;
@@ -656,7 +661,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
 
     /* get size of ringbuffer (longest IR plus max. delay) */
     /* then choose next power of 2 for performance optimization */
-    n_current = s->sofa.n_samples + s->sofa.max_delay;
+    n_current = n_samples + s->sofa.max_delay;
     /* length of longest IR plus max. delay */
     n_max = FFMAX(n_max, n_current);
 
@@ -721,24 +726,24 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     for (i = 0; i < s->n_conv; i++) {
         float *lir, *rir;
 
-        offset = i * FFALIGN(n_samples, 32); /* no. samples already written */
+        offset = i * n_samples; /* no. samples already written */
 
         lir = data_ir_l + offset;
         rir = data_ir_r + offset;
 
         if (s->type == TIME_DOMAIN) {
-            for (j = 0; j < n_samples; j++) {
+            for (j = 0; j < ir_samples; j++) {
                 /* load reversed IRs of the specified source position
                  * sample-by-sample for left and right ear; and apply gain */
-                s->data_ir[0][offset + j] = lir[n_samples - 1 - j] * gain_lin;
-                s->data_ir[1][offset + j] = rir[n_samples - 1 - j] * gain_lin;
+                s->data_ir[0][offset + j] = lir[ir_samples - 1 - j] * gain_lin;
+                s->data_ir[1][offset + j] = rir[ir_samples - 1 - j] * gain_lin;
             }
         } else {
             memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
             memset(fft_in_r, 0, n_fft * sizeof(*fft_in_r));
 
             offset = i * n_fft; /* no. samples already written */
-            for (j = 0; j < n_samples; j++) {
+            for (j = 0; j < ir_samples; j++) {
                 /* load non-reversed IRs of the specified source position
                  * sample-by-sample and apply gain,
                  * L channel is loaded to real part, R channel to imag part,
