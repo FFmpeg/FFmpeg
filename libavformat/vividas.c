@@ -582,6 +582,8 @@ static int viv_read_packet(AVFormatContext *s,
     int64_t off;
     int ret;
 
+    if (!viv->sb_pb)
+        return AVERROR(EIO);
     if (avio_feof(viv->sb_pb))
         return AVERROR_EOF;
 
@@ -615,6 +617,8 @@ static int viv_read_packet(AVFormatContext *s,
     }
 
     pb = viv->sb_pb;
+    if (!pb)
+        return AVERROR(EIO);
     off = avio_tell(pb);
     off += viv->sb_entries[viv->current_sb_entry].size;
 
