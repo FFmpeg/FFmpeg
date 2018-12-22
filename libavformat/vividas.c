@@ -392,7 +392,8 @@ static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t 
                 offset += data_len[j];
             }
 
-            st->codecpar->extradata_size = offset;
+            if (offset < st->codecpar->extradata_size)
+                st->codecpar->extradata_size = offset;
         }
     }
 
