@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2018-12-21 - 2744d6b364 - lavu 56.25.100 - hdr_dynamic_metadata.h
+  Add AV_FRAME_DATA_DYNAMIC_HDR_PLUS enum value, av_dynamic_hdr_plus_alloc(),
+  av_dynamic_hdr_plus_create_side_data() functions, and related structs.
+
 -------- 8< --------- FFmpeg 4.1 was cut here -------- 8< ---------
 
 2018-10-27 - 718044dc19 - lavu 56.21.100 - pixdesc.h
