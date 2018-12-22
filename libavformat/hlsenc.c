@@ -2352,6 +2352,34 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static void hls_free_variant_streams(struct HLSContext *hls)
+{
+    int i = 0;
+    AVFormatContext *vtt_oc = NULL;
+    VariantStream *vs = NULL;
+
+    for (i = 0; i < hls->nb_varstreams; i++) {
+        vs = &hls->var_streams[i];
+        vtt_oc = vs->vtt_avf;
+
+        av_freep(&vs->basename);
+        av_freep(&vs->base_output_dirname);
+        av_freep(&vs->fmp4_init_filename);
+        if (vtt_oc) {
+            av_freep(&vs->vtt_basename);
+            av_freep(&vs->vtt_m3u8_name);
+        }
+
+        hls_free_segments(vs->segments);
+        hls_free_segments(vs->old_segments);
+        av_freep(&vs->m3u8_name);
+        av_freep(&vs->streams);
+        av_freep(&vs->agroup);
+        av_freep(&vs->ccgroup);
+        av_freep(&vs->baseurl);
+    }
+}
+
 static int hls_write_trailer(struct AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
@@ -2448,30 +2476,16 @@ failed:
                 av_write_trailer(vtt_oc);
             vs->size = avio_tell(vs->vtt_avf->pb) - vs->start_pos;
             ff_format_io_close(s, &vtt_oc->pb);
+            avformat_free_context(vtt_oc);
         }
-        av_freep(&vs->basename);
-        av_freep(&vs->base_output_dirname);
         avformat_free_context(oc);
 
         vs->avf = NULL;
         hls_window(s, 1, vs);
-
-        av_freep(&vs->fmp4_init_filename);
-        if (vtt_oc) {
-            av_freep(&vs->vtt_basename);
-            av_freep(&vs->vtt_m3u8_name);
-            avformat_free_context(vtt_oc);
-        }
-
-        hls_free_segments(vs->segments);
-        hls_free_segments(vs->old_segments);
         av_free(old_filename);
-        av_freep(&vs->m3u8_name);
-        av_freep(&vs->streams);
-        av_freep(&vs->agroup);
-        av_freep(&vs->ccgroup);
-        av_freep(&vs->baseurl);
     }
+
+    hls_free_variant_streams(hls);
 
     for (i = 0; i < hls->nb_ccstreams; i++) {
         ClosedCaptionsStream *ccs = &hls->cc_streams[i];
