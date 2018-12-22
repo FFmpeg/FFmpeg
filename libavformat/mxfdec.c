@@ -2563,9 +2563,7 @@ static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
     time.tm_min  = (timestamp >> 16 & 0xFF);
     time.tm_sec  = (timestamp >> 8  & 0xFF);
 
-    /* msvcrt versions of strftime calls the invalid parameter handler
-     * (aborting the process if one isn't set) if the parameters are out
-     * of range. */
+    /* Clip values for legacy reasons. Maybe we should return error instead? */
     time.tm_mon  = av_clip(time.tm_mon,  0, 11);
     time.tm_mday = av_clip(time.tm_mday, 1, 31);
     time.tm_hour = av_clip(time.tm_hour, 0, 23);
