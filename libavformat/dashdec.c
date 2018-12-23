@@ -506,7 +506,7 @@ static char *get_content_url(xmlNodePtr *baseurl_nodes,
     }
 
     if (val)
-        av_strlcat(tmp_str, (const char*)val, max_url_size);
+        ff_make_absolute_url(tmp_str, max_url_size, tmp_str, val);
 
     if (rep_id_val) {
         url = av_strireplace(tmp_str, "$RepresentationID$", (const char*)rep_id_val);
