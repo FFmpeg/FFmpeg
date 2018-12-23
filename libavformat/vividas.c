@@ -130,7 +130,7 @@ static void xor_block(void *p1, void *p2, unsigned size, int key, unsigned *key_
     size >>= 2;
 
     while (size > 0) {
-        *d2 = *d1 ^ k;
+        *d2 = *d1 ^ (HAVE_BIGENDIAN ? av_bswap32(k) : k);
         k += key;
         d1++;
         d2++;
