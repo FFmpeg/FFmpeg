@@ -886,7 +886,7 @@ static const AVOption sofalizer_options[] = {
     { "time",      "time domain",      0,               AV_OPT_TYPE_CONST,  {.i64=0},       0,   0, .flags = FLAGS, "type" },
     { "freq",      "frequency domain", 0,               AV_OPT_TYPE_CONST,  {.i64=1},       0,   0, .flags = FLAGS, "type" },
     { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
-    { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},   -9, 9, .flags = FLAGS },
+    { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},  -20,40, .flags = FLAGS },
     { "framesize", "set frame size", OFFSET(framesize), AV_OPT_TYPE_INT,    {.i64=1024},1024,96000, .flags = FLAGS },
     { NULL }
 };
