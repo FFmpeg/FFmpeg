@@ -738,7 +738,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
                               data_ir_r + n_samples * i,
                               &delay_l, &delay_r);
         if (ret < 0)
-            return ret;
+            goto fail;
 
         s->delay[0][i] = delay_l * sample_rate;
         s->delay[1][i] = delay_r * sample_rate;
