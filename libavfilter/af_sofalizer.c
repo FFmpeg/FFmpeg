@@ -42,10 +42,13 @@
 #define FREQUENCY_DOMAIN 1
 
 typedef struct MySofa {  /* contains data of one SOFA file */
-    struct MYSOFA_EASY *easy;
+    struct MYSOFA_HRTF *hrtf;
+    struct MYSOFA_LOOKUP *lookup;
+    struct MYSOFA_NEIGHBORHOOD *neighborhood;
     int ir_samples;      /* length of one impulse response (IR) */
     int n_samples;       /* ir_samples to next power of 2 */
     float *lir, *rir;    /* IRs (time-domain) */
+    float *fir;
     int max_delay;
 } MySofa;
 
@@ -94,6 +97,11 @@ typedef struct SOFAlizerContext {
     float radius;        /* distance virtual loudspeakers to listener (in metres) */
     int type;            /* processing type */
     int framesize;       /* size of buffer */
+    int normalize;       /* should all IRs be normalized upon import ? */
+    int interpolate;     /* should wanted IRs be interpolated from neighbors ? */
+    int minphase;        /* should all IRs be minphased upon import ? */
+    float anglestep;     /* neighbor search angle step, in agles */
+    float radstep;       /* neighbor search radius step, in meters */
 
     VirtualSpeaker vspkrpos[64];
 
@@ -105,23 +113,61 @@ typedef struct SOFAlizerContext {
 
 static int close_sofa(struct MySofa *sofa)
 {
-    mysofa_close(sofa->easy);
-    sofa->easy = NULL;
+    if (sofa->neighborhood)
+        mysofa_neighborhood_free(sofa->neighborhood);
+    sofa->neighborhood = NULL;
+    if (sofa->lookup)
+        mysofa_lookup_free(sofa->lookup);
+    sofa->lookup = NULL;
+    if (sofa->hrtf)
+        mysofa_free(sofa->hrtf);
+    sofa->hrtf = NULL;
+    av_freep(&sofa->fir);
 
     return 0;
 }
 
 static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
 {
+    struct SOFAlizerContext *s = ctx->priv;
     struct MYSOFA_HRTF *mysofa;
     char *license;
     int ret;
 
     mysofa = mysofa_load(filename, &ret);
+    s->sofa.hrtf = mysofa;
     if (ret || !mysofa) {
         av_log(ctx, AV_LOG_ERROR, "Can't find SOFA-file '%s'\n", filename);
         return AVERROR(EINVAL);
     }
+
+    ret = mysofa_check(mysofa);
+    if (ret != MYSOFA_OK) {
+        av_log(ctx, AV_LOG_ERROR, "Selected SOFA file is invalid. Please select valid SOFA file.\n");
+        return ret;
+    }
+
+    if (s->normalize)
+        mysofa_loudness(s->sofa.hrtf);
+
+    if (s->minphase)
+        mysofa_minphase(s->sofa.hrtf, 0.01);
+
+    mysofa_tocartesian(s->sofa.hrtf);
+
+    s->sofa.lookup = mysofa_lookup_init(s->sofa.hrtf);
+    if (s->sofa.lookup == NULL)
+        return AVERROR(EINVAL);
+
+    if (s->interpolate)
+        s->sofa.neighborhood = mysofa_neighborhood_init_withstepdefine(s->sofa.hrtf,
+                                                                       s->sofa.lookup,
+                                                                       s->anglestep,
+                                                                       s->radstep);
+
+    s->sofa.fir = av_calloc(s->sofa.hrtf->N * s->sofa.hrtf->R, sizeof(*s->sofa.fir));
+    if (!s->sofa.fir)
+        return AVERROR(ENOMEM);
 
     if (mysofa->DataSamplingRate.elements != 1)
         return AVERROR(EINVAL);
@@ -130,7 +176,6 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
     license = mysofa_getAttribute(mysofa->attributes, (char *)"License");
     if (license)
         av_log(ctx, AV_LOG_INFO, "SOFA license: %s\n", license);
-    mysofa_free(mysofa);
 
     return 0;
 }
@@ -560,6 +605,43 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
+static int getfilter_float(AVFilterContext *ctx, float x, float y, float z,
+                           float *left, float *right,
+                           float *delay_left, float *delay_right)
+{
+    struct SOFAlizerContext *s = ctx->priv;
+    float c[3], delays[2];
+    float *fl, *fr;
+    int nearest;
+    int *neighbors;
+    float *res;
+
+    c[0] = x, c[1] = y, c[2] = z;
+    nearest = mysofa_lookup(s->sofa.lookup, c);
+    if (nearest < 0)
+        return AVERROR(EINVAL);
+
+    if (s->interpolate) {
+        neighbors = mysofa_neighborhood(s->sofa.neighborhood, nearest);
+        res = mysofa_interpolate(s->sofa.hrtf, c,
+                                 nearest, neighbors,
+                                 s->sofa.fir, delays);
+    } else {
+        res = s->sofa.hrtf->DataIR.values + nearest * s->sofa.hrtf->N * s->sofa.hrtf->R;
+    }
+
+    *delay_left  = delays[0];
+    *delay_right = delays[1];
+
+    fl = res;
+    fr = res + s->sofa.hrtf->N;
+
+    memcpy(left, fl, sizeof(float) * s->sofa.hrtf->N);
+    memcpy(right, fr, sizeof(float) * s->sofa.hrtf->N);
+
+    return 0;
+}
+
 static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int sample_rate)
 {
     struct SOFAlizerContext *s = ctx->priv;
@@ -579,18 +661,12 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     float *data_ir_r = NULL;
     int offset = 0; /* used for faster pointer arithmetics in for-loop */
     int i, j, azim_orig = azim, elev_orig = elev;
-    int filter_length, ret = 0;
+    int ret = 0;
     int n_current;
     int n_max = 0;
 
-    s->sofa.easy = mysofa_open(s->filename, sample_rate, &filter_length, &ret);
-    if (!s->sofa.easy || ret) { /* if an invalid SOFA file has been selected */
-        av_log(ctx, AV_LOG_ERROR, "Selected SOFA file is invalid. Please select valid SOFA file.\n");
-        return AVERROR_INVALIDDATA;
-    }
-
-    av_log(ctx, AV_LOG_DEBUG, "IR length: %d.\n", s->sofa.easy->hrtf->N);
-    s->sofa.ir_samples = s->sofa.easy->hrtf->N;
+    av_log(ctx, AV_LOG_DEBUG, "IR length: %d.\n", s->sofa.hrtf->N);
+    s->sofa.ir_samples = s->sofa.hrtf->N;
     s->sofa.n_samples = 1 << (32 - ff_clz(s->sofa.ir_samples));
 
     n_samples = s->sofa.n_samples;
@@ -650,10 +726,12 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
         mysofa_s2c(coordinates);
 
         /* get id of IR closest to desired position */
-        mysofa_getfilter_float(s->sofa.easy, coordinates[0], coordinates[1], coordinates[2],
-                               data_ir_l + n_samples * i,
-                               data_ir_r + n_samples * i,
-                               &delay_l, &delay_r);
+        ret = getfilter_float(ctx, coordinates[0], coordinates[1], coordinates[2],
+                              data_ir_l + n_samples * i,
+                              data_ir_r + n_samples * i,
+                              &delay_l, &delay_r);
+        if (ret < 0)
+            return ret;
 
         s->delay[0][i] = delay_l * sample_rate;
         s->delay[1][i] = delay_r * sample_rate;
@@ -894,6 +972,11 @@ static const AVOption sofalizer_options[] = {
     { "speakers",  "set speaker custom positions", OFFSET(speakers_pos), AV_OPT_TYPE_STRING,  {.str=0},    0, 0, .flags = FLAGS },
     { "lfegain",   "set lfe gain",                 OFFSET(lfe_gain),     AV_OPT_TYPE_FLOAT,   {.dbl=0},  -20,40, .flags = FLAGS },
     { "framesize", "set frame size", OFFSET(framesize), AV_OPT_TYPE_INT,    {.i64=1024},1024,96000, .flags = FLAGS },
+    { "normalize", "normalize IRs",  OFFSET(normalize), AV_OPT_TYPE_BOOL,   {.i64=1},       0,   1, .flags = FLAGS },
+    { "interpolate","interpolate IRs from neighbors",   OFFSET(interpolate),AV_OPT_TYPE_BOOL,    {.i64=0},       0,   1, .flags = FLAGS },
+    { "minphase",  "minphase IRs",   OFFSET(minphase),  AV_OPT_TYPE_BOOL,   {.i64=0},       0,   1, .flags = FLAGS },
+    { "anglestep", "set neighbor search angle step",    OFFSET(anglestep),  AV_OPT_TYPE_FLOAT,   {.dbl=.5},      0.01, 10, .flags = FLAGS },
+    { "radstep",   "set neighbor search radius step",   OFFSET(radstep),    AV_OPT_TYPE_FLOAT,   {.dbl=.01},     0.01,  1, .flags = FLAGS },
     { NULL }
 };
 

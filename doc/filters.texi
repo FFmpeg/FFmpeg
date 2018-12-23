@@ -4511,6 +4511,23 @@ Set custom gain for LFE channels. Value is in dB. Default is 0.
 Set custom frame size in number of samples. Default is 1024.
 Allowed range is from 1024 to 96000. Only used if option @samp{type}
 is set to @var{freq}.
+
+@item normalize
+Should all IRs be normalized upon importing SOFA file.
+By default is enabled.
+
+@item interpolate
+Should nearest IRs be interpolated with neighbor IRs if exact position
+does not match. By default is disabled.
+
+@item minphase
+Minphase all IRs upon loading of SOFA file. By default is disabled.
+
+@item anglestep
+Set neighbor search angle step. Only used if option @var{interpolate} is enabled.
+
+@item radstep
+Set neighbor search radius step. Only used if option @var{interpolate} is enabled.
 @end table
 
 @subsection Examples
