@@ -78,8 +78,11 @@ static int unpack_bitstream(G723_1_ChannelContext *p, const uint8_t *buf,
     GetBitContext gb;
     int ad_cb_len;
     int temp, info_bits, i;
+    int ret;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    ret = init_get_bits8(&gb, buf, buf_size);
+    if (ret < 0)
+        return ret;
 
     /* Extract frame type and rate info */
     info_bits = get_bits(&gb, 2);
