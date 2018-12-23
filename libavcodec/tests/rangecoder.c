@@ -60,8 +60,11 @@ int main(void)
                     av_log(NULL, AV_LOG_ERROR, "rac failure at %d pass %d version %d\n", i, p, version);
                     return 1;
                 }
-            if(version)
-                get_rac(&c, (uint8_t[]) { 129 });
+
+            if (ff_rac_check_termination(&c, version) < 0) {
+                av_log(NULL, AV_LOG_ERROR, "rac failure at termination pass %d version %d\n", p, version);
+                return 1;
+            }
             if (c.bytestream - c.bytestream_start - actual_length != version) {
                 av_log(NULL, AV_LOG_ERROR, "rac failure at pass %d version %d\n", p, version);
                 return 1;
