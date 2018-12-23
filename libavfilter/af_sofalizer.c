@@ -113,7 +113,6 @@ static int close_sofa(struct MySofa *sofa)
 
 static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
 {
-    struct SOFAlizerContext *s = ctx->priv;
     struct MYSOFA_HRTF *mysofa;
     char *license;
     int ret;
@@ -126,9 +125,8 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
 
     if (mysofa->DataSamplingRate.elements != 1)
         return AVERROR(EINVAL);
+    av_log(ctx, AV_LOG_DEBUG, "Original IR length: %d.\n", mysofa->N);
     *samplingrate = mysofa->DataSamplingRate.values[0];
-    s->sofa.ir_samples = mysofa->N;
-    s->sofa.n_samples = 1 << (32 - ff_clz(s->sofa.ir_samples));
     license = mysofa_getAttribute(mysofa->attributes, (char *)"License");
     if (license)
         av_log(ctx, AV_LOG_INFO, "SOFA license: %s\n", license);
@@ -590,6 +588,10 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
         av_log(ctx, AV_LOG_ERROR, "Selected SOFA file is invalid. Please select valid SOFA file.\n");
         return AVERROR_INVALIDDATA;
     }
+
+    av_log(ctx, AV_LOG_DEBUG, "IR length: %d.\n", s->sofa.easy->hrtf->N);
+    s->sofa.ir_samples = s->sofa.easy->hrtf->N;
+    s->sofa.n_samples = 1 << (32 - ff_clz(s->sofa.ir_samples));
 
     n_samples = s->sofa.n_samples;
     ir_samples = s->sofa.ir_samples;
