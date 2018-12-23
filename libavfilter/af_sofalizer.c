@@ -858,6 +858,10 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_fft_end(s->ifft[1]);
     av_fft_end(s->fft[0]);
     av_fft_end(s->fft[1]);
+    s->ifft[0] = NULL;
+    s->ifft[1] = NULL;
+    s->fft[0] = NULL;
+    s->fft[1] = NULL;
     av_freep(&s->delay[0]);
     av_freep(&s->delay[1]);
     av_freep(&s->data_ir[0]);
