@@ -627,6 +627,13 @@ static int getfilter_float(AVFilterContext *ctx, float x, float y, float z,
                                  nearest, neighbors,
                                  s->sofa.fir, delays);
     } else {
+        if (s->sofa.hrtf->DataDelay.elements > s->sofa.hrtf->R) {
+            delays[0] = s->sofa.hrtf->DataDelay.values[nearest * s->sofa.hrtf->R];
+            delays[1] = s->sofa.hrtf->DataDelay.values[nearest * s->sofa.hrtf->R + 1];
+        } else {
+            delays[0] = s->sofa.hrtf->DataDelay.values[0];
+            delays[1] = s->sofa.hrtf->DataDelay.values[1];
+        }
         res = s->sofa.hrtf->DataIR.values + nearest * s->sofa.hrtf->N * s->sofa.hrtf->R;
     }
 
