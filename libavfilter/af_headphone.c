@@ -795,7 +795,7 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
+    s->gain_lfe = expf((s->gain - 3 * inlink->channels + s->lfe_gain) / 20 * M_LN10);
 
     return 0;
 }
