@@ -28,6 +28,11 @@ FATE_SAMPLES_AUDIO-$(call DEMDEC, DSS, DSS_SP) += fate-dss-lp fate-dss-sp
 fate-dss-lp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/lp.dss -frames 30
 fate-dss-sp: CMD = framecrc -i $(TARGET_SAMPLES)/dss/sp.dss -frames 30
 
+FATE_SAMPLES_AUDIO-$(call DEMDEC, DSF, DST) += fate-dsf-dst
+fate-dsf-dst: CMD = pcm -i $(TARGET_SAMPLES)/dst/dst-64fs44-2ch.dff
+fate-dsf-dst: CMP = oneoff
+fate-dsf-dst: REF = $(SAMPLES)/dst/dst-64fs44-2ch.pcm
+
 FATE_SAMPLES_AUDIO-$(call DEMDEC, AVI, IMC) += fate-imc
 fate-imc: CMD = pcm -i $(TARGET_SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
