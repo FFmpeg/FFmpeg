@@ -2630,7 +2630,7 @@ void ff_hevc_sao_edge_filter_8_msa(uint8_t *dst, uint8_t *src,
                                    int16_t *sao_offset_val,
                                    int eo, int width, int height)
 {
-    ptrdiff_t stride_src = (2 * 64 + 32) / sizeof(uint8_t);
+    ptrdiff_t stride_src = (2 * MAX_PB_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / sizeof(uint8_t);
 
     switch (eo) {
     case 0:
