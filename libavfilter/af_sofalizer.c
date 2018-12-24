@@ -919,8 +919,8 @@ static int config_input(AVFilterLink *inlink)
         inlink->max_samples = s->framesize;
     }
 
-    /* gain -3 dB per channel, -6 dB to get LFE on a similar level */
-    s->gain_lfe = expf((s->gain - 3 * inlink->channels - 6 + s->lfe_gain) / 20 * M_LN10);
+    /* gain -3 dB per channel */
+    s->gain_lfe = expf((s->gain - 3 * inlink->channels + s->lfe_gain) / 20 * M_LN10);
 
     s->n_conv = inlink->channels;
 
