@@ -669,9 +669,6 @@ static int lag_decode_frame(AVCodecContext *avctx,
 
         if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
             return ret;
-        if (buf_size <= offset_ry || buf_size <= offset_gu || buf_size <= offset_bv) {
-            return AVERROR_INVALIDDATA;
-        }
 
         if (offset_ry >= buf_size ||
             offset_gu >= buf_size ||
