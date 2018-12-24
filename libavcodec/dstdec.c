@@ -70,7 +70,7 @@ typedef struct DSTContext {
     GetBitContext gb;
     ArithCoder ac;
     Table fsets, probs;
-    DECLARE_ALIGNED(64, uint8_t, status)[DST_MAX_CHANNELS][16];
+    DECLARE_ALIGNED(16, uint8_t, status)[DST_MAX_CHANNELS][16];
     DECLARE_ALIGNED(16, int16_t, filter)[DST_MAX_ELEMENTS][16][256];
     DSDContext dsdctx[DST_MAX_CHANNELS];
 } DSTContext;
