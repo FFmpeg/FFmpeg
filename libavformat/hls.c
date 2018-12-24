@@ -931,6 +931,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                    prev_start_seq_no, pls->start_seq_no);
         }
         free_segment_dynarray(prev_segments, prev_n_segments);
+        av_freep(&prev_segments);
     }
     if (pls)
         pls->last_load_time = av_gettime_relative();
