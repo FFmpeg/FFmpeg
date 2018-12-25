@@ -88,7 +88,8 @@ typedef struct SOFAlizerContext {
     float *data_ir[2];          /* IRs for all channels to be convolved */
                                 /* (this excludes the LFE) */
     float *temp_src[2];
-    FFTComplex *temp_fft[2];
+    FFTComplex *temp_fft[2];    /* Array to hold FFT values */
+    FFTComplex *temp_afft[2];   /* Array to accumulate FFT values prior to IFFT */
 
                          /* control variables */
     float gain;          /* filter gain (in dB) */
@@ -322,6 +323,7 @@ typedef struct ThreadData {
     float **ringbuffer;
     float **temp_src;
     FFTComplex **temp_fft;
+    FFTComplex **temp_afft;
 } ThreadData;
 
 static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
@@ -430,6 +432,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     /* -1 for AND instead of MODULO (applied to powers of 2): */
     const uint32_t modulo = (uint32_t)buffer_length - 1;
     FFTComplex *fft_in = s->temp_fft[jobnr]; /* temporary array for FFT input/output data */
+    FFTComplex *fft_acc = s->temp_afft[jobnr];
     FFTContext *ifft = s->ifft[jobnr];
     FFTContext *fft = s->fft[jobnr];
     const int n_conv = s->n_conv;
@@ -457,6 +460,9 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     for (j = n_read; j < in->nb_samples; j++) {
         dst[2 * j] = 0;
     }
+
+    /* fill FFT accumulation with 0 */
+    memset(fft_acc, 0, sizeof(FFTComplex) * n_fft);
 
     for (i = 0; i < n_conv; i++) {
         if (i == s->lfe_channel) { /* LFE */
@@ -490,26 +496,26 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
             /* complex multiplication of input signal and HRTFs */
             /* output channel (real): */
-            fft_in[j].re = re * hcomplex->re - im * hcomplex->im;
+            fft_acc[j].re += re * hcomplex->re - im * hcomplex->im;
             /* output channel (imag): */
-            fft_in[j].im = re * hcomplex->im + im * hcomplex->re;
+            fft_acc[j].im += re * hcomplex->im + im * hcomplex->re;
         }
+    }
 
-        /* transform output signal of current channel back to time domain */
-        av_fft_permute(ifft, fft_in);
-        av_fft_calc(ifft, fft_in);
+    /* transform output signal of current channel back to time domain */
+    av_fft_permute(ifft, fft_acc);
+    av_fft_calc(ifft, fft_acc);
 
-        for (j = 0; j < in->nb_samples; j++) {
-            /* write output signal of current channel to output buffer */
-            dst[2 * j] += fft_in[j].re * fft_scale;
-        }
+    for (j = 0; j < in->nb_samples; j++) {
+        /* write output signal of current channel to output buffer */
+        dst[2 * j] += fft_acc[j].re * fft_scale;
+    }
 
-        for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
-            /* write the rest of output signal to overflow buffer */
-            int write_pos = (wr + j) & modulo;
+    for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
+        /* write the rest of output signal to overflow buffer */
+        int write_pos = (wr + j) & modulo;
 
-            *(ringbuffer + write_pos) += fft_in[in->nb_samples + j].re * fft_scale;
-        }
+        *(ringbuffer + write_pos) += fft_acc[in->nb_samples + j].re * fft_scale;
     }
 
     /* go through all samples of current output buffer: count clippings */
@@ -549,6 +555,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     td.delay = s->delay; td.ir = s->data_ir; td.n_clippings = n_clippings;
     td.ringbuffer = s->ringbuffer; td.temp_src = s->temp_src;
     td.temp_fft = s->temp_fft;
+    td.temp_afft = s->temp_afft;
 
     if (s->type == TIME_DOMAIN) {
         ctx->internal->execute(ctx, sofalizer_convolute, &td, NULL, 2);
@@ -790,7 +797,10 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
         s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float));
         s->temp_fft[0] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
         s->temp_fft[1] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
-        if (!s->temp_fft[0] || !s->temp_fft[1]) {
+        s->temp_afft[0] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
+        s->temp_afft[1] = av_malloc_array(s->n_fft, sizeof(FFTComplex));
+        if (!s->temp_fft[0] || !s->temp_fft[1] ||
+            !s->temp_afft[0] || !s->temp_afft[1]) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
@@ -957,6 +967,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->speaker_elev);
     av_freep(&s->temp_src[0]);
     av_freep(&s->temp_src[1]);
+    av_freep(&s->temp_afft[0]);
+    av_freep(&s->temp_afft[1]);
     av_freep(&s->temp_fft[0]);
     av_freep(&s->temp_fft[1]);
     av_freep(&s->data_hrtf[0]);
