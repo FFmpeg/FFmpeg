@@ -152,7 +152,7 @@ static int preload_sofa(AVFilterContext *ctx, char *filename, int *samplingrate)
         mysofa_loudness(s->sofa.hrtf);
 
     if (s->minphase)
-        mysofa_minphase(s->sofa.hrtf, 0.01);
+        mysofa_minphase(s->sofa.hrtf, 0.01f);
 
     mysofa_tocartesian(s->sofa.hrtf);
 
@@ -466,7 +466,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     for (j = 0; j < n_read; j++) {
         /* initialize output buf with saved signal from overflow buf */
         dst[mult * j]  = ringbuffer[wr];
-        ringbuffer[wr] = 0.0; /* re-set read samples to zero */
+        ringbuffer[wr] = 0.0f; /* re-set read samples to zero */
         /* update ringbuffer read/write position */
         wr  = (wr + 1) & modulo;
     }
