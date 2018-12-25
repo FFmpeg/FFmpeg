@@ -76,6 +76,13 @@ static int activate(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
         }
 
+        ret = av_frame_copy_props(pad_frame, frame);
+        if (ret < 0) {
+            av_frame_free(&pad_frame);
+            av_frame_free(&frame);
+            return ret;
+        }
+
         av_samples_copy(pad_frame->extended_data, frame->extended_data,
                         0, 0, frame->nb_samples, frame->channels, frame->format);
         av_samples_set_silence(pad_frame->extended_data, frame->nb_samples,
