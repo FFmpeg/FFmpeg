@@ -877,7 +877,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
                 /* load non-reversed IRs of the specified source position
                  * sample-by-sample and apply gain,
                  * L channel is loaded to real part, R channel to imag part,
-                 * IRs ared shifted by L and R delay */
+                 * IRs are shifted by L and R delay */
                 fft_in_l[s->delay[0][i] + j].re = lir[j] * gain_lin;
                 fft_in_r[s->delay[1][i] + j].re = rir[j] * gain_lin;
             }
