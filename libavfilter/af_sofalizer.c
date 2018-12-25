@@ -340,8 +340,10 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     float *temp_src = td->temp_src[jobnr];
     const int ir_samples = s->sofa.ir_samples; /* length of one IR */
     const int n_samples = s->sofa.n_samples;
-    const float *src = (const float *)in->data[0]; /* get pointer to audio input buffer */
-    float *dst = (float *)out->data[0]; /* get pointer to audio output buffer */
+    const int planar = in->format == AV_SAMPLE_FMT_FLTP;
+    const int mult = 1 + !planar;
+    const float *src = (const float *)in->extended_data[0]; /* get pointer to audio input buffer */
+    float *dst = (float *)out->extended_data[jobnr * planar]; /* get pointer to audio output buffer */
     const int in_channels = s->n_conv; /* number of input channels */
     /* ring buffer length is: longest IR plus max. delay -> next power of 2 */
     const int buffer_length = s->buffer_length;
@@ -352,7 +354,9 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
     int read;
     int i, l;
 
-    dst += offset;
+    if (!planar)
+        dst += offset;
+
     for (l = 0; l < in_channels; l++) {
         /* get starting address of ringbuffer for each input channel */
         buffer[l] = ringbuffer + l * buffer_length;
@@ -362,9 +366,18 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
         const float *temp_ir = ir; /* using same set of IRs for each sample */
 
         dst[0] = 0;
-        for (l = 0; l < in_channels; l++) {
-            /* write current input sample to ringbuffer (for each channel) */
-            buffer[l][wr] = src[l];
+        if (planar) {
+            for (l = 0; l < in_channels; l++) {
+                const float *srcp = (const float *)in->extended_data[l];
+
+                /* write current input sample to ringbuffer (for each channel) */
+                buffer[l][wr] = srcp[i];
+            }
+        } else {
+            for (l = 0; l < in_channels; l++) {
+                /* write current input sample to ringbuffer (for each channel) */
+                buffer[l][wr] = src[l];
+            }
         }
 
         /* loop goes through all channels to be convolved */
@@ -374,7 +387,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             if (l == s->lfe_channel) {
                 /* LFE is an input channel but requires no convolution */
                 /* apply gain to LFE signal and add to output buffer */
-                *dst += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
+                dst[0] += *(buffer[s->lfe_channel] + wr) * s->gain_lfe;
                 temp_ir += n_samples;
                 continue;
             }
@@ -403,7 +416,7 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             n_clippings[0]++;
 
         /* move output buffer pointer by +2 to get to next sample of processed channel: */
-        dst += 2;
+        dst += mult;
         src += in_channels;
         wr   = (wr + 1) & modulo; /* update ringbuffer write position */
     }
@@ -424,8 +437,9 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     int *n_clippings = &td->n_clippings[jobnr];
     float *ringbuffer = td->ringbuffer[jobnr];
     const int n_samples = s->sofa.n_samples; /* length of one IR */
-    const float *src = (const float *)in->data[0]; /* get pointer to audio input buffer */
-    float *dst = (float *)out->data[0]; /* get pointer to audio output buffer */
+    const int planar = in->format == AV_SAMPLE_FMT_FLTP;
+    const int mult = 1 + !planar;
+    float *dst = (float *)out->extended_data[jobnr * planar]; /* get pointer to audio output buffer */
     const int in_channels = s->n_conv; /* number of input channels */
     /* ring buffer length is: longest IR plus max. delay -> next power of 2 */
     const int buffer_length = s->buffer_length;
@@ -443,14 +457,15 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     int n_read;
     int i, j;
 
-    dst += offset;
+    if (!planar)
+        dst += offset;
 
     /* find minimum between number of samples and output buffer length:
      * (important, if one IR is longer than the output buffer) */
     n_read = FFMIN(s->sofa.n_samples, in->nb_samples);
     for (j = 0; j < n_read; j++) {
         /* initialize output buf with saved signal from overflow buf */
-        dst[2 * j]     = ringbuffer[wr];
+        dst[mult * j]  = ringbuffer[wr];
         ringbuffer[wr] = 0.0; /* re-set read samples to zero */
         /* update ringbuffer read/write position */
         wr  = (wr + 1) & modulo;
@@ -458,17 +473,26 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
     /* initialize rest of output buffer with 0 */
     for (j = n_read; j < in->nb_samples; j++) {
-        dst[2 * j] = 0;
+        dst[mult * j] = 0;
     }
 
     /* fill FFT accumulation with 0 */
     memset(fft_acc, 0, sizeof(FFTComplex) * n_fft);
 
     for (i = 0; i < n_conv; i++) {
+        const float *src = (const float *)in->extended_data[i * planar]; /* get pointer to audio input buffer */
+
         if (i == s->lfe_channel) { /* LFE */
-            for (j = 0; j < in->nb_samples; j++) {
-                /* apply gain to LFE signal and add to output buffer */
-                dst[2 * j] += src[i + j * in_channels] * s->gain_lfe;
+            if (in->format == AV_SAMPLE_FMT_FLT) {
+                for (j = 0; j < in->nb_samples; j++) {
+                    /* apply gain to LFE signal and add to output buffer */
+                    dst[2 * j] += src[i + j * in_channels] * s->gain_lfe;
+                }
+            } else {
+                for (j = 0; j < in->nb_samples; j++) {
+                    /* apply gain to LFE signal and add to output buffer */
+                    dst[j] += src[j] * s->gain_lfe;
+                }
             }
             continue;
         }
@@ -480,10 +504,18 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         /* fill FFT input with 0 (we want to zero-pad) */
         memset(fft_in, 0, sizeof(FFTComplex) * n_fft);
 
-        for (j = 0; j < in->nb_samples; j++) {
-            /* prepare input for FFT */
-            /* write all samples of current input channel to FFT input array */
-            fft_in[j].re = src[j * in_channels + i];
+        if (in->format == AV_SAMPLE_FMT_FLT) {
+            for (j = 0; j < in->nb_samples; j++) {
+                /* prepare input for FFT */
+                /* write all samples of current input channel to FFT input array */
+                fft_in[j].re = src[j * in_channels + i];
+            }
+        } else {
+            for (j = 0; j < in->nb_samples; j++) {
+                /* prepare input for FFT */
+                /* write all samples of current input channel to FFT input array */
+                fft_in[j].re = src[j];
+            }
         }
 
         /* transform input signal of current channel to frequency domain */
@@ -508,7 +540,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
     for (j = 0; j < in->nb_samples; j++) {
         /* write output signal of current channel to output buffer */
-        dst[2 * j] += fft_acc[j].re * fft_scale;
+        dst[mult * j] += fft_acc[j].re * fft_scale;
     }
 
     for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
@@ -521,12 +553,9 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     /* go through all samples of current output buffer: count clippings */
     for (i = 0; i < out->nb_samples; i++) {
         /* clippings counter */
-        if (fabsf(dst[0]) > 1) { /* if current output sample > 1 */
+        if (fabsf(dst[i * mult]) > 1) { /* if current output sample > 1 */
             n_clippings[0]++;
         }
-
-        /* move output buffer pointer by +2 to get to next sample of processed channel: */
-        dst += 2;
     }
 
     /* remember read/write position in ringbuffer for next call */
@@ -580,10 +609,14 @@ static int query_formats(AVFilterContext *ctx)
     AVFilterFormats *formats = NULL;
     AVFilterChannelLayouts *layouts = NULL;
     int ret, sample_rates[] = { 48000, -1 };
+    static const enum AVSampleFormat sample_fmts[] = {
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_FLTP,
+        AV_SAMPLE_FMT_NONE
+    };
 
-    ret = ff_add_format(&formats, AV_SAMPLE_FMT_FLT);
-    if (ret)
-        return ret;
+    formats = ff_make_format_list(sample_fmts);
+    if (!formats)
+        return AVERROR(ENOMEM);
     ret = ff_set_common_formats(ctx, formats);
     if (ret)
         return ret;
