@@ -300,7 +300,6 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     for (n = av_log2(s->minp); (1 << n) < s->nb_taps; n++);
     N = FFMIN(n, av_log2(s->maxp));
-    s->ir_length = 1 << n;
     s->fft_length = (1 << (N + 1)) + 1;
     s->part_size = 1 << (N - 1);
     s->block_size = FFALIGN(s->fft_length, 32);
@@ -426,7 +425,7 @@ static int convert_coeffs(AVFilterContext *ctx)
     av_log(ctx, AV_LOG_DEBUG, "nb_taps: %d\n", s->nb_taps);
     av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", s->nb_partitions);
     av_log(ctx, AV_LOG_DEBUG, "partition size: %d\n", s->part_size);
-    av_log(ctx, AV_LOG_DEBUG, "ir_length: %d\n", s->ir_length);
+    av_log(ctx, AV_LOG_DEBUG, "fft_length: %d\n", s->fft_length);
 
     s->have_coeffs = 1;
 

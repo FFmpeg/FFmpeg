@@ -59,7 +59,6 @@ typedef struct AudioFIRContext {
     int block_size;
     int nb_partitions;
     int nb_channels;
-    int ir_length;
     int fft_length;
     int nb_coef_channels;
     int one2many;
