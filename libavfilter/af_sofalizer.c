@@ -395,12 +395,12 @@ static int sofalizer_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
             /* current read position in ringbuffer: input sample write position
              * - delay for l-th ch. + diff. betw. IR length and buffer length
              * (mod buffer length) */
-            read = (wr - delay[l] - (n_samples - 1) + buffer_length) & modulo;
+            read = (wr - delay[l] - (ir_samples - 1) + buffer_length) & modulo;
 
-            if (read + n_samples < buffer_length) {
-                memmove(temp_src, bptr + read, n_samples * sizeof(*temp_src));
+            if (read + ir_samples < buffer_length) {
+                memmove(temp_src, bptr + read, ir_samples * sizeof(*temp_src));
             } else {
-                int len = FFMIN(n_samples - (read % n_samples), buffer_length - read);
+                int len = FFMIN(n_samples - (read % ir_samples), buffer_length - read);
 
                 memmove(temp_src, bptr + read, len * sizeof(*temp_src));
                 memmove(temp_src + len, bptr, (n_samples - len) * sizeof(*temp_src));
@@ -436,7 +436,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
     FFTComplex *hrtf = s->data_hrtf[jobnr]; /* get pointers to current HRTF data */
     int *n_clippings = &td->n_clippings[jobnr];
     float *ringbuffer = td->ringbuffer[jobnr];
-    const int n_samples = s->sofa.n_samples; /* length of one IR */
+    const int ir_samples = s->sofa.ir_samples; /* length of one IR */
     const int planar = in->format == AV_SAMPLE_FMT_FLTP;
     const int mult = 1 + !planar;
     float *dst = (float *)out->extended_data[jobnr * planar]; /* get pointer to audio output buffer */
@@ -462,7 +462,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
 
     /* find minimum between number of samples and output buffer length:
      * (important, if one IR is longer than the output buffer) */
-    n_read = FFMIN(s->sofa.n_samples, in->nb_samples);
+    n_read = FFMIN(ir_samples, in->nb_samples);
     for (j = 0; j < n_read; j++) {
         /* initialize output buf with saved signal from overflow buf */
         dst[mult * j]  = ringbuffer[wr];
@@ -543,7 +543,7 @@ static int sofalizer_fast_convolute(AVFilterContext *ctx, void *arg, int jobnr, 
         dst[mult * j] += fft_acc[j].re * fft_scale;
     }
 
-    for (j = 0; j < n_samples - 1; j++) { /* overflow length is IR length - 1 */
+    for (j = 0; j < ir_samples - 1; j++) { /* overflow length is IR length - 1 */
         /* write the rest of output signal to overflow buffer */
         int write_pos = (wr + j) & modulo;
 
