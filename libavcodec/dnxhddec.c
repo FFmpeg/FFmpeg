@@ -37,7 +37,7 @@
 #include "thread.h"
 
 typedef struct RowContext {
-    DECLARE_ALIGNED(16, int16_t, blocks)[12][64];
+    DECLARE_ALIGNED(32, int16_t, blocks)[12][64];
     int luma_scale[64];
     int chroma_scale[64];
     GetBitContext gb;
