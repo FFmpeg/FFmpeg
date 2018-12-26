@@ -145,7 +145,7 @@ typedef struct FourXContext {
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
     void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
