@@ -208,12 +208,12 @@ static int headphone_convolute(AVFilterContext *ctx, void *arg, int jobnr, int n
                 continue;
             }
 
-            read = (wr - *(delay + l) - (air_len - 1) + buffer_length) & modulo;
+            read = (wr - *(delay + l) - (ir_len - 1) + buffer_length) & modulo;
 
-            if (read + air_len < buffer_length) {
-                memcpy(temp_src, bptr + read, air_len * sizeof(*temp_src));
+            if (read + ir_len < buffer_length) {
+                memcpy(temp_src, bptr + read, ir_len * sizeof(*temp_src));
             } else {
-                int len = FFMIN(air_len - (read % air_len), buffer_length - read);
+                int len = FFMIN(air_len - (read % ir_len), buffer_length - read);
 
                 memcpy(temp_src, bptr + read, len * sizeof(*temp_src));
                 memcpy(temp_src + len, bptr, (air_len - len) * sizeof(*temp_src));
