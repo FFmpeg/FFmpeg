@@ -21,7 +21,6 @@
 #ifndef AVFILTER_AFIR_H
 #define AVFILTER_AFIR_H
 
-#include "libavutil/audio_fifo.h"
 #include "libavutil/common.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/opt.h"
@@ -53,7 +52,6 @@ typedef struct AudioFIRContext {
 
     int eof_coeffs;
     int have_coeffs;
-    int nb_coeffs;
     int nb_taps;
     int part_size;
     int part_index;
@@ -72,7 +70,6 @@ typedef struct AudioFIRContext {
     float **block;
     FFTComplex **coeff;
 
-    AVAudioFifo *fifo;
     AVFrame *in[2];
     AVFrame *buffer;
     AVFrame *video;

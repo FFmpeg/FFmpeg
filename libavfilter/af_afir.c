@@ -306,7 +306,6 @@ static int convert_coeffs(AVFilterContext *ctx)
     s->block_size = FFALIGN(s->fft_length, 32);
     s->coeff_size = FFALIGN(s->part_size + 1, 32);
     s->nb_partitions = (s->nb_taps + s->part_size - 1) / s->part_size;
-    s->nb_coeffs = s->ir_length + s->nb_partitions;
 
     for (ch = 0; ch < ctx->inputs[0]->channels; ch++) {
         s->sum[ch] = av_calloc(s->fft_length, sizeof(**s->sum));
