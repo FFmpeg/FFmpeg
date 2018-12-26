@@ -2077,7 +2077,6 @@ static int hls_write_header(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     int ret, i, j;
-    AVDictionary *options = NULL;
     VariantStream *vs = NULL;
 
     for (i = 0; i < hls->nb_varstreams; i++) {
@@ -2125,7 +2124,6 @@ static int hls_write_header(AVFormatContext *s)
             }
         }
     }
-fail:
 
     return ret;
 }
