@@ -72,7 +72,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     block = s->block[ch] + s->part_index * s->block_size;
     memset(block, 0, sizeof(*block) * s->fft_length);
 
-    s->fdsp->vector_fmul_scalar(block, src, s->dry_gain, FFALIGN(s->nb_samples, 4));
+    s->fdsp->vector_fmul_scalar(block, src, s->dry_gain, FFALIGN(out->nb_samples, 4));
     emms_c();
 
     av_rdft_calc(s->rdft[ch], block);
@@ -121,9 +121,7 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFrame *out = NULL;
 
-    s->nb_samples = in->nb_samples;
-
-    out = ff_get_audio_buffer(outlink, s->nb_samples);
+    out = ff_get_audio_buffer(outlink, in->nb_samples);
     if (!out) {
         av_frame_free(&in);
         return AVERROR(ENOMEM);
