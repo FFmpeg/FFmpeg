@@ -140,26 +140,28 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
     case 4:
         while (run-- > 0) {
             uint8_t *odst = (uint8_t *)dst;
+            int off1 = (ly * linesize + lx) * 4;
+            int off2 = ((y * linesize + x) + off) * 4;
 
             if (y < 1 || y >= avctx->height ||
                 (y == 1 && x == 0))
                 return AVERROR_INVALIDDATA;
 
             if (x == 0) {
-                z = backstep;
+                z = backstep * 4;
             } else {
                 z = 0;
             }
 
-            r = odst[(ly * linesize + lx) * 4] +
-                odst[((y * linesize + x) + off) * 4 + 4] -
-                odst[((y * linesize + x) + off - z) * 4];
-            g = odst[(ly * linesize + lx) * 4 + 1] +
-                odst[((y * linesize + x) + off) * 4 + 5] -
-                odst[((y * linesize + x) + off - z) * 4 + 1];
-            b = odst[(ly * linesize + lx) * 4 + 2] +
-                odst[((y * linesize + x) + off) * 4 + 6] -
-                odst[((y * linesize + x) + off - z) * 4 + 2];
+            r = odst[off1] +
+                odst[off2 + 4] -
+                odst[off2 - z ];
+            g = odst[off1 + 1] +
+                odst[off2 + 5] -
+                odst[off2 - z  + 1];
+            b = odst[off1 + 2] +
+                odst[off2 + 6] -
+                odst[off2 - z  + 2];
             clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
             dst[y * linesize + x] = clr;
             lx = x;
