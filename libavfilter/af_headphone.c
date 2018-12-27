@@ -418,12 +418,12 @@ static int convert_coeffs(AVFilterContext *ctx, AVFilterLink *inlink)
 
         av_fft_end(s->fft[0]);
         av_fft_end(s->fft[1]);
-        s->fft[0] = av_fft_init(log2(s->n_fft), 0);
-        s->fft[1] = av_fft_init(log2(s->n_fft), 0);
+        s->fft[0] = av_fft_init(av_log2(s->n_fft), 0);
+        s->fft[1] = av_fft_init(av_log2(s->n_fft), 0);
         av_fft_end(s->ifft[0]);
         av_fft_end(s->ifft[1]);
-        s->ifft[0] = av_fft_init(log2(s->n_fft), 1);
-        s->ifft[1] = av_fft_init(log2(s->n_fft), 1);
+        s->ifft[0] = av_fft_init(av_log2(s->n_fft), 1);
+        s->ifft[1] = av_fft_init(av_log2(s->n_fft), 1);
 
         if (!s->fft[0] || !s->fft[1] || !s->ifft[0] || !s->ifft[1]) {
             av_log(ctx, AV_LOG_ERROR, "Unable to create FFT contexts of size %d.\n", s->n_fft);
