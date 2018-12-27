@@ -60,12 +60,9 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 {
     AudioFIRContext *s = ctx->priv;
     const float *src = (const float *)s->in[0]->extended_data[ch];
-    int index1 = (s->index + 1) % 3;
-    int index2 = (s->index + 2) % 3;
     float *sum = s->sum[ch];
     AVFrame *out = arg;
-    float *block;
-    float *dst;
+    float *block, *dst, *ptr;
     int n, i, j;
 
     memset(sum, 0, sizeof(*sum) * s->fft_length);
@@ -96,22 +93,17 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     sum[1] = sum[2 * s->part_size];
     av_rdft_calc(s->irdft[ch], sum);
 
-    dst = (float *)s->buffer->extended_data[ch] + index1 * s->part_size;
+    dst = (float *)s->buffer->extended_data[ch];
     for (n = 0; n < s->part_size; n++) {
         dst[n] += sum[n];
     }
 
-    dst = (float *)s->buffer->extended_data[ch] + index2 * s->part_size;
+    ptr = (float *)out->extended_data[ch];
+    s->fdsp->vector_fmul_scalar(ptr, dst, s->wet_gain, FFALIGN(out->nb_samples, 4));
+    emms_c();
 
+    dst = (float *)s->buffer->extended_data[ch];
     memcpy(dst, sum + s->part_size, s->part_size * sizeof(*dst));
-
-    dst = (float *)s->buffer->extended_data[ch] + s->index * s->part_size;
-
-    if (out) {
-        float *ptr = (float *)out->extended_data[ch];
-        s->fdsp->vector_fmul_scalar(ptr, dst, s->wet_gain, FFALIGN(out->nb_samples, 4));
-        emms_c();
-    }
 
     return 0;
 }
@@ -137,10 +129,6 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)
         s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
-
-    s->index++;
-    if (s->index == 3)
-        s->index = 0;
 
     av_frame_free(&in);
     s->in[0] = NULL;
@@ -329,7 +317,7 @@ static int convert_coeffs(AVFilterContext *ctx)
             return AVERROR(ENOMEM);
     }
 
-    s->buffer = ff_get_audio_buffer(ctx->inputs[0], s->part_size * 3);
+    s->buffer = ff_get_audio_buffer(ctx->inputs[0], s->part_size);
     if (!s->buffer)
         return AVERROR(ENOMEM);
 

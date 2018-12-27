@@ -72,7 +72,6 @@ typedef struct AudioFIRContext {
     AVFrame *buffer;
     AVFrame *video;
     int64_t pts;
-    int index;
 
     AVFloatDSPContext *fdsp;
     void (*fcmul_add)(float *sum, const float *t, const float *c,
