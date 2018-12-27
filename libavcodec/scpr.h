@@ -89,12 +89,12 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
     uint32_t lx = *plx,
              ly = *ply;
 
+    if (y >= avctx->height)
+        return AVERROR_INVALIDDATA;
+
     switch (ptype) {
     case 0:
         while (run-- > 0) {
-            if (y >= avctx->height)
-                return AVERROR_INVALIDDATA;
-
             dst[y * linesize + x] = clr;
             lx = x;
             ly = y;
@@ -102,14 +102,13 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
             if (x >= avctx->width) {
                 x = 0;
                 (y)++;
+                if (y >= avctx->height && run)
+                    return AVERROR_INVALIDDATA;
             }
         }
         break;
     case 1:
         while (run-- > 0) {
-            if (y >= avctx->height)
-                return AVERROR_INVALIDDATA;
-
             dst[y * linesize + x] = dst[ly * linesize + lx];
             lx = x;
             ly = y;
@@ -117,15 +116,17 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
             if (x >= avctx->width) {
                 x = 0;
                 (y)++;
+                if (y >= avctx->height && run)
+                    return AVERROR_INVALIDDATA;
             }
         }
         clr = dst[ly * linesize + lx];
         break;
     case 2:
-        while (run-- > 0) {
-            if (y < 1 || y >= avctx->height)
-                return AVERROR_INVALIDDATA;
+        if (y < 1)
+            return AVERROR_INVALIDDATA;
 
+        while (run-- > 0) {
             clr = dst[y * linesize + x + off + 1];
             dst[y * linesize + x] = clr;
             lx = x;
@@ -134,18 +135,19 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
             if (x >= avctx->width) {
                 x = 0;
                 (y)++;
+                if (y >= avctx->height && run)
+                    return AVERROR_INVALIDDATA;
             }
         }
         break;
     case 4:
+        if (y < 1 || (y == 1 && x == 0))
+            return AVERROR_INVALIDDATA;
+
         while (run-- > 0) {
             uint8_t *odst = (uint8_t *)dst;
             int off1 = (ly * linesize + lx) * 4;
             int off2 = ((y * linesize + x) + off) * 4;
-
-            if (y < 1 || y >= avctx->height ||
-                (y == 1 && x == 0))
-                return AVERROR_INVALIDDATA;
 
             if (x == 0) {
                 z = backstep * 4;
@@ -170,15 +172,16 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
             if (x >= avctx->width) {
                 x = 0;
                 (y)++;
+                if (y >= avctx->height && run)
+                    return AVERROR_INVALIDDATA;
             }
         }
         break;
     case 5:
-        while (run-- > 0) {
-            if (y < 1 || y >= avctx->height ||
-                (y == 1 && x == 0))
-                return AVERROR_INVALIDDATA;
+        if (y < 1 || (y == 1 && x == 0))
+            return AVERROR_INVALIDDATA;
 
+        while (run-- > 0) {
             if (x == 0) {
                 z = backstep;
             } else {
@@ -193,6 +196,8 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
             if (x >= avctx->width) {
                 x = 0;
                 (y)++;
+                if (y >= avctx->height && run)
+                    return AVERROR_INVALIDDATA;
             }
         }
         break;
