@@ -78,58 +78,62 @@ typedef struct SCPRContext {
 } SCPRContext;
 
 static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
-                        int *x, int *y, uint32_t clr, uint32_t *dst,
-                        int linesize, uint32_t *lx, uint32_t *ly,
+                        int *px, int *py, uint32_t clr, uint32_t *dst,
+                        int linesize, uint32_t *plx, uint32_t *ply,
                         uint32_t backstep, int off, int *cx, int *cx1)
 {
     uint32_t r, g, b;
     int z;
+    int x = *px,
+        y = *py;
+    uint32_t lx = *plx,
+             ly = *ply;
 
     switch (ptype) {
     case 0:
         while (run-- > 0) {
-            if (*y >= avctx->height)
+            if (y >= avctx->height)
                 return AVERROR_INVALIDDATA;
 
-            dst[*y * linesize + *x] = clr;
-            *lx = *x;
-            *ly = *y;
-            (*x)++;
-            if (*x >= avctx->width) {
-                *x = 0;
-                (*y)++;
+            dst[y * linesize + x] = clr;
+            lx = x;
+            ly = y;
+            (x)++;
+            if (x >= avctx->width) {
+                x = 0;
+                (y)++;
             }
         }
         break;
     case 1:
         while (run-- > 0) {
-            if (*y >= avctx->height)
+            if (y >= avctx->height)
                 return AVERROR_INVALIDDATA;
 
-            dst[*y * linesize + *x] = dst[*ly * linesize + *lx];
-            *lx = *x;
-            *ly = *y;
-            (*x)++;
-            if (*x >= avctx->width) {
-                *x = 0;
-                (*y)++;
+            dst[y * linesize + x] = dst[ly * linesize + lx];
+            lx = x;
+            ly = y;
+            (x)++;
+            if (x >= avctx->width) {
+                x = 0;
+                (y)++;
             }
         }
-        clr = dst[*ly * linesize + *lx];
+        clr = dst[ly * linesize + lx];
         break;
     case 2:
         while (run-- > 0) {
-            if (*y < 1 || *y >= avctx->height)
+            if (y < 1 || y >= avctx->height)
                 return AVERROR_INVALIDDATA;
 
-            clr = dst[*y * linesize + *x + off + 1];
-            dst[*y * linesize + *x] = clr;
-            *lx = *x;
-            *ly = *y;
-            (*x)++;
-            if (*x >= avctx->width) {
-                *x = 0;
-                (*y)++;
+            clr = dst[y * linesize + x + off + 1];
+            dst[y * linesize + x] = clr;
+            lx = x;
+            ly = y;
+            (x)++;
+            if (x >= avctx->width) {
+                x = 0;
+                (y)++;
             }
         }
         break;
@@ -137,60 +141,65 @@ static int decode_run_i(AVCodecContext *avctx, uint32_t ptype, int run,
         while (run-- > 0) {
             uint8_t *odst = (uint8_t *)dst;
 
-            if (*y < 1 || *y >= avctx->height ||
-                (*y == 1 && *x == 0))
+            if (y < 1 || y >= avctx->height ||
+                (y == 1 && x == 0))
                 return AVERROR_INVALIDDATA;
 
-            if (*x == 0) {
+            if (x == 0) {
                 z = backstep;
             } else {
                 z = 0;
             }
 
-            r = odst[(*ly * linesize + *lx) * 4] +
-                odst[((*y * linesize + *x) + off) * 4 + 4] -
-                odst[((*y * linesize + *x) + off - z) * 4];
-            g = odst[(*ly * linesize + *lx) * 4 + 1] +
-                odst[((*y * linesize + *x) + off) * 4 + 5] -
-                odst[((*y * linesize + *x) + off - z) * 4 + 1];
-            b = odst[(*ly * linesize + *lx) * 4 + 2] +
-                odst[((*y * linesize + *x) + off) * 4 + 6] -
-                odst[((*y * linesize + *x) + off - z) * 4 + 2];
+            r = odst[(ly * linesize + lx) * 4] +
+                odst[((y * linesize + x) + off) * 4 + 4] -
+                odst[((y * linesize + x) + off - z) * 4];
+            g = odst[(ly * linesize + lx) * 4 + 1] +
+                odst[((y * linesize + x) + off) * 4 + 5] -
+                odst[((y * linesize + x) + off - z) * 4 + 1];
+            b = odst[(ly * linesize + lx) * 4 + 2] +
+                odst[((y * linesize + x) + off) * 4 + 6] -
+                odst[((y * linesize + x) + off - z) * 4 + 2];
             clr = ((b & 0xFF) << 16) + ((g & 0xFF) << 8) + (r & 0xFF);
-            dst[*y * linesize + *x] = clr;
-            *lx = *x;
-            *ly = *y;
-            (*x)++;
-            if (*x >= avctx->width) {
-                *x = 0;
-                (*y)++;
+            dst[y * linesize + x] = clr;
+            lx = x;
+            ly = y;
+            (x)++;
+            if (x >= avctx->width) {
+                x = 0;
+                (y)++;
             }
         }
         break;
     case 5:
         while (run-- > 0) {
-            if (*y < 1 || *y >= avctx->height ||
-                (*y == 1 && *x == 0))
+            if (y < 1 || y >= avctx->height ||
+                (y == 1 && x == 0))
                 return AVERROR_INVALIDDATA;
 
-            if (*x == 0) {
+            if (x == 0) {
                 z = backstep;
             } else {
                 z = 0;
             }
 
-            clr = dst[*y * linesize + *x + off - z];
-            dst[*y * linesize + *x] = clr;
-            *lx = *x;
-            *ly = *y;
-            (*x)++;
-            if (*x >= avctx->width) {
-                *x = 0;
-                (*y)++;
+            clr = dst[y * linesize + x + off - z];
+            dst[y * linesize + x] = clr;
+            lx = x;
+            ly = y;
+            (x)++;
+            if (x >= avctx->width) {
+                x = 0;
+                (y)++;
             }
         }
         break;
     }
+
+    *px = x;
+    *py = y;
+    *plx= lx;
+    *ply= ly;
 
     if (avctx->bits_per_coded_sample == 16) {
         *cx1 = (clr & 0x3F00) >> 2;
