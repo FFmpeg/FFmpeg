@@ -72,7 +72,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     block = s->block[ch] + s->part_index * s->block_size;
     memset(block, 0, sizeof(*block) * s->fft_length);
 
-    s->fdsp->vector_fmul_scalar(block + s->part_size, src, s->dry_gain, FFALIGN(s->nb_samples, 4));
+    s->fdsp->vector_fmul_scalar(block, src, s->dry_gain, FFALIGN(s->nb_samples, 4));
     emms_c();
 
     av_rdft_calc(s->rdft[ch], block);
@@ -401,12 +401,11 @@ static int convert_coeffs(AVFilterContext *ctx)
             const float scale = 1.f / s->part_size;
             const int toffset = i * s->part_size;
             const int coffset = i * s->coeff_size;
-            const int boffset = s->part_size;
             const int remaining = s->nb_taps - (i * s->part_size);
             const int size = remaining >= s->part_size ? s->part_size : remaining;
 
             memset(block, 0, sizeof(*block) * s->fft_length);
-            memcpy(block + boffset, time + toffset, size * sizeof(*block));
+            memcpy(block, time + toffset, size * sizeof(*block));
 
             av_rdft_calc(s->rdft[0], block);
 
