@@ -153,10 +153,17 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                 case 3:
                     chmask = avio_rl32(pb);
                     break;
+                case 4:
+                    avio_skip(pb, 1);
+                    chan  |= (avio_r8(pb) & 0xF) << 8;
+                    chan  += 1;
+                    chmask = avio_rl24(pb);
+                    break;
                 case 5:
                     avio_skip(pb, 1);
                     chan  |= (avio_r8(pb) & 0xF) << 8;
-                    chmask = avio_rl24(pb);
+                    chan  += 1;
+                    chmask = avio_rl32(pb);
                     break;
                 default:
                     av_log(ctx, AV_LOG_ERROR,
