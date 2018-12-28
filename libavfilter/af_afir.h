@@ -31,6 +31,22 @@
 #include "formats.h"
 #include "internal.h"
 
+typedef struct AudioFIRSegment {
+    int nb_partitions;
+    int part_index;
+    int part_size;
+    int block_size;
+    int fft_length;
+    int coeff_size;
+
+    AVFrame *sum;
+    AVFrame *block;
+    AVFrame *buffer;
+
+    RDFTContext **rdft, **irdft;
+    FFTComplex **coeff;
+} AudioFIRSegment;
+
 typedef struct AudioFIRContext {
     const AVClass *class;
 
@@ -53,23 +69,13 @@ typedef struct AudioFIRContext {
     int eof_coeffs;
     int have_coeffs;
     int nb_taps;
-    int part_size;
-    int part_index;
-    int coeff_size;
-    int block_size;
-    int nb_partitions;
     int nb_channels;
-    int fft_length;
     int nb_coef_channels;
     int one2many;
 
-    RDFTContext **rdft, **irdft;
-    float **sum;
-    float **block;
-    FFTComplex **coeff;
+    AudioFIRSegment seg;
 
     AVFrame *in[2];
-    AVFrame *buffer;
     AVFrame *video;
     int64_t pts;
 
