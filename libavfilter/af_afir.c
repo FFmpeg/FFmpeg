@@ -593,39 +593,44 @@ static int config_output(AVFilterLink *outlink)
     return 0;
 }
 
+static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
+{
+    AudioFIRContext *s = ctx->priv;
+
+    if (seg->coeff) {
+        for (int ch = 0; ch < s->nb_coef_channels; ch++) {
+            av_freep(&seg->coeff[ch]);
+        }
+    }
+    av_freep(&seg->coeff);
+
+    if (seg->rdft) {
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            av_rdft_end(seg->rdft[ch]);
+        }
+    }
+    av_freep(&seg->rdft);
+
+    if (seg->irdft) {
+        for (int ch = 0; ch < s->nb_channels; ch++) {
+            av_rdft_end(seg->irdft[ch]);
+        }
+    }
+    av_freep(&seg->irdft);
+
+    av_frame_free(&seg->block);
+    av_frame_free(&seg->sum);
+    av_frame_free(&seg->buffer);
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
-    int ch;
 
-    if (s->seg.coeff) {
-        for (ch = 0; ch < s->nb_coef_channels; ch++) {
-            av_freep(&s->seg.coeff[ch]);
-        }
-    }
-    av_freep(&s->seg.coeff);
-
-    if (s->seg.rdft) {
-        for (ch = 0; ch < s->nb_channels; ch++) {
-            av_rdft_end(s->seg.rdft[ch]);
-        }
-    }
-    av_freep(&s->seg.rdft);
-
-    if (s->seg.irdft) {
-        for (ch = 0; ch < s->nb_channels; ch++) {
-            av_rdft_end(s->seg.irdft[ch]);
-        }
-    }
-    av_freep(&s->seg.irdft);
-
-    av_frame_free(&s->in[1]);
-
-    av_frame_free(&s->seg.block);
-    av_frame_free(&s->seg.sum);
-    av_frame_free(&s->seg.buffer);
+    uninit_segment(ctx, &s->seg);
 
     av_freep(&s->fdsp);
+    av_frame_free(&s->in[1]);
 
     for (int i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
