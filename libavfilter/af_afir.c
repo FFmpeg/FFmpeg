@@ -286,6 +286,13 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     for (n = av_log2(s->minp); (1 << n) < s->nb_taps; n++);
     N = FFMIN(n, av_log2(s->maxp));
+
+    s->seg.coeff = av_calloc(ctx->inputs[1]->channels, sizeof(*s->seg.coeff));
+    s->seg.rdft  = av_calloc(ctx->inputs[0]->channels, sizeof(*s->seg.rdft));
+    s->seg.irdft = av_calloc(ctx->inputs[0]->channels, sizeof(*s->seg.irdft));
+    if (!s->seg.coeff || !s->seg.rdft || !s->seg.irdft)
+        return AVERROR(ENOMEM);
+
     s->seg.fft_length = (1 << (N + 1)) + 1;
     s->seg.part_size = 1 << (N - 1);
     s->seg.block_size = FFALIGN(s->seg.fft_length, 32);
@@ -569,12 +576,6 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base   = ctx->inputs[0]->time_base;
     outlink->channel_layout = ctx->inputs[0]->channel_layout;
     outlink->channels = ctx->inputs[0]->channels;
-
-    s->seg.coeff = av_calloc(ctx->inputs[1]->channels, sizeof(*s->seg.coeff));
-    s->seg.rdft  = av_calloc(outlink->channels, sizeof(*s->seg.rdft));
-    s->seg.irdft = av_calloc(outlink->channels, sizeof(*s->seg.irdft));
-    if (!s->seg.coeff || !s->seg.rdft || !s->seg.irdft)
-        return AVERROR(ENOMEM);
 
     s->nb_channels = outlink->channels;
     s->nb_coef_channels = ctx->inputs[1]->channels;
