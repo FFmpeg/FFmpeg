@@ -87,9 +87,9 @@ read_header:
     if (dqt_offs) {
         init_get_bits(&s->gb, buf_ptr+dqt_offs, (buf_end - (buf_ptr+dqt_offs))*8);
         s->start_code = DQT;
-        if (ff_mjpeg_decode_dqt(s) < 0 &&
-            (avctx->err_recognition & AV_EF_EXPLODE))
-            return AVERROR_INVALIDDATA;
+        ret = ff_mjpeg_decode_dqt(s);
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
     }
 
     dht_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "dht is %d and size is %d\n");
@@ -105,8 +105,8 @@ read_header:
     if (sof_offs) {
         init_get_bits(&s->gb, buf_ptr+sof_offs, (buf_end - (buf_ptr+sof_offs))*8);
         s->start_code = SOF0;
-        if (ff_mjpeg_decode_sof(s) < 0)
-            return -1;
+        if ((ret = ff_mjpeg_decode_sof(s)) < 0)
+            return ret;
     }
 
     sos_offs = read_offs(avctx, &hgb, buf_end - buf_ptr, "sos is %d and size is %d\n");
@@ -118,9 +118,9 @@ read_header:
                       8 * FFMIN(field_size, buf_end - buf_ptr - sos_offs));
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
-        if (ff_mjpeg_decode_sos(s, NULL, 0, NULL) < 0 &&
-            (avctx->err_recognition & AV_EF_EXPLODE))
-            return AVERROR_INVALIDDATA;
+        ret = ff_mjpeg_decode_sos(s, NULL, 0, NULL);
+        if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
+            return ret;
     }
 
     if (s->interlaced) {
