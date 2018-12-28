@@ -104,7 +104,7 @@ int ff_v4l2_m2m_codec_init(AVCodecContext *avctx);
 int ff_v4l2_m2m_codec_end(AVCodecContext *avctx);
 
 /**
- * Reinitializes the V4L2m2mContext when the driver cant continue processing
+ * Reinitializes the V4L2m2mContext when the driver cannot continue processing
  * with the capture parameters.
  *
  * @param[in] ctx The V4L2m2mContext instantiated by the encoder/decoder.
@@ -114,7 +114,7 @@ int ff_v4l2_m2m_codec_end(AVCodecContext *avctx);
 int ff_v4l2_m2m_codec_reinit(V4L2m2mContext *ctx);
 
 /**
- * Reinitializes the V4L2m2mContext when the driver cant continue processing
+ * Reinitializes the V4L2m2mContext when the driver cannot continue processing
  * with the  any of the current V4L2Contexts (ie, changes in output and capture).
  *
  * @param[in] ctx The V4L2m2mContext instantiated by the encoder/decoder.
