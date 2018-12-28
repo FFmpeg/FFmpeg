@@ -59,42 +59,43 @@ static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t le
 static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 {
     AudioFIRContext *s = ctx->priv;
+    AudioFIRSegment *seg = &s->seg;
     const float *src = (const float *)s->in[0]->extended_data[ch];
-    float *sum = (float *)s->seg.sum->extended_data[ch];
+    float *sum = (float *)seg->sum->extended_data[ch];
     AVFrame *out = arg;
     float *block, *dst, *ptr;
     int n, i, j;
 
-    memset(sum, 0, sizeof(*sum) * s->seg.fft_length);
-    block = (float *)s->seg.block->extended_data[ch] + s->seg.part_index * s->seg.block_size;
-    memset(block, 0, sizeof(*block) * s->seg.fft_length);
+    memset(sum, 0, sizeof(*sum) * seg->fft_length);
+    block = (float *)seg->block->extended_data[ch] + seg->part_index * seg->block_size;
+    memset(block, 0, sizeof(*block) * seg->fft_length);
 
     s->fdsp->vector_fmul_scalar(block, src, s->dry_gain, FFALIGN(out->nb_samples, 4));
     emms_c();
 
-    av_rdft_calc(s->seg.rdft[ch], block);
-    block[2 * s->seg.part_size] = block[1];
+    av_rdft_calc(seg->rdft[ch], block);
+    block[2 * seg->part_size] = block[1];
     block[1] = 0;
 
-    j = s->seg.part_index;
+    j = seg->part_index;
 
-    for (i = 0; i < s->seg.nb_partitions; i++) {
-        const int coffset = i * s->seg.coeff_size;
-        const float *block = (const float *)s->seg.block->extended_data[ch] + j * s->seg.block_size;
-        const FFTComplex *coeff = s->seg.coeff[ch * !s->one2many] + coffset;
+    for (i = 0; i < seg->nb_partitions; i++) {
+        const int coffset = i * seg->coeff_size;
+        const float *block = (const float *)seg->block->extended_data[ch] + j * seg->block_size;
+        const FFTComplex *coeff = seg->coeff[ch * !s->one2many] + coffset;
 
-        s->fcmul_add(sum, block, (const float *)coeff, s->seg.part_size);
+        s->fcmul_add(sum, block, (const float *)coeff, seg->part_size);
 
         if (j == 0)
-            j = s->seg.nb_partitions;
+            j = seg->nb_partitions;
         j--;
     }
 
-    sum[1] = sum[2 * s->seg.part_size];
-    av_rdft_calc(s->seg.irdft[ch], sum);
+    sum[1] = sum[2 * seg->part_size];
+    av_rdft_calc(seg->irdft[ch], sum);
 
-    dst = (float *)s->seg.buffer->extended_data[ch];
-    for (n = 0; n < s->seg.part_size; n++) {
+    dst = (float *)seg->buffer->extended_data[ch];
+    for (n = 0; n < seg->part_size; n++) {
         dst[n] += sum[n];
     }
 
@@ -102,8 +103,8 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     s->fdsp->vector_fmul_scalar(ptr, dst, s->wet_gain, FFALIGN(out->nb_samples, 4));
     emms_c();
 
-    dst = (float *)s->seg.buffer->extended_data[ch];
-    memcpy(dst, sum + s->seg.part_size, s->seg.part_size * sizeof(*dst));
+    dst = (float *)seg->buffer->extended_data[ch];
+    memcpy(dst, sum + seg->part_size, seg->part_size * sizeof(*dst));
 
     return 0;
 }
