@@ -259,7 +259,7 @@ static int read_probe_openmpt(AVProbeData *p)
                 } else {
                     /* The file extension is unknown and we have very few data
                      * bytes available. libopenmpt cannot decide anything here,
-                     * and returning any score > 0 would result in successfull
+                     * and returning any score > 0 would result in successful
                      * probing of random data.
                      */
                     return 0;
