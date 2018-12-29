@@ -74,7 +74,8 @@ typedef struct AudioFIRContext {
     int nb_coef_channels;
     int one2many;
 
-    AudioFIRSegment seg;
+    AudioFIRSegment seg[1024];
+    int nb_segments;
 
     AVFrame *in[2];
     AVFrame *video;
