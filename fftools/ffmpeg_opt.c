@@ -760,6 +760,13 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         MATCH_PER_STREAM_OPT(discard, str, discard_str, ic, st);
         ist->user_set_discard = AVDISCARD_NONE;
+
+        if ((o->video_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) ||
+            (o->audio_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) ||
+            (o->subtitle_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE) ||
+            (o->data_disable && ist->st->codecpar->codec_type == AVMEDIA_TYPE_DATA))
+                ist->user_set_discard = AVDISCARD_ALL;
+
         if (discard_str && av_opt_eval_int(&cc, discard_opt, discard_str, &ist->user_set_discard) < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error parsing discard %s.\n",
                     discard_str);
