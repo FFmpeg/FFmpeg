@@ -387,6 +387,7 @@ static int convert_coeffs(AVFilterContext *ctx)
 
     for (ch = 0; ch < ctx->inputs[1]->channels; ch++) {
         float *time = (float *)s->in[1]->extended_data[!s->one2many * ch];
+        int toffset = 0;
 
         for (i = FFMAX(1, s->length * s->nb_taps); i < s->nb_taps; i++)
             time[i] = 0;
@@ -402,9 +403,8 @@ static int convert_coeffs(AVFilterContext *ctx)
 
             for (i = 0; i < seg->nb_partitions; i++) {
                 const float scale = 1.f / seg->part_size;
-                const int toffset = i * seg->part_size;
                 const int coffset = i * seg->coeff_size;
-                const int remaining = s->nb_taps - (i * seg->part_size);
+                const int remaining = s->nb_taps - toffset;
                 const int size = remaining >= seg->part_size ? seg->part_size : remaining;
 
                 memset(block, 0, sizeof(*block) * seg->fft_length);
@@ -420,6 +420,8 @@ static int convert_coeffs(AVFilterContext *ctx)
                 }
                 coeff[coffset + seg->part_size].re = block[1] * scale;
                 coeff[coffset + seg->part_size].im = 0;
+
+                toffset += size;
             }
 
             av_log(ctx, AV_LOG_DEBUG, "nb_partitions: %d\n", seg->nb_partitions);
