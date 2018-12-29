@@ -67,7 +67,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     int n, i, j;
 
     memset(sum, 0, sizeof(*sum) * seg->fft_length);
-    block = (float *)seg->block->extended_data[ch] + seg->part_index * seg->block_size;
+    block = (float *)seg->block->extended_data[ch] + seg->part_index[ch] * seg->block_size;
     memset(block, 0, sizeof(*block) * seg->fft_length);
 
     s->fdsp->vector_fmul_scalar(block, src, s->dry_gain, FFALIGN(out->nb_samples, 4));
@@ -77,7 +77,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     block[2 * seg->part_size] = block[1];
     block[1] = 0;
 
-    j = seg->part_index;
+    j = seg->part_index[ch];
 
     for (i = 0; i < seg->nb_partitions; i++) {
         const int coffset = i * seg->coeff_size;
@@ -106,6 +106,8 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     dst = (float *)seg->buffer->extended_data[ch];
     memcpy(dst, sum + seg->part_size, seg->part_size * sizeof(*dst));
 
+    seg->part_index[ch] = (seg->part_index[ch] + 1) % seg->nb_partitions;
+
     return 0;
 }
 
@@ -124,12 +126,6 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
         s->pts = in->pts;
     s->in[0] = in;
     ctx->internal->execute(ctx, fir_channel, out, NULL, outlink->channels);
-
-    for (int segment = 0; segment < s->nb_segments; segment++) {
-        AudioFIRSegment *seg = &s->seg[segment];
-
-        seg->part_index = (seg->part_index + 1) % seg->nb_partitions;
-    }
 
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)
@@ -299,6 +295,10 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg, int nb_parti
         if (!seg->rdft[ch] || !seg->irdft[ch])
             return AVERROR(ENOMEM);
     }
+
+    seg->part_index = av_calloc(ctx->inputs[0]->channels, sizeof(*seg->part_index));
+    if (!seg->part_index)
+        return AVERROR(ENOMEM);
 
     seg->sum    = ff_get_audio_buffer(ctx->inputs[0], seg->fft_length);
     seg->block  = ff_get_audio_buffer(ctx->inputs[0], seg->nb_partitions * seg->block_size);
@@ -621,6 +621,8 @@ static void uninit_segment(AVFilterContext *ctx, AudioFIRSegment *seg)
         }
     }
     av_freep(&seg->irdft);
+
+    av_freep(&seg->part_index);
 
     av_frame_free(&seg->block);
     av_frame_free(&seg->sum);

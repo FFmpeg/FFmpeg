@@ -33,12 +33,13 @@
 
 typedef struct AudioFIRSegment {
     int nb_partitions;
-    int part_index;
     int part_size;
     int block_size;
     int fft_length;
     int coeff_size;
     int segment_size;
+
+    int *part_index;
 
     AVFrame *sum;
     AVFrame *block;
