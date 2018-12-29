@@ -38,13 +38,14 @@ typedef struct AudioFIRSegment {
     int block_size;
     int fft_length;
     int coeff_size;
+    int segment_size;
 
     AVFrame *sum;
     AVFrame *block;
     AVFrame *buffer;
+    AVFrame *coeff;
 
     RDFTContext **rdft, **irdft;
-    FFTComplex **coeff;
 } AudioFIRSegment;
 
 typedef struct AudioFIRContext {
