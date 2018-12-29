@@ -293,10 +293,17 @@ static void init_input_filter(FilterGraph *fg, AVFilterInOut *in)
             exit_program(1);
         }
         ist = input_streams[input_files[file_idx]->ist_index + st->index];
+        if (ist->user_set_discard == AVDISCARD_ALL) {
+            av_log(NULL, AV_LOG_FATAL, "Stream specifier '%s' in filtergraph description %s "
+                   "matches a disabled input stream.\n", p, fg->graph_desc);
+            exit_program(1);
+        }
     } else {
         /* find the first unused stream of corresponding type */
         for (i = 0; i < nb_input_streams; i++) {
             ist = input_streams[i];
+            if (ist->user_set_discard == AVDISCARD_ALL)
+                continue;
             if (ist->dec_ctx->codec_type == type && ist->discard)
                 break;
         }
