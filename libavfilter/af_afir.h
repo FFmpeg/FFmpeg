@@ -37,14 +37,18 @@ typedef struct AudioFIRSegment {
     int block_size;
     int fft_length;
     int coeff_size;
-    int segment_size;
+    int input_size;
+    int input_offset;
 
+    int *output_offset;
     int *part_index;
 
     AVFrame *sum;
     AVFrame *block;
     AVFrame *buffer;
     AVFrame *coeff;
+    AVFrame *input;
+    AVFrame *output;
 
     RDFTContext **rdft, **irdft;
 } AudioFIRSegment;
@@ -80,6 +84,7 @@ typedef struct AudioFIRContext {
 
     AVFrame *in[2];
     AVFrame *video;
+    int min_part_size;
     int64_t pts;
 
     AVFloatDSPContext *fdsp;
