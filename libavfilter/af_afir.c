@@ -326,7 +326,7 @@ static int init_segment(AVFilterContext *ctx, AudioFIRSegment *seg,
     if (!seg->rdft || !seg->irdft)
         return AVERROR(ENOMEM);
 
-    seg->fft_length    = part_size * 4 + 1;
+    seg->fft_length    = part_size * 2 + 1;
     seg->part_size     = part_size;
     seg->block_size    = FFALIGN(seg->fft_length, 32);
     seg->coeff_size    = FFALIGN(seg->part_size + 1, 32);
