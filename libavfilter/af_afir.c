@@ -76,7 +76,6 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
         seg->output_offset[ch] += s->min_part_size;
         if (seg->output_offset[ch] == seg->part_size) {
             seg->output_offset[ch] = 0;
-            memset(dst, 0, sizeof(*dst) * seg->part_size);
         } else {
             memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
@@ -119,9 +118,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
             buf[n] += sum[n];
         }
 
-        for (n = 0; n < seg->part_size; n++) {
-            dst[n] += buf[n];
-        }
+        memcpy(dst, buf, seg->part_size * sizeof(*dst));
 
         buf = (float *)seg->buffer->extended_data[ch];
         memcpy(buf, sum + seg->part_size, seg->part_size * sizeof(*buf));
