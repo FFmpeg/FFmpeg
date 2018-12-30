@@ -2335,6 +2335,17 @@ This encoder requires the presence of the libxavs2 headers and library
 during configuration. You need to explicitly configure the build with
 @option{--enable-libxavs2}.
 
+The following standard libavcodec options are used:
+@itemize
+@item
+@option{b} / @option{bit_rate}
+@item
+@option{g} / @option{gop_size}
+@item
+@option{bf} / @option{max_b_frames}
+@end itemize
+
+The encoder also has its own specific options:
 @subsection Options
 
 @table @option
@@ -2369,7 +2380,7 @@ by ":".
 For example to specify libxavs2 encoding options with @option{-xavs2-params}:
 
 @example
-ffmpeg -i input -c:v libxavs2 -xavs2-params preset_level=5 output.avs2
+ffmpeg -i input -c:v libxavs2 -xavs2-params RdoqLevel=0 output.avs2
 @end example
 @end table
 
