@@ -358,7 +358,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     s->in = in;
     if (!s->is_rgbashift) {
-        av_image_copy_plane(out->data[0] + out->linesize[0],
+        av_image_copy_plane(out->data[0],
                             out->linesize[0],
                             in->data[0], in->linesize[0],
                             s->linesize[0], s->height[0]);
