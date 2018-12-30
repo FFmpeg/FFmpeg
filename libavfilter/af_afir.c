@@ -56,7 +56,7 @@ static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t le
     sum[2 * n] += t[2 * n] * c[2 * n];
 }
 
-static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
+static int fir_channel(AVFilterContext *ctx, void *arg, int ch)
 {
     AudioFIRContext *s = ctx->priv;
     const float *in = (const float *)s->in[0]->extended_data[ch];
@@ -138,6 +138,19 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     return 0;
 }
 
+static int fir_channels(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    AVFrame *out = arg;
+    const int start = (out->channels * jobnr) / nb_jobs;
+    const int end = (out->channels * (jobnr+1)) / nb_jobs;
+
+    for (int ch = start; ch < end; ch++) {
+        fir_channel(ctx, out, ch);
+    }
+
+    return 0;
+}
+
 static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -152,7 +165,8 @@ static int fir_frame(AudioFIRContext *s, AVFrame *in, AVFilterLink *outlink)
     if (s->pts == AV_NOPTS_VALUE)
         s->pts = in->pts;
     s->in[0] = in;
-    ctx->internal->execute(ctx, fir_channel, out, NULL, outlink->channels);
+    ctx->internal->execute(ctx, fir_channels, out, NULL, FFMIN(outlink->channels,
+                                                               ff_filter_get_nb_threads(ctx)));
 
     out->pts = s->pts;
     if (s->pts != AV_NOPTS_VALUE)
