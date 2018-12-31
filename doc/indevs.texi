@@ -374,7 +374,7 @@ Defaults to @option{false}.
 @item timestamp_align
 Capture start time alignment in seconds. If set to nonzero, input frames are
 dropped till the system timestamp aligns with configured value.
-Alignment difference of upto one frame duration is tolerated.
+Alignment difference of up to one frame duration is tolerated.
 This is useful for maintaining input synchronization across N different
 hardware devices deployed for 'N-way' redundancy. The system time of different
 hardware devices should be synchronized with protocols such as NTP or PTP,
