@@ -56,12 +56,12 @@ static void fcmul_add_c(float *sum, const float *t, const float *c, ptrdiff_t le
     sum[2 * n] += t[2 * n] * c[2 * n];
 }
 
-static int fir_channel(AVFilterContext *ctx, void *arg, int ch)
+static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
 {
     AudioFIRContext *s = ctx->priv;
-    const float *in = (const float *)s->in[0]->extended_data[ch];
-    AVFrame *out = arg;
-    float *block, *buf, *ptr = (float *)out->extended_data[ch];
+    const float *in = (const float *)s->in[0]->extended_data[ch] + offset;
+    float *block, *buf, *ptr = (float *)out->extended_data[ch] + offset;
+    const int nb_samples = FFMIN(s->min_part_size, out->nb_samples - offset);
     int n, i, j;
 
     for (int segment = 0; segment < s->nb_segments; segment++) {
@@ -70,7 +70,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch)
         float *dst = (float *)seg->output->extended_data[ch];
         float *sum = (float *)seg->sum->extended_data[ch];
 
-        s->fdsp->vector_fmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(out->nb_samples, 4));
+        s->fdsp->vector_fmul_scalar(src + seg->input_offset, in, s->dry_gain, FFALIGN(nb_samples, 4));
         emms_c();
 
         seg->output_offset[ch] += s->min_part_size;
@@ -80,7 +80,7 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch)
             memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
             dst += seg->output_offset[ch];
-            for (n = 0; n < out->nb_samples; n++) {
+            for (n = 0; n < nb_samples; n++) {
                 ptr[n] += dst[n];
             }
             continue;
@@ -127,13 +127,24 @@ static int fir_channel(AVFilterContext *ctx, void *arg, int ch)
 
         memmove(src, src + s->min_part_size, (seg->input_size - s->min_part_size) * sizeof(*src));
 
-        for (n = 0; n < out->nb_samples; n++) {
+        for (n = 0; n < nb_samples; n++) {
             ptr[n] += dst[n];
         }
     }
 
-    s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(out->nb_samples, 4));
+    s->fdsp->vector_fmul_scalar(ptr, ptr, s->wet_gain, FFALIGN(nb_samples, 4));
     emms_c();
+
+    return 0;
+}
+
+static int fir_channel(AVFilterContext *ctx, AVFrame *out, int ch)
+{
+    AudioFIRContext *s = ctx->priv;
+
+    for (int offset = 0; offset < out->nb_samples; offset += s->min_part_size) {
+        fir_quantum(ctx, out, ch, offset);
+    }
 
     return 0;
 }
@@ -525,8 +536,8 @@ static int activate(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    int ret, status, available, wanted;
     AVFrame *in = NULL;
-    int ret, status;
     int64_t pts;
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
@@ -557,7 +568,9 @@ static int activate(AVFilterContext *ctx)
             return ret;
     }
 
-    ret = ff_inlink_consume_samples(ctx->inputs[0], s->min_part_size, s->min_part_size, &in);
+    available = ff_inlink_queued_samples(ctx->inputs[0]);
+    wanted = FFMAX(s->min_part_size, (available / s->min_part_size) * s->min_part_size);
+    ret = ff_inlink_consume_samples(ctx->inputs[0], wanted, wanted, &in);
     if (ret > 0)
         ret = fir_frame(s, in, outlink);
 
