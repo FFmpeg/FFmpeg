@@ -452,7 +452,7 @@ static int decode_exponents(AC3DecodeContext *s,
         prevexp += dexp[i] - 2;
         if (prevexp > 24U) {
             av_log(s->avctx, AV_LOG_ERROR, "exponent %d is out-of-range\n", prevexp);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         switch (group_size) {
         case 4: dexps[j++] = prevexp;
