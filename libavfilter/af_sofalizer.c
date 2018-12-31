@@ -719,12 +719,20 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     n_samples = s->sofa.n_samples;
     ir_samples = s->sofa.ir_samples;
 
-    s->data_ir[0] = av_calloc(n_samples, sizeof(float) * s->n_conv);
-    s->data_ir[1] = av_calloc(n_samples, sizeof(float) * s->n_conv);
+    if (s->type == TIME_DOMAIN) {
+        s->data_ir[0] = av_calloc(n_samples, sizeof(float) * s->n_conv);
+        s->data_ir[1] = av_calloc(n_samples, sizeof(float) * s->n_conv);
+
+        if (!s->data_ir[0] || !s->data_ir[1]) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+    }
+
     s->delay[0] = av_calloc(s->n_conv, sizeof(int));
     s->delay[1] = av_calloc(s->n_conv, sizeof(int));
 
-    if (!s->data_ir[0] || !s->data_ir[1] || !s->delay[0] || !s->delay[1]) {
+    if (!s->delay[0] || !s->delay[1]) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
