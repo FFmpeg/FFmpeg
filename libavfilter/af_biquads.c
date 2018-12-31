@@ -63,6 +63,7 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -245,7 +246,7 @@ static int config_filter(AVFilterLink *outlink, int reset)
     AVFilterContext *ctx    = outlink->src;
     BiquadsContext *s       = ctx->priv;
     AVFilterLink *inlink    = ctx->inputs[0];
-    double A = exp(s->gain / 40 * log(10.));
+    double A = ff_exp10(s->gain / 40);
     double w0 = 2 * M_PI * s->frequency / inlink->sample_rate;
     double alpha, beta;
 
