@@ -112,7 +112,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
     av_assert0((unsigned)pkt->size <= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
     if ((unsigned)grow_by >
         INT_MAX - (pkt->size + AV_INPUT_BUFFER_PADDING_SIZE))
-        return -1;
+        return AVERROR(ENOMEM);
 
     new_size = pkt->size + grow_by + AV_INPUT_BUFFER_PADDING_SIZE;
     if (pkt->buf) {
@@ -124,7 +124,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
         } else {
             data_offset = pkt->data - pkt->buf->data;
             if (data_offset > INT_MAX - new_size)
-                return -1;
+                return AVERROR(ENOMEM);
         }
 
         if (new_size + data_offset > pkt->buf->size) {
