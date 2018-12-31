@@ -118,7 +118,7 @@ static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSCon
     return 0; \
 err: \
     av_log(avctx, AV_LOG_ERROR, "illegal "#PAR"\n"); \
-    return -1; \
+    return AVERROR_INVALIDDATA; \
 }
 
 READ_PAR_DATA(iid,    huff_offset[table_idx],    0, FFABS(ps->iid_par[e][b]) > 7 + 8 * ps->iid_quant)
