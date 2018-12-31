@@ -98,12 +98,12 @@ static const struct LumaCoefficients luma_coefficients[AVCOL_SPC_NB] = {
     [AVCOL_SPC_BT2020_NCL] = { 0.2627, 0.6780, 0.0593 },
 };
 
-static struct PrimaryCoefficients primaries_table[AVCOL_PRI_NB] = {
+static const struct PrimaryCoefficients primaries_table[AVCOL_PRI_NB] = {
     [AVCOL_PRI_BT709]  = { 0.640, 0.330, 0.300, 0.600, 0.150, 0.060 },
     [AVCOL_PRI_BT2020] = { 0.708, 0.292, 0.170, 0.797, 0.131, 0.046 },
 };
 
-static struct WhitepointCoefficients whitepoint_table[AVCOL_PRI_NB] = {
+static const struct WhitepointCoefficients whitepoint_table[AVCOL_PRI_NB] = {
     [AVCOL_PRI_BT709]  = { 0.3127, 0.3290 },
     [AVCOL_PRI_BT2020] = { 0.3127, 0.3290 },
 };
