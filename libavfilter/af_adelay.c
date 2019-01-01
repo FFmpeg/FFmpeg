@@ -141,7 +141,7 @@ static int config_input(AVFilterLink *inlink)
     p = s->delays;
     for (i = 0; i < s->nb_delays; i++) {
         ChanDelay *d = &s->chandelay[i];
-        float delay;
+        float delay, div;
         char type = 0;
         int ret;
 
@@ -152,8 +152,9 @@ static int config_input(AVFilterLink *inlink)
 
         ret = av_sscanf(arg, "%d%c", &d->delay, &type);
         if (ret != 2 || type != 'S') {
+            div = type == 's' ? 1.0 : 1000.0;
             av_sscanf(arg, "%f", &delay);
-            d->delay = delay * inlink->sample_rate / 1000.0;
+            d->delay = delay * inlink->sample_rate / div;
         }
 
         if (d->delay < 0) {

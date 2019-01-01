@@ -683,6 +683,7 @@ Set list of delays in milliseconds for each channel separated by '|'.
 Unused delays will be silently ignored. If number of given delays is
 smaller than number of channels all remaining channels will not be delayed.
 If you want to delay exact number of samples, append 'S' to number.
+If you want instead to delay in seconds, append 's' to number.
 @end table
 
 @subsection Examples
