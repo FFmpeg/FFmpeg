@@ -1165,7 +1165,7 @@ up to 60 seconds long.
 
 It can be used as component for digital crossover filters,
 room equalization, cross talk cancellation, wavefield synthesis,
-auralization, ambiophonics and ambisonics.
+auralization, ambiophonics, ambisonics and spatialization.
 
 This filter uses second stream as FIR coefficients.
 If second stream holds single channel, it will be used
