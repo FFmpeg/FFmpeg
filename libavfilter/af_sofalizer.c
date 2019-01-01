@@ -588,7 +588,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->type == TIME_DOMAIN) {
         ctx->internal->execute(ctx, sofalizer_convolute, &td, NULL, 2);
-    } else {
+    } else if (s->type == FREQUENCY_DOMAIN) {
         ctx->internal->execute(ctx, sofalizer_fast_convolute, &td, NULL, 2);
     }
     emms_c();
@@ -825,7 +825,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
     if (s->type == TIME_DOMAIN) {
         s->ringbuffer[0] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
         s->ringbuffer[1] = av_calloc(s->buffer_length, sizeof(float) * nb_input_channels);
-    } else {
+    } else if (s->type == FREQUENCY_DOMAIN) {
         /* get temporary HRTF memory for L and R channel */
         data_hrtf_l = av_malloc_array(n_fft, sizeof(*data_hrtf_l) * n_conv);
         data_hrtf_r = av_malloc_array(n_fft, sizeof(*data_hrtf_r) * n_conv);
@@ -876,7 +876,7 @@ static int load_data(AVFilterContext *ctx, int azim, int elev, float radius, int
                 s->data_ir[0][offset + j] = lir[ir_samples - 1 - j] * gain_lin;
                 s->data_ir[1][offset + j] = rir[ir_samples - 1 - j] * gain_lin;
             }
-        } else {
+        } else if (s->type == FREQUENCY_DOMAIN) {
             memset(fft_in_l, 0, n_fft * sizeof(*fft_in_l));
             memset(fft_in_r, 0, n_fft * sizeof(*fft_in_r));
 
