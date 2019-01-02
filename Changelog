@@ -15,6 +15,7 @@ version <next>:
 - hymt decoder
 - anlmdn filter
 - maskfun filter
+- hcom demuxer and decoder
 
 
 version 4.1:
