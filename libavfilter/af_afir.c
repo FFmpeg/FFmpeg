@@ -103,7 +103,7 @@ static int fir_quantum(AVFilterContext *ctx, AVFrame *out, int ch, int offset)
             const float *block = (const float *)seg->block->extended_data[ch] + i * seg->block_size;
             const FFTComplex *coeff = (const FFTComplex *)seg->coeff->extended_data[ch * !s->one2many] + coffset;
 
-            s->fcmul_add(sum, block, (const float *)coeff, seg->part_size);
+            s->afirdsp.fcmul_add(sum, block, (const float *)coeff, seg->part_size);
 
             if (j == 0)
                 j = seg->nb_partitions;
@@ -753,6 +753,14 @@ static int config_video(AVFilterLink *outlink)
     return 0;
 }
 
+void ff_afir_init(AudioFIRDSPContext *dsp)
+{
+    dsp->fcmul_add = fcmul_add_c;
+
+    if (ARCH_X86)
+        ff_afir_init_x86(dsp);
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     AudioFIRContext *s = ctx->priv;
@@ -792,14 +800,11 @@ static av_cold int init(AVFilterContext *ctx)
         }
     }
 
-    s->fcmul_add = fcmul_add_c;
-
     s->fdsp = avpriv_float_dsp_alloc(0);
     if (!s->fdsp)
         return AVERROR(ENOMEM);
 
-    if (ARCH_X86)
-        ff_afir_init_x86(s);
+    ff_afir_init(&s->afirdsp);
 
     return 0;
 }

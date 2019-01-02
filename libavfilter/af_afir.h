@@ -53,6 +53,11 @@ typedef struct AudioFIRSegment {
     RDFTContext **rdft, **irdft;
 } AudioFIRSegment;
 
+typedef struct AudioFIRDSPContext {
+    void (*fcmul_add)(float *sum, const float *t, const float *c,
+                      ptrdiff_t len);
+} AudioFIRDSPContext;
+
 typedef struct AudioFIRContext {
     const AVClass *class;
 
@@ -87,11 +92,12 @@ typedef struct AudioFIRContext {
     int min_part_size;
     int64_t pts;
 
+    AudioFIRDSPContext afirdsp;
     AVFloatDSPContext *fdsp;
-    void (*fcmul_add)(float *sum, const float *t, const float *c,
-                      ptrdiff_t len);
+
 } AudioFIRContext;
 
-void ff_afir_init_x86(AudioFIRContext *s);
+void ff_afir_init(AudioFIRDSPContext *s);
+void ff_afir_init_x86(AudioFIRDSPContext *s);
 
 #endif /* AVFILTER_AFIR_H */
