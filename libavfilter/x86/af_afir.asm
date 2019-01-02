@@ -30,7 +30,6 @@ SECTION .text
 INIT_XMM sse3
 cglobal fcmul_add, 4,4,6, sum, t, c, len
     shl       lend, 3
-    add       lend, mmsize*2
     add         tq, lenq
     add         cq, lenq
     add       sumq, lenq
@@ -57,4 +56,8 @@ ALIGN 16
     movaps    [sumq + lenq+mmsize], m3
     add       lenq, mmsize*2
     jl .loop
-    REP_RET
+    movss xm0, [tq + lenq]
+    mulss xm0, [cq + lenq]
+    addss xm0, [sumq + lenq]
+    movss [sumq + lenq], xm0
+    RET
