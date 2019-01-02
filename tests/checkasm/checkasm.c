@@ -150,6 +150,9 @@ static const struct {
     #endif
 #endif
 #if CONFIG_AVFILTER
+    #if CONFIG_AFIR_FILTER
+        { "af_afir", checkasm_check_afir },
+    #endif
     #if CONFIG_BLEND_FILTER
         { "vf_blend", checkasm_check_blend },
     #endif
