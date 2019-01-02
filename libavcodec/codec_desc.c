@@ -2943,6 +2943,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("ATRAC9 (Adaptive TRansform Acoustic Coding 9)"),
         .props     = AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_HCOM,
+        .type      = AVMEDIA_TYPE_AUDIO,
+        .name      = "hcom",
+        .long_name = NULL_IF_CONFIG_SMALL("HCOM Audio"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* subtitle codecs */
     {
