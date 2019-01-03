@@ -72,6 +72,9 @@ typedef struct FLVContext {
     int64_t *keyframe_filepositions;
     int missing_streams;
     AVRational framerate;
+    int64_t last_ts;
+    int64_t time_offset;
+    int64_t time_pos;
 } FLVContext;
 
 static int probe(AVProbeData *p, int live)
@@ -917,6 +920,18 @@ static int resync(AVFormatContext *s)
         flv->resync_buffer[j ] =
         flv->resync_buffer[j1] = avio_r8(s->pb);
 
+        if (i >= 8 && pos) {
+            uint8_t *d = flv->resync_buffer + j1 - 8;
+            if (d[0] == 'F' &&
+                d[1] == 'L' &&
+                d[2] == 'V' &&
+                d[3] < 5 && d[5] == 0) {
+                av_log(s, AV_LOG_WARNING, "Concatenated FLV detected, might fail to demux, decode and seek %"PRId64"\n", flv->last_ts);
+                flv->time_offset = flv->last_ts + 1;
+                flv->time_pos    = avio_tell(s->pb);
+            }
+        }
+
         if (i > 22) {
             unsigned lsize2 = AV_RB32(flv->resync_buffer + j1 - 4);
             if (lsize2 >= 11 && lsize2 + 8LL < FFMIN(i, RESYNC_BUFFER_SIZE)) {
@@ -1071,6 +1086,10 @@ skip:
 
         }
         av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
+
+        if (flv->time_pos <= pos) {
+            dts += flv->time_offset;
+        }
 
         if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
             ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
@@ -1282,6 +1301,10 @@ leave:
             }
         }
     }
+
+    if (ret >= 0)
+        flv->last_ts = pkt->dts;
+
     return ret;
 }
 
