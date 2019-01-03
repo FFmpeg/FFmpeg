@@ -27,7 +27,7 @@ SECTION .text
 ; void ff_fcmul_add(float *sum, const float *t, const float *c, int len)
 ;------------------------------------------------------------------------------
 
-INIT_XMM sse3
+%macro FCMUL_ADD 0
 cglobal fcmul_add, 4,4,6, sum, t, c, len
     shl       lend, 3
     add         tq, lenq
@@ -61,3 +61,9 @@ ALIGN 16
     addss xm0, [sumq + lenq]
     movss [sumq + lenq], xm0
     RET
+%endmacro
+
+INIT_XMM sse3
+FCMUL_ADD
+INIT_YMM avx
+FCMUL_ADD
