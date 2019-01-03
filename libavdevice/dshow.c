@@ -278,12 +278,12 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                     goto fail1;
                 }
                 *device_unique_name = unique_name;
+                unique_name = NULL;
                 // success, loop will end now
             }
         } else {
             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", friendly_name);
             av_log(avctx, AV_LOG_INFO, "    Alternative name \"%s\"\n", unique_name);
-            av_free(unique_name);
         }
 
 fail1:
@@ -291,7 +291,8 @@ fail1:
             IMalloc_Free(co_malloc, olestr);
         if (bind_ctx)
             IBindCtx_Release(bind_ctx);
-        av_free(friendly_name);
+        av_freep(&friendly_name);
+        av_freep(&unique_name);
         if (bag)
             IPropertyBag_Release(bag);
         IMoniker_Release(m);
@@ -941,6 +942,8 @@ dshow_add_device(AVFormatContext *avctx,
     AVStream *st;
     int ret = AVERROR(EIO);
 
+    type.pbFormat = NULL;
+
     st = avformat_new_stream(avctx, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);
@@ -989,7 +992,8 @@ dshow_add_device(AVFormatContext *avctx,
             if (par->codec_id == AV_CODEC_ID_NONE) {
                 av_log(avctx, AV_LOG_ERROR, "Unknown compression type. "
                                  "Please report type 0x%X.\n", (int) bih->biCompression);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto error;
             }
             par->bits_per_coded_sample = bih->biBitCount;
         } else {
@@ -1030,6 +1034,8 @@ dshow_add_device(AVFormatContext *avctx,
     ret = 0;
 
 error:
+    if (type.pbFormat)
+        CoTaskMemFree(type.pbFormat);
     return ret;
 }
 

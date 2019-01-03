@@ -249,8 +249,20 @@ libAVPin_Setup(libAVPin *this, libAVFilter *filter)
 
     return 1;
 }
+
+static void
+libAVPin_Free(libAVPin *this)
+{
+    if (!this)
+        return;
+    av_freep(&this->imemvtbl);
+    if (this->type.pbFormat) {
+        CoTaskMemFree(this->type.pbFormat);
+        this->type.pbFormat = NULL;
+    }
+}
 DECLARE_CREATE(libAVPin, libAVPin_Setup(this, filter), libAVFilter *filter)
-DECLARE_DESTROY(libAVPin, nothing)
+DECLARE_DESTROY(libAVPin, libAVPin_Free)
 
 /*****************************************************************************
  * libAVMemInputPin
