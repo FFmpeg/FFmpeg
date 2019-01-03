@@ -177,7 +177,7 @@ static av_cold int read_header_vs(AVFormatContext *s)
     char dummy;
     const VSVideoInfo *info;
     struct VSState *vss_state;
-    int err;
+    int err = 0;
 
     vss_state = av_mallocz(sizeof(*vss_state));
     if (!vss_state) {
