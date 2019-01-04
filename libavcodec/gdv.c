@@ -470,12 +470,10 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
 
     if (!gdv->scale_v && !gdv->scale_h) {
         int sidx = PREAMBLE_SIZE, didx = 0;
-        int y, x;
+        int y;
 
         for (y = 0; y < avctx->height; y++) {
-            for (x = 0; x < avctx->width; x++) {
-                dst[x+didx] = gdv->frame[x+sidx];
-            }
+            memcpy(dst + didx, gdv->frame + sidx, avctx->width);
             sidx += avctx->width;
             didx += frame->linesize[0];
         }
