@@ -6389,6 +6389,8 @@ static int mov_init(AVFormatContext *s)
             }
             if (mov->video_track_timescale) {
                 track->timescale = mov->video_track_timescale;
+                if (mov->mode == MODE_ISM && mov->video_track_timescale != 10000000)
+                    av_log(s, AV_LOG_WARNING, "Warning: some tools, like mp4split, assume a timescale of 10000000 for ISMV.\n");
             } else {
                 track->timescale = st->time_base.den;
                 while(track->timescale < 10000)
@@ -6486,10 +6488,14 @@ static int mov_init(AVFormatContext *s)
         }
         if (!track->height)
             track->height = st->codecpar->height;
-        /* The ism specific timescale isn't mandatory, but is assumed by
-         * some tools, such as mp4split. */
-        if (mov->mode == MODE_ISM)
-            track->timescale = 10000000;
+        /* The Protected Interoperable File Format (PIFF) standard, used by ISMV recommends but
+           doesn't mandate a track timescale of 10,000,000. The muxer allows a custom timescale
+           for video tracks, so if user-set, it isn't overwritten */
+        if (mov->mode == MODE_ISM &&
+            (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
+            (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !mov->video_track_timescale))) {
+             track->timescale = 10000000;
+        }
 
         avpriv_set_pts_info(st, 64, 1, track->timescale);
 
