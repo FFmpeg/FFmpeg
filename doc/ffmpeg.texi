@@ -1640,8 +1640,10 @@ This allows dumping sdp information when at least one output isn't an
 rtp stream. (Requires at least one of the output formats to be rtp).
 
 @item -discard (@emph{input})
-Allows discarding specific streams or frames of streams at the demuxer.
-Not all demuxers support this.
+Allows discarding specific streams or frames from streams.
+Any input stream can be fully discarded, using value @code{all} whereas
+selective discarding of frames from a stream occurs at the demuxer
+and is not supported by all demuxers.
 
 @table @option
 @item none
