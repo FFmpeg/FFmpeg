@@ -40,18 +40,18 @@ ALIGN 16
     movsldup  m3, [tq + lenq+mmsize]
     movaps    m1, [cq + lenq]
     movaps    m4, [cq + lenq+mmsize]
-    mulps     m0, m1
-    mulps     m3, m4
-    shufps    m1, m1, 0xb1
-    shufps    m4, m4, 0xb1
+    mulps     m0, m0, m1
+    mulps     m3, m3, m4
+    shufps    m1, m1, m1, 0xb1
+    shufps    m4, m4, m4, 0xb1
     movshdup  m2, [tq + lenq]
     movshdup  m5, [tq + lenq+mmsize]
-    mulps     m2, m1
-    mulps     m5, m4
-    addsubps  m0, m2
-    addsubps  m3, m5
-    addps     m0, [sumq + lenq]
-    addps     m3, [sumq + lenq+mmsize]
+    mulps     m2, m2, m1
+    mulps     m5, m5, m4
+    addsubps  m0, m0, m2
+    addsubps  m3, m3, m5
+    addps     m0, m0, [sumq + lenq]
+    addps     m3, m3, [sumq + lenq+mmsize]
     movaps    [sumq + lenq], m0
     movaps    [sumq + lenq+mmsize], m3
     add       lenq, mmsize*2
