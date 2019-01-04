@@ -1961,6 +1961,7 @@ fail:
     return ret;
 }
 
+#if HAVE_THREADS
 static int ref_frame(Vp3DecodeContext *s, ThreadFrame *dst, ThreadFrame *src)
 {
     ff_thread_release_buffer(s->avctx, dst);
@@ -1979,7 +1980,6 @@ static int ref_frames(Vp3DecodeContext *dst, Vp3DecodeContext *src)
     return 0;
 }
 
-#if HAVE_THREADS
 static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     Vp3DecodeContext *s = dst->priv_data, *s1 = src->priv_data;
