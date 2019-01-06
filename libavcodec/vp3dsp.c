@@ -228,14 +228,14 @@ static void vp3_idct_dc_add_c(uint8_t *dest /* align 8 */, ptrdiff_t stride,
     block[0] = 0;
 }
 
-static void vp3_v_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
-                                int *bounding_values)
+static av_always_inline void vp3_v_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
+                                                 int *bounding_values, int count)
 {
     unsigned char *end;
     int filter_value;
     const ptrdiff_t nstride = -stride;
 
-    for (end = first_pixel + 8; first_pixel < end; first_pixel++) {
+    for (end = first_pixel + count; first_pixel < end; first_pixel++) {
         filter_value = (first_pixel[2 * nstride] - first_pixel[stride]) +
                        (first_pixel[0] - first_pixel[nstride]) * 3;
         filter_value = bounding_values[(filter_value + 4) >> 3];
@@ -245,13 +245,13 @@ static void vp3_v_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
     }
 }
 
-static void vp3_h_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
-                                int *bounding_values)
+static av_always_inline void vp3_h_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
+                                                 int *bounding_values, int count)
 {
     unsigned char *end;
     int filter_value;
 
-    for (end = first_pixel + 8 * stride; first_pixel != end; first_pixel += stride) {
+    for (end = first_pixel + count * stride; first_pixel != end; first_pixel += stride) {
         filter_value = (first_pixel[-2] - first_pixel[1]) +
                        (first_pixel[ 0] - first_pixel[-1]) * 3;
         filter_value = bounding_values[(filter_value + 4) >> 3];
@@ -260,6 +260,18 @@ static void vp3_h_loop_filter_c(uint8_t *first_pixel, ptrdiff_t stride,
         first_pixel[ 0] = av_clip_uint8(first_pixel[ 0] - filter_value);
     }
 }
+
+#define LOOP_FILTER(prefix, suffix, dim, count) \
+void prefix##_##dim##_loop_filter_##count##suffix(uint8_t *first_pixel, ptrdiff_t stride, \
+                                int *bounding_values) \
+{ \
+    vp3_##dim##_loop_filter_c(first_pixel, stride, bounding_values, count); \
+}
+
+static LOOP_FILTER(vp3,_c, v, 8)
+static LOOP_FILTER(vp3,_c, h, 8)
+LOOP_FILTER(ff_vp3dsp, , v, 12)
+LOOP_FILTER(ff_vp3dsp, , h, 12)
 
 static void put_no_rnd_pixels_l2(uint8_t *dst, const uint8_t *src1,
                                  const uint8_t *src2, ptrdiff_t stride, int h)
@@ -285,8 +297,8 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
     c->idct_put      = vp3_idct_put_c;
     c->idct_add      = vp3_idct_add_c;
     c->idct_dc_add   = vp3_idct_dc_add_c;
-    c->v_loop_filter = vp3_v_loop_filter_c;
-    c->h_loop_filter = vp3_h_loop_filter_c;
+    c->v_loop_filter = vp3_v_loop_filter_8_c;
+    c->h_loop_filter = vp3_h_loop_filter_8_c;
 
     if (ARCH_ARM)
         ff_vp3dsp_init_arm(c, flags);

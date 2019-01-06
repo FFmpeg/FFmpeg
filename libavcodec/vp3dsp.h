@@ -45,6 +45,9 @@ typedef struct VP3DSPContext {
     void (*h_loop_filter)(uint8_t *src, ptrdiff_t stride, int *bounding_values);
 } VP3DSPContext;
 
+void ff_vp3dsp_v_loop_filter_12(uint8_t *first_pixel, ptrdiff_t stride, int *bounding_values);
+void ff_vp3dsp_h_loop_filter_12(uint8_t *first_pixel, ptrdiff_t stride, int *bounding_values);
+
 void ff_vp3dsp_init(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_arm(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags);
