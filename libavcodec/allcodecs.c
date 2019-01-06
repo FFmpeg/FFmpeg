@@ -330,6 +330,7 @@ extern AVCodec ff_vcr1_decoder;
 extern AVCodec ff_vmdvideo_decoder;
 extern AVCodec ff_vmnc_decoder;
 extern AVCodec ff_vp3_decoder;
+extern AVCodec ff_vp4_decoder;
 extern AVCodec ff_vp5_decoder;
 extern AVCodec ff_vp6_decoder;
 extern AVCodec ff_vp6a_decoder;

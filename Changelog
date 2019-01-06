@@ -31,6 +31,7 @@ version <next>:
 - xmedian filter
 - asr filter
 - showspatial multimedia filter
+- VP4 video decoder
 
 
 version 4.1:
