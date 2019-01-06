@@ -350,6 +350,15 @@ static int bsf_list_filter(AVBSFContext *bsf, AVPacket *out)
     return ret;
 }
 
+static void bsf_list_flush(AVBSFContext *bsf)
+{
+    BSFListContext *lst = bsf->priv_data;
+
+    for (int i = 0; i < lst->nb_bsfs; i++)
+        av_bsf_flush(lst->bsfs[i]);
+    lst->idx = lst->flushed_idx = 0;
+}
+
 static void bsf_list_close(AVBSFContext *bsf)
 {
     BSFListContext *lst = bsf->priv_data;
@@ -398,6 +407,7 @@ const AVBitStreamFilter ff_list_bsf = {
         .priv_class     = &bsf_list_class,
         .init           = bsf_list_init,
         .filter         = bsf_list_filter,
+        .flush          = bsf_list_flush,
         .close          = bsf_list_close,
 };
 
