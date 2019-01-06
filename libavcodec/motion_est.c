@@ -633,7 +633,7 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
                 if(P[i][1] > (c->ymax<<shift)) P[i][1]= (c->ymax<<shift);
             }
 
-        dmin4 = epzs_motion_search4(s, &mx4, &my4, P, block, block, s->p_mv_table, (1<<16)>>shift);
+        dmin4 = epzs_motion_search2(s, &mx4, &my4, P, block, block, s->p_mv_table, (1<<16)>>shift, 1);
 
         dmin4= c->sub_motion_search(s, &mx4, &my4, dmin4, block, block, size, h);
 
@@ -795,7 +795,7 @@ static int interlaced_search(MpegEncContext *s, int ref_index,
             P_MV1[0]= mx; //FIXME not correct if block != field_select
             P_MV1[1]= my / 2;
 
-            dmin = epzs_motion_search2(s, &mx_i, &my_i, P, block, field_select+ref_index, mv_table, (1<<16)>>1);
+            dmin = epzs_motion_search2(s, &mx_i, &my_i, P, block, field_select+ref_index, mv_table, (1<<16)>>1, 0);
 
             dmin= c->sub_motion_search(s, &mx_i, &my_i, dmin, block, field_select+ref_index, size, h);
 
