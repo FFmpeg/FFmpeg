@@ -542,6 +542,21 @@ union unaligned_16 { uint16_t l; } __attribute__((packed)) av_alias;
 #   define AV_WN64A(p, v) AV_WNA(64, p, v)
 #endif
 
+#if AV_HAVE_BIGENDIAN
+#   define AV_RLA(s, p)    av_bswap##s(AV_RN##s##A(p))
+#   define AV_WLA(s, p, v) AV_WN##s##A(p, av_bswap##s(v))
+#else
+#   define AV_RLA(s, p)    AV_RN##s##A(p)
+#   define AV_WLA(s, p, v) AV_WN##s##A(p, v)
+#endif
+
+#ifndef AV_RL64A
+#   define AV_RL64A(p) AV_RLA(64, p)
+#endif
+#ifndef AV_WL64A
+#   define AV_WL64A(p, v) AV_WLA(64, p, v)
+#endif
+
 /*
  * The AV_COPYxxU macros are suitable for copying data to/from unaligned
  * memory locations.
