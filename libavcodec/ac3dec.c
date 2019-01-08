@@ -1467,6 +1467,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     int buf_size, full_buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
     int blk, ch, err, offset, ret;
+    int i;
     int skip = 0, got_independent_frame = 0;
     const uint8_t *channel_map;
     uint8_t extended_channel_map[EAC3_MAX_CHANNELS];
@@ -1477,14 +1478,21 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     s->superframe_size = 0;
 
     buf_size = full_buf_size;
-    while (buf_size > 2) {
-        if (AV_RB16(buf) != 0x770B && AV_RL16(buf) != 0x770B) {
-            buf += 1;
-            buf_size -= 1;
-            continue;
+    for (i = 1; i < buf_size; i += 2) {
+        if (buf[i] == 0x77 || buf[i] == 0x0B) {
+            if ((buf[i] ^ buf[i-1]) == (0x77 ^ 0x0B)) {
+                i--;
+                break;
+            } else if ((buf[i] ^ buf[i+1]) == (0x77 ^ 0x0B)) {
+                break;
+            }
         }
-        break;
     }
+    if (i >= buf_size)
+        return AVERROR_INVALIDDATA;
+    buf += i;
+    buf_size -= i;
+
     /* copy input buffer to decoder context to avoid reading past the end
        of the buffer, which can be caused by a damaged input stream. */
     if (buf_size >= 2 && AV_RB16(buf) == 0x770B) {
