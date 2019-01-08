@@ -72,11 +72,10 @@ static void libdav1d_data_free(const uint8_t *data, void *opaque) {
 }
 
 static void libdav1d_frame_free(void *opaque, uint8_t *data) {
-    Dav1dPicture p = { 0 };
+    Dav1dPicture *p = opaque;
 
-    p.ref = opaque;
-    p.data[0] = (void *) 0x1; // this has to be non-NULL
-    dav1d_picture_unref(&p);
+    dav1d_picture_unref(p);
+    av_free(p);
 }
 
 static const enum AVPixelFormat pix_fmt[][3] = {
@@ -90,7 +89,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dData *data = &dav1d->data;
-    Dav1dPicture p = { 0 };
+    Dav1dPicture *p;
     int res;
 
     if (!data->sz) {
@@ -124,43 +123,49 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             return res;
     }
 
-    res = dav1d_get_picture(dav1d->c, &p);
+    p = av_mallocz(sizeof(*p));
+    if (!p)
+        return AVERROR(ENOMEM);
+
+    res = dav1d_get_picture(dav1d->c, p);
     if (res < 0) {
         if (res == -EINVAL)
             res = AVERROR_INVALIDDATA;
         else if (res == -EAGAIN && c->internal->draining)
             res = AVERROR_EOF;
 
+        av_free(p);
         return res;
     }
 
-    av_assert0(p.data[0] != NULL);
+    av_assert0(p->data[0] != NULL);
 
     frame->buf[0] = av_buffer_create(NULL, 0, libdav1d_frame_free,
-                                     p.ref, AV_BUFFER_FLAG_READONLY);
+                                     p, AV_BUFFER_FLAG_READONLY);
     if (!frame->buf[0]) {
-        dav1d_picture_unref(&p);
+        dav1d_picture_unref(p);
+        av_free(p);
         return AVERROR(ENOMEM);
     }
 
-    frame->data[0] = p.data[0];
-    frame->data[1] = p.data[1];
-    frame->data[2] = p.data[2];
-    frame->linesize[0] = p.stride[0];
-    frame->linesize[1] = p.stride[1];
-    frame->linesize[2] = p.stride[1];
+    frame->data[0] = p->data[0];
+    frame->data[1] = p->data[1];
+    frame->data[2] = p->data[2];
+    frame->linesize[0] = p->stride[0];
+    frame->linesize[1] = p->stride[1];
+    frame->linesize[2] = p->stride[1];
 
-    c->profile = p.seq_hdr->profile;
-    frame->format = c->pix_fmt = pix_fmt[p.p.layout][p.seq_hdr->hbd];
-    frame->width = p.p.w;
-    frame->height = p.p.h;
-    if (c->width != p.p.w || c->height != p.p.h) {
-        res = ff_set_dimensions(c, p.p.w, p.p.h);
+    c->profile = p->seq_hdr->profile;
+    frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
+    frame->width = p->p.w;
+    frame->height = p->p.h;
+    if (c->width != p->p.w || c->height != p->p.h) {
+        res = ff_set_dimensions(c, p->p.w, p->p.h);
         if (res < 0)
             return res;
     }
 
-    switch (p.seq_hdr->chr) {
+    switch (p->seq_hdr->chr) {
     case DAV1D_CHR_VERTICAL:
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_LEFT;
         break;
@@ -168,25 +173,25 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         frame->chroma_location = c->chroma_sample_location = AVCHROMA_LOC_TOPLEFT;
         break;
     }
-    frame->colorspace = c->colorspace = (enum AVColorSpace) p.seq_hdr->mtrx;
-    frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p.seq_hdr->pri;
-    frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p.seq_hdr->trc;
-    frame->color_range = c->color_range = p.seq_hdr->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+    frame->colorspace = c->colorspace = (enum AVColorSpace) p->seq_hdr->mtrx;
+    frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p->seq_hdr->pri;
+    frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p->seq_hdr->trc;
+    frame->color_range = c->color_range = p->seq_hdr->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
 
     // match timestamps and packet size
-    frame->pts = frame->best_effort_timestamp = p.m.timestamp;
+    frame->pts = frame->best_effort_timestamp = p->m.timestamp;
 #if FF_API_PKT_PTS
 FF_DISABLE_DEPRECATION_WARNINGS
-    frame->pkt_pts = p.m.timestamp;
+    frame->pkt_pts = p->m.timestamp;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    frame->pkt_dts = p.m.timestamp;
-    frame->pkt_pos = p.m.offset;
-    frame->pkt_size = p.m.size;
-    frame->pkt_duration = p.m.duration;
-    frame->key_frame = p.frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY;
+    frame->pkt_dts = p->m.timestamp;
+    frame->pkt_pos = p->m.offset;
+    frame->pkt_size = p->m.size;
+    frame->pkt_duration = p->m.duration;
+    frame->key_frame = p->frame_hdr->frame_type == DAV1D_FRAME_TYPE_KEY;
 
-    switch (p.frame_hdr->frame_type) {
+    switch (p->frame_hdr->frame_type) {
     case DAV1D_FRAME_TYPE_KEY:
     case DAV1D_FRAME_TYPE_INTRA:
         frame->pict_type = AV_PICTURE_TYPE_I;
