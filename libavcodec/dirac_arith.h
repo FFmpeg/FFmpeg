@@ -82,6 +82,7 @@ typedef struct {
 
     uint16_t contexts[DIRAC_CTX_COUNT];
     int error;
+    int overread;
 } DiracArith;
 
 extern const uint8_t ff_dirac_next_ctx[DIRAC_CTX_COUNT];
@@ -119,6 +120,9 @@ static inline void refill(DiracArith *c)
                 new |= 0xff00;
 
             c->bytestream = c->bytestream_end;
+            c->overread ++;
+            if (c->overread > 4)
+                c->error = AVERROR_INVALIDDATA;
         }
 
         c->low += new << counter;
