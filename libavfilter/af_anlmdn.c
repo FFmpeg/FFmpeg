@@ -168,7 +168,10 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
             float w;
 
             av_assert0(distance >= 0.f);
-            w = expf(-distance * sw);
+            w = -distance * sw;
+            if (w < -11.f)
+                continue;
+            w = expf(w);
             P += w * f[i - S + j + (j >= S)];
             Q += w;
         }
