@@ -27,6 +27,8 @@
 #include "audio.h"
 #include "formats.h"
 
+#include "af_anlmdndsp.h"
+
 #define SQR(x) ((x) * (x))
 
 typedef struct AudioNLMeansContext {
@@ -49,7 +51,7 @@ typedef struct AudioNLMeansContext {
 
     AVAudioFifo *fifo;
 
-    float (*compute_distance)(const float *f1, const float *f2, int K);
+    AudioNLMDNDSPContext dsp;
 } AudioNLMeansContext;
 
 #define OFFSET(x) offsetof(AudioNLMeansContext, x)
@@ -93,7 +95,7 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_samplerates(ctx, formats);
 }
 
-static float compute_distance_ssd(const float *f1, const float *f2, int K)
+static float compute_distance_ssd_c(const float *f1, const float *f2, ptrdiff_t K)
 {
     float distance = 0.;
 
@@ -101,6 +103,25 @@ static float compute_distance_ssd(const float *f1, const float *f2, int K)
         distance += SQR(f1[k] - f2[k]);
 
     return distance;
+}
+
+static void compute_cache_c(float *cache, const float *f,
+                            ptrdiff_t S, ptrdiff_t K,
+                            ptrdiff_t i, ptrdiff_t jj)
+{
+    int v = 0;
+
+    for (int j = jj; j < jj + S; j++, v++)
+        cache[v] += -SQR(f[i - K - 1] - f[j - K - 1]) + SQR(f[i + K] - f[j + K]);
+}
+
+void ff_anlmdn_init(AudioNLMDNDSPContext *dsp)
+{
+    dsp->compute_distance_ssd = compute_distance_ssd_c;
+    dsp->compute_cache        = compute_cache_c;
+
+    if (ARCH_X86)
+        ff_anlmdn_init_x86(dsp);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -129,7 +150,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fifo)
         return AVERROR(ENOMEM);
 
-    s->compute_distance = compute_distance_ssd;
+    ff_anlmdn_init(&s->dsp);
 
     return 0;
 }
@@ -153,17 +174,14 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
             for (int j = i - S; j <= i + S; j++) {
                 if (i == j)
                     continue;
-                cache[v++] = s->compute_distance(f + i, f + j, K);
+                cache[v++] = s->dsp.compute_distance_ssd(f + i, f + j, K);
             }
         } else {
-            for (int j = i - S; j < i; j++, v++)
-                cache[v] = cache[v] - SQR(f[i - K - 1] - f[j - K - 1]) + SQR(f[i + K] - f[j + K]);
-
-            for (int j = i + 1; j <= i + S; j++, v++)
-                cache[v] = cache[v] - SQR(f[i - K - 1] - f[j - K - 1]) + SQR(f[i + K] - f[j + K]);
+            s->dsp.compute_cache(cache, f, S, K, i, i - S);
+            s->dsp.compute_cache(cache + S, f, S, K, i, i + 1);
         }
 
-        for (int j = 0; j < v; j++) {
+        for (int j = 0; j < 2 * S; j++) {
             const float distance = cache[j];
             float w;
 
