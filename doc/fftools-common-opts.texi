@@ -42,10 +42,20 @@ streams, 'V' only matches video streams which are not attached pictures, video
 thumbnails or cover arts.  If @var{stream_index} is given, then it matches
 stream number @var{stream_index} of this type. Otherwise, it matches all
 streams of this type.
-@item p:@var{program_id}[:@var{stream_index}]
-If @var{stream_index} is given, then it matches the stream with number @var{stream_index}
+@item p:@var{program_id}[:@var{stream_index}] or p:@var{program_id}[:@var{stream_type}[:@var{stream_index}]] or
+p:@var{program_id}:m:@var{key}[:@var{value}]
+In first version, if @var{stream_index} is given, then it matches the stream with number @var{stream_index}
 in the program with the id @var{program_id}. Otherwise, it matches all streams in the
-program.
+program. In the second version, @var{stream_type} is one of following: 'v' for video, 'a' for audio, 's'
+for subtitle, 'd' for data. If @var{stream_index} is also given, then it matches
+stream number @var{stream_index} of this type in the program with the id @var{program_id}.
+Otherwise, if only @var{stream_type} is given, it matches all
+streams of this type in the program with the id @var{program_id}.
+In the third version matches streams in the program with the id @var{program_id} with the metadata
+tag @var{key} having the specified value. If
+@var{value} is not given, matches streams that contain the given tag with any
+value.
+
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
 @item m:@var{key}[:@var{value}]
@@ -168,14 +178,24 @@ The returned list cannot be assumed to be always complete.
 ffmpeg -sinks pulse,server=192.168.0.4
 @end example
 
-@item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
-Set the logging level used by the library.
-Adding "repeat+" indicates that repeated log output should not be compressed
-to the first line and the "Last message repeated n times" line will be
-omitted. "repeat" can also be used alone.
-If "repeat" is used alone, and with no prior loglevel set, the default
-loglevel will be used. If multiple loglevel parameters are given, using
-'repeat' will not change the loglevel.
+@item -loglevel [@var{flags}+]@var{loglevel} | -v [@var{flags}+]@var{loglevel}
+Set logging level and flags used by the library.
+
+The optional @var{flags} prefix can consist of the following values:
+@table @samp
+@item repeat
+Indicates that repeated log output should not be compressed to the first line
+and the "Last message repeated n times" line will be omitted.
+@item level
+Indicates that log output should add a @code{[level]} prefix to each message
+line. This can be used as an alternative to log coloring, e.g. when dumping the
+log to file.
+@end table
+Flags can also be used alone by adding a '+'/'-' prefix to set/reset a single
+flag without affecting other @var{flags} or changing @var{loglevel}. When
+setting both @var{flags} and @var{loglevel}, a '+' separator is expected
+between the last @var{flags} value and before @var{loglevel}.
+
 @var{loglevel} is a string or a number containing one of the following values:
 @table @samp
 @item quiet, -8
@@ -200,6 +220,17 @@ Same as @code{info}, except more verbose.
 Show everything, including debugging information.
 @item trace, 56
 @end table
+
+For example to enable repeated log output, add the @code{level} prefix, and set
+@var{loglevel} to @code{verbose}:
+@example
+ffmpeg -loglevel repeat+level+verbose -i input output
+@end example
+Another example that enables repeated log output without affecting current
+state of @code{level} prefix flag or @var{loglevel}:
+@example
+ffmpeg [...] -loglevel +repeat
+@end example
 
 By default the program logs to stderr. If coloring is supported by the
 terminal, colors are used to mark errors and warnings. Log coloring

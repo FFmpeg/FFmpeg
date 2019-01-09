@@ -287,7 +287,7 @@ endfunc
         zip1            v4.4S, v4.4S, v4.4S
         fmla            v6.4S, v1.4S, v3.4S
         fmla            v2.4S, v5.4S, v4.4S
-        fcmeq           v7.4S, v3.4S, #0.0
+        fcmeq           v7.4S, v3.4S, #0
         bif             v2.16B, v6.16B, v7.16B
         st1             {v2.4S}, [x0], #16
         subs            x5, x5, #2

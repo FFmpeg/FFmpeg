@@ -36,6 +36,7 @@ fate-opus-testvector09:      CMP_TARGET = 0
 fate-opus-testvector10:      CMP_TARGET = 38
 fate-opus-testvector11:      CMP_TARGET = 0
 fate-opus-testvector12:      CMP_TARGET = 160
+fate-opus-tron.6ch.tinypkts: CMP_SHIFT = 1440
 fate-opus-tron.6ch.tinypkts: CMP_TARGET = 0
 
 $(FATE_OPUS_CELT): CMP = oneoff

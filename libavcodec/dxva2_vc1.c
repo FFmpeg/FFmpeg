@@ -20,16 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "dxva2_internal.h"
 #include "mpegutils.h"
 #include "vc1.h"
 #include "vc1data.h"
 
-// The headers above may include w32threads.h, which uses the original
-// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
-// potentially newer version.
-#include "dxva2_internal.h"
-
 #define MAX_SLICES 1024
+
 struct dxva2_picture_context {
     DXVA_PictureParameters pp;
     unsigned               slice_count;
@@ -473,6 +470,7 @@ const AVHWAccel ff_vc1_d3d11va2_hwaccel = {
     .start_frame    = dxva2_vc1_start_frame,
     .decode_slice   = dxva2_vc1_decode_slice,
     .end_frame      = dxva2_vc1_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct dxva2_picture_context),
     .priv_data_size = sizeof(FFDXVASharedContext),
 };

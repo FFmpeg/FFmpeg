@@ -146,10 +146,10 @@ av_cold void ff_h264_pred_init_mips(H264PredContext *h, int codec_id,
                                     int bit_depth,
                                     const int chroma_format_idc)
 {
-#if HAVE_MSA
-    h264_pred_init_msa(h, codec_id, bit_depth, chroma_format_idc);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     h264_pred_init_mmi(h, codec_id, bit_depth, chroma_format_idc);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    h264_pred_init_msa(h, codec_id, bit_depth, chroma_format_idc);
+#endif  // #if HAVE_MSA
 }

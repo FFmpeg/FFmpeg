@@ -472,6 +472,8 @@ static int activate(AVFilterContext *ctx)
     int nb_samples = 0;
     int64_t pts;
 
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
+
     if (!s->input_frames[0]) {
         ret = ff_inlink_consume_frame(ctx->inputs[0], &s->input_frames[0]);
         if (ret < 0) {
@@ -484,6 +486,9 @@ static int activate(AVFilterContext *ctx)
                 ff_inlink_request_frame(ctx->inputs[0]);
                 return 0;
             }
+        }
+        if (!s->input_frames[0]) {
+            return 0;
         }
     }
 

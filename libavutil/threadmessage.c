@@ -102,6 +102,19 @@ void av_thread_message_queue_free(AVThreadMessageQueue **mq)
 #endif
 }
 
+int av_thread_message_queue_nb_elems(AVThreadMessageQueue *mq)
+{
+#if HAVE_THREADS
+    int ret;
+    pthread_mutex_lock(&mq->lock);
+    ret = av_fifo_size(mq->fifo);
+    pthread_mutex_unlock(&mq->lock);
+    return ret / mq->elsize;
+#else
+    return AVERROR(ENOSYS);
+#endif
+}
+
 #if HAVE_THREADS
 
 static int av_thread_message_queue_send_locked(AVThreadMessageQueue *mq,

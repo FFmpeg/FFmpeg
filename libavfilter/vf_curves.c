@@ -70,6 +70,9 @@ typedef struct CurvesContext {
     int step;
     char *plot_filename;
     int is_16bit;
+    int depth;
+
+    int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } CurvesContext;
 
 typedef struct ThreadData {
@@ -209,7 +212,7 @@ static int get_nb_points(const struct keypoint *d)
  * @see http://people.math.sfu.ca/~stockie/teaching/macm316/notes/splines.pdf
  */
 
-#define CLIP(v) (nbits == 8 ? av_clip_uint8(v) : av_clip_uint16(v))
+#define CLIP(v) (nbits == 8 ? av_clip_uint8(v) : av_clip_uintp2_c(v, nbits))
 
 static inline int interpolate(void *log_ctx, uint16_t *y,
                               const struct keypoint *points, int nbits)
@@ -341,6 +344,10 @@ static int interpolate##nbits(void *log_ctx, uint16_t *y,                   \
 }
 
 DECLARE_INTERPOLATE_FUNC(8)
+DECLARE_INTERPOLATE_FUNC(9)
+DECLARE_INTERPOLATE_FUNC(10)
+DECLARE_INTERPOLATE_FUNC(12)
+DECLARE_INTERPOLATE_FUNC(14)
 DECLARE_INTERPOLATE_FUNC(16)
 
 static int parse_psfile(AVFilterContext *ctx, const char *fname)
@@ -512,6 +519,12 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB0,   AV_PIX_FMT_BGR0,
         AV_PIX_FMT_RGB48,  AV_PIX_FMT_BGR48,
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_BGRA64,
+        AV_PIX_FMT_GBRP,   AV_PIX_FMT_GBRAP,
+        AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
+        AV_PIX_FMT_GBRP14,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
@@ -520,66 +533,7 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int config_input(AVFilterLink *inlink)
-{
-    int i, j, ret;
-    AVFilterContext *ctx = inlink->dst;
-    CurvesContext *curves = ctx->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    char **pts = curves->comp_points_str;
-    struct keypoint *comp_points[NB_COMP + 1] = {0};
-
-    ff_fill_rgba_map(curves->rgba_map, inlink->format);
-    curves->is_16bit = desc->comp[0].depth > 8;
-    curves->lut_size = curves->is_16bit ? 1<<16 : 1<<8;
-    curves->step = av_get_padded_bits_per_pixel(desc) >> (3 + curves->is_16bit);
-
-    for (i = 0; i < NB_COMP + 1; i++) {
-        curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
-        if (!curves->graph[i])
-            return AVERROR(ENOMEM);
-        ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);
-        if (ret < 0)
-            return ret;
-        if (curves->is_16bit) ret = interpolate16(ctx, curves->graph[i], comp_points[i]);
-        else                  ret = interpolate8(ctx, curves->graph[i], comp_points[i]);
-        if (ret < 0)
-            return ret;
-    }
-
-    if (pts[NB_COMP]) {
-        for (i = 0; i < NB_COMP; i++)
-            for (j = 0; j < curves->lut_size; j++)
-                curves->graph[i][j] = curves->graph[NB_COMP][curves->graph[i][j]];
-    }
-
-    if (av_log_get_level() >= AV_LOG_VERBOSE) {
-        for (i = 0; i < NB_COMP; i++) {
-            const struct keypoint *point = comp_points[i];
-            av_log(ctx, AV_LOG_VERBOSE, "#%d points:", i);
-            while (point) {
-                av_log(ctx, AV_LOG_VERBOSE, " (%f;%f)", point->x, point->y);
-                point = point->next;
-            }
-        }
-    }
-
-    if (curves->plot_filename)
-        dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size);
-
-    for (i = 0; i < NB_COMP + 1; i++) {
-        struct keypoint *point = comp_points[i];
-        while (point) {
-            struct keypoint *next = point->next;
-            av_free(point);
-            point = next;
-        }
-    }
-
-    return 0;
-}
-
-static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+static int filter_slice_packed(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     int x, y;
     const CurvesContext *curves = ctx->priv;
@@ -627,9 +581,143 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     return 0;
 }
 
+static int filter_slice_planar(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    int x, y;
+    const CurvesContext *curves = ctx->priv;
+    const ThreadData *td = arg;
+    const AVFrame *in  = td->in;
+    const AVFrame *out = td->out;
+    const int direct = out == in;
+    const int step = curves->step;
+    const uint8_t r = curves->rgba_map[R];
+    const uint8_t g = curves->rgba_map[G];
+    const uint8_t b = curves->rgba_map[B];
+    const uint8_t a = curves->rgba_map[A];
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;
+
+    if (curves->is_16bit) {
+        for (y = slice_start; y < slice_end; y++) {
+            uint16_t       *dstrp = (      uint16_t *)(out->data[r] + y * out->linesize[r]);
+            uint16_t       *dstgp = (      uint16_t *)(out->data[g] + y * out->linesize[g]);
+            uint16_t       *dstbp = (      uint16_t *)(out->data[b] + y * out->linesize[b]);
+            uint16_t       *dstap = (      uint16_t *)(out->data[a] + y * out->linesize[a]);
+            const uint16_t *srcrp = (const uint16_t *)(in ->data[r] + y *  in->linesize[r]);
+            const uint16_t *srcgp = (const uint16_t *)(in ->data[g] + y *  in->linesize[g]);
+            const uint16_t *srcbp = (const uint16_t *)(in ->data[b] + y *  in->linesize[b]);
+            const uint16_t *srcap = (const uint16_t *)(in ->data[a] + y *  in->linesize[a]);
+
+            for (x = 0; x < in->width; x++) {
+                dstrp[x] = curves->graph[R][srcrp[x]];
+                dstgp[x] = curves->graph[G][srcgp[x]];
+                dstbp[x] = curves->graph[B][srcbp[x]];
+                if (!direct && step == 4)
+                    dstap[x] = srcap[x];
+            }
+        }
+    } else {
+        uint8_t       *dstr = out->data[r] + slice_start * out->linesize[r];
+        uint8_t       *dstg = out->data[g] + slice_start * out->linesize[g];
+        uint8_t       *dstb = out->data[b] + slice_start * out->linesize[b];
+        uint8_t       *dsta = out->data[a] + slice_start * out->linesize[a];
+        const uint8_t *srcr =  in->data[r] + slice_start *  in->linesize[r];
+        const uint8_t *srcg =  in->data[g] + slice_start *  in->linesize[g];
+        const uint8_t *srcb =  in->data[b] + slice_start *  in->linesize[b];
+        const uint8_t *srca =  in->data[a] + slice_start *  in->linesize[a];
+
+        for (y = slice_start; y < slice_end; y++) {
+            for (x = 0; x < in->width; x++) {
+                dstr[x] = curves->graph[R][srcr[x]];
+                dstg[x] = curves->graph[G][srcg[x]];
+                dstb[x] = curves->graph[B][srcb[x]];
+                if (!direct && step == 4)
+                    dsta[x] = srca[x];
+            }
+            dstr += out->linesize[r];
+            dstg += out->linesize[g];
+            dstb += out->linesize[b];
+            dsta += out->linesize[a];
+            srcr += in ->linesize[r];
+            srcg += in ->linesize[g];
+            srcb += in ->linesize[b];
+            srca += in ->linesize[a];
+        }
+    }
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    int i, j, ret;
+    AVFilterContext *ctx = inlink->dst;
+    CurvesContext *curves = ctx->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    char **pts = curves->comp_points_str;
+    struct keypoint *comp_points[NB_COMP + 1] = {0};
+
+    ff_fill_rgba_map(curves->rgba_map, inlink->format);
+    curves->is_16bit = desc->comp[0].depth > 8;
+    curves->depth = desc->comp[0].depth;
+    curves->lut_size = 1 << curves->depth;
+    curves->step = av_get_padded_bits_per_pixel(desc) >> (3 + curves->is_16bit);
+    curves->filter_slice = desc->flags & AV_PIX_FMT_FLAG_PLANAR ? filter_slice_planar : filter_slice_packed;
+
+    for (i = 0; i < NB_COMP + 1; i++) {
+        curves->graph[i] = av_mallocz_array(curves->lut_size, sizeof(*curves->graph[0]));
+        if (!curves->graph[i])
+            return AVERROR(ENOMEM);
+        ret = parse_points_str(ctx, comp_points + i, curves->comp_points_str[i], curves->lut_size);
+        if (ret < 0)
+            return ret;
+        switch (curves->depth) {
+        case  8: ret = interpolate8 (ctx, curves->graph[i], comp_points[i]); break;
+        case  9: ret = interpolate9 (ctx, curves->graph[i], comp_points[i]); break;
+        case 10: ret = interpolate10(ctx, curves->graph[i], comp_points[i]); break;
+        case 12: ret = interpolate12(ctx, curves->graph[i], comp_points[i]); break;
+        case 14: ret = interpolate14(ctx, curves->graph[i], comp_points[i]); break;
+        case 16: ret = interpolate16(ctx, curves->graph[i], comp_points[i]); break;
+        }
+        if (ret < 0)
+            return ret;
+    }
+
+    if (pts[NB_COMP]) {
+        for (i = 0; i < NB_COMP; i++)
+            for (j = 0; j < curves->lut_size; j++)
+                curves->graph[i][j] = curves->graph[NB_COMP][curves->graph[i][j]];
+    }
+
+    if (av_log_get_level() >= AV_LOG_VERBOSE) {
+        for (i = 0; i < NB_COMP; i++) {
+            const struct keypoint *point = comp_points[i];
+            av_log(ctx, AV_LOG_VERBOSE, "#%d points:", i);
+            while (point) {
+                av_log(ctx, AV_LOG_VERBOSE, " (%f;%f)", point->x, point->y);
+                point = point->next;
+            }
+        }
+    }
+
+    if (curves->plot_filename)
+        dump_curves(curves->plot_filename, curves->graph, comp_points, curves->lut_size);
+
+    for (i = 0; i < NB_COMP + 1; i++) {
+        struct keypoint *point = comp_points[i];
+        while (point) {
+            struct keypoint *next = point->next;
+            av_free(point);
+            point = next;
+        }
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
+    CurvesContext *curves = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     ThreadData td;
@@ -647,7 +735,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, curves->filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     if (out != in)
         av_frame_free(&in);

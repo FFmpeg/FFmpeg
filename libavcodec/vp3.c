@@ -223,6 +223,10 @@ typedef struct Vp3DecodeContext {
      * which of the fragments are coded */
     int *coded_fragment_list[3];
 
+    int *kf_coded_fragment_list;
+    int *nkf_coded_fragment_list;
+    int num_kf_coded_fragment[3];
+
     VLC dc_vlc[16];
     VLC ac_vlc_1[16];
     VLC ac_vlc_2[16];
@@ -271,7 +275,8 @@ static av_cold void free_tables(AVCodecContext *avctx)
 
     av_freep(&s->superblock_coding);
     av_freep(&s->all_fragments);
-    av_freep(&s->coded_fragment_list[0]);
+    av_freep(&s->nkf_coded_fragment_list);
+    av_freep(&s->kf_coded_fragment_list);
     av_freep(&s->dct_tokens_base);
     av_freep(&s->superblock_fragments);
     av_freep(&s->macroblock_coding);
@@ -451,6 +456,7 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     int i, j;
     int current_fragment;
     int plane;
+    int plane0_num_coded_frags = 0;
 
     if (s->keyframe) {
         memset(s->superblock_coding, SB_FULLY_CODED, s->superblock_count);
@@ -537,45 +543,71 @@ static int unpack_superblocks(Vp3DecodeContext *s, GetBitContext *gb)
     s->total_num_coded_frags = 0;
     memset(s->macroblock_coding, MODE_COPY, s->macroblock_count);
 
+    s->coded_fragment_list[0] = s->keyframe ? s->kf_coded_fragment_list
+                                            : s->nkf_coded_fragment_list;
+
     for (plane = 0; plane < 3; plane++) {
         int sb_start = superblock_starts[plane];
         int sb_end   = sb_start + (plane ? s->c_superblock_count
                                          : s->y_superblock_count);
         int num_coded_frags = 0;
 
-        for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
-            /* iterate through all 16 fragments in a superblock */
-            for (j = 0; j < 16; j++) {
-                /* if the fragment is in bounds, check its coding status */
-                current_fragment = s->superblock_fragments[i * 16 + j];
-                if (current_fragment != -1) {
-                    int coded = s->superblock_coding[i];
-
-                    if (s->superblock_coding[i] == SB_PARTIALLY_CODED) {
-                        /* fragment may or may not be coded; this is the case
-                         * that cares about the fragment coding runs */
-                        if (current_run-- == 0) {
-                            bit        ^= 1;
-                            current_run = get_vlc2(gb, s->fragment_run_length_vlc.table, 5, 2);
+        if (s->keyframe) {
+            if (s->num_kf_coded_fragment[plane] == -1) {
+                for (i = sb_start; i < sb_end; i++) {
+                    /* iterate through all 16 fragments in a superblock */
+                    for (j = 0; j < 16; j++) {
+                        /* if the fragment is in bounds, check its coding status */
+                        current_fragment = s->superblock_fragments[i * 16 + j];
+                        if (current_fragment != -1) {
+                            s->coded_fragment_list[plane][num_coded_frags++] =
+                                current_fragment;
                         }
-                        coded = bit;
                     }
+                }
+                s->num_kf_coded_fragment[plane] = num_coded_frags;
+            } else
+                num_coded_frags = s->num_kf_coded_fragment[plane];
+        } else {
+            for (i = sb_start; i < sb_end && get_bits_left(gb) > 0; i++) {
+                if (get_bits_left(gb) < plane0_num_coded_frags >> 2) {
+                    return AVERROR_INVALIDDATA;
+                }
+                /* iterate through all 16 fragments in a superblock */
+                for (j = 0; j < 16; j++) {
+                    /* if the fragment is in bounds, check its coding status */
+                    current_fragment = s->superblock_fragments[i * 16 + j];
+                    if (current_fragment != -1) {
+                        int coded = s->superblock_coding[i];
 
-                    if (coded) {
-                        /* default mode; actual mode will be decoded in
-                         * the next phase */
-                        s->all_fragments[current_fragment].coding_method =
-                            MODE_INTER_NO_MV;
-                        s->coded_fragment_list[plane][num_coded_frags++] =
-                            current_fragment;
-                    } else {
-                        /* not coded; copy this fragment from the prior frame */
-                        s->all_fragments[current_fragment].coding_method =
-                            MODE_COPY;
+                        if (coded == SB_PARTIALLY_CODED) {
+                            /* fragment may or may not be coded; this is the case
+                             * that cares about the fragment coding runs */
+                            if (current_run-- == 0) {
+                                bit        ^= 1;
+                                current_run = get_vlc2(gb, s->fragment_run_length_vlc.table, 5, 2);
+                            }
+                            coded = bit;
+                        }
+
+                        if (coded) {
+                            /* default mode; actual mode will be decoded in
+                             * the next phase */
+                            s->all_fragments[current_fragment].coding_method =
+                                MODE_INTER_NO_MV;
+                            s->coded_fragment_list[plane][num_coded_frags++] =
+                                current_fragment;
+                        } else {
+                            /* not coded; copy this fragment from the prior frame */
+                            s->all_fragments[current_fragment].coding_method =
+                                MODE_COPY;
+                        }
                     }
                 }
             }
         }
+        if (!plane)
+            plane0_num_coded_frags = num_coded_frags;
         s->total_num_coded_frags += num_coded_frags;
         for (i = 0; i < 64; i++)
             s->num_coded_frags[plane][i] = num_coded_frags;
@@ -951,9 +983,11 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     Vp3Fragment *all_fragments = s->all_fragments;
     VLC_TYPE(*vlc_table)[2] = table->table;
 
-    if (num_coeffs < 0)
+    if (num_coeffs < 0) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Invalid number of coefficients at level %d\n", coeff_index);
+        return AVERROR_INVALIDDATA;
+    }
 
     if (eob_run > num_coeffs) {
         coeff_i      =
@@ -977,6 +1011,9 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             eob_run = eob_run_base[token];
             if (eob_run_get_bits[token])
                 eob_run += get_bits(gb, eob_run_get_bits[token]);
+
+            if (!eob_run)
+                eob_run = INT_MAX;
 
             // record only the number of blocks ended in this plane,
             // any spill will be recorded in the next plane.
@@ -1680,7 +1717,9 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     s->superblock_coding = av_mallocz(s->superblock_count);
     s->all_fragments     = av_mallocz_array(s->fragment_count, sizeof(Vp3Fragment));
 
-    s->coded_fragment_list[0] = av_mallocz_array(s->fragment_count, sizeof(int));
+    s-> kf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
+    s->nkf_coded_fragment_list = av_mallocz_array(s->fragment_count, sizeof(int));
+    memset(s-> num_kf_coded_fragment, -1, sizeof(s-> num_kf_coded_fragment));
 
     s->dct_tokens_base = av_mallocz_array(s->fragment_count,
                                           64 * sizeof(*s->dct_tokens_base));
@@ -1692,7 +1731,8 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     s->macroblock_coding    = av_mallocz(s->macroblock_count + 1);
 
     if (!s->superblock_coding    || !s->all_fragments          ||
-        !s->dct_tokens_base      || !s->coded_fragment_list[0] ||
+        !s->dct_tokens_base      || !s->kf_coded_fragment_list ||
+        !s->nkf_coded_fragment_list ||
         !s->superblock_fragments || !s->macroblock_coding      ||
         !s->motion_val[0]        || !s->motion_val[1]) {
         vp3_decode_end(avctx);
@@ -2246,6 +2286,8 @@ static int vp3_init_thread_copy(AVCodecContext *avctx)
     s->superblock_coding      = NULL;
     s->all_fragments          = NULL;
     s->coded_fragment_list[0] = NULL;
+    s-> kf_coded_fragment_list= NULL;
+    s->nkf_coded_fragment_list= NULL;
     s->dct_tokens_base        = NULL;
     s->superblock_fragments   = NULL;
     s->macroblock_coding      = NULL;

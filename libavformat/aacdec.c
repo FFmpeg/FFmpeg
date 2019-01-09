@@ -22,8 +22,10 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
 #include "id3v1.h"
+#include "id3v2.h"
 #include "apetag.h"
 
 #define ADTS_HEADER_SIZE 7
@@ -116,13 +118,56 @@ static int adts_aac_read_header(AVFormatContext *s)
     return 0;
 }
 
+static int handle_id3(AVFormatContext *s, AVPacket *pkt)
+{
+    AVDictionary *metadata = NULL;
+    AVIOContext ioctx;
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    int ret;
+
+    ret = av_append_packet(s->pb, pkt, ff_id3v2_tag_len(pkt->data) - pkt->size);
+    if (ret < 0) {
+        av_packet_unref(pkt);
+        return ret;
+    }
+
+    ffio_init_context(&ioctx, pkt->data, pkt->size, 0, NULL, NULL, NULL, NULL);
+    ff_id3v2_read_dict(&ioctx, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+    if ((ret = ff_id3v2_parse_priv_dict(&metadata, &id3v2_extra_meta)) < 0)
+        goto error;
+
+    if (metadata) {
+        if ((ret = av_dict_copy(&s->metadata, metadata, 0)) < 0)
+            goto error;
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+    }
+
+error:
+    av_packet_unref(pkt);
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+    av_dict_free(&metadata);
+
+    return ret;
+}
+
 static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, fsize;
 
-    ret = av_get_packet(s->pb, pkt, ADTS_HEADER_SIZE);
+    // Parse all the ID3 headers between frames
+    while (1) {
+        ret = av_get_packet(s->pb, pkt, FFMAX(ID3v2_HEADER_SIZE, ADTS_HEADER_SIZE));
+        if (ret >= ID3v2_HEADER_SIZE && ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
+            if ((ret = handle_id3(s, pkt)) >= 0) {
+                continue;
+            }
+        }
+        break;
+    }
+
     if (ret < 0)
         return ret;
+
     if (ret < ADTS_HEADER_SIZE) {
         av_packet_unref(pkt);
         return AVERROR(EIO);
@@ -139,7 +184,7 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_INVALIDDATA;
     }
 
-    ret = av_append_packet(s->pb, pkt, fsize - ADTS_HEADER_SIZE);
+    ret = av_append_packet(s->pb, pkt, fsize - pkt->size);
     if (ret < 0)
         av_packet_unref(pkt);
 

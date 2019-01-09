@@ -681,6 +681,93 @@ static av_cold int dolby_e_close(AVCodecContext *avctx)
     return 0;
 }
 
+
+static av_cold void init_tables(void)
+{
+    int i, j;
+
+    for (i = 1; i < 17; i++)
+        mantissa_tab1[i][0] = 1.0f / (1 << i - 1);
+
+    for (i = 2; i < 16; i++) {
+        mantissa_tab1[i][1] = 1.0f  / ((1 << i) - 1);
+        mantissa_tab1[i][2] = 0.5f  / ((1 << i) - 1);
+        mantissa_tab1[i][3] = 0.25f / ((1 << i) - 1);
+    }
+
+    mantissa_tab1[i][1] = 0.5f   / (1 << 15);
+    mantissa_tab1[i][2] = 0.75f  / (1 << 15);
+    mantissa_tab1[i][3] = 0.875f / (1 << 15);
+
+    for (i = 1; i < 17; i++) {
+        mantissa_tab2[i][1] = mantissa_tab1[i][0] * 0.5f;
+        mantissa_tab2[i][2] = mantissa_tab1[i][0] * 0.75f;
+        mantissa_tab2[i][3] = mantissa_tab1[i][0] * 0.875f;
+        for (j = 1; j < 4; j++)
+            mantissa_tab3[i][j] = 1.0f / (1 << i) + 1.0f / (1 << j) - 1.0f / (1 << i + j);
+    }
+
+    mantissa_tab3[1][3] = 0.6875f;
+
+    for (i = 0; i < 25; i++) {
+        exponent_tab[i * 2    ] = 1.0f      / (1 << i);
+        exponent_tab[i * 2 + 1] = M_SQRT1_2 / (1 << i);
+    }
+
+    for (i = 1; i < 1024; i++)
+        gain_tab[i] = exp2f((i - 960) / 64.0f);
+
+    // short 1
+    ff_kbd_window_init(window, 3.0f, 128);
+    for (i = 0; i < 128; i++)
+        window[128 + i] = window[127 - i];
+
+    // start
+    for (i = 0; i < 192; i++)
+        window[256 + i] = start_window[i];
+
+    // short 2
+    for (i = 0; i < 192; i++)
+        window[448 + i] = short_window2[i];
+    for (i = 0; i < 64; i++)
+        window[640 + i] = window[63 - i];
+
+    // short 3
+    for (i = 0; i < 64; i++)
+        window[704 + i] = short_window3[i];
+    for (i = 0; i < 192; i++)
+        window[768 + i] = window[64 + i];
+
+    // bridge
+    for (i = 0; i < 128; i++)
+        window[960 + i] = window[i];
+    for (i = 0; i < 64; i++)
+        window[1088 + i] = 1.0f;
+
+    // long
+    ff_kbd_window_init(window + 1408, 3.0f, 256);
+    for (i = 0; i < 640; i++)
+        window[1664 + i] = 1.0f;
+    for (i = 0; i < 256; i++)
+        window[2304 + i] = window[1152 + i] = window[1663 - i];
+
+    // reverse start
+    for (i = 0; i < 192; i++)
+        window[2560 + i] = window[447 - i];
+
+    // reverse short 2
+    for (i = 0; i < 256; i++)
+        window[2752 + i] = window[703 - i];
+
+    // reverse short 3
+    for (i = 0; i < 256; i++)
+        window[3008 + i] = window[959 - i];
+
+    // reverse bridge
+    for (i = 0; i < 448; i++)
+        window[3264 + i] = window[1407 - i];
+}
+
 static av_cold int dolby_e_init(AVCodecContext *avctx)
 {
     static AVOnce init_once = AV_ONCE_INIT;

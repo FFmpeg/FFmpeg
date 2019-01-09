@@ -216,7 +216,7 @@ static int vc2hq_handle_packet(AVFormatContext *ctx, PayloadContext *pl_ctx,
     return res;
 }
 
-RTPDynamicProtocolHandler ff_vc2hq_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_vc2hq_dynamic_handler = {
     .enc_name         = "VC2",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_DIRAC,

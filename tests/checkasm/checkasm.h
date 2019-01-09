@@ -40,6 +40,7 @@
 #include "libavutil/timer.h"
 
 void checkasm_check_aacpsdsp(void);
+void checkasm_check_afir(void);
 void checkasm_check_alacdsp(void);
 void checkasm_check_audiodsp(void);
 void checkasm_check_blend(void);
@@ -57,12 +58,16 @@ void checkasm_check_h264pred(void);
 void checkasm_check_h264qpel(void);
 void checkasm_check_hevc_add_res(void);
 void checkasm_check_hevc_idct(void);
+void checkasm_check_hevc_sao(void);
 void checkasm_check_huffyuvdsp(void);
 void checkasm_check_jpeg2000dsp(void);
 void checkasm_check_llviddsp(void);
+void checkasm_check_llviddspenc(void);
+void checkasm_check_nlmeans(void);
 void checkasm_check_pixblockdsp(void);
 void checkasm_check_sbrdsp(void);
 void checkasm_check_synth_filter(void);
+void checkasm_check_sw_rgb(void);
 void checkasm_check_utvideodsp(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vf_hflip(void);

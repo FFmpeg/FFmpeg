@@ -254,7 +254,7 @@ static int analyze_chunk(AVFormatContext *s, const uint8_t *chunk)
             if (data_offset + hdrs[i].rec_size > CHUNK_SIZE)
                 break;
 
-            if ((hdrs[i].subrec_type << 0x08 | hdrs[i].rec_type) == 0x3c0 && hdrs[i].rec_size > 15) {
+            if ((hdrs[i].subrec_type << 8 | hdrs[i].rec_type) == 0x3c0 && hdrs[i].rec_size > 15) {
                 /* first make sure we're aligned */
                 int pes_offset = find_es_header(ty_MPEGAudioPacket,
                         &chunk[data_offset], 5);

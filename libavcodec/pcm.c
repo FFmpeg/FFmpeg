@@ -42,6 +42,9 @@ static av_cold int pcm_encode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_PCM_MULAW:
         pcm_ulaw_tableinit();
         break;
+    case AV_CODEC_ID_PCM_VIDC:
+        pcm_vidc_tableinit();
+        break;
     default:
         break;
     }
@@ -216,6 +219,12 @@ static int pcm_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
             *dst++ = linear_to_ulaw[(v + 32768) >> 2];
         }
         break;
+    case AV_CODEC_ID_PCM_VIDC:
+        for (; n > 0; n--) {
+            v      = *samples++;
+            *dst++ = linear_to_vidc[(v + 32768) >> 2];
+        }
+        break;
     default:
         return -1;
     }
@@ -248,6 +257,10 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
     case AV_CODEC_ID_PCM_MULAW:
         for (i = 0; i < 256; i++)
             s->table[i] = ulaw2linear(i);
+        break;
+    case AV_CODEC_ID_PCM_VIDC:
+        for (i = 0; i < 256; i++)
+            s->table[i] = vidc2linear(i);
         break;
     case AV_CODEC_ID_PCM_F16LE:
     case AV_CODEC_ID_PCM_F24LE:
@@ -485,6 +498,7 @@ static int pcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
     case AV_CODEC_ID_PCM_ALAW:
     case AV_CODEC_ID_PCM_MULAW:
+    case AV_CODEC_ID_PCM_VIDC:
         for (; n > 0; n--) {
             AV_WN16A(samples, s->table[*src++]);
             samples += 2;
@@ -612,3 +626,4 @@ PCM_CODEC  (PCM_U32LE,        AV_SAMPLE_FMT_S32, pcm_u32le,        "PCM unsigned
 PCM_DECODER(PCM_ZORK,         AV_SAMPLE_FMT_U8,  pcm_zork,         "PCM Zork");
 PCM_CODEC  (PCM_S64BE,        AV_SAMPLE_FMT_S64, pcm_s64be,        "PCM signed 64-bit big-endian");
 PCM_CODEC  (PCM_S64LE,        AV_SAMPLE_FMT_S64, pcm_s64le,        "PCM signed 64-bit little-endian");
+PCM_CODEC  (PCM_VIDC,         AV_SAMPLE_FMT_S16, pcm_vidc,         "PCM Archimedes VIDC");

@@ -30,37 +30,43 @@ latency. Must be an integer not lesser than 32. It is 5000000 by default.
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
 
-@item fflags @var{flags} (@emph{input/output})
-Set format flags.
+@item fflags @var{flags}
+Set format flags. Some are implemented for a limited number of formats.
 
-Possible values:
+Possible values for input files:
 @table @samp
-@item ignidx
-Ignore index.
+@item discardcorrupt
+Discard corrupted packets.
 @item fastseek
 Enable fast, but inaccurate seeks for some formats.
 @item genpts
-Generate PTS.
+Generate missing PTS if DTS is present.
+@item igndts
+Ignore DTS if PTS is set. Inert when nofillin is set.
+@item ignidx
+Ignore index.
+@item keepside (@emph{deprecated},@emph{inert})
+@item nobuffer
+Reduce the latency introduced by buffering during initial input streams analysis.
 @item nofillin
-Do not fill in missing values that can be exactly calculated.
+Do not fill in missing values in packet fields that can be exactly calculated.
 @item noparse
 Disable AVParsers, this needs @code{+nofillin} too.
-@item igndts
-Ignore DTS.
-@item discardcorrupt
-Discard corrupted frames.
 @item sortdts
-Try to interleave output packets by DTS.
-@item keepside
-Do not merge side data.
-@item latm
-Enable RTP MP4A-LATM payload.
-@item nobuffer
-Reduce the latency introduced by optional buffering
+Try to interleave output packets by DTS. At present, available only for AVIs with an index.
+@end table
+
+Possible values for output files:
+@table @samp
+@item autobsf
+Automatically apply bitstream filters as required by the output format. Enabled by default.
 @item bitexact
 Only write platform-, build- and time-independent data.
 This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
+@item flush_packets
+Write out packets immediately.
+@item latm (@emph{deprecated},@emph{inert})
 @item shortest
 Stop muxing at the end of the shortest stream.
 It may be needed to increase max_interleave_delta to avoid flushing the longer
@@ -214,6 +220,10 @@ ffprobe -dump_separator "
 @item max_streams @var{integer} (@emph{input})
 Specifies the maximum number of streams. This can be used to reject files that
 would require too many resources due to a large number of streams.
+
+@item skip_estimate_duration_from_pts @var{bool} (@emph{input})
+Skip estimation of input duration when calculated using PTS.
+At present, applicable for MPEG-PS and MPEG-TS.
 @end table
 
 @c man end FORMAT OPTIONS

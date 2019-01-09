@@ -114,6 +114,8 @@ typedef struct EBUR128Context {
     int meter;                      ///< select a EBU mode between +9 and +18
     int scale_range;                ///< the range of LU values according to the meter
     int y_zero_lu;                  ///< the y value (pixel position) for 0 LU
+    int y_opt_max;                  ///< the y value (pixel position) for 1 LU
+    int y_opt_min;                  ///< the y value (pixel position) for -1 LU
     int *y_line_ref;                ///< y reference values for drawing the LU lines in the graph and the gauge
 
     /* audio */
@@ -142,12 +144,25 @@ typedef struct EBUR128Context {
     int metadata;                   ///< whether or not to inject loudness results in frames
     int dual_mono;                  ///< whether or not to treat single channel input files as dual-mono
     double pan_law;                 ///< pan law value used to calculate dual-mono measurements
+    int target;                     ///< target level in LUFS used to set relative zero LU in visualization
+    int gauge_type;                 ///< whether gauge shows momentary or short
+    int scale;                      ///< display scale type of statistics
 } EBUR128Context;
 
 enum {
     PEAK_MODE_NONE          = 0,
     PEAK_MODE_SAMPLES_PEAKS = 1<<1,
     PEAK_MODE_TRUE_PEAKS    = 1<<2,
+};
+
+enum {
+    GAUGE_TYPE_MOMENTARY = 0,
+    GAUGE_TYPE_SHORTTERM = 1,
+};
+
+enum {
+    SCALE_TYPE_ABSOLUTE = 0,
+    SCALE_TYPE_RELATIVE = 1,
 };
 
 #define OFFSET(x) offsetof(EBUR128Context, x)
@@ -168,28 +183,48 @@ static const AVOption ebur128_options[] = {
         { "true",   "enable true-peak mode",   0, AV_OPT_TYPE_CONST, {.i64 = PEAK_MODE_TRUE_PEAKS},    INT_MIN, INT_MAX, A|F, "mode" },
     { "dualmono", "treat mono input files as dual-mono", OFFSET(dual_mono), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, A|F },
     { "panlaw", "set a specific pan law for dual-mono files", OFFSET(pan_law), AV_OPT_TYPE_DOUBLE, {.dbl = -3.01029995663978}, -10.0, 0.0, A|F },
+    { "target", "set a specific target level in LUFS (-23 to 0)", OFFSET(target), AV_OPT_TYPE_INT, {.i64 = -23}, -23, 0, V|F },
+    { "gauge", "set gauge display type", OFFSET(gauge_type), AV_OPT_TYPE_INT, {.i64 = 0 }, GAUGE_TYPE_MOMENTARY, GAUGE_TYPE_SHORTTERM, V|F, "gaugetype" },
+        { "momentary",   "display momentary value",   0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_MOMENTARY}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "m",           "display momentary value",   0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_MOMENTARY}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "shortterm",   "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+        { "s",           "display short-term value",  0, AV_OPT_TYPE_CONST, {.i64 = GAUGE_TYPE_SHORTTERM}, INT_MIN, INT_MAX, V|F, "gaugetype" },
+    { "scale", "sets display method for the stats", OFFSET(scale), AV_OPT_TYPE_INT, {.i64 = 0}, SCALE_TYPE_ABSOLUTE, SCALE_TYPE_RELATIVE, V|F, "scaletype" },
+        { "absolute",   "display absolute values (LUFS)",          0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_ABSOLUTE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "LUFS",       "display absolute values (LUFS)",          0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_ABSOLUTE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "relative",   "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
+        { "LU",         "display values relative to target (LU)",  0, AV_OPT_TYPE_CONST, {.i64 = SCALE_TYPE_RELATIVE}, INT_MIN, INT_MAX, V|F, "scaletype" },
     { NULL },
 };
 
 AVFILTER_DEFINE_CLASS(ebur128);
 
 static const uint8_t graph_colors[] = {
-    0xdd, 0x66, 0x66,   // value above 0LU non reached
-    0x66, 0x66, 0xdd,   // value below 0LU non reached
-    0x96, 0x33, 0x33,   // value above 0LU reached
-    0x33, 0x33, 0x96,   // value below 0LU reached
-    0xdd, 0x96, 0x96,   // value above 0LU line non reached
-    0x96, 0x96, 0xdd,   // value below 0LU line non reached
-    0xdd, 0x33, 0x33,   // value above 0LU line reached
-    0x33, 0x33, 0xdd,   // value below 0LU line reached
+    0xdd, 0x66, 0x66,   // value above 1LU non reached below -1LU (impossible)
+    0x66, 0x66, 0xdd,   // value below 1LU non reached below -1LU
+    0x96, 0x33, 0x33,   // value above 1LU reached below -1LU (impossible)
+    0x33, 0x33, 0x96,   // value below 1LU reached below -1LU
+    0xdd, 0x96, 0x96,   // value above 1LU line non reached below -1LU (impossible)
+    0x96, 0x96, 0xdd,   // value below 1LU line non reached below -1LU
+    0xdd, 0x33, 0x33,   // value above 1LU line reached below -1LU (impossible)
+    0x33, 0x33, 0xdd,   // value below 1LU line reached below -1LU
+    0xdd, 0x66, 0x66,   // value above 1LU non reached above -1LU
+    0x66, 0xdd, 0x66,   // value below 1LU non reached above -1LU
+    0x96, 0x33, 0x33,   // value above 1LU reached above -1LU
+    0x33, 0x96, 0x33,   // value below 1LU reached above -1LU
+    0xdd, 0x96, 0x96,   // value above 1LU line non reached above -1LU
+    0x96, 0xdd, 0x96,   // value below 1LU line non reached above -1LU
+    0xdd, 0x33, 0x33,   // value above 1LU line reached above -1LU
+    0x33, 0xdd, 0x33,   // value below 1LU line reached above -1LU
 };
 
 static const uint8_t *get_graph_color(const EBUR128Context *ebur128, int v, int y)
 {
-    const int below0  = y > ebur128->y_zero_lu;
+    const int above_opt_max = y > ebur128->y_opt_max;
+    const int below_opt_min = y < ebur128->y_opt_min;
     const int reached = y >= v;
     const int line    = ebur128->y_line_ref[y] || y == ebur128->y_zero_lu;
-    const int colorid = 4*line + 2*reached + below0;
+    const int colorid = 8*below_opt_min+ 4*line + 2*reached + above_opt_max;
     return graph_colors + 3*colorid;
 }
 
@@ -323,6 +358,8 @@ static int config_video_output(AVFilterLink *outlink)
 
     /* draw graph */
     ebur128->y_zero_lu = lu_to_y(ebur128, 0);
+    ebur128->y_opt_max = lu_to_y(ebur128, 1);
+    ebur128->y_opt_min = lu_to_y(ebur128, -1);
     p = outpicref->data[0] + ebur128->graph.y * outpicref->linesize[0]
                            + ebur128->graph.x * 3;
     for (y = 0; y < ebur128->graph.h; y++) {
@@ -459,6 +496,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     EBUR128Context *ebur128 = ctx->priv;
     AVFilterPad pad;
+    int ret;
 
     if (ebur128->loglevel != AV_LOG_INFO &&
         ebur128->loglevel != AV_LOG_VERBOSE) {
@@ -495,7 +533,11 @@ static av_cold int init(AVFilterContext *ctx)
         };
         if (!pad.name)
             return AVERROR(ENOMEM);
-        ff_insert_outpad(ctx, 0, &pad);
+        ret = ff_insert_outpad(ctx, 0, &pad);
+        if (ret < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
     pad = (AVFilterPad){
         .name         = av_asprintf("out%d", ebur128->do_video),
@@ -504,7 +546,11 @@ static av_cold int init(AVFilterContext *ctx)
     };
     if (!pad.name)
         return AVERROR(ENOMEM);
-    ff_insert_outpad(ctx, ebur128->do_video, &pad);
+    ret = ff_insert_outpad(ctx, ebur128->do_video, &pad);
+    if (ret < 0) {
+        av_freep(&pad.name);
+        return ret;
+    }
 
     /* summary */
     av_log(ctx, AV_LOG_VERBOSE, "EBU +%d scale\n", ebur128->meter);
@@ -724,15 +770,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 loudness_3000 -= ebur128->pan_law;
             }
 
-#define LOG_FMT "M:%6.1f S:%6.1f     I:%6.1f LUFS     LRA:%6.1f LU"
+#define LOG_FMT "TARGET:%d LUFS    M:%6.1f S:%6.1f     I:%6.1f %s       LRA:%6.1f LU"
 
             /* push one video frame */
             if (ebur128->do_video) {
                 int x, y, ret;
                 uint8_t *p;
+                double gauge_value;
+                int y_loudness_lu_graph, y_loudness_lu_gauge;
 
-                const int y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 + 23);
-                const int y_loudness_lu_gauge = lu_to_y(ebur128, loudness_400  + 23);
+                if (ebur128->gauge_type == GAUGE_TYPE_MOMENTARY) {
+                    gauge_value = loudness_400 - ebur128->target;
+                } else {
+                    gauge_value = loudness_3000 - ebur128->target;
+                }
+
+                y_loudness_lu_graph = lu_to_y(ebur128, loudness_3000 - ebur128->target);
+                y_loudness_lu_gauge = lu_to_y(ebur128, gauge_value);
 
                 /* draw the graph using the short-term loudness */
                 p = pic->data[0] + ebur128->graph.y*pic->linesize[0] + ebur128->graph.x*3;
@@ -744,7 +798,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                     p += pic->linesize[0];
                 }
 
-                /* draw the gauge using the momentary loudness */
+                /* draw the gauge using either momentary or short-term loudness */
                 p = pic->data[0] + ebur128->gauge.y*pic->linesize[0] + ebur128->gauge.x*3;
                 for (y = 0; y < ebur128->gauge.h; y++) {
                     const uint8_t *c = get_graph_color(ebur128, y_loudness_lu_gauge, y);
@@ -755,10 +809,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 }
 
                 /* draw textual info */
-                drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
-                         LOG_FMT "     ", // padding to erase trailing characters
-                         loudness_400, loudness_3000,
-                         ebur128->integrated_loudness, ebur128->loudness_range);
+                if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
+                    drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
+                             LOG_FMT "     ", // padding to erase trailing characters
+                             ebur128->target, loudness_400, loudness_3000,
+                             ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
+                } else {
+                    drawtext(pic, PAD, PAD - PAD/2, FONT16, font_colors,
+                             LOG_FMT "     ", // padding to erase trailing characters
+                             ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
+                             ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
+                }
 
                 /* set pts and push frame */
                 pic->pts = pts;
@@ -798,10 +859,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
                 SET_META_PEAK(true,   TRUE);
             }
 
-            av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
-                   av_ts2timestr(pts, &outlink->time_base),
-                   loudness_400, loudness_3000,
-                   ebur128->integrated_loudness, ebur128->loudness_range);
+            if (ebur128->scale == SCALE_TYPE_ABSOLUTE) {
+                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
+                       av_ts2timestr(pts, &outlink->time_base),
+                       ebur128->target, loudness_400, loudness_3000,
+                       ebur128->integrated_loudness, "LUFS", ebur128->loudness_range);
+            } else {
+                av_log(ctx, ebur128->loglevel, "t: %-10s " LOG_FMT,
+                       av_ts2timestr(pts, &outlink->time_base),
+                       ebur128->target, loudness_400-ebur128->target, loudness_3000-ebur128->target,
+                       ebur128->integrated_loudness-ebur128->target, "LU", ebur128->loudness_range);
+            }
 
 #define PRINT_PEAKS(str, sp, ptype) do {                            \
     if (ebur128->peak_mode & PEAK_MODE_ ## ptype ## _PEAKS) {       \

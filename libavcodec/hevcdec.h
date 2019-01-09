@@ -430,6 +430,7 @@ typedef struct HEVCContext {
     int max_ra;
     int bs_width;
     int bs_height;
+    int overlap;
 
     int is_decoded;
     int no_rasl_output_flag;
@@ -544,7 +545,7 @@ int ff_hevc_res_scale_sign_flag(HEVCContext *s, int idx);
 /**
  * Get the number of candidate references for the current frame.
  */
-int ff_hevc_frame_nb_refs(HEVCContext *s);
+int ff_hevc_frame_nb_refs(const HEVCContext *s);
 
 int ff_hevc_set_new_ref(HEVCContext *s, AVFrame **frame, int poc);
 
@@ -559,8 +560,6 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
     case HEVC_NAL_VCL_N10:
     case HEVC_NAL_VCL_N12:
     case HEVC_NAL_VCL_N14:
-    case HEVC_NAL_BLA_N_LP:
-    case HEVC_NAL_IDR_N_LP:
         return 1;
         break;
     default: break;

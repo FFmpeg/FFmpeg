@@ -19,6 +19,8 @@
 #ifndef AVUTIL_CPU_INTERNAL_H
 #define AVUTIL_CPU_INTERNAL_H
 
+#include "config.h"
+
 #include "cpu.h"
 
 #define CPUEXT_SUFFIX(flags, suffix, cpuext)                            \

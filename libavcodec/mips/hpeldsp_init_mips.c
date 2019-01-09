@@ -113,10 +113,10 @@ static void ff_hpeldsp_init_mmi(HpelDSPContext *c, int flags)
 
 void ff_hpeldsp_init_mips(HpelDSPContext *c, int flags)
 {
-#if HAVE_MSA
-    ff_hpeldsp_init_msa(c, flags);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     ff_hpeldsp_init_mmi(c, flags);
 #endif  // #if HAVE_MMI
+#if HAVE_MSA
+    ff_hpeldsp_init_msa(c, flags);
+#endif  // #if HAVE_MSA
 }

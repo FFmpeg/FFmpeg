@@ -164,7 +164,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
 
     table_size = 1 << table_nb_bits;
     if (table_nb_bits > 30)
-       return -1;
+       return AVERROR(EINVAL);
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
     ff_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
@@ -306,7 +306,7 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
             av_log(NULL, AV_LOG_ERROR, "Too long VLC (%d) in init_vlc\n", buf[j].bits);\
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
-            return -1;                                                      \
+            return AVERROR(EINVAL);                                         \
         }                                                                   \
         GET_DATA(buf[j].code, codes, i, codes_wrap, codes_size);            \
         if (buf[j].code >= (1LL<<buf[j].bits)) {                            \
@@ -314,7 +314,7 @@ int ff_init_vlc_sparse(VLC *vlc_arg, int nb_bits, int nb_codes,
                    "init_vlc\n", buf[j].code, i);                           \
             if (!(flags & INIT_VLC_USE_NEW_STATIC))                         \
                 av_free(buf);                                               \
-            return -1;                                                      \
+            return AVERROR(EINVAL);                                         \
         }                                                                   \
         if (flags & INIT_VLC_LE)                                            \
             buf[j].code = bitswap_32(buf[j].code);                          \

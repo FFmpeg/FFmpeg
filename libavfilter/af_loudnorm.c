@@ -431,6 +431,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
+    if (s->pts == AV_NOPTS_VALUE)
+        s->pts = in->pts;
+
     out->pts = s->pts;
     src = (const double *)in->data[0];
     dst = (double *)out->data[0];
@@ -763,7 +766,7 @@ static int config_input(AVFilterLink *inlink)
         inlink->partial_buf_size = frame_size(inlink->sample_rate, 3000);
     }
 
-    s->pts =
+    s->pts = AV_NOPTS_VALUE;
     s->buf_index =
     s->prev_buf_index =
     s->limiter_buf_index = 0;

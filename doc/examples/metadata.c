@@ -44,7 +44,6 @@ int main (int argc, char **argv)
         return 1;
     }
 
-    av_register_all();
     if ((ret = avformat_open_input(&fmt_ctx, argv[1], NULL, NULL)))
         return ret;
 

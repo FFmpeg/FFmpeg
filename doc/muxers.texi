@@ -94,21 +94,23 @@ compatibility with software that only supports a single audio stream in AVI
 @anchor{chromaprint}
 @section chromaprint
 
-Chromaprint fingerprinter
+Chromaprint fingerprinter.
 
-This muxer feeds audio data to the Chromaprint library, which generates
-a fingerprint for the provided audio data. It takes a single signed
-native-endian 16-bit raw audio stream.
+This muxer feeds audio data to the Chromaprint library,
+which generates a fingerprint for the provided audio data. See @url{https://acoustid.org/chromaprint}
+
+It takes a single signed native-endian 16-bit raw audio stream of at most 2 channels.
 
 @subsection Options
 
 @table @option
 @item silence_threshold
-Threshold for detecting silence, ranges from 0 to 32767. -1 for default
-(required for use with the AcoustID service).
+Threshold for detecting silence, ranges from -1 to 32767. -1 disables silence detection and
+is required for use with the AcoustID service. Default is -1.
 
 @item algorithm
-Algorithm index to fingerprint with.
+Version of algorithm to fingerprint with. Range is 0 to 4. Version 2 requires that silence
+detection be enabled. Default is 1.
 
 @item fp_format
 Format to output the fingerprint as. Accepts the following options:
@@ -120,7 +122,7 @@ Binary raw fingerprint
 Binary compressed fingerprint
 
 @item base64
-Base64 compressed fingerprint
+Base64 compressed fingerprint @emph{(default)}
 
 @end table
 
@@ -226,7 +228,12 @@ ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
 
 @table @option
 @item -min_seg_duration @var{microseconds}
-Set the segment length in microseconds.
+This is a deprecated option to set the segment length in microseconds, use @var{seg_duration} instead.
+@item -seg_duration @var{duration}
+Set the segment length in seconds (fractional value can be set). The value is
+treated as average segment duration when @var{use_template} is enabled and
+@var{use_timeline} is disabled and as minimum segment duration for all the other
+use cases.
 @item -window_size @var{size}
 Set the maximum number of segments kept in the manifest.
 @item -extra_window_size @var{size}
@@ -240,13 +247,15 @@ Enable (1) or disable (0) use of SegmentTimeline in SegmentTemplate.
 @item -single_file @var{single_file}
 Enable (1) or disable (0) storing all segments in one file, accessed using byte ranges.
 @item -single_file_name @var{file_name}
-DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1".
+DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1". In the template, "$ext$" is replaced with the file name extension specific for the segment format.
 @item -init_seg_name @var{init_name}
-DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.m4s"
+DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
 @item -media_seg_name @var{segment_name}
-DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.m4s"
+DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
 @item -utc_timing_url @var{utc_url}
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
+@item method @var{method}
+Use the given HTTP method to create output files. Generally set to PUT or POST.
 @item -http_user_agent @var{user_agent}
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
 @item -http_persistent @var{http_persistent}
@@ -254,6 +263,9 @@ Use persistent HTTP connections. Applicable only for HTTP output.
 @item -hls_playlist @var{hls_playlist}
 Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
+@item -streaming @var{streaming}
+Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
+mode, each frame will be a moof fragment which forms a chunk.
 @item -adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
@@ -261,6 +273,46 @@ of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
 To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
+@item -timeout @var{timeout}
+Set timeout for socket I/O operations. Applicable only for HTTP output.
+@item -index_correction @var{index_correction}
+Enable (1) or Disable (0) segment index correction logic. Applicable only when
+@var{use_template} is enabled and @var{use_timeline} is disabled.
+
+When enabled, the logic monitors the flow of segment indexes. If a streams's
+segment index value is not at the expected real time position, then the logic
+corrects that index value.
+
+Typically this logic is needed in live streaming use cases. The network bandwidth
+fluctuations are common during long run streaming. Each fluctuation can cause
+the segment indexes fall behind the expected real time position.
+@item -format_options @var{options_list}
+Set container format (mp4/webm) options using a @code{:} separated list of
+key=value parameters. Values containing @code{:} special characters must be
+escaped.
+
+@item -dash_segment_type @var{dash_segment_type}
+Possible values:
+@item auto
+If this flag is set, the dash segment files format will be selected based on the stream codec. This is the default mode.
+
+@item mp4
+If this flag is set, the dash segment files will be in in ISOBMFF format.
+
+@item webm
+If this flag is set, the dash segment files will be in in WebM format.
+
+@item -ignore_io_errors @var{ignore_io_errors}
+Ignore IO errors during open and write. Useful for long-duration runs with network output.
+
+@item -lhls @var{lhls}
+Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
+Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
+trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
+This option will also try to comply with the above open spec, till Apple's spec officially supports it.
+Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
+This is an experimental feature.
+
 @end table
 
 @anchor{framecrc}
@@ -508,6 +560,12 @@ Segment will be cut on the next key frame after this time has passed.
 Set the maximum number of playlist entries. If set to 0 the list file
 will contain all the segments. Default value is 5.
 
+@item hls_delete_threshold @var{size}
+Set the number of unreferenced segments to keep on disk before @code{hls_flags delete_segments}
+deletes them. Increase this to allow continue clients to download segments which
+were recently referenced in the playlist. Default value is 1, meaning segments older than
+@code{hls_list_size+1} will be deleted.
+
 @item hls_ts_options @var{options_list}
 Set output format options using a :-separated list of key=value
 parameters. Values containing @code{:} special characters must be
@@ -575,7 +633,7 @@ This example will produce the playlist, @file{out.m3u8}, and segment files:
 but only the file name part without any path info will be contained in the m3u8 segment list.
 Should a relative path be specified, the path of the created segment
 files will be relative to the current working directory.
-When use_localtime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
+When strftime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
 
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
@@ -604,34 +662,40 @@ This example will produce the playlists segment file sets:
 @file{vs1/file_000.ts}, @file{vs1/file_001.ts}, @file{vs1/file_002.ts}, etc.
 
 @item use_localtime
+Same as strftime option, will be deprecated.
+
+@item strftime
 Use strftime() on @var{filename} to expand the segment filename with localtime.
 The segment number is also available in this mode, but to use it, you need to specify second_level_segment_index
 hls_flag and %%d will be the specifier.
 @example
-ffmpeg -i in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
 Note: On some systems/environments, the @code{%s} specifier is not available. See
   @code{strftime()} documentation.
 @example
-ffmpeg -i in.nut -use_localtime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-0001.ts}, @file{file-20160215-0002.ts}, etc.
 
 @item use_localtime_mkdir
-Used together with -use_localtime, it will create all subdirectories which
+Same as strftime_mkdir option, will be deprecated .
+
+@item strftime_mkdir
+Used together with -strftime_mkdir, it will create all subdirectories which
 is expanded in @var{filename}.
 @example
-ffmpeg -i in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will create a directory 201560215 (if it does not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
 @file{20160215/file-20160215-1455569023.ts}, @file{20160215/file-20160215-1455569024.ts}, etc.
 
 @example
-ffmpeg -i in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y/%m/%d/file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y/%m/%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will create a directory hierarchy 2016/02/15 (if any of them do not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
@@ -716,17 +780,17 @@ Possible values:
 
 @table @samp
 @item mpegts
-If this flag is set, the hls segment files will format to mpegts.
-the mpegts files is used in all hls versions.
+Output segment files in MPEG-2 Transport Stream format. This is
+compatible with all HLS versions.
 
 @item fmp4
-If this flag is set, the hls segment files will format to fragment mp4 looks like dash.
-the fmp4 files is used in hls after version 7.
+Output segment files in fragmented MP4 format, similar to MPEG-DASH.
+fmp4 files may be used in HLS version 7 and above.
 
 @end table
 
 @item hls_fmp4_init_filename @var{filename}
-set filename to the fragment files header file, default filename is @file{init.mp4}.
+Set filename to the fragment files header file, default filename is @file{init.mp4}.
 
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
@@ -791,24 +855,24 @@ Generate @code{EXT-X-PROGRAM-DATE-TIME} tags.
 
 @item second_level_segment_index
 Makes it possible to use segment indexes as %%d in hls_segment_filename expression
-besides date/time values when use_localtime is on.
+besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xd format is available where x is the required width.
 
 @item second_level_segment_size
 Makes it possible to use segment sizes (counted in bytes) as %%s in hls_segment_filename
-expression besides date/time values when use_localtime is on.
+expression besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xs format is available where x is the required width.
 
 @item second_level_segment_duration
 Makes it possible to use segment duration (calculated  in microseconds) as %%t in hls_segment_filename
-expression besides date/time values when use_localtime is on.
+expression besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xt format is available where x is the required width.
 
 @example
 ffmpeg -i sample.mpeg \
    -f hls -hls_time 3 -hls_list_size 5 \
    -hls_flags second_level_segment_index+second_level_segment_size+second_level_segment_duration \
-   -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename "segment_%Y%m%d%H%M%S_%%04d_%%08s_%%013t.ts" stream.m3u8
+   -strftime 1 -strftime_mkdir 1 -hls_segment_filename "segment_%Y%m%d%H%M%S_%%04d_%%08s_%%013t.ts" stream.m3u8
 @end example
 This will produce segments like this:
 @file{segment_20170102194334_0003_00122200_0000003000000.ts}, @file{segment_20170102194334_0004_00120072_0000003000000.ts} etc.
@@ -901,6 +965,43 @@ and they are mapped to the two video only variant streams with audio group names
 
 By default, a single hls variant containing all the encoded streams is created.
 
+@item cc_stream_map
+Map string which specifies different closed captions groups and their
+attributes. The closed captions stream groups are separated by space.
+Expected string format is like this
+"ccgroup:<group name>,instreamid:<INSTREAM-ID>,language:<language code> ....".
+'ccgroup' and 'instreamid' are mandatory attributes. 'language' is an optional
+attribute.
+The closed captions groups configured using this option are mapped to different
+variant streams by providing the same 'ccgroup' name in the
+@code{var_stream_map} string. If @code{var_stream_map} is not set, then the
+first available ccgroup in @code{cc_stream_map} is mapped to the output variant
+stream. The examples for these two use cases are given below.
+
+@example
+ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
+  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out.m3u8
+@end example
+This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in
+the master playlist with group name 'cc', langauge 'en' (english) and
+INSTREAM-ID 'CC1'. Also, it adds @code{CLOSED-CAPTIONS} attribute with group
+name 'cc' for the output variant stream.
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -a53cc:0 1 -a53cc:1 1\
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls \
+  -cc_stream_map "ccgroup:cc,instreamid:CC1,language:en ccgroup:cc,instreamid:CC2,language:sp" \
+  -var_stream_map "v:0,a:0,ccgroup:cc v:1,a:1,ccgroup:cc" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example adds two @code{#EXT-X-MEDIA} tags with @code{TYPE=CLOSED-CAPTIONS} in
+the master playlist for the INSTREAM-IDs 'CC1' and 'CC2'. Also, it adds
+@code{CLOSED-CAPTIONS} attribute with group name 'cc' for the two output variant
+streams.
+
 @item master_pl_name
 Create HLS master playlist with the given name.
 
@@ -923,6 +1024,12 @@ publishing it repeatedly every after 30 segments i.e. every after 60s.
 
 @item http_persistent
 Use persistent HTTP connections. Applicable only for HTTP output.
+
+@item timeout
+Set timeout for socket I/O operations. Applicable only for HTTP output.
+
+@item -ignore_io_errors
+Ignore IO errors during open, write and delete. Useful for long-duration runs with network output.
 
 @end table
 
@@ -1231,6 +1338,10 @@ more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags skip_sidx
+Skip writing of sidx atom. When bitrate overhead due to sidx atom is high,
+this option could be used for cases where sidx atom is not mandatory.
+When global_sidx flag is enabled, this option will be ignored.
 @item -movflags faststart
 Run a second pass moving the index (moov atom) to the beginning of the file.
 This operation can take a while, and will not work in various situations such
@@ -1262,6 +1373,18 @@ be negative. This enables the initial sample to have DTS/CTS of zero, and
 reduces the need for edit lists for some cases such as video tracks with
 B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
+
+This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -write_prft
+Write producer time reference box (PRFT) with a specified time source for the
+NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
+as wallclock time and @samp{pts} to specify timesource as input packets' PTS
+values.
+
+Setting value to @samp{pts} is applicable only for a live encoding use case,
+where PTS values are set as as wallclock time at the source. For example, an
+encoding use case with decklink capture source where @option{video_pts} and
+@option{audio_pts} are set to @samp{abs_wallclock}.
 @end table
 
 @subsection Example
@@ -1970,20 +2093,35 @@ ffmpeg -re -i ... -c:v libx264 -c:a aac -f fifo -fifo_format flv -map 0:v -map 0
 @anchor{tee}
 @section tee
 
-The tee muxer can be used to write the same data to several files or any
-other kind of muxer. It can be used, for example, to both stream a video to
-the network and save it to disk at the same time.
+The tee muxer can be used to write the same data to several outputs, such as files or streams.
+It can be used, for example, to stream a video over a network and save it to disk at the same time.
 
 It is different from specifying several outputs to the @command{ffmpeg}
-command-line tool because the audio and video data will be encoded only once
-with the tee muxer; encoding can be a very expensive process. It is not
-useful when using the libavformat API directly because it is then possible
-to feed the same packets to several muxers directly.
+command-line tool. With the tee muxer, the audio and video data will be encoded only once.
+With conventional multiple outputs, multiple encoding operations in parallel are initiated,
+which can be a very expensive process. The tee muxer is not useful when using the libavformat API
+directly because it is then possible to feed the same packets to several muxers directly.
+
+Since the tee muxer does not represent any particular output format, ffmpeg cannot auto-select
+output streams. So all streams intended for output must be specified using @code{-map}. See
+the examples below.
+
+Some encoders may need different options depending on the output format;
+the auto-detection of this can not work with the tee muxer, so they need to be explicitly specified.
+The main example is the @option{global_header} flag.
+
+The slave outputs are specified in the file name given to the muxer,
+separated by '|'. If any of the slave name contains the '|' separator,
+leading or trailing spaces or any special character, those must be
+escaped (see @ref{quoting_and_escaping,,the "Quoting and escaping"
+section in the ffmpeg-utils(1) manual,ffmpeg-utils}).
+
+@subsection Options
 
 @table @option
 
 @item use_fifo @var{bool}
-If set to 1, slave outputs will be processed in separate thread using @ref{fifo}
+If set to 1, slave outputs will be processed in separate threads using the @ref{fifo}
 muxer. This allows to compensate for different speed/latency/reliability of
 outputs and setup transparent recovery. By default this feature is turned off.
 
@@ -1991,12 +2129,6 @@ outputs and setup transparent recovery. By default this feature is turned off.
 Options to pass to fifo pseudo-muxer instances. See @ref{fifo}.
 
 @end table
-
-The slave outputs are specified in the file name given to the muxer,
-separated by '|'. If any of the slave name contains the '|' separator,
-leading or trailing spaces or any special character, it must be
-escaped (see @ref{quoting_and_escaping,,the "Quoting and escaping"
-section in the ffmpeg-utils(1) manual,ffmpeg-utils}).
 
 Muxer options can be specified for each slave by prepending them as a list of
 @var{key}=@var{value} pairs separated by ':', between square brackets. If
@@ -2006,12 +2138,26 @@ must be escaped; note that this is a second level escaping.
 The following special options are also recognized:
 @table @option
 @item f
-Specify the format name. Useful if it cannot be guessed from the
-output name suffix.
+Specify the format name. Required if it cannot be guessed from the
+output URL.
 
 @item bsfs[/@var{spec}]
 Specify a list of bitstream filters to apply to the specified
 output.
+
+It is possible to specify to which streams a given bitstream filter
+applies, by appending a stream specifier to the option separated by
+@code{/}. @var{spec} must be a stream specifier (see @ref{Format
+stream specifiers}).
+
+If the stream specifier is not specified, the bitstream filters will be
+applied to all streams in the output. This will cause that output operation
+to fail if the output contains streams to which the bitstream filter cannot
+be applied e.g. @code{h264_mp4toannexb} being applied to an output containing an audio stream.
+
+Options for a bitstream filter must be specified in the form of @code{opt=value}.
+
+Several bitstream filters can be specified, separated by ",".
 
 @item use_fifo @var{bool}
 This allows to override tee muxer use_fifo option for individual slave muxer.
@@ -2020,19 +2166,13 @@ This allows to override tee muxer use_fifo option for individual slave muxer.
 This allows to override tee muxer fifo_options for individual slave muxer.
 See @ref{fifo}.
 
-It is possible to specify to which streams a given bitstream filter
-applies, by appending a stream specifier to the option separated by
-@code{/}. @var{spec} must be a stream specifier (see @ref{Format
-stream specifiers}).  If the stream specifier is not specified, the
-bitstream filters will be applied to all streams in the output.
-
-Several bitstream filters can be specified, separated by ",".
-
 @item select
 Select the streams that should be mapped to the slave output,
 specified by a stream specifier. If not specified, this defaults to
-all the input streams. You may use multiple stream specifiers
-separated by commas (@code{,}) e.g.: @code{a:0,v}
+all the mapped streams. This will cause that output operation to fail
+if the output format does not accept all mapped streams.
+
+You may use multiple stream specifiers separated by commas (@code{,}) e.g.: @code{a:0,v}
 
 @item onfail
 Specify behaviour on output failure. This can be set to either @code{abort} (which is
@@ -2046,7 +2186,7 @@ will continue without being affected.
 @itemize
 @item
 Encode something and both archive it in a WebM file and stream it
-as MPEG-TS over UDP (the streams need to be explicitly mapped):
+as MPEG-TS over UDP:
 @example
 ffmpeg -i ... -c:v libx264 -c:a mp2 -f tee -map 0:v -map 0:a
   "archive-20121107.mkv|[f=mpegts]udp://10.0.1.255:1234/"
@@ -2069,22 +2209,18 @@ option is applied to @file{out.aac} in order to make it contain only
 audio packets.
 @example
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
-       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
+       -f tee "[bsfs/v=dump_extra=freq=keyframe]out.ts|[movflags=+faststart]out.mp4|[select=a]out.aac"
 @end example
 
 @item
-As below, but select only stream @code{a:1} for the audio output. Note
+As above, but select only stream @code{a:1} for the audio output. Note
 that a second level escaping must be performed, as ":" is a special
 character used to separate options.
 @example
 ffmpeg -i ... -map 0 -flags +global_header -c:v libx264 -c:a aac
-       -f tee "[bsfs/v=dump_extra]out.ts|[movflags=+faststart]out.mp4|[select=\'a:1\']out.aac"
+       -f tee "[bsfs/v=dump_extra=freq=keyframe]out.ts|[movflags=+faststart]out.mp4|[select=\'a:1\']out.aac"
 @end example
 @end itemize
-
-Note: some codecs may need different options depending on the output format;
-the auto-detection of this can not work with the tee muxer. The main example
-is the @option{global_header} flag.
 
 @section webm_dash_manifest
 

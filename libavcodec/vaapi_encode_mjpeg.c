@@ -23,9 +23,12 @@
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixfmt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avcodec.h"
+#include "bytestream.h"
+#include "cbs.h"
+#include "cbs_jpeg.h"
 #include "internal.h"
 #include "jpegtables.h"
 #include "mjpeg.h"
@@ -56,185 +59,91 @@ static const unsigned char vaapi_encode_mjpeg_quant_chrominance[64] = {
 };
 
 typedef struct VAAPIEncodeMJPEGContext {
+    VAAPIEncodeContext common;
+
+    // User options.
+    int jfif;
+    int huffman;
+
+    // Derived settings.
     int quality;
-    int component_subsample_h[3];
-    int component_subsample_v[3];
+    uint8_t jfif_data[14];
 
-    VAQMatrixBufferJPEG quant_tables;
-    VAHuffmanTableBufferJPEGBaseline huffman_tables;
+    // Writer structures.
+    JPEGRawFrameHeader     frame_header;
+    JPEGRawScan            scan;
+    JPEGRawApplicationData jfif_header;
+    JPEGRawQuantisationTableSpecification quant_tables;
+    JPEGRawHuffmanTableSpecification      huffman_tables;
+
+    CodedBitstreamContext *cbc;
+    CodedBitstreamFragment current_fragment;
 } VAAPIEncodeMJPEGContext;
-
-static av_cold void vaapi_encode_mjpeg_copy_huffman(unsigned char *dst_lengths,
-                                                    unsigned char *dst_values,
-                                                    const unsigned char *src_lengths,
-                                                    const unsigned char *src_values)
-{
-    int i, mt;
-
-    ++src_lengths;
-
-    mt = 0;
-    for (i = 0; i < 16; i++)
-        mt += (dst_lengths[i] = src_lengths[i]);
-
-    for (i = 0; i < mt; i++)
-        dst_values[i] = src_values[i];
-}
-
-static av_cold void vaapi_encode_mjpeg_init_tables(AVCodecContext *avctx)
-{
-    VAAPIEncodeContext                *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext          *priv = ctx->priv_data;
-    VAQMatrixBufferJPEG             *quant = &priv->quant_tables;
-    VAHuffmanTableBufferJPEGBaseline *huff = &priv->huffman_tables;
-    int i;
-
-    quant->load_lum_quantiser_matrix = 1;
-    quant->load_chroma_quantiser_matrix = 1;
-
-    for (i = 0; i < 64; i++) {
-        quant->lum_quantiser_matrix[i] =
-            vaapi_encode_mjpeg_quant_luminance[i];
-        quant->chroma_quantiser_matrix[i] =
-            vaapi_encode_mjpeg_quant_chrominance[i];
-    }
-
-    huff->load_huffman_table[0] = 1;
-    vaapi_encode_mjpeg_copy_huffman(huff->huffman_table[0].num_dc_codes,
-                                    huff->huffman_table[0].dc_values,
-                                    avpriv_mjpeg_bits_dc_luminance,
-                                    avpriv_mjpeg_val_dc);
-    vaapi_encode_mjpeg_copy_huffman(huff->huffman_table[0].num_ac_codes,
-                                    huff->huffman_table[0].ac_values,
-                                    avpriv_mjpeg_bits_ac_luminance,
-                                    avpriv_mjpeg_val_ac_luminance);
-    memset(huff->huffman_table[0].pad, 0, sizeof(huff->huffman_table[0].pad));
-
-    huff->load_huffman_table[1] = 1;
-    vaapi_encode_mjpeg_copy_huffman(huff->huffman_table[1].num_dc_codes,
-                                    huff->huffman_table[1].dc_values,
-                                    avpriv_mjpeg_bits_dc_chrominance,
-                                    avpriv_mjpeg_val_dc);
-    vaapi_encode_mjpeg_copy_huffman(huff->huffman_table[1].num_ac_codes,
-                                    huff->huffman_table[1].ac_values,
-                                    avpriv_mjpeg_bits_ac_chrominance,
-                                    avpriv_mjpeg_val_ac_chrominance);
-    memset(huff->huffman_table[1].pad, 0, sizeof(huff->huffman_table[1].pad));
-}
-
-static void vaapi_encode_mjpeg_write_marker(PutBitContext *pbc, int marker)
-{
-    put_bits(pbc, 8, 0xff);
-    put_bits(pbc, 8, marker);
-}
 
 static int vaapi_encode_mjpeg_write_image_header(AVCodecContext *avctx,
                                                  VAAPIEncodePicture *pic,
                                                  VAAPIEncodeSlice *slice,
                                                  char *data, size_t *data_len)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
-    VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
-    VAEncSliceParameterBufferJPEG *vslice = slice->codec_slice_params;
-    VAAPIEncodeMJPEGContext         *priv = ctx->priv_data;
-    PutBitContext pbc;
-    int t, i, quant_scale;
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
+    CodedBitstreamFragment  *frag = &priv->current_fragment;
+    int err;
 
-    init_put_bits(&pbc, data, *data_len);
-
-    vaapi_encode_mjpeg_write_marker(&pbc, SOI);
-
-    // Quantisation table coefficients are scaled for quality by the driver,
-    // so we also need to do it ourselves here so that headers match.
-    if (priv->quality < 50)
-        quant_scale = 5000 / priv->quality;
-    else
-        quant_scale = 200 - 2 * priv->quality;
-
-    for (t = 0; t < 2; t++) {
-        int q;
-
-        vaapi_encode_mjpeg_write_marker(&pbc, DQT);
-
-        put_bits(&pbc, 16, 3 + 64); // Lq
-        put_bits(&pbc, 4, 0); // Pq
-        put_bits(&pbc, 4, t); // Tq
-
-        for (i = 0; i < 64; i++) {
-            q = i[t ? priv->quant_tables.chroma_quantiser_matrix
-                    : priv->quant_tables.lum_quantiser_matrix];
-            q = (q * quant_scale) / 100;
-            if (q < 1)   q = 1;
-            if (q > 255) q = 255;
-            put_bits(&pbc, 8, q);
-        }
+    if (priv->jfif) {
+        err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+                                         JPEG_MARKER_APPN + 0,
+                                         &priv->jfif_header, NULL);
+        if (err < 0)
+            goto fail;
     }
 
-    vaapi_encode_mjpeg_write_marker(&pbc, SOF0);
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+                                     JPEG_MARKER_DQT,
+                                     &priv->quant_tables, NULL);
+    if (err < 0)
+        goto fail;
 
-    put_bits(&pbc, 16, 8 + 3 * vpic->num_components); // Lf
-    put_bits(&pbc, 8,  vpic->sample_bit_depth); // P
-    put_bits(&pbc, 16, vpic->picture_height);   // Y
-    put_bits(&pbc, 16, vpic->picture_width);    // X
-    put_bits(&pbc, 8,  vpic->num_components);   // Nf
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+                                     JPEG_MARKER_SOF0,
+                                     &priv->frame_header, NULL);
+    if (err < 0)
+        goto fail;
 
-    for (i = 0; i < vpic->num_components; i++) {
-        put_bits(&pbc, 8, vpic->component_id[i]); // Ci
-        put_bits(&pbc, 4, priv->component_subsample_h[i]); // Hi
-        put_bits(&pbc, 4, priv->component_subsample_v[i]); // Vi
-        put_bits(&pbc, 8, vpic->quantiser_table_selector[i]); // Tqi
+    if (priv->huffman) {
+        err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+                                         JPEG_MARKER_DHT,
+                                         &priv->huffman_tables, NULL);
+        if (err < 0)
+            goto fail;
     }
 
-    for (t = 0; t < 4; t++) {
-        int mt;
-        unsigned char *lengths, *values;
+    err = ff_cbs_insert_unit_content(priv->cbc, frag, -1,
+                                     JPEG_MARKER_SOS,
+                                     &priv->scan, NULL);
+    if (err < 0)
+        goto fail;
 
-        vaapi_encode_mjpeg_write_marker(&pbc, DHT);
-
-        if ((t & 1) == 0) {
-            lengths = priv->huffman_tables.huffman_table[t / 2].num_dc_codes;
-            values  = priv->huffman_tables.huffman_table[t / 2].dc_values;
-        } else {
-            lengths = priv->huffman_tables.huffman_table[t / 2].num_ac_codes;
-            values  = priv->huffman_tables.huffman_table[t / 2].ac_values;
-        }
-
-        mt = 0;
-        for (i = 0; i < 16; i++)
-            mt += lengths[i];
-
-        put_bits(&pbc, 16, 2 + 17 + mt); // Lh
-        put_bits(&pbc, 4, t & 1); // Tc
-        put_bits(&pbc, 4, t / 2); // Th
-
-        for (i = 0; i < 16; i++)
-            put_bits(&pbc, 8, lengths[i]);
-        for (i = 0; i < mt; i++)
-            put_bits(&pbc, 8, values[i]);
+    err = ff_cbs_write_fragment_data(priv->cbc, frag);
+    if (err < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to write image header.\n");
+        goto fail;
     }
 
-    vaapi_encode_mjpeg_write_marker(&pbc, SOS);
-
-    av_assert0(vpic->num_components == vslice->num_components);
-
-    put_bits(&pbc, 16, 6 + 2 * vslice->num_components); // Ls
-    put_bits(&pbc, 8,  vslice->num_components); // Ns
-
-    for (i = 0; i < vslice->num_components; i++) {
-        put_bits(&pbc, 8, vslice->components[i].component_selector); // Csj
-        put_bits(&pbc, 4, vslice->components[i].dc_table_selector);  // Tdj
-        put_bits(&pbc, 4, vslice->components[i].ac_table_selector);  // Taj
+    if (*data_len < 8 * frag->data_size) {
+        av_log(avctx, AV_LOG_ERROR, "Image header too large: "
+               "%zu < %zu.\n", *data_len, 8 * frag->data_size);
+        err = AVERROR(ENOSPC);
+        goto fail;
     }
 
-    put_bits(&pbc, 8, 0); // Ss
-    put_bits(&pbc, 8, 63); // Se
-    put_bits(&pbc, 4, 0); // Ah
-    put_bits(&pbc, 4, 0); // Al
+    // Remove the EOI at the end of the fragment.
+    memcpy(data, frag->data, frag->data_size - 2);
+    *data_len = 8 * (frag->data_size - 2);
 
-    *data_len = put_bits_count(&pbc);
-    flush_put_bits(&pbc);
-
-    return 0;
+    err = 0;
+fail:
+    ff_cbs_fragment_uninit(priv->cbc, frag);
+    return err;
 }
 
 static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
@@ -242,24 +151,67 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
                                                  int index, int *type,
                                                  char *data, size_t *data_len)
 {
-    VAAPIEncodeContext       *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext *priv = ctx->priv_data;
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
+    int t, i, k;
 
     if (index == 0) {
         // Write quantisation tables.
-        if (*data_len < sizeof(priv->quant_tables))
-            return AVERROR(EINVAL);
-        *type = VAQMatrixBufferType;
-        memcpy(data, &priv->quant_tables,
-               *data_len = sizeof(priv->quant_tables));
+        JPEGRawFrameHeader                     *fh = &priv->frame_header;
+        JPEGRawQuantisationTableSpecification *dqt = &priv->quant_tables;
+        VAQMatrixBufferJPEG *quant;
+
+        if (*data_len < sizeof(*quant))
+            return AVERROR(ENOSPC);
+        *type     = VAQMatrixBufferType;
+        *data_len = sizeof(*quant);
+
+        quant = (VAQMatrixBufferJPEG*)data;
+        memset(quant, 0, sizeof(*quant));
+
+        quant->load_lum_quantiser_matrix = 1;
+        for (i = 0; i < 64; i++)
+            quant->lum_quantiser_matrix[i] = dqt->table[fh->Tq[0]].Q[i];
+
+        if (fh->Nf > 1) {
+            quant->load_chroma_quantiser_matrix = 1;
+            for (i = 0; i < 64; i++)
+                quant->chroma_quantiser_matrix[i] =
+                    dqt->table[fh->Tq[1]].Q[i];
+        }
 
     } else if (index == 1) {
         // Write huffman tables.
-        if (*data_len < sizeof(priv->huffman_tables))
-            return AVERROR(EINVAL);
-        *type = VAHuffmanTableBufferType;
-        memcpy(data, &priv->huffman_tables,
-               *data_len = sizeof(priv->huffman_tables));
+        JPEGRawScanHeader                 *sh = &priv->scan.header;
+        JPEGRawHuffmanTableSpecification *dht = &priv->huffman_tables;
+        VAHuffmanTableBufferJPEGBaseline *huff;
+
+        if (*data_len < sizeof(*huff))
+            return AVERROR(ENOSPC);
+        *type     = VAHuffmanTableBufferType;
+        *data_len = sizeof(*huff);
+
+        huff = (VAHuffmanTableBufferJPEGBaseline*)data;
+        memset(huff, 0, sizeof(*huff));
+
+        for (t = 0; t < 1 + (sh->Ns > 1); t++) {
+            const JPEGRawHuffmanTable *ht;
+
+            huff->load_huffman_table[t] = 1;
+
+            ht = &dht->table[2 * t];
+            for (i = k = 0; i < 16; i++)
+                k += (huff->huffman_table[t].num_dc_codes[i] = ht->L[i]);
+            av_assert0(k <= sizeof(huff->huffman_table[t].dc_values));
+            for (i = 0; i < k; i++)
+                huff->huffman_table[t].dc_values[i] = ht->V[i];
+
+            ht = &dht->table[2 * t + 1];
+            for (i = k = 0; i < 16; i++)
+                k += (huff->huffman_table[t].num_ac_codes[i] = ht->L[i]);
+            av_assert0(k <= sizeof(huff->huffman_table[t].ac_values));
+            for (i = 0; i < k; i++)
+                huff->huffman_table[t].ac_values[i] = ht->V[i];
+        }
 
     } else {
         return AVERROR_EOF;
@@ -270,43 +222,185 @@ static int vaapi_encode_mjpeg_write_extra_buffer(AVCodecContext *avctx,
 static int vaapi_encode_mjpeg_init_picture_params(AVCodecContext *avctx,
                                                   VAAPIEncodePicture *pic)
 {
-    VAAPIEncodeContext               *ctx = avctx->priv_data;
+    VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
+    JPEGRawFrameHeader                *fh = &priv->frame_header;
+    JPEGRawScanHeader                 *sh = &priv->scan.header;
     VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
-    VAAPIEncodeMJPEGContext         *priv = ctx->priv_data;
+    const AVPixFmtDescriptor *desc;
+    const uint8_t *components;
+    int t, i, quant_scale, len;
 
-    vpic->reconstructed_picture = pic->recon_surface;
-    vpic->coded_buf = pic->output_buffer;
+    desc = av_pix_fmt_desc_get(priv->common.input_frames->sw_format);
+    av_assert0(desc);
+    if (desc->flags & AV_PIX_FMT_FLAG_RGB)
+        components = (uint8_t[3]) { 'R', 'G', 'B' };
+    else
+        components = (uint8_t[3]) {  1,   2,   3  };
 
-    vpic->picture_width  = avctx->width;
-    vpic->picture_height = avctx->height;
+    // Frame header.
 
-    vpic->pic_flags.bits.profile      = 0;
-    vpic->pic_flags.bits.progressive  = 0;
-    vpic->pic_flags.bits.huffman      = 1;
-    vpic->pic_flags.bits.interleaved  = 0;
-    vpic->pic_flags.bits.differential = 0;
+    fh->P  = 8;
+    fh->Y  = avctx->height;
+    fh->X  = avctx->width;
+    fh->Nf = desc->nb_components;
 
-    vpic->sample_bit_depth = 8;
-    vpic->num_scan = 1;
+    for (i = 0; i < fh->Nf; i++) {
+        fh->C[i] = components[i];
+        fh->H[i] = 1 + (i == 0 ? desc->log2_chroma_w : 0);
+        fh->V[i] = 1 + (i == 0 ? desc->log2_chroma_h : 0);
 
-    vpic->num_components = 3;
+        fh->Tq[i] = !!i;
+    }
 
-    vpic->component_id[0] = 1;
-    vpic->component_id[1] = 2;
-    vpic->component_id[2] = 3;
+    fh->Lf = 8 + 3 * fh->Nf;
 
-    priv->component_subsample_h[0] = 2;
-    priv->component_subsample_v[0] = 2;
-    priv->component_subsample_h[1] = 1;
-    priv->component_subsample_v[1] = 1;
-    priv->component_subsample_h[2] = 1;
-    priv->component_subsample_v[2] = 1;
+    // JFIF header.
+    if (priv->jfif) {
+        JPEGRawApplicationData *app = &priv->jfif_header;
+        AVRational sar = pic->input_image->sample_aspect_ratio;
+        int sar_w, sar_h;
+        PutByteContext pbc;
 
-    vpic->quantiser_table_selector[0] = 0;
-    vpic->quantiser_table_selector[1] = 1;
-    vpic->quantiser_table_selector[2] = 1;
+        bytestream2_init_writer(&pbc, priv->jfif_data,
+                                sizeof(priv->jfif_data));
 
-    vpic->quality = priv->quality;
+        bytestream2_put_buffer(&pbc, "JFIF", 5);
+        bytestream2_put_be16(&pbc, 0x0102);
+        bytestream2_put_byte(&pbc, 0);
+
+        av_reduce(&sar_w, &sar_h, sar.num, sar.den, 65535);
+        if (sar_w && sar_h) {
+            bytestream2_put_be16(&pbc, sar_w);
+            bytestream2_put_be16(&pbc, sar_h);
+        } else {
+            bytestream2_put_be16(&pbc, 1);
+            bytestream2_put_be16(&pbc, 1);
+        }
+
+        bytestream2_put_byte(&pbc, 0);
+        bytestream2_put_byte(&pbc, 0);
+
+        av_assert0(bytestream2_get_bytes_left_p(&pbc) == 0);
+
+        app->Lp     = 2 + sizeof(priv->jfif_data);
+        app->Ap     = priv->jfif_data;
+        app->Ap_ref = NULL;
+    }
+
+    // Quantisation tables.
+
+    if (priv->quality < 50)
+        quant_scale = 5000 / priv->quality;
+    else
+        quant_scale = 200 - 2 * priv->quality;
+
+    len = 2;
+
+    for (t = 0; t < 1 + (fh->Nf > 1); t++) {
+        JPEGRawQuantisationTable *quant = &priv->quant_tables.table[t];
+        const uint8_t *data = t == 0 ?
+            vaapi_encode_mjpeg_quant_luminance :
+            vaapi_encode_mjpeg_quant_chrominance;
+
+        quant->Pq = 0;
+        quant->Tq = t;
+        for (i = 0; i < 64; i++)
+            quant->Q[i] = av_clip(data[i] * quant_scale / 100, 1, 255);
+
+        len += 65;
+    }
+
+    priv->quant_tables.Lq = len;
+
+    // Huffman tables.
+
+    len = 2;
+
+    for (t = 0; t < 2 + 2 * (fh->Nf > 1); t++) {
+        JPEGRawHuffmanTable *huff = &priv->huffman_tables.table[t];
+        const uint8_t *lengths, *values;
+        int k;
+
+        switch (t) {
+        case 0:
+            lengths = avpriv_mjpeg_bits_dc_luminance + 1;
+            values  = avpriv_mjpeg_val_dc;
+            break;
+        case 1:
+            lengths = avpriv_mjpeg_bits_ac_luminance + 1;
+            values  = avpriv_mjpeg_val_ac_luminance;
+            break;
+        case 2:
+            lengths = avpriv_mjpeg_bits_dc_chrominance + 1;
+            values  = avpriv_mjpeg_val_dc;
+            break;
+        case 3:
+            lengths = avpriv_mjpeg_bits_ac_chrominance + 1;
+            values  = avpriv_mjpeg_val_ac_chrominance;
+            break;
+        }
+
+        huff->Tc = t % 2;
+        huff->Th = t / 2;
+
+        for (i = k = 0; i < 16; i++)
+            k += (huff->L[i] = lengths[i]);
+
+        for (i = 0; i < k; i++)
+            huff->V[i] = values[i];
+
+        len += 17 + k;
+    }
+
+    priv->huffman_tables.Lh = len;
+
+    // Scan header.
+
+    sh->Ns = fh->Nf;
+
+    for (i = 0; i < fh->Nf; i++) {
+        sh->Cs[i] = fh->C[i];
+        sh->Td[i] = i > 0;
+        sh->Ta[i] = i > 0;
+    }
+
+    sh->Ss = 0;
+    sh->Se = 63;
+    sh->Ah = 0;
+    sh->Al = 0;
+
+    sh->Ls = 6 + 2 * sh->Ns;
+
+
+    *vpic = (VAEncPictureParameterBufferJPEG) {
+        .reconstructed_picture = pic->recon_surface,
+        .coded_buf             = pic->output_buffer,
+
+        .picture_width  = fh->X,
+        .picture_height = fh->Y,
+
+        .pic_flags.bits = {
+            .profile      = 0,
+            .progressive  = 0,
+            .huffman      = 1,
+            .interleaved  = 0,
+            .differential = 0,
+        },
+
+        .sample_bit_depth = fh->P,
+        .num_scan         = 1,
+        .num_components   = fh->Nf,
+
+        // The driver modifies the provided quantisation tables according
+        // to this quality value; the middle value of 50 makes that the
+        // identity so that they are used unchanged.
+        .quality = 50,
+    };
+
+    for (i = 0; i < fh->Nf; i++) {
+        vpic->component_id[i]             = fh->C[i];
+        vpic->quantiser_table_selector[i] = fh->Tq[i];
+    }
 
     pic->nb_slices = 1;
 
@@ -317,17 +411,20 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
                                                 VAAPIEncodePicture *pic,
                                                 VAAPIEncodeSlice *slice)
 {
-    VAEncPictureParameterBufferJPEG *vpic = pic->codec_picture_params;
+    VAAPIEncodeMJPEGContext         *priv = avctx->priv_data;
+    JPEGRawScanHeader                 *sh = &priv->scan.header;
     VAEncSliceParameterBufferJPEG *vslice = slice->codec_slice_params;
     int i;
 
-    vslice->restart_interval = 0;
+    *vslice = (VAEncSliceParameterBufferJPEG) {
+        .restart_interval = 0,
+        .num_components   = sh->Ns,
+    };
 
-    vslice->num_components = vpic->num_components;
-    for (i = 0; i < vslice->num_components; i++) {
-        vslice->components[i].component_selector = i + 1;
-        vslice->components[i].dc_table_selector = (i > 0);
-        vslice->components[i].ac_table_selector = (i > 0);
+    for (i = 0; i < sh->Ns; i++) {
+        vslice->components[i].component_selector = sh->Cs[i];
+        vslice->components[i].dc_table_selector  = sh->Td[i];
+        vslice->components[i].ac_table_selector  = sh->Ta[i];
     }
 
     return 0;
@@ -336,7 +433,8 @@ static int vaapi_encode_mjpeg_init_slice_params(AVCodecContext *avctx,
 static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
 {
     VAAPIEncodeContext       *ctx = avctx->priv_data;
-    VAAPIEncodeMJPEGContext *priv = ctx->priv_data;
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
+    int err;
 
     priv->quality = avctx->global_quality;
     if (priv->quality < 1 || priv->quality > 100) {
@@ -356,13 +454,29 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
         ctx->va_packed_headers |=  VA_ENC_PACKED_HEADER_SLICE;
     }
 
-    vaapi_encode_mjpeg_init_tables(avctx);
+    err = ff_cbs_init(&priv->cbc, AV_CODEC_ID_MJPEG, avctx);
+    if (err < 0)
+        return err;
 
     return 0;
 }
 
+static const VAAPIEncodeProfile vaapi_encode_mjpeg_profiles[] = {
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+            8, 1, 0, 0, VAProfileJPEGBaseline },
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+            8, 3, 1, 1, VAProfileJPEGBaseline },
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+            8, 3, 1, 0, VAProfileJPEGBaseline },
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,
+            8, 3, 0, 0, VAProfileJPEGBaseline },
+    { FF_PROFILE_UNKNOWN }
+};
+
 static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
-    .priv_data_size        = sizeof(VAAPIEncodeMJPEGContext),
+    .profiles              = vaapi_encode_mjpeg_profiles,
+
+    .flags                 = FLAG_CONSTANT_QUALITY_ONLY,
 
     .configure             = &vaapi_encode_mjpeg_configure,
 
@@ -384,15 +498,8 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
 
     ctx->codec = &vaapi_encode_type_mjpeg;
 
-    ctx->va_profile    = VAProfileJPEGBaseline;
-    ctx->va_entrypoint = VAEntrypointEncPicture;
-
-    ctx->va_rt_format = VA_RT_FORMAT_YUV420;
-
-    ctx->va_rc_mode = VA_RC_CQP;
-
     // The JPEG image header - see note above.
-    ctx->va_packed_headers =
+    ctx->desired_packed_headers =
         VA_ENC_PACKED_HEADER_RAW_DATA;
 
     ctx->surface_width  = FFALIGN(avctx->width,  8);
@@ -401,14 +508,41 @@ static av_cold int vaapi_encode_mjpeg_init(AVCodecContext *avctx)
     return ff_vaapi_encode_init(avctx);
 }
 
+static av_cold int vaapi_encode_mjpeg_close(AVCodecContext *avctx)
+{
+    VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
+
+    ff_cbs_close(&priv->cbc);
+
+    return ff_vaapi_encode_close(avctx);
+}
+
+#define OFFSET(x) offsetof(VAAPIEncodeMJPEGContext, x)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
+static const AVOption vaapi_encode_mjpeg_options[] = {
+    VAAPI_ENCODE_COMMON_OPTIONS,
+
+    { "jfif", "Include JFIF header",
+      OFFSET(jfif), AV_OPT_TYPE_BOOL,
+      { .i64 = 0 }, 0, 1, FLAGS },
+    { "huffman", "Include huffman tables",
+      OFFSET(huffman), AV_OPT_TYPE_BOOL,
+      { .i64 = 1 }, 0, 1, FLAGS },
+
+    { NULL },
+};
+
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {
     { "global_quality", "80" },
+    { "b",              "0"  },
+    { "g",              "1"  },
     { NULL },
 };
 
 static const AVClass vaapi_encode_mjpeg_class = {
     .class_name = "mjpeg_vaapi",
     .item_name  = av_default_item_name,
+    .option     = vaapi_encode_mjpeg_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -417,12 +551,13 @@ AVCodec ff_mjpeg_vaapi_encoder = {
     .long_name      = NULL_IF_CONFIG_SMALL("MJPEG (VAAPI)"),
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_MJPEG,
-    .priv_data_size = sizeof(VAAPIEncodeContext),
+    .priv_data_size = sizeof(VAAPIEncodeMJPEGContext),
     .init           = &vaapi_encode_mjpeg_init,
     .encode2        = &ff_vaapi_encode2,
-    .close          = &ff_vaapi_encode_close,
+    .close          = &vaapi_encode_mjpeg_close,
     .priv_class     = &vaapi_encode_mjpeg_class,
-    .capabilities   = AV_CODEC_CAP_HARDWARE,
+    .capabilities   = AV_CODEC_CAP_HARDWARE |
+                      AV_CODEC_CAP_INTRA_ONLY,
     .defaults       = vaapi_encode_mjpeg_defaults,
     .pix_fmts = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_VAAPI,

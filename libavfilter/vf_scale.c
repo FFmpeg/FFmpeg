@@ -261,11 +261,10 @@ static int config_props(AVFilterLink *outlink)
 
     /* TODO: make algorithm configurable */
 
-    scale->input_is_pal = desc->flags & AV_PIX_FMT_FLAG_PAL ||
-                          desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL;
+    scale->input_is_pal = desc->flags & AV_PIX_FMT_FLAG_PAL;
     if (outfmt == AV_PIX_FMT_PAL8) outfmt = AV_PIX_FMT_BGR8;
     scale->output_is_pal = av_pix_fmt_desc_get(outfmt)->flags & AV_PIX_FMT_FLAG_PAL ||
-                           av_pix_fmt_desc_get(outfmt)->flags & AV_PIX_FMT_FLAG_PSEUDOPAL;
+                           av_pix_fmt_desc_get(outfmt)->flags & FF_PSEUDOPAL;
 
     if (scale->sws)
         sws_freeContext(scale->sws);

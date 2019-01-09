@@ -85,6 +85,11 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     }
     *size = off_size;
 
+    if (!*size) {
+        *bufptr = NULL;
+        goto out;
+    }
+
 #if HAVE_MMAP
     ptr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
     if (ptr == MAP_FAILED) {
@@ -126,12 +131,15 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
     read(fd, *bufptr, *size);
 #endif
 
+out:
     close(fd);
     return 0;
 }
 
 void av_file_unmap(uint8_t *bufptr, size_t size)
 {
+    if (!size)
+        return;
 #if HAVE_MMAP
     munmap(bufptr, size);
 #elif HAVE_MAPVIEWOFFILE

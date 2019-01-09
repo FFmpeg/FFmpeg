@@ -982,11 +982,13 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     }
 
     if (s->needs_pce) {
+        char buf[64];
         for (i = 0; i < FF_ARRAY_ELEMS(aac_pce_configs); i++)
             if (avctx->channel_layout == aac_pce_configs[i].layout)
                 break;
-        ERROR_IF(i == FF_ARRAY_ELEMS(aac_pce_configs), "Unsupported channel layout\n");
-        av_log(avctx, AV_LOG_INFO, "Using a PCE to encode channel layout\n");
+        av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
+        ERROR_IF(i == FF_ARRAY_ELEMS(aac_pce_configs), "Unsupported channel layout \"%s\"\n", buf);
+        av_log(avctx, AV_LOG_INFO, "Using a PCE to encode channel layout \"%s\"\n", buf);
         s->pce = aac_pce_configs[i];
         s->reorder_map = s->pce.reorder_map;
         s->chan_map = s->pce.config_map;

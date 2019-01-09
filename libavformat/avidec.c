@@ -670,7 +670,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st->start_time = 0;
             avio_rl32(pb); /* buffer size */
             avio_rl32(pb); /* quality */
-            if (ast->cum_len*ast->scale/ast->rate > 3600) {
+            if (ast->cum_len > 3600LL * ast->rate / ast->scale) {
                 av_log(s, AV_LOG_ERROR, "crazy start time, iam scared, giving up\n");
                 ast->cum_len = 0;
             }
@@ -1228,6 +1228,11 @@ start_sync:
         // detect ##ix chunk and skip
         if (d[2] == 'i' && d[3] == 'x' && n < s->nb_streams) {
             avio_skip(pb, size);
+            goto start_sync;
+        }
+
+        if (d[2] == 'w' && d[3] == 'c' && n < s->nb_streams) {
+            avio_skip(pb, 16 * 3 + 8);
             goto start_sync;
         }
 

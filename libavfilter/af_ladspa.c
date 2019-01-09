@@ -548,8 +548,8 @@ static av_cold int init(AVFilterContext *ctx)
             break;
         p = NULL;
 
-        if (sscanf(arg, "c%d=%f", &i, &val) != 2) {
-            if (sscanf(arg, "%f", &val) != 1) {
+        if (av_sscanf(arg, "c%d=%f", &i, &val) != 2) {
+            if (av_sscanf(arg, "%f", &val) != 1) {
                 av_log(ctx, AV_LOG_ERROR, "Invalid syntax.\n");
                 return AVERROR(EINVAL);
             }
@@ -715,7 +715,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     LADSPA_Data value;
     unsigned long port;
 
-    if (sscanf(cmd, "c%ld", &port) + sscanf(args, "%f", &value) != 2)
+    if (av_sscanf(cmd, "c%ld", &port) + av_sscanf(args, "%f", &value) != 2)
         return AVERROR(EINVAL);
 
     return set_control(ctx, port, value);

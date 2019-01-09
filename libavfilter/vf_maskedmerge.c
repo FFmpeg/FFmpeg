@@ -56,11 +56,53 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+}
+
+typedef struct ThreadData {
+    AVFrame *base, *overlay, *mask;
+    AVFrame *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    MaskedMergeContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *base = td->base;
+    AVFrame *overlay = td->overlay;
+    AVFrame *mask = td->mask;
+    AVFrame *out = td->out;
+    int p;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        const int h = s->height[p];
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],
+                                out->linesize[p],
+                                base->data[p] + slice_start * base->linesize[p],
+                                base->linesize[p],
+                                s->linesize[p], slice_end - slice_start);
+            continue;
+        }
+
+        s->maskedmerge(base->data[p] + slice_start * base->linesize[p],
+                       overlay->data[p] + slice_start * overlay->linesize[p],
+                       mask->data[p] + slice_start * mask->linesize[p],
+                       out->data[p] + slice_start * out->linesize[p],
+                       base->linesize[p], overlay->linesize[p],
+                       mask->linesize[p], out->linesize[p],
+                       s->width[p], slice_end - slice_start,
+                       s->half, s->depth);
+    }
+
+    return 0;
 }
 
 static int process_frame(FFFrameSync *fs)
@@ -69,6 +111,7 @@ static int process_frame(FFFrameSync *fs)
     MaskedMergeContext *s = fs->opaque;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *base, *overlay, *mask;
+    ThreadData td;
     int ret;
 
     if ((ret = ff_framesync_get_frame(&s->fs, 0, &base,    0)) < 0 ||
@@ -81,27 +124,17 @@ static int process_frame(FFFrameSync *fs)
         if (!out)
             return AVERROR(ENOMEM);
     } else {
-        int p;
-
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, base);
 
-        for (p = 0; p < s->nb_planes; p++) {
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
-                                    s->linesize[p], s->height[p]);
-                continue;
-            }
-
-            s->maskedmerge(base->data[p], overlay->data[p],
-                           mask->data[p], out->data[p],
-                           base->linesize[p], overlay->linesize[p],
-                           mask->linesize[p], out->linesize[p],
-                           s->width[p], s->height[p],
-                           s->half, s->depth);
-        }
+        td.out = out;
+        td.base = base;
+        td.overlay = overlay;
+        td.mask = mask;
+        ctx->internal->execute(ctx, filter_slice, &td, NULL,
+                               FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(base->pts, s->fs.time_base, outlink->time_base);
 
@@ -291,5 +324,5 @@ AVFilter ff_vf_maskedmerge = {
     .inputs        = maskedmerge_inputs,
     .outputs       = maskedmerge_outputs,
     .priv_class    = &maskedmerge_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

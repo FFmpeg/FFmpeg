@@ -644,7 +644,7 @@ static int rtsp_listen(AVFormatContext *s)
 
     /* extract hostname and port */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth), host, sizeof(host),
-                 &port, path, sizeof(path), s->filename);
+                 &port, path, sizeof(path), s->url);
 
     /* ff_url_join. No authorization by now (NULL) */
     ff_url_join(rt->control_uri, sizeof(rt->control_uri), proto, NULL, host,
@@ -804,7 +804,7 @@ static int resetup_tcp(AVFormatContext *s)
     int port;
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0,
-                 s->filename);
+                 s->url);
     ff_rtsp_undo_setup(s, 0);
     return ff_rtsp_make_setup_request(s, host, port, RTSP_LOWER_TRANSPORT_TCP,
                                       rt->real_challenge);

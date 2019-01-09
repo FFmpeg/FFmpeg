@@ -38,6 +38,9 @@ typedef struct ChannelSplitContext {
 
     uint64_t channel_layout;
     char    *channel_layout_str;
+    char    *channels_str;
+
+    int      map[64];
 } ChannelSplitContext;
 
 #define OFFSET(x) offsetof(ChannelSplitContext, x)
@@ -45,6 +48,7 @@ typedef struct ChannelSplitContext {
 #define F AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption channelsplit_options[] = {
     { "channel_layout", "Input channel layout.", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, { .str = "stereo" }, .flags = A|F },
+    { "channels",        "Channels to extract.", OFFSET(channels_str),       AV_OPT_TYPE_STRING, { .str = "all" },    .flags = A|F },
     { NULL }
 };
 
@@ -53,8 +57,9 @@ AVFILTER_DEFINE_CLASS(channelsplit);
 static av_cold int init(AVFilterContext *ctx)
 {
     ChannelSplitContext *s = ctx->priv;
+    uint64_t channel_layout;
     int nb_channels;
-    int ret = 0, i;
+    int all = 0, ret = 0, i;
 
     if (!(s->channel_layout = av_get_channel_layout(s->channel_layout_str))) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing channel layout '%s'.\n",
@@ -63,13 +68,34 @@ static av_cold int init(AVFilterContext *ctx)
         goto fail;
     }
 
-    nb_channels = av_get_channel_layout_nb_channels(s->channel_layout);
+
+    if (!strcmp(s->channels_str, "all")) {
+        nb_channels = av_get_channel_layout_nb_channels(s->channel_layout);
+        channel_layout = s->channel_layout;
+        all = 1;
+    } else {
+        if ((ret = av_get_extended_channel_layout(s->channels_str, &channel_layout, &nb_channels)) < 0)
+            return ret;
+    }
+
     for (i = 0; i < nb_channels; i++) {
-        uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, i);
+        uint64_t channel = av_channel_layout_extract_channel(channel_layout, i);
         AVFilterPad pad  = { 0 };
 
         pad.type = AVMEDIA_TYPE_AUDIO;
         pad.name = av_get_channel_name(channel);
+
+        if (all) {
+            s->map[i] = i;
+        } else {
+            if ((ret = av_get_channel_layout_channel_index(s->channel_layout, channel)) < 0) {
+                av_log(ctx, AV_LOG_ERROR, "Channel name '%s' not present in channel layout '%s'.\n",
+                       av_get_channel_name(channel), s->channel_layout_str);
+                return ret;
+            }
+
+            s->map[i] = ret;
+        }
 
         if ((ret = ff_insert_outpad(ctx, i, &pad)) < 0) {
             return ret;
@@ -96,7 +122,7 @@ static int query_formats(AVFilterContext *ctx)
 
     for (i = 0; i < ctx->nb_outputs; i++) {
         AVFilterChannelLayouts *out_layouts = NULL;
-        uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, i);
+        uint64_t channel = av_channel_layout_extract_channel(s->channel_layout, s->map[i]);
 
         if ((ret = ff_add_channel_layout(&out_layouts, channel)) < 0 ||
             (ret = ff_channel_layouts_ref(out_layouts, &ctx->outputs[i]->in_channel_layouts)) < 0)
@@ -109,6 +135,7 @@ static int query_formats(AVFilterContext *ctx)
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AVFilterContext *ctx = inlink->dst;
+    ChannelSplitContext *s = ctx->priv;
     int i, ret = 0;
 
     for (i = 0; i < ctx->nb_outputs; i++) {
@@ -119,9 +146,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
             break;
         }
 
-        buf_out->data[0] = buf_out->extended_data[0] = buf_out->extended_data[i];
+        buf_out->data[0] = buf_out->extended_data[0] = buf_out->extended_data[s->map[i]];
         buf_out->channel_layout =
-            av_channel_layout_extract_channel(buf->channel_layout, i);
+            av_channel_layout_extract_channel(buf->channel_layout, s->map[i]);
         buf_out->channels = 1;
 
         ret = ff_filter_frame(ctx->outputs[i], buf_out);

@@ -327,6 +327,11 @@ static int config_input(AVFilterLink *inlink)
     s->buffer_size = inlink->sample_rate * s->attack * inlink->channels;
     s->buffer_size -= s->buffer_size % inlink->channels;
 
+    if (s->buffer_size <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Attack is too small.\n");
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 

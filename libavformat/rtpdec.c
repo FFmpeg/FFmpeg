@@ -69,88 +69,104 @@ static RTPDynamicProtocolHandler t140_dynamic_handler = { /* RFC 4103 */
     .codec_id   = AV_CODEC_ID_TEXT,
 };
 
-static RTPDynamicProtocolHandler *rtp_first_dynamic_payload_handler = NULL;
+extern RTPDynamicProtocolHandler ff_rdt_video_handler;
+extern RTPDynamicProtocolHandler ff_rdt_audio_handler;
+extern RTPDynamicProtocolHandler ff_rdt_live_video_handler;
+extern RTPDynamicProtocolHandler ff_rdt_live_audio_handler;
 
-void ff_register_dynamic_payload_handler(RTPDynamicProtocolHandler *handler)
+static const RTPDynamicProtocolHandler *rtp_dynamic_protocol_handler_list[] = {
+    /* rtp */
+    &ff_ac3_dynamic_handler,
+    &ff_amr_nb_dynamic_handler,
+    &ff_amr_wb_dynamic_handler,
+    &ff_dv_dynamic_handler,
+    &ff_g726_16_dynamic_handler,
+    &ff_g726_24_dynamic_handler,
+    &ff_g726_32_dynamic_handler,
+    &ff_g726_40_dynamic_handler,
+    &ff_g726le_16_dynamic_handler,
+    &ff_g726le_24_dynamic_handler,
+    &ff_g726le_32_dynamic_handler,
+    &ff_g726le_40_dynamic_handler,
+    &ff_h261_dynamic_handler,
+    &ff_h263_1998_dynamic_handler,
+    &ff_h263_2000_dynamic_handler,
+    &ff_h263_rfc2190_dynamic_handler,
+    &ff_h264_dynamic_handler,
+    &ff_hevc_dynamic_handler,
+    &ff_ilbc_dynamic_handler,
+    &ff_jpeg_dynamic_handler,
+    &ff_mp4a_latm_dynamic_handler,
+    &ff_mp4v_es_dynamic_handler,
+    &ff_mpeg_audio_dynamic_handler,
+    &ff_mpeg_audio_robust_dynamic_handler,
+    &ff_mpeg_video_dynamic_handler,
+    &ff_mpeg4_generic_dynamic_handler,
+    &ff_mpegts_dynamic_handler,
+    &ff_ms_rtp_asf_pfa_handler,
+    &ff_ms_rtp_asf_pfv_handler,
+    &ff_qcelp_dynamic_handler,
+    &ff_qdm2_dynamic_handler,
+    &ff_qt_rtp_aud_handler,
+    &ff_qt_rtp_vid_handler,
+    &ff_quicktime_rtp_aud_handler,
+    &ff_quicktime_rtp_vid_handler,
+    &ff_rfc4175_rtp_handler,
+    &ff_svq3_dynamic_handler,
+    &ff_theora_dynamic_handler,
+    &ff_vc2hq_dynamic_handler,
+    &ff_vorbis_dynamic_handler,
+    &ff_vp8_dynamic_handler,
+    &ff_vp9_dynamic_handler,
+    &gsm_dynamic_handler,
+    &l24_dynamic_handler,
+    &opus_dynamic_handler,
+    &realmedia_mp3_dynamic_handler,
+    &speex_dynamic_handler,
+    &t140_dynamic_handler,
+    /* rdt */
+    &ff_rdt_video_handler,
+    &ff_rdt_audio_handler,
+    &ff_rdt_live_video_handler,
+    &ff_rdt_live_audio_handler,
+    NULL,
+};
+
+const RTPDynamicProtocolHandler *ff_rtp_handler_iterate(void **opaque)
 {
-    handler->next = rtp_first_dynamic_payload_handler;
-    rtp_first_dynamic_payload_handler = handler;
+    uintptr_t i = (uintptr_t)*opaque;
+    const RTPDynamicProtocolHandler *r = rtp_dynamic_protocol_handler_list[i];
+
+    if (r)
+        *opaque = (void*)(i + 1);
+
+    return r;
 }
 
-void ff_register_rtp_dynamic_payload_handlers(void)
-{
-    ff_register_dynamic_payload_handler(&ff_ac3_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_amr_nb_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_amr_wb_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_dv_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726_16_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726_24_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726_32_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726_40_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726le_16_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726le_24_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726le_32_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_g726le_40_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_h261_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_h263_1998_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_h263_2000_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_h263_rfc2190_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_h264_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_hevc_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_ilbc_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_jpeg_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mp4a_latm_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mp4v_es_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mpeg_audio_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mpeg_audio_robust_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mpeg_video_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mpeg4_generic_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_mpegts_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfa_handler);
-    ff_register_dynamic_payload_handler(&ff_ms_rtp_asf_pfv_handler);
-    ff_register_dynamic_payload_handler(&ff_qcelp_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_qdm2_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_qt_rtp_aud_handler);
-    ff_register_dynamic_payload_handler(&ff_qt_rtp_vid_handler);
-    ff_register_dynamic_payload_handler(&ff_quicktime_rtp_aud_handler);
-    ff_register_dynamic_payload_handler(&ff_quicktime_rtp_vid_handler);
-    ff_register_dynamic_payload_handler(&ff_rfc4175_rtp_handler);
-    ff_register_dynamic_payload_handler(&ff_svq3_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_theora_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_vc2hq_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_vorbis_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_vp8_dynamic_handler);
-    ff_register_dynamic_payload_handler(&ff_vp9_dynamic_handler);
-    ff_register_dynamic_payload_handler(&gsm_dynamic_handler);
-    ff_register_dynamic_payload_handler(&l24_dynamic_handler);
-    ff_register_dynamic_payload_handler(&opus_dynamic_handler);
-    ff_register_dynamic_payload_handler(&realmedia_mp3_dynamic_handler);
-    ff_register_dynamic_payload_handler(&speex_dynamic_handler);
-    ff_register_dynamic_payload_handler(&t140_dynamic_handler);
-}
-
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
                                                        enum AVMediaType codec_type)
 {
-    RTPDynamicProtocolHandler *handler;
-    for (handler = rtp_first_dynamic_payload_handler;
-         handler; handler = handler->next)
+    void *i = 0;
+    const RTPDynamicProtocolHandler *handler;
+    while (handler = ff_rtp_handler_iterate(&i)) {
         if (handler->enc_name &&
             !av_strcasecmp(name, handler->enc_name) &&
             codec_type == handler->codec_type)
             return handler;
+    }
     return NULL;
 }
 
-RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
+const RTPDynamicProtocolHandler *ff_rtp_handler_find_by_id(int id,
                                                      enum AVMediaType codec_type)
 {
-    RTPDynamicProtocolHandler *handler;
-    for (handler = rtp_first_dynamic_payload_handler;
-         handler; handler = handler->next)
+    void *i = 0;
+    const RTPDynamicProtocolHandler *handler;
+    while (handler = ff_rtp_handler_iterate(&i)) {
         if (handler->static_payload_id && handler->static_payload_id == id &&
             codec_type == handler->codec_type)
             return handler;
+    }
     return NULL;
 }
 
@@ -556,7 +572,7 @@ RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st,
 }
 
 void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                                       RTPDynamicProtocolHandler *handler)
+                                       const RTPDynamicProtocolHandler *handler)
 {
     s->dynamic_protocol_context = ctx;
     s->handler                  = handler;

@@ -176,6 +176,7 @@ typedef struct NSVContext {
     int16_t avsync;
     AVRational framerate;
     uint32_t *nsvs_timestamps;
+    int nsvf;
 } NSVContext;
 
 static const AVCodecTag nsv_codec_video_tags[] = {
@@ -265,6 +266,12 @@ static int nsv_parse_NSVf_header(AVFormatContext *s)
     int table_entries_used;
 
     nsv->state = NSV_UNSYNC; /* in case we fail */
+
+    if (nsv->nsvf) {
+        av_log(s, AV_LOG_TRACE, "Multiple NSVf\n");
+        return 0;
+    }
+    nsv->nsvf = 1;
 
     size = avio_rl32(pb);
     if (size < 28)

@@ -256,14 +256,22 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         c->perm_type = FF_IDCT_PERM_NONE;
     } else {
         if (avctx->bits_per_raw_sample == 10 || avctx->bits_per_raw_sample == 9) {
-            c->idct_put              = ff_simple_idct_put_10;
-            c->idct_add              = ff_simple_idct_add_10;
-            c->idct                  = ff_simple_idct_10;
+            /* 10-bit MPEG-4 Simple Studio Profile requires a higher precision IDCT
+               However, it only uses idct_put */
+            if (c->mpeg4_studio_profile) {
+                c->idct_put              = ff_simple_idct_put_int32_10bit;
+                c->idct_add              = NULL;
+                c->idct                  = NULL;
+            } else {
+                c->idct_put              = ff_simple_idct_put_int16_10bit;
+                c->idct_add              = ff_simple_idct_add_int16_10bit;
+                c->idct                  = ff_simple_idct_int16_10bit;
+            }
             c->perm_type             = FF_IDCT_PERM_NONE;
         } else if (avctx->bits_per_raw_sample == 12) {
-            c->idct_put              = ff_simple_idct_put_12;
-            c->idct_add              = ff_simple_idct_add_12;
-            c->idct                  = ff_simple_idct_12;
+            c->idct_put              = ff_simple_idct_put_int16_12bit;
+            c->idct_add              = ff_simple_idct_add_int16_12bit;
+            c->idct                  = ff_simple_idct_int16_12bit;
             c->perm_type             = FF_IDCT_PERM_NONE;
         } else {
             if (avctx->idct_algo == FF_IDCT_INT) {
@@ -280,9 +288,9 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
 #endif /* CONFIG_FAANIDCT */
             } else { // accurate/default
                 /* Be sure FF_IDCT_NONE will select this one, since it uses FF_IDCT_PERM_NONE */
-                c->idct_put  = ff_simple_idct_put_8;
-                c->idct_add  = ff_simple_idct_add_8;
-                c->idct      = ff_simple_idct_8;
+                c->idct_put  = ff_simple_idct_put_int16_8bit;
+                c->idct_add  = ff_simple_idct_add_int16_8bit;
+                c->idct      = ff_simple_idct_int16_8bit;
                 c->perm_type = FF_IDCT_PERM_NONE;
             }
         }

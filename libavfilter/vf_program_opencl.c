@@ -17,14 +17,10 @@
  */
 
 #include "libavutil/avstring.h"
-#include "libavutil/buffer.h"
-#include "libavutil/common.h"
-#include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_opencl.h"
 #include "libavutil/log.h"
 #include "libavutil/mem.h"
-#include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 
 #include "avfilter.h"
 #include "framesync.h"
@@ -142,31 +138,22 @@ static int program_opencl_run(AVFilterContext *avctx)
             }
         }
 
-        cle = clGetImageInfo(dst, CL_IMAGE_WIDTH,  sizeof(size_t),
-                             &global_work[0], NULL);
-        cle = clGetImageInfo(dst, CL_IMAGE_HEIGHT, sizeof(size_t),
-                             &global_work[1], NULL);
+        err = ff_opencl_filter_work_size_from_image(avctx, global_work,
+                                                    output, plane, 0);
+        if (err < 0)
+            goto fail;
 
         av_log(avctx, AV_LOG_DEBUG, "Run kernel on plane %d "
-               "(%zux%zu).\n", plane, global_work[0], global_work[1]);
+               "(%"SIZE_SPECIFIER"x%"SIZE_SPECIFIER").\n",
+               plane, global_work[0], global_work[1]);
 
         cle = clEnqueueNDRangeKernel(ctx->command_queue, ctx->kernel, 2, NULL,
                                      global_work, NULL, 0, NULL, NULL);
-        if (cle != CL_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR, "Failed to enqueue kernel: %d.\n",
-                   cle);
-            err = AVERROR(EIO);
-            goto fail;
-        }
+        CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to enqueue kernel: %d.\n", cle);
     }
 
     cle = clFinish(ctx->command_queue);
-    if (cle != CL_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to finish command queue: %d.\n",
-               cle);
-        err = AVERROR(EIO);
-        goto fail;
-    }
+    CL_FAIL_ON_ERROR(AVERROR(EIO), "Failed to finish command queue: %d.\n", cle);
 
     if (ctx->nb_inputs > 0) {
         err = av_frame_copy_props(output, ctx->frames[0]);

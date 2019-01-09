@@ -148,10 +148,12 @@ static int alloc_frame_buffer(AVCodecContext *avctx,  Picture *pic,
         }
     }
 
-    if (linesize && (linesize   != pic->f->linesize[0] ||
-                     uvlinesize != pic->f->linesize[1])) {
+    if ((linesize   &&   linesize != pic->f->linesize[0]) ||
+        (uvlinesize && uvlinesize != pic->f->linesize[1])) {
         av_log(avctx, AV_LOG_ERROR,
-               "get_buffer() failed (stride changed)\n");
+               "get_buffer() failed (stride changed: linesize=%d/%d uvlinesize=%d/%d)\n",
+               linesize,   pic->f->linesize[0],
+               uvlinesize, pic->f->linesize[1]);
         ff_mpeg_unref_picture(avctx, pic);
         return -1;
     }

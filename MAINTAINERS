@@ -39,7 +39,7 @@ QuickTime faststart:
 Miscellaneous Areas
 ===================
 
-documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Lou Logan
+documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Lou Logan, Gyan Doshi
 project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
@@ -121,7 +121,6 @@ Generic Parts:
     motion*                             Michael Niedermayer
   rate control:
     ratecontrol.c                       Michael Niedermayer
-    libxvid_rc.c                        Michael Niedermayer
   simple IDCT:
     simple_idct.c, simple_idct.h        Michael Niedermayer
   postprocessing:
@@ -139,6 +138,7 @@ Codecs:
   aacenc*, aaccoder.c                   Rostislav Pehlivanov
   alacenc.c                             Jaikrishnan Menon
   alsdec.c                              Thilo Borgmann, Umair Khan
+  aptx.c                                Aurelien Jacobs
   ass*                                  Aurelien Jacobs
   asv*                                  Michael Niedermayer
   atrac3plus*                           Maxim Poliakovski
@@ -187,6 +187,7 @@ Codecs:
   jvdec.c                               Peter Ross
   lcl*.c                                Roberto Togni, Reimar Doeffinger
   libcelt_dec.c                         Nicolas George
+  libcodec2.c                           Tomas Härdin
   libdirac*                             David Conrad
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
@@ -218,7 +219,7 @@ Codecs:
   ptx.c                                 Ivo van Poorten
   qcelp*                                Reynaldo H. Verdejo Pinochet
   qdm2.c, qdm2data.h                    Roberto Togni
-  qsv*                                  Mark Thompson
+  qsv*                                  Mark Thompson, Zhong Li
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
@@ -240,6 +241,7 @@ Codecs:
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   ttaenc.c                              Paul B Mahol
   txd.c                                 Ivo van Poorten
+  v4l2_*                                Jorge Ramirez-Ortiz
   vc2*                                  Rostislav Pehlivanov
   vcr1.c                                Michael Niedermayer
   videotoolboxenc.c                     Rick Kern, Aman Gupta
@@ -265,7 +267,7 @@ Hardware acceleration:
   crystalhd.c                           Philip Langdale
   dxva2*                                Hendrik Leppkes, Laurent Aimar, Steve Lhomme
   d3d11va*                              Steve Lhomme
-  mediacodec*                           Matthieu Bouron
+  mediacodec*                           Matthieu Bouron, Aman Gupta
   vaapi*                                Gwenole Beauchesne
   vaapi_encode*                         Mark Thompson
   vdpau*                                Philip Langdale, Carl Eugen Hoyos
@@ -279,6 +281,7 @@ libavdevice
 
 
   avfoundation.m                        Thilo Borgmann
+  android_camera.c                      Felix Matouschek
   decklink*                             Marton Balint
   dshow.c                               Roger Pack (CC rogerdpack@gmail.com)
   fbdev_enc.c                           Lukasz Marek
@@ -329,6 +332,7 @@ Filters:
   vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
   vf_colorchannelmixer.c                Paul B Mahol
+  vf_colorconstancy.c                   Mina Sami    (CC <minas.gorgy@gmail.com>)
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
   vf_colorlevels.c                      Paul B Mahol
@@ -392,8 +396,10 @@ Muxers/Demuxers:
   brstm.c                               Paul B Mahol
   caf*                                  Peter Ross
   cdxl.c                                Paul B Mahol
+  codec2.c                              Tomas Härdin
   crc.c                                 Michael Niedermayer
   dashdec.c                             Steven Liu
+  dashenc.c                             Karthick Jeyapal
   daud.c                                Reimar Doeffinger
   dss.c                                 Oleksij Rempel
   dtsdec.c                              foo86
@@ -407,7 +413,6 @@ Muxers/Demuxers:
   flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
-  hls.c                                 Anssi Hannula
   hlsenc.c                              Christian Suloway, Steven Liu
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
@@ -518,7 +523,7 @@ Operating systems / CPU architectures
 =====================================
 
 Alpha                                   Falk Hueffner
-MIPS                                    Manojkumar Bhosale
+MIPS                                    Manojkumar Bhosale, Shiyou Yin
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
@@ -546,6 +551,7 @@ Ivan Uskov
 James Darnley
 Jan Ekström
 Joakim Plate
+Jun Zhao
 Kieran Kunhya
 Kirill Gavrilov
 Martin Storsjö
@@ -568,8 +574,11 @@ Releases
 If you want to maintain an older release, please contact us
 
 
-GnuPG Fingerprints of maintainers and contributors
-==================================================
+GnuPG Fingerprints and IRC nicknames of maintainers and contributors
+====================================================================
+
+IRC nicknames are in parentheses. These apply
+to the IRC channels listed on the website.
 
 Alexander Strasser            1C96 78B7 83CB 8AA7 9AF5 D1EB A7D8 A57B A876 E58F
 Anssi Hannula                 1A92 FF42 2DD9 8D2E 8AF7 65A9 4278 C520 513D F3CB
@@ -587,7 +596,7 @@ Jaikrishnan Menon             61A1 F09F 01C9 2D45 78E1 C862 25DC 8831 AF70 D368
 James Almer                   7751 2E8C FD94 A169 57E6 9A7A 1463 01AD 7376 59E0
 Jean Delvare                  7CA6 9F44 60F1 BDC4 1FD2 C858 A552 6B9B B3CD 4E6A
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
-Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
+Lou Logan (llogan)            7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Nicolas George                24CE 01CE 9ACC 5CEB 74D8 8D9D B063 D997 36E5 4C93
 Nikolay Aleksandrov           8978 1D8C FB71 588E 4B27 EAA8 C4F0 B5FC E011 13B1
@@ -604,5 +613,5 @@ Steinar H. Gunderson          C2E9 004F F028 C18E 4EAD DB83 7F61 7561 7797 8F76
 Stephan Hilb                  4F38 0B3A 5F39 B99B F505 E562 8D5C 5554 4E17 8863
 Tiancheng "Timothy" Gu        9456 AFC0 814A 8139 E994 8351 7FE6 B095 B582 B0D4
 Tim Nicholson                 38CF DB09 3ED0 F607 8B67 6CED 0C0B FC44 8B0B FC83
-Tomas Härdin                  A79D 4E3D F38F 763F 91F5 8B33 A01E 8AE0 41BB 2551
+Tomas Härdin (thardin)        A79D 4E3D F38F 763F 91F5 8B33 A01E 8AE0 41BB 2551
 Wei Gao                       4269 7741 857A 0E60 9EC5 08D2 4744 4EFA 62C1 87B9

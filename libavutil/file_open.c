@@ -138,7 +138,7 @@ int avpriv_tempfile(const char *prefix, char **filename, int log_offset, void *l
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
-#if defined(_WIN32) || defined (__ANDROID__)
+#if defined(_WIN32) || defined (__ANDROID__) || defined(__DJGPP__)
     if (fd < 0) {
         snprintf(*filename, len, "./%sXXXXXX", prefix);
         fd = mkstemp(*filename);

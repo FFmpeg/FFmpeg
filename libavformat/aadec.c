@@ -35,6 +35,9 @@
 #define MAX_TOC_ENTRIES 16
 #define MAX_DICTIONARY_ENTRIES 128
 #define TEA_BLOCK_SIZE 8
+#define CHAPTER_HEADER_SIZE 8
+#define TIMEPREC 1000
+#define MP3_FRAME_SIZE 104
 
 typedef struct AADemuxContext {
     AVClass *class;
@@ -46,6 +49,9 @@ typedef struct AADemuxContext {
     struct AVTEA *tea_ctx;
     uint8_t file_key[16];
     int64_t current_chapter_size;
+    int64_t content_start;
+    int64_t content_end;
+    int seek_offset;
 } AADemuxContext;
 
 static int get_second_size(char *codec_name)
@@ -69,7 +75,7 @@ static int aa_read_header(AVFormatContext *s)
     uint32_t nkey, nval, toc_size, npairs, header_seed = 0, start;
     char key[128], val[128], codec_name[64] = {0};
     uint8_t output[24], dst[8], src[8];
-    int64_t largest_size = -1, current_size = -1;
+    int64_t largest_size = -1, current_size = -1, chapter_pos;
     struct toc_entry {
         uint32_t offset;
         uint32_t size;
@@ -172,19 +178,24 @@ static int aa_read_header(AVFormatContext *s)
         st->codecpar->codec_id = AV_CODEC_ID_MP3;
         st->codecpar->sample_rate = 22050;
         st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
-        st->start_time = 0;
+        avpriv_set_pts_info(st, 64, 8, 32000 * TIMEPREC);
+        // encoded audio frame is MP3_FRAME_SIZE bytes (+1 with padding, unlikely)
     } else if (!strcmp(codec_name, "acelp85")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 19;
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 8500;
+        st->codecpar->bit_rate = 8500;
         st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+        avpriv_set_pts_info(st, 64, 8, 8500 * TIMEPREC);
     } else if (!strcmp(codec_name, "acelp16")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 20;
         st->codecpar->channels = 1;
         st->codecpar->sample_rate = 16000;
+        st->codecpar->bit_rate = 16000;
         st->need_parsing = AVSTREAM_PARSE_FULL_RAW;
+        avpriv_set_pts_info(st, 64, 8, 16000 * TIMEPREC);
     }
 
     /* determine, and jump to audio start offset */
@@ -197,7 +208,30 @@ static int aa_read_header(AVFormatContext *s)
     }
     start = TOC[largest_idx].offset;
     avio_seek(pb, start, SEEK_SET);
+
+    // extract chapter positions. since all formats have constant bit rate, use it
+    // as time base in bytes/s, for easy stream position <-> timestamp conversion
+    st->start_time = 0;
+    c->content_start = start;
+    c->content_end = start + largest_size;
+
+    while ((chapter_pos = avio_tell(pb)) >= 0 && chapter_pos < c->content_end) {
+        int chapter_idx = s->nb_chapters;
+        uint32_t chapter_size = avio_rb32(pb);
+        if (chapter_size == 0) break;
+        chapter_pos -= start + CHAPTER_HEADER_SIZE * chapter_idx;
+        avio_skip(pb, 4 + chapter_size);
+        if (!avpriv_new_chapter(s, chapter_idx, st->time_base,
+            chapter_pos * TIMEPREC, (chapter_pos + chapter_size) * TIMEPREC, NULL))
+                return AVERROR(ENOMEM);
+    }
+
+    st->duration = (largest_size - CHAPTER_HEADER_SIZE * s->nb_chapters) * TIMEPREC;
+
+    ff_update_cur_dts(s, st, 0);
+    avio_seek(pb, start, SEEK_SET);
     c->current_chapter_size = 0;
+    c->seek_offset = 0;
 
     return 0;
 }
@@ -213,6 +247,12 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     int written = 0;
     int ret;
     AADemuxContext *c = s->priv_data;
+    uint64_t pos = avio_tell(s->pb);
+
+    // are we at the end of the audio content?
+    if (pos >= c->content_end) {
+        return AVERROR_EOF;
+    }
 
     // are we at the start of a chapter?
     if (c->current_chapter_size == 0) {
@@ -223,6 +263,7 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_DEBUG, "Chapter %d (%" PRId64 " bytes)\n", c->chapter_idx, c->current_chapter_size);
         c->chapter_idx = c->chapter_idx + 1;
         avio_skip(s->pb, 4); // data start offset
+        pos += 8;
         c->current_codec_second_size = c->codec_second_size;
     }
 
@@ -234,7 +275,9 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     // decrypt c->current_codec_second_size bytes
     blocks = c->current_codec_second_size / TEA_BLOCK_SIZE;
     for (i = 0; i < blocks; i++) {
-        avio_read(s->pb, src, TEA_BLOCK_SIZE);
+        ret = avio_read(s->pb, src, TEA_BLOCK_SIZE);
+        if (ret != TEA_BLOCK_SIZE)
+            return (ret < 0) ? ret : AVERROR_EOF;
         av_tea_init(c->tea_ctx, c->file_key, 16);
         av_tea_crypt(c->tea_ctx, dst, src, 1, NULL, 1);
         memcpy(buf + written, dst, TEA_BLOCK_SIZE);
@@ -242,7 +285,9 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     trailing_bytes = c->current_codec_second_size % TEA_BLOCK_SIZE;
     if (trailing_bytes != 0) { // trailing bytes are left unencrypted!
-        avio_read(s->pb, src, trailing_bytes);
+        ret = avio_read(s->pb, src, trailing_bytes);
+        if (ret != trailing_bytes)
+            return (ret < 0) ? ret : AVERROR_EOF;
         memcpy(buf + written, src, trailing_bytes);
         written = written + trailing_bytes;
     }
@@ -252,12 +297,67 @@ static int aa_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (c->current_chapter_size <= 0)
         c->current_chapter_size = 0;
 
-    ret = av_new_packet(pkt, written);
+    if (c->seek_offset > written)
+        c->seek_offset = 0; // ignore wrong estimate
+
+    ret = av_new_packet(pkt, written - c->seek_offset);
     if (ret < 0)
         return ret;
-    memcpy(pkt->data, buf, written);
+    memcpy(pkt->data, buf + c->seek_offset, written - c->seek_offset);
+    pkt->pos = pos;
 
+    c->seek_offset = 0;
     return 0;
+}
+
+static int aa_read_seek(AVFormatContext *s,
+                        int stream_index, int64_t timestamp, int flags)
+{
+    AADemuxContext *c = s->priv_data;
+    AVChapter *ch;
+    int64_t chapter_pos, chapter_start, chapter_size;
+    int chapter_idx = 0;
+
+    // find chapter containing seek timestamp
+    if (timestamp < 0)
+        timestamp = 0;
+
+    while (chapter_idx < s->nb_chapters && timestamp >= s->chapters[chapter_idx]->end) {
+        ++chapter_idx;
+    }
+
+    if (chapter_idx >= s->nb_chapters) {
+        chapter_idx = s->nb_chapters - 1;
+        if (chapter_idx < 0) return -1; // there is no chapter.
+        timestamp = s->chapters[chapter_idx]->end;
+    }
+
+    ch = s->chapters[chapter_idx];
+
+    // sync by clamping timestamp to nearest valid block position in its chapter
+    chapter_size = ch->end / TIMEPREC - ch->start / TIMEPREC;
+    chapter_pos = av_rescale_rnd((timestamp - ch->start) / TIMEPREC,
+        1, c->codec_second_size,
+        (flags & AVSEEK_FLAG_BACKWARD) ? AV_ROUND_DOWN : AV_ROUND_UP)
+        * c->codec_second_size;
+    if (chapter_pos >= chapter_size)
+        chapter_pos = chapter_size;
+    chapter_start = c->content_start + (ch->start / TIMEPREC) + CHAPTER_HEADER_SIZE * (1 + chapter_idx);
+
+    // reinit read state
+    avio_seek(s->pb, chapter_start + chapter_pos, SEEK_SET);
+    c->current_codec_second_size = c->codec_second_size;
+    c->current_chapter_size = chapter_size - chapter_pos;
+    c->chapter_idx = 1 + chapter_idx;
+
+    // for unaligned frames, estimate offset of first frame in block (assume no padding)
+    if (s->streams[0]->codecpar->codec_id == AV_CODEC_ID_MP3) {
+        c->seek_offset = (MP3_FRAME_SIZE - chapter_pos % MP3_FRAME_SIZE) % MP3_FRAME_SIZE;
+    }
+
+    ff_update_cur_dts(s, s->streams[0], ch->start + (chapter_pos + c->seek_offset) * TIMEPREC);
+
+    return 1;
 }
 
 static int aa_probe(AVProbeData *p)
@@ -305,6 +405,7 @@ AVInputFormat ff_aa_demuxer = {
     .read_probe     = aa_probe,
     .read_header    = aa_read_header,
     .read_packet    = aa_read_packet,
+    .read_seek      = aa_read_seek,
     .read_close     = aa_read_close,
-    .flags          = AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_NO_BYTE_SEEK | AVFMT_NOGENSEARCH,
 };

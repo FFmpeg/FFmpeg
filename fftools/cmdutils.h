@@ -625,6 +625,9 @@ void *grow_array(void *array, int elem_size, int *size, int new_size);
 #define GET_PIX_FMT_NAME(pix_fmt)\
     const char *name = av_get_pix_fmt_name(pix_fmt);
 
+#define GET_CODEC_NAME(id)\
+    const char *name = avcodec_descriptor_get(id)->name;
+
 #define GET_SAMPLE_FMT_NAME(sample_fmt)\
     const char *name = av_get_sample_fmt_name(sample_fmt)
 

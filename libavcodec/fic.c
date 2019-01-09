@@ -82,6 +82,7 @@ static const uint8_t fic_qmat_lq[64] = {
 static const uint8_t fic_header[7] = { 0, 0, 1, 'F', 'I', 'C', 'V' };
 
 #define FIC_HEADER_SIZE 27
+#define CURSOR_OFFSET 59
 
 static av_always_inline void fic_idct(int16_t *blk, int step, int shift, int rnd)
 {
@@ -172,9 +173,11 @@ static int fic_decode_slice(AVCodecContext *avctx, void *tdata)
     int slice_h  = tctx->slice_h;
     int src_size = tctx->src_size;
     int y_off    = tctx->y_off;
-    int x, y, p;
+    int x, y, p, ret;
 
-    init_get_bits(&gb, src, src_size * 8);
+    ret = init_get_bits8(&gb, src, src_size);
+    if (ret < 0)
+        return ret;
 
     for (p = 0; p < 3; p++) {
         int stride   = ctx->frame->linesize[p];
@@ -337,6 +340,10 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
         skip_cursor = 1;
     }
 
+    if (!skip_cursor && avpkt->size < CURSOR_OFFSET + sizeof(ctx->cursor_buf)) {
+        skip_cursor = 1;
+    }
+
     /* Slice height for all but the last slice. */
     ctx->slice_h = 16 * (ctx->aligned_height >> 4) / nslices;
     if (ctx->slice_h % 16)
@@ -375,6 +382,8 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
             slice_h      = FFALIGN(avctx->height - ctx->slice_h * (nslices - 1), 16);
         } else {
             slice_size = AV_RB32(src + tsize + FIC_HEADER_SIZE + slice * 4 + 4);
+            if (slice_size < slice_off)
+                return AVERROR_INVALIDDATA;
         }
 
         if (slice_size < slice_off || slice_size > msize)
@@ -416,7 +425,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Draw cursor. */
     if (!skip_cursor) {
-        memcpy(ctx->cursor_buf, src + 59, 32 * 32 * 4);
+        memcpy(ctx->cursor_buf, src + CURSOR_OFFSET, sizeof(ctx->cursor_buf));
         fic_draw_cursor(avctx, cur_x, cur_y);
     }
 
@@ -464,7 +473,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass fic_decoder_class = {
-    .class_name = "FIC encoder",
+    .class_name = "FIC decoder",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

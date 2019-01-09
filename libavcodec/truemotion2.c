@@ -63,6 +63,7 @@ typedef struct TM2Context {
     AVFrame *pic;
 
     GetBitContext gb;
+    int error;
     BswapDSPContext bdsp;
 
     uint8_t *buffer;
@@ -111,9 +112,13 @@ typedef struct TM2Huff {
     int *lens; ///< codelengths
 } TM2Huff;
 
+/**
+ *
+ * @returns the length of the longest code or an AVERROR code
+ */
 static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *huff)
 {
-    int ret;
+    int ret, ret2;
     if (length > huff->max_bits) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Tree exceeded its given depth (%i)\n",
                huff->max_bits);
@@ -132,14 +137,14 @@ static int tm2_read_tree(TM2Context *ctx, uint32_t prefix, int length, TM2Huff *
         huff->bits[huff->num] = prefix;
         huff->lens[huff->num] = length;
         huff->num++;
-        return 0;
+        return length;
     } else { /* non-terminal node */
-        if ((ret = tm2_read_tree(ctx, prefix << 1, length + 1, huff)) < 0)
-            return ret;
+        if ((ret2 = tm2_read_tree(ctx, prefix << 1, length + 1, huff)) < 0)
+            return ret2;
         if ((ret = tm2_read_tree(ctx, (prefix << 1) | 1, length + 1, huff)) < 0)
             return ret;
     }
-    return 0;
+    return FFMAX(ret, ret2);
 }
 
 static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
@@ -182,6 +187,11 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
 
     res = tm2_read_tree(ctx, 0, 0, &huff);
 
+    if (res >= 0 && res != huff.max_bits) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "Got less bits than expected: %i of %i\n",
+               res, huff.max_bits);
+        res = AVERROR_INVALIDDATA;
+    }
     if (huff.num != huff.max_num) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Got less codes than expected: %i of %i\n",
                huff.num, huff.max_num);
@@ -376,6 +386,10 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
             }
         }
     } else {
+        if (len < 0) {
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
         for (i = 0; i < toks; i++) {
             ctx->tokens[stream_id][i] = codes.recode[0];
             if (stream_id <= TM2_MOT && ctx->tokens[stream_id][i] >= TM2_DELTAS) {
@@ -398,6 +412,7 @@ static inline int GET_TOK(TM2Context *ctx,int type)
 {
     if (ctx->tok_ptrs[type] >= ctx->tok_lens[type]) {
         av_log(ctx->avctx, AV_LOG_ERROR, "Read token from stream %i out of bounds (%i>=%i)\n", type, ctx->tok_ptrs[type], ctx->tok_lens[type]);
+        ctx->error = 1;
         return 0;
     }
     if (type <= TM2_MOT) {
@@ -441,15 +456,15 @@ static inline int GET_TOK(TM2Context *ctx,int type)
 
 /* recalculate last and delta values for next blocks */
 #define TM2_RECALC_BLOCK(CHR, stride, last, CD) {\
-    CD[0] = CHR[1] - last[1];\
-    CD[1] = (int)CHR[stride + 1] - (int)CHR[1];\
+    CD[0] = (unsigned)CHR[         1] - (unsigned)last[1];\
+    CD[1] = (unsigned)CHR[stride + 1] - (unsigned) CHR[1];\
     last[0] = (int)CHR[stride + 0];\
     last[1] = (int)CHR[stride + 1];}
 
 /* common operations - add deltas to 4x4 block of luma or 2x2 blocks of chroma */
 static inline void tm2_apply_deltas(TM2Context *ctx, int* Y, int stride, int *deltas, int *last)
 {
-    int ct, d;
+    unsigned ct, d;
     int i, j;
 
     for (j = 0; j < 4; j++){
@@ -478,7 +493,7 @@ static inline void tm2_high_chroma(int *data, int stride, int *last, unsigned *C
     }
 }
 
-static inline void tm2_low_chroma(int *data, int stride, int *clast, int *CD, int *deltas, int bx)
+static inline void tm2_low_chroma(int *data, int stride, int *clast, unsigned *CD, int *deltas, int bx)
 {
     int t;
     int l;
@@ -488,8 +503,8 @@ static inline void tm2_low_chroma(int *data, int stride, int *clast, int *CD, in
         prev = clast[-3];
     else
         prev = 0;
-    t        = (CD[0] + CD[1]) >> 1;
-    l        = (prev - CD[0] - CD[1] + clast[1]) >> 1;
+    t        = (int)(CD[0] + CD[1]) >> 1;
+    l        = (int)(prev - CD[0] - CD[1] + clast[1]) >> 1;
     CD[1]    = CD[0] + CD[1] - t;
     CD[0]    = t;
     clast[0] = l;
@@ -809,6 +824,8 @@ static int tm2_decode_blocks(TM2Context *ctx, AVFrame *p)
             default:
                 av_log(ctx->avctx, AV_LOG_ERROR, "Skipping unknown block type %i\n", type);
             }
+            if (ctx->error)
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -888,6 +905,8 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p    = l->pic;
     int offset           = TM2_HEADER_SIZE;
     int i, t, ret;
+
+    l->error = 0;
 
     av_fast_padded_malloc(&l->buffer, &l->buffer_size, buf_size);
     if (!l->buffer) {

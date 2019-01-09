@@ -38,6 +38,11 @@
 
 #include "rtmpdh.h"
 
+#if CONFIG_MBEDTLS
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
+#endif
+
 #define P1024                                          \
     "FFFFFFFFFFFFFFFFC90FDAA22168C234C4C6628B80DC1CD1" \
     "29024E088A67CC74020BBEA63B139B22514A08798E3404DD" \
@@ -159,6 +164,56 @@ static int bn_modexp(FFBigNum bn, FFBigNum y, FFBigNum q, FFBigNum p)
     BN_CTX_free(ctx);
     return 0;
 }
+#elif CONFIG_MBEDTLS
+#define bn_new(bn)                      \
+    do {                                \
+        bn = av_malloc(sizeof(*bn));    \
+        if (bn)                         \
+            mbedtls_mpi_init(bn);       \
+    } while (0)
+#define bn_free(bn)                     \
+    do {                                \
+        mbedtls_mpi_free(bn);           \
+        av_free(bn);                    \
+    } while (0)
+#define bn_set_word(bn, w)          mbedtls_mpi_lset(bn, w)
+#define bn_cmp(a, b)                mbedtls_mpi_cmp_mpi(a, b)
+#define bn_copy(to, from)           mbedtls_mpi_copy(to, from)
+#define bn_sub_word(bn, w)          mbedtls_mpi_sub_int(bn, bn, w)
+#define bn_cmp_1(bn)                mbedtls_mpi_cmp_int(bn, 1)
+#define bn_num_bytes(bn)            (mbedtls_mpi_bitlen(bn) + 7) / 8
+#define bn_bn2bin(bn, buf, len)     mbedtls_mpi_write_binary(bn, buf, len)
+#define bn_bin2bn(bn, buf, len)                     \
+    do {                                            \
+        bn_new(bn);                                 \
+        if (bn)                                     \
+            mbedtls_mpi_read_binary(bn, buf, len);  \
+    } while (0)
+#define bn_hex2bn(bn, buf, ret)                     \
+    do {                                            \
+        bn_new(bn);                                 \
+        if (bn)                                     \
+            ret = (mbedtls_mpi_read_string(bn, 16, buf) == 0);  \
+        else                                        \
+            ret = 1;                                \
+    } while (0)
+#define bn_random(bn, num_bits)                     \
+    do {                                            \
+        mbedtls_entropy_context entropy_ctx;        \
+        mbedtls_ctr_drbg_context ctr_drbg_ctx;      \
+                                                    \
+        mbedtls_entropy_init(&entropy_ctx);         \
+        mbedtls_ctr_drbg_init(&ctr_drbg_ctx);       \
+        mbedtls_ctr_drbg_seed(&ctr_drbg_ctx,        \
+                              mbedtls_entropy_func, \
+                              &entropy_ctx,         \
+                              NULL, 0);             \
+        mbedtls_mpi_fill_random(bn, (num_bits + 7) / 8, mbedtls_ctr_drbg_random, &ctr_drbg_ctx); \
+        mbedtls_ctr_drbg_free(&ctr_drbg_ctx);       \
+        mbedtls_entropy_free(&entropy_ctx);         \
+    } while (0)
+#define bn_modexp(bn, y, q, p)      mbedtls_mpi_exp_mod(bn, y, q, p, 0)
+
 #endif
 
 #define MAX_BYTES 18000

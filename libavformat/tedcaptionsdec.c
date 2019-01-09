@@ -94,7 +94,7 @@ static int parse_string(AVIOContext *pb, int *cur_byte, AVBPrint *bp, int full)
 {
     int ret;
 
-    av_bprint_init(bp, 0, full ? -1 : 1);
+    av_bprint_init(bp, 0, full ? AV_BPRINT_SIZE_UNLIMITED : AV_BPRINT_SIZE_AUTOMATIC);
     ret = expect_byte(pb, cur_byte, '"');
     if (ret < 0)
         goto fail;

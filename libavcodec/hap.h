@@ -103,4 +103,10 @@ int ff_hap_set_chunk_count(HapContext *ctx, int count, int first_in_frame);
  */
 av_cold void ff_hap_free_context(HapContext *ctx);
 
+/* The first three bytes are the size of the section past the header, or zero
+ * if the length is stored in the next long word. The fourth byte in the first
+ * long word indicates the type of the current section. */
+int ff_hap_parse_section_header(GetByteContext *gbc, int *section_size,
+                                enum HapSectionType *section_type);
+
 #endif /* AVCODEC_HAP_H */

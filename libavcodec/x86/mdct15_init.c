@@ -33,32 +33,35 @@ void ff_fft15_avx(FFTComplex *out, FFTComplex *in, FFTComplex *exptab, ptrdiff_t
 static void perm_twiddles(MDCT15Context *s)
 {
     int k;
-    FFTComplex exp_5point[4];
+    FFTComplex tmp[30];
 
-    FFTComplex tmp[21], tmp2[30];
-    memcpy(tmp, s->exptab, sizeof(FFTComplex)*21);
+    /* 5-point FFT twiddles */
+    s->exptab[60].re = s->exptab[60].im = s->exptab[19].re;
+    s->exptab[61].re = s->exptab[61].im = s->exptab[19].im;
+    s->exptab[62].re = s->exptab[62].im = s->exptab[20].re;
+    s->exptab[63].re = s->exptab[63].im = s->exptab[20].im;
 
     /* 15-point FFT twiddles */
     for (k = 0; k < 5; k++) {
-        tmp2[6*k + 0] = tmp[k +  0];
-        tmp2[6*k + 2] = tmp[k +  5];
-        tmp2[6*k + 4] = tmp[k + 10];
+        tmp[6*k + 0] = s->exptab[k +  0];
+        tmp[6*k + 2] = s->exptab[k +  5];
+        tmp[6*k + 4] = s->exptab[k + 10];
 
-        tmp2[6*k + 1] = tmp[2 * (k + 0)];
-        tmp2[6*k + 3] = tmp[2 * (k + 5)];
-        tmp2[6*k + 5] = tmp[2 *  k + 5 ];
+        tmp[6*k + 1] = s->exptab[2 * (k + 0)];
+        tmp[6*k + 3] = s->exptab[2 * (k + 5)];
+        tmp[6*k + 5] = s->exptab[2 *  k + 5 ];
     }
 
     for (k = 0; k < 6; k++) {
         FFTComplex ac_exp[] = {
-            { tmp2[6*1 + k].re,  tmp2[6*1 + k].re },
-            { tmp2[6*2 + k].re,  tmp2[6*2 + k].re },
-            { tmp2[6*3 + k].re,  tmp2[6*3 + k].re },
-            { tmp2[6*4 + k].re,  tmp2[6*4 + k].re },
-            { tmp2[6*1 + k].im, -tmp2[6*1 + k].im },
-            { tmp2[6*2 + k].im, -tmp2[6*2 + k].im },
-            { tmp2[6*3 + k].im, -tmp2[6*3 + k].im },
-            { tmp2[6*4 + k].im, -tmp2[6*4 + k].im },
+            { tmp[6*1 + k].re,  tmp[6*1 + k].re },
+            { tmp[6*2 + k].re,  tmp[6*2 + k].re },
+            { tmp[6*3 + k].re,  tmp[6*3 + k].re },
+            { tmp[6*4 + k].re,  tmp[6*4 + k].re },
+            { tmp[6*1 + k].im, -tmp[6*1 + k].im },
+            { tmp[6*2 + k].im, -tmp[6*2 + k].im },
+            { tmp[6*3 + k].im, -tmp[6*3 + k].im },
+            { tmp[6*4 + k].im, -tmp[6*4 + k].im },
         };
         memcpy(s->exptab + 8*k, ac_exp, 8*sizeof(FFTComplex));
     }
@@ -66,21 +69,13 @@ static void perm_twiddles(MDCT15Context *s)
     /* Specialcase when k = 0 */
     for (k = 0; k < 3; k++) {
         FFTComplex dc_exp[] = {
-            { tmp2[2*k + 0].re, -tmp2[2*k + 0].im },
-            { tmp2[2*k + 0].im,  tmp2[2*k + 0].re },
-            { tmp2[2*k + 1].re, -tmp2[2*k + 1].im },
-            { tmp2[2*k + 1].im,  tmp2[2*k + 1].re },
+            { tmp[2*k + 0].re, -tmp[2*k + 0].im },
+            { tmp[2*k + 0].im,  tmp[2*k + 0].re },
+            { tmp[2*k + 1].re, -tmp[2*k + 1].im },
+            { tmp[2*k + 1].im,  tmp[2*k + 1].re },
         };
         memcpy(s->exptab + 8*6 + 4*k, dc_exp, 4*sizeof(FFTComplex));
     }
-
-    /* 5-point FFT twiddles */
-    exp_5point[0].re = exp_5point[0].im = tmp[19].re;
-    exp_5point[1].re = exp_5point[1].im = tmp[19].im;
-    exp_5point[2].re = exp_5point[2].im = tmp[20].re;
-    exp_5point[3].re = exp_5point[3].im = tmp[20].im;
-
-    memcpy(s->exptab + 8*6 + 4*3, exp_5point, 4*sizeof(FFTComplex));
 }
 
 av_cold void ff_mdct15_init_x86(MDCT15Context *s)

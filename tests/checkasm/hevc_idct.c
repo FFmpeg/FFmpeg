@@ -87,7 +87,7 @@ void checkasm_check_hevc_idct(void)
 {
     int bit_depth;
 
-    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         HEVCDSPContext h;
 
         ff_hevc_dsp_init(&h, bit_depth);
@@ -95,7 +95,7 @@ void checkasm_check_hevc_idct(void)
     }
     report("idct_dc");
 
-    for (bit_depth = 8; bit_depth <= 10; bit_depth++) {
+    for (bit_depth = 8; bit_depth <= 12; bit_depth += 2) {
         HEVCDSPContext h;
 
         ff_hevc_dsp_init(&h, bit_depth);

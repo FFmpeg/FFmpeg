@@ -70,6 +70,11 @@ FATE_LIBAVUTIL += fate-dict
 fate-dict: libavutil/tests/dict$(EXESUF)
 fate-dict: CMD = run libavutil/tests/dict
 
+FATE_LIBAVUTIL += fate-encryption-info
+fate-encryption-info: libavutil/tests/encryption_info$(EXESUF)
+fate-encryption-info: CMD = run libavutil/tests/encryption_info
+fate-encryption-info: CMP = null
+
 FATE_LIBAVUTIL += fate-eval
 fate-eval: libavutil/tests/eval$(EXESUF)
 fate-eval: CMD = run libavutil/tests/eval
@@ -89,6 +94,11 @@ fate-hmac: CMD = run libavutil/tests/hmac
 FATE_LIBAVUTIL += fate-imgutils
 fate-imgutils: libavutil/tests/imgutils$(EXESUF)
 fate-imgutils: CMD = run libavutil/tests/imgutils
+
+FATE_LIBAVUTIL += fate-integer
+fate-integer: libavutil/tests/integer$(EXESUF)
+fate-integer: CMD = run libavutil/tests/integer
+fate-integer: CMP = null
 
 FATE_LIBAVUTIL += fate-lfg
 fate-lfg: libavutil/tests/lfg$(EXESUF)

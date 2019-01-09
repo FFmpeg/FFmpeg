@@ -28,6 +28,7 @@
 const MXFCodecUL ff_mxf_data_definition_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x01,0x00,0x00,0x00 }, 13, AVMEDIA_TYPE_VIDEO },
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x02,0x00,0x00,0x00 }, 13, AVMEDIA_TYPE_AUDIO },
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x02,0x03,0x00,0x00,0x00 }, 13, AVMEDIA_TYPE_DATA },
     { { 0x80,0x7D,0x00,0x60,0x08,0x14,0x3E,0x6F,0x6F,0x3C,0x8C,0xE1,0x6C,0xEF,0x11,0xD2 }, 16, AVMEDIA_TYPE_VIDEO }, /* LegacyPicture Avid Media Composer MXF */
     { { 0x80,0x7D,0x00,0x60,0x08,0x14,0x3E,0x6F,0x78,0xE1,0xEB,0xE1,0x6C,0xEF,0x11,0xD2 }, 16, AVMEDIA_TYPE_AUDIO }, /* LegacySound Avid Media Composer MXF */
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,  AVMEDIA_TYPE_DATA },
@@ -134,7 +135,7 @@ static const MXFSamplesPerFrame mxf_spf[] = {
     { { 1001, 24000 }, { 2002, 0,    0,    0,    0,    0 } }, // FILM 23.976
     { { 1, 24},        { 2000, 0,    0,    0,    0,    0 } }, // FILM 24
     { { 1001, 30000 }, { 1602, 1601, 1602, 1601, 1602, 0 } }, // NTSC 29.97
-    { { 1001, 60000 }, { 801,  801,  801,  801,  800,  0 } }, // NTSC 59.94
+    { { 1001, 60000 }, { 801,  801,  800,  801,  801,  0 } }, // NTSC 59.94
     { { 1, 25 },       { 1920, 0,    0,    0,    0,    0 } }, // PAL 25
     { { 1, 50 },       { 960,  0,    0,    0,    0,    0 } }, // PAL 50
     { { 1, 60 },       { 800,  0,    0,    0,    0,    0 } },
@@ -170,4 +171,21 @@ const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s,
                mxf_spf[idx].time_base.den);
 
     return &mxf_spf[idx];
+}
+
+static const int mxf_content_package_rates[] = {
+    3, 2, 7, 13, 4, 10, 12,
+};
+
+int ff_mxf_get_content_package_rate(AVRational time_base)
+{
+    int idx = av_find_nearest_q_idx(time_base, mxf_time_base);
+    AVRational diff = av_sub_q(time_base, mxf_time_base[idx]);
+
+    diff.num = FFABS(diff.num);
+
+    if (av_cmp_q(diff, (AVRational){1, 1000}) >= 0)
+        return -1;
+
+    return mxf_content_package_rates[idx];
 }

@@ -112,7 +112,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
     av_assert0((unsigned)pkt->size <= INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
     if ((unsigned)grow_by >
         INT_MAX - (pkt->size + AV_INPUT_BUFFER_PADDING_SIZE))
-        return -1;
+        return AVERROR(ENOMEM);
 
     new_size = pkt->size + grow_by + AV_INPUT_BUFFER_PADDING_SIZE;
     if (pkt->buf) {
@@ -124,7 +124,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by)
         } else {
             data_offset = pkt->data - pkt->buf->data;
             if (data_offset > INT_MAX - new_size)
-                return -1;
+                return AVERROR(ENOMEM);
         }
 
         if (new_size + data_offset > pkt->buf->size) {
@@ -375,6 +375,9 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_DISPLAYMATRIX:              return "Display Matrix";
     case AV_PKT_DATA_STEREO3D:                   return "Stereo 3D";
     case AV_PKT_DATA_AUDIO_SERVICE_TYPE:         return "Audio Service Type";
+    case AV_PKT_DATA_QUALITY_STATS:              return "Quality stats";
+    case AV_PKT_DATA_FALLBACK_TRACK:             return "Fallback track";
+    case AV_PKT_DATA_CPB_PROPERTIES:             return "CPB properties";
     case AV_PKT_DATA_SKIP_SAMPLES:               return "Skip Samples";
     case AV_PKT_DATA_JP_DUALMONO:                return "JP Dual Mono";
     case AV_PKT_DATA_STRINGS_METADATA:           return "Strings Metadata";
@@ -388,6 +391,9 @@ const char *av_packet_side_data_name(enum AVPacketSideDataType type)
     case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:        return "Content light level metadata";
     case AV_PKT_DATA_SPHERICAL:                  return "Spherical Mapping";
     case AV_PKT_DATA_A53_CC:                     return "A53 Closed Captions";
+    case AV_PKT_DATA_ENCRYPTION_INIT_INFO:       return "Encryption initialization data";
+    case AV_PKT_DATA_ENCRYPTION_INFO:            return "Encryption info";
+    case AV_PKT_DATA_AFD:                        return "Active Format Description data";
     }
     return NULL;
 }
@@ -571,11 +577,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     dst->flags                = src->flags;
     dst->stream_index         = src->stream_index;
 
+    dst->side_data            = NULL;
+    dst->side_data_elems      = 0;
     for (i = 0; i < src->side_data_elems; i++) {
-         enum AVPacketSideDataType type = src->side_data[i].type;
-         int size          = src->side_data[i].size;
-         uint8_t *src_data = src->side_data[i].data;
-         uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
+        enum AVPacketSideDataType type = src->side_data[i].type;
+        int size          = src->side_data[i].size;
+        uint8_t *src_data = src->side_data[i].data;
+        uint8_t *dst_data = av_packet_new_side_data(dst, type, size);
 
         if (!dst_data) {
             av_packet_free_side_data(dst);
@@ -648,6 +656,45 @@ void av_packet_move_ref(AVPacket *dst, AVPacket *src)
     av_init_packet(src);
     src->data = NULL;
     src->size = 0;
+}
+
+int av_packet_make_refcounted(AVPacket *pkt)
+{
+    int ret;
+
+    if (pkt->buf)
+        return 0;
+
+    ret = packet_alloc(&pkt->buf, pkt->size);
+    if (ret < 0)
+        return ret;
+    if (pkt->size)
+        memcpy(pkt->buf->data, pkt->data, pkt->size);
+
+    pkt->data = pkt->buf->data;
+
+    return 0;
+}
+
+int av_packet_make_writable(AVPacket *pkt)
+{
+    AVBufferRef *buf = NULL;
+    int ret;
+
+    if (pkt->buf && av_buffer_is_writable(pkt->buf))
+        return 0;
+
+    ret = packet_alloc(&buf, pkt->size);
+    if (ret < 0)
+        return ret;
+    if (pkt->size)
+        memcpy(buf->data, pkt->data, pkt->size);
+
+    av_buffer_unref(&pkt->buf);
+    pkt->buf  = buf;
+    pkt->data = buf->data;
+
+    return 0;
 }
 
 void av_packet_rescale_ts(AVPacket *pkt, AVRational src_tb, AVRational dst_tb)

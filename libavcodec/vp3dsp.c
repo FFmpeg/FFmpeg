@@ -293,4 +293,6 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
         ff_vp3dsp_init_ppc(c, flags);
     if (ARCH_X86)
         ff_vp3dsp_init_x86(c, flags);
+    if (ARCH_MIPS)
+        ff_vp3dsp_init_mips(c, flags);
 }

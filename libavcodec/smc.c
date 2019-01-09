@@ -438,6 +438,10 @@ static int smc_decode_frame(AVCodecContext *avctx,
     int pal_size;
     const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &pal_size);
     int ret;
+    int total_blocks = ((s->avctx->width + 3) / 4) * ((s->avctx->height + 3) / 4);
+
+    if (total_blocks / 1024 > avpkt->size)
+        return AVERROR_INVALIDDATA;
 
     bytestream2_init(&s->gb, buf, buf_size);
 

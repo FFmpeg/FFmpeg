@@ -344,7 +344,7 @@ static inline int selective_color_##nbits(AVFilterContext *ctx, ThreadData *td, 
             const int max_color = FFMAX3(r, g, b);                                                      \
             const int is_white   = (r > 1<<(nbits-1) && g > 1<<(nbits-1) && b > 1<<(nbits-1));          \
             const int is_neutral = (r || g || b) &&                                                     \
-                                   r != (1<<nbits)-1 && g != (1<<nbits)-1 && b != (1<<nbits)-1;         \
+                                   (r != (1<<nbits)-1 || g != (1<<nbits)-1 || b != (1<<nbits)-1);       \
             const int is_black   = (r < 1<<(nbits-1) && g < 1<<(nbits-1) && b < 1<<(nbits-1));          \
             const uint32_t range_flag = (r == max_color) << RANGE_REDS                                  \
                                       | (r == min_color) << RANGE_CYANS                                 \

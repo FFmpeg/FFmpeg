@@ -151,7 +151,7 @@ int av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame);
  *              the end of stream, when it can contain less than nb_samples.
  *
  * @return The return codes have the same meaning as for
- *         av_buffersink_get_samples().
+ *         av_buffersink_get_frame().
  *
  * @warning do not mix this function with av_buffersink_get_frame(). Use only one or
  * the other with a single sink, not both.

@@ -257,13 +257,13 @@ default.
 @section Which are good parameters for encoding high quality MPEG-4?
 
 '-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
-things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd'.
+things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Which are good parameters for encoding high quality MPEG-1/MPEG-2?
 
 '-mbd rd -trellis 2 -cmp 2 -subcmp 2 -g 100 -pass 1/2'
 but beware the '-g 100' might cause problems with some decoders.
-Things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd.
+Things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Interlaced video looks very bad when encoded with ffmpeg, what is wrong?
 

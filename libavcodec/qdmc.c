@@ -26,6 +26,7 @@
 #define BITSTREAM_READER_LE
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/thread.h"
 
 #include "avcodec.h"
 #include "bytestream.h"
@@ -204,7 +205,7 @@ static const uint8_t phase_diff_codes[] = {
                            INIT_VLC_LE | INIT_VLC_USE_NEW_STATIC); \
     } while (0)
 
-static av_cold void qdmc_init_static_data(AVCodec *codec)
+static av_cold void qdmc_init_static_data(void)
 {
     int i;
 
@@ -250,9 +251,12 @@ static void make_noises(QDMCContext *s)
 
 static av_cold int qdmc_decode_init(AVCodecContext *avctx)
 {
+    static AVOnce init_static_once = AV_ONCE_INIT;
     QDMCContext *s = avctx->priv_data;
-    int fft_size, fft_order, size, g, j, x;
+    int ret, fft_size, fft_order, size, g, j, x;
     GetByteContext b;
+
+    ff_thread_once(&init_static_once, qdmc_init_static_data);
 
     if (!avctx->extradata || (avctx->extradata_size < 48)) {
         av_log(avctx, AV_LOG_ERROR, "extradata missing or truncated\n");
@@ -334,7 +338,9 @@ static av_cold int qdmc_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    ff_fft_init(&s->fft_ctx, fft_order, 1);
+    ret = ff_fft_init(&s->fft_ctx, fft_order, 1);
+    if (ret < 0)
+        return ret;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
@@ -775,7 +781,6 @@ AVCodec ff_qdmc_decoder = {
     .id               = AV_CODEC_ID_QDMC,
     .priv_data_size   = sizeof(QDMCContext),
     .init             = qdmc_decode_init,
-    .init_static_data = qdmc_init_static_data,
     .close            = qdmc_decode_close,
     .decode           = qdmc_decode_frame,
     .flush            = qdmc_flush,

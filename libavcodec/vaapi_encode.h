@@ -23,6 +23,10 @@
 
 #include <va/va.h>
 
+#if VA_CHECK_VERSION(1, 0, 0)
+#include <va/va_str.h>
+#endif
+
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_vaapi.h"
 
@@ -48,6 +52,10 @@ enum {
 
 typedef struct VAAPIEncodeSlice {
     int             index;
+    int             row_start;
+    int             row_size;
+    int             block_start;
+    int             block_size;
     void           *priv_data;
     void           *codec_slice_params;
 } VAAPIEncodeSlice;
@@ -86,23 +94,34 @@ typedef struct VAAPIEncodePicture {
     VAAPIEncodeSlice *slices;
 } VAAPIEncodePicture;
 
+typedef struct VAAPIEncodeProfile {
+    // lavc profile value (FF_PROFILE_*).
+    int       av_profile;
+    // Supported bit depth.
+    int       depth;
+    // Number of components.
+    int       nb_components;
+    // Chroma subsampling in width dimension.
+    int       log2_chroma_w;
+    // Chroma subsampling in height dimension.
+    int       log2_chroma_h;
+    // VAAPI profile value.
+    VAProfile va_profile;
+} VAAPIEncodeProfile;
+
 typedef struct VAAPIEncodeContext {
     const AVClass *class;
 
     // Codec-specific hooks.
     const struct VAAPIEncodeType *codec;
 
-    // Encoding profile (VAProfileXXX).
-    VAProfile       va_profile;
-    // Encoding entrypoint (usually VAEntryointEncSlice).
-    VAEntrypoint    va_entrypoint;
-    // Surface colour/sampling format (usually VA_RT_FORMAT_YUV420).
-    unsigned int    va_rt_format;
-    // Rate control mode.
-    unsigned int    va_rc_mode;
-    // Supported packed headers (initially the desired set, modified
-    // later to what is actually supported).
-    unsigned int    va_packed_headers;
+    // Global options.
+
+    // Use low power encoding mode.
+    int             low_power;
+
+    // Desired packed headers.
+    unsigned int    desired_packed_headers;
 
     // The required size of surfaces.  This is probably the input
     // size (AVCodecContext.width|height) aligned up to whatever
@@ -110,11 +129,26 @@ typedef struct VAAPIEncodeContext {
     int             surface_width;
     int             surface_height;
 
+    // The block size for slice calculations.
+    int             slice_block_width;
+    int             slice_block_height;
+
     // Everything above this point must be set before calling
     // ff_vaapi_encode_init().
 
-    // Codec-specific state.
-    void *priv_data;
+    // Chosen encoding profile details.
+    const VAAPIEncodeProfile *profile;
+
+    // Encoding profile (VAProfile*).
+    VAProfile       va_profile;
+    // Encoding entrypoint (VAEntryoint*).
+    VAEntrypoint    va_entrypoint;
+    // Rate control mode.
+    unsigned int    va_rc_mode;
+    // Bitrate for codec-specific encoder parameters.
+    unsigned int    va_bit_rate;
+    // Packed headers which will actually be sent.
+    unsigned int    va_packed_headers;
 
     // Configuration attributes to use when creating va_config.
     VAConfigAttrib  config_attributes[MAX_CONFIG_ATTRIBUTES];
@@ -198,24 +232,36 @@ typedef struct VAAPIEncodeContext {
     int64_t         dts_pts_diff;
     int64_t         ts_ring[MAX_REORDER_DELAY * 3];
 
+    // Slice structure.
+    int slice_block_rows;
+    int slice_block_cols;
+    int nb_slices;
+    int slice_size;
+
     // Frame type decision.
+    int gop_size;
     int p_per_i;
     int b_per_p;
     int force_idr;
     int gop_counter;
     int p_counter;
     int end_of_stream;
-
-    // Codec-local options are allocated to follow this structure in
-    // memory (in the AVCodec definition, set priv_data_size to
-    // sizeof(VAAPIEncodeContext) + sizeof(VAAPIEncodeFooOptions)).
-    void *codec_options;
-    char codec_options_data[0];
 } VAAPIEncodeContext;
 
+enum {
+    // Codec supports controlling the subdivision of pictures into slices.
+    FLAG_SLICE_CONTROL         = 1 << 0,
+    // Codec only supports constant quality (no rate control).
+    FLAG_CONSTANT_QUALITY_ONLY = 1 << 1,
+};
 
 typedef struct VAAPIEncodeType {
-    size_t priv_data_size;
+    // List of supported profiles and corresponding VAAPI profiles.
+    // (Must end with FF_PROFILE_UNKNOWN.)
+    const VAAPIEncodeProfile *profiles;
+
+    // Codec feature flags.
+    int flags;
 
     // Perform any extra codec-specific configuration after the
     // codec context is initialised (set up the private data and
@@ -279,5 +325,14 @@ int ff_vaapi_encode2(AVCodecContext *avctx, AVPacket *pkt,
 
 int ff_vaapi_encode_init(AVCodecContext *avctx);
 int ff_vaapi_encode_close(AVCodecContext *avctx);
+
+
+#define VAAPI_ENCODE_COMMON_OPTIONS \
+    { "low_power", \
+      "Use low-power encoding mode (only available on some platforms; " \
+      "may not support all encoding features)", \
+      OFFSET(common.low_power), AV_OPT_TYPE_BOOL, \
+      { .i64 = 0 }, 0, 1, FLAGS }
+
 
 #endif /* AVCODEC_VAAPI_ENCODE_H */

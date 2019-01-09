@@ -37,15 +37,16 @@ static int ivf_write_header(AVFormatContext *s)
     }
     par = s->streams[0]->codecpar;
     if (par->codec_type != AVMEDIA_TYPE_VIDEO ||
-        !(par->codec_id == AV_CODEC_ID_VP8 || par->codec_id == AV_CODEC_ID_VP9 ||
-          par->codec_id == AV_CODEC_ID_AV1)) {
+        !(par->codec_id == AV_CODEC_ID_AV1 ||
+          par->codec_id == AV_CODEC_ID_VP8 ||
+          par->codec_id == AV_CODEC_ID_VP9)) {
         av_log(s, AV_LOG_ERROR, "Currently only VP8, VP9 and AV1 are supported!\n");
         return AVERROR(EINVAL);
     }
     avio_write(pb, "DKIF", 4);
     avio_wl16(pb, 0); // version
     avio_wl16(pb, 32); // header length
-    avio_wl32(pb, par->codec_tag ? par->codec_tag :
+    avio_wl32(pb,
               par->codec_id == AV_CODEC_ID_VP9 ? AV_RL32("VP90") :
               par->codec_id == AV_CODEC_ID_VP8 ? AV_RL32("VP80") : AV_RL32("AV01"));
     avio_wl16(pb, par->width);
@@ -96,6 +97,8 @@ static int ivf_check_bitstream(struct AVFormatContext *s, const AVPacket *pkt)
 
     if (st->codecpar->codec_id == AV_CODEC_ID_VP9)
         ret = ff_stream_add_bitstream_filter(st, "vp9_superframe", NULL);
+    else if (st->codecpar->codec_id == AV_CODEC_ID_AV1)
+        ret = ff_stream_add_bitstream_filter(st, "av1_metadata", "td=insert");
 
     return ret;
 }

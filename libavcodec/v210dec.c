@@ -27,6 +27,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
+#include "libavutil/intreadwrite.h"
 
 #define READ_PIXELS(a, b, c)         \
     do {                             \
@@ -92,6 +93,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     }
+    if (   avctx->codec_tag == MKTAG('C', '2', '1', '0')
+        && avpkt->size > 64
+        && AV_RN32(psrc) == AV_RN32("INFO")
+        && avpkt->size - 64 >= stride * avctx->height)
+        psrc += 64;
 
     aligned_input = !((uintptr_t)psrc & 0xf) && !(stride & 0xf);
     if (aligned_input != s->aligned_input) {

@@ -68,10 +68,6 @@ static int yop_read_header(AVFormatContext *s)
     if (!audio_stream || !video_stream)
         return AVERROR(ENOMEM);
 
-    // Extra data that will be passed to the decoder
-    if (ff_alloc_extradata(video_stream->codecpar, 8))
-        return AVERROR(ENOMEM);
-
     // Audio
     audio_par                 = audio_stream->codecpar;
     audio_par->codec_type     = AVMEDIA_TYPE_AUDIO;
@@ -94,9 +90,9 @@ static int yop_read_header(AVFormatContext *s)
 
     video_stream->sample_aspect_ratio = (AVRational){1, 2};
 
-    ret = avio_read(pb, video_par->extradata, 8);
-    if (ret < 8)
-        return ret < 0 ? ret : AVERROR_EOF;
+    ret = ff_get_extradata(s, video_par, pb, 8);
+    if (ret < 0)
+        return ret;
 
     yop->palette_size       = video_par->extradata[0] * 3 + 4;
     yop->audio_block_length = AV_RL16(video_par->extradata + 6);

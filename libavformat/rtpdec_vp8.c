@@ -276,7 +276,7 @@ static int vp8_need_keyframe(PayloadContext *vp8)
     return vp8->sequence_dirty || !vp8->sequence_ok;
 }
 
-RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .enc_name       = "VP8",
     .codec_type     = AVMEDIA_TYPE_VIDEO,
     .codec_id       = AV_CODEC_ID_VP8,

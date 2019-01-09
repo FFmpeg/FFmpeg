@@ -296,6 +296,7 @@ typedef struct VC1Context{
     uint8_t (*curr_luty)[256]  ,(*curr_lutuv)[256];
     int last_use_ic, *curr_use_ic, next_use_ic, aux_use_ic;
     int rnd;                        ///< rounding control
+    int cbptab;
 
     /** Frame decoding info for S/M profiles only */
     //@{
@@ -367,6 +368,11 @@ typedef struct VC1Context{
     int frfd, brfd;         ///< reference frame distance (forward or backward)
     int first_pic_header_flag;
     int pic_header_flag;
+    int mbmodetab;
+    int icbptab;
+    int imvtab;
+    int twomvbptab;
+    int fourmvbptab;
 
     /** Frame decoding info for sprite modes */
     //@{
@@ -416,10 +422,12 @@ void ff_vc1_init_transposed_scantables(VC1Context *v);
 int  ff_vc1_decode_end(AVCodecContext *avctx);
 void ff_vc1_decode_blocks(VC1Context *v);
 
-void ff_vc1_loop_filter_iblk(VC1Context *v, int pq);
-void ff_vc1_loop_filter_iblk_delayed(VC1Context *v, int pq);
-void ff_vc1_smooth_overlap_filter_iblk(VC1Context *v);
-void ff_vc1_apply_p_loop_filter(VC1Context *v);
+void ff_vc1_i_overlap_filter(VC1Context *v);
+void ff_vc1_p_overlap_filter(VC1Context *v);
+void ff_vc1_i_loop_filter(VC1Context *v);
+void ff_vc1_p_loop_filter(VC1Context *v);
+void ff_vc1_p_intfr_loop_filter(VC1Context *v);
+void ff_vc1_b_intfi_loop_filter(VC1Context *v);
 
 void ff_vc1_mc_1mv(VC1Context *v, int dir);
 void ff_vc1_mc_4mv_luma(VC1Context *v, int n, int dir, int avg);

@@ -791,8 +791,6 @@ int main(int argc, char **argv)
     int split = 0, ismf = 0, i;
     struct Tracks tracks = { 0, .video_track = -1, .audio_track = -1 };
 
-    av_register_all();
-
     for (i = 1; i < argc; i++) {
         if (!strcmp(argv[i], "-n")) {
             basename = argv[i + 1];

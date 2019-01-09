@@ -76,17 +76,7 @@ static inline int is_dos_path(const char *path)
     return 0;
 }
 
-#if defined(__OS2__)
-#define SHUT_RD 0
-#define SHUT_WR 1
-#define SHUT_RDWR 2
-#endif
-
 #if defined(_WIN32)
-#define SHUT_RD SD_RECEIVE
-#define SHUT_WR SD_SEND
-#define SHUT_RDWR SD_BOTH
-
 #ifndef S_IRUSR
 #define S_IRUSR S_IREAD
 #endif
@@ -96,6 +86,19 @@ static inline int is_dos_path(const char *path)
 #endif
 
 #if CONFIG_NETWORK
+#if defined(_WIN32)
+#define SHUT_RD SD_RECEIVE
+#define SHUT_WR SD_SEND
+#define SHUT_RDWR SD_BOTH
+#else
+#include <sys/socket.h>
+#if !defined(SHUT_RD) /* OS/2, DJGPP */
+#define SHUT_RD 0
+#define SHUT_WR 1
+#define SHUT_RDWR 2
+#endif
+#endif
+
 #if !HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif

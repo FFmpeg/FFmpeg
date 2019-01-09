@@ -1679,7 +1679,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         break;
 
     default:
-        return -1;
+        av_assert0(0); // unsupported codec_id should not happen
     }
 
     if (avpkt->size && bytestream2_tell(&gb) == 0) {

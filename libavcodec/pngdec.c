@@ -446,7 +446,7 @@ static int decode_zbuf(AVBPrint *bp, const uint8_t *data,
         return AVERROR_EXTERNAL;
     zstream.next_in  = (unsigned char *)data;
     zstream.avail_in = data_end - data;
-    av_bprint_init(bp, 0, -1);
+    av_bprint_init(bp, 0, AV_BPRINT_SIZE_UNLIMITED);
 
     while (zstream.avail_in > 0) {
         av_bprint_get_buffer(bp, 2, &buf, &buf_size);
@@ -578,6 +578,10 @@ static int decode_ihdr_chunk(AVCodecContext *avctx, PNGDecContext *s,
     }
     s->color_type       = bytestream2_get_byte(&s->gb);
     s->compression_type = bytestream2_get_byte(&s->gb);
+    if (s->compression_type) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid compression method %d\n", s->compression_type);
+        goto error;
+    }
     s->filter_type      = bytestream2_get_byte(&s->gb);
     s->interlace_type   = bytestream2_get_byte(&s->gb);
     bytestream2_skip(&s->gb, 4); /* crc */
@@ -1315,7 +1319,7 @@ static int decode_frame_common(AVCodecContext *avctx, PNGDecContext *s,
             char *gamma_str;
             int num = bytestream2_get_be32(&s->gb);
 
-            av_bprint_init(&bp, 0, -1);
+            av_bprint_init(&bp, 0, AV_BPRINT_SIZE_UNLIMITED);
             av_bprintf(&bp, "%i/%i", num, 100000);
             ret = av_bprint_finalize(&bp, &gamma_str);
             if (ret < 0)

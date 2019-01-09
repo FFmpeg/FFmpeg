@@ -11,10 +11,10 @@ c0866e9e710fce735423594a93bee604 *./tests/data/images/xwd/02.xwd
 ./tests/data/images/xwd/%02d.xwd CRC=0x14555d6e
 202863 ./tests/data/images/xwd/02.xwd
 c6f3cb7c45f7238474a89d2ad61a1caf *./tests/data/images/xwd/02.xwd
-./tests/data/images/xwd/%02d.xwd CRC=0xfaafb59b
+./tests/data/images/xwd/%02d.xwd CRC=0xf217a95e
 104559 ./tests/data/images/xwd/02.xwd
 fe1af954966a40c2cd35fc27094ff823 *./tests/data/images/xwd/02.xwd
-./tests/data/images/xwd/%02d.xwd CRC=0xd69c3a09
+./tests/data/images/xwd/%02d.xwd CRC=0xce042dcc
 104559 ./tests/data/images/xwd/02.xwd
 85e9b8b814a1dea71d143aac2e487037 *./tests/data/images/xwd/02.xwd
 ./tests/data/images/xwd/%02d.xwd CRC=0x0ff205be

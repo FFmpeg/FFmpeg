@@ -201,40 +201,139 @@
 
 #endif /* HAVE_LOONGSON2 */
 
-#define TRANSPOSE_4H(m1, m2, m3, m4, t1, t2, t3, t4, t5, r1, zero, shift) \
-        "li         "#r1",  0x93                                    \n\t" \
-        "xor        "#zero","#zero","#zero"                         \n\t" \
-        "mtc1       "#r1",  "#shift"                                \n\t" \
-        "punpcklhw  "#t1",  "#m1",  "#zero"                         \n\t" \
-        "punpcklhw  "#t5",  "#m2",  "#zero"                         \n\t" \
-        "pshufh     "#t5",  "#t5",  "#shift"                        \n\t" \
-        "or         "#t1",  "#t1",  "#t5"                           \n\t" \
-        "punpckhhw  "#t2",  "#m1",  "#zero"                         \n\t" \
-        "punpckhhw  "#t5",  "#m2",  "#zero"                         \n\t" \
-        "pshufh     "#t5",  "#t5",  "#shift"                        \n\t" \
-        "or         "#t2",  "#t2",  "#t5"                           \n\t" \
-        "punpcklhw  "#t3",  "#m3",  "#zero"                         \n\t" \
-        "punpcklhw  "#t5",  "#m4",  "#zero"                         \n\t" \
-        "pshufh     "#t5",  "#t5",  "#shift"                        \n\t" \
-        "or         "#t3",  "#t3",  "#t5"                           \n\t" \
-        "punpckhhw  "#t4",  "#m3",  "#zero"                         \n\t" \
-        "punpckhhw  "#t5",  "#m4",  "#zero"                         \n\t" \
-        "pshufh     "#t5",  "#t5",  "#shift"                        \n\t" \
-        "or         "#t4",  "#t4",  "#t5"                           \n\t" \
-        "punpcklwd  "#m1",  "#t1",  "#t3"                           \n\t" \
-        "punpckhwd  "#m2",  "#t1",  "#t3"                           \n\t" \
-        "punpcklwd  "#m3",  "#t2",  "#t4"                           \n\t" \
-        "punpckhwd  "#m4",  "#t2",  "#t4"                           \n\t"
+/**
+ * backup register
+ */
+#define BACKUP_REG \
+  double temp_backup_reg[8];                                    \
+  if (_MIPS_SIM == _ABI64)                                      \
+    __asm__ volatile (                                          \
+      "gssqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
+      "gssqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
+      "gssqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
+      "gssqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );                                                          \
+  else                                                          \
+    __asm__ volatile (                                          \
+      "gssqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
+      "gssqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
+      "gssqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );
 
+/**
+ * recover register
+ */
+#define RECOVER_REG \
+  if (_MIPS_SIM == _ABI64)                                      \
+    __asm__ volatile (                                          \
+      "gslqc1       $f25,      $f24,       0x00(%[temp])  \n\t" \
+      "gslqc1       $f27,      $f26,       0x10(%[temp])  \n\t" \
+      "gslqc1       $f29,      $f28,       0x20(%[temp])  \n\t" \
+      "gslqc1       $f31,      $f30,       0x30(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );                                                          \
+  else                                                          \
+    __asm__ volatile (                                          \
+      "gslqc1       $f22,      $f20,       0x00(%[temp])  \n\t" \
+      "gslqc1       $f26,      $f24,       0x10(%[temp])  \n\t" \
+      "gslqc1       $f30,      $f28,       0x20(%[temp])  \n\t" \
+      :                                                         \
+      : [temp]"r"(temp_backup_reg)                              \
+      : "memory"                                                \
+    );
 
-#define PSRAH_4_MMI(fp1, fp2, fp3, fp4, shift)                              \
-        "psrah      "#fp1",     "#fp1",     "#shift"                \n\t"   \
-        "psrah      "#fp2",     "#fp2",     "#shift"                \n\t"   \
-        "psrah      "#fp3",     "#fp3",     "#shift"                \n\t"   \
+/**
+ * brief: Transpose 4X4 half word packaged data.
+ * fr_i0, fr_i1, fr_i2, fr_i3: src & dst
+ * fr_t0, fr_t1, fr_t2, fr_t3: temporary register
+ */
+#define TRANSPOSE_4H(fr_i0, fr_i1, fr_i2, fr_i3,                          \
+                     fr_t0, fr_t1, fr_t2, fr_t3)                          \
+        "punpcklhw  "#fr_t0",   "#fr_i0",   "#fr_i1"                \n\t" \
+        "punpckhhw  "#fr_t1",   "#fr_i0",   "#fr_i1"                \n\t" \
+        "punpcklhw  "#fr_t2",   "#fr_i2",   "#fr_i3"                \n\t" \
+        "punpckhhw  "#fr_t3",   "#fr_i2",   "#fr_i3"                \n\t" \
+        "punpcklwd  "#fr_i0",   "#fr_t0",   "#fr_t2"                \n\t" \
+        "punpckhwd  "#fr_i1",   "#fr_t0",   "#fr_t2"                \n\t" \
+        "punpcklwd  "#fr_i2",   "#fr_t1",   "#fr_t3"                \n\t" \
+        "punpckhwd  "#fr_i3",   "#fr_t1",   "#fr_t3"                \n\t"
+
+/**
+ * brief: Transpose 8x8 byte packaged data.
+ * fr_i0~i7: src & dst
+ * fr_t0~t3: temporary register
+ */
+#define TRANSPOSE_8B(fr_i0, fr_i1, fr_i2, fr_i3, fr_i4, fr_i5,            \
+                     fr_i6, fr_i7, fr_t0, fr_t1, fr_t2, fr_t3)            \
+        "punpcklbh  "#fr_t0",   "#fr_i0",   "#fr_i1"                \n\t" \
+        "punpckhbh  "#fr_t1",   "#fr_i0",   "#fr_i1"                \n\t" \
+        "punpcklbh  "#fr_t2",   "#fr_i2",   "#fr_i3"                \n\t" \
+        "punpckhbh  "#fr_t3",   "#fr_i2",   "#fr_i3"                \n\t" \
+        "punpcklbh  "#fr_i0",   "#fr_i4",   "#fr_i5"                \n\t" \
+        "punpckhbh  "#fr_i1",   "#fr_i4",   "#fr_i5"                \n\t" \
+        "punpcklbh  "#fr_i2",   "#fr_i6",   "#fr_i7"                \n\t" \
+        "punpckhbh  "#fr_i3",   "#fr_i6",   "#fr_i7"                \n\t" \
+        "punpcklhw  "#fr_i4",   "#fr_t0",   "#fr_t2"                \n\t" \
+        "punpckhhw  "#fr_i5",   "#fr_t0",   "#fr_t2"                \n\t" \
+        "punpcklhw  "#fr_i6",   "#fr_t1",   "#fr_t3"                \n\t" \
+        "punpckhhw  "#fr_i7",   "#fr_t1",   "#fr_t3"                \n\t" \
+        "punpcklhw  "#fr_t0",   "#fr_i0",   "#fr_i2"                \n\t" \
+        "punpckhhw  "#fr_t1",   "#fr_i0",   "#fr_i2"                \n\t" \
+        "punpcklhw  "#fr_t2",   "#fr_i1",   "#fr_i3"                \n\t" \
+        "punpckhhw  "#fr_t3",   "#fr_i1",   "#fr_i3"                \n\t" \
+        "punpcklwd  "#fr_i0",   "#fr_i4",   "#fr_t0"                \n\t" \
+        "punpckhwd  "#fr_i1",   "#fr_i4",   "#fr_t0"                \n\t" \
+        "punpcklwd  "#fr_i2",   "#fr_i5",   "#fr_t1"                \n\t" \
+        "punpckhwd  "#fr_i3",   "#fr_i5",   "#fr_t1"                \n\t" \
+        "punpcklwd  "#fr_i4",   "#fr_i6",   "#fr_t2"                \n\t" \
+        "punpckhwd  "#fr_i5",   "#fr_i6",   "#fr_t2"                \n\t" \
+        "punpcklwd  "#fr_i6",   "#fr_i7",   "#fr_t3"                \n\t" \
+        "punpckhwd  "#fr_i7",   "#fr_i7",   "#fr_t3"                \n\t"
+
+/**
+ * brief: Parallel SRA for 8 byte packaged data.
+ * fr_i0: src
+ * fr_i1: SRA number(SRAB number + 8)
+ * fr_t0, fr_t1: temporary register
+ * fr_d0: dst
+ */
+#define PSRAB_MMI(fr_i0, fr_i1, fr_t0, fr_t1, fr_d0)                      \
+        "punpcklbh    "#fr_t0",   "#fr_t0",   "#fr_i0"              \n\t" \
+        "punpckhbh    "#fr_t1",   "#fr_t1",   "#fr_i0"              \n\t" \
+        "psrah        "#fr_t0",   "#fr_t0",   "#fr_i1"              \n\t" \
+        "psrah        "#fr_t1",   "#fr_t1",   "#fr_i1"              \n\t" \
+        "packsshb     "#fr_d0",   "#fr_t0",   "#fr_t1"              \n\t"
+
+/**
+ * brief: Parallel SRL for 8 byte packaged data.
+ * fr_i0: src
+ * fr_i1: SRL number(SRLB number + 8)
+ * fr_t0, fr_t1: temporary register
+ * fr_d0: dst
+ */
+#define PSRLB_MMI(fr_i0, fr_i1, fr_t0, fr_t1, fr_d0)                      \
+        "punpcklbh    "#fr_t0",   "#fr_t0",   "#fr_i0"              \n\t" \
+        "punpckhbh    "#fr_t1",   "#fr_t1",   "#fr_i0"              \n\t" \
+        "psrlh        "#fr_t0",   "#fr_t0",   "#fr_i1"              \n\t" \
+        "psrlh        "#fr_t1",   "#fr_t1",   "#fr_i1"              \n\t" \
+        "packsshb     "#fr_d0",   "#fr_t0",   "#fr_t1"              \n\t"
+
+#define PSRAH_4_MMI(fp1, fp2, fp3, fp4, shift)                            \
+        "psrah      "#fp1",     "#fp1",     "#shift"                \n\t" \
+        "psrah      "#fp2",     "#fp2",     "#shift"                \n\t" \
+        "psrah      "#fp3",     "#fp3",     "#shift"                \n\t" \
         "psrah      "#fp4",     "#fp4",     "#shift"                \n\t"
 
-#define PSRAH_8_MMI(fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, shift)          \
-        PSRAH_4_MMI(fp1, fp2, fp3, fp4, shift)                              \
+#define PSRAH_8_MMI(fp1, fp2, fp3, fp4, fp5, fp6, fp7, fp8, shift)        \
+        PSRAH_4_MMI(fp1, fp2, fp3, fp4, shift)                            \
         PSRAH_4_MMI(fp5, fp6, fp7, fp8, shift)
 
 

@@ -1184,10 +1184,10 @@ FIND_MIN_MAX((%0, %1, 8))
 #endif
         "movq %%mm6, %%mm0                      \n\t" // max
         "psubb %%mm7, %%mm6                     \n\t" // max - min
-        "push %4                              \n\t"
-        "movd %%mm6, %k4                        \n\t"
-        "cmpb "MANGLE(deringThreshold)", %b4    \n\t"
-        "pop %4                               \n\t"
+        "push %%"FF_REG_a"                      \n\t"
+        "movd %%mm6, %%eax                      \n\t"
+        "cmpb "MANGLE(deringThreshold)", %%al   \n\t"
+        "pop %%"FF_REG_a"                       \n\t"
         " jb 1f                                 \n\t"
         PAVGB(%%mm0, %%mm7)                           // a=(max + min)/2
         "punpcklbw %%mm7, %%mm7                 \n\t"
@@ -1317,7 +1317,7 @@ DERING_CORE((%0, %1, 8)       ,(%%FF_REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,
         "1:                        \n\t"
         : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
           NAMED_CONSTRAINTS_ADD(deringThreshold,b00,b02,b08)
-        : "%"FF_REG_a, "%"FF_REG_d, "%"FF_REG_sp
+        : "%"FF_REG_a, "%"FF_REG_d
     );
 #else // HAVE_7REGS && (TEMPLATE_PP_MMXEXT || TEMPLATE_PP_3DNOW)
     int y;

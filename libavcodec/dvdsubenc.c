@@ -438,7 +438,7 @@ static int dvdsub_init(AVCodecContext *avctx)
     av_assert0(sizeof(dvdc->global_palette) == sizeof(default_palette));
     memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
 
-    av_bprint_init(&extradata, 0, 1);
+    av_bprint_init(&extradata, 0, AV_BPRINT_SIZE_AUTOMATIC);
     if (avctx->width && avctx->height)
         av_bprintf(&extradata, "size: %dx%d\n", avctx->width, avctx->height);
     av_bprintf(&extradata, "palette:");

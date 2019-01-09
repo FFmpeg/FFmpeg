@@ -92,6 +92,8 @@ static int read_header(AVFormatContext *s)
     uint16_t flags;
     int keyframe;
     int ret;
+    uint32_t signature;
+    uint8_t revision;
 
     vst = avformat_new_stream(s, NULL);
     if (!vst)
@@ -160,14 +162,14 @@ static int read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
+    signature = (vst->codecpar->codec_tag & 0xFFFFFF);
+    revision = ((vst->codecpar->codec_tag >> 24) % 0xFF);
+
+    if ((signature == AV_RL32("BIK") && (revision == 'k')) ||
+        (signature == AV_RL32("KB2") && (revision == 'i' || revision == 'j' || revision == 'k')))
+        avio_skip(pb, 4); /* unknown new field */
+
     if (bink->num_audio_tracks) {
-        uint32_t signature = (vst->codecpar->codec_tag & 0xFFFFFF);
-        uint8_t revision = ((vst->codecpar->codec_tag >> 24) % 0xFF);
-
-        if ((signature == AV_RL32("BIK") && (revision == 0x6b)) || /* k */
-            (signature == AV_RL32("KB2") && (revision == 0x69 || revision == 0x6a || revision == 0x6b))) /* i,j,k */
-            avio_skip(pb, 4); /* unknown new field */
-
         avio_skip(pb, 4 * bink->num_audio_tracks); /* max decoded size */
 
         for (i = 0; i < bink->num_audio_tracks; i++) {

@@ -130,8 +130,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     if (!pix_fmts)
         FAIL(AVERROR(ENOMEM));
 
-    avfilter_register_all();
-
     buffersink = avfilter_get_by_name("buffersink");
     abuffersink = avfilter_get_by_name("abuffersink");
 
@@ -166,7 +164,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx)
     }
 
     if (!lavfi->graph_str)
-        lavfi->graph_str = av_strdup(avctx->filename);
+        lavfi->graph_str = av_strdup(avctx->url);
 
     /* parse the graph, create a stream for each open output */
     if (!(lavfi->graph = avfilter_graph_alloc()))

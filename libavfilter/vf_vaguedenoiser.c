@@ -42,6 +42,7 @@ typedef struct VagueDenoiserContext {
     int planes;
 
     int depth;
+    int bpc;
     int peak;
     int nb_planes;
     int planeheight[4];
@@ -135,6 +136,7 @@ static int config_input(AVFilterLink *inlink)
     int p, i, nsteps_width, nsteps_height, nsteps_max;
 
     s->depth = desc->comp[0].depth;
+    s->bpc = (s->depth + 7) / 8;
     s->nb_planes = desc->nb_components;
 
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
@@ -410,7 +412,7 @@ static void filter(VagueDenoiserContext *s, AVFrame *in, AVFrame *out)
 
         if (!((1 << p) & s->planes)) {
             av_image_copy_plane(out->data[p], out->linesize[p], in->data[p], in->linesize[p],
-                                s->planewidth[p], s->planeheight[p]);
+                                s->planewidth[p] * s->bpc, s->planeheight[p]);
             continue;
         }
 

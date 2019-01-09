@@ -126,6 +126,53 @@ static void predict_width(AVCodecParameters *par, uint64_t fsize, int got_width)
         par->width = fsize > 4000 ? (160<<3) : (80<<3);
 }
 
+static int bin_probe(AVProbeData *p)
+{
+    const uint8_t *d = p->buf;
+    int magic = 0, sauce = 0;
+    int invisible = 0;
+    int i;
+
+    if (p->buf_size > 256)
+        magic = !memcmp(d + p->buf_size - 256, next_magic, sizeof(next_magic));
+    if (p->buf_size > 128)
+        sauce = !memcmp(d + p->buf_size - 128, "SAUCE00", 7);
+
+    if (magic)
+        return AVPROBE_SCORE_EXTENSION + 1;
+
+    if (av_match_ext(p->filename, "bin")) {
+        AVCodecParameters par;
+        int got_width = 0;
+        par.width = par.height = 0;
+        if (sauce)
+            return AVPROBE_SCORE_EXTENSION + 1;
+
+        predict_width(&par, p->buf_size, got_width);
+        if (par.width <= 0)
+            return 0;
+        calculate_height(&par, p->buf_size);
+        if (par.height <= 0)
+            return 0;
+
+        for (i = 0; i < p->buf_size - 256;  i+=2) {
+            if ((d[i+1] & 15) == (d[i+1] >> 4) && d[i] && d[i] != 0xFF && d[i] != ' ') {
+                invisible ++;
+            }
+        }
+
+        if (par.width * par.height * 2 / (8*16) == p->buf_size)
+            return AVPROBE_SCORE_MAX / 2;
+        return 0;
+    }
+
+    if (sauce)
+        return 1;
+
+    return 0;
+}
+
+
 static int bintext_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
@@ -343,9 +390,9 @@ AVInputFormat ff_bintext_demuxer = {
     .name           = "bin",
     .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
     .priv_data_size = sizeof(BinDemuxContext),
+    .read_probe     = bin_probe,
     .read_header    = bintext_read_header,
     .read_packet    = read_packet,
-    .extensions     = "bin",
     .priv_class     = CLASS("Binary text demuxer"),
 };
 #endif

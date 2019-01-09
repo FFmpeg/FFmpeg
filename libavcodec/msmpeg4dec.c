@@ -208,6 +208,9 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, int16_t block[6][64])
     uint8_t *coded_val;
     uint32_t * const mb_type_ptr = &s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride];
 
+    if (get_bits_left(&s->gb) <= 0)
+        return AVERROR_INVALIDDATA;
+
     if (s->pict_type == AV_PICTURE_TYPE_P) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
@@ -408,6 +411,14 @@ av_cold int ff_msmpeg4_decode_init(AVCodecContext *avctx)
 int ff_msmpeg4_decode_picture_header(MpegEncContext * s)
 {
     int code;
+
+    // at minimum one bit per macroblock is required at least in a valid frame,
+    // we discard frames much smaller than this. Frames smaller than 1/8 of the
+    // smallest "black/skip" frame generally contain not much recoverable content
+    // while at the same time they have the highest computational requirements
+    // per byte
+    if (get_bits_left(&s->gb) * 8LL < (s->width+15)/16 * ((s->height+15)/16))
+        return AVERROR_INVALIDDATA;
 
     if(s->msmpeg4_version==1){
         int start_code = get_bits_long(&s->gb, 32);

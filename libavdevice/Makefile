@@ -14,6 +14,7 @@ OBJS-$(CONFIG_SHARED)                    += reverse.o
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa_dec.o alsa.o timefilter.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa_enc.o alsa.o
+OBJS-$(CONFIG_ANDROID_CAMERA_INDEV)      += android_camera.o
 OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
 OBJS-$(CONFIG_CACA_OUTDEV)               += caca.o

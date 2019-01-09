@@ -293,7 +293,7 @@ static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
         av_log(ctx, AV_LOG_INFO, "dialogue");
         break;
     case AV_AUDIO_SERVICE_TYPE_COMMENTARY:
-        av_log(ctx, AV_LOG_INFO, "comentary");
+        av_log(ctx, AV_LOG_INFO, "commentary");
         break;
     case AV_AUDIO_SERVICE_TYPE_EMERGENCY:
         av_log(ctx, AV_LOG_INFO, "emergency");
@@ -547,6 +547,12 @@ static void dump_stream_format(AVFormatContext *ic, int i,
         av_log(NULL, AV_LOG_INFO, " (visual impaired)");
     if (st->disposition & AV_DISPOSITION_CLEAN_EFFECTS)
         av_log(NULL, AV_LOG_INFO, " (clean effects)");
+    if (st->disposition & AV_DISPOSITION_DESCRIPTIONS)
+        av_log(NULL, AV_LOG_INFO, " (descriptions)");
+    if (st->disposition & AV_DISPOSITION_DEPENDENT)
+        av_log(NULL, AV_LOG_INFO, " (dependent)");
+    if (st->disposition & AV_DISPOSITION_STILL_IMAGE)
+        av_log(NULL, AV_LOG_INFO, " (still image)");
     av_log(NULL, AV_LOG_INFO, "\n");
 
     dump_metadata(NULL, st->metadata, "    ");

@@ -79,13 +79,23 @@ static av_cold int libkvazaar_init(AVCodecContext *avctx)
     cfg->width  = avctx->width;
     cfg->height = avctx->height;
 
-    if (avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Could not set framerate for kvazaar: integer overflow\n");
-        return AVERROR(EINVAL);
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        if (avctx->ticks_per_frame > INT_MAX / avctx->framerate.den) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not set framerate for kvazaar: integer overflow\n");
+            return AVERROR(EINVAL);
+        }
+        cfg->framerate_num   = avctx->framerate.num;
+        cfg->framerate_denom = avctx->time_base.den * avctx->ticks_per_frame;
+    } else {
+        if (avctx->ticks_per_frame > INT_MAX / avctx->time_base.num) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Could not set framerate for kvazaar: integer overflow\n");
+            return AVERROR(EINVAL);
+        }
+        cfg->framerate_num   = avctx->time_base.den;
+        cfg->framerate_denom = avctx->time_base.num * avctx->ticks_per_frame;
     }
-    cfg->framerate_num   = avctx->time_base.den;
-    cfg->framerate_denom = avctx->time_base.num * avctx->ticks_per_frame;
     cfg->target_bitrate = avctx->bit_rate;
     cfg->vui.sar_width  = avctx->sample_aspect_ratio.num;
     cfg->vui.sar_height = avctx->sample_aspect_ratio.den;
@@ -143,8 +153,8 @@ static av_cold int libkvazaar_close(AVCodecContext *avctx)
     LibkvazaarContext *ctx = avctx->priv_data;
 
     if (ctx->api) {
-      ctx->api->encoder_close(ctx->encoder);
-      ctx->api->config_destroy(ctx->config);
+        ctx->api->encoder_close(ctx->encoder);
+        ctx->api->config_destroy(ctx->config);
     }
 
     if (avctx->extradata)
@@ -170,7 +180,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
 
     if (frame) {
         if (frame->width != ctx->config->width ||
-                frame->height != ctx->config->height) {
+            frame->height != ctx->config->height) {
             av_log(avctx, AV_LOG_ERROR,
                    "Changing video dimensions during encoding is not supported. "
                    "(changed from %dx%d to %dx%d)\n",
@@ -207,7 +217,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
               0
             };
             av_image_copy(input_pic->data, dst_linesizes,
-                          frame->data, frame->linesize,
+                          (const uint8_t **)frame->data, frame->linesize,
                           frame->format, frame->width, frame->height);
         }
 
@@ -223,8 +233,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Failed to encode frame.\n");
         retval = AVERROR_INVALIDDATA;
         goto done;
-    }
-    else
+    } else
         retval = 0; /* kvazaar returns 1 on success */
 
     if (data_out) {
@@ -249,7 +258,7 @@ static int libkvazaar_encode(AVCodecContext *avctx,
         // IRAP VCL NAL unit types span the range
         // [BLA_W_LP (16), RSV_IRAP_VCL23 (23)].
         if (frame_info.nal_unit_type >= KVZ_NAL_BLA_W_LP &&
-                frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
+            frame_info.nal_unit_type <= KVZ_NAL_RSV_IRAP_VCL23) {
             avpkt->flags |= AV_PKT_FLAG_KEY;
         }
 
@@ -293,7 +302,7 @@ AVCodec ff_libkvazaar_encoder = {
     .long_name        = NULL_IF_CONFIG_SMALL("libkvazaar H.265 / HEVC"),
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_HEVC,
-    .capabilities     = AV_CODEC_CAP_DELAY,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
     .pix_fmts         = pix_fmts,
 
     .priv_class       = &class,

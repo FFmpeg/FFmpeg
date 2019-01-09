@@ -188,6 +188,7 @@ static int update_size(AVCodecContext *avctx, int w, int h)
 
         switch (s->pix_fmt) {
         case AV_PIX_FMT_YUV420P:
+        case AV_PIX_FMT_YUV420P10:
 #if CONFIG_VP9_DXVA2_HWACCEL
             *fmtp++ = AV_PIX_FMT_DXVA2_VLD;
 #endif
@@ -202,7 +203,6 @@ static int update_size(AVCodecContext *avctx, int w, int h)
             *fmtp++ = AV_PIX_FMT_VAAPI;
 #endif
             break;
-        case AV_PIX_FMT_YUV420P10:
         case AV_PIX_FMT_YUV420P12:
 #if CONFIG_VP9_NVDEC_HWACCEL
             *fmtp++ = AV_PIX_FMT_CUDA;
@@ -1306,6 +1306,9 @@ static int decode_tiles(AVCodecContext *avctx,
                         decode_sb_mem(td, row, col, lflvl_ptr,
                                       yoff2, uvoff2, BL_64X64);
                     } else {
+                        if (vpX_rac_is_end(td->c)) {
+                            return AVERROR_INVALIDDATA;
+                        }
                         decode_sb(td, row, col, lflvl_ptr,
                                   yoff2, uvoff2, BL_64X64);
                     }

@@ -20,14 +20,6 @@
 
 #include <windows.h>
 
-// Include thread.h before redefining _WIN32_WINNT, to get
-// the right implementation for AVOnce
-#include "thread.h"
-
-#if !defined(_WIN32_WINNT) || _WIN32_WINNT < 0x0600
-#undef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600
-#endif
 #define COBJMACROS
 
 #include <initguid.h>
@@ -46,6 +38,7 @@
 #include "imgutils.h"
 #include "pixdesc.h"
 #include "pixfmt.h"
+#include "thread.h"
 
 typedef HRESULT(WINAPI *PFN_CREATE_DXGI_FACTORY)(REFIID riid, void **ppFactory);
 
@@ -118,6 +111,38 @@ static void d3d11va_frames_uninit(AVHWFramesContext *ctx)
     if (s->staging_texture)
         ID3D11Texture2D_Release(s->staging_texture);
     s->staging_texture = NULL;
+}
+
+static int d3d11va_frames_get_constraints(AVHWDeviceContext *ctx,
+                                          const void *hwconfig,
+                                          AVHWFramesConstraints *constraints)
+{
+    AVD3D11VADeviceContext *device_hwctx = ctx->hwctx;
+    int nb_sw_formats = 0;
+    HRESULT hr;
+    int i;
+
+    constraints->valid_sw_formats = av_malloc_array(FF_ARRAY_ELEMS(supported_formats) + 1,
+                                                    sizeof(*constraints->valid_sw_formats));
+    if (!constraints->valid_sw_formats)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(supported_formats); i++) {
+        UINT format_support = 0;
+        hr = ID3D11Device_CheckFormatSupport(device_hwctx->device, supported_formats[i].d3d_format, &format_support);
+        if (SUCCEEDED(hr) && (format_support & D3D11_FORMAT_SUPPORT_TEXTURE2D))
+            constraints->valid_sw_formats[nb_sw_formats++] = supported_formats[i].pix_fmt;
+    }
+    constraints->valid_sw_formats[nb_sw_formats] = AV_PIX_FMT_NONE;
+
+    constraints->valid_hw_formats = av_malloc_array(2, sizeof(*constraints->valid_hw_formats));
+    if (!constraints->valid_hw_formats)
+        return AVERROR(ENOMEM);
+
+    constraints->valid_hw_formats[0] = AV_PIX_FMT_D3D11;
+    constraints->valid_hw_formats[1] = AV_PIX_FMT_NONE;
+
+    return 0;
 }
 
 static void free_texture(void *opaque, uint8_t *data)
@@ -524,17 +549,19 @@ static int d3d11va_device_create(AVHWDeviceContext *ctx, const char *device,
         }
     }
 
-    hr = mD3D11CreateDevice(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
-                   D3D11_SDK_VERSION, &device_hwctx->device, NULL, NULL);
     if (pAdapter) {
-        DXGI_ADAPTER_DESC2 desc;
+        DXGI_ADAPTER_DESC desc;
         hr = IDXGIAdapter2_GetDesc(pAdapter, &desc);
         if (!FAILED(hr)) {
             av_log(ctx, AV_LOG_INFO, "Using device %04x:%04x (%ls).\n",
                    desc.VendorId, desc.DeviceId, desc.Description);
         }
-        IDXGIAdapter_Release(pAdapter);
     }
+
+    hr = mD3D11CreateDevice(pAdapter, pAdapter ? D3D_DRIVER_TYPE_UNKNOWN : D3D_DRIVER_TYPE_HARDWARE, NULL, creationFlags, NULL, 0,
+                   D3D11_SDK_VERSION, &device_hwctx->device, NULL, NULL);
+    if (pAdapter)
+        IDXGIAdapter_Release(pAdapter);
     if (FAILED(hr)) {
         av_log(ctx, AV_LOG_ERROR, "Failed to create Direct3D device (%lx)\n", (long)hr);
         return AVERROR_UNKNOWN;
@@ -576,6 +603,7 @@ const HWContextType ff_hwcontext_type_d3d11va = {
     .device_create        = d3d11va_device_create,
     .device_init          = d3d11va_device_init,
     .device_uninit        = d3d11va_device_uninit,
+    .frames_get_constraints = d3d11va_frames_get_constraints,
     .frames_init          = d3d11va_frames_init,
     .frames_uninit        = d3d11va_frames_uninit,
     .frames_get_buffer    = d3d11va_get_buffer,

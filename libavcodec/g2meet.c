@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <zlib.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
@@ -555,8 +556,8 @@ static uint32_t epic_decode_pixel_pred(ePICContext *dc, int x, int y,
         B     = ((pred >> B_shift) & 0xFF) - TOSIGNED(delta);
     }
 
-    if (R<0 || G<0 || B<0) {
-        av_log(NULL, AV_LOG_ERROR, "RGB %d %d %d is out of range\n", R, G, B);
+    if (R<0 || G<0 || B<0 || R > 255 || G > 255 || B > 255) {
+        avpriv_request_sample(NULL, "RGB %d %d %d is out of range\n", R, G, B);
         return 0;
     }
 
@@ -926,6 +927,7 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
         if (c->ec.els_ctx.err != 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "ePIC: couldn't decode transparency pixel!\n");
+            ff_els_decoder_uninit(&c->ec.unsigned_rung);
             return AVERROR_INVALIDDATA;
         }
 
@@ -1354,14 +1356,16 @@ static void g2m_paint_cursor(G2MContext *c, uint8_t *dst, int stride)
     } else {
         dst    +=  x * 3;
     }
-    if (y < 0) {
+
+    if (y < 0)
         h      +=  y;
+    if (w < 0 || h < 0)
+        return;
+    if (y < 0) {
         cursor += -y * c->cursor_stride;
     } else {
         dst    +=  y * stride;
     }
-    if (w < 0 || h < 0)
-        return;
 
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
@@ -1451,7 +1455,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             c->tile_height = bytestream2_get_be32(&bc);
             if (c->tile_width <= 0 || c->tile_height <= 0 ||
                 ((c->tile_width | c->tile_height) & 0xF) ||
-                c->tile_width * (uint64_t)c->tile_height >= INT_MAX / 4
+                c->tile_width * (uint64_t)c->tile_height >= INT_MAX / 4 ||
+                av_image_check_size2(c->tile_width, c->tile_height, avctx->max_pixels, avctx->pix_fmt, 0, avctx) < 0
             ) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid tile dimensions %dx%d\n",

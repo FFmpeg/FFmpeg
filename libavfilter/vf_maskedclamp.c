@@ -30,6 +30,10 @@
 #define OFFSET(x) offsetof(MaskedClampContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
+typedef struct ThreadData {
+    AVFrame *b, *o, *m, *d;
+} ThreadData;
+
 typedef struct MaskedClampContext {
     const AVClass *class;
 
@@ -43,11 +47,7 @@ typedef struct MaskedClampContext {
     int depth;
     FFFrameSync fs;
 
-    void (*maskedclamp)(const uint8_t *bsrc, const uint8_t *osrc,
-                        const uint8_t *msrc, uint8_t *dst,
-                        ptrdiff_t blinesize, ptrdiff_t darklinesize,
-                        ptrdiff_t brightlinesize, ptrdiff_t destlinesize,
-                        int w, int h, int undershoot, int overshoot);
+    int (*maskedclamp)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } MaskedClampContext;
 
 static const AVOption maskedclamp_options[] = {
@@ -78,7 +78,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
@@ -103,92 +103,122 @@ static int process_frame(FFFrameSync *fs)
         if (!out)
             return AVERROR(ENOMEM);
     } else {
-        int p;
+        ThreadData td;
 
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, base);
 
-        for (p = 0; p < s->nb_planes; p++) {
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
-                                    s->linesize[p], s->height[p]);
-                continue;
-            }
+        td.b = base;
+        td.o = dark;
+        td.m = bright;
+        td.d = out;
 
-            s->maskedclamp(base->data[p], dark->data[p],
-                           bright->data[p], out->data[p],
-                           base->linesize[p], dark->linesize[p],
-                           bright->linesize[p], out->linesize[p],
-                           s->width[p], s->height[p],
-                           s->undershoot, s->overshoot);
-        }
+        ctx->internal->execute(ctx, s->maskedclamp, &td, NULL, FFMIN(s->height[0],
+                                                                     ff_filter_get_nb_threads(ctx)));
     }
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
     return ff_filter_frame(outlink, out);
 }
 
-static void maskedclamp8(const uint8_t *bsrc, const uint8_t *darksrc,
-                         const uint8_t *brightsrc, uint8_t *dst,
-                         ptrdiff_t blinesize, ptrdiff_t darklinesize,
-                         ptrdiff_t brightlinesize, ptrdiff_t dlinesize,
-                         int w, int h,
-                         int undershoot, int overshoot)
+static int maskedclamp8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    int x, y;
+    MaskedClampContext *s = ctx->priv;
+    ThreadData *td = arg;
+    int p;
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            if (bsrc[x] < darksrc[x] - undershoot)
-                dst[x] = darksrc[x] - undershoot;
-            else if (bsrc[x] > brightsrc[x] + overshoot)
-                dst[x] = brightsrc[x] + overshoot;
-            else
-                dst[x] = bsrc[x];
+    for (p = 0; p < s->nb_planes; p++) {
+        const ptrdiff_t blinesize = td->b->linesize[p];
+        const ptrdiff_t brightlinesize = td->m->linesize[p];
+        const ptrdiff_t darklinesize = td->o->linesize[p];
+        const ptrdiff_t dlinesize = td->d->linesize[p];
+        const int w = s->width[p];
+        const int h = s->height[p];
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const uint8_t *bsrc = td->b->data[p] + slice_start * blinesize;
+        const uint8_t *darksrc = td->o->data[p] + slice_start * darklinesize;
+        const uint8_t *brightsrc = td->m->data[p] + slice_start * brightlinesize;
+        uint8_t *dst = td->d->data[p] + slice_start * dlinesize;
+        const int undershoot = s->undershoot;
+        const int overshoot = s->overshoot;
+        int x, y;
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane(dst, dlinesize, bsrc, blinesize,
+                                s->linesize[p], slice_end - slice_start);
+            continue;
         }
 
-        dst  += dlinesize;
-        bsrc += blinesize;
-        darksrc += darklinesize;
-        brightsrc += brightlinesize;
+        for (y = slice_start; y < slice_end; y++) {
+            for (x = 0; x < w; x++) {
+                if (bsrc[x] < darksrc[x] - undershoot)
+                    dst[x] = darksrc[x] - undershoot;
+                else if (bsrc[x] > brightsrc[x] + overshoot)
+                    dst[x] = brightsrc[x] + overshoot;
+                else
+                    dst[x] = bsrc[x];
+            }
+
+            dst  += dlinesize;
+            bsrc += blinesize;
+            darksrc += darklinesize;
+            brightsrc += brightlinesize;
+        }
     }
+
+    return 0;
 }
 
-static void maskedclamp16(const uint8_t *bbsrc, const uint8_t *oosrc,
-                          const uint8_t *mmsrc, uint8_t *ddst,
-                          ptrdiff_t blinesize, ptrdiff_t darklinesize,
-                          ptrdiff_t brightlinesize, ptrdiff_t dlinesize,
-                          int w, int h,
-                          int undershoot, int overshoot)
+static int maskedclamp16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
-    const uint16_t *bsrc = (const uint16_t *)bbsrc;
-    const uint16_t *darksrc = (const uint16_t *)oosrc;
-    const uint16_t *brightsrc = (const uint16_t *)mmsrc;
-    uint16_t *dst = (uint16_t *)ddst;
-    int x, y;
+    MaskedClampContext *s = ctx->priv;
+    ThreadData *td = arg;
+    int p;
 
-    dlinesize /= 2;
-    blinesize /= 2;
-    darklinesize /= 2;
-    brightlinesize /= 2;
+    for (p = 0; p < s->nb_planes; p++) {
+        const ptrdiff_t blinesize = td->b->linesize[p] / 2;
+        const ptrdiff_t brightlinesize = td->m->linesize[p] / 2;
+        const ptrdiff_t darklinesize = td->o->linesize[p] / 2;
+        const ptrdiff_t dlinesize = td->d->linesize[p] / 2;
+        const int w = s->width[p];
+        const int h = s->height[p];
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        const uint16_t *bsrc = (const uint16_t *)td->b->data[p] + slice_start * blinesize;
+        const uint16_t *darksrc = (const uint16_t *)td->o->data[p] + slice_start * darklinesize;
+        const uint16_t *brightsrc = (const uint16_t *)td->m->data[p] + slice_start * brightlinesize;
+        uint16_t *dst = (uint16_t *)td->d->data[p] + slice_start * dlinesize;
+        const int undershoot = s->undershoot;
+        const int overshoot = s->overshoot;
+        int x, y;
 
-    for (y = 0; y < h; y++) {
-        for (x = 0; x < w; x++) {
-            if (bsrc[x] < darksrc[x] - undershoot)
-                dst[x] = darksrc[x] - undershoot;
-            else if (bsrc[x] > brightsrc[x] + overshoot)
-                dst[x] = brightsrc[x] + overshoot;
-            else
-                dst[x] = bsrc[x];
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane((uint8_t *)dst, dlinesize, (const uint8_t *)bsrc, blinesize,
+                                s->linesize[p], slice_end - slice_start);
+            continue;
         }
 
-        dst  += dlinesize;
-        bsrc += blinesize;
-        darksrc += darklinesize;
-        brightsrc += brightlinesize;
+        for (y = slice_start; y < slice_end; y++) {
+            for (x = 0; x < w; x++) {
+                if (bsrc[x] < darksrc[x] - undershoot)
+                    dst[x] = darksrc[x] - undershoot;
+                else if (bsrc[x] > brightsrc[x] + overshoot)
+                    dst[x] = brightsrc[x] + overshoot;
+                else
+                    dst[x] = bsrc[x];
+            }
+
+            dst  += dlinesize;
+            bsrc += blinesize;
+            darksrc += darklinesize;
+            brightsrc += brightlinesize;
+        }
     }
+
+    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -324,5 +354,5 @@ AVFilter ff_vf_maskedclamp = {
     .inputs        = maskedclamp_inputs,
     .outputs       = maskedclamp_outputs,
     .priv_class    = &maskedclamp_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

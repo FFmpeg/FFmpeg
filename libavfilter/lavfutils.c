@@ -37,8 +37,6 @@ int ff_load_image(uint8_t *data[4], int linesize[4],
 
     av_init_packet(&pkt);
 
-    av_register_all();
-
     iformat = av_find_input_format("image2pipe");
     if ((ret = avformat_open_input(&format_ctx, filename, iformat, NULL)) < 0) {
         av_log(log_ctx, AV_LOG_ERROR,

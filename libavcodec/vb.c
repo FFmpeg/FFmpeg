@@ -107,6 +107,10 @@ static int vb_decode_framedata(VBDecContext *c, int offset)
     blk2   = 0;
     for (blk = 0; blk < blocks; blk++) {
         if (!(blk & 3)) {
+            if (bytestream2_get_bytes_left(&g) < 1) {
+                av_log(c->avctx, AV_LOG_ERROR, "Insufficient data\n");
+                return AVERROR_INVALIDDATA;
+            }
             blocktypes = bytestream2_get_byte(&g);
         }
         switch (blocktypes & 0xC0) {

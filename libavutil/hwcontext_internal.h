@@ -156,6 +156,11 @@ int ff_hwframe_map_create(AVBufferRef *hwframe_ref,
                                         HWMapDescriptor *hwmap),
                           void *priv);
 
+/**
+ * Replace the current hwmap of dst with the one from src, used for indirect
+ * mappings like VAAPI->(DRM)->OpenCL/Vulkan where a direct interop is missing
+ */
+int ff_hwframe_map_replace(AVFrame *dst, const AVFrame *src);
 
 extern const HWContextType ff_hwcontext_type_cuda;
 extern const HWContextType ff_hwcontext_type_d3d11va;

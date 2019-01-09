@@ -44,7 +44,6 @@ typedef struct APNGDemuxContext {
     int max_fps;
     int default_fps;
 
-    int64_t pkt_pts;
     int pkt_duration;
 
     int is_key_frame;
@@ -343,6 +342,10 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     len = avio_rb32(pb);
     tag = avio_rl32(pb);
+
+    if (avio_feof(pb))
+        return AVERROR_EOF;
+
     switch (tag) {
     case MKTAG('f', 'c', 'T', 'L'):
         if (len != 26)
@@ -390,9 +393,8 @@ static int apng_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (ctx->is_key_frame)
             pkt->flags |= AV_PKT_FLAG_KEY;
-        pkt->pts = ctx->pkt_pts;
+        pkt->pts = pkt->dts = AV_NOPTS_VALUE;
         pkt->duration = ctx->pkt_duration;
-        ctx->pkt_pts += ctx->pkt_duration;
         return ret;
     case MKTAG('I', 'E', 'N', 'D'):
         ctx->cur_loop++;

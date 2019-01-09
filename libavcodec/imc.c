@@ -104,6 +104,8 @@ typedef struct IMCContext {
 
     int8_t cyclTab[32], cyclTab2[32];
     float  weights1[31], weights2[31];
+
+    AVCodecContext *avctx;
 } IMCContext;
 
 static VLC huffman_vlc[4][4];
@@ -466,7 +468,7 @@ static int bit_allocation(IMCContext *q, IMCChannel *chctx,
 
     for (i = 0; i < BANDS - 1; i++) {
         if (chctx->flcoeffs5[i] <= 0) {
-            av_log(NULL, AV_LOG_ERROR, "flcoeffs5 %f invalid\n", chctx->flcoeffs5[i]);
+            av_log(q->avctx, AV_LOG_ERROR, "flcoeffs5 %f invalid\n", chctx->flcoeffs5[i]);
             return AVERROR_INVALIDDATA;
         }
         chctx->flcoeffs4[i] = chctx->flcoeffs3[i] - log2f(chctx->flcoeffs5[i]);
@@ -1021,6 +1023,8 @@ static int imc_decode_frame(AVCodecContext *avctx, void *data,
     IMCContext *q = avctx->priv_data;
 
     LOCAL_ALIGNED_16(uint16_t, buf16, [(IMC_BLOCK_SIZE + AV_INPUT_BUFFER_PADDING_SIZE) / 2]);
+
+    q->avctx = avctx;
 
     if (buf_size < IMC_BLOCK_SIZE * avctx->channels) {
         av_log(avctx, AV_LOG_ERROR, "frame too small!\n");

@@ -136,7 +136,7 @@ static int subband_bufer_alloc(DCAEncContext *c)
                                (SUBBAND_SAMPLES + DCA_ADPCM_COEFFS),
                                sizeof(int32_t));
     if (!bufer)
-        return -1;
+        return AVERROR(ENOMEM);
 
     /* we need a place for DCA_ADPCM_COEFF samples from previous frame
      * to calc prediction coefficients for each subband */
@@ -152,8 +152,11 @@ static int subband_bufer_alloc(DCAEncContext *c)
 
 static void subband_bufer_free(DCAEncContext *c)
 {
-    int32_t *bufer = c->subband[0][0] - DCA_ADPCM_COEFFS;
-    av_freep(&bufer);
+    if (c->subband[0][0]) {
+        int32_t *bufer = c->subband[0][0] - DCA_ADPCM_COEFFS;
+        av_free(bufer);
+        c->subband[0][0] = NULL;
+    }
 }
 
 static int encode_init(AVCodecContext *avctx)
@@ -163,8 +166,8 @@ static int encode_init(AVCodecContext *avctx)
     int i, j, k, min_frame_bits;
     int ret;
 
-    if (subband_bufer_alloc(c))
-        return AVERROR(ENOMEM);
+    if ((ret = subband_bufer_alloc(c)) < 0)
+        return ret;
 
     c->fullband_channels = c->channels = avctx->channels;
     c->lfe_channel = (avctx->channels == 3 || avctx->channels == 6);

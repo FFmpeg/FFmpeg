@@ -154,17 +154,21 @@ typedef struct AVPixFmtDescriptor {
  * in some cases be simpler. Or the data can be interpreted purely based on
  * the pixel format without using the palette.
  * An example of a pseudo-paletted format is AV_PIX_FMT_GRAY8
+ *
+ * @deprecated This flag is deprecated, and will be removed. When it is removed,
+ * the extra palette allocation in AVFrame.data[1] is removed as well. Only
+ * actual paletted formats (as indicated by AV_PIX_FMT_FLAG_PAL) will have a
+ * palette. Starting with FFmpeg versions which have this flag deprecated, the
+ * extra "pseudo" palette is already ignored, and API users are not required to
+ * allocate a palette for AV_PIX_FMT_FLAG_PSEUDOPAL formats (it was required
+ * before the deprecation, though).
  */
 #define AV_PIX_FMT_FLAG_PSEUDOPAL    (1 << 6)
 
 /**
  * The pixel format has an alpha channel. This is set on all formats that
- * support alpha in some way. The exception is AV_PIX_FMT_PAL8, which can
- * carry alpha as part of the palette. Details are explained in the
- * AVPixelFormat enum, and are also encoded in the corresponding
- * AVPixFmtDescriptor.
- *
- * The alpha is always straight, never pre-multiplied.
+ * support alpha in some way, including AV_PIX_FMT_PAL8. The alpha is always
+ * straight, never pre-multiplied.
  *
  * If a codec or a filter does not support alpha, it should set all alpha to
  * opaque, or use the equivalent pixel formats without alpha component, e.g.
@@ -339,7 +343,13 @@ char *av_get_pix_fmt_string(char *buf, int buf_size,
  * format writes the values corresponding to the palette
  * component c in data[1] to dst, rather than the palette indexes in
  * data[0]. The behavior is undefined if the format is not paletted.
+ * @param dst_element_size size of elements in dst array (2 or 4 byte)
  */
+void av_read_image_line2(void *dst, const uint8_t *data[4],
+                        const int linesize[4], const AVPixFmtDescriptor *desc,
+                        int x, int y, int c, int w, int read_pal_component,
+                        int dst_element_size);
+
 void av_read_image_line(uint16_t *dst, const uint8_t *data[4],
                         const int linesize[4], const AVPixFmtDescriptor *desc,
                         int x, int y, int c, int w, int read_pal_component);
@@ -357,7 +367,12 @@ void av_read_image_line(uint16_t *dst, const uint8_t *data[4],
  * @param y the vertical coordinate of the first pixel to write
  * @param w the width of the line to write, that is the number of
  * values to write to the image line
+ * @param src_element_size size of elements in src array (2 or 4 byte)
  */
+void av_write_image_line2(const void *src, uint8_t *data[4],
+                         const int linesize[4], const AVPixFmtDescriptor *desc,
+                         int x, int y, int c, int w, int src_element_size);
+
 void av_write_image_line(const uint16_t *src, uint8_t *data[4],
                          const int linesize[4], const AVPixFmtDescriptor *desc,
                          int x, int y, int c, int w);

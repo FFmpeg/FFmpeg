@@ -149,11 +149,16 @@ typedef struct ATempoContext {
     uint64_t nsamples_out;
 } ATempoContext;
 
+#define YAE_ATEMPO_MIN 0.5
+#define YAE_ATEMPO_MAX 100.0
+
 #define OFFSET(x) offsetof(ATempoContext, x)
 
 static const AVOption atempo_options[] = {
     { "tempo", "set tempo scale factor",
-      OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0.5, 2.0,
+      OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 },
+      YAE_ATEMPO_MIN,
+      YAE_ATEMPO_MAX,
       AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM },
     { NULL }
 };
@@ -331,9 +336,9 @@ static int yae_set_tempo(AVFilterContext *ctx, const char *arg_tempo)
         return AVERROR(EINVAL);
     }
 
-    if (tempo < 0.5 || tempo > 2.0) {
-        av_log(ctx, AV_LOG_ERROR, "Tempo value %f exceeds [0.5, 2.0] range\n",
-               tempo);
+    if (tempo < YAE_ATEMPO_MIN || tempo > YAE_ATEMPO_MAX) {
+        av_log(ctx, AV_LOG_ERROR, "Tempo value %f exceeds [%f, %f] range\n",
+               tempo, YAE_ATEMPO_MIN, YAE_ATEMPO_MAX);
         return AVERROR(EINVAL);
     }
 
@@ -439,8 +444,8 @@ static int yae_load_data(ATempoContext *atempo,
         return 0;
     }
 
-    // samples are not expected to be skipped:
-    av_assert0(read_size <= atempo->ring);
+    // samples are not expected to be skipped, unless tempo is greater than 2:
+    av_assert0(read_size <= atempo->ring || atempo->tempo > 2.0);
 
     while (atempo->position[0] < stop_here && src < src_end) {
         int src_samples = (src_end - src) / atempo->stride;

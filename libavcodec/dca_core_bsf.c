@@ -24,18 +24,17 @@
 #include "dca_syncwords.h"
 #include "libavutil/mem.h"
 
-static int dca_core_filter(AVBSFContext *ctx, AVPacket *out)
+static int dca_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
-    AVPacket *in;
     GetByteContext gb;
     uint32_t syncword;
     int core_size = 0, ret;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
-    bytestream2_init(&gb, in->data, in->size);
+    bytestream2_init(&gb, pkt->data, pkt->size);
     syncword = bytestream2_get_be32(&gb);
     bytestream2_skip(&gb, 1);
 
@@ -45,11 +44,8 @@ static int dca_core_filter(AVBSFContext *ctx, AVPacket *out)
         break;
     }
 
-    av_packet_move_ref(out, in);
-    av_packet_free(&in);
-
-    if (core_size > 0 && core_size <= out->size) {
-        out->size = core_size;
+    if (core_size > 0 && core_size <= pkt->size) {
+        pkt->size = core_size;
     }
 
     return 0;

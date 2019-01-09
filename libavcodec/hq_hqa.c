@@ -181,6 +181,9 @@ static int hqa_decode_mb(HQContext *c, AVFrame *pic, int qgroup,
     int flag = 0;
     int i, ret, cbp;
 
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
+
     cbp = get_vlc2(gb, c->hqa_cbp_vlc.table, 5, 1);
 
     for (i = 0; i < 12; i++)

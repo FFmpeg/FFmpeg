@@ -94,7 +94,7 @@ static const AVOption pseudocolor_options[] = {
 };
 
 static const enum AVPixelFormat pix_fmts[] = {
-    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+    AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
     AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
     AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
     AV_PIX_FMT_YUV444P, AV_PIX_FMT_GBRP,
@@ -545,6 +545,7 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GRAY9:
     case AV_PIX_FMT_GRAY10:
     case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_GRAY16:
         s->filter[0] = s->filter[1] = s->filter[2] = s->filter[3] = pseudocolor_filter_16;
         break;

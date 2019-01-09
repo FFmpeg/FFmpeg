@@ -217,6 +217,7 @@ static int v4l2_stop_decode(V4L2Context *ctx)
 {
     struct v4l2_decoder_cmd cmd = {
         .cmd = V4L2_DEC_CMD_STOP,
+        .flags = 0,
     };
     int ret;
 
@@ -234,6 +235,7 @@ static int v4l2_stop_encode(V4L2Context *ctx)
 {
     struct v4l2_encoder_cmd cmd = {
         .cmd = V4L2_ENC_CMD_STOP,
+        .flags = 0,
     };
     int ret;
 
@@ -256,10 +258,26 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
         .events =  POLLIN | POLLRDNORM | POLLPRI | POLLOUT | POLLWRNORM, /* default blocking capture */
         .fd = ctx_to_m2mctx(ctx)->fd,
     };
-    int ret;
+    int i, ret;
 
+    /* if we are draining and there are no more capture buffers queued in the driver we are done */
+    if (!V4L2_TYPE_IS_OUTPUT(ctx->type) && ctx_to_m2mctx(ctx)->draining) {
+        for (i = 0; i < ctx->num_buffers; i++) {
+            if (ctx->buffers[i].status == V4L2BUF_IN_DRIVER)
+                goto start;
+        }
+        ctx->done = 1;
+        return NULL;
+    }
+
+start:
     if (V4L2_TYPE_IS_OUTPUT(ctx->type))
         pfd.events =  POLLOUT | POLLWRNORM;
+    else {
+        /* no need to listen to requests for more input while draining */
+        if (ctx_to_m2mctx(ctx)->draining)
+            pfd.events =  POLLIN | POLLRDNORM | POLLPRI;
+    }
 
     for (;;) {
         ret = poll(&pfd, 1, timeout);
@@ -267,17 +285,22 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
             break;
         if (errno == EINTR)
             continue;
-
-        /* timeout is being used to indicate last valid bufer when draining */
-        if (ctx_to_m2mctx(ctx)->draining)
-            ctx->done = 1;
-
         return NULL;
     }
 
     /* 0. handle errors */
     if (pfd.revents & POLLERR) {
-        av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+        /* if we are trying to get free buffers but none have been queued yet
+           no need to raise a warning */
+        if (timeout == 0) {
+            for (i = 0; i < ctx->num_buffers; i++) {
+                if (ctx->buffers[i].status != V4L2BUF_AVAILABLE)
+                    av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+            }
+        }
+        else
+            av_log(logger(ctx), AV_LOG_WARNING, "%s POLLERR\n", ctx->name);
+
         return NULL;
     }
 
@@ -286,7 +309,7 @@ static V4L2Buffer* v4l2_dequeue_v4l2buf(V4L2Context *ctx, int timeout)
         ret = v4l2_handle_event(ctx);
         if (ret < 0) {
             /* if re-init failed, abort */
-            ctx->done = EINVAL;
+            ctx->done = 1;
             return NULL;
         }
         if (ret) {
@@ -325,23 +348,25 @@ dequeue:
         ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_DQBUF, &buf);
         if (ret) {
             if (errno != EAGAIN) {
-                ctx->done = errno;
+                ctx->done = 1;
                 if (errno != EPIPE)
                     av_log(logger(ctx), AV_LOG_DEBUG, "%s VIDIOC_DQBUF, errno (%s)\n",
                         ctx->name, av_err2str(AVERROR(errno)));
             }
-        } else {
-            avbuf = &ctx->buffers[buf.index];
-            avbuf->status = V4L2BUF_AVAILABLE;
-            avbuf->buf = buf;
-            if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
-                memcpy(avbuf->planes, planes, sizeof(planes));
-                avbuf->buf.m.planes = avbuf->planes;
-            }
+            return NULL;
         }
+
+        avbuf = &ctx->buffers[buf.index];
+        avbuf->status = V4L2BUF_AVAILABLE;
+        avbuf->buf = buf;
+        if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
+            memcpy(avbuf->planes, planes, sizeof(planes));
+            avbuf->buf.m.planes = avbuf->planes;
+        }
+        return avbuf;
     }
 
-    return avbuf;
+    return NULL;
 }
 
 static V4L2Buffer* v4l2_getfree_v4l2buf(V4L2Context *ctx)
@@ -421,9 +446,7 @@ static int v4l2_get_raw_format(V4L2Context* ctx, enum AVPixelFormat *p)
 
     if (pixfmt != AV_PIX_FMT_NONE) {
         ret = v4l2_try_raw_format(ctx, pixfmt);
-        if (ret)
-            pixfmt = AV_PIX_FMT_NONE;
-        else
+        if (!ret)
             return 0;
     }
 
@@ -552,14 +575,12 @@ int ff_v4l2_context_dequeue_frame(V4L2Context* ctx, AVFrame* frame)
 {
     V4L2Buffer* avbuf = NULL;
 
-    /* if we are draining, we are no longer inputing data, therefore enable a
-     * timeout so we can dequeue and flag the last valid buffer.
-     *
+    /*
      * blocks until:
      *  1. decoded frame available
      *  2. an input buffer is ready to be dequeued
      */
-    avbuf = v4l2_dequeue_v4l2buf(ctx, ctx_to_m2mctx(ctx)->draining ? 200 : -1);
+    avbuf = v4l2_dequeue_v4l2buf(ctx, -1);
     if (!avbuf) {
         if (ctx->done)
             return AVERROR_EOF;
@@ -574,14 +595,12 @@ int ff_v4l2_context_dequeue_packet(V4L2Context* ctx, AVPacket* pkt)
 {
     V4L2Buffer* avbuf = NULL;
 
-    /* if we are draining, we are no longer inputing data, therefore enable a
-     * timeout so we can dequeue and flag the last valid buffer.
-     *
+    /*
      * blocks until:
      *  1. encoded packet available
      *  2. an input buffer ready to be dequeued
      */
-    avbuf = v4l2_dequeue_v4l2buf(ctx, ctx_to_m2mctx(ctx)->draining ? 200 : -1);
+    avbuf = v4l2_dequeue_v4l2buf(ctx, -1);
     if (!avbuf) {
         if (ctx->done)
             return AVERROR_EOF;

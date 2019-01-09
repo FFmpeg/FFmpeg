@@ -61,7 +61,7 @@ const uint8_t ff_vc1_mbmode_intfrp[2][15][4] = {
         { MV_PMODE_INTFR_1MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_INTRA    , 0, 0, 0 }
     },
     {
@@ -73,13 +73,13 @@ const uint8_t ff_vc1_mbmode_intfrp[2][15][4] = {
         { MV_PMODE_INTFR_1MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_2MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_2MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_4MV      , 0, 0, 1 },
         { MV_PMODE_INTFR_4MV      , 1, 0, 1 },
         { MV_PMODE_INTFR_4MV      , 0, 0, 0 },
         { MV_PMODE_INTFR_4MV_FIELD, 0, 0, 1 },
         { MV_PMODE_INTFR_4MV_FIELD, 1, 0, 1 },
-        { MV_PMODE_INTFR_4MV_FIELD, 0, 0, 0 },
+        { MV_PMODE_INTFR_4MV_FIELD, 1, 0, 0 },
         { MV_PMODE_INTFR_INTRA    , 0, 0, 0 }
     }
 };
@@ -1090,7 +1090,7 @@ const int32_t ff_vc1_dqscale[63] = {
      0x1F08,  0x1E1E,  0x1D42,  0x1C72, 0x1BAD, 0x1AF3, 0x1A42, 0x199A,
      0x18FA,  0x1862,  0x17D0,  0x1746, 0x16C1, 0x1643, 0x15CA, 0x1555,
      0x14E6,  0x147B,  0x1414,  0x13B1, 0x1352, 0x12F7, 0x129E, 0x1249,
-     0x11F7,  0x11A8,  0x115B,  0x1111, 0x10C9, 0x1084, 0x1000
+     0x11F7,  0x11A8,  0x115B,  0x1111, 0x10C9, 0x1084, 0x1041
 };
 
 /* P Interlaced field picture MV predictor scaling values (Table 114) */

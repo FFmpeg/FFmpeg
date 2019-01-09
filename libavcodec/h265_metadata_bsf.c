@@ -239,7 +239,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = ff_bsf_get_packet(bsf, &in);
     if (err < 0)
-        goto fail;
+        return err;
 
     err = ff_cbs_read_packet(ctx->cbc, au, in);
     if (err < 0) {
@@ -289,7 +289,7 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
             aud->pic_type = pic_type;
 
             err = ff_cbs_insert_unit_content(ctx->cbc, au,
-                                             0, HEVC_NAL_AUD, aud);
+                                             0, HEVC_NAL_AUD, aud, NULL);
             if (err) {
                 av_log(bsf, AV_LOG_ERROR, "Failed to insert AUD.\n");
                 goto fail;
@@ -324,6 +324,8 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 fail:
     ff_cbs_fragment_uninit(ctx->cbc, au);
 
+    if (err < 0)
+        av_packet_unref(out);
     av_packet_free(&in);
 
     return err;
@@ -379,59 +381,63 @@ static void h265_metadata_close(AVBSFContext *bsf)
 }
 
 #define OFFSET(x) offsetof(H265MetadataContext, x)
+#define FLAGS (AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_BSF_PARAM)
 static const AVOption h265_metadata_options[] = {
     { "aud", "Access Unit Delimiter NAL units",
         OFFSET(aud), AV_OPT_TYPE_INT,
-        { .i64 = PASS }, PASS, REMOVE, 0, "aud" },
-    { "pass",   NULL, 0, AV_OPT_TYPE_CONST, { .i64 = PASS   }, .unit = "aud" },
-    { "insert", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = INSERT }, .unit = "aud" },
-    { "remove", NULL, 0, AV_OPT_TYPE_CONST, { .i64 = REMOVE }, .unit = "aud" },
+        { .i64 = PASS }, PASS, REMOVE, FLAGS, "aud" },
+    { "pass",   NULL, 0, AV_OPT_TYPE_CONST,
+        { .i64 = PASS   }, .flags = FLAGS, .unit = "aud" },
+    { "insert", NULL, 0, AV_OPT_TYPE_CONST,
+        { .i64 = INSERT }, .flags = FLAGS, .unit = "aud" },
+    { "remove", NULL, 0, AV_OPT_TYPE_CONST,
+        { .i64 = REMOVE }, .flags = FLAGS, .unit = "aud" },
 
     { "sample_aspect_ratio", "Set sample aspect ratio (table E-1)",
         OFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, 65535 },
+        { .dbl = 0.0 }, 0, 65535, FLAGS },
 
     { "video_format", "Set video format (table E-2)",
         OFFSET(video_format), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 7 },
+        { .i64 = -1 }, -1, 7, FLAGS },
     { "video_full_range_flag", "Set video full range flag",
         OFFSET(video_full_range_flag), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 1 },
+        { .i64 = -1 }, -1, 1, FLAGS },
     { "colour_primaries", "Set colour primaries (table E-3)",
         OFFSET(colour_primaries), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "transfer_characteristics", "Set transfer characteristics (table E-4)",
         OFFSET(transfer_characteristics), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
     { "matrix_coefficients", "Set matrix coefficients (table E-5)",
         OFFSET(matrix_coefficients), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 255 },
+        { .i64 = -1 }, -1, 255, FLAGS },
 
     { "chroma_sample_loc_type", "Set chroma sample location type (figure E-1)",
         OFFSET(chroma_sample_loc_type), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, 6 },
+        { .i64 = -1 }, -1, 6, FLAGS },
 
     { "tick_rate",
         "Set VPS and VUI tick rate (num_units_in_tick / time_scale)",
         OFFSET(tick_rate), AV_OPT_TYPE_RATIONAL,
-        { .dbl = 0.0 }, 0, UINT_MAX },
+        { .dbl = 0.0 }, 0, UINT_MAX, FLAGS },
     { "num_ticks_poc_diff_one",
         "Set VPS and VUI number of ticks per POC increment",
         OFFSET(num_ticks_poc_diff_one), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, INT_MAX },
+        { .i64 = -1 }, -1, INT_MAX, FLAGS },
 
     { "crop_left", "Set left border crop offset",
         OFFSET(crop_left), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, HEVC_MAX_WIDTH },
+        { .i64 = -1 }, -1, HEVC_MAX_WIDTH, FLAGS },
     { "crop_right", "Set right border crop offset",
         OFFSET(crop_right), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, HEVC_MAX_WIDTH },
+        { .i64 = -1 }, -1, HEVC_MAX_WIDTH, FLAGS },
     { "crop_top", "Set top border crop offset",
         OFFSET(crop_top), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, HEVC_MAX_HEIGHT },
+        { .i64 = -1 }, -1, HEVC_MAX_HEIGHT, FLAGS },
     { "crop_bottom", "Set bottom border crop offset",
         OFFSET(crop_bottom), AV_OPT_TYPE_INT,
-        { .i64 = -1 }, -1, HEVC_MAX_HEIGHT },
+        { .i64 = -1 }, -1, HEVC_MAX_HEIGHT, FLAGS },
 
     { NULL }
 };

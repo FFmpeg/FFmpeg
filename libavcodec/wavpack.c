@@ -85,7 +85,7 @@ typedef struct WavpackContext {
 
 #define LEVEL_DECAY(a)  (((a) + 0x80) >> 8)
 
-static av_always_inline int get_tail(GetBitContext *gb, int k)
+static av_always_inline unsigned get_tail(GetBitContext *gb, int k)
 {
     int p, e, res;
 
@@ -433,8 +433,8 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                     L2 = L + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
                     R2 = R + ((s->decorr[i].weightB * (int64_t)B + 512) >> 10);
                 } else {
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
-                    R2 = R + ((int)(s->decorr[i].weightB * (unsigned)B + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
+                    R2 = R + (unsigned)((int)(s->decorr[i].weightB * (unsigned)B + 512) >> 10);
                 }
                 if (A && L)
                     s->decorr[i].weightA -= ((((L ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
@@ -446,13 +446,13 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)s->decorr[i].samplesA[0] + 512) >> 10);
                 else
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)s->decorr[i].samplesA[0] + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)s->decorr[i].samplesA[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, s->decorr[i].samplesA[0], L);
                 L = L2;
                 if (type != AV_SAMPLE_FMT_S16P)
                     R2 = R + ((s->decorr[i].weightB * (int64_t)L2 + 512) >> 10);
                 else
-                    R2 = R + ((int)(s->decorr[i].weightB * (unsigned)L2 + 512) >> 10);
+                    R2 = R + (unsigned)((int)(s->decorr[i].weightB * (unsigned)L2 + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightB, s->decorr[i].delta, L2, R);
                 R                        = R2;
                 s->decorr[i].samplesA[0] = R;
@@ -460,7 +460,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     R2 = R + ((s->decorr[i].weightB * (int64_t)s->decorr[i].samplesB[0] + 512) >> 10);
                 else
-                    R2 = R + ((int)(s->decorr[i].weightB * (unsigned)s->decorr[i].samplesB[0] + 512) >> 10);
+                    R2 = R + (unsigned)((int)(s->decorr[i].weightB * (unsigned)s->decorr[i].samplesB[0] + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightB, s->decorr[i].delta, s->decorr[i].samplesB[0], R);
                 R = R2;
 
@@ -472,7 +472,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
                 if (type != AV_SAMPLE_FMT_S16P)
                     L2 = L + ((s->decorr[i].weightA * (int64_t)R2 + 512) >> 10);
                 else
-                    L2 = L + ((int)(s->decorr[i].weightA * (unsigned)R2 + 512) >> 10);
+                    L2 = L + (unsigned)((int)(s->decorr[i].weightA * (unsigned)R2 + 512) >> 10);
                 UPDATE_WEIGHT_CLIP(s->decorr[i].weightA, s->decorr[i].delta, R2, L);
                 L                        = L2;
                 s->decorr[i].samplesB[0] = L;
@@ -480,7 +480,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb,
         }
 
         if (type == AV_SAMPLE_FMT_S16P) {
-            if (FFABS(L) + (unsigned)FFABS(R) > (1<<19)) {
+            if (FFABS((int64_t)L) + FFABS((int64_t)R) > (1<<19)) {
                 av_log(s->avctx, AV_LOG_ERROR, "sample %d %d too large\n", L, R);
                 return AVERROR_INVALIDDATA;
             }
@@ -554,7 +554,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb,
             if (type != AV_SAMPLE_FMT_S16P)
                 S = T + ((s->decorr[i].weightA * (int64_t)A + 512) >> 10);
             else
-                S = T + ((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
+                S = T + (unsigned)((int)(s->decorr[i].weightA * (unsigned)A + 512) >> 10);
             if (A && T)
                 s->decorr[i].weightA -= ((((T ^ A) >> 30) & 2) - 1) * s->decorr[i].delta;
             s->decorr[i].samplesA[j] = T = S;
@@ -940,13 +940,23 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
             case 3:
                 chmask = bytestream2_get_le32(&gb);
                 break;
+            case 4:
+                size = bytestream2_get_byte(&gb);
+                chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
+                chan  += 1;
+                if (avctx->channels != chan)
+                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
+                           " instead of %i.\n", chan, avctx->channels);
+                chmask = bytestream2_get_le24(&gb);
+                break;
             case 5:
                 size = bytestream2_get_byte(&gb);
-                if (avctx->channels != size)
-                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
-                           " instead of %i.\n", size, avctx->channels);
                 chan  |= (bytestream2_get_byte(&gb) & 0xF) << 8;
-                chmask = bytestream2_get_le16(&gb);
+                chan  += 1;
+                if (avctx->channels != chan)
+                    av_log(avctx, AV_LOG_WARNING, "%i channels signalled"
+                           " instead of %i.\n", chan, avctx->channels);
+                chmask = bytestream2_get_le32(&gb);
                 break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "Invalid channel info size %d\n",

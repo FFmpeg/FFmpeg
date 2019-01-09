@@ -161,6 +161,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int orig_size      = buf_size;
     int keyframe, ret;
     int size_change = 0;
+    int minsize = 0;
     int result, init_frame = !avctx->frame_number;
     enum {
         NUV_UNCOMPRESSED  = '0',
@@ -198,6 +199,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case NUV_RTJPEG_IN_LZO:
     case NUV_RTJPEG:
         keyframe = !buf[2];
+        if (c->width < 16 || c->height < 16) {
+            return AVERROR_INVALIDDATA;
+        }
         break;
     case NUV_COPY_LAST:
         keyframe = 0;
@@ -206,6 +210,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         keyframe = 1;
         break;
     }
+    switch (comptype) {
+    case NUV_UNCOMPRESSED:
+        minsize = c->width * c->height * 3 / 2;
+        break;
+    case NUV_RTJPEG:
+        minsize = c->width/16 * (c->height/16) * 6;
+        break;
+    }
+    if (buf_size < minsize / 4)
+        return AVERROR_INVALIDDATA;
 retry:
     // Skip the rest of the frame header.
     buf       = &buf[12];

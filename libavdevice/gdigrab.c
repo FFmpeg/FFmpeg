@@ -230,7 +230,7 @@ gdigrab_read_header(AVFormatContext *s1)
     HBITMAP hbmp   = NULL;
     void *buffer   = NULL;
 
-    const char *filename = s1->filename;
+    const char *filename = s1->url;
     const char *name     = NULL;
     AVStream   *st       = NULL;
 

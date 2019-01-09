@@ -25,6 +25,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_cuda_internal.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/fifo.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
@@ -74,6 +75,8 @@ typedef struct CuvidContext
     int internal_error;
     int decoder_flushing;
 
+    int *key_frame;
+
     cudaVideoCodec codec_type;
     cudaVideoChromaFormat chroma_format;
 
@@ -93,29 +96,7 @@ typedef struct CuvidParsedFrame
     int is_deinterlacing;
 } CuvidParsedFrame;
 
-static int check_cu(AVCodecContext *avctx, CUresult err, const char *func)
-{
-    CuvidContext *ctx = avctx->priv_data;
-    const char *err_name;
-    const char *err_string;
-
-    av_log(avctx, AV_LOG_TRACE, "Calling %s\n", func);
-
-    if (err == CUDA_SUCCESS)
-        return 0;
-
-    ctx->cudl->cuGetErrorName(err, &err_name);
-    ctx->cudl->cuGetErrorString(err, &err_string);
-
-    av_log(avctx, AV_LOG_ERROR, "%s failed", func);
-    if (err_name && err_string)
-        av_log(avctx, AV_LOG_ERROR, " -> %s: %s", err_name, err_string);
-    av_log(avctx, AV_LOG_ERROR, "\n");
-
-    return AVERROR_EXTERNAL;
-}
-
-#define CHECK_CU(x) check_cu(avctx, (x), #x)
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(avctx, ctx->cudl, x)
 
 static int CUDAAPI cuvid_handle_video_sequence(void *opaque, CUVIDEOFORMAT* format)
 {
@@ -340,6 +321,8 @@ static int CUDAAPI cuvid_handle_picture_decode(void *opaque, CUVIDPICPARAMS* pic
 
     av_log(avctx, AV_LOG_TRACE, "pfnDecodePicture\n");
 
+    ctx->key_frame[picparams->CurrPicIdx] = picparams->intra_pic_flag;
+
     ctx->internal_error = CHECK_CU(ctx->cvdl->cuvidDecodePicture(ctx->cudecoder, picparams));
     if (ctx->internal_error < 0)
         return 0;
@@ -374,7 +357,11 @@ static int cuvid_is_buffer_full(AVCodecContext *avctx)
 {
     CuvidContext *ctx = avctx->priv_data;
 
-    return (av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + 2 > ctx->nb_surfaces;
+    int delay = ctx->cuparseinfo.ulMaxDisplayDelay;
+    if (ctx->deint_mode != cudaVideoDeinterlaceMode_Weave && !ctx->drop_second_field)
+        delay *= 2;
+
+    return (av_fifo_size(ctx->frame_queue) / sizeof(CuvidParsedFrame)) + delay >= ctx->nb_surfaces;
 }
 
 static int cuvid_decode_packet(AVCodecContext *avctx, const AVPacket *avpkt)
@@ -546,12 +533,16 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
                     .Height        = avctx->height >> (i ? 1 : 0),
                 };
 
-                ret = CHECK_CU(ctx->cudl->cuMemcpy2D(&cpy));
+                ret = CHECK_CU(ctx->cudl->cuMemcpy2DAsync(&cpy, device_hwctx->stream));
                 if (ret < 0)
                     goto error;
 
                 offset += avctx->height;
             }
+
+            ret = CHECK_CU(ctx->cudl->cuStreamSynchronize(device_hwctx->stream));
+            if (ret < 0)
+                goto error;
         } else if (avctx->pix_fmt == AV_PIX_FMT_NV12 ||
                    avctx->pix_fmt == AV_PIX_FMT_P010 ||
                    avctx->pix_fmt == AV_PIX_FMT_P016) {
@@ -590,6 +581,7 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
             goto error;
         }
 
+        frame->key_frame = ctx->key_frame[parsed_frame.dispinfo.picture_index];
         frame->width = avctx->width;
         frame->height = avctx->height;
         if (avctx->pkt_timebase.num && avctx->pkt_timebase.den)
@@ -692,6 +684,8 @@ static av_cold int cuvid_decode_end(AVCodecContext *avctx)
 
     av_buffer_unref(&ctx->hwframe);
     av_buffer_unref(&ctx->hwdevice);
+
+    av_freep(&ctx->key_frame);
 
     cuvid_free_functions(&ctx->cvdl);
 
@@ -975,6 +969,12 @@ static av_cold int cuvid_decode_init(AVCodecContext *avctx)
         memcpy(ctx->cuparse_ext.raw_seqhdr_data,
                avctx->extradata,
                FFMIN(sizeof(ctx->cuparse_ext.raw_seqhdr_data), avctx->extradata_size));
+    }
+
+    ctx->key_frame = av_mallocz(ctx->nb_surfaces * sizeof(int));
+    if (!ctx->key_frame) {
+        ret = AVERROR(ENOMEM);
+        goto error;
     }
 
     ctx->cuparseinfo.ulMaxNumDecodeSurfaces = ctx->nb_surfaces;

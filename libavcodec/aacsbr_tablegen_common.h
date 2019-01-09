@@ -111,16 +111,4 @@ static DECLARE_ALIGNED(32, INTFLOAT, sbr_qmf_window_us)[640] = {
     Q31( 0.8537385600f),
 };
 
-static av_cold void aacsbr_tableinit(void)
-{
-    int n;
-    for (n = 1; n < 320; n++)
-        sbr_qmf_window_us[320 + n] = sbr_qmf_window_us[320 - n];
-    sbr_qmf_window_us[384] = -sbr_qmf_window_us[384];
-    sbr_qmf_window_us[512] = -sbr_qmf_window_us[512];
-
-    for (n = 0; n < 320; n++)
-        sbr_qmf_window_ds[n] = sbr_qmf_window_us[2*n];
-}
-
 #endif /* AVCODEC_AACSBR_TABLEGEN_COMMON_H */

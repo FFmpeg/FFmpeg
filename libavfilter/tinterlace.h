@@ -34,8 +34,8 @@
 #include "avfilter.h"
 
 #define TINTERLACE_FLAG_VLPF 01
-#define TINTERLACE_FLAG_EXACT_TB 2
-#define TINTERLACE_FLAG_CVLPF 4
+#define TINTERLACE_FLAG_CVLPF 2
+#define TINTERLACE_FLAG_EXACT_TB 4
 
 enum TInterlaceMode {
     MODE_MERGE = 0,
@@ -47,6 +47,11 @@ enum TInterlaceMode {
     MODE_INTERLACEX2,
     MODE_MERGEX2,
     MODE_NB,
+};
+
+enum InterlaceScanMode {
+    MODE_TFF = 0,
+    MODE_BFF,
 };
 
 typedef struct TInterlaceContext {

@@ -35,6 +35,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/time.h"
+#include "libavfilter/qsvvpp.h"
 
 #include "avfilter.h"
 #include "formats.h"
@@ -201,6 +202,11 @@ static int init_out_session(AVFilterContext *ctx)
         }
     }
 
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     /* create a "slave" session with those same properties, to be used for
      * actual deinterlacing */
     err = MFXInit(impl, &ver, &s->session);
@@ -211,6 +217,12 @@ static int init_out_session(AVFilterContext *ctx)
 
     if (handle) {
         err = MFXVideoCORE_SetHandle(s->session, handle_type, handle);
+        if (err != MFX_ERR_NONE)
+            return AVERROR_UNKNOWN;
+    }
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        err = MFXJoinSession(device_hwctx->session, s->session);
         if (err != MFX_ERR_NONE)
             return AVERROR_UNKNOWN;
     }

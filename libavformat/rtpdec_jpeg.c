@@ -379,7 +379,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     return AVERROR(EAGAIN);
 }
 
-RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
     .enc_name          = "JPEG",
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_MJPEG,

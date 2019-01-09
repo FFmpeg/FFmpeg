@@ -142,7 +142,7 @@ static int pix_fmt_to_mfx_fourcc(int format)
         return MFX_FOURCC_NV12;
     case AV_PIX_FMT_YUYV422:
         return MFX_FOURCC_YUY2;
-    case AV_PIX_FMT_RGB32:
+    case AV_PIX_FMT_BGRA:
         return MFX_FOURCC_RGB4;
     }
 
@@ -296,7 +296,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
             av_log(ctx, AV_LOG_ERROR, "QSVVPP gets a wrong frame.\n");
             return NULL;
         }
-        qsv_frame->frame   = picref;
+        qsv_frame->frame   = av_frame_clone(picref);
         qsv_frame->surface = (mfxFrameSurface1 *)qsv_frame->frame->data[3];
     } else {
         /* make a copy if the input is not padded as libmfx requires */
@@ -318,7 +318,7 @@ static QSVFrame *submit_frame(QSVVPPContext *s, AVFilterLink *inlink, AVFrame *p
             av_frame_copy_props(qsv_frame->frame, picref);
             av_frame_free(&picref);
         } else
-            qsv_frame->frame = picref;
+            qsv_frame->frame = av_frame_clone(picref);
 
         if (map_frame_to_surface(qsv_frame->frame,
                                 &qsv_frame->surface_internal) < 0) {
@@ -503,6 +503,11 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         }
     }
 
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     /* create a "slave" session with those same properties, to be used for vpp */
     ret = MFXInit(impl, &ver, &s->session);
     if (ret != MFX_ERR_NONE) {
@@ -515,9 +520,12 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         if (ret != MFX_ERR_NONE)
             return AVERROR_UNKNOWN;
     }
-    ret = MFXJoinSession(device_hwctx->session, s->session);
-    if (ret != MFX_ERR_NONE)
-        return AVERROR_UNKNOWN;
+
+    if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+        ret = MFXJoinSession(device_hwctx->session, s->session);
+        if (ret != MFX_ERR_NONE)
+            return AVERROR_UNKNOWN;
+    }
 
     if (IS_OPAQUE_MEMORY(s->in_mem_mode) || IS_OPAQUE_MEMORY(s->out_mem_mode)) {
         s->opaque_alloc.In.Surfaces   = s->surface_ptrs_in;

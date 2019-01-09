@@ -279,8 +279,6 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    av_register_all();
-
     if (seek_test(argv[1], argv[2], argv[3]) != 0)
         return 1;
 

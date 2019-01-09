@@ -463,6 +463,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     if (o->flags & AV_OPT_FLAG_READONLY)
         return AVERROR(EINVAL);
 
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
+
     dst = ((uint8_t *)target_obj) + o->offset;
     switch (o->type) {
     case AV_OPT_TYPE_BOOL:
@@ -493,15 +496,22 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_SAMPLE_FMT:
         return set_string_sample_fmt(obj, o, val, dst);
     case AV_OPT_TYPE_DURATION:
-        if (!val) {
-            *(int64_t *)dst = 0;
+        {
+            int64_t usecs = 0;
+            if (val) {
+                if ((ret = av_parse_time(&usecs, val, 1)) < 0) {
+                    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
+                    return ret;
+                }
+            }
+            if (usecs < o->min || usecs > o->max) {
+                av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
+                       usecs / 1000000.0, o->name, o->min / 1000000.0, o->max / 1000000.0);
+                return AVERROR(ERANGE);
+            }
+            *(int64_t *)dst = usecs;
             return 0;
-        } else {
-            if ((ret = av_parse_time(dst, val, 1)) < 0)
-                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
-            return ret;
         }
-        break;
     case AV_OPT_TYPE_COLOR:
         return set_string_color(obj, o, val, dst);
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
@@ -758,6 +768,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 
     if (!o || !target_obj || (o->offset<=0 && o->type != AV_OPT_TYPE_CONST))
         return AVERROR_OPTION_NOT_FOUND;
+
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
 
     dst = (uint8_t *)target_obj + o->offset;
 
@@ -1181,6 +1194,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_EXPORT)         ? 'X' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_READONLY)       ? 'R' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_BSF_PARAM)      ? 'B' : '.');
 
         if (opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);

@@ -47,6 +47,12 @@
 
 static enum AVPixelFormat h263_get_format(AVCodecContext *avctx)
 {
+    /* MPEG-4 Studio Profile only, not supported by hardware */
+    if (avctx->bits_per_raw_sample > 8) {
+        av_assert1(((MpegEncContext *)avctx->priv_data)->studio_profile);
+        return avctx->pix_fmt;
+    }
+
     if (avctx->codec->id == AV_CODEC_ID_MSS2)
         return AV_PIX_FMT_YUV420P;
 
@@ -197,6 +203,11 @@ static int decode_slice(MpegEncContext *s)
 
     ff_set_qscale(s, s->qscale);
 
+    if (s->studio_profile) {
+        if ((ret = ff_mpeg4_decode_studio_slice_header(s->avctx->priv_data)) < 0)
+            return ret;
+    }
+
     if (s->avctx->hwaccel) {
         const uint8_t *start = s->gb.buffer + get_bits_count(&s->gb) / 8;
         ret = s->avctx->hwaccel->decode_slice(s->avctx, start, s->gb.buffer_end - start);
@@ -307,6 +318,7 @@ static int decode_slice(MpegEncContext *s)
 
     av_assert1(s->mb_x == 0 && s->mb_y == s->mb_height);
 
+    // Detect incorrect padding with wrong stuffing codes used by NEC N-02B
     if (s->codec_id == AV_CODEC_ID_MPEG4         &&
         (s->workaround_bugs & FF_BUG_AUTODETECT) &&
         get_bits_left(&s->gb) >= 48              &&
@@ -534,6 +546,8 @@ retry:
     if (CONFIG_MPEG4_DECODER && avctx->codec_id == AV_CODEC_ID_MPEG4) {
         if (ff_mpeg4_workaround_bugs(avctx) == 1)
             goto retry;
+        if (s->studio_profile != (s->idsp.idct == NULL))
+            ff_mpv_idct_init(s);
     }
 
     /* After H.263 & MPEG-4 header decode we have the height, width,
@@ -630,7 +644,7 @@ retry:
     slice_ret = decode_slice(s);
     while (s->mb_y < s->mb_height) {
         if (s->msmpeg4_version) {
-            if (s->slice_height == 0 || s->mb_x != 0 ||
+            if (s->slice_height == 0 || s->mb_x != 0 || slice_ret < 0 ||
                 (s->mb_y % s->slice_height) != 0 || get_bits_left(&s->gb) < 0)
                 break;
         } else {
@@ -656,7 +670,8 @@ retry:
 
     av_assert1(s->bitstream_buffer_size == 0);
 frame_end:
-    ff_er_frame_end(&s->er);
+    if (!s->studio_profile)
+        ff_er_frame_end(&s->er);
 
     if (avctx->hwaccel) {
         ret = avctx->hwaccel->end_frame(avctx);

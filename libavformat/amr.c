@@ -178,18 +178,17 @@ AVInputFormat ff_amr_demuxer = {
 #if CONFIG_AMRNB_DEMUXER
 static int amrnb_probe(AVProbeData *p)
 {
-    int mode, i = 0, valid = 0;
+    int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
 
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 9 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrnb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
@@ -197,10 +196,11 @@ static int amrnb_probe(AVProbeData *p)
             }
         } else {
             valid = 0;
+            invalid++;
             i++;
         }
     }
-    if (valid > 100)
+    if (valid > 100 && valid >> 4 > invalid)
         return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
@@ -234,18 +234,17 @@ AVInputFormat ff_amrnb_demuxer = {
 #if CONFIG_AMRWB_DEMUXER
 static int amrwb_probe(AVProbeData *p)
 {
-    int mode, i = 0, valid = 0;
+    int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
 
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 10 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrwb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
@@ -253,11 +252,12 @@ static int amrwb_probe(AVProbeData *p)
             }
         } else {
             valid = 0;
+            invalid++;
             i++;
         }
     }
-    if (valid > 100)
-        return AVPROBE_SCORE_EXTENSION / 2 - 1;
+    if (valid > 100 && valid >> 4 > invalid)
+        return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
 

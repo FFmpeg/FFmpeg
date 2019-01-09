@@ -348,12 +348,13 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                                 height != s->height ||
                                 s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
                                 s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
-                                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED);
+                                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED ||
+                                s->video_format != VIDEO_FORMAT_UNSPECIFIED);
 
             if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
-                put_bits(&s->pb, 3, 5);                         // video_format: 5 is unspecified
+                put_bits(&s->pb, 3, s->video_format);           // video_format
                 put_bits(&s->pb, 1, 1);                         // colour_description
                 put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
                 put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics
@@ -1125,6 +1126,13 @@ static const AVOption mpeg2_options[] = {
     {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, "seq_disp_ext" },
     {     "never",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 0 },  0, 0, VE, "seq_disp_ext" },
     {     "always", NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 1 },  0, 0, VE, "seq_disp_ext" },
+    { "video_format",     "Video_format in the sequence_display_extension indicating the source of the video.", OFFSET(video_format), AV_OPT_TYPE_INT, { .i64 = VIDEO_FORMAT_UNSPECIFIED }, 0, 7, VE, "video_format" },
+    {     "component",    NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_COMPONENT  },  0, 0, VE, "video_format" },
+    {     "pal",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_PAL        },  0, 0, VE, "video_format" },
+    {     "ntsc",         NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_NTSC       },  0, 0, VE, "video_format" },
+    {     "secam",        NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_SECAM      },  0, 0, VE, "video_format" },
+    {     "mac",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_MAC        },  0, 0, VE, "video_format" },
+    {     "unspecified",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_UNSPECIFIED},  0, 0, VE, "video_format" },
     FF_MPV_COMMON_OPTS
     { NULL },
 };

@@ -584,7 +584,7 @@ value is 0.
 This is required for generating an XML file which can be validated
 through an XSD file.
 
-@item xsd_compliant, x
+@item xsd_strict, x
 If set to 1 perform more checks for ensuring that the output is XSD
 compliant. Default value is 0.
 This option automatically sets @option{fully_qualified} to 1.

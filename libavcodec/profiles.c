@@ -30,7 +30,6 @@ const AVProfile ff_aac_profiles[] = {
     { FF_PROFILE_AAC_LD,    "LD"       },
     { FF_PROFILE_AAC_ELD,   "ELD"      },
     { FF_PROFILE_AAC_MAIN,  "Main" },
-    { FF_PROFILE_AAC_LOW,   "LC"   },
     { FF_PROFILE_AAC_SSR,   "SSR"  },
     { FF_PROFILE_AAC_LTP,   "LTP"  },
     { FF_PROFILE_UNKNOWN },
@@ -138,6 +137,37 @@ const AVProfile ff_vp9_profiles[] = {
     { FF_PROFILE_VP9_2, "Profile 2" },
     { FF_PROFILE_VP9_3, "Profile 3" },
     { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_av1_profiles[] = {
+    { FF_PROFILE_AV1_MAIN,         "Main" },
+    { FF_PROFILE_AV1_HIGH,         "High" },
+    { FF_PROFILE_AV1_PROFESSIONAL, "Professional" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_sbc_profiles[] = {
+    { FF_PROFILE_SBC_MSBC, "mSBC" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_prores_profiles[] = {
+    { FF_PROFILE_PRORES_PROXY,    "Proxy"    },
+    { FF_PROFILE_PRORES_LT,       "LT"       },
+    { FF_PROFILE_PRORES_STANDARD, "Standard" },
+    { FF_PROFILE_PRORES_HQ,       "HQ"       },
+    { FF_PROFILE_PRORES_4444,     "4444"     },
+    { FF_PROFILE_PRORES_XQ,       "XQ"       },
+    { FF_PROFILE_UNKNOWN }
+};
+
+const AVProfile ff_mjpeg_profiles[] = {
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,            "Baseline"    },
+    { FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"  },
+    { FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT,         "Progressive" },
+    { FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS,                "Lossless"    },
+    { FF_PROFILE_MJPEG_JPEG_LS,                         "JPEG LS"     },
+    { FF_PROFILE_UNKNOWN }
 };
 
 #endif /* !CONFIG_SMALL */

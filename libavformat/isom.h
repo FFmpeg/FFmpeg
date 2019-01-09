@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "libavutil/encryption_info.h"
 #include "libavutil/mastering_display_metadata.h"
 #include "libavutil/spherical.h"
 #include "libavutil/stereo3d.h"
@@ -40,6 +41,7 @@ extern const AVCodecTag ff_mp4_obj_type[];
 extern const AVCodecTag ff_codec_movvideo_tags[];
 extern const AVCodecTag ff_codec_movaudio_tags[];
 extern const AVCodecTag ff_codec_movsubtitle_tags[];
+extern const AVCodecTag ff_codec_movdata_tags[];
 
 int ff_mov_iso639_to_lang(const char lang[4], int mp4);
 int ff_mov_lang_to_iso639(unsigned code, char to[4]);
@@ -108,12 +110,26 @@ typedef struct MOVSbgp {
     unsigned int index;
 } MOVSbgp;
 
+typedef struct MOVEncryptionIndex {
+    // Individual encrypted samples.  If there are no elements, then the default
+    // settings will be used.
+    unsigned int nb_encrypted_samples;
+    AVEncryptionInfo **encrypted_samples;
+
+    uint8_t* auxiliary_info_sizes;
+    size_t auxiliary_info_sample_count;
+    uint8_t auxiliary_info_default_size;
+    uint64_t* auxiliary_offsets;  ///< Absolute seek position
+    size_t auxiliary_offsets_count;
+} MOVEncryptionIndex;
+
 typedef struct MOVFragmentStreamInfo {
     int id;
     int64_t sidx_pts;
     int64_t first_tfra_pts;
     int64_t tfdt_dts;
     int index_entry;
+    MOVEncryptionIndex *encryption_index;
 } MOVFragmentStreamInfo;
 
 typedef struct MOVFragmentIndexItem {
@@ -168,6 +184,7 @@ typedef struct MOVStreamContext {
     int *keyframes;
     int time_scale;
     int64_t time_offset;  ///< time offset of the edit list entries
+    int64_t min_corrected_pts;  ///< minimum Composition time shown by the edits excluding empty edits.
     int current_sample;
     int64_t current_index;
     MOVIndexRange* index_ranges;
@@ -201,6 +218,7 @@ typedef struct MOVStreamContext {
     int *extradata_size;
     int last_stsd_index;
     int stsd_count;
+    int stsd_version;
 
     int32_t *display_matrix;
     AVStereo3D *stereo3d;
@@ -214,15 +232,10 @@ typedef struct MOVStreamContext {
 
     int has_sidx;  // If there is an sidx entry for this stream.
     struct {
-        int use_subsamples;
-        uint8_t* auxiliary_info;
-        uint8_t* auxiliary_info_end;
-        uint8_t* auxiliary_info_pos;
-        uint8_t auxiliary_info_default_size;
-        uint8_t* auxiliary_info_sizes;
-        size_t auxiliary_info_sizes_count;
-        int64_t auxiliary_info_index;
         struct AVAESCTR* aes_ctr;
+        unsigned int per_sample_iv_size;  // Either 0, 8, or 16.
+        AVEncryptionInfo *default_encrypted_sample;
+        MOVEncryptionIndex *encryption_index;
     } cenc;
 } MOVStreamContext;
 

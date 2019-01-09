@@ -22,7 +22,9 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+#include "libavutil/xga_font_data.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -58,6 +60,12 @@ typedef struct AudioIIRContext {
     int format;
     int process;
     int precision;
+    int response;
+    int w, h;
+    int ir_channel;
+    AVRational rate;
+
+    AVFrame *video;
 
     IIRChannel *iir;
     int channels;
@@ -75,7 +83,19 @@ static int query_formats(AVFilterContext *ctx)
         AV_SAMPLE_FMT_DBLP,
         AV_SAMPLE_FMT_NONE
     };
+    static const enum AVPixelFormat pix_fmts[] = {
+        AV_PIX_FMT_RGB0,
+        AV_PIX_FMT_NONE
+    };
     int ret;
+
+    if (s->response) {
+        AVFilterLink *videolink = ctx->outputs[1];
+
+        formats = ff_make_format_list(pix_fmts);
+        if ((ret = ff_formats_ref(formats, &videolink->in_formats)) < 0)
+            return ret;
+    }
 
     layouts = ff_all_channel_counts();
     if (!layouts)
@@ -394,7 +414,7 @@ static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
 
     for (i = 0; i < nb + 1; i++) {
         if (fabs(coeffs[2 * i + 1]) > FLT_EPSILON) {
-            av_log(ctx, AV_LOG_ERROR, "coeff: %lf of z^%d is not real; poles/zeros are not complex conjugates.\n",
+            av_log(ctx, AV_LOG_ERROR, "coeff: %f of z^%d is not real; poles/zeros are not complex conjugates.\n",
                    coeffs[2 * i + 1], i);
             return AVERROR(EINVAL);
         }
@@ -573,7 +593,7 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->biquads[current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : iir->g);
             iir->biquads[current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : iir->g);
 
-            av_log(ctx, AV_LOG_VERBOSE, "a=%lf %lf %lf:b=%lf %lf %lf\n",
+            av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
                    iir->biquads[current_biquad].a0,
                    iir->biquads[current_biquad].a1,
                    iir->biquads[current_biquad].a2,
@@ -642,6 +662,166 @@ static void convert_pd2zp(AVFilterContext *ctx, int channels)
     }
 }
 
+static void drawtext(AVFrame *pic, int x, int y, const char *txt, uint32_t color)
+{
+    const uint8_t *font;
+    int font_height;
+    int i;
+
+    font = avpriv_cga_font, font_height = 8;
+
+    for (i = 0; txt[i]; i++) {
+        int char_y, mask;
+
+        uint8_t *p = pic->data[0] + y * pic->linesize[0] + (x + i * 8) * 4;
+        for (char_y = 0; char_y < font_height; char_y++) {
+            for (mask = 0x80; mask; mask >>= 1) {
+                if (font[txt[i] * font_height + char_y] & mask)
+                    AV_WL32(p, color);
+                p += 4;
+            }
+            p += pic->linesize[0] - 8 * 4;
+        }
+    }
+}
+
+static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t color)
+{
+    int dx = FFABS(x1-x0);
+    int dy = FFABS(y1-y0), sy = y0 < y1 ? 1 : -1;
+    int err = (dx>dy ? dx : -dy) / 2, e2;
+
+    for (;;) {
+        AV_WL32(out->data[0] + y0 * out->linesize[0] + x0 * 4, color);
+
+        if (x0 == x1 && y0 == y1)
+            break;
+
+        e2 = err;
+
+        if (e2 >-dx) {
+            err -= dy;
+            x0--;
+        }
+
+        if (e2 < dy) {
+            err += dx;
+            y0 += sy;
+        }
+    }
+}
+
+static void draw_response(AVFilterContext *ctx, AVFrame *out)
+{
+    AudioIIRContext *s = ctx->priv;
+    float *mag, *phase, min = FLT_MAX, max = FLT_MIN;
+    int prev_ymag = -1, prev_yphase = -1;
+    char text[32];
+    int ch, i, x;
+
+    memset(out->data[0], 0, s->h * out->linesize[0]);
+
+    phase = av_malloc_array(s->w, sizeof(*phase));
+    mag = av_malloc_array(s->w, sizeof(*mag));
+    if (!mag || !phase)
+        goto end;
+
+    ch = av_clip(s->ir_channel, 0, s->channels - 1);
+    for (i = 0; i < s->w; i++) {
+        const double *b = s->iir[ch].ab[0];
+        const double *a = s->iir[ch].ab[1];
+        double w = i * M_PI / (s->w - 1);
+        double realz, realp;
+        double imagz, imagp;
+        double real, imag, div;
+
+        if (s->format == 0) {
+            realz = 0., realp = 0.;
+            imagz = 0., imagp = 0.;
+            for (x = 0; x < s->iir[ch].nb_ab[1]; x++) {
+                realz += cos(-x * w) * a[x];
+                imagz += sin(-x * w) * a[x];
+            }
+
+            for (x = 0; x < s->iir[ch].nb_ab[0]; x++) {
+                realp += cos(-x * w) * b[x];
+                imagp += sin(-x * w) * b[x];
+            }
+
+            div = realp * realp + imagp * imagp;
+            real = (realz * realp + imagz * imagp) / div;
+            imag = (imagz * realp - imagp * realz) / div;
+        } else {
+            real = 1;
+            imag = 0;
+            for (x = 0; x < s->iir[ch].nb_ab[1]; x++) {
+                double ore, oim, re, im;
+
+                re = cos(w) - a[2 * x];
+                im = sin(w) - a[2 * x + 1];
+
+                ore = real;
+                oim = imag;
+
+                real = ore * re - oim * im;
+                imag = ore * im + oim * re;
+            }
+
+            for (x = 0; x < s->iir[ch].nb_ab[0]; x++) {
+                double ore, oim, re, im;
+
+                re = cos(w) - b[2 * x];
+                im = sin(w) - b[2 * x + 1];
+
+                ore = real;
+                oim = imag;
+                div = re * re + im * im;
+
+                real = (ore * re + oim * im) / div;
+                imag = (oim * re - ore * im) / div;
+            }
+        }
+
+        mag[i] = s->iir[ch].g * hypot(real, imag);
+        phase[i] = atan2(imag, real);
+        min = fminf(min, mag[i]);
+        max = fmaxf(max, mag[i]);
+    }
+
+    for (i = 0; i < s->w; i++) {
+        int ymag = mag[i] / max * (s->h - 1);
+        int yphase = (0.5 * (1. + phase[i] / M_PI)) * (s->h - 1);
+
+        ymag = s->h - 1 - av_clip(ymag, 0, s->h - 1);
+        yphase = s->h - 1 - av_clip(yphase, 0, s->h - 1);
+
+        if (prev_ymag < 0)
+            prev_ymag = ymag;
+        if (prev_yphase < 0)
+            prev_yphase = yphase;
+
+        draw_line(out, i,   ymag, FFMAX(i - 1, 0),   prev_ymag, 0xFFFF00FF);
+        draw_line(out, i, yphase, FFMAX(i - 1, 0), prev_yphase, 0xFF00FF00);
+
+        prev_ymag   = ymag;
+        prev_yphase = yphase;
+    }
+
+    if (s->w > 400 && s->h > 100) {
+        drawtext(out, 2, 2, "Max Magnitude:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", max);
+        drawtext(out, 15 * 8 + 2, 2, text, 0xDDDDDDDD);
+
+        drawtext(out, 2, 12, "Min Magnitude:", 0xDDDDDDDD);
+        snprintf(text, sizeof(text), "%.2f", min);
+        drawtext(out, 15 * 8 + 2, 12, text, 0xDDDDDDDD);
+    }
+
+end:
+    av_free(phase);
+    av_free(mag);
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -672,6 +852,15 @@ static int config_output(AVFilterLink *outlink)
         convert_pd2zp(ctx, inlink->channels);
     }
 
+    av_frame_free(&s->video);
+    if (s->response) {
+        s->video = ff_get_video_buffer(ctx->outputs[1], s->w, s->h);
+        if (!s->video)
+            return AVERROR(ENOMEM);
+
+        draw_response(ctx, s->video);
+    }
+
     if (s->format == 0)
         av_log(ctx, AV_LOG_WARNING, "tf coefficients format is not recommended for too high number of zeros/poles.\n");
 
@@ -693,7 +882,7 @@ static int config_output(AVFilterLink *outlink)
             return ret;
     }
 
-    for (ch = 0; ch < inlink->channels; ch++) {
+    for (ch = 0; s->format == 0 && ch < inlink->channels; ch++) {
         IIRChannel *iir = &s->iir[ch];
 
         for (i = 1; i < iir->nb_ab[0]; i++) {
@@ -722,7 +911,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     ThreadData td;
     AVFrame *out;
-    int ch;
+    int ch, ret;
 
     if (av_frame_is_writable(in)) {
         out = in;
@@ -749,12 +938,41 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (in != out)
         av_frame_free(&in);
 
+    if (s->response) {
+        AVFilterLink *outlink = ctx->outputs[1];
+        int64_t old_pts = s->video->pts;
+        int64_t new_pts = av_rescale_q(out->pts, ctx->inputs[0]->time_base, outlink->time_base);
+
+        if (new_pts > old_pts) {
+            s->video->pts = new_pts;
+            ret = ff_filter_frame(outlink, av_frame_clone(s->video));
+            if (ret < 0)
+                return ret;
+        }
+    }
+
     return ff_filter_frame(outlink, out);
+}
+
+static int config_video(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    AudioIIRContext *s = ctx->priv;
+
+    outlink->sample_aspect_ratio = (AVRational){1,1};
+    outlink->w = s->w;
+    outlink->h = s->h;
+    outlink->frame_rate = s->rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
+
+    return 0;
 }
 
 static av_cold int init(AVFilterContext *ctx)
 {
     AudioIIRContext *s = ctx->priv;
+    AVFilterPad pad, vpad;
+    int ret;
 
     if (!s->a_str || !s->b_str || !s->g_str) {
         av_log(ctx, AV_LOG_ERROR, "Valid coefficients are mandatory.\n");
@@ -767,6 +985,35 @@ static av_cold int init(AVFilterContext *ctx)
     case 2: s->sample_format = AV_SAMPLE_FMT_S32P; break;
     case 3: s->sample_format = AV_SAMPLE_FMT_S16P; break;
     default: return AVERROR_BUG;
+    }
+
+    pad = (AVFilterPad){
+        .name         = av_strdup("default"),
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .config_props = config_output,
+    };
+
+    if (!pad.name)
+        return AVERROR(ENOMEM);
+
+    if (s->response) {
+        vpad = (AVFilterPad){
+            .name         = av_strdup("filter_response"),
+            .type         = AVMEDIA_TYPE_VIDEO,
+            .config_props = config_video,
+        };
+        if (!vpad.name)
+            return AVERROR(ENOMEM);
+    }
+
+    ret = ff_insert_outpad(ctx, 0, &pad);
+    if (ret < 0)
+        return ret;
+
+    if (s->response) {
+        ret = ff_insert_outpad(ctx, 1, &vpad);
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -788,6 +1035,11 @@ static av_cold void uninit(AVFilterContext *ctx)
         }
     }
     av_freep(&s->iir);
+
+    av_freep(&ctx->output_pads[0].name);
+    if (s->response)
+        av_freep(&ctx->output_pads[1].name);
+    av_frame_free(&s->video);
 }
 
 static const AVFilterPad inputs[] = {
@@ -799,17 +1051,9 @@ static const AVFilterPad inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad outputs[] = {
-    {
-        .name         = "default",
-        .type         = AVMEDIA_TYPE_AUDIO,
-        .config_props = config_output,
-    },
-    { NULL }
-};
-
 #define OFFSET(x) offsetof(AudioIIRContext, x)
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption aiir_options[] = {
     { "z", "set B/numerator/zeros coefficients",   OFFSET(b_str),    AV_OPT_TYPE_STRING, {.str="1+0i 1-0i"}, 0, 0, AF },
@@ -830,6 +1074,10 @@ static const AVOption aiir_options[] = {
     { "flt", "single-precision floating-point",    0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "precision" },
     { "i32", "32-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "precision" },
     { "i16", "16-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "precision" },
+    { "response", "show IR frequency response",    OFFSET(response), AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, VF },
+    { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
+    { "size",   "set video size",                  OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
+    { "rate",   "set video rate",                  OFFSET(rate),     AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
     { NULL },
 };
 
@@ -844,6 +1092,6 @@ AVFilter ff_af_aiir = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
-    .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_DYNAMIC_OUTPUTS |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };

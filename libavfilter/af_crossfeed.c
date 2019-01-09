@@ -17,6 +17,7 @@
  */
 
 #include "libavutil/channel_layout.h"
+#include "libavutil/ffmath.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
@@ -57,7 +58,7 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     CrossfeedContext *s = ctx->priv;
-    double A = exp(s->strength * -30 / 40 * log(10.));
+    double A = ff_exp10(s->strength * -30 / 40);
     double w0 = 2 * M_PI * (1. - s->range) * 2100 / inlink->sample_rate;
     double alpha;
 

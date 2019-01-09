@@ -342,6 +342,26 @@ static inline void shuffle_bytes_0321_c(const uint8_t *src, uint8_t *dst,
     }
 }
 
+#if !HAVE_BIGENDIAN
+#define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
+static void shuffle_bytes_##name (const uint8_t *src,                   \
+                                        uint8_t *dst, int src_size)     \
+{                                                                       \
+    int i;                                                              \
+                                                                        \
+    for (i = 0; i < src_size; i += 4) {                                 \
+        dst[i + 0] = src[i + a];                                        \
+        dst[i + 1] = src[i + b];                                        \
+        dst[i + 2] = src[i + c];                                        \
+        dst[i + 3] = src[i + d];                                        \
+    }                                                                   \
+}
+
+DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
+DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
+DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
+#endif
+
 static inline void rgb24tobgr24_c(const uint8_t *src, uint8_t *dst, int src_size)
 {
     unsigned i;
@@ -949,6 +969,9 @@ static av_cold void rgb2rgb_init_c(void)
 #else
     shuffle_bytes_0321 = shuffle_bytes_0321_c;
     shuffle_bytes_2103 = shuffle_bytes_2103_c;
+    shuffle_bytes_1230 = shuffle_bytes_1230_c;
+    shuffle_bytes_3012 = shuffle_bytes_3012_c;
+    shuffle_bytes_3210 = shuffle_bytes_3210_c;
 #endif
     rgb32tobgr16       = rgb32tobgr16_c;
     rgb32tobgr15       = rgb32tobgr15_c;

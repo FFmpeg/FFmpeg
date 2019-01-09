@@ -59,6 +59,20 @@ static const AVOption tinterlace_options[] = {
 
 AVFILTER_DEFINE_CLASS(tinterlace);
 
+static const AVOption interlace_options[] = {
+   { "scan",              "scanning mode", OFFSET(mode), AV_OPT_TYPE_INT, {.i64 = MODE_TFF}, 0, 1, FLAGS, "mode"},
+   { "tff",               "top field first",                              0, AV_OPT_TYPE_CONST, {.i64 = MODE_TFF}, INT_MIN, INT_MAX, FLAGS, .unit = "mode"},
+   { "bff",               "bottom field first",                           0, AV_OPT_TYPE_CONST, {.i64 = MODE_BFF}, INT_MIN, INT_MAX, FLAGS, .unit = "mode"},
+   { "lowpass",           "set vertical low-pass filter", OFFSET(flags), AV_OPT_TYPE_FLAGS,   {.i64 = TINTERLACE_FLAG_VLPF}, 0, 2, 0, "flags" },
+   { "off",               "disable vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = 0}, INT_MIN, INT_MAX, FLAGS, "flags" },
+   { "linear",            "linear vertical low-pass filter",              0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_VLPF}, INT_MIN, INT_MAX, FLAGS, "flags" },
+   { "complex",           "complex vertical low-pass filter",             0, AV_OPT_TYPE_CONST, {.i64 = TINTERLACE_FLAG_CVLPF},INT_MIN, INT_MAX, FLAGS, "flags" },
+
+   { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(interlace);
+
 #define FULL_SCALE_YUVJ_FORMATS \
     AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P, AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P
 
@@ -497,6 +511,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *picref)
     return ret;
 }
 
+static int init_interlace(AVFilterContext *ctx)
+{
+    TInterlaceContext *tinterlace = ctx->priv;
+
+    if (tinterlace->mode <= MODE_BFF)
+        tinterlace->mode += MODE_INTERLEAVE_TOP;
+
+    return 0;
+}
+
 static const AVFilterPad tinterlace_inputs[] = {
     {
         .name         = "default",
@@ -524,4 +548,17 @@ AVFilter ff_vf_tinterlace = {
     .inputs        = tinterlace_inputs,
     .outputs       = tinterlace_outputs,
     .priv_class    = &tinterlace_class,
+};
+
+
+AVFilter ff_vf_interlace = {
+    .name          = "interlace",
+    .description   = NULL_IF_CONFIG_SMALL("Convert progressive video into interlaced."),
+    .priv_size     = sizeof(TInterlaceContext),
+    .init          = init_interlace,
+    .uninit        = uninit,
+    .query_formats = query_formats,
+    .inputs        = tinterlace_inputs,
+    .outputs       = tinterlace_outputs,
+    .priv_class    = &interlace_class,
 };

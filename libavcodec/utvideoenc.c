@@ -283,23 +283,6 @@ static void mangle_rgb_planes(uint8_t *dst[4], ptrdiff_t dst_stride,
     }
 }
 
-/* Write data to a plane with left prediction */
-static void left_predict(uint8_t *src, uint8_t *dst, ptrdiff_t stride,
-                         int width, int height)
-{
-    int i, j;
-    uint8_t prev;
-
-    prev = 0x80; /* Set the initial value */
-    for (j = 0; j < height; j++) {
-        for (i = 0; i < width; i++) {
-            *dst++ = src[i] - prev;
-            prev   = src[i];
-        }
-        src += stride;
-    }
-}
-
 #undef A
 #undef B
 
@@ -436,8 +419,7 @@ static int encode_plane(AVCodecContext *avctx, uint8_t *src,
         for (i = 0; i < c->slices; i++) {
             sstart = send;
             send   = height * (i + 1) / c->slices & cmask;
-            left_predict(src + sstart * stride, dst + sstart * width,
-                         stride, width, send - sstart);
+            c->llvidencdsp.sub_left_predict(dst + sstart * width, src + sstart * stride, stride, width, send - sstart);
         }
         break;
     case PRED_MEDIAN:

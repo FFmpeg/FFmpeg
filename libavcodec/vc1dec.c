@@ -340,22 +340,22 @@ av_cold int ff_vc1_decode_init_alloc_tables(VC1Context *v)
 
     v->n_allocated_blks = s->mb_width + 2;
     v->block            = av_malloc(sizeof(*v->block) * v->n_allocated_blks);
-    v->cbp_base         = av_malloc(sizeof(v->cbp_base[0]) * 2 * s->mb_stride);
+    v->cbp_base         = av_malloc(sizeof(v->cbp_base[0]) * 3 * s->mb_stride);
     if (!v->block || !v->cbp_base)
         goto error;
-    v->cbp              = v->cbp_base + s->mb_stride;
-    v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 2 * s->mb_stride);
+    v->cbp              = v->cbp_base + 2 * s->mb_stride;
+    v->ttblk_base       = av_malloc(sizeof(v->ttblk_base[0]) * 3 * s->mb_stride);
     if (!v->ttblk_base)
         goto error;
-    v->ttblk            = v->ttblk_base + s->mb_stride;
-    v->is_intra_base    = av_mallocz(sizeof(v->is_intra_base[0]) * 2 * s->mb_stride);
+    v->ttblk            = v->ttblk_base + 2 * s->mb_stride;
+    v->is_intra_base    = av_mallocz(sizeof(v->is_intra_base[0]) * 3 * s->mb_stride);
     if (!v->is_intra_base)
         goto error;
-    v->is_intra         = v->is_intra_base + s->mb_stride;
-    v->luma_mv_base     = av_mallocz(sizeof(v->luma_mv_base[0]) * 2 * s->mb_stride);
+    v->is_intra         = v->is_intra_base + 2 * s->mb_stride;
+    v->luma_mv_base     = av_mallocz(sizeof(v->luma_mv_base[0]) * 3 * s->mb_stride);
     if (!v->luma_mv_base)
         goto error;
-    v->luma_mv          = v->luma_mv_base + s->mb_stride;
+    v->luma_mv          = v->luma_mv_base + 2 * s->mb_stride;
 
     /* allocate block type info in that way so it could be used with s->block_index[] */
     v->mb_type_base = av_malloc(s->b8_stride * (mb_height * 2 + 1) + s->mb_stride * (mb_height + 1) * 2);
@@ -698,9 +698,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                                                     slices[n_slices].buf);
                     init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
                                   buf_size3 << 3);
-                    /* assuming that the field marker is at the exact middle,
-                       hope it's correct */
-                    slices[n_slices].mby_start = s->mb_height + 1 >> 1;
+                    slices[n_slices].mby_start = avctx->coded_height + 31 >> 5;
                     slices[n_slices].rawbuf = start;
                     slices[n_slices].raw_size = size + 4;
                     n_slices1 = n_slices - 1; // index of the last slice of the first field
@@ -903,13 +901,41 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             s->picture_structure = PICT_BOTTOM_FIELD - v->tff;
             if ((ret = avctx->hwaccel->start_frame(avctx, buf_start, buf_start_second_field - buf_start)) < 0)
                 goto err;
-            if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, buf_start_second_field - buf_start)) < 0)
-                goto err;
+
+            if (n_slices1 == -1) {
+                // no slices, decode the field as-is
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, buf_start_second_field - buf_start)) < 0)
+                    goto err;
+            } else {
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start, slices[0].rawbuf - buf_start)) < 0)
+                    goto err;
+
+                for (i = 0 ; i < n_slices1 + 1; i++) {
+                    s->gb = slices[i].gb;
+                    s->mb_y = slices[i].mby_start;
+
+                    v->pic_header_flag = get_bits1(&s->gb);
+                    if (v->pic_header_flag) {
+                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                            av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
+                            ret = AVERROR_INVALIDDATA;
+                            if (avctx->err_recognition & AV_EF_EXPLODE)
+                                goto err;
+                            continue;
+                        }
+                    }
+
+                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                        goto err;
+                }
+            }
+
             if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
                 goto err;
 
             // decode second field
             s->gb = slices[n_slices1 + 1].gb;
+            s->mb_y = slices[n_slices1 + 1].mby_start;
             s->picture_structure = PICT_TOP_FIELD + v->tff;
             v->second_field = 1;
             v->pic_header_flag = 0;
@@ -922,8 +948,35 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 
             if ((ret = avctx->hwaccel->start_frame(avctx, buf_start_second_field, (buf + buf_size) - buf_start_second_field)) < 0)
                 goto err;
-            if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start_second_field, (buf + buf_size) - buf_start_second_field)) < 0)
-                goto err;
+
+            if (n_slices - n_slices1 == 2) {
+                // no slices, decode the field as-is
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start_second_field, (buf + buf_size) - buf_start_second_field)) < 0)
+                    goto err;
+            } else {
+                if ((ret = avctx->hwaccel->decode_slice(avctx, buf_start_second_field, slices[n_slices1 + 2].rawbuf - buf_start_second_field)) < 0)
+                    goto err;
+
+                for (i = n_slices1 + 2; i < n_slices; i++) {
+                    s->gb = slices[i].gb;
+                    s->mb_y = slices[i].mby_start;
+
+                    v->pic_header_flag = get_bits1(&s->gb);
+                    if (v->pic_header_flag) {
+                        if (ff_vc1_parse_frame_header_adv(v, &s->gb) < 0) {
+                            av_log(v->s.avctx, AV_LOG_ERROR, "Slice header damaged\n");
+                            ret = AVERROR_INVALIDDATA;
+                            if (avctx->err_recognition & AV_EF_EXPLODE)
+                                goto err;
+                            continue;
+                        }
+                    }
+
+                    if ((ret = avctx->hwaccel->decode_slice(avctx, slices[i].rawbuf, slices[i].raw_size)) < 0)
+                        goto err;
+                }
+            }
+
             if ((ret = avctx->hwaccel->end_frame(avctx)) < 0)
                 goto err;
         } else {
@@ -1029,13 +1082,15 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     av_log(v->s.avctx, AV_LOG_ERROR, "first field slice count too large\n");
                     continue;
                 }
-                s->end_mb_y = (i <= n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
+                s->end_mb_y = (i == n_slices1 + 1) ? mb_height : FFMIN(mb_height, slices[i].mby_start % mb_height);
             }
             if (s->end_mb_y <= s->start_mb_y) {
                 av_log(v->s.avctx, AV_LOG_ERROR, "end mb y %d %d invalid\n", s->end_mb_y, s->start_mb_y);
                 continue;
             }
-            if (!v->p_frame_skipped && s->pict_type != AV_PICTURE_TYPE_I && !v->cbpcy_vlc) {
+            if (((s->pict_type == AV_PICTURE_TYPE_P && !v->p_frame_skipped) ||
+                 (s->pict_type == AV_PICTURE_TYPE_B && !v->bi_type)) &&
+                !v->cbpcy_vlc) {
                 av_log(v->s.avctx, AV_LOG_ERROR, "missing cbpcy_vlc\n");
                 continue;
             }
