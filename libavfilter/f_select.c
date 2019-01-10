@@ -241,7 +241,7 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_SAMPLE_RATE] =
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
-    if (select->do_scene_detect) {
+    if (CONFIG_SELECT_FILTER && select->do_scene_detect) {
         select->sad = ff_scene_sad_get_fn(8);
         if (!select->sad)
             return AVERROR(EINVAL);
