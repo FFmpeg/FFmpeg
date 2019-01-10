@@ -53,7 +53,7 @@ static void test_fcmul_add(const float *src0, const float *src1, const float *sr
     call_ref(cdst, src1, src2, LEN);
     call_new(odst, src1, src2, LEN);
     for (i = 0; i <= LEN*2; i++) {
-        if (!float_near_abs_eps(cdst[i], odst[i], FLT_EPSILON)) {
+        if (!float_near_abs_eps(cdst[i], odst[i], 6.2e-05)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                     i, cdst[i], odst[i], cdst[i] - odst[i]);
             fail();
