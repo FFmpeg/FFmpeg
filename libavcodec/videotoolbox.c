@@ -176,25 +176,30 @@ CFDataRef ff_videotoolbox_avcc_extradata_create(AVCodecContext *avctx)
 CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
 {
     HEVCContext *h = avctx->priv_data;
-    const HEVCVPS *vps = (const HEVCVPS *)h->ps.vps_list[0]->data;
-    const HEVCSPS *sps = (const HEVCSPS *)h->ps.sps_list[0]->data;
-    int i, num_pps = 0;
+    int i, num_vps = 0, num_sps = 0, num_pps = 0;
+    const HEVCVPS *vps = h->ps.vps;
+    const HEVCSPS *sps = h->ps.sps;
     const HEVCPPS *pps = h->ps.pps;
     PTLCommon ptlc = vps->ptl.general_ptl;
     VUI vui = sps->vui;
     uint8_t parallelismType;
     CFDataRef data = NULL;
     uint8_t *p;
-    int vt_extradata_size = 23 + 5 + vps->data_size + 5 + sps->data_size + 3;
+    int vt_extradata_size = 23 + 3 + 3 + 3;
     uint8_t *vt_extradata;
 
-    for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
-        if (h->ps.pps_list[i]) {
-            const HEVCPPS *pps = (const HEVCPPS *)h->ps.pps_list[i]->data;
-            vt_extradata_size += 2 + pps->data_size;
-            num_pps++;
-        }
+#define COUNT_SIZE_PS(T, t) \
+    for (i = 0; i < HEVC_MAX_##T##PS_COUNT; i++) { \
+        if (h->ps.t##ps_list[i]) { \
+            const HEVC##T##PS *lps = (const HEVC##T##PS *)h->ps.t##ps_list[i]->data; \
+            vt_extradata_size += 2 + lps->data_size; \
+            num_##t##ps++; \
+        } \
     }
+
+    COUNT_SIZE_PS(V, v)
+    COUNT_SIZE_PS(S, s)
+    COUNT_SIZE_PS(P, p)
 
     vt_extradata = av_malloc(vt_extradata_size);
     if (!vt_extradata)
@@ -286,43 +291,32 @@ CFDataRef ff_videotoolbox_hvcc_extradata_create(AVCodecContext *avctx)
     AV_W8(p + 22, 3);
 
     p += 23;
-    /* vps */
-    /*
-     * bit(1) array_completeness;
-     * unsigned int(1) reserved = 0;
-     * unsigned int(6) NAL_unit_type;
-     */
-    AV_W8(p, 1 << 7 |
-             HEVC_NAL_VPS & 0x3f);
-    /* unsigned int(16) numNalus; */
-    AV_WB16(p + 1, 1);
-    /* unsigned int(16) nalUnitLength; */
-    AV_WB16(p + 3, vps->data_size);
-    /* bit(8*nalUnitLength) nalUnit; */
-    memcpy(p + 5, vps->data, vps->data_size);
-    p += 5 + vps->data_size;
 
-    /* sps */
-    AV_W8(p, 1 << 7 |
-             HEVC_NAL_SPS & 0x3f);
-    AV_WB16(p + 1, 1);
-    AV_WB16(p + 3, sps->data_size);
-    memcpy(p + 5, sps->data, sps->data_size);
-    p += 5 + sps->data_size;
-
-    /* pps */
-    AV_W8(p, 1 << 7 |
-             HEVC_NAL_PPS & 0x3f);
-    AV_WB16(p + 1, num_pps);
-    p += 3;
-    for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
-        if (h->ps.pps_list[i]) {
-            const HEVCPPS *pps = (const HEVCPPS *)h->ps.pps_list[i]->data;
-            AV_WB16(p, pps->data_size);
-            memcpy(p + 2, pps->data, pps->data_size);
-            p += 2 + pps->data_size;
-        }
+#define APPEND_PS(T, t) \
+    /* \
+     * bit(1) array_completeness; \
+     * unsigned int(1) reserved = 0; \
+     * unsigned int(6) NAL_unit_type; \
+     */ \
+    AV_W8(p, 1 << 7 | \
+             HEVC_NAL_##T##PS & 0x3f); \
+    /* unsigned int(16) numNalus; */ \
+    AV_WB16(p + 1, num_##t##ps); \
+    p += 3; \
+    for (i = 0; i < HEVC_MAX_##T##PS_COUNT; i++) { \
+        if (h->ps.t##ps_list[i]) { \
+            const HEVC##T##PS *lps = (const HEVC##T##PS *)h->ps.t##ps_list[i]->data; \
+            /* unsigned int(16) nalUnitLength; */ \
+            AV_WB16(p, lps->data_size); \
+            /* bit(8*nalUnitLength) nalUnit; */ \
+            memcpy(p + 2, lps->data, lps->data_size); \
+            p += 2 + lps->data_size; \
+        } \
     }
+
+    APPEND_PS(V, v)
+    APPEND_PS(S, s)
+    APPEND_PS(P, p)
 
     av_assert0(p - vt_extradata == vt_extradata_size);
 
