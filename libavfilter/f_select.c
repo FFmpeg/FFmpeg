@@ -418,29 +418,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    SelectContext *select = ctx->priv;
-
-    if (!select->do_scene_detect) {
-        return ff_default_query_formats(ctx);
-    } else {
-        int ret;
-        static const enum AVPixelFormat pix_fmts[] = {
-            AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
-            AV_PIX_FMT_NONE
-        };
-        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-
-        if (!fmts_list)
-            return AVERROR(ENOMEM);
-        ret = ff_set_common_formats(ctx, fmts_list);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
 #if CONFIG_ASELECT_FILTER
 
 DEFINE_OPTIONS(aselect, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
@@ -485,6 +462,29 @@ AVFilter ff_af_aselect = {
 #endif /* CONFIG_ASELECT_FILTER */
 
 #if CONFIG_SELECT_FILTER
+
+static int query_formats(AVFilterContext *ctx)
+{
+    SelectContext *select = ctx->priv;
+
+    if (!select->do_scene_detect) {
+        return ff_default_query_formats(ctx);
+    } else {
+        int ret;
+        static const enum AVPixelFormat pix_fmts[] = {
+            AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+            AV_PIX_FMT_NONE
+        };
+        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+
+        if (!fmts_list)
+            return AVERROR(ENOMEM);
+        ret = ff_set_common_formats(ctx, fmts_list);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
 
 DEFINE_OPTIONS(select, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
 AVFILTER_DEFINE_CLASS(select);
