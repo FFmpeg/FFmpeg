@@ -29,6 +29,10 @@
 
 #include "af_anlmdndsp.h"
 
+#define MAX_DIFF         11.f
+#define WEIGHT_LUT_NBITS 20
+#define WEIGHT_LUT_SIZE  (1<<WEIGHT_LUT_NBITS)
+
 #define SQR(x) ((x) * (x))
 
 typedef struct AudioNLMeansContext {
@@ -37,6 +41,9 @@ typedef struct AudioNLMeansContext {
     float a;
     int64_t pd;
     int64_t rd;
+
+    float pdiff_lut_scale;
+    float weight_lut[WEIGHT_LUT_SIZE];
 
     int K;
     int S;
@@ -150,6 +157,13 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fifo)
         return AVERROR(ENOMEM);
 
+    s->pdiff_lut_scale = 1.f / MAX_DIFF * WEIGHT_LUT_SIZE;
+    for (int i = 0; i < WEIGHT_LUT_SIZE; i++) {
+        float w = -i / s->pdiff_lut_scale;
+
+        s->weight_lut[i] = expf(w);
+    }
+
     ff_anlmdn_init(&s->dsp);
 
     return 0;
@@ -183,13 +197,16 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 
         for (int j = 0; j < 2 * S; j++) {
             const float distance = cache[j];
+            unsigned weight_lut_idx;
             float w;
 
-            av_assert0(distance >= 0.f);
-            w = -distance * sw;
-            if (w < -11.f)
+            av_assert2(distance >= 0.f);
+            w = distance * sw;
+            if (w >= MAX_DIFF)
                 continue;
-            w = expf(w);
+            weight_lut_idx = w * s->pdiff_lut_scale;
+            av_assert2(weight_lut_idx < WEIGHT_LUT_SIZE);
+            w = s->weight_lut[weight_lut_idx];
             P += w * f[i - S + j + (j >= S)];
             Q += w;
         }
