@@ -40,6 +40,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// from x264.h, for quant_offsets, Macroblocks are 16x16
+// blocks of pixels (with respect to the luma plane)
+#define MB_SIZE 16
+
 typedef struct X264Context {
     AVClass        *class;
     x264_param_t    params;
@@ -282,6 +286,7 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     x264_picture_t pic_out = {0};
     int pict_type;
     int64_t *out_opaque;
+    AVFrameSideData *sd;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -342,6 +347,63 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                     x4->pic.extra_sei.payloads[0].payload = sei_data;
                     x4->pic.extra_sei.num_payloads = 1;
                     x4->pic.extra_sei.payloads[0].payload_type = 4;
+                }
+            }
+        }
+
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
+        if (sd) {
+            if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
+                av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+            } else {
+                if (frame->interlaced_frame == 0) {
+                    int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
+                    int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
+                    int nb_rois;
+                    AVRegionOfInterest* roi;
+                    float* qoffsets;
+                    qoffsets = av_mallocz_array(mbx * mby, sizeof(*qoffsets));
+                    if (!qoffsets)
+                        return AVERROR(ENOMEM);
+
+                    nb_rois = sd->size / sizeof(AVRegionOfInterest);
+                    roi = (AVRegionOfInterest*)sd->data;
+                    for (int count = 0; count < nb_rois; count++) {
+                        int starty = FFMIN(mby, roi->top / MB_SIZE);
+                        int endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
+                        int startx = FFMIN(mbx, roi->left / MB_SIZE);
+                        int endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
+                        float qoffset;
+
+                        if (roi->qoffset.den == 0) {
+                            av_free(qoffsets);
+                            av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den should not be zero.\n");
+                            return AVERROR(EINVAL);
+                        }
+                        qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
+                        qoffset = av_clipf(qoffset, -1.0f, 1.0f);
+
+                        // 25 is a number that I think it is a possible proper scale value.
+                        qoffset = qoffset * 25;
+
+                        for (int y = starty; y < endy; y++) {
+                            for (int x = startx; x < endx; x++) {
+                                qoffsets[x + y*mbx] = qoffset;
+                            }
+                        }
+
+                        if (roi->self_size == 0) {
+                            av_free(qoffsets);
+                            av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.self_size should be set to sizeof(AVRegionOfInterest).\n");
+                            return AVERROR(EINVAL);
+                        }
+                        roi = (AVRegionOfInterest*)((char*)roi + roi->self_size);
+                    }
+
+                    x4->pic.prop.quant_offsets = qoffsets;
+                    x4->pic.prop.quant_offsets_free = av_free;
+                } else {
+                    av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
                 }
             }
         }
