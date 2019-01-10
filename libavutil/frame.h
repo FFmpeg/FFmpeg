@@ -173,6 +173,12 @@ enum AVFrameSideDataType {
      * volume transform - application 4 of SMPTE 2094-40:2016 standard.
      */
     AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+
+    /**
+     * Regions Of Interest, the data is an array of AVRegionOfInterest type, the number of
+     * array element is implied by AVFrameSideData.size / AVRegionOfInterest.self_size.
+     */
+    AV_FRAME_DATA_REGIONS_OF_INTEREST,
 };
 
 enum AVActiveFormatDescription {
@@ -199,6 +205,35 @@ typedef struct AVFrameSideData {
     AVDictionary *metadata;
     AVBufferRef *buf;
 } AVFrameSideData;
+
+/**
+ * Structure to hold Region Of Interest.
+ *
+ * self_size specifies the size of this data structure. This value
+ * should be set to sizeof(AVRegionOfInterest). EINVAL is returned if self_size is zero.
+ *
+ * Number of pixels to discard from the top/bottom/left/right border of
+ * the frame to obtain the region of interest of the frame.
+ * They are encoder dependent and will be extended internally
+ * if the codec requires an alignment.
+ * If the regions overlap, the last value in the list will be used.
+ *
+ * qoffset is quant offset, and base rule here:
+ * returns EINVAL if AVRational.den is zero.
+ * the value (num/den) range is [-1.0, 1.0], clamp to +-1.0 if out of range.
+ * 0 means no picture quality change,
+ * negtive offset asks for better quality (and the best with value -1.0),
+ * positive offset asks for worse quality (and the worst with value 1.0).
+ * How to explain/implement the different quilaity requirement is encoder dependent.
+ */
+typedef struct AVRegionOfInterest {
+    uint32_t self_size;
+    int top;
+    int bottom;
+    int left;
+    int right;
+    AVRational qoffset;
+} AVRegionOfInterest;
 
 /**
  * This structure describes decoded (raw) audio or video data.
