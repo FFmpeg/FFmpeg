@@ -196,12 +196,8 @@ static void vp56_decode_4mv(VP56Context *s, int row, int col)
     s->macroblocks[row * s->mb_width + col].mv = s->mv[3];
 
     /* chroma vectors are average luma vectors */
-    if (s->avctx->codec->id == AV_CODEC_ID_VP5) {
-        s->mv[4].x = s->mv[5].x = RSHIFT(mv.x,2);
-        s->mv[4].y = s->mv[5].y = RSHIFT(mv.y,2);
-    } else {
-        s->mv[4] = s->mv[5] = (VP56mv) {mv.x/4, mv.y/4};
-    }
+    s->mv[4].x = s->mv[5].x = RSHIFT(mv.x,2);
+    s->mv[4].y = s->mv[5].y = RSHIFT(mv.y,2);
 }
 
 static VP56mb vp56_decode_mv(VP56Context *s, int row, int col)
