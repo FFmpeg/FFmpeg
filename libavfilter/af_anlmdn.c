@@ -270,6 +270,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (out) {
         out->pts = s->pts;
         out->nb_samples = s->offset;
+        if (s->eof_left >= 0) {
+            out->nb_samples = FFMIN(s->eof_left, s->offset);
+            s->eof_left -= out->nb_samples;
+        }
         s->pts += s->offset;
 
         return ff_filter_frame(outlink, out);
@@ -290,15 +294,13 @@ static int request_frame(AVFilterLink *outlink)
         AVFrame *in;
 
         if (s->eof_left < 0)
-            s->eof_left = av_audio_fifo_size(s->fifo);
-        in = ff_get_audio_buffer(outlink, FFMIN(s->H, s->N - s->eof_left));
+            s->eof_left = av_audio_fifo_size(s->fifo) - (s->S + s->K);
+        if (s->eof_left < 0)
+            return AVERROR_EOF;
+        in = ff_get_audio_buffer(outlink, s->H);
         if (!in)
             return AVERROR(ENOMEM);
 
-        if (s->eof_left < s->H)
-            s->eof_left = 0;
-        else
-            s->eof_left -= s->H;
         return filter_frame(ctx->inputs[0], in);
     }
 
