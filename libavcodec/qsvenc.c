@@ -267,6 +267,11 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #endif
 #endif
 
+#if QSV_HAVE_GPB
+    if (avctx->codec_id == AV_CODEC_ID_HEVC)
+        av_log(avctx, AV_LOG_VERBOSE,"GPB: %s\n", print_threestate(co3->GPB));
+#endif
+
     if (avctx->codec_id == AV_CODEC_ID_H264) {
         av_log(avctx, AV_LOG_VERBOSE, "Entropy coding: %s; MaxDecFrameBuffering: %"PRIu16"\n",
                co->CAVLC == MFX_CODINGOPTION_ON ? "CAVLC" : "CABAC", co->MaxDecFrameBuffering);
@@ -748,6 +753,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #if QSV_HAVE_CO3
         q->extco3.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION3;
         q->extco3.Header.BufferSz      = sizeof(q->extco3);
+#if QSV_HAVE_GPB
+        if (avctx->codec_id == AV_CODEC_ID_HEVC)
+            q->extco3.GPB              = q->gpb ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+#endif
         q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco3;
 #endif
     }
