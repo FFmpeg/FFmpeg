@@ -57,6 +57,7 @@ typedef struct AudioNLMeansContext {
     int64_t pts;
 
     AVAudioFifo *fifo;
+    int eof_left;
 
     AudioNLMDNDSPContext dsp;
 } AudioNLMeansContext;
@@ -140,6 +141,7 @@ static int config_output(AVFilterLink *outlink)
     s->K = av_rescale(s->pd, outlink->sample_rate, AV_TIME_BASE);
     s->S = av_rescale(s->rd, outlink->sample_rate, AV_TIME_BASE);
 
+    s->eof_left = -1;
     s->pts = AV_NOPTS_VALUE;
     s->H = s->K * 2 + 1;
     s->N = s->H + (s->K + s->S) * 2;
@@ -276,6 +278,33 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ret;
 }
 
+static int request_frame(AVFilterLink *outlink)
+{
+    AVFilterContext *ctx = outlink->src;
+    AudioNLMeansContext *s = ctx->priv;
+    int ret;
+
+    ret = ff_request_frame(ctx->inputs[0]);
+
+    if (ret == AVERROR_EOF && s->eof_left != 0) {
+        AVFrame *in;
+
+        if (s->eof_left < 0)
+            s->eof_left = av_audio_fifo_size(s->fifo);
+        in = ff_get_audio_buffer(outlink, FFMIN(s->H, s->N - s->eof_left));
+        if (!in)
+            return AVERROR(ENOMEM);
+
+        if (s->eof_left < s->H)
+            s->eof_left = 0;
+        else
+            s->eof_left -= s->H;
+        return filter_frame(ctx->inputs[0], in);
+    }
+
+    return ret;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioNLMeansContext *s = ctx->priv;
@@ -299,6 +328,7 @@ static const AVFilterPad outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = config_output,
+        .request_frame = request_frame,
     },
     { NULL }
 };
