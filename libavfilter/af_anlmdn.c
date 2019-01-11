@@ -135,6 +135,7 @@ static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AudioNLMeansContext *s = ctx->priv;
+    int ret;
 
     s->K = av_rescale(s->pd, outlink->sample_rate, AV_TIME_BASE);
     s->S = av_rescale(s->rd, outlink->sample_rate, AV_TIME_BASE);
@@ -158,6 +159,10 @@ static int config_output(AVFilterLink *outlink)
     s->fifo = av_audio_fifo_alloc(outlink->format, outlink->channels, s->N);
     if (!s->fifo)
         return AVERROR(ENOMEM);
+
+    ret = av_audio_fifo_write(s->fifo, (void **)s->in->extended_data, s->K + s->S);
+    if (ret < 0)
+        return ret;
 
     s->pdiff_lut_scale = 1.f / MAX_DIFF * WEIGHT_LUT_SIZE;
     for (int i = 0; i < WEIGHT_LUT_SIZE; i++) {
