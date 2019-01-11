@@ -143,6 +143,8 @@ static int config_output(AVFilterLink *outlink)
     s->H = s->K * 2 + 1;
     s->N = s->H + (s->K + s->S) * 2;
 
+    av_log(ctx, AV_LOG_DEBUG, "K:%d S:%d H:%d N:%d\n", s->K, s->S, s->H, s->N);
+
     av_frame_free(&s->in);
     av_frame_free(&s->cache);
     s->in = ff_get_audio_buffer(outlink, s->N);
