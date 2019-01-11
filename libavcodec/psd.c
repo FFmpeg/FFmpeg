@@ -337,6 +337,30 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         }
         avctx->pix_fmt = AV_PIX_FMT_PAL8;
         break;
+    case PSD_CMYK:
+        if (s->channel_count == 4) {
+            if (s->channel_depth == 8) {
+                avctx->pix_fmt = AV_PIX_FMT_GBRP;
+            } else if (s->channel_depth == 16) {
+                avctx->pix_fmt = AV_PIX_FMT_GBRP16BE;
+            } else {
+                avpriv_report_missing_feature(avctx, "channel depth %d for cmyk", s->channel_depth);
+                return AVERROR_PATCHWELCOME;
+            }
+        } else if (s->channel_count == 5) {
+            if (s->channel_depth == 8) {
+                avctx->pix_fmt = AV_PIX_FMT_GBRAP;
+            } else if (s->channel_depth == 16) {
+                avctx->pix_fmt = AV_PIX_FMT_GBRAP16BE;
+            } else {
+                avpriv_report_missing_feature(avctx, "channel depth %d for cmyk", s->channel_depth);
+                return AVERROR_PATCHWELCOME;
+            }
+        } else {
+            avpriv_report_missing_feature(avctx, "channel count %d for cmyk", s->channel_count);
+            return AVERROR_PATCHWELCOME;
+        }
+        break;
     case PSD_RGB:
         if (s->channel_count == 3) {
             if (s->channel_depth == 8) {
@@ -432,6 +456,66 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                         ptr[index_out + p] = *ptr_data;
                         ptr_data ++;
                     }
+                }
+            }
+        }
+    } else if (s->color_mode == PSD_CMYK) {
+        uint8_t *dst[4] = { picture->data[0], picture->data[1], picture->data[2], picture->data[3] };
+        const uint8_t *src[5] = { ptr_data };
+        src[1] = src[0] + s->line_size * s->height;
+        src[2] = src[1] + s->line_size * s->height;
+        src[3] = src[2] + s->line_size * s->height;
+        src[4] = src[3] + s->line_size * s->height;
+        if (s->channel_depth == 8) {
+            for (y = 0; y < s->height; y++) {
+                for (x = 0; x < s->width; x++) {
+                    int k = src[3][x];
+                    int r = src[0][x] * k;
+                    int g = src[1][x] * k;
+                    int b = src[2][x] * k;
+                    dst[0][x] = g * 257 >> 16;
+                    dst[1][x] = b * 257 >> 16;
+                    dst[2][x] = r * 257 >> 16;
+                }
+                dst[0] += picture->linesize[0];
+                dst[1] += picture->linesize[1];
+                dst[2] += picture->linesize[2];
+                src[0] += s->line_size;
+                src[1] += s->line_size;
+                src[2] += s->line_size;
+                src[3] += s->line_size;
+            }
+            if (avctx->pix_fmt == AV_PIX_FMT_GBRAP) {
+                for (y = 0; y < s->height; y++) {
+                    memcpy(dst[3], src[4], s->line_size);
+                    src[4] += s->line_size;
+                    dst[3] += picture->linesize[3];
+                }
+            }
+        } else {
+            for (y = 0; y < s->height; y++) {
+                for (x = 0; x < s->width; x++) {
+                    int64_t k = AV_RB16(&src[3][x * 2]);
+                    int64_t r = AV_RB16(&src[0][x * 2]) * k;
+                    int64_t g = AV_RB16(&src[1][x * 2]) * k;
+                    int64_t b = AV_RB16(&src[2][x * 2]) * k;
+                    AV_WB16(&dst[0][x * 2], g * 65537 >> 32);
+                    AV_WB16(&dst[1][x * 2], b * 65537 >> 32);
+                    AV_WB16(&dst[2][x * 2], r * 65537 >> 32);
+                }
+                dst[0] += picture->linesize[0];
+                dst[1] += picture->linesize[1];
+                dst[2] += picture->linesize[2];
+                src[0] += s->line_size;
+                src[1] += s->line_size;
+                src[2] += s->line_size;
+                src[3] += s->line_size;
+            }
+            if (avctx->pix_fmt == AV_PIX_FMT_GBRAP16BE) {
+                for (y = 0; y < s->height; y++) {
+                    memcpy(dst[3], src[4], s->line_size);
+                    src[4] += s->line_size;
+                    dst[3] += picture->linesize[3];
                 }
             }
         }
