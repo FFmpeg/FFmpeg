@@ -379,11 +379,6 @@ int ff_vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitCo
     } else {
         v->res_rtm_flag = get_bits1(gb); //reserved
     }
-    if (!v->res_rtm_flag) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Old WMV3 version detected, some frames may be decoded incorrectly\n");
-        //return -1;
-    }
     //TODO: figure out what they mean (always 0x402F)
     if (!v->res_fasttx)
         skip_bits(gb, 16);

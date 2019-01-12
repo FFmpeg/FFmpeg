@@ -275,7 +275,10 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         //in 4-MV mode different blocks have different B predictor position
         switch (n) {
         case 0:
-            off = (s->mb_x > 0) ? -1 : 1;
+            if (v->res_rtm_flag)
+                off = s->mb_x ? -1 : 1;
+            else
+                off = s->mb_x ? -1 : 2 * s->mb_width - wrap - 1;
             break;
         case 1:
             off = (s->mb_x == (s->mb_width - 1)) ? -1 : 1;
