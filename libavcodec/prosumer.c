@@ -38,7 +38,7 @@ typedef struct ProSumerContext {
 
     unsigned stride;
     unsigned size;
-    uint32_t lut[0x10000];
+    uint32_t lut[0x2000];
     uint8_t *initial_line;
     uint8_t *decbuffer;
 } ProSumerContext;
