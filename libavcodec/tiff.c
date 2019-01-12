@@ -571,7 +571,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     if (s->compr == TIFF_CCITT_RLE ||
         s->compr == TIFF_G3        ||
         s->compr == TIFF_G4) {
-        if (is_yuv)
+        if (is_yuv || p->format == AV_PIX_FMT_GRAY12)
             return AVERROR_INVALIDDATA;
 
         return tiff_unpack_fax(s, dst, stride, src, size, width, lines);
