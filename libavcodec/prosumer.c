@@ -99,6 +99,8 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
             }
             idx = a >> 20;
             b = lut[2 * idx];
+            if (!b)
+                return AVERROR_INVALIDDATA;
             continue;
         }
         idx = 2;
@@ -159,8 +161,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     memset(s->decbuffer, 0, s->size);
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
     bytestream2_init_writer(&s->pb, s->decbuffer, s->size);
-
-    decompress(&s->gb, AV_RL32(avpkt->data + 28) >> 1, &s->pb, s->lut);
+    ret = decompress(&s->gb, AV_RL32(avpkt->data + 28) >> 1, &s->pb, s->lut);
+    if (ret < 0)
+        return ret;
     vertical_predict((uint32_t *)s->decbuffer, 0, (uint32_t *)s->initial_line, s->stride, 1);
     vertical_predict((uint32_t *)s->decbuffer, s->stride, (uint32_t *)s->decbuffer, s->stride, avctx->height - 1);
 
