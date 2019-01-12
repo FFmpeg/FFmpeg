@@ -84,16 +84,13 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
                     if (bytestream2_get_bytes_left(gb) <= 0) {
                         if (!a)
                             return 0;
-                        cnt = 4;
                     } else {
-                        pos = bytestream2_tell(gb) ^ 2;
-                        bytestream2_seek(gb, pos, SEEK_SET);
+                        pos = bytestream2_tell(gb);
+                        bytestream2_seek(gb, pos ^ 2, SEEK_SET);
                         AV_WN16(&a, bytestream2_peek_le16(gb));
-                        pos = pos ^ 2;
-                        bytestream2_seek(gb, pos, SEEK_SET);
-                        bytestream2_skip(gb, 2);
-                        cnt = 4;
+                        bytestream2_seek(gb, pos + 2, SEEK_SET);
                     }
+                    cnt = 4;
                 }
                 c--;
             }
@@ -117,12 +114,10 @@ static int decompress(GetByteContext *gb, int size, PutByteContext *pb, const ui
                 }
                 return 0;
             }
-            pos = bytestream2_tell(gb) ^ 2;
-            bytestream2_seek(gb, pos, SEEK_SET);
+            pos = bytestream2_tell(gb);
+            bytestream2_seek(gb, pos ^ 2, SEEK_SET);
             AV_WN16(&a, bytestream2_peek_le16(gb));
-            pos = pos ^ 2;
-            bytestream2_seek(gb, pos, SEEK_SET);
-            bytestream2_skip(gb, 2);
+            bytestream2_seek(gb, pos + 2, SEEK_SET);
             cnt = 4;
             idx--;
         }
