@@ -825,7 +825,7 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_YA16LE : AV_PIX_FMT_YA16BE;
         break;
     case 324:
-        s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        s->avctx->pix_fmt = s->photometric == TIFF_PHOTOMETRIC_SEPARATED ? AV_PIX_FMT_RGB0 : AV_PIX_FMT_RGBA;
         break;
     case 483:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGB48LE  : AV_PIX_FMT_RGB48BE;
@@ -1100,12 +1100,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_PHOTOMETRIC_BLACK_IS_ZERO:
         case TIFF_PHOTOMETRIC_RGB:
         case TIFF_PHOTOMETRIC_PALETTE:
+        case TIFF_PHOTOMETRIC_SEPARATED:
         case TIFF_PHOTOMETRIC_YCBCR:
         case TIFF_PHOTOMETRIC_CFA:
             s->photometric = value;
             break;
         case TIFF_PHOTOMETRIC_ALPHA_MASK:
-        case TIFF_PHOTOMETRIC_SEPARATED:
         case TIFF_PHOTOMETRIC_CIE_LAB:
         case TIFF_PHOTOMETRIC_ICC_LAB:
         case TIFF_PHOTOMETRIC_ITU_LAB:
@@ -1528,6 +1528,24 @@ again:
                 for (j = 0; j < stride; j++)
                     dst[j] = c - dst[j];
                 dst += stride;
+            }
+        }
+
+        if (s->photometric == TIFF_PHOTOMETRIC_SEPARATED &&
+            s->avctx->pix_fmt == AV_PIX_FMT_RGB0) {
+            dst = p->data[plane];
+            for (i = 0; i < s->height; i++) {
+                for (j = 0; j < s->width; j++) {
+                    int k =  255 - dst[4 * j + 3];
+                    int r = (255 - dst[4 * j    ]) * k;
+                    int g = (255 - dst[4 * j + 1]) * k;
+                    int b = (255 - dst[4 * j + 2]) * k;
+                    dst[4 * j    ] = r * 257 >> 16;
+                    dst[4 * j + 1] = g * 257 >> 16;
+                    dst[4 * j + 2] = b * 257 >> 16;
+                    dst[4 * j + 3] = 255;
+                }
+                dst += p->linesize[plane];
             }
         }
     }
