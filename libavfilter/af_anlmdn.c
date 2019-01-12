@@ -66,7 +66,7 @@ typedef struct AudioNLMeansContext {
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption anlmdn_options[] = {
-    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=1},       1,   9999, AF },
+    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AF },
     { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AF },
     { "r", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AF },
     { NULL }
@@ -186,7 +186,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     const int K = s->K;
     const float *f = (const float *)(s->in->extended_data[ch]) + K;
     float *cache = (float *)s->cache->extended_data[ch];
-    const float sw = 32768.f / s->a;
+    const float sw = (65536.f / (4 * K + 2)) / sqrtf(s->a);
     float *dst = (float *)out->extended_data[ch] + s->offset;
 
     for (int i = S; i < s->H + S; i++) {

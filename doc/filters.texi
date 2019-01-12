@@ -1762,7 +1762,7 @@ The filter accepts the following options.
 
 @table @option
 @item s
-Set denoising strength. Allowed range is from 1 to 9999. Default value is 1.
+Set denoising strength. Allowed range is from 0.00001 to 10. Default value is 0.00001.
 
 @item p
 Set patch radius duration. Allowed range is from 1 to 100 milliseconds.
