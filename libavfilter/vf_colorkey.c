@@ -34,6 +34,9 @@ typedef struct ColorkeyContext {
     uint8_t colorkey_rgba[4];
     float similarity;
     float blend;
+
+    int (*do_slice)(AVFilterContext *ctx, void *arg,
+                    int jobnr, int nb_jobs);
 } ColorkeyContext;
 
 static uint8_t do_colorkey_pixel(ColorkeyContext *ctx, uint8_t r, uint8_t g, uint8_t b)
@@ -77,15 +80,65 @@ static int do_colorkey_slice(AVFilterContext *avctx, void *arg, int jobnr, int n
     return 0;
 }
 
+static int do_colorhold_slice(AVFilterContext *avctx, void *arg, int jobnr, int nb_jobs)
+{
+    AVFrame *frame = arg;
+
+    const int slice_start = (frame->height * jobnr) / nb_jobs;
+    const int slice_end = (frame->height * (jobnr + 1)) / nb_jobs;
+
+    ColorkeyContext *ctx = avctx->priv;
+
+    int x, y;
+
+    for (y = slice_start; y < slice_end; ++y) {
+        for (x = 0; x < frame->width; ++x) {
+            int o, t, r, g, b;
+
+            o = frame->linesize[0] * y + x * 4;
+            r = frame->data[0][o + ctx->co[0]];
+            g = frame->data[0][o + ctx->co[1]];
+            b = frame->data[0][o + ctx->co[2]];
+
+            t = do_colorkey_pixel(ctx, r, g, b);
+
+            if (t > 0) {
+                int a = (r + g + b) / 3;
+                int rt = 255 - t;
+
+                frame->data[0][o + ctx->co[0]] = (a * t + r * rt + 127) >> 8;
+                frame->data[0][o + ctx->co[1]] = (a * t + g * rt + 127) >> 8;
+                frame->data[0][o + ctx->co[2]] = (a * t + b * rt + 127) >> 8;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static av_cold int init_filter(AVFilterContext *avctx)
+{
+    ColorkeyContext *ctx = avctx->priv;
+
+    if (!strcmp(avctx->filter->name, "colorkey")) {
+        ctx->do_slice = do_colorkey_slice;
+    } else {
+        ctx->do_slice = do_colorhold_slice;
+    }
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *frame)
 {
     AVFilterContext *avctx = link->dst;
+    ColorkeyContext *ctx = avctx->priv;
     int res;
 
     if (res = av_frame_make_writable(frame))
         return res;
 
-    if (res = avctx->internal->execute(avctx, do_colorkey_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
+    if (res = avctx->internal->execute(avctx, ctx->do_slice, frame, NULL, FFMIN(frame->height, ff_filter_get_nb_threads(avctx))))
         return res;
 
     return ff_filter_frame(avctx->outputs[0], frame);
@@ -148,6 +201,8 @@ static const AVFilterPad colorkey_outputs[] = {
 #define OFFSET(x) offsetof(ColorkeyContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
 
+#if CONFIG_COLORKEY_FILTER
+
 static const AVOption colorkey_options[] = {
     { "color", "set the colorkey key color", OFFSET(colorkey_rgba), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "similarity", "set the colorkey similarity value", OFFSET(similarity), AV_OPT_TYPE_FLOAT, { .dbl = 0.01 }, 0.01, 1.0, FLAGS },
@@ -163,7 +218,34 @@ AVFilter ff_vf_colorkey = {
     .priv_size     = sizeof(ColorkeyContext),
     .priv_class    = &colorkey_class,
     .query_formats = query_formats,
+    .init          = init_filter,
     .inputs        = colorkey_inputs,
     .outputs       = colorkey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
+
+#endif /* CONFIG_COLORKEY_FILTER */
+#if CONFIG_COLORHOLD_FILTER
+
+static const AVOption colorhold_options[] = {
+    { "color", "set the colorhold key color", OFFSET(colorkey_rgba), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "similarity", "set the colorhold similarity value", OFFSET(similarity), AV_OPT_TYPE_FLOAT, { .dbl = 0.01 }, 0.01, 1.0, FLAGS },
+    { "blend", "set the colorhold blend value", OFFSET(blend), AV_OPT_TYPE_FLOAT, { .dbl = 0.0 }, 0.0, 1.0, FLAGS },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(colorhold);
+
+AVFilter ff_vf_colorhold = {
+    .name          = "colorhold",
+    .description   = NULL_IF_CONFIG_SMALL("Turns a certain color range into gray. Operates on RGB colors."),
+    .priv_size     = sizeof(ColorkeyContext),
+    .priv_class    = &colorhold_class,
+    .query_formats = query_formats,
+    .init          = init_filter,
+    .inputs        = colorkey_inputs,
+    .outputs       = colorkey_outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+};
+
+#endif /* CONFIG_COLORHOLD_FILTER */

@@ -6723,6 +6723,24 @@ ffmpeg -i background.png -i video.mp4 -filter_complex "[1:v]colorkey=0x3BBD1E:0.
 @end example
 @end itemize
 
+@section colorhold
+Remove all color information for all RGB colors except for certain one.
+
+The filter accepts the following options:
+
+@table @option
+@item color
+The color which will not be replaced with neutral gray.
+
+@item similarity
+Similarity percentage with the above color.
+0.01 matches only the exact key color, while 1.0 matches everything.
+
+@item blend
+Blend percentage. 0.0 makes pixels fully gray.
+Higher values result in more preserved color.
+@end table
+
 @section colorlevels
 
 Adjust video input frames using levels.

@@ -27,6 +27,7 @@ version <next>:
 - lagfun filter
 - asoftclip filter
 - Support decoding of HEVC 4:4:4 content in vdpau
+- colorhold filter
 
 
 version 4.1:
