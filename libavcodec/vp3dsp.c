@@ -195,6 +195,158 @@ static av_always_inline void idct(uint8_t *dst, ptrdiff_t stride,
     }
 }
 
+static av_always_inline void idct10(uint8_t *dst, ptrdiff_t stride,
+                                    int16_t *input, int type)
+{
+    int16_t *ip = input;
+
+    int A, B, C, D, Ad, Bd, Cd, Dd, E, F, G, H;
+    int Ed, Gd, Add, Bdd, Fd, Hd;
+
+    int i;
+
+    /* Inverse DCT on the rows now */
+    for (i = 0; i < 4; i++) {
+        /* Check for non-zero values */
+        if (ip[0 * 8] | ip[1 * 8] | ip[2 * 8] | ip[3 * 8]) {
+            A =  M(xC1S7, ip[1 * 8]);
+            B =  M(xC7S1, ip[1 * 8]);
+            C =  M(xC3S5, ip[3 * 8]);
+            D = -M(xC5S3, ip[3 * 8]);
+
+            Ad = M(xC4S4, (A - C));
+            Bd = M(xC4S4, (B - D));
+
+            Cd = A + C;
+            Dd = B + D;
+
+            E = M(xC4S4, ip[0 * 8]);
+            F = E;
+
+            G = M(xC2S6, ip[2 * 8]);
+            H = M(xC6S2, ip[2 * 8]);
+
+            Ed = E - G;
+            Gd = E + G;
+
+            Add = F + Ad;
+            Bdd = Bd - H;
+
+            Fd = F - Ad;
+            Hd = Bd + H;
+
+            /* Final sequence of operations over-write original inputs */
+            ip[0 * 8] = Gd + Cd;
+            ip[7 * 8] = Gd - Cd;
+
+            ip[1 * 8] = Add + Hd;
+            ip[2 * 8] = Add - Hd;
+
+            ip[3 * 8] = Ed + Dd;
+            ip[4 * 8] = Ed - Dd;
+
+            ip[5 * 8] = Fd + Bdd;
+            ip[6 * 8] = Fd - Bdd;
+
+        }
+
+        ip += 1;
+    }
+
+    ip = input;
+
+    for (i = 0; i < 8; i++) {
+        /* Check for non-zero values (bitwise or faster than ||) */
+        if (ip[0] | ip[1] | ip[2] | ip[3]) {
+            A =  M(xC1S7, ip[1]);
+            B =  M(xC7S1, ip[1]);
+            C =  M(xC3S5, ip[3]);
+            D = -M(xC5S3, ip[3]);
+
+            Ad = M(xC4S4, (A - C));
+            Bd = M(xC4S4, (B - D));
+
+            Cd = A + C;
+            Dd = B + D;
+
+            E = M(xC4S4, ip[0]);
+            if (type == 1)
+                E += 16 * 128;
+            F = E;
+
+            G = M(xC2S6, ip[2]);
+            H = M(xC6S2, ip[2]);
+
+            Ed = E - G;
+            Gd = E + G;
+
+            Add = F + Ad;
+            Bdd = Bd - H;
+
+            Fd = F - Ad;
+            Hd = Bd + H;
+
+            Gd += 8;
+            Add += 8;
+            Ed += 8;
+            Fd += 8;
+
+            /* Final sequence of operations over-write original inputs. */
+            if (type == 1) {
+                dst[0 * stride] = av_clip_uint8((Gd + Cd) >> 4);
+                dst[7 * stride] = av_clip_uint8((Gd - Cd) >> 4);
+
+                dst[1 * stride] = av_clip_uint8((Add + Hd) >> 4);
+                dst[2 * stride] = av_clip_uint8((Add - Hd) >> 4);
+
+                dst[3 * stride] = av_clip_uint8((Ed + Dd) >> 4);
+                dst[4 * stride] = av_clip_uint8((Ed - Dd) >> 4);
+
+                dst[5 * stride] = av_clip_uint8((Fd + Bdd) >> 4);
+                dst[6 * stride] = av_clip_uint8((Fd - Bdd) >> 4);
+            } else {
+                dst[0 * stride] = av_clip_uint8(dst[0 * stride] + ((Gd + Cd) >> 4));
+                dst[7 * stride] = av_clip_uint8(dst[7 * stride] + ((Gd - Cd) >> 4));
+
+                dst[1 * stride] = av_clip_uint8(dst[1 * stride] + ((Add + Hd) >> 4));
+                dst[2 * stride] = av_clip_uint8(dst[2 * stride] + ((Add - Hd) >> 4));
+
+                dst[3 * stride] = av_clip_uint8(dst[3 * stride] + ((Ed + Dd) >> 4));
+                dst[4 * stride] = av_clip_uint8(dst[4 * stride] + ((Ed - Dd) >> 4));
+
+                dst[5 * stride] = av_clip_uint8(dst[5 * stride] + ((Fd + Bdd) >> 4));
+                dst[6 * stride] = av_clip_uint8(dst[6 * stride] + ((Fd - Bdd) >> 4));
+            }
+        } else {
+            if (type == 1) {
+                dst[0*stride] =
+                dst[1*stride] =
+                dst[2*stride] =
+                dst[3*stride] =
+                dst[4*stride] =
+                dst[5*stride] =
+                dst[6*stride] =
+                dst[7*stride] = 128;
+            }
+        }
+
+        ip += 8;
+        dst++;
+    }
+}
+
+void ff_vp3dsp_idct10_put(uint8_t *dest, ptrdiff_t stride, int16_t *block)
+{
+    idct10(dest, stride, block, 1);
+    memset(block, 0, sizeof(*block) * 64);
+}
+
+void ff_vp3dsp_idct10_add(uint8_t *dest, ptrdiff_t stride, int16_t *block)
+{
+    idct10(dest, stride, block, 2);
+    memset(block, 0, sizeof(*block) * 64);
+}
+
 static void vp3_idct_put_c(uint8_t *dest /* align 8 */, ptrdiff_t stride,
                            int16_t *block /* align 16 */)
 {
