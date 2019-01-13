@@ -204,7 +204,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
             s->dsp.compute_cache(cache + S, f, S, K, i, i + 1);
         }
 
-        for (int j = 0; j < 2 * S; j++) {
+        for (int j = 0; j < 2 * S && !ctx->is_disabled; j++) {
             const float distance = cache[j];
             unsigned weight_lut_idx;
             float w;
@@ -344,5 +344,6 @@ AVFilter ff_af_anlmdn = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
