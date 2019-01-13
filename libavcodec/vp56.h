@@ -170,6 +170,7 @@ struct vp56_context {
     int filter_mode;
     int max_vector_length;
     int sample_variance_threshold;
+    DECLARE_ALIGNED(8, int, bounding_values_array)[256];
 
     uint8_t coeff_ctx[4][64];              /* used in vp5 only */
     uint8_t coeff_ctx_last[4];             /* used in vp5 only */
