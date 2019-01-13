@@ -406,6 +406,24 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
     }
 }
 
+static void vp56_idct_put(VP56Context *s, uint8_t * dest, ptrdiff_t stride, int16_t *block, int selector)
+{
+    if (selector > 10 || selector == 1)
+        s->vp3dsp.idct_put(dest, stride, block);
+    else
+        ff_vp3dsp_idct10_put(dest, stride, block);
+}
+
+static void vp56_idct_add(VP56Context *s, uint8_t * dest, ptrdiff_t stride, int16_t *block, int selector)
+{
+    if (selector > 10)
+        s->vp3dsp.idct_add(dest, stride, block);
+    else if (selector > 1)
+        ff_vp3dsp_idct10_add(dest, stride, block);
+    else
+        s->vp3dsp.idct_dc_add(dest, stride, block);
+}
+
 static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, int is_alpha, VP56mb mb_type)
 {
     int b, ab, b_max, plane, off;
@@ -426,8 +444,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
         case VP56_MB_INTRA:
             for (b=0; b<b_max; b++) {
                 plane = ff_vp56_b2p[b+ab];
-                s->vp3dsp.idct_put(frame_current->data[plane] + s->block_offset[b],
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_put(s, frame_current->data[plane] + s->block_offset[b],
+                                s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
 
@@ -439,8 +457,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
                 s->hdsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
                                              frame_ref->data[plane] + off,
                                              s->stride[plane], 8);
-                s->vp3dsp.idct_add(frame_current->data[plane] + off,
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_add(s, frame_current->data[plane] + off,
+                              s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
 
@@ -457,8 +475,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
                 plane = ff_vp56_b2p[b+ab];
                 vp56_mc(s, b, plane, frame_ref->data[plane], s->stride[plane],
                         16*col+x_off, 16*row+y_off);
-                s->vp3dsp.idct_add(frame_current->data[plane] + s->block_offset[b],
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_add(s, frame_current->data[plane] + s->block_offset[b],
+                              s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
     }
