@@ -27,6 +27,7 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/avassert.h"
 
 #include "avcodec.h"
 #include "rnd_avg.h"
@@ -295,4 +296,35 @@ av_cold void ff_vp3dsp_init(VP3DSPContext *c, int flags)
         ff_vp3dsp_init_x86(c, flags);
     if (ARCH_MIPS)
         ff_vp3dsp_init_mips(c, flags);
+}
+
+/*
+ * This function initializes the loop filter boundary limits if the frame's
+ * quality index is different from the previous frame's.
+ *
+ * where sizeof(bounding_values_array) is 256 * sizeof(int)
+ *
+ * The filter_limit_values may not be larger than 127.
+ */
+void ff_vp3dsp_set_bounding_values(int * bounding_values_array, int filter_limit)
+{
+    int *bounding_values = bounding_values_array + 127;
+    int x;
+    int value;
+
+    av_assert0(filter_limit < 128U);
+
+    /* set up the bounding values */
+    memset(bounding_values_array, 0, 256 * sizeof(int));
+    for (x = 0; x < filter_limit; x++) {
+        bounding_values[-x] = -x;
+        bounding_values[x] = x;
+    }
+    for (x = value = filter_limit; x < 128 && value; x++, value--) {
+        bounding_values[ x] =  value;
+        bounding_values[-x] = -value;
+    }
+    if (value)
+        bounding_values[128] = value;
+    bounding_values[129] = bounding_values[130] = filter_limit * 0x02020202;
 }

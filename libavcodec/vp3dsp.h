@@ -51,4 +51,6 @@ void ff_vp3dsp_init_ppc(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_x86(VP3DSPContext *c, int flags);
 void ff_vp3dsp_init_mips(VP3DSPContext *c, int flags);
 
+void ff_vp3dsp_set_bounding_values(int * bound_values_array, int filter_limit);
+
 #endif /* AVCODEC_VP3DSP_H */
