@@ -83,6 +83,8 @@
 #include "swscale_ppc_template.c"
 #undef FUNC
 
+#undef vzero
+
 #endif /* !HAVE_BIGENDIAN */
 
 static void yuv2plane1_8_u(const int16_t *src, uint8_t *dest, int dstW,
@@ -180,6 +182,76 @@ static void yuv2plane1_nbps_vsx(const int16_t *src, uint16_t *dest, int dstW,
     yuv2plane1_nbps_u(src, dest, dstW, big_endian, output_bits, i);
 }
 
+static void yuv2planeX_nbps_u(const int16_t *filter, int filterSize,
+                              const int16_t **src, uint16_t *dest, int dstW,
+                              int big_endian, int output_bits, int start)
+{
+    int i;
+    int shift = 11 + 16 - output_bits;
+
+    for (i = start; i < dstW; i++) {
+        int val = 1 << (shift - 1);
+        int j;
+
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * filter[j];
+
+        output_pixel(&dest[i], val);
+    }
+}
+
+static void yuv2planeX_nbps_vsx(const int16_t *filter, int filterSize,
+                                const int16_t **src, uint16_t *dest, int dstW,
+                                int big_endian, int output_bits)
+{
+    const int dst_u = -(uintptr_t)dest & 7;
+    const int shift = 11 + 16 - output_bits;
+    const int add = (1 << (shift - 1));
+    const int clip = (1 << output_bits) - 1;
+    const uint16_t swap = big_endian ? 8 : 0;
+    const vector uint32_t vadd = (vector uint32_t) {add, add, add, add};
+    const vector uint32_t vshift = (vector uint32_t) {shift, shift, shift, shift};
+    const vector uint16_t vswap = (vector uint16_t) {swap, swap, swap, swap, swap, swap, swap, swap};
+    const vector uint16_t vlargest = (vector uint16_t) {clip, clip, clip, clip, clip, clip, clip, clip};
+    const vector int16_t vzero = vec_splat_s16(0);
+    const vector uint8_t vperm = (vector uint8_t) {0, 1, 8, 9, 2, 3, 10, 11, 4, 5, 12, 13, 6, 7, 14, 15};
+    vector int16_t vfilter[MAX_FILTER_SIZE], vin;
+    vector uint16_t v;
+    vector uint32_t vleft, vright, vtmp;
+    int i, j;
+
+    for (i = 0; i < filterSize; i++) {
+        vfilter[i] = (vector int16_t) {filter[i], filter[i], filter[i], filter[i],
+                                       filter[i], filter[i], filter[i], filter[i]};
+    }
+
+    yuv2planeX_nbps_u(filter, filterSize, src, dest, dst_u, big_endian, output_bits, 0);
+
+    for (i = dst_u; i < dstW - 7; i += 8) {
+        vleft = vright = vadd;
+
+        for (j = 0; j < filterSize; j++) {
+            vin = vec_vsx_ld(0, &src[j][i]);
+            vtmp = (vector uint32_t) vec_mule(vin, vfilter[j]);
+            vleft = vec_add(vleft, vtmp);
+            vtmp = (vector uint32_t) vec_mulo(vin, vfilter[j]);
+            vright = vec_add(vright, vtmp);
+        }
+
+        vleft = vec_sra(vleft, vshift);
+        vright = vec_sra(vright, vshift);
+        v = vec_packsu(vleft, vright);
+        v = (vector uint16_t) vec_max((vector int16_t) v, vzero);
+        v = vec_min(v, vlargest);
+        v = vec_rl(v, vswap);
+        v = vec_perm(v, v, vperm);
+        vec_st(v, 0, &dest[i]);
+    }
+
+    yuv2planeX_nbps_u(filter, filterSize, src, dest, dstW, big_endian, output_bits, i);
+}
+
+
 #undef output_pixel
 
 #define output_pixel(pos, val, bias, signedness) \
@@ -234,12 +306,103 @@ static void yuv2plane1_16_vsx(const int32_t *src, uint16_t *dest, int dstW,
     yuv2plane1_16_u(src, dest, dstW, big_endian, output_bits, i);
 }
 
+#if HAVE_POWER8
+
+static void yuv2planeX_16_u(const int16_t *filter, int filterSize,
+                            const int32_t **src, uint16_t *dest, int dstW,
+                            int big_endian, int output_bits, int start)
+{
+    int i;
+    int shift = 15;
+
+    for (i = start; i < dstW; i++) {
+        int val = 1 << (shift - 1);
+        int j;
+
+        /* range of val is [0,0x7FFFFFFF], so 31 bits, but with lanczos/spline
+         * filters (or anything with negative coeffs, the range can be slightly
+         * wider in both directions. To account for this overflow, we subtract
+         * a constant so it always fits in the signed range (assuming a
+         * reasonable filterSize), and re-add that at the end. */
+        val -= 0x40000000;
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * (unsigned)filter[j];
+
+        output_pixel(&dest[i], val, 0x8000, int);
+    }
+}
+
+static void yuv2planeX_16_vsx(const int16_t *filter, int filterSize,
+                              const int32_t **src, uint16_t *dest, int dstW,
+                              int big_endian, int output_bits)
+{
+    const int dst_u = -(uintptr_t)dest & 7;
+    const int shift = 15;
+    const int bias = 0x8000;
+    const int add = (1 << (shift - 1)) - 0x40000000;
+    const uint16_t swap = big_endian ? 8 : 0;
+    const vector uint32_t vadd = (vector uint32_t) {add, add, add, add};
+    const vector uint32_t vshift = (vector uint32_t) {shift, shift, shift, shift};
+    const vector uint16_t vswap = (vector uint16_t) {swap, swap, swap, swap, swap, swap, swap, swap};
+    const vector uint16_t vbias = (vector uint16_t) {bias, bias, bias, bias, bias, bias, bias, bias};
+    vector int32_t vfilter[MAX_FILTER_SIZE];
+    vector uint16_t v;
+    vector uint32_t vleft, vright, vtmp;
+    vector int32_t vin32l, vin32r;
+    int i, j;
+
+    for (i = 0; i < filterSize; i++) {
+        vfilter[i] = (vector int32_t) {filter[i], filter[i], filter[i], filter[i]};
+    }
+
+    yuv2planeX_16_u(filter, filterSize, src, dest, dst_u, big_endian, output_bits, 0);
+
+    for (i = dst_u; i < dstW - 7; i += 8) {
+        vleft = vright = vadd;
+
+        for (j = 0; j < filterSize; j++) {
+            vin32l = vec_vsx_ld(0, &src[j][i]);
+            vin32r = vec_vsx_ld(0, &src[j][i + 4]);
+
+            vtmp = (vector uint32_t) vec_mul(vin32l, vfilter[j]);
+            vleft = vec_add(vleft, vtmp);
+            vtmp = (vector uint32_t) vec_mul(vin32r, vfilter[j]);
+            vright = vec_add(vright, vtmp);
+        }
+
+        vleft = vec_sra(vleft, vshift);
+        vright = vec_sra(vright, vshift);
+        v = (vector uint16_t) vec_packs((vector int32_t) vleft, (vector int32_t) vright);
+        v = vec_add(v, vbias);
+        v = vec_rl(v, vswap);
+        vec_st(v, 0, &dest[i]);
+    }
+
+    yuv2planeX_16_u(filter, filterSize, src, dest, dstW, big_endian, output_bits, i);
+}
+
+#endif /* HAVE_POWER8 */
+
 #define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t) \
+    yuv2NBPS1(bits, BE_LE, is_be, template_size, typeX_t) \
+    yuv2NBPSX(bits, BE_LE, is_be, template_size, typeX_t)
+
+#define yuv2NBPS1(bits, BE_LE, is_be, template_size, typeX_t) \
 static void yuv2plane1_ ## bits ## BE_LE ## _vsx(const int16_t *src, \
                              uint8_t *dest, int dstW, \
                              const uint8_t *dither, int offset) \
 { \
     yuv2plane1_ ## template_size ## _vsx((const typeX_t *) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}
+
+#define yuv2NBPSX(bits, BE_LE, is_be, template_size, typeX_t) \
+static void yuv2planeX_ ## bits ## BE_LE ## _vsx(const int16_t *filter, int filterSize, \
+                              const int16_t **src, uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2planeX_## template_size ## _vsx(filter, \
+                         filterSize, (const typeX_t **) src, \
                          (uint16_t *) dest, dstW, is_be, bits); \
 }
 
@@ -251,8 +414,13 @@ yuv2NBPS(12, BE, 1, nbps, int16_t)
 yuv2NBPS(12, LE, 0, nbps, int16_t)
 yuv2NBPS(14, BE, 1, nbps, int16_t)
 yuv2NBPS(14, LE, 0, nbps, int16_t)
-yuv2NBPS(16, BE, 1, 16, int32_t)
-yuv2NBPS(16, LE, 0, 16, int32_t)
+
+yuv2NBPS1(16, BE, 1, 16, int32_t)
+yuv2NBPS1(16, LE, 0, 16, int32_t)
+#if HAVE_POWER8
+yuv2NBPSX(16, BE, 1, 16, int32_t)
+yuv2NBPSX(16, LE, 0, 16, int32_t)
+#endif
 
 #endif /* !HAVE_BIGENDIAN */
 
@@ -262,8 +430,9 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
 {
 #if HAVE_VSX
     enum AVPixelFormat dstFormat = c->dstFormat;
+    const int cpu_flags = av_get_cpu_flags();
 
-    if (!(av_get_cpu_flags() & AV_CPU_FLAG_VSX))
+    if (!(cpu_flags & AV_CPU_FLAG_VSX))
         return;
 
 #if !HAVE_BIGENDIAN
@@ -286,20 +455,29 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
 #if !HAVE_BIGENDIAN
         case 9:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_9BE_vsx  : yuv2plane1_9LE_vsx;
+            c->yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_vsx  : yuv2planeX_9LE_vsx;
             break;
         case 10:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_10BE_vsx  : yuv2plane1_10LE_vsx;
+            c->yuv2planeX = isBE(dstFormat) ? yuv2planeX_10BE_vsx  : yuv2planeX_10LE_vsx;
             break;
         case 12:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_12BE_vsx  : yuv2plane1_12LE_vsx;
+            c->yuv2planeX = isBE(dstFormat) ? yuv2planeX_12BE_vsx  : yuv2planeX_12LE_vsx;
             break;
         case 14:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_14BE_vsx  : yuv2plane1_14LE_vsx;
+            c->yuv2planeX = isBE(dstFormat) ? yuv2planeX_14BE_vsx  : yuv2planeX_14LE_vsx;
             break;
         case 16:
             c->yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_vsx  : yuv2plane1_16LE_vsx;
+#if HAVE_POWER8
+            if (cpu_flags & AV_CPU_FLAG_POWER8) {
+                c->yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_vsx  : yuv2planeX_16LE_vsx;
+            }
+#endif /* HAVE_POWER8 */
             break;
-#endif
+#endif /* !HAVE_BIGENDIAN */
         }
     }
 #endif /* HAVE_VSX */

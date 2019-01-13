@@ -21,7 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-static void FUNC(yuv2planeX_16)(const int16_t *filter, int filterSize,
+static void FUNC(yuv2planeX_8_16)(const int16_t *filter, int filterSize,
                                   const int16_t **src, uint8_t *dest,
                                   const uint8_t *dither, int offset, int x)
 {
@@ -88,7 +88,7 @@ static void FUNC(yuv2planeX)(const int16_t *filter, int filterSize,
     yuv2planeX_u(filter, filterSize, src, dest, dst_u, dither, offset, 0);
 
     for (i = dst_u; i < dstW - 15; i += 16)
-        FUNC(yuv2planeX_16)(filter, filterSize, src, dest + i, dither,
+        FUNC(yuv2planeX_8_16)(filter, filterSize, src, dest + i, dither,
                               offset, i);
 
     yuv2planeX_u(filter, filterSize, src, dest, dstW, dither, offset, i);
