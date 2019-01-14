@@ -158,8 +158,8 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #endif
         ) {
         av_log(avctx, AV_LOG_VERBOSE,
-               "BufferSizeInKB: %"PRIu16"; InitialDelayInKB: %"PRIu16"; TargetKbps: %"PRIu16"; MaxKbps: %"PRIu16"\n",
-               info->BufferSizeInKB, info->InitialDelayInKB, info->TargetKbps, info->MaxKbps);
+               "BufferSizeInKB: %"PRIu16"; InitialDelayInKB: %"PRIu16"; TargetKbps: %"PRIu16"; MaxKbps: %"PRIu16"; BRCParamMultiplier: %"PRIu16"\n",
+               info->BufferSizeInKB, info->InitialDelayInKB, info->TargetKbps, info->MaxKbps, info->BRCParamMultiplier);
     } else if (info->RateControlMethod == MFX_RATECONTROL_CQP) {
         av_log(avctx, AV_LOG_VERBOSE, "QPI: %"PRIu16"; QPP: %"PRIu16"; QPB: %"PRIu16"\n",
                info->QPI, info->QPP, info->QPB);
@@ -167,8 +167,8 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #if QSV_HAVE_AVBR
     else if (info->RateControlMethod == MFX_RATECONTROL_AVBR) {
         av_log(avctx, AV_LOG_VERBOSE,
-               "TargetKbps: %"PRIu16"; Accuracy: %"PRIu16"; Convergence: %"PRIu16"\n",
-               info->TargetKbps, info->Accuracy, info->Convergence);
+               "TargetKbps: %"PRIu16"; Accuracy: %"PRIu16"; Convergence: %"PRIu16"; BRCParamMultiplier: %"PRIu16"\n",
+               info->TargetKbps, info->Accuracy, info->Convergence, info->BRCParamMultiplier);
     }
 #endif
 #if QSV_HAVE_LA
@@ -178,8 +178,8 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #endif
              ) {
         av_log(avctx, AV_LOG_VERBOSE,
-               "TargetKbps: %"PRIu16"; LookAheadDepth: %"PRIu16"\n",
-               info->TargetKbps, co2->LookAheadDepth);
+               "TargetKbps: %"PRIu16"; LookAheadDepth: %"PRIu16"; BRCParamMultiplier: %"PRIu16"\n",
+               info->TargetKbps, co2->LookAheadDepth, info->BRCParamMultiplier);
     }
 #endif
 #if QSV_HAVE_ICQ
@@ -451,6 +451,8 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
                                    avctx->sw_pix_fmt : avctx->pix_fmt;
     const AVPixFmtDescriptor *desc;
     float quant;
+    int target_bitrate_kbps, max_bitrate_kbps, brc_param_multiplier;
+    int buffer_size_in_kilobytes, initial_delay_in_kilobytes;
     int ret;
     mfxVersion ver;
 
@@ -552,16 +554,25 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     if (ret < 0)
         return ret;
 
+    //libmfx BRC parameters are 16 bits thus maybe overflow, then BRCParamMultiplier is needed
+    buffer_size_in_kilobytes   = avctx->rc_buffer_size / 8000;
+    initial_delay_in_kilobytes = avctx->rc_initial_buffer_occupancy / 1000;
+    target_bitrate_kbps        = avctx->bit_rate / 1000;
+    max_bitrate_kbps           = avctx->rc_max_rate / 1000;
+    brc_param_multiplier       = (FFMAX(FFMAX3(target_bitrate_kbps, max_bitrate_kbps, buffer_size_in_kilobytes),
+                                  initial_delay_in_kilobytes) + 0x10000) / 0x10000;
+
     switch (q->param.mfx.RateControlMethod) {
     case MFX_RATECONTROL_CBR:
     case MFX_RATECONTROL_VBR:
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
-        q->param.mfx.BufferSizeInKB   = avctx->rc_buffer_size / 8000;
-        q->param.mfx.InitialDelayInKB = avctx->rc_initial_buffer_occupancy / 1000;
-        q->param.mfx.TargetKbps       = avctx->bit_rate / 1000;
-        q->param.mfx.MaxKbps          = avctx->rc_max_rate / 1000;
+        q->param.mfx.BufferSizeInKB   = buffer_size_in_kilobytes / brc_param_multiplier;
+        q->param.mfx.InitialDelayInKB = initial_delay_in_kilobytes / brc_param_multiplier;
+        q->param.mfx.TargetKbps       = target_bitrate_kbps / brc_param_multiplier;
+        q->param.mfx.MaxKbps          = max_bitrate_kbps / brc_param_multiplier;
+        q->param.mfx.BRCParamMultiplier = brc_param_multiplier;
         break;
     case MFX_RATECONTROL_CQP:
         quant = avctx->global_quality / FF_QP2LAMBDA;
@@ -573,15 +584,17 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         break;
 #if QSV_HAVE_AVBR
     case MFX_RATECONTROL_AVBR:
-        q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;
+        q->param.mfx.TargetKbps  = target_bitrate_kbps / brc_param_multiplier;
         q->param.mfx.Convergence = q->avbr_convergence;
         q->param.mfx.Accuracy    = q->avbr_accuracy;
+        q->param.mfx.BRCParamMultiplier = brc_param_multiplier;
         break;
 #endif
 #if QSV_HAVE_LA
     case MFX_RATECONTROL_LA:
-        q->param.mfx.TargetKbps  = avctx->bit_rate / 1000;
+        q->param.mfx.TargetKbps  = target_bitrate_kbps / brc_param_multiplier;
         q->extco2.LookAheadDepth = q->look_ahead_depth;
+        q->param.mfx.BRCParamMultiplier = brc_param_multiplier;
         break;
 #if QSV_HAVE_ICQ
     case MFX_RATECONTROL_LA_ICQ:
@@ -726,7 +739,7 @@ static int qsv_retrieve_enc_jpeg_params(AVCodecContext *avctx, QSVEncContext *q)
         return ff_qsv_print_error(avctx, ret,
                                   "Error calling GetVideoParam");
 
-    q->packet_size = q->param.mfx.BufferSizeInKB * 1000;
+    q->packet_size = q->param.mfx.BufferSizeInKB * q->param.mfx.BRCParamMultiplier * 1000;
 
     // for qsv mjpeg the return value maybe 0 so alloc the buffer
     if (q->packet_size == 0)
@@ -779,7 +792,7 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         return ff_qsv_print_error(avctx, ret,
                                   "Error calling GetVideoParam");
 
-    q->packet_size = q->param.mfx.BufferSizeInKB * 1000;
+    q->packet_size = q->param.mfx.BufferSizeInKB * q->param.mfx.BRCParamMultiplier * 1000;
 
     if (!extradata.SPSBufSize || (need_pps && !extradata.PPSBufSize)) {
         av_log(avctx, AV_LOG_ERROR, "No extradata returned from libmfx.\n");
