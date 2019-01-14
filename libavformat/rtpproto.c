@@ -40,7 +40,7 @@
 #include "os_support.h"
 #include <fcntl.h>
 #if HAVE_POLL_H
-#include <sys/poll.h>
+#include <poll.h>
 #endif
 
 typedef struct RTPContext {
