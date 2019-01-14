@@ -2058,6 +2058,50 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             }
         }
         break;
+    case 0xfd: /* ARIB data coding type descriptor */
+        // STD-B24, fascicle 3, chapter 4 defines private_stream_1
+        // for captions
+        if (stream_type == STREAM_TYPE_PRIVATE_DATA) {
+            // This structure is defined in STD-B10, part 1, listing 5.4 and
+            // part 2, 6.2.20).
+            // Listing of data_component_ids is in STD-B10, part 2, Annex J.
+            // Component tag limits are documented in TR-B14, fascicle 2,
+            // Vol. 3, Section 2, 4.2.8.1
+            int actual_component_tag = st->stream_identifier - 1;
+            int picked_profile = FF_PROFILE_UNKNOWN;
+            int data_component_id = get16(pp, desc_end);
+            if (data_component_id < 0)
+                return AVERROR_INVALIDDATA;
+
+            switch (data_component_id) {
+            case 0x0008:
+                // [0x30..0x37] are component tags utilized for
+                // non-mobile captioning service ("profile A").
+                if (actual_component_tag >= 0x30 &&
+                    actual_component_tag <= 0x37) {
+                    picked_profile = FF_PROFILE_ARIB_PROFILE_A;
+                }
+                break;
+            case 0x0012:
+                // component tag 0x87 signifies a mobile/partial reception
+                // (1seg) captioning service ("profile C").
+                if (actual_component_tag == 0x87) {
+                    picked_profile = FF_PROFILE_ARIB_PROFILE_C;
+                }
+                break;
+            default:
+                break;
+            }
+
+            if (picked_profile == FF_PROFILE_UNKNOWN)
+                break;
+
+            st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+            st->codecpar->codec_id   = AV_CODEC_ID_ARIB_CAPTION;
+            st->codecpar->profile    = picked_profile;
+            st->request_probe        = 0;
+        }
+        break;
     default:
         break;
     }
