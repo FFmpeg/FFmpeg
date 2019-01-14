@@ -170,4 +170,10 @@ const AVProfile ff_mjpeg_profiles[] = {
     { FF_PROFILE_UNKNOWN }
 };
 
+const AVProfile ff_arib_caption_profiles[] = {
+    { FF_PROFILE_ARIB_PROFILE_A, "Profile A" },
+    { FF_PROFILE_ARIB_PROFILE_C, "Profile C" },
+    { FF_PROFILE_UNKNOWN }
+};
+
 #endif /* !CONFIG_SMALL */

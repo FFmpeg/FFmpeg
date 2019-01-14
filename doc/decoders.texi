@@ -194,6 +194,31 @@ without this library.
 @chapter Subtitles Decoders
 @c man begin SUBTILES DECODERS
 
+@section libaribb24
+
+ARIB STD-B24 caption decoder.
+
+Implements profiles A and C of the ARIB STD-B24 standard.
+
+@subsection libaribb24 Decoder Options
+
+@table @option
+
+@item -aribb24-base-path @var{path}
+Sets the base path for the libaribb24 library. This is utilized for reading of
+configuration files (for custom unicode conversions), and for dumping of
+non-text symbols as images under that location.
+
+Unset by default.
+
+@item -aribb24-skip-ruby-text @var{boolean}
+Tells the decoder wrapper to skip text blocks that contain half-height ruby
+text.
+
+Enabled by default.
+
+@end table
+
 @section dvbsub
 
 @subsection Options

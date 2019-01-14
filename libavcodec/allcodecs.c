@@ -677,6 +677,7 @@ extern AVCodec ff_qdmc_at_decoder;
 extern AVCodec ff_qdm2_at_decoder;
 extern AVCodec ff_libaom_av1_decoder;
 extern AVCodec ff_libaom_av1_encoder;
+extern AVCodec ff_libaribb24_decoder;
 extern AVCodec ff_libcelt_decoder;
 extern AVCodec ff_libcodec2_encoder;
 extern AVCodec ff_libcodec2_decoder;

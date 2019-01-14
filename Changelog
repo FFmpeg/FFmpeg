@@ -17,6 +17,7 @@ version <next>:
 - maskfun filter
 - hcom demuxer and decoder
 - ARBC decoder
+- libaribb24 based ARIB STD-B24 caption support (profiles A and C)
 
 
 version 4.1:
