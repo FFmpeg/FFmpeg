@@ -745,7 +745,7 @@ static void construct_vector (
     for (j = 0; j < veclen; j++) {
         a32 = SPL_MUL_16_16(*gainPtr++, cbvec0[j]);
         a32 += SPL_MUL_16_16(*gainPtr++, cbvec1[j]);
-        a32 += SPL_MUL_16_16(*gainPtr, cbvec2[j]);
+        a32 += (unsigned)SPL_MUL_16_16(*gainPtr, cbvec2[j]);
         gainPtr -= 2;
         decvector[j] = (a32 + 8192) >> 14;
     }
