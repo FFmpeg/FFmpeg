@@ -223,9 +223,9 @@ static void free_segment_dynarray(struct segment **segments, int n_segments)
 
 static void free_segment_list(struct playlist *pls)
 {
-        free_segment_dynarray(pls->segments, pls->n_segments);
-        av_freep(&pls->segments);
-        pls->n_segments = 0;
+    free_segment_dynarray(pls->segments, pls->n_segments);
+    av_freep(&pls->segments);
+    pls->n_segments = 0;
 }
 
 static void free_init_section_list(struct playlist *pls)
