@@ -92,6 +92,7 @@ typedef struct AVAppIOControl {
 
     int     is_handled;     /* out, default = false */
     int     is_url_changed; /* out, default = false */
+    int     is_audio;
 } AVAppIOControl;
 
 typedef struct AVAppTcpIOControl {
@@ -126,6 +127,7 @@ typedef struct AVAppHttpEvent
     int64_t  filesize;
     int64_t  start_time;
     int64_t  end_time;
+    int      is_audio;
 } AVAppHttpEvent;
 
 typedef struct AVAppIOTraffic
