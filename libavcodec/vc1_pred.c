@@ -289,6 +289,8 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         case 3:
             off = -1;
         }
+        if (v->field_mode && s->mb_width == 1)
+            b_valid = b_valid && c_valid;
     }
 
     if (v->field_mode) {
