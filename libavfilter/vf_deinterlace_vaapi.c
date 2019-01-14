@@ -113,6 +113,7 @@ static int deint_vaapi_build_filter_params(AVFilterContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Deinterlacing mode %d (%s) is "
                    "not supported.\n", ctx->mode,
                    deint_vaapi_mode_name(ctx->mode));
+            return AVERROR(EINVAL);
         }
     }
 
