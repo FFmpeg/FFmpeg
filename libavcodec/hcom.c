@@ -90,11 +90,10 @@ static int hcom_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     while (get_bits_left(&gb) > 0) {
-        if (get_bits1(&gb)) {
+        if (get_bits1(&gb))
             s->dict_entry = s->dict[s->dict_entry].r;
-        } else {
+        else
             s->dict_entry = s->dict[s->dict_entry].l;
-        }
 
         if (s->dict[s->dict_entry].l < 0) {
             int16_t datum;
