@@ -814,7 +814,7 @@ static void set_processing_window(enum diff_mode diff_mode,
     int width  = cur_src->width;
     int height = cur_src->height;
 
-    if (prv_src && diff_mode == DIFF_MODE_RECTANGLE) {
+    if (prv_src->data[0] && diff_mode == DIFF_MODE_RECTANGLE) {
         int y;
         int x_end = cur_src->width  - 1,
             y_end = cur_src->height - 1;
@@ -911,11 +911,10 @@ static int apply_palette(AVFilterLink *inlink, AVFrame *in, AVFrame **outf)
 
     set_processing_window(s->diff_mode, s->last_in, in,
                           s->last_out, out, &x, &y, &w, &h);
-    av_frame_free(&s->last_in);
-    av_frame_free(&s->last_out);
-    s->last_in  = av_frame_clone(in);
-    s->last_out = av_frame_clone(out);
-    if (!s->last_in || !s->last_out ||
+    av_frame_unref(s->last_in);
+    av_frame_unref(s->last_out);
+    if (av_frame_ref(s->last_in, in) < 0 ||
+        av_frame_ref(s->last_out, out) < 0 ||
         av_frame_make_writable(s->last_in) < 0) {
         av_frame_free(&in);
         av_frame_free(&out);
@@ -1085,6 +1084,14 @@ static int dither_value(int p)
 static av_cold int init(AVFilterContext *ctx)
 {
     PaletteUseContext *s = ctx->priv;
+
+    s->last_in  = av_frame_alloc();
+    s->last_out = av_frame_alloc();
+    if (!s->last_in || !s->last_out) {
+        av_frame_free(&s->last_in);
+        av_frame_free(&s->last_out);
+        return AVERROR(ENOMEM);
+    }
 
     s->set_frame = set_frame_lut[s->color_search_method][s->dither];
 
