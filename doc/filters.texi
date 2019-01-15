@@ -12805,6 +12805,21 @@ Higher values should result in a smoother motion vector field but less
 optimal individual vectors. Default value is 1.
 @end table
 
+@section median
+
+Pick median pixel from certain rectangle defined by radius.
+
+This filter accepts the following options:
+
+@table @option
+@item radius
+Set horizontal and vertical radius size. Default value is @code{1}.
+Allowed range is integer from 1 to 127.
+
+@item planes
+Set which planes to process. Default is @code{15}, which is all available planes.
+@end table
+
 @section mergeplanes
 
 Merge color channel components from several video streams.

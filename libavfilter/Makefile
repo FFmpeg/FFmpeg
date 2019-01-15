@@ -297,6 +297,7 @@ OBJS-$(CONFIG_MASKEDMERGE_FILTER)            += vf_maskedmerge.o framesync.o
 OBJS-$(CONFIG_MASKEDMIN_FILTER)              += vf_maskedminmax.o framesync.o
 OBJS-$(CONFIG_MASKFUN_FILTER)                += vf_maskfun.o
 OBJS-$(CONFIG_MCDEINT_FILTER)                += vf_mcdeint.o
+OBJS-$(CONFIG_MEDIAN_FILTER)                 += vf_median.o
 OBJS-$(CONFIG_MERGEPLANES_FILTER)            += vf_mergeplanes.o framesync.o
 OBJS-$(CONFIG_MESTIMATE_FILTER)              += vf_mestimate.o motion_estimation.o
 OBJS-$(CONFIG_METADATA_FILTER)               += f_metadata.o

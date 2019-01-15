@@ -19,6 +19,7 @@ version <next>:
 - bilateral filter
 - maskedmin and maskedmax filters
 - VDPAU VP9 hwaccel
+- median filter
 
 
 version 4.2:
