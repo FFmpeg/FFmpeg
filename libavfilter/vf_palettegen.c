@@ -245,7 +245,7 @@ static void write_palette(AVFilterContext *ctx, AVFrame *out)
                     av_log(ctx, AV_LOG_WARNING, "Dupped color: %08"PRIX32"\n", pal[x]);
                 last_color = pal[x];
             } else {
-                pal[x] = 0xff000000; // pad with black
+                pal[x] = last_color; // pad with last color
             }
         }
         pal += pal_linesize;
