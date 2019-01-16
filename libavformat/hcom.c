@@ -27,6 +27,8 @@
 
 static int hcom_probe(AVProbeData *p)
 {
+    if (p->buf_size < 132)
+        return 0;
     if (!memcmp(p->buf+65, "FSSD", 4) &&
         !memcmp(p->buf+128, "HCOM", 4))
         return AVPROBE_SCORE_MAX;
