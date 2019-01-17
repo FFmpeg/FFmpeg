@@ -735,6 +735,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int ret = 0;
     OMX_BUFFERHEADERTYPE* buffer;
     OMX_ERRORTYPE err;
+    int had_partial = 0;
 
     if (frame) {
         uint8_t *dst[4];
@@ -846,7 +847,7 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         // packet, or get EOS.
         buffer = get_buffer(&s->output_mutex, &s->output_cond,
                             &s->num_done_out_buffers, s->done_out_buffers,
-                            !frame);
+                            !frame || had_partial);
         if (!buffer)
             break;
 
@@ -881,6 +882,9 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
                     s->output_buf = NULL;
                     s->output_buf_size = 0;
                 }
+#if CONFIG_OMX_RPI
+                had_partial = 1;
+#endif
             } else {
                 // End of frame, and the caller provided a preallocated frame
                 if ((ret = ff_alloc_packet2(avctx, pkt, s->output_buf_size + buffer->nFilledLen, 0)) < 0) {
