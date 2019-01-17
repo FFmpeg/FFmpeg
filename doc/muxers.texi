@@ -216,6 +216,8 @@ It creates a MPD manifest file and segment files for each stream.
 The segment filename might contain pre-defined identifiers used with SegmentTemplate
 as defined in section 5.3.9.4.4 of the standard. Available identifiers are "$RepresentationID$",
 "$Number$", "$Bandwidth$" and "$Time$".
+In addition to the standard identifiers, an ffmpeg-specific "$ext$" identifier is also supported.
+When specified ffmpeg will replace $ext$ in the file name with muxing format's extensions such as mp4, webm etc.,
 
 @example
 ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
