@@ -99,6 +99,8 @@ AVFILTER_DEFINE_CLASS(extractplanes);
         AV_PIX_FMT_YUV422P12##suf,                             \
         AV_PIX_FMT_YUV444P12##suf,                             \
         AV_PIX_FMT_YUV440P12##suf,                             \
+        AV_PIX_FMT_YUVA422P12##suf,                            \
+        AV_PIX_FMT_YUVA444P12##suf,                            \
         AV_PIX_FMT_GBRP10##suf, AV_PIX_FMT_GBRAP10##suf,       \
         AV_PIX_FMT_GBRP12##suf, AV_PIX_FMT_GBRAP12##suf,       \
         AV_PIX_FMT_YUV420P9##suf,                              \
