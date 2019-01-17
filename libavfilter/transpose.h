@@ -29,6 +29,9 @@ enum TransposeDir {
     TRANSPOSE_CLOCK,
     TRANSPOSE_CCLOCK,
     TRANSPOSE_CLOCK_FLIP,
+    TRANSPOSE_REVERSAL,    // rotate by half-turn
+    TRANSPOSE_HFLIP,
+    TRANSPOSE_VFLIP,
 };
 
 #endif
