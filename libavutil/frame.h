@@ -222,7 +222,7 @@ typedef struct AVFrameSideData {
  * returns EINVAL if AVRational.den is zero.
  * the value (num/den) range is [-1.0, 1.0], clamp to +-1.0 if out of range.
  * 0 means no picture quality change,
- * negtive offset asks for better quality (and the best with value -1.0),
+ * negative offset asks for better quality (and the best with value -1.0),
  * positive offset asks for worse quality (and the worst with value 1.0).
  * How to explain/implement the different quilaity requirement is encoder dependent.
  */
