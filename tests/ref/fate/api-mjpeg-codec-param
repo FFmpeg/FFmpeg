@@ -138,6 +138,7 @@ stream=0, decode=0
     max_pixels=2147483647
     hwaccel_flags=0x00000001
     extra_hw_frames=-1
+    discard_damaged_percentage=95
 stream=0, decode=1
     b=0
     ab=0
@@ -278,3 +279,4 @@ stream=0, decode=1
     max_pixels=2147483647
     hwaccel_flags=0x00000001
     extra_hw_frames=-1
+    discard_damaged_percentage=95

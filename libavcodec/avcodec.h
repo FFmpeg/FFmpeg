@@ -3345,6 +3345,14 @@ typedef struct AVCodecContext {
      * used as reference pictures).
      */
     int extra_hw_frames;
+
+    /**
+     * The percentage of damaged samples to discard a frame.
+     *
+     * - decoding: set by user
+     * - encoding: unused
+     */
+    int discard_damaged_percentage;
 } AVCodecContext;
 
 #if FF_API_CODEC_GET_SET

@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-01-27 - XXXXXXXXXX - lavc 58.46.100 - avcodec.h
+  Add discard_damaged_percentage
+
 2019-01-08 - xxxxxxxxxx - lavu 56.26.100 - frame.h
   Add AV_FRAME_DATA_REGIONS_OF_INTEREST
 
