@@ -86,3 +86,4 @@ MMI-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8dsp_mmi.o
 MMI-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_mmi.o
 MMI-OBJS-$(CONFIG_VC1_DECODER)            += mips/vc1dsp_mmi.o
 MMI-OBJS-$(CONFIG_WMV2DSP)                += mips/wmv2dsp_mmi.o
+MMI-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_mmi.o
