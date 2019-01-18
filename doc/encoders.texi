@@ -1687,6 +1687,44 @@ Enable smooth interintra mode. Default is true.
 
 @end table
 
+@section libsvt-av1
+
+SVT-AV1 encoder wrapper.
+
+Requires the presence of the SVT-AV1 headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libsvtav1}.
+
+@subsection Options
+
+@table @option
+@item qmax
+Sets the maximum quantizer to use when using bitrate mode.
+
+@item qmin
+Sets the minimum quantizer to use when using bitrate mode.
+
+@item qp
+Uses quantizer mode to encode at the given quantizer (0-63).
+
+@item hielevel
+Enable scene change detection.
+
+@item la_depth
+Set number of frames to look ahead (0-120).
+
+@item preset
+Set encoding preset.
+
+@item tier
+
+@item tile-rows
+Selects how many rows of tiles to encode with (0-6).
+
+@item tile-columns
+Selects how many columns of tiles to encode with (0-4).
+
+@end table
+
 @section libkvazaar
 
 Kvazaar H.265/HEVC encoder.

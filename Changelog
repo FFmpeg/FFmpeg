@@ -9,6 +9,7 @@ version <next>:
 - VDPAU accelerated HEVC 10/12bit decoding
 - ADPCM IMA Ubisoft APM encoder
 - Rayman 2 APM muxer
+- AV1 encoding support SVT-AV1
 
 
 version 4.3:
