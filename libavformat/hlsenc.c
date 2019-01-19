@@ -2740,7 +2740,11 @@ static int hls_init(AVFormatContext *s)
                 av_strlcpy(vs->fmp4_init_filename, hls->fmp4_init_filename,
                            fmp4_init_filename_len);
                 if (hls->nb_varstreams > 1) {
-                    ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
+                    if (av_stristr(vs->fmp4_init_filename, "%v")) {
+                        format_name(vs->fmp4_init_filename, fmp4_init_filename_len, i);
+                    } else {
+                        ret = append_postfix(vs->fmp4_init_filename, fmp4_init_filename_len, i);
+                    }
                     if (ret < 0)
                         goto fail;
                 }
