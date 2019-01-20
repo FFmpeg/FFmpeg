@@ -16,6 +16,7 @@ version <next>:
 - anlmdn filter
 - maskfun filter
 - hcom demuxer and decoder
+- ARBC decoder
 
 
 version 4.1:
