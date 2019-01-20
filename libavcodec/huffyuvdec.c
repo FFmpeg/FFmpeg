@@ -1268,6 +1268,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         if (nb_slices > 1) {
             slice_offset = AV_RL32(avpkt->data + slices_info_offset + slice * 8);
             slice_size = AV_RL32(avpkt->data + slices_info_offset + slice * 8 + 4);
+
+            if (slice_offset < 0 || slice_size <= 0 || (slice_offset&3) ||
+                slice_offset + (int64_t)slice_size > buf_size)
+                return AVERROR_INVALIDDATA;
+
             y_offset = height - (slice + 1) * slice_height;
             s->bdsp.bswap_buf((uint32_t *)s->bitstream_buffer,
                               (const uint32_t *)(buf + slice_offset), slice_size / 4);
