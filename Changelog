@@ -1,6 +1,72 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.1.1:
+- avcodec/prosumer: Error out if decompress() stops reading data
+- avcodec/tiff: Check for 12bit gray fax
+- avutil/imgutils: Optimize memset_bytes() by using av_memcpy_backptr()
+- avutil/mem: Optimize fill32() by unrolling and using 64bit
+- configure: bump year
+- avcodec/tests/rangecoder: initialize array to avoid valgrind warning
+- avcodec/gdv: Optimize and factorize scaling loops
+- avcodec/h264_slice: Fix integer overflow in implicit_weight_table()
+- avcodec/exr: set layer_match in all branches
+- avcodec/exr: Check for duplicate channel index
+- avfilter/vf_tonemap_opencl: Make static tables const
+- doc/indevs: fix upto typo
+- avcodec/4xm: Fix returned error codes
+- avformat/libopenmpt: Fix successfull typo
+- avcodec/v4l2_m2m: fix cant typo
+- avcodec/mjpegbdec: Fix some misplaced {} and spaces
+- avformat/wvdec: detect and error out on WavPack DSD files
+- avcodec/mips: Fix failed case: hevc-conformance-AMP_A_Samsung_* when enable msa
+- avcodec/fic: Fail on invalid slice size/off
+- avcodec/ilbcdec: fix integer overflow in energy
+- postproc/postprocess_template: remove FF_REG_sp from clobber list
+- postproc/postprocess_template: Avoid using %4 for the threshold compare
+- libavformat/mov: Fix NULL-dereference read for some encrypted content.
+- avcodec/rpza: Check that there is enough data for all the blocks
+- avcodec/rpza: Move frame allocation to a later point
+- avcodec/avcodec: Document the data type for AV_PKT_DATA_MPEGTS_STREAM_ID
+- avformat/mpegts: Fix side data type for stream id
+- tests/fate/filter-video: increase fuzz for fate-filter-refcmp-psnr-rgb
+- avcodec/mjpegdec: Fix indention of ljpeg_decode_yuv_scan()
+- lavf/id3v2: fail read_apic on EOF reading mimetype
+- avcodec/rasc: Check that the number of moves is less than or equal the number of pixels
+- avformat/nutenc: Document trailer index assert better
+- lavf/mov: ensure only one tkhd per trak
+- avcodec/clearvideo: Check remaining input bits in P macro block loop
+- avcodec/rasc: Check input space before reading chunk
+- avcodec/dxv: Check that there is enough data to decompress
+- avcodec/ppc/hevcdsp: Fix build failures with powerpc-linux-gnu-gcc-4.8 with --disable-optimizations
+- avcodec/msvideo1: Check for too small dimensions
+- avcodec/wmv2dec: Skip I frame if its smaller than 1/8 of the minimal size
+- avcodec/msmpeg4dec: Skip frame if its smaller than 1/8 of the minimal size
+- avcodec/truemotion2rt: Fix rounding in input size check
+- avcodec/diracdec: Check component quant
+- avcodec/tiff: Limit filtering to decoded data
+- avcodec/truemotion2: fix integer overflows in tm2_low_chroma()
+- avcodec/pngdec: Check compression method
+- fftools/ffmpeg: Repair reinit_filter feature
+- avcodec/shorten: Fix integer overflow with offset
+- avcodec/imm4: Use ff_set_dimensions()
+- h264_redundant_pps: Fix logging context
+- avfilter/af_asetnsamples: fix last frame props
+- cbs_av1: Fix reading of overlong uvlc codes
+- avcodec/cbs_av1: fix parsing delta_frame_id_minus1
+- avfilter/vf_overlay: fix filtering with negative y
+- avformat/movenc: get number of written bytes from bitstream writer
+- avformat/movenc: fix size calculation in mov_write_eac3_tag()
+- avfilter/vf_overlay: fix crash with negative y
+- avcodec/mpeg_er: fix clearing chroma blocks for 422 and 444
+- avfilter/af_afade: fix duration maximum
+- avfilter/vf_fade: fix start/duration max value
+- avcodec/cbs_av1: fix parsing signed integer values
+- avcodec/cbs_av1: fix storage size for segmentation_params feature_value fields
+- configure: Add missing xlib dependency for VAAPI X11 code
+- avcodec/hevcdec: fix non-ref frame judgement
+
+
 version 4.1:
 - deblock filter
 - tmix filter
