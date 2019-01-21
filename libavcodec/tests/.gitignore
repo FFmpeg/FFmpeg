@@ -2,6 +2,7 @@
 /avpacket
 /cabac
 /celp_math
+/codec_desc
 /dct
 /fft
 /fft-fixed
