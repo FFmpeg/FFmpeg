@@ -251,6 +251,15 @@
     );
 
 /**
+ * brief: Transpose 2X2 word packaged data.
+ * fr_i0, fr_i1: src
+ * fr_o0, fr_o1: dst
+ */
+#define TRANSPOSE_2W(fr_i0, fr_i1, fr_o0, fr_o1)                          \
+        "punpcklwd  "#fr_o0",   "#fr_i0",   "#fr_i1"                \n\t" \
+        "punpckhwd  "#fr_o1",   "#fr_i0",   "#fr_i1"                \n\t"
+
+/**
  * brief: Transpose 4X4 half word packaged data.
  * fr_i0, fr_i1, fr_i2, fr_i3: src & dst
  * fr_t0, fr_t1, fr_t2, fr_t3: temporary register

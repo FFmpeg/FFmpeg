@@ -480,16 +480,33 @@ void ff_hevc_addblk_32x32_msa(uint8_t *dst, int16_t *pi16Coeffs,
 void ff_hevc_idct_luma_4x4_msa(int16_t *pi16Coeffs);
 
 /* Loongson optimization */
-#define L_BI_MC(PEL, DIR, WIDTH, TYPE)                                         \
-void ff_hevc_put_hevc_##PEL##_bi_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,       \
-                                                        ptrdiff_t dst_stride,  \
-                                                        uint8_t *src,          \
-                                                        ptrdiff_t src_stride,  \
-                                                        int16_t *src_16bit,    \
-                                                        int height,            \
-                                                        intptr_t mx,           \
-                                                        intptr_t my,           \
-                                                        int width)
+#define L_MC(PEL, DIR, WIDTH, TYPE)                                          \
+void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_##TYPE(int16_t *dst,          \
+                                                      uint8_t *src,          \
+                                                      ptrdiff_t src_stride,  \
+                                                      int height,            \
+                                                      intptr_t mx,           \
+                                                      intptr_t my,           \
+                                                      int width)
+L_MC(qpel, hv, 4, mmi);
+L_MC(qpel, hv, 8, mmi);
+L_MC(qpel, hv, 12, mmi);
+L_MC(qpel, hv, 16, mmi);
+L_MC(qpel, hv, 24, mmi);
+L_MC(qpel, hv, 32, mmi);
+L_MC(qpel, hv, 48, mmi);
+L_MC(qpel, hv, 64, mmi);
+
+#define L_BI_MC(PEL, DIR, WIDTH, TYPE)                                          \
+void ff_hevc_put_hevc_##PEL##_bi_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,          \
+                                                         ptrdiff_t dst_stride,  \
+                                                         uint8_t *src,          \
+                                                         ptrdiff_t src_stride,  \
+                                                         int16_t *src_16bit,    \
+                                                         int height,            \
+                                                         intptr_t mx,           \
+                                                         intptr_t my,           \
+                                                         int width)
 
 L_BI_MC(pel, pixels, 8, mmi);
 L_BI_MC(pel, pixels, 16, mmi);
