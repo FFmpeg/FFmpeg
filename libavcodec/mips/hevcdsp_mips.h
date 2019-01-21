@@ -502,7 +502,7 @@ void ff_hevc_put_hevc_##PEL##_bi_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,          
                                                          ptrdiff_t dst_stride,  \
                                                          uint8_t *src,          \
                                                          ptrdiff_t src_stride,  \
-                                                         int16_t *src_16bit,    \
+                                                         int16_t *src2,         \
                                                          int height,            \
                                                          intptr_t mx,           \
                                                          intptr_t my,           \
@@ -514,5 +514,15 @@ L_BI_MC(pel, pixels, 24, mmi);
 L_BI_MC(pel, pixels, 32, mmi);
 L_BI_MC(pel, pixels, 48, mmi);
 L_BI_MC(pel, pixels, 64, mmi);
+
+L_BI_MC(qpel, hv, 4, mmi);
+L_BI_MC(qpel, hv, 8, mmi);
+L_BI_MC(qpel, hv, 12, mmi);
+L_BI_MC(qpel, hv, 16, mmi);
+L_BI_MC(qpel, hv, 24, mmi);
+L_BI_MC(qpel, hv, 32, mmi);
+L_BI_MC(qpel, hv, 48, mmi);
+L_BI_MC(qpel, hv, 64, mmi);
+
 #undef L_BI_MC
 #endif  // #ifndef AVCODEC_MIPS_HEVCDSP_MIPS_H

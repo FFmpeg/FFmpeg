@@ -34,6 +34,15 @@ static av_cold void hevc_dsp_init_mmi(HEVCDSPContext *c,
         c->put_hevc_qpel[8][1][1] = ff_hevc_put_hevc_qpel_hv48_8_mmi;
         c->put_hevc_qpel[9][1][1] = ff_hevc_put_hevc_qpel_hv64_8_mmi;
 
+        c->put_hevc_qpel_bi[1][1][1] = ff_hevc_put_hevc_qpel_bi_hv4_8_mmi;
+        c->put_hevc_qpel_bi[3][1][1] = ff_hevc_put_hevc_qpel_bi_hv8_8_mmi;
+        c->put_hevc_qpel_bi[4][1][1] = ff_hevc_put_hevc_qpel_bi_hv12_8_mmi;
+        c->put_hevc_qpel_bi[5][1][1] = ff_hevc_put_hevc_qpel_bi_hv16_8_mmi;
+        c->put_hevc_qpel_bi[6][1][1] = ff_hevc_put_hevc_qpel_bi_hv24_8_mmi;
+        c->put_hevc_qpel_bi[7][1][1] = ff_hevc_put_hevc_qpel_bi_hv32_8_mmi;
+        c->put_hevc_qpel_bi[8][1][1] = ff_hevc_put_hevc_qpel_bi_hv48_8_mmi;
+        c->put_hevc_qpel_bi[9][1][1] = ff_hevc_put_hevc_qpel_bi_hv64_8_mmi;
+
         c->put_hevc_qpel_bi[3][0][0] = ff_hevc_put_hevc_pel_bi_pixels8_8_mmi;
         c->put_hevc_qpel_bi[5][0][0] = ff_hevc_put_hevc_pel_bi_pixels16_8_mmi;
         c->put_hevc_qpel_bi[6][0][0] = ff_hevc_put_hevc_pel_bi_pixels24_8_mmi;
