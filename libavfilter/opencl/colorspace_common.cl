@@ -124,10 +124,14 @@ float3 yuv2rgb(float y, float u, float v) {
 
 float3 yuv2lrgb(float3 yuv) {
     float3 rgb = yuv2rgb(yuv.x, yuv.y, yuv.z);
+#ifdef linearize
     float r = linearize(rgb.x);
     float g = linearize(rgb.y);
     float b = linearize(rgb.z);
     return (float3)(r, g, b);
+#else
+    return rgb;
+#endif
 }
 
 float3 rgb2yuv(float r, float g, float b) {
@@ -151,19 +155,25 @@ float rgb2y(float r, float g, float b) {
 }
 
 float3 lrgb2yuv(float3 c) {
+#ifdef delinearize
     float r = delinearize(c.x);
     float g = delinearize(c.y);
     float b = delinearize(c.z);
-
     return rgb2yuv(r, g, b);
+#else
+    return rgb2yuv(c.x, c.y, c.z);
+#endif
 }
 
 float lrgb2y(float3 c) {
+#ifdef delinearize
     float r = delinearize(c.x);
     float g = delinearize(c.y);
     float b = delinearize(c.z);
-
     return rgb2y(r, g, b);
+#else
+    return rgb2y(c.x, c.y, c.z);
+#endif
 }
 
 float3 lrgb2lrgb(float3 c) {
