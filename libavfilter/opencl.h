@@ -25,6 +25,7 @@
 // it was introduced in OpenCL 2.0.
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 
+#include "libavutil/bprint.h"
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_opencl.h"
@@ -124,5 +125,12 @@ int ff_opencl_filter_work_size_from_image(AVFilterContext *avctx,
                                           size_t *work_size,
                                           AVFrame *frame, int plane,
                                           int block_alignment);
+/**
+ * Print a 3x3 matrix into a buffer as __constant array, which could
+ * be included in an OpenCL program.
+*/
+
+void ff_opencl_print_const_matrix_3x3(AVBPrint *buf, const char *name_str,
+                                      double mat[3][3]);
 
 #endif /* AVFILTER_OPENCL_H */
