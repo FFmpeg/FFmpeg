@@ -353,6 +353,8 @@ static int decode_dlta(AVCodecContext *avctx,
     compression = bytestream2_get_le32(gb);
 
     if (compression == 1) {
+        if (w * h * s->bpp * 3 < uncompressed_size)
+            return AVERROR_INVALIDDATA;
         ret = decode_zlib(avctx, avpkt, size, uncompressed_size);
         if (ret < 0)
             return ret;
