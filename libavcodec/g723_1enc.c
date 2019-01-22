@@ -1191,6 +1191,11 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+static const AVCodecDefault defaults[] = {
+    { "b", "6300" },
+    { NULL },
+};
+
 AVCodec ff_g723_1_encoder = {
     .name           = "g723_1",
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
@@ -1199,6 +1204,7 @@ AVCodec ff_g723_1_encoder = {
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
     .encode2        = g723_1_encode_frame,
+    .defaults       = defaults,
     .sample_fmts    = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
