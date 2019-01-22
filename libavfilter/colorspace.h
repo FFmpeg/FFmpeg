@@ -44,6 +44,10 @@ void ff_fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
                            const struct WhitepointCoefficients *wp,
                            double rgb2xyz[3][3]);
 
+const struct LumaCoefficients *ff_get_luma_coefficients(enum AVColorSpace csp);
+void ff_fill_rgb2yuv_table(const struct LumaCoefficients *coeffs,
+                           double rgb2yuv[3][3]);
+
 double ff_determine_signal_peak(AVFrame *in);
 void ff_update_hdr_metadata(AVFrame *in, double peak);
 
