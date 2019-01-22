@@ -1210,7 +1210,7 @@ static int dash_init(AVFormatContext *s)
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
             if (c->streaming)
-                av_dict_set(&opts, "movflags", "frag_every_frame+dash+delay_moov+skip_sidx", 0);
+                av_dict_set(&opts, "movflags", "frag_every_frame+dash+delay_moov+skip_sidx+skip_trailer", 0);
             else
                 av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov", 0);
         } else {
