@@ -139,6 +139,9 @@ static int fic_decode_block(FICContext *ctx, GetBitContext *gb,
 {
     int i, num_coeff;
 
+    if (get_bits_left(gb) < 8)
+        return AVERROR_INVALIDDATA;
+
     /* Is it a skip block? */
     if (get_bits1(gb)) {
         *is_p = 1;
