@@ -982,6 +982,22 @@ and they are mapped to the one video only variant streams with audio group name
 
 By default, a single hls variant containing all the encoded streams is created.
 
+@example
+ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
+  -map 0:a -map 0:a -map 0:v -f hls \
+  -var_stream_map "a:0,agroup:aud_low,default:yes,language=ENG a:1,agroup:aud_low,language:CHN v:0,agroup:aud_low" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates two audio only and one video only variant streams. In
+addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
+playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
+and they are mapped to the one video only variant streams with audio group name
+'aud_low', and the audio group have default stat is NO or YES, and one audio
+have and language is named ENG, the other audio language is named CHN.
+
+By default, a single hls variant containing all the encoded streams is created.
+
 @item cc_stream_map
 Map string which specifies different closed captions groups and their
 attributes. The closed captions stream groups are separated by space.

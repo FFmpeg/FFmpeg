@@ -154,6 +154,7 @@ typedef struct VariantStream {
     unsigned int nb_streams;
     int m3u8_created; /* status of media play-list creation */
     int is_default; /* default status of audio group */
+    char *language; /* audio lauguage name */
     char *agroup; /* audio group name */
     char *ccgroup; /* closed caption group name */
     char *baseurl;
@@ -1261,7 +1262,7 @@ static int create_master_playlist(AVFormatContext *s,
             goto fail;
         }
 
-        ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name, i, hls->has_default_key ? vs->is_default : 1);
+        ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name, vs->language, i, hls->has_default_key ? vs->is_default : 1);
 
         av_freep(&m3u8_rel_name);
     }
@@ -1829,7 +1830,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     /**
      * Expected format for var_stream_map string is as below:
      * "a:0,v:0 a:1,v:1"
-     * "a:0,agroup:a0,default:1 a:1,agroup:a1,defalut:0 v:0,agroup:a0  v:1,agroup:a1"
+     * "a:0,agroup:a0,default:1,language:ENG a:1,agroup:a1,defalut:0 v:0,agroup:a0  v:1,agroup:a1"
      * This string specifies how to group the audio, video and subtitle streams
      * into different variant streams. The variant stream groups are separated
      * by space.
@@ -1879,8 +1880,12 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
         nb_streams = 0;
         while (keyval = av_strtok(varstr, ",", &saveptr2)) {
             varstr = NULL;
-
-            if (av_strstart(keyval, "default:", &val)) {
+            if (av_strstart(keyval, "language:", &val)) {
+                vs->language = av_strdup(val);
+                if (!vs->language)
+                    return AVERROR(ENOMEM);
+                continue;
+            } else if (av_strstart(keyval, "default:", &val)) {
                 vs->is_default = (!av_strncasecmp(val, "YES", strlen("YES")) ||
                                   (!av_strncasecmp(val, "1", strlen("1"))));
                 hls->has_default_key = 1;
@@ -2392,6 +2397,7 @@ static void hls_free_variant_streams(struct HLSContext *hls)
         av_freep(&vs->m3u8_name);
         av_freep(&vs->streams);
         av_freep(&vs->agroup);
+        av_freep(&vs->language);
         av_freep(&vs->ccgroup);
         av_freep(&vs->baseurl);
     }
@@ -2843,6 +2849,7 @@ fail:
             av_freep(&vs->m3u8_name);
             av_freep(&vs->vtt_m3u8_name);
             av_freep(&vs->streams);
+            av_freep(&vs->language);
             av_freep(&vs->agroup);
             av_freep(&vs->ccgroup);
             av_freep(&vs->baseurl);
