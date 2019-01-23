@@ -295,7 +295,7 @@ retry:
         }
         goto retry;
     }
-    url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
+    url = s->segments[s->cur_seq_no - s->start_seq_no]->url;
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
     ret = ffurl_open_whitelist(&s->seg_hd, url, AVIO_FLAG_READ,
                                &h->interrupt_callback, NULL,
