@@ -958,6 +958,8 @@ select double-exponential seat
 select double-exponential sigmoid
 @item losi
 select logistic sigmoid
+@item nofade
+no fade applied
 @end table
 @end table
 
