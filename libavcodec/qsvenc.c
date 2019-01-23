@@ -136,6 +136,9 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
 #if QSV_HAVE_CO2
     mfxExtCodingOption2 *co2 = (mfxExtCodingOption2*)coding_opts[1];
 #endif
+#if QSV_HAVE_CO3
+    mfxExtCodingOption3 *co3 = (mfxExtCodingOption3*)coding_opts[2];
+#endif
 
     av_log(avctx, AV_LOG_VERBOSE, "profile: %s; level: %"PRIu16"\n",
            print_profile(info->CodecProfile), info->CodecLevel);
@@ -190,7 +193,12 @@ static void dump_video_param(AVCodecContext *avctx, QSVEncContext *q,
                info->ICQQuality, co2->LookAheadDepth);
     }
 #endif
-
+#if QSV_HAVE_QVBR
+    else if (info->RateControlMethod == MFX_RATECONTROL_QVBR) {
+        av_log(avctx, AV_LOG_VERBOSE, "QVBRQuality: %"PRIu16"\n",
+               co3->QVBRQuality);
+    }
+#endif
     av_log(avctx, AV_LOG_VERBOSE, "NumSlice: %"PRIu16"; NumRefFrame: %"PRIu16"\n",
            info->NumSlice, info->NumRefFrame);
     av_log(avctx, AV_LOG_VERBOSE, "RateDistortionOpt: %s\n",
@@ -330,7 +338,7 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
     }
 #endif
 #if QSV_HAVE_ICQ
-    else if (avctx->global_quality > 0) {
+    else if (avctx->global_quality > 0 && !avctx->rc_max_rate) {
         rc_mode = MFX_RATECONTROL_ICQ;
         rc_desc = "intelligent constant quality (ICQ)";
     }
@@ -343,6 +351,12 @@ static int select_rc_mode(AVCodecContext *avctx, QSVEncContext *q)
     else if (!avctx->rc_max_rate) {
         rc_mode = MFX_RATECONTROL_AVBR;
         rc_desc = "average variable bitrate (AVBR)";
+    }
+#endif
+#if QSV_HAVE_QVBR
+    else if (avctx->global_quality > 0) {
+        rc_mode = MFX_RATECONTROL_QVBR;
+        rc_desc = "constant quality with VBR algorithm (QVBR)";
     }
 #endif
     else {
@@ -568,11 +582,18 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #if QSV_HAVE_VCM
     case MFX_RATECONTROL_VCM:
 #endif
+#if QSV_HAVE_QVBR
+    case MFX_RATECONTROL_QVBR:
+#endif
         q->param.mfx.BufferSizeInKB   = buffer_size_in_kilobytes / brc_param_multiplier;
         q->param.mfx.InitialDelayInKB = initial_delay_in_kilobytes / brc_param_multiplier;
         q->param.mfx.TargetKbps       = target_bitrate_kbps / brc_param_multiplier;
         q->param.mfx.MaxKbps          = max_bitrate_kbps / brc_param_multiplier;
         q->param.mfx.BRCParamMultiplier = brc_param_multiplier;
+#if QSV_HAVE_QVBR
+        if (q->param.mfx.RateControlMethod == MFX_RATECONTROL_QVBR)
+            q->extco3.QVBRQuality = av_clip(avctx->global_quality, 0, 51);
+#endif
         break;
     case MFX_RATECONTROL_CQP:
         quant = avctx->global_quality / FF_QP2LAMBDA;
@@ -718,6 +739,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
 #endif
         }
+#if QSV_HAVE_CO3
+        q->extco3.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION3;
+        q->extco3.Header.BufferSz      = sizeof(q->extco3);
+        q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extco3;
+#endif
     }
 
     if (!check_enc_param(avctx,q)) {
@@ -772,12 +798,21 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
         .Header.BufferSz = sizeof(co2),
     };
 #endif
+#if QSV_HAVE_CO3
+    mfxExtCodingOption3 co3 = {
+        .Header.BufferId = MFX_EXTBUFF_CODING_OPTION3,
+        .Header.BufferSz = sizeof(co3),
+    };
+#endif
 
     mfxExtBuffer *ext_buffers[] = {
         (mfxExtBuffer*)&extradata,
         (mfxExtBuffer*)&co,
 #if QSV_HAVE_CO2
         (mfxExtBuffer*)&co2,
+#endif
+#if QSV_HAVE_CO3
+        (mfxExtBuffer*)&co3,
 #endif
     };
 

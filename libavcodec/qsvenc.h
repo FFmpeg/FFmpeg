@@ -56,7 +56,7 @@
 #define QSV_HAVE_AVBR   0
 #define QSV_HAVE_ICQ    QSV_VERSION_ATLEAST(1, 28)
 #define QSV_HAVE_VCM    0
-#define QSV_HAVE_QVBR   0
+#define QSV_HAVE_QVBR   QSV_VERSION_ATLEAST(1, 28)
 #define QSV_HAVE_MF     QSV_VERSION_ATLEAST(1, 25)
 #endif
 
@@ -111,6 +111,9 @@ typedef struct QSVEncContext {
 #if QSV_HAVE_CO2
     mfxExtCodingOption2 extco2;
 #endif
+#if QSV_HAVE_CO3
+    mfxExtCodingOption3 extco3;
+#endif
 #if QSV_HAVE_MF
     mfxExtMultiFrameParam   extmfp;
     mfxExtMultiFrameControl extmfc;
@@ -119,7 +122,7 @@ typedef struct QSVEncContext {
     mfxFrameSurface1       **opaque_surfaces;
     AVBufferRef             *opaque_alloc_buf;
 
-    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2 + (QSV_HAVE_MF * 2)];
+    mfxExtBuffer  *extparam_internal[2 + QSV_HAVE_CO2 + QSV_HAVE_CO3 + (QSV_HAVE_MF * 2)];
     int         nb_extparam_internal;
 
     mfxExtBuffer **extparam;
