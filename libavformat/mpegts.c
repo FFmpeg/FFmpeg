@@ -91,6 +91,7 @@ struct MpegTSFilter {
     int es_id;
     int last_cc; /* last cc code (-1 if first packet) */
     int64_t last_pcr;
+    int discard;
     enum MpegTSFilterType type;
     union {
         MpegTSPESFilter pes_filter;
@@ -2474,8 +2475,6 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
     int64_t pos;
 
     pid = AV_RB16(packet + 1) & 0x1fff;
-    if (pid && discard_pid(ts, pid))
-        return 0;
     is_start = packet[1] & 0x40;
     tss = ts->pids[pid];
     if (ts->auto_guess && !tss && is_start) {
@@ -2483,6 +2482,10 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         tss = ts->pids[pid];
     }
     if (!tss)
+        return 0;
+    if (is_start)
+        tss->discard = discard_pid(ts, pid);
+    if (tss->discard)
         return 0;
     ts->current_pid = pid;
 
