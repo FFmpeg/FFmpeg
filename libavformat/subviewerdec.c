@@ -27,6 +27,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "subtitles.h"
+#include "avio_internal.h"
 #include "libavcodec/internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
@@ -78,6 +79,11 @@ static int subviewer_read_header(AVFormatContext *s)
 
     if (!st)
         return AVERROR(ENOMEM);
+    res = ffio_ensure_seekback(s->pb, 3);
+    if (res < 0)
+        return res;
+    if (avio_rb24(s->pb) != 0xefbbbf)
+        avio_seek(s->pb, -3, SEEK_CUR);
     avpriv_set_pts_info(st, 64, 1, 100);
     st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codecpar->codec_id   = AV_CODEC_ID_SUBVIEWER;
