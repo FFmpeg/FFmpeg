@@ -46,7 +46,6 @@ typedef struct XAVS2EContext {
     int min_qp;
     int preset_level;
     int log_level;
-    int hierarchical_reference;
 
     void *encoder;
     char *xavs2_opts;
