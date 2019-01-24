@@ -2741,8 +2741,8 @@ static int mov_write_mdhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (version != 0 && track->mode == MODE_MOV) {
         av_log(NULL, AV_LOG_ERROR,
                "FATAL error, file duration too long for timebase, this file will not be\n"
-               "playable with quicktime. Choose a different timebase or a different\n"
-               "container format\n");
+               "playable with QuickTime. Choose a different timebase with "
+               "-video_track_timescale or a different container format\n");
     }
 
     return 32;
