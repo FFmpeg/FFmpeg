@@ -232,10 +232,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             break;
         case AV_FRAME_DATA_S12M_TIMECODE: {
             uint32_t *tc = (uint32_t*)sd->data;
-            for (int j = 1; j < tc[0]; j++) {
+            for (int j = 1; j <= tc[0]; j++) {
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
-                av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0] - 1 ? ", " : "");
+                av_log(ctx, AV_LOG_INFO, "timecode - %s%s", tcbuf, j != tc[0] ? ", " : "");
             }
             break;
         }
