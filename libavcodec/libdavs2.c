@@ -45,9 +45,9 @@ static av_cold int davs2_init(AVCodecContext *avctx)
     /* init the decoder */
     cad->param.threads      = avctx->thread_count;
     cad->param.info_level   = 0;
-    cad->decoder            = davs2_decoder_open(&cad->param);
     cad->param.disable_avx  = !(cpu_flags & AV_CPU_FLAG_AVX &&
                                 cpu_flags & AV_CPU_FLAG_AVX2);
+    cad->decoder            = davs2_decoder_open(&cad->param);
 
     if (!cad->decoder) {
         av_log(avctx, AV_LOG_ERROR, "decoder created error.");
