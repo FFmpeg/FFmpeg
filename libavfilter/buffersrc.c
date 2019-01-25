@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/timestamp.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersrc.h"
@@ -67,15 +68,20 @@ typedef struct BufferSourceContext {
     int eof;
 } BufferSourceContext;
 
-#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format)\
+#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, pts)\
     if (c->w != width || c->h != height || c->pix_fmt != format) {\
-        av_log(s, AV_LOG_INFO, "Changing frame properties on the fly is not supported by all filters.\n");\
+        av_log(s, AV_LOG_INFO, "filter context - w: %d h: %d fmt: %d, incoming frame - w: %d h: %d fmt: %d pts_time: %s\n",\
+               c->w, c->h, c->pix_fmt, width, height, format, av_ts2timestr(pts, &s->outputs[0]->time_base));\
+        av_log(s, AV_LOG_WARNING, "Changing video frame properties on the fly is not supported by all filters.\n");\
     }
 
-#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format)\
+#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format, pts)\
     if (c->sample_fmt != format || c->sample_rate != srate ||\
         c->channel_layout != ch_layout || c->channels != ch_count) {\
-        av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
+        av_log(s, AV_LOG_INFO, "filter context - fmt: %s r: %d layout: %"PRIX64" ch: %d, incoming frame - fmt: %s r: %d layout: %"PRIX64" ch: %d pts_time: %s\n",\
+               av_get_sample_fmt_name(c->sample_fmt), c->sample_rate, c->channel_layout, c->channels,\
+               av_get_sample_fmt_name(format), srate, ch_layout, ch_count, av_ts2timestr(pts, &s->outputs[0]->time_base));\
+        av_log(s, AV_LOG_ERROR, "Changing audio frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
 
@@ -208,14 +214,14 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         switch (ctx->outputs[0]->type) {
         case AVMEDIA_TYPE_VIDEO:
             CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
-                                     frame->format);
+                                     frame->format, frame->pts);
             break;
         case AVMEDIA_TYPE_AUDIO:
             /* For layouts unknown on input but known on link after negotiation. */
             if (!frame->channel_layout)
                 frame->channel_layout = s->channel_layout;
             CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                     frame->channels, frame->format);
+                                     frame->channels, frame->format, frame->pts);
             break;
         default:
             return AVERROR(EINVAL);
