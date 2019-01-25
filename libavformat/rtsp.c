@@ -446,7 +446,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (!strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_SUBTITLE;
         }
-        if (codec_type == AVMEDIA_TYPE_UNKNOWN || !(rt->media_type_mask & (1 << codec_type))) {
+        if (codec_type == AVMEDIA_TYPE_UNKNOWN ||
+            !(rt->media_type_mask & (1 << codec_type)) ||
+            rt->nb_rtsp_streams >= s->max_streams
+        ) {
             s1->skip_media = 1;
             return;
         }
