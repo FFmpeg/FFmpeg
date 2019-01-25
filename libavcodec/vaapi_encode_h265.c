@@ -902,6 +902,7 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
 
     if (pic->type != PICTURE_TYPE_IDR) {
         H265RawSTRefPicSet *rps;
+        const VAAPIEncodeH265Picture *strp;
         int rps_poc[MAX_DPB_SIZE];
         int rps_used[MAX_DPB_SIZE];
         int i, j, poc, rps_pics;
@@ -912,16 +913,24 @@ static int vaapi_encode_h265_init_slice_params(AVCodecContext *avctx,
         memset(rps, 0, sizeof(*rps));
 
         rps_pics = 0;
+        for (i = 0; i < pic->nb_refs; i++) {
+            strp = pic->refs[i]->priv_data;
+            rps_poc[rps_pics]  = strp->pic_order_cnt;
+            rps_used[rps_pics] = 1;
+            ++rps_pics;
+        }
         for (i = 0; i < pic->nb_dpb_pics; i++) {
-            VAAPIEncodeH265Picture *strp;
             if (pic->dpb[i] == pic)
+                continue;
+            for (j = 0; j < pic->nb_refs; j++) {
+                if (pic->dpb[i] == pic->refs[j])
+                    break;
+            }
+            if (j < pic->nb_refs)
                 continue;
             strp = pic->dpb[i]->priv_data;
             rps_poc[rps_pics]  = strp->pic_order_cnt;
             rps_used[rps_pics] = 0;
-            for (j = 0; j < pic->nb_refs; j++)
-                if (pic->dpb[i] == pic->refs[j])
-                    rps_used[rps_pics] = 1;
             ++rps_pics;
         }
 
