@@ -305,6 +305,8 @@ External library support:
                            on OSX if openssl and gnutls are not used [autodetect]
   --disable-xlib           disable xlib [autodetect]
   --disable-zlib           disable zlib [autodetect]
+  --enable-quic            enable quic, needed for quic support
+                           if libquic is not used [no]
 
   The following libraries provide various hardware acceleration features:
   --disable-amf            disable AMF video encoding code [autodetect]
@@ -1646,6 +1648,7 @@ EXTERNAL_LIBRARY_NONFREE_LIST="
     libfdk_aac
     openssl
     libtls
+    quic
 "
 
 EXTERNAL_LIBRARY_VERSION3_LIST="
@@ -3277,6 +3280,7 @@ srtp_protocol_select="rtp_protocol srtp"
 tcp_protocol_select="network"
 tls_protocol_deps_any="gnutls openssl schannel securetransport libtls"
 tls_protocol_select="tcp_protocol"
+quic_protocol_deps_any="quic"
 udp_protocol_select="network"
 udplite_protocol_select="network"
 unix_protocol_deps="sys_un_h"

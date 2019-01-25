@@ -39,6 +39,7 @@ extern const URLProtocol ff_http_protocol;
 extern const URLProtocol ff_httpproxy_protocol;
 extern const URLProtocol ff_https_protocol;
 extern const URLProtocol ff_icecast_protocol;
+extern const URLProtocol ff_quic_protocol;
 extern const URLProtocol ff_ijkhttphook_protocol;
 extern const URLProtocol ff_ijkfilehook_protocol;
 extern const URLProtocol ff_ijklongurl_protocol;

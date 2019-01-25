@@ -203,6 +203,18 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
     return h->func_on_app_event(h, AVAPP_CTRL_DID_TCP_OPEN, (void *)control, sizeof(AVAppTcpIOControl));
 }
 
+// only callback returns error
+int av_application_quic_on_tcp_did_open(AVApplicationContext *h, int error)
+{
+    if (h && h->func_on_app_event) {
+        AVAppTcpIOControl control = {0};
+        control.error = error;
+        control.port = 443;
+        return h->func_on_app_event(h, AVAPP_CTRL_WILL_TCP_OPEN, (void *)&control, sizeof(AVAppTcpIOControl));
+    }
+    return 0;
+}
+
 void av_application_on_async_statistic(AVApplicationContext *h, AVAppAsyncStatistic *statistic)
 {
     if (h && h->func_on_app_event)

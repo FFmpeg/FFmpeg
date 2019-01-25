@@ -201,6 +201,7 @@ int  av_application_on_io_control(AVApplicationContext *h, int event_type, AVApp
 
 int av_application_on_tcp_will_open(AVApplicationContext *h);
 int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, AVAppTcpIOControl *control);
+int av_application_quic_on_tcp_did_open(AVApplicationContext *h, int error);
 
 void av_application_on_async_statistic(AVApplicationContext *h, AVAppAsyncStatistic *statistic);
 void av_application_on_async_read_speed(AVApplicationContext *h, AVAppAsyncReadSpeed *speed);
