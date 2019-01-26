@@ -174,19 +174,13 @@ static inline void update_vlc_state(VlcState *const state, const int v)
     count++;
 
     if (drift <= -count) {
-        if (state->bias > -128)
-            state->bias--;
+        state->bias = FFMAX(state->bias - 1, -128);
 
-        drift += count;
-        if (drift <= -count)
-            drift = -count + 1;
+        drift = FFMAX(drift + count, -count + 1);
     } else if (drift > 0) {
-        if (state->bias < 127)
-            state->bias++;
+        state->bias = FFMIN(state->bias + 1, 127);
 
-        drift -= count;
-        if (drift > 0)
-            drift = 0;
+        drift = FFMIN(drift - count, 0);
     }
 
     state->drift = drift;
