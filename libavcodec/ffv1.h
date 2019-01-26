@@ -153,9 +153,7 @@ static av_always_inline int fold(int diff, int bits)
     if (bits == 8)
         diff = (int8_t)diff;
     else {
-        diff +=  1 << (bits  - 1);
-        diff  = av_mod_uintp2(diff, bits);
-        diff -=  1 << (bits  - 1);
+        diff = sign_extend(diff, bits);
     }
 
     return diff;
