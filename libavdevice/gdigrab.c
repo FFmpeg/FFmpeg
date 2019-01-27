@@ -277,14 +277,20 @@ gdigrab_read_header(AVFormatContext *s1)
     }
     bpp = GetDeviceCaps(source_hdc, BITSPIXEL);
 
+    horzres = GetDeviceCaps(source_hdc, HORZRES);
+    vertres = GetDeviceCaps(source_hdc, VERTRES);
+    desktophorzres = GetDeviceCaps(source_hdc, DESKTOPHORZRES);
+    desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
+
     if (hwnd) {
         GetClientRect(hwnd, &virtual_rect);
+        /* window -- get the right height and width for scaling DPI */
+        virtual_rect.left   = virtual_rect.left   * desktophorzres / horzres;
+        virtual_rect.right  = virtual_rect.right  * desktophorzres / horzres;
+        virtual_rect.top    = virtual_rect.top    * desktopvertres / vertres;
+        virtual_rect.bottom = virtual_rect.bottom * desktopvertres / vertres;
     } else {
         /* desktop -- get the right height and width for scaling DPI */
-        horzres = GetDeviceCaps(source_hdc, HORZRES);
-        vertres = GetDeviceCaps(source_hdc, VERTRES);
-        desktophorzres = GetDeviceCaps(source_hdc, DESKTOPHORZRES);
-        desktopvertres = GetDeviceCaps(source_hdc, DESKTOPVERTRES);
         virtual_rect.left = GetSystemMetrics(SM_XVIRTUALSCREEN);
         virtual_rect.top = GetSystemMetrics(SM_YVIRTUALSCREEN);
         virtual_rect.right = (virtual_rect.left + GetSystemMetrics(SM_CXVIRTUALSCREEN)) * desktophorzres / horzres;
