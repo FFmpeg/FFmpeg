@@ -38,7 +38,7 @@ typedef struct ARBCContext {
     AVFrame *prev_frame;
 } ARBCContext;
 
-static void fill_tile4(AVCodecContext *avctx, uint8_t *color, AVFrame *frame)
+static void fill_tile4(AVCodecContext *avctx, int color, AVFrame *frame)
 {
     ARBCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -62,9 +62,7 @@ static void fill_tile4(AVCodecContext *avctx, uint8_t *color, AVFrame *frame)
                         mask = mask << 1;
                         continue;
                     }
-                    frame->data[0][frame->linesize[0] * (h - j) + 3 * k + 0] = color[0];
-                    frame->data[0][frame->linesize[0] * (h - j) + 3 * k + 1] = color[1];
-                    frame->data[0][frame->linesize[0] * (h - j) + 3 * k + 2] = color[2];
+                    AV_WB24(&frame->data[0][frame->linesize[0] * (h - j) + 3 * k], color);
                 }
                 mask = mask << 1;
             }
@@ -73,7 +71,7 @@ static void fill_tile4(AVCodecContext *avctx, uint8_t *color, AVFrame *frame)
 }
 
 static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
-                       uint8_t *color, AVFrame *frame)
+                       int color, AVFrame *frame)
 {
     ARBCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
@@ -99,9 +97,7 @@ static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
                         for (int n = 0; n < step_w; n++) {
                             if (j + m >= avctx->height || k + n >= avctx->width)
                                 continue;
-                            frame->data[0][frame->linesize[0] * (h - (j + m)) + 3 * (k + n) + 0] = color[0];
-                            frame->data[0][frame->linesize[0] * (h - (j + m)) + 3 * (k + n) + 1] = color[1];
-                            frame->data[0][frame->linesize[0] * (h - (j + m)) + 3 * (k + n) + 2] = color[2];
+                            AV_WB24(&frame->data[0][frame->linesize[0] * (h - (j + m)) + 3 * (k + n)], color);
                         }
                     }
                 }
@@ -138,16 +134,16 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     for (int i = 0; i < nb_segments; i++) {
         int resolution_flag;
-        uint8_t fill[3];
+        int fill;
 
         if (bytestream2_get_bytes_left(&s->gb) <= 0)
             return AVERROR_INVALIDDATA;
 
-        fill[0] = bytestream2_get_byte(&s->gb);
+        fill = bytestream2_get_byte(&s->gb) << 16;
         bytestream2_skip(&s->gb, 1);
-        fill[1] = bytestream2_get_byte(&s->gb);
+        fill |= bytestream2_get_byte(&s->gb) << 8;
         bytestream2_skip(&s->gb, 1);
-        fill[2] = bytestream2_get_byte(&s->gb);
+        fill |= bytestream2_get_byte(&s->gb) << 0;
         bytestream2_skip(&s->gb, 1);
         resolution_flag = bytestream2_get_byte(&s->gb);
 
