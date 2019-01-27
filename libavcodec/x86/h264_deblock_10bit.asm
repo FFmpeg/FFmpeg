@@ -162,6 +162,7 @@ cglobal deblock_v_luma_10, 5,5,8*(mmsize/16)
     %define ms2 [rsp+mmsize*2]
     %define am  [rsp+mmsize*3]
     %define bm  [rsp+mmsize*4]
+    movsxdifnidn  r1, r1d
     SUB        rsp, pad
     shl        r2d, 2
     shl        r3d, 2
@@ -219,6 +220,7 @@ cglobal deblock_h_luma_10, 5,6,8*(mmsize/16)
     %define p2m [rsp+mmsize*4]
     %define am  [rsp+mmsize*5]
     %define bm  [rsp+mmsize*6]
+    movsxdifnidn  r1, r1d
     SUB        rsp, pad
     shl        r2d, 2
     shl        r3d, 2
@@ -349,6 +351,7 @@ cglobal deblock_v_luma_10, 5,5,15
     %define mask0 m7
     %define mask1 m10
     %define mask2 m11
+    movsxdifnidn  r1, r1d
     shl        r2d, 2
     shl        r3d, 2
     LOAD_AB    m12, m13, r2d, r3d
@@ -377,6 +380,7 @@ cglobal deblock_v_luma_10, 5,5,15
     REP_RET
 
 cglobal deblock_h_luma_10, 5,7,15
+    movsxdifnidn  r1, r1d
     shl        r2d, 2
     shl        r3d, 2
     LOAD_AB    m12, m13, r2d, r3d
@@ -492,6 +496,7 @@ DEBLOCK_LUMA_64
     CAT_XDEFINE t, i, [rsp+mmsize*(i-4)]
     %assign i i+1
 %endrep
+    movsxdifnidn  r1, r1d
     SUB    rsp, pad
 %endmacro
 
@@ -615,6 +620,7 @@ cglobal deblock_v_luma_intra_10, 4,7,16
     %define q2 m13
     %define aa m5
     %define bb m14
+    movsxdifnidn  r1, r1d
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
     neg     r4
@@ -668,6 +674,7 @@ cglobal deblock_h_luma_intra_10, 4,7,16
     %define p3 m4
     %define spill [rsp]
     %assign pad 24-(stack_offset&15)
+    movsxdifnidn  r1, r1d
     SUB     rsp, pad
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
@@ -852,6 +859,7 @@ DEBLOCK_LUMA_INTRA
 ;                             int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
+    movsxdifnidn  r1, r1d
     mov         r5, r0
     sub         r0, r1
     sub         r0, r1
@@ -887,6 +895,7 @@ cglobal deblock_v_chroma_10, 5,7-(mmsize/16),8*(mmsize/16)
 ;                                   int beta)
 ;-----------------------------------------------------------------------------
 cglobal deblock_v_chroma_intra_10, 4,6-(mmsize/16),8*(mmsize/16)
+    movsxdifnidn  r1, r1d
     mov         r4, r0
     sub         r0, r1
     sub         r0, r1

@@ -288,6 +288,7 @@ cextern pb_3
 ;-----------------------------------------------------------------------------
 %macro DEBLOCK_LUMA 0
 cglobal deblock_v_luma_8, 5,5,10
+    movsxdifnidn  r1, r1d
     movd    m8, [r4] ; tc0
     lea     r4, [r1*3]
     dec     r2d        ; alpha-1
@@ -335,6 +336,7 @@ cglobal deblock_v_luma_8, 5,5,10
 INIT_MMX cpuname
 cglobal deblock_h_luma_8, 5,9,0,0x60+16*WIN64
     movsxd r7,  r1d
+    movsxdifnidn  r1, r1d
     lea    r8,  [r7+r7*2]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
@@ -395,6 +397,7 @@ DEBLOCK_LUMA
 ;                         int8_t *tc0)
 ;-----------------------------------------------------------------------------
 cglobal deblock_%1_luma_8, 5,5,8,2*%2
+    movsxdifnidn  r1, r1d
     lea     r4, [r1*3]
     dec     r2     ; alpha-1
     neg     r4
@@ -445,6 +448,7 @@ cglobal deblock_%1_luma_8, 5,5,8,2*%2
 ;-----------------------------------------------------------------------------
 INIT_MMX cpuname
 cglobal deblock_h_luma_8, 0,5,8,0x60+12
+    movsxdifnidn  r1, r1d
     mov    r0, r0mp
     mov    r3, r1m
     lea    r4, [r3*3]
@@ -646,6 +650,7 @@ cglobal deblock_%1_luma_intra_8, 4,6,16,0x10
 %else
 cglobal deblock_%1_luma_intra_8, 4,6,16,ARCH_X86_64*0x50-0x50
 %endif
+    movsxdifnidn  r1, r1d
     lea     r4, [r1*4]
     lea     r5, [r1*3] ; 3*stride
     dec     r2d        ; alpha-1
@@ -703,6 +708,7 @@ INIT_MMX cpuname
 ;-----------------------------------------------------------------------------
 cglobal deblock_h_luma_intra_8, 4,9,0,0x80
     movsxd r7,  r1d
+    movsxdifnidn  r1, r1d
     lea    r8,  [r7*3]
     lea    r6,  [r0-4]
     lea    r5,  [r0-4+r8]
@@ -782,6 +788,7 @@ DEBLOCK_LUMA_INTRA v8
 INIT_MMX mmxext
 
 %macro CHROMA_V_START 0
+    movsxdifnidn  r1, r1d
     dec    r2d      ; alpha-1
     dec    r3d      ; beta-1
     mov    t5, r0
@@ -790,6 +797,7 @@ INIT_MMX mmxext
 %endmacro
 
 %macro CHROMA_H_START 0
+    movsxdifnidn  r1, r1d
     dec    r2d
     dec    r3d
     sub    r0, 2
