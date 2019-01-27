@@ -142,7 +142,7 @@ static int ring_size_of_read_back(RingBuffer *ring)
 static int ring_drain(RingBuffer *ring, int offset)
 {
     av_assert2(offset >= -ring_size_of_read_back(ring));
-    av_assert2(offset <= -ring_size(ring));
+    av_assert2(offset <= ring_size(ring));
     ring->read_pos += offset;
     return 0;
 }
