@@ -479,24 +479,25 @@ static void paint_mouse_pointer(AVFormatContext *s1, struct gdigrab *gdigrab)
             goto icon_error;
         }
 
-        pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot;
-        pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot;
-
         if (hwnd) {
             RECT rect;
 
             if (GetWindowRect(hwnd, &rect)) {
-                pos.x -= rect.left;
-                pos.y -= rect.top;
+                pos.x = ci.ptScreenPos.x - clip_rect.left - info.xHotspot - rect.left;
+                pos.y = ci.ptScreenPos.y - clip_rect.top - info.yHotspot - rect.top;
+
+                //that would keep the correct location of mouse with hidpi screens
+                pos.x = pos.x * desktophorzres / horzres;
+                pos.y = pos.y * desktopvertres / vertres;
             } else {
                 CURSOR_ERROR("Couldn't get window rectangle");
                 goto icon_error;
             }
+        } else {
+            //that would keep the correct location of mouse with hidpi screens
+            pos.x = ci.ptScreenPos.x * desktophorzres / horzres - clip_rect.left - info.xHotspot;
+            pos.y = ci.ptScreenPos.y * desktopvertres / vertres - clip_rect.top - info.yHotspot;
         }
-
-        //that would keep the correct location of mouse with hidpi screens
-        pos.x = pos.x * desktophorzres / horzres;
-        pos.y = pos.y * desktopvertres / vertres;
 
         av_log(s1, AV_LOG_DEBUG, "Cursor pos (%li,%li) -> (%li,%li)\n",
                 ci.ptScreenPos.x, ci.ptScreenPos.y, pos.x, pos.y);
