@@ -649,12 +649,26 @@ request(){
     done
 }
 
+warn_if_gets_disabled(){
+    for var in $*; do
+        WARN_IF_GETS_DISABLED_LIST="$WARN_IF_GETS_DISABLED_LIST $var"
+    done
+}
+
 enable(){
     set_all yes $*
 }
 
 disable(){
     set_all no $*
+}
+
+disable_with_reason(){
+    disable $1
+    eval "${1}_disable_reason=\"$2\""
+    if requested $1; then
+        die "ERROR: $1 requested, but $2"
+    fi
 }
 
 enable_weak(){
@@ -785,10 +799,10 @@ check_deps(){
 
             [ -n "$dep_ifa" ] && { enabled_all $dep_ifa && enable_weak $cfg; }
             [ -n "$dep_ifn" ] && { enabled_any $dep_ifn && enable_weak $cfg; }
-            enabled_all  $dep_all || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not all dependencies are satisfied: $dep_all"; }
-            enabled_any  $dep_any || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but not any dependency is satisfied: $dep_any"; }
-            disabled_all $dep_con || { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some conflicting dependencies are unsatisfied: $dep_con"; }
-            disabled_any $dep_sel && { disable $cfg && requested $cfg && die "ERROR: $cfg requested, but some selected dependency is unsatisfied: $dep_sel"; }
+            enabled_all  $dep_all || { disable_with_reason $cfg "not all dependencies are satisfied: $dep_all"; }
+            enabled_any  $dep_any || { disable_with_reason $cfg "not any dependency is satisfied: $dep_any"; }
+            disabled_all $dep_con || { disable_with_reason $cfg "some conflicting dependencies are unsatisfied: $dep_con"; }
+            disabled_any $dep_sel && { disable_with_reason $cfg "some selected dependency is unsatisfied: $dep_sel"; }
 
             enabled $cfg && enable_deep_weak $dep_sel $dep_sgs
 
@@ -3883,6 +3897,7 @@ for opt do
             name=$(echo "${optval}" | sed "s/,/_${thing}|/g")_${thing}
             list=$(filter "$name" $list)
             [ "$list" = "" ] && warn "Option $opt did not match anything"
+            test $action = enable && warn_if_gets_disabled $list
             $action $list
         ;;
         --enable-yasm|--disable-yasm)
@@ -7108,6 +7123,15 @@ fi
 echo "License: $license"
 
 fi # test "$quiet" != "yes"
+
+if test -n "$WARN_IF_GETS_DISABLED_LIST"; then
+    for cfg in $WARN_IF_GETS_DISABLED_LIST; do
+        if disabled $cfg; then
+            varname=${cfg}_disable_reason
+            eval "warn \"Disabled $cfg because \$$varname\""
+        fi
+    done
+fi
 
 if test -n "$WARNINGS"; then
     printf "\n%s%s$WARNINGS%s" "$warn_color" "$bold_color" "$reset_color"
