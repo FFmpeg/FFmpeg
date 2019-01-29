@@ -46,7 +46,7 @@ typedef struct QUICContext {
     int             proto_version;
     int             init_mtu;
     int             need_cert_verify;
-    int             connect_timeout_ms;
+    int             connect_timeout_us;
     int             rw_timeout;
     int             recv_buffer_size;
     int             seekable; /**< Control seekability, 0 = disable, 1 = enable, -1 = probe. */
@@ -78,7 +78,7 @@ static const AVOption options[] = {
     { "need_cert_verify", "Need quic verify certificates", OFFSET(need_cert_verify), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, .flags = D|E },
     { "recv_buffer_size", "Quic client receive buffer in bytes", OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = 1048576 }, 1024, 67108864, .flags = D|E },
     { "timeout",     "set timeout (in microseconds) of socket I/O operations", OFFSET(rw_timeout),     AV_OPT_TYPE_INT, { .i64 = 2000000 },         -1, INT_MAX, .flags = D|E },
-    { "connect_timeout",  "set connect timeout (in microseconds) of socket", OFFSET(connect_timeout_ms),     AV_OPT_TYPE_INT, { .i64 = 10000000 },         -1, INT_MAX, .flags = D|E },
+    { "connect_timeout",  "set connect timeout (in microseconds) of socket", OFFSET(connect_timeout_us),     AV_OPT_TYPE_INT, { .i64 = 10000000 },         -1, INT_MAX, .flags = D|E },
     { "dash_audio_tcp", "dash audio tcp", OFFSET(dash_audio_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
     { "dash_video_tcp", "dash video tcp", OFFSET(dash_video_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
     { "ijkapplication", "AVApplicationContext", OFFSET(app_ctx_intptr), AV_OPT_TYPE_INT64, { .i64 = 0 }, INT64_MIN, INT64_MAX, .flags = D },
@@ -93,14 +93,15 @@ static const AVClass quic_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int quic_strtoi(const char* str, int len, int* val_ptr)
+static int quic_strtoi(const char* str, int len, uint64_t* val_ptr)
 {
-    int i, val = 0;
+    uint64_t val = 0;
+    int i = 0;
     int convert_stat = 0; // 0: start; 1: converting; 2: tail
     if (!val_ptr) {
         return AVERROR(EINVAL);
     }
-    for (i = 0; i < len; ++i) {
+    for (i = 0; i < len; i++) {
         // 0. skip head space
         if (convert_stat == 0) {
             if (isspace(str[i])) {
@@ -179,7 +180,8 @@ static void quic_url_split(const char *url, char *hostname, int hostname_size, c
 
 static int quic_open_internal(URLContext *h)
 {
-    int ret = 0, val = 0, len = 0, header_val_len = 0;
+    int ret = 0, header_val_len = 0, len = 0;
+    uint64_t val = 0;
     char header_name[256] = {0}, *slash = NULL;
     const char *header_val = NULL;
     tBvcQuicHandler handler;
@@ -214,7 +216,7 @@ static int quic_open_internal(URLContext *h)
     opts.quic_version       = s->proto_version;
     opts.init_mtu           = s->init_mtu;
     opts.need_cert_verify   = s->need_cert_verify;
-    opts.connect_timeout_ms = s->connect_timeout_ms;
+    opts.connect_timeout_ms = s->connect_timeout_us / 1000;
     opts.buffer_size        = s->recv_buffer_size;
 
     s->body_off         = 0;
@@ -238,6 +240,8 @@ static int quic_open_internal(URLContext *h)
     av_application_quic_on_tcp_did_open(s->app_ctx, ret);
 
     if (ret != 0) {
+        end_time = av_gettime();
+        av_application_did_http_open(s->app_ctx, (void*)h, opts.url, ret, 0, 0, start_time, end_time);
         bvc_quic_client_destroy(handler);
         av_log(NULL, AV_LOG_ERROR, "quic_open_internal ECONNREFUSED ret = %d\n", ret);
         return AVERROR(ECONNREFUSED);
@@ -247,22 +251,12 @@ static int quic_open_internal(URLContext *h)
 
     av_log(NULL, AV_LOG_INFO, "quic_open_internal resp_code = %d\n", s->resp_code);
     if (s->resp_code != 200 && s->resp_code != 206) {
+        end_time = av_gettime();
+        av_application_did_http_open(s->app_ctx, (void*)h, opts.url, ret, s->resp_code, 0, start_time, end_time);
         bvc_quic_client_destroy(handler);
         return AVERROR(ECONNREFUSED);//TODO AVHTTP_ERRORCODE
     }
 
-    // 1. get "content-length" for body offset and size
-    strcpy(header_name, "content-length");
-    bvc_quic_client_response_header(handler, header_name, strlen(header_name), &header_val, &header_val_len);
-    if (header_val == NULL) {
-        bvc_quic_client_destroy(handler);
-        return AVERROR(EINVAL);//TODO AVHTTP_ERRORCODE
-    }
-    ret = quic_strtoi(header_val, header_val_len, &val);
-    if (ret != 0) {
-        bvc_quic_client_destroy(handler);
-        return AVERROR(EINVAL);//TODO AVHTTP_ERRORCODE
-    }
     // check seekable
     if (s->resp_code == 200) {
         strcpy(header_name, "accept-ranges");
@@ -271,31 +265,32 @@ static int quic_open_internal(URLContext *h)
             h->is_streamed = 0;
         }
     } else if (s->resp_code == 206) {
-        strcpy(header_name, "content-range");
-        bvc_quic_client_response_header(handler, header_name, strlen(header_name), &header_val, &header_val_len);
-        if (header_val != NULL && !av_strncasecmp(header_val, "bytes ", 6)) {
-            // body offset
-            slash = strchr(header_val, '-');
-            len = slash - (header_val + 6);
-            if (slash && len > 0) {
-                ret = quic_strtoi(header_val + 6, len, &val);
-                if (!ret) {
-                    s->body_off = val;
-                }
-            }
-            // body len
-            slash = strchr(header_val, '/') + 1;
-            len = header_val_len - (slash - header_val);
-            if (slash && len > 0) {
-                ret = quic_strtoi(slash, len, &val);
-                if (!ret) {
-                    s->body_len = val;
-                }
-            }
-        }
         h->is_streamed = 0;
     }
-    s->body_len = val;
+
+    strcpy(header_name, "content-range");
+    bvc_quic_client_response_header(handler, header_name, strlen(header_name), &header_val, &header_val_len);
+    if (header_val != NULL && !av_strncasecmp(header_val, "bytes ", 6)) {
+        // body offset
+        slash = strchr(header_val, '-');
+        len = slash - (header_val + 6);
+        if (slash && len > 0) {
+            ret = quic_strtoi(header_val + 6, len, &val);
+            if (!ret) {
+                s->body_off = val;
+            }
+        }
+        // body len
+        slash = strchr(header_val, '/') + 1;
+        len = header_val_len - (slash - header_val);
+        if (slash && len > 0) {
+            ret = quic_strtoi(slash, len, &val);
+            if (!ret) {
+                s->body_len = val;
+            }
+        }
+    }
+
     av_log(NULL, AV_LOG_INFO, "quic_open_internal body_len = %lld\n", s->body_len);
 
     end_time = av_gettime();
@@ -382,6 +377,10 @@ static int quic_read(URLContext *h, uint8_t *buf, int size)
     if (ret > 0) {
         s->body_off += ret;
         av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
+    } else if (ret == 0 && s->body_off < s->body_len) {
+        av_log(h, AV_LOG_ERROR,
+            "Quic stream ends prematurely at %"PRIu64", should be %"PRIu64"\n", s->body_off, s->body_len);
+        return AVERROR(EIO);
     }
 
     return ret < 0 ? AVERROR(EIO) : ret;

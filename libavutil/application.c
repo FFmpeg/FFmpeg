@@ -210,7 +210,7 @@ int av_application_quic_on_tcp_did_open(AVApplicationContext *h, int error)
         AVAppTcpIOControl control = {0};
         control.error = error;
         control.port = 443;
-        return h->func_on_app_event(h, AVAPP_CTRL_WILL_TCP_OPEN, (void *)&control, sizeof(AVAppTcpIOControl));
+        return h->func_on_app_event(h, AVAPP_CTRL_DID_TCP_OPEN, (void *)&control, sizeof(AVAppTcpIOControl));
     }
     return 0;
 }
