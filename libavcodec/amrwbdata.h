@@ -1884,7 +1884,7 @@ static const float lpf_7_coef[31] = { // low pass, 7kHz cutoff
 /** Core frame sizes in each mode */
 static const uint16_t cf_sizes_wb[] = {
     132, 177, 253, 285, 317, 365, 397, 461, 477,
-    40 /// SID/comfort noise frame
+    40, 0, 0, 0, 0, 0, 0
 };
 
 #endif /* AVCODEC_AMRWBDATA_H */

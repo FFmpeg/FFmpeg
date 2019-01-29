@@ -1119,12 +1119,19 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
     buf_out = (float *)frame->data[0];
 
     header_size      = decode_mime_header(ctx, buf);
+    expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
+
+    if (ctx->fr_cur_mode == NO_DATA) {
+        for (i = 0; i < frame->nb_samples; i++)
+            buf_out[i] = 0.f;
+        *got_frame_ptr = 1;
+        return expected_fr_size;
+    }
     if (ctx->fr_cur_mode > MODE_SID) {
         av_log(avctx, AV_LOG_ERROR,
                "Invalid mode %d\n", ctx->fr_cur_mode);
         return AVERROR_INVALIDDATA;
     }
-    expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
 
     if (buf_size < expected_fr_size) {
         av_log(avctx, AV_LOG_ERROR,
