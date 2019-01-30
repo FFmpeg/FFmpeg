@@ -1490,6 +1490,8 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data,
     }
     if (i >= buf_size)
         return AVERROR_INVALIDDATA;
+    if (i > 10)
+        return i;
     buf += i;
     buf_size -= i;
 
