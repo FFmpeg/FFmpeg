@@ -64,7 +64,7 @@ typedef struct RsccContext {
     /* zlib interaction */
     uint8_t *inflated_buf;
     uLongf inflated_size;
-    int valid_pixels
+    int valid_pixels;
 } RsccContext;
 
 static av_cold int rscc_init(AVCodecContext *avctx)
