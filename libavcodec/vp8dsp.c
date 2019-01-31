@@ -679,6 +679,8 @@ av_cold void ff_vp78dsp_init(VP8DSPContext *dsp)
     VP78_BILINEAR_MC_FUNC(1, 8);
     VP78_BILINEAR_MC_FUNC(2, 4);
 
+    if (ARCH_AARCH64)
+        ff_vp78dsp_init_aarch64(dsp);
     if (ARCH_ARM)
         ff_vp78dsp_init_arm(dsp);
     if (ARCH_PPC)
@@ -739,6 +741,8 @@ av_cold void ff_vp8dsp_init(VP8DSPContext *dsp)
     dsp->vp8_v_loop_filter_simple = vp8_v_loop_filter_simple_c;
     dsp->vp8_h_loop_filter_simple = vp8_h_loop_filter_simple_c;
 
+    if (ARCH_AARCH64)
+        ff_vp8dsp_init_aarch64(dsp);
     if (ARCH_ARM)
         ff_vp8dsp_init_arm(dsp);
     if (ARCH_X86)
