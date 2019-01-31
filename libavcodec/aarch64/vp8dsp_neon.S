@@ -28,7 +28,7 @@
 function ff_vp8_idct_add_neon, export=1
         ld1             {v0.8b - v3.8b},  [x1]
         mov             w4,  #20091
-        movk            w4,  #35468/2, lsl 16
+        movk            w4,  #35468/2, lsl #16
         dup             v4.2s, w4
 
         smull           v26.4s, v1.4h,  v4.h[0]
