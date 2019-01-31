@@ -125,36 +125,37 @@ function ff_vp8_idct_add_neon, export=1
         sub             v17.4h,     v0.4h,  v2.4h
 
         add             v18.4h,     v20.4h, v23.4h
-        ld1             {v24.d}[0], [x0],   x2
-        zip1            v16.2d,     v16.2d, v17.2d
-        sub             v19.4h,     v21.4h, v22.4h
-        ld1             {v25.d}[0], [x0],   x2
-        zip1            v18.2d,     v18.2d, v19.2d
-        add             v0.8h,      v16.8h, v18.8h
-        ld1             {v25.d}[1], [x0],   x2
-        sub             v1.8h,      v16.8h, v18.8h
-        ld1             {v24.d}[1], [x0],   x2
-        srshr           v0.8h,      v0.8h,  #3
-        trn1            v24.4s,     v24.4s, v25.4s
-        srshr           v1.8h,      v1.8h,  #3
+        ld1             {v24.s}[0], [x0],   x2
+        sub             v19.4h, v21.4h, v22.4h
+        ld1             {v25.s}[0], [x0],   x2
+        add             v0.4h,      v16.4h, v18.4h
+        add             v1.4h,      v17.4h, v19.4h
+        ld1             {v26.s}[0], [x0],   x2
+        sub             v3.4h,      v16.4h, v18.4h
+        sub             v2.4h,      v17.4h, v19.4h
+        ld1             {v27.s}[0], [x0],   x2
+        srshr           v0.4h,      v0.4h,  #3
+        srshr           v1.4h,      v1.4h,  #3
+        srshr           v2.4h,      v2.4h,  #3
+        srshr           v3.4h,      v3.4h,  #3
+
         sub             x0,  x0,  x2,  lsl #2
 
-        ext             v1.16b, v1.16b, v1.16b, #8
-        trn1            v3.2d,  v0.2d,  v1.2d
-        trn2            v0.2d,  v0.2d,  v1.2d
-        trn1            v1.8h,  v3.8h,  v0.8h
-        trn2            v3.8h,  v3.8h,  v0.8h
-        uzp1            v0.4s,  v1.4s,  v3.4s
-        uzp2            v1.4s,  v3.4s,  v1.4s
+        transpose_4x4H  v0, v1, v2, v3, v5, v6, v7, v16
 
         uaddw           v0.8h,  v0.8h, v24.8b
-        uaddw2          v1.8h,  v1.8h, v24.16b
+        uaddw           v1.8h,  v1.8h, v25.8b
+        uaddw           v2.8h,  v2.8h, v26.8b
+        uaddw           v3.8h,  v3.8h, v27.8b
         sqxtun          v0.8b,  v0.8h
-        sqxtun2         v0.16b, v1.8h
+        sqxtun          v1.8b,  v1.8h
+        sqxtun          v2.8b,  v2.8h
+        sqxtun          v3.8b,  v3.8h
+
         st1             {v0.s}[0],  [x0], x2
-        st1             {v0.s}[1],  [x0], x2
-        st1             {v0.s}[3],  [x0], x2
-        st1             {v0.s}[2],  [x0], x2
+        st1             {v1.s}[0],  [x0], x2
+        st1             {v2.s}[0],  [x0], x2
+        st1             {v3.s}[0],  [x0], x2
 
         ret
 endfunc
