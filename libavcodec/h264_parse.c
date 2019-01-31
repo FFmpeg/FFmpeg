@@ -242,7 +242,12 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
                 ref_count[1] = 1;
         }
 
-        if (ref_count[0] - 1 > max[0] || ref_count[1] - 1 > max[1]) {
+        if (slice_type_nos == AV_PICTURE_TYPE_B)
+            list_count = 2;
+        else
+            list_count = 1;
+
+        if (ref_count[0] - 1 > max[0] || (list_count == 2 && (ref_count[1] - 1 > max[1]))) {
             av_log(logctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n",
                    ref_count[0] - 1, max[0], ref_count[1] - 1, max[1]);
             ref_count[0] = ref_count[1] = 0;
@@ -250,10 +255,6 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
             goto fail;
         }
 
-        if (slice_type_nos == AV_PICTURE_TYPE_B)
-            list_count = 2;
-        else
-            list_count = 1;
     } else {
         list_count   = 0;
         ref_count[0] = ref_count[1] = 0;
