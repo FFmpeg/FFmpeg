@@ -25,6 +25,15 @@ static av_cold void hevc_dsp_init_mmi(HEVCDSPContext *c,
                                       const int bit_depth)
 {
     if (8 == bit_depth) {
+        c->put_hevc_qpel[1][0][1] = ff_hevc_put_hevc_qpel_h4_8_mmi;
+        c->put_hevc_qpel[3][0][1] = ff_hevc_put_hevc_qpel_h8_8_mmi;
+        c->put_hevc_qpel[4][0][1] = ff_hevc_put_hevc_qpel_h12_8_mmi;
+        c->put_hevc_qpel[5][0][1] = ff_hevc_put_hevc_qpel_h16_8_mmi;
+        c->put_hevc_qpel[6][0][1] = ff_hevc_put_hevc_qpel_h24_8_mmi;
+        c->put_hevc_qpel[7][0][1] = ff_hevc_put_hevc_qpel_h32_8_mmi;
+        c->put_hevc_qpel[8][0][1] = ff_hevc_put_hevc_qpel_h48_8_mmi;
+        c->put_hevc_qpel[9][0][1] = ff_hevc_put_hevc_qpel_h64_8_mmi;
+
         c->put_hevc_qpel[1][1][1] = ff_hevc_put_hevc_qpel_hv4_8_mmi;
         c->put_hevc_qpel[3][1][1] = ff_hevc_put_hevc_qpel_hv8_8_mmi;
         c->put_hevc_qpel[4][1][1] = ff_hevc_put_hevc_qpel_hv12_8_mmi;

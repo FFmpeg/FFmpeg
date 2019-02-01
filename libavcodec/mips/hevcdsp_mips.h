@@ -488,6 +488,15 @@ void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_##TYPE(int16_t *dst,          \
                                                       intptr_t mx,           \
                                                       intptr_t my,           \
                                                       int width)
+L_MC(qpel, h, 4, mmi);
+L_MC(qpel, h, 8, mmi);
+L_MC(qpel, h, 12, mmi);
+L_MC(qpel, h, 16, mmi);
+L_MC(qpel, h, 24, mmi);
+L_MC(qpel, h, 32, mmi);
+L_MC(qpel, h, 48, mmi);
+L_MC(qpel, h, 64, mmi);
+
 L_MC(qpel, hv, 4, mmi);
 L_MC(qpel, hv, 8, mmi);
 L_MC(qpel, hv, 12, mmi);
