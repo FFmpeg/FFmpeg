@@ -196,8 +196,6 @@ null(){
     :
 }
 
-mkdir -p "$outdir"
-
 exec 3>&2
 eval $command >"$outfile" 2>$errfile
 err=$?

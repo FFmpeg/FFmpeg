@@ -2,7 +2,8 @@ THREADS = 1
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
 
-OUTDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
+FATE_OUTDIRS = tests/data tests/data/fate tests/data/filtergraphs tests/data/lavf tests/data/pixfmt tests/vsynth1
+OUTDIRS += $(FATE_OUTDIRS)
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'
@@ -149,7 +150,7 @@ $(addprefix fate-, $(IGNORE_TESTS)): REPORT=ignore
 
 fate: $(FATE)
 
-$(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE): $(FATE_UTILS:%=tests/%$(HOSTEXESUF)) | $(FATE_OUTDIRS)
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)' '$(CPUFLAGS)' '$(CMP_SHIFT)' '$(CMP_TARGET)' '$(SIZE_TOLERANCE)' '$(CMP_UNIT)' '$(GEN)' '$(HWACCEL)' '$(REPORT)'
 
