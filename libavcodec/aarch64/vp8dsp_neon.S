@@ -957,6 +957,51 @@ function ff_put_vp8_epel16_h6v6_neon, export=1
         ret
 endfunc
 
+function ff_put_vp8_epel8_v6_neon, export=1
+        sub             x2,  x2,  x3,  lsl #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},  [x6]
+1:
+        ld1             {v2.8b},  [x2], x3
+        ld1             {v3.8b},  [x2], x3
+        ld1             {v4.8b},  [x2], x3
+        ld1             {v5.8b},  [x2], x3
+        ld1             {v6.8b},  [x2], x3
+        ld1             {v7.8b},  [x2], x3
+        ld1             {v28.8b}, [x2]
+
+        sub             x2,  x2,  x3,  lsl #2
+
+        vp8_epel8_v6_y2 v2, v3, v2, v3, v4, v5, v6, v7, v28
+
+        st1             {v2.8b}, [x0], x1
+        st1             {v3.8b}, [x0], x1
+        subs            w4,  w4,  #2
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel8_h6_neon, export=1
+        sub             x2,  x2,  #2
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},        [x5]
+1:
+        ld1             {v2.8b, v3.8b}, [x2], x3
+
+        vp8_epel8_h6    v2,  v2,  v3
+
+        st1             {v2.8b}, [x0], x1
+        subs            w4,  w4,  #1
+        b.ne            1b
+
+        ret
+endfunc
+
 function ff_put_vp8_epel8_h6v6_neon, export=1
         sub             x2,  x2,  x3,  lsl #1
         sub             x2,  x2,  #2
@@ -1000,6 +1045,48 @@ function ff_put_vp8_epel8_h6v6_neon, export=1
         b.ne            2b
 
         add             sp,  sp,  #168+16
+        ret
+endfunc
+
+function ff_put_vp8_epel8_v4_neon, export=1
+        sub             x2,  x2,  x3
+
+        movrel          x7,  subpel_filters, -16
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},     [x6]
+1:
+        ld1             {v2.8b},     [x2], x3
+        ld1             {v3.8b},     [x2], x3
+        ld1             {v4.8b},     [x2], x3
+        ld1             {v5.8b},     [x2], x3
+        ld1             {v6.8b},     [x2]
+        sub             x2,  x2,  x3,  lsl #1
+
+        vp8_epel8_v4_y2 v2, v2, v3, v4, v5, v6
+
+        st1             {v2.d}[0], [x0], x1
+        st1             {v2.d}[1], [x0], x1
+        subs            w4,  w4,  #2
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel8_h4_neon, export=1
+        sub             x2,  x2,  #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+1:
+        ld1             {v2.8b,v3.8b}, [x2], x3
+
+        vp8_epel8_h4    v2,  v2,  v3
+
+        st1             {v2.8b}, [x0], x1
+        subs            w4,  w4,  #1
+        b.ne            1b
+
         ret
 endfunc
 
