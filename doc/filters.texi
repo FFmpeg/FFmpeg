@@ -12296,10 +12296,10 @@ The filter accepts the following options.
 
 @table @option
 @item s
-Set denoising strength.
+Set denoising strength. Default is 1.0. Must be in range [1.0, 30.0].
 
 @item p
-Set patch size.
+Set patch size. Default is 7. Must be odd number in range [0, 99].
 
 @item pc
 Same as @option{p} but for chroma planes.
@@ -12307,7 +12307,7 @@ Same as @option{p} but for chroma planes.
 The default value is @var{0} and means automatic.
 
 @item r
-Set research size.
+Set research size. Default is 15. Must be odd number in range [0, 99].
 
 @item rc
 Same as @option{r} but for chroma planes.
