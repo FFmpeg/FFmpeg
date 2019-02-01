@@ -67,4 +67,9 @@
     VP8_MC(epel ## w ## _h4v6, opt);            \
     VP8_MC(epel ## w ## _h6v6, opt)
 
+#define VP8_BILIN(w, opt)                       \
+    VP8_MC(bilin ## w ## _h, opt);              \
+    VP8_MC(bilin ## w ## _v, opt);              \
+    VP8_MC(bilin ## w ## _hv, opt)
+
 #endif /* AVCODEC_AARCH64_VP8DSP_H */

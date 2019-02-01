@@ -1509,3 +1509,295 @@ function ff_put_vp8_epel4_h4v4_neon, export=1
         add             sp,  sp,  #44
         ret
 endfunc
+
+/* Bilinear MC */
+
+function ff_put_vp8_bilin16_h_neon, export=1
+        mov             w7,     #8
+        dup             v0.8b,  w5
+        sub             w5,     w7,     w5
+        dup             v1.8b,  w5
+1:
+        subs            w4,     w4,     #2
+        ld1             {v2.8b,v3.8b,v4.8b},    [x2], x3
+        ext             v5.8b,  v3.8b,  v4.8b,  #1
+        ext             v4.8b,  v2.8b,  v3.8b,  #1
+        umull           v16.8h, v2.8b,  v1.8b
+        umlal           v16.8h, v4.8b,  v0.8b
+        ld1             {v18.8b,v19.8b,v20.8b}, [x2], x3
+        umull           v6.8h,  v3.8b,  v1.8b
+        umlal           v6.8h,  v5.8b,  v0.8b
+        ext             v21.8b, v19.8b, v20.8b, #1
+        ext             v20.8b, v18.8b, v19.8b, #1
+        umull           v22.8h, v18.8b, v1.8b
+        umlal           v22.8h, v20.8b, v0.8b
+        umull           v24.8h, v19.8b, v1.8b
+        umlal           v24.8h, v21.8b, v0.8b
+        rshrn           v4.8b,  v16.8h, #3
+        rshrn2          v4.16b, v6.8h,  #3
+        rshrn           v6.8b,  v22.8h, #3
+        rshrn2          v6.16b, v24.8h, #3
+        st1             {v4.16b}, [x0], x1
+        st1             {v6.16b}, [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin16_v_neon, export=1
+        mov             w7,     #8
+        dup             v0.16b, w6
+        sub             w6,     w7,     w6
+        dup             v1.16b, w6
+
+        ld1             {v2.16b}, [x2], x3
+1:
+        subs            w4,     w4,     #2
+        ld1             {v4.16b}, [x2], x3
+        umull           v6.8h,  v2.8b,  v1.8b
+        umlal           v6.8h,  v4.8b,  v0.8b
+        umull2          v16.8h, v2.16b, v1.16b
+        umlal2          v16.8h, v4.16b, v0.16b
+        ld1             {v2.16b}, [x2], x3
+        umull           v18.8h, v4.8b,  v1.8b
+        umlal           v18.8h, v2.8b,  v0.8b
+        umull2          v20.8h, v4.16b, v1.16b
+        umlal2          v20.8h, v2.16b, v0.16b
+        rshrn           v4.8b,  v6.8h,  #3
+        rshrn2          v4.16b, v16.8h, #3
+        rshrn           v6.8b,  v18.8h, #3
+        rshrn2          v6.16b, v20.8h, #3
+        st1             {v4.16b}, [x0], x1
+        st1             {v6.16b}, [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin16_hv_neon, export=1
+        mov             w7,      #8
+        dup             v0.8b,   w5            // mx
+        sub             w5,      w7,     w5
+        dup             v1.8b,   w5
+        dup             v2.16b,  w6            // my
+        sub             w6,      w7,     w6
+        dup             v3.16b,  w6
+
+        ld1             {v4.8b,v5.8b,v6.8b},    [x2], x3
+
+        ext             v7.8b,   v5.8b,  v6.8b, #1
+        ext             v6.8b,   v4.8b,  v5.8b, #1
+        umull           v16.8h,  v4.8b,  v1.8b
+        umlal           v16.8h,  v6.8b,  v0.8b
+        umull           v18.8h,  v5.8b,  v1.8b
+        umlal           v18.8h,  v7.8b,  v0.8b
+        rshrn           v4.8b,   v16.8h, #3
+        rshrn2          v4.16b,  v18.8h, #3
+1:
+        subs            w4,  w4,  #2
+        ld1             {v18.8b,v19.8b,v20.8b},  [x2], x3
+        ext             v21.8b,  v19.8b, v20.8b, #1
+        ext             v20.8b,  v18.8b, v19.8b, #1
+        umull           v22.8h,  v18.8b, v1.8b
+        umlal           v22.8h,  v20.8b, v0.8b
+        ld1             {v26.8b,v27.8b,v28.8b},  [x2], x3
+        umull           v24.8h,  v19.8b, v1.8b
+        umlal           v24.8h,  v21.8b, v0.8b
+        ext             v29.8b,  v27.8b, v28.8b, #1
+        ext             v28.8b,  v26.8b, v27.8b, #1
+        umull           v16.8h,  v26.8b, v1.8b
+        umlal           v16.8h,  v28.8b, v0.8b
+        umull           v18.8h,  v27.8b, v1.8b
+        umlal           v18.8h,  v29.8b, v0.8b
+        rshrn           v6.8b,   v22.8h, #3
+        rshrn2          v6.16b,  v24.8h, #3
+        umull           v24.8h,  v4.8b,  v3.8b
+        umlal           v24.8h,  v6.8b,  v2.8b
+        umull2          v30.8h,  v4.16b, v3.16b
+        umlal2          v30.8h,  v6.16b, v2.16b
+        rshrn           v4.8b,   v16.8h, #3
+        rshrn2          v4.16b,  v18.8h, #3
+        umull           v20.8h,  v6.8b,  v3.8b
+        umlal           v20.8h,  v4.8b,  v2.8b
+        umull2          v22.8h,  v6.16b, v3.16b
+        umlal2          v22.8h,  v4.16b, v2.16b
+        rshrn           v24.8b,  v24.8h, #3
+        rshrn2          v24.16b, v30.8h, #3
+        st1             {v24.16b}, [x0], x1
+        rshrn           v20.8b,  v20.8h, #3
+        rshrn2          v20.16b, v22.8h, #3
+        st1             {v20.16b}, [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin8_h_neon, export=1
+        mov             w7,     #8
+        dup             v0.8b,  w5
+        sub             w5,     w7,     w5
+        dup             v1.8b,  w5
+1:
+        subs            w4,     w4,     #2
+        ld1             {v2.8b,v3.8b},  [x2],  x3
+        ext             v3.8b,  v2.8b,  v3.8b, #1
+        umull           v4.8h,  v2.8b,  v1.8b
+        umlal           v4.8h,  v3.8b,  v0.8b
+        ld1             {v6.8b,v7.8b},  [x2],  x3
+        ext             v7.8b,  v6.8b,  v7.8b, #1
+        umull           v16.8h, v6.8b,  v1.8b
+        umlal           v16.8h, v7.8b,  v0.8b
+        rshrn           v4.8b,  v4.8h,  #3
+        rshrn           v16.8b, v16.8h, #3
+        st1             {v4.8b},  [x0], x1
+        st1             {v16.8b}, [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin8_v_neon, export=1
+        mov             w7,      #8
+        dup             v0.8b,   w6
+        sub             w6,      w7,    w6
+        dup             v1.8b,   w6
+
+        ld1             {v2.8b}, [x2],  x3
+1:
+        subs            w4,      w4,    #2
+        ld1             {v3.8b}, [x2],  x3
+        umull           v4.8h,   v2.8b, v1.8b
+        umlal           v4.8h,   v3.8b, v0.8b
+        ld1             {v2.8b}, [x2],  x3
+        umull           v6.8h,   v3.8b, v1.8b
+        umlal           v6.8h,   v2.8b, v0.8b
+        rshrn           v4.8b,   v4.8h, #3
+        rshrn           v6.8b,   v6.8h, #3
+        st1             {v4.8b}, [x0],  x1
+        st1             {v6.8b}, [x0],  x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin8_hv_neon, export=1
+        mov             w7,     #8
+        dup             v0.8b,  w5             // mx
+        sub             w5,     w7,     w5
+        dup             v1.8b,  w5
+        dup             v2.8b,  w6             // my
+        sub             w6,     w7,     w6
+        dup             v3.8b,  w6
+
+        ld1             {v4.8b,v5.8b},  [x2],  x3
+        ext             v5.8b,  v4.8b,  v5.8b, #1
+        umull           v18.8h, v4.8b,  v1.8b
+        umlal           v18.8h, v5.8b,  v0.8b
+        rshrn           v22.8b, v18.8h, #3
+1:
+        subs            w4,     w4,     #2
+        ld1             {v6.8b,v7.8b},  [x2],  x3
+        ext             v7.8b,  v6.8b,  v7.8b, #1
+        umull           v16.8h, v6.8b,  v1.8b
+        umlal           v16.8h, v7.8b,  v0.8b
+        ld1             {v4.8b,v5.8b},  [x2],  x3
+        ext             v5.8b,  v4.8b,  v5.8b, #1
+        umull           v18.8h, v4.8b,  v1.8b
+        umlal           v18.8h, v5.8b,  v0.8b
+        rshrn           v16.8b, v16.8h, #3
+        umull           v20.8h, v22.8b, v3.8b
+        umlal           v20.8h, v16.8b, v2.8b
+        rshrn           v22.8b, v18.8h, #3
+        umull           v24.8h, v16.8b, v3.8b
+        umlal           v24.8h, v22.8b, v2.8b
+        rshrn           v20.8b, v20.8h, #3
+        st1             {v20.8b}, [x0], x1
+        rshrn           v23.8b, v24.8h, #3
+        st1             {v23.8b}, [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin4_h_neon, export=1
+        mov             w7,      #8
+        dup             v0.8b,   w5
+        sub             w5,      w7,     w5
+        dup             v1.8b,   w5
+1:
+        subs            w4,      w4,     #2
+        ld1             {v2.8b}, [x2],   x3
+        ext             v3.8b,   v2.8b,  v3.8b,  #1
+        ld1             {v6.8b}, [x2],   x3
+        ext             v7.8b,   v6.8b,  v7.8b,  #1
+        trn1            v2.2s,   v2.2s,  v6.2s
+        trn1            v3.2s,   v3.2s,  v7.2s
+        umull           v4.8h,   v2.8b,  v1.8b
+        umlal           v4.8h,   v3.8b,  v0.8b
+        rshrn           v4.8b,   v4.8h,  #3
+        st1             {v4.s}[0], [x0], x1
+        st1             {v4.s}[1], [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin4_v_neon, export=1
+        mov             w7,     #8
+        dup             v0.8b,  w6
+        sub             w6,     w7,  w6
+        dup             v1.8b,  w6
+
+        ld1r            {v2.2s},    [x2], x3
+1:
+        ld1r            {v3.2s},   [x2]
+        ld1             {v2.s}[1], [x2], x3
+        ld1             {v3.s}[1], [x2], x3
+        umull           v4.8h,  v2.8b,  v1.8b
+        umlal           v4.8h,  v3.8b,  v0.8b
+        trn2            v2.2s,  v3.2s,  v2.2s
+        rshrn           v4.8b,  v4.8h,  #3
+        st1             {v4.s}[0], [x0], x1
+        st1             {v4.s}[1], [x0], x1
+        subs            w4,     w4,     #2
+        b.gt            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_bilin4_hv_neon, export=1
+        mov             w7,      #8
+        dup             v0.8b,   w5             // mx
+        sub             w5,      w7,     w5
+        dup             v1.8b,   w5
+        dup             v2.8b,   w6             // my
+        sub             w6,      w7,     w6
+        dup             v3.8b,   w6
+
+        ld1             {v4.8b}, [x2],   x3
+        ext             v5.8b,   v4.8b,  v4.8b,  #1
+        umull           v18.8h,  v4.8b,  v1.8b
+        umlal           v18.8h,  v5.8b,  v0.8b
+        rshrn           v22.8b,  v18.8h, #3
+1:
+        subs            w4,      w4,     #2
+        ld1             {v6.8b}, [x2],   x3
+        ext             v7.8b,   v6.8b,  v6.8b,  #1
+        ld1             {v4.8b}, [x2],   x3
+        ext             v5.8b,   v4.8b,  v4.8b,  #1
+        trn1            v6.2s,   v6.2s,  v4.2s
+        trn1            v7.2s,   v7.2s,  v5.2s
+        umull           v16.8h,  v6.8b,  v1.8b
+        umlal           v16.8h,  v7.8b,  v0.8b
+        rshrn           v16.8b,  v16.8h, #3
+        umull           v20.8h,  v16.8b, v2.8b
+        trn1            v22.2s,  v22.2s, v16.2s
+        umlal           v20.8h,  v22.8b, v3.8b
+        rev64           v22.2s,  v16.2s
+        rshrn           v20.8b,  v20.8h, #3
+        st1             {v20.s}[0], [x0], x1
+        st1             {v20.s}[1], [x0], x1
+        b.gt            1b
+
+        ret
+endfunc
