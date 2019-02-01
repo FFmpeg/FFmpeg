@@ -43,13 +43,6 @@ struct weighted_avg {
     float sum;
 };
 
-/*
- * Note: WEIGHT_LUT_SIZE must be larger than max_meaningful_diff
- * (log(255)*max(h)^2, which is approximately 500000 with the current
- * maximum sigma of 30).
- */
-#define WEIGHT_LUT_SIZE 500000
-
 typedef struct NLMeansContext {
     const AVClass *class;
     int nb_planes;
@@ -66,7 +59,7 @@ typedef struct NLMeansContext {
     ptrdiff_t ii_lz_32;                         // linesize in 32-bit units of the integral image
     struct weighted_avg *wa;                    // weighted average of every pixel
     ptrdiff_t wa_linesize;                      // linesize for wa in struct size unit
-    float weight_lut[WEIGHT_LUT_SIZE];          // lookup table mapping (scaled) patch differences to their associated weights
+    float *weight_lut;                          // lookup table mapping (scaled) patch differences to their associated weights
     uint32_t max_meaningful_diff;               // maximum difference considered (if the patch difference is too high we ignore the pixel)
     NLMeansDSPContext dsp;
 } NLMeansContext;
@@ -529,8 +522,10 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->pdiff_scale = 1. / (h * h);
     s->max_meaningful_diff = log(255.) / s->pdiff_scale;
-    av_assert0((s->max_meaningful_diff - 1) < FF_ARRAY_ELEMS(s->weight_lut));
-    for (i = 0; i < WEIGHT_LUT_SIZE; i++)
+    s->weight_lut = av_calloc(s->max_meaningful_diff, sizeof(*s->weight_lut));
+    if (!s->weight_lut)
+        return AVERROR(ENOMEM);
+    for (i = 0; i < s->max_meaningful_diff; i++)
         s->weight_lut[i] = exp(-i * s->pdiff_scale);
 
     CHECK_ODD_FIELD(research_size,   "Luma research window");
@@ -559,6 +554,7 @@ static av_cold int init(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     NLMeansContext *s = ctx->priv;
+    av_freep(&s->weight_lut);
     av_freep(&s->ii_orig);
     av_freep(&s->wa);
 }
