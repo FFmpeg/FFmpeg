@@ -524,6 +524,12 @@ L_BI_MC(qpel, hv, 32, mmi);
 L_BI_MC(qpel, hv, 48, mmi);
 L_BI_MC(qpel, hv, 64, mmi);
 
+L_BI_MC(epel, hv, 4, mmi);
+L_BI_MC(epel, hv, 8, mmi);
+L_BI_MC(epel, hv, 12, mmi);
+L_BI_MC(epel, hv, 16, mmi);
+L_BI_MC(epel, hv, 24, mmi);
+L_BI_MC(epel, hv, 32, mmi);
 #undef L_BI_MC
 
 #define L_UNI_MC(PEL, DIR, WIDTH, TYPE)                                         \
