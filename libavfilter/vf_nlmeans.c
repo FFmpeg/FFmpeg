@@ -528,7 +528,7 @@ static av_cold int init(AVFilterContext *ctx)
     const double h = s->sigma * 10.;
 
     s->pdiff_scale = 1. / (h * h);
-    s->max_meaningful_diff = -log(1/255.) / s->pdiff_scale;
+    s->max_meaningful_diff = log(255.) / s->pdiff_scale;
     av_assert0((s->max_meaningful_diff - 1) < FF_ARRAY_ELEMS(s->weight_lut));
     for (i = 0; i < WEIGHT_LUT_SIZE; i++)
         s->weight_lut[i] = exp(-i * s->pdiff_scale);
