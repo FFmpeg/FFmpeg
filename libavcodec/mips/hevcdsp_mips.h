@@ -524,6 +524,15 @@ L_BI_MC(qpel, hv, 32, mmi);
 L_BI_MC(qpel, hv, 48, mmi);
 L_BI_MC(qpel, hv, 64, mmi);
 
+L_BI_MC(qpel, h, 4, mmi);
+L_BI_MC(qpel, h, 8, mmi);
+L_BI_MC(qpel, h, 12, mmi);
+L_BI_MC(qpel, h, 16, mmi);
+L_BI_MC(qpel, h, 24, mmi);
+L_BI_MC(qpel, h, 32, mmi);
+L_BI_MC(qpel, h, 48, mmi);
+L_BI_MC(qpel, h, 64, mmi);
+
 L_BI_MC(epel, hv, 4, mmi);
 L_BI_MC(epel, hv, 8, mmi);
 L_BI_MC(epel, hv, 12, mmi);
