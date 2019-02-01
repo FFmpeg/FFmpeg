@@ -43,8 +43,12 @@ struct weighted_avg {
     float sum;
 };
 
-#define WEIGHT_LUT_NBITS 9
-#define WEIGHT_LUT_SIZE  (1<<WEIGHT_LUT_NBITS)
+/*
+ * Note: WEIGHT_LUT_SIZE must be larger than max_meaningful_diff
+ * (log(255)*max(h)^2, which is approximately 500000 with the current
+ * maximum sigma of 30).
+ */
+#define WEIGHT_LUT_SIZE 500000
 
 typedef struct NLMeansContext {
     const AVClass *class;
@@ -63,7 +67,6 @@ typedef struct NLMeansContext {
     struct weighted_avg *wa;                    // weighted average of every pixel
     ptrdiff_t wa_linesize;                      // linesize for wa in struct size unit
     float weight_lut[WEIGHT_LUT_SIZE];          // lookup table mapping (scaled) patch differences to their associated weights
-    float pdiff_lut_scale;                      // scale factor for patch differences before looking into the LUT
     uint32_t max_meaningful_diff;               // maximum difference considered (if the patch difference is too high we ignore the pixel)
     NLMeansDSPContext dsp;
 } NLMeansContext;
@@ -401,8 +404,7 @@ static int nlmeans_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
             const uint32_t patch_diff_sq = e - d - b + a;
 
             if (patch_diff_sq < s->max_meaningful_diff) {
-                const unsigned weight_lut_idx = patch_diff_sq * s->pdiff_lut_scale;
-                const float weight = s->weight_lut[weight_lut_idx]; // exp(-patch_diff_sq * s->pdiff_scale)
+                const float weight = s->weight_lut[patch_diff_sq]; // exp(-patch_diff_sq * s->pdiff_scale)
                 wa[x].total_weight += weight;
                 wa[x].sum += weight * src[x];
             }
@@ -527,10 +529,9 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->pdiff_scale = 1. / (h * h);
     s->max_meaningful_diff = -log(1/255.) / s->pdiff_scale;
-    s->pdiff_lut_scale = 1./s->max_meaningful_diff * WEIGHT_LUT_SIZE;
-    av_assert0((s->max_meaningful_diff - 1) * s->pdiff_lut_scale < FF_ARRAY_ELEMS(s->weight_lut));
+    av_assert0((s->max_meaningful_diff - 1) < FF_ARRAY_ELEMS(s->weight_lut));
     for (i = 0; i < WEIGHT_LUT_SIZE; i++)
-        s->weight_lut[i] = exp(-i / s->pdiff_lut_scale * s->pdiff_scale);
+        s->weight_lut[i] = exp(-i * s->pdiff_scale);
 
     CHECK_ODD_FIELD(research_size,   "Luma research window");
     CHECK_ODD_FIELD(patch_size,      "Luma patch");
