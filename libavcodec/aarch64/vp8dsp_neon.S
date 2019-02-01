@@ -581,7 +581,7 @@ function ff_put_vp8_pixels16_neon, export=1
         st1             {v1.16b},     [x0], x1
         st1             {v2.16b},     [x0], x1
         st1             {v3.16b},     [x0], x1
-        bgt             1b
+        b.gt            1b
         ret
 endfunc
 
@@ -596,7 +596,7 @@ function ff_put_vp8_pixels8_neon, export=1
         st1             {v0.d}[1], [x0], x1
         st1             {v1.8b},   [x0], x1
         st1             {v1.d}[1], [x0], x1
-        bgt             1b
+        b.gt            1b
         ret
 endfunc
 
@@ -778,7 +778,7 @@ function ff_put_vp8_epel16_v6_neon, export=1
         st1             {v1.1d - v2.1d}, [x0], x1
         st1             {v3.1d - v4.1d}, [x0], x1
         subs            x4, x4, #2
-        bne             1b
+        b.ne            1b
 
         ret
 endfunc
@@ -797,7 +797,7 @@ function ff_put_vp8_epel16_h6_neon, export=1
         st1             {v1.16b}, [x0], x1
 
         subs            w4, w4, #1
-        bne             1b
+        b.ne            1b
         ret
 endfunc
 
@@ -821,7 +821,7 @@ function ff_put_vp8_epel16_h6v6_neon, export=1
         vp8_epel16_h6   v1, v1, v2
         st1             {v1.16b}, [x7], #16
         subs            x16, x16, #1
-        bne             1b
+        b.ne            1b
 
 
         // second pass (vertical):
@@ -842,7 +842,7 @@ function ff_put_vp8_epel16_h6v6_neon, export=1
 
         st1             {v2.16b}, [x0], x1
         subs            x4, x4, #1
-        bne             2b
+        b.ne            2b
 
         add             sp,  sp,  #336+16
         ret
@@ -869,7 +869,7 @@ function ff_put_vp8_epel8_h6v6_neon, export=1
 
         st1             {v1.8b}, [x7], #8
         subs            x16, x16, #1
-        bne             1b
+        b.ne            1b
 
         // second pass (vertical):
         sxtw            x6,  w6
@@ -888,7 +888,7 @@ function ff_put_vp8_epel8_h6v6_neon, export=1
         st1             {v1.8b}, [x0], x1
         st1             {v2.8b}, [x0], x1
         subs            x4, x4, #2
-        bne             2b
+        b.ne            2b
 
         add             sp,  sp,  #168+16
         ret
@@ -915,7 +915,7 @@ function ff_put_vp8_epel8_h4v6_neon, export=1
 
         st1             {v1.8b}, [x7], #8
         subs            x16, x16, #1
-        bne             1b
+        b.ne            1b
 
         // second pass (vertical):
         sxtw            x6,  w6
@@ -934,7 +934,7 @@ function ff_put_vp8_epel8_h4v6_neon, export=1
         st1             {v1.8b}, [x0], x1
         st1             {v2.8b}, [x0], x1
         subs            x4, x4, #2
-        bne             2b
+        b.ne            2b
 
         add             sp,  sp,  #168+16
         ret
@@ -962,7 +962,7 @@ function ff_put_vp8_epel8_h4v4_neon, export=1
 
         st1             {v1.8b}, [x7], #8
         subs            x16, x16, #1
-        bne             1b
+        b.ne            1b
 
         // second pass (vertical):
         sxtw            x6,  w6
@@ -979,7 +979,7 @@ function ff_put_vp8_epel8_h4v4_neon, export=1
         st1             {v1.d}[0], [x0], x1
         st1             {v1.d}[1], [x0], x1
         subs            x4, x4, #2
-        bne             2b
+        b.ne            2b
 
         add             sp,  sp,  #168+16
         ret
@@ -1007,7 +1007,7 @@ function ff_put_vp8_epel8_h6v4_neon, export=1
 
         st1             {v1.8b}, [x7], #8
         subs            x16, x16, #1
-        bne             1b
+        b.ne            1b
 
         // second pass (vertical):
         sxtw            x6,  w6
@@ -1024,7 +1024,7 @@ function ff_put_vp8_epel8_h6v4_neon, export=1
         st1             {v1.d}[0], [x0], x1
         st1             {v1.d}[1], [x0], x1
         subs            x4, x4, #2
-        bne             2b
+        b.ne            2b
 
         add             sp,  sp,  #168+16
         ret
