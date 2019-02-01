@@ -3592,8 +3592,8 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
         }
     }
 
-    assert(put_bits_count(&src->pb) % 8 ==0);
-    assert(put_bits_count(&dst->pb) % 8 ==0);
+    av_assert1(put_bits_count(&src->pb) % 8 ==0);
+    av_assert1(put_bits_count(&dst->pb) % 8 ==0);
     avpriv_copy_bits(&dst->pb, src->pb.buf, put_bits_count(&src->pb));
     flush_put_bits(&dst->pb);
 }
