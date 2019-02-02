@@ -195,6 +195,12 @@ input as soon as possible. Enabled by default for realtime streams, where data
 may be dropped if not read in time. Use this option to enable infinite buffers
 for all inputs, use @option{-noinfbuf} to disable it.
 
+@item -filter_threads @var{nb_threads}
+Defines how many threads are used to process a filter pipeline. Each pipeline
+will produce a thread pool with this many threads available for parallel
+processing. The default is 0 which means that the thread count will be
+determined by the number of available CPUs.
+
 @end table
 
 @section While playing
