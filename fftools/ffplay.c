@@ -2125,26 +2125,17 @@ static int video_thread(void *arg)
     AVRational frame_rate = av_guess_frame_rate(is->ic, is->video_st, NULL);
 
 #if CONFIG_AVFILTER
-    AVFilterGraph *graph = avfilter_graph_alloc();
+    AVFilterGraph *graph = NULL;
     AVFilterContext *filt_out = NULL, *filt_in = NULL;
     int last_w = 0;
     int last_h = 0;
     enum AVPixelFormat last_format = -2;
     int last_serial = -1;
     int last_vfilter_idx = 0;
-    if (!graph) {
-        av_frame_free(&frame);
-        return AVERROR(ENOMEM);
-    }
-
 #endif
 
-    if (!frame) {
-#if CONFIG_AVFILTER
-        avfilter_graph_free(&graph);
-#endif
+    if (!frame)
         return AVERROR(ENOMEM);
-    }
 
     for (;;) {
         ret = get_video_frame(is, frame);
@@ -2167,6 +2158,10 @@ static int video_thread(void *arg)
                    (const char *)av_x_if_null(av_get_pix_fmt_name(frame->format), "none"), is->viddec.pkt_serial);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
+            if (!graph) {
+                ret = AVERROR(ENOMEM);
+                goto the_end;
+            }
             if ((ret = configure_video_filters(graph, is, vfilters_list ? vfilters_list[is->vfilter_idx] : NULL, frame)) < 0) {
                 SDL_Event event;
                 event.type = FF_QUIT_EVENT;
