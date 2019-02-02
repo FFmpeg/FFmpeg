@@ -19,17 +19,6 @@ do_lavf()
         do_avconv_crc $file $DEC_OPTS -i $target_path/$file $4
 }
 
-do_image_formats()
-{
-    outfile="$datadir/images/$1/"
-    mkdir -p "$outfile"
-    file=${outfile}%02d.$1
-    run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $2 $ENC_OPTS $3 -frames 12 -y -qscale 10 $target_path/$file
-    do_md5sum ${outfile}02.$1
-    do_avconv_crc $file $DEC_OPTS $3 -i $target_path/$file
-    echo $(wc -c ${outfile}02.$1)
-}
-
 if [ -n "$do_avi" ] ; then
 do_lavf avi "" "-c:a mp2 -ar 44100"
 fi
@@ -105,60 +94,6 @@ if [ -n "$do_yuv4mpeg" ] ; then
 file=${outfile}lavf.y4m
 do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $ENC_OPTS -t 1 -qscale 10
 do_avconv_crc $file -i $target_path/$file
-fi
-
-# image formats
-
-if [ -n "$do_pgm" ] ; then
-do_image_formats pgm
-fi
-
-if [ -n "$do_ppm" ] ; then
-do_image_formats ppm
-fi
-
-if [ -n "$do_png" ] ; then
-do_image_formats png
-fi
-
-if [ -n "$do_bmp" ] ; then
-do_image_formats bmp
-fi
-
-if [ -n "$do_tga" ] ; then
-do_image_formats tga
-fi
-
-if [ -n "$do_tiff" ] ; then
-do_image_formats tiff "-pix_fmt rgb24"
-fi
-
-if [ -n "$do_sgi" ] ; then
-do_image_formats sgi
-fi
-
-if [ -n "$do_jpg" ] ; then
-do_image_formats jpg "-pix_fmt yuvj420p" "-f image2"
-fi
-
-if [ -n "$do_pam" ] ; then
-do_image_formats pam
-fi
-
-if [ -n "$do_pcx" ] ; then
-do_image_formats pcx
-fi
-
-if [ -n "$do_xwd" ] ; then
-do_image_formats xwd
-fi
-
-if [ -n "$do_dpx" ] ; then
-do_image_formats dpx
-fi
-
-if [ -n "$do_sunrast" ] ; then
-do_image_formats sun
 fi
 
 # pix_fmt conversions
