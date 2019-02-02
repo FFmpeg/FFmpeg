@@ -1,3 +1,3 @@
-7df31ba8a5909e3c88b1d1a3f93c4ec2 *./tests/data/lavf/lavf.mpg
-372736 ./tests/data/lavf/lavf.mpg
-./tests/data/lavf/lavf.mpg CRC=0xdd24439e
+7df31ba8a5909e3c88b1d1a3f93c4ec2 *tests/data/lavf/lavf.mpg
+372736 tests/data/lavf/lavf.mpg
+tests/data/lavf/lavf.mpg CRC=0xdd24439e

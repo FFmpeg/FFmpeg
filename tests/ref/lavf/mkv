@@ -1,3 +1,3 @@
-dad336329ef85127f97e9d12a3b57a59 *./tests/data/lavf/lavf.mkv
-320383 ./tests/data/lavf/lavf.mkv
-./tests/data/lavf/lavf.mkv CRC=0x63ed3cda
+dad336329ef85127f97e9d12a3b57a59 *tests/data/lavf/lavf.mkv
+320383 tests/data/lavf/lavf.mkv
+tests/data/lavf/lavf.mkv CRC=0x63ed3cda
