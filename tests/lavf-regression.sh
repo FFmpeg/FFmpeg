@@ -30,13 +30,6 @@ do_image_formats()
     echo $(wc -c ${outfile}02.$1)
 }
 
-do_audio_only()
-{
-    file=${outfile}lavf.$1
-    do_avconv $file $DEC_OPTS $2 -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $3
-    do_avconv_crc $file $DEC_OPTS $4 -i $target_path/$file
-}
-
 if [ -n "$do_avi" ] ; then
 do_lavf avi "" "-c:a mp2 -ar 44100"
 fi
@@ -166,52 +159,6 @@ fi
 
 if [ -n "$do_sunrast" ] ; then
 do_image_formats sun
-fi
-
-# audio only
-
-if [ -n "$do_wav" ] ; then
-do_audio_only wav
-fi
-
-if [ -n "$do_alaw" ] ; then
-do_audio_only al "" "" "-ar 44100"
-fi
-
-if [ -n "$do_mulaw" ] ; then
-do_audio_only ul "" "" "-ar 44100"
-fi
-
-if [ -n "$do_au" ] ; then
-do_audio_only au
-fi
-
-if [ -n "$do_mmf" ] ; then
-do_audio_only mmf
-fi
-
-if [ -n "$do_aiff" ] ; then
-do_audio_only aif
-fi
-
-if [ -n "$do_voc" ] ; then
-do_audio_only voc
-fi
-
-if [ -n "$do_voc_s16" ] ; then
-do_audio_only s16.voc "-ac 2" "-c:a pcm_s16le"
-fi
-
-if [ -n "$do_ogg" ] ; then
-do_audio_only ogg "" "-c:a flac"
-fi
-
-if [ -n "$do_rso" ] ; then
-do_audio_only rso
-fi
-
-if [ -n "$do_sox" ] ; then
-do_audio_only sox
 fi
 
 # pix_fmt conversions

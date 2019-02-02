@@ -156,6 +156,7 @@ enc_dec(){
 # functions above and below that should be refactored.
 avconv2="$target_exec ${target_path}/avconv"
 raw_src="${target_path}/tests/vsynth1/%02d.pgm"
+pcm_src="${target_path}/tests/data/asynth1.sw"
 crcfile="tests/data/$test.lavf.crc"
 target_crcfile="${target_path}/$crcfile"
 
@@ -186,6 +187,14 @@ do_avconv_crc(){
     shift
     run_avconv $* -f crc "$target_crcfile"
     echo "$f $(cat $crcfile)"
+}
+
+lavf_audio(){
+    t="${test#lavf-}"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS $1 -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $2
+    do_avconv_crc $file $DEC_OPTS $3 -i $target_path/$file
 }
 
 lavf_image2pipe(){
