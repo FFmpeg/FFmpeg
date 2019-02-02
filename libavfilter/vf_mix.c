@@ -354,7 +354,8 @@ static int tmix_filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->nb_frames < s->nb_inputs) {
         s->frames[s->nb_frames] = in;
         s->nb_frames++;
-        return 0;
+        if (s->nb_frames < s->nb_inputs)
+            return 0;
     } else {
         av_frame_free(&s->frames[0]);
         memmove(&s->frames[0], &s->frames[1], sizeof(*s->frames) * (s->nb_inputs - 1));
