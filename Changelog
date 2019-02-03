@@ -2,6 +2,14 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.1.1:
+- avcodec/pgssubdec: Check for duplicate display segments
+- avformat/rtsp: Check number of streams in sdp_parse_line()
+- avformat/rtsp: Clear reply in every iteration in ff_rtsp_connect()
+- avcodec/rasc: Move ff_get_buffer() after frame checks
+- avcodec/rasc: Check uncompressed dlta size
+- avcodec/fic: Check that there is input left in fic_decode_block()
+- avcodec/ilbcdec: Fix undefined integer overflow lsf2poly()
+- avcodec/ilbcdec: Fix integer overflow in construct_vector()
 - avcodec/prosumer: Error out if decompress() stops reading data
 - avcodec/tiff: Check for 12bit gray fax
 - avutil/imgutils: Optimize memset_bytes() by using av_memcpy_backptr()
