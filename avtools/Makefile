@@ -28,7 +28,7 @@ $(foreach P,$(AVPROGS-yes),$(eval $(call DOAVTOOL,$(P))))
 all: $(AVPROGS)
 
 avtools/cmdutils.o: avversion.h | avtools
-OBJDIRS += avtools
+OUTDIRS += avtools
 
 ifdef AVPROGS
 install: install-progs install-data

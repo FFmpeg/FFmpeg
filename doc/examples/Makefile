@@ -18,7 +18,7 @@ $(EXAMPLES): %$(EXESUF): %.o
 examples: $(EXAMPLES)
 
 $(EXAMPLES:%$(EXESUF)=%.o): | doc/examples
-OBJDIRS += doc/examples
+OUTDIRS += doc/examples
 
 DOXY_INPUT += $(addprefix $(SRC_PATH)/, $(EXAMPLES:%$(EXESUF)=%.c))
 

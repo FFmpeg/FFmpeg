@@ -30,7 +30,7 @@ CHECKASMOBJS := $(sort $(CHECKASMOBJS:%=tests/checkasm/%))
 
 CHECKASMDIRS := $(sort $(dir $(CHECKASMOBJS)))
 $(CHECKASMOBJS): | $(CHECKASMDIRS)
-OBJDIRS += $(CHECKASMDIRS)
+OUTDIRS += $(CHECKASMDIRS)
 
 CHECKASM := tests/checkasm/checkasm$(EXESUF)
 

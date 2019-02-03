@@ -2,7 +2,7 @@ THREADS = 1
 VREF = tests/vsynth1/00.pgm
 AREF = tests/data/asynth1.sw
 
-OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
+OUTDIRS += tests/data tests/vsynth1 tests/data/filtergraphs
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'

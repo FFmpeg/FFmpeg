@@ -47,7 +47,7 @@ $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
 $(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
 $(TOOLOBJS): | tools
 
-OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(TESTOBJS))
+OUTDIRS := $(OUTDIRS) $(dir $(OBJS) $(HOBJS) $(HOSTOBJS) $(TESTOBJS))
 
 CLEANSUFFIXES     = *.d *.gcda *.gcno *.h.c *.map *.o *.pc *.ver *.version *~
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a

@@ -3,7 +3,7 @@ TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 tools/cws2fws$(EXESUF): ELIBS = $(ZLIB)
 
-OBJDIRS += tools
+OUTDIRS += tools
 
 clean::
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
