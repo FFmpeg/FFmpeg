@@ -34,32 +34,36 @@
 static SoftFloat sbr_sum_square_c(int (*x)[2], int n)
 {
     SoftFloat ret;
-    uint64_t accu, round;
+    uint64_t accu = 0, round;
     uint64_t accu0 = 0, accu1 = 0, accu2 = 0, accu3 = 0;
     int i, nz, nz0;
     unsigned u;
 
+    nz = 0;
     for (i = 0; i < n; i += 2) {
-        // Larger values are inavlid and could cause overflows of accu.
-        av_assert2(FFABS(x[i + 0][0]) >> 30 == 0);
         accu0 += (int64_t)x[i + 0][0] * x[i + 0][0];
-        av_assert2(FFABS(x[i + 0][1]) >> 30 == 0);
         accu1 += (int64_t)x[i + 0][1] * x[i + 0][1];
-        av_assert2(FFABS(x[i + 1][0]) >> 30 == 0);
         accu2 += (int64_t)x[i + 1][0] * x[i + 1][0];
-        av_assert2(FFABS(x[i + 1][1]) >> 30 == 0);
         accu3 += (int64_t)x[i + 1][1] * x[i + 1][1];
+        if ((accu0|accu1|accu2|accu3) > UINT64_MAX - INT32_MIN*(int64_t)INT32_MIN || i+2>=n) {
+            accu0 >>= nz;
+            accu1 >>= nz;
+            accu2 >>= nz;
+            accu3 >>= nz;
+            while ((accu0|accu1|accu2|accu3) > (UINT64_MAX - accu) >> 2) {
+                accu0 >>= 1;
+                accu1 >>= 1;
+                accu2 >>= 1;
+                accu3 >>= 1;
+                accu  >>= 1;
+                nz ++;
+            }
+            accu += accu0 + accu1 + accu2 + accu3;
+            accu0 = accu1 = accu2 = accu3 = 0;
+        }
     }
 
-    nz0 = 15;
-    while ((accu0|accu1|accu2|accu3) >> 62) {
-        accu0 >>= 1;
-        accu1 >>= 1;
-        accu2 >>= 1;
-        accu3 >>= 1;
-        nz0 --;
-    }
-    accu = accu0 + accu1 + accu2 + accu3;
+    nz0 = 15 - nz;
 
     u = accu >> 32;
     if (u) {
