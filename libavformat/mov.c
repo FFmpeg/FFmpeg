@@ -1266,7 +1266,7 @@ static int64_t get_frag_time(MOVFragmentIndex *frag_index,
 static int search_frag_timestamp(MOVFragmentIndex *frag_index,
                                  AVStream *st, int64_t timestamp)
 {
-    int a, b, m;
+    int a, b, m, m0;
     int64_t frag_time;
     int id = -1;
 
@@ -1282,15 +1282,18 @@ static int search_frag_timestamp(MOVFragmentIndex *frag_index,
     b = frag_index->nb_items;
 
     while (b - a > 1) {
-        m = (a + b) >> 1;
-        frag_time = get_frag_time(frag_index, m, id);
-        if (frag_time != AV_NOPTS_VALUE) {
-            if (frag_time >= timestamp)
-                b = m;
-            if (frag_time <= timestamp)
-                a = m;
-        }
+        m0 = m = (a + b) >> 1;
+
+        while (m < b &&
+               (frag_time = get_frag_time(frag_index, m, id)) == AV_NOPTS_VALUE)
+            m++;
+
+        if (m < b && frag_time <= timestamp)
+            a = m;
+        else
+            b = m0;
     }
+
     return a;
 }
 
