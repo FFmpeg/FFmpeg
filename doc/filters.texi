@@ -3556,7 +3556,8 @@ Full example using wav files as coefficients with amovie filters for 7.1 downmix
 each amovie filter use stereo file with IR coefficients as input.
 The files give coefficients for each position of virtual loudspeaker:
 @example
-ffmpeg -i input.wav -lavfi-complex "amovie=azi_270_ele_0_DFC.wav[sr],amovie=azi_90_ele_0_DFC.wav[sl],amovie=azi_225_ele_0_DFC.wav[br],amovie=azi_135_ele_0_DFC.wav[bl],amovie=azi_0_ele_0_DFC.wav,asplit[fc][lfe],amovie=azi_35_ele_0_DFC.wav[fl],amovie=azi_325_ele_0_DFC.wav[fr],[a:0][fl][fr][fc][lfe][bl][br][sl][sr]headphone=FL|FR|FC|LFE|BL|BR|SL|SR"
+ffmpeg -i input.wav
+-filter_complex "amovie=azi_270_ele_0_DFC.wav[sr];amovie=azi_90_ele_0_DFC.wav[sl];amovie=azi_225_ele_0_DFC.wav[br];amovie=azi_135_ele_0_DFC.wav[bl];amovie=azi_0_ele_0_DFC.wav,asplit[fc][lfe];amovie=azi_35_ele_0_DFC.wav[fl];amovie=azi_325_ele_0_DFC.wav[fr];[0:a][fl][fr][fc][lfe][bl][br][sl][sr]headphone=FL|FR|FC|LFE|BL|BR|SL|SR"
 output.wav
 @end example
 
@@ -3564,7 +3565,7 @@ output.wav
 Full example using wav files as coefficients with amovie filters for 7.1 downmix,
 but now in @var{multich} @var{hrir} format.
 @example
-ffmpeg -i input.wav -lavfi-complex "amovie=minp.wav[hrirs],[a:0][hrirs]headphone=map=FL|FR|FC|LFE|BL|BR|SL|SR:hrir=multich"
+ffmpeg -i input.wav -filter_complex "amovie=minp.wav[hrirs];[0:a][hrirs]headphone=map=FL|FR|FC|LFE|BL|BR|SL|SR:hrir=multich"
 output.wav
 @end example
 @end itemize
