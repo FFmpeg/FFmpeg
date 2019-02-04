@@ -2000,8 +2000,6 @@ static int dash_read_header(AVFormatContext *s)
     if ((ret = save_avio_options(s)) < 0)
         goto fail;
 
-    av_dict_set(&c->avio_opts, "seekable", "0", 0);
-
     if ((ret = parse_manifest(s, s->url, s->pb)) < 0)
         goto fail;
 
@@ -2009,6 +2007,8 @@ static int dash_read_header(AVFormatContext *s)
      * stream. */
     if (!c->is_live) {
         s->duration = (int64_t) c->media_presentation_duration * AV_TIME_BASE;
+    } else {
+        av_dict_set(&c->avio_opts, "seekable", "0", 0);
     }
 
     if(c->n_videos)
