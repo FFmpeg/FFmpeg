@@ -5097,13 +5097,24 @@ AVRational av_guess_frame_rate(AVFormatContext *format, AVStream *st, AVFrame *f
     return fr;
 }
 
-int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
-                                    const char *spec)
+/**
+ * Matches a stream specifier (but ignores requested index).
+ *
+ * @param index set if a specific index is requested from the matching streams
+ *
+ * @return <0 on error
+ *         0  if st is NOT a matching stream
+ *         >0 if st is a matching stream
+ */
+static int match_stream_specifier(AVFormatContext *s, AVStream *st,
+                                  const char *spec, int *index)
 {
-    if (*spec <= '9' && *spec >= '0') /* opt:index */
-        return strtol(spec, NULL, 0) == st->index;
-    else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
-             *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
+    if (*spec <= '9' && *spec >= '0') { /* opt:index */
+        if (index)
+            *index = strtol(spec, NULL, 0);
+        return 1;
+    } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
+               *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
         enum AVMediaType type;
         int nopic = 0;
 
@@ -5128,27 +5139,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
             return 0;
-        if (*spec++ == ':') { /* possibly followed by :index */
-            int i, index = strtol(spec, NULL, 0);
-            for (i = 0; i < s->nb_streams; i++) {
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-                if ((s->streams[i]->codecpar->codec_type == type
-                      || s->streams[i]->codec->codec_type == type
-                    ) &&
-                    !(nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC)) &&
-                    index-- == 0)
-                    return i == st->index;
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
-                if ((s->streams[i]->codecpar->codec_type == type) &&
-                    !(nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC)) &&
-                    index-- == 0)
-                    return i == st->index;
-#endif
-            }
-            return 0;
-        }
+        if (*spec++ == ':') /* possibly followed by another specifier */
+            return match_stream_specifier(s, st, spec, index);
         return 1;
     } else if (*spec == 'p' && *(spec + 1) == ':') {
         int prog_id, i, j;
@@ -5159,99 +5151,15 @@ FF_ENABLE_DEPRECATION_WARNINGS
             if (s->programs[i]->id != prog_id)
                 continue;
 
-            if (*endptr++ == ':') {  // p:<id>:....
-                if ( *endptr == 'a' || *endptr == 'v' ||
-                     *endptr == 's' || *endptr == 'd') {  // p:<id>:<st_type>[:<index>]
-                    enum AVMediaType type;
-
-                    switch (*endptr++) {
-                    case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
-                    case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
-                    case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
-                    case 'd': type = AVMEDIA_TYPE_DATA;       break;
-                    default:  av_assert0(0);
+            for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
+                if (st->index == s->programs[i]->stream_index[j]) {
+                    if (*endptr++ == ':') {  // p:<id>:....
+                        return match_stream_specifier(s, st, endptr, index);
+                    } else {
+                        return 1;
                     }
-                    if (*endptr++ == ':') {  // p:<id>:<st_type>:<index>
-                        int stream_idx = strtol(endptr, NULL, 0), type_counter = 0;
-                        for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
-                            int stream_index = s->programs[i]->stream_index[j];
-                            if (st->index == s->programs[i]->stream_index[j]) {
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-                                return type_counter == stream_idx &&
-                                       (type == st->codecpar->codec_type ||
-                                        type == st->codec->codec_type);
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
-                                return type_counter == stream_idx &&
-                                       type == st->codecpar->codec_type;
-#endif
-                             }
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-                            if (type == s->streams[stream_index]->codecpar->codec_type ||
-                                type == s->streams[stream_index]->codec->codec_type)
-                                type_counter++;
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
-                            if (type == s->streams[stream_index]->codecpar->codec_type)
-                                type_counter++;
-#endif
-                        }
-                        return 0;
-                    } else {  // p:<id>:<st_type>
-                        for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
-                            if (st->index == s->programs[i]->stream_index[j]) {
-#if FF_API_LAVF_AVCTX
-FF_DISABLE_DEPRECATION_WARNINGS
-                                 return type == st->codecpar->codec_type ||
-                                        type == st->codec->codec_type;
-FF_ENABLE_DEPRECATION_WARNINGS
-#else
-                                 return type == st->codecpar->codec_type;
-#endif
-                            }
-                        return 0;
-                    }
-
-                } else if ( *endptr == 'm') { // p:<id>:m:<metadata_spec>
-                    AVDictionaryEntry *tag;
-                    char *key, *val;
-                    int ret = 0;
-
-                    if (*(++endptr) != ':') {
-                        av_log(s, AV_LOG_ERROR, "Invalid stream specifier syntax, missing ':' sign after :m.\n");
-                        return AVERROR(EINVAL);
-                    }
-
-                    val = strchr(++endptr, ':');
-                    key = val ? av_strndup(endptr, val - endptr) : av_strdup(endptr);
-                    if (!key)
-                        return AVERROR(ENOMEM);
-
-                    for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
-                        if (st->index == s->programs[i]->stream_index[j]) {
-                            tag = av_dict_get(st->metadata, key, NULL, 0);
-                            if (tag && (!val || !strcmp(tag->value, val + 1)))
-                                ret = 1;
-
-                            break;
-                        }
-
-                    av_freep(&key);
-                    return ret;
-
-                } else {  // p:<id>:<index>
-                    int stream_idx = strtol(endptr, NULL, 0);
-                    return stream_idx >= 0 &&
-                           stream_idx < s->programs[i]->nb_stream_indexes &&
-                           st->index == s->programs[i]->stream_index[stream_idx];
                 }
             }
-
-            for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
-                if (st->index == s->programs[i]->stream_index[j])
-                    return 1;
         }
         return 0;
     } else if (*spec == '#' ||
@@ -5333,8 +5241,37 @@ FF_ENABLE_DEPRECATION_WARNINGS
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 
-    av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
     return AVERROR(EINVAL);
+}
+
+
+int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
+                                    const char *spec)
+{
+    int ret;
+    int index = -1;
+
+    /* This is not really needed but saves us a loop for simple stream index specifiers. */
+    if (*spec <= '9' && *spec >= '0') /* opt:index */
+        return strtol(spec, NULL, 0) == st->index;
+
+    ret = match_stream_specifier(s, st, spec, &index);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
+        return ret;
+    }
+    if (!ret || index < 0)
+        return ret;
+
+    /* If we requested a matching stream index, we have to ensure st is that. */
+    for (int i = 0; i < s->nb_streams && index >= 0; i++) {
+        int ret = match_stream_specifier(s, s->streams[i], spec, NULL);
+        if (ret < 0)
+            return ret;
+        if (ret > 0 && index-- == 0 && st == s->streams[i])
+            return 1;
+    }
+    return 0;
 }
 
 int ff_generate_avci_extradata(AVStream *st)
