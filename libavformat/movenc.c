@@ -320,8 +320,12 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     uint8_t buf[3];
     int fscod, bsid, bsmod, acmod, lfeon, frmsizecod;
 
-    if (track->vos_len < 7)
-        return -1;
+    if (track->vos_len < 7) {
+        av_log(pb, AV_LOG_ERROR,
+               "Cannot write moov atom before AC3 packets."
+               " Set the delay_moov flag to fix this.\n");
+        return AVERROR(EINVAL);
+    }
 
     avio_wb32(pb, 11);
     ffio_wfourcc(pb, "dac3");
@@ -538,8 +542,11 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
     struct eac3_info *info;
     int size, i;
 
-    if (!track->eac3_priv)
+    if (!track->eac3_priv) {
+        av_log(pb, AV_LOG_ERROR,
+               "Cannot write moov atom before EAC3 packets parsed.\n");
         return AVERROR(EINVAL);
+    }
 
     info = track->eac3_priv;
     size = 2 + ((34 * (info->num_ind_sub + 1) + 7) >> 3);
@@ -1022,6 +1029,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     int64_t pos = avio_tell(pb);
     int version = 0;
     uint32_t tag = track->tag;
+    int ret = 0;
 
     if (track->mode == MODE_MOV) {
         if (track->timescale > UINT16_MAX || !track->par->channels) {
@@ -1125,34 +1133,41 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
          track->par->codec_id == AV_CODEC_ID_QDM2          ||
          (mov_pcm_le_gt16(track->par->codec_id) && version==1) ||
          (mov_pcm_be_gt16(track->par->codec_id) && version==1)))
-        mov_write_wave_tag(s, pb, track);
+        ret = mov_write_wave_tag(s, pb, track);
     else if (track->tag == MKTAG('m','p','4','a'))
-        mov_write_esds_tag(pb, track);
+        ret = mov_write_esds_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_AMR_NB)
-        mov_write_amr_tag(pb, track);
+        ret = mov_write_amr_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_AC3)
-        mov_write_ac3_tag(pb, track);
+        ret = mov_write_ac3_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_EAC3)
-        mov_write_eac3_tag(pb, track);
+        ret = mov_write_eac3_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_ALAC)
-        mov_write_extradata_tag(pb, track);
+        ret = mov_write_extradata_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_WMAPRO)
-        mov_write_wfex_tag(s, pb, track);
+        ret = mov_write_wfex_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_FLAC)
-        mov_write_dfla_tag(pb, track);
+        ret = mov_write_dfla_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_OPUS)
-        mov_write_dops_tag(pb, track);
+        ret = mov_write_dops_tag(pb, track);
     else if (track->vos_len > 0)
-        mov_write_glbl_tag(pb, track);
+        ret = mov_write_glbl_tag(pb, track);
 
-    if (track->mode == MODE_MOV && track->par->codec_type == AVMEDIA_TYPE_AUDIO)
-        mov_write_chan_tag(s, pb, track);
+    if (ret < 0)
+        return ret;
 
-    if (mov->encryption_scheme != MOV_ENC_NONE) {
-        ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid);
+    if (track->mode == MODE_MOV && track->par->codec_type == AVMEDIA_TYPE_AUDIO
+            && ((ret = mov_write_chan_tag(s, pb, track)) < 0)) {
+        return ret;
     }
 
-    return update_size(pb, pos);
+    if (mov->encryption_scheme != MOV_ENC_NONE
+            && ((ret = ff_mov_cenc_write_sinf_tag(track, pb, mov->encryption_kid)) < 0)) {
+        return ret;
+    }
+
+    ret = update_size(pb, pos);
+    return ret;
 }
 
 static int mov_write_d263_tag(AVIOContext *pb)
@@ -2217,22 +2232,27 @@ static int mov_write_gpmd_tag(AVIOContext *pb, const MOVTrack *track)
 static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
+    int ret = 0;
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "stsd");
     avio_wb32(pb, 0); /* version & flags */
     avio_wb32(pb, 1); /* entry count */
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)
-        mov_write_video_tag(pb, mov, track);
+        ret = mov_write_video_tag(pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)
-        mov_write_audio_tag(s, pb, mov, track);
+        ret = mov_write_audio_tag(s, pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_SUBTITLE)
-        mov_write_subtitle_tag(pb, track);
+        ret = mov_write_subtitle_tag(pb, track);
     else if (track->par->codec_tag == MKTAG('r','t','p',' '))
-        mov_write_rtp_tag(pb, track);
+        ret = mov_write_rtp_tag(pb, track);
     else if (track->par->codec_tag == MKTAG('t','m','c','d'))
-        mov_write_tmcd_tag(pb, track);
+        ret = mov_write_tmcd_tag(pb, track);
     else if (track->par->codec_tag == MKTAG('g','p','m','d'))
-        mov_write_gpmd_tag(pb, track);
+        ret = mov_write_gpmd_tag(pb, track);
+
+    if (ret < 0)
+        return ret;
+
     return update_size(pb, pos);
 }
 
@@ -2435,11 +2455,12 @@ static int mov_preroll_write_stbl_atoms(AVIOContext *pb, MOVTrack *track)
 static int mov_write_stbl_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
-    int ret;
+    int ret = 0;
 
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "stbl");
-    mov_write_stsd_tag(s, pb, mov, track);
+    if ((ret = mov_write_stsd_tag(s, pb, mov, track)) < 0)
+        return ret;
     mov_write_stts_tag(pb, track);
     if ((track->par->codec_type == AVMEDIA_TYPE_VIDEO ||
          track->par->codec_tag == MKTAG('r','t','p',' ')) &&
