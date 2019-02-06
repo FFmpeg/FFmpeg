@@ -3541,7 +3541,7 @@ static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = matroska_resync(matroska, pos);
     }
 
-    return ret;
+    return 0;
 }
 
 static int matroska_read_seek(AVFormatContext *s, int stream_index,
