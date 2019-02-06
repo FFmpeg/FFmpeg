@@ -22,6 +22,7 @@
 #include "libavutil/common.h"
 #include "libavutil/parseutils.h"
 #include "htmlsubtitles.h"
+#include <ctype.h>
 
 static int html_color_parse(void *log_ctx, const char *str)
 {
@@ -49,6 +50,25 @@ static void rstrip_spaces_buf(AVBPrint *buf)
     if (av_bprint_is_complete(buf))
         while (buf->len > 0 && buf->str[buf->len - 1] == ' ')
             buf->str[--buf->len] = 0;
+}
+
+/*
+ * Fast code for scanning text enclosed in braces. Functionally
+ * equivalent to this sscanf call:
+ *
+ * sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0
+ */
+static int scanbraces(const char* in) {
+    if (strncmp(in, "{\\an", 4) != 0) {
+        return 0;
+    }
+    if (!isdigit(in[4])) {
+        return 0;
+    }
+    if (in[5] != '}') {
+        return 0;
+    }
+    return 1;
 }
 
 /*
@@ -110,9 +130,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
             break;
         case '{':    /* skip all {\xxx} substrings except for {\an%d}
                         and all microdvd like styles such as {Y:xxx} */
-            len = 0;
-            an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
-
+            an += scanbraces(in);
             if (!closing_brace_missing) {
                 if (   (an != 1 && in[1] == '\\')
                     || (in[1] && strchr("CcFfoPSsYy", in[1]) && in[2] == ':')) {
