@@ -75,6 +75,34 @@ struct font_tag {
 };
 
 /*
+ * Fast code for scanning the rest of a tag. Functionally equivalent to
+ * this sscanf call:
+ *
+ * sscanf(in, "%127[^<>]>%n", buffer, lenp) == 2
+ */
+static int scantag(const char* in, char* buffer, int* lenp) {
+    int len;
+
+    for (len = 0; len < 128; len++) {
+        const char c = *in++;
+        switch (c) {
+        case '\0':
+            return 0;
+        case '<':
+            return 0;
+        case '>':
+            buffer[len] = '\0';
+            *lenp = len+1;
+            return 1;
+        default:
+            break;
+        }
+        buffer[len] = c;
+    }
+    return 0;
+}
+
+/*
  * The general politic of the convert is to mask unsupported tags or formatting
  * errors (but still alert the user/subtitles writer with an error/warning)
  * without dropping any actual text content for the final user.
@@ -155,7 +183,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 
             len = 0;
 
-            if (sscanf(in+tag_close+1, "%127[^<>]>%n", buffer, &len) >= 1 && len > 0) {
+            if (scantag(in+tag_close+1, buffer, &len) && len > 0) {
                 const int skip = len + tag_close;
                 const char *tagname = buffer;
                 while (*tagname == ' ') {
