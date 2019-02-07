@@ -76,6 +76,7 @@ typedef struct MOVAtom {
 struct MOVParseTableEntry;
 
 typedef struct MOVFragment {
+    int found_tfhd;
     unsigned track_id;
     uint64_t base_data_offset;
     uint64_t moof_offset;
