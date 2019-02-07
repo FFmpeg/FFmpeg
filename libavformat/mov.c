@@ -2459,8 +2459,11 @@ static inline int mov_get_stsc_samples(MOVStreamContext *sc, int index)
 
     if (index < sc->stsc_count - 1)
         chunk_count = sc->stsc_data[index + 1].first - sc->stsc_data[index].first;
-    else
+    else {
+        // Validation for stsc / stco  happens earlier in mov_read_stsc + mov_read_trak.
+        av_assert0(sc->stsc_data[index].first <= sc->chunk_count);
         chunk_count = sc->chunk_count - (sc->stsc_data[index].first - 1);
+    }
 
     return sc->stsc_data[index].count * chunk_count;
 }
@@ -3635,6 +3638,13 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     c->trak_index = -1;
 
+    // Here stsc refers to a chunk not described in stco. This is technically invalid,
+    // but we can overlook it (clearing stsc) whenever stts_count == 0 (indicating no samples).
+    if (!sc->chunk_count && !sc->stts_count && sc->stsc_count) {
+        sc->stsc_count = 0;
+        av_freep(&sc->stsc_data);
+    }
+
     /* sanity checks */
     if (sc->chunk_count && (!sc->stts_count || !sc->stsc_count ||
                             (!sc->sample_size && !sc->sample_count))) {
@@ -3642,7 +3652,7 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                st->index);
         return 0;
     }
-    if (sc->chunk_count && sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
+    if (sc->stsc_count && sc->stsc_data[ sc->stsc_count - 1 ].first > sc->chunk_count) {
         av_log(c->fc, AV_LOG_ERROR, "stream %d, contradictionary STSC and STCO\n",
                st->index);
         return AVERROR_INVALIDDATA;
