@@ -114,6 +114,9 @@ ogm_header(AVFormatContext *s, int idx)
                 bytestream2_get_buffer(&p, st->codecpar->extradata, st->codecpar->extradata_size);
             }
         }
+
+        // Update internal avctx with changes to codecpar above.
+        st->internal->need_context_update = 1;
     } else if (bytestream2_peek_byte(&p) == 3) {
         bytestream2_skip(&p, 7);
         if (bytestream2_get_bytes_left(&p) > 1)
