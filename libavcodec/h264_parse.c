@@ -253,6 +253,10 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
             ref_count[0] = ref_count[1] = 0;
             *plist_count = 0;
             goto fail;
+        } else if (ref_count[1] - 1 > max[1]) {
+            av_log(logctx, AV_LOG_DEBUG, "reference overflow %u > %u \n",
+                   ref_count[1] - 1, max[1]);
+            ref_count[1] = 0;
         }
 
     } else {
