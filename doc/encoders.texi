@@ -2574,6 +2574,9 @@ Specifies the video_format written into the sequence display extension
 indicating the source of the video pictures. The default is @samp{unspecified},
 can be @samp{component}, @samp{pal}, @samp{ntsc}, @samp{secam} or @samp{mac}.
 For maximum compatibility, use @samp{component}.
+@item a53cc @var{boolean}
+Import closed captions (which must be ATSC compatible format) into output.
+Default is 1 (on).
 @end table
 
 @section png
