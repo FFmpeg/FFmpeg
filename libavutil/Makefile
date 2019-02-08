@@ -160,7 +160,7 @@ OBJS = adler32.o                                                        \
        xtea.o                                                           \
        tea.o                                                            \
 
-OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o cuda_check.o
+OBJS-$(CONFIG_CUDA)                     += hwcontext_cuda.o
 OBJS-$(CONFIG_D3D11VA)                  += hwcontext_d3d11va.o
 OBJS-$(CONFIG_DXVA2)                    += hwcontext_dxva2.o
 OBJS-$(CONFIG_LIBDRM)                   += hwcontext_drm.o
