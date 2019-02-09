@@ -468,11 +468,10 @@ static av_always_inline int encode_alpha_slice_data(AVCodecContext *avctx, int8_
     }
 }
 
-static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
-        unsigned stride, unsigned width, unsigned height, uint16_t *dst,
-        unsigned dst_width, unsigned dst_height)
+static inline void subimage_with_fill_template(uint16_t *src, unsigned x, unsigned y,
+                                               unsigned stride, unsigned width, unsigned height, uint16_t *dst,
+                                               unsigned dst_width, unsigned dst_height, int is_alpha_plane)
 {
-
     int box_width = FFMIN(width - x, dst_width);
     int box_height = FFMIN(height - y, dst_height);
     int i, j, src_stride = stride >> 1;
@@ -481,9 +480,17 @@ static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
     src += y * src_stride + x;
     for (i = 0; i < box_height; ++i) {
         for (j = 0; j < box_width; ++j) {
-            dst[j] = src[j];
+            if (!is_alpha_plane) {
+                dst[j] = src[j];
+            } else {
+                dst[j] = src[j] << 6; /* alpha 10b to 16b */
+            }
         }
-        last_pix = dst[j - 1];
+        if (!is_alpha_plane) {
+            last_pix = dst[j - 1];
+        } else {
+            last_pix = dst[j - 1] << 6; /* alpha 10b to 16b */
+        }
         for (; j < dst_width; j++)
             dst[j] = last_pix;
         src += src_stride;
@@ -498,34 +505,19 @@ static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
     }
 }
 
+static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
+        unsigned stride, unsigned width, unsigned height, uint16_t *dst,
+        unsigned dst_width, unsigned dst_height)
+{
+    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 0);
+}
+
 /* reorganize alpha data and convert 10b -> 16b */
 static void subimage_alpha_with_fill(uint16_t *src, unsigned x, unsigned y,
                                unsigned stride, unsigned width, unsigned height, uint16_t *dst,
                                unsigned dst_width, unsigned dst_height)
 {
-    int box_width = FFMIN(width - x, dst_width);
-    int box_height = FFMIN(height - y, dst_height);
-    int i, j, src_stride = stride >> 1;
-    uint16_t last_pix, *last_line;
-
-    src += y * src_stride + x;
-    for (i = 0; i < box_height; ++i) {
-        for (j = 0; j < box_width; ++j) {
-            dst[j] = src[j] << 6; /* 10b to 16b */
-        }
-        last_pix = dst[j - 1] << 6; /* 10b to 16b */
-        for (; j < dst_width; j++)
-            dst[j] = last_pix;
-        src += src_stride;
-        dst += dst_width;
-    }
-    last_line = dst - dst_width;
-    for (; i < dst_height; i++) {
-        for (j = 0; j < dst_width; ++j) {
-            dst[j] = last_line[j];
-        }
-        dst += dst_width;
-    }
+    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 1);
 }
 
 static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
