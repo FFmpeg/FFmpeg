@@ -186,6 +186,7 @@ typedef struct {
 
     int qmat_luma[16][64];
     int qmat_chroma[16][64];
+    const uint8_t *scantable;
 
     int is_422;
     int need_alpha;
@@ -269,14 +270,14 @@ static const uint8_t lev_to_cb[10] = { 0x04, 0x0A, 0x05, 0x06, 0x04, 0x28,
         0x28, 0x28, 0x28, 0x4C };
 
 static void encode_ac_coeffs(PutBitContext *pb,
-        int16_t *in, int blocks_per_slice, int *qmat)
+        int16_t *in, int blocks_per_slice, int *qmat, const uint8_t ff_prores_scan[64])
 {
     int prev_run = 4;
     int prev_level = 2;
 
     int run = 0, level, code, i, j;
     for (i = 1; i < 64; i++) {
-        int indp = ff_prores_progressive_scan[i];
+        int indp = ff_prores_scan[i];
         for (j = 0; j < blocks_per_slice; j++) {
             int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
             if (val) {
@@ -354,7 +355,8 @@ static void calc_plane_dct(FDCTDSPContext *fdsp, uint8_t *src, int16_t * blocks,
     }
 }
 
-static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsigned buf_size, int *qmat, int sub_sample_chroma)
+static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsigned buf_size, int *qmat, int sub_sample_chroma,
+                              const uint8_t ff_prores_scan[64])
 {
     int blocks_per_slice;
     PutBitContext pb;
@@ -363,7 +365,7 @@ static int encode_slice_plane(int16_t *blocks, int mb_count, uint8_t *buf, unsig
     init_put_bits(&pb, buf, buf_size);
 
     encode_dc_coeffs(&pb, blocks, blocks_per_slice, qmat);
-    encode_ac_coeffs(&pb, blocks, blocks_per_slice, qmat);
+    encode_ac_coeffs(&pb, blocks, blocks_per_slice, qmat, ff_prores_scan);
 
     flush_put_bits(&pb);
     return put_bits_ptr(&pb) - pb.buf;
@@ -378,15 +380,15 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
     ProresContext* ctx = avctx->priv_data;
 
     *y_data_size = encode_slice_plane(blocks_y, mb_count,
-                                      buf, data_size, ctx->qmat_luma[qp - 1], 0);
+                                      buf, data_size, ctx->qmat_luma[qp - 1], 0, ctx->scantable);
 
     if (!(avctx->flags & AV_CODEC_FLAG_GRAY)) {
         *u_data_size = encode_slice_plane(blocks_u, mb_count, buf + *y_data_size, data_size - *y_data_size,
-                                          ctx->qmat_chroma[qp - 1], ctx->is_422);
+                                          ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
 
         *v_data_size = encode_slice_plane(blocks_v, mb_count, buf + *y_data_size + *u_data_size,
                                           data_size - *y_data_size - *u_data_size,
-                                          ctx->qmat_chroma[qp - 1], ctx->is_422);
+                                          ctx->qmat_chroma[qp - 1], ctx->is_422, ctx->scantable);
     }
 
     return *y_data_size + *u_data_size + *v_data_size;
@@ -755,6 +757,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = 10;
     ctx->need_alpha = 0;
+    ctx->scantable = ff_prores_progressive_scan;
 
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
