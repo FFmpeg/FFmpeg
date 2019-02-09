@@ -55,7 +55,7 @@ typedef struct ZmbvEncContext {
     int keyint, curfrm;
     z_stream zstream;
 
-    int score_tab[256];
+    int score_tab[ZMBV_BLOCK * ZMBV_BLOCK + 1];
 } ZmbvEncContext;
 
 
@@ -69,20 +69,26 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
 {
     int sum = 0;
     int i, j;
-    uint8_t histogram[256] = {0};
+    uint16_t histogram[256] = {0};
 
-    *xored = 0;
+    /* Build frequency histogram of byte values for src[] ^ src2[] */
     for(j = 0; j < bh; j++){
         for(i = 0; i < bw; i++){
             int t = src[i] ^ src2[i];
             histogram[t]++;
-            *xored |= t;
         }
         src += stride;
         src2 += stride2;
     }
 
-    for(i = 1; i < 256; i++)
+    /* If not all the xored values were 0, then the blocks are different */
+    *xored = (histogram[0] < bw * bh);
+
+    /* Exit early if blocks are equal */
+    if (!*xored) return 0;
+
+    /* Sum the entropy of all values */
+    for(i = 0; i < 256; i++)
         sum += c->score_tab[histogram[i]];
 
     return sum;
@@ -278,7 +284,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int i;
     int lvl = 9;
 
-    for(i=1; i<256; i++)
+    /* Entropy-based score tables for comparing blocks.
+     * Suitable for blocks up to (ZMBV_BLOCK * ZMBV_BLOCK) bytes.
+     * Scores are nonnegative, lower is better.
+     */
+    for(i = 1; i <= ZMBV_BLOCK * ZMBV_BLOCK; i++)
         c->score_tab[i] = -i * log2(i / (double)(ZMBV_BLOCK * ZMBV_BLOCK)) * 256;
 
     c->avctx = avctx;
