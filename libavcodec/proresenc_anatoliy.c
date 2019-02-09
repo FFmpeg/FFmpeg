@@ -190,6 +190,7 @@ typedef struct {
 
     int is_422;
     int need_alpha;
+    int is_interlaced;
 
     char *vendor;
 } ProresContext;
@@ -470,14 +471,25 @@ static av_always_inline int encode_alpha_slice_data(AVCodecContext *avctx, int8_
 
 static inline void subimage_with_fill_template(uint16_t *src, unsigned x, unsigned y,
                                                unsigned stride, unsigned width, unsigned height, uint16_t *dst,
-                                               unsigned dst_width, unsigned dst_height, int is_alpha_plane)
+                                               unsigned dst_width, unsigned dst_height, int is_alpha_plane,
+                                               int is_interlaced, int is_top_field)
 {
     int box_width = FFMIN(width - x, dst_width);
-    int box_height = FFMIN(height - y, dst_height);
-    int i, j, src_stride = stride >> 1;
+    int i, j, src_stride, box_height;
     uint16_t last_pix, *last_line;
 
+    if (!is_interlaced) {
+        src_stride = stride >> 1;
     src += y * src_stride + x;
+        box_height = FFMIN(height - y, dst_height);
+    } else {
+        src_stride = stride; /* 2 lines stride */
+        src += y * src_stride * 2 + x;
+        box_height = FFMIN(height - y * 2, dst_height);
+        if (!is_top_field)
+            src += src_stride;
+    }
+
     for (i = 0; i < box_height; ++i) {
         for (j = 0; j < box_width; ++j) {
             if (!is_alpha_plane) {
@@ -507,22 +519,22 @@ static inline void subimage_with_fill_template(uint16_t *src, unsigned x, unsign
 
 static void subimage_with_fill(uint16_t *src, unsigned x, unsigned y,
         unsigned stride, unsigned width, unsigned height, uint16_t *dst,
-        unsigned dst_width, unsigned dst_height)
+        unsigned dst_width, unsigned dst_height, int is_interlaced, int is_top_field)
 {
-    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 0);
+    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 0, is_interlaced, is_top_field);
 }
 
 /* reorganize alpha data and convert 10b -> 16b */
 static void subimage_alpha_with_fill(uint16_t *src, unsigned x, unsigned y,
                                unsigned stride, unsigned width, unsigned height, uint16_t *dst,
-                               unsigned dst_width, unsigned dst_height)
+                               unsigned dst_width, unsigned dst_height, int is_interlaced, int is_top_field)
 {
-    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 1);
+    subimage_with_fill_template(src, x, y, stride, width, height, dst, dst_width, dst_height, 1, is_interlaced, is_top_field);
 }
 
 static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
         int mb_y, unsigned mb_count, uint8_t *buf, unsigned data_size,
-        int unsafe, int *qp)
+        int unsafe, int *qp, int is_interlaced, int is_top_field)
 {
     int luma_stride, chroma_stride, alpha_stride = 0;
     ProresContext* ctx = avctx->priv_data;
@@ -545,21 +557,33 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
     if (ctx->need_alpha)
         alpha_stride = pic->linesize[3];
 
+    if (!is_interlaced) {
     dest_y = pic->data[0] + (mb_y << 4) * luma_stride   + (mb_x << 5);
     dest_u = pic->data[1] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
     dest_v = pic->data[2] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
+    } else {
+        dest_y = pic->data[0] + (mb_y << 4) * luma_stride * 2   + (mb_x << 5);
+        dest_u = pic->data[1] + (mb_y << 4) * chroma_stride * 2 + (mb_x << (5 - ctx->is_422));
+        dest_v = pic->data[2] + (mb_y << 4) * chroma_stride * 2 + (mb_x << (5 - ctx->is_422));
+        if (!is_top_field){ /* bottom field, offset dest */
+            dest_y += luma_stride;
+            dest_u += chroma_stride;
+            dest_v += chroma_stride;
+        }
+    }
 
     if (unsafe) {
         subimage_with_fill((uint16_t *) pic->data[0], mb_x << 4, mb_y << 4,
                 luma_stride, avctx->width, avctx->height,
-                (uint16_t *) ctx->fill_y, mb_count << 4, 16);
+                (uint16_t *) ctx->fill_y, mb_count << 4, 16, is_interlaced, is_top_field);
         subimage_with_fill((uint16_t *) pic->data[1], mb_x << (4 - ctx->is_422), mb_y << 4,
                            chroma_stride, avctx->width >> ctx->is_422, avctx->height,
-                           (uint16_t *) ctx->fill_u, mb_count << (4 - ctx->is_422), 16);
+                           (uint16_t *) ctx->fill_u, mb_count << (4 - ctx->is_422), 16, is_interlaced, is_top_field);
         subimage_with_fill((uint16_t *) pic->data[2], mb_x << (4 - ctx->is_422), mb_y << 4,
                            chroma_stride, avctx->width >> ctx->is_422, avctx->height,
-                           (uint16_t *) ctx->fill_v, mb_count << (4 - ctx->is_422), 16);
+                           (uint16_t *) ctx->fill_v, mb_count << (4 - ctx->is_422), 16, is_interlaced, is_top_field);
 
+        /* no need for interlaced special case, data already reorganized in subimage_with_fill */
         calc_plane_dct(fdsp, ctx->fill_y, blocks_y, mb_count <<  5,                mb_count, 0, 0);
         calc_plane_dct(fdsp, ctx->fill_u, blocks_u, mb_count << (5 - ctx->is_422), mb_count, 1, ctx->is_422);
         calc_plane_dct(fdsp, ctx->fill_v, blocks_v, mb_count << (5 - ctx->is_422), mb_count, 1, ctx->is_422);
@@ -569,9 +593,15 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
                           &y_data_size, &u_data_size, &v_data_size,
                           *qp);
     } else {
+        if (!is_interlaced) {
         calc_plane_dct(fdsp, dest_y, blocks_y, luma_stride, mb_count, 0, 0);
         calc_plane_dct(fdsp, dest_u, blocks_u, chroma_stride, mb_count, 1, ctx->is_422);
         calc_plane_dct(fdsp, dest_v, blocks_v, chroma_stride, mb_count, 1, ctx->is_422);
+        } else {
+            calc_plane_dct(fdsp, dest_y, blocks_y, luma_stride   * 2, mb_count, 0, 0);
+            calc_plane_dct(fdsp, dest_u, blocks_u, chroma_stride * 2, mb_count, 1, ctx->is_422);
+            calc_plane_dct(fdsp, dest_v, blocks_v, chroma_stride * 2, mb_count, 1, ctx->is_422);
+        }
 
         slice_size = encode_slice_data(avctx, blocks_y, blocks_u, blocks_v,
                           mb_count, buf + hdr_size, data_size - hdr_size,
@@ -608,7 +638,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
 
         subimage_alpha_with_fill((uint16_t *) pic->data[3], mb_x << 4, mb_y << 4,
                            alpha_stride, avctx->width, avctx->height,
-                           (uint16_t *) ctx->fill_a, mb_count << 4, 16);
+                           (uint16_t *) ctx->fill_a, mb_count << 4, 16, is_interlaced, is_top_field);
         ret = encode_alpha_slice_data(avctx, ctx->fill_a, mb_count,
                                       buf + hdr_size + slice_size,
                                       data_size - hdr_size - slice_size, &a_data_size);
@@ -621,15 +651,28 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
 }
 
 static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
-        uint8_t *buf, const int buf_size)
+        uint8_t *buf, const int buf_size, const int picture_index, const int is_top_field)
 {
+    ProresContext *ctx = avctx->priv_data;
     int mb_width = (avctx->width + 15) >> 4;
-    int mb_height = (avctx->height + 15) >> 4;
     int hdr_size, sl_size, i;
-    int mb_y, sl_data_size, qp;
+    int mb_y, sl_data_size, qp, mb_height, picture_height, unsafe_mb_height_limit;
     int unsafe_bot, unsafe_right;
     uint8_t *sl_data, *sl_data_sizes;
     int slice_per_line = 0, rem = mb_width;
+
+    if (!ctx->is_interlaced) { /* progressive encoding */
+        mb_height = (avctx->height + 15) >> 4;
+        unsafe_mb_height_limit = mb_height;
+    } else {
+        if (is_top_field) {
+            picture_height = (avctx->height + 1) / 2;
+        } else {
+            picture_height = avctx->height / 2;
+        }
+        mb_height = (picture_height + 15) >> 4;
+        unsafe_mb_height_limit = mb_height * 2;
+    }
 
     for (i = av_log2(DEFAULT_SLICE_MB_WIDTH); i >= 0; --i) {
         slice_per_line += rem >> i;
@@ -647,11 +690,11 @@ static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
             while (mb_width - mb_x < slice_mb_count)
                 slice_mb_count >>= 1;
 
-            unsafe_bot = (avctx->height & 0xf) && (mb_y == mb_height - 1);
+            unsafe_bot = (avctx->height & 0xf) && (mb_y == unsafe_mb_height_limit - 1);
             unsafe_right = (avctx->width & 0xf) && (mb_x + slice_mb_count == mb_width);
 
             sl_size = encode_slice(avctx, pic, mb_x, mb_y, slice_mb_count,
-                    sl_data, sl_data_size, unsafe_bot || unsafe_right, &qp);
+                    sl_data, sl_data_size, unsafe_bot || unsafe_right, &qp, ctx->is_interlaced, is_top_field);
             if (sl_size < 0){
                 return sl_size;
             }
@@ -665,8 +708,8 @@ static int prores_encode_picture(AVCodecContext *avctx, const AVFrame *pic,
 
     buf[0] = hdr_size << 3;
     AV_WB32(buf + 1, sl_data - buf);
-    AV_WB16(buf + 5, slice_per_line * mb_height);
-    buf[7] = av_log2(DEFAULT_SLICE_MB_WIDTH) << 4;
+    AV_WB16(buf + 5, slice_per_line * mb_height); /* picture size */
+    buf[7] = av_log2(DEFAULT_SLICE_MB_WIDTH) << 4; /* number of slices */
 
     return sl_data - buf;
 }
@@ -677,7 +720,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ProresContext *ctx = avctx->priv_data;
     int header_size = 148;
     uint8_t *buf;
-    int compress_frame_size, pic_size, ret;
+    int compress_frame_size, pic_size, ret, is_top_field_first = 0;
     uint8_t frame_flags;
     int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + AV_INPUT_BUFFER_MIN_SIZE; //FIXME choose tighter limit
 
@@ -699,6 +742,18 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     frame_flags = 0x82; /* 422 not interlaced */
     if (avctx->profile >= FF_PROFILE_PRORES_4444) /* 4444 or 4444 Xq */
         frame_flags |= 0x40; /* 444 chroma */
+    if (ctx->is_interlaced) {
+        if (pict->top_field_first || !pict->interlaced_frame) { /* tff frame or progressive frame interpret as tff */
+            av_log(avctx, AV_LOG_DEBUG, "use interlaced encoding, top field first\n");
+            frame_flags |= 0x04; /* interlaced tff */
+            is_top_field_first = 1;
+        } else {
+            av_log(avctx, AV_LOG_DEBUG, "use interlaced encoding, bottom field first\n");
+            frame_flags |= 0x08; /* interlaced bff */
+        }
+    } else {
+        av_log(avctx, AV_LOG_DEBUG, "use progressive encoding\n");
+    }
     *buf++ = frame_flags;
     *buf++ = 0; /* reserved */
     /* only write color properties, if valid value. set to unspecified otherwise */
@@ -721,11 +776,20 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, QMAT_CHROMA[avctx->profile], 64);
 
     pic_size = prores_encode_picture(avctx, pict, buf,
-                                     pkt->size - compress_frame_size);
+                                     pkt->size - compress_frame_size, 0, is_top_field_first);/* encode progressive or first field */
     if (pic_size < 0) {
         return pic_size;
     }
     compress_frame_size += pic_size;
+
+    if (ctx->is_interlaced) { /* encode second field */
+        pic_size = prores_encode_picture(avctx, pict, pkt->data + compress_frame_size,
+                                         pkt->size - compress_frame_size, 1, !is_top_field_first);
+        if (pic_size < 0) {
+            return pic_size;
+        }
+        compress_frame_size += pic_size;
+    }
 
     AV_WB32(pkt->data, compress_frame_size);/* update frame size */
     pkt->flags |= AV_PKT_FLAG_KEY;
@@ -749,7 +813,12 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 
     avctx->bits_per_raw_sample = 10;
     ctx->need_alpha = 0;
+    ctx->is_interlaced = !!(avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT);
+    if (ctx->is_interlaced) {
+        ctx->scantable = ff_prores_interlaced_scan;
+    } else {
     ctx->scantable = ff_prores_progressive_scan;
+    }
 
     if (avctx->width & 0x1) {
         av_log(avctx, AV_LOG_ERROR,
