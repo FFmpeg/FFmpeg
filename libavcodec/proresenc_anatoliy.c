@@ -480,7 +480,7 @@ static inline void subimage_with_fill_template(uint16_t *src, unsigned x, unsign
 
     if (!is_interlaced) {
         src_stride = stride >> 1;
-    src += y * src_stride + x;
+        src += y * src_stride + x;
         box_height = FFMIN(height - y, dst_height);
     } else {
         src_stride = stride; /* 2 lines stride */
@@ -558,9 +558,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
         alpha_stride = pic->linesize[3];
 
     if (!is_interlaced) {
-    dest_y = pic->data[0] + (mb_y << 4) * luma_stride   + (mb_x << 5);
-    dest_u = pic->data[1] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
-    dest_v = pic->data[2] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
+        dest_y = pic->data[0] + (mb_y << 4) * luma_stride   + (mb_x << 5);
+        dest_u = pic->data[1] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
+        dest_v = pic->data[2] + (mb_y << 4) * chroma_stride + (mb_x << (5 - ctx->is_422));
     } else {
         dest_y = pic->data[0] + (mb_y << 4) * luma_stride * 2   + (mb_x << 5);
         dest_u = pic->data[1] + (mb_y << 4) * chroma_stride * 2 + (mb_x << (5 - ctx->is_422));
@@ -594,9 +594,9 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic, int mb_x,
                           *qp);
     } else {
         if (!is_interlaced) {
-        calc_plane_dct(fdsp, dest_y, blocks_y, luma_stride, mb_count, 0, 0);
-        calc_plane_dct(fdsp, dest_u, blocks_u, chroma_stride, mb_count, 1, ctx->is_422);
-        calc_plane_dct(fdsp, dest_v, blocks_v, chroma_stride, mb_count, 1, ctx->is_422);
+            calc_plane_dct(fdsp, dest_y, blocks_y, luma_stride, mb_count, 0, 0);
+            calc_plane_dct(fdsp, dest_u, blocks_u, chroma_stride, mb_count, 1, ctx->is_422);
+            calc_plane_dct(fdsp, dest_v, blocks_v, chroma_stride, mb_count, 1, ctx->is_422);
         } else {
             calc_plane_dct(fdsp, dest_y, blocks_y, luma_stride   * 2, mb_count, 0, 0);
             calc_plane_dct(fdsp, dest_u, blocks_u, chroma_stride * 2, mb_count, 1, ctx->is_422);
@@ -817,7 +817,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
     if (ctx->is_interlaced) {
         ctx->scantable = ff_prores_interlaced_scan;
     } else {
-    ctx->scantable = ff_prores_progressive_scan;
+        ctx->scantable = ff_prores_progressive_scan;
     }
 
     if (avctx->width & 0x1) {
