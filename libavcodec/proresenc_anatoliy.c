@@ -683,7 +683,7 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     ProresContext *ctx = avctx->priv_data;
     int header_size = 148;
     uint8_t *buf;
-    int pic_size, ret;
+    int compress_frame_size, pic_size, ret;
     uint8_t frame_flags;
     int frame_size = FFALIGN(avctx->width, 16) * FFALIGN(avctx->height, 16)*16 + 500 + AV_INPUT_BUFFER_MIN_SIZE; //FIXME choose tighter limit
 
@@ -692,13 +692,9 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         return ret;
 
     buf = pkt->data;
-    pic_size = prores_encode_picture(avctx, pict, buf + header_size + 8,
-            pkt->size - header_size - 8);
-    if (pic_size < 0) {
-        return pic_size;
-    }
+    compress_frame_size = 8 + header_size;
 
-    bytestream_put_be32(&buf, pic_size + 8 + header_size);
+    bytestream_put_be32(&buf, compress_frame_size);/* frame size will be update after picture(s) encoding */
     bytestream_put_buffer(&buf, "icpf", 4);
 
     bytestream_put_be16(&buf, header_size);
@@ -730,8 +726,16 @@ static int prores_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     bytestream_put_buffer(&buf, QMAT_LUMA[avctx->profile],   64);
     bytestream_put_buffer(&buf, QMAT_CHROMA[avctx->profile], 64);
 
+    pic_size = prores_encode_picture(avctx, pict, buf,
+                                     pkt->size - compress_frame_size);
+    if (pic_size < 0) {
+        return pic_size;
+    }
+    compress_frame_size += pic_size;
+
+    AV_WB32(pkt->data, compress_frame_size);/* update frame size */
     pkt->flags |= AV_PKT_FLAG_KEY;
-    pkt->size = pic_size + 8 + header_size;
+    pkt->size = compress_frame_size;
     *got_packet = 1;
 
     return 0;
