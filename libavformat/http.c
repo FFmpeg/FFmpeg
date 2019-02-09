@@ -1504,12 +1504,13 @@ static int http_read_stream_all(URLContext *h, uint8_t *buf, int size)
     return pos;
 }
 
-static void update_metadata(HTTPContext *s, char *data)
+static void update_metadata(URLContext *h, char *data)
 {
     char *key;
     char *val;
     char *end;
     char *next = data;
+    HTTPContext *s = h->priv_data;
 
     while (*next) {
         key = next;
@@ -1525,6 +1526,7 @@ static void update_metadata(HTTPContext *s, char *data)
         val += 2;
 
         av_dict_set(&s->metadata, key, val, 0);
+        av_log(h, AV_LOG_VERBOSE, "Metadata update for %s: %s\n", key, val);
 
         next = end + 2;
     }
@@ -1559,7 +1561,7 @@ static int store_icy(URLContext *h, int size)
             data[len + 1] = 0;
             if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
                 return ret;
-            update_metadata(s, data);
+            update_metadata(h, data);
         }
         s->icy_data_read = 0;
         remaining        = s->icy_metaint;
