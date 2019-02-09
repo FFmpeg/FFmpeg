@@ -683,7 +683,7 @@ static char *getstr8(const uint8_t **pp, const uint8_t *p_end)
             "ISO6937", "ISO-8859-5", "ISO-8859-6", "ISO-8859-7",
             "ISO-8859-8", "ISO-8859-9", "ISO-8859-10", "ISO-8859-11",
             "", "ISO-8859-13", "ISO-8859-14", "ISO-8859-15", "", "", "", "",
-            "", "ISO-10646", "KSC_5601", "GB2312", "UCS-2BE", "UTF-8", "", "",
+            "", "UCS-2BE", "KSC_5601", "GB2312", "UCS-2BE", "UTF-8", "", "",
             "", "", "", "", "", "", "", ""
         };
         iconv_t cd;
