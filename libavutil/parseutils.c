@@ -504,7 +504,7 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
         switch(c) {
         case 'H':
         case 'J':
-            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, 2);
+            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, c == 'H' ? 2 : 4);
 
             if (val == -1)
                 return NULL;
