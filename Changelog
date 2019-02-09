@@ -2,6 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.1.1:
+- avformat/mov: validate chunk_count vs stsc_data
+- avformat/mov: require tfhd to begin parsing trun
 - avcodec/pgssubdec: Check for duplicate display segments
 - avformat/rtsp: Check number of streams in sdp_parse_line()
 - avformat/rtsp: Clear reply in every iteration in ff_rtsp_connect()
