@@ -678,7 +678,7 @@ static char *getstr8(const uint8_t **pp, const uint8_t *p_end)
     if (len > p_end - p)
         return NULL;
 #if CONFIG_ICONV
-    if (len && *p < 0x20) {
+    if (len) {
         const char *encodings[] = {
             "ISO6937", "ISO-8859-5", "ISO-8859-6", "ISO-8859-7",
             "ISO-8859-8", "ISO-8859-9", "ISO-8859-10", "ISO-8859-11",
@@ -688,16 +688,20 @@ static char *getstr8(const uint8_t **pp, const uint8_t *p_end)
         };
         iconv_t cd;
         char *in, *out;
-        size_t inlen = len - 1, outlen = inlen * 6 + 1;
+        size_t inlen = len, outlen = inlen * 6 + 1;
         if (len >= 3 && p[0] == 0x10 && !p[1] && p[2] && p[2] <= 0xf && p[2] != 0xc) {
             char iso8859[12];
             snprintf(iso8859, sizeof(iso8859), "ISO-8859-%d", p[2]);
-            inlen -= 2;
+            inlen -= 3;
             in = (char *)p + 3;
             cd = iconv_open("UTF-8", iso8859);
-        } else {
+        } else if (p[0] < 0x20) {
+            inlen -= 1;
             in = (char *)p + 1;
             cd = iconv_open("UTF-8", encodings[*p]);
+        } else {
+            in = (char *)p;
+            cd = iconv_open("UTF-8", encodings[0]);
         }
         if (cd == (iconv_t)-1)
             goto no_iconv;
