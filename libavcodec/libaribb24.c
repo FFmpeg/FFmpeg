@@ -204,12 +204,13 @@ static int libaribb24_close(AVCodecContext *avctx)
 
 #define RGB_TO_BGR(c) ((c & 0xff) << 16 | (c & 0xff00) | ((c >> 16) & 0xff))
 
-static void libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
+static int libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
 {
     Libaribb24Context *b24 = avctx->priv_data;
     const arib_buf_region_t *region = arib_decoder_get_regions(b24->decoder);
     unsigned int profile_font_size = get_profile_font_size(avctx->profile);
     AVBPrint buf = { 0 };
+    int ret = 0;
 
     av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
 
@@ -224,6 +225,7 @@ static void libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
 
         if (region_length < 0) {
             av_log(avctx, AV_LOG_ERROR, "Invalid negative region length!\n");
+            ret = AVERROR_INVALIDDATA;
             break;
         }
 
@@ -264,12 +266,20 @@ next_region:
         region = region->p_next;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "Styled ASS line: %s\n",
-           buf.str);
-    ff_ass_add_rect(sub, buf.str, b24->read_order++,
-                    0, NULL, NULL);
+    if (!av_bprint_is_complete(&buf))
+        ret = AVERROR(ENOMEM);
+
+    if (ret == 0) {
+        av_log(avctx, AV_LOG_DEBUG, "Styled ASS line: %s\n",
+               buf.str);
+
+        ret = ff_ass_add_rect(sub, buf.str, b24->read_order++,
+                              0, NULL, NULL);
+    }
 
     av_bprint_finalize(&buf, NULL);
+
+    return ret;
 }
 
 static int libaribb24_decode(AVCodecContext *avctx, void *data, int *got_sub_ptr, AVPacket *pkt)
@@ -281,6 +291,7 @@ static int libaribb24_decode(AVCodecContext *avctx, void *data, int *got_sub_ptr
     const unsigned char *parsed_data = NULL;
     char *decoded_subtitle = NULL;
     time_t subtitle_duration = 0;
+    int ret = 0;
 
     if (pkt->size <= 0)
         return pkt->size;
@@ -332,7 +343,7 @@ static int libaribb24_decode(AVCodecContext *avctx, void *data, int *got_sub_ptr
            avctx->time_base.num, avctx->time_base.den);
 
     if (decoded_subtitle)
-        libaribb24_handle_regions(avctx, sub);
+        ret = libaribb24_handle_regions(avctx, sub);
 
     *got_sub_ptr = sub->num_rects > 0;
 
@@ -342,7 +353,7 @@ static int libaribb24_decode(AVCodecContext *avctx, void *data, int *got_sub_ptr
     // longer and longer...
     arib_finalize_decoder(b24->decoder);
 
-    return pkt->size;
+    return ret < 0 ? ret : pkt->size;
 }
 
 static void libaribb24_flush(AVCodecContext *avctx)
