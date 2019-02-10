@@ -1067,8 +1067,12 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
     if (obu->obu_size > 0 &&
         obu->header.obu_type != AV1_OBU_TILE_GROUP &&
         obu->header.obu_type != AV1_OBU_FRAME) {
-        err = cbs_av1_read_trailing_bits(ctx, &gbc,
-                                         obu->obu_size * 8 + start_pos - end_pos);
+        int nb_bits = obu->obu_size * 8 + start_pos - end_pos;
+
+        if (nb_bits <= 0)
+            return AVERROR_INVALIDDATA;
+
+        err = cbs_av1_read_trailing_bits(ctx, &gbc, nb_bits);
         if (err < 0)
             return err;
     }
