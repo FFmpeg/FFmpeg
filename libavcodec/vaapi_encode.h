@@ -129,6 +129,36 @@ typedef struct VAAPIEncodeProfile {
     VAProfile va_profile;
 } VAAPIEncodeProfile;
 
+enum {
+    RC_MODE_AUTO,
+    RC_MODE_CQP,
+    RC_MODE_CBR,
+    RC_MODE_VBR,
+    RC_MODE_ICQ,
+    RC_MODE_QVBR,
+    RC_MODE_AVBR,
+    RC_MODE_MAX = RC_MODE_AVBR,
+};
+
+typedef struct VAAPIEncodeRCMode {
+    // Mode from above enum (RC_MODE_*).
+    int mode;
+    // Name.
+    const char *name;
+    // Supported in the compile-time VAAPI version.
+    int supported;
+    // VA mode value (VA_RC_*).
+    uint32_t va_mode;
+    // Uses bitrate parameters.
+    int bitrate;
+    // Supports maxrate distinct from bitrate.
+    int maxrate;
+    // Uses quality value.
+    int quality;
+    // Supports HRD/VBV parameters.
+    int hrd;
+} VAAPIEncodeRCMode;
+
 typedef struct VAAPIEncodeContext {
     const AVClass *class;
 
@@ -145,6 +175,14 @@ typedef struct VAAPIEncodeContext {
 
     // Desired B frame reference depth.
     int             desired_b_depth;
+
+    // Explicitly set RC mode (otherwise attempt to pick from
+    // available modes).
+    int             explicit_rc_mode;
+
+    // Explicitly-set QP, for use with the "qp" options.
+    // (Forces CQP mode when set, overriding everything else.)
+    int             explicit_qp;
 
     // Desired packed headers.
     unsigned int    desired_packed_headers;
@@ -164,6 +202,12 @@ typedef struct VAAPIEncodeContext {
 
     // Chosen encoding profile details.
     const VAAPIEncodeProfile *profile;
+
+    // Chosen rate control mode details.
+    const VAAPIEncodeRCMode *rc_mode;
+    // RC quality level - meaning depends on codec and RC mode.
+    // In CQP mode this sets the fixed quantiser value.
+    int             rc_quality;
 
     // Encoding profile (VAProfile*).
     VAProfile       va_profile;
@@ -296,6 +340,10 @@ typedef struct VAAPIEncodeType {
     // Codec feature flags.
     int flags;
 
+    // Default quality for this codec - used as quantiser or RC quality
+    // factor depending on RC mode.
+    int default_quality;
+
     // Perform any extra codec-specific configuration after the
     // codec context is initialised (set up the private data and
     // add any necessary global parameters).
@@ -381,6 +429,23 @@ int ff_vaapi_encode_close(AVCodecContext *avctx);
       "Maximum B-frame reference depth", \
       OFFSET(common.desired_b_depth), AV_OPT_TYPE_INT, \
       { .i64 = 1 }, 1, INT_MAX, FLAGS }
+
+#define VAAPI_ENCODE_RC_MODE(name, desc) \
+    { #name, desc, 0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_ ## name }, \
+      0, 0, FLAGS, "rc_mode" }
+#define VAAPI_ENCODE_RC_OPTIONS \
+    { "rc_mode",\
+      "Set rate control mode", \
+      OFFSET(common.explicit_rc_mode), AV_OPT_TYPE_INT, \
+      { .i64 = RC_MODE_AUTO }, RC_MODE_AUTO, RC_MODE_MAX, FLAGS, "rc_mode" }, \
+    { "auto", "Choose mode automatically based on other parameters", \
+      0, AV_OPT_TYPE_CONST, { .i64 = RC_MODE_AUTO }, 0, 0, FLAGS, "rc_mode" }, \
+    VAAPI_ENCODE_RC_MODE(CQP,  "Constant-quality"), \
+    VAAPI_ENCODE_RC_MODE(CBR,  "Constant-bitrate"), \
+    VAAPI_ENCODE_RC_MODE(VBR,  "Variable-bitrate"), \
+    VAAPI_ENCODE_RC_MODE(ICQ,  "Intelligent constant-quality"), \
+    VAAPI_ENCODE_RC_MODE(QVBR, "Quality-defined variable-bitrate"), \
+    VAAPI_ENCODE_RC_MODE(AVBR, "Average variable-bitrate")
 
 
 #endif /* AVCODEC_VAAPI_ENCODE_H */

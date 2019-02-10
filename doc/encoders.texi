@@ -2824,6 +2824,30 @@ Set the B-frame reference depth.  When set to one (the default), all B-frames
 will refer only to P- or I-frames.  When set to greater values multiple layers
 of B-frames will be present, frames in each layer only referring to frames in
 higher layers.
+
+@item rc_mode
+Set the rate control mode to use.  A given driver may only support a subset of
+modes.
+
+Possible modes:
+@table @option
+@item auto
+Choose the mode automatically based on driver support and the other options.
+This is the default.
+@item CQP
+Constant-quality.
+@item CBR
+Constant-bitrate.
+@item VBR
+Variable-bitrate.
+@item ICQ
+Intelligent constant-quality.
+@item QVBR
+Quality-defined variable-bitrate.
+@item AVBR
+Average variable bitrate.
+@end table
+
 @end table
 
 Each encoder also has its own specific options:
