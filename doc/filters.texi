@@ -431,7 +431,7 @@ Range is between 0 and 1.
 @end table
 
 @section acontrast
-Simple audio dynamic range commpression/expansion filter.
+Simple audio dynamic range compression/expansion filter.
 
 The filter accepts the following options:
 
@@ -605,8 +605,8 @@ The lower value, the more samples will be detected as impulsive noise.
 @item b
 Set burst fusion, in percentage of window size. Allowed range is @code{0} to
 @code{10}. Default value is @code{2}.
-If any two samples deteced as noise are spaced less than this value then any
-sample inbetween those two samples will be also detected as noise.
+If any two samples detected as noise are spaced less than this value then any
+sample in between those two samples will be also detected as noise.
 
 @item m
 Set overlap method.
@@ -1220,7 +1220,7 @@ Set max allowed Impulse Response filter duration in seconds. Default is 30 secon
 Allowed range is 0.1 to 60 seconds.
 
 @item response
-Show IR frequency reponse, magnitude(magenta) and phase(green) and group delay(yellow) in additional video stream.
+Show IR frequency response, magnitude(magenta), phase(green) and group delay(yellow) in additional video stream.
 By default it is disabled.
 
 @item channel
@@ -1382,7 +1382,7 @@ Z-plane zeros/poles, polar degrees
 
 @item r
 Set kind of processing.
-Can be @code{d} - direct or @code{s} - serial cascading. Defauls is @code{s}.
+Can be @code{d} - direct or @code{s} - serial cascading. Default is @code{s}.
 
 @item e
 Set filtering precision.
@@ -10534,7 +10534,7 @@ max value instead of calculating Minkowski distance.
 @item sigma
 The standard deviation of Gaussian blur to be applied on the scene. Must be
 chosen in the range [0,1024.0] and default value = 1. floor( @var{sigma} * break_off_sigma(3) )
-can't be euqal to 0 if @var{difford} is greater than 0.
+can't be equal to 0 if @var{difford} is greater than 0.
 @end table
 
 @subsection Examples
@@ -18858,7 +18858,7 @@ Default value for each plane is @code{0 0 0 0 1 0 0 0 0}.
 @item 3rdiv
 Set multiplier for calculated value for each plane.
 If unset or 0, it will be sum of all matrix elements.
-The option value must be an float number greater or equal to @code{0.0}. Default value is @code{1.0}.
+The option value must be a float number greater or equal to @code{0.0}. Default value is @code{1.0}.
 
 @item 0bias
 @item 1bias
@@ -18866,7 +18866,7 @@ The option value must be an float number greater or equal to @code{0.0}. Default
 @item 3bias
 Set bias for each plane. This value is added to the result of the multiplication.
 Useful for making the overall image brighter or darker.
-The option value must be an float number greater or equal to @code{0.0}. Default value is @code{0.0}.
+The option value must be a float number greater or equal to @code{0.0}. Default value is @code{0.0}.
 
 @end table
 
@@ -19136,7 +19136,7 @@ the cpu version tonemap currently. A setting of 0.0 disables this option.
 
 @item threshold
 The tonemapping algorithm parameters is fine-tuned per each scene. And a threshold
-is used to detect whether the scene has changed or not. If the distance beween
+is used to detect whether the scene has changed or not. If the distance between
 the current frame average brightness and the current running average exceeds
 a threshold value, we would re-calculate scene average and peak brightness.
 The default value is 0.2.
@@ -19558,7 +19558,7 @@ Set outer coloring mode.
 It shall assume one of following values:
 @table @option
 @item iteration_count
-Set iteration cound mode.
+Set iteration count mode.
 @item normalized_iteration_count
 set normalized iteration count mode.
 @end table
@@ -22479,7 +22479,7 @@ This filter is primarily created for reversing processed @ref{showspectrum}
 filter outputs, but can synthesize sound from other spectrograms too.
 But in such case results are going to be poor if the phase data is not
 available, because in such cases phase data need to be recreated, usually
-its just recreated from random noise.
+it's just recreated from random noise.
 For best results use gray only output (@code{channel} color mode in
 @ref{showspectrum} filter) and @code{log} scale for magnitude video and
 @code{lin} scale for phase video. To produce phase, for 2nd video, use
