@@ -313,7 +313,8 @@ static int vaapi_encode_mpeg2_init_sequence_params(AVCodecContext *avctx)
 
     goph->group_start_code = MPEG2_START_GROUP;
 
-    goph->time_code   = 0;
+    // Marker bit in the middle of time_code.
+    goph->time_code   = 1 << 12;
     goph->closed_gop  = 1;
     goph->broken_link = 0;
 
