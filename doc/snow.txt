@@ -172,7 +172,7 @@ spatial_decomposition_count
     FIXME
 
 colorspace_type
-    0   unspecified YcbCr
+    0   unspecified YCbCr
     1   Gray
     2   Gray + Alpha
     3   GBR
@@ -235,7 +235,7 @@ spatial_decomposition_type
     stored as delta from last, last is reset to 0 if always_reset || keyframe
 
 qlog
-    quality (logarthmic quantizer scale)
+    quality (logarithmic quantizer scale)
     stored as delta from last, last is reset to 0 if always_reset || keyframe
 
 mv_scale
@@ -251,11 +251,11 @@ block_max_depth
     stored as delta from last, last is reset to 0 if always_reset || keyframe
 
 quant_table
-    quantiztation table
+    quantization table
 
 
 Highlevel bitstream structure:
-=============================
+==============================
  --------------------------------------------
 |                   Header                   |
  --------------------------------------------
@@ -303,7 +303,7 @@ Decoding process:
                   |  Intra DC  |               |
                   |            |    LL0 subband prediction
                    ------------                |
-                                \        Dequantizaton
+                                \        Dequantization
  -------------------             \             |
 |  Reference frames |             \           IDWT
 | -------   ------- |    Motion    \           |
@@ -390,8 +390,8 @@ motion vector prediction
    (mvx_diff, mvy_diff)*mv_scale
 
 
-Intra DC Predicton:
-======================
+Intra DC Prediction:
+====================
 the luma and chroma values of the left block are used as predictors
 
 the used luma and chroma is the sum of the predictor and y_diff, cb_diff, cr_diff
@@ -407,7 +407,7 @@ Motion Compensation:
 
 Halfpel interpolation:
 ----------------------
-halfpel interpolation is done by convolution with the halfpel filter stored
+Halfpel interpolation is done by convolution with the halfpel filter stored
 in the header:
 
 horizontal halfpel samples are found by
@@ -463,8 +463,8 @@ to the closest available fullpel sample
 Smaller pel interpolation:
 --------------------------
 if diag_mc is set then points which lie on a line between 2 vertically,
-horiziontally or diagonally adjacent halfpel points shall be interpolated
-linearls with rounding to nearest and halfway values rounded up.
+horizontally or diagonally adjacent halfpel points shall be interpolated
+linearly with rounding to nearest and halfway values rounded up.
 points which lie on 2 diagonals at the same time should only use the one
 diagonal not containing the fullpel point
 
@@ -519,8 +519,8 @@ width,height here are the width and height of the LL0 subband not of the final
 video
 
 
-Dequantizaton:
-==============
+Dequantization:
+===============
 FIXME
 
 Wavelet Transform:
