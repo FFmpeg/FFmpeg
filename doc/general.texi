@@ -1135,10 +1135,10 @@ following image formats are supported:
 @item DPCM Sol               @tab     @tab  X
 @item DPCM Xan               @tab     @tab  X
     @tab Used in Origin's Wing Commander IV AVI files.
-@item DSD (Direct Stream Digitial), least significant bit first  @tab  @tab  X
-@item DSD (Direct Stream Digitial), most significant bit first   @tab  @tab  X
-@item DSD (Direct Stream Digitial), least significant bit first, planar  @tab  @tab  X
-@item DSD (Direct Stream Digitial), most significant bit first, planar   @tab  @tab  X
+@item DSD (Direct Stream Digital), least significant bit first  @tab  @tab  X
+@item DSD (Direct Stream Digital), most significant bit first   @tab  @tab  X
+@item DSD (Direct Stream Digital), least significant bit first, planar  @tab  @tab  X
+@item DSD (Direct Stream Digital), most significant bit first, planar   @tab  @tab  X
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DST (Direct Stream Transfer) @tab  @tab  X
 @item DV audio               @tab     @tab  X

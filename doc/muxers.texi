@@ -1018,7 +1018,7 @@ ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
   http://example.com/live/out.m3u8
 @end example
 This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in
-the master playlist with group name 'cc', langauge 'en' (english) and
+the master playlist with group name 'cc', language 'en' (english) and
 INSTREAM-ID 'CC1'. Also, it adds @code{CLOSED-CAPTIONS} attribute with group
 name 'cc' for the output variant stream.
 @example

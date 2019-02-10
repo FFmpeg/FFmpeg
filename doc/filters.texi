@@ -606,7 +606,7 @@ The lower value, the more samples will be detected as impulsive noise.
 Set burst fusion, in percentage of window size. Allowed range is @code{0} to
 @code{10}. Default value is @code{2}.
 If any two samples detected as noise are spaced less than this value then any
-sample in between those two samples will be also detected as noise.
+sample between those two samples will be also detected as noise.
 
 @item m
 Set overlap method.
@@ -1399,7 +1399,7 @@ single-precision floating-point
 @end table
 
 @item response
-Show IR frequency reponse, magnitude and phase in additional video stream.
+Show IR frequency response, magnitude and phase in additional video stream.
 By default it is disabled.
 
 @item channel
@@ -1425,7 +1425,7 @@ used for all remaining channels.
 
 @itemize
 @item
-Apply 2 pole elliptic notch at arround 5000Hz for 48000 Hz sample rate:
+Apply 2 pole elliptic notch at around 5000Hz for 48000 Hz sample rate:
 @example
 aiir=k=1:z=7.957584807809675810E-1 -2.575128568908332300 3.674839853930788710 -2.57512875289799137 7.957586296317130880E-1:p=1 -2.86950072432325953 3.63022088054647218 -2.28075678147272232 6.361362326477423500E-1:f=tf:r=d
 @end example
@@ -5648,7 +5648,7 @@ For example radius of 3 will instruct filter to calculate average of 7 frames.
 Set factor to amplify difference. Default is 2. Allowed range is from 0 to 65535.
 
 @item threshold
-Set threshold for difference amplification. Any differrence greater or equal to
+Set threshold for difference amplification. Any difference greater or equal to
 this value will not alter source pixel. Default is 10.
 Allowed range is from 0 to 65535.
 
@@ -6033,7 +6033,7 @@ The filter accepts the following options.
 @item sigma
 Set denoising strength. Default value is 1.
 Allowed range is from 0 to 999.9.
-The denoising algorith is very sensitive to sigma, so adjust it
+The denoising algorithm is very sensitive to sigma, so adjust it
 according to the source.
 
 @item block
@@ -10265,7 +10265,7 @@ The filter accepts the following options:
 Set horizontal sigma, standard deviation of Gaussian blur. Default is @code{0.5}.
 
 @item steps
-Set number of steps for Gaussian approximation. Defauls is @code{1}.
+Set number of steps for Gaussian approximation. Default is @code{1}.
 
 @item planes
 Set which planes to filter. By default all planes are filtered.
@@ -15336,7 +15336,7 @@ Keep the same color primaries property (default).
 @end table
 
 @item color_trc
-Set the color transfert.
+Set the color transfer.
 Available values are:
 
 @table @samp
@@ -20136,7 +20136,7 @@ Default is @code{log}.
 
 @item acount
 Set how much frames to accumulate in histogram.
-Defauls is 1. Setting this to -1 accumulates all frames.
+Default is 1. Setting this to -1 accumulates all frames.
 
 @item rheight
 Set histogram ratio of window height.

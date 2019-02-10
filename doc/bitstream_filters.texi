@@ -561,7 +561,7 @@ P3 D65
 @end table
 
 @item transfer_characteristics
-Set the color transfert.
+Set the color transfer.
 Available values are:
 
 @table @samp
