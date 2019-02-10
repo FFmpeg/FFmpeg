@@ -568,11 +568,11 @@ static int img_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     { "framerate",    "set the video framerate", OFFSET(framerate),    AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC }, \
     { "pixel_format", "set video pixel format",  OFFSET(pixel_format), AV_OPT_TYPE_STRING,     {.str = NULL}, 0, 0,       DEC }, \
     { "video_size",   "set video size",          OFFSET(width),        AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0,       DEC }, \
+    { "loop",         "force loop over input file sequence", OFFSET(loop), AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC }, \
     { NULL },
 
 #if CONFIG_IMAGE2_DEMUXER
 const AVOption ff_img_options[] = {
-    { "loop",         "force loop over input file sequence", OFFSET(loop),         AV_OPT_TYPE_BOOL,   {.i64 = 0   }, 0, 1,       DEC },
     { "pattern_type", "set pattern type",                    OFFSET(pattern_type), AV_OPT_TYPE_INT,    {.i64=PT_DEFAULT}, 0,       INT_MAX, DEC, "pattern_type"},
     { "glob_sequence","select glob/sequence pattern type",   0, AV_OPT_TYPE_CONST,  {.i64=PT_GLOB_SEQUENCE}, INT_MIN, INT_MAX, DEC, "pattern_type" },
     { "glob",         "select glob pattern type",            0, AV_OPT_TYPE_CONST,  {.i64=PT_GLOB         }, INT_MIN, INT_MAX, DEC, "pattern_type" },
