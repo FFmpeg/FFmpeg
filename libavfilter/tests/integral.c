@@ -33,6 +33,9 @@ static void display_integral(const uint32_t *ii, int w, int h, int lz_32)
 int main(void)
 {
     int ret = 0, xoff, yoff;
+    uint32_t *ii_start;
+    uint32_t *ii_start2;
+    NLMeansDSPContext dsp = {0};
 
     // arbitrary test source of size 6x4 and linesize=8
     const int w = 6, h = 5, lz = 8;
@@ -57,10 +60,8 @@ int main(void)
     if (!ii || !ii2)
         return -1;
 
-    uint32_t *ii_start  = ii  + ii_lz_32 + 1; // skip top 0-line and left 0-column
-    uint32_t *ii_start2 = ii2 + ii_lz_32 + 1; // skip top 0-line and left 0-column
-
-    NLMeansDSPContext dsp = {0};
+    ii_start  = ii  + ii_lz_32 + 1; // skip top 0-line and left 0-column
+    ii_start2 = ii2 + ii_lz_32 + 1; // skip top 0-line and left 0-column
 
     ff_nlmeans_init(&dsp);
 
