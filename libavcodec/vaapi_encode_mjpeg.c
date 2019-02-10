@@ -438,7 +438,7 @@ static av_cold int vaapi_encode_mjpeg_configure(AVCodecContext *avctx)
     VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
     int err;
 
-    priv->quality = avctx->global_quality;
+    priv->quality = ctx->rc_quality;
     if (priv->quality < 1 || priv->quality > 100) {
         av_log(avctx, AV_LOG_ERROR, "Invalid quality value %d "
                "(must be 1-100).\n", priv->quality);
@@ -482,6 +482,8 @@ static const VAAPIEncodeType vaapi_encode_type_mjpeg = {
                              FLAG_INTRA_ONLY,
 
     .configure             = &vaapi_encode_mjpeg_configure,
+
+    .default_quality       = 80,
 
     .picture_params_size   = sizeof(VAEncPictureParameterBufferJPEG),
     .init_picture_params   = &vaapi_encode_mjpeg_init_picture_params,
@@ -537,7 +539,6 @@ static const AVOption vaapi_encode_mjpeg_options[] = {
 };
 
 static const AVCodecDefault vaapi_encode_mjpeg_defaults[] = {
-    { "global_quality", "80" },
     { "b",              "0"  },
     { NULL },
 };
