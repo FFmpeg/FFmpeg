@@ -182,21 +182,21 @@ static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
     VAAPIEncodeVP9Context *priv = avctx->priv_data;
 
     if (ctx->rc_mode->quality) {
-    priv->q_idx_p = av_clip(ctx->rc_quality, 0, VP9_MAX_QUANT);
-    if (avctx->i_quant_factor > 0.0)
-        priv->q_idx_idr = av_clip((priv->q_idx_p *
-                                   avctx->i_quant_factor +
-                                   avctx->i_quant_offset) + 0.5,
-                                  0, VP9_MAX_QUANT);
-    else
-        priv->q_idx_idr = priv->q_idx_p;
-    if (avctx->b_quant_factor > 0.0)
-        priv->q_idx_b = av_clip((priv->q_idx_p *
-                                 avctx->b_quant_factor +
-                                 avctx->b_quant_offset) + 0.5,
-                                0, VP9_MAX_QUANT);
-    else
-        priv->q_idx_b = priv->q_idx_p;
+        priv->q_idx_p = av_clip(ctx->rc_quality, 0, VP9_MAX_QUANT);
+        if (avctx->i_quant_factor > 0.0)
+            priv->q_idx_idr =
+                av_clip((avctx->i_quant_factor * priv->q_idx_p  +
+                         avctx->i_quant_offset) + 0.5,
+                        0, VP9_MAX_QUANT);
+        else
+            priv->q_idx_idr = priv->q_idx_p;
+        if (avctx->b_quant_factor > 0.0)
+            priv->q_idx_b =
+                av_clip((avctx->b_quant_factor * priv->q_idx_p  +
+                         avctx->b_quant_offset) + 0.5,
+                        0, VP9_MAX_QUANT);
+        else
+            priv->q_idx_b = priv->q_idx_p;
     } else {
         // Arbitrary value.
         priv->q_idx_idr = priv->q_idx_p = priv->q_idx_b = 100;
