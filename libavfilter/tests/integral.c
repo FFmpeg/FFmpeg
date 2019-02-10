@@ -54,15 +54,15 @@ int main(void)
     uint32_t *ii  = av_mallocz_array(ii_h + 1, ii_lz_32 * sizeof(*ii));
     uint32_t *ii2 = av_mallocz_array(ii_h + 1, ii_lz_32 * sizeof(*ii2));
 
+    if (!ii || !ii2)
+        return -1;
+
     uint32_t *ii_start  = ii  + ii_lz_32 + 1; // skip top 0-line and left 0-column
     uint32_t *ii_start2 = ii2 + ii_lz_32 + 1; // skip top 0-line and left 0-column
 
     NLMeansDSPContext dsp = {0};
 
     ff_nlmeans_init(&dsp);
-
-    if (!ii || !ii2)
-        return -1;
 
     for (yoff = -e; yoff <= e; yoff++) {
         for (xoff = -e; xoff <= e; xoff++) {
