@@ -178,23 +178,29 @@ static int vaapi_encode_vp9_init_picture_params(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_vp9_configure(AVCodecContext *avctx)
 {
+    VAAPIEncodeContext     *ctx = avctx->priv_data;
     VAAPIEncodeVP9Context *priv = avctx->priv_data;
 
-    priv->q_idx_p = av_clip(avctx->global_quality, 0, VP9_MAX_QUANT);
+    if (ctx->rc_mode->quality) {
+    priv->q_idx_p = av_clip(ctx->rc_quality, 0, VP9_MAX_QUANT);
     if (avctx->i_quant_factor > 0.0)
-        priv->q_idx_idr = av_clip((avctx->global_quality *
+        priv->q_idx_idr = av_clip((priv->q_idx_p *
                                    avctx->i_quant_factor +
                                    avctx->i_quant_offset) + 0.5,
                                   0, VP9_MAX_QUANT);
     else
         priv->q_idx_idr = priv->q_idx_p;
     if (avctx->b_quant_factor > 0.0)
-        priv->q_idx_b = av_clip((avctx->global_quality *
+        priv->q_idx_b = av_clip((priv->q_idx_p *
                                  avctx->b_quant_factor +
                                  avctx->b_quant_offset) + 0.5,
                                 0, VP9_MAX_QUANT);
     else
         priv->q_idx_b = priv->q_idx_p;
+    } else {
+        // Arbitrary value.
+        priv->q_idx_idr = priv->q_idx_p = priv->q_idx_b = 100;
+    }
 
     return 0;
 }
@@ -210,6 +216,8 @@ static const VAAPIEncodeType vaapi_encode_type_vp9 = {
 
     .flags                 = FLAG_B_PICTURES |
                              FLAG_B_PICTURE_REFERENCES,
+
+    .default_quality       = 100,
 
     .picture_priv_data_size = sizeof(VAAPIEncodeVP9Picture),
 
@@ -244,6 +252,8 @@ static av_cold int vaapi_encode_vp9_init(AVCodecContext *avctx)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_vp9_options[] = {
     VAAPI_ENCODE_COMMON_OPTIONS,
+    VAAPI_ENCODE_RC_OPTIONS,
+
     { "loop_filter_level", "Loop filter level",
       OFFSET(loop_filter_level), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, 63, FLAGS },
     { "loop_filter_sharpness", "Loop filter sharpness",
@@ -255,7 +265,6 @@ static const AVCodecDefault vaapi_encode_vp9_defaults[] = {
     { "b",              "0"   },
     { "bf",             "0"   },
     { "g",              "250" },
-    { "global_quality", "100" },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
     { NULL },
