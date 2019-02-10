@@ -521,19 +521,17 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
         return err;
 
     if (ctx->va_rc_mode == VA_RC_CQP) {
-        priv->quant_p = av_clip(avctx->global_quality, 1, 31);
+        priv->quant_p = av_clip(ctx->rc_quality, 1, 31);
         if (avctx->i_quant_factor > 0.0)
-            priv->quant_i = av_clip((avctx->global_quality *
-                                     avctx->i_quant_factor +
-                                     avctx->i_quant_offset) + 0.5,
-                                    1, 31);
+            priv->quant_i =
+                av_clip((avctx->i_quant_factor * priv->quant_p +
+                         avctx->i_quant_offset) + 0.5, 1, 31);
         else
             priv->quant_i = priv->quant_p;
         if (avctx->b_quant_factor > 0.0)
-            priv->quant_b = av_clip((avctx->global_quality *
-                                     avctx->b_quant_factor +
-                                     avctx->b_quant_offset) + 0.5,
-                                    1, 31);
+            priv->quant_b =
+                av_clip((avctx->b_quant_factor * priv->quant_p +
+                         avctx->b_quant_offset) + 0.5, 1, 31);
         else
             priv->quant_b = priv->quant_p;
 
@@ -542,7 +540,9 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
                priv->quant_i, priv->quant_p, priv->quant_b);
 
     } else {
-        av_assert0(0 && "Invalid RC mode.");
+        priv->quant_i = 16;
+        priv->quant_p = 16;
+        priv->quant_b = 16;
     }
 
     ctx->slice_block_rows = FFALIGN(avctx->height, 16) / 16;
@@ -566,6 +566,8 @@ static const VAAPIEncodeType vaapi_encode_type_mpeg2 = {
     .flags                 = FLAG_B_PICTURES,
 
     .configure             = &vaapi_encode_mpeg2_configure,
+
+    .default_quality       = 10,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferMPEG2),
     .init_sequence_params  = &vaapi_encode_mpeg2_init_sequence_params,
@@ -638,6 +640,7 @@ static av_cold int vaapi_encode_mpeg2_close(AVCodecContext *avctx)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_mpeg2_options[] = {
     VAAPI_ENCODE_COMMON_OPTIONS,
+    VAAPI_ENCODE_RC_OPTIONS,
 
     { "profile", "Set profile (in profile_and_level_indication)",
       OFFSET(profile), AV_OPT_TYPE_INT,
@@ -672,7 +675,6 @@ static const AVCodecDefault vaapi_encode_mpeg2_defaults[] = {
     { "i_qoffset",      "0"   },
     { "b_qfactor",      "6/5" },
     { "b_qoffset",      "0"   },
-    { "global_quality", "10"  },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
     { NULL },
