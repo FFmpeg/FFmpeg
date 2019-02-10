@@ -161,14 +161,15 @@ static int vaapi_encode_vp8_write_quant_table(AVCodecContext *avctx,
 
 static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
 {
+    VAAPIEncodeContext     *ctx = avctx->priv_data;
     VAAPIEncodeVP8Context *priv = avctx->priv_data;
 
-    priv->q_index_p = av_clip(avctx->global_quality, 0, VP8_MAX_QUANT);
+    priv->q_index_p = av_clip(ctx->rc_quality, 0, VP8_MAX_QUANT);
     if (avctx->i_quant_factor > 0.0)
-        priv->q_index_i = av_clip((avctx->global_quality *
-                                   avctx->i_quant_factor +
-                                   avctx->i_quant_offset) + 0.5,
-                                  0, VP8_MAX_QUANT);
+        priv->q_index_i =
+            av_clip((avctx->i_quant_factor * priv->q_index_p  +
+                     avctx->i_quant_offset) + 0.5,
+                    0, VP8_MAX_QUANT);
     else
         priv->q_index_i = priv->q_index_p;
 
@@ -184,6 +185,8 @@ static const VAAPIEncodeType vaapi_encode_type_vp8 = {
     .profiles              = vaapi_encode_vp8_profiles,
 
     .configure             = &vaapi_encode_vp8_configure,
+
+    .default_quality       = 40,
 
     .sequence_params_size  = sizeof(VAEncSequenceParameterBufferVP8),
     .init_sequence_params  = &vaapi_encode_vp8_init_sequence_params,
@@ -215,6 +218,8 @@ static av_cold int vaapi_encode_vp8_init(AVCodecContext *avctx)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
 static const AVOption vaapi_encode_vp8_options[] = {
     VAAPI_ENCODE_COMMON_OPTIONS,
+    VAAPI_ENCODE_RC_OPTIONS,
+
     { "loop_filter_level", "Loop filter level",
       OFFSET(loop_filter_level), AV_OPT_TYPE_INT, { .i64 = 16 }, 0, 63, FLAGS },
     { "loop_filter_sharpness", "Loop filter sharpness",
@@ -226,7 +231,6 @@ static const AVCodecDefault vaapi_encode_vp8_defaults[] = {
     { "b",              "0"   },
     { "bf",             "0"   },
     { "g",              "120" },
-    { "global_quality", "40"  },
     { "qmin",           "-1"  },
     { "qmax",           "-1"  },
     { NULL },
