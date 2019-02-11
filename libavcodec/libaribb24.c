@@ -249,11 +249,11 @@ static int libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
         // font size
         if (region->i_fontwidth  != profile_font_size ||
             region->i_fontheight != profile_font_size) {
-            av_bprintf(&buf, "{\\fscx%d\\fscy%d}",
-                       (int)round(((double)region->i_fontwidth /
-                                   (double)profile_font_size) * 100),
-                       (int)round(((double)region->i_fontheight /
-                                   (double)profile_font_size) * 100));
+            av_bprintf(&buf, "{\\fscx%"PRId64"\\fscy%"PRId64"}",
+                       av_rescale(region->i_fontwidth, 100,
+                                  profile_font_size),
+                       av_rescale(region->i_fontheight, 100,
+                                  profile_font_size));
         }
 
         // TODO: positioning
