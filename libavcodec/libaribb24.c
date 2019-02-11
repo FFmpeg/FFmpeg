@@ -202,7 +202,7 @@ static int libaribb24_close(AVCodecContext *avctx)
     return 0;
 }
 
-#define RGB_TO_BGR(c) ((c & 0xff) << 16 | (c & 0xff00) | ((c >> 16) & 0xff))
+#define RGB_TO_BGR(c) (((c) & 0xff) << 16 | ((c) & 0xff00) | (((c) >> 16) & 0xff))
 
 static int libaribb24_handle_regions(AVCodecContext *avctx, AVSubtitle *sub)
 {
