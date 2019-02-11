@@ -367,9 +367,9 @@ static void libaribb24_flush(AVCodecContext *avctx)
 #define SD AV_OPT_FLAG_SUBTITLE_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "aribb24-base-path", "set the base path for the libaribb24 library",
-      OFFSET(aribb24_base_path), AV_OPT_TYPE_STRING, { 0 }, 0, 0, SD },
+      OFFSET(aribb24_base_path), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, SD },
     { "aribb24-skip-ruby-text", "skip ruby text blocks during decoding",
-      OFFSET(aribb24_skip_ruby), AV_OPT_TYPE_BOOL, { 1 }, 0, 1, SD },
+      OFFSET(aribb24_skip_ruby), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, SD },
     { NULL }
 };
 
