@@ -118,7 +118,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->output, au);
+    ff_cbs_fragment_reset(ctx->output, au);
     av_packet_free(&in);
     if (err < 0)
         av_packet_unref(out);
@@ -167,7 +167,7 @@ static int h264_redundant_pps_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->output, au);
+    ff_cbs_fragment_reset(ctx->output, au);
     return err;
 }
 
@@ -180,6 +180,8 @@ static void h264_redundant_pps_flush(AVBSFContext *bsf)
 static void h264_redundant_pps_close(AVBSFContext *bsf)
 {
     H264RedundantPPSContext *ctx = bsf->priv_data;
+
+    ff_cbs_fragment_free(ctx->input, &ctx->access_unit);
     ff_cbs_close(&ctx->input);
     ff_cbs_close(&ctx->output);
 }

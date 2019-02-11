@@ -604,7 +604,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, au);
+    ff_cbs_fragment_reset(ctx->cbc, au);
     av_freep(&displaymatrix_side_data);
 
     if (err < 0)
@@ -648,13 +648,15 @@ static int h264_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, au);
+    ff_cbs_fragment_reset(ctx->cbc, au);
     return err;
 }
 
 static void h264_metadata_close(AVBSFContext *bsf)
 {
     H264MetadataContext *ctx = bsf->priv_data;
+
+    ff_cbs_fragment_free(ctx->cbc, &ctx->access_unit);
     ff_cbs_close(&ctx->cbc);
 }
 

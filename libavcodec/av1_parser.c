@@ -72,7 +72,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
             goto end;
         }
 
-        ff_cbs_fragment_uninit(s->cbc, td);
+        ff_cbs_fragment_reset(s->cbc, td);
     }
 
     ret = ff_cbs_read(s->cbc, td, data, size);
@@ -159,7 +159,7 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
     }
 
 end:
-    ff_cbs_fragment_uninit(s->cbc, td);
+    ff_cbs_fragment_reset(s->cbc, td);
 
     s->cbc->log_ctx = NULL;
 
@@ -193,6 +193,7 @@ static void av1_parser_close(AVCodecParserContext *ctx)
 {
     AV1ParseContext *s = ctx->priv_data;
 
+    ff_cbs_fragment_free(s->cbc, &s->temporal_unit);
     ff_cbs_close(&s->cbc);
 }
 

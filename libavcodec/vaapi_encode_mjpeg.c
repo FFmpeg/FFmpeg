@@ -142,7 +142,7 @@ static int vaapi_encode_mjpeg_write_image_header(AVCodecContext *avctx,
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(priv->cbc, frag);
+    ff_cbs_fragment_reset(priv->cbc, frag);
     return err;
 }
 
@@ -515,6 +515,7 @@ static av_cold int vaapi_encode_mjpeg_close(AVCodecContext *avctx)
 {
     VAAPIEncodeMJPEGContext *priv = avctx->priv_data;
 
+    ff_cbs_fragment_free(priv->cbc, &priv->current_fragment);
     ff_cbs_close(&priv->cbc);
 
     return ff_vaapi_encode_close(avctx);
