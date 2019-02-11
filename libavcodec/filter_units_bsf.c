@@ -199,18 +199,18 @@ static int filter_units_init(AVBSFContext *bsf)
     ctx->cbc->nb_decompose_unit_types = 0;
 
     if (bsf->par_in->extradata) {
-        CodedBitstreamFragment ps;
+        CodedBitstreamFragment *frag = &ctx->fragment;
 
-        err = ff_cbs_read_extradata(ctx->cbc, &ps, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->cbc, frag, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
         } else {
-            err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, &ps);
+            err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, frag);
             if (err < 0)
                 av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
         }
 
-        ff_cbs_fragment_uninit(ctx->cbc, &ps);
+        ff_cbs_fragment_uninit(ctx->cbc, frag);
     }
 
     return err;
