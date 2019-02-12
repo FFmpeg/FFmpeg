@@ -38,8 +38,22 @@ static av_cold void vp3dsp_init_msa(VP3DSPContext *c, int flags)
 }
 #endif /* HAVE_MSA */
 
+#if HAVE_MMI
+static av_cold void vp3dsp_init_mmi(VP3DSPContext *c, int flags)
+{
+    c->put_no_rnd_pixels_l2 = ff_put_no_rnd_pixels_l2_mmi;
+
+    c->idct_add      = ff_vp3_idct_add_mmi;
+    c->idct_put      = ff_vp3_idct_put_mmi;
+    c->idct_dc_add   = ff_vp3_idct_dc_add_mmi;
+}
+#endif /* HAVE_MMI */
+
 av_cold void ff_vp3dsp_init_mips(VP3DSPContext *c, int flags)
 {
+#if HAVE_MMI
+    vp3dsp_init_mmi(c, flags);
+#endif /* HAVE_MMI */
 #if HAVE_MSA
     vp3dsp_init_msa(c, flags);
 #endif /* HAVE_MSA */
