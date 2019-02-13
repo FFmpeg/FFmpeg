@@ -37,7 +37,7 @@ int main(void)
     uint32_t *ii_start2;
     NLMeansDSPContext dsp = {0};
 
-    // arbitrary test source of size 6x4 and linesize=8
+    // arbitrary test source of size 6x5 and linesize=8
     const int w = 6, h = 5, lz = 8;
     static const uint8_t src[] = {
         0xb0, 0x71, 0xfb, 0xd8, 0x01, 0xd9, /***/ 0x01, 0x02,
