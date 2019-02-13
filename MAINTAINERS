@@ -362,6 +362,7 @@ Filters:
   vf_ssim.c                             Paul B Mahol
   vf_stereo3d.c                         Paul B Mahol
   vf_telecine.c                         Paul B Mahol
+  vf_tonemap_opencl.c                   Ruiling Song
   vf_yadif.c                            Michael Niedermayer
   vf_zoompan.c                          Paul B Mahol
 
