@@ -284,13 +284,16 @@ typedef struct HEVCSPS {
     int max_transform_hierarchy_depth_inter;
     int max_transform_hierarchy_depth_intra;
 
+    int sps_range_extension_flag;
     int transform_skip_rotation_enabled_flag;
     int transform_skip_context_enabled_flag;
     int implicit_rdpcm_enabled_flag;
     int explicit_rdpcm_enabled_flag;
+    int extended_precision_processing_flag;
     int intra_smoothing_disabled_flag;
     int high_precision_offsets_enabled_flag;
     int persistent_rice_adaptation_enabled_flag;
+    int cabac_bypass_alignment_enabled_flag;
 
     ///< coded frame dimension in various units
     int width;
@@ -365,6 +368,7 @@ typedef struct HEVCPPS {
     int num_extra_slice_header_bits;
     uint8_t slice_header_extension_present_flag;
     uint8_t log2_max_transform_skip_block_size;
+    uint8_t pps_range_extensions_flag;
     uint8_t cross_component_prediction_enabled_flag;
     uint8_t chroma_qp_offset_list_enabled_flag;
     uint8_t diff_cu_chroma_qp_offset_depth;
