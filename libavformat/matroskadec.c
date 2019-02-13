@@ -1197,6 +1197,18 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                    length, max_lengths[syntax->type], syntax->type);
             return AVERROR_INVALIDDATA;
         }
+        if (matroska->num_levels > 0) {
+            MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
+            AVIOContext *pb = matroska->ctx->pb;
+            int64_t pos = avio_tell(pb);
+            if (level->length != (uint64_t) -1 &&
+                (pos + length) > (level->start + level->length)) {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Invalid length 0x%"PRIx64" > 0x%"PRIx64" in parent\n",
+                       length, level->start + level->length);
+                return AVERROR_INVALIDDATA;
+            }
+        }
     }
 
     switch (syntax->type) {
