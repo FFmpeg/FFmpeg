@@ -422,8 +422,13 @@ static int spdif_header_truehd(AVFormatContext *s, AVPacket *pkt)
 
     memcpy(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length],
            pkt->data, pkt->size);
-    memset(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length + pkt->size],
-           0, TRUEHD_FRAME_OFFSET - pkt->size - mat_code_length);
+    if (ctx->hd_buf_count < 23) {
+        memset(&ctx->hd_buf[ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + mat_code_length + pkt->size],
+               0, TRUEHD_FRAME_OFFSET - pkt->size - mat_code_length);
+    } else {
+        size_t padding = MAT_FRAME_SIZE - (ctx->hd_buf_count * TRUEHD_FRAME_OFFSET - BURST_HEADER_SIZE + pkt->size);
+        memset(&ctx->hd_buf[MAT_FRAME_SIZE - padding], 0, padding);
+    }
 
     if (++ctx->hd_buf_count < 24){
         ctx->pkt_offset = 0;
