@@ -93,6 +93,8 @@ typedef struct AVAppIOControl {
     int     is_handled;     /* out, default = false */
     int     is_url_changed; /* out, default = false */
     int     is_audio;
+    int     http_code;
+    int     error_code;
 } AVAppIOControl;
 
 typedef struct AVAppTcpIOControl {

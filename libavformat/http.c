@@ -574,6 +574,11 @@ static int http_open(URLContext *h, const char *uri, int flags,
     ret = http_open_cnx(h, options);
     end_time = av_gettime();
     av_application_did_http_open(s->app_ctx, (void*)h, uri, ret, s->http_code, s->filesize, start_time, end_time);
+    // save http_code,error in extra dict
+
+    av_dict_set_int(options, "ijk-http-code", s->http_code, 0);
+    av_dict_set_int(options, "ijk-http-error", ret, 0);
+
     if (ret < 0)
         av_dict_free(&s->chained_options);
     return ret;
