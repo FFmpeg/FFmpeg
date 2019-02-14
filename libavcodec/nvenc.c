@@ -1070,6 +1070,10 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->tier = ctx->tier;
 
+#ifdef NVENC_HAVE_HEVC_BFRAME_REF_MODE
+    hevc->useBFramesAsRef = ctx->b_ref_mode;
+#endif
+
     return 0;
 }
 
