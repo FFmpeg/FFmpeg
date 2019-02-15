@@ -3057,6 +3057,7 @@ static int decode_studio_vop_header(Mpeg4DecContext *ctx, GetBitContext *gb)
         return 0;
 
     s->partitioned_frame = 0;
+    s->interlaced_dct = 0;
     s->decode_mb = mpeg4_decode_studio_mb;
 
     decode_smpte_tc(ctx, gb);
