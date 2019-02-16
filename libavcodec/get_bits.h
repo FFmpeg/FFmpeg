@@ -380,7 +380,7 @@ static inline int get_sbits(GetBitContext *s, int n)
  */
 static inline unsigned int get_bits(GetBitContext *s, int n)
 {
-    register int tmp;
+    register unsigned int tmp;
 #if CACHED_BITSTREAM_READER
 
     av_assert2(n>0 && n<=32);
@@ -442,7 +442,7 @@ static inline unsigned int get_bits_le(GetBitContext *s, int n)
  */
 static inline unsigned int show_bits(GetBitContext *s, int n)
 {
-    register int tmp;
+    register unsigned int tmp;
 #if CACHED_BITSTREAM_READER
     if (n > s->bits_left)
         refill_32(s);
