@@ -18,6 +18,7 @@ version <next>:
 - hcom demuxer and decoder
 - ARBC decoder
 - libaribb24 based ARIB STD-B24 caption support (profiles A and C)
+- Support decoding of HEVC 4:4:4 content in nvdec and cuviddec
 
 
 version 4.1:
