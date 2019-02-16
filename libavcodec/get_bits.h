@@ -403,6 +403,7 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
     LAST_SKIP_BITS(re, s, n);
     CLOSE_READER(re, s);
 #endif
+    av_assert2(tmp < UINT64_C(1) << n);
     return tmp;
 }
 
