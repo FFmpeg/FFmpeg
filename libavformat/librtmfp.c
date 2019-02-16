@@ -25,7 +25,6 @@
  */
 
 #include "libavutil/avstring.h"
-//#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #if CONFIG_NETWORK
@@ -101,7 +100,6 @@ static int rtmfp_close(URLContext *s)
     LibRTMFPContext *ctx = s->priv_data;
 
     av_log(NULL, AV_LOG_INFO, "Closing RTMFP connection...\n");
-    //RTMFP_Close(ctx->id, 1);
     RTMFP_Terminate();
     return 0;
 }
@@ -200,7 +198,6 @@ static int rtmfp_write(URLContext *s, const uint8_t *buf, int size)
     int res = 0;
 
     res = RTMFP_Write(ctx->id, buf, size);
-    //av_log(NULL, AV_LOG_INFO, "RTMFP write called, %d/%d bytes read\n", res, size);
     return (res < 0)? AVERROR_UNKNOWN : res;
 }
 
@@ -210,47 +207,9 @@ static int rtmfp_read(URLContext *s, uint8_t *buf, int size)
     int res = 0;
 
     res = RTMFP_Read(ctx->streamId, ctx->id, buf, size);
-    //av_log(NULL, AV_LOG_INFO, "RTMFP read called, %d/%d bytes read\n", res, size);
 
     return (res < 0)? AVERROR_UNKNOWN : res;
 }
-
-/*static int rtmp_read_pause(URLContext *s, int pause)
-{
-    LibRTMPContext *ctx = s->priv_data;
-    RTMP *r = &ctx->rtmp;
-
-    if (!RTMP_Pause(r, pause))
-        return AVERROR_UNKNOWN;
-    return 0;
-}
-
-static int64_t rtmp_read_seek(URLContext *s, int stream_index,
-                              int64_t timestamp, int flags)
-{
-    LibRTMPContext *ctx = s->priv_data;
-    RTMP *r = &ctx->rtmp;
-
-    if (flags & AVSEEK_FLAG_BYTE)
-        return AVERROR(ENOSYS);
-
-    // seeks are in milliseconds
-    if (stream_index < 0)
-        timestamp = av_rescale_rnd(timestamp, 1000, AV_TIME_BASE,
-            flags & AVSEEK_FLAG_BACKWARD ? AV_ROUND_DOWN : AV_ROUND_UP);
-
-    if (!RTMP_SendSeek(r, timestamp))
-        return AVERROR_UNKNOWN;
-    return timestamp;
-}
-
-static int rtmp_get_file_handle(URLContext *s)
-{
-    LibRTMPContext *ctx = s->priv_data;
-    RTMP *r = &ctx->rtmp;
-
-    return RTMP_Socket(r);
-}*/
 
 #define OFFSET(x) offsetof(LibRTMFPContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
@@ -293,9 +252,6 @@ URLProtocol ff_librtmfp_protocol = {
     .url_read            = rtmfp_read,
     .url_write           = rtmfp_write,
     .url_close           = rtmfp_close,
-    /*.url_read_pause      = rtmp_read_pause,
-    .url_read_seek       = rtmp_read_seek,
-    .url_get_file_handle = rtmp_get_file_handle,*/
     .priv_data_size      = sizeof(LibRTMFPContext),
     .priv_data_class     = &librtmfp_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
