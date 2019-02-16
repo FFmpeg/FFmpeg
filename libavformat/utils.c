@@ -5111,147 +5111,147 @@ static int match_stream_specifier(AVFormatContext *s, AVStream *st,
 {
     int match = 1;                      /* Stores if the specifier matches so far. */
     while (*spec) {
-    if (*spec <= '9' && *spec >= '0') { /* opt:index */
-        if (indexptr)
-            *indexptr = spec;
-        return match;
-    } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
-               *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
-        enum AVMediaType type;
-        int nopic = 0;
+        if (*spec <= '9' && *spec >= '0') { /* opt:index */
+            if (indexptr)
+                *indexptr = spec;
+            return match;
+        } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
+                   *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
+            enum AVMediaType type;
+            int nopic = 0;
 
-        switch (*spec++) {
-        case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
-        case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
-        case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
-        case 'd': type = AVMEDIA_TYPE_DATA;       break;
-        case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
-        case 'V': type = AVMEDIA_TYPE_VIDEO; nopic = 1; break;
-        default:  av_assert0(0);
-        }
-        if (*spec && *spec++ != ':')         /* If we are not at the end, then another specifier must follow. */
-            return AVERROR(EINVAL);
+            switch (*spec++) {
+            case 'v': type = AVMEDIA_TYPE_VIDEO;      break;
+            case 'a': type = AVMEDIA_TYPE_AUDIO;      break;
+            case 's': type = AVMEDIA_TYPE_SUBTITLE;   break;
+            case 'd': type = AVMEDIA_TYPE_DATA;       break;
+            case 't': type = AVMEDIA_TYPE_ATTACHMENT; break;
+            case 'V': type = AVMEDIA_TYPE_VIDEO; nopic = 1; break;
+            default:  av_assert0(0);
+            }
+            if (*spec && *spec++ != ':')         /* If we are not at the end, then another specifier must follow. */
+                return AVERROR(EINVAL);
 
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
-        if (type != st->codecpar->codec_type
-           && (st->codecpar->codec_type != AVMEDIA_TYPE_UNKNOWN || st->codec->codec_type != type))
-            match = 0;
-FF_ENABLE_DEPRECATION_WARNINGS
+            if (type != st->codecpar->codec_type
+               && (st->codecpar->codec_type != AVMEDIA_TYPE_UNKNOWN || st->codec->codec_type != type))
+                match = 0;
+    FF_ENABLE_DEPRECATION_WARNINGS
 #else
-        if (type != st->codecpar->codec_type)
-            match = 0;
+            if (type != st->codecpar->codec_type)
+                match = 0;
 #endif
-        if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
-            match = 0;
-    } else if (*spec == 'p' && *(spec + 1) == ':') {
-        int prog_id, i, j;
-        int found = 0;
-        char *endptr;
-        spec += 2;
-        prog_id = strtol(spec, &endptr, 0);
-        /* Disallow empty id and make sure that if we are not at the end, then another specifier must follow. */
-        if (spec == endptr || (*endptr && *endptr++ != ':'))
-            return AVERROR(EINVAL);
-        spec = endptr;
-        if (match) {
-        for (i = 0; i < s->nb_programs; i++) {
-            if (s->programs[i]->id != prog_id)
-                continue;
+            if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
+                match = 0;
+        } else if (*spec == 'p' && *(spec + 1) == ':') {
+            int prog_id, i, j;
+            int found = 0;
+            char *endptr;
+            spec += 2;
+            prog_id = strtol(spec, &endptr, 0);
+            /* Disallow empty id and make sure that if we are not at the end, then another specifier must follow. */
+            if (spec == endptr || (*endptr && *endptr++ != ':'))
+                return AVERROR(EINVAL);
+            spec = endptr;
+            if (match) {
+                for (i = 0; i < s->nb_programs; i++) {
+                    if (s->programs[i]->id != prog_id)
+                        continue;
 
-            for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
-                if (st->index == s->programs[i]->stream_index[j]) {
-                    found = 1;
-                    i = s->nb_programs;
-                    break;
+                    for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
+                        if (st->index == s->programs[i]->stream_index[j]) {
+                            found = 1;
+                            i = s->nb_programs;
+                            break;
+                        }
+                    }
                 }
             }
-        }
-        }
-        if (!found)
-            match = 0;
-    } else if (*spec == '#' ||
-               (*spec == 'i' && *(spec + 1) == ':')) {
-        int stream_id;
-        char *endptr;
-        spec += 1 + (*spec == 'i');
-        stream_id = strtol(spec, &endptr, 0);
-        if (spec == endptr || *endptr)                /* Disallow empty id and make sure we are at the end. */
-            return AVERROR(EINVAL);
-        return match && (stream_id == st->id);
-    } else if (*spec == 'm' && *(spec + 1) == ':') {
-        AVDictionaryEntry *tag;
-        char *key, *val;
-        int ret;
+            if (!found)
+                match = 0;
+        } else if (*spec == '#' ||
+                   (*spec == 'i' && *(spec + 1) == ':')) {
+            int stream_id;
+            char *endptr;
+            spec += 1 + (*spec == 'i');
+            stream_id = strtol(spec, &endptr, 0);
+            if (spec == endptr || *endptr)                /* Disallow empty id and make sure we are at the end. */
+                return AVERROR(EINVAL);
+            return match && (stream_id == st->id);
+        } else if (*spec == 'm' && *(spec + 1) == ':') {
+            AVDictionaryEntry *tag;
+            char *key, *val;
+            int ret;
 
-        if (match) {
-        spec += 2;
-        val = strchr(spec, ':');
+            if (match) {
+               spec += 2;
+               val = strchr(spec, ':');
 
-        key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
-        if (!key)
-            return AVERROR(ENOMEM);
+               key = val ? av_strndup(spec, val - spec) : av_strdup(spec);
+               if (!key)
+                   return AVERROR(ENOMEM);
 
-        tag = av_dict_get(st->metadata, key, NULL, 0);
-        if (tag) {
-            if (!val || !strcmp(tag->value, val + 1))
-                ret = 1;
-            else
-                ret = 0;
-        } else
-            ret = 0;
+               tag = av_dict_get(st->metadata, key, NULL, 0);
+               if (tag) {
+                   if (!val || !strcmp(tag->value, val + 1))
+                       ret = 1;
+                   else
+                       ret = 0;
+               } else
+                   ret = 0;
 
-        av_freep(&key);
-        }
-        return match && ret;
-    } else if (*spec == 'u' && *(spec + 1) == '\0') {
-        AVCodecParameters *par = st->codecpar;
+               av_freep(&key);
+            }
+            return match && ret;
+        } else if (*spec == 'u' && *(spec + 1) == '\0') {
+            AVCodecParameters *par = st->codecpar;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
-        AVCodecContext *codec = st->codec;
+            AVCodecContext *codec = st->codec;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-        int val;
-        switch (par->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            val = par->sample_rate && par->channels;
+            int val;
+            switch (par->codec_type) {
+            case AVMEDIA_TYPE_AUDIO:
+                val = par->sample_rate && par->channels;
 #if FF_API_LAVF_AVCTX
-            val = val || (codec->sample_rate && codec->channels);
+                val = val || (codec->sample_rate && codec->channels);
 #endif
-            if (par->format == AV_SAMPLE_FMT_NONE
+                if (par->format == AV_SAMPLE_FMT_NONE
 #if FF_API_LAVF_AVCTX
-                && codec->sample_fmt == AV_SAMPLE_FMT_NONE
+                    && codec->sample_fmt == AV_SAMPLE_FMT_NONE
 #endif
-                )
-                return 0;
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            val = par->width && par->height;
+                    )
+                    return 0;
+                break;
+            case AVMEDIA_TYPE_VIDEO:
+                val = par->width && par->height;
 #if FF_API_LAVF_AVCTX
-            val = val || (codec->width && codec->height);
+                val = val || (codec->width && codec->height);
 #endif
-            if (par->format == AV_PIX_FMT_NONE
+                if (par->format == AV_PIX_FMT_NONE
 #if FF_API_LAVF_AVCTX
-                && codec->pix_fmt == AV_PIX_FMT_NONE
+                    && codec->pix_fmt == AV_PIX_FMT_NONE
 #endif
-                )
-                return 0;
-            break;
-        case AVMEDIA_TYPE_UNKNOWN:
-            val = 0;
-            break;
-        default:
-            val = 1;
-            break;
-        }
+                    )
+                    return 0;
+                break;
+            case AVMEDIA_TYPE_UNKNOWN:
+                val = 0;
+                break;
+            default:
+                val = 1;
+                break;
+            }
 #if FF_API_LAVF_AVCTX
-        return match && ((par->codec_id != AV_CODEC_ID_NONE || codec->codec_id != AV_CODEC_ID_NONE) && val != 0);
+            return match && ((par->codec_id != AV_CODEC_ID_NONE || codec->codec_id != AV_CODEC_ID_NONE) && val != 0);
 #else
-        return match && (par->codec_id != AV_CODEC_ID_NONE && val != 0);
+            return match && (par->codec_id != AV_CODEC_ID_NONE && val != 0);
 #endif
-    } else {
-        return AVERROR(EINVAL);
-    }
+        } else {
+            return AVERROR(EINVAL);
+        }
     }
 
     return match;
