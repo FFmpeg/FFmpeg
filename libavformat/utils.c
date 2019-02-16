@@ -5100,18 +5100,19 @@ AVRational av_guess_frame_rate(AVFormatContext *format, AVStream *st, AVFrame *f
 /**
  * Matches a stream specifier (but ignores requested index).
  *
- * @param index set if a specific index is requested from the matching streams
+ * @param indexptr set to point to the requested stream index if there is one
  *
  * @return <0 on error
  *         0  if st is NOT a matching stream
  *         >0 if st is a matching stream
  */
 static int match_stream_specifier(AVFormatContext *s, AVStream *st,
-                                  const char *spec, int *index)
+                                  const char *spec, const char **indexptr)
 {
+    while (*spec) {
     if (*spec <= '9' && *spec >= '0') { /* opt:index */
-        if (index)
-            *index = strtol(spec, NULL, 0);
+        if (indexptr)
+            *indexptr = spec;
         return 1;
     } else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd' ||
                *spec == 't' || *spec == 'V') { /* opt:[vasdtV] */
@@ -5127,6 +5128,9 @@ static int match_stream_specifier(AVFormatContext *s, AVStream *st,
         case 'V': type = AVMEDIA_TYPE_VIDEO; nopic = 1; break;
         default:  av_assert0(0);
         }
+        if (*spec && *spec++ != ':')         /* If we are not at the end, then another specifier must follow. */
+            return AVERROR(EINVAL);
+
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
         if (type != st->codecpar->codec_type
@@ -5139,37 +5143,39 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
         if (nopic && (st->disposition & AV_DISPOSITION_ATTACHED_PIC))
             return 0;
-        if (*spec++ == ':') /* possibly followed by another specifier */
-            return match_stream_specifier(s, st, spec, index);
-        return 1;
     } else if (*spec == 'p' && *(spec + 1) == ':') {
         int prog_id, i, j;
+        int found = 0;
         char *endptr;
         spec += 2;
         prog_id = strtol(spec, &endptr, 0);
+        /* Disallow empty id and make sure that if we are not at the end, then another specifier must follow. */
+        if (spec == endptr || (*endptr && *endptr++ != ':'))
+            return AVERROR(EINVAL);
+        spec = endptr;
         for (i = 0; i < s->nb_programs; i++) {
             if (s->programs[i]->id != prog_id)
                 continue;
 
             for (j = 0; j < s->programs[i]->nb_stream_indexes; j++) {
                 if (st->index == s->programs[i]->stream_index[j]) {
-                    if (*endptr++ == ':') {  // p:<id>:....
-                        return match_stream_specifier(s, st, endptr, index);
-                    } else {
-                        return 1;
-                    }
+                    found = 1;
+                    i = s->nb_programs;
+                    break;
                 }
             }
         }
-        return 0;
+        if (!found)
+            return 0;
     } else if (*spec == '#' ||
                (*spec == 'i' && *(spec + 1) == ':')) {
         int stream_id;
         char *endptr;
         spec += 1 + (*spec == 'i');
         stream_id = strtol(spec, &endptr, 0);
-        if (!*endptr)
-            return stream_id == st->id;
+        if (spec == endptr || *endptr)                /* Disallow empty id and make sure we are at the end. */
+            return AVERROR(EINVAL);
+        return stream_id == st->id;
     } else if (*spec == 'm' && *(spec + 1) == ':') {
         AVDictionaryEntry *tag;
         char *key, *val;
@@ -5193,7 +5199,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         av_freep(&key);
         return ret;
-    } else if (*spec == 'u') {
+    } else if (*spec == 'u' && *(spec + 1) == '\0') {
         AVCodecParameters *par = st->codecpar;
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -5238,40 +5244,54 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #else
         return par->codec_id != AV_CODEC_ID_NONE && val != 0;
 #endif
-    } else if (!*spec) /* empty specifier, matches everything */
-        return 1;
+    } else {
+        return AVERROR(EINVAL);
+    }
+    }
 
-    return AVERROR(EINVAL);
+    /* empty specifier, matches everything */
+    return 1;
 }
 
 
 int avformat_match_stream_specifier(AVFormatContext *s, AVStream *st,
                                     const char *spec)
 {
-    int ret;
-    int index = -1;
+    int ret, index;
+    char *endptr;
+    const char *indexptr = NULL;
+
+    ret = match_stream_specifier(s, st, spec, &indexptr);
+    if (ret < 0)
+        goto error;
+
+    if (!indexptr)
+        return ret;
+
+    index = strtol(indexptr, &endptr, 0);
+    if (*endptr) {                  /* We can't have anything after the requested index. */
+        ret = AVERROR(EINVAL);
+        goto error;
+    }
 
     /* This is not really needed but saves us a loop for simple stream index specifiers. */
-    if (*spec <= '9' && *spec >= '0') /* opt:index */
-        return strtol(spec, NULL, 0) == st->index;
-
-    ret = match_stream_specifier(s, st, spec, &index);
-    if (ret < 0) {
-        av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
-        return ret;
-    }
-    if (!ret || index < 0)
-        return ret;
+    if (spec == indexptr)
+        return (index == st->index);
 
     /* If we requested a matching stream index, we have to ensure st is that. */
     for (int i = 0; i < s->nb_streams && index >= 0; i++) {
-        int ret = match_stream_specifier(s, s->streams[i], spec, NULL);
+        ret = match_stream_specifier(s, s->streams[i], spec, NULL);
         if (ret < 0)
-            return ret;
+            goto error;
         if (ret > 0 && index-- == 0 && st == s->streams[i])
             return 1;
     }
     return 0;
+
+error:
+    if (ret == AVERROR(EINVAL))
+        av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
+    return ret;
 }
 
 int ff_generate_avci_extradata(AVStream *st)
