@@ -626,6 +626,7 @@ OBJS-$(CONFIG_LIBRTMPE_PROTOCOL)         += librtmp.o
 OBJS-$(CONFIG_LIBRTMPS_PROTOCOL)         += librtmp.o
 OBJS-$(CONFIG_LIBRTMPT_PROTOCOL)         += librtmp.o
 OBJS-$(CONFIG_LIBRTMPTE_PROTOCOL)        += librtmp.o
+OBJS-$(CONFIG_LIBRTMFP_PROTOCOL)         += librtmfp.o
 OBJS-$(CONFIG_LIBSMBCLIENT_PROTOCOL)     += libsmbclient.o
 OBJS-$(CONFIG_LIBSRT_PROTOCOL)           += libsrt.o
 OBJS-$(CONFIG_LIBSSH_PROTOCOL)           += libssh.o

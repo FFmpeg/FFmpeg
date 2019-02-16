@@ -834,6 +834,126 @@ To play the same stream using @command{ffplay}:
 ffplay "rtmp://myserver/live/mystream live=1"
 @end example
 
+@section librtmfp
+
+Real-Time Media Flow Protocol.
+
+Requires the presence of the librtmfp headers and library during
+configuration. You need to explicitly configure the build with
+"--enable-librtmfp".
+
+This protocol provides most functionalities of the UDP protocol RTMFP : 
+unicast, direct p2p and multicast (via NetGroup).
+
+The required syntax for an RTMFP URL is:
+@example
+rtmfp://@var{hostname}[:@var{port}][/@var{app}][/@var{playpath}]
+@end example
+
+The accepted parameters are:
+@table @option
+
+@item hostname
+The address of the RTMFP server.
+
+@item port
+The number of the UDP port to use (by default is 1935).
+
+@item app
+It is the name of the application to access. It usually corresponds to the
+path where the application is installed on the RTMFP server (e.g.
+/ondemand/,/flash/live/, etc.).
+
+@item playpath
+It is the path or name of the resource to play with reference to the
+application specified in app.
+@end table
+
+Additionally, the following parameters can be set via command line options
+(or in code via @code{AVOption}s):
+@table @option
+
+@item rtmfp_socketReceiveSize
+Socket receive buffer size.
+
+@item rtmfp_socketSendSize
+Socket send buffer size.
+
+@item rtmfp_audioUnbuffered
+Unbuffered audio mode (default to false).
+
+@item rtmfp_videoUnbuffered
+Unbuffered video mode (default to false).
+
+@item rtmfp_peerId
+Connect to a peer for playing.
+
+@item rtmfp_p2pPublishing
+Publish the stream in p2p mode (default to false).
+
+@item rtmfp_netgroup
+Publish/Play the stream into a NetGroup (multicast).
+
+@item rtmfp_fallbackUrl
+(Only with @code{rtmfp_negtroup}) Try to play an RTMFP unicast stream url
+until the NetGroup connection is not ready. Can produce undefined behavior
+if the stream codecs are different.
+
+@item rtmfp_fallbackTimeout
+(Only with @code{rtmfp_negtroup}) Set the timeout in milliseconds to start
+fallback to unicast.
+
+@item rtmfp_disableRateControl
+(Only with @code{rtmfp_negtroup}) Disable the P2P connection rate control
+to avoid unwanted disconnection.
+
+@item rtmfp_pushLimit
+(Only with @code{rtmfp_negtroup}) Specifies the maximum number (-1) of
+peers to which we will send push fragments.
+
+@item rtmfp_updatePeriod
+(Only with @code{rtmfp_negtroup}) Specifies the interval in milliseconds
+between messages sent to peers informating them that the local node has
+new p2p multicast media fragments available.
+
+@item rtmfp_windowDuration
+(Only with @code{rtmfp_negtroup}) Specifies the duration in milliseconds
+of the p2p multicast reassembly window.
+
+@item rtmfp_swfurl
+URL of the SWF player. By default no value will be sent.
+
+@item rtmfp_app
+Name of application to connect to on the RTMFP server (by default 'live').
+
+@item rtmfp_pageurl
+URL of the web page in which the media was embedded. By default no value
+will be sent.
+
+@item rtmfp_flashver
+Version of the Flash plugin used to run the SWF player. By default 
+@code{WIN 20,0,0,286}.
+
+@item rtmfp_host
+IPv4 host address to bind to (use this if you ave multiple interfaces).
+
+@item rtmfp_hostIPv6
+IPv6 host address to bind to (use this if you ave multiple interfaces).
+@end table 
+
+For example to read with @command{ffplay} a multimedia resource named
+"sample" from the application "vod" from an RTMFP server "myserver":
+@example
+ffplay rtmfp://myserver/vod/sample
+@end example
+
+To publish a multimedia resource named "sample" to an RTMFP server:
+@example
+ffmpeg -re -i <input> -f flv rtmfp://myserver/sample
+@end example
+
+For more information see: @url{https://github.com/MonaSolutions/librtmfp}.
+
 @section rtp
 
 Real-time Transport Protocol.
