@@ -365,7 +365,15 @@ ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
 All codec AVOptions are per-stream, and thus a stream specifier
-should be attached to them.
+should be attached to them:
+@example
+ffmpeg -i multichannel.mxf -map 0:v:0 -map 0:a:0 -map 0:a:0 -c:a:0 ac3 -b:a:0 640k -ac:a:1 2 -c:a:1 aac -b:2 128k out.mp4
+@end example
+
+In the above example, a multichannel audio stream is mapped twice for output.
+The first instance is encoded with codec ac3 and bitrate 640k.
+The second instance is downmixed to 2 channels and encoded with codec aac. A bitrate of 128k is specified for it using
+absolute index of the output stream.
 
 Note: the @option{-nooption} syntax cannot be used for boolean
 AVOptions, use @option{-option 0}/@option{-option 1}.
