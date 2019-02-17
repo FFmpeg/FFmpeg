@@ -45,6 +45,9 @@ static void fill_tile4(AVCodecContext *avctx, uint8_t *color, AVFrame *frame)
     int nb_tiles = bytestream2_get_le16(gb);
     int h = avctx->height - 1;
 
+    if ((avctx->width / 4 + 1) * (avctx->height / 4 + 1) < nb_tiles)
+        return;
+
     for (int i = 0; i < nb_tiles; i++) {
         int y = bytestream2_get_byte(gb);
         int x = bytestream2_get_byte(gb);
@@ -78,6 +81,9 @@ static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
     const int step_w = tile_width / 4;
     int nb_tiles = bytestream2_get_le16(gb);
     int h = avctx->height - 1;
+
+    if ((avctx->width / tile_width + 1) * (avctx->height / tile_height + 1) < nb_tiles)
+        return;
 
     for (int i = 0; i < nb_tiles; i++) {
         int y = bytestream2_get_byte(gb);
