@@ -1903,6 +1903,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         type   = get_bits(&s->gb, 8);
         len -= 4;
 
+        av_freep(&s->stereo3d);
         s->stereo3d = av_stereo3d_alloc();
         if (!s->stereo3d) {
             goto out;
