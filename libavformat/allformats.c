@@ -34,6 +34,7 @@ extern const AVInputFormat  ff_aac_demuxer;
 extern const AVInputFormat  ff_aax_demuxer;
 extern const AVInputFormat  ff_ac3_demuxer;
 extern const FFOutputFormat ff_ac3_muxer;
+extern const AVInputFormat  ff_ac4_demuxer;
 extern const AVInputFormat  ff_ace_demuxer;
 extern const AVInputFormat  ff_acm_demuxer;
 extern const AVInputFormat  ff_act_demuxer;
