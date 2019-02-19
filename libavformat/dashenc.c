@@ -141,6 +141,7 @@ typedef struct DASHContext {
     SegmentType segment_type_option;  /* segment type as specified in options */
     int ignore_io_errors;
     int lhls;
+    int master_publish_rate;
 } DASHContext;
 
 static struct codec_string {
@@ -965,12 +966,17 @@ static int write_manifest(AVFormatContext *s, int final)
             return ret;
     }
 
-    if (c->hls_playlist && !c->master_playlist_created) {
+    if (c->hls_playlist) {
         char filename_hls[1024];
         const char *audio_group = "A1";
         char audio_codec_str[128] = "\0";
         int is_default = 1;
         int max_audio_bitrate = 0;
+
+        // Publish master playlist only the configured rate
+        if (c->master_playlist_created && (!c->master_publish_rate ||
+             c->streams[0].segment_index % c->master_publish_rate))
+            return 0;
 
         if (*c->dirname)
             snprintf(filename_hls, sizeof(filename_hls), "%smaster.m3u8", c->dirname);
@@ -1798,6 +1804,7 @@ static const AVOption options[] = {
     { "webm", "make segment file in WebM format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_WEBM }, 0, UINT_MAX,   E, "segment_type"},
     { "ignore_io_errors", "Ignore IO errors during open and write. Useful for long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "lhls", "Enable Low-latency HLS(Experimental). Adds #EXT-X-PREFETCH tag with current segment's URI", OFFSET(lhls), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "master_m3u8_publish_rate", "Publish master playlist every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     { NULL },
 };
 

@@ -315,6 +315,9 @@ This option will also try to comply with the above open spec, till Apple's spec 
 Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
 This is an experimental feature.
 
+@item -master_m3u8_publish_rate @var{master_m3u8_publish_rate}
+Publish master playlist repeatedly every after specified number of segment intervals.
+
 @end table
 
 @anchor{framecrc}
