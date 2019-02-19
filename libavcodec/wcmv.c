@@ -56,11 +56,13 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
+    blocks = bytestream2_get_le16(&gb);
+    if (!blocks)
+        return avpkt->size;
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
-    blocks = bytestream2_get_le16(&gb);
     if (blocks > 5) {
         GetByteContext bgb;
         int x = 0, size;
