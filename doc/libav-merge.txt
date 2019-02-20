@@ -100,6 +100,7 @@ Stuff that didn't reach the codebase:
   - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()
 - Support recovery from an already present HLS playlist (see 16cb06bb30)
 - Remove all output devices (see 8e7e042d41, 8d3db95f20, 6ce13070bd, d46cd24986 and https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/216904.html)
+- avcodec/libaomenc: export the Sequence Header OBU as extradata (See a024c3ce9a)
 
 Collateral damage that needs work locally:
 ------------------------------------------
