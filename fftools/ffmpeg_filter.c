@@ -739,6 +739,7 @@ static int sub2video_prepare(InputStream *ist, InputFilter *ifilter)
     if (!ist->sub2video.frame)
         return AVERROR(ENOMEM);
     ist->sub2video.last_pts = INT64_MIN;
+    ist->sub2video.end_pts  = INT64_MIN;
     return 0;
 }
 
