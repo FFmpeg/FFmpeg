@@ -25,13 +25,13 @@
 #include "libavcodec/h264dsp.h"
 #include "libavcodec/arm/startcode.h"
 
-void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
+void ff_h264_v_loop_filter_luma_neon(uint8_t *pix, ptrdiff_t stride, int alpha,
                                      int beta, int8_t *tc0);
-void ff_h264_h_loop_filter_luma_neon(uint8_t *pix, int stride, int alpha,
+void ff_h264_h_loop_filter_luma_neon(uint8_t *pix, ptrdiff_t stride, int alpha,
                                      int beta, int8_t *tc0);
-void ff_h264_v_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
+void ff_h264_v_loop_filter_chroma_neon(uint8_t *pix, ptrdiff_t stride, int alpha,
                                        int beta, int8_t *tc0);
-void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, int stride, int alpha,
+void ff_h264_h_loop_filter_chroma_neon(uint8_t *pix, ptrdiff_t stride, int alpha,
                                        int beta, int8_t *tc0);
 
 void ff_weight_h264_pixels_16_neon(uint8_t *dst, int stride, int height,
