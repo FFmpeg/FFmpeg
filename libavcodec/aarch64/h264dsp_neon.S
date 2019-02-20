@@ -54,9 +54,12 @@
         uabd            v17.16B, v20.16B, v16.16B       // abs(p2 - p0)
         and             v21.16B, v21.16B, v28.16B
         uabd            v19.16B,  v4.16B,  v0.16B       // abs(q2 - q0)
+        and             v21.16B, v21.16B, v30.16B      // < beta
+        shrn            v30.8b,  v21.8h,  #4
+        mov             x7, v30.d[0]
         cmhi            v17.16B, v22.16B, v17.16B       // < beta
-        and             v21.16B, v21.16B, v30.16B
         cmhi            v19.16B, v22.16B, v19.16B       // < beta
+        cbz             x7,  9f
         and             v17.16B, v17.16B, v21.16B
         and             v19.16B, v19.16B, v21.16B
         and             v24.16B, v24.16B, v21.16B
@@ -124,7 +127,7 @@ function ff_h264_v_loop_filter_luma_neon, export=1
         st1             {v16.16B}, [x0], x1
         st1             {v0.16B},  [x0], x1
         st1             {v19.16B}, [x0]
-
+9:
         ret
 endfunc
 
@@ -174,32 +177,34 @@ function ff_h264_h_loop_filter_luma_neon, export=1
         st1             {v16.S}[3], [x0], x1
         st1             {v0.S}[3],  [x0], x1
         st1             {v19.S}[3], [x0], x1
-
+9:
         ret
 endfunc
 
 .macro  h264_loop_filter_chroma
         dup             v22.8B, w2              // alpha
+        dup             v23.8B, w3              // beta
         uxtl            v24.8H, v24.8B
         uabd            v26.8B, v16.8B, v0.8B   // abs(p0 - q0)
-        uxtl            v4.8H,  v0.8B
         uabd            v28.8B, v18.8B, v16.8B  // abs(p1 - p0)
-        usubw           v4.8H,  v4.8H,  v16.8B
-        sli             v24.8H, v24.8H, #8
-        shl             v4.8H,  v4.8H,  #2
         uabd            v30.8B, v2.8B,  v0.8B   // abs(q1 - q0)
-        uaddw           v4.8H,  v4.8H,  v18.8B
         cmhi            v26.8B, v22.8B, v26.8B  // < alpha
+        cmhi            v28.8B, v23.8B, v28.8B  // < beta
+        cmhi            v30.8B, v23.8B, v30.8B  // < beta
+        uxtl            v4.8H,  v0.8B
+        and             v26.8B, v26.8B, v28.8B
+        usubw           v4.8H,  v4.8H,  v16.8B
+        and             v26.8B, v26.8B, v30.8B
+        shl             v4.8H,  v4.8H,  #2
+        mov             x2,  v26.d[0]
+        sli             v24.8H, v24.8H, #8
+        uaddw           v4.8H,  v4.8H,  v18.8B
+        cbz             x2,  9f
         usubw           v4.8H,  v4.8H,  v2.8B
-        dup             v22.8B, w3              // beta
         rshrn           v4.8B,  v4.8H,  #3
-        cmhi            v28.8B, v22.8B, v28.8B  // < beta
-        cmhi            v30.8B, v22.8B, v30.8B  // < beta
         smin            v4.8B,  v4.8B,  v24.8B
         neg             v25.8B, v24.8B
-        and             v26.8B, v26.8B, v28.8B
         smax            v4.8B,  v4.8B,  v25.8B
-        and             v26.8B, v26.8B, v30.8B
         uxtl            v22.8H, v0.8B
         and             v4.8B,  v4.8B,  v26.8B
         uxtl            v28.8H, v16.8B
@@ -224,7 +229,7 @@ function ff_h264_v_loop_filter_chroma_neon, export=1
         sub             x0,  x0,  x1, lsl #1
         st1             {v16.8B}, [x0], x1
         st1             {v0.8B},  [x0], x1
-
+9:
         ret
 endfunc
 
@@ -257,7 +262,7 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         st1             {v16.S}[1], [x0], x1
         st1             {v0.S}[1],  [x0], x1
         st1             {v2.S}[1],  [x0], x1
-
+9:
         ret
 endfunc
 
