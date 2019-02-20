@@ -228,6 +228,33 @@ or headers.
 
 You can then filter the mailing list messages to their own folder.
 
+@section How do I disable mail delivery without unsubscribing?
+
+Sometimes you may want to temporarily stop receiving all mailing list
+messages. This "vacation mode" is simple to do:
+
+@enumerate
+@item
+Go to the @url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user mailing list info page}
+
+@item
+Enter your email address in the box at very bottom of the page and click the
+@emph{Unsubscribe or edit options} box.
+
+@item
+Enter your password and click the @emph{Log in} button.
+
+@item
+Look for the @emph{Mail delivery} option. Here you can disable/enable mail
+delivery. If you check @emph{Set globally} it will apply your choice to all
+other FFmpeg mailing lists you are subscribed to.
+@end enumerate
+
+Alternatively, from your subscribed address, send a message to @email{ffmpeg-user-request@@ffmpeg.org}
+with the subject @emph{set delivery off}. To re-enable mail delivery send a
+message to @email{ffmpeg-user-request@@ffmpeg.org} with the subject
+@emph{set delivery on}.
+
 @chapter Rules and Etiquette
 
 @section What are the rules and the proper etiquette?
