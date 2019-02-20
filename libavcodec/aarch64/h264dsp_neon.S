@@ -130,6 +130,7 @@ endfunc
 
 function ff_h264_h_loop_filter_luma_neon, export=1
         h264_loop_filter_start
+        sxtw            x1,  w1
 
         sub             x0,  x0,  #4
         ld1             {v6.8B},  [x0], x1
@@ -210,6 +211,7 @@ endfunc
 
 function ff_h264_v_loop_filter_chroma_neon, export=1
         h264_loop_filter_start
+        sxtw            x1,  w1
 
         sub             x0,  x0,  x1, lsl #1
         ld1             {v18.8B}, [x0], x1
@@ -228,6 +230,7 @@ endfunc
 
 function ff_h264_h_loop_filter_chroma_neon, export=1
         h264_loop_filter_start
+        sxtw            x1,  w1
 
         sub             x0,  x0,  #2
         ld1             {v18.S}[0], [x0], x1
