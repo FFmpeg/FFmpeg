@@ -63,6 +63,8 @@ ELF     .size   \name, . - \name
 .else
         .section        .rodata
 .endif
+#elif defined(_WIN32)
+        .section        .rdata
 #elif !defined(__MACH__)
         .section        .rodata
 #else
