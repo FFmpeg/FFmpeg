@@ -625,7 +625,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
     q1 = newq1;                                                                              \
 }
 
-static void h264_v_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0) {
+static void h264_v_loop_filter_luma_altivec(uint8_t *pix, ptrdiff_t stride, int alpha, int beta, int8_t *tc0) {
 
     if ((tc0[0] & tc0[1] & tc0[2] & tc0[3]) >= 0) {
         register vec_u8 p2 = vec_ld(-3*stride, pix);
@@ -642,7 +642,7 @@ static void h264_v_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha,
     }
 }
 
-static void h264_h_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0) {
+static void h264_h_loop_filter_luma_altivec(uint8_t *pix, ptrdiff_t stride, int alpha, int beta, int8_t *tc0) {
 
     register vec_u8 line0, line1, line2, line3, line4, line5;
     if ((tc0[0] & tc0[1] & tc0[2] & tc0[3]) < 0)
