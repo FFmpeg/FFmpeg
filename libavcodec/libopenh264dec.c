@@ -109,10 +109,18 @@ static int svc_decode_frame(AVCodecContext *avctx, void *data,
 #endif
     } else {
         info.uiInBsTimeStamp = avpkt->pts;
+#if OPENH264_VER_AT_LEAST(1, 4)
+        // Contrary to the name, DecodeFrameNoDelay actually does buffering
+        // and reordering of frames, and is the recommended decoding entry
+        // point since 1.4. This is essential for successfully decoding
+        // B-frames.
+        state = (*s->decoder)->DecodeFrameNoDelay(s->decoder, avpkt->data, avpkt->size, ptrs, &info);
+#else
         state = (*s->decoder)->DecodeFrame2(s->decoder, avpkt->data, avpkt->size, ptrs, &info);
+#endif
     }
     if (state != dsErrorFree) {
-        av_log(avctx, AV_LOG_ERROR, "DecodeFrame2 failed\n");
+        av_log(avctx, AV_LOG_ERROR, "DecodeFrame failed\n");
         return AVERROR_UNKNOWN;
     }
     if (info.iBufferStatus != 1) {
