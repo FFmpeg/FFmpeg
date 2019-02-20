@@ -101,13 +101,13 @@ void ff_h264_loop_filter_strength_mmxext(int16_t bS[2][4][4], uint8_t nnz[40],
 
 #define LF_FUNC(DIR, TYPE, DEPTH, OPT)                                        \
 void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT(uint8_t *pix,  \
-                                                               int stride,    \
+                                                               ptrdiff_t stride, \
                                                                int alpha,     \
                                                                int beta,      \
                                                                int8_t *tc0);
 #define LF_IFUNC(DIR, TYPE, DEPTH, OPT) \
 void ff_deblock_ ## DIR ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT(uint8_t *pix,  \
-                                                               int stride,    \
+                                                               ptrdiff_t stride, \
                                                                int alpha,     \
                                                                int beta);
 
