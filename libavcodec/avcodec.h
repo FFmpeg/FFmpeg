@@ -1358,6 +1358,12 @@ enum AVPacketSideDataType {
     AV_PKT_DATA_ENCRYPTION_INFO,
 
     /**
+     * Private usage
+     * The format is not part of ABI, use AVDictionary type
+     */
+    AV_PKT_DATA_DICT,
+
+    /**
      * The number of side data types.
      * This is not part of the public API/ABI in the sense that it may
      * change when new side data types are added.
