@@ -525,9 +525,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
-
     if (c->comp == 0) { // uncompressed data
         if (c->decomp_size < len) {
             av_log(avctx, AV_LOG_ERROR, "Buffer too small\n");
@@ -553,6 +550,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         av_log(avctx, AV_LOG_ERROR, "decompressed size %d is incorrect, expected %d\n", c->decomp_len, expected_size);
         return AVERROR_INVALIDDATA;
     }
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
+        return ret;
+
     if (c->flags & ZMBV_KEYFRAME) {
         frame->key_frame = 1;
         frame->pict_type = AV_PICTURE_TYPE_I;
