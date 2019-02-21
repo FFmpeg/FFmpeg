@@ -20,10 +20,8 @@
 * DEALINGS IN THE SOFTWARE.
 */
 
-#include <cuda.h>
-
 #include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_cuda.h"
+#include "libavutil/hwcontext_cuda_internal.h"
 #include "libavutil/cuda_check.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -31,7 +29,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-#define CHECK_CU(x) FF_CUDA_CHECK(ctx, x)
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(ctx, s->hwctx->internal->cuda_dl, x)
 
 #define HIST_SIZE (3*256)
 #define DIV_UP(a, b) ( ((a) + (b) - 1) / (b) )
@@ -60,6 +58,7 @@ typedef struct ThumbnailCudaContext {
     AVRational tb;              ///< copy of the input timebase to ease access
 
     AVBufferRef *hw_frames_ctx;
+    AVCUDADeviceContext *hwctx;
 
     CUmodule    cu_module;
 
@@ -67,12 +66,10 @@ typedef struct ThumbnailCudaContext {
     CUfunction  cu_func_uchar2;
     CUfunction  cu_func_ushort;
     CUfunction  cu_func_ushort2;
-    CUtexref    cu_tex_uchar;
-    CUtexref    cu_tex_uchar2;
-    CUtexref    cu_tex_ushort;
-    CUtexref    cu_tex_ushort2;
+    CUstream    cu_stream;
 
     CUdeviceptr data;
+
 } ThumbnailCudaContext;
 
 #define OFFSET(x) offsetof(ThumbnailCudaContext, x)
@@ -157,29 +154,44 @@ static AVFrame *get_best_frame(AVFilterContext *ctx)
     return picref;
 }
 
-static int thumbnail_kernel(ThumbnailCudaContext *ctx, CUfunction func, CUtexref tex, int channels,
+static int thumbnail_kernel(AVFilterContext *ctx, CUfunction func, int channels,
     int *histogram, uint8_t *src_dptr, int src_width, int src_height, int src_pitch, int pixel_size)
 {
-    CUdeviceptr src_devptr = (CUdeviceptr)src_dptr;
-    void *args[] = { &histogram, &src_width, &src_height };
-    CUDA_ARRAY_DESCRIPTOR desc;
+    int ret;
+    ThumbnailCudaContext *s = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
+    CUtexObject tex = 0;
+    void *args[] = { &tex, &histogram, &src_width, &src_height };
 
-    desc.Width = src_width;
-    desc.Height = src_height;
-    desc.NumChannels = channels;
-    if (pixel_size == 1) {
-        desc.Format = CU_AD_FORMAT_UNSIGNED_INT8;
-    }
-    else {
-        desc.Format = CU_AD_FORMAT_UNSIGNED_INT16;
-    }
+    CUDA_TEXTURE_DESC tex_desc = {
+        .filterMode = CU_TR_FILTER_MODE_LINEAR,
+        .flags = CU_TRSF_READ_AS_INTEGER,
+    };
 
-    CHECK_CU(cuTexRefSetAddress2D_v3(tex, &desc, src_devptr, src_pitch));
-    CHECK_CU(cuLaunchKernel(func,
-                            DIV_UP(src_width, BLOCKX), DIV_UP(src_height, BLOCKY), 1,
-                            BLOCKX, BLOCKY, 1, 0, 0, args, NULL));
+    CUDA_RESOURCE_DESC res_desc = {
+        .resType = CU_RESOURCE_TYPE_PITCH2D,
+        .res.pitch2D.format = pixel_size == 1 ?
+                              CU_AD_FORMAT_UNSIGNED_INT8 :
+                              CU_AD_FORMAT_UNSIGNED_INT16,
+        .res.pitch2D.numChannels = channels,
+        .res.pitch2D.width = src_width,
+        .res.pitch2D.height = src_height,
+        .res.pitch2D.pitchInBytes = src_pitch,
+        .res.pitch2D.devPtr = (CUdeviceptr)src_dptr,
+    };
 
-    return 0;
+    ret = CHECK_CU(cu->cuTexObjectCreate(&tex, &res_desc, &tex_desc, NULL));
+    if (ret < 0)
+        goto exit;
+
+    ret = CHECK_CU(cu->cuLaunchKernel(func,
+                                      DIV_UP(src_width, BLOCKX), DIV_UP(src_height, BLOCKY), 1,
+                                      BLOCKX, BLOCKY, 1, 0, s->cu_stream, args, NULL));
+exit:
+    if (tex)
+        CHECK_CU(cu->cuTexObjectDestroy(tex));
+
+    return ret;
 }
 
 static int thumbnail(AVFilterContext *ctx, int *histogram, AVFrame *in)
@@ -189,40 +201,40 @@ static int thumbnail(AVFilterContext *ctx, int *histogram, AVFrame *in)
 
     switch (in_frames_ctx->sw_format) {
     case AV_PIX_FMT_NV12:
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 1);
-        thumbnail_kernel(s, s->cu_func_uchar2, s->cu_tex_uchar2, 2,
+        thumbnail_kernel(ctx, s->cu_func_uchar2, 2,
             histogram + 256, in->data[1], in->width / 2, in->height / 2, in->linesize[1], 1);
         break;
     case AV_PIX_FMT_YUV420P:
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 1);
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram + 256, in->data[1], in->width / 2, in->height / 2, in->linesize[1], 1);
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram + 512, in->data[2], in->width / 2, in->height / 2, in->linesize[2], 1);
         break;
     case AV_PIX_FMT_YUV444P:
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 1);
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram + 256, in->data[1], in->width, in->height, in->linesize[1], 1);
-        thumbnail_kernel(s, s->cu_func_uchar, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_uchar, 1,
             histogram + 512, in->data[2], in->width, in->height, in->linesize[2], 1);
         break;
     case AV_PIX_FMT_P010LE:
     case AV_PIX_FMT_P016LE:
-        thumbnail_kernel(s, s->cu_func_ushort, s->cu_tex_ushort, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 2);
-        thumbnail_kernel(s, s->cu_func_ushort2, s->cu_tex_ushort2, 2,
+        thumbnail_kernel(ctx, s->cu_func_ushort2, 2,
             histogram + 256, in->data[1], in->width / 2, in->height / 2, in->linesize[1], 2);
         break;
     case AV_PIX_FMT_YUV444P16:
-        thumbnail_kernel(s, s->cu_func_ushort2, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
             histogram, in->data[0], in->width, in->height, in->linesize[0], 2);
-        thumbnail_kernel(s, s->cu_func_ushort2, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
             histogram + 256, in->data[1], in->width, in->height, in->linesize[1], 2);
-        thumbnail_kernel(s, s->cu_func_ushort2, s->cu_tex_uchar, 1,
+        thumbnail_kernel(ctx, s->cu_func_ushort2, 1,
             histogram + 512, in->data[2], in->width, in->height, in->linesize[2], 2);
         break;
     default:
@@ -236,10 +248,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     AVFilterContext *ctx  = inlink->dst;
     ThumbnailCudaContext *s   = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
     AVFilterLink *outlink = ctx->outputs[0];
     int *hist = s->frames[s->n].histogram;
     AVHWFramesContext *hw_frames_ctx = (AVHWFramesContext*)s->hw_frames_ctx->data;
-    AVCUDADeviceContext *device_hwctx = hw_frames_ctx->device_ctx->hwctx;
     CUcontext dummy;
     CUDA_MEMCPY2D cpy = { 0 };
     int ret = 0;
@@ -247,11 +259,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     // keep a reference of each frame
     s->frames[s->n].buf = frame;
 
-    ret = CHECK_CU(cuCtxPushCurrent(device_hwctx->cuda_ctx));
+    ret = CHECK_CU(cu->cuCtxPushCurrent(s->hwctx->cuda_ctx));
     if (ret < 0)
         return ret;
 
-    CHECK_CU(cuMemsetD8(s->data, 0, HIST_SIZE * sizeof(int)));
+    CHECK_CU(cu->cuMemsetD8Async(s->data, 0, HIST_SIZE * sizeof(int), s->cu_stream));
 
     thumbnail(ctx, (int*)s->data, frame);
 
@@ -264,7 +276,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     cpy.WidthInBytes = HIST_SIZE * sizeof(int);
     cpy.Height = 1;
 
-    ret = CHECK_CU(cuMemcpy2D(&cpy));
+    ret = CHECK_CU(cu->cuMemcpy2DAsync(&cpy, s->cu_stream));
     if (ret < 0)
         return ret;
 
@@ -276,7 +288,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             hist[i] = 4 * hist[i];
     }
 
-    CHECK_CU(cuCtxPopCurrent(&dummy));
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     if (ret < 0)
         return ret;
 
@@ -292,14 +304,15 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     int i;
     ThumbnailCudaContext *s = ctx->priv;
+    CudaFunctions *cu = s->hwctx->internal->cuda_dl;
 
     if (s->data) {
-        CHECK_CU(cuMemFree(s->data));
+        CHECK_CU(cu->cuMemFree(s->data));
         s->data = 0;
     }
 
     if (s->cu_module) {
-        CHECK_CU(cuModuleUnload(s->cu_module));
+        CHECK_CU(cu->cuModuleUnload(s->cu_module));
         s->cu_module = NULL;
     }
 
@@ -342,43 +355,43 @@ static int config_props(AVFilterLink *inlink)
     AVHWFramesContext     *hw_frames_ctx = (AVHWFramesContext*)inlink->hw_frames_ctx->data;
     AVCUDADeviceContext *device_hwctx = hw_frames_ctx->device_ctx->hwctx;
     CUcontext dummy, cuda_ctx = device_hwctx->cuda_ctx;
+    CudaFunctions *cu = device_hwctx->internal->cuda_dl;
     int ret;
 
     extern char vf_thumbnail_cuda_ptx[];
 
-    ret = CHECK_CU(cuCtxPushCurrent(cuda_ctx));
+    s->hwctx = device_hwctx;
+    s->cu_stream = s->hwctx->stream;
+
+    ret = CHECK_CU(cu->cuCtxPushCurrent(cuda_ctx));
     if (ret < 0)
         return ret;
 
-    ret = CHECK_CU(cuModuleLoadData(&s->cu_module, vf_thumbnail_cuda_ptx));
+    ret = CHECK_CU(cu->cuModuleLoadData(&s->cu_module, vf_thumbnail_cuda_ptx));
     if (ret < 0)
         return ret;
 
-    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Thumbnail_uchar"));
-    CHECK_CU(cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Thumbnail_uchar2"));
-    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Thumbnail_ushort"));
-    CHECK_CU(cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Thumbnail_ushort2"));
-
-    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar, s->cu_module, "uchar_tex"));
-    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_uchar2, s->cu_module, "uchar2_tex"));
-    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort, s->cu_module, "ushort_tex"));
-    CHECK_CU(cuModuleGetTexRef(&s->cu_tex_ushort2, s->cu_module, "ushort2_tex"));
-
-    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar, CU_TRSF_READ_AS_INTEGER));
-    CHECK_CU(cuTexRefSetFlags(s->cu_tex_uchar2, CU_TRSF_READ_AS_INTEGER));
-    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort, CU_TRSF_READ_AS_INTEGER));
-    CHECK_CU(cuTexRefSetFlags(s->cu_tex_ushort2, CU_TRSF_READ_AS_INTEGER));
-
-    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar, CU_TR_FILTER_MODE_LINEAR));
-    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_uchar2, CU_TR_FILTER_MODE_LINEAR));
-    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort, CU_TR_FILTER_MODE_LINEAR));
-    CHECK_CU(cuTexRefSetFilterMode(s->cu_tex_ushort2, CU_TR_FILTER_MODE_LINEAR));
-
-    ret = CHECK_CU(cuMemAlloc(&s->data, HIST_SIZE * sizeof(int)));
+    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_uchar, s->cu_module, "Thumbnail_uchar"));
     if (ret < 0)
         return ret;
 
-    CHECK_CU(cuCtxPopCurrent(&dummy));
+    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_uchar2, s->cu_module, "Thumbnail_uchar2"));
+    if (ret < 0)
+        return ret;
+
+    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_ushort, s->cu_module, "Thumbnail_ushort"));
+    if (ret < 0)
+        return ret;
+
+    ret = CHECK_CU(cu->cuModuleGetFunction(&s->cu_func_ushort2, s->cu_module, "Thumbnail_ushort2"));
+    if (ret < 0)
+        return ret;
+
+    ret = CHECK_CU(cu->cuMemAlloc(&s->data, HIST_SIZE * sizeof(int)));
+    if (ret < 0)
+        return ret;
+
+    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
     s->hw_frames_ctx = ctx->inputs[0]->hw_frames_ctx;
 

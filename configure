@@ -2976,7 +2976,7 @@ v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
 hwupload_cuda_filter_deps="ffnvcodec"
 scale_npp_filter_deps="ffnvcodec libnpp"
 scale_cuda_filter_deps="ffnvcodec cuda_nvcc"
-thumbnail_cuda_filter_deps="cuda_sdk"
+thumbnail_cuda_filter_deps="ffnvcodec cuda_nvcc"
 transpose_npp_filter_deps="ffnvcodec libnpp"
 
 amf_deps_any="libdl LoadLibrary"

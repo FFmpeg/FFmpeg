@@ -22,55 +22,54 @@
 
 extern "C" {
 
-texture<unsigned char, 2> uchar_tex;
-texture<uchar2, 2>  uchar2_tex;
-texture<unsigned short, 2> ushort_tex;
-texture<ushort2, 2>  ushort2_tex;
-
-__global__ void Thumbnail_uchar(int *histogram, int src_width, int src_height)
+__global__ void Thumbnail_uchar(cudaTextureObject_t uchar_tex,
+                                int *histogram, int src_width, int src_height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
     if (y < src_height && x < src_width)
     {
-        unsigned char pixel = tex2D(uchar_tex, x, y);
+        unsigned char pixel = tex2D<unsigned char>(uchar_tex, x, y);
         atomicAdd(&histogram[pixel], 1);
     }
 }
 
-__global__ void Thumbnail_uchar2(int *histogram, int src_width, int src_height)
+__global__ void Thumbnail_uchar2(cudaTextureObject_t uchar2_tex,
+                                 int *histogram, int src_width, int src_height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (y < src_height && x < src_width)
     {
-        uchar2 pixel = tex2D(uchar2_tex, x, y);
+        uchar2 pixel = tex2D<uchar2>(uchar2_tex, x, y);
         atomicAdd(&histogram[pixel.x], 1);
         atomicAdd(&histogram[256 + pixel.y], 1);
     }
 }
 
-__global__ void Thumbnail_ushort(int *histogram, int src_width, int src_height)
+__global__ void Thumbnail_ushort(cudaTextureObject_t ushort_tex,
+                                 int *histogram, int src_width, int src_height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (y < src_height && x < src_width)
     {
-        unsigned short pixel = (tex2D(ushort_tex, x, y) + 128) >> 8;
+        unsigned short pixel = (tex2D<unsigned short>(ushort_tex, x, y) + 128) >> 8;
         atomicAdd(&histogram[pixel], 1);
     }
 }
 
-__global__ void Thumbnail_ushort2(int *histogram, int src_width, int src_height)
+__global__ void Thumbnail_ushort2(cudaTextureObject_t ushort2_tex,
+                                  int *histogram, int src_width, int src_height)
 {
     int x = blockIdx.x * blockDim.x + threadIdx.x;
     int y = blockIdx.y * blockDim.y + threadIdx.y;
 
     if (y < src_height && x < src_width)
     {
-        ushort2 pixel = tex2D(ushort2_tex, x, y);
+        ushort2 pixel = tex2D<ushort2>(ushort2_tex, x, y);
         atomicAdd(&histogram[(pixel.x + 128) >> 8], 1);
         atomicAdd(&histogram[256 + (pixel.y + 128) >> 8], 1);
     }
