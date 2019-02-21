@@ -3535,7 +3535,7 @@ zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi"
 vpp_qsv_filter_deps="libmfx"
 vpp_qsv_filter_select="qsvvpp"
-yadif_cuda_filter_deps="cuda_sdk"
+yadif_cuda_filter_deps="ffnvcodec cuda_nvcc"
 
 # examples
 avio_dir_cmd_deps="avformat avutil"
