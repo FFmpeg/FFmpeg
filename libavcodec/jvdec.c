@@ -170,6 +170,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             GetBitContext gb;
             init_get_bits(&gb, buf, 8 * video_size);
 
+            if (avctx->height/8 * (avctx->width/8) > 4 * video_size) {
+                av_log(avctx, AV_LOG_ERROR, "Insufficient input data for dimensions\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             for (j = 0; j < avctx->height; j += 8)
                 for (i = 0; i < avctx->width; i += 8)
                     decode8x8(&gb,
