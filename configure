@@ -321,6 +321,7 @@ External library support:
   The following libraries provide various hardware acceleration features:
   --disable-amf            disable AMF video encoding code [autodetect]
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
+  --enable-cuda-nvcc       enable Nvidia CUDA compiler [no]
   --enable-cuda-sdk        enable CUDA features that require the CUDA SDK [no]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
@@ -1001,6 +1002,10 @@ hostcc_o(){
     eval printf '%s\\n' $HOSTCC_O
 }
 
+nvcc_o(){
+    eval printf '%s\\n' $NVCC_O
+}
+
 test_cc(){
     log test_cc "$@"
     cat > $TMPC
@@ -1020,6 +1025,22 @@ test_objcc(){
     cat > $TMPM
     log_file $TMPM
     test_cmd $objcc -Werror=missing-prototypes $CPPFLAGS $CFLAGS $OBJCFLAGS "$@" $OBJCC_C $(cc_o $TMPO) $TMPM
+}
+
+test_nvcc(){
+    log test_nvcc "$@"
+    cat > $TMPCU
+    log_file $TMPCU
+    test_cmd $nvcc -ptx $NVCCFLAGS "$@" $NVCC_C $(nvcc_o $TMPO) $TMPCU
+}
+
+check_nvcc() {
+    log check_nvcc "$@"
+    test_nvcc <<EOF
+extern "C" {
+    __global__ void hello(unsigned char *data) {}
+}
+EOF
 }
 
 test_cpp(){
@@ -1806,6 +1827,7 @@ EXTRALIBS_LIST="
 "
 
 HWACCEL_LIBRARY_NONFREE_LIST="
+    cuda_nvcc
     cuda_sdk
     libnpp
 "
@@ -4238,6 +4260,7 @@ tmpfile TMPCPP .cpp
 tmpfile TMPE   $EXESUF
 tmpfile TMPH   .h
 tmpfile TMPM   .m
+tmpfile TMPCU  .cu
 tmpfile TMPO   .o
 tmpfile TMPS   .S
 tmpfile TMPSH  .sh
@@ -6087,6 +6110,7 @@ for func in $COMPLEX_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
+enabled cuda_nvcc         && { check_nvcc || die "ERROR: failed checking for nvcc."; }
 enabled cuda_sdk          && require cuda_sdk cuda.h cuCtxCreate -lcuda
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { require_headers DeckLinkAPI.h &&
