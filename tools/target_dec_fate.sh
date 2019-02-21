@@ -50,6 +50,8 @@ while read -r LINE; do
     FILE=`echo $LINE | sed 's# .*##'`
     if test -f "$1/$FILE" ; then
         echo exists       $FILE
+    elif echo "$ISSUE_NUM" | grep '#' >/dev/null ; then
+        echo disabled     $FILE
     else
         echo downloading  $FILE
         mkdir -p "$1/$ISSUE_NUM"
@@ -72,6 +74,9 @@ make -j4 $TOOLS
 while read -r LINE; do
     TOOL_ID=`echo $LINE | sed 's#[^ ]* ##'`
     FILE=`echo $LINE | sed 's# .*##'`
+    if ! test -f "$1/$FILE" ; then
+        continue
+    fi
     tools/$TOOL_ID $1/$FILE
 done < "tools/$LIST"
 
