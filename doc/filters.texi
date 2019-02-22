@@ -5652,6 +5652,11 @@ Set threshold for difference amplification. Any difference greater or equal to
 this value will not alter source pixel. Default is 10.
 Allowed range is from 0 to 65535.
 
+@item tolerance
+Set tolerance for difference amplification. Any difference lower to
+this value will not alter source pixel. Default is 0.
+Allowed range is from 0 to 65535.
+
 @item low
 Set lower limit for changing source pixel. Default is 65535. Allowed range is from 0 to 65535.
 This option controls maximum possible value that will decrease source pixel value.
