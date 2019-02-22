@@ -237,7 +237,7 @@ static void sub2video_push_ref(InputStream *ist, int64_t pts)
     }
 }
 
-void sub2video_update(InputStream *ist, AVSubtitle *sub)
+void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub)
 {
     AVFrame *frame = ist->sub2video.frame;
     int8_t *dst;
@@ -254,7 +254,12 @@ void sub2video_update(InputStream *ist, AVSubtitle *sub)
                                  AV_TIME_BASE_Q, ist->st->time_base);
         num_rects = sub->num_rects;
     } else {
-        pts       = ist->sub2video.end_pts;
+        /* If we are initializing the system, utilize current heartbeat
+           PTS as the start time, and show until the following subpicture
+           is received. Otherwise, utilize the previous subpicture's end time
+           as the fall-back value. */
+        pts       = ist->sub2video.initialize ?
+                    heartbeat_pts : ist->sub2video.end_pts;
         end_pts   = INT64_MAX;
         num_rects = 0;
     }
@@ -269,6 +274,7 @@ void sub2video_update(InputStream *ist, AVSubtitle *sub)
         sub2video_copy_rect(dst, dst_linesize, frame->width, frame->height, sub->rects[i]);
     sub2video_push_ref(ist, pts);
     ist->sub2video.end_pts = end_pts;
+    ist->sub2video.initialize = 0;
 }
 
 static void sub2video_heartbeat(InputStream *ist, int64_t pts)
@@ -291,9 +297,11 @@ static void sub2video_heartbeat(InputStream *ist, int64_t pts)
         /* do not send the heartbeat frame if the subtitle is already ahead */
         if (pts2 <= ist2->sub2video.last_pts)
             continue;
-        if (pts2 >= ist2->sub2video.end_pts ||
-            (!ist2->sub2video.frame->data[0] && ist2->sub2video.end_pts < INT64_MAX))
-            sub2video_update(ist2, NULL);
+        if (pts2 >= ist2->sub2video.end_pts || ist2->sub2video.initialize)
+            /* if we have hit the end of the current displayed subpicture,
+               or if we need to initialize the system, update the
+               overlayed subpicture and its start/end times */
+            sub2video_update(ist2, pts2 + 1, NULL);
         for (j = 0, nb_reqs = 0; j < ist2->nb_filters; j++)
             nb_reqs += av_buffersrc_get_nb_failed_requests(ist2->filters[j]->filter);
         if (nb_reqs)
@@ -307,7 +315,7 @@ static void sub2video_flush(InputStream *ist)
     int ret;
 
     if (ist->sub2video.end_pts < INT64_MAX)
-        sub2video_update(ist, NULL);
+        sub2video_update(ist, INT64_MAX, NULL);
     for (i = 0; i < ist->nb_filters; i++) {
         ret = av_buffersrc_add_frame(ist->filters[i]->filter, NULL);
         if (ret != AVERROR_EOF && ret < 0)
@@ -2507,7 +2515,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output,
         return ret;
 
     if (ist->sub2video.frame) {
-        sub2video_update(ist, &subtitle);
+        sub2video_update(ist, INT64_MIN, &subtitle);
     } else if (ist->nb_filters) {
         if (!ist->sub2video.sub_queue)
             ist->sub2video.sub_queue = av_fifo_alloc(8 * sizeof(AVSubtitle));

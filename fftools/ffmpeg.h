@@ -348,6 +348,7 @@ typedef struct InputStream {
         AVFifoBuffer *sub_queue;    ///< queue of AVSubtitle* before filter init
         AVFrame *frame;
         int w, h;
+        unsigned int initialize; ///< marks if sub2video_update should force an initialization
     } sub2video;
 
     int dr1;
@@ -645,7 +646,7 @@ int filtergraph_is_simple(FilterGraph *fg);
 int init_simple_filtergraph(InputStream *ist, OutputStream *ost);
 int init_complex_filtergraph(FilterGraph *fg);
 
-void sub2video_update(InputStream *ist, AVSubtitle *sub);
+void sub2video_update(InputStream *ist, int64_t heartbeat_pts, AVSubtitle *sub);
 
 int ifilter_parameters_from_frame(InputFilter *ifilter, const AVFrame *frame);
 
