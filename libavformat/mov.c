@@ -3446,6 +3446,7 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
     MOVIndexRange *current_index_range;
     int i;
     int found_keyframe_after_edit = 0;
+    int found_non_empty_edit = 0;
 
     if (!msc->elst_data || msc->elst_count <= 0 || nb_old <= 0) {
         return;
@@ -3492,10 +3493,11 @@ static void mov_fix_index(MOVContext *mov, AVStream *st)
         edit_list_dts_counter = edit_list_dts_entry_end;
         edit_list_dts_entry_end += edit_list_duration;
         num_discarded_begin = 0;
-        if (edit_list_media_time == -1) {
+        if (!found_non_empty_edit && edit_list_media_time == -1) {
             empty_edits_sum_duration += edit_list_duration;
             continue;
         }
+        found_non_empty_edit = 1;
 
         // If we encounter a non-negative edit list reset the skip_samples/start_pad fields and set them
         // according to the edit list below.
