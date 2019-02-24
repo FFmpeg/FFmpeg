@@ -109,6 +109,11 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
             if(yoffset >= avctx->height)
                 return AVERROR_INVALIDDATA;
             dst += vid->frame->linesize[0] * yoffset;
+        case VIDEO_P_FRAME:
+        case VIDEO_I_FRAME:
+            break;
+        default:
+            return AVERROR_INVALIDDATA;
     }
 
     // main code
