@@ -294,6 +294,8 @@ static int decompress_5(AVCodecContext *avctx, unsigned skip)
 
     while (bytestream2_get_bytes_left_p(pb) > 0 && bytestream2_get_bytes_left(gb) > 0) {
         int tag = read_bits2(&bits, gb);
+        if (bytestream2_get_bytes_left(gb) < 1)
+            return AVERROR_INVALIDDATA;
         if (tag == 0) {
             bytestream2_put_byte(pb, bytestream2_get_byte(gb));
         } else if (tag == 1) {
