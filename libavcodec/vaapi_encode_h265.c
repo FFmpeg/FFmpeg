@@ -270,9 +270,6 @@ static int vaapi_encode_h265_init_sequence_params(AVCodecContext *avctx)
     int chroma_format, bit_depth;
     int i;
 
-    memset(&priv->current_access_unit, 0,
-           sizeof(priv->current_access_unit));
-
     memset(vps, 0, sizeof(*vps));
     memset(sps, 0, sizeof(*sps));
     memset(pps, 0, sizeof(*pps));

@@ -299,9 +299,6 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
     VAEncSequenceParameterBufferH264 *vseq = ctx->codec_sequence_params;
     VAEncPictureParameterBufferH264  *vpic = ctx->codec_picture_params;
 
-    memset(&priv->current_access_unit, 0,
-           sizeof(priv->current_access_unit));
-
     memset(sps, 0, sizeof(*sps));
     memset(pps, 0, sizeof(*pps));
 
@@ -623,9 +620,6 @@ static int vaapi_encode_h264_init_picture_params(AVCodecContext *avctx,
     VAAPIEncodeH264Picture         *hprev = prev ? prev->priv_data : NULL;
     VAEncPictureParameterBufferH264 *vpic = pic->codec_picture_params;
     int i;
-
-    memset(&priv->current_access_unit, 0,
-           sizeof(priv->current_access_unit));
 
     if (pic->type == PICTURE_TYPE_IDR) {
         av_assert0(pic->display_order == pic->encode_order);
