@@ -239,7 +239,7 @@ Dump full command line and console output to a file named
 @code{@var{program}-@var{YYYYMMDD}-@var{HHMMSS}.log} in the current
 directory.
 This file can be useful for bug reports.
-It also implies @code{-loglevel verbose}.
+It also implies @code{-loglevel debug}.
 
 Setting the environment variable @env{FFREPORT} to any value has the
 same effect. If the value is a ':'-separated key=value sequence, these
