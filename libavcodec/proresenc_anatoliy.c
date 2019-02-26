@@ -484,10 +484,10 @@ static inline void subimage_with_fill_template(uint16_t *src, unsigned x, unsign
         box_height = FFMIN(height - y, dst_height);
     } else {
         src_stride = stride; /* 2 lines stride */
-        src += y * src_stride * 2 + x;
+        src += y * src_stride + x;
         box_height = FFMIN(height - y * 2, dst_height);
         if (!is_top_field)
-            src += src_stride;
+            src += stride >> 1;
     }
 
     for (i = 0; i < box_height; ++i) {
