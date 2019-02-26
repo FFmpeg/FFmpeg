@@ -6044,10 +6044,11 @@ if enabled cuda_sdk; then
 fi
 
 if ! disabled ffnvcodec; then
-    check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.2" \
-          "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" "" || \
-      check_pkg_config ffnvcodec "ffnvcodec >= 8.0.14.2 ffnvcodec < 8.1" \
-          "ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h" ""
+    ffnv_hdr_list="ffnvcodec/nvEncodeAPI.h ffnvcodec/dynlink_cuda.h ffnvcodec/dynlink_cuviddec.h ffnvcodec/dynlink_nvcuvid.h"
+    check_pkg_config ffnvcodec "ffnvcodec >= 9.0.18.0" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 8.2.15.8 ffnvcodec < 8.3" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 8.1.24.9 ffnvcodec < 8.2" "$ffnv_hdr_list" "" || \
+      check_pkg_config ffnvcodec "ffnvcodec >= 8.0.14.9 ffnvcodec < 8.1" "$ffnv_hdr_list" ""
 fi
 
 check_cpp_condition winrt windows.h "!WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)"
