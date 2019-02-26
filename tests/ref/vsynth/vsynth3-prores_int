@@ -1,0 +1,4 @@
+8bd60c3d149977dd25e21adcf57d76fa *tests/data/fate/vsynth3-prores_int.mov
+148325 tests/data/fate/vsynth3-prores_int.mov
+628a667a0de678239f05a6e5497c4601 *tests/data/fate/vsynth3-prores_int.out.rawvideo
+stddev:    3.06 PSNR: 38.40 MAXDIFF:   29 bytes:    86700/    86700

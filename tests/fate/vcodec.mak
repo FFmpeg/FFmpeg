@@ -336,8 +336,20 @@ fate-vsynth%-mpng:               CODEC   = png
 
 FATE_VCODEC-$(call ENCDEC, MSVIDEO1, AVI) += msvideo1
 
-FATE_VCODEC-$(call ENCDEC, PRORES, MOV) += prores prores_ks
+FATE_VCODEC-$(call ENCDEC, PRORES, MOV) += prores prores_int prores_444 prores_444_int prores_ks
 fate-vsynth%-prores:             FMT     = mov
+
+fate-vsynth%-prores_int:         CODEC   = prores
+fate-vsynth%-prores_int:         ENCOPTS = -flags +ildct
+fate-vsynth%-prores_int:         FMT     = mov
+
+fate-vsynth%-prores_444:         CODEC   = prores
+fate-vsynth%-prores_444:         ENCOPTS = -pix_fmt yuv444p10
+fate-vsynth%-prores_444:         FMT     = mov
+
+fate-vsynth%-prores_444_int:     CODEC   = prores
+fate-vsynth%-prores_444_int:     ENCOPTS = -pix_fmt yuv444p10 -flags +ildct
+fate-vsynth%-prores_444_int:     FMT     = mov
 
 fate-vsynth%-prores_ks:          ENCOPTS = -profile hq
 fate-vsynth%-prores_ks:          FMT     = mov
