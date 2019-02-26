@@ -346,7 +346,7 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
 
 static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
-    int rle_code;
+    int rle_code, rle_code_half;
     int pixel_ptr;
     int row_inc = s->frame->linesize[0];
     unsigned int argb;
@@ -379,10 +379,15 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
                 CHECK_PIXEL_PTR(rle_code * 4);
 
                 /* copy pixels directly to output */
-                while (rle_code--) {
-                    argb = bytestream2_get_ne32(&s->g);
-                    AV_WN32A(rgb + pixel_ptr, argb);
-                    pixel_ptr  += 4;
+                rle_code_half = rle_code / 2;
+                while (rle_code_half--) { /* copy 2 argb raw value at the same time */
+                    AV_WN64A(rgb + pixel_ptr, bytestream2_get_ne64(&s->g));
+                    pixel_ptr += 8;
+                }
+
+                if (rle_code % 2 != 0){ /* not even raw value */
+                    AV_WN32A(rgb + pixel_ptr, bytestream2_get_ne32(&s->g));
+                    pixel_ptr += 4;
                 }
             }
         }
