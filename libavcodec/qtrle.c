@@ -367,7 +367,7 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
-                argb = bytestream2_get_be32(&s->g);
+                argb = bytestream2_get_ne32(&s->g);
 
                 CHECK_PIXEL_PTR(rle_code * 4);
 
@@ -380,7 +380,7 @@ static void qtrle_decode_32bpp(QtrleContext *s, int row_ptr, int lines_to_change
 
                 /* copy pixels directly to output */
                 while (rle_code--) {
-                    argb = bytestream2_get_be32(&s->g);
+                    argb = bytestream2_get_ne32(&s->g);
                     AV_WN32A(rgb + pixel_ptr, argb);
                     pixel_ptr  += 4;
                 }
@@ -416,7 +416,7 @@ static av_cold int qtrle_decode_init(AVCodecContext *avctx)
         break;
 
     case 32:
-        avctx->pix_fmt = AV_PIX_FMT_RGB32;
+        avctx->pix_fmt = AV_PIX_FMT_ARGB;
         break;
 
     default:
