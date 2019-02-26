@@ -297,10 +297,11 @@ static void qtrle_decode_16bpp(QtrleContext *s, int row_ptr, int lines_to_change
 
 static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change)
 {
-    int rle_code;
+    int rle_code, rle_code_half;
     int pixel_ptr;
     int row_inc = s->frame->linesize[0];
-    uint8_t r, g, b;
+    uint8_t b;
+    uint16_t rg;
     uint8_t *rgb = s->frame->data[0];
     int pixel_limit = s->frame->linesize[0] * s->avctx->height;
 
@@ -318,25 +319,31 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
             } else if (rle_code < 0) {
                 /* decode the run length code */
                 rle_code = -rle_code;
-                r = bytestream2_get_byte(&s->g);
-                g = bytestream2_get_byte(&s->g);
+                rg = bytestream2_get_ne16(&s->g);
                 b = bytestream2_get_byte(&s->g);
 
                 CHECK_PIXEL_PTR(rle_code * 3);
 
                 while (rle_code--) {
-                    rgb[pixel_ptr++] = r;
-                    rgb[pixel_ptr++] = g;
-                    rgb[pixel_ptr++] = b;
+                    AV_WN16A(rgb + pixel_ptr, rg);
+                    rgb[pixel_ptr + 2] = b;
+                    pixel_ptr += 3;
                 }
             } else {
                 CHECK_PIXEL_PTR(rle_code * 3);
 
-                /* copy pixels directly to output */
-                while (rle_code--) {
-                    rgb[pixel_ptr++] = bytestream2_get_byte(&s->g);
-                    rgb[pixel_ptr++] = bytestream2_get_byte(&s->g);
-                    rgb[pixel_ptr++] = bytestream2_get_byte(&s->g);
+                rle_code_half = rle_code / 2;
+
+                while (rle_code_half--) { /* copy 2 raw rgb value at the same time */
+                    AV_WN32A(rgb + pixel_ptr, bytestream2_get_ne32(&s->g)); /* rgbr */
+                    AV_WN16A(rgb + pixel_ptr + 4, bytestream2_get_ne16(&s->g)); /* rgbr */
+                    pixel_ptr += 6;
+                }
+
+                if (rle_code % 2 != 0){ /* not even raw value */
+                    AV_WN16A(rgb + pixel_ptr, bytestream2_get_ne16(&s->g));
+                    rgb[pixel_ptr + 2] = bytestream2_get_byte(&s->g);
+                    pixel_ptr += 3;
                 }
             }
         }
