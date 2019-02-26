@@ -1030,7 +1030,10 @@ test_nvcc(){
     log test_nvcc "$@"
     cat > $TMPCU
     log_file $TMPCU
-    test_cmd $nvcc -ptx $NVCCFLAGS "$@" $NVCC_C $(nvcc_o $TMPO) $TMPCU
+    tmpcu_=$TMPCU
+    tmpo_=$TMPO
+    [ -x "$(command -v cygpath)" ] && tmpcu_=$(cygpath -m $tmpcu_) && tmpo_=$(cygpath -m $tmpo_)
+    test_cmd $nvcc -ptx $NVCCFLAGS "$@" $NVCC_C $(nvcc_o $tmpo_) $tmpcu_
 }
 
 check_nvcc() {
