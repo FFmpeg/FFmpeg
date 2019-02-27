@@ -28,9 +28,9 @@
         ldr             w6,  [x4]
         ccmp            w3,  #0, #0, ne
         mov             v24.S[0], w6
-        and             w6,  w6,  w6,  lsl #16
+        and             w8,  w6,  w6,  lsl #16
         b.eq            1f
-        ands            w6,  w6,  w6,  lsl #8
+        ands            w8,  w8,  w8,  lsl #8
         b.ge            2f
 1:
         ret
@@ -394,10 +394,10 @@ endfunc
         usubw           v4.8H,  v4.8H,  v16.8B
         and             v26.8B, v26.8B, v30.8B
         shl             v4.8H,  v4.8H,  #2
-        mov             x2,  v26.d[0]
+        mov             x8,  v26.d[0]
         sli             v24.8H, v24.8H, #8
         uaddw           v4.8H,  v4.8H,  v18.8B
-        cbz             x2,  9f
+        cbz             x8,  9f
         usubw           v4.8H,  v4.8H,  v2.8B
         rshrn           v4.8B,  v4.8H,  #3
         smin            v4.8B,  v4.8B,  v24.8B
@@ -436,6 +436,7 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         sxtw            x1,  w1
 
         sub             x0,  x0,  #2
+h_loop_filter_chroma420:
         ld1             {v18.S}[0], [x0], x1
         ld1             {v16.S}[0], [x0], x1
         ld1             {v0.S}[0],  [x0], x1
@@ -464,6 +465,19 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         ret
 endfunc
 
+function ff_h264_h_loop_filter_chroma422_neon, export=1
+        sxtw            x1,  w1
+        h264_loop_filter_start
+        add             x5,  x0,  x1
+        sub             x0,  x0,  #2
+        add             x1,  x1,  x1
+        mov             x7,  x30
+        bl              h_loop_filter_chroma420
+        mov             x30, x7
+        sub             x0,  x5,  #2
+        mov             v24.s[0], w6
+        b               h_loop_filter_chroma420
+endfunc
 
 .macro h264_loop_filter_chroma_intra
     uabd            v26.8b, v16.8b, v17.8b  // abs(p0 - q0)
@@ -536,6 +550,7 @@ function ff_h264_h_loop_filter_chroma_intra_neon, export=1
 
     sub             x4,  x0,  #2
     sub             x0,  x0,  #1
+h_loop_filter_chroma420_intra:
     ld1             {v18.8b}, [x4], x1
     ld1             {v16.8b}, [x4], x1
     ld1             {v17.8b}, [x4], x1
@@ -543,7 +558,7 @@ function ff_h264_h_loop_filter_chroma_intra_neon, export=1
     ld1             {v18.s}[1], [x4], x1
     ld1             {v16.s}[1], [x4], x1
     ld1             {v17.s}[1], [x4], x1
-    ld1             {v19.s}[1], [x4]
+    ld1             {v19.s}[1], [x4], x1
 
     transpose_4x8B v18, v16, v17, v19, v26, v27, v28, v29
 
@@ -562,6 +577,17 @@ function ff_h264_h_loop_filter_chroma_intra_neon, export=1
     ret
 endfunc
 
+function ff_h264_h_loop_filter_chroma422_intra_neon, export=1
+    h264_loop_filter_start_intra
+    sub             x4,  x0,  #2
+    add             x5,  x0,  x1, lsl #3
+    sub             x0,  x0,  #1
+    mov             x7,  x30
+    bl              h_loop_filter_chroma420_intra
+    sub             x0,  x5,  #1
+    mov             x30, x7
+    b               h_loop_filter_chroma420_intra
+endfunc
 
 .macro  biweight_16     macs, macd
         dup             v0.16B,  w5
