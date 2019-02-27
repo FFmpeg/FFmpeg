@@ -512,7 +512,7 @@ static int decompress_p(AVCodecContext *avctx,
 {
     SCPRContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
-    int ret, temp, min, max, x, y, cx = 0, cx1 = 0;
+    int ret, temp = 0, min, max, x, y, cx = 0, cx1 = 0;
     int backstep = linesize - avctx->width;
 
     if (bytestream2_get_byte(gb) == 0)
