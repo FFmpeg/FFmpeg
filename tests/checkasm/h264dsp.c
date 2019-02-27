@@ -341,9 +341,9 @@ static void check_loop_filter(void)
             c = c*9/10;
         }
 
-#define CHECK_LOOP_FILTER(name, align, ...)                             \
+#define CHECK_LOOP_FILTER(name, align, idc)                             \
         do {                                                            \
-            if (check_func(h.name, #name "_%dbpp", bit_depth)) {        \
+            if (check_func(h.name, #name #idc "_%dbpp", bit_depth)) {   \
                 for (j = 0; j < 36; j++) {                              \
                     intptr_t off = 8 * 32 + (j & 15) * 4 * !align;      \
                     for (i = 0; i < 1024; i+=4) {                       \
@@ -355,7 +355,7 @@ static void check_loop_filter(void)
                     call_ref(dst0 + off, 32, alphas[j], betas[j], tc0[j]); \
                     call_new(dst1 + off, 32, alphas[j], betas[j], tc0[j]); \
                     if (memcmp(dst0, dst1, 32 * 16 * SIZEOF_PIXEL)) {   \
-                        fprintf(stderr, #name ": j:%d, alpha:%d beta:%d " \
+                        fprintf(stderr, #name #idc ": j:%d, alpha:%d beta:%d " \
                                 "tc0:{%d,%d,%d,%d}\n", j, alphas[j], betas[j], \
                                 tc0[j][0], tc0[j][1], tc0[j][2], tc0[j][3]); \
                         fail();                                         \
@@ -365,12 +365,16 @@ static void check_loop_filter(void)
             }                                                           \
         } while (0)
 
-        CHECK_LOOP_FILTER(h264_v_loop_filter_luma, 1);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma, 0);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff, 0);
-        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma, 1);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma, 0);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff, 0);
+        CHECK_LOOP_FILTER(h264_v_loop_filter_luma, 1,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_luma, 0,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff, 0,);
+        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma, 1,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma, 0,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff, 0,);
+
+        ff_h264dsp_init(&h, bit_depth, 2);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma, 0, 422);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff, 0, 422);
 #undef CHECK_LOOP_FILTER
     }
 }
@@ -397,9 +401,9 @@ static void check_loop_filter_intra(void)
             a = a*9/10;
         }
 
-#define CHECK_LOOP_FILTER(name, align)                                  \
+#define CHECK_LOOP_FILTER(name, align, idc)                             \
         do {                                                            \
-            if (check_func(h.name, #name "_%dbpp", bit_depth)) {        \
+            if (check_func(h.name, #name #idc "_%dbpp", bit_depth)) {   \
                 for (j = 0; j < 36; j++) {                              \
                     intptr_t off = 8 * 32 + (j & 15) * 4 * !align;      \
                     for (i = 0; i < 1024; i+=4) {                       \
@@ -411,7 +415,7 @@ static void check_loop_filter_intra(void)
                     call_ref(dst0 + off, 32, alphas[j], betas[j]);      \
                     call_new(dst1 + off, 32, alphas[j], betas[j]);      \
                     if (memcmp(dst0, dst1, 32 * 16 * SIZEOF_PIXEL)) {   \
-                        fprintf(stderr, #name ": j:%d, alpha:%d beta:%d\n", \
+                        fprintf(stderr, #name #idc ": j:%d, alpha:%d beta:%d\n", \
                                 j, alphas[j], betas[j]);                \
                         fail();                                         \
                     }                                                   \
@@ -420,12 +424,16 @@ static void check_loop_filter_intra(void)
             }                                                           \
         } while (0)
 
-        CHECK_LOOP_FILTER(h264_v_loop_filter_luma_intra, 1);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_intra, 0);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff_intra, 0);
-        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma_intra, 1);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_intra, 0);
-        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff_intra, 0);
+        CHECK_LOOP_FILTER(h264_v_loop_filter_luma_intra, 1,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_intra, 0,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_luma_mbaff_intra, 0,);
+        CHECK_LOOP_FILTER(h264_v_loop_filter_chroma_intra, 1,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_intra, 0,);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff_intra, 0,);
+
+        ff_h264dsp_init(&h, bit_depth, 2);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_intra, 0, 422);
+        CHECK_LOOP_FILTER(h264_h_loop_filter_chroma_mbaff_intra, 0, 422);
 #undef CHECK_LOOP_FILTER
     }
 }
