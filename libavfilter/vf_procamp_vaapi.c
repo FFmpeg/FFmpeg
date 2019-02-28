@@ -148,6 +148,10 @@ static int procamp_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
         goto fail;
     }
 
+    err = av_frame_copy_props(output_frame, input_frame);
+    if (err < 0)
+        return err;
+
     err = ff_vaapi_vpp_init_params(avctx, &params,
                                    input_frame, output_frame);
     if (err < 0)
@@ -160,9 +164,6 @@ static int procamp_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     if (err < 0)
         goto fail;
 
-    err = av_frame_copy_props(output_frame, input_frame);
-    if (err < 0)
-        goto fail;
     av_frame_free(&input_frame);
 
     av_log(avctx, AV_LOG_DEBUG, "Filter output: %s, %ux%u (%"PRId64").\n",

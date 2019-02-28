@@ -234,18 +234,278 @@ fail:
     return err;
 }
 
-int ff_vaapi_vpp_colour_standard(enum AVColorSpace av_cs)
+typedef struct VAAPIColourProperties {
+    VAProcColorStandardType va_color_standard;
+
+    enum AVColorPrimaries color_primaries;
+    enum AVColorTransferCharacteristic color_trc;
+    enum AVColorSpace colorspace;
+
+    uint8_t va_chroma_sample_location;
+    uint8_t va_color_range;
+
+    enum AVColorRange color_range;
+    enum AVChromaLocation chroma_sample_location;
+} VAAPIColourProperties;
+
+static const VAAPIColourProperties vaapi_colour_standard_map[] = {
+    { VAProcColorStandardBT601,       5,  6,  5 },
+    { VAProcColorStandardBT601,       6,  6,  6 },
+    { VAProcColorStandardBT709,       1,  1,  1 },
+    { VAProcColorStandardBT470M,      4,  4,  4 },
+    { VAProcColorStandardBT470BG,     5,  5,  5 },
+    { VAProcColorStandardSMPTE170M,   6,  6,  6 },
+    { VAProcColorStandardSMPTE240M,   7,  7,  7 },
+    { VAProcColorStandardGenericFilm, 8,  1,  1 },
+#if VA_CHECK_VERSION(1, 1, 0)
+    { VAProcColorStandardSRGB,        1, 13,  0 },
+    { VAProcColorStandardXVYCC601,    1, 11,  5 },
+    { VAProcColorStandardXVYCC709,    1, 11,  1 },
+    { VAProcColorStandardBT2020,      9, 14,  9 },
+#endif
+};
+
+static void vaapi_vpp_fill_colour_standard(VAAPIColourProperties *props,
+                                           VAProcColorStandardType *vacs,
+                                           int nb_vacs)
 {
-    switch(av_cs) {
-#define CS(av, va) case AVCOL_SPC_ ## av: return VAProcColorStandard ## va;
-        CS(BT709,     BT709);
-        CS(BT470BG,   BT601);
-        CS(SMPTE170M, SMPTE170M);
-        CS(SMPTE240M, SMPTE240M);
-#undef CS
-    default:
-        return VAProcColorStandardNone;
+    const VAAPIColourProperties *t;
+    int i, j, score, best_score, worst_score;
+    VAProcColorStandardType best_standard;
+
+#if VA_CHECK_VERSION(1, 1, 0)
+    // If the driver supports explicit use of the standard values then just
+    // use them and avoid doing any mapping.  (The driver may not support
+    // some particular code point, but it still has enough information to
+    // make a better fallback choice than we do in that case.)
+    for (i = 0; i < nb_vacs; i++) {
+        if (vacs[i] == VAProcColorStandardExplicit) {
+            props->va_color_standard = VAProcColorStandardExplicit;
+            return;
+        }
     }
+#endif
+
+    // Give scores to the possible options and choose the lowest one.
+    // An exact match will score zero and therefore always be chosen, as
+    // will a partial match where all unmatched elements are explicitly
+    // unspecified.  If no options match at all then just pass "none" to
+    // the driver and let it make its own choice.
+    best_standard = VAProcColorStandardNone;
+    best_score = -1;
+    worst_score = 4 * (props->colorspace != AVCOL_SPC_UNSPECIFIED &&
+                       props->colorspace != AVCOL_SPC_RGB) +
+                  2 * (props->color_trc != AVCOL_TRC_UNSPECIFIED) +
+                      (props->color_primaries != AVCOL_PRI_UNSPECIFIED);
+
+    if (worst_score == 0) {
+        // No properties are specified, so we aren't going to be able to
+        // make a useful choice.
+        props->va_color_standard = VAProcColorStandardNone;
+        return;
+    }
+
+    for (i = 0; i < nb_vacs; i++) {
+        for (j = 0; j < FF_ARRAY_ELEMS(vaapi_colour_standard_map); j++) {
+            t = &vaapi_colour_standard_map[j];
+            if (t->va_color_standard != vacs[i])
+                continue;
+
+            score = 0;
+            if (props->colorspace != AVCOL_SPC_UNSPECIFIED &&
+                props->colorspace != AVCOL_SPC_RGB)
+                score += 4 * (props->colorspace != t->colorspace);
+            if (props->color_trc != AVCOL_TRC_UNSPECIFIED)
+                score += 2 * (props->color_trc != t->color_trc);
+            if (props->color_primaries != AVCOL_PRI_UNSPECIFIED)
+                score += (props->color_primaries != t->color_primaries);
+
+            // Only include choices which matched something.
+            if (score < worst_score &&
+                (best_score == -1 || score < best_score)) {
+                best_score    = score;
+                best_standard = t->va_color_standard;
+            }
+        }
+    }
+    props->va_color_standard = best_standard;
+}
+
+static void vaapi_vpp_fill_chroma_sample_location(VAAPIColourProperties *props)
+{
+#if VA_CHECK_VERSION(1, 1, 0)
+    static const struct {
+        enum AVChromaLocation av;
+        uint8_t va;
+    } csl_map[] = {
+        { AVCHROMA_LOC_UNSPECIFIED, VA_CHROMA_SITING_UNKNOWN },
+        { AVCHROMA_LOC_LEFT,        VA_CHROMA_SITING_VERTICAL_CENTER |
+                                    VA_CHROMA_SITING_HORIZONTAL_LEFT },
+        { AVCHROMA_LOC_CENTER,      VA_CHROMA_SITING_VERTICAL_CENTER |
+                                    VA_CHROMA_SITING_HORIZONTAL_CENTER },
+        { AVCHROMA_LOC_TOPLEFT,     VA_CHROMA_SITING_VERTICAL_TOP |
+                                    VA_CHROMA_SITING_HORIZONTAL_LEFT },
+        { AVCHROMA_LOC_TOP,         VA_CHROMA_SITING_VERTICAL_TOP |
+                                    VA_CHROMA_SITING_HORIZONTAL_CENTER },
+        { AVCHROMA_LOC_BOTTOMLEFT,  VA_CHROMA_SITING_VERTICAL_BOTTOM |
+                                    VA_CHROMA_SITING_HORIZONTAL_LEFT },
+        { AVCHROMA_LOC_BOTTOM,      VA_CHROMA_SITING_VERTICAL_BOTTOM |
+                                    VA_CHROMA_SITING_HORIZONTAL_CENTER },
+    };
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(csl_map); i++) {
+        if (props->chroma_sample_location == csl_map[i].av) {
+            props->va_chroma_sample_location = csl_map[i].va;
+            return;
+        }
+    }
+    props->va_chroma_sample_location = VA_CHROMA_SITING_UNKNOWN;
+#else
+    props->va_chroma_sample_location = 0;
+#endif
+}
+
+static void vaapi_vpp_fill_colour_range(VAAPIColourProperties *props)
+{
+#if VA_CHECK_VERSION(1, 1, 0)
+    switch (props->color_range) {
+    case AVCOL_RANGE_MPEG:
+        props->va_color_range = VA_SOURCE_RANGE_REDUCED;
+        break;
+    case AVCOL_RANGE_JPEG:
+        props->va_color_range = VA_SOURCE_RANGE_FULL;
+        break;
+    case AVCOL_RANGE_UNSPECIFIED:
+    default:
+        props->va_color_range = VA_SOURCE_RANGE_UNKNOWN;
+    }
+#else
+    props->va_color_range = 0;
+#endif
+}
+
+static void vaapi_vpp_fill_colour_properties(AVFilterContext *avctx,
+                                             VAAPIColourProperties *props,
+                                             VAProcColorStandardType *vacs,
+                                             int nb_vacs)
+{
+    vaapi_vpp_fill_colour_standard(props, vacs, nb_vacs);
+    vaapi_vpp_fill_chroma_sample_location(props);
+    vaapi_vpp_fill_colour_range(props);
+
+    av_log(avctx, AV_LOG_DEBUG, "Mapped colour properties %s %s/%s/%s %s "
+           "to VA standard %d chroma siting %#x range %#x.\n",
+           av_color_range_name(props->color_range),
+           av_color_space_name(props->colorspace),
+           av_color_primaries_name(props->color_primaries),
+           av_color_transfer_name(props->color_trc),
+           av_chroma_location_name(props->chroma_sample_location),
+           props->va_color_standard,
+           props->va_chroma_sample_location, props->va_color_range);
+}
+
+static int vaapi_vpp_frame_is_rgb(const AVFrame *frame)
+{
+    const AVHWFramesContext *hwfc;
+    const AVPixFmtDescriptor *desc;
+    av_assert0(frame->format == AV_PIX_FMT_VAAPI &&
+               frame->hw_frames_ctx);
+    hwfc = (const AVHWFramesContext*)frame->hw_frames_ctx->data;
+    desc = av_pix_fmt_desc_get(hwfc->sw_format);
+    av_assert0(desc);
+    return !!(desc->flags & AV_PIX_FMT_FLAG_RGB);
+}
+
+static int vaapi_vpp_colour_properties(AVFilterContext *avctx,
+                                       VAProcPipelineParameterBuffer *params,
+                                       const AVFrame *input_frame,
+                                       AVFrame *output_frame)
+{
+    VAAPIVPPContext *ctx = avctx->priv;
+    VAAPIColourProperties input_props, output_props;
+    VAProcPipelineCaps caps;
+    VAStatus vas;
+
+    vas = vaQueryVideoProcPipelineCaps(ctx->hwctx->display, ctx->va_context,
+                                       ctx->filter_buffers, ctx->nb_filter_buffers,
+                                       &caps);
+    if (vas != VA_STATUS_SUCCESS) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to query capabilities for "
+               "colour standard support: %d (%s).\n", vas, vaErrorStr(vas));
+        return AVERROR_EXTERNAL;
+    }
+
+    input_props = (VAAPIColourProperties) {
+        .colorspace = vaapi_vpp_frame_is_rgb(input_frame)
+                ? AVCOL_SPC_RGB : input_frame->colorspace,
+        .color_primaries        = input_frame->color_primaries,
+        .color_trc              = input_frame->color_trc,
+        .color_range            = input_frame->color_range,
+        .chroma_sample_location = input_frame->chroma_location,
+    };
+
+    vaapi_vpp_fill_colour_properties(avctx, &input_props,
+                                     caps.input_color_standards,
+                                     caps.num_input_color_standards);
+
+    output_props = (VAAPIColourProperties) {
+        .colorspace = vaapi_vpp_frame_is_rgb(output_frame)
+                ? AVCOL_SPC_RGB : output_frame->colorspace,
+        .color_primaries        = output_frame->color_primaries,
+        .color_trc              = output_frame->color_trc,
+        .color_range            = output_frame->color_range,
+        .chroma_sample_location = output_frame->chroma_location,
+    };
+    vaapi_vpp_fill_colour_properties(avctx, &output_props,
+                                     caps.output_color_standards,
+                                     caps.num_output_color_standards);
+
+    // If the properties weren't filled completely in the output frame and
+    // we chose a fixed standard then fill the known values in here.
+#if VA_CHECK_VERSION(1, 1, 0)
+    if (output_props.va_color_standard != VAProcColorStandardExplicit)
+#endif
+    {
+        const VAAPIColourProperties *output_standard = NULL;
+        int i;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(vaapi_colour_standard_map); i++) {
+            if (output_props.va_color_standard ==
+                vaapi_colour_standard_map[i].va_color_standard) {
+                output_standard = &vaapi_colour_standard_map[i];
+                break;
+            }
+        }
+        if (output_standard) {
+            output_frame->colorspace = vaapi_vpp_frame_is_rgb(output_frame)
+                          ? AVCOL_SPC_RGB : output_standard->colorspace;
+            output_frame->color_primaries = output_standard->color_primaries;
+            output_frame->color_trc       = output_standard->color_trc;
+        }
+    }
+
+    params->surface_color_standard = input_props.va_color_standard;
+    params->output_color_standard = output_props.va_color_standard;
+
+#if VA_CHECK_VERSION(1, 1, 0)
+    params->input_color_properties = (VAProcColorProperties) {
+        .chroma_sample_location   = input_props.va_chroma_sample_location,
+        .color_range              = input_props.va_color_range,
+        .colour_primaries         = input_props.color_primaries,
+        .transfer_characteristics = input_props.color_trc,
+        .matrix_coefficients      = input_props.colorspace,
+    };
+    params->output_color_properties = (VAProcColorProperties) {
+        .chroma_sample_location   = output_props.va_chroma_sample_location,
+        .color_range              = output_props.va_color_range,
+        .colour_primaries         = output_props.color_primaries,
+        .transfer_characteristics = output_props.color_trc,
+        .matrix_coefficients      = output_props.colorspace,
+    };
+#endif
+
+    return 0;
 }
 
 int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
@@ -255,6 +515,7 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
 {
     VAAPIVPPContext *ctx = avctx->priv;
     VASurfaceID input_surface;
+    int err;
 
     ctx->input_region = (VARectangle) {
         .x      = input_frame->crop_left,
@@ -274,12 +535,8 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
     *params = (VAProcPipelineParameterBuffer) {
         .surface                 = input_surface,
         .surface_region          = &ctx->input_region,
-        .surface_color_standard  =
-            ff_vaapi_vpp_colour_standard(input_frame->colorspace),
         .output_region           = NULL,
         .output_background_color = VAAPI_VPP_BACKGROUND_BLACK,
-        .output_color_standard   =
-            ff_vaapi_vpp_colour_standard(input_frame->colorspace),
         .pipeline_flags          = 0,
         .filter_flags            = VA_FRAME_PICTURE,
 
@@ -290,6 +547,11 @@ int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
         .mirror_state   = VA_MIRROR_NONE,
 #endif
     };
+
+    err = vaapi_vpp_colour_properties(avctx, params,
+                                      input_frame, output_frame);
+    if (err < 0)
+        return err;
 
     return 0;
 }

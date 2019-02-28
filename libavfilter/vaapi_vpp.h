@@ -68,8 +68,6 @@ int ff_vaapi_vpp_config_input(AVFilterLink *inlink);
 
 int ff_vaapi_vpp_config_output(AVFilterLink *outlink);
 
-int ff_vaapi_vpp_colour_standard(enum AVColorSpace av_cs);
-
 int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
                              VAProcPipelineParameterBuffer *params,
                              const AVFrame *input_frame,
