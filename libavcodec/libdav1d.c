@@ -37,6 +37,13 @@ typedef struct Libdav1dContext {
     int apply_grain;
 } Libdav1dContext;
 
+static void libdav1d_log_callback(void *opaque, const char *fmt, va_list vl)
+{
+    AVCodecContext *c = opaque;
+
+    av_vlog(c, AV_LOG_ERROR, fmt, vl);
+}
+
 static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -46,6 +53,8 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     av_log(c, AV_LOG_INFO, "libdav1d %s\n", dav1d_version());
 
     dav1d_default_settings(&s);
+    s.logger.cookie = c;
+    s.logger.callback = libdav1d_log_callback;
     s.n_tile_threads = dav1d->tile_threads;
     s.apply_grain = dav1d->apply_grain;
     s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), DAV1D_MAX_FRAME_THREADS);
