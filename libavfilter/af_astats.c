@@ -49,6 +49,8 @@
 #define MEASURE_ZERO_CROSSINGS_RATE     (1 << 17)
 #define MEASURE_NUMBER_OF_SAMPLES       (1 << 18)
 
+#define MEASURE_MINMAXPEAK              (MEASURE_MIN_LEVEL | MEASURE_MAX_LEVEL | MEASURE_PEAK_LEVEL)
+
 typedef struct ChannelStats {
     double last;
     double last_non_zero;
@@ -214,6 +216,14 @@ static void bit_depth(AudioStatsContext *s, uint64_t mask, uint64_t imask, AVRat
     for (; result; --result, mask >>= 1)
         if (mask & 1)
             depth->num++;
+}
+
+static inline void update_minmax(AudioStatsContext *s, ChannelStats *p, double d)
+{
+    if (d < p->min)
+        p->min = d;
+    if (d > p->max)
+        p->max = d;
 }
 
 static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, double nd, int64_t i)
@@ -406,26 +416,32 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
 }
 
-#define UPDATE_STATS_P(type, double_sample, normalized_sample, int_sample)      \
+#define UPDATE_STATS_P(type, update_func, channel_func)                         \
     for (int c = 0; c < channels; c++) {                                        \
         ChannelStats *p = &s->chstats[c];                                       \
         const type *src = (const type *)data[c];                                \
         const type * const srcend = src + samples;                              \
         for (; src < srcend; src++)                                             \
-            update_stat(s, p, double_sample, normalized_sample, int_sample);    \
+            update_func;                                                        \
+        channel_func;                                                           \
     }
 
-#define UPDATE_STATS_I(type, double_sample, normalized_sample, int_sample)      \
+#define UPDATE_STATS_I(type, update_func, channel_func)                         \
     for (int c = 0; c < channels; c++) {                                        \
         ChannelStats *p = &s->chstats[c];                                       \
         const type *src = (const type *)data[0];                                \
         const type * const srcend = src + samples * channels;                   \
         for (src += c; src < srcend; src += channels)                           \
-            update_stat(s, p, double_sample, normalized_sample, int_sample);    \
+            update_func;                                                        \
+        channel_func;                                                           \
     }
 
 #define UPDATE_STATS(planar, type, sample, normalizer_suffix, int_sample) \
-    UPDATE_STATS_##planar(type, sample, sample normalizer_suffix, int_sample);
+    if ((s->measure_overall | s->measure_perchannel) & ~MEASURE_MINMAXPEAK) {                          \
+        UPDATE_STATS_##planar(type, update_stat(s, p, sample, sample normalizer_suffix, int_sample), );    \
+    } else {                                                                                           \
+        UPDATE_STATS_##planar(type, update_minmax(s, p, sample), p->nmin = p->min normalizer_suffix; p->nmax = p->max normalizer_suffix;); \
+    }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
