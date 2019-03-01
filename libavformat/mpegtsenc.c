@@ -1263,6 +1263,12 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 pcr = (dts - delay) * 300;
             if (dts != AV_NOPTS_VALUE && dts < pcr / 300)
                 av_log(s, AV_LOG_WARNING, "dts < pcr, TS is invalid\n");
+            if (pcr < 0) {
+                pcr = (dts == AV_NOPTS_VALUE) ? 0 :(dts * 300);
+                if (pcr < 0) {
+                    pcr = 0;
+                }
+            }
             extend_af(buf, write_pcr_bits(q, pcr));
             q = get_ts_payload_start(buf);
         }
