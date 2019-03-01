@@ -253,6 +253,7 @@ static int http_open_cnx(URLContext *h, AVDictionary **options)
     HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
     int location_changed, attempts = 0, redirects = 0;
+    int retry = 0;
 redo:
     av_dict_copy(options, s->chained_options, 0);
 
@@ -260,9 +261,21 @@ redo:
     cur_proxy_auth_type = s->auth_state.auth_type;
 
     location_changed = http_open_cnx_internal(h, options);
-    if (location_changed < 0)
+    if (location_changed < 0) {
+        if (s->reconnect && retry++ < 3 &&
+            ((location_changed == AVERROR(ECONNRESET)) || (location_changed == AVERROR(EPIPE)) ||
+            (location_changed == AVERROR(ENETRESET)) || (location_changed == AVERROR(ECONNREFUSED)) ||
+            (location_changed == AVERROR(ETIMEDOUT)))) {
+            if (ff_network_sleep_interruptible(1000U*1000, &h->interrupt_callback) != AVERROR(ETIMEDOUT)) {
+                goto fail;
+            }
+            if (s->hd) {
+                ffurl_closep(&s->hd);
+            }
+            goto redo;
+        }
         goto fail;
-
+    }
     attempts++;
     if (s->http_code == 401) {
         if ((cur_auth_type == HTTP_AUTH_NONE || s->auth_state.stale) &&
