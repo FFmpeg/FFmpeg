@@ -410,17 +410,18 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     for (int c = 0; c < channels; c++) {                                        \
         ChannelStats *p = &s->chstats[c];                                       \
         const type *src = (const type *)data[c];                                \
-        for (int i = 0; i < samples; i++, src++)                                \
+        const type * const srcend = src + samples;                              \
+        for (; src < srcend; src++)                                             \
             update_stat(s, p, double_sample, normalized_sample, int_sample);    \
     }
 
-#define UPDATE_STATS_I(type, double_sample, normalized_sample, int_sample)                    \
-    {                                                                                         \
-        const type *src = (const type *)data[0];                                              \
-        for (int i = 0; i < samples; i++) {                                                   \
-            for (int c = 0; c < channels; c++, src++)                                         \
-                update_stat(s, &s->chstats[c], double_sample, normalized_sample, int_sample); \
-        }                                                                                     \
+#define UPDATE_STATS_I(type, double_sample, normalized_sample, int_sample)      \
+    for (int c = 0; c < channels; c++) {                                        \
+        ChannelStats *p = &s->chstats[c];                                       \
+        const type *src = (const type *)data[0];                                \
+        const type * const srcend = src + samples * channels;                   \
+        for (src += c; src < srcend; src += channels)                           \
+            update_stat(s, p, double_sample, normalized_sample, int_sample);    \
     }
 
 #define UPDATE_STATS(planar, type, sample, normalizer_suffix, int_sample) \
