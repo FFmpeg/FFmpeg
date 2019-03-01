@@ -331,79 +331,79 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
             max_sigma_x = p->sigma_x;
 
         if (s->measure_perchannel & MEASURE_DC_OFFSET)
-        set_meta(metadata, c + 1, "DC_offset", "%f", p->sigma_x / p->nb_samples);
+            set_meta(metadata, c + 1, "DC_offset", "%f", p->sigma_x / p->nb_samples);
         if (s->measure_perchannel & MEASURE_MIN_LEVEL)
-        set_meta(metadata, c + 1, "Min_level", "%f", p->min);
+            set_meta(metadata, c + 1, "Min_level", "%f", p->min);
         if (s->measure_perchannel & MEASURE_MAX_LEVEL)
-        set_meta(metadata, c + 1, "Max_level", "%f", p->max);
+            set_meta(metadata, c + 1, "Max_level", "%f", p->max);
         if (s->measure_perchannel & MEASURE_MIN_DIFFERENCE)
-        set_meta(metadata, c + 1, "Min_difference", "%f", p->min_diff);
+            set_meta(metadata, c + 1, "Min_difference", "%f", p->min_diff);
         if (s->measure_perchannel & MEASURE_MAX_DIFFERENCE)
-        set_meta(metadata, c + 1, "Max_difference", "%f", p->max_diff);
+            set_meta(metadata, c + 1, "Max_difference", "%f", p->max_diff);
         if (s->measure_perchannel & MEASURE_MEAN_DIFFERENCE)
-        set_meta(metadata, c + 1, "Mean_difference", "%f", p->diff1_sum / (p->nb_samples - 1));
+            set_meta(metadata, c + 1, "Mean_difference", "%f", p->diff1_sum / (p->nb_samples - 1));
         if (s->measure_perchannel & MEASURE_RMS_DIFFERENCE)
-        set_meta(metadata, c + 1, "RMS_difference", "%f", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
+            set_meta(metadata, c + 1, "RMS_difference", "%f", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
         if (s->measure_perchannel & MEASURE_PEAK_LEVEL)
-        set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
+            set_meta(metadata, c + 1, "Peak_level", "%f", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         if (s->measure_perchannel & MEASURE_RMS_LEVEL)
-        set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
+            set_meta(metadata, c + 1, "RMS_level", "%f", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         if (s->measure_perchannel & MEASURE_RMS_PEAK)
-        set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
+            set_meta(metadata, c + 1, "RMS_peak", "%f", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
         if (s->measure_perchannel & MEASURE_RMS_TROUGH)
-        set_meta(metadata, c + 1, "RMS_trough", "%f", LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
+            set_meta(metadata, c + 1, "RMS_trough", "%f", LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
         if (s->measure_perchannel & MEASURE_CREST_FACTOR)
-        set_meta(metadata, c + 1, "Crest_factor", "%f", p->sigma_x2 ? FFMAX(-p->min, p->max) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
+            set_meta(metadata, c + 1, "Crest_factor", "%f", p->sigma_x2 ? FFMAX(-p->min, p->max) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
         if (s->measure_perchannel & MEASURE_FLAT_FACTOR)
-        set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
+            set_meta(metadata, c + 1, "Flat_factor", "%f", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
-        set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
+            set_meta(metadata, c + 1, "Peak_count", "%f", (float)(p->min_count + p->max_count));
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
-        bit_depth(s, p->mask, p->imask, &depth);
-        set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
-        set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
+            bit_depth(s, p->mask, p->imask, &depth);
+            set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
+            set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
         }
         if (s->measure_perchannel & MEASURE_DYNAMIC_RANGE)
-        set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
+            set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
         if (s->measure_perchannel & MEASURE_ZERO_CROSSINGS)
-        set_meta(metadata, c + 1, "Zero_crossings", "%f", p->zero_runs);
+            set_meta(metadata, c + 1, "Zero_crossings", "%f", p->zero_runs);
         if (s->measure_perchannel & MEASURE_ZERO_CROSSINGS_RATE)
-        set_meta(metadata, c + 1, "Zero_crossings_rate", "%f", p->zero_runs/(double)p->nb_samples);
+            set_meta(metadata, c + 1, "Zero_crossings_rate", "%f", p->zero_runs/(double)p->nb_samples);
     }
 
     if (s->measure_overall & MEASURE_DC_OFFSET)
-    set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
+        set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
     if (s->measure_overall & MEASURE_MIN_LEVEL)
-    set_meta(metadata, 0, "Overall.Min_level", "%f", min);
+        set_meta(metadata, 0, "Overall.Min_level", "%f", min);
     if (s->measure_overall & MEASURE_MAX_LEVEL)
-    set_meta(metadata, 0, "Overall.Max_level", "%f", max);
+        set_meta(metadata, 0, "Overall.Max_level", "%f", max);
     if (s->measure_overall & MEASURE_MIN_DIFFERENCE)
-    set_meta(metadata, 0, "Overall.Min_difference", "%f", min_diff);
+        set_meta(metadata, 0, "Overall.Min_difference", "%f", min_diff);
     if (s->measure_overall & MEASURE_MAX_DIFFERENCE)
-    set_meta(metadata, 0, "Overall.Max_difference", "%f", max_diff);
+        set_meta(metadata, 0, "Overall.Max_difference", "%f", max_diff);
     if (s->measure_overall & MEASURE_MEAN_DIFFERENCE)
-    set_meta(metadata, 0, "Overall.Mean_difference", "%f", diff1_sum / (nb_samples - s->nb_channels));
+        set_meta(metadata, 0, "Overall.Mean_difference", "%f", diff1_sum / (nb_samples - s->nb_channels));
     if (s->measure_overall & MEASURE_RMS_DIFFERENCE)
-    set_meta(metadata, 0, "Overall.RMS_difference", "%f", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
+        set_meta(metadata, 0, "Overall.RMS_difference", "%f", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
     if (s->measure_overall & MEASURE_PEAK_LEVEL)
-    set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
+        set_meta(metadata, 0, "Overall.Peak_level", "%f", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     if (s->measure_overall & MEASURE_RMS_LEVEL)
-    set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
+        set_meta(metadata, 0, "Overall.RMS_level", "%f", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     if (s->measure_overall & MEASURE_RMS_PEAK)
-    set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
+        set_meta(metadata, 0, "Overall.RMS_peak", "%f", LINEAR_TO_DB(sqrt(max_sigma_x2)));
     if (s->measure_overall & MEASURE_RMS_TROUGH)
-    set_meta(metadata, 0, "Overall.RMS_trough", "%f", LINEAR_TO_DB(sqrt(min_sigma_x2)));
+        set_meta(metadata, 0, "Overall.RMS_trough", "%f", LINEAR_TO_DB(sqrt(min_sigma_x2)));
     if (s->measure_overall & MEASURE_FLAT_FACTOR)
-    set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
+        set_meta(metadata, 0, "Overall.Flat_factor", "%f", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
-    set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
+        set_meta(metadata, 0, "Overall.Peak_count", "%f", (float)(min_count + max_count) / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
-    bit_depth(s, mask, imask, &depth);
-    set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
-    set_meta(metadata, 0, "Overall.Bit_depth2", "%f", depth.den);
+        bit_depth(s, mask, imask, &depth);
+        set_meta(metadata, 0, "Overall.Bit_depth", "%f", depth.num);
+        set_meta(metadata, 0, "Overall.Bit_depth2", "%f", depth.den);
     }
     if (s->measure_overall & MEASURE_NUMBER_OF_SAMPLES)
-    set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
+        set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
 }
 
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
@@ -562,80 +562,80 @@ static void print_stats(AVFilterContext *ctx)
 
         av_log(ctx, AV_LOG_INFO, "Channel: %d\n", c + 1);
         if (s->measure_perchannel & MEASURE_DC_OFFSET)
-        av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", p->sigma_x / p->nb_samples);
+            av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", p->sigma_x / p->nb_samples);
         if (s->measure_perchannel & MEASURE_MIN_LEVEL)
-        av_log(ctx, AV_LOG_INFO, "Min level: %f\n", p->min);
+            av_log(ctx, AV_LOG_INFO, "Min level: %f\n", p->min);
         if (s->measure_perchannel & MEASURE_MAX_LEVEL)
-        av_log(ctx, AV_LOG_INFO, "Max level: %f\n", p->max);
+            av_log(ctx, AV_LOG_INFO, "Max level: %f\n", p->max);
         if (s->measure_perchannel & MEASURE_MIN_DIFFERENCE)
-        av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", p->min_diff);
+            av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", p->min_diff);
         if (s->measure_perchannel & MEASURE_MAX_DIFFERENCE)
-        av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", p->max_diff);
+            av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", p->max_diff);
         if (s->measure_perchannel & MEASURE_MEAN_DIFFERENCE)
-        av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", p->diff1_sum / (p->nb_samples - 1));
+            av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", p->diff1_sum / (p->nb_samples - 1));
         if (s->measure_perchannel & MEASURE_RMS_DIFFERENCE)
-        av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
+            av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(p->diff1_sum_x2 / (p->nb_samples - 1)));
         if (s->measure_perchannel & MEASURE_PEAK_LEVEL)
-        av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
+            av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-p->nmin, p->nmax)));
         if (s->measure_perchannel & MEASURE_RMS_LEVEL)
-        av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
+            av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(p->sigma_x2 / p->nb_samples)));
         if (s->measure_perchannel & MEASURE_RMS_PEAK)
-        av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
+            av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(p->max_sigma_x2)));
         if (s->measure_perchannel & MEASURE_RMS_TROUGH)
-        if (p->min_sigma_x2 != 1)
-            av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n",LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
+            if (p->min_sigma_x2 != 1)
+                av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n",LINEAR_TO_DB(sqrt(p->min_sigma_x2)));
         if (s->measure_perchannel & MEASURE_CREST_FACTOR)
-        av_log(ctx, AV_LOG_INFO, "Crest factor: %f\n", p->sigma_x2 ? FFMAX(-p->nmin, p->nmax) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
+            av_log(ctx, AV_LOG_INFO, "Crest factor: %f\n", p->sigma_x2 ? FFMAX(-p->nmin, p->nmax) / sqrt(p->sigma_x2 / p->nb_samples) : 1);
         if (s->measure_perchannel & MEASURE_FLAT_FACTOR)
-        av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
+            av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((p->min_runs + p->max_runs) / (p->min_count + p->max_count)));
         if (s->measure_perchannel & MEASURE_PEAK_COUNT)
-        av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
+            av_log(ctx, AV_LOG_INFO, "Peak count: %"PRId64"\n", p->min_count + p->max_count);
         if (s->measure_perchannel & MEASURE_BIT_DEPTH) {
-        bit_depth(s, p->mask, p->imask, &depth);
-        av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+            bit_depth(s, p->mask, p->imask, &depth);
+            av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
         }
         if (s->measure_perchannel & MEASURE_DYNAMIC_RANGE)
-        av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
+            av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
         if (s->measure_perchannel & MEASURE_ZERO_CROSSINGS)
-        av_log(ctx, AV_LOG_INFO, "Zero crossings: %"PRId64"\n", p->zero_runs);
+            av_log(ctx, AV_LOG_INFO, "Zero crossings: %"PRId64"\n", p->zero_runs);
         if (s->measure_perchannel & MEASURE_ZERO_CROSSINGS_RATE)
-        av_log(ctx, AV_LOG_INFO, "Zero crossings rate: %f\n", p->zero_runs/(double)p->nb_samples);
+            av_log(ctx, AV_LOG_INFO, "Zero crossings rate: %f\n", p->zero_runs/(double)p->nb_samples);
     }
 
     av_log(ctx, AV_LOG_INFO, "Overall\n");
     if (s->measure_overall & MEASURE_DC_OFFSET)
-    av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", max_sigma_x / (nb_samples / s->nb_channels));
+        av_log(ctx, AV_LOG_INFO, "DC offset: %f\n", max_sigma_x / (nb_samples / s->nb_channels));
     if (s->measure_overall & MEASURE_MIN_LEVEL)
-    av_log(ctx, AV_LOG_INFO, "Min level: %f\n", min);
+        av_log(ctx, AV_LOG_INFO, "Min level: %f\n", min);
     if (s->measure_overall & MEASURE_MAX_LEVEL)
-    av_log(ctx, AV_LOG_INFO, "Max level: %f\n", max);
+        av_log(ctx, AV_LOG_INFO, "Max level: %f\n", max);
     if (s->measure_overall & MEASURE_MIN_DIFFERENCE)
-    av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", min_diff);
+        av_log(ctx, AV_LOG_INFO, "Min difference: %f\n", min_diff);
     if (s->measure_overall & MEASURE_MAX_DIFFERENCE)
-    av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", max_diff);
+        av_log(ctx, AV_LOG_INFO, "Max difference: %f\n", max_diff);
     if (s->measure_overall & MEASURE_MEAN_DIFFERENCE)
-    av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", diff1_sum / (nb_samples - s->nb_channels));
+        av_log(ctx, AV_LOG_INFO, "Mean difference: %f\n", diff1_sum / (nb_samples - s->nb_channels));
     if (s->measure_overall & MEASURE_RMS_DIFFERENCE)
-    av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
+        av_log(ctx, AV_LOG_INFO, "RMS difference: %f\n", sqrt(diff1_sum_x2 / (nb_samples - s->nb_channels)));
     if (s->measure_overall & MEASURE_PEAK_LEVEL)
-    av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
+        av_log(ctx, AV_LOG_INFO, "Peak level dB: %f\n", LINEAR_TO_DB(FFMAX(-nmin, nmax)));
     if (s->measure_overall & MEASURE_RMS_LEVEL)
-    av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
+        av_log(ctx, AV_LOG_INFO, "RMS level dB: %f\n", LINEAR_TO_DB(sqrt(sigma_x2 / nb_samples)));
     if (s->measure_overall & MEASURE_RMS_PEAK)
-    av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));
+        av_log(ctx, AV_LOG_INFO, "RMS peak dB: %f\n", LINEAR_TO_DB(sqrt(max_sigma_x2)));
     if (s->measure_overall & MEASURE_RMS_TROUGH)
-    if (min_sigma_x2 != 1)
-        av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n", LINEAR_TO_DB(sqrt(min_sigma_x2)));
+        if (min_sigma_x2 != 1)
+            av_log(ctx, AV_LOG_INFO, "RMS trough dB: %f\n", LINEAR_TO_DB(sqrt(min_sigma_x2)));
     if (s->measure_overall & MEASURE_FLAT_FACTOR)
-    av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
+        av_log(ctx, AV_LOG_INFO, "Flat factor: %f\n", LINEAR_TO_DB((min_runs + max_runs) / (min_count + max_count)));
     if (s->measure_overall & MEASURE_PEAK_COUNT)
-    av_log(ctx, AV_LOG_INFO, "Peak count: %f\n", (min_count + max_count) / (double)s->nb_channels);
+        av_log(ctx, AV_LOG_INFO, "Peak count: %f\n", (min_count + max_count) / (double)s->nb_channels);
     if (s->measure_overall & MEASURE_BIT_DEPTH) {
-    bit_depth(s, mask, imask, &depth);
-    av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
+        bit_depth(s, mask, imask, &depth);
+        av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
     }
     if (s->measure_overall & MEASURE_NUMBER_OF_SAMPLES)
-    av_log(ctx, AV_LOG_INFO, "Number of samples: %"PRId64"\n", nb_samples / s->nb_channels);
+        av_log(ctx, AV_LOG_INFO, "Number of samples: %"PRId64"\n", nb_samples / s->nb_channels);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
