@@ -406,12 +406,33 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, 0, "Overall.Number_of_samples", "%f", nb_samples / s->nb_channels);
 }
 
+#define UPDATE_STATS_P(type, double_sample, normalized_sample, int_sample)      \
+    for (int c = 0; c < channels; c++) {                                        \
+        ChannelStats *p = &s->chstats[c];                                       \
+        const type *src = (const type *)data[c];                                \
+        for (int i = 0; i < samples; i++, src++)                                \
+            update_stat(s, p, double_sample, normalized_sample, int_sample);    \
+    }
+
+#define UPDATE_STATS_I(type, double_sample, normalized_sample, int_sample)                    \
+    {                                                                                         \
+        const type *src = (const type *)data[0];                                              \
+        for (int i = 0; i < samples; i++) {                                                   \
+            for (int c = 0; c < channels; c++, src++)                                         \
+                update_stat(s, &s->chstats[c], double_sample, normalized_sample, int_sample); \
+        }                                                                                     \
+    }
+
+#define UPDATE_STATS(planar, type, sample, normalizer_suffix, int_sample) \
+    UPDATE_STATS_##planar(type, sample, sample normalizer_suffix, int_sample);
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 {
     AudioStatsContext *s = inlink->dst->priv;
     AVDictionary **metadata = &buf->metadata;
     const int channels = s->nb_channels;
-    int i, c;
+    const int samples = buf->nb_samples;
+    const uint8_t * const * const data = (const uint8_t * const *)buf->extended_data;
 
     if (s->reset_count > 0) {
         if (s->nb_frames >= s->reset_count) {
@@ -423,89 +444,34 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 
     switch (inlink->format) {
     case AV_SAMPLE_FMT_DBLP:
-        for (c = 0; c < channels; c++) {
-            ChannelStats *p = &s->chstats[c];
-            const double *src = (const double *)buf->extended_data[c];
-
-            for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 63)));
-        }
+        UPDATE_STATS(P, double, *src, , llrint(*src * (UINT64_C(1) << 63)));
         break;
-    case AV_SAMPLE_FMT_DBL: {
-        const double *src = (const double *)buf->extended_data[0];
-
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src, llrint(*src * (UINT64_C(1) << 63)));
-        }}
+    case AV_SAMPLE_FMT_DBL:
+        UPDATE_STATS(I, double, *src, , llrint(*src * (UINT64_C(1) << 63)));
         break;
     case AV_SAMPLE_FMT_FLTP:
-        for (c = 0; c < channels; c++) {
-            ChannelStats *p = &s->chstats[c];
-            const float *src = (const float *)buf->extended_data[c];
-
-            for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src, llrint(*src * (UINT64_C(1) << 31)));
-        }
+        UPDATE_STATS(P, float, *src, , llrint(*src * (UINT64_C(1) << 31)));
         break;
-    case AV_SAMPLE_FMT_FLT: {
-        const float *src = (const float *)buf->extended_data[0];
-
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src, llrint(*src * (UINT64_C(1) << 31)));
-        }}
+    case AV_SAMPLE_FMT_FLT:
+        UPDATE_STATS(I, float, *src, , llrint(*src * (UINT64_C(1) << 31)));
         break;
     case AV_SAMPLE_FMT_S64P:
-        for (c = 0; c < channels; c++) {
-            ChannelStats *p = &s->chstats[c];
-            const int64_t *src = (const int64_t *)buf->extended_data[c];
-
-            for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src / (double)INT64_MAX, *src);
-        }
+        UPDATE_STATS(P, int64_t, *src, / (double)INT64_MAX, *src);
         break;
-    case AV_SAMPLE_FMT_S64: {
-        const int64_t *src = (const int64_t *)buf->extended_data[0];
-
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src / (double)INT64_MAX, *src);
-        }}
+    case AV_SAMPLE_FMT_S64:
+        UPDATE_STATS(I, int64_t, *src, / (double)INT64_MAX, *src);
         break;
     case AV_SAMPLE_FMT_S32P:
-        for (c = 0; c < channels; c++) {
-            ChannelStats *p = &s->chstats[c];
-            const int32_t *src = (const int32_t *)buf->extended_data[c];
-
-            for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src / (double)INT32_MAX, *src);
-        }
+        UPDATE_STATS(P, int32_t, *src, / (double)INT32_MAX, *src);
         break;
-    case AV_SAMPLE_FMT_S32: {
-        const int32_t *src = (const int32_t *)buf->extended_data[0];
-
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src / (double)INT32_MAX, *src);
-        }}
+    case AV_SAMPLE_FMT_S32:
+        UPDATE_STATS(I, int32_t, *src, / (double)INT32_MAX, *src);
         break;
     case AV_SAMPLE_FMT_S16P:
-        for (c = 0; c < channels; c++) {
-            ChannelStats *p = &s->chstats[c];
-            const int16_t *src = (const int16_t *)buf->extended_data[c];
-
-            for (i = 0; i < buf->nb_samples; i++, src++)
-                update_stat(s, p, *src, *src / (double)INT16_MAX, *src);
-        }
+        UPDATE_STATS(P, int16_t, *src, / (double)INT16_MAX, *src);
         break;
-    case AV_SAMPLE_FMT_S16: {
-        const int16_t *src = (const int16_t *)buf->extended_data[0];
-
-        for (i = 0; i < buf->nb_samples; i++) {
-            for (c = 0; c < channels; c++, src++)
-                update_stat(s, &s->chstats[c], *src, *src / (double)INT16_MAX, *src);
-        }}
+    case AV_SAMPLE_FMT_S16:
+        UPDATE_STATS(I, int16_t, *src, / (double)INT16_MAX, *src);
         break;
     }
 
