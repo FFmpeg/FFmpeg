@@ -41,7 +41,6 @@ typedef struct IMM4Context {
     uint8_t *bitstream;
     int bitstream_size;
 
-    int changed_size;
     int factor;
     unsigned lo;
     unsigned hi;
@@ -370,6 +369,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     IMM4Context *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     AVFrame *frame = data;
+    int width, height;
     unsigned type;
     int ret, scaled;
 
@@ -391,9 +391,11 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->color_range = AVCOL_RANGE_JPEG;
 
+    width = avctx->width;
+    height = avctx->height;
+
     scaled = avpkt->data[8];
     if (scaled < 2) {
-        int width, height;
         int mode = avpkt->data[10];
 
         switch (mode) {
@@ -422,18 +424,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             height = 576;
             break;
         }
-
-        if (s->changed_size == 1 &&
-            (avctx->width != width || avctx->height != height)) {
-            av_log(avctx, AV_LOG_ERROR, "Frame size change is unsupported.\n");
-            return AVERROR_INVALIDDATA;
-        }
-        ret = ff_set_dimensions(avctx, width, height);
-        if (ret < 0)
-            return ret;
     }
 
-    s->changed_size = 1;
     skip_bits_long(gb, 24 * 8);
     type = get_bits_long(gb, 32);
     s->hi = get_bits(gb, 16);
@@ -452,6 +444,17 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         avpriv_request_sample(avctx, "type %X", type);
         return AVERROR_PATCHWELCOME;
     }
+
+    if (!frame->key_frame &&
+        (avctx->width != width ||
+         avctx->height != height)) {
+        av_log(avctx, AV_LOG_ERROR, "Frame size change is unsupported.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ret = ff_set_dimensions(avctx, width, height);
+    if (ret < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, frame, frame->key_frame ? AV_GET_BUFFER_FLAG_REF : 0)) < 0)
         return ret;
