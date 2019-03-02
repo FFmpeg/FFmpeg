@@ -28,12 +28,12 @@
 #include "libavutil/fifo.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
-#include "libavutil/pixelutils.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "scene_sad.h"
 
 static const char *const var_names[] = {
     "TB",                ///< timebase
@@ -145,7 +145,7 @@ typedef struct SelectContext {
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
-    av_pixelutils_sad_fn sad;       ///< Sum of the absolute difference function (scene detect only)
+    ff_scene_sad_fn sad;            ///< Sum of the absolute difference function (scene detect only)
     double prev_mafd;               ///< previous MAFD                           (scene detect only)
     AVFrame *prev_picref;           ///< previous frame                          (scene detect only)
     double select;
@@ -241,8 +241,8 @@ static int config_input(AVFilterLink *inlink)
     select->var_values[VAR_SAMPLE_RATE] =
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
-    if (select->do_scene_detect) {
-        select->sad = av_pixelutils_get_sad_fn(3, 3, 2, select); // 8x8 both sources aligned
+    if (CONFIG_SELECT_FILTER && select->do_scene_detect) {
+        select->sad = ff_scene_sad_get_fn(8);
         if (!select->sad)
             return AVERROR(EINVAL);
     }
@@ -258,24 +258,12 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
     if (prev_picref &&
         frame->height == prev_picref->height &&
         frame->width  == prev_picref->width) {
-        int x, y, nb_sad = 0;
-        int64_t sad = 0;
+        uint64_t sad;
         double mafd, diff;
-        uint8_t *p1 =      frame->data[0];
-        uint8_t *p2 = prev_picref->data[0];
-        const int p1_linesize =       frame->linesize[0];
-        const int p2_linesize = prev_picref->linesize[0];
 
-        for (y = 0; y < frame->height - 7; y += 8) {
-            for (x = 0; x < frame->width*3 - 7; x += 8) {
-                sad += select->sad(p1 + x, p1_linesize, p2 + x, p2_linesize);
-                nb_sad += 8 * 8;
-            }
-            p1 += 8 * p1_linesize;
-            p2 += 8 * p2_linesize;
-        }
+        select->sad(prev_picref->data[0], prev_picref->linesize[0], frame->data[0], frame->linesize[0], frame->width * 3, frame->height, &sad);
         emms_c();
-        mafd = nb_sad ? (double)sad / nb_sad : 0;
+        mafd = (double)sad / (frame->width * 3 * frame->height);
         diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
         select->prev_mafd = mafd;
@@ -430,29 +418,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 }
 
-static int query_formats(AVFilterContext *ctx)
-{
-    SelectContext *select = ctx->priv;
-
-    if (!select->do_scene_detect) {
-        return ff_default_query_formats(ctx);
-    } else {
-        int ret;
-        static const enum AVPixelFormat pix_fmts[] = {
-            AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
-            AV_PIX_FMT_NONE
-        };
-        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
-
-        if (!fmts_list)
-            return AVERROR(ENOMEM);
-        ret = ff_set_common_formats(ctx, fmts_list);
-        if (ret < 0)
-            return ret;
-    }
-    return 0;
-}
-
 #if CONFIG_ASELECT_FILTER
 
 DEFINE_OPTIONS(aselect, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
@@ -497,6 +462,29 @@ AVFilter ff_af_aselect = {
 #endif /* CONFIG_ASELECT_FILTER */
 
 #if CONFIG_SELECT_FILTER
+
+static int query_formats(AVFilterContext *ctx)
+{
+    SelectContext *select = ctx->priv;
+
+    if (!select->do_scene_detect) {
+        return ff_default_query_formats(ctx);
+    } else {
+        int ret;
+        static const enum AVPixelFormat pix_fmts[] = {
+            AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
+            AV_PIX_FMT_NONE
+        };
+        AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);
+
+        if (!fmts_list)
+            return AVERROR(ENOMEM);
+        ret = ff_set_common_formats(ctx, fmts_list);
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
 
 DEFINE_OPTIONS(select, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM);
 AVFILTER_DEFINE_CLASS(select);

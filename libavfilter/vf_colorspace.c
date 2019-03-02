@@ -440,7 +440,7 @@ static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
         s->yuv2yuv(out_data, td->out_linesize, in_data, td->in_linesize, w, h,
                    s->yuv2yuv_coeffs, s->yuv_offset);
     } else {
-        // FIXME maybe (for caching effciency) do pipeline per-line instead of
+        // FIXME maybe (for caching efficiency) do pipeline per-line instead of
         // full buffer per function? (Or, since yuv2rgb requires 2 lines: per
         // 2 lines, for yuv420.)
         /*

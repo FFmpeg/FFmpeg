@@ -1,5 +1,5 @@
 /*
- * AVS2/IEEE 1857.4 video parser.
+ * AVS2-P2/IEEE1857.4 video parser.
  * Copyright (c) 2018  Huiwen Ren <hwrenx@gmail.com>
  *
  * This file is part of FFmpeg.

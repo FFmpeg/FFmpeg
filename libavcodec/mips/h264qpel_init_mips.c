@@ -240,10 +240,10 @@ static av_cold void h264qpel_init_mmi(H264QpelContext *c, int bit_depth)
 
 av_cold void ff_h264qpel_init_mips(H264QpelContext *c, int bit_depth)
 {
-#if HAVE_MSA
-    h264qpel_init_msa(c, bit_depth);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     h264qpel_init_mmi(c, bit_depth);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    h264qpel_init_msa(c, bit_depth);
+#endif  // #if HAVE_MSA
 }

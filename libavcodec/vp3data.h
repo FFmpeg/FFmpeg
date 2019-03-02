@@ -73,7 +73,7 @@ static const uint8_t vp31_dc_scale_factor[64] = {
      20,  10,  10,  10,  10,  10,  10,  10
 };
 
-static const uint32_t vp31_ac_scale_factor[64] = {
+static const uint16_t vp31_ac_scale_factor[64] = {
     500, 450, 400, 370, 340, 310, 285, 265,
     245, 225, 210, 195, 185, 180, 170, 160,
     150, 145, 135, 130, 125, 115, 110, 107,

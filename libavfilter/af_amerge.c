@@ -23,9 +23,6 @@
  * Audio merging filter
  */
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
-
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -285,9 +282,9 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
 
-    nb_samples = ff_framequeue_queued_samples(&ctx->inputs[0]->fifo);
+    nb_samples = ff_inlink_queued_samples(ctx->inputs[0]);
     for (i = 1; i < ctx->nb_inputs && nb_samples > 0; i++) {
-        nb_samples = FFMIN(ff_framequeue_queued_samples(&ctx->inputs[i]->fifo), nb_samples);
+        nb_samples = FFMIN(ff_inlink_queued_samples(ctx->inputs[i]), nb_samples);
     }
 
     if (nb_samples) {
@@ -297,7 +294,7 @@ static int activate(AVFilterContext *ctx)
     }
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (ff_framequeue_queued_samples(&ctx->inputs[i]->fifo))
+        if (ff_inlink_queued_samples(ctx->inputs[i]))
             continue;
 
         if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {

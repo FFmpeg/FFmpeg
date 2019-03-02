@@ -343,9 +343,51 @@ static int find_next_start_code(const uint8_t *buf, const uint8_t *next_avc)
     return i + 3;
 }
 
+static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
+{
+    if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
+        goto fail;
+    size += AV_INPUT_BUFFER_PADDING_SIZE;
+
+    if (rbsp->rbsp_buffer_alloc_size >= size &&
+        (!rbsp->rbsp_buffer_ref || av_buffer_is_writable(rbsp->rbsp_buffer_ref)))
+        return;
+
+    size = FFMIN(size + size / 16 + 32, INT_MAX);
+
+    if (rbsp->rbsp_buffer_ref)
+        av_buffer_unref(&rbsp->rbsp_buffer_ref);
+    else
+        av_free(rbsp->rbsp_buffer);
+
+    rbsp->rbsp_buffer = av_malloc(size);
+    if (!rbsp->rbsp_buffer)
+        goto fail;
+    rbsp->rbsp_buffer_alloc_size = size;
+
+    if (use_ref) {
+        rbsp->rbsp_buffer_ref = av_buffer_create(rbsp->rbsp_buffer, size,
+                                                 NULL, NULL, 0);
+        if (!rbsp->rbsp_buffer_ref)
+            goto fail;
+    }
+
+    return;
+
+fail:
+    rbsp->rbsp_buffer_alloc_size = 0;
+    if (rbsp->rbsp_buffer_ref) {
+        av_buffer_unref(&rbsp->rbsp_buffer_ref);
+        rbsp->rbsp_buffer = NULL;
+    } else
+        av_freep(&rbsp->rbsp_buffer);
+
+    return;
+}
+
 int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
                           void *logctx, int is_nalff, int nal_length_size,
-                          enum AVCodecID codec_id, int small_padding)
+                          enum AVCodecID codec_id, int small_padding, int use_ref)
 {
     GetByteContext bc;
     int consumed, ret = 0;
@@ -353,7 +395,8 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
     int64_t padding = small_padding ? 0 : MAX_MBPAIR_SIZE;
 
     bytestream2_init(&bc, buf, length);
-    av_fast_padded_malloc(&pkt->rbsp.rbsp_buffer, &pkt->rbsp.rbsp_buffer_alloc_size, length + padding);
+    alloc_rbsp_buffer(&pkt->rbsp, length + padding, use_ref);
+
     if (!pkt->rbsp.rbsp_buffer)
         return AVERROR(ENOMEM);
 
@@ -474,6 +517,10 @@ void ff_h2645_packet_uninit(H2645Packet *pkt)
     }
     av_freep(&pkt->nals);
     pkt->nals_allocated = 0;
-    av_freep(&pkt->rbsp.rbsp_buffer);
+    if (pkt->rbsp.rbsp_buffer_ref) {
+        av_buffer_unref(&pkt->rbsp.rbsp_buffer_ref);
+        pkt->rbsp.rbsp_buffer = NULL;
+    } else
+        av_freep(&pkt->rbsp.rbsp_buffer);
     pkt->rbsp.rbsp_buffer_alloc_size = pkt->rbsp.rbsp_buffer_size = 0;
 }

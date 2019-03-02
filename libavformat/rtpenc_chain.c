@@ -59,6 +59,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
     rtpctx->flags |= s->flags & AVFMT_FLAG_BITEXACT;
+    rtpctx->strict_std_compliance = s->strict_std_compliance;
 
     /* Get the payload type from the codec */
     if (st->id < RTP_PT_PRIVATE)

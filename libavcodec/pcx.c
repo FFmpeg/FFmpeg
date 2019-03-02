@@ -30,13 +30,16 @@
 
 #define PCX_HEADER_SIZE 128
 
-static void pcx_rle_decode(GetByteContext *gb,
+static int pcx_rle_decode(GetByteContext *gb,
                            uint8_t *dst,
                            unsigned int bytes_per_scanline,
                            int compressed)
 {
     unsigned int i = 0;
     unsigned char run, value;
+
+    if (bytestream2_get_bytes_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
 
     if (compressed) {
         while (i < bytes_per_scanline && bytestream2_get_bytes_left(gb)>0) {
@@ -52,6 +55,7 @@ static void pcx_rle_decode(GetByteContext *gb,
     } else {
         bytestream2_get_buffer(gb, dst, bytes_per_scanline);
     }
+    return 0;
 }
 
 static void pcx_palette(GetByteContext *gb, uint32_t *dst, int pallen)
@@ -153,7 +157,9 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if (nplanes == 3 && bits_per_pixel == 8) {
         for (y = 0; y < h; y++) {
-            pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            ret = pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            if (ret < 0)
+                goto end;
 
             for (x = 0; x < w; x++) {
                 ptr[3 * x]     = scanline[x];
@@ -174,7 +180,9 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
 
         for (y = 0; y < h; y++, ptr += stride) {
-            pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            ret = pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            if (ret < 0)
+                goto end;
             memcpy(ptr, scanline, w);
         }
 
@@ -194,7 +202,9 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         for (y = 0; y < h; y++) {
             init_get_bits8(&s, scanline, bytes_per_scanline);
 
-            pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            ret = pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            if (ret < 0)
+                goto end;
 
             for (x = 0; x < w; x++)
                 ptr[x] = get_bits(&s, bits_per_pixel);
@@ -204,7 +214,9 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         int i;
 
         for (y = 0; y < h; y++) {
-            pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            ret = pcx_rle_decode(&gb, scanline, bytes_per_scanline, compressed);
+            if (ret < 0)
+                goto end;
 
             for (x = 0; x < w; x++) {
                 int m = 0x80 >> (x & 7), v = 0;

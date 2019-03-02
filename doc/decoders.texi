@@ -49,7 +49,7 @@ top-field-first is assumed
 
 @section libdavs2
 
-AVS2/IEEE 1857.4 video decoder wrapper.
+AVS2-P2/IEEE1857.4 video decoder wrapper.
 
 This decoder allows libavcodec to decode AVS2 streams with davs2 library.
 
@@ -194,6 +194,31 @@ without this library.
 @chapter Subtitles Decoders
 @c man begin SUBTILES DECODERS
 
+@section libaribb24
+
+ARIB STD-B24 caption decoder.
+
+Implements profiles A and C of the ARIB STD-B24 standard.
+
+@subsection libaribb24 Decoder Options
+
+@table @option
+
+@item -aribb24-base-path @var{path}
+Sets the base path for the libaribb24 library. This is utilized for reading of
+configuration files (for custom unicode conversions), and for dumping of
+non-text symbols as images under that location.
+
+Unset by default.
+
+@item -aribb24-skip-ruby-text @var{boolean}
+Tells the decoder wrapper to skip text blocks that contain half-height ruby
+text.
+
+Enabled by default.
+
+@end table
+
 @section dvbsub
 
 @subsection Options
@@ -261,12 +286,18 @@ Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
 @item txt_format
-Specifies the format of the decoded subtitles. The teletext decoder is capable
-of decoding the teletext pages to bitmaps or to simple text, you should use
-"bitmap" for teletext pages, because certain graphics and colors cannot be
-expressed in simple text. You might use "text" for teletext based subtitles if
-your application can handle simple text based subtitles. Default value is
-bitmap.
+Specifies the format of the decoded subtitles.
+@table @option
+@item bitmap
+The default format, you should use this for teletext pages, because certain
+graphics and colors cannot be expressed in simple text or even ASS.
+@item text
+Simple text based output without formatting.
+@item ass
+Formatted ASS output, subtitle pages and teletext pages are returned in
+different styles, subtitle pages are stripped down to text, but an effort is
+made to keep the text alignment and the formatting.
+@end table
 @item txt_left
 X offset of generated bitmaps, default is 0.
 @item txt_top

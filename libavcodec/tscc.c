@@ -169,6 +169,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     c->frame = av_frame_alloc();
+    if (!c->frame)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -195,4 +197,5 @@ AVCodec ff_tscc_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };

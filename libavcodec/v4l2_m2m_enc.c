@@ -48,7 +48,7 @@ static inline void v4l2_set_timeperframe(V4L2m2mContext *s, unsigned int num, un
 
 static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed int value, const char *name)
 {
-    struct v4l2_ext_controls ctrls = { 0 };
+    struct v4l2_ext_controls ctrls = { { 0 } };
     struct v4l2_ext_control ctrl = { 0 };
 
     /* set ctrls */
@@ -68,7 +68,7 @@ static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed 
 
 static inline int v4l2_get_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed int *value, const char *name)
 {
-    struct v4l2_ext_controls ctrls = { 0 };
+    struct v4l2_ext_controls ctrls = { { 0 } };
     struct v4l2_ext_control ctrl = { 0 };
     int ret;
 

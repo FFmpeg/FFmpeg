@@ -23,10 +23,6 @@
  * fade audio filter
  */
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
-
-#include "libavutil/audio_fifo.h"
 #include "libavutil/opt.h"
 #include "audio.h"
 #include "avfilter.h"
@@ -43,9 +39,7 @@ typedef struct AudioFadeContext {
     int64_t start_time;
     int overlap;
     int cf0_eof;
-    int prev_size;
     int crossfade_is_over;
-    AVAudioFifo *fifo[2];
     int64_t pts;
 
     void (*fade_samples)(uint8_t **dst, uint8_t * const *src,
@@ -57,7 +51,7 @@ typedef struct AudioFadeContext {
                               int curve0, int curve1);
 } AudioFadeContext;
 
-enum CurveType { TRI, QSIN, ESIN, HSIN, LOG, IPAR, QUA, CUB, SQU, CBR, PAR, EXP, IQSIN, IHSIN, DESE, DESI, NB_CURVES };
+enum CurveType { TRI, QSIN, ESIN, HSIN, LOG, IPAR, QUA, CUB, SQU, CBR, PAR, EXP, IQSIN, IHSIN, DESE, DESI, LOSI, NONE, NB_CURVES };
 
 #define OFFSET(x) offsetof(AudioFadeContext, x)
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
@@ -151,6 +145,17 @@ static double fade_gain(int curve, int64_t index, int64_t range)
     case DESI:
         gain = gain <= 0.5 ? CUBE(2 * gain) / 2: 1 - CUBE(2 * (1 - gain)) / 2;
         break;
+    case LOSI: {
+                   const double a = 1. / (1. - 0.787) - 1;
+                   double A = 1. / (1.0 + exp(0 -((gain-0.5) * a * 2.0)));
+                   double B = 1. / (1.0 + exp(a));
+                   double C = 1. / (1.0 + exp(0-a));
+                   gain = (A - B) / (C - B);
+               }
+        break;
+    case NONE:
+        gain = 1.0;
+        break;
     }
 
     return gain;
@@ -237,8 +242,8 @@ static const AVOption afade_options[] = {
     { "ns",           "set number of samples for fade duration",     OFFSET(nb_samples),   AV_OPT_TYPE_INT64,  {.i64 = 44100}, 1, INT64_MAX, FLAGS },
     { "start_time",   "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
     { "st",           "set time to start fading",                    OFFSET(start_time),   AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
-    { "duration",     "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
-    { "d",            "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT32_MAX, FLAGS },
+    { "duration",     "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
+    { "d",            "set fade duration",                           OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, INT64_MAX, FLAGS },
     { "curve",        "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
     { "c",            "set fade curve type",                         OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
     { "tri",          "linear slope",                                0,                    AV_OPT_TYPE_CONST,  {.i64 = TRI  }, 0, 0, FLAGS, "curve" },
@@ -257,6 +262,8 @@ static const AVOption afade_options[] = {
     { "ihsin",        "inverted half of sine wave",                  0,                    AV_OPT_TYPE_CONST,  {.i64 = IHSIN}, 0, 0, FLAGS, "curve" },
     { "dese",         "double-exponential seat",                     0,                    AV_OPT_TYPE_CONST,  {.i64 = DESE }, 0, 0, FLAGS, "curve" },
     { "desi",         "double-exponential sigmoid",                  0,                    AV_OPT_TYPE_CONST,  {.i64 = DESI }, 0, 0, FLAGS, "curve" },
+    { "losi",         "logistic sigmoid",                            0,                    AV_OPT_TYPE_CONST,  {.i64 = LOSI }, 0, 0, FLAGS, "curve" },
+    { "nofade",       "no fade; keep audio as-is",                   0,                    AV_OPT_TYPE_CONST,  {.i64 = NONE }, 0, 0, FLAGS, "curve" },
     { NULL }
 };
 
@@ -354,8 +361,8 @@ AVFilter ff_af_afade = {
 static const AVOption acrossfade_options[] = {
     { "nb_samples",   "set number of samples for cross fade duration", OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX/10, FLAGS },
     { "ns",           "set number of samples for cross fade duration", OFFSET(nb_samples),   AV_OPT_TYPE_INT,    {.i64 = 44100}, 1, INT32_MAX/10, FLAGS },
-    { "duration",     "set cross fade duration",                       OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, 60, FLAGS },
-    { "d",            "set cross fade duration",                       OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, 60, FLAGS },
+    { "duration",     "set cross fade duration",                       OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, 60000000, FLAGS },
+    { "d",            "set cross fade duration",                       OFFSET(duration),     AV_OPT_TYPE_DURATION, {.i64 = 0. }, 0, 60000000, FLAGS },
     { "overlap",      "overlap 1st stream end with 2nd stream start",  OFFSET(overlap),      AV_OPT_TYPE_BOOL,   {.i64 = 1    }, 0,  1, FLAGS },
     { "o",            "overlap 1st stream end with 2nd stream start",  OFFSET(overlap),      AV_OPT_TYPE_BOOL,   {.i64 = 1    }, 0,  1, FLAGS },
     { "curve1",       "set fade curve type for 1st stream",            OFFSET(curve),        AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
@@ -376,6 +383,8 @@ static const AVOption acrossfade_options[] = {
     {     "ihsin",    "inverted half of sine wave",                    0,                    AV_OPT_TYPE_CONST,  {.i64 = IHSIN}, 0, 0, FLAGS, "curve" },
     {     "dese",     "double-exponential seat",                       0,                    AV_OPT_TYPE_CONST,  {.i64 = DESE }, 0, 0, FLAGS, "curve" },
     {     "desi",     "double-exponential sigmoid",                    0,                    AV_OPT_TYPE_CONST,  {.i64 = DESI }, 0, 0, FLAGS, "curve" },
+    {     "losi",     "logistic sigmoid",                              0,                    AV_OPT_TYPE_CONST,  {.i64 = LOSI }, 0, 0, FLAGS, "curve" },
+    {     "nofade",   "no fade; keep audio as-is",                     0,                    AV_OPT_TYPE_CONST,  {.i64 = NONE }, 0, 0, FLAGS, "curve" },
     { "curve2",       "set fade curve type for 2nd stream",            OFFSET(curve2),       AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
     { "c2",           "set fade curve type for 2nd stream",            OFFSET(curve2),       AV_OPT_TYPE_INT,    {.i64 = TRI  }, 0, NB_CURVES - 1, FLAGS, "curve" },
     { NULL }
@@ -462,8 +471,8 @@ static int activate(AVFilterContext *ctx)
         return ff_filter_frame(outlink, in);
     }
 
-    if (ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) > s->nb_samples) {
-        nb_samples = ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) - s->nb_samples;
+    if (ff_inlink_queued_samples(ctx->inputs[0]) > s->nb_samples) {
+        nb_samples = ff_inlink_queued_samples(ctx->inputs[0]) - s->nb_samples;
         if (nb_samples > 0) {
             ret = ff_inlink_consume_samples(ctx->inputs[0], nb_samples, nb_samples, &in);
             if (ret < 0) {
@@ -474,7 +483,7 @@ static int activate(AVFilterContext *ctx)
         s->pts += av_rescale_q(in->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
         return ff_filter_frame(outlink, in);
-    } else if (ff_framequeue_queued_samples(&ctx->inputs[1]->fifo) >= s->nb_samples) {
+    } else if (ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples) {
         if (s->overlap) {
             out = ff_get_audio_buffer(outlink, s->nb_samples);
             if (!out)
@@ -544,10 +553,10 @@ static int activate(AVFilterContext *ctx)
             return ff_filter_frame(outlink, out);
         }
     } else if (ff_outlink_frame_wanted(ctx->outputs[0])) {
-        if (!s->cf0_eof && ctx->inputs[0]->status_in) {
+        if (!s->cf0_eof && ff_outlink_get_status(ctx->inputs[0])) {
             s->cf0_eof = 1;
         }
-        if (ctx->inputs[1]->status_in) {
+        if (ff_outlink_get_status(ctx->inputs[1])) {
             ff_outlink_set_status(ctx->outputs[0], AVERROR_EOF, AV_NOPTS_VALUE);
             return 0;
         }

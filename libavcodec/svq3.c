@@ -1064,16 +1064,15 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         av_log(s->avctx, AV_LOG_ERROR, "illegal slice type %u \n", slice_id);
         return -1;
     }
-    if (get_bits1(&s->gb_slice)) {
-        avpriv_report_missing_feature(s->avctx, "Media key encryption");
-        return AVERROR_PATCHWELCOME;
-    }
 
     s->slice_type = ff_h264_golomb_to_pict_type[slice_id];
 
     if ((header & 0x9F) == 2) {
-        i = (s->mb_num < 64) ? 5 : av_log2(s->mb_num - 1);
+        i = (s->mb_num < 64) ? 6 : (1 + av_log2(s->mb_num - 1));
         get_bits(&s->gb_slice, i);
+    } else if (get_bits1(&s->gb_slice)) {
+        avpriv_report_missing_feature(s->avctx, "Media key encryption");
+        return AVERROR_PATCHWELCOME;
     }
 
     s->slice_num      = get_bits(&s->gb_slice, 8);

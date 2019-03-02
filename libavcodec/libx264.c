@@ -40,6 +40,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+// from x264.h, for quant_offsets, Macroblocks are 16x16
+// blocks of pixels (with respect to the luma plane)
+#define MB_SIZE 16
+
 typedef struct X264Context {
     AVClass        *class;
     x264_param_t    params;
@@ -92,6 +96,9 @@ typedef struct X264Context {
     int noise_reduction;
 
     char *x264_params;
+
+    int nb_reordered_opaque, next_reordered_opaque;
+    int64_t *reordered_opaque;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -161,6 +168,8 @@ static int avfmt2_num_planes(int avfmt)
     case AV_PIX_FMT_BGR0:
     case AV_PIX_FMT_BGR24:
     case AV_PIX_FMT_RGB24:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY10:
         return 1;
 
     default:
@@ -276,6 +285,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     int nnal, i, ret;
     x264_picture_t pic_out = {0};
     int pict_type;
+    int64_t *out_opaque;
+    AVFrameSideData *sd;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = x4->params.i_csp;
@@ -294,6 +305,11 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
         }
 
         x4->pic.i_pts  = frame->pts;
+
+        x4->reordered_opaque[x4->next_reordered_opaque] = frame->reordered_opaque;
+        x4->pic.opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
+        x4->next_reordered_opaque++;
+        x4->next_reordered_opaque %= x4->nb_reordered_opaque;
 
         switch (frame->pict_type) {
         case AV_PICTURE_TYPE_I:
@@ -334,6 +350,63 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
                 }
             }
         }
+
+        sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
+        if (sd) {
+            if (x4->params.rc.i_aq_mode == X264_AQ_NONE) {
+                av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+            } else {
+                if (frame->interlaced_frame == 0) {
+                    int mbx = (frame->width + MB_SIZE - 1) / MB_SIZE;
+                    int mby = (frame->height + MB_SIZE - 1) / MB_SIZE;
+                    int nb_rois;
+                    AVRegionOfInterest* roi;
+                    float* qoffsets;
+                    qoffsets = av_mallocz_array(mbx * mby, sizeof(*qoffsets));
+                    if (!qoffsets)
+                        return AVERROR(ENOMEM);
+
+                    nb_rois = sd->size / sizeof(AVRegionOfInterest);
+                    roi = (AVRegionOfInterest*)sd->data;
+                    for (int count = 0; count < nb_rois; count++) {
+                        int starty = FFMIN(mby, roi->top / MB_SIZE);
+                        int endy   = FFMIN(mby, (roi->bottom + MB_SIZE - 1)/ MB_SIZE);
+                        int startx = FFMIN(mbx, roi->left / MB_SIZE);
+                        int endx   = FFMIN(mbx, (roi->right + MB_SIZE - 1)/ MB_SIZE);
+                        float qoffset;
+
+                        if (roi->qoffset.den == 0) {
+                            av_free(qoffsets);
+                            av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den should not be zero.\n");
+                            return AVERROR(EINVAL);
+                        }
+                        qoffset = roi->qoffset.num * 1.0f / roi->qoffset.den;
+                        qoffset = av_clipf(qoffset, -1.0f, 1.0f);
+
+                        // 25 is a number that I think it is a possible proper scale value.
+                        qoffset = qoffset * 25;
+
+                        for (int y = starty; y < endy; y++) {
+                            for (int x = startx; x < endx; x++) {
+                                qoffsets[x + y*mbx] = qoffset;
+                            }
+                        }
+
+                        if (roi->self_size == 0) {
+                            av_free(qoffsets);
+                            av_log(ctx, AV_LOG_ERROR, "AVRegionOfInterest.self_size should be set to sizeof(AVRegionOfInterest).\n");
+                            return AVERROR(EINVAL);
+                        }
+                        roi = (AVRegionOfInterest*)((char*)roi + roi->self_size);
+                    }
+
+                    x4->pic.prop.quant_offsets = qoffsets;
+                    x4->pic.prop.quant_offsets_free = av_free;
+                } else {
+                    av_log(ctx, AV_LOG_WARNING, "interlaced_frame not supported for ROI encoding yet, skipping ROI.\n");
+                }
+            }
+        }
     }
 
     do {
@@ -348,6 +421,14 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     pkt->pts = pic_out.i_pts;
     pkt->dts = pic_out.i_dts;
 
+    out_opaque = pic_out.opaque;
+    if (out_opaque >= x4->reordered_opaque &&
+        out_opaque < &x4->reordered_opaque[x4->nb_reordered_opaque]) {
+        ctx->reordered_opaque = *out_opaque;
+    } else {
+        // Unexpected opaque pointer on picture output
+        ctx->reordered_opaque = 0;
+    }
 
     switch (pic_out.i_type) {
     case X264_TYPE_IDR:
@@ -391,6 +472,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
 
     av_freep(&avctx->extradata);
     av_freep(&x4->sei);
+    av_freep(&x4->reordered_opaque);
 
     if (x4->enc) {
         x264_encoder_close(x4->enc);
@@ -442,6 +524,10 @@ static int convert_pix_fmt(enum AVPixelFormat pix_fmt)
     case AV_PIX_FMT_NV20:      return X264_CSP_NV16;
 #ifdef X264_CSP_NV21
     case AV_PIX_FMT_NV21:      return X264_CSP_NV21;
+#endif
+#ifdef X264_CSP_I400
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_GRAY10:    return X264_CSP_I400;
 #endif
     };
     return 0;
@@ -840,6 +926,14 @@ FF_ENABLE_DEPRECATION_WARNINGS
     cpb_props->max_bitrate = x4->params.rc.i_vbv_max_bitrate * 1000;
     cpb_props->avg_bitrate = x4->params.rc.i_bitrate         * 1000;
 
+    // Overestimate the reordered opaque buffer size, in case a runtime
+    // reconfigure would increase the delay (which it shouldn't).
+    x4->nb_reordered_opaque = x264_encoder_maximum_delayed_frames(x4->enc) + 17;
+    x4->reordered_opaque    = av_malloc_array(x4->nb_reordered_opaque,
+                                              sizeof(*x4->reordered_opaque));
+    if (!x4->reordered_opaque)
+        return AVERROR(ENOMEM);
+
     return 0;
 }
 
@@ -885,6 +979,10 @@ static const enum AVPixelFormat pix_fmts_all[] = {
     AV_PIX_FMT_YUV422P10,
     AV_PIX_FMT_YUV444P10,
     AV_PIX_FMT_NV20,
+#ifdef X264_CSP_I400
+    AV_PIX_FMT_GRAY8,
+    AV_PIX_FMT_GRAY10,
+#endif
     AV_PIX_FMT_NONE
 };
 #if CONFIG_LIBX264RGB_ENCODER
@@ -1049,12 +1147,12 @@ AVCodec ff_libx264_encoder = {
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &x264_class,
     .defaults         = x264_defaults,
     .init_static_data = X264_init_static,
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
-                        FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name     = "libx264",
 };
 #endif
@@ -1076,7 +1174,8 @@ AVCodec ff_libx264rgb_encoder = {
     .init           = X264_init,
     .encode2        = X264_frame,
     .close          = X264_close,
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                      AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,
@@ -1101,12 +1200,12 @@ AVCodec ff_libx262_encoder = {
     .init             = X264_init,
     .encode2          = X264_frame,
     .close            = X264_close,
-    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
+    .capabilities     = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS |
+                        AV_CODEC_CAP_ENCODER_REORDERED_OPAQUE,
     .priv_class       = &X262_class,
     .defaults         = x264_defaults,
     .pix_fmts         = pix_fmts_8bit,
-    .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
-                        FF_CODEC_CAP_INIT_CLEANUP,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name     = "libx264",
 };
 #endif

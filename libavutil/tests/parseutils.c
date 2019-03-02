@@ -185,6 +185,10 @@ static void test_av_parse_time(void)
         "42.1729",
         "-1729.42",
         "12:34",
+        "2147483648s",
+        "4294967296ms",
+        "8589934592us",
+        "9223372036854775808us",
     };
 
     av_log_set_level(AV_LOG_DEBUG);

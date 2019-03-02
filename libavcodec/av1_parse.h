@@ -23,6 +23,7 @@
 
 #include <stdint.h>
 
+#include "av1.h"
 #include "avcodec.h"
 #include "get_bits.h"
 
@@ -30,6 +31,12 @@ typedef struct AV1OBU {
     /** Size of payload */
     int size;
     const uint8_t *data;
+
+    /**
+     * Size, in bits, of just the data, excluding the trailing_one_bit and
+     * any trailing padding.
+     */
+    int size_bits;
 
     /** Size of entire OBU, including header */
     int raw_size;
@@ -54,7 +61,7 @@ typedef struct AV1Packet {
 /**
  * Extract an OBU from a raw bitstream.
  *
- * @note This function does not copy or store any bistream data. All
+ * @note This function does not copy or store any bitstream data. All
  *       the pointers in the AV1OBU structure will be valid as long
  *       as the input buffer also is.
  */
@@ -64,7 +71,7 @@ int ff_av1_extract_obu(AV1OBU *obu, const uint8_t *buf, int length,
 /**
  * Split an input packet into OBUs.
  *
- * @note This function does not copy or store any bistream data. All
+ * @note This function does not copy or store any bitstream data. All
  *       the pointers in the AV1Packet structure will be valid as
  *       long as the input buffer also is.
  */
@@ -95,6 +102,7 @@ static inline int parse_obu_header(const uint8_t *buf, int buf_size,
 {
     GetBitContext gb;
     int ret, extension_flag, has_size_flag;
+    int64_t size;
 
     ret = init_get_bits8(&gb, buf, FFMIN(buf_size, 2 + 8)); // OBU header fields + max leb128 length
     if (ret < 0)
@@ -118,9 +126,49 @@ static inline int parse_obu_header(const uint8_t *buf, int buf_size,
 
     *obu_size  = has_size_flag ? leb128(&gb)
                                : buf_size - 1 - extension_flag;
+
+    if (get_bits_left(&gb) < 0)
+        return AVERROR_INVALIDDATA;
+
     *start_pos = get_bits_count(&gb) / 8;
 
-    return 0;
+    size = *obu_size + *start_pos;
+
+    if (size > buf_size)
+        return AVERROR_INVALIDDATA;
+
+    return size;
+}
+
+static inline int get_obu_bit_length(const uint8_t *buf, int size, int type)
+{
+    int v;
+
+    /* There are no trailing bits on these */
+    if (type == AV1_OBU_TILE_GROUP || type == AV1_OBU_FRAME) {
+        if (size > INT_MAX / 8)
+            return AVERROR(ERANGE);
+        else
+            return size * 8;
+    }
+
+    while (size > 0 && buf[size - 1] == 0)
+        size--;
+
+    if (!size)
+        return 0;
+
+    v = buf[size - 1];
+
+    if (size > INT_MAX / 8)
+        return AVERROR(ERANGE);
+    size *= 8;
+
+    /* Remove the trailing_one_bit and following trailing zeros */
+    if (v)
+        size -= ff_ctz(v) + 1;
+
+    return size;
 }
 
 #endif /* AVCODEC_AV1_PARSE_H */

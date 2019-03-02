@@ -470,6 +470,13 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_AV1,          MKTAG('A', 'V', '0', '1') },
     { AV_CODEC_ID_MSCC,         MKTAG('M', 'S', 'C', 'C') },
     { AV_CODEC_ID_SRGC,         MKTAG('S', 'R', 'G', 'C') },
+    { AV_CODEC_ID_IMM4,         MKTAG('I', 'M', 'M', '4') },
+    { AV_CODEC_ID_PROSUMER,     MKTAG('B', 'T', '2', '0') },
+    { AV_CODEC_ID_MWSC,         MKTAG('M', 'W', 'S', 'C') },
+    { AV_CODEC_ID_WCMV,         MKTAG('W', 'C', 'M', 'V') },
+    { AV_CODEC_ID_RASC,         MKTAG('R', 'A', 'S', 'C') },
+    { AV_CODEC_ID_HYMT,         MKTAG('H', 'Y', 'M', 'T') },
+    { AV_CODEC_ID_ARBC,         MKTAG('A', 'R', 'B', 'C') },
     { AV_CODEC_ID_NONE,         0 }
 };
 

@@ -43,10 +43,14 @@ static int FUNC(frame_sync_code)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
                               VP9RawFrameHeader *current, int profile)
 {
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
     int err;
 
-    if (profile >= 2)
+    if (profile >= 2) {
         f(1, ten_or_twelve_bit);
+        vp9->bit_depth = current->ten_or_twelve_bit ? 12 : 10;
+    } else
+        vp9->bit_depth = 8;
 
     f(3, color_space);
 
@@ -55,7 +59,7 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile == 1 || profile == 3) {
             f(1, subsampling_x);
             f(1, subsampling_y);
-            f(1, color_config_reserved_zero);
+            fixed(1, reserved_zero, 0);
         } else {
             infer(subsampling_x, 1);
             infer(subsampling_y, 1);
@@ -65,8 +69,12 @@ static int FUNC(color_config)(CodedBitstreamContext *ctx, RWContext *rw,
         if (profile == 1 || profile == 3) {
             infer(subsampling_x, 0);
             infer(subsampling_y, 0);
+            fixed(1, reserved_zero, 0);
         }
     }
+
+    vp9->subsampling_x = current->subsampling_x;
+    vp9->subsampling_y = current->subsampling_y;
 
     return 0;
 }
@@ -80,8 +88,11 @@ static int FUNC(frame_size)(CodedBitstreamContext *ctx, RWContext *rw,
     f(16, frame_width_minus_1);
     f(16, frame_height_minus_1);
 
-    vp9->mi_cols = (current->frame_width_minus_1  + 8) >> 3;
-    vp9->mi_rows = (current->frame_height_minus_1 + 8) >> 3;
+    vp9->frame_width  = current->frame_width_minus_1  + 1;
+    vp9->frame_height = current->frame_height_minus_1 + 1;
+
+    vp9->mi_cols = (vp9->frame_width  + 7) >> 3;
+    vp9->mi_rows = (vp9->frame_height + 7) >> 3;
     vp9->sb64_cols = (vp9->mi_cols + 7) >> 3;
     vp9->sb64_rows = (vp9->mi_rows + 7) >> 3;
 
@@ -106,15 +117,33 @@ static int FUNC(render_size)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
                                       VP9RawFrameHeader *current)
 {
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
     int err, i;
 
     for (i = 0; i < VP9_REFS_PER_FRAME; i++) {
         fs(1, found_ref[i], 1, i);
-        if (current->found_ref[i])
+        if (current->found_ref[i]) {
+            VP9ReferenceFrameState *ref =
+                &vp9->ref[current->ref_frame_idx[i]];
+
+            vp9->frame_width   = ref->frame_width;
+            vp9->frame_height  = ref->frame_height;
+
+            vp9->subsampling_x = ref->subsampling_x;
+            vp9->subsampling_y = ref->subsampling_y;
+            vp9->bit_depth     = ref->bit_depth;
+
             break;
+        }
     }
     if (i >= VP9_REFS_PER_FRAME)
         CHECK(FUNC(frame_size)(ctx, rw, current));
+    else {
+        vp9->mi_cols = (vp9->frame_width  + 7) >> 3;
+        vp9->mi_rows = (vp9->frame_height + 7) >> 3;
+        vp9->sb64_cols = (vp9->mi_cols + 7) >> 3;
+        vp9->sb64_rows = (vp9->mi_rows + 7) >> 3;
+    }
     CHECK(FUNC(render_size)(ctx, rw, current));
 
     return 0;
@@ -248,16 +277,16 @@ static int FUNC(tile_info)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
                                      VP9RawFrameHeader *current)
 {
-    int profile, i;
-    int err;
+    CodedBitstreamVP9Context *vp9 = ctx->priv_data;
+    int err, i;
 
     f(2, frame_marker);
 
     f(1, profile_low_bit);
     f(1, profile_high_bit);
-    profile = (current->profile_high_bit << 1) + current->profile_low_bit;
-    if (profile == 3)
-        f(1, profile_reserved_zero);
+    vp9->profile = (current->profile_high_bit << 1) + current->profile_low_bit;
+    if (vp9->profile == 3)
+        fixed(1, reserved_zero, 0);
 
     f(1, show_existing_frame);
     if (current->show_existing_frame) {
@@ -274,7 +303,7 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     if (current->frame_type == VP9_KEY_FRAME) {
         CHECK(FUNC(frame_sync_code)(ctx, rw, current));
-        CHECK(FUNC(color_config)(ctx, rw, current, profile));
+        CHECK(FUNC(color_config)(ctx, rw, current, vp9->profile));
         CHECK(FUNC(frame_size)(ctx, rw, current));
         CHECK(FUNC(render_size)(ctx, rw, current));
 
@@ -294,12 +323,16 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
          if (current->intra_only == 1) {
              CHECK(FUNC(frame_sync_code)(ctx, rw, current));
 
-             if (profile > 0) {
-                 CHECK(FUNC(color_config)(ctx, rw, current, profile));
+             if (vp9->profile > 0) {
+                 CHECK(FUNC(color_config)(ctx, rw, current, vp9->profile));
              } else {
                  infer(color_space,   1);
                  infer(subsampling_x, 1);
                  infer(subsampling_y, 1);
+                 vp9->bit_depth = 8;
+
+                 vp9->subsampling_x = current->subsampling_x;
+                 vp9->subsampling_y = current->subsampling_y;
              }
 
              f(8, refresh_frame_flags);
@@ -337,6 +370,25 @@ static int FUNC(uncompressed_header)(CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(tile_info)(ctx, rw, current));
 
     f(16, header_size_in_bytes);
+
+    for (i = 0; i < VP9_NUM_REF_FRAMES; i++) {
+        if (current->refresh_frame_flags & (1 << i)) {
+            vp9->ref[i] = (VP9ReferenceFrameState) {
+                .frame_width    = vp9->frame_width,
+                .frame_height   = vp9->frame_height,
+                .subsampling_x  = vp9->subsampling_x,
+                .subsampling_y  = vp9->subsampling_y,
+                .bit_depth      = vp9->bit_depth,
+            };
+        }
+    }
+
+    av_log(ctx->log_ctx, AV_LOG_DEBUG, "Frame:  size %dx%d  "
+           "subsample %dx%d  bit_depth %d  tiles %dx%d.\n",
+           vp9->frame_width, vp9->frame_height,
+           vp9->subsampling_x, vp9->subsampling_y,
+           vp9->bit_depth, 1 << current->tile_cols_log2,
+           1 << current->tile_rows_log2);
 
     return 0;
 }

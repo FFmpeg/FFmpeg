@@ -302,6 +302,11 @@ static int init_out_session(AVFilterContext *ctx)
         }
     }
 
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     /* create a "slave" session with those same properties, to be used for
      * actual scaling */
     err = MFXInit(impl, &ver, &s->session);

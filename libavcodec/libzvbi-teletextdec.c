@@ -26,6 +26,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/log.h"
+#include "libavutil/common.h"
 
 #include <libzvbi.h>
 
@@ -56,7 +57,7 @@ typedef struct TeletextContext
     char           *pgno;
     int             x_offset;
     int             y_offset;
-    int             format_id; /* 0 = bitmap, 1 = text/ass */
+    int             format_id; /* 0 = bitmap, 1 = text/ass, 2 = ass */
     int             chop_top;
     int             sub_duration; /* in msec */
     int             transparent_bg;
@@ -76,7 +77,54 @@ typedef struct TeletextContext
     uint8_t         subtitle_map[2048];
     int             last_pgno;
     int             last_p5;
+    int             last_ass_alignment;
 } TeletextContext;
+
+static int my_ass_subtitle_header(AVCodecContext *avctx)
+{
+    int ret = ff_ass_subtitle_header_default(avctx);
+    char *new_header;
+    uint8_t *event_pos;
+
+    if (ret < 0)
+        return ret;
+
+    event_pos = strstr(avctx->subtitle_header, "\r\n[Events]\r\n");
+    if (!event_pos)
+        return AVERROR_BUG;
+
+    new_header = av_asprintf("%.*s%s%s",
+        (int)(event_pos - avctx->subtitle_header), avctx->subtitle_header,
+        "Style: "
+        "Teletext,"            /* Name */
+        "Monospace,11,"        /* Font{name,size} */
+        "&Hffffff,&Hffffff,&H0,&H0," /* {Primary,Secondary,Outline,Back}Colour */
+        "0,0,0,0,"             /* Bold, Italic, Underline, StrikeOut */
+        "160,100,"             /* Scale{X,Y} */
+        "0,0,"                 /* Spacing, Angle */
+        "3,0.1,0,"             /* BorderStyle, Outline, Shadow */
+        "5,1,1,1,"             /* Alignment, Margin[LRV] */
+        "0\r\n"                /* Encoding */
+        "Style: "
+        "Subtitle,"            /* Name */
+        "Monospace,16,"        /* Font{name,size} */
+        "&Hffffff,&Hffffff,&H0,&H0," /* {Primary,Secondary,Outline,Back}Colour */
+        "0,0,0,0,"             /* Bold, Italic, Underline, StrikeOut */
+        "100,100,"             /* Scale{X,Y} */
+        "0,0,"                 /* Spacing, Angle */
+        "1,1,1,"               /* BorderStyle, Outline, Shadow */
+        "8,48,48,20,"          /* Alignment, Margin[LRV] */
+        "0\r\n"                /* Encoding */
+        , event_pos);
+
+    if (!new_header)
+        return AVERROR(ENOMEM);
+
+    av_free(avctx->subtitle_header);
+    avctx->subtitle_header = new_header;
+    avctx->subtitle_header_size = strlen(new_header);
+    return 0;
+}
 
 static int chop_spaces_utf8(const unsigned char* t, int len)
 {
@@ -168,6 +216,184 @@ static int gen_sub_text(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page
     if (buf.len) {
         sub_rect->type = SUBTITLE_ASS;
         sub_rect->ass = create_ass_text(ctx, buf.str);
+
+        if (!sub_rect->ass) {
+            av_bprint_finalize(&buf, NULL);
+            return AVERROR(ENOMEM);
+        }
+        av_log(ctx, AV_LOG_DEBUG, "subtext:%s:txetbus\n", sub_rect->ass);
+    } else {
+        sub_rect->type = SUBTITLE_NONE;
+    }
+    av_bprint_finalize(&buf, NULL);
+    return 0;
+}
+
+static void bprint_color(const char *type, AVBPrint *buf, vbi_page *page, unsigned ci)
+{
+    int r = VBI_R(page->color_map[ci]);
+    int g = VBI_G(page->color_map[ci]);
+    int b = VBI_B(page->color_map[ci]);
+    av_bprintf(buf, "{\\%s&H%02X%02X%02X&}", type, b, g, r);
+}
+
+#define IS_TXT_SPACE(ch) ((ch).unicode < 0x0020 || (ch).unicode >= 0xe000 || (ch).unicode == 0x00a0 ||\
+                          (ch).size > VBI_DOUBLE_SIZE || (ch).opacity == VBI_TRANSPARENT_SPACE)
+
+static void get_trim_info(vbi_page *page, vbi_char *row, int *leading, int *trailing, int *olen)
+{
+    int i, len = 0;
+    int char_seen = 0;
+
+    *leading = 0;
+
+    for (i = 0; i < page->columns; i++) {
+        uint16_t out = IS_TXT_SPACE(row[i]) ? 32 : row[i].unicode;
+
+        if (out == 32 && !char_seen)
+            (*leading)++;
+        else if (out != 32)
+            char_seen = 1, len = i - (*leading) + 1;
+    }
+
+    *olen = len;
+    *trailing = len > 0 ? page->columns - *leading - len : page->columns;
+}
+
+static void decode_string(vbi_page *page, vbi_char *row, AVBPrint *buf,
+                          int start, int end, vbi_color *cur_color, vbi_color *cur_back_color)
+{
+    int i;
+
+    for (i = start; i < end; i++) {
+        uint16_t out = IS_TXT_SPACE(row[i]) ? 32 : row[i].unicode;
+
+        if (*cur_color != row[i].foreground) {
+            bprint_color("c", buf, page, row[i].foreground);
+            *cur_color = row[i].foreground;
+        }
+        if (*cur_back_color != row[i].background) {
+            bprint_color("3c", buf, page, row[i].background);
+            *cur_back_color = row[i].background;
+        }
+
+        if (out == 32) {
+            av_bprintf(buf, "\\h");
+        } else if (out == '\\' || out == '{' || out == '}') {
+            av_bprintf(buf, "\\%c", (char)out);
+        } else {
+            char tmp;
+            /* convert to utf-8 */
+            PUT_UTF8(out, tmp, av_bprint_chars(buf, tmp, 1););
+        }
+    }
+}
+
+/* Draw a page as ass formatted text */
+static int gen_sub_ass(TeletextContext *ctx, AVSubtitleRect *sub_rect, vbi_page *page, int chop_top)
+{
+    int i;
+    int leading, trailing, len;
+    int last_trailing = -1, last_leading = -1;
+    int min_trailing = page->columns, min_leading = page->columns;
+    int alignment = 2;
+    int vertical_align = -1;
+    int can_align_left = 1, can_align_right = 1, can_align_center = 1;
+    int is_subtitle_page = ctx->subtitle_map[page->pgno & 0x7ff];
+    int empty_lines = 0;
+    vbi_color cur_color = VBI_WHITE;
+    vbi_color cur_back_color = VBI_BLACK;
+    AVBPrint buf;
+
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_UNLIMITED);
+
+    for (i = chop_top; i < page->rows; i++) {
+        vbi_char *row = page->text + i * page->columns;
+
+        get_trim_info(page, row, &leading, &trailing, &len);
+
+        if (len) {
+            if (last_leading != -1 && last_leading != leading || leading > 5)
+                can_align_left = 0;
+            if (last_trailing != -1 && last_trailing != trailing || trailing > 2)
+                can_align_right = 0;
+            if (last_trailing != -1 && (FFABS((trailing - leading) - (last_trailing - last_leading)) > 1) || trailing - leading > 4)
+                can_align_center = 0;
+            last_leading = leading;
+            last_trailing = trailing;
+            min_leading = FFMIN(leading, min_leading);
+            min_trailing = FFMIN(trailing, min_trailing);
+        }
+    }
+
+    if (!can_align_right && can_align_left && !can_align_center) {
+        ctx->last_ass_alignment = alignment = 1;
+    } else if (!can_align_right && !can_align_left && can_align_center) {
+        ctx->last_ass_alignment = alignment = 2;
+    } else if (can_align_right && !can_align_left && !can_align_center) {
+        ctx->last_ass_alignment = alignment = 3;
+    } else {
+        if (ctx->last_ass_alignment == 1 && can_align_left ||
+            ctx->last_ass_alignment == 2 && can_align_center ||
+            ctx->last_ass_alignment == 3 && can_align_right)
+            alignment = ctx->last_ass_alignment;
+    }
+
+    for (i = chop_top; i < page->rows; i++) {
+        int j;
+        vbi_char *row = page->text + i * page->columns;
+        int is_transparent_line;
+
+        for (j = 0; j < page->columns; j++)
+            if (row[j].opacity != VBI_TRANSPARENT_SPACE)
+                break;
+        is_transparent_line = (j == page->columns);
+
+        len = is_transparent_line ? 0 : page->columns;
+        leading = trailing = is_transparent_line ? page->columns : 0;
+
+        if (is_subtitle_page) {
+            if (!is_transparent_line)
+                get_trim_info(page, row, &leading, &trailing, &len);
+
+            if (vertical_align == -1 && len) {
+                vertical_align = (2 - (av_clip(i + 1, 0, 23) / 8));
+                av_bprintf(&buf, "{\\an%d}", alignment + vertical_align * 3);
+                if (vertical_align != 2)
+                    empty_lines = 0;
+            }
+
+            if (len && empty_lines > 1)
+                for (empty_lines /= 2; empty_lines > 0; empty_lines--)
+                    av_bprintf(&buf, " \\N");
+
+            if (alignment == 1 || alignment == 2 && !can_align_center)
+                leading = min_leading;
+            if (alignment == 3 || alignment == 2 && !can_align_center)
+                trailing = min_trailing;
+        }
+
+        if (len || !is_subtitle_page) {
+            decode_string(page, row, &buf, leading, page->columns - trailing, &cur_color, &cur_back_color);
+            av_bprintf(&buf, " \\N");
+            empty_lines = 0;
+        } else {
+            empty_lines++;
+        }
+    }
+
+    if (vertical_align == 0)
+        for (empty_lines = (empty_lines - 1) / 2; empty_lines > 0; empty_lines--)
+            av_bprintf(&buf, " \\N");
+
+    if (!av_bprint_is_complete(&buf)) {
+        av_bprint_finalize(&buf, NULL);
+        return AVERROR(ENOMEM);
+    }
+
+    if (buf.len) {
+        sub_rect->type = SUBTITLE_ASS;
+        sub_rect->ass = ff_ass_get_dialog(ctx->readorder++, 0, is_subtitle_page ? "Subtitle" : "Teletext", NULL, buf.str);
 
         if (!sub_rect->ass) {
             av_bprint_finalize(&buf, NULL);
@@ -318,9 +544,20 @@ static void handler(vbi_event *ev, void *user_data)
             cur_page->pgno = ev->ev.ttx_page.pgno;
             cur_page->subno = ev->ev.ttx_page.subno;
             if (cur_page->sub_rect) {
-                res = (ctx->format_id == 0) ?
-                    gen_sub_bitmap(ctx, cur_page->sub_rect, &page, chop_top) :
-                    gen_sub_text  (ctx, cur_page->sub_rect, &page, chop_top);
+                switch (ctx->format_id) {
+                    case 0:
+                        res = gen_sub_bitmap(ctx, cur_page->sub_rect, &page, chop_top);
+                        break;
+                    case 1:
+                        res = gen_sub_text(ctx, cur_page->sub_rect, &page, chop_top);
+                        break;
+                    case 2:
+                        res = gen_sub_ass(ctx, cur_page->sub_rect, &page, chop_top);
+                        break;
+                    default:
+                        res = AVERROR_BUG;
+                        break;
+                }
                 if (res < 0) {
                     av_freep(&cur_page->sub_rect);
                     ctx->handler_ret = res;
@@ -448,7 +685,7 @@ static int teletext_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     // is there a subtitle to pass?
     if (ctx->nb_pages) {
         int i;
-        sub->format = ctx->format_id;
+        sub->format = !!ctx->format_id;
         sub->start_display_time = 0;
         sub->end_display_time = ctx->sub_duration;
         sub->num_rects = 0;
@@ -508,12 +745,22 @@ static int teletext_init_decoder(AVCodecContext *avctx)
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
     ctx->last_pgno = -1;
+    ctx->last_ass_alignment = 2;
 
     if (ctx->opacity == -1)
         ctx->opacity = ctx->transparent_bg ? 0 : 255;
 
     av_log(avctx, AV_LOG_VERBOSE, "page filter: %s\n", ctx->pgno);
-    return (ctx->format_id == 1) ? ff_ass_subtitle_header_default(avctx) : 0;
+
+    switch (ctx->format_id) {
+        case 0:
+            return 0;
+        case 1:
+            return ff_ass_subtitle_header_default(avctx);
+        case 2:
+            return my_ass_subtitle_header(avctx);
+    }
+    return AVERROR_BUG;
 }
 
 static int teletext_close_decoder(AVCodecContext *avctx)
@@ -529,6 +776,7 @@ static int teletext_close_decoder(AVCodecContext *avctx)
     ctx->vbi = NULL;
     ctx->pts = AV_NOPTS_VALUE;
     ctx->last_pgno = -1;
+    ctx->last_ass_alignment = 2;
     memset(ctx->subtitle_map, 0, sizeof(ctx->subtitle_map));
     if (!(avctx->flags2 & AV_CODEC_FLAG2_RO_FLUSH_NOOP))
         ctx->readorder = 0;
@@ -545,9 +793,10 @@ static void teletext_flush(AVCodecContext *avctx)
 static const AVOption options[] = {
     {"txt_page",        "page numbers to decode, subtitle for subtitles, * for all", OFFSET(pgno),   AV_OPT_TYPE_STRING, {.str = "*"},      0, 0,        SD},
     {"txt_chop_top",    "discards the top teletext line",                    OFFSET(chop_top),       AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},
-    {"txt_format",      "format of the subtitles (bitmap or text)",          OFFSET(format_id),      AV_OPT_TYPE_INT,    {.i64 = 0},        0, 1,        SD,  "txt_format"},
+    {"txt_format",      "format of the subtitles (bitmap or text or ass)",   OFFSET(format_id),      AV_OPT_TYPE_INT,    {.i64 = 0},        0, 2,        SD,  "txt_format"},
     {"bitmap",          NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 0},        0, 0,        SD,  "txt_format"},
     {"text",            NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 1},        0, 0,        SD,  "txt_format"},
+    {"ass",             NULL,                                                0,                      AV_OPT_TYPE_CONST,  {.i64 = 2},        0, 0,        SD,  "txt_format"},
     {"txt_left",        "x offset of generated bitmaps",                     OFFSET(x_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_top",         "y offset of generated bitmaps",                     OFFSET(y_offset),       AV_OPT_TYPE_INT,    {.i64 = 0},        0, 65535,    SD},
     {"txt_chop_spaces", "chops leading and trailing spaces from text",       OFFSET(chop_spaces),    AV_OPT_TYPE_INT,    {.i64 = 1},        0, 1,        SD},

@@ -52,6 +52,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/timecode.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "internal.h"
 #include "mxf.h"
@@ -265,6 +266,7 @@ typedef struct MXFIndexTable {
 } MXFIndexTable;
 
 typedef struct MXFContext {
+    const AVClass *class;     /**< Class for private options. */
     MXFPartition *partitions;
     unsigned partitions_count;
     MXFOP op;
@@ -287,6 +289,7 @@ typedef struct MXFContext {
     int last_forward_partition;
     int nb_index_tables;
     MXFIndexTable *index_tables;
+    int eia608_extract;
 } MXFContext;
 
 /* NOTE: klv_offset is not set (-1) for local keys */
@@ -447,6 +450,81 @@ static int find_body_sid_by_offset(MXFContext *mxf, int64_t offset)
     if (a == -1)
         return 0;
     return mxf->partitions[a].body_sid;
+}
+
+static int mxf_get_eia608_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt, int64_t length)
+{
+    int count = avio_rb16(s->pb);
+    int cdp_identifier, cdp_length, cdp_footer_id, ccdata_id, cc_count;
+    int line_num, sample_coding, sample_count;
+    int did, sdid, data_length;
+    int i, ret;
+
+    if (count != 1)
+        av_log(s, AV_LOG_WARNING, "unsupported multiple ANC packets (%d) per KLV packet\n", count);
+
+    for (i = 0; i < count; i++) {
+        if (length < 6) {
+            av_log(s, AV_LOG_ERROR, "error reading s436m packet %"PRId64"\n", length);
+            return AVERROR_INVALIDDATA;
+        }
+        line_num = avio_rb16(s->pb);
+        avio_r8(s->pb); // wrapping type
+        sample_coding = avio_r8(s->pb);
+        sample_count = avio_rb16(s->pb);
+        length -= 6 + 8 + sample_count;
+        if (line_num != 9 && line_num != 11)
+            continue;
+        if (sample_coding == 7 || sample_coding == 8 || sample_coding == 9) {
+            av_log(s, AV_LOG_WARNING, "unsupported s436m 10 bit sample coding\n");
+            continue;
+        }
+        if (length < 0)
+            return AVERROR_INVALIDDATA;
+
+        avio_rb32(s->pb); // array count
+        avio_rb32(s->pb); // array elem size
+        did = avio_r8(s->pb);
+        sdid = avio_r8(s->pb);
+        data_length = avio_r8(s->pb);
+        if (did != 0x61 || sdid != 1) {
+            av_log(s, AV_LOG_WARNING, "unsupported did or sdid: %x %x\n", did, sdid);
+            continue;
+        }
+        cdp_identifier = avio_rb16(s->pb); // cdp id
+        if (cdp_identifier != 0x9669) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp identifier %x\n", cdp_identifier);
+            return AVERROR_INVALIDDATA;
+        }
+        cdp_length = avio_r8(s->pb);
+        avio_r8(s->pb); // cdp_frame_rate
+        avio_r8(s->pb); // cdp_flags
+        avio_rb16(s->pb); // cdp_hdr_sequence_cntr
+        ccdata_id = avio_r8(s->pb); // ccdata_id
+        if (ccdata_id != 0x72) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp data section %x\n", ccdata_id);
+            return AVERROR_INVALIDDATA;
+        }
+        cc_count = avio_r8(s->pb) & 0x1f;
+        ret = av_get_packet(s->pb, pkt, cc_count * 3);
+        if (ret < 0)
+            return ret;
+        if (cdp_length - 9 - 4 <  cc_count * 3) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp size %d cc count %d\n", cdp_length, cc_count);
+            return AVERROR_INVALIDDATA;
+        }
+        avio_skip(s->pb, data_length - 9 - 4 - cc_count * 3);
+        cdp_footer_id = avio_r8(s->pb);
+        if (cdp_footer_id != 0x74) {
+            av_log(s, AV_LOG_ERROR, "wrong cdp footer section %x\n", cdp_footer_id);
+            return AVERROR_INVALIDDATA;
+        }
+        avio_rb16(s->pb); // cdp_ftr_sequence_cntr
+        avio_r8(s->pb); // packet_checksum
+        break;
+    }
+
+    return 0;
 }
 
 /* XXX: use AVBitStreamFilter */
@@ -1992,15 +2070,15 @@ static int mxf_parse_physical_source_package(MXFContext *mxf, MXFTrack *source_t
                 continue;
             }
 
-        if (physical_track->edit_rate.num <= 0 ||
-            physical_track->edit_rate.den <= 0) {
-            av_log(mxf->fc, AV_LOG_WARNING,
-                   "Invalid edit rate (%d/%d) found on structural"
-                   " component #%d, defaulting to 25/1\n",
-                   physical_track->edit_rate.num,
-                   physical_track->edit_rate.den, i);
-            physical_track->edit_rate = (AVRational){25, 1};
-        }
+            if (physical_track->edit_rate.num <= 0 ||
+                physical_track->edit_rate.den <= 0) {
+                av_log(mxf->fc, AV_LOG_WARNING,
+                       "Invalid edit rate (%d/%d) found on structural"
+                       " component #%d, defaulting to 25/1\n",
+                       physical_track->edit_rate.num,
+                       physical_track->edit_rate.den, i);
+                physical_track->edit_rate = (AVRational){25, 1};
+            }
 
             for (k = 0; k < physical_track->sequence->structural_components_count; k++) {
                 if (!(mxf_tc = mxf_resolve_timecode_component(mxf, &physical_track->sequence->structural_components_refs[k])))
@@ -2354,6 +2432,18 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 default:
                     av_log(mxf->fc, AV_LOG_INFO, "Unknown frame layout type: %d\n", descriptor->frame_layout);
             }
+
+            if (st->codecpar->codec_id == AV_CODEC_ID_PRORES) {
+                switch (descriptor->essence_codec_ul[14]) {
+                case 1: st->codecpar->codec_tag = MKTAG('a','p','c','o'); break;
+                case 2: st->codecpar->codec_tag = MKTAG('a','p','c','s'); break;
+                case 3: st->codecpar->codec_tag = MKTAG('a','p','c','n'); break;
+                case 4: st->codecpar->codec_tag = MKTAG('a','p','c','h'); break;
+                case 5: st->codecpar->codec_tag = MKTAG('a','p','4','h'); break;
+                case 6: st->codecpar->codec_tag = MKTAG('a','p','4','x'); break;
+                }
+            }
+
             if (st->codecpar->codec_id == AV_CODEC_ID_RAWVIDEO) {
                 st->codecpar->format = descriptor->pix_fmt;
                 if (st->codecpar->format == AV_PIX_FMT_NONE) {
@@ -2390,7 +2480,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             if (st->codecpar->codec_id == AV_CODEC_ID_NONE || (st->codecpar->codec_id == AV_CODEC_ID_PCM_ALAW && (enum AVCodecID)container_ul->id != AV_CODEC_ID_NONE))
                 st->codecpar->codec_id = (enum AVCodecID)container_ul->id;
             st->codecpar->channels = descriptor->channels;
-            st->codecpar->bits_per_coded_sample = descriptor->bits_per_sample;
 
             if (descriptor->sample_rate.den > 0) {
                 st->codecpar->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
@@ -2423,6 +2512,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             } else if (st->codecpar->codec_id == AV_CODEC_ID_MP2) {
                 st->need_parsing = AVSTREAM_PARSE_FULL;
             }
+            st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
         } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
             enum AVMediaType type;
             container_ul = mxf_get_codec_ul(mxf_data_essence_container_uls, essence_container_ul);
@@ -2433,6 +2523,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codecpar->codec_type = type;
             if (container_ul->desc)
                 av_dict_set(&st->metadata, "data_type", container_ul->desc, 0);
+            if (mxf->eia608_extract &&
+                !strcmp(container_ul->desc, "vbi_vanc_smpte_436M")) {
+                st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+                st->codecpar->codec_id = AV_CODEC_ID_EIA_608;
+            }
         }
         if (descriptor->extradata) {
             if (!ff_alloc_extradata(st->codecpar, descriptor->extradata_size)) {
@@ -2461,23 +2556,24 @@ fail_and_free:
 static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
 {
     struct tm time = { 0 };
+    int msecs;
     time.tm_year = (timestamp >> 48) - 1900;
     time.tm_mon  = (timestamp >> 40 & 0xFF) - 1;
     time.tm_mday = (timestamp >> 32 & 0xFF);
     time.tm_hour = (timestamp >> 24 & 0xFF);
     time.tm_min  = (timestamp >> 16 & 0xFF);
     time.tm_sec  = (timestamp >> 8  & 0xFF);
+    msecs        = (timestamp & 0xFF) * 4;
 
-    /* msvcrt versions of strftime calls the invalid parameter handler
-     * (aborting the process if one isn't set) if the parameters are out
-     * of range. */
+    /* Clip values for legacy reasons. Maybe we should return error instead? */
     time.tm_mon  = av_clip(time.tm_mon,  0, 11);
     time.tm_mday = av_clip(time.tm_mday, 1, 31);
     time.tm_hour = av_clip(time.tm_hour, 0, 23);
     time.tm_min  = av_clip(time.tm_min,  0, 59);
     time.tm_sec  = av_clip(time.tm_sec,  0, 59);
+    msecs        = av_clip(msecs, 0, 999);
 
-    return (int64_t)av_timegm(&time) * 1000000;
+    return (int64_t)av_timegm(&time) * 1000000 + msecs * 1000;
 }
 
 #define SET_STR_METADATA(pb, name, str) do { \
@@ -2495,7 +2591,7 @@ static int64_t mxf_timestamp_to_int64(uint64_t timestamp)
 
 #define SET_TS_METADATA(pb, name, var, str) do { \
     var = avio_rb64(pb); \
-    if ((ret = avpriv_dict_set_timestamp(&s->metadata, name, mxf_timestamp_to_int64(var)) < 0)) \
+    if (var && (ret = avpriv_dict_set_timestamp(&s->metadata, name, mxf_timestamp_to_int64(var))) < 0) \
         return ret; \
 } while (0)
 
@@ -3269,7 +3365,8 @@ static int64_t mxf_set_current_edit_unit(MXFContext *mxf, AVStream *st, int64_t 
 static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
                              AVPacket *pkt)
 {
-    MXFTrack *track = mxf->fc->streams[pkt->stream_index]->priv_data;
+    AVStream *st = mxf->fc->streams[pkt->stream_index];
+    MXFTrack *track = st->priv_data;
     int64_t bits_per_sample = par->bits_per_coded_sample;
 
     if (!bits_per_sample)
@@ -3280,8 +3377,10 @@ static int mxf_set_audio_pts(MXFContext *mxf, AVCodecParameters *par,
     if (   par->channels <= 0
         || bits_per_sample <= 0
         || par->channels * (int64_t)bits_per_sample < 8)
-        return AVERROR(EINVAL);
-    track->sample_count += pkt->size / (par->channels * (int64_t)bits_per_sample / 8);
+        track->sample_count = mxf_compute_sample_count(mxf, st, av_rescale_q(track->sample_count, st->time_base, av_inv_q(track->edit_rate)) + 1);
+    else
+        track->sample_count += pkt->size / (par->channels * (int64_t)bits_per_sample / 8);
+
     return 0;
 }
 
@@ -3308,6 +3407,8 @@ static int mxf_set_pts(MXFContext *mxf, AVStream *st, AVPacket *pkt)
         if (ret < 0)
             return ret;
     } else if (track) {
+        pkt->dts = pkt->pts = track->sample_count;
+        pkt->duration = 1;
         track->sample_count++;
     }
     return 0;
@@ -3401,6 +3502,13 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
                                               pkt, klv.length);
                 if (ret < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
+                    mxf->current_klv_data = (KLVPacket){{0}};
+                    return ret;
+                }
+            } else if (mxf->eia608_extract &&
+                       s->streams[index]->codecpar->codec_id == AV_CODEC_ID_EIA_608) {
+                ret = mxf_get_eia608_packet(s, s->streams[index], pkt, klv.length);
+                if (ret < 0) {
                     mxf->current_klv_data = (KLVPacket){{0}};
                     return ret;
                 }
@@ -3602,6 +3710,21 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     return 0;
 }
 
+static const AVOption options[] = {
+    { "eia608_extract", "extract eia 608 captions from s436m track",
+      offsetof(MXFContext, eia608_extract), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1,
+      AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass demuxer_class = {
+    .class_name = "mxf",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .category   = AV_CLASS_CATEGORY_DEMUXER,
+};
+
 AVInputFormat ff_mxf_demuxer = {
     .name           = "mxf",
     .long_name      = NULL_IF_CONFIG_SMALL("MXF (Material eXchange Format)"),
@@ -3612,4 +3735,5 @@ AVInputFormat ff_mxf_demuxer = {
     .read_packet    = mxf_read_packet,
     .read_close     = mxf_read_close,
     .read_seek      = mxf_read_seek,
+    .priv_class     = &demuxer_class,
 };

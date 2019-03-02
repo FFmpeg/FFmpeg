@@ -157,7 +157,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     }
 
     ret = ff_h2645_packet_split(&s->h2645_pkt, pkt->data, pkt->size,
-                                ctx, 0, 0, ctx->par_in->codec_id, 1);
+                                ctx, 0, 0, ctx->par_in->codec_id, 1, 0);
     if (ret < 0)
         return ret;
 
@@ -331,6 +331,7 @@ static const struct {
                    uint8_t **data, int *size);
 } extract_tab[] = {
     { AV_CODEC_ID_AV1,        extract_extradata_av1     },
+    { AV_CODEC_ID_AVS2,       extract_extradata_mpeg4   },
     { AV_CODEC_ID_CAVS,       extract_extradata_mpeg4   },
     { AV_CODEC_ID_H264,       extract_extradata_h2645   },
     { AV_CODEC_ID_HEVC,       extract_extradata_h2645   },
@@ -397,6 +398,7 @@ static void extract_extradata_close(AVBSFContext *ctx)
 
 static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_AV1,
+    AV_CODEC_ID_AVS2,
     AV_CODEC_ID_CAVS,
     AV_CODEC_ID_H264,
     AV_CODEC_ID_HEVC,

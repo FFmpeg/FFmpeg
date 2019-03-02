@@ -25,6 +25,7 @@
 #include "cbs.h"
 #include "cbs_h264.h"
 #include "h264.h"
+#include "h264_levels.h"
 #include "h264_sei.h"
 
 enum {
@@ -37,6 +38,11 @@ enum {
 enum {
     FLIP_HORIZONTAL = 1,
     FLIP_VERTICAL   = 2,
+};
+
+enum {
+    LEVEL_UNSET = -2,
+    LEVEL_AUTO  = -1,
 };
 
 typedef struct H264MetadataContext {
@@ -74,6 +80,8 @@ typedef struct H264MetadataContext {
     int display_orientation;
     double rotate;
     int flip;
+
+    int level;
 } H264MetadataContext;
 
 
@@ -207,6 +215,61 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
     CROP(top,    crop_unit_y);
     CROP(bottom, crop_unit_y);
 #undef CROP
+
+    if (ctx->level != LEVEL_UNSET) {
+        int level_idc;
+
+        if (ctx->level == LEVEL_AUTO) {
+            const H264LevelDescriptor *desc;
+            int64_t bit_rate;
+            int width, height, dpb_frames;
+
+            if (sps->vui.nal_hrd_parameters_present_flag) {
+                bit_rate = (sps->vui.nal_hrd_parameters.bit_rate_value_minus1[0] + 1) *
+                    (INT64_C(1) << (sps->vui.nal_hrd_parameters.bit_rate_scale + 6));
+            } else if (sps->vui.vcl_hrd_parameters_present_flag) {
+                bit_rate = (sps->vui.vcl_hrd_parameters.bit_rate_value_minus1[0] + 1) *
+                    (INT64_C(1) << (sps->vui.vcl_hrd_parameters.bit_rate_scale + 6));
+                // Adjust for VCL vs. NAL limits.
+                bit_rate = bit_rate * 6 / 5;
+            } else {
+                bit_rate = 0;
+            }
+
+            // Don't use max_dec_frame_buffering if it is only inferred.
+            dpb_frames = sps->vui.bitstream_restriction_flag ?
+                sps->vui.max_dec_frame_buffering : H264_MAX_DPB_FRAMES;
+
+            width  = 16 * (sps->pic_width_in_mbs_minus1 + 1);
+            height = 16 * (sps->pic_height_in_map_units_minus1 + 1) *
+                (2 - sps->frame_mbs_only_flag);
+
+            desc = ff_h264_guess_level(sps->profile_idc, bit_rate,
+                                       width, height, dpb_frames);
+            if (desc) {
+                level_idc = desc->level_idc;
+            } else {
+                av_log(bsf, AV_LOG_WARNING, "Stream does not appear to "
+                       "conform to any level: using level 6.2.\n");
+                level_idc = 62;
+            }
+        } else {
+            level_idc = ctx->level;
+        }
+
+        if (level_idc == 9) {
+            if (sps->profile_idc == 66 ||
+                sps->profile_idc == 77 ||
+                sps->profile_idc == 88) {
+                sps->level_idc = 11;
+                sps->constraint_set3_flag = 1;
+            } else {
+                sps->level_idc = 9;
+            }
+        } else {
+            sps->level_idc = level_idc;
+        }
+    }
 
     if (need_vui)
         sps->vui_parameters_present_flag = 1;
@@ -541,7 +604,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, au);
+    ff_cbs_fragment_reset(ctx->cbc, au);
     av_freep(&displaymatrix_side_data);
 
     if (err < 0)
@@ -585,13 +648,15 @@ static int h264_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, au);
+    ff_cbs_fragment_reset(ctx->cbc, au);
     return err;
 }
 
 static void h264_metadata_close(AVBSFContext *bsf)
 {
     H264MetadataContext *ctx = bsf->priv_data;
+
+    ff_cbs_fragment_free(ctx->cbc, &ctx->access_unit);
     ff_cbs_close(&ctx->cbc);
 }
 
@@ -682,6 +747,36 @@ static const AVOption h264_metadata_options[] = {
     { "vertical",   "Set ver_flip",
         0, AV_OPT_TYPE_CONST,
         { .i64 = FLIP_VERTICAL },   .flags = FLAGS, .unit = "flip" },
+
+    { "level", "Set level (table A-1)",
+        OFFSET(level), AV_OPT_TYPE_INT,
+        { .i64 = LEVEL_UNSET }, LEVEL_UNSET, 0xff, FLAGS, "level" },
+    { "auto", "Attempt to guess level from stream properties",
+        0, AV_OPT_TYPE_CONST,
+        { .i64 = LEVEL_AUTO }, .flags = FLAGS, .unit = "level" },
+#define LEVEL(name, value) name, NULL, 0, AV_OPT_TYPE_CONST, \
+        { .i64 = value },      .flags = FLAGS, .unit = "level"
+    { LEVEL("1",   10) },
+    { LEVEL("1b",   9) },
+    { LEVEL("1.1", 11) },
+    { LEVEL("1.2", 12) },
+    { LEVEL("1.3", 13) },
+    { LEVEL("2",   20) },
+    { LEVEL("2.1", 21) },
+    { LEVEL("2.2", 22) },
+    { LEVEL("3",   30) },
+    { LEVEL("3.1", 31) },
+    { LEVEL("3.2", 32) },
+    { LEVEL("4",   40) },
+    { LEVEL("4.1", 41) },
+    { LEVEL("4.2", 42) },
+    { LEVEL("5",   50) },
+    { LEVEL("5.1", 51) },
+    { LEVEL("5.2", 52) },
+    { LEVEL("6",   60) },
+    { LEVEL("6.1", 61) },
+    { LEVEL("6.2", 62) },
+#undef LEVEL
 
     { NULL }
 };

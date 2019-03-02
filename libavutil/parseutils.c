@@ -504,7 +504,7 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
         switch(c) {
         case 'H':
         case 'J':
-            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, 2);
+            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, c == 'H' ? 2 : 4);
 
             if (val == -1)
                 return NULL;
@@ -661,12 +661,15 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         if (!q) {
             char *o;
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, &o, 10);
+            errno = 0;
+            t = strtoll(p, &o, 10);
             if (o == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
-            dt.tm_min = 0;
-            dt.tm_hour = 0;
+            if (errno == ERANGE)
+                return AVERROR(ERANGE);
             q = o;
+        } else {
+            t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
         }
     }
 
@@ -688,7 +691,6 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     }
 
     if (duration) {
-        t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
         if (q[0] == 'm' && q[1] == 's') {
             suffix = 1000;
             microseconds /= 1000;
@@ -734,7 +736,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     if (*q)
         return AVERROR(EINVAL);
 
+    if (INT64_MAX / suffix < t)
+        return AVERROR(ERANGE);
     t *= suffix;
+    if (INT64_MAX - microseconds < t)
+        return AVERROR(ERANGE);
     t += microseconds;
     *timeval = negative ? -t : t;
     return 0;

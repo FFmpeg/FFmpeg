@@ -200,12 +200,8 @@ int ff_vaapi_decode_issue(AVCodecContext *avctx,
         AV_VAAPI_DRIVER_QUIRK_RENDER_PARAM_BUFFERS)
         ff_vaapi_decode_destroy_buffers(avctx, pic);
 
-    pic->nb_param_buffers = 0;
-    pic->nb_slices        = 0;
-    pic->slices_allocated = 0;
-    av_freep(&pic->slice_buffers);
-
-    return 0;
+    err = 0;
+    goto exit;
 
 fail_with_picture:
     vas = vaEndPicture(ctx->hwctx->display, ctx->va_context);
@@ -216,6 +212,12 @@ fail_with_picture:
 fail:
     ff_vaapi_decode_destroy_buffers(avctx, pic);
 fail_at_end:
+exit:
+    pic->nb_param_buffers = 0;
+    pic->nb_slices        = 0;
+    pic->slices_allocated = 0;
+    av_freep(&pic->slice_buffers);
+
     return err;
 }
 
@@ -389,9 +391,7 @@ static const struct {
     MAP(VC1,         VC1_MAIN,        VC1Main     ),
     MAP(VC1,         VC1_COMPLEX,     VC1Advanced ),
     MAP(VC1,         VC1_ADVANCED,    VC1Advanced ),
-#if VA_CHECK_VERSION(0, 35, 0)
     MAP(VP8,         UNKNOWN,       VP8Version0_3 ),
-#endif
 #if VA_CHECK_VERSION(0, 38, 0)
     MAP(VP9,         VP9_0,           VP9Profile0 ),
 #endif

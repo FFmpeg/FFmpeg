@@ -229,8 +229,8 @@ static int config_output(AVFilterLink *outlink)
 
 static void stereo_position(float a, float p, float *x, float *y)
 {
-      *x = av_clipf(a+FFMAX(0, sinf(p-M_PI_2))*FFDIFFSIGN(a,0), -1, 1);
-      *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1, 1);
+    *x = av_clipf(a+FFMAX(0, sinf(p-M_PI_2))*FFDIFFSIGN(a,0), -1, 1);
+    *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1, 1);
 }
 
 static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,

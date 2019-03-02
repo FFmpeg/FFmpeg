@@ -143,6 +143,9 @@ enum {
     // A.4.1: table A.6 allows at most 20 tile columns for any level.
     HEVC_MAX_TILE_COLUMNS = 20,
 
+    // A.4.2: table A.6 allows at most 600 slice segments for any level.
+    HEVC_MAX_SLICE_SEGMENTS = 600,
+
     // 7.4.7.1: in the worst case (tiles_enabled_flag and
     // entropy_coding_sync_enabled_flag are both set), entry points can be
     // placed at the beginning of every Ctb row in every tile, giving an

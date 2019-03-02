@@ -66,7 +66,7 @@
 #endif
 
 /**
- * Assert that floating point opperations can be executed.
+ * Assert that floating point operations can be executed.
  *
  * This will av_assert0() that the cpu is not in MMX state on X86
  */

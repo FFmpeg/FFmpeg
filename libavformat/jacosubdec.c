@@ -127,7 +127,7 @@ shift_and_ret:
     ts_start  = (ts_start + jacosub->shift) * 100 / jacosub->timeres;
     ts_end    = (ts_end   + jacosub->shift) * 100 / jacosub->timeres;
     *start    = ts_start;
-    *duration = ts_start + ts_end;
+    *duration = ts_end - ts_start;
     return buf + len;
 }
 

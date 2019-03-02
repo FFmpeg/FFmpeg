@@ -73,7 +73,7 @@ static void ff_prores_idct_wrap(int16_t *dst){
     for(i=0; i<64; i++){
         qmat[i]=4;
     }
-    ff_prores_idct(dst, qmat);
+    ff_prores_idct_10(dst, qmat);
     for(i=0; i<64; i++) {
          dst[i] -= 512;
     }

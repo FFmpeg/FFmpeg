@@ -37,10 +37,15 @@ typedef struct MSCCContext {
     unsigned int      uncomp_size;
     uint8_t          *uncomp_buf;
     z_stream          zstream;
+
+    uint32_t          pal[256];
 } MSCCContext;
 
-static int rle_uncompress(AVCodecContext *avctx, GetByteContext *gb, PutByteContext *pb, int bpp)
+static int rle_uncompress(AVCodecContext *avctx, GetByteContext *gb, PutByteContext *pb)
 {
+    MSCCContext *s = avctx->priv_data;
+    unsigned x = 0, y = 0;
+
     while (bytestream2_get_bytes_left(gb) > 0) {
         uint32_t fill;
         int j;
@@ -78,19 +83,22 @@ static int rle_uncompress(AVCodecContext *avctx, GetByteContext *gb, PutByteCont
                     break;
                 }
             }
+            x += run;
         } else {
             unsigned copy = bytestream2_get_byte(gb);
 
-            if (copy == 1) {
+            if (copy == 0) {
+                x = 0;
+                y++;
+                bytestream2_seek_p(pb, y * avctx->width * s->bpp, SEEK_SET);
+            } else if (copy == 1) {
                 return 0;
             } else if (copy == 2) {
-                unsigned x, y;
 
-                x = bytestream2_get_byte(gb);
-                y = bytestream2_get_byte(gb);
+                x += bytestream2_get_byte(gb);
+                y += bytestream2_get_byte(gb);
 
-                bytestream2_skip_p(pb, x * bpp);
-                bytestream2_skip_p(pb, y * bpp * avctx->width);
+                bytestream2_seek_p(pb, y * avctx->width * s->bpp + x * s->bpp, SEEK_SET);
             } else {
                 for (j = 0; j < copy; j++) {
                     switch (avctx->bits_per_coded_sample) {
@@ -108,6 +116,10 @@ static int rle_uncompress(AVCodecContext *avctx, GetByteContext *gb, PutByteCont
                         break;
                     }
                 }
+
+                if (s->bpp == 1 && (copy & 1))
+                    bytestream2_skip(gb, 1);
+                x += copy;
             }
         }
     }
@@ -128,7 +140,8 @@ static int decode_frame(AVCodecContext *avctx,
     int ret, j;
 
     if (avpkt->size < 3)
-        return AVERROR_INVALIDDATA;
+        return buf_size;
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
@@ -136,6 +149,20 @@ static int decode_frame(AVCodecContext *avctx,
         avpkt->data[2] ^= avpkt->data[0];
         buf += 2;
         buf_size -= 2;
+    }
+
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
+
+        if (pal && size == AVPALETTE_SIZE) {
+            frame->palette_has_changed = 1;
+            for (j = 0; j < 256; j++)
+                s->pal[j] = 0xFF000000 | AV_RL32(pal + j * 4);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
+        }
+        memcpy(frame->data[1], s->pal, AVPALETTE_SIZE);
     }
 
     ret = inflateReset(&s->zstream);
@@ -156,7 +183,7 @@ static int decode_frame(AVCodecContext *avctx,
     bytestream2_init(&gb, s->decomp_buf, s->zstream.total_out);
     bytestream2_init_writer(&pb, s->uncomp_buf, s->uncomp_size);
 
-    ret = rle_uncompress(avctx, &gb, &pb, s->bpp);
+    ret = rle_uncompress(avctx, &gb, &pb);
     if (ret)
         return ret;
 
@@ -176,10 +203,10 @@ static int decode_frame(AVCodecContext *avctx,
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     MSCCContext *s = avctx->priv_data;
-    int zret;
+    int stride, zret;
 
     switch (avctx->bits_per_coded_sample) {
-    case  8: avctx->pix_fmt = AV_PIX_FMT_GRAY8;  break;
+    case  8: avctx->pix_fmt = AV_PIX_FMT_PAL8;   break;
     case 16: avctx->pix_fmt = AV_PIX_FMT_RGB555; break;
     case 24: avctx->pix_fmt = AV_PIX_FMT_BGR24;  break;
     case 32: avctx->pix_fmt = AV_PIX_FMT_BGRA;   break;
@@ -189,13 +216,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     }
 
     s->bpp = avctx->bits_per_coded_sample >> 3;
-    memset(&s->zstream, 0, sizeof(z_stream));
+    stride = 4 * ((avctx->width * avctx->bits_per_coded_sample + 31) / 32);
 
-    s->decomp_size = 4 * avctx->height * ((avctx->width * avctx->bits_per_coded_sample + 31) / 32);
+    s->decomp_size = 2 * avctx->height * stride;
     if (!(s->decomp_buf = av_malloc(s->decomp_size)))
         return AVERROR(ENOMEM);
 
-    s->uncomp_size = 4 * avctx->height * ((avctx->width * avctx->bits_per_coded_sample + 31) / 32);
+    s->uncomp_size = avctx->height * stride;
     if (!(s->uncomp_buf = av_malloc(s->uncomp_size)))
         return AVERROR(ENOMEM);
 
@@ -234,6 +261,7 @@ AVCodec ff_mscc_decoder = {
     .close            = decode_close,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };
 
 AVCodec ff_srgc_decoder = {
@@ -246,4 +274,5 @@ AVCodec ff_srgc_decoder = {
     .close            = decode_close,
     .decode           = decode_frame,
     .capabilities     = AV_CODEC_CAP_DR1,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -32,10 +32,10 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
     uint32_t pts = 0, dts = 0;
 
     if (pkt->pts != AV_NOPTS_VALUE) {
-        pts = (uint32_t)pkt->pts;
+        pts = pkt->pts;
     }
     if (pkt->dts != AV_NOPTS_VALUE) {
-        dts = (uint32_t)pkt->dts;
+        dts = pkt->dts;
     }
 
     /*
@@ -46,8 +46,8 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
         size_t len = AV_RB16(data + 1) + 3;
 
         if (len > size) {
-            av_log(s, AV_LOG_ERROR, "Not enough data, skipping %d bytes\n",
-                     (int)size);
+            av_log(s, AV_LOG_ERROR, "Not enough data, skipping %"SIZE_SPECIFIER" bytes\n",
+                   size);
             return AVERROR_INVALIDDATA;
         }
 
@@ -63,8 +63,8 @@ static int sup_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (size > 0) {
-        av_log(s, AV_LOG_ERROR, "Skipping %d bytes after last segment in frame\n",
-                 (int)size);
+        av_log(s, AV_LOG_ERROR, "Skipping %"SIZE_SPECIFIER" bytes after last segment in frame\n",
+               size);
         return AVERROR_INVALIDDATA;
     }
 

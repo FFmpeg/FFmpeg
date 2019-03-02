@@ -425,7 +425,7 @@ The @code{csv} writer is equivalent to @code{compact}, but supports
 different defaults.
 
 Each section is printed on a single line.
-If no option is specifid, the output has the form:
+If no option is specified, the output has the form:
 @example
 section|key1=val1| ... |keyN=valN
 @end example
@@ -591,7 +591,7 @@ This option automatically sets @option{fully_qualified} to 1.
 @end table
 
 For more information about the XML format, see
-@url{http://www.w3.org/XML/}.
+@url{https://www.w3.org/XML/}.
 @c man end WRITERS
 
 @chapter Timecode

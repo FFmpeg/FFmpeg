@@ -364,12 +364,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->id = ac3_id++;
             } else if (st->codecpar->codec_id == AV_CODEC_ID_DTS) {
                 stream->id = dts_id++;
-            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
-                       st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
-                if (st->codecpar->bits_per_coded_sample != 16) {
-                    av_log(ctx, AV_LOG_ERROR, "Only 16 bit LPCM streams can be muxed.\n");
-                    goto fail;
-                }
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE) {
                 stream->id = lpcm_id++;
                 for (j = 0; j < 4; j++) {
                     if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
@@ -392,6 +387,26 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->lpcm_header[1] = (st->codecpar->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
                 stream->lpcm_align     = st->codecpar->channels * 2;
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+                int freq;
+
+                switch (st->codecpar->sample_rate) {
+                case 48000: freq = 0; break;
+                case 96000: freq = 1; break;
+                case 44100: freq = 2; break;
+                case 32000: freq = 3; break;
+                default:
+                    av_log(ctx, AV_LOG_ERROR, "Unsupported sample rate.\n");
+                    return AVERROR(EINVAL);
+                }
+
+                stream->lpcm_header[0] = 0x0c;
+                stream->lpcm_header[1] = (freq << 4) |
+                                         (((st->codecpar->bits_per_coded_sample - 16) / 4) << 6) |
+                                         st->codecpar->channels - 1;
+                stream->lpcm_header[2] = 0x80;
+                stream->id = lpcm_id++;
+                stream->lpcm_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample / 8;
             } else {
                 stream->id = mpa_id++;
             }

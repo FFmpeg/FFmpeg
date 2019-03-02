@@ -110,6 +110,16 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     return 0;
 }
 
+static inline unsigned int qsv_fifo_item_size(void)
+{
+    return sizeof(mfxSyncPoint*) + sizeof(QSVFrame*);
+}
+
+static inline unsigned int qsv_fifo_size(const AVFifoBuffer* fifo)
+{
+    return av_fifo_size(fifo) / qsv_fifo_item_size();
+}
+
 static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
 {
     const AVPixFmtDescriptor *desc;
@@ -125,8 +135,7 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return AVERROR_BUG;
 
     if (!q->async_fifo) {
-        q->async_fifo = av_fifo_alloc((1 + q->async_depth) *
-                                      (sizeof(mfxSyncPoint*) + sizeof(QSVFrame*)));
+        q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
         if (!q->async_fifo)
             return AVERROR(ENOMEM);
     }
@@ -363,6 +372,8 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         ++q->zero_consume_run;
         if (q->zero_consume_run > 1)
             ff_qsv_print_warning(avctx, ret, "A decode call did not consume any data");
+    } else if (!*sync && bs.DataOffset) {
+        ++q->buffered_count;
     } else {
         q->zero_consume_run = 0;
     }
@@ -384,7 +395,7 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         av_freep(&sync);
     }
 
-    if (!av_fifo_space(q->async_fifo) ||
+    if ((qsv_fifo_size(q->async_fifo) >= q->async_depth) ||
         (!avpkt->size && av_fifo_size(q->async_fifo))) {
         AVFrame *src_frame;
 
@@ -490,6 +501,8 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
         if (!q->avctx_internal)
             return AVERROR(ENOMEM);
 
+        q->avctx_internal->codec_id = avctx->codec_id;
+
         q->parser = av_parser_init(avctx->codec_id);
         if (!q->parser)
             return AVERROR(ENOMEM);
@@ -517,6 +530,16 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                                            AV_PIX_FMT_NONE,
                                            AV_PIX_FMT_NONE };
         enum AVPixelFormat qsv_format;
+        AVPacket zero_pkt = {0};
+
+        if (q->buffered_count) {
+            q->reinit_flag = 1;
+            /* decode zero-size pkt to flush the buffered pkt before reinit */
+            q->buffered_count--;
+            return qsv_decode(avctx, q, frame, got_frame, &zero_pkt);
+        }
+
+        q->reinit_flag = 0;
 
         qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
         if (qsv_format < 0) {

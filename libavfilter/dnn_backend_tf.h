@@ -29,12 +29,10 @@
 
 #include "dnn_interface.h"
 
-DNNModel* ff_dnn_load_model_tf(const char* model_filename);
+DNNModel *ff_dnn_load_model_tf(const char *model_filename);
 
-DNNModel* ff_dnn_load_default_model_tf(DNNDefaultModel model_type);
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model);
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel* model);
-
-void ff_dnn_free_model_tf(DNNModel** model);
+void ff_dnn_free_model_tf(DNNModel **model);
 
 #endif

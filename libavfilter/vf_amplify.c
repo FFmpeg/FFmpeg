@@ -34,6 +34,7 @@ typedef struct AmplifyContext {
     int radius;
     float factor;
     float threshold;
+    float tolerance;
     int planes;
 
     int llimit;
@@ -53,7 +54,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9,
-        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
         AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
@@ -104,6 +105,7 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
     const int radius = s->radius;
     const int nb_inputs = s->nb_inputs;
     const float threshold = s->threshold;
+    const float tolerance = s->tolerance;
     const float factor = s->factor;
     const int llimit = s->llimit;
     const int hlimit = s->hlimit;
@@ -136,7 +138,7 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
 
                     avg = sum / (float)nb_inputs;
                     diff = src - avg;
-                    if (fabsf(diff) < threshold) {
+                    if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {
                         int amp;
                         if (diff < 0) {
                             amp = -FFMIN(FFABS(diff * factor), llimit);
@@ -179,7 +181,7 @@ static int amplify_frame(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
                     avg = sum / (float)nb_inputs;
                     diff = src - avg;
 
-                    if (fabsf(diff) < threshold) {
+                    if (fabsf(diff) < threshold && fabsf(diff) > tolerance) {
                         int amp;
                         if (diff < 0) {
                             amp = -FFMIN(FFABS(diff * factor), llimit);
@@ -271,6 +273,7 @@ static const AVOption amplify_options[] = {
     { "radius", "set radius", OFFSET(radius), AV_OPT_TYPE_INT, {.i64=2}, 1, 63, .flags = FLAGS },
     { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = FLAGS },
     { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = FLAGS },
+    { "tolerance", "set tolerance", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, UINT16_MAX, .flags = FLAGS },
     { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
     { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
     { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },

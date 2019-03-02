@@ -240,7 +240,7 @@ static int config_props(AVFilterLink *inlink)
 
     if (!lensfun->distortion_coords) {
         if (lensfun->mode & SUBPIXEL_DISTORTION) {
-            lensfun->distortion_coords = av_malloc(sizeof(float) * inlink->w * inlink->h * 2 * 3);
+            lensfun->distortion_coords = av_malloc_array(inlink->w * inlink->h, sizeof(float) * 2 * 3);
             if (!lensfun->distortion_coords)
                 return AVERROR(ENOMEM);
             if (lensfun->mode & GEOMETRY_DISTORTION) {
@@ -257,7 +257,7 @@ static int config_props(AVFilterLink *inlink)
                                                       lensfun->distortion_coords);
             }
         } else if (lensfun->mode & GEOMETRY_DISTORTION) {
-            lensfun->distortion_coords = av_malloc(sizeof(float) * inlink->w * inlink->h * 2);
+            lensfun->distortion_coords = av_malloc_array(inlink->w * inlink->h, sizeof(float) * 2);
             if (!lensfun->distortion_coords)
                 return AVERROR(ENOMEM);
             // apply only geometry distortion
@@ -270,7 +270,7 @@ static int config_props(AVFilterLink *inlink)
 
     if (!lensfun->interpolation)
         if (lensfun->interpolation_type == LANCZOS) {
-            lensfun->interpolation = av_malloc(sizeof(float) * 4 * LANCZOS_RESOLUTION);
+            lensfun->interpolation = av_malloc_array(LANCZOS_RESOLUTION, sizeof(float) * 4);
             if (!lensfun->interpolation)
                 return AVERROR(ENOMEM);
             for (index = 0; index < 4 * LANCZOS_RESOLUTION; ++index) {
@@ -510,10 +510,8 @@ static av_cold void uninit(AVFilterContext *ctx)
         lf_lens_destroy(lensfun->lens);
     if (lensfun->modifier)
         lf_modifier_destroy(lensfun->modifier);
-    if (lensfun->distortion_coords)
-        av_free(lensfun->distortion_coords);
-    if (lensfun->interpolation)
-        av_free(lensfun->interpolation);
+    av_freep(&lensfun->distortion_coords);
+    av_freep(&lensfun->interpolation);
 }
 
 static const AVFilterPad lensfun_inputs[] = {

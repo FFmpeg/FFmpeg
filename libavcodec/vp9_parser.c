@@ -36,12 +36,16 @@ static int parse(AVCodecParserContext *ctx,
     *out_data = data;
     *out_size = size;
 
-    if ((res = init_get_bits8(&gb, data, size)) < 0)
+    if (!size || (res = init_get_bits8(&gb, data, size)) < 0)
         return size; // parsers can't return errors
     get_bits(&gb, 2); // frame marker
     profile  = get_bits1(&gb);
     profile |= get_bits1(&gb) << 1;
     if (profile == 3) profile += get_bits1(&gb);
+    if (profile > 3)
+        return size;
+
+    avctx->profile = profile;
 
     if (get_bits1(&gb)) {
         keyframe = 0;

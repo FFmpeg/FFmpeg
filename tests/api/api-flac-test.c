@@ -31,7 +31,7 @@
 #include "libavutil/common.h"
 #include "libavutil/samplefmt.h"
 
-#define NUMBER_OF_FRAMES 200
+#define NUMBER_OF_AUDIO_FRAMES 200
 #define NAME_BUFF_SIZE 100
 
 /* generate i-th frame of test audio */
@@ -137,19 +137,19 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         return AVERROR(ENOMEM);
     }
 
-    raw_in = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
+    raw_in = av_malloc(in_frame->linesize[0] * NUMBER_OF_AUDIO_FRAMES);
     if (!raw_in) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_in\n");
         return AVERROR(ENOMEM);
     }
 
-    raw_out = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
+    raw_out = av_malloc(in_frame->linesize[0] * NUMBER_OF_AUDIO_FRAMES);
     if (!raw_out) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_out\n");
         return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < NUMBER_OF_FRAMES; i++) {
+    for (i = 0; i < NUMBER_OF_AUDIO_FRAMES; i++) {
         av_init_packet(&enc_pkt);
         enc_pkt.data = NULL;
         enc_pkt.size = 0;
@@ -209,7 +209,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         av_packet_unref(&enc_pkt);
     }
 
-    if (memcmp(raw_in, raw_out, out_frame_bytes * NUMBER_OF_FRAMES) != 0) {
+    if (memcmp(raw_in, raw_out, out_frame_bytes * NUMBER_OF_AUDIO_FRAMES) != 0) {
         av_log(NULL, AV_LOG_ERROR, "Output differs\n");
         return 1;
     }

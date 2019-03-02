@@ -293,7 +293,7 @@ static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
         av_log(ctx, AV_LOG_INFO, "dialogue");
         break;
     case AV_AUDIO_SERVICE_TYPE_COMMENTARY:
-        av_log(ctx, AV_LOG_INFO, "comentary");
+        av_log(ctx, AV_LOG_INFO, "commentary");
         break;
     case AV_AUDIO_SERVICE_TYPE_EMERGENCY:
         av_log(ctx, AV_LOG_INFO, "emergency");

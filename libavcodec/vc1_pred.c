@@ -262,18 +262,23 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         return;
     }
 
-    C = s->current_picture.motion_val[dir][xy -    1 + v->blocks_off];
-    A = s->current_picture.motion_val[dir][xy - wrap + v->blocks_off];
+    a_valid = !s->first_slice_line || (n == 2 || n == 3);
+    b_valid = a_valid;
+    c_valid = s->mb_x || (n == 1 || n == 3);
     if (mv1) {
         if (v->field_mode && mixedmv_pic)
             off = (s->mb_x == (s->mb_width - 1)) ? -2 : 2;
         else
             off = (s->mb_x == (s->mb_width - 1)) ? -1 : 2;
+        b_valid = b_valid && s->mb_width > 1;
     } else {
         //in 4-MV mode different blocks have different B predictor position
         switch (n) {
         case 0:
-            off = (s->mb_x > 0) ? -1 : 1;
+            if (v->res_rtm_flag)
+                off = s->mb_x ? -1 : 1;
+            else
+                off = s->mb_x ? -1 : 2 * s->mb_width - wrap - 1;
             break;
         case 1:
             off = (s->mb_x == (s->mb_width - 1)) ? -1 : 1;
@@ -284,12 +289,10 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         case 3:
             off = -1;
         }
+        if (v->field_mode && s->mb_width == 1)
+            b_valid = b_valid && c_valid;
     }
-    B = s->current_picture.motion_val[dir][xy - wrap + off + v->blocks_off];
 
-    a_valid = !s->first_slice_line || (n == 2 || n == 3);
-    b_valid = a_valid && (s->mb_width > 1);
-    c_valid = s->mb_x || (n == 1 || n == 3);
     if (v->field_mode) {
         a_valid = a_valid && !is_intra[xy - wrap];
         b_valid = b_valid && !is_intra[xy - wrap + off];
@@ -297,6 +300,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     }
 
     if (a_valid) {
+        A = s->current_picture.motion_val[dir][xy - wrap + v->blocks_off];
         a_f = v->mv_f[dir][xy - wrap + v->blocks_off];
         num_oppfield  += a_f;
         num_samefield += 1 - a_f;
@@ -307,6 +311,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         a_f = 0;
     }
     if (b_valid) {
+        B = s->current_picture.motion_val[dir][xy - wrap + off + v->blocks_off];
         b_f = v->mv_f[dir][xy - wrap + off + v->blocks_off];
         num_oppfield  += b_f;
         num_samefield += 1 - b_f;
@@ -317,6 +322,7 @@ void ff_vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         b_f = 0;
     }
     if (c_valid) {
+        C = s->current_picture.motion_val[dir][xy - 1 + v->blocks_off];
         c_f = v->mv_f[dir][xy - 1 + v->blocks_off];
         num_oppfield  += c_f;
         num_samefield += 1 - c_f;

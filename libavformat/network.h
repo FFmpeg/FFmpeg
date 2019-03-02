@@ -304,4 +304,34 @@ int ff_http_match_no_proxy(const char *no_proxy, const char *hostname);
 
 int ff_socket(int domain, int type, int protocol);
 
+void ff_log_net_error(void *ctx, int level, const char* prefix);
+
+/**
+ * Connect to any of the given addrinfo addresses, with multiple attempts
+ * running in parallel.
+ *
+ * @param addrs    The list of addresses to try to connect to.
+ *                 This list will be mutated internally, but the list head
+ *                 will remain as such, so this doesn't affect the caller
+ *                 freeing the list afterwards.
+ * @param timeout_ms_per_address The number of milliseconds to wait for each
+ *                 connection attempt. Since multiple addresses are tried,
+ *                 some of them in parallel, the total run time will at most
+ *                 be timeout_ms_per_address*ceil(nb_addrs/parallel) +
+ *                 (parallel - 1) * NEXT_ATTEMPT_DELAY_MS.
+ * @param parallel The maximum number of connections to attempt in parallel.
+ *                 This is limited to an internal maximum capacity.
+ * @param h        URLContext providing interrupt check
+ *                 callback and logging context.
+ * @param fd       If successful, the connected socket is returned here.
+ * @param customize_fd Function that will be called for each socket created,
+ *                 to allow the caller to set socket options before calling
+ *                 connect() on it, may be NULL.
+ * @param customize_ctx Context parameter passed to customize_fd.
+ * @return         0 on success, AVERROR on failure.
+ */
+int ff_connect_parallel(struct addrinfo *addrs, int timeout_ms_per_address,
+                        int parallel, URLContext *h, int *fd,
+                        void (*customize_fd)(void *, int), void *customize_ctx);
+
 #endif /* AVFORMAT_NETWORK_H */

@@ -264,8 +264,6 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
                                  PutBitContext *pbc)
 {
     MPEG2RawSlice *slice = unit->content;
-    GetBitContext gbc;
-    size_t bits_left;
     int err;
 
     err = cbs_mpeg2_write_slice_header(ctx, pbc, &slice->header);
@@ -273,21 +271,38 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
         return err;
 
     if (slice->data) {
+        size_t rest = slice->data_size - (slice->data_bit_start + 7) / 8;
+        uint8_t *pos = slice->data + slice->data_bit_start / 8;
+
+        av_assert0(slice->data_bit_start >= 0 &&
+                   8 * slice->data_size > slice->data_bit_start);
+
         if (slice->data_size * 8 + 8 > put_bits_left(pbc))
             return AVERROR(ENOSPC);
 
-        init_get_bits(&gbc, slice->data, slice->data_size * 8);
-        skip_bits_long(&gbc, slice->data_bit_start);
+        // First copy the remaining bits of the first byte
+        if (slice->data_bit_start % 8)
+            put_bits(pbc, 8 - slice->data_bit_start % 8,
+                     *pos++ & MAX_UINT_BITS(8 - slice->data_bit_start % 8));
 
-        while (get_bits_left(&gbc) > 15)
-            put_bits(pbc, 16, get_bits(&gbc, 16));
+        if (put_bits_count(pbc) % 8 == 0) {
+            // If the writer is aligned at this point,
+            // memcpy can be used to improve performance.
+            // This is the normal case.
+            flush_put_bits(pbc);
+            memcpy(put_bits_ptr(pbc), pos, rest);
+            skip_put_bytes(pbc, rest);
+        } else {
+            // If not, we have to copy manually:
+            for (; rest > 3; rest -= 4, pos += 4)
+                put_bits32(pbc, AV_RB32(pos));
 
-        bits_left = get_bits_left(&gbc);
-        put_bits(pbc, bits_left, get_bits(&gbc, bits_left));
+            for (; rest; rest--, pos++)
+                put_bits(pbc, 8, *pos);
 
-        // Align with zeroes.
-        while (put_bits_count(pbc) % 8 != 0)
-            put_bits(pbc, 1, 0);
+            // Align with zeros
+            put_bits(pbc, 8 - put_bits_count(pbc) % 8, 0);
+        }
     }
 
     return 0;

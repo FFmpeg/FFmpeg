@@ -50,9 +50,9 @@ static int pcm_read_header(AVFormatContext *s)
 
     av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
     if (mime_type && s->iformat->mime_type) {
-        int rate = 0, channels = 0;
+        int rate = 0, channels = 0, little_endian = 0;
         size_t len = strlen(s->iformat->mime_type);
-        if (!strncmp(s->iformat->mime_type, mime_type, len)) {
+        if (!av_strncasecmp(s->iformat->mime_type, mime_type, len)) { /* audio/L16 */
             uint8_t *options = mime_type + len;
             len = strlen(mime_type);
             while (options < mime_type + len) {
@@ -63,6 +63,12 @@ static int pcm_read_header(AVFormatContext *s)
                     sscanf(options, " rate=%d",     &rate);
                 if (!channels)
                     sscanf(options, " channels=%d", &channels);
+                if (!little_endian) {
+                     char val[14]; /* sizeof("little-endian") == 14 */
+                     if (sscanf(options, " endianness=%13s", val) == 1) {
+                         little_endian = strcmp(val, "little-endian") == 0;
+                     }
+                }
             }
             if (rate <= 0) {
                 av_log(s, AV_LOG_ERROR,
@@ -74,6 +80,8 @@ static int pcm_read_header(AVFormatContext *s)
             st->codecpar->sample_rate = rate;
             if (channels > 0)
                 st->codecpar->channels = channels;
+            if (little_endian)
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
         }
     }
     av_freep(&mime_type);
@@ -142,10 +150,10 @@ PCMDEF(s24le, "PCM signed 24-bit little-endian",
        NULL, AV_CODEC_ID_PCM_S24LE)
 
 PCMDEF(s16be, "PCM signed 16-bit big-endian",
-       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE)
+       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE, .mime_type = "audio/L16")
 
 PCMDEF(s16le, "PCM signed 16-bit little-endian",
-       AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE, .mime_type = "audio/L16",)
+       AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE)
 
 PCMDEF(s8, "PCM signed 8-bit",
        "sb", AV_CODEC_ID_PCM_S8)
@@ -176,6 +184,9 @@ PCMDEF(alaw, "PCM A-law",
 
 PCMDEF(mulaw, "PCM mu-law",
        "ul", AV_CODEC_ID_PCM_MULAW)
+
+PCMDEF(vidc, "PCM Archimedes VIDC",
+       NULL, AV_CODEC_ID_PCM_VIDC)
 
 static const AVOption sln_options[] = {
     { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 8000}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },

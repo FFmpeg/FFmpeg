@@ -223,9 +223,9 @@ static void free_segment_dynarray(struct segment **segments, int n_segments)
 
 static void free_segment_list(struct playlist *pls)
 {
-        free_segment_dynarray(pls->segments, pls->n_segments);
-        av_freep(&pls->segments);
-        pls->n_segments = 0;
+    free_segment_dynarray(pls->segments, pls->n_segments);
+    av_freep(&pls->segments);
+    pls->n_segments = 0;
 }
 
 static void free_init_section_list(struct playlist *pls)
@@ -811,6 +811,27 @@ static int parse_playlist(HLSContext *c, const char *url,
             ff_parse_key_value(ptr, (ff_parse_key_val_cb) handle_init_section_args,
                                &info);
             cur_init_section = new_init_section(pls, &info, url);
+            cur_init_section->key_type = key_type;
+            if (has_iv) {
+                memcpy(cur_init_section->iv, iv, sizeof(iv));
+            } else {
+                int seq = pls->start_seq_no + pls->n_segments;
+                memset(cur_init_section->iv, 0, sizeof(cur_init_section->iv));
+                AV_WB32(cur_init_section->iv + 12, seq);
+            }
+
+            if (key_type != KEY_NONE) {
+                ff_make_absolute_url(tmp_str, sizeof(tmp_str), url, key);
+                cur_init_section->key = av_strdup(tmp_str);
+                if (!cur_init_section->key) {
+                    av_free(cur_init_section);
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
+            } else {
+                cur_init_section->key = NULL;
+            }
+
         } else if (av_strstart(line, "#EXT-X-ENDLIST", &ptr)) {
             if (pls)
                 pls->finished = 1;
@@ -910,6 +931,7 @@ static int parse_playlist(HLSContext *c, const char *url,
                    prev_start_seq_no, pls->start_seq_no);
         }
         free_segment_dynarray(prev_segments, prev_n_segments);
+        av_freep(&prev_segments);
     }
     if (pls)
         pls->last_load_time = av_gettime_relative();

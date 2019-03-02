@@ -102,6 +102,7 @@ typedef struct WaveformContext {
     int            shift_w[4], shift_h[4];
     GraticuleLines *glines;
     int            nb_glines;
+    int            rgb;
 
     int (*waveform_slice)(AVFilterContext *ctx, void *arg,
                           int jobnr, int nb_jobs);
@@ -2610,17 +2611,18 @@ static void graticule_row(WaveformContext *s, AVFrame *out)
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int height = s->display == PARADE ? out->height / s->acomp : out->height;
-    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
+    int C, k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
             continue;
 
         k++;
+        C = s->rgb ? 0 : c;
         for (p = 0; p < s->ncomp; p++) {
             const int v = s->grat_yuva_color[p];
             for (l = 0; l < s->nb_glines; l++) {
-                const uint16_t pos = s->glines[l].line[c].pos;
+                const uint16_t pos = s->glines[l].line[C].pos;
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + offset_y * out->linesize[p] + x;
 
@@ -2629,8 +2631,8 @@ static void graticule_row(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
-            const char *name = s->glines[l].line[c].name;
-            const uint16_t pos = s->glines[l].line[c].pos;
+            const char *name = s->glines[l].line[C].name;
+            const uint16_t pos = s->glines[l].line[C].pos;
             int x = offset_x + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
@@ -2651,17 +2653,18 @@ static void graticule16_row(WaveformContext *s, AVFrame *out)
     const float o2 = 1. - o1;
     const int mult = s->max / 256;
     const int height = s->display == PARADE ? out->height / s->acomp : out->height;
-    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
+    int C, k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if (!((1 << c) & s->pcomp) || (!s->display && k > 0))
             continue;
 
         k++;
+        C = s->rgb ? 0 : c;
         for (p = 0; p < s->ncomp; p++) {
             const int v = s->grat_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
-                const uint16_t pos = s->glines[l].line[c].pos;
+                const uint16_t pos = s->glines[l].line[C].pos;
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
                 uint16_t *dst = (uint16_t *)(out->data[p] + offset_y * out->linesize[p]) + x;
 
@@ -2670,8 +2673,8 @@ static void graticule16_row(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
-            const char *name = s->glines[l].line[c].name;
-            const uint16_t pos = s->glines[l].line[c].pos;
+            const char *name = s->glines[l].line[C].name;
+            const uint16_t pos = s->glines[l].line[C].pos;
             int x = offset_x + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (x < 0)
@@ -2691,17 +2694,18 @@ static void graticule_column(WaveformContext *s, AVFrame *out)
     const float o1 = s->opacity;
     const float o2 = 1. - o1;
     const int width = s->display == PARADE ? out->width / s->acomp : out->width;
-    int k = 0, c, p, l, offset_y = 0, offset_x = 0;
+    int C, k = 0, c, p, l, offset_y = 0, offset_x = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
             continue;
 
         k++;
+        C = s->rgb ? 0 : c;
         for (p = 0; p < s->ncomp; p++) {
             const int v = s->grat_yuva_color[p];
             for (l = 0; l < s->nb_glines ; l++) {
-                const uint16_t pos = s->glines[l].line[c].pos;
+                const uint16_t pos = s->glines[l].line[C].pos;
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + y * out->linesize[p] + offset_x;
 
@@ -2710,8 +2714,8 @@ static void graticule_column(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
-            const char *name = s->glines[l].line[c].name;
-            const uint16_t pos = s->glines[l].line[c].pos;
+            const char *name = s->glines[l].line[C].name;
+            const uint16_t pos = s->glines[l].line[C].pos;
             int y = offset_y + (s->mirror ? s->size - 1 - pos : pos) - 10;
 
             if (y < 0)
@@ -2732,17 +2736,18 @@ static void graticule16_column(WaveformContext *s, AVFrame *out)
     const float o2 = 1. - o1;
     const int mult = s->max / 256;
     const int width = s->display == PARADE ? out->width / s->acomp : out->width;
-    int k = 0, c, p, l, offset_x = 0, offset_y = 0;
+    int C, k = 0, c, p, l, offset_x = 0, offset_y = 0;
 
     for (c = 0; c < s->ncomp; c++) {
         if ((!((1 << c) & s->pcomp) || (!s->display && k > 0)))
             continue;
 
         k++;
+        C = s->rgb ? 0 : c;
         for (p = 0; p < s->ncomp; p++) {
             const int v = s->grat_yuva_color[p] * mult;
             for (l = 0; l < s->nb_glines ; l++) {
-                const uint16_t pos = s->glines[l].line[c].pos;
+                const uint16_t pos = s->glines[l].line[C].pos;
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
                 uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]) + offset_x;
 
@@ -2751,8 +2756,8 @@ static void graticule16_column(WaveformContext *s, AVFrame *out)
         }
 
         for (l = 0; l < s->nb_glines && (s->flags & 1); l++) {
-            const char *name = s->glines[l].line[c].name;
-            const uint16_t pos = s->glines[l].line[c].pos;
+            const char *name = s->glines[l].line[C].name;
+            const uint16_t pos = s->glines[l].line[C].pos;
             int y = offset_y + (s->mirror ? s->size - 1 - pos: pos) - 10;
 
             if (y < 0)
@@ -2996,8 +3001,8 @@ static int config_input(AVFilterLink *inlink)
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP12:
+        s->rgb = 1;
         memcpy(s->bg_color, black_gbrp_color, sizeof(s->bg_color));
-        s->graticulef = graticule_none;
         break;
     default:
         memcpy(s->bg_color, black_yuva_color, sizeof(s->bg_color));
@@ -3020,6 +3025,9 @@ static int config_output(AVFilterLink *outlink)
             comp++;
     }
     s->acomp = comp;
+    if (s->acomp == 0)
+        return AVERROR(EINVAL);
+
     s->odesc = av_pix_fmt_desc_get(outlink->format);
     s->dcomp = s->odesc->nb_components;
 

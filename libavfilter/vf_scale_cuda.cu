@@ -22,14 +22,8 @@
 
 extern "C" {
 
-texture<unsigned char, 2> uchar_tex;
-texture<uchar2, 2>  uchar2_tex;
-texture<uchar4, 2>  uchar4_tex;
-texture<unsigned short, 2> ushort_tex;
-texture<ushort2, 2>  ushort2_tex;
-texture<ushort4, 2>  ushort4_tex;
-
-__global__ void Subsample_Bilinear_uchar(unsigned char *dst,
+__global__ void Subsample_Bilinear_uchar(cudaTextureObject_t uchar_tex,
+                                    unsigned char *dst,
                                     int dst_width, int dst_height, int dst_pitch,
                                     int src_width, int src_height)
 {
@@ -48,15 +42,16 @@ __global__ void Subsample_Bilinear_uchar(unsigned char *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        int y0 = tex2D(uchar_tex, xi-dx, yi-dy);
-        int y1 = tex2D(uchar_tex, xi+dx, yi-dy);
-        int y2 = tex2D(uchar_tex, xi-dx, yi+dy);
-        int y3 = tex2D(uchar_tex, xi+dx, yi+dy);
+        int y0 = tex2D<unsigned char>(uchar_tex, xi-dx, yi-dy);
+        int y1 = tex2D<unsigned char>(uchar_tex, xi+dx, yi-dy);
+        int y2 = tex2D<unsigned char>(uchar_tex, xi-dx, yi+dy);
+        int y3 = tex2D<unsigned char>(uchar_tex, xi+dx, yi+dy);
         dst[yo*dst_pitch+xo] = (unsigned char)((y0+y1+y2+y3+2) >> 2);
     }
 }
 
-__global__ void Subsample_Bilinear_uchar2(uchar2 *dst,
+__global__ void Subsample_Bilinear_uchar2(cudaTextureObject_t uchar2_tex,
+                                    uchar2 *dst,
                                     int dst_width, int dst_height, int dst_pitch2,
                                     int src_width, int src_height)
 {
@@ -75,10 +70,10 @@ __global__ void Subsample_Bilinear_uchar2(uchar2 *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        uchar2 c0 = tex2D(uchar2_tex, xi-dx, yi-dy);
-        uchar2 c1 = tex2D(uchar2_tex, xi+dx, yi-dy);
-        uchar2 c2 = tex2D(uchar2_tex, xi-dx, yi+dy);
-        uchar2 c3 = tex2D(uchar2_tex, xi+dx, yi+dy);
+        uchar2 c0 = tex2D<uchar2>(uchar2_tex, xi-dx, yi-dy);
+        uchar2 c1 = tex2D<uchar2>(uchar2_tex, xi+dx, yi-dy);
+        uchar2 c2 = tex2D<uchar2>(uchar2_tex, xi-dx, yi+dy);
+        uchar2 c3 = tex2D<uchar2>(uchar2_tex, xi+dx, yi+dy);
         int2 uv;
         uv.x = ((int)c0.x+(int)c1.x+(int)c2.x+(int)c3.x+2) >> 2;
         uv.y = ((int)c0.y+(int)c1.y+(int)c2.y+(int)c3.y+2) >> 2;
@@ -86,7 +81,8 @@ __global__ void Subsample_Bilinear_uchar2(uchar2 *dst,
     }
 }
 
-__global__ void Subsample_Bilinear_uchar4(uchar4 *dst,
+__global__ void Subsample_Bilinear_uchar4(cudaTextureObject_t uchar4_tex,
+                                    uchar4 *dst,
                                     int dst_width, int dst_height, int dst_pitch,
                                     int src_width, int src_height)
 {
@@ -105,10 +101,10 @@ __global__ void Subsample_Bilinear_uchar4(uchar4 *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        uchar4 c0 = tex2D(uchar4_tex, xi-dx, yi-dy);
-        uchar4 c1 = tex2D(uchar4_tex, xi+dx, yi-dy);
-        uchar4 c2 = tex2D(uchar4_tex, xi-dx, yi+dy);
-        uchar4 c3 = tex2D(uchar4_tex, xi+dx, yi+dy);
+        uchar4 c0 = tex2D<uchar4>(uchar4_tex, xi-dx, yi-dy);
+        uchar4 c1 = tex2D<uchar4>(uchar4_tex, xi+dx, yi-dy);
+        uchar4 c2 = tex2D<uchar4>(uchar4_tex, xi-dx, yi+dy);
+        uchar4 c3 = tex2D<uchar4>(uchar4_tex, xi+dx, yi+dy);
         int4 res;
         res.x =  ((int)c0.x+(int)c1.x+(int)c2.x+(int)c3.x+2) >> 2;
         res.y =  ((int)c0.y+(int)c1.y+(int)c2.y+(int)c3.y+2) >> 2;
@@ -119,7 +115,8 @@ __global__ void Subsample_Bilinear_uchar4(uchar4 *dst,
     }
 }
 
-__global__ void Subsample_Bilinear_ushort(unsigned short *dst,
+__global__ void Subsample_Bilinear_ushort(cudaTextureObject_t ushort_tex,
+                                    unsigned short *dst,
                                     int dst_width, int dst_height, int dst_pitch,
                                     int src_width, int src_height)
 {
@@ -138,15 +135,16 @@ __global__ void Subsample_Bilinear_ushort(unsigned short *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        int y0 = tex2D(ushort_tex, xi-dx, yi-dy);
-        int y1 = tex2D(ushort_tex, xi+dx, yi-dy);
-        int y2 = tex2D(ushort_tex, xi-dx, yi+dy);
-        int y3 = tex2D(ushort_tex, xi+dx, yi+dy);
+        int y0 = tex2D<unsigned short>(ushort_tex, xi-dx, yi-dy);
+        int y1 = tex2D<unsigned short>(ushort_tex, xi+dx, yi-dy);
+        int y2 = tex2D<unsigned short>(ushort_tex, xi-dx, yi+dy);
+        int y3 = tex2D<unsigned short>(ushort_tex, xi+dx, yi+dy);
         dst[yo*dst_pitch+xo] = (unsigned short)((y0+y1+y2+y3+2) >> 2);
     }
 }
 
-__global__ void Subsample_Bilinear_ushort2(ushort2 *dst,
+__global__ void Subsample_Bilinear_ushort2(cudaTextureObject_t ushort2_tex,
+                                    ushort2 *dst,
                                     int dst_width, int dst_height, int dst_pitch2,
                                     int src_width, int src_height)
 {
@@ -165,10 +163,10 @@ __global__ void Subsample_Bilinear_ushort2(ushort2 *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        ushort2 c0 = tex2D(ushort2_tex, xi-dx, yi-dy);
-        ushort2 c1 = tex2D(ushort2_tex, xi+dx, yi-dy);
-        ushort2 c2 = tex2D(ushort2_tex, xi-dx, yi+dy);
-        ushort2 c3 = tex2D(ushort2_tex, xi+dx, yi+dy);
+        ushort2 c0 = tex2D<ushort2>(ushort2_tex, xi-dx, yi-dy);
+        ushort2 c1 = tex2D<ushort2>(ushort2_tex, xi+dx, yi-dy);
+        ushort2 c2 = tex2D<ushort2>(ushort2_tex, xi-dx, yi+dy);
+        ushort2 c3 = tex2D<ushort2>(ushort2_tex, xi+dx, yi+dy);
         int2 uv;
         uv.x = ((int)c0.x+(int)c1.x+(int)c2.x+(int)c3.x+2) >> 2;
         uv.y = ((int)c0.y+(int)c1.y+(int)c2.y+(int)c3.y+2) >> 2;
@@ -176,7 +174,8 @@ __global__ void Subsample_Bilinear_ushort2(ushort2 *dst,
     }
 }
 
-__global__ void Subsample_Bilinear_ushort4(ushort4 *dst,
+__global__ void Subsample_Bilinear_ushort4(cudaTextureObject_t ushort4_tex,
+                                    ushort4 *dst,
                                     int dst_width, int dst_height, int dst_pitch,
                                     int src_width, int src_height)
 {
@@ -195,10 +194,10 @@ __global__ void Subsample_Bilinear_ushort4(ushort4 *dst,
         // Convert weights to two bilinear weights -> {wh,1.0,wh} -> {wh,0.5,0} + {0,0.5,wh}
         float dx = wh / (0.5f + wh);
         float dy = wv / (0.5f + wv);
-        ushort4 c0 = tex2D(ushort4_tex, xi-dx, yi-dy);
-        ushort4 c1 = tex2D(ushort4_tex, xi+dx, yi-dy);
-        ushort4 c2 = tex2D(ushort4_tex, xi-dx, yi+dy);
-        ushort4 c3 = tex2D(ushort4_tex, xi+dx, yi+dy);
+        ushort4 c0 = tex2D<ushort4>(ushort4_tex, xi-dx, yi-dy);
+        ushort4 c1 = tex2D<ushort4>(ushort4_tex, xi+dx, yi-dy);
+        ushort4 c2 = tex2D<ushort4>(ushort4_tex, xi-dx, yi+dy);
+        ushort4 c3 = tex2D<ushort4>(ushort4_tex, xi+dx, yi+dy);
         int4 res;
         res.x =  ((int)c0.x+(int)c1.x+(int)c2.x+(int)c3.x+2) >> 2;
         res.y =  ((int)c0.y+(int)c1.y+(int)c2.y+(int)c3.y+2) >> 2;

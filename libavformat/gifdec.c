@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "libavutil/bprint.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "internal.h"
@@ -94,42 +95,6 @@ static int resync(AVIOContext *pb)
     return 0;
 }
 
-static int gif_read_header(AVFormatContext *s)
-{
-    GIFDemuxContext *gdc = s->priv_data;
-    AVIOContext     *pb  = s->pb;
-    AVStream        *st;
-    int width, height, ret;
-
-    if ((ret = resync(pb)) < 0)
-        return ret;
-
-    gdc->delay  = gdc->default_delay;
-    width  = avio_rl16(pb);
-    height = avio_rl16(pb);
-
-    if (width == 0 || height == 0)
-        return AVERROR_INVALIDDATA;
-
-    st = avformat_new_stream(s, NULL);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    /* GIF format operates with time in "hundredths of second",
-     * therefore timebase is 1/100 */
-    avpriv_set_pts_info(st, 64, 1, 100);
-    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
-    st->codecpar->codec_id   = AV_CODEC_ID_GIF;
-    st->codecpar->width      = width;
-    st->codecpar->height     = height;
-
-    /* jump to start because gif decoder needs header data too */
-    if (avio_seek(pb, 0, SEEK_SET) != 0)
-        return AVERROR(EIO);
-
-    return 0;
-}
-
 static int gif_skip_subblocks(AVIOContext *pb)
 {
     int sb_size, ret = 0;
@@ -140,6 +105,104 @@ static int gif_skip_subblocks(AVIOContext *pb)
     }
 
     return ret;
+}
+
+static int gif_read_header(AVFormatContext *s)
+{
+    GIFDemuxContext *gdc = s->priv_data;
+    AVIOContext     *pb  = s->pb;
+    AVStream        *st;
+    int type, width, height, ret, n, flags;
+    int64_t nb_frames = 0, duration = 0;
+
+    if ((ret = resync(pb)) < 0)
+        return ret;
+
+    gdc->delay  = gdc->default_delay;
+    width  = avio_rl16(pb);
+    height = avio_rl16(pb);
+    flags = avio_r8(pb);
+    avio_skip(pb, 1);
+    n      = avio_r8(pb);
+
+    if (width == 0 || height == 0)
+        return AVERROR_INVALIDDATA;
+
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    if (flags & 0x80)
+        avio_skip(pb, 3 * (1 << ((flags & 0x07) + 1)));
+
+    while ((type = avio_r8(pb)) != GIF_TRAILER) {
+        if (avio_feof(pb))
+            break;
+        if (type == GIF_EXTENSION_INTRODUCER) {
+            int subtype = avio_r8(pb);
+            if (subtype == GIF_COM_EXT_LABEL) {
+                AVBPrint bp;
+                int block_size;
+
+                av_bprint_init(&bp, 0, -1);
+                while ((block_size = avio_r8(pb)) != 0) {
+                    avio_read_to_bprint(pb, &bp, block_size);
+                }
+                av_dict_set(&s->metadata, "comment", bp.str, 0);
+                av_bprint_finalize(&bp, NULL);
+            } else if (subtype == GIF_GCE_EXT_LABEL) {
+                int block_size = avio_r8(pb);
+
+                if (block_size == 4) {
+                    int delay;
+
+                    avio_skip(pb, 1);
+                    delay = avio_rl16(pb);
+                    if (delay < gdc->min_delay)
+                        delay = gdc->default_delay;
+                    delay = FFMIN(delay, gdc->max_delay);
+                    duration += delay;
+                    avio_skip(pb, 1);
+                } else {
+                    avio_skip(pb, block_size);
+                }
+                gif_skip_subblocks(pb);
+            } else {
+                gif_skip_subblocks(pb);
+            }
+        } else if (type == GIF_IMAGE_SEPARATOR) {
+            avio_skip(pb, 8);
+            flags = avio_r8(pb);
+            if (flags & 0x80)
+                avio_skip(pb, 3 * (1 << ((flags & 0x07) + 1)));
+            avio_skip(pb, 1);
+            gif_skip_subblocks(pb);
+            nb_frames++;
+        } else {
+            break;
+        }
+    }
+
+    /* GIF format operates with time in "hundredths of second",
+     * therefore timebase is 1/100 */
+    avpriv_set_pts_info(st, 64, 1, 100);
+    st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+    st->codecpar->codec_id   = AV_CODEC_ID_GIF;
+    st->codecpar->width      = width;
+    st->codecpar->height     = height;
+    st->start_time           = 0;
+    st->duration             = duration;
+    st->nb_frames            = nb_frames;
+    if (n) {
+        st->codecpar->sample_aspect_ratio.num = n + 15;
+        st->codecpar->sample_aspect_ratio.den = 64;
+    }
+
+    /* jump to start because gif decoder needs header data too */
+    if (avio_seek(pb, 0, SEEK_SET) != 0)
+        return AVERROR(EIO);
+
+    return 0;
 }
 
 static int gif_read_ext(AVFormatContext *s)

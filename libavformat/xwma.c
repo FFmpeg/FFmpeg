@@ -80,19 +80,43 @@ static int xwma_read_header(AVFormatContext *s)
         return ret;
     st->need_parsing = AVSTREAM_PARSE_NONE;
 
-    /* All xWMA files I have seen contained WMAv2 data. If there are files
-     * using WMA Pro or some other codec, then we need to figure out the right
-     * extradata for that. Thus, ask the user for feedback, but try to go on
-     * anyway.
-     */
+    /* XWMA encoder only allows a few channel/sample rate/bitrate combinations,
+     * but some create identical files with fake bitrate (1ch 22050hz at
+     * 20/48/192kbps are all 20kbps, with the exact same codec data).
+     * Decoder needs correct bitrate to work, so it's normalized here. */
+    if (st->codecpar->codec_id == AV_CODEC_ID_WMAV2) {
+        int ch = st->codecpar->channels;
+        int sr = st->codecpar->sample_rate;
+        int br = st->codecpar->bit_rate;
+
+        if (ch == 1) {
+            if (sr == 22050 && (br==48000 || br==192000))
+                br = 20000;
+            else if (sr == 32000 && (br==48000 || br==192000))
+                br = 20000;
+            else if (sr == 44100 && (br==96000 || br==192000))
+                br = 48000;
+        }
+        else if (ch == 2) {
+            if (sr == 22050 && (br==48000 || br==192000))
+                br = 32000;
+            else if (sr == 32000 && (br==192000))
+                br = 48000;
+        }
+
+        st->codecpar->bit_rate = br;
+    }
+
+    /* Normally xWMA can only contain WMAv2 with 1/2 channels,
+     * and WMAPRO with 6 channels. */
     if (st->codecpar->codec_id != AV_CODEC_ID_WMAV2 &&
         st->codecpar->codec_id != AV_CODEC_ID_WMAPRO) {
         avpriv_request_sample(s, "Unexpected codec (tag %s; id %d)",
                               av_fourcc2str(st->codecpar->codec_tag),
                               st->codecpar->codec_id);
     } else {
-        /* In all xWMA files I have seen, there is no extradata. But the WMA
-         * codecs require extradata, so we provide our own fake extradata.
+        /* xWMA shouldn't have extradata. But the WMA codecs require it,
+         * so we provide our own fake extradata.
          *
          * First, check that there really was no extradata in the header. If
          * there was, then try to use it, after asking the user to provide a

@@ -25,6 +25,169 @@
 #include "constants.h"
 #include "libavutil/mips/mmiutils.h"
 
+#define DECLARE_DOUBLE_1            double db_1
+#define DECLARE_DOUBLE_2            double db_2
+#define DECLARE_UINT32_T            uint32_t  it_1
+#define RESTRICT_ASM_DOUBLE_1       [db_1]"=&f"(db_1)
+#define RESTRICT_ASM_DOUBLE_2       [db_2]"=&f"(db_2)
+#define RESTRICT_ASM_UINT32_T       [it_1]"=&r"(it_1)
+
+#define MMI_PCMPGTUB(dst, src1, src2)                                       \
+        "pcmpeqb    %[db_1],    "#src1",        "#src2"             \n\t"   \
+        "pmaxub     %[db_2],    "#src1",        "#src2"             \n\t"   \
+        "pcmpeqb    %[db_2],    %[db_2],        "#src1"             \n\t"   \
+        "xor        "#dst",     %[db_2],        %[db_1]             \n\t"
+
+#define MMI_BTOH(dst_l, dst_r, src)                                         \
+        "xor        %[db_1],    %[db_1],        %[db_1]             \n\t"   \
+        "pcmpgtb    %[db_2],    %[db_1],        "#src"              \n\t"   \
+        "punpcklbh  "#dst_r",   "#src",         %[db_2]             \n\t"   \
+        "punpckhbh  "#dst_l",   "#src",         %[db_2]             \n\t"
+
+#define MMI_VP8_LOOP_FILTER                                                 \
+        /* Calculation of hev */                                            \
+        "dmtc1      %[thresh],  %[ftmp3]                            \n\t"   \
+        "punpcklbh  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklhw  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklwd  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "pasubub    %[ftmp0],   %[p1],          %[p0]               \n\t"   \
+        "pasubub    %[ftmp1],   %[q1],          %[q0]               \n\t"   \
+        "pmaxub     %[ftmp0],   %[ftmp0],       %[ftmp1]            \n\t"   \
+        MMI_PCMPGTUB(%[hev], %[ftmp0], %[ftmp3])                            \
+        /* Calculation of mask */                                           \
+        "pasubub    %[ftmp1],   %[p0],          %[q0]               \n\t"   \
+        "paddusb    %[ftmp1],   %[ftmp1],       %[ftmp1]            \n\t"   \
+        "pasubub    %[ftmp2],   %[p1],          %[q1]               \n\t"   \
+        "li         %[tmp0],    0x09                                \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp3]                            \n\t"   \
+        PSRLB_MMI(%[ftmp2],  %[ftmp3],  %[ftmp4],  %[ftmp5],  %[ftmp2])     \
+        "paddusb    %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"   \
+        "dmtc1      %[e],       %[ftmp3]                            \n\t"   \
+        "punpcklbh  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklhw  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklwd  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        MMI_PCMPGTUB(%[mask], %[ftmp1], %[ftmp3])                           \
+        "pmaxub     %[mask],    %[mask],        %[ftmp0]            \n\t"   \
+        "pasubub    %[ftmp1],   %[p3],          %[p2]               \n\t"   \
+        "pasubub    %[ftmp2],   %[p2],          %[p1]               \n\t"   \
+        "pmaxub     %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"   \
+        "pmaxub     %[mask],    %[mask],        %[ftmp1]            \n\t"   \
+        "pasubub    %[ftmp1],   %[q3],          %[q2]               \n\t"   \
+        "pasubub    %[ftmp2],   %[q2],          %[q1]               \n\t"   \
+        "pmaxub     %[ftmp1],   %[ftmp1],       %[ftmp2]            \n\t"   \
+        "pmaxub     %[mask],    %[mask],        %[ftmp1]            \n\t"   \
+        "dmtc1      %[i],       %[ftmp3]                            \n\t"   \
+        "punpcklbh  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklhw  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "punpcklwd  %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        MMI_PCMPGTUB(%[mask], %[mask], %[ftmp3])                            \
+        "pcmpeqw    %[ftmp3],   %[ftmp3],       %[ftmp3]            \n\t"   \
+        "xor        %[mask],    %[mask],        %[ftmp3]            \n\t"   \
+        /* VP8_MBFILTER */                                                  \
+        "li         %[tmp0],    0x80808080                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp7]                            \n\t"   \
+        "punpcklwd  %[ftmp7],   %[ftmp7],       %[ftmp7]            \n\t"   \
+        "xor        %[p2],      %[p2],          %[ftmp7]            \n\t"   \
+        "xor        %[p1],      %[p1],          %[ftmp7]            \n\t"   \
+        "xor        %[p0],      %[p0],          %[ftmp7]            \n\t"   \
+        "xor        %[q0],      %[q0],          %[ftmp7]            \n\t"   \
+        "xor        %[q1],      %[q1],          %[ftmp7]            \n\t"   \
+        "xor        %[q2],      %[q2],          %[ftmp7]            \n\t"   \
+        "psubsb     %[ftmp4],   %[p1],          %[q1]               \n\t"   \
+        "psubb      %[ftmp5],   %[q0],          %[p0]               \n\t"   \
+        MMI_BTOH(%[ftmp1],  %[ftmp0],  %[ftmp5])                            \
+        MMI_BTOH(%[ftmp3],  %[ftmp2],  %[ftmp4])                            \
+        /* Right part */                                                    \
+        "paddh      %[ftmp5],   %[ftmp0],       %[ftmp0]            \n\t"   \
+        "paddh      %[ftmp0],   %[ftmp0],       %[ftmp5]            \n\t"   \
+        "paddh      %[ftmp0],   %[ftmp2],       %[ftmp0]            \n\t"   \
+        /* Left part */                                                     \
+        "paddh      %[ftmp5],   %[ftmp1],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp1],   %[ftmp1],       %[ftmp5]            \n\t"   \
+        "paddh      %[ftmp1],   %[ftmp3],       %[ftmp1]            \n\t"   \
+        /* Combine left and right part */                                   \
+        "packsshb   %[ftmp1],   %[ftmp0],       %[ftmp1]            \n\t"   \
+        "and        %[ftmp1],   %[ftmp1],       %[mask]             \n\t"   \
+        "and        %[ftmp2],   %[ftmp1],       %[hev]              \n\t"   \
+        "li         %[tmp0],    0x04040404                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp0]                            \n\t"   \
+        "punpcklwd  %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
+        "paddsb     %[ftmp3],   %[ftmp2],       %[ftmp0]            \n\t"   \
+        "li         %[tmp0],    0x0B                                \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp4]                            \n\t"   \
+        PSRAB_MMI(%[ftmp3],  %[ftmp4],  %[ftmp5],  %[ftmp6],  %[ftmp3])     \
+        "li         %[tmp0],    0x03030303                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp0]                            \n\t"   \
+        "punpcklwd  %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
+        "paddsb     %[ftmp4],   %[ftmp2],       %[ftmp0]            \n\t"   \
+        "li         %[tmp0],    0x0B                                \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp2]                            \n\t"   \
+        PSRAB_MMI(%[ftmp4],  %[ftmp2],  %[ftmp5],  %[ftmp6],  %[ftmp4])     \
+        "psubsb     %[q0],      %[q0],          %[ftmp3]            \n\t"   \
+        "paddsb     %[p0],      %[p0],          %[ftmp4]            \n\t"   \
+        /* filt_val &= ~hev */                                              \
+        "pcmpeqw    %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
+        "xor        %[hev],     %[hev],         %[ftmp0]            \n\t"   \
+        "and        %[ftmp1],   %[ftmp1],       %[hev]              \n\t"   \
+        MMI_BTOH(%[ftmp5],  %[ftmp6],  %[ftmp1])                            \
+        "li         %[tmp0],    0x07                                \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp2]                            \n\t"   \
+        "li         %[tmp0],    0x001b001b                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp1]                            \n\t"   \
+        "punpcklwd  %[ftmp1],   %[ftmp1],       %[ftmp1]            \n\t"   \
+        "li         %[tmp0],    0x003f003f                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp0]                            \n\t"   \
+        "punpcklwd  %[ftmp0],   %[ftmp0],       %[ftmp0]            \n\t"   \
+        /* Right part */                                                    \
+        "pmullh     %[ftmp3],   %[ftmp6],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp3],   %[ftmp3],       %[ftmp2]            \n\t"   \
+        /* Left part */                                                     \
+        "pmullh     %[ftmp4],   %[ftmp5],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp4],   %[ftmp4],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp4],   %[ftmp4],       %[ftmp2]            \n\t"   \
+        /* Combine left and right part */                                   \
+        "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
+        "psubsb     %[q0],      %[q0],          %[ftmp4]            \n\t"   \
+        "xor        %[q0],      %[q0],          %[ftmp7]            \n\t"   \
+        "paddsb     %[p0],      %[p0],          %[ftmp4]            \n\t"   \
+        "xor        %[p0],      %[p0],          %[ftmp7]            \n\t"   \
+        "li         %[tmp0],    0x00120012                          \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp1]                            \n\t"   \
+        "punpcklwd  %[ftmp1],   %[ftmp1],       %[ftmp1]            \n\t"   \
+        /* Right part */                                                    \
+        "pmullh     %[ftmp3],   %[ftmp6],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp3],   %[ftmp3],       %[ftmp2]            \n\t"   \
+        /* Left part */                                                     \
+        "pmullh     %[ftmp4],   %[ftmp5],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp4],   %[ftmp4],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp4],   %[ftmp4],       %[ftmp2]            \n\t"   \
+        /* Combine left and right part */                                   \
+        "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
+        "psubsb     %[q1],      %[q1],          %[ftmp4]            \n\t"   \
+        "xor        %[q1],      %[q1],          %[ftmp7]            \n\t"   \
+        "paddsb     %[p1],      %[p1],          %[ftmp4]            \n\t"   \
+        "xor        %[p1],      %[p1],          %[ftmp7]            \n\t"   \
+        "li         %[tmp0],    0x03                                \n\t"   \
+        "dmtc1      %[tmp0],    %[ftmp1]                            \n\t"   \
+        /* Right part */                                                    \
+        "psllh      %[ftmp3],   %[ftmp6],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp6]            \n\t"   \
+        "paddh      %[ftmp3],   %[ftmp3],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp3],   %[ftmp3],       %[ftmp2]            \n\t"   \
+        /* Left part */                                                     \
+        "psllh      %[ftmp4],   %[ftmp5],       %[ftmp1]            \n\t"   \
+        "paddh      %[ftmp4],   %[ftmp4],       %[ftmp5]            \n\t"   \
+        "paddh      %[ftmp4],   %[ftmp4],       %[ftmp0]            \n\t"   \
+        "psrah      %[ftmp4],   %[ftmp4],       %[ftmp2]            \n\t"   \
+        /* Combine left and right part */                                   \
+        "packsshb   %[ftmp4],   %[ftmp3],       %[ftmp4]            \n\t"   \
+        "psubsb     %[q2],      %[q2],          %[ftmp4]            \n\t"   \
+        "xor        %[q2],      %[q2],          %[ftmp7]            \n\t"   \
+        "paddsb     %[p2],      %[p2],          %[ftmp4]            \n\t"   \
+        "xor        %[p2],      %[p2],          %[ftmp7]            \n\t"
+
 #define PUT_VP8_EPEL4_H6_MMI(src, dst)                                      \
         MMI_ULWC1(%[ftmp1], src, 0x00)                                      \
         "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]            \n\t"   \
@@ -621,15 +784,71 @@ static av_always_inline int vp8_normal_limit(uint8_t *p, ptrdiff_t stride,
 static av_always_inline void vp8_v_loop_filter8_mmi(uint8_t *dst,
         ptrdiff_t stride, int flim_E, int flim_I, int hev_thresh)
 {
-    int i;
-
-    for (i = 0; i < 8; i++)
-        if (vp8_normal_limit(dst + i * 1, stride, flim_E, flim_I)) {
-            if (hev(dst + i * 1, stride, hev_thresh))
-                vp8_filter_common_is4tap(dst + i * 1, stride);
-            else
-                filter_mbedge(dst + i * 1, stride);
-        }
+    double ftmp[18];
+    uint32_t tmp[1];
+    DECLARE_DOUBLE_1;
+    DECLARE_DOUBLE_2;
+    DECLARE_UINT32_T;
+    __asm__ volatile(
+        /* Get data from dst */
+        "gsldlc1    %[q0],      0x07(%[dst])                      \n\t"
+        "gsldrc1    %[q0],      0x00(%[dst])                      \n\t"
+        PTR_SUBU    "%[tmp0],   %[dst],         %[stride]         \n\t"
+        "gsldlc1    %[p0],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[p0],      0x00(%[tmp0])                     \n\t"
+        PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gsldlc1    %[p1],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[p1],      0x00(%[tmp0])                     \n\t"
+        PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gsldlc1    %[p2],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[p2],      0x00(%[tmp0])                     \n\t"
+        PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gsldlc1    %[p3],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[p3],      0x00(%[tmp0])                     \n\t"
+        PTR_ADDU    "%[tmp0],   %[dst],         %[stride]         \n\t"
+        "gsldlc1    %[q1],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[q1],      0x00(%[tmp0])                     \n\t"
+        PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gsldlc1    %[q2],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[q2],      0x00(%[tmp0])                     \n\t"
+        PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gsldlc1    %[q3],      0x07(%[tmp0])                     \n\t"
+        "gsldrc1    %[q3],      0x00(%[tmp0])                     \n\t"
+        MMI_VP8_LOOP_FILTER
+        /* Move to dst */
+        "gssdlc1    %[q0],      0x07(%[dst])                      \n\t"
+        "gssdrc1    %[q0],      0x00(%[dst])                      \n\t"
+        PTR_SUBU    "%[tmp0],   %[dst],         %[stride]         \n\t"
+        "gssdlc1    %[p0],      0x07(%[tmp0])                     \n\t"
+        "gssdrc1    %[p0],      0x00(%[tmp0])                     \n\t"
+        PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gssdlc1    %[p1],      0x07(%[tmp0])                     \n\t"
+        "gssdrc1    %[p1],      0x00(%[tmp0])                     \n\t"
+        PTR_SUBU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gssdlc1    %[p2],      0x07(%[tmp0])                     \n\t"
+        "gssdrc1    %[p2],      0x00(%[tmp0])                     \n\t"
+        PTR_ADDU    "%[tmp0],   %[dst],         %[stride]         \n\t"
+        "gssdlc1    %[q1],      0x07(%[tmp0])                     \n\t"
+        "gssdrc1    %[q1],      0x00(%[tmp0])                     \n\t"
+        PTR_ADDU    "%[tmp0],   %[tmp0],        %[stride]         \n\t"
+        "gssdlc1    %[q2],      0x07(%[tmp0])                     \n\t"
+        "gssdrc1    %[q2],      0x00(%[tmp0])                     \n\t"
+        : [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
+          [p1]"=&f"(ftmp[2]),       [p0]"=&f"(ftmp[3]),
+          [q0]"=&f"(ftmp[4]),       [q1]"=&f"(ftmp[5]),
+          [q2]"=&f"(ftmp[6]),       [q3]"=&f"(ftmp[7]),
+          [ftmp0]"=&f"(ftmp[8]),    [ftmp1]"=&f"(ftmp[9]),
+          [ftmp2]"=&f"(ftmp[10]),   [ftmp3]"=&f"(ftmp[11]),
+          [hev]"=&f"(ftmp[12]),     [mask]"=&f"(ftmp[13]),
+          [ftmp4]"=&f"(ftmp[14]),   [ftmp5]"=&f"(ftmp[15]),
+          [ftmp6]"=&f"(ftmp[16]),   [ftmp7]"=&f"(ftmp[17]),
+          [dst]"+&r"(dst),          [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_DOUBLE_1,    RESTRICT_ASM_DOUBLE_2,
+          RESTRICT_ASM_UINT32_T
+        : [e]"r"((mips_reg)flim_E), [thresh]"r"((mips_reg)hev_thresh),
+          [i]"r"((mips_reg)flim_I), [stride]"r"((mips_reg)stride)
+        : "memory"
+    );
 }
 
 static av_always_inline void vp8_v_loop_filter8_inner_mmi(uint8_t *dst,
@@ -650,15 +869,85 @@ static av_always_inline void vp8_v_loop_filter8_inner_mmi(uint8_t *dst,
 static av_always_inline void vp8_h_loop_filter8_mmi(uint8_t *dst,
         ptrdiff_t stride, int flim_E, int flim_I, int hev_thresh)
 {
-    int i;
-
-    for (i = 0; i < 8; i++)
-        if (vp8_normal_limit(dst + i * stride, 1, flim_E, flim_I)) {
-            if (hev(dst + i * stride, 1, hev_thresh))
-                vp8_filter_common_is4tap(dst + i * stride, 1);
-            else
-                filter_mbedge(dst + i * stride, 1);
-        }
+    double ftmp[18];
+    uint32_t tmp[1];
+    DECLARE_DOUBLE_1;
+    DECLARE_DOUBLE_2;
+    DECLARE_UINT32_T;
+    __asm__ volatile(
+        /* Get data from dst */
+        "gsldlc1    %[p3],        0x03(%[dst])                    \n\t"
+        "gsldrc1    %[p3],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[tmp0],     %[dst],           %[stride]     \n\t"
+        "gsldlc1    %[p2],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[p2],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[p1],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[p1],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[p0],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[p0],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[q0],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[q0],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[q1],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[q1],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[q2],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[q2],        -0x04(%[tmp0])                  \n\t"
+        PTR_ADDU    "%[tmp0],     %[tmp0],          %[stride]     \n\t"
+        "gsldlc1    %[q3],        0x03(%[tmp0])                   \n\t"
+        "gsldrc1    %[q3],        -0x04(%[tmp0])                  \n\t"
+        /* Matrix transpose */
+        TRANSPOSE_8B(%[p3], %[p2], %[p1], %[p0],
+                     %[q0], %[q1], %[q2], %[q3],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
+        MMI_VP8_LOOP_FILTER
+        /* Matrix transpose */
+        TRANSPOSE_8B(%[p3], %[p2], %[p1], %[p0],
+                     %[q0], %[q1], %[q2], %[q3],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
+        /* Move to dst */
+        "gssdlc1    %[p3],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[p3],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[p2],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[p2],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[p1],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[p1],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[p0],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[p0],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[q0],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[q0],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[q1],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[q1],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[q2],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[q2],        -0x04(%[dst])                   \n\t"
+        PTR_ADDU    "%[dst],      %[dst],           %[stride]     \n\t"
+        "gssdlc1    %[q3],        0x03(%[dst])                    \n\t"
+        "gssdrc1    %[q3],        -0x04(%[dst])                   \n\t"
+        : [p3]"=&f"(ftmp[0]),       [p2]"=&f"(ftmp[1]),
+          [p1]"=&f"(ftmp[2]),       [p0]"=&f"(ftmp[3]),
+          [q0]"=&f"(ftmp[4]),       [q1]"=&f"(ftmp[5]),
+          [q2]"=&f"(ftmp[6]),       [q3]"=&f"(ftmp[7]),
+          [ftmp0]"=&f"(ftmp[8]),    [ftmp1]"=&f"(ftmp[9]),
+          [ftmp2]"=&f"(ftmp[10]),   [ftmp3]"=&f"(ftmp[11]),
+          [hev]"=&f"(ftmp[12]),     [mask]"=&f"(ftmp[13]),
+          [ftmp4]"=&f"(ftmp[14]),   [ftmp5]"=&f"(ftmp[15]),
+          [ftmp6]"=&f"(ftmp[16]),   [ftmp7]"=&f"(ftmp[17]),
+          [dst]"+&r"(dst),          [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_DOUBLE_1,    RESTRICT_ASM_DOUBLE_2,
+          RESTRICT_ASM_UINT32_T
+        : [e]"r"((mips_reg)flim_E), [thresh]"r"((mips_reg)hev_thresh),
+          [i]"r"((mips_reg)flim_I), [stride]"r"((mips_reg)stride)
+        : "memory"
+    );
 }
 
 static av_always_inline void vp8_h_loop_filter8_inner_mmi(uint8_t *dst,
@@ -890,8 +1179,7 @@ void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
         MMI_SDC1(%[ftmp0], %[block], 0x18)
 
         TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp0], %[ftmp10])
+                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8])
 
         // t[0 4  8 12]
         "paddh      %[ftmp5],   %[ftmp1],       %[ftmp3]            \n\t"
@@ -926,8 +1214,7 @@ void ff_vp8_idct_add_mmi(uint8_t *dst, int16_t block[16], ptrdiff_t stride)
         "psrah      %[ftmp4],   %[ftmp4],       %[ftmp11]           \n\t"
 
         TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp0], %[ftmp10])
+                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8])
 
         MMI_LWC1(%[ftmp5], %[dst0], 0x00)
         MMI_LWC1(%[ftmp6], %[dst1], 0x00)
@@ -1083,29 +1370,16 @@ void ff_vp8_idct_dc_add4uv_mmi(uint8_t *dst, int16_t block[4][16],
 void ff_vp8_v_loop_filter16_mmi(uint8_t *dst, ptrdiff_t stride, int flim_E,
         int flim_I, int hev_thresh)
 {
-    int i;
-
-    for (i = 0; i < 16; i++)
-        if (vp8_normal_limit(dst + i * 1, stride, flim_E, flim_I)) {
-            if (hev(dst + i * 1, stride, hev_thresh))
-                vp8_filter_common_is4tap(dst + i * 1, stride);
-            else
-                filter_mbedge(dst + i * 1, stride);
-        }
+    vp8_v_loop_filter8_mmi(dst, stride, flim_E, flim_I, hev_thresh);
+    vp8_v_loop_filter8_mmi(dst + 8, stride, flim_E, flim_I, hev_thresh);
 }
 
 void ff_vp8_h_loop_filter16_mmi(uint8_t *dst, ptrdiff_t stride, int flim_E,
         int flim_I, int hev_thresh)
 {
-    int i;
-
-    for (i = 0; i < 16; i++)
-        if (vp8_normal_limit(dst + i * stride, 1, flim_E, flim_I)) {
-            if (hev(dst + i * stride, 1, hev_thresh))
-                vp8_filter_common_is4tap(dst + i * stride, 1);
-            else
-                filter_mbedge(dst + i * stride, 1);
-        }
+    vp8_h_loop_filter8_mmi(dst, stride, flim_E, flim_I, hev_thresh);
+    vp8_h_loop_filter8_mmi(dst + 8 * stride, stride, flim_E, flim_I,
+                           hev_thresh);
 }
 
 void ff_vp8_v_loop_filter8uv_mmi(uint8_t *dstU, uint8_t *dstV, ptrdiff_t stride,

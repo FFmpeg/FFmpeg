@@ -45,10 +45,10 @@ static av_cold void blockdsp_init_mmi(BlockDSPContext *c)
 
 void ff_blockdsp_init_mips(BlockDSPContext *c)
 {
-#if HAVE_MSA
-    blockdsp_init_msa(c);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     blockdsp_init_mmi(c);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    blockdsp_init_msa(c);
+#endif  // #if HAVE_MSA
 }

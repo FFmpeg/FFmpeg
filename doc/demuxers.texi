@@ -269,6 +269,12 @@ ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
 @table @option
 @item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
+
+@item -flv_ignore_prevtag @var{bool}
+Ignore the size of previous tag value.
+
+@item -flv_full_metadata @var{bool}
+Output all context of the onMetadata.
 @end table
 
 @section gif
@@ -475,14 +481,84 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 
 The Game Music Emu library is a collection of video game music file emulators.
 
-See @url{http://code.google.com/p/game-music-emu/} for more information.
+See @url{https://bitbucket.org/mpyne/game-music-emu/overview} for more information.
 
-Some files have multiple tracks. The demuxer will pick the first track by
-default. The @option{track_index} option can be used to select a different
-track. Track indexes start at 0. The demuxer exports the number of tracks as
-@var{tracks} meta data entry.
+It accepts the following options:
 
-For very large files, the @option{max_size} option may have to be adjusted.
+@table @option
+
+@item track_index
+Set the index of which track to demux. The demuxer can only export one track.
+Track indexes start at 0. Default is to pick the first track. Number of tracks
+is exported as @var{tracks} metadata entry.
+
+@item sample_rate
+Set the sampling rate of the exported track. Range is 1000 to 999999. Default is 44100.
+
+@item max_size @emph{(bytes)}
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read.
+Default is 50 MiB.
+
+@end table
+
+@section libmodplug
+
+ModPlug based module demuxer
+
+See @url{https://github.com/Konstanty/libmodplug}
+
+It will export one 2-channel 16-bit 44.1 kHz audio stream.
+Optionally, a @code{pal8} 16-color video stream can be exported with or without printed metadata.
+
+It accepts the following options:
+
+@table @option
+@item noise_reduction
+Apply a simple low-pass filter. Can be 1 (on) or 0 (off). Default is 0.
+
+@item reverb_depth
+Set amount of reverb. Range 0-100. Default is 0.
+
+@item reverb_delay
+Set delay in ms, clamped to 40-250 ms. Default is 0.
+
+@item bass_amount
+Apply bass expansion a.k.a. XBass or megabass. Range is 0 (quiet) to 100 (loud). Default is 0.
+
+@item bass_range
+Set cutoff i.e. upper-bound for bass frequencies. Range is 10-100 Hz. Default is 0.
+
+@item surround_depth
+Apply a Dolby Pro-Logic surround effect. Range is 0 (quiet) to 100 (heavy). Default is 0.
+
+@item surround_delay
+Set surround delay in ms, clamped to 5-40 ms. Default is 0.
+
+@item max_size
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read. Range is 0 to 100 MiB.
+0 removes buffer size limit (not recommended). Default is 5 MiB.
+
+@item video_stream_expr
+String which is evaluated using the eval API to assign colors to the generated video stream.
+Variables which can be used are @code{x}, @code{y}, @code{w}, @code{h}, @code{t}, @code{speed},
+@code{tempo}, @code{order}, @code{pattern} and @code{row}.
+
+@item video_stream
+Generate video stream. Can be 1 (on) or 0 (off). Default is 0.
+
+@item video_stream_w
+Set video frame width in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_h
+Set video frame height in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_ptxt
+Print metadata on video stream. Includes @code{speed}, @code{tempo}, @code{order}, @code{pattern},
+@code{row} and @code{ts} (time in ms). Can be 1 (on) or 0 (off). Default is 1.
+
+@end table
 
 @section libopenmpt
 
@@ -655,5 +731,21 @@ Example: convert the captions to a format most players understand:
 @example
 ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
 @end example
+
+@section vapoursynth
+
+Vapoursynth wrapper.
+
+Due to security concerns, Vapoursynth scripts will not
+be autodetected so the input format has to be forced. For ff* CLI tools,
+add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
+
+This demuxer accepts the following option:
+@table @option
+@item max_script_size
+The demuxer buffers the entire script into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of scripts that can be read.
+Default is 1 MiB.
+@end table
 
 @c man end DEMUXERS

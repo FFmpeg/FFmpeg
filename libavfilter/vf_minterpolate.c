@@ -26,11 +26,11 @@
 #include "libavutil/motion_vector.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
-#include "libavutil/pixelutils.h"
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "scene_sad.h"
 
 #define ME_MODE_BIDIR 0
 #define ME_MODE_BILAT 1
@@ -188,7 +188,7 @@ typedef struct MIContext {
 
     int scd_method;
     int scene_changed;
-    av_pixelutils_sad_fn sad;
+    ff_scene_sad_fn sad;
     double prev_mafd;
     double scd_threshold;
 
@@ -383,7 +383,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (mi_ctx->scd_method == SCD_METHOD_FDIFF) {
-        mi_ctx->sad = av_pixelutils_get_sad_fn(3, 3, 2, mi_ctx);
+        mi_ctx->sad = ff_scene_sad_get_fn(8);
         if (!mi_ctx->sad)
             return AVERROR(EINVAL);
     }
@@ -826,19 +826,15 @@ static int inject_frame(AVFilterLink *inlink, AVFrame *avf_in)
 static int detect_scene_change(MIContext *mi_ctx)
 {
     AVMotionEstContext *me_ctx = &mi_ctx->me_ctx;
-    int x, y;
-    int linesize = me_ctx->linesize;
     uint8_t *p1 = mi_ctx->frames[1].avf->data[0];
+    ptrdiff_t linesize1 = mi_ctx->frames[1].avf->linesize[0];
     uint8_t *p2 = mi_ctx->frames[2].avf->data[0];
+    ptrdiff_t linesize2 = mi_ctx->frames[2].avf->linesize[0];
 
     if (mi_ctx->scd_method == SCD_METHOD_FDIFF) {
         double ret = 0, mafd, diff;
-        int64_t sad;
-
-        for (sad = y = 0; y < me_ctx->height; y += 8)
-            for (x = 0; x < linesize; x += 8)
-                sad += mi_ctx->sad(p1 + x + y * linesize, linesize, p2 + x + y * linesize, linesize);
-
+        uint64_t sad;
+        mi_ctx->sad(p1, linesize1, p2, linesize2, me_ctx->width, me_ctx->height, &sad);
         emms_c();
         mafd = (double) sad / (me_ctx->height * me_ctx->width * 3);
         diff = fabs(mafd - mi_ctx->prev_mafd);

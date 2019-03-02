@@ -267,7 +267,8 @@ audio track.
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}.
+Defaults to @option{false}. Alternatively you can use the @code{-sources}
+option of ffmpeg to list the available input devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
@@ -369,6 +370,20 @@ Defaults to @samp{16}.
 If set to @option{true}, timestamps are forwarded as they are without removing
 the initial offset.
 Defaults to @option{false}.
+
+@item timestamp_align
+Capture start time alignment in seconds. If set to nonzero, input frames are
+dropped till the system timestamp aligns with configured value.
+Alignment difference of up to one frame duration is tolerated.
+This is useful for maintaining input synchronization across N different
+hardware devices deployed for 'N-way' redundancy. The system time of different
+hardware devices should be synchronized with protocols such as NTP or PTP,
+before using this option.
+Note that this method is not foolproof. In some border cases input
+synchronization may not happen due to thread scheduling jitters in the OS.
+Either sync could go wrong by 1 frame or in a rarer case
+@option{timestamp_align} seconds.
+Defaults to @samp{0}.
 
 @end table
 
@@ -772,7 +787,7 @@ ffplay -f iec61883 -i auto
 Grab and record the input of a FireWire DV/HDV device,
 using a packet buffer of 100000 packets if the source is HDV.
 @example
-ffmpeg -f iec61883 -i auto -hdvbuffer 100000 out.mpg
+ffmpeg -f iec61883 -i auto -dvbuffer 100000 out.mpg
 @end example
 
 @end itemize
@@ -1035,6 +1050,21 @@ IIDC1394 input device, based on libdc1394 and libraw1394.
 
 Requires the configure option @code{--enable-libdc1394}.
 
+@subsection Options
+@table @option
+
+@item framerate
+Set the frame rate. Default is @code{ntsc}, corresponding to a frame
+rate of @code{30000/1001}.
+
+@item pixel_format
+Select the pixel format. Default is @code{uyvy422}.
+
+@item video_size
+Set the video size given as a string such as @code{640x480} or @code{hd720}.
+Default is @code{qvga}.
+@end table
+
 @section libndi_newtek
 
 The libndi_newtek input device provides capture capabilities for using NDI (Network
@@ -1063,6 +1093,10 @@ Defaults to @option{0.5}.
 When this flag is @option{false}, all video that you receive will be progressive.
 Defaults to @option{true}.
 
+@item extra_ips
+If is set to list of comma separated ip addresses, scan for sources not only
+using mDNS but also use unicast ip addresses specified by this list.
+
 @end table
 
 @subsection Examples
@@ -1076,10 +1110,23 @@ ffmpeg -f libndi_newtek -find_sources 1 -i dummy
 @end example
 
 @item
+List local and remote input devices:
+@example
+ffmpeg -f libndi_newtek -extra_ips "192.168.10.10" -find_sources 1 -i dummy
+@end example
+
+@item
 Restream to NDI:
 @example
 ffmpeg -f libndi_newtek -i "DEV-5.INTERNAL.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
 @end example
+
+@item
+Restream remote NDI to local NDI:
+@example
+ffmpeg -f libndi_newtek -extra_ips "192.168.10.10" -i "DEV-5.REMOTE.M1STEREO.TV (NDI_SOURCE_NAME_1)" -f libndi_newtek -y NDI_SOURCE_NAME_2
+@end example
+
 
 @end itemize
 

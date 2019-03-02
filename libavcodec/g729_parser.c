@@ -48,6 +48,7 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
         av_assert1(avctx->codec_id == AV_CODEC_ID_G729);
         /* FIXME: replace this heuristic block_size with more precise estimate */
         s->block_size = (avctx->bit_rate < 8000) ? G729D_6K4_BLOCK_SIZE : G729_8K_BLOCK_SIZE;
+        s->block_size *= avctx->channels;
         s->duration   = avctx->frame_size;
     }
 

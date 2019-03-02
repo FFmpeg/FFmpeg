@@ -61,7 +61,8 @@ FATE_CBS_HEVC_SAMPLES =       \
     LTRPSPS_A_Qualcomm_1.bit  \
     RPLM_A_qualcomm_4.bit     \
     CONFWIN_A_Sony_1.bit      \
-    HRD_A_Fujitsu_2.bit
+    HRD_A_Fujitsu_2.bit       \
+    SLPPLP_A_VIDYO_2.bit
 
 $(foreach N,$(FATE_CBS_HEVC_SAMPLES),$(eval $(call FATE_CBS_TEST,hevc,$(basename $(N)),hevc-conformance/$(N),hevc)))
 

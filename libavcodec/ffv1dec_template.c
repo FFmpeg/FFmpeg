@@ -50,6 +50,11 @@ static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
     for (x = 0; x < w; x++) {
         int diff, context, sign;
 
+        if (!(x & 1023)) {
+            if (is_input_end(s))
+                return AVERROR_INVALIDDATA;
+        }
+
         context = RENAME(get_context)(p, sample[1] + x, sample[0] + x, sample[1] + x);
         if (context < 0) {
             context = -context;
@@ -107,7 +112,7 @@ static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
     return 0;
 }
 
-static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int h, int stride[4])
+static int RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int h, int stride[4])
 {
     int x, y, p;
     TYPE *sample[4][2];
@@ -127,6 +132,7 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int
 
     for (y = 0; y < h; y++) {
         for (p = 0; p < 3 + transparency; p++) {
+            int ret;
             TYPE *temp = sample[p][0]; // FIXME: try a normal buffer
 
             sample[p][0] = sample[p][1];
@@ -135,9 +141,11 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int
             sample[p][1][-1]= sample[p][0][0  ];
             sample[p][0][ w]= sample[p][0][w-1];
             if (lbd && s->slice_coding_mode == 0)
-                RENAME(decode_line)(s, w, sample[p], (p + 1)/2, 9);
+                ret = RENAME(decode_line)(s, w, sample[p], (p + 1)/2, 9);
             else
-                RENAME(decode_line)(s, w, sample[p], (p + 1)/2, bits + (s->slice_coding_mode != 1));
+                ret = RENAME(decode_line)(s, w, sample[p], (p + 1)/2, bits + (s->slice_coding_mode != 1));
+            if (ret < 0)
+                return ret;
         }
         for (x = 0; x < w; x++) {
             int g = sample[0][1][x];
@@ -168,4 +176,5 @@ static void RENAME(decode_rgb_frame)(FFV1Context *s, uint8_t *src[4], int w, int
             }
         }
     }
+    return 0;
 }

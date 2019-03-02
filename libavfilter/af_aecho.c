@@ -78,7 +78,7 @@ static void fill_items(char *item_str, int *nb_items, float *items)
         char *tstr = av_strtok(p, "|", &saveptr);
         p = NULL;
         if (tstr)
-            new_nb_items += sscanf(tstr, "%f", &items[new_nb_items]) == 1;
+            new_nb_items += av_sscanf(tstr, "%f", &items[new_nb_items]) == 1;
     }
 
     *nb_items = new_nb_items;

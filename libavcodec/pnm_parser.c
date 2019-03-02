@@ -32,6 +32,7 @@ static int pnm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     ParseContext *pc = s->priv_data;
     PNMContext pnmctx;
     int next;
+    int skip = 0;
 
     for (; pc->overread > 0; pc->overread--) {
         pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
@@ -43,16 +44,17 @@ retry:
         pnmctx.bytestream_end   = pc->buffer + pc->index;
     } else {
         pnmctx.bytestream_start =
-        pnmctx.bytestream       = (uint8_t *) buf; /* casts avoid warnings */
-        pnmctx.bytestream_end   = (uint8_t *) buf + buf_size;
+        pnmctx.bytestream       = (uint8_t *) buf + skip; /* casts avoid warnings */
+        pnmctx.bytestream_end   = (uint8_t *) buf + buf_size - skip;
     }
     if (ff_pnm_decode_header(avctx, &pnmctx) < 0) {
         if (pnmctx.bytestream < pnmctx.bytestream_end) {
             if (pc->index) {
                 pc->index = 0;
             } else {
-                buf++;
-                buf_size--;
+                unsigned step = FFMAX(1, pnmctx.bytestream - pnmctx.bytestream_start);
+
+                skip += step;
             }
             goto retry;
         }
@@ -60,9 +62,9 @@ retry:
     } else if (pnmctx.type < 4) {
         next = END_NOT_FOUND;
     } else {
-        next = pnmctx.bytestream - pnmctx.bytestream_start
+        next = pnmctx.bytestream - pnmctx.bytestream_start + skip
                + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
-        if (pnmctx.bytestream_start != buf)
+        if (pnmctx.bytestream_start != buf + skip)
             next -= pc->index;
         if (next > buf_size)
             next = END_NOT_FOUND;

@@ -59,11 +59,11 @@ tests/data/hapalphaonly_nosnappy.mov: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 
 FATE_HAPQA_EXTRACT_BSF_FFPROBE += fate-hapqa-extract-nosnappy-to-hapq-mov
 fate-hapqa-extract-nosnappy-to-hapq-mov: tests/data/hapq_nosnappy.mov
-fate-hapqa-extract-nosnappy-to-hapq-mov: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_data_hash adler32 -show_streams -select_streams v -v 0 $(TARGET_PATH)/tests/data/hapq_nosnappy.mov
+fate-hapqa-extract-nosnappy-to-hapq-mov: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_data_hash adler32 -bitexact -show_streams -select_streams v -v 0 $(TARGET_PATH)/tests/data/hapq_nosnappy.mov
 
 FATE_HAPQA_EXTRACT_BSF_FFPROBE += fate-hapqa-extract-nosnappy-to-hapalphaonly-mov
 fate-hapqa-extract-nosnappy-to-hapalphaonly-mov: tests/data/hapalphaonly_nosnappy.mov
-fate-hapqa-extract-nosnappy-to-hapalphaonly-mov: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_data_hash adler32 -show_streams -select_streams v -v 0 $(TARGET_PATH)/tests/data/hapalphaonly_nosnappy.mov
+fate-hapqa-extract-nosnappy-to-hapalphaonly-mov: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -show_data_hash adler32 -bitexact -show_streams -select_streams v -v 0 $(TARGET_PATH)/tests/data/hapalphaonly_nosnappy.mov
 
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER HAPQA_EXTRACT_BSF MOV_MUXER) += $(FATE_HAPQA_EXTRACT_BSF)

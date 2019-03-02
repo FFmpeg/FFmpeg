@@ -75,7 +75,7 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
 
                 remaining = avpriv_dnxhd_get_frame_size(cid);
                 if (remaining <= 0) {
-                    remaining = ff_dnxhd_get_hr_frame_size(cid, dctx->w, dctx->h);
+                    remaining = avpriv_dnxhd_get_hr_frame_size(cid, dctx->w, dctx->h);
                     if (remaining <= 0)
                         continue;
                 }

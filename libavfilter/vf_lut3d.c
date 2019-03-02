@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2013 Clément Bœsch
+ * Copyright (c) 2018 Paul B Mahol
  *
  * This file is part of FFmpeg.
  *
@@ -366,7 +367,7 @@ static int parse_dat(AVFilterContext *ctx, FILE *f)
                 struct rgbvec *vec = &lut3d->lut[k][j][i];
                 if (k != 0 || j != 0 || i != 0)
                     NEXT_LINE(skip_line(line));
-                if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
+                if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                     return AVERROR_INVALIDDATA;
             }
         }
@@ -383,7 +384,7 @@ static int parse_cube(AVFilterContext *ctx, FILE *f)
     float max[3] = {1.0, 1.0, 1.0};
 
     while (fgets(line, sizeof(line), f)) {
-        if (!strncmp(line, "LUT_3D_SIZE ", 12)) {
+        if (!strncmp(line, "LUT_3D_SIZE", 11)) {
             int i, j, k;
             const int size = strtol(line + 12, NULL, 0);
 
@@ -406,13 +407,15 @@ try_again:
                                 else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
                                 if (!vals)
                                     return AVERROR_INVALIDDATA;
-                                sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                                av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
                                 av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
                                        min[0], min[1], min[2], max[0], max[1], max[2]);
                                 goto try_again;
+                            } else if (!strncmp(line, "TITLE", 5)) {
+                                goto try_again;
                             }
                         } while (skip_line(line));
-                        if (sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
+                        if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                             return AVERROR_INVALIDDATA;
                         vec->r *= max[0] - min[0];
                         vec->g *= max[1] - min[1];
@@ -445,7 +448,7 @@ static int parse_3dl(AVFilterContext *ctx, FILE *f)
                 struct rgbvec *vec = &lut3d->lut[k][j][i];
 
                 NEXT_LINE(skip_line(line));
-                if (sscanf(line, "%d %d %d", &r, &g, &b) != 3)
+                if (av_sscanf(line, "%d %d %d", &r, &g, &b) != 3)
                     return AVERROR_INVALIDDATA;
                 vec->r = r / scale;
                 vec->g = g / scale;
@@ -509,7 +512,7 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
                 float val[3];
 
                 NEXT_LINE(0);
-                if (sscanf(line, "%f %f %f", val, val + 1, val + 2) != 3)
+                if (av_sscanf(line, "%f %f %f", val, val + 1, val + 2) != 3)
                     return AVERROR_INVALIDDATA;
                 vec->r = val[rgb_map[0]] * scale;
                 vec->g = val[rgb_map[1]] * scale;
@@ -973,5 +976,510 @@ AVFilter ff_vf_haldclut = {
     .outputs       = haldclut_outputs,
     .priv_class    = &haldclut_class,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+};
+#endif
+
+#if CONFIG_LUT1D_FILTER
+
+enum interp_1d_mode {
+    INTERPOLATE_1D_NEAREST,
+    INTERPOLATE_1D_LINEAR,
+    INTERPOLATE_1D_CUBIC,
+    INTERPOLATE_1D_COSINE,
+    INTERPOLATE_1D_SPLINE,
+    NB_INTERP_1D_MODE
+};
+
+#define MAX_1D_LEVEL 65536
+
+typedef struct LUT1DContext {
+    const AVClass *class;
+    char *file;
+    int interpolation;          ///<interp_1d_mode
+    uint8_t rgba_map[4];
+    int step;
+    float lut[3][MAX_1D_LEVEL];
+    int lutsize;
+    avfilter_action_func *interp;
+} LUT1DContext;
+
+#undef OFFSET
+#define OFFSET(x) offsetof(LUT1DContext, x)
+
+static void set_identity_matrix_1d(LUT1DContext *lut1d, int size)
+{
+    const float c = 1. / (size - 1);
+    int i;
+
+    lut1d->lutsize = size;
+    for (i = 0; i < size; i++) {
+        lut1d->lut[0][i] = i * c;
+        lut1d->lut[1][i] = i * c;
+        lut1d->lut[2][i] = i * c;
+    }
+}
+
+static int parse_cube_1d(AVFilterContext *ctx, FILE *f)
+{
+    LUT1DContext *lut1d = ctx->priv;
+    char line[MAX_LINE_SIZE];
+    float min[3] = {0.0, 0.0, 0.0};
+    float max[3] = {1.0, 1.0, 1.0};
+
+    while (fgets(line, sizeof(line), f)) {
+        if (!strncmp(line, "LUT_1D_SIZE", 11)) {
+            const int size = strtol(line + 12, NULL, 0);
+            int i;
+
+            if (size < 2 || size > MAX_1D_LEVEL) {
+                av_log(ctx, AV_LOG_ERROR, "Too large or invalid 1D LUT size\n");
+                return AVERROR(EINVAL);
+            }
+            lut1d->lutsize = size;
+            for (i = 0; i < size; i++) {
+                do {
+try_again:
+                    NEXT_LINE(0);
+                    if (!strncmp(line, "DOMAIN_", 7)) {
+                        float *vals = NULL;
+                        if      (!strncmp(line + 7, "MIN ", 4)) vals = min;
+                        else if (!strncmp(line + 7, "MAX ", 4)) vals = max;
+                        if (!vals)
+                            return AVERROR_INVALIDDATA;
+                        av_sscanf(line + 11, "%f %f %f", vals, vals + 1, vals + 2);
+                        av_log(ctx, AV_LOG_DEBUG, "min: %f %f %f | max: %f %f %f\n",
+                               min[0], min[1], min[2], max[0], max[1], max[2]);
+                        goto try_again;
+                    } else if (!strncmp(line, "LUT_1D_INPUT_RANGE ", 19)) {
+                        av_sscanf(line + 19, "%f %f", min, max);
+                        min[1] = min[2] = min[0];
+                        max[1] = max[2] = max[0];
+                        goto try_again;
+                    } else if (!strncmp(line, "TITLE", 5)) {
+                        goto try_again;
+                    }
+                } while (skip_line(line));
+                if (av_sscanf(line, "%f %f %f", &lut1d->lut[0][i], &lut1d->lut[1][i], &lut1d->lut[2][i]) != 3)
+                    return AVERROR_INVALIDDATA;
+                lut1d->lut[0][i] *= max[0] - min[0];
+                lut1d->lut[1][i] *= max[1] - min[1];
+                lut1d->lut[2][i] *= max[2] - min[2];
+            }
+            break;
+        }
+    }
+    return 0;
+}
+
+static const AVOption lut1d_options[] = {
+    { "file", "set 1D LUT file name", OFFSET(file), AV_OPT_TYPE_STRING, {.str=NULL}, .flags = FLAGS },
+    { "interp", "select interpolation mode", OFFSET(interpolation),    AV_OPT_TYPE_INT, {.i64=INTERPOLATE_1D_LINEAR}, 0, NB_INTERP_1D_MODE-1, FLAGS, "interp_mode" },
+        { "nearest", "use values from the nearest defined points", 0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_NEAREST},   INT_MIN, INT_MAX, FLAGS, "interp_mode" },
+        { "linear",  "use values from the linear interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_LINEAR},    INT_MIN, INT_MAX, FLAGS, "interp_mode" },
+        { "cosine",  "use values from the cosine interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_COSINE},    INT_MIN, INT_MAX, FLAGS, "interp_mode" },
+        { "cubic",   "use values from the cubic interpolation",    0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_CUBIC},     INT_MIN, INT_MAX, FLAGS, "interp_mode" },
+        { "spline",  "use values from the spline interpolation",   0, AV_OPT_TYPE_CONST, {.i64=INTERPOLATE_1D_SPLINE},    INT_MIN, INT_MAX, FLAGS, "interp_mode" },
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(lut1d);
+
+static inline float interp_1d_nearest(const LUT1DContext *lut1d,
+                                      int idx, const float s)
+{
+    return lut1d->lut[idx][NEAR(s)];
+}
+
+#define NEXT1D(x) (FFMIN((int)(x) + 1, lut1d->lutsize - 1))
+
+static inline float interp_1d_linear(const LUT1DContext *lut1d,
+                                     int idx, const float s)
+{
+    const int prev = PREV(s);
+    const int next = NEXT1D(s);
+    const float d = s - prev;
+    const float p = lut1d->lut[idx][prev];
+    const float n = lut1d->lut[idx][next];
+
+    return lerpf(p, n, d);
+}
+
+static inline float interp_1d_cosine(const LUT1DContext *lut1d,
+                                     int idx, const float s)
+{
+    const int prev = PREV(s);
+    const int next = NEXT1D(s);
+    const float d = s - prev;
+    const float p = lut1d->lut[idx][prev];
+    const float n = lut1d->lut[idx][next];
+    const float m = (1.f - cosf(d * M_PI)) * .5f;
+
+    return lerpf(p, n, m);
+}
+
+static inline float interp_1d_cubic(const LUT1DContext *lut1d,
+                                    int idx, const float s)
+{
+    const int prev = PREV(s);
+    const int next = NEXT1D(s);
+    const float mu = s - prev;
+    float a0, a1, a2, a3, mu2;
+
+    float y0 = lut1d->lut[idx][FFMAX(prev - 1, 0)];
+    float y1 = lut1d->lut[idx][prev];
+    float y2 = lut1d->lut[idx][next];
+    float y3 = lut1d->lut[idx][FFMIN(next + 1, lut1d->lutsize - 1)];
+
+
+    mu2 = mu * mu;
+    a0 = y3 - y2 - y0 + y1;
+    a1 = y0 - y1 - a0;
+    a2 = y2 - y0;
+    a3 = y1;
+
+    return a0 * mu * mu2 + a1 * mu2 + a2 * mu + a3;
+}
+
+static inline float interp_1d_spline(const LUT1DContext *lut1d,
+                                     int idx, const float s)
+{
+    const int prev = PREV(s);
+    const int next = NEXT1D(s);
+    const float x = s - prev;
+    float c0, c1, c2, c3;
+
+    float y0 = lut1d->lut[idx][FFMAX(prev - 1, 0)];
+    float y1 = lut1d->lut[idx][prev];
+    float y2 = lut1d->lut[idx][next];
+    float y3 = lut1d->lut[idx][FFMIN(next + 1, lut1d->lutsize - 1)];
+
+    c0 = y1;
+    c1 = .5f * (y2 - y0);
+    c2 = y0 - 2.5f * y1 + 2.f * y2 - .5f * y3;
+    c3 = .5f * (y3 - y0) + 1.5f * (y1 - y2);
+
+    return ((c3 * x + c2) * x + c1) * x + c0;
+}
+
+#define DEFINE_INTERP_FUNC_PLANAR_1D(name, nbits, depth)                     \
+static int interp_1d_##nbits##_##name##_p##depth(AVFilterContext *ctx,       \
+                                                 void *arg, int jobnr,       \
+                                                 int nb_jobs)                \
+{                                                                            \
+    int x, y;                                                                \
+    const LUT1DContext *lut1d = ctx->priv;                                   \
+    const ThreadData *td = arg;                                              \
+    const AVFrame *in  = td->in;                                             \
+    const AVFrame *out = td->out;                                            \
+    const int direct = out == in;                                            \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;              \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;              \
+    uint8_t *grow = out->data[0] + slice_start * out->linesize[0];           \
+    uint8_t *brow = out->data[1] + slice_start * out->linesize[1];           \
+    uint8_t *rrow = out->data[2] + slice_start * out->linesize[2];           \
+    uint8_t *arow = out->data[3] + slice_start * out->linesize[3];           \
+    const uint8_t *srcgrow = in->data[0] + slice_start * in->linesize[0];    \
+    const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];    \
+    const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];    \
+    const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];    \
+    const float factor = (1 << depth) - 1;                                   \
+    const float scale = (1. / factor) * (lut1d->lutsize - 1);                \
+                                                                             \
+    for (y = slice_start; y < slice_end; y++) {                              \
+        uint##nbits##_t *dstg = (uint##nbits##_t *)grow;                     \
+        uint##nbits##_t *dstb = (uint##nbits##_t *)brow;                     \
+        uint##nbits##_t *dstr = (uint##nbits##_t *)rrow;                     \
+        uint##nbits##_t *dsta = (uint##nbits##_t *)arow;                     \
+        const uint##nbits##_t *srcg = (const uint##nbits##_t *)srcgrow;      \
+        const uint##nbits##_t *srcb = (const uint##nbits##_t *)srcbrow;      \
+        const uint##nbits##_t *srcr = (const uint##nbits##_t *)srcrrow;      \
+        const uint##nbits##_t *srca = (const uint##nbits##_t *)srcarow;      \
+        for (x = 0; x < in->width; x++) {                                    \
+            float r = srcr[x] * scale;                                       \
+            float g = srcg[x] * scale;                                       \
+            float b = srcb[x] * scale;                                       \
+            r = interp_1d_##name(lut1d, 0, r);                               \
+            g = interp_1d_##name(lut1d, 1, g);                               \
+            b = interp_1d_##name(lut1d, 2, b);                               \
+            dstr[x] = av_clip_uintp2(r * factor, depth);                     \
+            dstg[x] = av_clip_uintp2(g * factor, depth);                     \
+            dstb[x] = av_clip_uintp2(b * factor, depth);                     \
+            if (!direct && in->linesize[3])                                  \
+                dsta[x] = srca[x];                                           \
+        }                                                                    \
+        grow += out->linesize[0];                                            \
+        brow += out->linesize[1];                                            \
+        rrow += out->linesize[2];                                            \
+        arow += out->linesize[3];                                            \
+        srcgrow += in->linesize[0];                                          \
+        srcbrow += in->linesize[1];                                          \
+        srcrrow += in->linesize[2];                                          \
+        srcarow += in->linesize[3];                                          \
+    }                                                                        \
+    return 0;                                                                \
+}
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     8, 8)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      8, 8)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      8, 8)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       8, 8)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      8, 8)
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     16, 9)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      16, 9)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 9)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 9)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 9)
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     16, 10)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      16, 10)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 10)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 10)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 10)
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     16, 12)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      16, 12)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 12)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 12)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 12)
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     16, 14)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      16, 14)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 14)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 14)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 14)
+
+DEFINE_INTERP_FUNC_PLANAR_1D(nearest,     16, 16)
+DEFINE_INTERP_FUNC_PLANAR_1D(linear,      16, 16)
+DEFINE_INTERP_FUNC_PLANAR_1D(cosine,      16, 16)
+DEFINE_INTERP_FUNC_PLANAR_1D(cubic,       16, 16)
+DEFINE_INTERP_FUNC_PLANAR_1D(spline,      16, 16)
+
+#define DEFINE_INTERP_FUNC_1D(name, nbits)                                   \
+static int interp_1d_##nbits##_##name(AVFilterContext *ctx, void *arg,       \
+                                      int jobnr, int nb_jobs)                \
+{                                                                            \
+    int x, y;                                                                \
+    const LUT1DContext *lut1d = ctx->priv;                                   \
+    const ThreadData *td = arg;                                              \
+    const AVFrame *in  = td->in;                                             \
+    const AVFrame *out = td->out;                                            \
+    const int direct = out == in;                                            \
+    const int step = lut1d->step;                                            \
+    const uint8_t r = lut1d->rgba_map[R];                                    \
+    const uint8_t g = lut1d->rgba_map[G];                                    \
+    const uint8_t b = lut1d->rgba_map[B];                                    \
+    const uint8_t a = lut1d->rgba_map[A];                                    \
+    const int slice_start = (in->height *  jobnr   ) / nb_jobs;              \
+    const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;              \
+    uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];   \
+    const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];   \
+    const float factor = (1 << nbits) - 1;                                   \
+    const float scale = (1. / factor) * (lut1d->lutsize - 1);                \
+                                                                             \
+    for (y = slice_start; y < slice_end; y++) {                              \
+        uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                    \
+        const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;        \
+        for (x = 0; x < in->width * step; x += step) {                       \
+            float rr = src[x + r] * scale;                                   \
+            float gg = src[x + g] * scale;                                   \
+            float bb = src[x + b] * scale;                                   \
+            rr = interp_1d_##name(lut1d, 0, rr);                             \
+            gg = interp_1d_##name(lut1d, 1, gg);                             \
+            bb = interp_1d_##name(lut1d, 2, bb);                             \
+            dst[x + r] = av_clip_uint##nbits(rr * factor);                   \
+            dst[x + g] = av_clip_uint##nbits(gg * factor);                   \
+            dst[x + b] = av_clip_uint##nbits(bb * factor);                   \
+            if (!direct && step == 4)                                        \
+                dst[x + a] = src[x + a];                                     \
+        }                                                                    \
+        dstrow += out->linesize[0];                                          \
+        srcrow += in ->linesize[0];                                          \
+    }                                                                        \
+    return 0;                                                                \
+}
+
+DEFINE_INTERP_FUNC_1D(nearest,     8)
+DEFINE_INTERP_FUNC_1D(linear,      8)
+DEFINE_INTERP_FUNC_1D(cosine,      8)
+DEFINE_INTERP_FUNC_1D(cubic,       8)
+DEFINE_INTERP_FUNC_1D(spline,      8)
+
+DEFINE_INTERP_FUNC_1D(nearest,     16)
+DEFINE_INTERP_FUNC_1D(linear,      16)
+DEFINE_INTERP_FUNC_1D(cosine,      16)
+DEFINE_INTERP_FUNC_1D(cubic,       16)
+DEFINE_INTERP_FUNC_1D(spline,      16)
+
+static int config_input_1d(AVFilterLink *inlink)
+{
+    int depth, is16bit = 0, planar = 0;
+    LUT1DContext *lut1d = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    depth = desc->comp[0].depth;
+
+    switch (inlink->format) {
+    case AV_PIX_FMT_RGB48:
+    case AV_PIX_FMT_BGR48:
+    case AV_PIX_FMT_RGBA64:
+    case AV_PIX_FMT_BGRA64:
+        is16bit = 1;
+        break;
+    case AV_PIX_FMT_GBRP9:
+    case AV_PIX_FMT_GBRP10:
+    case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRP14:
+    case AV_PIX_FMT_GBRP16:
+    case AV_PIX_FMT_GBRAP10:
+    case AV_PIX_FMT_GBRAP12:
+    case AV_PIX_FMT_GBRAP16:
+        is16bit = 1;
+    case AV_PIX_FMT_GBRP:
+    case AV_PIX_FMT_GBRAP:
+        planar = 1;
+        break;
+    }
+
+    ff_fill_rgba_map(lut1d->rgba_map, inlink->format);
+    lut1d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
+
+#define SET_FUNC_1D(name) do {                                     \
+    if (planar) {                                                  \
+        switch (depth) {                                           \
+        case  8: lut1d->interp = interp_1d_8_##name##_p8;   break; \
+        case  9: lut1d->interp = interp_1d_16_##name##_p9;  break; \
+        case 10: lut1d->interp = interp_1d_16_##name##_p10; break; \
+        case 12: lut1d->interp = interp_1d_16_##name##_p12; break; \
+        case 14: lut1d->interp = interp_1d_16_##name##_p14; break; \
+        case 16: lut1d->interp = interp_1d_16_##name##_p16; break; \
+        }                                                          \
+    } else if (is16bit) { lut1d->interp = interp_1d_16_##name;     \
+    } else {              lut1d->interp = interp_1d_8_##name; }    \
+} while (0)
+
+    switch (lut1d->interpolation) {
+    case INTERPOLATE_1D_NEAREST:     SET_FUNC_1D(nearest);  break;
+    case INTERPOLATE_1D_LINEAR:      SET_FUNC_1D(linear);   break;
+    case INTERPOLATE_1D_COSINE:      SET_FUNC_1D(cosine);   break;
+    case INTERPOLATE_1D_CUBIC:       SET_FUNC_1D(cubic);    break;
+    case INTERPOLATE_1D_SPLINE:      SET_FUNC_1D(spline);   break;
+    default:
+        av_assert0(0);
+    }
+
+    return 0;
+}
+
+static av_cold int lut1d_init(AVFilterContext *ctx)
+{
+    int ret;
+    FILE *f;
+    const char *ext;
+    LUT1DContext *lut1d = ctx->priv;
+
+    if (!lut1d->file) {
+        set_identity_matrix_1d(lut1d, 32);
+        return 0;
+    }
+
+    f = fopen(lut1d->file, "r");
+    if (!f) {
+        ret = AVERROR(errno);
+        av_log(ctx, AV_LOG_ERROR, "%s: %s\n", lut1d->file, av_err2str(ret));
+        return ret;
+    }
+
+    ext = strrchr(lut1d->file, '.');
+    if (!ext) {
+        av_log(ctx, AV_LOG_ERROR, "Unable to guess the format from the extension\n");
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+    ext++;
+
+    if (!av_strcasecmp(ext, "cube") || !av_strcasecmp(ext, "1dlut")) {
+        ret = parse_cube_1d(ctx, f);
+    } else {
+        av_log(ctx, AV_LOG_ERROR, "Unrecognized '.%s' file type\n", ext);
+        ret = AVERROR(EINVAL);
+    }
+
+    if (!ret && !lut1d->lutsize) {
+        av_log(ctx, AV_LOG_ERROR, "1D LUT is empty\n");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+end:
+    fclose(f);
+    return ret;
+}
+
+static AVFrame *apply_1d_lut(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterContext *ctx = inlink->dst;
+    LUT1DContext *lut1d = ctx->priv;
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFrame *out;
+    ThreadData td;
+
+    if (av_frame_is_writable(in)) {
+        out = in;
+    } else {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out) {
+            av_frame_free(&in);
+            return NULL;
+        }
+        av_frame_copy_props(out, in);
+    }
+
+    td.in  = in;
+    td.out = out;
+    ctx->internal->execute(ctx, lut1d->interp, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+
+    if (out != in)
+        av_frame_free(&in);
+
+    return out;
+}
+
+static int filter_frame_1d(AVFilterLink *inlink, AVFrame *in)
+{
+    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFrame *out = apply_1d_lut(inlink, in);
+    if (!out)
+        return AVERROR(ENOMEM);
+    return ff_filter_frame(outlink, out);
+}
+
+static const AVFilterPad lut1d_inputs[] = {
+    {
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = filter_frame_1d,
+        .config_props = config_input_1d,
+    },
+    { NULL }
+};
+
+static const AVFilterPad lut1d_outputs[] = {
+    {
+        .name = "default",
+        .type = AVMEDIA_TYPE_VIDEO,
+    },
+    { NULL }
+};
+
+AVFilter ff_vf_lut1d = {
+    .name          = "lut1d",
+    .description   = NULL_IF_CONFIG_SMALL("Adjust colors using a 1D LUT."),
+    .priv_size     = sizeof(LUT1DContext),
+    .init          = lut1d_init,
+    .query_formats = query_formats,
+    .inputs        = lut1d_inputs,
+    .outputs       = lut1d_outputs,
+    .priv_class    = &lut1d_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
 };
 #endif

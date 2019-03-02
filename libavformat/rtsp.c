@@ -454,7 +454,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (!strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_SUBTITLE;
         }
-        if (codec_type == AVMEDIA_TYPE_UNKNOWN || !(rt->media_type_mask & (1 << codec_type))) {
+        if (codec_type == AVMEDIA_TYPE_UNKNOWN ||
+            !(rt->media_type_mask & (1 << codec_type)) ||
+            rt->nb_rtsp_streams >= s->max_streams
+        ) {
             s1->skip_media = 1;
             return;
         }
@@ -1663,7 +1666,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     char tcpname[1024], cmd[2048], auth[128];
     const char *lower_rtsp_proto = "tcp";
     int port, err, tcp_fd;
-    RTSPMessageHeader reply1 = {0}, *reply = &reply1;
+    RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
     int default_port = RTSP_DEFAULT_PORT;
     char real_challenge[64] = "";
@@ -1692,6 +1695,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     rt->lower_transport_mask &= (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
 
 redirect:
+    memset(&reply1, 0, sizeof(reply1));
     /* extract hostname and port */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->url);

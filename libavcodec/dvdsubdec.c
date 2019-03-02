@@ -83,10 +83,7 @@ static int decode_run_8bit(GetBitContext *gb, int *color)
 {
     int len;
     int has_run = get_bits1(gb);
-    if (get_bits1(gb))
-        *color = get_bits(gb, 8);
-    else
-        *color = get_bits(gb, 2);
+    *color = get_bits(gb, 2 + 6*get_bits1(gb));
     if (has_run) {
         if (get_bits1(gb)) {
             len = get_bits(gb, 7);
@@ -128,6 +125,8 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h, uint8_t used_
             len = decode_run_8bit(&gb, &color);
         else
             len = decode_run_2bit(&gb, &color);
+        if (len != INT_MAX && len > w - x)
+            return AVERROR_INVALIDDATA;
         len = FFMIN(len, w - x);
         memset(d + x, color, len);
         used_color[color] = 1;
@@ -596,6 +595,7 @@ static int dvdsub_decode(AVCodecContext *avctx,
     }
 
     if (is_menu < 0) {
+        ctx->buf_size = 0;
     no_subtitle:
         reset_rects(sub);
         *data_size = 0;

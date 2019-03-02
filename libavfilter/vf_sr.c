@@ -33,43 +33,37 @@
 #include "libswscale/swscale.h"
 #include "dnn_interface.h"
 
-typedef enum {SRCNN, ESPCN} SRModel;
-
 typedef struct SRContext {
     const AVClass *class;
 
-    SRModel model_type;
-    char* model_filename;
+    char *model_filename;
     DNNBackendType backend_type;
-    DNNModule* dnn_module;
-    DNNModel* model;
+    DNNModule *dnn_module;
+    DNNModel *model;
     DNNData input, output;
     int scale_factor;
-    struct SwsContext* sws_context;
-    int sws_slice_h;
+    struct SwsContext *sws_contexts[3];
+    int sws_slice_h, sws_input_linesize, sws_output_linesize;
 } SRContext;
 
 #define OFFSET(x) offsetof(SRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption sr_options[] = {
-    { "model", "specifies what DNN model to use", OFFSET(model_type), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, 1, FLAGS, "model_type" },
-    { "srcnn", "Super-Resolution Convolutional Neural Network model (scale factor should be specified for custom SRCNN model)", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "model_type" },
-    { "espcn", "Efficient Sub-Pixel Convolutional Neural Network model", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "model_type" },
     { "dnn_backend", "DNN backend used for model execution", OFFSET(backend_type), AV_OPT_TYPE_FLAGS, { .i64 = 0 }, 0, 1, FLAGS, "backend" },
     { "native", "native backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "backend" },
 #if (CONFIG_LIBTENSORFLOW == 1)
     { "tensorflow", "tensorflow backend flag", 0, AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0, FLAGS, "backend" },
 #endif
-    {"scale_factor", "scale factor for SRCNN model", OFFSET(scale_factor), AV_OPT_TYPE_INT, { .i64 = 2 }, 2, 4, FLAGS},
-    { "model_filename", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
+    { "scale_factor", "scale factor for SRCNN model", OFFSET(scale_factor), AV_OPT_TYPE_INT, { .i64 = 2 }, 2, 4, FLAGS },
+    { "model", "path to model file specifying network architecture and its parameters", OFFSET(model_filename), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(sr);
 
-static av_cold int init(AVFilterContext* context)
+static av_cold int init(AVFilterContext *context)
 {
-    SRContext* sr_context = context->priv;
+    SRContext *sr_context = context->priv;
 
     sr_context->dnn_module = ff_get_dnn_module(sr_context->backend_type);
     if (!sr_context->dnn_module){
@@ -77,59 +71,55 @@ static av_cold int init(AVFilterContext* context)
         return AVERROR(ENOMEM);
     }
     if (!sr_context->model_filename){
-        av_log(context, AV_LOG_VERBOSE, "model file for network was not specified, using default network for x2 upsampling\n");
-        sr_context->scale_factor = 2;
-        switch (sr_context->model_type){
-        case SRCNN:
-            sr_context->model = (sr_context->dnn_module->load_default_model)(DNN_SRCNN);
-            break;
-        case ESPCN:
-            sr_context->model = (sr_context->dnn_module->load_default_model)(DNN_ESPCN);
-        }
+        av_log(context, AV_LOG_ERROR, "model file for network was not specified\n");
+        return AVERROR(EIO);
     }
     else{
-        sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
+        if (!sr_context->dnn_module->load_model) {
+            av_log(context, AV_LOG_ERROR, "load_model for network was not specified\n");
+            return AVERROR(EIO);
+        } else {
+            sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
+        }
     }
     if (!sr_context->model){
         av_log(context, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EIO);
     }
 
+    sr_context->sws_contexts[0] = NULL;
+    sr_context->sws_contexts[1] = NULL;
+    sr_context->sws_contexts[2] = NULL;
+
     return 0;
 }
 
-static int query_formats(AVFilterContext* context)
+static int query_formats(AVFilterContext *context)
 {
     const enum AVPixelFormat pixel_formats[] = {AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
                                                 AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_GRAY8,
                                                 AV_PIX_FMT_NONE};
-    AVFilterFormats* formats_list;
+    AVFilterFormats *formats_list;
 
     formats_list = ff_make_format_list(pixel_formats);
     if (!formats_list){
         av_log(context, AV_LOG_ERROR, "could not create formats list\n");
         return AVERROR(ENOMEM);
     }
+
     return ff_set_common_formats(context, formats_list);
 }
 
-static int config_props(AVFilterLink* inlink)
+static int config_props(AVFilterLink *inlink)
 {
-    AVFilterContext* context = inlink->dst;
-    SRContext* sr_context = context->priv;
-    AVFilterLink* outlink = context->outputs[0];
+    AVFilterContext *context = inlink->dst;
+    SRContext *sr_context = context->priv;
+    AVFilterLink *outlink = context->outputs[0];
     DNNReturnType result;
     int sws_src_h, sws_src_w, sws_dst_h, sws_dst_w;
 
-    switch (sr_context->model_type){
-    case SRCNN:
-        sr_context->input.width = inlink->w * sr_context->scale_factor;
-        sr_context->input.height = inlink->h * sr_context->scale_factor;
-        break;
-    case ESPCN:
-        sr_context->input.width = inlink->w;
-        sr_context->input.height = inlink->h;
-    }
+    sr_context->input.width = inlink->w * sr_context->scale_factor;
+    sr_context->input.height = inlink->h * sr_context->scale_factor;
     sr_context->input.channels = 1;
 
     result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, &sr_context->output);
@@ -138,23 +128,42 @@ static int config_props(AVFilterLink* inlink)
         return AVERROR(EIO);
     }
     else{
+        if (sr_context->input.height != sr_context->output.height || sr_context->input.width != sr_context->output.width){
+            sr_context->input.width = inlink->w;
+            sr_context->input.height = inlink->h;
+            result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, &sr_context->output);
+            if (result != DNN_SUCCESS){
+                av_log(context, AV_LOG_ERROR, "could not set input and output for the model\n");
+                return AVERROR(EIO);
+            }
+            sr_context->scale_factor = 0;
+        }
         outlink->h = sr_context->output.height;
         outlink->w = sr_context->output.width;
-        switch (sr_context->model_type){
-        case SRCNN:
-            sr_context->sws_context = sws_getContext(inlink->w, inlink->h, inlink->format,
-                                                     outlink->w, outlink->h, outlink->format, SWS_BICUBIC, NULL, NULL, NULL);
-            if (!sr_context->sws_context){
-                av_log(context, AV_LOG_ERROR, "could not create SwsContext\n");
+        sr_context->sws_contexts[1] = sws_getContext(sr_context->input.width, sr_context->input.height, AV_PIX_FMT_GRAY8,
+                                                     sr_context->input.width, sr_context->input.height, AV_PIX_FMT_GRAYF32,
+                                                     0, NULL, NULL, NULL);
+        sr_context->sws_input_linesize = sr_context->input.width << 2;
+        sr_context->sws_contexts[2] = sws_getContext(sr_context->output.width, sr_context->output.height, AV_PIX_FMT_GRAYF32,
+                                                     sr_context->output.width, sr_context->output.height, AV_PIX_FMT_GRAY8,
+                                                     0, NULL, NULL, NULL);
+        sr_context->sws_output_linesize = sr_context->output.width << 2;
+        if (!sr_context->sws_contexts[1] || !sr_context->sws_contexts[2]){
+            av_log(context, AV_LOG_ERROR, "could not create SwsContext for conversions\n");
+            return AVERROR(ENOMEM);
+        }
+        if (sr_context->scale_factor){
+            sr_context->sws_contexts[0] = sws_getContext(inlink->w, inlink->h, inlink->format,
+                                                         outlink->w, outlink->h, outlink->format,
+                                                         SWS_BICUBIC, NULL, NULL, NULL);
+            if (!sr_context->sws_contexts[0]){
+                av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling\n");
                 return AVERROR(ENOMEM);
             }
             sr_context->sws_slice_h = inlink->h;
-            break;
-        case ESPCN:
-            if (inlink->format == AV_PIX_FMT_GRAY8){
-                sr_context->sws_context = NULL;
-            }
-            else{
+        }
+        else{
+            if (inlink->format != AV_PIX_FMT_GRAY8){
                 sws_src_h = sr_context->input.height;
                 sws_src_w = sr_context->input.width;
                 sws_dst_h = sr_context->output.height;
@@ -162,35 +171,36 @@ static int config_props(AVFilterLink* inlink)
 
                 switch (inlink->format){
                 case AV_PIX_FMT_YUV420P:
-                    sws_src_h = (sws_src_h >> 1) + (sws_src_h % 2 != 0 ? 1 : 0);
-                    sws_src_w = (sws_src_w >> 1) + (sws_src_w % 2 != 0 ? 1 : 0);
-                    sws_dst_h = (sws_dst_h >> 1) + (sws_dst_h % 2 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 1) + (sws_dst_w % 2 != 0 ? 1 : 0);
+                    sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 1);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
+                    sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 1);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
                     break;
                 case AV_PIX_FMT_YUV422P:
-                    sws_src_w = (sws_src_w >> 1) + (sws_src_w % 2 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 1) + (sws_dst_w % 2 != 0 ? 1 : 0);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 1);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 1);
                     break;
                 case AV_PIX_FMT_YUV444P:
                     break;
                 case AV_PIX_FMT_YUV410P:
-                    sws_src_h = (sws_src_h >> 2) + (sws_src_h % 4 != 0 ? 1 : 0);
-                    sws_src_w = (sws_src_w >> 2) + (sws_src_w % 4 != 0 ? 1 : 0);
-                    sws_dst_h = (sws_dst_h >> 2) + (sws_dst_h % 4 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 2) + (sws_dst_w % 4 != 0 ? 1 : 0);
+                    sws_src_h = AV_CEIL_RSHIFT(sws_src_h, 2);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
+                    sws_dst_h = AV_CEIL_RSHIFT(sws_dst_h, 2);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                     break;
                 case AV_PIX_FMT_YUV411P:
-                    sws_src_w = (sws_src_w >> 2) + (sws_src_w % 4 != 0 ? 1 : 0);
-                    sws_dst_w = (sws_dst_w >> 2) + (sws_dst_w % 4 != 0 ? 1 : 0);
+                    sws_src_w = AV_CEIL_RSHIFT(sws_src_w, 2);
+                    sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                     break;
                 default:
-                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for input pixel format");
+                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling for given input pixel format");
                     return AVERROR(EIO);
                 }
-                sr_context->sws_context = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
-                                                         sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8, SWS_BICUBIC, NULL, NULL, NULL);
-                if (!sr_context->sws_context){
-                    av_log(context, AV_LOG_ERROR, "could not create SwsContext\n");
+                sr_context->sws_contexts[0] = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
+                                                             sws_dst_w, sws_dst_h, AV_PIX_FMT_GRAY8,
+                                                             SWS_BICUBIC, NULL, NULL, NULL);
+                if (!sr_context->sws_contexts[0]){
+                    av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling\n");
                     return AVERROR(ENOMEM);
                 }
                 sr_context->sws_slice_h = sws_src_h;
@@ -201,61 +211,12 @@ static int config_props(AVFilterLink* inlink)
     }
 }
 
-typedef struct ThreadData{
-    uint8_t* data;
-    int data_linesize, height, width;
-} ThreadData;
-
-static int uint8_to_float(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
+static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
-    SRContext* sr_context = context->priv;
-    const ThreadData* td = arg;
-    const int slice_start = (td->height *  jobnr     ) / nb_jobs;
-    const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const uint8_t* src = td->data + slice_start * td->data_linesize;
-    float* dst = sr_context->input.data + slice_start * td->width;
-    int y, x;
-
-    for (y = slice_start; y < slice_end; ++y){
-        for (x = 0; x < td->width; ++x){
-            dst[x] = (float)src[x] / 255.0f;
-        }
-        src += td->data_linesize;
-        dst += td->width;
-    }
-
-    return 0;
-}
-
-static int float_to_uint8(AVFilterContext* context, void* arg, int jobnr, int nb_jobs)
-{
-    SRContext* sr_context = context->priv;
-    const ThreadData* td = arg;
-    const int slice_start = (td->height *  jobnr     ) / nb_jobs;
-    const int slice_end   = (td->height * (jobnr + 1)) / nb_jobs;
-    const float* src = sr_context->output.data + slice_start * td->width;
-    uint8_t* dst = td->data + slice_start * td->data_linesize;
-    int y, x;
-
-    for (y = slice_start; y < slice_end; ++y){
-        for (x = 0; x < td->width; ++x){
-            dst[x] = (uint8_t)(255.0f * FFMIN(src[x], 1.0f));
-        }
-        src += td->width;
-        dst += td->data_linesize;
-    }
-
-    return 0;
-}
-
-static int filter_frame(AVFilterLink* inlink, AVFrame* in)
-{
-    AVFilterContext* context = inlink->dst;
-    SRContext* sr_context = context->priv;
-    AVFilterLink* outlink = context->outputs[0];
-    AVFrame* out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    ThreadData td;
-    int nb_threads;
+    AVFilterContext *context = inlink->dst;
+    SRContext *sr_context = context->priv;
+    AVFilterLink *outlink = context->outputs[0];
+    AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     DNNReturnType dnn_result;
 
     if (!out){
@@ -266,30 +227,26 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
     av_frame_copy_props(out, in);
     out->height = sr_context->output.height;
     out->width = sr_context->output.width;
-    switch (sr_context->model_type){
-    case SRCNN:
-        sws_scale(sr_context->sws_context, (const uint8_t **)in->data, in->linesize,
+    if (sr_context->scale_factor){
+        sws_scale(sr_context->sws_contexts[0], (const uint8_t **)in->data, in->linesize,
                   0, sr_context->sws_slice_h, out->data, out->linesize);
-        td.data = out->data[0];
-        td.data_linesize = out->linesize[0];
-        td.height = out->height;
-        td.width = out->width;
-        break;
-    case ESPCN:
-        if (sr_context->sws_context){
-            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 1), in->linesize + 1,
+
+        sws_scale(sr_context->sws_contexts[1], (const uint8_t **)out->data, out->linesize,
+                  0, out->height, (uint8_t * const*)(&sr_context->input.data),
+                  (const int [4]){sr_context->sws_input_linesize, 0, 0, 0});
+    }
+    else{
+        if (sr_context->sws_contexts[0]){
+            sws_scale(sr_context->sws_contexts[0], (const uint8_t **)(in->data + 1), in->linesize + 1,
                       0, sr_context->sws_slice_h, out->data + 1, out->linesize + 1);
-            sws_scale(sr_context->sws_context, (const uint8_t **)(in->data + 2), in->linesize + 2,
+            sws_scale(sr_context->sws_contexts[0], (const uint8_t **)(in->data + 2), in->linesize + 2,
                       0, sr_context->sws_slice_h, out->data + 2, out->linesize + 2);
         }
-        td.data = in->data[0];
-        td.data_linesize = in->linesize[0];
-        td.height = in->height;
-        td.width = in->width;
-    }
 
-    nb_threads = ff_filter_get_nb_threads(context);
-    context->internal->execute(context, uint8_to_float, &td, NULL, FFMIN(td.height, nb_threads));
+        sws_scale(sr_context->sws_contexts[1], (const uint8_t **)in->data, in->linesize,
+                  0, in->height, (uint8_t * const*)(&sr_context->input.data),
+                  (const int [4]){sr_context->sws_input_linesize, 0, 0, 0});
+    }
     av_frame_free(&in);
 
     dnn_result = (sr_context->dnn_module->execute_model)(sr_context->model);
@@ -298,26 +255,27 @@ static int filter_frame(AVFilterLink* inlink, AVFrame* in)
         return AVERROR(EIO);
     }
 
-    td.data = out->data[0];
-    td.data_linesize = out->linesize[0];
-    td.height = out->height;
-    td.width = out->width;
-    context->internal->execute(context, float_to_uint8, &td, NULL, FFMIN(td.height, nb_threads));
+    sws_scale(sr_context->sws_contexts[2], (const uint8_t *[4]){(const uint8_t *)sr_context->output.data, 0, 0, 0},
+              (const int[4]){sr_context->sws_output_linesize, 0, 0, 0},
+              0, out->height, (uint8_t * const*)out->data, out->linesize);
 
     return ff_filter_frame(outlink, out);
 }
 
-static av_cold void uninit(AVFilterContext* context)
+static av_cold void uninit(AVFilterContext *context)
 {
-    SRContext* sr_context = context->priv;
+    int i;
+    SRContext *sr_context = context->priv;
 
     if (sr_context->dnn_module){
         (sr_context->dnn_module->free_model)(&sr_context->model);
         av_freep(&sr_context->dnn_module);
     }
 
-    if (sr_context->sws_context){
-        sws_freeContext(sr_context->sws_context);
+    for (i = 0; i < 3; ++i){
+        if (sr_context->sws_contexts[i]){
+            sws_freeContext(sr_context->sws_contexts[i]);
+        }
     }
 }
 

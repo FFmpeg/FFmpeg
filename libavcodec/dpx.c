@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/imgutils.h"
@@ -50,8 +51,26 @@ static unsigned int read32(const uint8_t **ptr, int is_big)
     return temp;
 }
 
-static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big, int shift)
+static uint16_t read10in32_gray(const uint8_t **ptr, uint32_t *lbuf,
+                                int *n_datum, int is_big, int shift)
+{
+    uint16_t temp;
+
+    if (*n_datum)
+        (*n_datum)--;
+    else {
+        *lbuf = read32(ptr, is_big);
+        *n_datum = 2;
+    }
+
+    temp = *lbuf >> shift & 0x3FF;
+    *lbuf = *lbuf >> 10;
+
+    return temp;
+}
+
+static uint16_t read10in32(const uint8_t **ptr, uint32_t *lbuf,
+                           int *n_datum, int is_big, int shift)
 {
     if (*n_datum)
         (*n_datum)--;
@@ -65,8 +84,8 @@ static uint16_t read10in32(const uint8_t **ptr, uint32_t * lbuf,
     return *lbuf & 0x3FF;
 }
 
-static uint16_t read12in32(const uint8_t **ptr, uint32_t * lbuf,
-                                  int * n_datum, int is_big)
+static uint16_t read12in32(const uint8_t **ptr, uint32_t *lbuf,
+                           int *n_datum, int is_big)
 {
     if (*n_datum)
         (*n_datum)--;
@@ -106,6 +125,9 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size       = avpkt->size;
     AVFrame *const p = data;
     uint8_t *ptr[AV_NUM_DATA_POINTERS];
+    uint32_t header_version, version = 0;
+    char creator[101];
+    char input_device[33];
 
     unsigned int offset;
     int magic_num, endian;
@@ -140,6 +162,15 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Invalid data start offset\n");
         return AVERROR_INVALIDDATA;
     }
+
+    header_version = read32(&buf, 0);
+    if (header_version == MKTAG('V','1','.','0'))
+        version = 1;
+    if (header_version == MKTAG('V','2','.','0'))
+        version = 2;
+    if (!version)
+        av_log(avctx, AV_LOG_WARNING, "Unknown header format version %s.\n",
+               av_fourcc2str(header_version));
 
     // Check encryption
     buf = avpkt->data + 660;
@@ -310,6 +341,10 @@ static int decode_frame(AVCodecContext *avctx,
     case 51121:
         avctx->pix_fmt = AV_PIX_FMT_GBRAP12;
         break;
+    case 6100:
+    case 6101:
+        avctx->pix_fmt = AV_PIX_FMT_GRAY10;
+        break;
     case 6161:
         avctx->pix_fmt = AV_PIX_FMT_GRAY16BE;
         break;
@@ -347,6 +382,14 @@ static int decode_frame(AVCodecContext *avctx,
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
+    av_strlcpy(creator, avpkt->data + 160, 100);
+    creator[100] = '\0';
+    av_dict_set(&p->metadata, "Creator", creator, 0);
+
+    av_strlcpy(input_device, avpkt->data + 1556, 32);
+    input_device[32] = '\0';
+    av_dict_set(&p->metadata, "Input Device", input_device, 0);
+
     // Move pointer to offset from start of file
     buf =  avpkt->data + offset;
 
@@ -360,20 +403,27 @@ static int decode_frame(AVCodecContext *avctx,
                                 (uint16_t*)ptr[1],
                                 (uint16_t*)ptr[2],
                                 (uint16_t*)ptr[3]};
-            int shift = packing == 1 ? 22 : 20;
+            int shift = elements > 1 ? packing == 1 ? 22 : 20 : packing == 1 ? 2 : 0;
             for (y = 0; y < avctx->width; y++) {
-                *dst[2]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
-                *dst[0]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
-                *dst[1]++ = read10in32(&buf, &rgbBuffer,
-                                       &n_datum, endian, shift);
+                if (elements >= 3)
+                    *dst[2]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
+                if (elements == 1)
+                    *dst[0]++ = read10in32_gray(&buf, &rgbBuffer,
+                                                &n_datum, endian, shift);
+                else
+                    *dst[0]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
+                if (elements >= 2)
+                    *dst[1]++ = read10in32(&buf, &rgbBuffer,
+                                           &n_datum, endian, shift);
                 if (elements == 4)
                     *dst[3]++ =
                     read10in32(&buf, &rgbBuffer,
                                &n_datum, endian, shift);
             }
-            n_datum = 0;
+            if (memcmp(input_device, "Scanity", 7))
+                n_datum = 0;
             for (i = 0; i < elements; i++)
                 ptr[i] += p->linesize[i];
         }

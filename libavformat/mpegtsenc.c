@@ -54,8 +54,8 @@ typedef struct MpegTSSection {
 typedef struct MpegTSService {
     MpegTSSection pmt; /* MPEG-2 PMT table context */
     int sid;           /* service ID */
-    char *name;
-    char *provider_name;
+    uint8_t name[256];
+    uint8_t provider_name[256];
     int pcr_pid;
     int pcr_packet_count;
     int pcr_packet_period;
@@ -264,25 +264,21 @@ static void mpegts_write_pat(AVFormatContext *s)
                           data, q - data);
 }
 
-/* NOTE: !str is accepted for an empty string */
-static void putstr8(uint8_t **q_ptr, const char *str, int write_len)
+static void putbuf(uint8_t **q_ptr, const uint8_t *buf, size_t len)
 {
-    uint8_t *q;
-    int len;
+    memcpy(*q_ptr, buf, len);
+    *q_ptr += len;
+}
 
-    q = *q_ptr;
-    if (!str)
-        len = 0;
-    else
-        len = strlen(str);
-    if (write_len)
-        *q++ = len;
-    if (!str) {
-        *q_ptr = q;
-        return;
-    }
-    memcpy(q, str, len);
-    q     += len;
+static void put_registration_descriptor(uint8_t **q_ptr, uint32_t tag)
+{
+    uint8_t *q = *q_ptr;
+    *q++ = 0x05; /* MPEG-2 registration descriptor*/
+    *q++ = 4;
+    *q++ = tag;
+    *q++ = tag >> 8;
+    *q++ = tag >> 16;
+    *q++ = tag >> 24;
     *q_ptr = q;
 }
 
@@ -412,14 +408,8 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
             }
-            if (st->codecpar->codec_id==AV_CODEC_ID_S302M) {
-                *q++ = 0x05; /* MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'B';
-                *q++ = 'S';
-                *q++ = 'S';
-                *q++ = 'D';
-            }
+            if (st->codecpar->codec_id==AV_CODEC_ID_S302M)
+                put_registration_descriptor(&q, MKTAG('B', 'S', 'S', 'D'));
             if (st->codecpar->codec_id==AV_CODEC_ID_OPUS) {
                 /* 6 bytes registration descriptor, 4 bytes Opus audio descriptor */
                 if (q - data > SECTION_LENGTH - 6 - 4) {
@@ -427,12 +417,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                     break;
                 }
 
-                *q++ = 0x05; /* MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'O';
-                *q++ = 'p';
-                *q++ = 'u';
-                *q++ = 's';
+                put_registration_descriptor(&q, MKTAG('O', 'p', 'u', 's'));
 
                 *q++ = 0x7f; /* DVB extension descriptor */
                 *q++ = 2;
@@ -618,37 +603,24 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         break;
         case AVMEDIA_TYPE_VIDEO:
             if (stream_type == STREAM_TYPE_VIDEO_DIRAC) {
-                *q++ = 0x05; /*MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'd';
-                *q++ = 'r';
-                *q++ = 'a';
-                *q++ = 'c';
+                put_registration_descriptor(&q, MKTAG('d', 'r', 'a', 'c'));
             } else if (stream_type == STREAM_TYPE_VIDEO_VC1) {
-                *q++ = 0x05; /*MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'V';
-                *q++ = 'C';
-                *q++ = '-';
-                *q++ = '1';
+                put_registration_descriptor(&q, MKTAG('V', 'C', '-', '1'));
+            } else if (stream_type == STREAM_TYPE_VIDEO_HEVC && s->strict_std_compliance <= FF_COMPLIANCE_NORMAL) {
+                put_registration_descriptor(&q, MKTAG('H', 'E', 'V', 'C'));
             }
             break;
         case AVMEDIA_TYPE_DATA:
             if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
-                *q++ = 0x05; /* MPEG-2 registration descriptor */
-                *q++ = 4;
-                *q++ = 'K';
-                *q++ = 'L';
-                *q++ = 'V';
-                *q++ = 'A';
+                put_registration_descriptor(&q, MKTAG('K', 'L', 'V', 'A'));
             } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
                 const char *tag = "ID3 ";
                 *q++ = 0x26; /* metadata descriptor */
                 *q++ = 13;
                 put16(&q, 0xffff);    /* metadata application format */
-                putstr8(&q, tag, 0);
+                putbuf(&q, tag, strlen(tag));
                 *q++ = 0xff;        /* metadata format */
-                putstr8(&q, tag, 0);
+                putbuf(&q, tag, strlen(tag));
                 *q++ = 0;            /* metadata service ID */
                 *q++ = 0xF;          /* metadata_locator_record_flag|MPEG_carriage_flags|reserved */
             }
@@ -695,8 +667,8 @@ static void mpegts_write_sdt(AVFormatContext *s)
         desc_len_ptr = q;
         q++;
         *q++         = ts->service_type;
-        putstr8(&q, service->provider_name, 1);
-        putstr8(&q, service->name, 1);
+        putbuf(&q, service->provider_name, service->provider_name[0] + 1);
+        putbuf(&q, service->name, service->name[0] + 1);
         desc_len_ptr[0] = q - desc_len_ptr - 1;
 
         /* fill descriptor length */
@@ -709,10 +681,47 @@ static void mpegts_write_sdt(AVFormatContext *s)
                           data, q - data);
 }
 
-static MpegTSService *mpegts_add_service(MpegTSWrite *ts, int sid,
+/* This stores a string in buf with the correct encoding and also sets the
+ * first byte as the length. !str is accepted for an empty string.
+ * If the string is already encoded, invalid UTF-8 or has no multibyte sequence
+ * then we keep it as is, otherwise we signal UTF-8 encoding. */
+static int encode_str8(uint8_t *buf, const char *str)
+{
+    size_t str_len;
+    if (!str)
+        str = "";
+    str_len = strlen(str);
+    if (str[0] && (unsigned)str[0] >= 0x20) {   /* Make sure the string is not already encoded. */
+        const uint8_t *q = str;
+        int has_multibyte = 0;
+        while (*q) {
+            uint32_t code;
+            GET_UTF8(code, *q++, goto invalid;) /* Is it valid UTF-8? */
+            has_multibyte |= (code > 127);      /* Does it have multibyte UTF-8 chars in it? */
+        }
+        if (has_multibyte) {                    /* If we have multibyte chars and valid UTF-8, then encode as such! */
+            if (str_len > 254)
+                return AVERROR(EINVAL);
+            buf[0] = str_len + 1;
+            buf[1] = 0x15;
+            memcpy(&buf[2], str, str_len);
+            return 0;
+        }
+    }
+invalid:
+    /* Otherwise let's just encode the string as is! */
+    if (str_len > 255)
+        return AVERROR(EINVAL);
+    buf[0] = str_len;
+    memcpy(&buf[1], str, str_len);
+    return 0;
+}
+
+static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
                                          const char *provider_name,
                                          const char *name)
 {
+    MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
 
     service = av_mallocz(sizeof(MpegTSService));
@@ -721,17 +730,16 @@ static MpegTSService *mpegts_add_service(MpegTSWrite *ts, int sid,
     service->pmt.pid       = ts->pmt_start_pid + ts->nb_services;
     service->sid           = sid;
     service->pcr_pid       = 0x1fff;
-    service->provider_name = av_strdup(provider_name);
-    service->name          = av_strdup(name);
-    if (!service->provider_name || !service->name)
+    if (encode_str8(service->provider_name, provider_name) < 0 ||
+        encode_str8(service->name, name) < 0) {
+        av_log(s, AV_LOG_ERROR, "Too long service or provider name\n");
         goto fail;
+    }
     if (av_dynarray_add_nofree(&ts->services, &ts->nb_services, service) < 0)
         goto fail;
 
     return service;
 fail:
-    av_freep(&service->provider_name);
-    av_freep(&service->name);
     av_free(service);
     return NULL;
 }
@@ -790,7 +798,7 @@ static int mpegts_init(AVFormatContext *s)
         service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
         provider      = av_dict_get(s->metadata, "service_provider", NULL, 0);
         provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
-        service       = mpegts_add_service(ts, ts->service_id,
+        service       = mpegts_add_service(s, ts->service_id,
                                            provider_name, service_name);
 
         if (!service)
@@ -809,7 +817,7 @@ static int mpegts_init(AVFormatContext *s)
             service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
             provider      = av_dict_get(program->metadata, "service_provider", NULL, 0);
             provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
-            service       = mpegts_add_service(ts, program->id,
+            service       = mpegts_add_service(s, program->id,
                                                provider_name, service_name);
 
             if (!service)
@@ -1523,7 +1531,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     int64_t dts = pkt->dts, pts = pkt->pts;
     int opus_samples = 0;
     int side_data_size;
-    char *side_data = NULL;
+    uint8_t *side_data = NULL;
     int stream_id = -1;
 
     side_data = av_packet_get_side_data(pkt,
@@ -1839,8 +1847,6 @@ static void mpegts_deinit(AVFormatContext *s)
 
     for (i = 0; i < ts->nb_services; i++) {
         service = ts->services[i];
-        av_freep(&service->provider_name);
-        av_freep(&service->name);
         av_freep(&service);
     }
     av_freep(&ts->services);

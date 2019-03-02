@@ -358,6 +358,7 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
         h->mb_num    = h1->mb_num;
         h->mb_stride = h1->mb_stride;
         h->b_stride  = h1->b_stride;
+        h->x264_build = h1->x264_build;
 
         if (h->context_initialized || h1->context_initialized) {
             if ((err = h264_slice_header_init(h)) < 0) {
@@ -399,7 +400,6 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
 
     h->enable_er       = h1->enable_er;
     h->workaround_bugs = h1->workaround_bugs;
-    h->x264_build      = h1->x264_build;
     h->droppable       = h1->droppable;
 
     // extradata/NAL handling
@@ -429,6 +429,13 @@ int ff_h264_update_thread_context(AVCodecContext *dst,
                        MAX_DELAYED_PIC_COUNT + 2, h, h1);
 
     h->frame_recovered       = h1->frame_recovered;
+
+    av_buffer_unref(&h->sei.a53_caption.buf_ref);
+    if (h1->sei.a53_caption.buf_ref) {
+        h->sei.a53_caption.buf_ref = av_buffer_ref(h1->sei.a53_caption.buf_ref);
+        if (!h->sei.a53_caption.buf_ref)
+            return AVERROR(ENOMEM);
+    }
 
     if (!h->cur_pic_ptr)
         return 0;
@@ -671,7 +678,7 @@ static void implicit_weight_table(const H264Context *h, H264SliceContext *sl, in
             cur_poc = h->cur_pic_ptr->field_poc[h->picture_structure - 1];
         }
         if (sl->ref_count[0] == 1 && sl->ref_count[1] == 1 && !FRAME_MBAFF(h) &&
-            sl->ref_list[0][0].poc + (int64_t)sl->ref_list[1][0].poc == 2 * cur_poc) {
+            sl->ref_list[0][0].poc + (int64_t)sl->ref_list[1][0].poc == 2LL * cur_poc) {
             sl->pwt.use_weight        = 0;
             sl->pwt.use_weight_chroma = 0;
             return;
@@ -1269,16 +1276,60 @@ static int h264_export_frame_props(H264Context *h)
         }
     }
 
-    if (h->sei.a53_caption.a53_caption) {
+    if (h->sei.a53_caption.buf_ref) {
         H264SEIA53Caption *a53 = &h->sei.a53_caption;
-        AVFrameSideData *sd = av_frame_new_side_data(cur->f,
-                                                     AV_FRAME_DATA_A53_CC,
-                                                     a53->a53_caption_size);
-        if (sd)
-            memcpy(sd->data, a53->a53_caption, a53->a53_caption_size);
-        av_freep(&a53->a53_caption);
-        a53->a53_caption_size = 0;
+
+        AVFrameSideData *sd = av_frame_new_side_data_from_buf(cur->f, AV_FRAME_DATA_A53_CC, a53->buf_ref);
+        if (!sd)
+            av_buffer_unref(&a53->buf_ref);
+        a53->buf_ref = NULL;
+
         h->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
+    }
+
+    if (h->sei.picture_timing.timecode_cnt > 0) {
+        uint32_t tc = 0;
+        uint32_t *tc_sd;
+
+        AVFrameSideData *tcside = av_frame_new_side_data(cur->f,
+                                                         AV_FRAME_DATA_S12M_TIMECODE,
+                                                         sizeof(uint32_t)*4);
+        if (!tcside)
+            return AVERROR(ENOMEM);
+
+        tc_sd = (uint32_t*)tcside->data;
+        tc_sd[0] = h->sei.picture_timing.timecode_cnt;
+
+        for (int i = 0; i < tc_sd[0]; i++) {
+            uint32_t frames;
+
+            /* For SMPTE 12-M timecodes, frame count is a special case if > 30 FPS.
+               See SMPTE ST 12-1:2014 Sec 12.1 for more info. */
+            if (av_cmp_q(h->avctx->framerate, (AVRational) {30, 1}) == 1) {
+                frames = h->sei.picture_timing.timecode[i].frame / 2;
+                if (h->sei.picture_timing.timecode[i].frame % 2 == 1) {
+                    if (av_cmp_q(h->avctx->framerate, (AVRational) {50, 1}) == 0)
+                        tc |= (1 << 7);
+                    else
+                        tc |= (1 << 23);
+                }
+            } else {
+                frames = h->sei.picture_timing.timecode[i].frame;
+            }
+
+            tc |= h->sei.picture_timing.timecode[i].dropframe << 30;
+            tc |= (frames / 10) << 28;
+            tc |= (frames % 10) << 24;
+            tc |= (h->sei.picture_timing.timecode[i].seconds / 10) << 20;
+            tc |= (h->sei.picture_timing.timecode[i].seconds % 10) << 16;
+            tc |= (h->sei.picture_timing.timecode[i].minutes / 10) << 12;
+            tc |= (h->sei.picture_timing.timecode[i].minutes % 10) << 8;
+            tc |= (h->sei.picture_timing.timecode[i].hours / 10) << 4;
+            tc |= (h->sei.picture_timing.timecode[i].hours % 10);
+
+            tc_sd[i + 1] = tc;
+        }
+        h->sei.picture_timing.timecode_cnt = 0;
     }
 
     if (h->sei.alternative_transfer.present &&

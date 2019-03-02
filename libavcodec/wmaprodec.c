@@ -210,6 +210,7 @@ typedef struct WMAProDecodeCtx {
     int              subframe_offset;               ///< subframe offset in the bit reservoir
     uint8_t          packet_loss;                   ///< set in case of bitstream error
     uint8_t          packet_done;                   ///< set when a packet is fully decoded
+    uint8_t          eof_done;                      ///< set when EOF reached and extra subframe is written (XMA1/2)
 
     /* frame decode state */
     uint32_t         frame_num;                     ///< current frame number (not used for decoding)
@@ -1609,7 +1610,34 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
 
     *got_frame_ptr = 0;
 
-    if (s->packet_done || s->packet_loss) {
+    if (!buf_size) {
+        AVFrame *frame = data;
+        int i;
+
+        /** Must output remaining samples after stream end. WMAPRO 5.1 created
+         * by XWMA encoder don't though (maybe only 1/2ch streams need it). */
+        s->packet_done = 0;
+        if (s->eof_done)
+            return 0;
+
+        /** clean output buffer and copy last IMDCT samples */
+        for (i = 0; i < s->nb_channels; i++) {
+            memset(frame->extended_data[i], 0,
+            s->samples_per_frame * sizeof(*s->channel[i].out));
+
+            memcpy(frame->extended_data[i], s->channel[i].out,
+                   s->samples_per_frame * sizeof(*s->channel[i].out) >> 1);
+        }
+
+        /* TODO: XMA should output 128 samples only (instead of 512) and WMAPRO
+         * maybe 768 (with 2048), XMA needs changes in multi-stream handling though. */
+
+        s->eof_done = 1;
+        s->packet_done = 1;
+        *got_frame_ptr = 1;
+        return 0;
+    }
+    else if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
 
         /** sanity check for the buffer length */
@@ -1922,6 +1950,7 @@ static void flush(WMAProDecodeCtx *s)
                sizeof(*s->channel[i].out));
     s->packet_loss = 1;
     s->skip_packets = 0;
+    s->eof_done = 0;
 }
 
 
@@ -1976,7 +2005,7 @@ AVCodec ff_xma1_decoder = {
     .init           = xma_decode_init,
     .close          = xma_decode_end,
     .decode         = xma_decode_packet,
-    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };
@@ -1991,7 +2020,7 @@ AVCodec ff_xma2_decoder = {
     .close          = xma_decode_end,
     .decode         = xma_decode_packet,
     .flush          = xma_flush,
-    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

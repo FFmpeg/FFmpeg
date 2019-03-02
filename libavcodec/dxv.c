@@ -1192,6 +1192,12 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
     ret = decompress_tex(avctx);
     if (ret < 0)
         return ret;
+    {
+        int w_block = avctx->coded_width / ctx->texture_block_w;
+        int h_block = avctx->coded_height / ctx->texture_block_h;
+        if (w_block * h_block * ctx->tex_step > ctx->tex_size * 8LL)
+            return AVERROR_INVALIDDATA;
+    }
 
     tframe.f = data;
     ret = ff_thread_get_buffer(avctx, &tframe, 0);

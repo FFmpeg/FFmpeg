@@ -76,7 +76,7 @@ the gcc developers. Note that we will not add workarounds for gcc bugs.
 
 Also note that (some of) the gcc developers believe this is not a bug or
 not a bug they should fix:
-@url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=11203}.
+@url{https://gcc.gnu.org/bugzilla/show_bug.cgi?id=11203}.
 Then again, some of them do not know the difference between an undecidable
 problem and an NP-hard problem...
 
@@ -257,13 +257,13 @@ default.
 @section Which are good parameters for encoding high quality MPEG-4?
 
 '-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
-things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd'.
+things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Which are good parameters for encoding high quality MPEG-1/MPEG-2?
 
 '-mbd rd -trellis 2 -cmp 2 -subcmp 2 -g 100 -pass 1/2'
 but beware the '-g 100' might cause problems with some decoders.
-Things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd.
+Things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Interlaced video looks very bad when encoded with ffmpeg, what is wrong?
 
@@ -516,7 +516,7 @@ in the ffmpeg invocation. This is effective whether you run ffmpeg in a shell
 or invoke ffmpeg in its own process via an operating system API.
 
 As an alternative, when you are running ffmpeg in a shell, you can redirect
-standard input to @code{/dev/null} (on Linux and Mac OS)
+standard input to @code{/dev/null} (on Linux and macOS)
 or @code{NUL} (on Windows). You can do this redirect either
 on the ffmpeg invocation, or from a shell script which calls ffmpeg.
 
@@ -526,7 +526,7 @@ For example:
 ffmpeg -nostdin -i INPUT OUTPUT
 @end example
 
-or (on Linux, Mac OS, and other UNIX-like shells):
+or (on Linux, macOS, and other UNIX-like shells):
 
 @example
 ffmpeg -i INPUT OUTPUT </dev/null
@@ -601,7 +601,7 @@ No. These tools are too bloated and they complicate the build.
 FFmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
-read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
+read @uref{https://web.archive.org/web/20111004021423/http://kernel.org/pub/linux/docs/lkml/#s15, "Programming Religion"}.
 
 @section Why are the ffmpeg programs devoid of debugging symbols?
 

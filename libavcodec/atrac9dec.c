@@ -61,7 +61,6 @@ typedef struct ATRAC9BlockData {
     int has_band_ext;
     int has_band_ext_data;
     int band_ext_q_unit;
-    int band_ext_mode;
 
     /* Gradient */
     int grad_mode;
@@ -123,7 +122,7 @@ static inline int parse_gradient(ATRAC9Context *s, ATRAC9BlockData *b,
     if (grad_range[0] >= grad_range[1] || grad_range[1] > 47)
         return AVERROR_INVALIDDATA;
 
-    if (grad_value[0] >= grad_value[1] || grad_value[1] >= 32)
+    if (grad_value[0] > 31 || grad_value[1] > 31)
         return AVERROR_INVALIDDATA;
 
     if (b->grad_boundary > b->q_unit_cnt)
@@ -215,7 +214,7 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
         return 0;
 
     if (!b->has_band_ext) {
-        b->band_ext_mode = get_bits(gb, 2);
+        skip_bits(gb, 2);
         skip_bits_long(gb, get_bits(gb, 5));
         return 0;
     }
@@ -501,7 +500,7 @@ static inline void fill_with_noise(ATRAC9Context *s, ATRAC9ChannelData *c,
         av_bmg_get(&s->lfg, tmp);
         c->coeffs[start + i + 0] = tmp[0];
         c->coeffs[start + i + 1] = tmp[1];
-        maxval = FFMAX(FFABS(tmp[0]), FFMAX(FFABS(tmp[1]), maxval));
+        maxval = FFMAX(FFMAX(FFABS(tmp[0]), FFABS(tmp[1])), maxval);
     }
     /* Normalize */
     for (int i = 0; i < count; i++)
@@ -522,7 +521,6 @@ static inline void scale_band_ext_coeffs(ATRAC9ChannelData *c, float sf[6],
 static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
                                        const int stereo)
 {
-    const int bc = at9_tab_band_ext_group[b->q_unit_cnt - 13][2];
     const int g_units[4] = { /* A, B, C, total units */
         b->q_unit_cnt,
         at9_tab_band_ext_group[b->q_unit_cnt - 13][0],
@@ -550,11 +548,11 @@ static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
 
         switch (c->band_ext) {
         case 0: {
-            int l;
             float sf[6] = { 0.0f };
+            const int l = g_units[3] - g_units[0] - 1;
             const int n_start = at9_q_unit_to_coeff_idx[g_units[3] - 1];
             const int n_cnt   = at9_q_unit_to_coeff_cnt[g_units[3] - 1];
-            switch (bc) {
+            switch (at9_tab_band_ext_group[b->q_unit_cnt - 13][2]) {
             case 3:
                 sf[0] = at9_band_ext_scales_m0[0][0][c->band_ext_data[0]];
                 sf[1] = at9_band_ext_scales_m0[0][1][c->band_ext_data[0]];
@@ -576,7 +574,6 @@ static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
                 break;
             }
 
-            l = g_units[3] - g_units[0] - 1;
             sf[l] = at9_scalefactor_c[c->scalefactors[g_units[0]]];
 
             fill_with_noise(s, c, n_start, n_cnt);
@@ -633,6 +630,34 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
     const int first_in_pkt = !get_bits1(gb);
     const int reuse_params =  get_bits1(gb);
     const int stereo = s->block_config->type[block_idx] == ATRAC9_BLOCK_TYPE_CPE;
+
+    if (s->block_config->type[block_idx] == ATRAC9_BLOCK_TYPE_LFE) {
+        ATRAC9ChannelData *c = &b->channel[0];
+        const int precision = reuse_params ? 8 : 4;
+        c->q_unit_cnt = b->q_unit_cnt = 2;
+
+        memset(c->scalefactors, 0, sizeof(c->scalefactors));
+        memset(c->q_coeffs_fine, 0, sizeof(c->q_coeffs_fine));
+        memset(c->q_coeffs_coarse, 0, sizeof(c->q_coeffs_coarse));
+
+        for (int i = 0; i < b->q_unit_cnt; i++) {
+            c->scalefactors[i] = get_bits(gb, 5);
+            c->precision_coarse[i] = precision;
+            c->precision_fine[i] = 0;
+        }
+
+        for (int i = 0; i < c->q_unit_cnt; i++) {
+            const int start = at9_q_unit_to_coeff_idx[i + 0];
+            const int end   = at9_q_unit_to_coeff_idx[i + 1];
+            for (int j = start; j < end; j++)
+                c->q_coeffs_coarse[j] = get_bits(gb, c->precision_coarse[i] + 1);
+        }
+
+        dequantize        (s, b, c);
+        apply_scalefactors(s, b, 0);
+
+        goto imdct;
+    }
 
     if (first_in_pkt && reuse_params) {
         av_log(s->avctx, AV_LOG_ERROR, "Invalid block flags!\n");
@@ -718,7 +743,7 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
     apply_scalefactors    (s, b, stereo);
     apply_band_extension  (s, b, stereo);
 
-    /* iMDCT */
+imdct:
     for (int i = 0; i <= stereo; i++) {
         ATRAC9ChannelData *c = &b->channel[i];
         const int dst_idx = s->block_config->plane_map[block_idx][i];

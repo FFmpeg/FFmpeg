@@ -17,6 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/frame.h"
+#include "libavutil/mastering_display_metadata.h"
+#include "libavutil/pixdesc.h"
+
 #include "colorspace.h"
 
 
@@ -88,4 +92,46 @@ void ff_fill_rgb2xyz_table(const struct PrimaryCoefficients *coeffs,
     rgb2xyz[2][0] *= sr;
     rgb2xyz[2][1] *= sg;
     rgb2xyz[2][2] *= sb;
+}
+
+double ff_determine_signal_peak(AVFrame *in)
+{
+    AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+    double peak = 0;
+
+    if (sd) {
+        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
+        peak = clm->MaxCLL / REFERENCE_WHITE;
+    }
+
+    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (!peak && sd) {
+        AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+        if (metadata->has_luminance)
+            peak = av_q2d(metadata->max_luminance) / REFERENCE_WHITE;
+    }
+
+    // For untagged source, use peak of 10000 if SMPTE ST.2084
+    // otherwise assume HLG with reference display peak 1000.
+    if (!peak)
+        peak = in->color_trc == AVCOL_TRC_SMPTE2084 ? 100.0f : 10.0f;
+
+    return peak;
+}
+
+void ff_update_hdr_metadata(AVFrame *in, double peak)
+{
+    AVFrameSideData *sd = av_frame_get_side_data(in, AV_FRAME_DATA_CONTENT_LIGHT_LEVEL);
+
+    if (sd) {
+        AVContentLightMetadata *clm = (AVContentLightMetadata *)sd->data;
+        clm->MaxCLL = (unsigned)(peak * REFERENCE_WHITE);
+    }
+
+    sd = av_frame_get_side_data(in, AV_FRAME_DATA_MASTERING_DISPLAY_METADATA);
+    if (sd) {
+        AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
+        if (metadata->has_luminance)
+            metadata->max_luminance = av_d2q(peak * REFERENCE_WHITE, 10000);
+    }
 }

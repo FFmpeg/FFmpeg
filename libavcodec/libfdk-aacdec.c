@@ -25,9 +25,15 @@
 #include "avcodec.h"
 #include "internal.h"
 
-/* The version macro is introduced the same time as the setting enum was
- * changed, so this check should suffice. */
-#ifndef AACDECODER_LIB_VL0
+#ifdef AACDECODER_LIB_VL0
+#define FDKDEC_VER_AT_LEAST(vl0, vl1) \
+    ((AACDECODER_LIB_VL0 > vl0) || \
+     (AACDECODER_LIB_VL0 == vl0 && AACDECODER_LIB_VL1 >= vl1))
+#else
+#define FDKDEC_VER_AT_LEAST(vl0, vl1) 0
+#endif
+
+#if !FDKDEC_VER_AT_LEAST(2, 5) // < 2.5.10
 #define AAC_PCM_MAX_OUTPUT_CHANNELS AAC_PCM_OUTPUT_CHANNELS
 #endif
 
@@ -48,6 +54,7 @@ typedef struct FDKAACDecContext {
     int drc_level;
     int drc_boost;
     int drc_heavy;
+    int drc_effect;
     int drc_cut;
     int level_limit;
 } FDKAACDecContext;
@@ -72,8 +79,12 @@ static const AVOption fdk_aac_dec_options[] = {
                      OFFSET(drc_level),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 127, AD, NULL    },
     { "drc_heavy", "Dynamic Range Control: heavy compression, where [1] is on (RF mode) and [0] is off",
                      OFFSET(drc_heavy),      AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 1,   AD, NULL    },
-#ifdef AACDECODER_LIB_VL0
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     { "level_limit", "Signal level limiting", OFFSET(level_limit), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, 1, AD },
+#endif
+#if FDKDEC_VER_AT_LEAST(3, 0) // 3.0.0
+    { "drc_effect","Dynamic Range Control: effect type, where e.g. [0] is none and [6] is general",
+                     OFFSET(drc_effect),     AV_OPT_TYPE_INT,   { .i64 = -1},  -1, 8,   AD, NULL    },
 #endif
     { NULL }
 };
@@ -296,10 +307,19 @@ static av_cold int fdk_aac_decode_init(AVCodecContext *avctx)
         }
     }
 
-#ifdef AACDECODER_LIB_VL0
+#if FDKDEC_VER_AT_LEAST(2, 5) // 2.5.10
     if (aacDecoder_SetParam(s->handle, AAC_PCM_LIMITER_ENABLE, s->level_limit) != AAC_DEC_OK) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set in signal level limiting in the decoder\n");
         return AVERROR_UNKNOWN;
+    }
+#endif
+
+#if FDKDEC_VER_AT_LEAST(3, 0) // 3.0.0
+    if (s->drc_effect != -1) {
+        if (aacDecoder_SetParam(s->handle, AAC_UNIDRC_SET_EFFECT, s->drc_effect) != AAC_DEC_OK) {
+            av_log(avctx, AV_LOG_ERROR, "Unable to set DRC effect type in the decoder\n");
+            return AVERROR_UNKNOWN;
+        }
     }
 #endif
 

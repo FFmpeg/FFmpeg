@@ -74,7 +74,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
@@ -464,6 +464,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY14:
             case AV_PIX_FMT_GRAY16:
                 s->premultiply[0] = limited ? unpremultiply16offset : unpremultiply16;
                 break;
@@ -510,6 +511,7 @@ static int filter_frame(AVFilterContext *ctx,
             case AV_PIX_FMT_GRAY9:
             case AV_PIX_FMT_GRAY10:
             case AV_PIX_FMT_GRAY12:
+            case AV_PIX_FMT_GRAY14:
             case AV_PIX_FMT_GRAY16:
                 s->premultiply[0] = limited ? premultiply16offset : premultiply16;
                 break;

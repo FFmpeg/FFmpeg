@@ -34,6 +34,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
+#include "av1.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "profiles.h"
@@ -50,6 +51,9 @@ struct FrameListData {
     unsigned long duration;          /**< duration to show frame
                                           (in timebase units) */
     uint32_t flags;                  /**< flags for this frame */
+    uint64_t sse[4];
+    int have_sse;                    /**< true if we have pending sse[] */
+    uint64_t frame_number;
     struct FrameListData *next;
 };
 
@@ -67,7 +71,14 @@ typedef struct AOMEncoderContext {
     int crf;
     int static_thresh;
     int drop_threshold;
-    int noise_sensitivity;
+    uint64_t sse[4];
+    int have_sse; /**< true if we have pending sse[] */
+    uint64_t frame_number;
+    int tile_cols, tile_rows;
+    int tile_cols_log2, tile_rows_log2;
+    aom_superblock_size_t superblock_size;
+    int uniform_tiles;
+    int row_mt;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
@@ -79,6 +90,12 @@ static const char *const ctlidstr[] = {
     [AV1E_SET_COLOR_PRIMARIES]  = "AV1E_SET_COLOR_PRIMARIES",
     [AV1E_SET_MATRIX_COEFFICIENTS] = "AV1E_SET_MATRIX_COEFFICIENTS",
     [AV1E_SET_TRANSFER_CHARACTERISTICS] = "AV1E_SET_TRANSFER_CHARACTERISTICS",
+    [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
+    [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
+    [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
+#ifdef AOM_CTRL_AV1E_SET_ROW_MT
+    [AV1E_SET_ROW_MT]           = "AV1E_SET_ROW_MT",
+#endif
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -143,6 +160,10 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            width, "kf_mode:",     cfg->kf_mode,
            width, "kf_min_dist:", cfg->kf_min_dist,
            width, "kf_max_dist:", cfg->kf_max_dist);
+    av_log(avctx, level, "tile settings\n"
+                         "  %*s%d\n  %*s%d\n",
+           width, "tile_width_count:",  cfg->tile_width_count,
+           width, "tile_height_count:", cfg->tile_height_count);
     av_log(avctx, level, "\n");
 }
 
@@ -174,7 +195,12 @@ static av_cold void free_frame_list(struct FrameListData *list)
 }
 
 static av_cold int codecctl_int(AVCodecContext *avctx,
-                                enum aome_enc_control_id id, int val)
+#ifdef UENUM1BYTE
+                                aome_enc_control_id id,
+#else
+                                enum aome_enc_control_id id,
+#endif
+                                int val)
 {
     AOMContext *ctx = avctx->priv_data;
     char buf[80];
@@ -270,7 +296,7 @@ static int set_pix_fmt(AVCodecContext *avctx, aom_codec_caps_t codec_caps,
 
 static void set_color_range(AVCodecContext *avctx)
 {
-    enum aom_color_range aom_cr;
+    aom_color_range_t aom_cr;
     switch (avctx->color_range) {
     case AVCOL_RANGE_UNSPECIFIED:
     case AVCOL_RANGE_MPEG:       aom_cr = AOM_CR_STUDIO_RANGE; break;
@@ -284,12 +310,180 @@ static void set_color_range(AVCodecContext *avctx)
     codecctl_int(avctx, AV1E_SET_COLOR_RANGE, aom_cr);
 }
 
+static int count_uniform_tiling(int dim, int sb_size, int tiles_log2)
+{
+    int sb_dim   = (dim + sb_size - 1) / sb_size;
+    int tile_dim = (sb_dim + (1 << tiles_log2) - 1) >> tiles_log2;
+    av_assert0(tile_dim > 0);
+    return (sb_dim + tile_dim - 1) / tile_dim;
+}
+
+static int choose_tiling(AVCodecContext *avctx,
+                         struct aom_codec_enc_cfg *enccfg)
+{
+    AOMContext *ctx = avctx->priv_data;
+    int sb_128x128_possible, sb_size, sb_width, sb_height;
+    int uniform_rows, uniform_cols;
+    int uniform_64x64_possible, uniform_128x128_possible;
+    int tile_size, rounding, i;
+
+    if (ctx->tile_cols_log2 >= 0)
+        ctx->tile_cols = 1 << ctx->tile_cols_log2;
+    if (ctx->tile_rows_log2 >= 0)
+        ctx->tile_rows = 1 << ctx->tile_rows_log2;
+
+    if (ctx->tile_cols == 0) {
+        ctx->tile_cols = (avctx->width + AV1_MAX_TILE_WIDTH - 1) /
+            AV1_MAX_TILE_WIDTH;
+        if (ctx->tile_cols > 1) {
+            av_log(avctx, AV_LOG_DEBUG, "Automatically using %d tile "
+                   "columns to fill width.\n", ctx->tile_cols);
+        }
+    }
+    av_assert0(ctx->tile_cols > 0);
+    if (ctx->tile_rows == 0) {
+        int max_tile_width =
+            FFALIGN((FFALIGN(avctx->width, 128) +
+                     ctx->tile_cols - 1) / ctx->tile_cols, 128);
+        ctx->tile_rows =
+            (max_tile_width * FFALIGN(avctx->height, 128) +
+             AV1_MAX_TILE_AREA - 1) / AV1_MAX_TILE_AREA;
+        if (ctx->tile_rows > 1) {
+            av_log(avctx, AV_LOG_DEBUG, "Automatically using %d tile "
+                   "rows to fill area.\n", ctx->tile_rows);
+        }
+    }
+    av_assert0(ctx->tile_rows > 0);
+
+    if ((avctx->width  + 63) / 64 < ctx->tile_cols ||
+        (avctx->height + 63) / 64 < ctx->tile_rows) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: frame not "
+               "large enough to fit specified tile arrangement.\n");
+        return AVERROR(EINVAL);
+    }
+    if (ctx->tile_cols > AV1_MAX_TILE_COLS ||
+        ctx->tile_rows > AV1_MAX_TILE_ROWS) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: AV1 does "
+               "not allow more than %dx%d tiles.\n",
+               AV1_MAX_TILE_COLS, AV1_MAX_TILE_ROWS);
+        return AVERROR(EINVAL);
+    }
+    if (avctx->width / ctx->tile_cols > AV1_MAX_TILE_WIDTH) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid tile sizing: AV1 does "
+               "not allow tiles of width greater than %d.\n",
+               AV1_MAX_TILE_WIDTH);
+        return AVERROR(EINVAL);
+    }
+
+    ctx->superblock_size = AOM_SUPERBLOCK_SIZE_DYNAMIC;
+
+    if (ctx->tile_cols == 1 && ctx->tile_rows == 1) {
+        av_log(avctx, AV_LOG_DEBUG, "Using a single tile.\n");
+        return 0;
+    }
+
+    sb_128x128_possible =
+        (avctx->width  + 127) / 128 >= ctx->tile_cols &&
+        (avctx->height + 127) / 128 >= ctx->tile_rows;
+
+    ctx->tile_cols_log2 = ctx->tile_cols == 1 ? 0 :
+        av_log2(ctx->tile_cols - 1) + 1;
+    ctx->tile_rows_log2 = ctx->tile_rows == 1 ? 0 :
+        av_log2(ctx->tile_rows - 1) + 1;
+
+    uniform_cols = count_uniform_tiling(avctx->width,
+                                        64, ctx->tile_cols_log2);
+    uniform_rows = count_uniform_tiling(avctx->height,
+                                        64, ctx->tile_rows_log2);
+    av_log(avctx, AV_LOG_DEBUG, "Uniform with 64x64 superblocks "
+           "-> %dx%d tiles.\n", uniform_cols, uniform_rows);
+    uniform_64x64_possible = uniform_cols == ctx->tile_cols &&
+                             uniform_rows == ctx->tile_rows;
+
+    if (sb_128x128_possible) {
+        uniform_cols = count_uniform_tiling(avctx->width,
+                                            128, ctx->tile_cols_log2);
+        uniform_rows = count_uniform_tiling(avctx->height,
+                                            128, ctx->tile_rows_log2);
+        av_log(avctx, AV_LOG_DEBUG, "Uniform with 128x128 superblocks "
+               "-> %dx%d tiles.\n", uniform_cols, uniform_rows);
+        uniform_128x128_possible = uniform_cols == ctx->tile_cols &&
+                                   uniform_rows == ctx->tile_rows;
+    } else {
+        av_log(avctx, AV_LOG_DEBUG, "128x128 superblocks not possible.\n");
+        uniform_128x128_possible = 0;
+    }
+
+    ctx->uniform_tiles = 1;
+    if (uniform_64x64_possible && uniform_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with dynamic "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        return 0;
+    }
+    if (uniform_64x64_possible && !sb_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with 64x64 "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_64X64;
+        return 0;
+    }
+    if (uniform_128x128_possible) {
+        av_log(avctx, AV_LOG_DEBUG, "Using uniform tiling with 128x128 "
+               "superblocks (tile_cols_log2 = %d, tile_rows_log2 = %d).\n",
+               ctx->tile_cols_log2, ctx->tile_rows_log2);
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_128X128;
+        return 0;
+    }
+    ctx->uniform_tiles = 0;
+
+    if (sb_128x128_possible) {
+        sb_size = 128;
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_128X128;
+    } else {
+        sb_size = 64;
+        ctx->superblock_size = AOM_SUPERBLOCK_SIZE_64X64;
+    }
+    av_log(avctx, AV_LOG_DEBUG, "Using fixed tiling with %dx%d "
+           "superblocks (tile_cols = %d, tile_rows = %d).\n",
+           sb_size, sb_size, ctx->tile_cols, ctx->tile_rows);
+
+    enccfg->tile_width_count  = ctx->tile_cols;
+    enccfg->tile_height_count = ctx->tile_rows;
+
+    sb_width  = (avctx->width  + sb_size - 1) / sb_size;
+    sb_height = (avctx->height + sb_size - 1) / sb_size;
+
+    tile_size = sb_width / ctx->tile_cols;
+    rounding  = sb_width % ctx->tile_cols;
+    for (i = 0; i < ctx->tile_cols; i++) {
+        enccfg->tile_widths[i] = tile_size +
+            (i < rounding / 2 ||
+             i > ctx->tile_cols - 1 - (rounding + 1) / 2);
+    }
+
+    tile_size = sb_height / ctx->tile_rows;
+    rounding  = sb_height % ctx->tile_rows;
+    for (i = 0; i < ctx->tile_rows; i++) {
+        enccfg->tile_heights[i] = tile_size +
+            (i < rounding / 2 ||
+             i > ctx->tile_rows - 1 - (rounding + 1) / 2);
+    }
+
+    return 0;
+}
+
 static av_cold int aom_init(AVCodecContext *avctx,
                             const struct aom_codec_iface *iface)
 {
     AOMContext *ctx = avctx->priv_data;
     struct aom_codec_enc_cfg enccfg = { 0 };
+#ifdef AOM_FRAME_IS_INTRAONLY
+    aom_codec_flags_t flags =
+        (avctx->flags & AV_CODEC_FLAG_PSNR) ? AOM_CODEC_USE_PSNR : 0;
+#else
     aom_codec_flags_t flags = 0;
+#endif
     AVCPBProperties *cpb_props;
     int res;
     aom_img_fmt_t img_fmt;
@@ -319,7 +513,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     enccfg.g_h            = avctx->height;
     enccfg.g_timebase.num = avctx->time_base.num;
     enccfg.g_timebase.den = avctx->time_base.den;
-    enccfg.g_threads      = avctx->thread_count;
+    enccfg.g_threads      =
+        FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 64);
 
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
@@ -431,6 +626,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
     enccfg.g_error_resilient = ctx->error_resilient;
 
+    res = choose_tiling(avctx, &enccfg);
+    if (res < 0)
+        return res;
+
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
     res = aom_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
@@ -453,6 +652,16 @@ static av_cold int aom_init(AVCodecContext *avctx,
     codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
     codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
     set_color_range(avctx);
+
+    codecctl_int(avctx, AV1E_SET_SUPERBLOCK_SIZE, ctx->superblock_size);
+    if (ctx->uniform_tiles) {
+        codecctl_int(avctx, AV1E_SET_TILE_COLUMNS, ctx->tile_cols_log2);
+        codecctl_int(avctx, AV1E_SET_TILE_ROWS,    ctx->tile_rows_log2);
+    }
+
+#ifdef AOM_CTRL_AV1E_SET_ROW_MT
+    codecctl_int(avctx, AV1E_SET_ROW_MT, ctx->row_mt);
+#endif
 
     // provide dummy value to initialize wrapper, values will be updated each _encode()
     aom_img_wrap(&ctx->rawimg, img_fmt, avctx->width, avctx->height, 1,
@@ -498,7 +707,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     return 0;
 }
 
-static inline void cx_pktcpy(struct FrameListData *dst,
+static inline void cx_pktcpy(AOMContext *ctx,
+                             struct FrameListData *dst,
                              const struct aom_codec_cx_pkt *src)
 {
     dst->pts      = src->data.frame.pts;
@@ -506,6 +716,17 @@ static inline void cx_pktcpy(struct FrameListData *dst,
     dst->flags    = src->data.frame.flags;
     dst->sz       = src->data.frame.sz;
     dst->buf      = src->data.frame.buf;
+#ifdef AOM_FRAME_IS_INTRAONLY
+    dst->have_sse = 0;
+    dst->frame_number = ++ctx->frame_number;
+    dst->have_sse = ctx->have_sse;
+    if (ctx->have_sse) {
+        /* associate last-seen SSE to the frame. */
+        /* Transfers ownership from ctx to dst. */
+        memcpy(dst->sse, ctx->sse, sizeof(dst->sse));
+        ctx->have_sse = 0;
+    }
+#endif
 }
 
 /**
@@ -519,6 +740,7 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
                       AVPacket *pkt)
 {
     AOMContext *ctx = avctx->priv_data;
+    int pict_type;
     int ret = ff_alloc_packet2(avctx, pkt, cx_frame->sz, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
@@ -528,8 +750,27 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
     memcpy(pkt->data, cx_frame->buf, pkt->size);
     pkt->pts = pkt->dts = cx_frame->pts;
 
-    if (!!(cx_frame->flags & AOM_FRAME_IS_KEY))
+    if (!!(cx_frame->flags & AOM_FRAME_IS_KEY)) {
         pkt->flags |= AV_PKT_FLAG_KEY;
+#ifdef AOM_FRAME_IS_INTRAONLY
+        pict_type = AV_PICTURE_TYPE_I;
+    } else if (cx_frame->flags & AOM_FRAME_IS_INTRAONLY) {
+        pict_type = AV_PICTURE_TYPE_I;
+    } else {
+        pict_type = AV_PICTURE_TYPE_P;
+    }
+
+    ff_side_data_set_encoder_stats(pkt, 0, cx_frame->sse + 1,
+                                   cx_frame->have_sse ? 3 : 0, pict_type);
+
+    if (cx_frame->have_sse) {
+        int i;
+        for (i = 0; i < 3; ++i) {
+            avctx->error[i] += cx_frame->sse[i + 1];
+        }
+        cx_frame->have_sse = 0;
+#endif
+    }
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         ret = av_bsf_send_packet(ctx->bsf, pkt);
@@ -585,7 +826,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
                 /* avoid storing the frame when the list is empty and we haven't yet
                  * provided a frame for output */
                 av_assert0(!ctx->coded_frame_list);
-                cx_pktcpy(&cx_frame, pkt);
+                cx_pktcpy(ctx, &cx_frame, pkt);
                 size = storeframe(avctx, &cx_frame, pkt_out);
                 if (size < 0)
                     return size;
@@ -598,7 +839,7 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
                            "Frame queue element alloc failed\n");
                     return AVERROR(ENOMEM);
                 }
-                cx_pktcpy(cx_frame, pkt);
+                cx_pktcpy(ctx, cx_frame, pkt);
                 cx_frame->buf = av_malloc(cx_frame->sz);
 
                 if (!cx_frame->buf) {
@@ -628,7 +869,18 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
             stats->sz += pkt->data.twopass_stats.sz;
             break;
         }
-        case AOM_CODEC_PSNR_PKT: // FIXME add support for AV_CODEC_FLAG_PSNR
+#ifdef AOM_FRAME_IS_INTRAONLY
+        case AOM_CODEC_PSNR_PKT:
+        {
+            av_assert0(!ctx->have_sse);
+            ctx->sse[0] = pkt->data.psnr.sse[0];
+            ctx->sse[1] = pkt->data.psnr.sse[1];
+            ctx->sse[2] = pkt->data.psnr.sse[2];
+            ctx->sse[3] = pkt->data.psnr.sse[3];
+            ctx->have_sse = 1;
+            break;
+        }
+#endif
         case AOM_CODEC_CUSTOM_PKT:
             // ignore unsupported/unrecognized packet types
             break;
@@ -731,25 +983,25 @@ static av_cold int av1_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(AOMContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -8, 8, VE},
+    { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, 0, 8, VE},
     { "auto-alt-ref",    "Enable use of alternate reference "
                          "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1},      -1,      2,       VE},
     { "lag-in-frames",   "Number of frames to look ahead at for "
                          "alternate reference frame selection",    OFFSET(lag_in_frames),   AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE},
     { "error-resilience", "Error resilience configuration", OFFSET(error_resilient), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, VE, "er"},
     { "default",         "Improve resiliency against losses of whole frames", 0, AV_OPT_TYPE_CONST, {.i64 = AOM_ERROR_RESILIENT_DEFAULT}, 0, 0, VE, "er"},
-    { "partitions",      "The frame partitions are independently decodable "
-                         "by the bool decoder, meaning that partitions can be decoded even "
-                         "though earlier partitions have been lost. Note that intra predicition"
-                         " is still done over the partition boundary.",       0, AV_OPT_TYPE_CONST, {.i64 = AOM_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"},
     { "crf",              "Select the quality for constant quality mode", offsetof(AOMContext, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE },
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "drop-threshold",   "Frame drop threshold", offsetof(AOMContext, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE },
-    { "noise-sensitivity", "Noise sensitivity", OFFSET(noise_sensitivity), AV_OPT_TYPE_INT, {.i64 = 0 }, 0, 4, VE},
+    { "tiles",            "Tile columns x rows", OFFSET(tile_cols), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, VE },
+    { "tile-columns",     "Log2 of number of tile columns to use", OFFSET(tile_cols_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
+    { "tile-rows",        "Log2 of number of tile rows to use",    OFFSET(tile_rows_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
+    { "row-mt",           "Enable row based multi-threading",      OFFSET(row_mt),         AV_OPT_TYPE_BOOL, {.i64 = 0},  0, 1, VE},
     { NULL }
 };
 
 static const AVCodecDefault defaults[] = {
+    { "b",          "256*1000" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
     { "g",                "-1" },

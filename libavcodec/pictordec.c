@@ -236,6 +236,9 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
 
+        if (s->nb_planes - plane > 1)
+            return AVERROR_INVALIDDATA;
+
         if (plane < s->nb_planes && x < avctx->width) {
             int run = (y + 1) * avctx->width - x;
             if (bits_per_plane == 8)

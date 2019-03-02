@@ -21,36 +21,10 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-
-enum BWDIFMode {
-    BWDIF_MODE_SEND_FRAME = 0, ///< send 1 frame for each frame
-    BWDIF_MODE_SEND_FIELD = 1, ///< send 1 frame for each field
-};
-
-enum BWDIFParity {
-    BWDIF_PARITY_TFF  =  0, ///< top field first
-    BWDIF_PARITY_BFF  =  1, ///< bottom field first
-    BWDIF_PARITY_AUTO = -1, ///< auto detection
-};
-
-enum BWDIFDeint {
-    BWDIF_DEINT_ALL        = 0, ///< deinterlace all frames
-    BWDIF_DEINT_INTERLACED = 1, ///< only deinterlace frames marked as interlaced
-};
+#include "yadif.h"
 
 typedef struct BWDIFContext {
-    const AVClass *class;
-
-    int mode;           ///< BWDIFMode
-    int parity;         ///< BWDIFParity
-    int deint;          ///< BWDIFDeint
-
-    int frame_pending;
-
-    AVFrame *cur;
-    AVFrame *next;
-    AVFrame *prev;
-    AVFrame *out;
+    YADIFContext yadif;
 
     void (*filter_intra)(void *dst1, void *cur1, int w, int prefs, int mrefs,
                          int prefs3, int mrefs3, int parity, int clip_max);
@@ -61,10 +35,6 @@ typedef struct BWDIFContext {
     void (*filter_edge)(void *dst, void *prev, void *cur, void *next,
                         int w, int prefs, int mrefs, int prefs2, int mrefs2,
                         int parity, int clip_max, int spat);
-
-    const AVPixFmtDescriptor *csp;
-    int inter_field;
-    int eof;
 } BWDIFContext;
 
 void ff_bwdif_init_x86(BWDIFContext *bwdif);

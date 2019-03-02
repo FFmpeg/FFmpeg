@@ -211,6 +211,14 @@ do {\
 
 struct tm *ff_brktimegm(time_t secs, struct tm *tm);
 
+/**
+ * Automatically create sub-directories
+ *
+ * @param path will create sub-directories by path
+ * @return 0, or < 0 on error
+ */
+int ff_mkdir_p(const char *path);
+
 char *ff_data_to_hex(char *buf, const uint8_t *src, int size, int lowercase);
 
 /**

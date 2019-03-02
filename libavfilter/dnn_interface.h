@@ -30,34 +30,30 @@ typedef enum {DNN_SUCCESS, DNN_ERROR} DNNReturnType;
 
 typedef enum {DNN_NATIVE, DNN_TF} DNNBackendType;
 
-typedef enum {DNN_SRCNN, DNN_ESPCN} DNNDefaultModel;
-
 typedef struct DNNData{
-    float* data;
+    float *data;
     int width, height, channels;
 } DNNData;
 
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
-    void* model;
+    void *model;
     // Sets model input and output, while allocating additional memory for intermediate calculations.
     // Should be called at least once before model execution.
-    DNNReturnType (*set_input_output)(void* model, DNNData* input, DNNData* output);
+    DNNReturnType (*set_input_output)(void *model, DNNData *input, DNNData *output);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
 typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
-    DNNModel* (*load_model)(const char* model_filename);
-    // Loads one of the default models
-    DNNModel* (*load_default_model)(DNNDefaultModel model_type);
+    DNNModel *(*load_model)(const char *model_filename);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
-    DNNReturnType (*execute_model)(const DNNModel* model);
+    DNNReturnType (*execute_model)(const DNNModel *model);
     // Frees memory allocated for model.
-    void (*free_model)(DNNModel** model);
+    void (*free_model)(DNNModel **model);
 } DNNModule;
 
 // Initializes DNNModule depending on chosen backend.
-DNNModule* ff_get_dnn_module(DNNBackendType backend_type);
+DNNModule *ff_get_dnn_module(DNNBackendType backend_type);
 
 #endif

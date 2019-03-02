@@ -34,27 +34,21 @@ Possible forms of stream specifiers are:
 @table @option
 @item @var{stream_index}
 Matches the stream with this index. E.g. @code{-threads:1 4} would set the
-thread count for the second stream to 4.
-@item @var{stream_type}[:@var{stream_index}]
+thread count for the second stream to 4. If @var{stream_index} is used as an
+additional stream specifier (see below), then it selects stream number
+@var{stream_index} from the matching streams.
+@item @var{stream_type}[:@var{additional_stream_specifier}]
 @var{stream_type} is one of following: 'v' or 'V' for video, 'a' for audio, 's'
 for subtitle, 'd' for data, and 't' for attachments. 'v' matches all video
 streams, 'V' only matches video streams which are not attached pictures, video
-thumbnails or cover arts.  If @var{stream_index} is given, then it matches
-stream number @var{stream_index} of this type. Otherwise, it matches all
-streams of this type.
-@item p:@var{program_id}[:@var{stream_index}] or p:@var{program_id}[:@var{stream_type}[:@var{stream_index}]] or
-p:@var{program_id}:m:@var{key}[:@var{value}]
-In first version, if @var{stream_index} is given, then it matches the stream with number @var{stream_index}
-in the program with the id @var{program_id}. Otherwise, it matches all streams in the
-program. In the second version, @var{stream_type} is one of following: 'v' for video, 'a' for audio, 's'
-for subtitle, 'd' for data. If @var{stream_index} is also given, then it matches
-stream number @var{stream_index} of this type in the program with the id @var{program_id}.
-Otherwise, if only @var{stream_type} is given, it matches all
-streams of this type in the program with the id @var{program_id}.
-In the third version matches streams in the program with the id @var{program_id} with the metadata
-tag @var{key} having the specified value. If
-@var{value} is not given, matches streams that contain the given tag with any
-value.
+thumbnails or cover arts. If @var{additional_stream_specifier} is used, then
+it matches streams which both have this type and match the
+@var{additional_stream_specifier}. Otherwise, it matches all streams of the
+specified type.
+@item p:@var{program_id}[:@var{additional_stream_specifier}]
+Matches streams which are in the program with the id @var{program_id}. If
+@var{additional_stream_specifier} is used, then it matches streams which both
+are part of the program and match the @var{additional_stream_specifier}.
 
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
@@ -245,7 +239,7 @@ Dump full command line and console output to a file named
 @code{@var{program}-@var{YYYYMMDD}-@var{HHMMSS}.log} in the current
 directory.
 This file can be useful for bug reports.
-It also implies @code{-loglevel verbose}.
+It also implies @code{-loglevel debug}.
 
 Setting the environment variable @env{FFREPORT} to any value has the
 same effect. If the value is a ':'-separated key=value sequence, these
@@ -371,7 +365,15 @@ ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
 All codec AVOptions are per-stream, and thus a stream specifier
-should be attached to them.
+should be attached to them:
+@example
+ffmpeg -i multichannel.mxf -map 0:v:0 -map 0:a:0 -map 0:a:0 -c:a:0 ac3 -b:a:0 640k -ac:a:1 2 -c:a:1 aac -b:2 128k out.mp4
+@end example
+
+In the above example, a multichannel audio stream is mapped twice for output.
+The first instance is encoded with codec ac3 and bitrate 640k.
+The second instance is downmixed to 2 channels and encoded with codec aac. A bitrate of 128k is specified for it using
+absolute index of the output stream.
 
 Note: the @option{-nooption} syntax cannot be used for boolean
 AVOptions, use @option{-option 0}/@option{-option 1}.

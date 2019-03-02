@@ -51,8 +51,7 @@ void ff_h264_sei_uninit(H264SEIContext *h)
     h->display_orientation.present = 0;
     h->afd.present                 =  0;
 
-    h->a53_caption.a53_caption_size = 0;
-    av_freep(&h->a53_caption.a53_caption);
+    av_buffer_unref(&h->a53_caption.buf_ref);
 }
 
 static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
@@ -85,32 +84,38 @@ static int decode_picture_timing(H264SEIPictureTiming *h, GetBitContext *gb,
             return AVERROR_INVALIDDATA;
 
         num_clock_ts = sei_num_clock_ts_table[h->pic_struct];
-
+        h->timecode_cnt = 0;
         for (i = 0; i < num_clock_ts; i++) {
-            if (get_bits(gb, 1)) {                /* clock_timestamp_flag */
+            if (get_bits(gb, 1)) {                      /* clock_timestamp_flag */
+                H264SEITimeCode *tc = &h->timecode[h->timecode_cnt++];
                 unsigned int full_timestamp_flag;
-
+                unsigned int counting_type, cnt_dropped_flag;
                 h->ct_type |= 1 << get_bits(gb, 2);
-                skip_bits(gb, 1);                 /* nuit_field_based_flag */
-                skip_bits(gb, 5);                 /* counting_type */
+                skip_bits(gb, 1);                       /* nuit_field_based_flag */
+                counting_type = get_bits(gb, 5);        /* counting_type */
                 full_timestamp_flag = get_bits(gb, 1);
-                skip_bits(gb, 1);                 /* discontinuity_flag */
-                skip_bits(gb, 1);                 /* cnt_dropped_flag */
-                skip_bits(gb, 8);                 /* n_frames */
+                skip_bits(gb, 1);                       /* discontinuity_flag */
+                cnt_dropped_flag = get_bits(gb, 1);      /* cnt_dropped_flag */
+                if (cnt_dropped_flag && counting_type > 1 && counting_type < 7)
+                    tc->dropframe = 1;
+                tc->frame = get_bits(gb, 8);         /* n_frames */
                 if (full_timestamp_flag) {
-                    skip_bits(gb, 6);             /* seconds_value 0..59 */
-                    skip_bits(gb, 6);             /* minutes_value 0..59 */
-                    skip_bits(gb, 5);             /* hours_value 0..23 */
+                    tc->full = 1;
+                    tc->seconds = get_bits(gb, 6); /* seconds_value 0..59 */
+                    tc->minutes = get_bits(gb, 6); /* minutes_value 0..59 */
+                    tc->hours = get_bits(gb, 5);   /* hours_value 0..23 */
                 } else {
-                    if (get_bits(gb, 1)) {        /* seconds_flag */
-                        skip_bits(gb, 6);         /* seconds_value range 0..59 */
-                        if (get_bits(gb, 1)) {    /* minutes_flag */
-                            skip_bits(gb, 6);     /* minutes_value 0..59 */
-                            if (get_bits(gb, 1))  /* hours_flag */
-                                skip_bits(gb, 5); /* hours_value 0..23 */
+                    tc->seconds = tc->minutes = tc->hours = tc->full = 0;
+                    if (get_bits(gb, 1)) {             /* seconds_flag */
+                        tc->seconds = get_bits(gb, 6);
+                        if (get_bits(gb, 1)) {         /* minutes_flag */
+                            tc->minutes = get_bits(gb, 6);
+                            if (get_bits(gb, 1))       /* hours_flag */
+                                tc->hours = get_bits(gb, 5);
                         }
                     }
                 }
+
                 if (sps->time_offset_length > 0)
                     skip_bits(gb,
                               sps->time_offset_length); /* time_offset */
@@ -169,7 +174,8 @@ static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
             size -= 2;
 
             if (cc_count && size >= cc_count * 3) {
-                const uint64_t new_size = (h->a53_caption_size + cc_count
+                int old_size = h->buf_ref ? h->buf_ref->size : 0;
+                const uint64_t new_size = (old_size + cc_count
                                            * UINT64_C(3));
                 int i, ret;
 
@@ -177,14 +183,15 @@ static int decode_registered_user_data_closed_caption(H264SEIA53Caption *h,
                     return AVERROR(EINVAL);
 
                 /* Allow merging of the cc data from two fields. */
-                ret = av_reallocp(&h->a53_caption, new_size);
+                ret = av_buffer_realloc(&h->buf_ref, new_size);
                 if (ret < 0)
                     return ret;
 
+                /* Use of av_buffer_realloc assumes buffer is writeable */
                 for (i = 0; i < cc_count; i++) {
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
-                    h->a53_caption[h->a53_caption_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
+                    h->buf_ref->data[old_size++] = get_bits(gb, 8);
                 }
 
                 skip_bits(gb, 8);   // marker_bits

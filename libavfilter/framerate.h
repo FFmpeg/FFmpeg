@@ -19,7 +19,7 @@
 #ifndef AVFILTER_FRAMERATE_H
 #define AVFILTER_FRAMERATE_H
 
-#include "libavutil/pixelutils.h"
+#include "scene_sad.h"
 #include "avfilter.h"
 
 #define BLEND_FUNC_PARAMS const uint8_t *src1, ptrdiff_t src1_linesize, \
@@ -48,7 +48,7 @@ typedef struct FrameRateContext {
     AVRational srce_time_base;          ///< timebase of source
     AVRational dest_time_base;          ///< timebase of destination
 
-    av_pixelutils_sad_fn sad;           ///< Sum of the absolute difference function (scene detect only)
+    ff_scene_sad_fn sad;                ///< Sum of the absolute difference function (scene detect only)
     double prev_mafd;                   ///< previous MAFD                           (scene detect only)
 
     int blend_factor_max;

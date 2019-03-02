@@ -182,7 +182,7 @@ static int unrefcount_frame(AVCodecInternal *avci, AVFrame *frame)
     return 0;
 }
 
-static int bsfs_init(AVCodecContext *avctx)
+int ff_decode_bsfs_init(AVCodecContext *avctx)
 {
     AVCodecInternal *avci = avctx->internal;
     DecodeFilterContext *s = &avci->filter;
@@ -688,10 +688,6 @@ int attribute_align_arg avcodec_send_packet(AVCodecContext *avctx, const AVPacke
     if (avpkt && !avpkt->size && avpkt->data)
         return AVERROR(EINVAL);
 
-    ret = bsfs_init(avctx);
-    if (ret < 0)
-        return ret;
-
     av_packet_unref(avci->buffer_pkt);
     if (avpkt && (avpkt->data || avpkt->side_data_elems)) {
         ret = av_packet_ref(avci->buffer_pkt, avpkt);
@@ -750,10 +746,6 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
 
     if (!avcodec_is_open(avctx) || !av_codec_is_decoder(avctx->codec))
         return AVERROR(EINVAL);
-
-    ret = bsfs_init(avctx);
-    if (ret < 0)
-        return ret;
 
     if (avci->buffer_frame->buf[0]) {
         av_frame_move_ref(frame, avci->buffer_frame);
@@ -1386,6 +1378,7 @@ int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt)
         if (i == n) {
             av_log(avctx, AV_LOG_ERROR, "Invalid return from get_format(): "
                    "%s not in possible list.\n", desc->name);
+            ret = AV_PIX_FMT_NONE;
             break;
         }
 
@@ -1504,7 +1497,7 @@ static int update_frame_pool(AVCodecContext *avctx, AVFrame *frame)
         tmpsize = av_image_fill_pointers(data, avctx->pix_fmt, h,
                                          NULL, linesize);
         if (tmpsize < 0)
-            return -1;
+            return tmpsize;
 
         for (i = 0; i < 3 && data[i + 1]; i++)
             size[i] = data[i + 1] - data[i];
@@ -1978,6 +1971,14 @@ int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
     return ret;
 }
 
+static void bsfs_flush(AVCodecContext *avctx)
+{
+    DecodeFilterContext *s = &avctx->internal->filter;
+
+    for (int i = 0; i < s->nb_bsfs; i++)
+        av_bsf_flush(s->bsfs[i]);
+}
+
 void avcodec_flush_buffers(AVCodecContext *avctx)
 {
     avctx->internal->draining      = 0;
@@ -1998,7 +1999,7 @@ void avcodec_flush_buffers(AVCodecContext *avctx)
     avctx->pts_correction_last_pts =
     avctx->pts_correction_last_dts = INT64_MIN;
 
-    ff_decode_bsfs_uninit(avctx);
+    bsfs_flush(avctx);
 
     if (!avctx->refcounted_frames)
         av_frame_unref(avctx->internal->to_free);

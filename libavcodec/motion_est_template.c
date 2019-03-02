@@ -989,76 +989,16 @@ int ff_epzs_motion_search(MpegEncContext *s, int *mx_ptr, int *my_ptr,
     }
 }
 
-static int epzs_motion_search4(MpegEncContext * s,
-                             int *mx_ptr, int *my_ptr, int P[10][2],
-                             int src_index, int ref_index, int16_t (*last_mv)[2],
-                             int ref_mv_scale)
-{
-    MotionEstContext * const c= &s->me;
-    int best[2]={0, 0};
-    int d, dmin;
-    unsigned map_generation;
-    const int penalty_factor= c->penalty_factor;
-    const int size=1;
-    const int h=8;
-    const int ref_mv_stride= s->mb_stride;
-    const int ref_mv_xy= s->mb_x + s->mb_y *ref_mv_stride;
-    me_cmp_func cmpf, chroma_cmpf;
-    LOAD_COMMON
-    int flags= c->flags;
-    LOAD_COMMON2
-
-    cmpf        = s->mecc.me_cmp[size];
-    chroma_cmpf = s->mecc.me_cmp[size + 1];
-
-    map_generation= update_map_generation(c);
-
-    dmin = 1000000;
-
-    /* first line */
-    if (s->first_slice_line) {
-        CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
-                        (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
-        CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
-    }else{
-        CHECK_MV(P_MV1[0]>>shift, P_MV1[1]>>shift)
-        //FIXME try some early stop
-        CHECK_MV(P_MEDIAN[0]>>shift, P_MEDIAN[1]>>shift)
-        CHECK_MV(P_LEFT[0]>>shift, P_LEFT[1]>>shift)
-        CHECK_MV(P_TOP[0]>>shift, P_TOP[1]>>shift)
-        CHECK_MV(P_TOPRIGHT[0]>>shift, P_TOPRIGHT[1]>>shift)
-        CHECK_CLIPPED_MV((last_mv[ref_mv_xy][0]*ref_mv_scale + (1<<15))>>16,
-                        (last_mv[ref_mv_xy][1]*ref_mv_scale + (1<<15))>>16)
-    }
-    if(dmin>64*4){
-        CHECK_CLIPPED_MV((last_mv[ref_mv_xy+1][0]*ref_mv_scale + (1<<15))>>16,
-                        (last_mv[ref_mv_xy+1][1]*ref_mv_scale + (1<<15))>>16)
-        if(s->mb_y+1<s->end_mb_y)  //FIXME replace at least with last_slice_line
-            CHECK_CLIPPED_MV((last_mv[ref_mv_xy+ref_mv_stride][0]*ref_mv_scale + (1<<15))>>16,
-                            (last_mv[ref_mv_xy+ref_mv_stride][1]*ref_mv_scale + (1<<15))>>16)
-    }
-
-    dmin= diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
-
-    *mx_ptr= best[0];
-    *my_ptr= best[1];
-
-    return dmin;
-}
-
-//try to merge with above FIXME (needs PSNR test)
 static int epzs_motion_search2(MpegEncContext * s,
                              int *mx_ptr, int *my_ptr, int P[10][2],
                              int src_index, int ref_index, int16_t (*last_mv)[2],
-                             int ref_mv_scale)
+                             int ref_mv_scale, const int size)
 {
     MotionEstContext * const c= &s->me;
     int best[2]={0, 0};
     int d, dmin;
     unsigned map_generation;
     const int penalty_factor= c->penalty_factor;
-    const int size=0; //FIXME pass as arg
     const int h=8;
     const int ref_mv_stride= s->mb_stride;
     const int ref_mv_xy= s->mb_x + s->mb_y *ref_mv_stride;

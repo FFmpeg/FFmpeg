@@ -53,6 +53,8 @@ typedef struct QSVContext {
 
     AVFifoBuffer *async_fifo;
     int zero_consume_run;
+    int buffered_count;
+    int reinit_flag;
 
     // the internal parser and codec context for parsing the data
     AVCodecParserContext *parser;

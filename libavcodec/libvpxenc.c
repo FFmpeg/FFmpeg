@@ -33,6 +33,7 @@
 #include "libavutil/avassert.h"
 #include "libvpx.h"
 #include "profiles.h"
+#include "libavutil/avstring.h"
 #include "libavutil/base64.h"
 #include "libavutil/common.h"
 #include "libavutil/internal.h"
@@ -75,6 +76,7 @@ typedef struct VPxEncoderContext {
     struct FrameListData *coded_frame_list;
 
     int cpu_used;
+    int sharpness;
     /**
      * VP8 specific flags, see VP8F_* below.
      */
@@ -98,6 +100,8 @@ typedef struct VPxEncoderContext {
     int rc_undershoot_pct;
     int rc_overshoot_pct;
 
+    char *vp8_ts_parameters;
+
     // VP9-only
     int lossless;
     int tile_columns;
@@ -111,6 +115,7 @@ typedef struct VPxEncoderContext {
     int row_mt;
     int tune_content;
     int corpus_complexity;
+    int tpl_model;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -126,6 +131,7 @@ static const char *const ctlidstr[] = {
     [VP8E_SET_TUNING]            = "VP8E_SET_TUNING",
     [VP8E_SET_CQ_LEVEL]          = "VP8E_SET_CQ_LEVEL",
     [VP8E_SET_MAX_INTRA_BITRATE_PCT] = "VP8E_SET_MAX_INTRA_BITRATE_PCT",
+    [VP8E_SET_SHARPNESS]               = "VP8E_SET_SHARPNESS",
 #if CONFIG_LIBVPX_VP9_ENCODER
     [VP9E_SET_LOSSLESS]                = "VP9E_SET_LOSSLESS",
     [VP9E_SET_TILE_COLUMNS]            = "VP9E_SET_TILE_COLUMNS",
@@ -146,6 +152,9 @@ static const char *const ctlidstr[] = {
 #ifdef VPX_CTRL_VP9E_SET_TUNE_CONTENT
     [VP9E_SET_TUNE_CONTENT]            = "VP9E_SET_TUNE_CONTENT",
 #endif
+#ifdef VPX_CTRL_VP9E_SET_TPL
+    [VP9E_SET_TPL]                     = "VP9E_SET_TPL",
+#endif
 #endif
 };
 
@@ -165,6 +174,7 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
 {
     int width = -30;
     int level = AV_LOG_DEBUG;
+    int i;
 
     av_log(avctx, level, "vpx_codec_enc_cfg\n");
     av_log(avctx, level, "generic settings\n"
@@ -204,6 +214,25 @@ static av_cold void dump_enc_cfg(AVCodecContext *avctx,
            "  %*s%u\n  %*s%u\n",
            width, "rc_undershoot_pct:", cfg->rc_undershoot_pct,
            width, "rc_overshoot_pct:",  cfg->rc_overshoot_pct);
+    av_log(avctx, level, "temporal layering settings\n"
+           "  %*s%u\n", width, "ts_number_layers:", cfg->ts_number_layers);
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_target_bitrate:");
+    for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+        av_log(avctx, level, "%u ", cfg->ts_target_bitrate[i]);
+    av_log(avctx, level, "\n");
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_rate_decimator:");
+    for (i = 0; i < VPX_TS_MAX_LAYERS; i++)
+        av_log(avctx, level, "%u ", cfg->ts_rate_decimator[i]);
+    av_log(avctx, level, "\n");
+    av_log(avctx, level,
+           "\n  %*s%u\n", width, "ts_periodicity:", cfg->ts_periodicity);
+    av_log(avctx, level,
+           "\n  %*s", width, "ts_layer_id:");
+    for (i = 0; i < VPX_TS_MAX_PERIODICITY; i++)
+        av_log(avctx, level, "%u ", cfg->ts_layer_id[i]);
+    av_log(avctx, level, "\n");
     av_log(avctx, level, "decoder buffer model\n"
             "  %*s%u\n  %*s%u\n  %*s%u\n",
             width, "rc_buf_sz:",         cfg->rc_buf_sz,
@@ -318,6 +347,39 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     av_freep(&ctx->twopass_stats.buf);
     av_freep(&avctx->stats_out);
     free_frame_list(ctx->coded_frame_list);
+    return 0;
+}
+
+static void vp8_ts_parse_int_array(int *dest, char *value, size_t value_len, int max_entries)
+{
+    int dest_idx = 0;
+    char *saveptr = NULL;
+    char *token = av_strtok(value, ",", &saveptr);
+
+    while (token && dest_idx < max_entries) {
+        dest[dest_idx++] = strtoul(token, NULL, 10);
+        token = av_strtok(NULL, ",", &saveptr);
+    }
+}
+
+static int vp8_ts_param_parse(struct vpx_codec_enc_cfg *enccfg, char *key, char *value)
+{
+    size_t value_len = strlen(value);
+
+    if (!value_len)
+        return -1;
+
+    if (!strcmp(key, "ts_number_layers"))
+        enccfg->ts_number_layers = strtoul(value, &value, 10);
+    else if (!strcmp(key, "ts_target_bitrate"))
+        vp8_ts_parse_int_array(enccfg->ts_target_bitrate, value, value_len, VPX_TS_MAX_LAYERS);
+    else if (!strcmp(key, "ts_rate_decimator"))
+      vp8_ts_parse_int_array(enccfg->ts_rate_decimator, value, value_len, VPX_TS_MAX_LAYERS);
+    else if (!strcmp(key, "ts_periodicity"))
+        enccfg->ts_periodicity = strtoul(value, &value, 10);
+    else if (!strcmp(key, "ts_layer_id"))
+        vp8_ts_parse_int_array(enccfg->ts_layer_id, value, value_len, VPX_TS_MAX_PERIODICITY);
+
     return 0;
 }
 
@@ -493,7 +555,8 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     enccfg.g_h            = avctx->height;
     enccfg.g_timebase.num = avctx->time_base.num;
     enccfg.g_timebase.den = avctx->time_base.den;
-    enccfg.g_threads      = avctx->thread_count ? avctx->thread_count : av_cpu_count();
+    enccfg.g_threads      =
+        FFMIN(avctx->thread_count ? avctx->thread_count : av_cpu_count(), 16);
     enccfg.g_lag_in_frames= ctx->lag_in_frames;
 
     if (avctx->flags & AV_CODEC_FLAG_PASS1)
@@ -635,6 +698,22 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     enccfg.g_error_resilient = ctx->error_resilient || ctx->flags & VP8F_ERROR_RESILIENT;
 
+    if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && ctx->vp8_ts_parameters) {
+        AVDictionary *dict    = NULL;
+        AVDictionaryEntry* en = NULL;
+
+        if (!av_dict_parse_string(&dict, ctx->vp8_ts_parameters, "=", ":", 0)) {
+            while ((en = av_dict_get(dict, "", en, AV_DICT_IGNORE_SUFFIX))) {
+                if (vp8_ts_param_parse(&enccfg, en->key, en->value) < 0)
+                    av_log(avctx, AV_LOG_WARNING,
+                           "Error parsing option '%s = %s'.\n",
+                           en->key, en->value);
+            }
+
+            av_dict_free(&dict);
+        }
+    }
+
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
     res = vpx_codec_enc_init(&ctx->encoder, iface, &enccfg, flags);
@@ -673,6 +752,9 @@ FF_ENABLE_DEPRECATION_WARNINGS
         av_log(avctx, AV_LOG_ERROR, "Transparency encoding with auto_alt_ref does not work\n");
         return AVERROR(EINVAL);
     }
+
+    if (ctx->sharpness >= 0)
+        codecctl_int(avctx, VP8E_SET_SHARPNESS, ctx->sharpness);
 
     if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8) {
 #if FF_API_PRIVATE_OPT
@@ -716,6 +798,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #ifdef VPX_CTRL_VP9E_SET_TUNE_CONTENT
         if (ctx->tune_content >= 0)
             codecctl_int(avctx, VP9E_SET_TUNE_CONTENT, ctx->tune_content);
+#endif
+#ifdef VPX_CTRL_VP9E_SET_TPL
+        if (ctx->tpl_model >= 0)
+            codecctl_int(avctx, VP9E_SET_TPL, ctx->tpl_model);
 #endif
     }
 #endif
@@ -1021,6 +1107,12 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #endif
         if (frame->pict_type == AV_PICTURE_TYPE_I)
             flags |= VPX_EFLAG_FORCE_KF;
+        if (CONFIG_LIBVPX_VP8_ENCODER && avctx->codec_id == AV_CODEC_ID_VP8 && frame->metadata) {
+            AVDictionaryEntry* en = av_dict_get(frame->metadata, "vp8-flags", NULL, 0);
+            if (en) {
+                flags |= strtoul(en->value, NULL, 10);
+            }
+        }
     }
 
     res = vpx_codec_encode(&ctx->encoder, rawimg, timestamp,
@@ -1067,8 +1159,6 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 #define COMMON_OPTIONS \
-    { "auto-alt-ref",    "Enable use of alternate reference " \
-                         "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1},      -1,      2,       VE}, \
     { "lag-in-frames",   "Number of frames to look ahead for " \
                          "alternate reference frame selection",    OFFSET(lag_in_frames),   AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE}, \
     { "arnr-maxframes",  "altref noise reduction max frame count", OFFSET(arnr_max_frames), AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE}, \
@@ -1108,11 +1198,16 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     {"arnr_strength", "altref noise reduction filter strength", offsetof(VPxContext, arnr_strength), AV_OPT_TYPE_INT, {.i64 = 3}, 0, 6, VE}, \
     {"arnr_type", "altref noise reduction filter type", offsetof(VPxContext, arnr_type), AV_OPT_TYPE_INT, {.i64 = 3}, 1, 3, VE}, \
     {"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VPxContext, lag_in_frames), AV_OPT_TYPE_INT, {.i64 = 25}, 0, 25, VE}, \
+    {"sharpness", "Increase sharpness at the expense of lower PSNR", offsetof(VPxContext, sharpness), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 7, VE},
 
 #if CONFIG_LIBVPX_VP8_ENCODER
 static const AVOption vp8_options[] = {
     COMMON_OPTIONS
+    { "auto-alt-ref",    "Enable use of alternate reference "
+                         "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1,  2, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1}, -16, 16, VE},
+    { "ts-parameters",   "Temporal scaling configuration using a "
+                         ":-separated list of key=value parameters",    OFFSET(vp8_ts_parameters), AV_OPT_TYPE_STRING, {.str=NULL},  0,  0, VE},
     LEGACY_OPTIONS
     { NULL }
 };
@@ -1121,6 +1216,8 @@ static const AVOption vp8_options[] = {
 #if CONFIG_LIBVPX_VP9_ENCODER
 static const AVOption vp9_options[] = {
     COMMON_OPTIONS
+    { "auto-alt-ref",    "Enable use of alternate reference "
+                         "frames (2-pass only)",                        OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "cpu-used",        "Quality/Speed ratio modifier",                OFFSET(cpu_used),        AV_OPT_TYPE_INT, {.i64 = 1},  -8, 8, VE},
     { "lossless",        "Lossless mode",                               OFFSET(lossless),        AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1, VE},
     { "tile-columns",    "Number of tile columns to use, log2",         OFFSET(tile_columns),    AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
@@ -1156,6 +1253,9 @@ static const AVOption vp9_options[] = {
 #endif
 #if VPX_ENCODER_ABI_VERSION >= 14
     { "corpus-complexity", "corpus vbr complexity midpoint", OFFSET(corpus_complexity), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 10000, VE },
+#endif
+#ifdef VPX_CTRL_VP9E_SET_TPL
+    { "enable-tpl",      "Enable temporal dependency model", OFFSET(tpl_model), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },
 #endif
     LEGACY_OPTIONS
     { NULL }

@@ -28,7 +28,6 @@
  * J. van de Weijer, Th. Gevers, A. Gijsenij "Edge-Based Color Constancy".
  */
 
-#include "libavutil/bprint.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
@@ -41,6 +40,8 @@
 #include <math.h>
 
 #define GREY_EDGE "greyedge"
+
+#define SQRT3 1.73205080757
 
 #define NUM_PLANES    3
 #define MAX_DIFF_ORD  2
@@ -145,7 +146,7 @@ static int set_gauss(AVFilterContext *ctx)
         sum1 = 0.0;
         for (i = 0; i < filtersize; ++i) {
             s->gauss[1][i] = - (GINDX(filtersize, i) / pow(sigma, 2)) * s->gauss[0][i];
-            sum1 += s->gauss[1][i] *GINDX(filtersize, i);
+            sum1 += s->gauss[1][i] * GINDX(filtersize, i);
         }
 
         for (i = 0; i < filtersize; ++i) {
@@ -595,7 +596,6 @@ static int diagonal_transformation(AVFilterContext *ctx, void *arg, int jobnr, i
     ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
-    double sqrt3 = pow(3.0, 0.5);
     int plane;
 
     for (plane = 0; plane < NUM_PLANES; ++plane) {
@@ -610,7 +610,7 @@ static int diagonal_transformation(AVFilterContext *ctx, void *arg, int jobnr, i
         unsigned i;
 
         for (i = slice_start; i < slice_end; ++i) {
-            temp = src[i] / (s->white[plane] * sqrt3);
+            temp = src[i] / (s->white[plane] * SQRT3);
             dst[i] = av_clip_uint8((int)(temp + 0.5));
         }
     }
@@ -657,12 +657,12 @@ static int config_props(AVFilterLink *inlink)
     double sigma = s->sigma;
     int ret;
 
-    if (!sigma && s->difford) {
-        av_log(ctx, AV_LOG_ERROR, "Sigma can't be set to 0 when difford > 0.\n");
+    if (!floor(break_off_sigma * sigma + 0.5) && s->difford) {
+        av_log(ctx, AV_LOG_ERROR, "floor(%f * sigma) must be > 0 when difford > 0.\n", break_off_sigma);
         return AVERROR(EINVAL);
     }
 
-    s->filtersize = 2 * floor(break_off_sigma * s->sigma + 0.5) + 1;
+    s->filtersize = 2 * floor(break_off_sigma * sigma + 0.5) + 1;
     if (ret=set_gauss(ctx)) {
         return ret;
     }
@@ -735,9 +735,9 @@ static const AVFilterPad colorconstancy_outputs[] = {
 #if CONFIG_GREYEDGE_FILTER
 
 static const AVOption greyedge_options[] = {
-    { "difford",  "set differentiation order", OFFSET(difford),  AV_OPT_TYPE_INT,    {.i64=1},   0,   2,      FLAGS },
-    { "minknorm", "set Minkowski norm",        OFFSET(minknorm), AV_OPT_TYPE_INT,    {.i64=1},   0,   65535,  FLAGS },
-    { "sigma",    "set sigma",                 OFFSET(sigma),    AV_OPT_TYPE_DOUBLE, {.dbl=1},   0.0, 1024.0, FLAGS },
+    { "difford",  "set differentiation order", OFFSET(difford),  AV_OPT_TYPE_INT,    {.i64=1}, 0,   2,      FLAGS },
+    { "minknorm", "set Minkowski norm",        OFFSET(minknorm), AV_OPT_TYPE_INT,    {.i64=1}, 0,   20,     FLAGS },
+    { "sigma",    "set sigma",                 OFFSET(sigma),    AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0.0, 1024.0, FLAGS },
     { NULL }
 };
 

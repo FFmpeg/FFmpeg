@@ -166,7 +166,7 @@ static int vivo_read_header(AVFormatContext *s)
             value = strchr(key, ':');
             if (!value) {
                 av_log(s, AV_LOG_WARNING, "missing colon in key:value pair '%s'\n",
-                       value);
+                       key);
                 continue;
             }
 

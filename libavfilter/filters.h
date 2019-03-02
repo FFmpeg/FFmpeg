@@ -61,10 +61,23 @@ int ff_inlink_process_commands(AVFilterLink *link, const AVFrame *frame);
 int ff_inlink_evaluate_timeline_at_frame(AVFilterLink *link, const AVFrame *frame);
 
 /**
+ * Get the number of frames available on the link.
+ * @return the number of frames available in the link fifo.
+ */
+size_t ff_inlink_queued_frames(AVFilterLink *link);
+
+/**
  * Test if a frame is available on the link.
  * @return  >0 if a frame is available
  */
 int ff_inlink_check_available_frame(AVFilterLink *link);
+
+
+/***
+  * Get the number of samples available on the link.
+  * @return the numer of samples available on the link.
+  */
+int ff_inlink_queued_samples(AVFilterLink *link);
 
 /**
  * Test if enough samples are available on the link.
@@ -101,6 +114,13 @@ int ff_inlink_consume_frame(AVFilterLink *link, AVFrame **rframe);
  */
 int ff_inlink_consume_samples(AVFilterLink *link, unsigned min, unsigned max,
                             AVFrame **rframe);
+
+/**
+ * Access a frame in the link fifo without consuming it.
+ * The first frame is numbered 0; the designated frame must exist.
+ * @return the frame at idx position in the link fifo.
+ */
+AVFrame *ff_inlink_peek_frame(AVFilterLink *link, size_t idx);
 
 /**
  * Make sure a frame is writable.

@@ -28,6 +28,7 @@
 
 typedef struct ChannelStats {
     double last;
+    double last_non_zero;
     double min_non_zero;
     double sigma_x, sigma_x2;
     double avg_sigma_x2, min_sigma_x2, max_sigma_x2;
@@ -40,6 +41,7 @@ typedef struct ChannelStats {
     double diff1_sum_x2;
     uint64_t mask, imask;
     uint64_t min_count, max_count;
+    uint64_t zero_runs;
     uint64_t nb_samples;
 } ChannelStats;
 
@@ -127,6 +129,7 @@ static void reset_stats(AudioStatsContext *s)
         p->imask = 0xFFFFFFFFFFFFFFFF;
         p->min_count = 0;
         p->max_count = 0;
+        p->zero_runs = 0;
         p->nb_samples = 0;
     }
 }
@@ -194,6 +197,11 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
         p->max_run = d == p->last ? p->max_run + 1 : 1;
     } else if (p->last == p->max) {
         p->max_runs += p->max_run * p->max_run;
+    }
+
+    if (d != 0) {
+        p->zero_runs += FFSIGN(d) != FFSIGN(p->last_non_zero);
+        p->last_non_zero = d;
     }
 
     p->sigma_x += nd;
@@ -292,6 +300,8 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
         set_meta(metadata, c + 1, "Bit_depth", "%f", depth.num);
         set_meta(metadata, c + 1, "Bit_depth2", "%f", depth.den);
         set_meta(metadata, c + 1, "Dynamic_range", "%f", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
+        set_meta(metadata, c + 1, "Zero_crossings", "%f", p->zero_runs);
+        set_meta(metadata, c + 1, "Zero_crossings_rate", "%f", p->zero_runs/(double)p->nb_samples);
     }
 
     set_meta(metadata, 0, "Overall.DC_offset", "%f", max_sigma_x / (nb_samples / s->nb_channels));
@@ -486,6 +496,8 @@ static void print_stats(AVFilterContext *ctx)
         bit_depth(s, p->mask, p->imask, &depth);
         av_log(ctx, AV_LOG_INFO, "Bit depth: %u/%u\n", depth.num, depth.den);
         av_log(ctx, AV_LOG_INFO, "Dynamic range: %f\n", LINEAR_TO_DB(2 * FFMAX(FFABS(p->min), FFABS(p->max))/ p->min_non_zero));
+        av_log(ctx, AV_LOG_INFO, "Zero crossings: %"PRId64"\n", p->zero_runs);
+        av_log(ctx, AV_LOG_INFO, "Zero crossings rate: %f\n", p->zero_runs/(double)p->nb_samples);
     }
 
     av_log(ctx, AV_LOG_INFO, "Overall\n");

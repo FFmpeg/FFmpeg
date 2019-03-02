@@ -174,7 +174,7 @@ static int misc_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
         ff_vaapi_vpp_colour_standard(input_frame->colorspace);
 
     params.output_region = NULL;
-    params.output_background_color = 0xff000000;
+    params.output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
     params.output_color_standard = params.surface_color_standard;
 
     params.pipeline_flags = 0;

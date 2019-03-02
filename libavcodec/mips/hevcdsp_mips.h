@@ -479,4 +479,95 @@ void ff_hevc_addblk_32x32_msa(uint8_t *dst, int16_t *pi16Coeffs,
                               ptrdiff_t stride);
 void ff_hevc_idct_luma_4x4_msa(int16_t *pi16Coeffs);
 
+/* Loongson optimization */
+#define L_MC(PEL, DIR, WIDTH, TYPE)                                          \
+void ff_hevc_put_hevc_##PEL##_##DIR##WIDTH##_8_##TYPE(int16_t *dst,          \
+                                                      uint8_t *src,          \
+                                                      ptrdiff_t src_stride,  \
+                                                      int height,            \
+                                                      intptr_t mx,           \
+                                                      intptr_t my,           \
+                                                      int width)
+L_MC(qpel, h, 4, mmi);
+L_MC(qpel, h, 8, mmi);
+L_MC(qpel, h, 12, mmi);
+L_MC(qpel, h, 16, mmi);
+L_MC(qpel, h, 24, mmi);
+L_MC(qpel, h, 32, mmi);
+L_MC(qpel, h, 48, mmi);
+L_MC(qpel, h, 64, mmi);
+
+L_MC(qpel, hv, 4, mmi);
+L_MC(qpel, hv, 8, mmi);
+L_MC(qpel, hv, 12, mmi);
+L_MC(qpel, hv, 16, mmi);
+L_MC(qpel, hv, 24, mmi);
+L_MC(qpel, hv, 32, mmi);
+L_MC(qpel, hv, 48, mmi);
+L_MC(qpel, hv, 64, mmi);
+
+#define L_BI_MC(PEL, DIR, WIDTH, TYPE)                                          \
+void ff_hevc_put_hevc_##PEL##_bi_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,          \
+                                                         ptrdiff_t dst_stride,  \
+                                                         uint8_t *src,          \
+                                                         ptrdiff_t src_stride,  \
+                                                         int16_t *src2,         \
+                                                         int height,            \
+                                                         intptr_t mx,           \
+                                                         intptr_t my,           \
+                                                         int width)
+
+L_BI_MC(pel, pixels, 8, mmi);
+L_BI_MC(pel, pixels, 16, mmi);
+L_BI_MC(pel, pixels, 24, mmi);
+L_BI_MC(pel, pixels, 32, mmi);
+L_BI_MC(pel, pixels, 48, mmi);
+L_BI_MC(pel, pixels, 64, mmi);
+
+L_BI_MC(qpel, hv, 4, mmi);
+L_BI_MC(qpel, hv, 8, mmi);
+L_BI_MC(qpel, hv, 12, mmi);
+L_BI_MC(qpel, hv, 16, mmi);
+L_BI_MC(qpel, hv, 24, mmi);
+L_BI_MC(qpel, hv, 32, mmi);
+L_BI_MC(qpel, hv, 48, mmi);
+L_BI_MC(qpel, hv, 64, mmi);
+
+L_BI_MC(qpel, h, 4, mmi);
+L_BI_MC(qpel, h, 8, mmi);
+L_BI_MC(qpel, h, 12, mmi);
+L_BI_MC(qpel, h, 16, mmi);
+L_BI_MC(qpel, h, 24, mmi);
+L_BI_MC(qpel, h, 32, mmi);
+L_BI_MC(qpel, h, 48, mmi);
+L_BI_MC(qpel, h, 64, mmi);
+
+L_BI_MC(epel, hv, 4, mmi);
+L_BI_MC(epel, hv, 8, mmi);
+L_BI_MC(epel, hv, 12, mmi);
+L_BI_MC(epel, hv, 16, mmi);
+L_BI_MC(epel, hv, 24, mmi);
+L_BI_MC(epel, hv, 32, mmi);
+#undef L_BI_MC
+
+#define L_UNI_MC(PEL, DIR, WIDTH, TYPE)                                         \
+void ff_hevc_put_hevc_##PEL##_uni_##DIR##WIDTH##_8_##TYPE(uint8_t *dst,         \
+                                                          ptrdiff_t dst_stride, \
+                                                          uint8_t *src,         \
+                                                          ptrdiff_t src_stride, \
+                                                          int height,           \
+                                                          intptr_t mx,          \
+                                                          intptr_t my,          \
+                                                          int width)
+
+L_UNI_MC(qpel, hv, 4, mmi);
+L_UNI_MC(qpel, hv, 8, mmi);
+L_UNI_MC(qpel, hv, 12, mmi);
+L_UNI_MC(qpel, hv, 16, mmi);
+L_UNI_MC(qpel, hv, 24, mmi);
+L_UNI_MC(qpel, hv, 32, mmi);
+L_UNI_MC(qpel, hv, 48, mmi);
+L_UNI_MC(qpel, hv, 64, mmi);
+#undef L_UNI_MC
+
 #endif  // #ifndef AVCODEC_MIPS_HEVCDSP_MIPS_H

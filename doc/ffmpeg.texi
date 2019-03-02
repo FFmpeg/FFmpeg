@@ -614,8 +614,13 @@ they do not conflict with the standard, as in:
 ffmpeg -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
-@item -dn (@emph{output})
-Disable data recording. For full manual control see the @code{-map}
+@item -dn (@emph{input/output})
+As an input option, blocks all data streams of a file from being filtered or
+being automatically selected or mapped for any output. See @code{-discard}
+option to disable streams individually.
+
+As an output option, disables data recording i.e. automatic selection or
+mapping of any data stream. For full manual control see the @code{-map}
 option.
 
 @item -dframes @var{number} (@emph{output})
@@ -775,8 +780,13 @@ If used together with @option{-vcodec copy}, it will affect the aspect ratio
 stored at container level, but not the aspect ratio stored in encoded
 frames, if it exists.
 
-@item -vn (@emph{output})
-Disable video recording. For full manual control see the @code{-map}
+@item -vn (@emph{input/output})
+As an input option, blocks all video streams of a file from being filtered or
+being automatically selected or mapped for any output. See @code{-discard}
+option to disable streams individually.
+
+As an output option, disables video recording i.e. automatic selection or
+mapping of any video stream. For full manual control see the @code{-map}
 option.
 
 @item -vcodec @var{codec} (@emph{output})
@@ -1089,8 +1099,13 @@ Set the number of audio channels. For output streams it is set by
 default to the number of input audio channels. For input streams
 this option only makes sense for audio grabbing devices and raw demuxers
 and is mapped to the corresponding demuxer options.
-@item -an (@emph{output})
-Disable audio recording. For full manual control see the @code{-map}
+@item -an (@emph{input/output})
+As an input option, blocks all audio streams of a file from being filtered or
+being automatically selected or mapped for any output. See @code{-discard}
+option to disable streams individually.
+
+As an output option, disables audio recording i.e. automatic selection or
+mapping of any audio stream. For full manual control see the @code{-map}
 option.
 @item -acodec @var{codec} (@emph{input/output})
 Set the audio codec. This is an alias for @code{-codec:a}.
@@ -1125,8 +1140,13 @@ stereo but not 6 channels as 5.1. The default is to always try to guess. Use
 @table @option
 @item -scodec @var{codec} (@emph{input/output})
 Set the subtitle codec. This is an alias for @code{-codec:s}.
-@item -sn (@emph{output})
-Disable subtitle recording. For full manual control see the @code{-map}
+@item -sn (@emph{input/output})
+As an input option, blocks all subtitle streams of a file from being filtered or
+being automatically selected or mapped for any output. See @code{-discard}
+option to disable streams individually.
+
+As an output option, disables subtitle recording i.e. automatic selection or
+mapping of any subtitle stream. For full manual control see the @code{-map}
 option.
 @item -sbsf @var{bitstream_filter}
 Deprecated, see -bsf
@@ -1620,8 +1640,10 @@ This allows dumping sdp information when at least one output isn't an
 rtp stream. (Requires at least one of the output formats to be rtp).
 
 @item -discard (@emph{input})
-Allows discarding specific streams or frames of streams at the demuxer.
-Not all demuxers support this.
+Allows discarding specific streams or frames from streams.
+Any input stream can be fully discarded, using value @code{all} whereas
+selective discarding of frames from a stream occurs at the demuxer
+and is not supported by all demuxers.
 
 @table @option
 @item none

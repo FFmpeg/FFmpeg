@@ -47,6 +47,8 @@ gray16be            08d997a3faa25a3db9d6be272d282eef
 gray16le            df65eb804360795e3e38a2701fa9641a
 gray9be             6382a14594a8b68f0ec7de25531f9334
 gray9le             4eb1dda58706436e3b69aef29b0089db
+grayf32be           f3bf178835f8146aa09d1da94bba4d8a
+grayf32le           fb6ea85bfbc8cd21c51fc0e110197294
 monob               8b04f859fee6a0be856be184acd7a0b5
 monow               54d16d2c01abfd72ecdb5e51e283937c
 nv12                8e24feb2c544dc26a20047a71e4c27aa
@@ -74,6 +76,8 @@ rgba64le            b91e1d77f799eb92241a2d2d28437b15
 uyvy422             3bcf3c80047592f2211fae3260b1b65d
 xyz12be             a1ef56bf746d71f59669c28e48fc8450
 xyz12le             831ff03c1ba4ef19374686f16a064d8c
+ya16be              2f2c27f1854ac00c73d13861dcab2705
+ya16le              2c1fbd127c9f0435adc0e9b2ea3f486b
 ya8                 dbb99fbcdc204aaa1a7397ff561f1a67
 yuv410p             5d4d992a7728431aa4e0700f87fb7fd8
 yuv411p             7e1300e89f5bc07939e2c4a6acbdf267
@@ -125,6 +129,8 @@ yuva420p9le         0e9c9803aaaddc9f38e419de587793c2
 yuva422p            8f6bb778647e5dee62f544d646321171
 yuva422p10be        2f7204c93a1e5bfb04538852f99e4074
 yuva422p10le        c8082548aca999edde77ef2749b1ff4c
+yuva422p12be        19f8205cca3d19bfd4ad9cd2bfb07a0e
+yuva422p12le        38e6c7d87332852d660df5594529fa6e
 yuva422p16be        427ad55f7464121bb3ce164641772bc6
 yuva422p16le        af6f8df651275de58129e010bb45ffcd
 yuva422p9be         47579cc2cea861ca1461589b80c4720f
@@ -132,6 +138,8 @@ yuva422p9le         aaeab2bfe80a29390e8666103ed8bb40
 yuva444p            459fad5abfd16db9bb6a52761dc74cc1
 yuva444p10be        fa16bae4fc25429deb944ffa9f5b28a0
 yuva444p10le        92f820d3481b7ebcb48b98a73e7b4c90
+yuva444p12be        d8193387128a1b1efc51f36a12c85385
+yuva444p12le        9c17bf72b083f93040d1e19516b54de7
 yuva444p16be        c80c1899789a6411d0025730efc8f01c
 yuva444p16le        2ed56ea50fafda4d226c9b133755dad8
 yuva444p9be         4903fde22b15d28da90761ac1cfcb1c5

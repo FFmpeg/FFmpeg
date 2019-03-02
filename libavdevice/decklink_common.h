@@ -27,6 +27,9 @@
 
 #include "libavutil/thread.h"
 #include "decklink_common_c.h"
+#if CONFIG_LIBKLVANC
+#include "libklvanc/vanc.h"
+#endif
 
 #ifdef _WIN32
 #define DECKLINK_BOOL BOOL
@@ -97,6 +100,7 @@ struct decklink_ctx {
     int bmd_width;
     int bmd_height;
     int bmd_field_dominance;
+    int supports_vanc;
 
     /* Capture buffer queue */
     AVPacketQueue queue;
@@ -114,6 +118,7 @@ struct decklink_ctx {
     AVStream *audio_st;
     AVStream *video_st;
     AVStream *teletext_st;
+    uint16_t cdp_sequence_num;
 
     /* Options */
     int list_devices;
@@ -124,6 +129,7 @@ struct decklink_ctx {
     DecklinkPtsSource audio_pts_source;
     DecklinkPtsSource video_pts_source;
     int draw_bars;
+    BMDPixelFormat raw_format;
 
     int frames_preroll;
     int frames_buffer;
@@ -132,6 +138,10 @@ struct decklink_ctx {
     pthread_cond_t cond;
     int frames_buffer_available_spots;
     int autodetect;
+
+#if CONFIG_LIBKLVANC
+    struct klvanc_context_s *vanc_ctx;
+#endif
 
     int channels;
     int audio_depth;
@@ -181,7 +191,6 @@ static const BMDTimecodeFormat decklink_timecode_format_map[] = {
     bmdTimecodeSerial,
 };
 
-HRESULT ff_decklink_get_display_name(IDeckLink *This, const char **displayName);
 int ff_decklink_set_configs(AVFormatContext *avctx, decklink_direction_t direction);
 int ff_decklink_set_format(AVFormatContext *avctx, int width, int height, int tb_num, int tb_den, enum AVFieldOrder field_order, decklink_direction_t direction = DIRECTION_OUT, int num = 0);
 int ff_decklink_set_format(AVFormatContext *avctx, decklink_direction_t direction, int num);

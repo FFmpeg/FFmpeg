@@ -15,22 +15,49 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
-2018-05-xx - xxxxxxxxxx - lavf 58.15.100 - avformat.h
+2019-01-27 - XXXXXXXXXX - lavc 58.46.100 - avcodec.h
+  Add discard_damaged_percentage
+
+2019-01-08 - xxxxxxxxxx - lavu 56.26.100 - frame.h
+  Add AV_FRAME_DATA_REGIONS_OF_INTEREST
+
+2018-12-21 - 2744d6b364 - lavu 56.25.100 - hdr_dynamic_metadata.h
+  Add AV_FRAME_DATA_DYNAMIC_HDR_PLUS enum value, av_dynamic_hdr_plus_alloc(),
+  av_dynamic_hdr_plus_create_side_data() functions, and related structs.
+
+-------- 8< --------- FFmpeg 4.1 was cut here -------- 8< ---------
+
+2018-10-27 - 718044dc19 - lavu 56.21.100 - pixdesc.h
+  Add av_read_image_line2(), av_write_image_line2()
+
+2018-10-24 - f9d4126f28 - lavu 56.20.100 - frame.h
+  Add AV_FRAME_DATA_S12M_TIMECODE
+
+2018-10-11 - f6d48b618a - lavc 58.33.100 - mediacodec.h
+  Add av_mediacodec_render_buffer_at_time().
+
+2018-09-09 - 35498c124a - lavc 58.29.100 - avcodec.h
+  Add AV_PKT_DATA_AFD
+
+2018-08-16 - b33f5299a5 - lavc 58.23.100 - avcodec.h
+  Add av_bsf_flush().
+
+2018-05-18 - 2b2f2f65f3 - lavf 58.15.100 - avformat.h
   Add pmt_version field to AVProgram
 
-2018-05-xx - xxxxxxxxxx - lavf 58.14.100 - avformat.h
+2018-05-17 - 5dfeb7f081 - lavf 58.14.100 - avformat.h
   Add AV_DISPOSITION_STILL_IMAGE
 
-2018-05-xx - xxxxxxxxxx - lavu 56.18.101 - hwcontext_cuda.h
+2018-05-10 - c855683427 - lavu 56.18.101 - hwcontext_cuda.h
   Add AVCUDADeviceContext.stream.
 
-2018-04-xx - xxxxxxxxxx - lavu 56.18.100 - pixdesc.h
+2018-04-30 - 56b081da57 - lavu 56.18.100 - pixdesc.h
   Add AV_PIX_FMT_FLAG_ALPHA to AV_PIX_FMT_PAL8.
 
-2018-04-xx - xxxxxxxxxx - lavu 56.17.100 - opt.h
+2018-04-26 - 5be0410cb3 - lavu 56.17.100 - opt.h
   Add AV_OPT_FLAG_DEPRECATED.
 
-2018-04-xx - xxxxxxxxxx - lavu 56.16.100 - threadmessage.h
+2018-04-26 - 71fa82bed6 - lavu 56.16.100 - threadmessage.h
   Add av_thread_message_queue_nb_elems().
 
 -------- 8< --------- FFmpeg 4.0 was cut here -------- 8< ---------

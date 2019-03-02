@@ -81,33 +81,33 @@ static int get_vp9_level(AVCodecParameters *par, AVRational *frame_rate) {
     if (picture_size <= 0) {
         return 0;
     } else if (sample_rate <= 829440     && picture_size <= 36864) {
-        return 0x10;
+        return 10;
     } else if (sample_rate <= 2764800    && picture_size <= 73728) {
-        return 0x11;
+        return 11;
     } else if (sample_rate <= 4608000    && picture_size <= 122880) {
-        return 0x20;
+        return 20;
     } else if (sample_rate <= 9216000    && picture_size <= 245760) {
-        return 0x21;
+        return 21;
     } else if (sample_rate <= 20736000   && picture_size <= 552960) {
-        return 0x30;
+        return 30;
     } else if (sample_rate <= 36864000   && picture_size <= 983040) {
-        return 0x31;
+        return 31;
     } else if (sample_rate <= 83558400   && picture_size <= 2228224) {
-        return 0x40;
+        return 40;
     } else if (sample_rate <= 160432128  && picture_size <= 2228224) {
-        return 0x41;
+        return 41;
     } else if (sample_rate <= 311951360  && picture_size <= 8912896) {
-        return 0x50;
+        return 50;
     } else if (sample_rate <= 588251136  && picture_size <= 8912896) {
-        return 0x51;
+        return 51;
     } else if (sample_rate <= 1176502272 && picture_size <= 8912896) {
-        return 0x52;
+        return 52;
     } else if (sample_rate <= 1176502272 && picture_size <= 35651584) {
-        return 0x60;
+        return 60;
     } else if (sample_rate <= 2353004544 && picture_size <= 35651584) {
-        return 0x61;
+        return 61;
     } else if (sample_rate <= 4706009088 && picture_size <= 35651584) {
-        return 0x62;
+        return 62;
     } else {
         return 0;
     }

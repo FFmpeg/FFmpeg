@@ -242,18 +242,23 @@ int ff_h264_parse_ref_count(int *plist_count, int ref_count[2],
                 ref_count[1] = 1;
         }
 
-        if (ref_count[0] - 1 > max[0] || ref_count[1] - 1 > max[1]) {
+        if (slice_type_nos == AV_PICTURE_TYPE_B)
+            list_count = 2;
+        else
+            list_count = 1;
+
+        if (ref_count[0] - 1 > max[0] || (list_count == 2 && (ref_count[1] - 1 > max[1]))) {
             av_log(logctx, AV_LOG_ERROR, "reference overflow %u > %u or %u > %u\n",
                    ref_count[0] - 1, max[0], ref_count[1] - 1, max[1]);
             ref_count[0] = ref_count[1] = 0;
             *plist_count = 0;
             goto fail;
+        } else if (ref_count[1] - 1 > max[1]) {
+            av_log(logctx, AV_LOG_DEBUG, "reference overflow %u > %u \n",
+                   ref_count[1] - 1, max[1]);
+            ref_count[1] = 0;
         }
 
-        if (slice_type_nos == AV_PICTURE_TYPE_B)
-            list_count = 2;
-        else
-            list_count = 1;
     } else {
         list_count   = 0;
         ref_count[0] = ref_count[1] = 0;
@@ -359,7 +364,7 @@ static int decode_extradata_ps(const uint8_t *data, int size, H264ParamSets *ps,
     H2645Packet pkt = { 0 };
     int i, ret = 0;
 
-    ret = ff_h2645_packet_split(&pkt, data, size, logctx, is_avc, 2, AV_CODEC_ID_H264, 1);
+    ret = ff_h2645_packet_split(&pkt, data, size, logctx, is_avc, 2, AV_CODEC_ID_H264, 1, 0);
     if (ret < 0) {
         ret = 0;
         goto fail;

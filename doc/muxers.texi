@@ -94,21 +94,23 @@ compatibility with software that only supports a single audio stream in AVI
 @anchor{chromaprint}
 @section chromaprint
 
-Chromaprint fingerprinter
+Chromaprint fingerprinter.
 
-This muxer feeds audio data to the Chromaprint library, which generates
-a fingerprint for the provided audio data. It takes a single signed
-native-endian 16-bit raw audio stream.
+This muxer feeds audio data to the Chromaprint library,
+which generates a fingerprint for the provided audio data. See @url{https://acoustid.org/chromaprint}
+
+It takes a single signed native-endian 16-bit raw audio stream of at most 2 channels.
 
 @subsection Options
 
 @table @option
 @item silence_threshold
-Threshold for detecting silence, ranges from 0 to 32767. -1 for default
-(required for use with the AcoustID service).
+Threshold for detecting silence, ranges from -1 to 32767. -1 disables silence detection and
+is required for use with the AcoustID service. Default is -1.
 
 @item algorithm
-Algorithm index to fingerprint with.
+Version of algorithm to fingerprint with. Range is 0 to 4. Version 2 requires that silence
+detection be enabled. Default is 1.
 
 @item fp_format
 Format to output the fingerprint as. Accepts the following options:
@@ -120,7 +122,7 @@ Binary raw fingerprint
 Binary compressed fingerprint
 
 @item base64
-Base64 compressed fingerprint
+Base64 compressed fingerprint @emph{(default)}
 
 @end table
 
@@ -214,6 +216,8 @@ It creates a MPD manifest file and segment files for each stream.
 The segment filename might contain pre-defined identifiers used with SegmentTemplate
 as defined in section 5.3.9.4.4 of the standard. Available identifiers are "$RepresentationID$",
 "$Number$", "$Bandwidth$" and "$Time$".
+In addition to the standard identifiers, an ffmpeg-specific "$ext$" identifier is also supported.
+When specified ffmpeg will replace $ext$ in the file name with muxing format's extensions such as mp4, webm etc.,
 
 @example
 ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
@@ -245,11 +249,11 @@ Enable (1) or disable (0) use of SegmentTimeline in SegmentTemplate.
 @item -single_file @var{single_file}
 Enable (1) or disable (0) storing all segments in one file, accessed using byte ranges.
 @item -single_file_name @var{file_name}
-DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1".
+DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1". In the template, "$ext$" is replaced with the file name extension specific for the segment format.
 @item -init_seg_name @var{init_name}
-DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.m4s"
+DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
 @item -media_seg_name @var{segment_name}
-DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.m4s"
+DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
 @item -utc_timing_url @var{utc_url}
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
 @item method @var{method}
@@ -289,13 +293,30 @@ Set container format (mp4/webm) options using a @code{:} separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
 
-@item dash_segment_type @var{dash_segment_type}
+@item -dash_segment_type @var{dash_segment_type}
 Possible values:
+@item auto
+If this flag is set, the dash segment files format will be selected based on the stream codec. This is the default mode.
+
 @item mp4
-If this flag is set, the dash segment files will be in in ISOBMFF format. This is the default format.
+If this flag is set, the dash segment files will be in in ISOBMFF format.
 
 @item webm
 If this flag is set, the dash segment files will be in in WebM format.
+
+@item -ignore_io_errors @var{ignore_io_errors}
+Ignore IO errors during open and write. Useful for long-duration runs with network output.
+
+@item -lhls @var{lhls}
+Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
+Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
+trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
+This option will also try to comply with the above open spec, till Apple's spec officially supports it.
+Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
+This is an experimental feature.
+
+@item -master_m3u8_publish_rate @var{master_m3u8_publish_rate}
+Publish master playlist repeatedly every after specified number of segment intervals.
 
 @end table
 
@@ -617,7 +638,7 @@ This example will produce the playlist, @file{out.m3u8}, and segment files:
 but only the file name part without any path info will be contained in the m3u8 segment list.
 Should a relative path be specified, the path of the created segment
 files will be relative to the current working directory.
-When use_localtime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
+When strftime_mkdir is set, the whole expanded value of @var{filename} will be written into the m3u8 segment list.
 
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
@@ -646,34 +667,40 @@ This example will produce the playlists segment file sets:
 @file{vs1/file_000.ts}, @file{vs1/file_001.ts}, @file{vs1/file_002.ts}, etc.
 
 @item use_localtime
+Same as strftime option, will be deprecated.
+
+@item strftime
 Use strftime() on @var{filename} to expand the segment filename with localtime.
 The segment number is also available in this mode, but to use it, you need to specify second_level_segment_index
 hls_flag and %%d will be the specifier.
 @example
-ffmpeg -i in.nut -use_localtime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -hls_segment_filename 'file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-1455569023.ts}, @file{file-20160215-1455569024.ts}, etc.
 Note: On some systems/environments, the @code{%s} specifier is not available. See
   @code{strftime()} documentation.
 @example
-ffmpeg -i in.nut -use_localtime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -hls_flags second_level_segment_index -hls_segment_filename 'file-%Y%m%d-%%04d.ts' out.m3u8
 @end example
 This example will produce the playlist, @file{out.m3u8}, and segment files:
 @file{file-20160215-0001.ts}, @file{file-20160215-0002.ts}, etc.
 
 @item use_localtime_mkdir
-Used together with -use_localtime, it will create all subdirectories which
+Same as strftime_mkdir option, will be deprecated .
+
+@item strftime_mkdir
+Used together with -strftime_mkdir, it will create all subdirectories which
 is expanded in @var{filename}.
 @example
-ffmpeg -i in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y%m%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will create a directory 201560215 (if it does not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
 @file{20160215/file-20160215-1455569023.ts}, @file{20160215/file-20160215-1455569024.ts}, etc.
 
 @example
-ffmpeg -i in.nut -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename '%Y/%m/%d/file-%Y%m%d-%s.ts' out.m3u8
+ffmpeg -i in.nut -strftime 1 -strftime_mkdir 1 -hls_segment_filename '%Y/%m/%d/file-%Y%m%d-%s.ts' out.m3u8
 @end example
 This example will create a directory hierarchy 2016/02/15 (if any of them do not exist), and then
 produce the playlist, @file{out.m3u8}, and segment files:
@@ -758,17 +785,17 @@ Possible values:
 
 @table @samp
 @item mpegts
-If this flag is set, the hls segment files will format to mpegts.
-the mpegts files is used in all hls versions.
+Output segment files in MPEG-2 Transport Stream format. This is
+compatible with all HLS versions.
 
 @item fmp4
-If this flag is set, the hls segment files will format to fragment mp4 looks like dash.
-the fmp4 files is used in hls after version 7.
+Output segment files in fragmented MP4 format, similar to MPEG-DASH.
+fmp4 files may be used in HLS version 7 and above.
 
 @end table
 
 @item hls_fmp4_init_filename @var{filename}
-set filename to the fragment files header file, default filename is @file{init.mp4}.
+Set filename to the fragment files header file, default filename is @file{init.mp4}.
 
 When @code{var_stream_map} is set with two or more variant streams, the
 @var{filename} pattern must contain the string "%v", this string specifies
@@ -833,24 +860,24 @@ Generate @code{EXT-X-PROGRAM-DATE-TIME} tags.
 
 @item second_level_segment_index
 Makes it possible to use segment indexes as %%d in hls_segment_filename expression
-besides date/time values when use_localtime is on.
+besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xd format is available where x is the required width.
 
 @item second_level_segment_size
 Makes it possible to use segment sizes (counted in bytes) as %%s in hls_segment_filename
-expression besides date/time values when use_localtime is on.
+expression besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xs format is available where x is the required width.
 
 @item second_level_segment_duration
 Makes it possible to use segment duration (calculated  in microseconds) as %%t in hls_segment_filename
-expression besides date/time values when use_localtime is on.
+expression besides date/time values when strftime is on.
 To get fixed width numbers with trailing zeroes, %%0xt format is available where x is the required width.
 
 @example
 ffmpeg -i sample.mpeg \
    -f hls -hls_time 3 -hls_list_size 5 \
    -hls_flags second_level_segment_index+second_level_segment_size+second_level_segment_duration \
-   -use_localtime 1 -use_localtime_mkdir 1 -hls_segment_filename "segment_%Y%m%d%H%M%S_%%04d_%%08s_%%013t.ts" stream.m3u8
+   -strftime 1 -strftime_mkdir 1 -hls_segment_filename "segment_%Y%m%d%H%M%S_%%04d_%%08s_%%013t.ts" stream.m3u8
 @end example
 This will produce segments like this:
 @file{segment_20170102194334_0003_00122200_0000003000000.ts}, @file{segment_20170102194334_0004_00120072_0000003000000.ts} etc.
@@ -943,6 +970,37 @@ and they are mapped to the two video only variant streams with audio group names
 
 By default, a single hls variant containing all the encoded streams is created.
 
+@example
+ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
+  -map 0:a -map 0:a -map 0:v -f hls \
+  -var_stream_map "a:0,agroup:aud_low,default:yes a:1,agroup:aud_low v:0,agroup:aud_low" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates two audio only and one video only variant streams. In
+addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
+playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
+and they are mapped to the one video only variant streams with audio group name
+'aud_low', and the audio group have default stat is NO or YES.
+
+By default, a single hls variant containing all the encoded streams is created.
+
+@example
+ffmpeg -re -i in.ts -b:a:0 32k -b:a:1 64k -b:v:0 1000k \
+  -map 0:a -map 0:a -map 0:v -f hls \
+  -var_stream_map "a:0,agroup:aud_low,default:yes,language=ENG a:1,agroup:aud_low,language:CHN v:0,agroup:aud_low" \
+  -master_pl_name master.m3u8 \
+  http://example.com/live/out_%v.m3u8
+@end example
+This example creates two audio only and one video only variant streams. In
+addition to the #EXT-X-STREAM-INF tag for each variant stream in the master
+playlist, #EXT-X-MEDIA tag is also added for the two audio only variant streams
+and they are mapped to the one video only variant streams with audio group name
+'aud_low', and the audio group have default stat is NO or YES, and one audio
+have and language is named ENG, the other audio language is named CHN.
+
+By default, a single hls variant containing all the encoded streams is created.
+
 @item cc_stream_map
 Map string which specifies different closed captions groups and their
 attributes. The closed captions stream groups are separated by space.
@@ -963,7 +1021,7 @@ ffmpeg -re -i in.ts -b:v 1000k -b:a 64k -a53cc 1 -f hls \
   http://example.com/live/out.m3u8
 @end example
 This example adds @code{#EXT-X-MEDIA} tag with @code{TYPE=CLOSED-CAPTIONS} in
-the master playlist with group name 'cc', langauge 'en' (english) and
+the master playlist with group name 'cc', language 'en' (english) and
 INSTREAM-ID 'CC1'. Also, it adds @code{CLOSED-CAPTIONS} attribute with group
 name 'cc' for the output variant stream.
 @example
@@ -1005,6 +1063,9 @@ Use persistent HTTP connections. Applicable only for HTTP output.
 
 @item timeout
 Set timeout for socket I/O operations. Applicable only for HTTP output.
+
+@item -ignore_io_errors
+Ignore IO errors during open, write and delete. Useful for long-duration runs with network output.
 
 @end table
 
@@ -1313,6 +1374,10 @@ more efficient), but with this option set, the muxer writes one moof/mdat
 pair for each track, making it easier to separate tracks.
 
 This option is implicitly set when writing ismv (Smooth Streaming) files.
+@item -movflags skip_sidx
+Skip writing of sidx atom. When bitrate overhead due to sidx atom is high,
+this option could be used for cases where sidx atom is not mandatory.
+When global_sidx flag is enabled, this option will be ignored.
 @item -movflags faststart
 Run a second pass moving the index (moov atom) to the beginning of the file.
 This operation can take a while, and will not work in various situations such
@@ -1344,6 +1409,8 @@ be negative. This enables the initial sample to have DTS/CTS of zero, and
 reduces the need for edit lists for some cases such as video tracks with
 B-frames. Additionally, eases conformance with the DASH-IF interoperability
 guidelines.
+
+This option is implicitly set when writing ismv (Smooth Streaming) files.
 @item -write_prft
 Write producer time reference box (PRFT) with a specified time source for the
 NTP field in the PRFT box. Set value as @samp{wallclock} to specify timesource
@@ -1459,7 +1526,7 @@ Set the program @samp{service_type}. Default is @code{digital_tv}.
 Accepts the following options:
 @table @samp
 @item hex_value
-Any hexdecimal value between @code{0x01} to @code{0xff} as defined in
+Any hexadecimal value between @code{0x01} and @code{0xff} as defined in
 ETSI 300 468.
 @item digital_tv
 Digital TV service.

@@ -173,7 +173,11 @@ static int file_delete(URLContext *h)
     av_strstart(filename, "file:", &filename);
 
     ret = rmdir(filename);
-    if (ret < 0 && errno == ENOTDIR)
+    if (ret < 0 && (errno == ENOTDIR
+#   ifdef _WIN32
+        || errno == EINVAL
+#   endif
+        ))
         ret = unlink(filename);
     if (ret < 0)
         return AVERROR(errno);

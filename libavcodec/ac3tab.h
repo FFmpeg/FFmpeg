@@ -50,6 +50,8 @@ extern const uint16_t ff_ac3_fast_gain_tab[8];
 extern const uint16_t ff_eac3_default_chmap[8];
 extern const uint8_t  ff_ac3_band_start_tab[AC3_CRITICAL_BANDS+1];
 extern const uint8_t  ff_ac3_bin_to_band_tab[253];
+extern const uint64_t ff_eac3_custom_channel_map_locations[16][2];
+
 
 /** Custom channel map locations bitmask
  *  Other channels described in documentation:

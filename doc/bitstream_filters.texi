@@ -37,6 +37,58 @@ raw ADTS AAC or an MPEG-TS container to MP4A-LATM, to an FLV file, or
 to MOV/MP4 files and related formats such as 3GP or M4A. Please note
 that it is auto-inserted for MP4A-LATM and MOV/MP4 and related formats.
 
+@section av1_metadata
+
+Modify metadata embedded in an AV1 stream.
+
+@table @option
+@item td
+Insert or remove temporal delimiter OBUs in all temporal units of the
+stream.
+
+@table @samp
+@item insert
+Insert a TD at the beginning of every TU which does not already have one.
+@item remove
+Remove the TD from the beginning of every TU which has one.
+@end table
+
+@item color_primaries
+@item transfer_characteristics
+@item matrix_coefficients
+Set the color description fields in the stream (see AV1 section 6.4.2).
+
+@item color_range
+Set the color range in the stream (see AV1 section 6.4.2; note that
+this cannot be set for streams using BT.709 primaries, sRGB transfer
+characteristic and identity (RGB) matrix coefficients).
+@table @samp
+@item tv
+Limited range.
+@item pc
+Full range.
+@end table
+
+@item chroma_sample_position
+Set the chroma sample location in the stream (see AV1 section 6.4.2).
+This can only be set for 4:2:0 streams.
+
+@table @samp
+@item vertical
+Left position (matching the default in MPEG-2 and H.264).
+@item colocated
+Top-left position.
+@end table
+
+@item tick_rate
+Set the tick rate (@emph{num_units_in_display_tick / time_scale}) in
+the timing info in the sequence header.
+@item num_ticks_per_picture
+Set the number of ticks in each picture, to indicate that the stream
+has a fixed framerate.  Ignored if @option{tick_rate} is not also set.
+
+@end table
+
 @section chomp
 
 Remove zero padding at the end of a packet.
@@ -214,6 +266,15 @@ insert the string ``hello'' associated with the given UUID.
 
 @item delete_filler
 Deletes both filler NAL units and filler SEI messages.
+
+@item level
+Set the level in the SPS.  Refer to H.264 section A.3 and tables A-1
+to A-5.
+
+The argument must be the name of a level (for example, @samp{4.2}), a
+level_idc value (for example, @samp{42}), or the special name @samp{auto}
+indicating that the filter should attempt to guess the level from the
+input stream properties.
 
 @end table
 
@@ -469,6 +530,72 @@ ffmpeg -i INPUT -c copy -bsf noise[=1] output.mkv
 @section null
 This bitstream filter passes the packets through unchanged.
 
+@section prores_metadata
+
+Modify color property metadata embedded in prores stream.
+
+@table @option
+@item color_primaries
+Set the color primaries.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same color primaries property (default).
+
+@item unknown
+@item bt709
+@item bt470bg
+BT601 625
+
+@item smpte170m
+BT601 525
+
+@item bt2020
+@item smpte431
+DCI P3
+
+@item smpte432
+P3 D65
+
+@end table
+
+@item transfer_characteristics
+Set the color transfer.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same transfer characteristics property (default).
+
+@item unknown
+@item bt709
+BT 601, BT 709, BT 2020
+@end table
+
+
+@item matrix_coefficients
+Set the matrix coefficient.
+Available values are:
+
+@table @samp
+@item auto
+Keep the same transfer characteristics property (default).
+
+@item unknown
+@item bt709
+@item smpte170m
+BT 601
+
+@item bt2020nc
+@end table
+@end table
+
+Set Rec709 colorspace for each frame of the file
+@example
+ffmpeg -i INPUT -c copy -bsf:v prores_metadata=color_primaries=bt709:color_trc=bt709:colorspace=bt709 output.mov
+@end example
+
 @section remove_extra
 
 Remove extradata from packets.
@@ -505,7 +632,12 @@ Log trace output containing all syntax elements in the coded stream
 headers (everything above the level of individual coded blocks).
 This can be useful for debugging low-level stream issues.
 
-Supports H.264, H.265, MPEG-2 and VP9.
+Supports AV1, H.264, H.265, (M)JPEG, MPEG-2 and VP9, but depending
+on the build only a subset of these may be available.
+
+@section truehd_core
+
+Extract the core from a TrueHD stream, dropping ATMOS data.
 
 @section vp9_metadata
 

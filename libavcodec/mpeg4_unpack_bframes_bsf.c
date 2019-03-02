@@ -21,50 +21,36 @@
 
 #include "avcodec.h"
 #include "bsf.h"
+#include "internal.h"
 #include "mpeg4video.h"
 
 typedef struct UnpackBFramesBSFContext {
     AVPacket *b_frame;
 } UnpackBFramesBSFContext;
 
-/* search next start code */
-static unsigned int find_startcode(const uint8_t *buf, int buf_size, int *pos)
-{
-    unsigned int startcode = 0xFF;
-
-    for (; *pos < buf_size;) {
-        startcode = ((startcode << 8) | buf[*pos]) & 0xFFFFFFFF;
-        *pos +=1;
-        if ((startcode & 0xFFFFFF00) != 0x100)
-            continue;  /* no startcode */
-        return startcode;
-    }
-
-    return 0;
-}
-
 /* determine the position of the packed marker in the userdata,
  * the number of VOPs and the position of the second VOP */
 static void scan_buffer(const uint8_t *buf, int buf_size,
                         int *pos_p, int *nb_vop, int *pos_vop2) {
-    unsigned int startcode;
-    int pos, i;
+    uint32_t startcode;
+    const uint8_t *end = buf + buf_size, *pos = buf;
 
-    for (pos = 0; pos < buf_size;) {
-        startcode = find_startcode(buf, buf_size, &pos);
+    while (pos < end) {
+        startcode = -1;
+        pos = avpriv_find_start_code(pos, end, &startcode);
 
         if (startcode == USER_DATA_STARTCODE && pos_p) {
             /* check if the (DivX) userdata string ends with 'p' (packed) */
-            for (i = 0; i < 255 && pos + i + 1 < buf_size; i++) {
-                if (buf[pos + i] == 'p' && buf[pos + i + 1] == '\0') {
-                    *pos_p = pos + i;
+            for (int i = 0; i < 255 && pos + i + 1 < end; i++) {
+                if (pos[i] == 'p' && pos[i + 1] == '\0') {
+                    *pos_p = pos + i - buf;
                     break;
                 }
             }
         } else if (startcode == VOP_STARTCODE && nb_vop) {
             *nb_vop += 1;
             if (*nb_vop == 2 && pos_vop2) {
-                *pos_vop2 = pos - 4; /* subtract 4 bytes startcode */
+                *pos_vop2 = pos - buf - 4; /* subtract 4 bytes startcode */
             }
         }
     }
@@ -166,6 +152,12 @@ static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
     return 0;
 }
 
+static void mpeg4_unpack_bframes_flush(AVBSFContext *bsfc)
+{
+    UnpackBFramesBSFContext *ctx = bsfc->priv_data;
+    av_packet_unref(ctx->b_frame);
+}
+
 static void mpeg4_unpack_bframes_close(AVBSFContext *bsfc)
 {
     UnpackBFramesBSFContext *ctx = bsfc->priv_data;
@@ -181,6 +173,7 @@ const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
     .priv_data_size = sizeof(UnpackBFramesBSFContext),
     .init           = mpeg4_unpack_bframes_init,
     .filter         = mpeg4_unpack_bframes_filter,
+    .flush          = mpeg4_unpack_bframes_flush,
     .close          = mpeg4_unpack_bframes_close,
     .codec_ids      = codec_ids,
 };

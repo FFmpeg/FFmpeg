@@ -130,6 +130,11 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
                 fixed(24, general_reserved_zero_34bits, 0);
                 fixed(10, general_reserved_zero_34bits, 0);
             }
+        } else if (profile_compatible(2)) {
+            fixed(7, general_reserved_zero_7bits, 0);
+            flag(general_one_picture_only_constraint_flag);
+            fixed(24, general_reserved_zero_35bits, 0);
+            fixed(11, general_reserved_zero_35bits, 0);
         } else {
             fixed(24, general_reserved_zero_43bits, 0);
             fixed(19, general_reserved_zero_43bits, 0);
@@ -158,10 +163,64 @@ static int FUNC(profile_tier_level)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     for (i = 0; i < max_num_sub_layers_minus1; i++) {
-        if (current->sub_layer_profile_present_flag[i])
-            return AVERROR_PATCHWELCOME;
+        if (current->sub_layer_profile_present_flag[i]) {
+            us(2, sub_layer_profile_space[i], 0, 0, 1, i);
+            flags(sub_layer_tier_flag[i],           1, i);
+            us(5, sub_layer_profile_idc[i], 0, 31,  1, i);
+
+            for (j = 0; j < 32; j++)
+                flags(sub_layer_profile_compatibility_flag[i][j], 2, i, j);
+
+            flags(sub_layer_progressive_source_flag[i],    1, i);
+            flags(sub_layer_interlaced_source_flag[i],     1, i);
+            flags(sub_layer_non_packed_constraint_flag[i], 1, i);
+            flags(sub_layer_frame_only_constraint_flag[i], 1, i);
+
+#define profile_compatible(x) (current->sub_layer_profile_idc[i] == (x) ||   \
+                               current->sub_layer_profile_compatibility_flag[i][x])
+            if (profile_compatible(4) || profile_compatible(5) ||
+                profile_compatible(6) || profile_compatible(7) ||
+                profile_compatible(8) || profile_compatible(9) ||
+                profile_compatible(10)) {
+                flags(sub_layer_max_12bit_constraint_flag[i],        1, i);
+                flags(sub_layer_max_10bit_constraint_flag[i],        1, i);
+                flags(sub_layer_max_8bit_constraint_flag[i],         1, i);
+                flags(sub_layer_max_422chroma_constraint_flag[i],    1, i);
+                flags(sub_layer_max_420chroma_constraint_flag[i],    1, i);
+                flags(sub_layer_max_monochrome_constraint_flag[i],   1, i);
+                flags(sub_layer_intra_constraint_flag[i],            1, i);
+                flags(sub_layer_one_picture_only_constraint_flag[i], 1, i);
+                flags(sub_layer_lower_bit_rate_constraint_flag[i],   1, i);
+
+                if (profile_compatible(5)) {
+                    flags(sub_layer_max_14bit_constraint_flag[i], 1, i);
+                    fixed(24, sub_layer_reserved_zero_33bits, 0);
+                    fixed( 9, sub_layer_reserved_zero_33bits, 0);
+                } else {
+                    fixed(24, sub_layer_reserved_zero_34bits, 0);
+                    fixed(10, sub_layer_reserved_zero_34bits, 0);
+                }
+            } else if (profile_compatible(2)) {
+                fixed(7, sub_layer_reserved_zero_7bits, 0);
+                flags(sub_layer_one_picture_only_constraint_flag[i], 1, i);
+                fixed(24, sub_layer_reserved_zero_43bits, 0);
+                fixed(11, sub_layer_reserved_zero_43bits, 0);
+            } else {
+                fixed(24, sub_layer_reserved_zero_43bits, 0);
+                fixed(19, sub_layer_reserved_zero_43bits, 0);
+            }
+
+            if (profile_compatible(1) || profile_compatible(2) ||
+                profile_compatible(3) || profile_compatible(4) ||
+                profile_compatible(5) || profile_compatible(9)) {
+                flags(sub_layer_inbld_flag[i], 1, i);
+            } else {
+                fixed(1, sub_layer_reserved_zero_bit, 0);
+            }
+#undef profile_compatible
+        }
         if (current->sub_layer_level_present_flag[i])
-            return AVERROR_PATCHWELCOME;
+            us(8, sub_layer_level_idc[i], 0, 255, 1, i);
     }
 
     return 0;
@@ -1505,10 +1564,442 @@ static int FUNC(slice_segment_header)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(sei_buffering_period)(CodedBitstreamContext *ctx, RWContext *rw,
+                                      H265RawSEIBufferingPeriod *current,
+                                      uint32_t *payload_size)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+    const H265RawSPS *sps;
+    const H265RawHRDParameters *hrd;
+    int err, i, length;
+
+#ifdef READ
+    int start_pos, end_pos, bits_left;
+    start_pos = get_bits_count(rw);
+#endif
+
+    HEADER("Buffering Period");
+
+    ue(bp_seq_parameter_set_id, 0, HEVC_MAX_SPS_COUNT - 1);
+
+    sps = h265->sps[current->bp_seq_parameter_set_id];
+    if (!sps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "SPS id %d not available.\n",
+               current->bp_seq_parameter_set_id);
+        return AVERROR_INVALIDDATA;
+    }
+    h265->active_sps = sps;
+
+    if (!sps->vui_parameters_present_flag ||
+        !sps->vui.vui_hrd_parameters_present_flag) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Buffering period SEI requires "
+               "HRD parameters to be present in SPS.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    hrd = &sps->vui.hrd_parameters;
+    if (!hrd->nal_hrd_parameters_present_flag &&
+        !hrd->vcl_hrd_parameters_present_flag) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Buffering period SEI requires "
+               "NAL or VCL HRD parameters to be present.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (!hrd->sub_pic_hrd_params_present_flag)
+        flag(irap_cpb_params_present_flag);
+    else
+        infer(irap_cpb_params_present_flag, 0);
+    if (current->irap_cpb_params_present_flag) {
+        length = hrd->au_cpb_removal_delay_length_minus1 + 1;
+        u(length, cpb_delay_offset, 0, MAX_UINT_BITS(length));
+        length = hrd->dpb_output_delay_length_minus1 + 1;
+        u(length, dpb_delay_offset, 0, MAX_UINT_BITS(length));
+    } else {
+        infer(cpb_delay_offset, 0);
+        infer(dpb_delay_offset, 0);
+    }
+
+    flag(concatenation_flag);
+
+    length = hrd->au_cpb_removal_delay_length_minus1 + 1;
+    u(length, au_cpb_removal_delay_delta_minus1, 0, MAX_UINT_BITS(length));
+
+    if (hrd->nal_hrd_parameters_present_flag) {
+        for (i = 0; i <= hrd->cpb_cnt_minus1[0]; i++) {
+            length = hrd->initial_cpb_removal_delay_length_minus1 + 1;
+
+            us(length, nal_initial_cpb_removal_delay[i],
+               0, MAX_UINT_BITS(length), 1, i);
+            us(length, nal_initial_cpb_removal_offset[i],
+               0, MAX_UINT_BITS(length), 1, i);
+
+            if (hrd->sub_pic_hrd_params_present_flag ||
+                current->irap_cpb_params_present_flag) {
+                us(length, nal_initial_alt_cpb_removal_delay[i],
+                   0, MAX_UINT_BITS(length), 1, i);
+                us(length, nal_initial_alt_cpb_removal_offset[i],
+                   0, MAX_UINT_BITS(length), 1, i);
+            }
+        }
+    }
+    if (hrd->vcl_hrd_parameters_present_flag) {
+        for (i = 0; i <= hrd->cpb_cnt_minus1[0]; i++) {
+            length = hrd->initial_cpb_removal_delay_length_minus1 + 1;
+
+            us(length, vcl_initial_cpb_removal_delay[i],
+               0, MAX_UINT_BITS(length), 1, i);
+            us(length, vcl_initial_cpb_removal_offset[i],
+               0, MAX_UINT_BITS(length), 1, i);
+
+            if (hrd->sub_pic_hrd_params_present_flag ||
+                current->irap_cpb_params_present_flag) {
+                us(length, vcl_initial_alt_cpb_removal_delay[i],
+                   0, MAX_UINT_BITS(length), 1, i);
+                us(length, vcl_initial_alt_cpb_removal_offset[i],
+                   0, MAX_UINT_BITS(length), 1, i);
+            }
+        }
+    }
+
+#ifdef READ
+    // payload_extension_present() - true if we are before the last 1-bit
+    // in the payload structure, which must be in the last byte.
+    end_pos = get_bits_count(rw);
+    bits_left = *payload_size * 8 - (end_pos - start_pos);
+    if (bits_left > 0 &&
+        (bits_left > 7 || ff_ctz(show_bits(rw, bits_left)) < bits_left - 1))
+        flag(use_alt_cpb_params_flag);
+    else
+        infer(use_alt_cpb_params_flag, 0);
+#else
+    if (current->use_alt_cpb_params_flag)
+        flag(use_alt_cpb_params_flag);
+#endif
+
+    return 0;
+}
+
+static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
+                                H265RawSEIPicTiming *current)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+    const H265RawSPS *sps;
+    const H265RawHRDParameters *hrd;
+    int err, expected_source_scan_type, i, length;
+
+    HEADER("Picture Timing");
+
+    sps = h265->active_sps;
+    if (!sps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "No active SPS for pic_timing.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    expected_source_scan_type = 2 -
+        2 * sps->profile_tier_level.general_interlaced_source_flag -
+        sps->profile_tier_level.general_progressive_source_flag;
+
+    if (sps->vui.frame_field_info_present_flag) {
+        u(4, pic_struct, 0, 12);
+        u(2, source_scan_type,
+          expected_source_scan_type >= 0 ? expected_source_scan_type : 0,
+          expected_source_scan_type >= 0 ? expected_source_scan_type : 2);
+        flag(duplicate_flag);
+    } else {
+        infer(pic_struct, 0);
+        infer(source_scan_type,
+              expected_source_scan_type >= 0 ? expected_source_scan_type : 2);
+        infer(duplicate_flag, 0);
+    }
+
+    if (sps->vui_parameters_present_flag &&
+        sps->vui.vui_hrd_parameters_present_flag)
+        hrd = &sps->vui.hrd_parameters;
+    else
+        hrd = NULL;
+    if (hrd && (hrd->nal_hrd_parameters_present_flag ||
+                hrd->vcl_hrd_parameters_present_flag)) {
+        length = hrd->au_cpb_removal_delay_length_minus1 + 1;
+        u(length, au_cpb_removal_delay_minus1, 0, MAX_UINT_BITS(length));
+
+        length = hrd->dpb_output_delay_length_minus1 + 1;
+        u(length, pic_dpb_output_delay, 0, MAX_UINT_BITS(length));
+
+        if (hrd->sub_pic_hrd_params_present_flag) {
+            length = hrd->dpb_output_delay_du_length_minus1 + 1;
+            u(length, pic_dpb_output_du_delay, 0, MAX_UINT_BITS(length));
+        }
+
+        if (hrd->sub_pic_hrd_params_present_flag &&
+            hrd->sub_pic_cpb_params_in_pic_timing_sei_flag) {
+            // Each decoding unit must contain at least one slice segment.
+            ue(num_decoding_units_minus1, 0, HEVC_MAX_SLICE_SEGMENTS);
+            flag(du_common_cpb_removal_delay_flag);
+
+            length = hrd->du_cpb_removal_delay_increment_length_minus1 + 1;
+            if (current->du_common_cpb_removal_delay_flag)
+                u(length, du_common_cpb_removal_delay_increment_minus1,
+                  0, MAX_UINT_BITS(length));
+
+            for (i = 0; i <= current->num_decoding_units_minus1; i++) {
+                ues(num_nalus_in_du_minus1[i],
+                    0, HEVC_MAX_SLICE_SEGMENTS, 1, i);
+                if (!current->du_common_cpb_removal_delay_flag &&
+                    i < current->num_decoding_units_minus1)
+                    us(length, du_cpb_removal_delay_increment_minus1[i],
+                      0, MAX_UINT_BITS(length), 1, i);
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int FUNC(sei_pan_scan_rect)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   H265RawSEIPanScanRect *current)
+{
+    int err, i;
+
+    HEADER("Pan-Scan Rectangle");
+
+    ue(pan_scan_rect_id, 0, UINT32_MAX - 1);
+    flag(pan_scan_rect_cancel_flag);
+
+    if (!current->pan_scan_rect_cancel_flag) {
+        ue(pan_scan_cnt_minus1, 0, 2);
+
+        for (i = 0; i <= current->pan_scan_cnt_minus1; i++) {
+            ses(pan_scan_rect_left_offset[i],   INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_right_offset[i],  INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_top_offset[i],    INT32_MIN + 1, INT32_MAX, 1, i);
+            ses(pan_scan_rect_bottom_offset[i], INT32_MIN + 1, INT32_MAX, 1, i);
+        }
+
+        flag(pan_scan_rect_persistence_flag);
+    }
+
+    return 0;
+}
+
+static int FUNC(sei_user_data_registered)(CodedBitstreamContext *ctx, RWContext *rw,
+                                          H265RawSEIUserDataRegistered *current,
+                                          uint32_t *payload_size)
+{
+    int err, i, j;
+
+    HEADER("User Data Registered ITU-T T.35");
+
+    u(8, itu_t_t35_country_code, 0x00, 0xff);
+    if (current->itu_t_t35_country_code != 0xff)
+        i = 1;
+    else {
+        u(8, itu_t_t35_country_code_extension_byte, 0x00, 0xff);
+        i = 2;
+    }
+
+#ifdef READ
+    if (*payload_size < i) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "Invalid SEI user data registered payload.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    current->data_length = *payload_size - i;
+#else
+    *payload_size = i + current->data_length;
+#endif
+
+    allocate(current->data, current->data_length);
+    for (j = 0; j < current->data_length; j++)
+        xu(8, itu_t_t35_payload_byte[i], current->data[j], 0x00, 0xff, 1, i + j);
+
+    return 0;
+}
+
+static int FUNC(sei_user_data_unregistered)(CodedBitstreamContext *ctx, RWContext *rw,
+                                            H265RawSEIUserDataUnregistered *current,
+                                            uint32_t *payload_size)
+{
+    int err, i;
+
+    HEADER("User Data Unregistered");
+
+#ifdef READ
+    if (*payload_size < 16) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "Invalid SEI user data unregistered payload.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    current->data_length = *payload_size - 16;
+#else
+    *payload_size = 16 + current->data_length;
+#endif
+
+    for (i = 0; i < 16; i++)
+        us(8, uuid_iso_iec_11578[i], 0x00, 0xff, 1, i);
+
+    allocate(current->data, current->data_length);
+
+    for (i = 0; i < current->data_length; i++)
+        xu(8, user_data_payload_byte[i], current->data[i], 0x00, 0xff, 1, i);
+
+    return 0;
+}
+
+static int FUNC(sei_recovery_point)(CodedBitstreamContext *ctx, RWContext *rw,
+                                    H265RawSEIRecoveryPoint *current)
+{
+    int err;
+
+    HEADER("Recovery Point");
+
+    se(recovery_poc_cnt, -32768, 32767);
+
+    flag(exact_match_flag);
+    flag(broken_link_flag);
+
+    return 0;
+}
+
+static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *rw,
+                                         H265RawSEIDisplayOrientation *current)
+{
+    int err;
+
+    HEADER("Display Orientation");
+
+    flag(display_orientation_cancel_flag);
+    if (!current->display_orientation_cancel_flag) {
+        flag(hor_flip);
+        flag(ver_flip);
+        u(16, anticlockwise_rotation, 0, 65535);
+        flag(display_orientation_persistence_flag);
+    }
+
+    return 0;
+}
+
+static int FUNC(sei_active_parameter_sets)(CodedBitstreamContext *ctx, RWContext *rw,
+                                           H265RawSEIActiveParameterSets *current)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+    const H265RawVPS *vps;
+    int err, i;
+
+    HEADER("Active Parameter Sets");
+
+    u(4, active_video_parameter_set_id, 0, HEVC_MAX_VPS_COUNT);
+    vps = h265->vps[current->active_video_parameter_set_id];
+    if (!vps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "VPS id %d not available for active "
+               "parameter sets.\n", current->active_video_parameter_set_id);
+        return AVERROR_INVALIDDATA;
+    }
+    h265->active_vps = vps;
+
+    flag(self_contained_cvs_flag);
+    flag(no_parameter_set_update_flag);
+
+    ue(num_sps_ids_minus1, 0, HEVC_MAX_SPS_COUNT - 1);
+    for (i = 0; i <= current->num_sps_ids_minus1; i++)
+        ues(active_seq_parameter_set_id[i], 0, HEVC_MAX_SPS_COUNT - 1, 1, i);
+
+    for (i = vps->vps_base_layer_internal_flag;
+         i <= FFMIN(62, vps->vps_max_layers_minus1); i++) {
+        ues(layer_sps_idx[i], 0, current->num_sps_ids_minus1, 1, i);
+
+        if (i == 0)
+            h265->active_sps = h265->sps[current->active_seq_parameter_set_id[current->layer_sps_idx[0]]];
+    }
+
+    return 0;
+}
+
+static int FUNC(sei_decoded_picture_hash)(CodedBitstreamContext *ctx, RWContext *rw,
+                                          H265RawSEIDecodedPictureHash *current)
+{
+    CodedBitstreamH265Context *h265 = ctx->priv_data;
+    const H265RawSPS *sps = h265->active_sps;
+    int err, c, i;
+
+    HEADER("Decoded Picture Hash");
+
+    if (!sps) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR,
+               "No active SPS for decoded picture hash.\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    u(8, hash_type, 0, 2);
+
+    for (c = 0; c < (sps->chroma_format_idc == 0 ? 1 : 3); c++) {
+        if (current->hash_type == 0) {
+            for (i = 0; i < 16; i++)
+                us(8, picture_md5[c][i], 0x00, 0xff, 2, c, i);
+        } else if (current->hash_type == 1) {
+            us(16, picture_crc[c], 0x0000, 0xffff, 1, c);
+        } else if (current->hash_type == 2) {
+            us(32, picture_checksum[c], 0x00000000, 0xffffffff, 1, c);
+        }
+    }
+
+    return 0;
+}
+
+static int FUNC(sei_time_code)(CodedBitstreamContext *ctx, RWContext *rw,
+                               H265RawSEITimeCode *current)
+{
+    int err, i;
+
+    HEADER("Time Code");
+
+    u(2, num_clock_ts, 1, 3);
+
+    for (i = 0; i < current->num_clock_ts; i++) {
+        flags(clock_timestamp_flag[i],   1, i);
+
+        if (current->clock_timestamp_flag[i]) {
+            flags(units_field_based_flag[i], 1, i);
+            us(5, counting_type[i], 0, 6,    1, i);
+            flags(full_timestamp_flag[i],    1, i);
+            flags(discontinuity_flag[i],     1, i);
+            flags(cnt_dropped_flag[i],       1, i);
+
+            us(9, n_frames[i], 0, MAX_UINT_BITS(9), 1, i);
+
+            if (current->full_timestamp_flag[i]) {
+                us(6, seconds_value[i], 0, 59, 1, i);
+                us(6, minutes_value[i], 0, 59, 1, i);
+                us(5, hours_value[i],   0, 23, 1, i);
+            } else {
+                flags(seconds_flag[i], 1, i);
+                if (current->seconds_flag[i]) {
+                    us(6, seconds_value[i], 0, 59, 1, i);
+                    flags(minutes_flag[i], 1, i);
+                    if (current->minutes_flag[i]) {
+                        us(6, minutes_value[i], 0, 59, 1, i);
+                        flags(hours_flag[i], 1, i);
+                        if (current->hours_flag[i])
+                            us(5, hours_value[i], 0, 23, 1, i);
+                    }
+                }
+            }
+
+            us(5, time_offset_length[i], 0, 31, 1, i);
+            if (current->time_offset_length[i] > 0)
+                us(current->time_offset_length[i], time_offset_value[i],
+                   0, MAX_UINT_BITS(current->time_offset_length[i]), 1, i);
+        }
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_mastering_display)(CodedBitstreamContext *ctx, RWContext *rw,
                                        H265RawSEIMasteringDisplayColourVolume *current)
 {
     int err, c;
+
+    HEADER("Mastering Display Colour Volume");
 
     for (c = 0; c < 3; c++) {
         us(16, display_primaries_x[c], 0, 50000, 1, c);
@@ -1531,14 +2022,29 @@ static int FUNC(sei_content_light_level)(CodedBitstreamContext *ctx, RWContext *
 {
     int err;
 
+    HEADER("Content Light Level");
+
     u(16, max_content_light_level, 0, MAX_UINT_BITS(16));
     u(16, max_pic_average_light_level, 0, MAX_UINT_BITS(16));
 
     return 0;
 }
 
+static int FUNC(sei_alternative_transfer_characteristics)(CodedBitstreamContext *ctx,
+                                                          RWContext *rw,
+                                                          H265RawSEIAlternativeTransferCharacteristics *current)
+{
+    int err;
+
+    HEADER("Alternative Transfer Characteristics");
+
+    u(8, preferred_transfer_characteristics, 0, 255);
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
-                             H265RawSEIPayload *current)
+                             H265RawSEIPayload *current, int prefix)
 {
     int err, i;
     int start_position, end_position;
@@ -1550,18 +2056,47 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
 #endif
 
     switch (current->payload_type) {
-    case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
-        CHECK(FUNC(sei_mastering_display)
-              (ctx, rw, &current->payload.mastering_display));
+#define SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid) do { \
+            if (prefix && !prefix_valid) { \
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "SEI type %s invalid " \
+                       "as prefix SEI!\n", #name); \
+                return AVERROR_INVALIDDATA; \
+            } \
+            if (!prefix && !suffix_valid) { \
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "SEI type %s invalid " \
+                       "as suffix SEI!\n", #name); \
+                return AVERROR_INVALIDDATA; \
+            } \
+        } while (0)
+#define SEI_TYPE_N(type, prefix_valid, suffix_valid, name) \
+    case HEVC_SEI_TYPE_ ## type: \
+        SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
+        CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name)); \
+        break
+#define SEI_TYPE_S(type, prefix_valid, suffix_valid, name) \
+    case HEVC_SEI_TYPE_ ## type: \
+        SEI_TYPE_CHECK_VALID(name, prefix_valid, suffix_valid); \
+        CHECK(FUNC(sei_ ## name)(ctx, rw, &current->payload.name, \
+                                 &current->payload_size)); \
+        break
 
-        break;
+        SEI_TYPE_S(BUFFERING_PERIOD,         1, 0, buffering_period);
+        SEI_TYPE_N(PICTURE_TIMING,           1, 0, pic_timing);
+        SEI_TYPE_N(PAN_SCAN_RECT,            1, 0, pan_scan_rect);
+        SEI_TYPE_S(USER_DATA_REGISTERED_ITU_T_T35,
+                                             1, 1, user_data_registered);
+        SEI_TYPE_S(USER_DATA_UNREGISTERED,   1, 1, user_data_unregistered);
+        SEI_TYPE_N(RECOVERY_POINT,           1, 0, recovery_point);
+        SEI_TYPE_N(DISPLAY_ORIENTATION,      1, 0, display_orientation);
+        SEI_TYPE_N(ACTIVE_PARAMETER_SETS,    1, 0, active_parameter_sets);
+        SEI_TYPE_N(DECODED_PICTURE_HASH,     0, 1, decoded_picture_hash);
+        SEI_TYPE_N(TIME_CODE,                1, 0, time_code);
+        SEI_TYPE_N(MASTERING_DISPLAY_INFO,   1, 0, mastering_display);
+        SEI_TYPE_N(CONTENT_LIGHT_LEVEL_INFO, 1, 0, content_light_level);
+        SEI_TYPE_N(ALTERNATIVE_TRANSFER_CHARACTERISTICS,
+                                             1, 0, alternative_transfer_characteristics);
 
-    case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
-        CHECK(FUNC(sei_content_light_level)
-              (ctx, rw, &current->payload.content_light_level));
-
-        break;
-
+#undef SEI_TYPE
     default:
         {
 #ifdef READ
@@ -1599,14 +2134,18 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
 }
 
 static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
-                     H265RawSEI *current)
+                     H265RawSEI *current, int prefix)
 {
     int err, k;
 
-    HEADER("Supplemental Enhancement Information");
+    if (prefix)
+        HEADER("Prefix Supplemental Enhancement Information");
+    else
+        HEADER("Suffix Supplemental Enhancement Information");
 
     CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
-                                HEVC_NAL_SEI_PREFIX));
+                                prefix ? HEVC_NAL_SEI_PREFIX
+                                       : HEVC_NAL_SEI_SUFFIX));
 
 #ifdef READ
     for (k = 0; k < H265_MAX_SEI_PAYLOADS; k++) {
@@ -1631,7 +2170,7 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
         current->payload[k].payload_type = payload_type;
         current->payload[k].payload_size = payload_size;
 
-        CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
+        CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k], prefix));
 
         if (!cbs_h2645_read_more_rbsp_data(rw))
             break;
@@ -1670,7 +2209,7 @@ static int FUNC(sei)(CodedBitstreamContext *ctx, RWContext *rw,
             }
             xu(8, last_payload_size_byte, tmp, 0, 254, 0);
 
-            CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k]));
+            CHECK(FUNC(sei_payload)(ctx, rw, &current->payload[k], prefix));
         }
     }
 #endif

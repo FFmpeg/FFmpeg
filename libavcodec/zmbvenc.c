@@ -45,23 +45,22 @@
 typedef struct ZmbvEncContext {
     AVCodecContext *avctx;
 
-    int range;
+    int lrange, urange;
     uint8_t *comp_buf, *work_buf;
     uint8_t pal[768];
     uint32_t pal2[256]; //for quick comparisons
-    uint8_t *prev;
+    uint8_t *prev, *prev_buf;
     int pstride;
     int comp_size;
     int keyint, curfrm;
     z_stream zstream;
 
-    int score_tab[256];
+    int score_tab[ZMBV_BLOCK * ZMBV_BLOCK + 1];
 } ZmbvEncContext;
 
 
 /** Block comparing function
  * XXX should be optimized and moved to DSPContext
- * TODO handle out of edge ME
  */
 static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
                             uint8_t *src2, int stride2, int bw, int bh,
@@ -69,20 +68,26 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
 {
     int sum = 0;
     int i, j;
-    uint8_t histogram[256] = {0};
+    uint16_t histogram[256] = {0};
 
-    *xored = 0;
+    /* Build frequency histogram of byte values for src[] ^ src2[] */
     for(j = 0; j < bh; j++){
         for(i = 0; i < bw; i++){
             int t = src[i] ^ src2[i];
             histogram[t]++;
-            *xored |= t;
         }
         src += stride;
         src2 += stride2;
     }
 
-    for(i = 1; i < 256; i++)
+    /* If not all the xored values were 0, then the blocks are different */
+    *xored = (histogram[0] < bw * bh);
+
+    /* Exit early if blocks are equal */
+    if (!*xored) return 0;
+
+    /* Sum the entropy of all values */
+    for(i = 0; i < 256; i++)
         sum += c->score_tab[histogram[i]];
 
     return sum;
@@ -94,23 +99,42 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
 static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
                    int pstride, int x, int y, int *mx, int *my, int *xored)
 {
-    int dx, dy, tx, ty, tv, bv, bw, bh;
+    int dx, dy, txored, tv, bv, bw, bh;
+    int mx0, my0;
 
-    *mx = *my = 0;
+    mx0 = *mx;
+    my0 = *my;
     bw = FFMIN(ZMBV_BLOCK, c->avctx->width - x);
     bh = FFMIN(ZMBV_BLOCK, c->avctx->height - y);
+
+    /* Try (0,0) */
     bv = block_cmp(c, src, sstride, prev, pstride, bw, bh, xored);
+    *mx = *my = 0;
     if(!bv) return 0;
-    for(ty = FFMAX(y - c->range, 0); ty < FFMIN(y + c->range, c->avctx->height - bh); ty++){
-        for(tx = FFMAX(x - c->range, 0); tx < FFMIN(x + c->range, c->avctx->width - bw); tx++){
-            if(tx == x && ty == y) continue; // we already tested this block
-            dx = tx - x;
-            dy = ty - y;
-            tv = block_cmp(c, src, sstride, prev + dx + dy * pstride, pstride, bw, bh, xored);
+
+    /* Try previous block's MV (if not 0,0) */
+    if (mx0 || my0){
+        tv = block_cmp(c, src, sstride, prev + mx0 + my0 * pstride, pstride, bw, bh, &txored);
+        if(tv < bv){
+            bv = tv;
+            *mx = mx0;
+            *my = my0;
+            *xored = txored;
+            if(!bv) return 0;
+        }
+    }
+
+    /* Try other MVs from top-to-bottom, left-to-right */
+    for(dy = -c->lrange; dy <= c->urange; dy++){
+        for(dx = -c->lrange; dx <= c->urange; dx++){
+            if(!dx && !dy) continue; // we already tested this block
+            if(dx == mx0 && dy == my0) continue; // this one too
+            tv = block_cmp(c, src, sstride, prev + dx + dy * pstride, pstride, bw, bh, &txored);
             if(tv < bv){
                  bv = tv;
                  *mx = dx;
                  *my = dy;
+                 *xored = txored;
                  if(!bv) return 0;
              }
          }
@@ -175,7 +199,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         int x, y, bh2, bw2, xored;
         uint8_t *tsrc, *tprev;
         uint8_t *mv;
-        int mx, my;
+        int mx = 0, my = 0;
 
         bw = (avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK;
         bh = (avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK;
@@ -263,7 +287,7 @@ static av_cold int encode_end(AVCodecContext *avctx)
     av_freep(&c->work_buf);
 
     deflateEnd(&c->zstream);
-    av_freep(&c->prev);
+    av_freep(&c->prev_buf);
 
     return 0;
 }
@@ -277,17 +301,26 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int zret; // Zlib return code
     int i;
     int lvl = 9;
+    int prev_size, prev_offset;
 
-    for(i=1; i<256; i++)
+    /* Entropy-based score tables for comparing blocks.
+     * Suitable for blocks up to (ZMBV_BLOCK * ZMBV_BLOCK) bytes.
+     * Scores are nonnegative, lower is better.
+     */
+    for(i = 1; i <= ZMBV_BLOCK * ZMBV_BLOCK; i++)
         c->score_tab[i] = -i * log2(i / (double)(ZMBV_BLOCK * ZMBV_BLOCK)) * 256;
 
     c->avctx = avctx;
 
     c->curfrm = 0;
     c->keyint = avctx->keyint_min;
-    c->range = 8;
-    if(avctx->me_range > 0)
-        c->range = FFMIN(avctx->me_range, 127);
+
+    /* Motion estimation range: maximum distance is -64..63 */
+    c->lrange = c->urange = 8;
+    if(avctx->me_range > 0){
+        c->lrange = FFMIN(avctx->me_range, 64);
+        c->urange = FFMIN(avctx->me_range, 63);
+    }
 
     if(avctx->compression_level >= 0)
         lvl = avctx->compression_level;
@@ -313,11 +346,23 @@ static av_cold int encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Can't allocate compression buffer.\n");
         return AVERROR(ENOMEM);
     }
-    c->pstride = FFALIGN(avctx->width, 16);
-    if (!(c->prev = av_malloc(c->pstride * avctx->height))) {
+
+    /* Allocate prev buffer - pad around the image to allow out-of-edge ME:
+     * - The image should be padded with `lrange` rows before and `urange` rows
+     *   after.
+     * - The stride should be padded with `lrange` pixels, then rounded up to a
+     *   multiple of 16 bytes.
+     * - The first row should also be padded with `lrange` pixels before, then
+     *   aligned up to a multiple of 16 bytes.
+     */
+    c->pstride = FFALIGN(avctx->width + c->lrange, 16);
+    prev_size = FFALIGN(c->lrange, 16) + c->pstride * (c->lrange + avctx->height + c->urange);
+    prev_offset = FFALIGN(c->lrange, 16) + c->pstride * c->lrange;
+    if (!(c->prev_buf = av_mallocz(prev_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate picture.\n");
         return AVERROR(ENOMEM);
     }
+    c->prev = c->prev_buf + prev_offset;
 
     c->zstream.zalloc = Z_NULL;
     c->zstream.zfree = Z_NULL;

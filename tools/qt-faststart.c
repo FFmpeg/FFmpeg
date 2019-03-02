@@ -443,6 +443,8 @@ int main(int argc, char *argv[])
     int64_t start_offset = 0;
     unsigned char *copy_buffer = NULL;
     int bytes_to_copy;
+    uint64_t free_size = 0;
+    uint64_t moov_size = 0;
 
     if (argc != 3) {
         printf("Usage: qt-faststart <infile.mov> <outfile.mov>\n"
@@ -535,6 +537,15 @@ int main(int argc, char *argv[])
          * able to continue scanning sensibly after this atom, so break. */
         if (atom_size < 8)
             break;
+
+        if (atom_type == MOOV_ATOM)
+            moov_size = atom_size;
+
+        if (moov_size && atom_type == FREE_ATOM) {
+            free_size += atom_size;
+            atom_type = MOOV_ATOM;
+            atom_size = moov_size;
+        }
     }
 
     if (atom_type != MOOV_ATOM) {
@@ -551,7 +562,7 @@ int main(int argc, char *argv[])
 
     /* moov atom was, in fact, the last atom in the chunk; load the whole
      * moov atom */
-    if (fseeko(infile, -atom_size, SEEK_END)) {
+    if (fseeko(infile, -(atom_size + free_size), SEEK_END)) {
         perror(argv[1]);
         goto error_out;
     }

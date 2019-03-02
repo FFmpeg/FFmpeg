@@ -63,6 +63,7 @@ typedef struct AudioIIRContext {
     int response;
     int w, h;
     int ir_channel;
+    AVRational rate;
 
     AVFrame *video;
 
@@ -413,7 +414,7 @@ static int expand(AVFilterContext *ctx, double *pz, int nb, double *coeffs)
 
     for (i = 0; i < nb + 1; i++) {
         if (fabs(coeffs[2 * i + 1]) > FLT_EPSILON) {
-            av_log(ctx, AV_LOG_ERROR, "coeff: %lf of z^%d is not real; poles/zeros are not complex conjugates.\n",
+            av_log(ctx, AV_LOG_ERROR, "coeff: %f of z^%d is not real; poles/zeros are not complex conjugates.\n",
                    coeffs[2 * i + 1], i);
             return AVERROR(EINVAL);
         }
@@ -592,7 +593,7 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->biquads[current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : iir->g);
             iir->biquads[current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : iir->g);
 
-            av_log(ctx, AV_LOG_VERBOSE, "a=%lf %lf %lf:b=%lf %lf %lf\n",
+            av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
                    iir->biquads[current_biquad].a0,
                    iir->biquads[current_biquad].a1,
                    iir->biquads[current_biquad].a2,
@@ -939,11 +940,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
     if (s->response) {
         AVFilterLink *outlink = ctx->outputs[1];
+        int64_t old_pts = s->video->pts;
+        int64_t new_pts = av_rescale_q(out->pts, ctx->inputs[0]->time_base, outlink->time_base);
 
-        s->video->pts = out->pts;
-        ret = ff_filter_frame(outlink, av_frame_clone(s->video));
-        if (ret < 0)
-            return ret;
+        if (new_pts > old_pts) {
+            s->video->pts = new_pts;
+            ret = ff_filter_frame(outlink, av_frame_clone(s->video));
+            if (ret < 0)
+                return ret;
+        }
     }
 
     return ff_filter_frame(outlink, out);
@@ -957,6 +962,8 @@ static int config_video(AVFilterLink *outlink)
     outlink->sample_aspect_ratio = (AVRational){1,1};
     outlink->w = s->w;
     outlink->h = s->h;
+    outlink->frame_rate = s->rate;
+    outlink->time_base = av_inv_q(outlink->frame_rate);
 
     return 0;
 }
@@ -1070,6 +1077,7 @@ static const AVOption aiir_options[] = {
     { "response", "show IR frequency response",    OFFSET(response), AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",                  OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },
+    { "rate",   "set video rate",                  OFFSET(rate),     AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT32_MAX, VF },
     { NULL },
 };
 

@@ -140,7 +140,8 @@ device with @command{-list_formats 1}. Audio sample rate is always 48 kHz.
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}.
+Defaults to @option{false}. Alternatively you can use the @code{-sinks}
+option of ffmpeg to list the available output devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
@@ -149,6 +150,14 @@ Defaults to @option{false}.
 @item preroll
 Amount of time to preroll video in seconds.
 Defaults to @option{0.5}.
+
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
+@item timing_offset
+Sets the genlock timing pixel offset on the used output.
+Defaults to @samp{unset}.
 
 @end table
 
@@ -392,6 +401,10 @@ Set the SDL window size, can be a string of the form
 @var{width}x@var{height} or a video size abbreviation.
 If not specified it defaults to the size of the input video,
 downscaled according to the aspect ratio.
+
+@item window_x
+@item window_y
+Set the position of the window on the screen.
 
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.

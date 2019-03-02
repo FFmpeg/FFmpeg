@@ -28,6 +28,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/timestamp.h"
 
 static int video_decode_example(const char *input_filename)
 {
@@ -131,9 +132,9 @@ static int video_decode_example(const char *input_filename)
                     av_log(NULL, AV_LOG_ERROR, "Can't copy image to buffer\n");
                     return number_of_written_bytes;
                 }
-                printf("%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, 0x%08lx\n", video_stream,
-                        fr->pts, fr->pkt_dts, fr->pkt_duration,
-                        number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
+                printf("%d, %s, %s, %8"PRId64", %8d, 0x%08lx\n", video_stream,
+                       av_ts2str(fr->pts), av_ts2str(fr->pkt_dts), fr->pkt_duration,
+                       number_of_written_bytes, av_adler32_update(0, (const uint8_t*)byte_buffer, number_of_written_bytes));
             }
             av_packet_unref(&pkt);
             av_init_packet(&pkt);

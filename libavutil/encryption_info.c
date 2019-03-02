@@ -297,14 +297,14 @@ uint8_t *av_encryption_init_info_add_side_data(const AVEncryptionInitInfo *info,
     temp_side_data_size = 4;
     init_info_count = 0;
     for (cur_info = info; cur_info; cur_info = cur_info->next) {
-        temp_side_data_size += (uint64_t)FF_ENCRYPTION_INIT_INFO_EXTRA + info->system_id_size + info->data_size;
+        temp_side_data_size += (uint64_t)FF_ENCRYPTION_INIT_INFO_EXTRA + cur_info->system_id_size + cur_info->data_size;
         if (init_info_count == UINT32_MAX || temp_side_data_size > UINT32_MAX) {
             return NULL;
         }
         init_info_count++;
 
-        if (info->num_key_ids) {
-            temp_side_data_size += (uint64_t)info->num_key_ids * info->key_id_size;
+        if (cur_info->num_key_ids) {
+            temp_side_data_size += (uint64_t)cur_info->num_key_ids * cur_info->key_id_size;
             if (temp_side_data_size > UINT32_MAX) {
                 return NULL;
             }
