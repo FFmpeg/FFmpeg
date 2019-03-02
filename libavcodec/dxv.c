@@ -426,7 +426,8 @@ static int fill_optable(unsigned *table0, OpcodeTable *table1, int nb_elements)
 static int get_opcodes(GetByteContext *gb, uint32_t *table, uint8_t *dst, int op_size, int nb_elements)
 {
     OpcodeTable optable[1024];
-    int sum, x, val, lshift, rshift, ret, size_in_bits, i, idx;
+    int sum, x, val, lshift, rshift, ret, i, idx;
+    int64_t size_in_bits;
     unsigned endoffset, newoffset, offset;
     unsigned next;
     uint8_t *src = (uint8_t *)gb->buffer;
