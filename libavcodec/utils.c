@@ -1401,10 +1401,8 @@ const char *avcodec_profile_name(enum AVCodecID codec_id, int profile)
 
 unsigned avcodec_version(void)
 {
-//    av_assert0(AV_CODEC_ID_V410==164);
     av_assert0(AV_CODEC_ID_PCM_S8_PLANAR==65563);
     av_assert0(AV_CODEC_ID_ADPCM_G722==69660);
-//     av_assert0(AV_CODEC_ID_BMV_AUDIO==86071);
     av_assert0(AV_CODEC_ID_SRT==94216);
     av_assert0(LIBAVCODEC_VERSION_MICRO >= 100);
 
