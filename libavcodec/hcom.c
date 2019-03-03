@@ -63,6 +63,10 @@ static av_cold int hcom_init(AVCodecContext *avctx)
     for (int i = 0; i < s->dict_entries; i++) {
         s->dict[i].l = AV_RB16(avctx->extradata + 6 + 4 * i);
         s->dict[i].r = AV_RB16(avctx->extradata + 6 + 4 * i + 2);
+        if (s->dict[i].l >= 0 &&
+            (s->dict[i].l >= s->dict_entries ||
+             s->dict[i].r >= s->dict_entries))
+            return AVERROR_INVALIDDATA;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_U8;
