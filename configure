@@ -6073,12 +6073,12 @@ enabled libvorbis         && require_pkg_config libvorbis vorbis vorbis/codec.h 
 enabled libvpx            && {
     enabled libvpx_vp8_decoder && {
         check_pkg_config libvpx_vp8_decoder "vpx >= 1.4.0" "vpx/vpx_decoder.h vpx/vp8dx.h" vpx_codec_vp8_dx ||
-            check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_dec_init_ver VPX_IMG_FMT_HIGHBITDEPTH" -lvpx ||
+            check_lib libvpx_vp8_decoder "vpx/vpx_decoder.h vpx/vp8dx.h" "vpx_codec_vp8_dx VPX_IMG_FMT_HIGHBITDEPTH" "-lvpx $libm_extralibs $pthreads_extralibs" ||
                 die "ERROR: libvpx decoder version must be >=1.4.0";
     }
     enabled libvpx_vp8_encoder && {
         check_pkg_config libvpx_vp8_encoder "vpx >= 1.4.0" "vpx/vpx_encoder.h vpx/vp8cx.h" vpx_codec_vp8_cx ||
-            check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_enc_init_ver VPX_IMG_FMT_HIGHBITDEPTH" -lvpx ||
+            check_lib libvpx_vp8_encoder "vpx/vpx_encoder.h vpx/vp8cx.h" "vpx_codec_vp8_cx VPX_IMG_FMT_HIGHBITDEPTH" "-lvpx $libm_extralibs $pthreads_extralibs" ||
                 die "ERROR: libvpx encoder version must be >=1.4.0";
     }
     enabled libvpx_vp9_decoder && {
