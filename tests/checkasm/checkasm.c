@@ -136,6 +136,9 @@ static const struct {
     #if CONFIG_UTVIDEO_DECODER
         { "utvideodsp", checkasm_check_utvideodsp },
     #endif
+    #if CONFIG_V210_DECODER
+        { "v210dec", checkasm_check_v210dec },
+    #endif
     #if CONFIG_V210_ENCODER
         { "v210enc", checkasm_check_v210enc },
     #endif
