@@ -270,6 +270,18 @@ static void putbuf(uint8_t **q_ptr, const uint8_t *buf, size_t len)
     *q_ptr += len;
 }
 
+static void put_registration_descriptor(uint8_t **q_ptr, uint32_t tag)
+{
+    uint8_t *q = *q_ptr;
+    *q++ = 0x05; /* MPEG-2 registration descriptor*/
+    *q++ = 4;
+    *q++ = tag;
+    *q++ = tag >> 8;
+    *q++ = tag >> 16;
+    *q++ = tag >> 24;
+    *q_ptr = q;
+}
+
 static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
@@ -396,14 +408,8 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                 *q++=1; // 1 byte, all flags sets to 0
                 *q++=0; // omit all fields...
             }
-            if (st->codecpar->codec_id==AV_CODEC_ID_S302M) {
-                *q++ = 0x05; /* MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'B';
-                *q++ = 'S';
-                *q++ = 'S';
-                *q++ = 'D';
-            }
+            if (st->codecpar->codec_id==AV_CODEC_ID_S302M)
+                put_registration_descriptor(&q, MKTAG('B', 'S', 'S', 'D'));
             if (st->codecpar->codec_id==AV_CODEC_ID_OPUS) {
                 /* 6 bytes registration descriptor, 4 bytes Opus audio descriptor */
                 if (q - data > SECTION_LENGTH - 6 - 4) {
@@ -411,12 +417,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
                     break;
                 }
 
-                *q++ = 0x05; /* MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'O';
-                *q++ = 'p';
-                *q++ = 'u';
-                *q++ = 's';
+                put_registration_descriptor(&q, MKTAG('O', 'p', 'u', 's'));
 
                 *q++ = 0x7f; /* DVB extension descriptor */
                 *q++ = 2;
@@ -602,29 +603,16 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         break;
         case AVMEDIA_TYPE_VIDEO:
             if (stream_type == STREAM_TYPE_VIDEO_DIRAC) {
-                *q++ = 0x05; /*MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'd';
-                *q++ = 'r';
-                *q++ = 'a';
-                *q++ = 'c';
+                put_registration_descriptor(&q, MKTAG('d', 'r', 'a', 'c'));
             } else if (stream_type == STREAM_TYPE_VIDEO_VC1) {
-                *q++ = 0x05; /*MPEG-2 registration descriptor*/
-                *q++ = 4;
-                *q++ = 'V';
-                *q++ = 'C';
-                *q++ = '-';
-                *q++ = '1';
+                put_registration_descriptor(&q, MKTAG('V', 'C', '-', '1'));
+            } else if (stream_type == STREAM_TYPE_VIDEO_HEVC && s->strict_std_compliance <= FF_COMPLIANCE_NORMAL) {
+                put_registration_descriptor(&q, MKTAG('H', 'E', 'V', 'C'));
             }
             break;
         case AVMEDIA_TYPE_DATA:
             if (st->codecpar->codec_id == AV_CODEC_ID_SMPTE_KLV) {
-                *q++ = 0x05; /* MPEG-2 registration descriptor */
-                *q++ = 4;
-                *q++ = 'K';
-                *q++ = 'L';
-                *q++ = 'V';
-                *q++ = 'A';
+                put_registration_descriptor(&q, MKTAG('K', 'L', 'V', 'A'));
             } else if (st->codecpar->codec_id == AV_CODEC_ID_TIMED_ID3) {
                 const char *tag = "ID3 ";
                 *q++ = 0x26; /* metadata descriptor */

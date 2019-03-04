@@ -41,6 +41,7 @@ typedef struct AudioNLMeansContext {
     float a;
     int64_t pd;
     int64_t rd;
+    int om;
 
     float pdiff_lut_scale;
     float weight_lut[WEIGHT_LUT_SIZE];
@@ -62,6 +63,13 @@ typedef struct AudioNLMeansContext {
     AudioNLMDNDSPContext dsp;
 } AudioNLMeansContext;
 
+enum OutModes {
+    IN_MODE,
+    OUT_MODE,
+    NOISE_MODE,
+    NB_MODES
+};
+
 #define OFFSET(x) offsetof(AudioNLMeansContext, x)
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
@@ -69,6 +77,10 @@ static const AVOption anlmdn_options[] = {
     { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AF },
     { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AF },
     { "r", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AF },
+    { "o", "set output mode",        OFFSET(om), AV_OPT_TYPE_INT,      {.i64=OUT_MODE},  0, NB_MODES-1, AF, "mode" },
+    {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AF, "mode" },
+    {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AF, "mode" },
+    {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AF, "mode" },
     { NULL }
 };
 
@@ -184,6 +196,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     AVFrame *out = arg;
     const int S = s->S;
     const int K = s->K;
+    const int om = s->om;
     const float *f = (const float *)(s->in->extended_data[ch]) + K;
     float *cache = (float *)s->cache->extended_data[ch];
     const float sw = (65536.f / (4 * K + 2)) / sqrtf(s->a);
@@ -223,7 +236,11 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
         P += f[i];
         Q += 1;
 
-        dst[i - S] = P / Q;
+        switch (om) {
+        case IN_MODE:    dst[i - S] = f[i];           break;
+        case OUT_MODE:   dst[i - S] = P / Q;          break;
+        case NOISE_MODE: dst[i - S] = f[i] - (P / Q); break;
+        }
     }
 
     return 0;

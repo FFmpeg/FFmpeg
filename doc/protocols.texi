@@ -193,6 +193,12 @@ Set I/O operation maximum block size, in bytes. Default value is
 @code{INT_MAX}, which results in not limiting the requested block size.
 Setting this value reasonably low improves user termination request reaction
 time, which is valuable for files on slow medium.
+
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
 @end table
 
 @section ftp
@@ -228,17 +234,6 @@ NOTE: Protocol can be used as output, but it is recommended to not do
 it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
-
-This protocol accepts the following options:
-
-@table @option
-@item follow
-If set to 1, the protocol will retry reading at the end of the file, allowing
-reading files that still are being written. In order for this to terminate,
-you either need to use the rw_timeout option, or use the interrupt callback
-(for API users).
-
-@end table
 
 @section gopher
 

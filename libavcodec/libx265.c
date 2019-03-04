@@ -79,6 +79,7 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
+    AVCPBProperties *cpb_props = NULL;
 
     ctx->api = x265_api_get(av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth);
     if (!ctx->api)
@@ -207,6 +208,13 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 
     ctx->params->rc.vbvBufferSize = avctx->rc_buffer_size / 1000;
     ctx->params->rc.vbvMaxBitrate = avctx->rc_max_rate    / 1000;
+
+    cpb_props = ff_add_cpb_side_data(avctx);
+    if (!cpb_props)
+        return AVERROR(ENOMEM);
+    cpb_props->buffer_size = ctx->params->rc.vbvBufferSize * 1000;
+    cpb_props->max_bitrate = ctx->params->rc.vbvMaxBitrate * 1000;
+    cpb_props->avg_bitrate = ctx->params->rc.bitrate       * 1000;
 
     if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         ctx->params->bRepeatHeaders = 1;
