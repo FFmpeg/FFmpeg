@@ -86,6 +86,9 @@ static int gdv_read_header(AVFormatContext *ctx)
     vst->nb_frames         = avio_rl16(pb);
 
     fps = avio_rl16(pb);
+    if (!fps)
+        return AVERROR_INVALIDDATA;
+
     snd_flags = avio_rl16(pb);
     if (snd_flags & 1) {
         ast = avformat_new_stream(ctx, 0);
