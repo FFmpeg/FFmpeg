@@ -61,6 +61,7 @@ typedef struct Segment {
     int64_t start_pos;
     int range_length, index_length;
     int64_t time;
+    double prog_date_time;
     int64_t duration;
     int n;
 } Segment;
@@ -122,6 +123,7 @@ typedef struct DASHContext {
     int64_t last_duration;
     int64_t total_duration;
     char availability_start_time[100];
+    time_t start_time_s;
     char dirname[1024];
     const char *single_file_name;  /* file names as specified in options */
     const char *init_seg_name;
@@ -433,6 +435,7 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
     const char *proto = avio_find_protocol_name(c->dirname);
     int use_rename = proto && !strcmp(proto, "file");
     int i, start_index, start_number;
+    double prog_date_time = 0;
 
     get_start_index_number(os, c, &start_index, &start_number);
 
@@ -467,11 +470,20 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
 
     for (i = start_index; i < os->nb_segments; i++) {
         Segment *seg = os->segments[i];
+
+        if (prog_date_time == 0) {
+            if (os->nb_segments == 1)
+                prog_date_time = c->start_time_s;
+            else
+                prog_date_time = seg->prog_date_time;
+        }
+        seg->prog_date_time = prog_date_time;
+
         ret = ff_hls_write_file_entry(c->m3u8_out, 0, c->single_file,
                                 (double) seg->duration / timescale, 0,
                                 seg->range_length, seg->start_pos, NULL,
                                 c->single_file ? os->initfile : seg->file,
-                                NULL);
+                                &prog_date_time);
         if (ret < 0) {
             av_log(os->ctx, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
         }
@@ -1592,9 +1604,12 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         os->first_pts = pkt->pts;
     os->last_pts = pkt->pts;
 
-    if (!c->availability_start_time[0])
+    if (!c->availability_start_time[0]) {
+        int64_t start_time_us = av_gettime();
+        c->start_time_s = start_time_us / 1000000;
         format_date_now(c->availability_start_time,
                         sizeof(c->availability_start_time));
+    }
 
     if (!os->availability_time_offset && pkt->duration) {
         int64_t frame_duration = av_rescale_q(pkt->duration, st->time_base,
