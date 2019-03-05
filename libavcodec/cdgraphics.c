@@ -81,11 +81,8 @@ static av_cold int cdg_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     cc->transparency = -1;
 
-    avctx->width   = CDG_FULL_WIDTH;
-    avctx->height  = CDG_FULL_HEIGHT;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-
-    return 0;
+    return ff_set_dimensions(avctx, CDG_FULL_WIDTH, CDG_FULL_HEIGHT);
 }
 
 static void cdg_border_preset(CDGraphicsContext *cc, uint8_t *data)
