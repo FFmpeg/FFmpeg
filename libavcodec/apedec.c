@@ -24,6 +24,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
+#include "libavutil/crc.h"
 #include "libavutil/opt.h"
 #include "lossless_audiodsp.h"
 #include "avcodec.h"
@@ -147,7 +148,8 @@ typedef struct APEContext {
     int fset;                                ///< which filter set to use (calculated from compression level)
     int flags;                               ///< global decoder flags
 
-    uint32_t CRC;                            ///< frame CRC
+    uint32_t CRC;                            ///< signalled frame CRC
+    uint32_t CRC_state;                      ///< accumulated CRC
     int frameflags;                          ///< frame flags
     APEPredictor predictor;                  ///< predictor used for final reconstruction
 
@@ -750,6 +752,7 @@ static int init_entropy_decoder(APEContext *ctx)
 
     /* Read the frame flags if they exist */
     ctx->frameflags = 0;
+    ctx->CRC_state = UINT32_MAX;
     if ((ctx->fileversion > 3820) && (ctx->CRC & 0x80000000)) {
         ctx->CRC &= ~0x80000000;
 
@@ -1576,6 +1579,27 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     s->samples -= blockstodecode;
+
+    if (avctx->err_recognition & AV_EF_CRCCHECK &&
+        s->fileversion >= 3900 && s->bps < 24) {
+        uint32_t crc = s->CRC_state;
+        const AVCRC *crc_tab = av_crc_get_table(AV_CRC_32_IEEE_LE);
+        for (i = 0; i < blockstodecode; i++) {
+            for (ch = 0; ch < s->channels; ch++) {
+                uint8_t *smp = frame->data[ch] + (i*(s->bps >> 3));
+                crc = av_crc(crc_tab, crc, smp, s->bps >> 3);
+            }
+        }
+
+        if (!s->samples && (~crc >> 1) ^ s->CRC) {
+            av_log(avctx, AV_LOG_ERROR, "CRC mismatch! Previously decoded "
+                   "frames may have been affected as well.\n");
+            if (avctx->err_recognition & AV_EF_EXPLODE)
+                return AVERROR_INVALIDDATA;
+        }
+
+        s->CRC_state = crc;
+    }
 
     *got_frame_ptr = 1;
 
