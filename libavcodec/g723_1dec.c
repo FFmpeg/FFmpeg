@@ -883,7 +883,8 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         G723_1_ChannelContext *p = &s->ch[ch];
         int16_t *audio = p->audio;
 
-        if (unpack_bitstream(p, buf, buf_size) < 0) {
+        if (unpack_bitstream(p, buf + ch * (buf_size / avctx->channels),
+                             buf_size / avctx->channels) < 0) {
             bad_frame = 1;
             if (p->past_frame_type == ACTIVE_FRAME)
                 p->cur_frame_type = ACTIVE_FRAME;
