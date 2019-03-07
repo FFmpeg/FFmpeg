@@ -34,10 +34,28 @@
 
 #include <zlib.h>
 
+/* Frame header flags */
 #define ZMBV_KEYFRAME 1
 #define ZMBV_DELTAPAL 2
 
+/* Motion block width/height (maximum allowed value is 255)
+ * Note: histogram datatype in block_cmp() must be big enough to hold values
+ * up to (4 * ZMBV_BLOCK * ZMBV_BLOCK)
+ */
 #define ZMBV_BLOCK 16
+
+/* Keyframe header format values */
+enum ZmbvFormat {
+    ZMBV_FMT_NONE  = 0,
+    ZMBV_FMT_1BPP  = 1,
+    ZMBV_FMT_2BPP  = 2,
+    ZMBV_FMT_4BPP  = 3,
+    ZMBV_FMT_8BPP  = 4,
+    ZMBV_FMT_15BPP = 5,
+    ZMBV_FMT_16BPP = 6,
+    ZMBV_FMT_24BPP = 7,
+    ZMBV_FMT_32BPP = 8
+};
 
 /**
  * Encoder context
@@ -53,9 +71,11 @@ typedef struct ZmbvEncContext {
     int pstride;
     int comp_size;
     int keyint, curfrm;
+    int bypp;
+    enum ZmbvFormat fmt;
     z_stream zstream;
 
-    int score_tab[ZMBV_BLOCK * ZMBV_BLOCK + 1];
+    int score_tab[ZMBV_BLOCK * ZMBV_BLOCK * 4 + 1];
 } ZmbvEncContext;
 
 
@@ -69,10 +89,11 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
     int sum = 0;
     int i, j;
     uint16_t histogram[256] = {0};
+    int bw_bytes = bw * c->bypp;
 
     /* Build frequency histogram of byte values for src[] ^ src2[] */
     for(j = 0; j < bh; j++){
-        for(i = 0; i < bw; i++){
+        for(i = 0; i < bw_bytes; i++){
             int t = src[i] ^ src2[i];
             histogram[t]++;
         }
@@ -81,7 +102,7 @@ static inline int block_cmp(ZmbvEncContext *c, uint8_t *src, int stride,
     }
 
     /* If not all the xored values were 0, then the blocks are different */
-    *xored = (histogram[0] < bw * bh);
+    *xored = (histogram[0] < bw_bytes * bh);
 
     /* Exit early if blocks are equal */
     if (!*xored) return 0;
@@ -114,7 +135,7 @@ static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
 
     /* Try previous block's MV (if not 0,0) */
     if (mx0 || my0){
-        tv = block_cmp(c, src, sstride, prev + mx0 + my0 * pstride, pstride, bw, bh, &txored);
+        tv = block_cmp(c, src, sstride, prev + mx0 * c->bypp + my0 * pstride, pstride, bw, bh, &txored);
         if(tv < bv){
             bv = tv;
             *mx = mx0;
@@ -129,7 +150,7 @@ static int zmbv_me(ZmbvEncContext *c, uint8_t *src, int sstride, uint8_t *prev,
         for(dx = -c->lrange; dx <= c->urange; dx++){
             if(!dx && !dy) continue; // we already tested this block
             if(dx == mx0 && dy == my0) continue; // this one too
-            tv = block_cmp(c, src, sstride, prev + dx + dy * pstride, pstride, bw, bh, &txored);
+            tv = block_cmp(c, src, sstride, prev + dx * c->bypp + dy * pstride, pstride, bw, bh, &txored);
             if(tv < bv){
                  bv = tv;
                  *mx = dx;
@@ -165,9 +186,10 @@ FF_DISABLE_DEPRECATION_WARNINGS
     avctx->coded_frame->key_frame = keyframe;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-    chpal = !keyframe && memcmp(p->data[1], c->pal2, 1024);
 
-    palptr = (uint32_t*)p->data[1];
+    palptr = (avctx->pix_fmt == AV_PIX_FMT_PAL8) ? (uint32_t *)p->data[1] : NULL;
+    chpal = !keyframe && palptr && memcmp(palptr, c->pal2, 1024);
+
     src = p->data[0];
     prev = c->prev;
     if(chpal){
@@ -181,19 +203,21 @@ FF_ENABLE_DEPRECATION_WARNINGS
             c->pal[i * 3 + 1] = tpal[1];
             c->pal[i * 3 + 2] = tpal[2];
         }
-        memcpy(c->pal2, p->data[1], 1024);
+        memcpy(c->pal2, palptr, 1024);
     }
     if(keyframe){
-        for(i = 0; i < 256; i++){
-            AV_WB24(c->pal+(i*3), palptr[i]);
+        if (palptr){
+            for(i = 0; i < 256; i++){
+                AV_WB24(c->pal+(i*3), palptr[i]);
+            }
+            memcpy(c->work_buf, c->pal, 768);
+            memcpy(c->pal2, palptr, 1024);
+            work_size = 768;
         }
-        memcpy(c->work_buf, c->pal, 768);
-        memcpy(c->pal2, p->data[1], 1024);
-        work_size = 768;
         for(i = 0; i < avctx->height; i++){
-            memcpy(c->work_buf + work_size, src, avctx->width);
+            memcpy(c->work_buf + work_size, src, avctx->width * c->bypp);
             src += p->linesize[0];
-            work_size += avctx->width;
+            work_size += avctx->width * c->bypp;
         }
     }else{
         int x, y, bh2, bw2, xored;
@@ -212,16 +236,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
             for(x = 0; x < avctx->width; x += ZMBV_BLOCK, mv += 2) {
                 bw2 = FFMIN(avctx->width - x, ZMBV_BLOCK);
 
-                tsrc = src + x;
-                tprev = prev + x;
+                tsrc = src + x * c->bypp;
+                tprev = prev + x * c->bypp;
 
                 zmbv_me(c, tsrc, p->linesize[0], tprev, c->pstride, x, y, &mx, &my, &xored);
                 mv[0] = (mx << 1) | !!xored;
                 mv[1] = my << 1;
-                tprev += mx + my * c->pstride;
+                tprev += mx * c->bypp + my * c->pstride;
                 if(xored){
                     for(j = 0; j < bh2; j++){
-                        for(i = 0; i < bw2; i++)
+                        for(i = 0; i < bw2 * c->bypp; i++)
                             c->work_buf[work_size++] = tsrc[i] ^ tprev[i];
                         tsrc += p->linesize[0];
                         tprev += c->pstride;
@@ -236,7 +260,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     src = p->data[0];
     prev = c->prev;
     for(i = 0; i < avctx->height; i++){
-        memcpy(prev, src, avctx->width);
+        memcpy(prev, src, avctx->width * c->bypp);
         prev += c->pstride;
         src += p->linesize[0];
     }
@@ -267,7 +291,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         *buf++ = 0; // hi ver
         *buf++ = 1; // lo ver
         *buf++ = 1; // comp
-        *buf++ = 4; // format - 8bpp
+        *buf++ = c->fmt; // format
         *buf++ = ZMBV_BLOCK; // block width
         *buf++ = ZMBV_BLOCK; // block height
     }
@@ -303,12 +327,34 @@ static av_cold int encode_init(AVCodecContext *avctx)
     int lvl = 9;
     int prev_size, prev_offset;
 
+    switch (avctx->pix_fmt) {
+    case AV_PIX_FMT_PAL8:
+        c->fmt = ZMBV_FMT_8BPP;
+        c->bypp = 1;
+        break;
+    case AV_PIX_FMT_RGB555LE:
+        c->fmt = ZMBV_FMT_15BPP;
+        c->bypp = 2;
+        break;
+    case AV_PIX_FMT_RGB565LE:
+        c->fmt = ZMBV_FMT_16BPP;
+        c->bypp = 2;
+        break;
+    case AV_PIX_FMT_BGR0:
+        c->fmt = ZMBV_FMT_32BPP;
+        c->bypp = 4;
+        break;
+    default:
+        av_log(avctx, AV_LOG_INFO, "unsupported pixel format\n");
+        return AVERROR(EINVAL);
+    }
+
     /* Entropy-based score tables for comparing blocks.
      * Suitable for blocks up to (ZMBV_BLOCK * ZMBV_BLOCK) bytes.
      * Scores are nonnegative, lower is better.
      */
-    for(i = 1; i <= ZMBV_BLOCK * ZMBV_BLOCK; i++)
-        c->score_tab[i] = -i * log2(i / (double)(ZMBV_BLOCK * ZMBV_BLOCK)) * 256;
+    for(i = 1; i <= ZMBV_BLOCK * ZMBV_BLOCK * c->bypp; i++)
+        c->score_tab[i] = -i * log2(i / (double)(ZMBV_BLOCK * ZMBV_BLOCK * c->bypp)) * 256;
 
     c->avctx = avctx;
 
@@ -331,7 +377,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     // Needed if zlib unused or init aborted before deflateInit
     memset(&c->zstream, 0, sizeof(z_stream));
-    c->comp_size = avctx->width * avctx->height + 1024 +
+    c->comp_size = avctx->width * c->bypp * avctx->height + 1024 +
         ((avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * ((avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK) * 2 + 4;
     if (!(c->work_buf = av_malloc(c->comp_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate work buffer.\n");
@@ -355,8 +401,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
      * - The first row should also be padded with `lrange` pixels before, then
      *   aligned up to a multiple of 16 bytes.
      */
-    c->pstride = FFALIGN(avctx->width + c->lrange, 16);
-    prev_size = FFALIGN(c->lrange, 16) + c->pstride * (c->lrange + avctx->height + c->urange);
+    c->pstride = FFALIGN((avctx->width + c->lrange) * c->bypp, 16);
+    prev_size = FFALIGN(c->lrange * c->bypp, 16) + c->pstride * (c->lrange + avctx->height + c->urange);
     prev_offset = FFALIGN(c->lrange, 16) + c->pstride * c->lrange;
     if (!(c->prev_buf = av_mallocz(prev_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate picture.\n");
@@ -385,5 +431,9 @@ AVCodec ff_zmbv_encoder = {
     .init           = encode_init,
     .encode2        = encode_frame,
     .close          = encode_end,
-    .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_PAL8, AV_PIX_FMT_NONE },
+    .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
+                                                     AV_PIX_FMT_RGB555LE,
+                                                     AV_PIX_FMT_RGB565LE,
+                                                     AV_PIX_FMT_BGR0,
+                                                     AV_PIX_FMT_NONE },
 };
