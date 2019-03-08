@@ -13,6 +13,7 @@ version <next>:
 - streamhash muxer
 - sierpinski video source
 - scroll video filter
+- photosensitivity filter
 
 
 version 4.2:

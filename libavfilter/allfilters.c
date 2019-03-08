@@ -305,6 +305,7 @@ extern AVFilter ff_vf_paletteuse;
 extern AVFilter ff_vf_perms;
 extern AVFilter ff_vf_perspective;
 extern AVFilter ff_vf_phase;
+extern AVFilter ff_vf_photosensitivity;
 extern AVFilter ff_vf_pixdesctest;
 extern AVFilter ff_vf_pixscope;
 extern AVFilter ff_vf_pp;

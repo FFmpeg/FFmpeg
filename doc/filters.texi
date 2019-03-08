@@ -14040,6 +14040,26 @@ Filter selects among @samp{t}, @samp{b} and @samp{p} using image analysis only.
 @end table
 @end table
 
+@section photosensitivity
+Reduce various flashes in video, so to help users with epilepsy.
+
+It accepts the following options:
+@table @option
+@item frames, f
+Set how many frames to use when filtering. Default is 30.
+
+@item threshold, t
+Set detection threshold factor. Default is 1.
+Lower is stricter.
+
+@item skip
+Set how many pixels to skip when sampling frames. Defalt is 1.
+Allowed range is from 1 to 1024.
+
+@item bypass
+Leave frames unchanged. Default is disabled.
+@end table
+
 @section pixdesctest
 
 Pixel format descriptor test filter, mainly useful for internal
