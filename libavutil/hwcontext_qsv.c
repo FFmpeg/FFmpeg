@@ -389,7 +389,7 @@ static mfxStatus frame_alloc(mfxHDL pthis, mfxFrameAllocRequest *req,
         !(req->Type & (MFX_MEMTYPE_FROM_VPPIN | MFX_MEMTYPE_FROM_VPPOUT)) ||
         !(req->Type & MFX_MEMTYPE_EXTERNAL_FRAME))
         return MFX_ERR_UNSUPPORTED;
-    if (i->Width  != i1->Width || i->Height != i1->Height ||
+    if (i->Width  > i1->Width || i->Height > i1->Height ||
         i->FourCC != i1->FourCC || i->ChromaFormat != i1->ChromaFormat) {
         av_log(ctx, AV_LOG_ERROR, "Mismatching surface properties in an "
                "allocation request: %dx%d %d %d vs %dx%d %d %d\n",
