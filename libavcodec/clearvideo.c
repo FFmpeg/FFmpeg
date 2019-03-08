@@ -555,6 +555,9 @@ static int clv_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         int plane;
 
+        if (c->pmb_width * c->pmb_height > 8LL*(buf_size - bytestream2_tell(&gb)))
+            return AVERROR_INVALIDDATA;
+
         if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
             return ret;
 
