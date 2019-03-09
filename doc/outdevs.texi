@@ -220,51 +220,6 @@ ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
 
-@section libndi_newtek
-
-The libndi_newtek output device provides playback capabilities for using NDI (Network
-Device Interface, standard created by NewTek).
-
-Output filename is a NDI name.
-
-To enable this output device, you need the NDI SDK and you
-need to configure with the appropriate @code{--extra-cflags}
-and @code{--extra-ldflags}.
-
-NDI uses uyvy422 pixel format natively, but also supports bgra, bgr0, rgba and
-rgb0.
-
-@subsection Options
-
-@table @option
-
-@item reference_level
-The audio reference level in dB. This specifies how many dB above the
-reference level (+4dBU) is the full range of 16 bit audio.
-Defaults to @option{0}.
-
-@item clock_video
-These specify whether video "clock" themselves.
-Defaults to @option{false}.
-
-@item clock_audio
-These specify whether audio "clock" themselves.
-Defaults to @option{false}.
-
-@end table
-
-@subsection Examples
-
-@itemize
-
-@item
-Play video clip:
-@example
-ffmpeg -i "udp://@@239.1.1.1:10480?fifo_size=1000000&overrun_nonfatal=1" -vf "scale=720:576,fps=fps=25,setdar=dar=16/9,format=pix_fmts=uyvy422" -f libndi_newtek NEW_NDI1
-@end example
-
-@end itemize
-
 @section opengl
 OpenGL output device.
 
