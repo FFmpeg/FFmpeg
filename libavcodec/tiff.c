@@ -1547,6 +1547,22 @@ again:
                 }
                 dst += p->linesize[plane];
             }
+        } else if (s->photometric == TIFF_PHOTOMETRIC_SEPARATED &&
+            s->avctx->pix_fmt == AV_PIX_FMT_RGBA64BE) {
+            dst = p->data[plane];
+            for (i = 0; i < s->height; i++) {
+                for (j = 0; j < s->width; j++) {
+                    uint64_t k =  65535 - AV_RB16(dst + 8 * j + 6);
+                    uint64_t r = (65535 - AV_RB16(dst + 8 * j    )) * k;
+                    uint64_t g = (65535 - AV_RB16(dst + 8 * j + 2)) * k;
+                    uint64_t b = (65535 - AV_RB16(dst + 8 * j + 4)) * k;
+                    AV_WB16(dst + 8 * j    , r * 65537 >> 32);
+                    AV_WB16(dst + 8 * j + 2, g * 65537 >> 32);
+                    AV_WB16(dst + 8 * j + 4, b * 65537 >> 32);
+                    AV_WB16(dst + 8 * j + 6, 65535);
+                }
+                dst += p->linesize[plane];
+            }
         }
     }
 
