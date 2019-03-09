@@ -620,16 +620,16 @@ static int get_packet_size(AVFormatContext* s)
         av_log(s, AV_LOG_TRACE, "Probe: %d, score: %d, dvhs_score: %d, fec_score: %d \n",
             buf_size, score, dvhs_score, fec_score);
 
-        if (buf_size < PROBE_PACKET_MAX_BUF)
-            margin = PROBE_PACKET_MARGIN; /*if buffer not filled */
-        else
-            margin = 0;
+        margin = mid_pred(score, fec_score, dvhs_score);
 
-        if (score > FFMAX(fec_score, dvhs_score) + margin)
+        if (buf_size < PROBE_PACKET_MAX_BUF)
+            margin += PROBE_PACKET_MARGIN; /*if buffer not filled */
+
+        if (score > margin)
             return TS_PACKET_SIZE;
-        else if (dvhs_score > FFMAX(score, fec_score) + margin)
+        else if (dvhs_score > margin)
             return TS_DVHS_PACKET_SIZE;
-        else if (fec_score > FFMAX(score, dvhs_score) + margin)
+        else if (fec_score > margin)
             return TS_FEC_PACKET_SIZE;
     }
     return AVERROR_INVALIDDATA;
