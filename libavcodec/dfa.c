@@ -355,6 +355,8 @@ static int dfa_decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
     while (bytestream2_get_bytes_left(&gb) > 0) {
+        if (bytestream2_get_bytes_left(&gb) < 12)
+            return AVERROR_INVALIDDATA;
         bytestream2_skip(&gb, 4);
         chunk_size = bytestream2_get_le32(&gb);
         chunk_type = bytestream2_get_le32(&gb);
