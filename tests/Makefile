@@ -10,7 +10,7 @@ FFMPEG=ffmpeg$(PROGSSUF)$(EXESUF)
 $(AREF): CMP=
 
 APITESTSDIR := tests/api
-OBJDIRS += tests/data tests/vsynth1 tests/data/filtergraphs $(APITESTSDIR)/
+OUTDIRS += tests/data tests/vsynth1 tests/data/filtergraphs $(APITESTSDIR)/
 
 $(VREF): tests/videogen$(HOSTEXESUF) | tests/vsynth1
 	$(M)./$< 'tests/vsynth1/'

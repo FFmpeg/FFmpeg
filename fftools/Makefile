@@ -32,7 +32,7 @@ $(foreach P,$(AVPROGS-yes),$(eval $(call DOFFTOOL,$(P))))
 all: $(AVPROGS)
 
 fftools/ffprobe.o fftools/cmdutils.o: libavutil/ffversion.h | fftools
-OBJDIRS += fftools
+OUTDIRS += fftools
 
 ifdef AVPROGS
 install: install-progs install-data

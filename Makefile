@@ -159,7 +159,7 @@ check: all alltools examples testprogs fate
 
 include $(SRC_PATH)/tests/Makefile
 
-$(sort $(OBJDIRS)):
+$(sort $(OUTDIRS)):
 	$(Q)mkdir -p $@
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
