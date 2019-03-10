@@ -2781,6 +2781,7 @@ static const AVCodecTag additional_video_tags[] = {
 
 static const AVCodecTag additional_subtitle_tags[] = {
     { AV_CODEC_ID_DVB_SUBTITLE,      0xFFFFFFFF },
+    { AV_CODEC_ID_DVD_SUBTITLE,      0xFFFFFFFF },
     { AV_CODEC_ID_HDMV_PGS_SUBTITLE, 0xFFFFFFFF },
     { AV_CODEC_ID_NONE,              0xFFFFFFFF }
 };
