@@ -52,12 +52,13 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
     }
 
     s = str;
-    while (bs < end && !pnm_space(c)) {
-        if ((s - str)  < buf_size - 1)
-            *s++ = c;
+    while (bs < end && !pnm_space(c) && (s - str) < buf_size - 1) {
+        *s++ = c;
         c = *bs++;
     }
     *s = '\0';
+    while (bs < end && !pnm_space(c))
+        c = *bs++;
     sc->bytestream = bs;
 }
 
