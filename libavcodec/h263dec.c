@@ -500,9 +500,9 @@ retry:
             GetBitContext gb;
 
             if (init_get_bits8(&gb, s->avctx->extradata, s->avctx->extradata_size) >= 0 )
-                ff_mpeg4_decode_picture_header(avctx->priv_data, &gb);
+                ff_mpeg4_decode_picture_header(avctx->priv_data, &gb, 1);
         }
-        ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb);
+        ret = ff_mpeg4_decode_picture_header(avctx->priv_data, &s->gb, 0);
     } else if (CONFIG_H263I_DECODER && s->codec_id == AV_CODEC_ID_H263I) {
         ret = ff_intel_h263_decode_picture_header(s);
     } else if (CONFIG_FLV_DECODER && s->h263_flv) {
