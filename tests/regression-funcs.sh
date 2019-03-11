@@ -32,9 +32,6 @@ target_crcfile="$target_datadir/$this.crc"
 cleanfiles="$raw_dst $crcfile"
 trap 'rm -f -- $cleanfiles' EXIT
 
-mkdir -p "$datadir"
-mkdir -p "$outfile"
-
 [ "${V-0}" -gt 0 ] && echov=echov || echov=:
 
 echov(){

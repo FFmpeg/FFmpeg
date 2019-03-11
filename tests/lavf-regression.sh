@@ -411,7 +411,6 @@ fi
 
 if [ -n "$do_pixfmt" ] ; then
 outfile="$datadir/pixfmt/"
-mkdir -p "$outfile"
 conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
              monob yuv440p yuvj440p"
