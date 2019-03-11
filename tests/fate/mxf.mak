@@ -37,9 +37,22 @@ FATE_MXF_REEL_NAME-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-reel_
 fate-mxf-reel_name: $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
 fate-mxf-reel_name: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf  -c copy -timecode 00:00:00:00 -metadata "reel_name=test_reel" -fflags +bitexact -f mxf
 
+FATE_MXF_USER_COMMENTS-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-user-comments
+fate-mxf-user-comments: $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
+fate-mxf-user-comments: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf -c copy -metadata "comment_test=value" -fflags +bitexact -f mxf
+
+FATE_MXF_D10_USER_COMMENTS-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-d10-user-comments
+fate-mxf-d10-user-comments: $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
+fate-mxf-d10-user-comments: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf -c copy -metadata "comment_test=value" -store_user_comments 1 -fflags +bitexact -f mxf_d10
+
+FATE_MXF_OPATOM_USER_COMMENTS-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF) += fate-mxf-opatom-user-comments
+fate-mxf-opatom-user-comments: $(TARGET_SAMPLES)/mxf/Sony-00001.mxf
+fate-mxf-opatom-user-comments: CMD = md5 -y -i $(TARGET_SAMPLES)/mxf/Sony-00001.mxf -an -vcodec copy -metadata "comment_test=value" -fflags +bitexact -f mxf_opatom
+
 FATE_MXF-$(CONFIG_MXF_DEMUXER) += $(FATE_MXF)
 
 FATE_SAMPLES_AVCONV += $(FATE_MXF-yes) $(FATE_MXF_REEL_NAME-yes)
+FATE_SAMPLES_AVCONV += $(FATE_MXF_USER_COMMENTS-yes) $(FATE_MXF_D10_USER_COMMENTS-yes) $(FATE_MXF_OPATOM_USER_COMMENTS-yes)
 FATE_SAMPLES_FFPROBE += $(FATE_MXF_PROBE-yes)
 
-fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes) $(FATE_MXF_REEL_NAME-yes)
+fate-mxf: $(FATE_MXF-yes) $(FATE_MXF_PROBE-yes) $(FATE_MXF_REEL_NAME-yes) $(FATE_MXF_USER_COMMENTS-yes) $(FATE_MXF_D10_USER_COMMENTS-yes) $(FATE_MXF_OPATOM_USER_COMMENTS-yes)
