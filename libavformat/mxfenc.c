@@ -3095,6 +3095,8 @@ static const AVOption opatom_options[] = {
     { "mxf_audio_edit_rate", "Audio edit rate for timecode",
         offsetof(MXFContext, audio_edit_rate), AV_OPT_TYPE_RATIONAL, {.dbl=25}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     MXF_COMMON_OPTIONS
+    { "store_user_comments", "",
+      offsetof(MXFContext, store_user_comments), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
