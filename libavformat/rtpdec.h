@@ -154,7 +154,6 @@ struct RTPDemuxContext {
     uint16_t seq;
     uint32_t timestamp;
     uint32_t base_timestamp;
-    uint32_t cur_timestamp;
     int64_t  unwrapped_timestamp;
     int64_t  range_start_offset;
     int max_payload_size;
