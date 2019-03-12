@@ -37,6 +37,13 @@ typedef struct Libdav1dContext {
     int apply_grain;
 } Libdav1dContext;
 
+static const enum AVPixelFormat pix_fmt[][3] = {
+    [DAV1D_PIXEL_LAYOUT_I400] = { AV_PIX_FMT_GRAY8,   AV_PIX_FMT_GRAY10,    AV_PIX_FMT_GRAY12 },
+    [DAV1D_PIXEL_LAYOUT_I420] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12 },
+    [DAV1D_PIXEL_LAYOUT_I422] = { AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12 },
+    [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12 },
+};
+
 static void libdav1d_log_callback(void *opaque, const char *fmt, va_list vl)
 {
     AVCodecContext *c = opaque;
@@ -86,13 +93,6 @@ static void libdav1d_frame_free(void *opaque, uint8_t *data) {
     dav1d_picture_unref(p);
     av_free(p);
 }
-
-static const enum AVPixelFormat pix_fmt[][3] = {
-    [DAV1D_PIXEL_LAYOUT_I400] = { AV_PIX_FMT_GRAY8,   AV_PIX_FMT_GRAY10,    AV_PIX_FMT_GRAY12 },
-    [DAV1D_PIXEL_LAYOUT_I420] = { AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV420P12 },
-    [DAV1D_PIXEL_LAYOUT_I422] = { AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV422P12 },
-    [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12 },
-};
 
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
