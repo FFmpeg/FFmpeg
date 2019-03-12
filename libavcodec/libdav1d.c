@@ -22,6 +22,7 @@
 #include <dav1d/dav1d.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/mastering_display_metadata.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
@@ -272,6 +273,33 @@ FF_ENABLE_DEPRECATION_WARNINGS
         break;
     default:
         return AVERROR_INVALIDDATA;
+    }
+
+    if (p->mastering_display) {
+        AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
+        if (!mastering)
+            return AVERROR(ENOMEM);
+
+        for (int i = 0; i < 3; i++) {
+            mastering->display_primaries[i][0] = av_make_q(p->mastering_display->primaries[i][0], 1 << 16);
+            mastering->display_primaries[i][1] = av_make_q(p->mastering_display->primaries[i][1], 1 << 16);
+        }
+        mastering->white_point[0] = av_make_q(p->mastering_display->white_point[0], 1 << 16);
+        mastering->white_point[1] = av_make_q(p->mastering_display->white_point[1], 1 << 16);
+
+        mastering->max_luminance = av_make_q(p->mastering_display->max_luminance, 1 << 8);
+        mastering->min_luminance = av_make_q(p->mastering_display->min_luminance, 1 << 14);
+
+        mastering->has_primaries = 1;
+        mastering->has_luminance = 1;
+    }
+    if (p->content_light) {
+        AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
+        if (!light)
+            return AVERROR(ENOMEM);
+
+        light->MaxCLL = p->content_light->max_content_light_level;
+        light->MaxFALL = p->content_light->max_frame_average_light_level;
     }
 
     return 0;
