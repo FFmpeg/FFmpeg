@@ -22,6 +22,7 @@
 #include <dav1d/dav1d.h>
 
 #include "libavutil/avassert.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 
 #include "avcodec.h"
@@ -31,6 +32,8 @@
 typedef struct Libdav1dContext {
     AVClass *class;
     Dav1dContext *c;
+    AVBufferPool *pool;
+    int pool_size;
 
     Dav1dData data;
     int tile_threads;
@@ -51,6 +54,59 @@ static void libdav1d_log_callback(void *opaque, const char *fmt, va_list vl)
     av_vlog(c, AV_LOG_ERROR, fmt, vl);
 }
 
+static int libdav1d_picture_allocator(Dav1dPicture *p, void *cookie)
+{
+    Libdav1dContext *dav1d = cookie;
+    enum AVPixelFormat format = pix_fmt[p->p.layout][p->seq_hdr->hbd];
+    int ret, linesize[4], h = FFALIGN(p->p.h, 128);
+    uint8_t *aligned_ptr, *data[4];
+    AVBufferRef *buf;
+
+    ret = av_image_fill_arrays(data, linesize, NULL, format, FFALIGN(p->p.w, 128),
+                               h, DAV1D_PICTURE_ALIGNMENT);
+    if (ret < 0)
+        return ret;
+
+    if (ret != dav1d->pool_size) {
+        av_buffer_pool_uninit(&dav1d->pool);
+        // Use twice the amount of required padding bytes for aligned_ptr below.
+        dav1d->pool = av_buffer_pool_init(ret + DAV1D_PICTURE_ALIGNMENT * 2, NULL);
+        if (!dav1d->pool)
+            return AVERROR(ENOMEM);
+        dav1d->pool_size = ret;
+    }
+    buf = av_buffer_pool_get(dav1d->pool);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    // libdav1d requires DAV1D_PICTURE_ALIGNMENT aligned buffers, which av_malloc()
+    // doesn't guarantee for example when AVX is disabled at configure time.
+    // Use the extra DAV1D_PICTURE_ALIGNMENT padding bytes in the buffer to align it
+    // if required.
+    aligned_ptr = (uint8_t *)FFALIGN((uintptr_t)buf->data, DAV1D_PICTURE_ALIGNMENT);
+    ret = av_image_fill_pointers(data, format, h, aligned_ptr, linesize);
+    if (ret < 0) {
+        av_buffer_unref(&buf);
+        return ret;
+    }
+
+    p->data[0] = data[0];
+    p->data[1] = data[1];
+    p->data[2] = data[2];
+    p->stride[0] = linesize[0];
+    p->stride[1] = linesize[1];
+    p->allocator_data = buf;
+
+    return 0;
+}
+
+static void libdav1d_picture_release(Dav1dPicture *p, void *cookie)
+{
+    AVBufferRef *buf = p->allocator_data;
+
+    av_buffer_unref(&buf);
+}
+
 static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -62,6 +118,9 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     dav1d_default_settings(&s);
     s.logger.cookie = c;
     s.logger.callback = libdav1d_log_callback;
+    s.allocator.cookie = dav1d;
+    s.allocator.alloc_picture_callback = libdav1d_picture_allocator;
+    s.allocator.release_picture_callback = libdav1d_picture_release;
     s.n_tile_threads = dav1d->tile_threads;
     s.apply_grain = dav1d->apply_grain;
     s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), DAV1D_MAX_FRAME_THREADS);
@@ -222,6 +281,7 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
 
+    av_buffer_pool_uninit(&dav1d->pool);
     dav1d_data_unref(&dav1d->data);
     dav1d_close(&dav1d->c);
 
