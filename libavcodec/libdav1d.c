@@ -185,9 +185,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
     res = dav1d_send_data(dav1d->c, data);
     if (res < 0) {
-        if (res == -EINVAL)
+        if (res == AVERROR(EINVAL))
             res = AVERROR_INVALIDDATA;
-        if (res != -EAGAIN)
+        if (res != AVERROR(EAGAIN))
             return res;
     }
 
@@ -197,9 +197,9 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
     res = dav1d_get_picture(dav1d->c, p);
     if (res < 0) {
-        if (res == -EINVAL)
+        if (res == AVERROR(EINVAL))
             res = AVERROR_INVALIDDATA;
-        else if (res == -EAGAIN && c->internal->draining)
+        else if (res == AVERROR(EAGAIN) && c->internal->draining)
             res = AVERROR_EOF;
 
         av_free(p);
