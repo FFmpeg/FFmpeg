@@ -231,7 +231,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     if (c->width != p->p.w || c->height != p->p.h) {
         res = ff_set_dimensions(c, p->p.w, p->p.h);
         if (res < 0)
-            return res;
+            goto fail;
     }
 
     switch (p->seq_hdr->chr) {
@@ -272,13 +272,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
         frame->pict_type = AV_PICTURE_TYPE_SP;
         break;
     default:
-        return AVERROR_INVALIDDATA;
+        res = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     if (p->mastering_display) {
         AVMasteringDisplayMetadata *mastering = av_mastering_display_metadata_create_side_data(frame);
-        if (!mastering)
-            return AVERROR(ENOMEM);
+        if (!mastering) {
+            res = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         for (int i = 0; i < 3; i++) {
             mastering->display_primaries[i][0] = av_make_q(p->mastering_display->primaries[i][0], 1 << 16);
@@ -295,14 +298,19 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
     if (p->content_light) {
         AVContentLightMetadata *light = av_content_light_metadata_create_side_data(frame);
-        if (!light)
-            return AVERROR(ENOMEM);
-
+        if (!light) {
+            res = AVERROR(ENOMEM);
+            goto fail;
+        }
         light->MaxCLL = p->content_light->max_content_light_level;
         light->MaxFALL = p->content_light->max_frame_average_light_level;
     }
 
-    return 0;
+    res = 0;
+fail:
+    if (res < 0)
+        av_frame_unref(frame);
+    return res;
 }
 
 static av_cold int libdav1d_close(AVCodecContext *c)
