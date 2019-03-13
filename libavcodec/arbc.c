@@ -117,6 +117,15 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size < 10)
         return AVERROR_INVALIDDATA;
 
+    bytestream2_init(&s->gb, avpkt->data, avpkt->size);
+    bytestream2_skip(&s->gb, 8);
+    nb_segments = bytestream2_get_le16(&s->gb);
+    if (nb_segments == 0)
+        keyframe = 0;
+
+    if (7 * nb_segments > bytestream2_get_bytes_left(&s->gb))
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
@@ -125,12 +134,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         if (ret < 0)
             return ret;
     }
-
-    bytestream2_init(&s->gb, avpkt->data, avpkt->size);
-    bytestream2_skip(&s->gb, 8);
-    nb_segments = bytestream2_get_le16(&s->gb);
-    if (nb_segments == 0)
-        keyframe = 0;
 
     for (int i = 0; i < nb_segments; i++) {
         int resolution_flag;
