@@ -29,6 +29,7 @@
 #include "isom.h"
 #include "id3v2.h"
 #include "mov_chan.h"
+#include "replaygain.h"
 
 #define AIFF                    0
 #define AIFF_C_VERSION1         0xA2805140
@@ -347,6 +348,10 @@ static int aiff_read_header(AVFormatContext *s)
             avio_skip(pb, 1);
         }
     }
+
+    ret = ff_replaygain_export(st, s->metadata);
+    if (ret < 0)
+        return ret;
 
 got_sound:
     if (!st->codecpar->block_align && st->codecpar->codec_id == AV_CODEC_ID_QCELP) {
