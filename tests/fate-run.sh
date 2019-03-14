@@ -243,6 +243,53 @@ stream_remux(){
         -f framecrc - || return
 }
 
+# FIXME: There is a certain duplication between the avconv-related helper
+# functions above and below that should be refactored.
+ffmpeg2="$target_exec ${target_path}/ffmpeg"
+raw_src="${target_path}/tests/vsynth1/%02d.pgm"
+crcfile="tests/data/$test.lavf.crc"
+target_crcfile="${target_path}/$crcfile"
+
+[ "${V-0}" -gt 0 ] && echov=echov || echov=:
+
+echov(){
+    echo "$@" >&3
+}
+
+AVCONV_OPTS="-nostdin -nostats -y -cpuflags $cpuflags -threads $threads"
+DEC_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+ENC_OPTS="$DEC_OPTS -threads $threads -dct fastint"
+
+run_avconv(){
+    $echov $ffmpeg2 $AVCONV_OPTS $*
+    $ffmpeg2 $AVCONV_OPTS $*
+}
+
+do_avconv(){
+    f="$1"
+    shift
+    set -- $* ${target_path}/$f
+    run_avconv $*
+    do_md5sum $f
+    echo $(wc -c $f)
+}
+
+do_avconv_crc(){
+    f="$1"
+    shift
+    run_avconv $* -f crc "$target_crcfile"
+    echo "$f $(cat $crcfile)"
+}
+
+lavf_image2pipe(){
+    t="${test#lavf-}"
+    t="${t%pipe}"
+    outdir="tests/data/lavf"
+    file=${outdir}/${t}pipe.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src -f image2pipe "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10
+    do_avconv_crc $file $DEC_OPTS -f image2pipe -i $target_path/$file
+}
+
 lavffatetest(){
     t="${test#lavf-fate-}"
     ref=${base}/ref/lavf-fate/$t

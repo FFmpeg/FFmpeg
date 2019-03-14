@@ -39,13 +39,6 @@ do_lavf_timecode()
     do_lavf $1 "" "$2"
 }
 
-do_streamed_images()
-{
-    file=${outfile}${1}pipe.$1
-    do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src -f image2pipe $ENC_OPTS -t 1 -qscale 10
-    do_avconv_crc $file $DEC_OPTS -f image2pipe -i $target_path/$file
-}
-
 do_image_formats()
 {
     outfile="$datadir/images/$1/"
@@ -201,18 +194,6 @@ fi
 #file=${outfile}lavf.mjpeg
 #do_avconv $file -t 1 -qscale 10 -f image2 -vcodec pgmyuv -i $raw_src
 #do_avconv_crc $file -i $target_path/$file
-
-if [ -n "$do_pbmpipe" ] ; then
-do_streamed_images pbm
-fi
-
-if [ -n "$do_pgmpipe" ] ; then
-do_streamed_images pgm
-fi
-
-if [ -n "$do_ppmpipe" ] ; then
-do_streamed_images ppm
-fi
 
 if [ -n "$do_gif" ] ; then
 file=${outfile}lavf.gif
