@@ -4,6 +4,7 @@
  * Copyright (c) 2010 Rob Clark <rob@ti.com>
  * Copyright (c) 2011 Mans Rullgard <mans@mansr.com>
  * Copyright (c) 2018 Magnus Röös <mla2.roos@gmail.com>
+ * Copyright (c) 2019 Martin Storsjo <martin@martin.st>
  *
  * This file is part of FFmpeg.
  *
@@ -24,6 +25,62 @@
 
 #include "libavutil/aarch64/asm.S"
 #include "neon.S"
+
+function ff_vp8_luma_dc_wht_neon, export=1
+        ld1             {v0.4h - v3.4h}, [x1]
+        movi            v30.8h, #0
+
+        add             v4.4h,  v0.4h,  v3.4h
+        add             v6.4h,  v1.4h,  v2.4h
+        st1             {v30.8h}, [x1], #16
+        sub             v7.4h,  v1.4h,  v2.4h
+        sub             v5.4h,  v0.4h,  v3.4h
+        st1             {v30.8h}, [x1]
+        add             v0.4h,  v4.4h,  v6.4h
+        add             v1.4h,  v5.4h,  v7.4h
+        sub             v2.4h,  v4.4h,  v6.4h
+        sub             v3.4h,  v5.4h,  v7.4h
+
+        movi            v16.4h, #3
+
+        transpose_4x4H  v0, v1, v2, v3, v4, v5, v6, v7
+
+        add             v0.4h,  v0.4h,  v16.4h
+
+        add             v4.4h,  v0.4h,  v3.4h
+        add             v6.4h,  v1.4h,  v2.4h
+        sub             v7.4h,  v1.4h,  v2.4h
+        sub             v5.4h,  v0.4h,  v3.4h
+        add             v0.4h,  v4.4h,  v6.4h
+        add             v1.4h,  v5.4h,  v7.4h
+        sub             v2.4h,  v4.4h,  v6.4h
+        sub             v3.4h,  v5.4h,  v7.4h
+
+        sshr            v0.4h,  v0.4h,  #3
+        sshr            v1.4h,  v1.4h,  #3
+        sshr            v2.4h,  v2.4h,  #3
+        sshr            v3.4h,  v3.4h,  #3
+
+        mov             x3,  #32
+        st1             {v0.h}[0],  [x0], x3
+        st1             {v1.h}[0],  [x0], x3
+        st1             {v2.h}[0],  [x0], x3
+        st1             {v3.h}[0],  [x0], x3
+        st1             {v0.h}[1],  [x0], x3
+        st1             {v1.h}[1],  [x0], x3
+        st1             {v2.h}[1],  [x0], x3
+        st1             {v3.h}[1],  [x0], x3
+        st1             {v0.h}[2],  [x0], x3
+        st1             {v1.h}[2],  [x0], x3
+        st1             {v2.h}[2],  [x0], x3
+        st1             {v3.h}[2],  [x0], x3
+        st1             {v0.h}[3],  [x0], x3
+        st1             {v1.h}[3],  [x0], x3
+        st1             {v2.h}[3],  [x0], x3
+        st1             {v3.h}[3],  [x0], x3
+
+        ret
+endfunc
 
 function ff_vp8_idct_add_neon, export=1
         ld1             {v0.8b - v3.8b},  [x1]
@@ -98,6 +155,58 @@ function ff_vp8_idct_add_neon, export=1
         st1             {v0.s}[1],  [x0], x2
         st1             {v0.s}[3],  [x0], x2
         st1             {v0.s}[2],  [x0], x2
+
+        ret
+endfunc
+
+function ff_vp8_idct_dc_add4uv_neon, export=1
+        movi            v0.4h,  #0
+        mov             x3,     #32
+        ld1r            {v16.4h},  [x1]
+        st1             {v0.h}[0], [x1], x3
+        ld1r            {v17.4h},  [x1]
+        st1             {v0.h}[0], [x1], x3
+        ld1r            {v18.4h},  [x1]
+        st1             {v0.h}[0], [x1], x3
+        ld1r            {v19.4h},  [x1]
+        st1             {v0.h}[0], [x1], x3
+        ins             v16.d[1],  v17.d[0]
+        ins             v18.d[1],  v19.d[0]
+        mov             x3,  x0
+        srshr           v16.8h,    v16.8h,  #3            // dc >>= 3
+        ld1             {v0.8b},   [x0], x2
+        srshr           v18.8h,    v18.8h,  #3
+        ld1             {v1.8b},   [x0], x2
+        uaddw           v20.8h,    v16.8h, v0.8b
+        ld1             {v2.8b},   [x0], x2
+        uaddw           v0.8h,     v16.8h, v1.8b
+        ld1             {v3.8b},   [x0], x2
+        uaddw           v22.8h,    v16.8h, v2.8b
+        ld1             {v4.8b},   [x0], x2
+        uaddw           v2.8h,     v16.8h, v3.8b
+        ld1             {v5.8b},   [x0], x2
+        uaddw           v24.8h,    v18.8h, v4.8b
+        ld1             {v6.8b},   [x0], x2
+        uaddw           v4.8h,     v18.8h, v5.8b
+        ld1             {v7.8b},   [x0], x2
+        uaddw           v26.8h,    v18.8h, v6.8b
+        sqxtun          v20.8b,    v20.8h
+        uaddw           v6.8h,     v18.8h, v7.8b
+        sqxtun          v21.8b,    v0.8h
+        sqxtun          v22.8b,    v22.8h
+        st1             {v20.8b},  [x3], x2
+        sqxtun          v23.8b,    v2.8h
+        st1             {v21.8b},  [x3], x2
+        sqxtun          v24.8b,    v24.8h
+        st1             {v22.8b},  [x3], x2
+        sqxtun          v25.8b,    v4.8h
+        st1             {v23.8b},  [x3], x2
+        sqxtun          v26.8b,    v26.8h
+        st1             {v24.8b},  [x3], x2
+        sqxtun          v27.8b,    v6.8h
+        st1             {v25.8b},  [x3], x2
+        st1             {v26.8b},  [x3], x2
+        st1             {v27.8b},  [x3], x2
 
         ret
 endfunc
