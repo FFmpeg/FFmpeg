@@ -24,6 +24,10 @@
 #define AVDEVICE_DECKLINK_COMMON_H
 
 #include <DeckLinkAPIVersion.h>
+#if BLACKMAGIC_DECKLINK_API_VERSION < 0x0b000000
+#define IID_IDeckLinkProfileAttributes IID_IDeckLinkAttributes
+#define IDeckLinkProfileAttributes IDeckLinkAttributes
+#endif
 
 #include "libavutil/thread.h"
 #include "decklink_common_c.h"
@@ -87,7 +91,7 @@ struct decklink_ctx {
     IDeckLinkOutput *dlo;
     IDeckLinkInput *dli;
     IDeckLinkConfiguration *cfg;
-    IDeckLinkAttributes *attr;
+    IDeckLinkProfileAttributes *attr;
     decklink_output_callback *output_callback;
 
     /* DeckLink mode information */
