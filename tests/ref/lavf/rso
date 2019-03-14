@@ -1,3 +1,3 @@
-443b72346065d6318ca18c8395aa1d87 *./tests/data/lavf/lavf.rso
-44108 ./tests/data/lavf/lavf.rso
-./tests/data/lavf/lavf.rso CRC=0x298fd284
+443b72346065d6318ca18c8395aa1d87 *tests/data/lavf/lavf.rso
+44108 tests/data/lavf/lavf.rso
+tests/data/lavf/lavf.rso CRC=0x298fd284

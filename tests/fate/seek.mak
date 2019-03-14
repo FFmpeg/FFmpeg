@@ -162,7 +162,7 @@ FATE_SAMPLES_SEEK += $(FATE_SEEK_VSYNTH_LENA-yes:%=fate-seek-vsynth_lena-%)
 # files from fate-lavf
 
 FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16BE,             AIFF)        += aiff
-FATE_SEEK_LAVF-$(call ENCDEC,  PCM_ALAW,              PCM_ALAW)    += alaw
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_ALAW,              PCM_ALAW)    += al
 FATE_SEEK_LAVF-$(call ENCDEC2, MSMPEG4V3,  MP2,       ASF)         += asf
 FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16BE,             AU)          += au
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      MP2,       AVI)         += avi
@@ -176,7 +176,7 @@ FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      MP2,       MATROSKA)    += mkv
 FATE_SEEK_LAVF-$(call ENCDEC,  ADPCM_YAMAHA,          MMF)         += mmf
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG4,      PCM_ALAW,  MOV)         += mov
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG1VIDEO, MP2,       MPEG1SYSTEM MPEGPS) += mpg
-FATE_SEEK_LAVF-$(call ENCDEC,  PCM_MULAW,             PCM_MULAW)   += mulaw
+FATE_SEEK_LAVF-$(call ENCDEC,  PCM_MULAW,             PCM_MULAW)   += ul
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF)         += mxf
 FATE_SEEK_LAVF-$(call ENCDEC2, MPEG2VIDEO, PCM_S16LE, MXF_D10 MXF) += mxf_d10
 FATE_SEEK_LAVF-$(call ENCDEC2, DVVIDEO,    PCM_S16LE, MXF)         += mxf_dv25
@@ -202,8 +202,8 @@ FATE_SEEK_LAVF-$(call ENCDEC,  PCM_S16LE,             WAV)         += wav
 FATE_SEEK_LAVF-$(call ENCDEC,  MP2,                   WTV)         += wtv
 FATE_SEEK_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                        += yuv4mpeg
 
-fate-seek-lavf-aiff:     SRC = lavf/lavf.aif
-fate-seek-lavf-alaw:     SRC = lavf/lavf.al
+fate-seek-lavf-aiff:     SRC = lavf/lavf.aiff
+fate-seek-lavf-al:       SRC = lavf/lavf.al
 fate-seek-lavf-asf:      SRC = lavf/lavf.asf
 fate-seek-lavf-au:       SRC = lavf/lavf.au
 fate-seek-lavf-avi:      SRC = lavf/lavf.avi
@@ -217,7 +217,7 @@ fate-seek-lavf-mkv:      SRC = lavf/lavf.mkv
 fate-seek-lavf-mmf:      SRC = lavf/lavf.mmf
 fate-seek-lavf-mov:      SRC = lavf/lavf.mov
 fate-seek-lavf-mpg:      SRC = lavf/lavf.mpg
-fate-seek-lavf-mulaw:    SRC = lavf/lavf.ul
+fate-seek-lavf-ul:       SRC = lavf/lavf.ul
 fate-seek-lavf-mxf:      SRC = lavf/lavf.mxf
 fate-seek-lavf-mxf_d10:  SRC = lavf/lavf.mxf_d10
 fate-seek-lavf-mxf_dv25: SRC = lavf/lavf.mxf_dv25

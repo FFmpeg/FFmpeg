@@ -1,3 +1,3 @@
-82c75c9cb61924fda68d9602ea69c445 *./tests/data/lavf/lavf.w64
-88304 ./tests/data/lavf/lavf.w64
-./tests/data/lavf/lavf.w64 CRC=0x3a1da17e
+82c75c9cb61924fda68d9602ea69c445 *tests/data/lavf/lavf.w64
+88304 tests/data/lavf/lavf.w64
+tests/data/lavf/lavf.w64 CRC=0x3a1da17e

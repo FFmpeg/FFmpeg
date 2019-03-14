@@ -50,13 +50,6 @@ do_image_formats()
     echo $(wc -c ${outfile}02.$1)
 }
 
-do_audio_only()
-{
-    file=${outfile}lavf.$1
-    do_avconv $file $DEC_OPTS $2 -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $3
-    do_avconv_crc $file $DEC_OPTS $4 -i $target_path/$file
-}
-
 if [ -n "$do_avi" ] ; then
 do_lavf avi "" "-acodec mp2 -ar 44100 -ab 64k -threads 1"
 fi
@@ -144,10 +137,6 @@ fi
 
 if [ -n "$do_nut" ] ; then
 do_lavf nut "" "-acodec mp2 -ab 64k -ar 44100 -threads 1"
-fi
-
-if [ -n "$do_mka" ] ; then
-do_audio_only mka "" "-c:a tta"
 fi
 
 if [ -n "$do_mkv" ] ; then
@@ -305,87 +294,8 @@ if [ -n "$do_sunrast" ] ; then
 do_image_formats sun
 fi
 
-# audio only
-
-if [ -n "$do_wav" ] ; then
-do_audio_only wav
-fi
-
-if [ -n "$do_wav_peak" ] ; then
-do_audio_only peak.wav "" "-write_peak on"
-fi
-
-if [ -n "$do_wav_peak_only" ] ; then
-file=${outfile}lavf.peak_only.wav
-do_avconv $file $DEC_OPTS -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 -write_peak only
-fi
-
-if [ -n "$do_alaw" ] ; then
-do_audio_only al "" "" "-ar 44100"
-fi
-
-if [ -n "$do_mulaw" ] ; then
-do_audio_only ul "" "" "-ar 44100"
-fi
-
-if [ -n "$do_au" ] ; then
-do_audio_only au
-fi
-
-if [ -n "$do_mmf" ] ; then
-do_audio_only mmf
-fi
-
-if [ -n "$do_aiff" ] ; then
-do_audio_only aif
-fi
-
-if [ -n "$do_voc" ] ; then
-do_audio_only voc "" "-acodec pcm_u8"
-fi
-
-if [ -n "$do_voc_s16" ] ; then
-do_audio_only s16.voc "-ac 2" "-acodec pcm_s16le"
-fi
-
-if [ -n "$do_ogg" ] ; then
-do_audio_only ogg "" "-c:a flac"
-fi
-
-if [ -n "$do_rso" ] ; then
-do_audio_only rso
-fi
-
 if [ -n "$do_smjpeg" ] ; then
 do_lavf smjpeg "" "-f smjpeg"
-fi
-
-if [ -n "$do_sox" ] ; then
-do_audio_only sox
-fi
-
-if [ -n "$do_tta" ] ; then
-do_audio_only tta
-fi
-
-if [ -n "$do_caf" ] ; then
-do_audio_only caf
-fi
-
-if [ -n "$do_ast" ] ; then
-do_audio_only ast "-ac 2" "-loopstart 1 -loopend 10"
-fi
-
-if [ -n "$do_ircam" ] ; then
-do_audio_only ircam
-fi
-
-if [ -n "$do_w64" ] ; then
-do_audio_only w64
-fi
-
-if [ -n "$do_wv" ] ; then
-do_audio_only wv
 fi
 
 # pix_fmt conversions
