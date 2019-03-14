@@ -1072,16 +1072,16 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
 
+    if (ff_decklink_set_configs(avctx, DIRECTION_IN) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set input configuration\n");
+        ret = AVERROR(EIO);
+        goto error;
+    }
+
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx, DIRECTION_IN);
         ret = AVERROR_EXIT;
-        goto error;
-    }
-
-    if (ff_decklink_set_configs(avctx, DIRECTION_IN) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not set input configuration\n");
-        ret = AVERROR(EIO);
         goto error;
     }
 
