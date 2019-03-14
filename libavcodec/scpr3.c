@@ -1081,6 +1081,10 @@ static int decompress_p3(AVCodecContext *avctx,
         }
     }
 
+    ret = av_frame_copy(s->current_frame, s->last_frame);
+    if (ret < 0)
+        return ret;
+
     for (y = 0; y < s->nby; y++) {
         for (x = 0; x < s->nbx; x++) {
             int sy1 = 0, sy2 = 16, sx1 = 0, sx2 = 16;

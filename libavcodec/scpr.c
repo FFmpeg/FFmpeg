@@ -409,6 +409,10 @@ static int decompress_p(AVCodecContext *avctx,
         }
     }
 
+    ret = av_frame_copy(s->current_frame, s->last_frame);
+    if (ret < 0)
+        return ret;
+
     for (y = 0; y < s->nby; y++) {
         for (x = 0; x < s->nbx; x++) {
             int sy1 = 0, sy2 = 16, sx1 = 0, sx2 = 16;
@@ -548,10 +552,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         }
     } else if (type == 0 || type == 1) {
         frame->key_frame = 0;
-
-        ret = av_frame_copy(s->current_frame, s->last_frame);
-        if (ret < 0)
-            return ret;
 
         if (s->version == 1 || s->version == 2)
             ret = decompress_p(avctx, (uint32_t *)s->current_frame->data[0],
