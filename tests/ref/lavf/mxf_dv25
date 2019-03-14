@@ -1,3 +1,3 @@
-0fc964fa22bc8b3a389b81b9a2efccb3 *./tests/data/lavf/lavf.mxf_dv25
-3834413 ./tests/data/lavf/lavf.mxf_dv25
-./tests/data/lavf/lavf.mxf_dv25 CRC=0xbdaf7f52
+0fc964fa22bc8b3a389b81b9a2efccb3 *tests/data/lavf/lavf.mxf_dv25
+3834413 tests/data/lavf/lavf.mxf_dv25
+tests/data/lavf/lavf.mxf_dv25 CRC=0xbdaf7f52

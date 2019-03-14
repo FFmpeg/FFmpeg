@@ -17,7 +17,7 @@ fate-api-h264-slice: $(APITESTSDIR)/api-h264-slice-test$(EXESUF)
 fate-api-h264-slice: CMD = run $(APITESTSDIR)/api-h264-slice-test 2 $(TARGET_SAMPLES)/h264/crew_cif.nal
 
 FATE_API_LIBAVFORMAT-$(call DEMDEC, FLV, FLV) += fate-api-seek
-fate-api-seek: $(APITESTSDIR)/api-seek-test$(EXESUF) fate-lavf-flv_fmt
+fate-api-seek: $(APITESTSDIR)/api-seek-test$(EXESUF) fate-lavf-flv
 fate-api-seek: CMD = run $(APITESTSDIR)/api-seek-test $(TARGET_PATH)/tests/data/lavf/lavf.flv 0 720
 fate-api-seek: CMP = null
 

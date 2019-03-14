@@ -1,3 +1,3 @@
-ef4783171ebbc38855331c9ead978322 *./tests/data/lavf/lavf.flm
-10137636 ./tests/data/lavf/lavf.flm
-./tests/data/lavf/lavf.flm CRC=0xcdf15757
+ef4783171ebbc38855331c9ead978322 *tests/data/lavf/lavf.flm
+10137636 tests/data/lavf/lavf.flm
+tests/data/lavf/lavf.flm CRC=0xcdf15757

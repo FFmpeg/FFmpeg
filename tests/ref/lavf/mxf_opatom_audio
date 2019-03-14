@@ -1,3 +1,3 @@
-c45bb140605339556a77e751fda2c449 *./tests/data/lavf/lavf.mxf_opatom_audio
-102969 ./tests/data/lavf/lavf.mxf_opatom_audio
-./tests/data/lavf/lavf.mxf_opatom_audio CRC=0xd155c6ff
+c45bb140605339556a77e751fda2c449 *tests/data/lavf/lavf.mxf_opatom_audio
+102969 tests/data/lavf/lavf.mxf_opatom_audio
+tests/data/lavf/lavf.mxf_opatom_audio CRC=0xd155c6ff

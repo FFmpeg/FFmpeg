@@ -91,6 +91,7 @@ include $(SRC_PATH)/tests/fate/vcodec.mak
 
 include $(SRC_PATH)/tests/fate/avformat.mak
 include $(SRC_PATH)/tests/fate/lavf-audio.mak
+include $(SRC_PATH)/tests/fate/lavf-container.mak
 include $(SRC_PATH)/tests/fate/lavf-image.mak
 include $(SRC_PATH)/tests/fate/lavf-image2pipe.mak
 include $(SRC_PATH)/tests/fate/seek.mak

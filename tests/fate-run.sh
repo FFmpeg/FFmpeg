@@ -290,6 +290,26 @@ lavf_audio(){
     do_avconv_crc $file $DEC_OPTS $3 -i $target_path/$file
 }
 
+lavf_container(){
+    t="${test#lavf-}"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le $1 -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -b:a 64k -t 1 -qscale:v 10 $2
+    test $3 = "disable_crc" ||
+        do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
+}
+
+lavf_container_attach() {          lavf_container "" "$1 -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap"; }
+lavf_container_timecode_nodrop() { lavf_container "" "$1 -timecode 02:56:14:13"; }
+lavf_container_timecode_drop()   { lavf_container "" "$1 -timecode 02:56:14.13 -r 30000/1001"; }
+
+lavf_container_timecode()
+{
+    lavf_container_timecode_nodrop "$@"
+    lavf_container_timecode_drop "$@"
+    lavf_container "" "$1"
+}
+
 lavf_image(){
     t="${test#lavf-}"
     outdir="tests/data/images/$t"
