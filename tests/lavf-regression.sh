@@ -39,17 +39,6 @@ do_lavf_timecode()
     do_lavf $1 "" "$2"
 }
 
-do_image_formats()
-{
-    outfile="$datadir/images/$1/"
-    mkdir -p "$outfile"
-    file=${outfile}%02d.$1
-    run_avconv $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS -frames 13 -y -qscale 10 $target_path/$file
-    do_md5sum ${outfile}02.$1
-    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
-    echo $(wc -c ${outfile}02.$1)
-}
-
 if [ -n "$do_avi" ] ; then
 do_lavf avi "" "-acodec mp2 -ar 44100 -ab 64k -threads 1"
 fi
@@ -215,83 +204,6 @@ for pix_fmt in $pix_fmts ; do
     do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS -pix_fmt $pix_fmt
     do_avconv_crc $file $DEC_OPTS -i $target_path/$file -pix_fmt $pix_fmt
 done
-fi
-
-# image formats
-
-if [ -n "$do_pgm" ] ; then
-do_image_formats pgm
-fi
-
-if [ -n "$do_ppm" ] ; then
-do_image_formats ppm
-fi
-
-if [ -n "$do_png" ] ; then
-do_image_formats png
-do_image_formats png "-pix_fmt gray16be"
-do_image_formats png "-pix_fmt rgb48be"
-fi
-
-if [ -n "$do_xbm" ] ; then
-do_image_formats xbm
-fi
-
-if [ -n "$do_bmp" ] ; then
-do_image_formats bmp
-fi
-
-if [ -n "$do_tga" ] ; then
-do_image_formats tga
-fi
-
-if [ -n "$do_tiff" ] ; then
-do_image_formats tiff "-pix_fmt rgb24"
-fi
-
-if [ -n "$do_sgi" ] ; then
-do_image_formats sgi
-fi
-
-if [ -n "$do_jpg" ] ; then
-do_image_formats jpg "-pix_fmt yuvj420p"
-fi
-
-if [ -n "$do_pam" ] ; then
-do_image_formats pam
-do_image_formats pam "-pix_fmt rgba"
-do_image_formats pam "-pix_fmt gray"
-do_image_formats pam "-pix_fmt gray16be" "-pix_fmt gray16be"
-do_image_formats pam "-pix_fmt rgb48be" "-pix_fmt rgb48be"
-do_image_formats pam "-pix_fmt monob"
-fi
-
-if [ -n "$do_pcx" ] ; then
-do_image_formats pcx
-fi
-
-if [ -n "$do_dpx" ] ; then
-do_image_formats dpx
-do_image_formats dpx "-pix_fmt gbrp10le" "-pix_fmt gbrp10le"
-do_image_formats dpx "-pix_fmt gbrp12le" "-pix_fmt gbrp12le"
-do_image_formats dpx "-pix_fmt rgb48le"
-do_image_formats dpx "-pix_fmt rgb48le -bits_per_raw_sample 10" "-pix_fmt rgb48le"
-do_image_formats dpx "-pix_fmt rgba64le"
-fi
-
-if [ -n "$do_xwd" ] ; then
-do_image_formats xwd
-do_image_formats xwd "-pix_fmt rgba"
-do_image_formats xwd "-pix_fmt rgb565be"
-do_image_formats xwd "-pix_fmt rgb555be"
-do_image_formats xwd "-pix_fmt rgb8"
-do_image_formats xwd "-pix_fmt rgb4_byte"
-do_image_formats xwd "-pix_fmt gray"
-do_image_formats xwd "-pix_fmt monow"
-fi
-
-if [ -n "$do_sunrast" ] ; then
-do_image_formats sun
 fi
 
 if [ -n "$do_smjpeg" ] ; then

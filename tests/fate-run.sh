@@ -290,6 +290,17 @@ lavf_audio(){
     do_avconv_crc $file $DEC_OPTS $3 -i $target_path/$file
 }
 
+lavf_image(){
+    t="${test#lavf-}"
+    outdir="tests/data/images/$t"
+    mkdir -p "$outdir"
+    file=${outdir}/%02d.$t
+    run_avconv $DEC_OPTS $1 -f image2 -c:v pgmyuv -i $raw_src "$ENC_OPTS -metadata title=lavftest" $2 -frames 13 -y -qscale 10 $target_path/$file
+    do_md5sum ${outdir}/02.$t
+    do_avconv_crc $file $DEC_OPTS $2 -i $target_path/$file
+    echo $(wc -c ${outdir}/02.$t)
+}
+
 lavf_image2pipe(){
     t="${test#lavf-}"
     t="${t%pipe}"

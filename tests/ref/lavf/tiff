@@ -1,3 +1,3 @@
-b3299346a8959553a437e486d8f3bf76 *./tests/data/images/tiff/02.tiff
-./tests/data/images/tiff/%02d.tiff CRC=0x6da01946
-307131 ./tests/data/images/tiff/02.tiff
+b3299346a8959553a437e486d8f3bf76 *tests/data/images/tiff/02.tiff
+tests/data/images/tiff/%02d.tiff CRC=0x6da01946
+307131 tests/data/images/tiff/02.tiff

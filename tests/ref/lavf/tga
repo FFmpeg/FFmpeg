@@ -1,3 +1,3 @@
-c0305c53e6d79d4ed9f35f04f671246c *./tests/data/images/tga/02.tga
-./tests/data/images/tga/%02d.tga CRC=0xe6c71946
-304172 ./tests/data/images/tga/02.tga
+c0305c53e6d79d4ed9f35f04f671246c *tests/data/images/tga/02.tga
+tests/data/images/tga/%02d.tga CRC=0xe6c71946
+304172 tests/data/images/tga/02.tga
