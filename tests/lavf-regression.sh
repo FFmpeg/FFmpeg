@@ -209,19 +209,3 @@ fi
 if [ -n "$do_smjpeg" ] ; then
 do_lavf smjpeg "" "-f smjpeg"
 fi
-
-# pix_fmt conversions
-
-if [ -n "$do_pixfmt" ] ; then
-outfile="$datadir/pixfmt/"
-conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
-             yuvj422p yuvj444p rgb24 bgr24 rgb32 rgb565 rgb555 gray monow \
-             monob yuv440p yuvj440p"
-for pix_fmt in $conversions ; do
-    file=${outfile}${pix_fmt}.yuv
-    run_avconv $DEC_OPTS -r 1 -f image2 -vcodec pgmyuv -i $raw_src \
-               $ENC_OPTS -f rawvideo -t 1 -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
-    do_avconv $file $DEC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $target_path/$raw_dst \
-                    $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt yuv444p
-done
-fi
