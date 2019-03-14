@@ -256,7 +256,7 @@ int ff_decklink_set_format(AVFormatContext *avctx,
     } else {
         if (!ctx->supports_vanc || ctx->dlo->DoesSupportVideoMode(ctx->bmd_mode, ctx->raw_format,
                                                                   bmdVideoOutputVANC,
-                                                                  &support, NULL) != S_OK) {
+                                                                  &support, NULL) != S_OK || support != bmdDisplayModeSupported) {
             /* Try without VANC enabled */
             if (ctx->dlo->DoesSupportVideoMode(ctx->bmd_mode, ctx->raw_format,
                                                bmdVideoOutputFlagDefault,
