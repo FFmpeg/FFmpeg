@@ -310,6 +310,16 @@ lavf_container_timecode()
     lavf_container "" "$1"
 }
 
+lavf_container_fate()
+{
+    t="${test#lavf-fate-}"
+    outdir="tests/data/lavf-fate"
+    file=${outdir}/lavf.$t
+    input="${target_samples}/$1"
+    do_avconv $file $DEC_OPTS $2 -i "$input" "$ENC_OPTS -metadata title=lavftest" -vcodec copy -acodec copy
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
+}
+
 lavf_image(){
     t="${test#lavf-}"
     outdir="tests/data/images/$t"

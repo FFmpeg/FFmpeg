@@ -12,19 +12,6 @@ $(FATE_LAVF): CMP =
 FATE_AVCONV += $(FATE_LAVF)
 fate-lavf:     $(FATE_LAVF)
 
-FATE_LAVF_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += ogg_vp3
-FATE_LAVF_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGV_MUXER)          += ogg_vp8
-FATE_LAVF_FATE-$(call ALLYES, MOV_DEMUXER        LATM_MUXER)         += latm
-FATE_LAVF_FATE-$(call ALLYES, MP3_DEMUXER        MP3_MUXER)          += mp3
-FATE_LAVF_FATE-$(call ALLYES, MOV_DEMUXER        MOV_MUXER)          += mov_qtrle_mace6
-FATE_LAVF_FATE-$(call ALLYES, AVI_DEMUXER        AVI_MUXER)          += avi_cram
-
-FATE_LAVF_FATE +=  $(FATE_LAVF_FATE-yes:%=fate-lavf-fate-%)
-$(FATE_LAVF_FATE): CMD = lavffatetest
-
-FATE_SAMPLES_FFMPEG += $(FATE_LAVF_FATE)
-fate-lavf-fate:        $(FATE_LAVF_FATE)
-
 tests/data/mp4-to-ts.m3u8: TAG = GEN
 tests/data/mp4-to-ts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \

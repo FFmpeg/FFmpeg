@@ -13,43 +13,6 @@ eval do_$test=y
 
 ENC_OPTS="$ENC_OPTS -metadata title=lavftest"
 
-do_lavf_fate()
-{
-    file=${outfile}lavf.$1
-    input="${target_samples}/$2"
-    do_avconv $file $DEC_OPTS -i "$input" $ENC_OPTS -vcodec copy -acodec copy
-    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
-}
-
-if [ -n "$do_mp3" ] ; then
-do_lavf_fate mp3 "mp3-conformance/he_32khz.bit" "-acodec copy"
-fi
-
-if [ -n "$do_latm" ] ; then
-do_lavf_fate latm "aac/al04_44.mp4" "-acodec copy"
-fi
-
-if [ -n "$do_ogg_vp3" ] ; then
-# -idct simple causes different results on different systems
-DEC_OPTS="$DEC_OPTS -idct auto"
-do_lavf_fate ogg "vp3/coeff_level64.mkv"
-fi
-
-if [ -n "$do_ogg_vp8" ] ; then
-do_lavf_fate ogv "vp8/RRSF49-short.webm" "-acodec copy"
-fi
-
-if [ -n "$do_mov_qtrle_mace6" ] ; then
-DEC_OPTS="$DEC_OPTS -idct auto"
-do_lavf_fate mov "qtrle/Animation-16Greys.mov"
-fi
-
-if [ -n "$do_avi_cram" ] ; then
-DEC_OPTS="$DEC_OPTS -idct auto"
-do_lavf_fate avi "cram/toon.avi"
-fi
-
-
 # streamed images
 # mjpeg
 #file=${outfile}lavf.mjpeg

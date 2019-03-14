@@ -55,3 +55,25 @@ fate-lavf-wtv: CMD = lavf_container "" "-c:a mp2 -threads 1"
 
 FATE_AVCONV += $(FATE_LAVF_CONTAINER)
 fate-lavf-container fate-lavf: $(FATE_LAVF_CONTAINER)
+
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGG_MUXER)          += vp3.ogg
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MATROSKA_DEMUXER   OGV_MUXER)          += vp8.ogg
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MOV_DEMUXER        LATM_MUXER)         += latm
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MP3_DEMUXER        MP3_MUXER)          += mp3
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, MOV_DEMUXER        MOV_MUXER)          += qtrle_mace6.mov
+FATE_LAVF_CONTAINER_FATE-$(call ALLYES, AVI_DEMUXER        AVI_MUXER)          += cram.avi
+
+FATE_LAVF_CONTAINER_FATE = $(FATE_LAVF_CONTAINER_FATE-yes:%=fate-lavf-fate-%)
+
+$(FATE_LAVF_CONTAINER_FATE): REF = $(SRC_PATH)/tests/ref/lavf-fate/$(@:fate-lavf-fate-%=%)
+$(FATE_LAVF_CONTAINER_FATE): $(AREF) $(VREF)
+
+fate-lavf-fate-vp3.ogg: CMD = lavf_container_fate "vp3/coeff_level64.mkv" "-idct auto"
+fate-lavf-fate-vp8.ogg: CMD = lavf_container_fate "vp8/RRSF49-short.webm" "" "-acodec copy"
+fate-lavf-fate-latm: CMD = lavf_container_fate "aac/al04_44.mp4" "" "-acodec copy"
+fate-lavf-fate-mp3: CMD = lavf_container_fate "mp3-conformance/he_32khz.bit" "" "-acodec copy"
+fate-lavf-fate-qtrle_mace6.mov: CMD = lavf_container_fate "qtrle/Animation-16Greys.mov" "-idct auto"
+fate-lavf-fate-cram.avi: CMD = lavf_container_fate "cram/toon.avi" "-idct auto"
+
+FATE_SAMPLES_FFMPEG += $(FATE_LAVF_CONTAINER_FATE)
+fate-lavf-fate fate-lavf: $(FATE_LAVF_CONTAINER_FATE)
