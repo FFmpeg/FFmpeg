@@ -1225,3 +1225,287 @@ function ff_put_vp8_epel8_h6v4_neon, export=1
         add             sp,  sp,  #168+16
         ret
 endfunc
+
+function ff_put_vp8_epel4_v6_neon, export=1
+        sub             x2,  x2,  x3,  lsl #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},    [x6]
+1:
+        ld1r            {v2.2s},    [x2], x3
+        ld1r            {v3.2s},    [x2], x3
+        ld1r            {v4.2s},    [x2], x3
+        ld1r            {v5.2s},    [x2], x3
+        ld1r            {v6.2s},    [x2], x3
+        ld1r            {v7.2s},    [x2], x3
+        ld1r            {v28.2s},   [x2]
+        sub             x2,  x2,  x3,  lsl #2
+        ld1             {v2.s}[1],  [x2], x3
+        ld1             {v3.s}[1],  [x2], x3
+        ld1             {v4.s}[1],  [x2], x3
+        ld1             {v5.s}[1],  [x2], x3
+        ld1             {v6.s}[1],  [x2], x3
+        ld1             {v7.s}[1],  [x2], x3
+        ld1             {v28.s}[1], [x2]
+        sub             x2,  x2,  x3,  lsl #2
+
+        vp8_epel8_v6_y2 v2, v3, v2, v3, v4, v5, v6, v7, v28
+
+        st1             {v2.s}[0],  [x0], x1
+        st1             {v3.s}[0],  [x0], x1
+        st1             {v2.s}[1],  [x0], x1
+        st1             {v3.s}[1],  [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h6_neon, export=1
+        sub             x2,  x2,  #2
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+1:
+        ld1             {v2.8b,v3.8b}, [x2], x3
+        vp8_epel8_h6    v2,  v2,  v3
+        st1             {v2.s}[0], [x0], x1
+        subs            w4,  w4,  #1
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h6v6_neon, export=1
+        sub             x2,  x2,  x3,  lsl #1
+        sub             x2,  x2,  #2
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+
+        sub             sp,  sp,  #52
+        add             w8,  w4,  #5
+        mov             x9,  sp
+1:
+        ld1             {v2.8b,v3.8b}, [x2], x3
+        vp8_epel8_h6    v2,  v2,  v3
+        st1             {v2.s}[0],     [x9], #4
+        subs            w8,  w8,  #1
+        b.ne            1b
+
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},       [x6]
+        mov             x9,  sp
+2:
+        ld1             {v2.8b,v3.8b}, [x9], #16
+        ld1             {v6.8b},       [x9], #8
+        ld1r            {v28.2s},      [x9]
+        sub             x9,  x9,  #16
+        ld1             {v4.8b,v5.8b}, [x9], #16
+        ld1             {v7.8b},       [x9], #8
+        ld1             {v28.s}[1],    [x9]
+        sub             x9,  x9,  #16
+        trn1            v1.2s, v2.2s, v4.2s
+        trn2            v4.2s, v2.2s, v4.2s
+        trn1            v2.2s, v3.2s, v5.2s
+        trn2            v5.2s, v3.2s, v5.2s
+        trn1            v3.2s, v6.2s, v7.2s
+        trn2            v7.2s, v6.2s, v7.2s
+        vp8_epel8_v6_y2 v2, v3, v1, v4, v2, v5, v3, v7, v28
+        st1             {v2.s}[0],  [x0], x1
+        st1             {v3.s}[0],  [x0], x1
+        st1             {v2.s}[1],  [x0], x1
+        st1             {v3.s}[1],  [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            2b
+
+        add             sp,  sp,  #52
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h4v6_neon, export=1
+        sub             x2,  x2,  x3,  lsl #1
+        sub             x2,  x2,  #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+
+        sub             sp,  sp,  #52
+        add             w8,  w4,  #5
+        mov             x9,  sp
+1:
+        ld1             {v2.8b},       [x2], x3
+        vp8_epel8_h4    v2,  v2,  v2
+        st1             {v2.s}[0],     [x9], #4
+        subs            w8,  w8,  #1
+        b.ne            1b
+
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},       [x6]
+        mov             x9,  sp
+2:
+        ld1             {v2.8b,v3.8b}, [x9], #16
+        ld1             {v6.8b},       [x9], #8
+        ld1r            {v28.2s},      [x9]
+        sub             x9,  x9,  #16
+        ld1             {v4.8b,v5.8b}, [x9], #16
+        ld1             {v7.8b},       [x9], #8
+        ld1             {v28.s}[1],    [x9]
+        sub             x9,  x9,  #16
+        trn1            v1.2s, v2.2s, v4.2s
+        trn2            v4.2s, v2.2s, v4.2s
+        trn1            v2.2s, v3.2s, v5.2s
+        trn2            v5.2s, v3.2s, v5.2s
+        trn1            v3.2s, v6.2s, v7.2s
+        trn2            v7.2s, v6.2s, v7.2s
+        vp8_epel8_v6_y2 v2, v3, v1, v4, v2, v5, v3, v7, v28
+        st1             {v2.s}[0],  [x0], x1
+        st1             {v3.s}[0],  [x0], x1
+        st1             {v2.s}[1],  [x0], x1
+        st1             {v3.s}[1],  [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            2b
+
+        add             sp,  sp,  #52
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h6v4_neon, export=1
+        sub             x2,  x2,  x3
+        sub             x2,  x2,  #2
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+
+        sub             sp,  sp,  #44
+        add             w8,  w4,  #3
+        mov             x9,  sp
+1:
+        ld1             {v2.8b,v3.8b}, [x2], x3
+        vp8_epel8_h6    v2, v2, v3
+        st1             {v2.s}[0],     [x9], #4
+        subs            w8,  w8,  #1
+        b.ne            1b
+
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},       [x6]
+        mov             x9,  sp
+2:
+        ld1             {v2.8b,v3.8b}, [x9], #16
+        ld1r            {v6.2s},       [x9]
+        sub             x9,  x9,  #8
+        ld1             {v4.8b,v5.8b}, [x9], #16
+        ld1             {v6.s}[1],     [x9]
+        sub             x9,  x9,  #8
+        trn1            v1.2s, v2.2s, v4.2s
+        trn2            v4.2s, v2.2s, v4.2s
+        trn1            v2.2s, v3.2s, v5.2s
+        trn2            v5.2s, v3.2s, v5.2s
+        vp8_epel8_v4_y2 v1, v1, v4, v2, v5, v6
+        st1             {v1.s}[0],  [x0], x1
+        st1             {v1.s}[2],  [x0], x1
+        st1             {v1.s}[1],  [x0], x1
+        st1             {v1.s}[3],  [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            2b
+
+        add             sp,  sp,  #44
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h4_neon, export=1
+        sub             x2,  x2,  #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},    [x5]
+1:
+        ld1             {v2.8b},    [x2], x3
+        vp8_epel8_h4    v2,  v2,  v2
+        st1             {v2.s}[0],  [x0], x1
+        subs            w4,  w4,  #1
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel4_v4_neon, export=1
+        sub             x2,  x2,  x3
+
+        movrel          x7,  subpel_filters, -16
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},   [x6]
+1:
+        ld1r            {v2.2s},   [x2], x3
+        ld1r            {v3.2s},   [x2], x3
+        ld1r            {v4.2s},   [x2], x3
+        ld1r            {v5.2s},   [x2], x3
+        ld1r            {v6.2s},   [x2]
+        sub             x2,  x2,  x3,  lsl #1
+        ld1             {v2.s}[1], [x2], x3
+        ld1             {v3.s}[1], [x2], x3
+        ld1             {v4.s}[1], [x2], x3
+        ld1             {v5.s}[1], [x2], x3
+        ld1             {v6.s}[1], [x2]
+        sub             x2,  x2,  x3,  lsl #1
+
+        vp8_epel8_v4_y2 v2, v2, v3, v4, v5, v6
+
+        st1             {v2.s}[0], [x0], x1
+        st1             {v2.s}[2], [x0], x1
+        st1             {v2.s}[1], [x0], x1
+        st1             {v2.s}[3], [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            1b
+
+        ret
+endfunc
+
+function ff_put_vp8_epel4_h4v4_neon, export=1
+        sub             x2,  x2,  x3
+        sub             x2,  x2,  #1
+
+        movrel          x7,  subpel_filters, -16
+        add             x5,  x7,  w5, uxtw #4
+        ld1             {v0.8h},       [x5]
+
+        sub             sp,  sp,  #44
+        add             w8,  w4,  #3
+        mov             x9,  sp
+1:
+        ld1             {v2.8b},       [x2], x3
+        vp8_epel8_h4    v2,  v2,  v3
+        st1             {v2.s}[0],     [x9], #4
+        subs            w8,  w8,  #1
+        b.ne            1b
+
+        add             x6,  x7,  w6, uxtw #4
+        ld1             {v0.8h},       [x6]
+        mov             x9,  sp
+2:
+        ld1             {v2.8b,v3.8b}, [x9], #16
+        ld1r            {v6.2s},       [x9]
+        sub             x9,  x9,  #8
+        ld1             {v4.8b,v5.8b}, [x9], #16
+        ld1             {v6.s}[1],     [x9]
+        sub             x9,  x9,  #8
+        trn1            v1.2s, v2.2s, v4.2s
+        trn2            v4.2s, v2.2s, v4.2s
+        trn1            v2.2s, v3.2s, v5.2s
+        trn2            v5.2s, v3.2s, v5.2s
+        vp8_epel8_v4_y2 v1, v1, v4, v2, v5, v6
+        st1             {v1.s}[0], [x0], x1
+        st1             {v1.s}[2], [x0], x1
+        st1             {v1.s}[1], [x0], x1
+        st1             {v1.s}[3], [x0], x1
+        subs            w4,  w4,  #4
+        b.ne            2b
+
+        add             sp,  sp,  #44
+        ret
+endfunc
