@@ -769,23 +769,6 @@ endfunc
         sqrshrun2       \d0\().16b, v22.8h, #7
 .endm
 
-.macro  vp8_epel8_v6    d0,  s0,  s1,  s2, s3, s4, s5
-        uxtl            \s2\().8h, \s2\().8b
-        uxtl            \s3\().8h, \s3\().8b
-        uxtl            \s1\().8h, \s1\().8b
-        uxtl            \s4\().8h, \s4\().8b
-        uxtl            \s0\().8h, \s0\().8b
-        uxtl            \s5\().8h, \s5\().8b
-        mul             \s2\().8h, \s2\().8h, v0.h[2]
-        mul             \s3\().8h, \s3\().8h, v0.h[3]
-        mls             \s2\().8h, \s1\().8h, v0.h[1]
-        mls             \s3\().8h, \s4\().8h, v0.h[4]
-        mla             \s2\().8h, \s0\().8h, v0.h[0]
-        mla             \s3\().8h, \s5\().8h, v0.h[5]
-        sqadd           \s3\().8h, \s2\().8h, \s3\().8h
-        sqrshrun        \d0\().8b, \s3\().8h, #7
-.endm
-
 .macro  vp8_epel8_v6_y2 d0, d1, s0, s1, s2, s3, s4, s5, s6
         uxtl            \s0\().8h, \s0\().8b
         uxtl            \s3\().8h, \s3\().8b
@@ -942,15 +925,18 @@ function ff_put_vp8_epel16_h6v6_neon, export=1
 2:
         ld1             {v1.8b - v4.8b},    [x7], #32
         ld1             {v16.8b - v19.8b},  [x7], #32
-        ld1             {v20.8b - v23.8b},  [x7]
-        sub             x7,  x7,  #48
+        ld1             {v20.8b - v23.8b},  [x7], #32
+        ld1             {v24.8b - v25.8b},  [x7]
+        sub             x7,  x7,  #64
 
-        vp8_epel8_v6    v5, v1, v3, v16, v18, v20, v22
-        vp8_epel8_v6    v2, v2, v4, v17, v19, v21, v23
-        trn1            v2.2d, v5.2d, v2.2d
+        vp8_epel8_v6_y2 v1, v3, v1, v3, v16, v18, v20, v22, v24
+        vp8_epel8_v6_y2 v2, v4, v2, v4, v17, v19, v21, v23, v25
+        trn1            v1.2d, v1.2d, v2.2d
+        trn1            v3.2d, v3.2d, v4.2d
 
-        st1             {v2.16b}, [x0], x1
-        subs            x4, x4, #1
+        st1             {v1.16b}, [x0], x1
+        st1             {v3.16b}, [x0], x1
+        subs            x4, x4, #2
         b.ne            2b
 
         add             sp,  sp,  #336+16
