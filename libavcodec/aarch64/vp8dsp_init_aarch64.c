@@ -37,9 +37,8 @@ VP8_EPEL(8,  neon);
 
 av_cold void ff_vp78dsp_init_aarch64(VP8DSPContext *dsp)
 {
-    if (!have_neon(av_get_cpu_flags())) {
+    if (!have_neon(av_get_cpu_flags()))
         return;
-    }
     dsp->put_vp8_epel_pixels_tab[0][0][0] = ff_put_vp8_pixels16_neon;
     dsp->put_vp8_epel_pixels_tab[0][0][2] = ff_put_vp8_epel16_h6_neon;
     dsp->put_vp8_epel_pixels_tab[0][2][0] = ff_put_vp8_epel16_v6_neon;
@@ -54,9 +53,8 @@ av_cold void ff_vp78dsp_init_aarch64(VP8DSPContext *dsp)
 
 av_cold void ff_vp8dsp_init_aarch64(VP8DSPContext *dsp)
 {
-    if (!have_neon(av_get_cpu_flags())) {
+    if (!have_neon(av_get_cpu_flags()))
         return;
-    }
 
     dsp->vp8_idct_add       = ff_vp8_idct_add_neon;
     dsp->vp8_idct_dc_add    = ff_vp8_idct_dc_add_neon;
