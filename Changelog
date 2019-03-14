@@ -1,6 +1,39 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.1.2:
+- avcodec/dvbsubdec: Check object position
+- avcodec/cdgraphics: Use ff_set_dimensions()
+- avformat/gdv: Check fps
+- configure: use vpx_codec_vp8_dx/cx for libvpx-vp8 checking
+- configure: add missing pthreads extralibs dependency for libvpx-vp9
+- avcodec/mpeg4videodec: Check idx in mpeg4_decode_studio_block()
+- avcodec/dxv: Correct integer overflow in get_opcodes()
+- avcodec/scpr: Fix use of uninitialized variable
+- avcodec/qpeg: Limit copy in qpeg_decode_intra() to the available bytes
+- avcodec/aic: Check remaining bits in aic_decode_coeffs()
+- avcodec/gdv: Check for truncated tags in decompress_5()
+- avcodec/bethsoftvideo: Check block_type
+- avcodec/jpeg2000dwt: Fix integer overflow in dwt_decode97_int()
+- avcodec/error_resilience: Use a symmetric check for skipping MV estimation
+- avcodec/mlpdec: Insuffient typo
+- avcodec/zmbv: obtain frame later
+- avcodec/jvdec: Check available input space before decode8x8()
+- avcodec/h264_direct: Fix overflow in POC comparission
+- avformat/webmdashenc: Check id in adaption_sets
+- avformat/http: Fix Out-of-Bounds access in process_line()
+- avformat/ftp: Fix Out-of-Bounds Access and Information Leak in ftp.c:393
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for handling braces
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for tag scaning
+- avformat/matroskadec: Do not leak queued packets on sync errors
+- avcodec/mpeg4videodec: Clear interlaced_dct for studio profile
+- avformat/mov: Do not use reference stream in mov_read_sidx() if there is no reference stream
+- avcodec/sbrdsp_fixed.c: remove input value limit for sbr_sum_square_c()
+- avcodec/prores_ks: Fix luma quantization if q >= MAX_STORED_Q
+- avformat/mov: fix hang while seek on a kind of fragmented mp4
+- avformat/async: fix assertion condition when draining buffer
+- avcodec/cbs_av1: don't call cbs_av1_read_trailing_bits() when no bits remain in the OBU
+
 version 4.1.1:
 - avformat/mov: validate chunk_count vs stsc_data
 - avformat/mov: require tfhd to begin parsing trun
