@@ -46,8 +46,12 @@ av_cold void ff_vp78dsp_init_aarch64(VP8DSPContext *dsp)
     dsp->put_vp8_epel_pixels_tab[0][2][2] = ff_put_vp8_epel16_h6v6_neon;
 
     dsp->put_vp8_epel_pixels_tab[1][0][0] = ff_put_vp8_pixels8_neon;
+    dsp->put_vp8_epel_pixels_tab[1][0][1] = ff_put_vp8_epel8_h4_neon;
+    dsp->put_vp8_epel_pixels_tab[1][0][2] = ff_put_vp8_epel8_h6_neon;
+    dsp->put_vp8_epel_pixels_tab[1][1][0] = ff_put_vp8_epel8_v4_neon;
     dsp->put_vp8_epel_pixels_tab[1][1][1] = ff_put_vp8_epel8_h4v4_neon;
     dsp->put_vp8_epel_pixels_tab[1][1][2] = ff_put_vp8_epel8_h6v4_neon;
+    dsp->put_vp8_epel_pixels_tab[1][2][0] = ff_put_vp8_epel8_v6_neon;
     dsp->put_vp8_epel_pixels_tab[1][2][1] = ff_put_vp8_epel8_h4v6_neon;
     dsp->put_vp8_epel_pixels_tab[1][2][2] = ff_put_vp8_epel8_h6v6_neon;
 }
