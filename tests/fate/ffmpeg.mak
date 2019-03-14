@@ -93,7 +93,7 @@ fate-copy-trac2211-avi: $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 fate-copy-trac2211-avi: CMD = transcode "h264 -r 14" $(TARGET_SAMPLES)/h264/bbc2.sample.h264\
                           avi "-c:a copy -c:v copy"
 
-FATE_STREAMCOPY-$(call ALLYES, APNG_DEMUXER APNG_MUXER) += fate-copy-apng
+FATE_STREAMCOPY-$(call ENCDEC, APNG, APNG) += fate-copy-apng
 fate-copy-apng: fate-lavf-apng
 fate-copy-apng: CMD = transcode apng "$(TARGET_PATH)/tests/data/lavf/lavf.apng" apng "-c:v copy"
 
