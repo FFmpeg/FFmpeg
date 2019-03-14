@@ -325,7 +325,7 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
                 CHECK_PIXEL_PTR(rle_code * 3);
 
                 while (rle_code--) {
-                    AV_WN16A(rgb + pixel_ptr, rg);
+                    AV_WN16(rgb + pixel_ptr, rg);
                     rgb[pixel_ptr + 2] = b;
                     pixel_ptr += 3;
                 }
@@ -335,13 +335,13 @@ static void qtrle_decode_24bpp(QtrleContext *s, int row_ptr, int lines_to_change
                 rle_code_half = rle_code / 2;
 
                 while (rle_code_half--) { /* copy 2 raw rgb value at the same time */
-                    AV_WN32A(rgb + pixel_ptr, bytestream2_get_ne32(&s->g)); /* rgbr */
-                    AV_WN16A(rgb + pixel_ptr + 4, bytestream2_get_ne16(&s->g)); /* rgbr */
+                    AV_WN32(rgb + pixel_ptr, bytestream2_get_ne32(&s->g)); /* rgbr */
+                    AV_WN16(rgb + pixel_ptr + 4, bytestream2_get_ne16(&s->g)); /* rgbr */
                     pixel_ptr += 6;
                 }
 
                 if (rle_code % 2 != 0){ /* not even raw value */
-                    AV_WN16A(rgb + pixel_ptr, bytestream2_get_ne16(&s->g));
+                    AV_WN16(rgb + pixel_ptr, bytestream2_get_ne16(&s->g));
                     rgb[pixel_ptr + 2] = bytestream2_get_byte(&s->g);
                     pixel_ptr += 3;
                 }
