@@ -743,7 +743,7 @@ endfunc
 
 
 // note: worst case sum of all 6-tap filter values * 255 is 0x7f80 so 16 bit
-// arithmatic can be used to apply filters
+// arithmetic can be used to apply filters
 const   subpel_filters, align=4
         .short     0,   6, 123,  12,   1,   0,   0,   0
         .short     2,  11, 108,  36,   8,   1,   0,   0
