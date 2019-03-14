@@ -92,8 +92,8 @@ function ff_vp8_idct_add_neon, export=1
         smull           v27.4s, v3.4h,  v4.h[0]
         sqdmulh         v20.4h, v1.4h,  v4.h[1]
         sqdmulh         v23.4h, v3.4h,  v4.h[1]
-        sqshrn          v21.4h, v26.4s, #16
-        sqshrn          v22.4h, v27.4s, #16
+        shrn            v21.4h, v26.4s, #16
+        shrn            v22.4h, v27.4s, #16
         add             v21.4h, v21.4h, v1.4h
         add             v22.4h, v22.4h, v3.4h
 
@@ -117,8 +117,8 @@ function ff_vp8_idct_add_neon, export=1
         st1             {v29.16b},  [x1]
         sqdmulh         v21.4h,     v1.4h,  v4.h[1]
         sqdmulh         v23.4h,     v3.4h,  v4.h[1]
-        sqshrn          v20.4h,     v26.4s, #16
-        sqshrn          v22.4h,     v27.4s, #16
+        shrn            v20.4h,     v26.4s, #16
+        shrn            v22.4h,     v27.4s, #16
         add             v20.4h,     v20.4h, v1.4h
         add             v22.4h,     v22.4h, v3.4h
         add             v16.4h,     v0.4h,  v2.4h
