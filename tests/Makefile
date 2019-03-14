@@ -89,11 +89,11 @@ include $(SRC_PATH)/$(APITESTSDIR)/Makefile
 include $(SRC_PATH)/tests/fate/acodec.mak
 include $(SRC_PATH)/tests/fate/vcodec.mak
 
-include $(SRC_PATH)/tests/fate/avformat.mak
 include $(SRC_PATH)/tests/fate/lavf-audio.mak
 include $(SRC_PATH)/tests/fate/lavf-container.mak
 include $(SRC_PATH)/tests/fate/lavf-image.mak
 include $(SRC_PATH)/tests/fate/lavf-image2pipe.mak
+include $(SRC_PATH)/tests/fate/lavf-video.mak
 include $(SRC_PATH)/tests/fate/seek.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
@@ -170,6 +170,7 @@ include $(SRC_PATH)/tests/fate/qt.mak
 include $(SRC_PATH)/tests/fate/qtrle.mak
 include $(SRC_PATH)/tests/fate/real.mak
 include $(SRC_PATH)/tests/fate/screen.mak
+include $(SRC_PATH)/tests/fate/segment.mak
 include $(SRC_PATH)/tests/fate/source.mak
 include $(SRC_PATH)/tests/fate/speedhq.mak
 include $(SRC_PATH)/tests/fate/subtitles.mak

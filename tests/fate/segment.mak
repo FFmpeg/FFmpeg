@@ -1,17 +1,3 @@
-FATE_LAVF-$(call ENCDEC,  APNG,                  APNG)               += apng
-FATE_LAVF-$(call ENCDEC,  FITS,                  FITS)               += fits
-FATE_LAVF-$(call ENCDEC,  GIF,                   IMAGE2)             += gif
-FATE_LAVF-$(CONFIG_YUV4MPEGPIPE_MUXER)                               += yuv4mpeg
-
-FATE_LAVF += $(FATE_LAVF-yes:%=fate-lavf-%)
-
-$(FATE_LAVF): $(AREF) $(VREF)
-$(FATE_LAVF): CMD = lavftest
-$(FATE_LAVF): CMP =
-
-FATE_AVCONV += $(FATE_LAVF)
-fate-lavf:     $(FATE_LAVF)
-
 tests/data/mp4-to-ts.m3u8: TAG = GEN
 tests/data/mp4-to-ts.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
