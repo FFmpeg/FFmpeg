@@ -325,9 +325,9 @@ lavf_image(){
     outdir="tests/data/images/$t"
     mkdir -p "$outdir"
     file=${outdir}/%02d.$t
-    run_avconv $DEC_OPTS $1 -f image2 -c:v pgmyuv -i $raw_src "$ENC_OPTS -metadata title=lavftest" $2 -frames 13 -y -qscale 10 $target_path/$file
+    run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $1 "$ENC_OPTS -metadata title=lavftest" -frames 13 -y -qscale 10 $target_path/$file
     do_md5sum ${outdir}/02.$t
-    do_avconv_crc $file $DEC_OPTS $2 -i $target_path/$file
+    do_avconv_crc $file $DEC_OPTS $2 -i $target_path/$file $2
     echo $(wc -c ${outdir}/02.$t)
 }
 
