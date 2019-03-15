@@ -58,4 +58,7 @@ av_cold void ff_opus_dsp_init(OpusDSP *ctx)
 {
     ctx->postfilter = postfilter_c;
     ctx->deemphasis = deemphasis_c;
+
+    if (ARCH_X86)
+        ff_opus_dsp_init_x86(ctx);
 }
