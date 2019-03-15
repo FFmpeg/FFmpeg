@@ -61,4 +61,7 @@ av_cold void ff_opus_dsp_init(OpusDSP *ctx)
 
     if (ARCH_X86)
         ff_opus_dsp_init_x86(ctx);
+
+    if (ARCH_AARCH64)
+        ff_opus_dsp_init_aarch64(ctx);
 }

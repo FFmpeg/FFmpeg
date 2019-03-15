@@ -16,21 +16,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_OPUSDSP_H
-#define AVCODEC_OPUSDSP_H
+#include "config.h"
 
-#include "libavutil/common.h"
+#include "libavutil/aarch64/cpu.h"
+#include "libavcodec/opusdsp.h"
 
-#define CELT_EMPH_COEFF 0.8500061035f
+void ff_opus_postfilter_neon(float *data, int period, float *gains, int len);
+float ff_opus_deemphasis_neon(float *out, float *in, float coeff, int len);
 
-typedef struct OpusDSP {
-    void (*postfilter)(float *data, int period, float *gains, int len);
-    float (*deemphasis)(float *out, float *in, float coeff, int len);
-} OpusDSP;
+av_cold void ff_opus_dsp_init_aarch64(OpusDSP *ctx)
+{
+    int cpu_flags = av_get_cpu_flags();
 
-void ff_opus_dsp_init(OpusDSP *ctx);
-
-void ff_opus_dsp_init_x86(OpusDSP *ctx);
-void ff_opus_dsp_init_aarch64(OpusDSP *ctx);
-
-#endif /* AVCODEC_OPUSDSP_H */
+    if (have_neon(cpu_flags)) {
+        ctx->postfilter = ff_opus_postfilter_neon;
+        ctx->deemphasis = ff_opus_deemphasis_neon;
+    }
+}
