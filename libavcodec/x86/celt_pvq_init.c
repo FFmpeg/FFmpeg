@@ -28,7 +28,7 @@ extern float ff_pvq_search_approx_sse2(float *X, int *y, int K, int N);
 extern float ff_pvq_search_approx_sse4(float *X, int *y, int K, int N);
 extern float ff_pvq_search_exact_avx  (float *X, int *y, int K, int N);
 
-av_cold void ff_opus_dsp_init_x86(CeltPVQ *s)
+av_cold void ff_celt_pvq_init_x86(CeltPVQ *s)
 {
     int cpu_flags = av_get_cpu_flags();
 

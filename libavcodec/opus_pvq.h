@@ -40,7 +40,7 @@ struct CeltPVQ {
     QUANT_FN(*quant_band);
 };
 
-void ff_opus_dsp_init_x86(struct CeltPVQ *s);
+void ff_celt_pvq_init_x86(struct CeltPVQ *s);
 
 int  ff_celt_pvq_init(struct CeltPVQ **pvq, int encode);
 void ff_celt_pvq_uninit(struct CeltPVQ **pvq);

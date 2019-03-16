@@ -904,7 +904,7 @@ int av_cold ff_celt_pvq_init(CeltPVQ **pvq, int encode)
     s->quant_band = encode ? pvq_encode_band : pvq_decode_band;
 
     if (ARCH_X86)
-        ff_opus_dsp_init_x86(s);
+        ff_celt_pvq_init_x86(s);
 
     *pvq = s;
 
