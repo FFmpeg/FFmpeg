@@ -123,13 +123,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         const uint32_t *src = (const uint32_t*)psrc;
         uint32_t val;
 
-        w = (avctx->width / 6) * 6;
+        w = (avctx->width / 12) * 12;
         s->unpack_frame(src, y, u, v, w);
 
         y += w;
         u += w >> 1;
         v += w >> 1;
         src += (w << 1) / 3;
+
+        if (w < avctx->width - 5) {
+            READ_PIXELS(u, y, v);
+            READ_PIXELS(y, u, y);
+            READ_PIXELS(v, y, u);
+            READ_PIXELS(y, v, y);
+            w += 6;
+        }
 
         if (w < avctx->width - 1) {
             READ_PIXELS(u, y, v);
