@@ -523,6 +523,9 @@ The offset is added to the timestamps of the input files. Specifying
 a positive offset means that the corresponding streams are delayed by
 the time duration specified in @var{offset}.
 
+@item -itsscale @var{scale} (@emph{input,per-stream})
+Rescale input timestamps. @var{scale} should be a floating point number.
+
 @item -timestamp @var{date} (@emph{output})
 Set the recording timestamp in the container.
 
