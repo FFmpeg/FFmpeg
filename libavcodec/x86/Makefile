@@ -53,7 +53,6 @@ OBJS-$(CONFIG_CAVS_DECODER)            += x86/cavsdsp.o
 OBJS-$(CONFIG_DCA_DECODER)             += x86/dcadsp_init.o x86/synth_filter_init.o
 OBJS-$(CONFIG_DNXHD_ENCODER)           += x86/dnxhdenc_init.o
 OBJS-$(CONFIG_EXR_DECODER)             += x86/exrdsp_init.o
-OBJS-$(CONFIG_OPUS_DECODER)            += x86/celt_pvq_init.o
 OBJS-$(CONFIG_OPUS_ENCODER)            += x86/celt_pvq_init.o
 OBJS-$(CONFIG_HEVC_DECODER)            += x86/hevcdsp_init.o
 OBJS-$(CONFIG_JPEG2000_DECODER)        += x86/jpeg2000dsp_init.o
