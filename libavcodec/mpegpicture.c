@@ -23,6 +23,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/imgutils.h"
 
 #include "avcodec.h"
 #include "motion_est.h"
@@ -57,6 +58,7 @@ do {\
 int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
                             ScratchpadContext *sc, int linesize)
 {
+#   define EMU_EDGE_HEIGHT (4 * 70)
     int alloc_size = FFALIGN(FFABS(linesize) + 64, 32);
 
     if (avctx->hwaccel)
@@ -67,13 +69,16 @@ int ff_mpeg_framesize_alloc(AVCodecContext *avctx, MotionEstContext *me,
         return AVERROR_PATCHWELCOME;
     }
 
+    if (av_image_check_size2(alloc_size, EMU_EDGE_HEIGHT, avctx->max_pixels, AV_PIX_FMT_NONE, 0, avctx) < 0)
+        return AVERROR(ENOMEM);
+
     // edge emu needs blocksize + filter length - 1
     // (= 17x17 for  halfpel / 21x21 for H.264)
     // VC-1 computes luma and chroma simultaneously and needs 19X19 + 9x9
     // at uvlinesize. It supports only YUV420 so 24x24 is enough
     // linesize * interlaced * MBsize
     // we also use this buffer for encoding in encode_mb_internal() needig an additional 32 lines
-    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, 4 * 70,
+    FF_ALLOCZ_ARRAY_OR_GOTO(avctx, sc->edge_emu_buffer, alloc_size, EMU_EDGE_HEIGHT,
                       fail);
 
     FF_ALLOCZ_ARRAY_OR_GOTO(avctx, me->scratchpad, alloc_size, 4 * 16 * 2,
