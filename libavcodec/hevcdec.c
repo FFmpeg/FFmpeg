@@ -2924,6 +2924,10 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
+            if (s->ref) {
+                av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
+                goto fail;
+            }
             if (s->max_ra == INT_MAX) {
                 if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
                     s->max_ra = s->poc;
