@@ -149,18 +149,11 @@ static void libdav1d_data_free(const uint8_t *data, void *opaque) {
     av_buffer_unref(&buf);
 }
 
-static void libdav1d_frame_free(void *opaque, uint8_t *data) {
-    Dav1dPicture *p = opaque;
-
-    dav1d_picture_unref(p);
-    av_free(p);
-}
-
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dData *data = &dav1d->data;
-    Dav1dPicture *p;
+    Dav1dPicture pic = { 0 }, *p = &pic;
     int res;
 
     if (!data->sz) {
@@ -194,10 +187,6 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
             return res;
     }
 
-    p = av_mallocz(sizeof(*p));
-    if (!p)
-        return AVERROR(ENOMEM);
-
     res = dav1d_get_picture(dav1d->c, p);
     if (res < 0) {
         if (res == AVERROR(EINVAL))
@@ -205,17 +194,15 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         else if (res == AVERROR(EAGAIN) && c->internal->draining)
             res = AVERROR_EOF;
 
-        av_free(p);
         return res;
     }
 
     av_assert0(p->data[0] != NULL);
 
-    frame->buf[0] = av_buffer_create(NULL, 0, libdav1d_frame_free,
-                                     p, AV_BUFFER_FLAG_READONLY);
+    // This requires the custom allocator above
+    frame->buf[0] = av_buffer_ref(p->allocator_data);
     if (!frame->buf[0]) {
         dav1d_picture_unref(p);
-        av_free(p);
         return AVERROR(ENOMEM);
     }
 
@@ -310,6 +297,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     res = 0;
 fail:
+    dav1d_picture_unref(p);
     if (res < 0)
         av_frame_unref(frame);
     return res;
