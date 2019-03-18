@@ -2795,6 +2795,10 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         }
 
         if (s->sh.first_slice_in_pic_flag) {
+            if (s->ref) {
+                av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
+                goto fail;
+            }
             ret = hevc_frame_start(s);
             if (ret < 0)
                 return ret;
