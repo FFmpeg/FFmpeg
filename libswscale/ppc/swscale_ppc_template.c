@@ -184,16 +184,17 @@ static void FUNC(hScale_real)(SwsContext *c, int16_t *dst, int dstW,
 
                 for (j = 0; j < filterSize - 15; j += 16) {
                     vector unsigned char src_v1, src_vF;
-                    vector signed short filter_v1R, filter_v2R, filter_v0, filter_v1;
+                    vector signed short filter_v1R, filter_v2R, filter_v0, filter_v1, src_vA, src_vB;
+                    vector signed int val_acc;
                     LOAD_SRCV(srcPos, j, src, permS, src_v0, src_v1, src_vF);
-                    vector signed short src_vA = // vec_unpackh sign-extends...
+                    src_vA = // vec_unpackh sign-extends...
                                                  (vector signed short)(VEC_MERGEH((vector unsigned char)vzero, src_vF));
-                    vector signed short src_vB = // vec_unpackh sign-extends...
+                    src_vB = // vec_unpackh sign-extends...
                                                  (vector signed short)(VEC_MERGEL((vector unsigned char)vzero, src_vF));
                     GET_VFD(i, j, filter, filter_v0R, filter_v1R, permF, filter_v0, 0);
                     GET_VFD(i, j, filter, filter_v1R, filter_v2R, permF, filter_v1, 16);
 
-                    vector signed int val_acc = vec_msums(src_vA, filter_v0, val_v);
+                    val_acc = vec_msums(src_vA, filter_v0, val_v);
                     val_v = vec_msums(src_vB, filter_v1, val_acc);
                     UPDATE_PTR(filter_v2R, filter_v0R, src_v1, src_v0);
                 }

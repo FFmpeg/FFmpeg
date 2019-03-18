@@ -43,10 +43,10 @@
 
 #define yuv2planeX_8(d1, d2, l1, src, x, perm, filter) do {\
         vector signed short ls;\
+        vector signed int   vf1, vf2, i1, i2;\
         GET_LS(l1, x, perm, src);\
-        vector signed int   i1  = vec_mule(filter, ls);\
-        vector signed int   i2  = vec_mulo(filter, ls);\
-        vector signed int   vf1, vf2;\
+        i1  = vec_mule(filter, ls);\
+        i2  = vec_mulo(filter, ls);\
         vf1 = vec_mergeh(i1, i2);\
         vf2 = vec_mergel(i1, i2);\
         d1 = vec_add(d1, vf1);\
