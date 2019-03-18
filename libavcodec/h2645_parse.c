@@ -499,7 +499,7 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
             ret = h264_parse_nal_header(nal, logctx);
         if (ret <= 0 || nal->size <= 0 || nal->size_bits <= 0) {
             if (ret < 0) {
-                av_log(logctx, AV_LOG_ERROR, "Invalid NAL unit %d, skipping.\n",
+                av_log(logctx, AV_LOG_WARNING, "Invalid NAL unit %d, skipping.\n",
                        nal->type);
             }
             pkt->nb_nals--;
