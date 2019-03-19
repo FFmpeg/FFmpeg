@@ -159,6 +159,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     ret = decompress(&s->gb, AV_RL32(avpkt->data + 28) >> 1, &s->pb, s->lut);
     if (ret < 0)
         return ret;
+    if (bytestream2_get_bytes_left_p(&s->pb) > s->size * (int64_t)avctx->discard_damaged_percentage / 100)
+        return AVERROR_INVALIDDATA;
     vertical_predict((uint32_t *)s->decbuffer, 0, (uint32_t *)s->initial_line, s->stride, 1);
     vertical_predict((uint32_t *)s->decbuffer, s->stride, (uint32_t *)s->decbuffer, s->stride, avctx->height - 1);
 
