@@ -1730,6 +1730,8 @@ static inline void tile_codeblocks(Jpeg2000DecoderContext *s, Jpeg2000Tile *tile
                                     bandpos);
                         if (ret)
                             coded = 1;
+                        else
+                            continue;
                         x = cblk->coord[0][0] - band->coord[0][0];
                         y = cblk->coord[1][0] - band->coord[1][0];
 
