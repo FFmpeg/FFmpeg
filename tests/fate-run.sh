@@ -257,9 +257,10 @@ echov(){
     echo "$@" >&3
 }
 
-AVCONV_OPTS="-nostdin -nostats -y -cpuflags $cpuflags -threads $threads"
-DEC_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
-ENC_OPTS="$DEC_OPTS -threads $threads -dct fastint"
+AVCONV_OPTS="-nostdin -nostats -y -cpuflags $cpuflags"
+COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+DEC_OPTS="$COMMON_OPTS -threads $threads"
+ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"
 
 run_avconv(){
     $echov $ffmpeg2 $AVCONV_OPTS $*
