@@ -125,7 +125,7 @@ ff_const59 AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-ff_const59 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
+ff_const59 AVInputFormat *av_probe_input_format3(ff_const59 AVProbeData *pd, int is_opened,
                                       int *score_ret)
 {
     AVProbeData lpd = *pd;
@@ -202,7 +202,7 @@ ff_const59 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened,
     return fmt;
 }
 
-ff_const59 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max)
+ff_const59 AVInputFormat *av_probe_input_format2(ff_const59 AVProbeData *pd, int is_opened, int *score_max)
 {
     int score_ret;
     ff_const59 AVInputFormat *fmt = av_probe_input_format3(pd, is_opened, &score_ret);
@@ -213,7 +213,7 @@ ff_const59 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened,
         return NULL;
 }
 
-ff_const59 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened)
+ff_const59 AVInputFormat *av_probe_input_format(ff_const59 AVProbeData *pd, int is_opened)
 {
     int score = 0;
     return av_probe_input_format2(pd, is_opened, &score);

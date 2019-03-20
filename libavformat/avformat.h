@@ -2240,7 +2240,7 @@ ff_const59 AVInputFormat *av_find_input_format(const char *short_name);
  * @param is_opened Whether the file is already opened; determines whether
  *                  demuxers with or without AVFMT_NOFILE are probed.
  */
-ff_const59 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
+ff_const59 AVInputFormat *av_probe_input_format(ff_const59 AVProbeData *pd, int is_opened);
 
 /**
  * Guess the file format.
@@ -2254,7 +2254,7 @@ ff_const59 AVInputFormat *av_probe_input_format(AVProbeData *pd, int is_opened);
  *                  If the score is <= AVPROBE_SCORE_MAX / 4 it is recommended
  *                  to retry with a larger probe buffer.
  */
-ff_const59 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score_max);
+ff_const59 AVInputFormat *av_probe_input_format2(ff_const59 AVProbeData *pd, int is_opened, int *score_max);
 
 /**
  * Guess the file format.
@@ -2263,7 +2263,7 @@ ff_const59 AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened,
  *                  demuxers with or without AVFMT_NOFILE are probed.
  * @param score_ret The score of the best detection.
  */
-ff_const59 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret);
+ff_const59 AVInputFormat *av_probe_input_format3(ff_const59 AVProbeData *pd, int is_opened, int *score_ret);
 
 /**
  * Probe a bytestream to determine the input format. Each time a probe returns
