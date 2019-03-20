@@ -68,7 +68,7 @@ static int sap_read_header(AVFormatContext *s)
     uint8_t recvbuf[RTP_MAX_PACKET_LENGTH];
     int port;
     int ret, i;
-    AVInputFormat* infmt;
+    ff_const59 AVInputFormat* infmt;
 
     if (!ff_network_init())
         return AVERROR(EIO);

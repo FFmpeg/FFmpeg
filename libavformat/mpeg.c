@@ -722,7 +722,7 @@ static int vobsub_read_header(AVFormatContext *s)
     int stream_id = -1;
     char id[64] = {0};
     char alt[MAX_LINE_SIZE] = {0};
-    AVInputFormat *iformat;
+    ff_const59 AVInputFormat *iformat;
 
     if (!vobsub->sub_name) {
         char *ext;

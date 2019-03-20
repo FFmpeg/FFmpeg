@@ -1068,7 +1068,7 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         uint8_t desc[256];
         int score      = AVPROBE_SCORE_EXTENSION, ret;
         AVIStream *ast = st->priv_data;
-        AVInputFormat *sub_demuxer;
+        ff_const59 AVInputFormat *sub_demuxer;
         AVRational time_base;
         int size;
         AVIOContext *pb = avio_alloc_context(pkt->data + 7,
