@@ -46,6 +46,7 @@ const H264LevelDescriptor *ff_h264_get_level(int level_idc,
  */
 const H264LevelDescriptor *ff_h264_guess_level(int profile_idc,
                                                int64_t bitrate,
+                                               int framerate,
                                                int width, int height,
                                                int max_dec_frame_buffering);
 

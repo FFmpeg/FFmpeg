@@ -329,9 +329,16 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
         sps->level_idc = avctx->level;
     } else {
         const H264LevelDescriptor *level;
+        int framerate;
+
+        if (avctx->framerate.num > 0 && avctx->framerate.den > 0)
+            framerate = avctx->framerate.num / avctx->framerate.den;
+        else
+            framerate = 0;
 
         level = ff_h264_guess_level(sps->profile_idc,
                                     avctx->bit_rate,
+                                    framerate,
                                     priv->mb_width  * 16,
                                     priv->mb_height * 16,
                                     priv->dpb_frames);

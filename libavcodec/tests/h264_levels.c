@@ -62,6 +62,48 @@ static const struct {
 static const struct {
     int width;
     int height;
+    int framerate;
+    int level_idc;
+} test_framerate[] = {
+    // Some typical sizes and frame rates.
+    // (From H.264 table A-1 and table A-6)
+    {  176,  144,  15, 10 },
+    {  176,  144,  16, 11 },
+    {  320,  240,  10, 11 },
+    {  320,  240,  20, 12 },
+    {  320,  240,  40, 21 },
+    {  352,  288,  30, 13 },
+    {  352,  288,  51, 22 },
+    {  352,  576,  25, 21 },
+    {  352,  576,  26, 30 },
+    {  640,  480,  33, 30 },
+    {  640,  480,  34, 31 },
+    {  720,  480,  50, 31 },
+    {  720,  576,  25, 30 },
+    {  800,  600,  55, 31 },
+    { 1024,  768,  35, 31 },
+    { 1024,  768,  70, 32 },
+    { 1280,  720,  30, 31 },
+    { 1280,  720,  31, 32 },
+    { 1280,  960,  45, 32 },
+    { 1280,  960,  46, 40 },
+    { 1280, 1024,  42, 32 },
+    { 1600, 1200,  32, 40 },
+    { 1600, 1200,  33, 42 },
+    { 1920, 1088,  30, 40 },
+    { 1920, 1088,  55, 42 },
+    { 2048, 1024,  30, 40 },
+    { 2048, 1024,  62, 42 },
+    { 2048, 1088,  60, 42 },
+    { 3680, 1536,  26, 50 },
+    { 4096, 2048,  30, 51 },
+    { 4096, 2048,  59, 52 },
+    { 4096, 2160,  60, 52 },
+};
+
+static const struct {
+    int width;
+    int height;
     int dpb_size;
     int level_idc;
 } test_dpb[] = {
@@ -147,14 +189,23 @@ int main(void)
     } while (0)
 
     for (i = 0; i < FF_ARRAY_ELEMS(test_sizes); i++) {
-        level = ff_h264_guess_level(0, 0, test_sizes[i].width,
+        level = ff_h264_guess_level(0, 0, 0, test_sizes[i].width,
                                     test_sizes[i].height, 0);
         CHECK(test_sizes[i].level_idc, "size %dx%d",
               test_sizes[i].width, test_sizes[i].height);
     }
 
+    for (i = 0; i < FF_ARRAY_ELEMS(test_framerate); i++) {
+        level = ff_h264_guess_level(0, 0, test_framerate[i].framerate,
+                                    test_framerate[i].width,
+                                    test_framerate[i].height, 0);
+        CHECK(test_framerate[i].level_idc, "framerate %d, size %dx%d",
+              test_framerate[i].framerate, test_framerate[i].width,
+              test_framerate[i].height);
+    }
+
     for (i = 0; i < FF_ARRAY_ELEMS(test_dpb); i++) {
-        level = ff_h264_guess_level(0, 0, test_dpb[i].width,
+        level = ff_h264_guess_level(0, 0, 0, test_dpb[i].width,
                                     test_dpb[i].height,
                                     test_dpb[i].dpb_size);
         CHECK(test_dpb[i].level_idc, "size %dx%d dpb %d",
@@ -165,7 +216,7 @@ int main(void)
     for (i = 0; i < FF_ARRAY_ELEMS(test_bitrate); i++) {
         level = ff_h264_guess_level(test_bitrate[i].profile_idc,
                                     test_bitrate[i].bitrate,
-                                    0, 0, 0);
+                                    0, 0, 0, 0);
         CHECK(test_bitrate[i].level_idc, "bitrate %"PRId64" profile %d",
               test_bitrate[i].bitrate, test_bitrate[i].profile_idc);
     }
@@ -173,6 +224,7 @@ int main(void)
     for (i = 0; i < FF_ARRAY_ELEMS(test_all); i++) {
         level = ff_h264_guess_level(test_all[i].profile_idc,
                                     test_all[i].bitrate,
+                                    0,
                                     test_all[i].width,
                                     test_all[i].height,
                                     test_all[i].dpb_frames);
