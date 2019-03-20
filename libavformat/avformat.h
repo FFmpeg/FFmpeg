@@ -532,6 +532,10 @@ typedef struct AVOutputFormat {
      * New public fields should be added right above.
      *****************************************************************
      */
+    /**
+     * The ff_const59 define is not part of the public API and will
+     * be removed without further warning.
+     */
 #if FF_API_AVIOFORMAT
 #define ff_const59
 #else
