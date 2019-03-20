@@ -6022,14 +6022,6 @@ check_type "windows.h d3d11.h" "ID3D11VideoDecoder"
 check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
-check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
-check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
-check_struct "va/va.h va/va_vpp.h" "VAProcPipelineCaps" rotation_flags
-check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
-check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
-check_type "va/va.h va/va_enc_vp8.h"  "VAEncPictureParameterBufferVP8"
-check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
-
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
 if enabled cuda_sdk; then
@@ -6461,6 +6453,14 @@ if enabled vaapi; then
     fi
 
     check_cpp_condition vaapi_1 "va/va.h" "VA_CHECK_VERSION(1, 0, 0)"
+
+    check_type "va/va.h va/va_dec_hevc.h" "VAPictureParameterBufferHEVC"
+    check_struct "va/va.h" "VADecPictureParameterBufferVP9" bit_depth
+    check_struct "va/va.h va/va_vpp.h" "VAProcPipelineCaps" rotation_flags
+    check_type "va/va.h va/va_enc_hevc.h" "VAEncPictureParameterBufferHEVC"
+    check_type "va/va.h va/va_enc_jpeg.h" "VAEncPictureParameterBufferJPEG"
+    check_type "va/va.h va/va_enc_vp8.h"  "VAEncPictureParameterBufferVP8"
+    check_type "va/va.h va/va_enc_vp9.h"  "VAEncPictureParameterBufferVP9"
 fi
 
 if enabled_all opencl libdrm ; then
