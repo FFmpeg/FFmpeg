@@ -110,8 +110,8 @@ typedef struct VariantStream {
     unsigned var_stream_idx;
     unsigned number;
     int64_t sequence;
-    AVOutputFormat *oformat;
-    AVOutputFormat *vtt_oformat;
+    ff_const59 AVOutputFormat *oformat;
+    ff_const59 AVOutputFormat *vtt_oformat;
     AVIOContext *out;
     int packets_written;
     int init_range_length;

@@ -48,7 +48,7 @@ int av_match_ext(const char *filename, const char *extensions)
     return 0;
 }
 
-AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
+ff_const59 AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
                                 const char *mime_type)
 {
     const AVOutputFormat *fmt = NULL;
@@ -84,12 +84,12 @@ AVOutputFormat *av_guess_format(const char *short_name, const char *filename,
     return fmt_found;
 }
 
-enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
+enum AVCodecID av_guess_codec(ff_const59 AVOutputFormat *fmt, const char *short_name,
                               const char *filename, const char *mime_type,
                               enum AVMediaType type)
 {
     if (av_match_name("segment", fmt->name) || av_match_name("ssegment", fmt->name)) {
-        AVOutputFormat *fmt2 = av_guess_format(NULL, filename, NULL);
+        ff_const59 AVOutputFormat *fmt2 = av_guess_format(NULL, filename, NULL);
         if (fmt2)
             fmt = fmt2;
     }

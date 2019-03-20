@@ -103,6 +103,9 @@
 #ifndef FF_API_LAVF_MP4A_LATM
 #define FF_API_LAVF_MP4A_LATM           (LIBAVFORMAT_VERSION_MAJOR < 59)
 #endif
+#ifndef FF_API_AVIOFORMAT
+#define FF_API_AVIOFORMAT               (LIBAVFORMAT_VERSION_MAJOR < 59)
+#endif
 
 
 #ifndef FF_API_R_FRAME_RATE

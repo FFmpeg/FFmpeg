@@ -48,8 +48,8 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 {
     struct MuxChain *chain = s->priv_data;
     AVFormatContext *mpegts_ctx = NULL, *rtp_ctx = NULL;
-    AVOutputFormat *mpegts_format = av_guess_format("mpegts", NULL, NULL);
-    AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
+    ff_const59 AVOutputFormat *mpegts_format = av_guess_format("mpegts", NULL, NULL);
+    ff_const59 AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
     int i, ret = AVERROR(ENOMEM);
     AVStream *st;
 

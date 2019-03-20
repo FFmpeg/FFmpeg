@@ -91,7 +91,7 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt,
                             AVCodecParameters *par, int idx)
 {
     int i;
-    AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
+    const AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
 
     /* Was the payload type already specified for the RTP muxer? */
     if (ofmt && ofmt->priv_class && fmt->priv_data) {

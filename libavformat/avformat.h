@@ -532,7 +532,12 @@ typedef struct AVOutputFormat {
      * New public fields should be added right above.
      *****************************************************************
      */
-    struct AVOutputFormat *next;
+#if FF_API_AVIOFORMAT
+#define ff_const59
+#else
+#define ff_const59 const
+#endif
+    ff_const59 struct AVOutputFormat *next;
     /**
      * size of private data so that it can be allocated in the wrapper
      */
@@ -1353,7 +1358,7 @@ typedef struct AVFormatContext {
      *
      * Muxing only, must be set by the caller before avformat_write_header().
      */
-    struct AVOutputFormat *oformat;
+    ff_const59 struct AVOutputFormat *oformat;
 
     /**
      * Format private data. This is an AVOptions-enabled struct
@@ -2211,7 +2216,7 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
  * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
  */
-int avformat_alloc_output_context2(AVFormatContext **ctx, AVOutputFormat *oformat,
+int avformat_alloc_output_context2(AVFormatContext **ctx, ff_const59 AVOutputFormat *oformat,
                                    const char *format_name, const char *filename);
 
 /**
@@ -2687,14 +2692,14 @@ int av_write_trailer(AVFormatContext *s);
  * @param mime_type if non-NULL checks if mime_type matches with the
  * MIME type of the registered formats
  */
-AVOutputFormat *av_guess_format(const char *short_name,
+ff_const59 AVOutputFormat *av_guess_format(const char *short_name,
                                 const char *filename,
                                 const char *mime_type);
 
 /**
  * Guess the codec ID based upon muxer and filename.
  */
-enum AVCodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
+enum AVCodecID av_guess_codec(ff_const59 AVOutputFormat *fmt, const char *short_name,
                             const char *filename, const char *mime_type,
                             enum AVMediaType type);
 

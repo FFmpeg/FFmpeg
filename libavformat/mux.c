@@ -145,7 +145,7 @@ enum AVChromaLocation ff_choose_chroma_location(AVFormatContext *s, AVStream *st
 
 }
 
-int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *oformat,
+int avformat_alloc_output_context2(AVFormatContext **avctx, ff_const59 AVOutputFormat *oformat,
                                    const char *format, const char *filename)
 {
     AVFormatContext *s = avformat_alloc_context();
@@ -246,7 +246,7 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
     AVStream *st;
     AVDictionary *tmp = NULL;
     AVCodecParameters *par = NULL;
-    AVOutputFormat *of = s->oformat;
+    const AVOutputFormat *of = s->oformat;
     const AVCodecDescriptor *desc;
     AVDictionaryEntry *e;
 

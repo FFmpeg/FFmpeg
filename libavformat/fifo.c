@@ -442,7 +442,7 @@ static void *fifo_consumer_thread(void *data)
     return NULL;
 }
 
-static int fifo_mux_init(AVFormatContext *avf, AVOutputFormat *oformat,
+static int fifo_mux_init(AVFormatContext *avf, ff_const59 AVOutputFormat *oformat,
                          const char *filename)
 {
     FifoContext *fifo = avf->priv_data;
@@ -481,7 +481,7 @@ static int fifo_mux_init(AVFormatContext *avf, AVOutputFormat *oformat,
 static int fifo_init(AVFormatContext *avf)
 {
     FifoContext *fifo = avf->priv_data;
-    AVOutputFormat *oformat;
+    ff_const59 AVOutputFormat *oformat;
     int ret = 0;
 
     if (fifo->recovery_wait_streamtime && !fifo->drop_pkts_on_overflow) {

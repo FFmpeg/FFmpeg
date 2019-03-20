@@ -53,7 +53,7 @@ typedef struct WebMChunkContext {
     char *http_method;
     uint64_t duration_written;
     int prev_pts;
-    AVOutputFormat *oformat;
+    ff_const59 AVOutputFormat *oformat;
     AVFormatContext *avf;
 } WebMChunkContext;
 
