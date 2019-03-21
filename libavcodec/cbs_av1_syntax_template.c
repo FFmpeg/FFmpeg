@@ -1637,15 +1637,18 @@ static int FUNC(metadata_hdr_mdcv)(CodedBitstreamContext *ctx, RWContext *rw,
     int err, i;
 
     for (i = 0; i < 3; i++) {
-        fcs(16, primary_chromaticity_x[i], 0, 50000, 1, i);
-        fcs(16, primary_chromaticity_y[i], 0, 50000, 1, i);
+        fbs(16, primary_chromaticity_x[i], 1, i);
+        fbs(16, primary_chromaticity_y[i], 1, i);
     }
 
-    fc(16, white_point_chromaticity_x, 0, 50000);
-    fc(16, white_point_chromaticity_y, 0, 50000);
+    fb(16, white_point_chromaticity_x);
+    fb(16, white_point_chromaticity_y);
 
     fc(32, luminance_max, 1, MAX_UINT_BITS(32));
-    fc(32, luminance_min, 0, current->luminance_max >> 6);
+    // luminance_min must be lower than luminance_max. Convert luminance_max from
+    // 24.8 fixed point to 18.14 fixed point in order to compare them.
+    fc(32, luminance_min, 0, FFMIN(((uint64_t)current->luminance_max << 6) - 1,
+                                   MAX_UINT_BITS(32)));
 
     return 0;
 }
