@@ -42,6 +42,7 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_HTTP = 8,          /**< HTTP tunneled - not a proper
                                                  transport mode as such,
                                                  only for use via AVOptions */
+    RTSP_LOWER_TRANSPORT_HTTPS,             /**< HTTPS tunneled */
     RTSP_LOWER_TRANSPORT_CUSTOM = 16,       /**< Custom IO - not a public
                                                  option for lower_transport_mask,
                                                  but set in the SDP demuxer based

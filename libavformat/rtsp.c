@@ -87,6 +87,7 @@ const AVOption ff_rtsp_options[] = {
     { "tcp", "TCP", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_TCP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
     { "udp_multicast", "UDP multicast", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_UDP_MULTICAST}, 0, 0, DEC, "rtsp_transport" },
     { "http", "HTTP tunneling", 0, AV_OPT_TYPE_CONST, {.i64 = (1 << RTSP_LOWER_TRANSPORT_HTTP)}, 0, 0, DEC, "rtsp_transport" },
+    { "https", "HTTPS tunneling", 0, AV_OPT_TYPE_CONST, {.i64 = (1 << RTSP_LOWER_TRANSPORT_HTTPS )}, 0, 0, DEC, "rtsp_transport" },
     RTSP_FLAG_OPTS("rtsp_flags", "set RTSP flags"),
     { "listen", "wait for incoming connections", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_LISTEN}, 0, 0, DEC, "rtsp_flags" },
     { "prefer_tcp", "try RTP via TCP first, if available", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_PREFER_TCP}, 0, 0, DEC|ENC, "rtsp_flags" },
@@ -1669,6 +1670,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
     int default_port = RTSP_DEFAULT_PORT;
+    int https_tunnel = 0;
     char real_challenge[64] = "";
     struct sockaddr_storage peer;
     socklen_t peer_len = sizeof(peer);
@@ -1687,7 +1689,9 @@ int ff_rtsp_connect(AVFormatContext *s)
         s->max_delay = s->iformat ? DEFAULT_REORDERING_DELAY : 0;
 
     rt->control_transport = RTSP_MODE_PLAIN;
-    if (rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTP)) {
+    if (rt->lower_transport_mask & ((1 << RTSP_LOWER_TRANSPORT_HTTP) |
+                                    (1 << RTSP_LOWER_TRANSPORT_HTTPS))) {
+        https_tunnel = !!(rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTPS));
         rt->lower_transport_mask = 1 << RTSP_LOWER_TRANSPORT_TCP;
         rt->control_transport = RTSP_MODE_TUNNEL;
     }
@@ -1741,7 +1745,7 @@ redirect:
         char sessioncookie[17];
         char headers[1024];
 
-        ff_url_join(httpname, sizeof(httpname), "http", auth, host, port, "%s", path);
+        ff_url_join(httpname, sizeof(httpname), https_tunnel ? "https" : "http", auth, host, port, "%s", path);
         snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
                  av_get_random_seed(), av_get_random_seed());
 
