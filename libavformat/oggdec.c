@@ -941,7 +941,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
     return ret;
 }
 
-static int ogg_probe(AVProbeData *p)
+static int ogg_probe(const AVProbeData *p)
 {
     if (!memcmp("OggS", p->buf, 5) && p->buf[5] <= 0x7)
         return AVPROBE_SCORE_MAX;

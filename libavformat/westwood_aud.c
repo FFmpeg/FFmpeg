@@ -42,7 +42,7 @@
 #define AUD_CHUNK_PREAMBLE_SIZE 8
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
-static int wsaud_probe(AVProbeData *p)
+static int wsaud_probe(const AVProbeData *p)
 {
     int field;
 

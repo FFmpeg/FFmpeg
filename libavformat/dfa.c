@@ -25,7 +25,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int dfa_probe(AVProbeData *p)
+static int dfa_probe(const AVProbeData *p)
 {
     if (p->buf_size < 4 || AV_RL32(p->buf) != MKTAG('D', 'F', 'I', 'A'))
         return 0;

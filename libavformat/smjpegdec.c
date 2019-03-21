@@ -36,7 +36,7 @@ typedef struct SMJPEGContext {
     int video_stream_index;
 } SMJPEGContext;
 
-static int smjpeg_probe(AVProbeData *p)
+static int smjpeg_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, SMJPEG_MAGIC, 8))
         return AVPROBE_SCORE_MAX;

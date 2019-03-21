@@ -37,7 +37,7 @@ typedef struct DXAContext {
     int readvid;
 }DXAContext;
 
-static int dxa_probe(AVProbeData *p)
+static int dxa_probe(const AVProbeData *p)
 {
     int w, h;
     if (p->buf_size < 15)

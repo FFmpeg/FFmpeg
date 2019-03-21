@@ -24,7 +24,7 @@
 #include "rawdec.h"
 #include "internal.h"
 
-static int acm_probe(AVProbeData *p)
+static int acm_probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf) != 0x97280301)
         return 0;

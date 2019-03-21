@@ -36,7 +36,7 @@
  *  uint32_t    ts;     // time
  */
 
-static int msnwc_tcp_probe(AVProbeData *p)
+static int msnwc_tcp_probe(const AVProbeData *p)
 {
     int i;
 

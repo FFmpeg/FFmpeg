@@ -52,7 +52,7 @@ typedef struct JVDemuxContext {
 
 #define MAGIC " Compression by John M Phillips Copyright (C) 1995 The Bitmap Brothers Ltd."
 
-static int read_probe(AVProbeData *pd)
+static int read_probe(const AVProbeData *pd)
 {
     if (pd->buf[0] == 'J' && pd->buf[1] == 'V' && strlen(MAGIC) + 4 <= pd->buf_size &&
         !memcmp(pd->buf + 4, MAGIC, strlen(MAGIC)))

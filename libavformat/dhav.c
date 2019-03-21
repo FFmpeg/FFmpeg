@@ -49,7 +49,7 @@ typedef struct DHAVStream {
     int64_t pts;
 } DHAVStream;
 
-static int dhav_probe(AVProbeData *p)
+static int dhav_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "DAHUA", 5))
         return AVPROBE_SCORE_MAX;

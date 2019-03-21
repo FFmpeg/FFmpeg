@@ -29,7 +29,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int dts_probe(AVProbeData *p)
+static int dts_probe(const AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;

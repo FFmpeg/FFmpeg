@@ -73,7 +73,7 @@ typedef struct Wc3DemuxContext {
 
 } Wc3DemuxContext;
 
-static int wc3_probe(AVProbeData *p)
+static int wc3_probe(const AVProbeData *p)
 {
     if (p->buf_size < 12)
         return 0;

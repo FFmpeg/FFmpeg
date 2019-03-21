@@ -39,7 +39,7 @@ typedef struct FITSContext {
     int64_t pts;
 } FITSContext;
 
-static int fits_probe(AVProbeData *p)
+static int fits_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     if (!memcmp(b, "SIMPLE  =                    T", 30))

@@ -34,7 +34,7 @@ typedef struct ADXDemuxerContext {
     int header_size;
 } ADXDemuxerContext;
 
-static int adx_probe(AVProbeData *p)
+static int adx_probe(const AVProbeData *p)
 {
     int offset;
     if (AV_RB16(p->buf) != 0x8000)

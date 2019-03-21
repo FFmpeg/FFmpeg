@@ -31,7 +31,7 @@
 #define ISUNIT(x) ( ISSQH(x) || ISEND(x) || (x) == 0xB2 || ISPIC(x) || (x) == 0xB5 || (x) == 0xB7 )
 #define ISAVS2(x) ((x) == 0x20 || (x) == 0x22 || (x) == 0x30 || (x) == 0x32 )
 
-static int avs2_probe(AVProbeData *p)
+static int avs2_probe(const AVProbeData *p)
 {
     uint32_t code= -1, hds=0, pic=0, seq=0;
     uint8_t state=0;

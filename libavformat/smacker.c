@@ -92,7 +92,7 @@ static const uint8_t smk_pal[64] = {
 };
 
 
-static int smacker_probe(AVProbeData *p)
+static int smacker_probe(const AVProbeData *p)
 {
     if (   AV_RL32(p->buf) != MKTAG('S', 'M', 'K', '2')
         && AV_RL32(p->buf) != MKTAG('S', 'M', 'K', '4'))

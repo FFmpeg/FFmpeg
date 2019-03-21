@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int sdr2_probe(AVProbeData *p)
+static int sdr2_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('S', 'R', 'A', 1))
         return 0;

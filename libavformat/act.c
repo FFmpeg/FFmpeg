@@ -33,7 +33,7 @@ typedef struct{
     char second_packet;      ///< 1 - if temporary buffer contains valid (second) G.729 packet
 } ACTContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     int i;
 

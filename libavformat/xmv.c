@@ -115,7 +115,7 @@ typedef struct XMVDemuxContext {
     XMVAudioPacket *audio; ///< The audio packets contained in each packet.
 } XMVDemuxContext;
 
-static int xmv_probe(AVProbeData *p)
+static int xmv_probe(const AVProbeData *p)
 {
     uint32_t file_version;
 

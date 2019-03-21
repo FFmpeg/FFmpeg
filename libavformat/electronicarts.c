@@ -458,7 +458,7 @@ static int process_ea_header(AVFormatContext *s)
     return 1;
 }
 
-static int ea_probe(AVProbeData *p)
+static int ea_probe(const AVProbeData *p)
 {
     unsigned big_endian, size;
 

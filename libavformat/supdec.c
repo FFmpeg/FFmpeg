@@ -68,7 +68,7 @@ static int sup_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int sup_probe(AVProbeData *p)
+static int sup_probe(const AVProbeData *p)
 {
     unsigned char *buf = p->buf;
     size_t buf_size = p->buf_size;

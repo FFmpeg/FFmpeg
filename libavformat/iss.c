@@ -58,7 +58,7 @@ static void get_token(AVIOContext *s, char *buf, int maxlen)
     buf[i] = 0; /* Ensure null terminated, but may be truncated */
 }
 
-static int iss_probe(AVProbeData *p)
+static int iss_probe(const AVProbeData *p)
 {
     if (strncmp(p->buf, ISS_SIG, ISS_SIG_LEN))
         return 0;

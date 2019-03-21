@@ -43,7 +43,7 @@ typedef struct DTSHDDemuxContext {
     uint64_t    data_end;
 } DTSHDDemuxContext;
 
-static int dtshd_probe(AVProbeData *p)
+static int dtshd_probe(const AVProbeData *p)
 {
     if (AV_RB64(p->buf) == DTSHDHDR)
         return AVPROBE_SCORE_MAX;

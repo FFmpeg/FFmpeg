@@ -60,7 +60,7 @@ typedef struct WVContext {
     int64_t apetag_start;
 } WVContext;
 
-static int wv_probe(AVProbeData *p)
+static int wv_probe(const AVProbeData *p)
 {
     /* check file header */
     if (p->buf_size <= 32)

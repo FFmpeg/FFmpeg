@@ -160,7 +160,7 @@ fail:
     return -1;
 }
 
-static int img_read_probe(AVProbeData *p)
+static int img_read_probe(const AVProbeData *p)
 {
     if (p->filename && ff_guess_image2_codec(p->filename)) {
         if (av_filename_number_test(p->filename))
@@ -629,7 +629,7 @@ AVInputFormat ff_image2pipe_demuxer = {
 };
 #endif
 
-static int bmp_probe(AVProbeData *p)
+static int bmp_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int ihsize;
@@ -647,7 +647,7 @@ static int bmp_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 4;
 }
 
-static int dds_probe(AVProbeData *p)
+static int dds_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -658,7 +658,7 @@ static int dds_probe(AVProbeData *p)
     return 0;
 }
 
-static int dpx_probe(AVProbeData *p)
+static int dpx_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int w, h;
@@ -676,7 +676,7 @@ static int dpx_probe(AVProbeData *p)
     return 0;
 }
 
-static int exr_probe(AVProbeData *p)
+static int exr_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -685,7 +685,7 @@ static int exr_probe(AVProbeData *p)
     return 0;
 }
 
-static int j2k_probe(AVProbeData *p)
+static int j2k_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -695,7 +695,7 @@ static int j2k_probe(AVProbeData *p)
     return 0;
 }
 
-static int jpeg_probe(AVProbeData *p)
+static int jpeg_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int i, state = SOI;
@@ -770,7 +770,7 @@ static int jpeg_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 8;
 }
 
-static int jpegls_probe(AVProbeData *p)
+static int jpegls_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -779,7 +779,7 @@ static int jpegls_probe(AVProbeData *p)
     return 0;
 }
 
-static int pcx_probe(AVProbeData *p)
+static int pcx_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -800,7 +800,7 @@ static int pcx_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION + 1;
 }
 
-static int qdraw_probe(AVProbeData *p)
+static int qdraw_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -816,7 +816,7 @@ static int qdraw_probe(AVProbeData *p)
     return 0;
 }
 
-static int pictor_probe(AVProbeData *p)
+static int pictor_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -825,7 +825,7 @@ static int pictor_probe(AVProbeData *p)
     return 0;
 }
 
-static int png_probe(AVProbeData *p)
+static int png_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -834,7 +834,7 @@ static int png_probe(AVProbeData *p)
     return 0;
 }
 
-static int psd_probe(AVProbeData *p)
+static int psd_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int ret = 0;
@@ -862,7 +862,7 @@ static int psd_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION + ret;
 }
 
-static int sgi_probe(AVProbeData *p)
+static int sgi_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -874,7 +874,7 @@ static int sgi_probe(AVProbeData *p)
     return 0;
 }
 
-static int sunrast_probe(AVProbeData *p)
+static int sunrast_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -883,7 +883,7 @@ static int sunrast_probe(AVProbeData *p)
     return 0;
 }
 
-static int svg_probe(AVProbeData *p)
+static int svg_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     const uint8_t *end = p->buf + p->buf_size;
@@ -903,7 +903,7 @@ static int svg_probe(AVProbeData *p)
     return 0;
 }
 
-static int tiff_probe(AVProbeData *p)
+static int tiff_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -913,7 +913,7 @@ static int tiff_probe(AVProbeData *p)
     return 0;
 }
 
-static int webp_probe(AVProbeData *p)
+static int webp_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -941,39 +941,39 @@ static inline int pnm_probe(const AVProbeData *p)
     return 0;
 }
 
-static int pbm_probe(AVProbeData *p)
+static int pbm_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 1) || pnm_magic_check(p, 4) ? pnm_probe(p) : 0;
 }
 
-static inline int pgmx_probe(AVProbeData *p)
+static inline int pgmx_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 2) || pnm_magic_check(p, 5) ? pnm_probe(p) : 0;
 }
 
-static int pgm_probe(AVProbeData *p)
+static int pgm_probe(const AVProbeData *p)
 {
     int ret = pgmx_probe(p);
     return ret && !av_match_ext(p->filename, "pgmyuv") ? ret : 0;
 }
 
-static int pgmyuv_probe(AVProbeData *p) // custom FFmpeg format recognized by file extension
+static int pgmyuv_probe(const AVProbeData *p) // custom FFmpeg format recognized by file extension
 {
     int ret = pgmx_probe(p);
     return ret && av_match_ext(p->filename, "pgmyuv") ? ret : 0;
 }
 
-static int ppm_probe(AVProbeData *p)
+static int ppm_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 3) || pnm_magic_check(p, 6) ? pnm_probe(p) : 0;
 }
 
-static int pam_probe(AVProbeData *p)
+static int pam_probe(const AVProbeData *p)
 {
     return pnm_magic_check(p, 7) ? pnm_probe(p) : 0;
 }
 
-static int xpm_probe(AVProbeData *p)
+static int xpm_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 
@@ -982,7 +982,7 @@ static int xpm_probe(AVProbeData *p)
     return 0;
 }
 
-static int xwd_probe(AVProbeData *p)
+static int xwd_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     unsigned width, bpp, bpad, lsize;
@@ -1012,7 +1012,7 @@ static int xwd_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX / 2 + 1;
 }
 
-static int gif_probe(AVProbeData *p)
+static int gif_probe(const AVProbeData *p)
 {
     /* check magick */
     if (memcmp(p->buf, gif87a_sig, 6) && memcmp(p->buf, gif89a_sig, 6))

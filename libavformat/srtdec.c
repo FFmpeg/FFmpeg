@@ -30,7 +30,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } SRTContext;
 
-static int srt_probe(AVProbeData *p)
+static int srt_probe(const AVProbeData *p)
 {
     int v;
     char buf[64], *pbuf;

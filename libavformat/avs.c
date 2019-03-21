@@ -50,7 +50,7 @@ typedef enum avs_block_type {
     AVS_GAME_DATA = 0x04,
 } AvsBlockType;
 
-static int avs_probe(AVProbeData * p)
+static int avs_probe(const AVProbeData * p)
 {
     const uint8_t *d;
 

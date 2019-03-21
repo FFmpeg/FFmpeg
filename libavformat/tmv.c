@@ -51,7 +51,7 @@ typedef struct TMVContext {
 #define PROBE_MAX_FPS         120
 #define PROBE_MIN_AUDIO_SIZE  (PROBE_MIN_SAMPLE_RATE / PROBE_MAX_FPS)
 
-static int tmv_probe(AVProbeData *p)
+static int tmv_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf)   == TMV_TAG &&
         AV_RL16(p->buf+4) >= PROBE_MIN_SAMPLE_RATE &&

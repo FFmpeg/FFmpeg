@@ -36,7 +36,7 @@ typedef struct {
 } MicroDVDContext;
 
 
-static int microdvd_probe(AVProbeData *p)
+static int microdvd_probe(const AVProbeData *p)
 {
     unsigned char c;
     const uint8_t *ptr = p->buf;

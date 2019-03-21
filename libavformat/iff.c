@@ -142,7 +142,7 @@ static int get_metadata(AVFormatContext *s,
     return 0;
 }
 
-static int iff_probe(AVProbeData *p)
+static int iff_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
 

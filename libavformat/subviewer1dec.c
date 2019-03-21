@@ -31,7 +31,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } SubViewer1Context;
 
-static int subviewer1_probe(AVProbeData *p)
+static int subviewer1_probe(const AVProbeData *p)
 {
     const unsigned char *ptr = p->buf;
 

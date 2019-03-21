@@ -23,7 +23,7 @@
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('D','K','I','F')
         && !AV_RL16(p->buf+4) && AV_RL16(p->buf+6) == 32)

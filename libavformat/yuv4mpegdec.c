@@ -333,7 +333,7 @@ static int yuv4_read_seek(AVFormatContext *s, int stream_index,
     return 0;
 }
 
-static int yuv4_probe(AVProbeData *pd)
+static int yuv4_probe(const AVProbeData *pd)
 {
     /* check file header */
     if (strncmp(pd->buf, Y4M_MAGIC, sizeof(Y4M_MAGIC) - 1) == 0)

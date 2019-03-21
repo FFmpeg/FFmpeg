@@ -52,7 +52,7 @@ typedef struct {
     uint64_t pts;
 } MlvContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('M','L','V','I') &&
         AV_RL32(p->buf + 4) >= 52 &&

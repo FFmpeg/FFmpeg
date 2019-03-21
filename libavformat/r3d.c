@@ -368,7 +368,7 @@ static int r3d_read_packet(AVFormatContext *s, AVPacket *pkt)
     return err;
 }
 
-static int r3d_probe(AVProbeData *p)
+static int r3d_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf + 4) == MKTAG('R','E','D','1'))
         return AVPROBE_SCORE_MAX;

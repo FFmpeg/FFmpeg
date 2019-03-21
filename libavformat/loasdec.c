@@ -27,7 +27,7 @@
 
 #define LOAS_SYNC_WORD 0x2b7
 
-static int loas_probe(AVProbeData *p)
+static int loas_probe(const AVProbeData *p)
 {
     int max_frames = 0, first_frames = 0;
     int fsize, frames;

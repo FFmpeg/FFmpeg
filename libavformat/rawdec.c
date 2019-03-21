@@ -134,7 +134,7 @@ AVInputFormat ff_data_demuxer = {
 #endif
 
 #if CONFIG_MJPEG_DEMUXER
-static int mjpeg_probe(AVProbeData *p)
+static int mjpeg_probe(const AVProbeData *p)
 {
     int i;
     int state = -1;

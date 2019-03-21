@@ -30,7 +30,7 @@ typedef struct SDSContext {
     void (*read_block)(const uint8_t *src, uint32_t *dst);
 } SDSContext;
 
-static int sds_probe(AVProbeData *p)
+static int sds_probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf) == 0xF07E0001 && p->buf[20] == 0xF7 &&
         p->buf[6] >= 8 && p->buf[6] <= 28)

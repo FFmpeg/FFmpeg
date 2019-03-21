@@ -30,7 +30,7 @@ typedef struct {
     uint64_t data_size;
 } DSFContext;
 
-static int dsf_probe(AVProbeData *p)
+static int dsf_probe(const AVProbeData *p)
 {
     if (p->buf_size < 12 || memcmp(p->buf, "DSD ", 4) || AV_RL64(p->buf + 4) != 28)
         return 0;

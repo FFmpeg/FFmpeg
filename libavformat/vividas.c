@@ -70,7 +70,7 @@ typedef struct VividasDemuxContext {
     VIV_AudioSubpacket audio_subpackets[MAX_AUDIO_SUBPACKETS];
 } VividasDemuxContext;
 
-static int viv_probe(AVProbeData *p)
+static int viv_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "vividas03", 9))
         return 0;

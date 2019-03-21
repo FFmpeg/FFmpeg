@@ -321,7 +321,7 @@ static int tedcaptions_read_close(AVFormatContext *avf)
     return 0;
 }
 
-static av_cold int tedcaptions_read_probe(AVProbeData *p)
+static av_cold int tedcaptions_read_probe(const AVProbeData *p)
 {
     static const char *const tags[] = {
         "\"captions\"", "\"duration\"", "\"content\"",

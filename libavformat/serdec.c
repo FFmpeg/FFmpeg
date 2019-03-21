@@ -35,7 +35,7 @@ typedef struct SERDemuxerContext {
     int64_t end;
 } SERDemuxerContext;
 
-static int ser_probe(AVProbeData *pd)
+static int ser_probe(const AVProbeData *pd)
 {
     if (memcmp(pd->buf, SER_MAGIC, 14) == 0)
         return AVPROBE_SCORE_MAX;

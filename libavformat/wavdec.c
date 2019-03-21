@@ -129,7 +129,7 @@ static int64_t find_tag(WAVDemuxContext * wav, AVIOContext *pb, uint32_t tag1)
     return size;
 }
 
-static int wav_probe(AVProbeData *p)
+static int wav_probe(const AVProbeData *p)
 {
     /* check file header */
     if (p->buf_size <= 32)
@@ -774,7 +774,7 @@ AVInputFormat ff_wav_demuxer = {
 #endif /* CONFIG_WAV_DEMUXER */
 
 #if CONFIG_W64_DEMUXER
-static int w64_probe(AVProbeData *p)
+static int w64_probe(const AVProbeData *p)
 {
     if (p->buf_size <= 40)
         return 0;

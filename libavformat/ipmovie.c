@@ -614,7 +614,7 @@ static int process_ipmovie_chunk(IPMVEContext *s, AVIOContext *pb,
 
 static const char signature[] = "Interplay MVE File\x1A\0\x1A";
 
-static int ipmovie_probe(AVProbeData *p)
+static int ipmovie_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     const uint8_t *b_end = p->buf + p->buf_size - sizeof(signature);

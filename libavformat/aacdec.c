@@ -30,7 +30,7 @@
 
 #define ADTS_HEADER_SIZE 7
 
-static int adts_aac_probe(AVProbeData *p)
+static int adts_aac_probe(const AVProbeData *p)
 {
     int max_frames = 0, first_frames = 0;
     int fsize, frames;

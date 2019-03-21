@@ -37,7 +37,7 @@
 #include "pcm.h"
 #include "sox.h"
 
-static int sox_probe(AVProbeData *p)
+static int sox_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == SOX_TAG || AV_RB32(p->buf) == SOX_TAG)
         return AVPROBE_SCORE_MAX;

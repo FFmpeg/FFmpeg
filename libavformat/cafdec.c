@@ -48,7 +48,7 @@ typedef struct CafContext {
     int64_t data_size;              ///< raw data size, in bytes
 } CafContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf) == MKBETAG('c','a','f','f') && AV_RB16(&p->buf[4]) == 1)
         return AVPROBE_SCORE_MAX;

@@ -48,7 +48,7 @@ static int timed_line(const char *ptr)
             (sscanf(ptr, "@%u @%u %c", &fs, &fe, &c) == 3 && fs < fe));
 }
 
-static int jacosub_probe(AVProbeData *p)
+static int jacosub_probe(const AVProbeData *p)
 {
     const char *ptr     = p->buf;
     const char *ptr_end = p->buf + p->buf_size;

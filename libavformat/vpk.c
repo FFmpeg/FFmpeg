@@ -29,7 +29,7 @@ typedef struct VPKDemuxContext {
     unsigned last_block_size;
 } VPKDemuxContext;
 
-static int vpk_probe(AVProbeData *p)
+static int vpk_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKBETAG('V','P','K',' '))
         return 0;

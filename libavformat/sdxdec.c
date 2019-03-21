@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int sdx_probe(AVProbeData *p)
+static int sdx_probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf) == AV_RB32("SDX:"))
         return AVPROBE_SCORE_EXTENSION;

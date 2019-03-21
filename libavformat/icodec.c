@@ -43,7 +43,7 @@ typedef struct {
     IcoImage * images;
 } IcoDemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     unsigned i, frames, checked = 0;
 

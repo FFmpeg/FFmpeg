@@ -702,7 +702,7 @@ typedef struct AVInputFormat {
      * The buffer provided is guaranteed to be AVPROBE_PADDING_SIZE bytes
      * big so you do not have to check for that unless you need more.
      */
-    int (*read_probe)(AVProbeData *);
+    int (*read_probe)(const AVProbeData *);
 
     /**
      * Read the format header and initialize the AVFormatContext

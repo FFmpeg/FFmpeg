@@ -3574,7 +3574,7 @@ static int mxf_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int mxf_probe(AVProbeData *p) {
+static int mxf_probe(const AVProbeData *p) {
     const uint8_t *bufp = p->buf;
     const uint8_t *end = p->buf + p->buf_size;
 

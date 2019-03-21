@@ -111,7 +111,7 @@ static int mpjpeg_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int mpjpeg_read_probe(AVProbeData *p)
+static int mpjpeg_read_probe(const AVProbeData *p)
 {
     AVIOContext *pb;
     int ret = 0;

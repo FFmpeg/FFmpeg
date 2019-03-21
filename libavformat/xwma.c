@@ -34,7 +34,7 @@ typedef struct XWMAContext {
     int64_t data_end;
 } XWMAContext;
 
-static int xwma_probe(AVProbeData *p)
+static int xwma_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "RIFF", 4) && !memcmp(p->buf + 8, "XWMA", 4))
         return AVPROBE_SCORE_MAX;

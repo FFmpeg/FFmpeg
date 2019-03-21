@@ -59,7 +59,7 @@ typedef struct RoqDemuxContext {
 
 } RoqDemuxContext;
 
-static int roq_probe(AVProbeData *p)
+static int roq_probe(const AVProbeData *p)
 {
     if ((AV_RL16(&p->buf[0]) != RoQ_MAGIC_NUMBER) ||
         (AV_RL32(&p->buf[2]) != 0xFFFFFFFF))

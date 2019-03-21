@@ -2302,7 +2302,7 @@ static int dash_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
     return ret;
 }
 
-static int dash_probe(AVProbeData *p)
+static int dash_probe(const AVProbeData *p)
 {
     if (!av_stristr(p->buf, "<MPD"))
         return 0;

@@ -57,7 +57,7 @@ static const AVCodecTag codec_au_tags[] = {
 
 #if CONFIG_AU_DEMUXER
 
-static int au_probe(AVProbeData *p)
+static int au_probe(const AVProbeData *p)
 {
     if (p->buf[0] == '.' && p->buf[1] == 's' &&
         p->buf[2] == 'n' && p->buf[3] == 'd')

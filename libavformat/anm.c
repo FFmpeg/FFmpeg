@@ -47,7 +47,7 @@ typedef struct AnmDemuxContext {
 #define LPF_TAG  MKTAG('L','P','F',' ')
 #define ANIM_TAG MKTAG('A','N','I','M')
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     /* verify tags and video dimensions */
     if (AV_RL32(&p->buf[0])  == LPF_TAG &&

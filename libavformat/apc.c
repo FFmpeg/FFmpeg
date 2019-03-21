@@ -25,7 +25,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int apc_probe(AVProbeData *p)
+static int apc_probe(const AVProbeData *p)
 {
     if (!strncmp(p->buf, "CRYO_APC", 8))
         return AVPROBE_SCORE_MAX;

@@ -34,7 +34,7 @@ typedef struct GSMDemuxerContext {
     int sample_rate;
 } GSMDemuxerContext;
 
-static int gsm_probe(AVProbeData *p)
+static int gsm_probe(const AVProbeData *p)
 {
     int valid = 0, invalid = 0;
     uint8_t *b = p->buf;

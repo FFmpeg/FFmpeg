@@ -35,7 +35,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } RealTextContext;
 
-static int realtext_probe(AVProbeData *p)
+static int realtext_probe(const AVProbeData *p)
 {
     char buf[7];
     FFTextReader tr;

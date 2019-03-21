@@ -106,7 +106,7 @@ typedef struct TYDemuxContext {
     uint8_t         chunk[CHUNK_SIZE];
 } TYDemuxContext;
 
-static int ty_probe(AVProbeData *p)
+static int ty_probe(const AVProbeData *p)
 {
     int i;
 

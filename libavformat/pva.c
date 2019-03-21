@@ -40,7 +40,7 @@ static int pva_check(const uint8_t *p) {
     return length + 8;
 }
 
-static int pva_probe(AVProbeData * pd) {
+static int pva_probe(const AVProbeData * pd) {
     const unsigned char *buf = pd->buf;
     int len = pva_check(buf);
 

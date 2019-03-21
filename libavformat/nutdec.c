@@ -149,7 +149,7 @@ static int64_t find_startcode(AVIOContext *bc, uint64_t code, int64_t pos)
     }
 }
 
-static int nut_probe(AVProbeData *p)
+static int nut_probe(const AVProbeData *p)
 {
     int i;
 

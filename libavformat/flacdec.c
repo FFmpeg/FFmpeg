@@ -211,7 +211,7 @@ fail:
     return ret;
 }
 
-static int raw_flac_probe(AVProbeData *p)
+static int raw_flac_probe(const AVProbeData *p)
 {
     if ((p->buf[2] & 0xF0) == 0)    // blocksize code invalid
         return 0;
@@ -227,7 +227,7 @@ static int raw_flac_probe(AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION / 4 + 1;
 }
 
-static int flac_probe(AVProbeData *p)
+static int flac_probe(const AVProbeData *p)
 {
     if ((AV_RB16(p->buf) & 0xFFFE) == 0xFFF8)
         return raw_flac_probe(p);

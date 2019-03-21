@@ -26,7 +26,7 @@
 #include "internal.h"
 #include "libavutil/dict.h"
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if(!memcmp(p->buf, ID_STRING, strlen(ID_STRING)))
         return AVPROBE_SCORE_MAX;

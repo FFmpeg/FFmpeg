@@ -232,7 +232,7 @@ static int probe_openmpt_extension(AVProbeData *p)
     return 0;
 }
 
-static int read_probe_openmpt(AVProbeData *p)
+static int read_probe_openmpt(const AVProbeData *p)
 {
 #if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
     int probe_result;

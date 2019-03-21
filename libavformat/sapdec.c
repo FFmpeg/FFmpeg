@@ -42,7 +42,7 @@ struct SAPState {
     int eof;
 };
 
-static int sap_probe(AVProbeData *p)
+static int sap_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "sap:", NULL))
         return AVPROBE_SCORE_MAX;

@@ -39,7 +39,7 @@ typedef struct BFIContext {
     int avflag;
 } BFIContext;
 
-static int bfi_probe(AVProbeData * p)
+static int bfi_probe(const AVProbeData * p)
 {
     /* Check file header */
     if (AV_RL32(p->buf) == MKTAG('B', 'F', '&', 'I'))

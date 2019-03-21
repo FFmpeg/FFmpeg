@@ -22,7 +22,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int h263_probe(AVProbeData *p)
+static int h263_probe(const AVProbeData *p)
 {
     uint64_t code= -1;
     int i;

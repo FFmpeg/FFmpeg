@@ -36,7 +36,7 @@ typedef struct yop_dec_context {
     int palette_size;
 } YopDecContext;
 
-static int yop_probe(AVProbeData *probe_packet)
+static int yop_probe(const AVProbeData *probe_packet)
 {
     if (AV_RB16(probe_packet->buf) == AV_RB16("YO")  &&
         probe_packet->buf[2]<10                      &&

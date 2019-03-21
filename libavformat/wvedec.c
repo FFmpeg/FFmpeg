@@ -22,7 +22,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int wve_probe(AVProbeData *p)
+static int wve_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "ALawSoundFile**\0\017\020", 18) ||
         memcmp(p->buf + 22, "\0\0\0\1\0\0\0\0\0\0", 10))

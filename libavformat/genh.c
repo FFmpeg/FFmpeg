@@ -29,7 +29,7 @@ typedef struct GENHDemuxContext {
     unsigned interleave_size;
 } GENHDemuxContext;
 
-static int genh_probe(AVProbeData *p)
+static int genh_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('G','E','N','H'))
         return 0;

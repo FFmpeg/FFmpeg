@@ -55,7 +55,7 @@ typedef struct Rl2DemuxContext {
  * @param p probe buffer
  * @return 0 when the probe buffer does not contain rl2 data, > 0 otherwise
  */
-static int rl2_probe(AVProbeData *p)
+static int rl2_probe(const AVProbeData *p)
 {
 
     if(AV_RB32(&p->buf[0]) != FORM_TAG)

@@ -59,7 +59,7 @@ typedef struct BinkDemuxContext {
     int smush_size;
 } BinkDemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int smush = AV_RN32(p->buf) == AV_RN32("SMUS");

@@ -83,7 +83,7 @@ typedef struct APEContext {
     uint8_t  *bittable;
 } APEContext;
 
-static int ape_probe(AVProbeData * p)
+static int ape_probe(const AVProbeData * p)
 {
     int version = AV_RL16(p->buf+4);
     if (AV_RL32(p->buf) != MKTAG('M', 'A', 'C', ' '))

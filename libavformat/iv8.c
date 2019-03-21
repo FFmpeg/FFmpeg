@@ -22,7 +22,7 @@
 #include "internal.h"
 
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     // the single file I have starts with that, I do not know if others do, too
     if(   p->buf[0] == 1

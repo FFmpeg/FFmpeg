@@ -24,7 +24,7 @@
 #include "rawdec.h"
 
 #if CONFIG_MJPEG_2000_DEMUXER
-static int mjpeg2000_probe(AVProbeData *p)
+static int mjpeg2000_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int i, marker, marker_size;

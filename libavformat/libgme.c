@@ -169,7 +169,7 @@ static int read_seek_gme(AVFormatContext *s, int stream_idx, int64_t ts, int fla
     return 0;
 }
 
-static int probe_gme(AVProbeData *p)
+static int probe_gme(const AVProbeData *p)
 {
     // Reads 4 bytes - returns "" if unknown format.
     if (gme_identify_header(p->buf)[0]) {

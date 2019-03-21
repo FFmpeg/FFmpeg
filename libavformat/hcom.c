@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int hcom_probe(AVProbeData *p)
+static int hcom_probe(const AVProbeData *p)
 {
     if (p->buf_size < 132)
         return 0;

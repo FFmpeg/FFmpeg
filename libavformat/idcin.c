@@ -91,7 +91,7 @@ typedef struct IdcinDemuxContext {
     int64_t first_pkt_pos;
 } IdcinDemuxContext;
 
-static int idcin_probe(AVProbeData *p)
+static int idcin_probe(const AVProbeData *p)
 {
     unsigned int number, sample_rate;
     unsigned int w, h;

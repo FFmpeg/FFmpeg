@@ -40,7 +40,7 @@ typedef struct VivoContext {
     uint8_t  text[1024 + 1];
 } VivoContext;
 
-static int vivo_probe(AVProbeData *p)
+static int vivo_probe(const AVProbeData *p)
 {
     const unsigned char *buf = p->buf;
     unsigned c, length = 0;

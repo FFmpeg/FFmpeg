@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int mtaf_probe(AVProbeData *p)
+static int mtaf_probe(const AVProbeData *p)
 {
     if (p->buf_size < 0x44)
         return 0;

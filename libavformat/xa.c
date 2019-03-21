@@ -40,7 +40,7 @@ typedef struct MaxisXADemuxContext {
     uint32_t sent_bytes;
 } MaxisXADemuxContext;
 
-static int xa_probe(AVProbeData *p)
+static int xa_probe(const AVProbeData *p)
 {
     int channels, srate, bits_per_sample;
     if (p->buf_size < 24)

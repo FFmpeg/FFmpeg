@@ -37,7 +37,7 @@ typedef struct {
     int kind;
 } WebVTTContext;
 
-static int webvtt_probe(AVProbeData *p)
+static int webvtt_probe(const AVProbeData *p)
 {
     const uint8_t *ptr = p->buf;
 

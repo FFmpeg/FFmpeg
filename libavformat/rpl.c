@@ -33,7 +33,7 @@
 /** 256 is arbitrary, but should be big enough for any reasonable file. */
 #define RPL_LINE_LENGTH 256
 
-static int rpl_probe(AVProbeData *p)
+static int rpl_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, RPL_SIGNATURE, RPL_SIGNATURE_SIZE))
         return 0;

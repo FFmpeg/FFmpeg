@@ -6901,7 +6901,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_probe(AVProbeData *p)
+static int mov_probe(const AVProbeData *p)
 {
     int64_t offset;
     uint32_t tag;

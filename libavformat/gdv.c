@@ -34,7 +34,7 @@ typedef struct GDVContext {
     unsigned pal[256];
 } GDVContext;
 
-static int gdv_read_probe(AVProbeData *p)
+static int gdv_read_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == 0x29111994)
         return AVPROBE_SCORE_MAX;

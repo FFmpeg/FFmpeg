@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int nist_probe(AVProbeData *p)
+static int nist_probe(const AVProbeData *p)
 {
     if (AV_RL64(p->buf) == AV_RL64("NIST_1A\x0a"))
         return AVPROBE_SCORE_MAX;

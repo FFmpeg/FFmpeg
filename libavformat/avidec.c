@@ -1920,7 +1920,7 @@ static int avi_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int avi_probe(AVProbeData *p)
+static int avi_probe(const AVProbeData *p)
 {
     int i;
 

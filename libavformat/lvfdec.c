@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "riff.h"
 
-static int lvf_probe(AVProbeData *p)
+static int lvf_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('L', 'V', 'F', 'F'))
         return 0;

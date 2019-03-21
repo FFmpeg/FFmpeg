@@ -22,7 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int svag_probe(AVProbeData *p)
+static int svag_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "Svag", 4))
         return 0;

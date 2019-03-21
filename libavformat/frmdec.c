@@ -42,7 +42,7 @@ typedef struct {
     int count;
 } FrmContext;
 
-static int frm_read_probe(AVProbeData *p)
+static int frm_read_probe(const AVProbeData *p)
 {
     if (p->buf_size > 8 &&
         p->buf[0] == 'F' && p->buf[1] == 'R' && p->buf[2] == 'M' &&

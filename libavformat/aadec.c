@@ -360,7 +360,7 @@ static int aa_read_seek(AVFormatContext *s,
     return 1;
 }
 
-static int aa_probe(AVProbeData *p)
+static int aa_probe(const AVProbeData *p)
 {
     uint8_t *buf = p->buf;
 

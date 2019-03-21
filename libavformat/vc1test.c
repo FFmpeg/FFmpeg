@@ -32,7 +32,7 @@
 
 #define VC1_EXTRADATA_SIZE 4
 
-static int vc1t_probe(AVProbeData *p)
+static int vc1t_probe(const AVProbeData *p)
 {
     uint32_t size;
 

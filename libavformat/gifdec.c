@@ -69,7 +69,7 @@ typedef struct GIFDemuxContext {
  */
 #define GIF_MIN_DELAY       2
 
-static int gif_probe(AVProbeData *p)
+static int gif_probe(const AVProbeData *p)
 {
     /* check magick */
     if (memcmp(p->buf, gif87a_sig, 6) && memcmp(p->buf, gif89a_sig, 6))

@@ -1295,7 +1295,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
 /*
  * Autodetecting...
  */
-static int matroska_probe(AVProbeData *p)
+static int matroska_probe(const AVProbeData *p)
 {
     uint64_t total = 0;
     int len_mask = 0x80, size = 1, n = 1, i;

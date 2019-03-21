@@ -47,7 +47,7 @@ typedef enum {
     NUV_MYTHEXT   = 'X'
 } nuv_frametype;
 
-static int nuv_probe(AVProbeData *p)
+static int nuv_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "NuppelVideo", 12))
         return AVPROBE_SCORE_MAX;

@@ -36,7 +36,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } SAMIContext;
 
-static int sami_probe(AVProbeData *p)
+static int sami_probe(const AVProbeData *p)
 {
     char buf[6];
     FFTextReader tr;

@@ -189,7 +189,7 @@ static int get_aiff_header(AVFormatContext *s, int size,
     return num_frames;
 }
 
-static int aiff_probe(AVProbeData *p)
+static int aiff_probe(const AVProbeData *p)
 {
     /* check file header */
     if (p->buf[0] == 'F' && p->buf[1] == 'O' &&

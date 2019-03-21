@@ -2281,7 +2281,7 @@ end:
 #endif /* CONFIG_RTPDEC */
 
 #if CONFIG_SDP_DEMUXER
-static int sdp_probe(AVProbeData *p1)
+static int sdp_probe(const AVProbeData *p1)
 {
     const char *p = p1->buf, *p_end = p1->buf + p1->buf_size;
 
@@ -2420,7 +2420,7 @@ AVInputFormat ff_sdp_demuxer = {
 #endif /* CONFIG_SDP_DEMUXER */
 
 #if CONFIG_RTP_DEMUXER
-static int rtp_probe(AVProbeData *p)
+static int rtp_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtp:", NULL))
         return AVPROBE_SCORE_MAX;

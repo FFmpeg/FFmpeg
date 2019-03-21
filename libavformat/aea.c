@@ -27,7 +27,7 @@
 
 #define AT1_SU_SIZE     212
 
-static int aea_read_probe(AVProbeData *p)
+static int aea_read_probe(const AVProbeData *p)
 {
     if (p->buf_size <= 2048+212)
         return 0;

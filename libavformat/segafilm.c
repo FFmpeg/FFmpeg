@@ -64,7 +64,7 @@ typedef struct FilmDemuxContext {
     unsigned int version;
 } FilmDemuxContext;
 
-static int film_probe(AVProbeData *p)
+static int film_probe(const AVProbeData *p)
 {
     if (AV_RB32(&p->buf[0]) != FILM_TAG)
         return 0;

@@ -24,7 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/vc1_common.h"
 
-static int vc1_probe(AVProbeData *p)
+static int vc1_probe(const AVProbeData *p)
 {
     int seq = 0, entry = 0, frame = 0, i;
 

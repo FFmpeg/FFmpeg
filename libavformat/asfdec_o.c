@@ -147,7 +147,7 @@ typedef struct ASFContext {
 static int detect_unknown_subobject(AVFormatContext *s, int64_t offset, int64_t size);
 static const GUIDParseTable *find_guid(ff_asf_guid guid);
 
-static int asf_probe(AVProbeData *pd)
+static int asf_probe(const AVProbeData *pd)
 {
     /* check file header */
     if (!ff_guidcmp(pd->buf, &ff_asf_header))

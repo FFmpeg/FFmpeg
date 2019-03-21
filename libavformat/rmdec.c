@@ -1067,7 +1067,7 @@ static int rm_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int rm_probe(AVProbeData *p)
+static int rm_probe(const AVProbeData *p)
 {
     /* check file header */
     if ((p->buf[0] == '.' && p->buf[1] == 'R' &&
@@ -1158,7 +1158,7 @@ AVInputFormat ff_rdt_demuxer = {
     .flags          = AVFMT_NOFILE,
 };
 
-static int ivr_probe(AVProbeData *p)
+static int ivr_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, ".R1M\x0\x1\x1", 7) &&
         memcmp(p->buf, ".REC", 4))

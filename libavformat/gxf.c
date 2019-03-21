@@ -86,7 +86,7 @@ static int parse_packet_header(AVIOContext *pb, GXFPktType *type, int *length) {
 /**
  * @brief check if file starts with a PKT_MAP header
  */
-static int gxf_probe(AVProbeData *p) {
+static int gxf_probe(const AVProbeData *p) {
     static const uint8_t startcode[] = {0, 0, 0, 0, 1, 0xbc}; // start with map packet
     static const uint8_t endcode[] = {0, 0, 0, 0, 0xe1, 0xe2};
     if (!memcmp(p->buf, startcode, sizeof(startcode)) &&

@@ -52,7 +52,7 @@ typedef struct Hnm4DemuxContext {
     AVPacket vpkt;
 } Hnm4DemuxContext;
 
-static int hnm_probe(AVProbeData *p)
+static int hnm_probe(const AVProbeData *p)
 {
     if (p->buf_size < 4)
         return 0;

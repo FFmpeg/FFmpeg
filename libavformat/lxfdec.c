@@ -52,7 +52,7 @@ typedef struct LXFDemuxContext {
     uint32_t video_format, packet_type, extended_size;
 } LXFDemuxContext;
 
-static int lxf_probe(AVProbeData *p)
+static int lxf_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, LXF_IDENT, LXF_IDENT_LENGTH))
         return AVPROBE_SCORE_MAX;

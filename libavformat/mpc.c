@@ -45,7 +45,7 @@ typedef struct MPCContext {
     int frames_noted;
 } MPCContext;
 
-static int mpc_probe(AVProbeData *p)
+static int mpc_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
     if (d[0] == 'M' && d[1] == 'P' && d[2] == '+' && (d[3] == 0x17 || d[3] == 0x7))

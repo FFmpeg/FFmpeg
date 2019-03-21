@@ -30,7 +30,7 @@
 #define CAVS_VIDEO_EDIT_CODE      0x000001b7
 #define CAVS_PROFILE_JIZHUN       0x20
 
-static int cavsvideo_probe(AVProbeData *p)
+static int cavsvideo_probe(const AVProbeData *p)
 {
     uint32_t code= -1;
     int pic=0, seq=0, slice_pos = 0;
