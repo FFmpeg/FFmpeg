@@ -293,6 +293,9 @@ Set container format (mp4/webm) options using a @code{:} separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
 
+@item -global_sidx @var{global_sidx}
+Write global SIDX atom. Applicable only for single file, mp4 output, non-streaming mode.
+
 @item -dash_segment_type @var{dash_segment_type}
 Possible values:
 @item auto
