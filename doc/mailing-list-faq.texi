@@ -64,10 +64,6 @@ Email @email{ffmpeg-devel@@ffmpeg.org} to send a message to the
 ffmpeg-devel mailing list.
 @end itemize
 
-Note that the ffmpeg-devel mailing list does not require you to subscribe
-to send a message or patch, but ffmpeg-user and libav-user do require
-subscription.
-
 @chapter Subscribing / Unsubscribing
 
 @anchor{How do I subscribe?}
@@ -94,6 +90,9 @@ The process is the same for the other mailing lists.
 Please avoid asking a mailing list admin to unsubscribe you unless you
 are absolutely unable to do so by yourself. See @ref{Who do I contact if I have a problem with the mailing list?}
 
+Note that it is possible to temporarily halt message delivery (vacation mode).
+See @ref{How do I disable mail delivery without unsubscribing?}
+
 @chapter Moderation Queue
 @anchor{Why is my message awaiting moderator approval?}
 @section Why is my message awaiting moderator approval?
@@ -116,7 +115,8 @@ or is abusive towards others).
 
 @section How long does it take for my message in the moderation queue to be approved?
 
-The queue is usually checked daily to several times a week.
+The queue is not checked on a regular basis. You can ask on the
+@t{#ffmpeg-devel} IRC channel on Freenode for someone to approve your message.
 
 @anchor{How do I delete my message in the moderation queue?}
 @section How do I delete my message in the moderation queue?
@@ -157,11 +157,12 @@ Perform a site search using your favorite search engine. Example:
 
 You can ask for help in the official @t{#ffmpeg} IRC channel on Freenode.
 
-Some users prefer the third-party Nabble interface which presents the
-mailing lists in a typical forum layout.
+Some users prefer the third-party @url{http://www.ffmpeg-archive.org/, Nabble}
+interface which presents the mailing lists in a typical forum layout.
 
-There are also numerous third-party help sites such as Super User and
-r/ffmpeg on reddit.
+There are also numerous third-party help sites such as
+@url{https://superuser.com/tags/ffmpeg, Super User} and
+@url{https://www.reddit.com/r/ffmpeg/, r/ffmpeg on reddit}.
 
 @anchor{What is top-posting?}
 @section What is top-posting?
@@ -181,7 +182,7 @@ instead of attaching them.
 Anywhere that is not too annoying for us to use.
 
 Google Drive and Dropbox are acceptable if you need a file host, and
-0x0.st is good for files under 256 MiB.
+@url{https://0x0.st/, 0x0.st} is good for files under 256 MiB.
 
 Small, short samples are preferred if possible.
 
@@ -228,6 +229,7 @@ or headers.
 
 You can then filter the mailing list messages to their own folder.
 
+@anchor{How do I disable mail delivery without unsubscribing?}
 @section How do I disable mail delivery without unsubscribing?
 
 Sometimes you may want to temporarily stop receiving all mailing list
