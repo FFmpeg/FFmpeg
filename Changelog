@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.1.2:
+- avcodec/dfa: Check the chunk header is not truncated
+- avcodec/clearvideo: Check remaining data in P frames
+- avcodec/hevcdec: decode at most one slice reporting being the first in the picture
 - avcodec/dvbsubdec: Check object position
 - avcodec/cdgraphics: Use ff_set_dimensions()
 - avformat/gdv: Check fps
