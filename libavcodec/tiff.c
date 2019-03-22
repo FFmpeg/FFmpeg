@@ -55,6 +55,7 @@ typedef struct TiffContext {
     GetByteContext gb;
 
     int get_subimage;
+    uint16_t get_page;
 
     int width, height;
     unsigned int bpp, bppcount;
@@ -75,6 +76,7 @@ typedef struct TiffContext {
     unsigned white_level;
 
     uint32_t sub_ifd;
+    uint16_t cur_page;
 
     int strips, rps, sstype;
     int sot;
@@ -1327,6 +1329,12 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         break;
     case TIFF_PAGE_NUMBER:
         ADD_METADATA(count, "page_number", " / ");
+        // need to seek back to re-read the page number
+        bytestream2_seek(&s->gb, -count * sizeof(uint16_t), SEEK_CUR);
+        // read the page number
+        s->cur_page = ff_tget(&s->gb, TIFF_SHORT, s->le);
+        // get back to where we were before the previous seek
+        bytestream2_seek(&s->gb, count * sizeof(uint16_t) - sizeof(uint16_t), SEEK_CUR);
         break;
     case TIFF_SOFTWARE_NAME:
         ADD_METADATA(count, "software", NULL);
@@ -1364,6 +1372,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint8_t *dst;
     GetByteContext stripsizes;
     GetByteContext stripdata;
+    int retry_for_subifd, retry_for_page;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
@@ -1384,6 +1393,7 @@ again:
     s->fill_order  = 0;
     s->white_level = 0;
     s->is_bayer    = 0;
+    s->cur_page    = 0;
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame
@@ -1398,8 +1408,20 @@ again:
             return ret;
     }
 
-    if (s->sub_ifd && s->get_subimage) {
+    /** whether we should look for this IFD's SubIFD */
+    retry_for_subifd = s->sub_ifd && s->get_subimage;
+    /** whether we should look for this multi-page IFD's next page */
+    retry_for_page = s->get_page && s->cur_page + 1 < s->get_page;  // get_page is 1-indexed
+
+    if (retry_for_page) {
+        // set offset to the next IFD
+        off = ff_tget_long(&s->gb, le);
+    } else if (retry_for_subifd) {
+        // set offset to the SubIFD
         off = s->sub_ifd;
+    }
+
+    if (retry_for_subifd || retry_for_page) {
         if (off >= UINT_MAX - 14 || avpkt->size < off + 14) {
             av_log(avctx, AV_LOG_ERROR, "IFD offset is greater than image size\n");
             return AVERROR_INVALIDDATA;
@@ -1648,6 +1670,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(TiffContext, x)
 static const AVOption tiff_options[] = {
     { "subimage", "decode subimage instead if available", OFFSET(get_subimage), AV_OPT_TYPE_BOOL, {.i64=0},  0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
+    { "page", "page number of multi-page image to decode (starting from 1)", OFFSET(get_page), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
     { NULL },
 };
 
