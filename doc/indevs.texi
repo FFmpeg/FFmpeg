@@ -910,6 +910,14 @@ Capture from CRTC ID 42 at 60fps, map the result to VAAPI, convert to NV12 and e
 ffmpeg -crtc_id 42 -framerate 60 -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,scale_vaapi=w=1920:h=1080:format=nv12' -c:v h264_vaapi output.mp4
 @end example
 
+@item
+To capture only part of a plane the output can be cropped - this can be used to capture
+a single window, as long as it has a known absolute position and size.  For example, to
+capture and encode the middle quarter of a 1920x1080 plane:
+@example
+ffmpeg -f kmsgrab -i - -vf 'hwmap=derive_device=vaapi,crop=960:540:480:270,scale_vaapi=960:540:nv12' -c:v h264_vaapi output.mp4
+@end example
+
 @end itemize
 
 @section lavfi
