@@ -830,6 +830,11 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     case 405:
         if (s->photometric == TIFF_PHOTOMETRIC_SEPARATED)
             s->avctx->pix_fmt = AV_PIX_FMT_RGBA;
+        else {
+            av_log(s->avctx, AV_LOG_ERROR,
+                "bpp=40 without PHOTOMETRIC_SEPARATED is unsupported\n");
+            return AVERROR_PATCHWELCOME;
+        }
         break;
     case 483:
         s->avctx->pix_fmt = s->le ? AV_PIX_FMT_RGB48LE  : AV_PIX_FMT_RGB48BE;
