@@ -129,6 +129,21 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic, int *g
     return 0;
 }
 
+static void davs2_flush(AVCodecContext *avctx)
+{
+    DAVS2Context *cad      = avctx->priv_data;
+    int           ret      = DAVS2_GOT_FRAME;
+
+    while (ret == DAVS2_GOT_FRAME) {
+        ret = davs2_decoder_flush(cad->decoder, &cad->headerset, &cad->out_frame);
+        davs2_decoder_frame_unref(cad->decoder, &cad->out_frame);
+    }
+
+    if (ret == DAVS2_ERROR) {
+        av_log(avctx, AV_LOG_WARNING, "Decoder flushing failed.\n");
+    }
+}
+
 static int send_delayed_frame(AVCodecContext *avctx, AVFrame *frame, int *got_frame)
 {
     DAVS2Context *cad      = avctx->priv_data;
@@ -205,6 +220,7 @@ AVCodec ff_libdavs2_decoder = {
     .init           = davs2_init,
     .close          = davs2_end,
     .decode         = davs2_decode_frame,
+    .flush          = davs2_flush,
     .capabilities   =  AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AUTO_THREADS,
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                      AV_PIX_FMT_NONE },
