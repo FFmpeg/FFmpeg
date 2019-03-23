@@ -107,7 +107,7 @@ static int davs2_dump_frames(AVCodecContext *avctx, davs2_picture_t *pic, int *g
         frame->buf[plane]  = av_buffer_alloc(size_line * pic->lines[plane]);
 
         if (!frame->buf[plane]){
-            av_log(avctx, AV_LOG_ERROR, "dump error: alloc failed.\n");
+            av_log(avctx, AV_LOG_ERROR, "Decoder error: allocation failure, can't dump frames.\n");
             return AVERROR(ENOMEM);
         }
 
