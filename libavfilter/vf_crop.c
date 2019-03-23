@@ -98,9 +98,17 @@ static int query_formats(AVFilterContext *ctx)
 
     for (fmt = 0; av_pix_fmt_desc_get(fmt); fmt++) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(fmt);
-        if (!(desc->flags & (AV_PIX_FMT_FLAG_HWACCEL | AV_PIX_FMT_FLAG_BITSTREAM)) &&
-            !((desc->log2_chroma_w || desc->log2_chroma_h) && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) &&
-            (ret = ff_add_format(&formats, fmt)) < 0)
+        if (desc->flags & AV_PIX_FMT_FLAG_BITSTREAM)
+            continue;
+        if (!(desc->flags & AV_PIX_FMT_FLAG_HWACCEL)) {
+            // Not usable if there is any subsampling but the format is
+            // not planar (e.g. YUYV422).
+            if ((desc->log2_chroma_w || desc->log2_chroma_h) &&
+                !(desc->flags & AV_PIX_FMT_FLAG_PLANAR))
+                continue;
+        }
+        ret = ff_add_format(&formats, fmt);
+        if (ret < 0)
             return ret;
     }
 
@@ -157,8 +165,14 @@ static int config_input(AVFilterLink *link)
     s->var_values[VAR_POS]   = NAN;
 
     av_image_fill_max_pixsteps(s->max_step, NULL, pix_desc);
-    s->hsub = pix_desc->log2_chroma_w;
-    s->vsub = pix_desc->log2_chroma_h;
+
+    if (pix_desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        s->hsub = 1;
+        s->vsub = 1;
+    } else {
+        s->hsub = pix_desc->log2_chroma_w;
+        s->vsub = pix_desc->log2_chroma_h;
+    }
 
     if ((ret = av_expr_parse_and_eval(&res, (expr = s->w_expr),
                                       var_names, s->var_values,
@@ -237,9 +251,15 @@ fail_expr:
 static int config_output(AVFilterLink *link)
 {
     CropContext *s = link->src->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
 
-    link->w = s->w;
-    link->h = s->h;
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        // Hardware frames adjust the cropping regions rather than
+        // changing the frame size.
+    } else {
+        link->w = s->w;
+        link->h = s->h;
+    }
     link->sample_aspect_ratio = s->out_sar;
 
     return 0;
@@ -251,9 +271,6 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
     CropContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     int i;
-
-    frame->width  = s->w;
-    frame->height = s->h;
 
     s->var_values[VAR_N] = link->frame_count_out;
     s->var_values[VAR_T] = frame->pts == AV_NOPTS_VALUE ?
@@ -285,22 +302,32 @@ static int filter_frame(AVFilterLink *link, AVFrame *frame)
             (int)s->var_values[VAR_N], s->var_values[VAR_T], s->var_values[VAR_POS],
             s->x, s->y, s->x+s->w, s->y+s->h);
 
-    frame->data[0] += s->y * frame->linesize[0];
-    frame->data[0] += s->x * s->max_step[0];
+    if (desc->flags & AV_PIX_FMT_FLAG_HWACCEL) {
+        frame->crop_top   += s->y;
+        frame->crop_left  += s->x;
+        frame->crop_bottom = frame->height - frame->crop_top - frame->crop_bottom - s->h;
+        frame->crop_right  = frame->width  - frame->crop_left - frame->crop_right - s->w;
+    } else {
+        frame->width  = s->w;
+        frame->height = s->h;
 
-    if (!(desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & FF_PSEUDOPAL)) {
-        for (i = 1; i < 3; i ++) {
-            if (frame->data[i]) {
-                frame->data[i] += (s->y >> s->vsub) * frame->linesize[i];
-                frame->data[i] += (s->x * s->max_step[i]) >> s->hsub;
+        frame->data[0] += s->y * frame->linesize[0];
+        frame->data[0] += s->x * s->max_step[0];
+
+        if (!(desc->flags & AV_PIX_FMT_FLAG_PAL || desc->flags & FF_PSEUDOPAL)) {
+            for (i = 1; i < 3; i ++) {
+                if (frame->data[i]) {
+                    frame->data[i] += (s->y >> s->vsub) * frame->linesize[i];
+                    frame->data[i] += (s->x * s->max_step[i]) >> s->hsub;
+                }
             }
         }
-    }
 
-    /* alpha plane */
-    if (frame->data[3]) {
-        frame->data[3] += s->y * frame->linesize[3];
-        frame->data[3] += s->x * s->max_step[3];
+        /* alpha plane */
+        if (frame->data[3]) {
+            frame->data[3] += s->y * frame->linesize[3];
+            frame->data[3] += s->x * s->max_step[3];
+        }
     }
 
     return ff_filter_frame(link->dst->outputs[0], frame);
