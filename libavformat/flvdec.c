@@ -386,7 +386,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, int64_t m
     int64_t initial_pos    = avio_tell(ioc);
 
     if (flv->keyframe_count > 0) {
-        av_log(s, AV_LOG_DEBUG, "keyframes have been paresed\n");
+        av_log(s, AV_LOG_DEBUG, "keyframes have been parsed\n");
         return 0;
     }
     av_assert0(!flv->keyframe_times);
