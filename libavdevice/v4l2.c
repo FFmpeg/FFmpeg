@@ -816,7 +816,7 @@ static int device_try_init(AVFormatContext *ctx,
     return ret;
 }
 
-static int v4l2_read_probe(AVProbeData *p)
+static int v4l2_read_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "/dev/video", NULL))
         return AVPROBE_SCORE_MAX - 1;
