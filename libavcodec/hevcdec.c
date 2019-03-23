@@ -472,6 +472,11 @@ static int hls_slice_header(HEVCContext *s)
 
     // Coded parameters
     sh->first_slice_in_pic_flag = get_bits1(gb);
+    if (s->ref && sh->first_slice_in_pic_flag) {
+        av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
+        return 1; // This slice will be skiped later, do not corrupt state
+    }
+
     if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
         s->seq_decode = (s->seq_decode + 1) & 0xff;
         s->max_ra     = INT_MAX;
@@ -2862,12 +2867,13 @@ static int decode_nal_unit(HEVCContext *s, const H2645NAL *nal)
         ret = hls_slice_header(s);
         if (ret < 0)
             return ret;
+        if (ret == 1) {
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
+        }
+
 
         if (s->sh.first_slice_in_pic_flag) {
-            if (s->ref) {
-                av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
-                goto fail;
-            }
             if (s->max_ra == INT_MAX) {
                 if (s->nal_unit_type == HEVC_NAL_CRA_NUT || IS_BLA(s)) {
                     s->max_ra = s->poc;
