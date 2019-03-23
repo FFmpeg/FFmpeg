@@ -36,17 +36,15 @@
  * into component streams, and the reverse process of muxing - writing supplied
  * data in a specified container format. It also has an @ref lavf_io
  * "I/O module" which supports a number of protocols for accessing the data (e.g.
- * file, tcp, http and others). Before using lavf, you need to call
- * av_register_all() to register all compiled muxers, demuxers and protocols.
+ * file, tcp, http and others).
  * Unless you are absolutely sure you won't use libavformat's network
  * capabilities, you should also call avformat_network_init().
  *
  * A supported input format is described by an AVInputFormat struct, conversely
  * an output format is described by AVOutputFormat. You can iterate over all
- * registered input/output formats using the av_iformat_next() /
- * av_oformat_next() functions. The protocols layer is not part of the public
- * API, so you can only get the names of supported protocols with the
- * avio_enum_protocols() function.
+ * input/output formats using the  av_demuxer_iterate / av_muxer_iterate() functions.
+ * The protocols layer is not part of the public API, so you can only get the names
+ * of supported protocols with the avio_enum_protocols() function.
  *
  * Main lavf structure used for both muxing and demuxing is AVFormatContext,
  * which exports all information about the file being read or written. As with
