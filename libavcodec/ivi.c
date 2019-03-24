@@ -807,36 +807,36 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
             }
 
             if (ref_mb) {
-            if (band->inherit_qdelta)
-                mb->q_delta = ref_mb->q_delta;
+                if (band->inherit_qdelta)
+                    mb->q_delta = ref_mb->q_delta;
 
-            if (band->inherit_mv) {
-                /* motion vector inheritance */
-                if (mv_scale) {
-                    mb->mv_x = ivi_scale_mv(ref_mb->mv_x, mv_scale);
-                    mb->mv_y = ivi_scale_mv(ref_mb->mv_y, mv_scale);
-                } else {
-                    mb->mv_x = ref_mb->mv_x;
-                    mb->mv_y = ref_mb->mv_y;
-                }
-                need_mc |= mb->mv_x || mb->mv_y; /* tracking non-zero motion vectors */
-                {
-                    int dmv_x, dmv_y, cx, cy;
+                if (band->inherit_mv) {
+                    /* motion vector inheritance */
+                    if (mv_scale) {
+                        mb->mv_x = ivi_scale_mv(ref_mb->mv_x, mv_scale);
+                        mb->mv_y = ivi_scale_mv(ref_mb->mv_y, mv_scale);
+                    } else {
+                        mb->mv_x = ref_mb->mv_x;
+                        mb->mv_y = ref_mb->mv_y;
+                    }
+                    need_mc |= mb->mv_x || mb->mv_y; /* tracking non-zero motion vectors */
+                    {
+                        int dmv_x, dmv_y, cx, cy;
 
-                    dmv_x = mb->mv_x >> band->is_halfpel;
-                    dmv_y = mb->mv_y >> band->is_halfpel;
-                    cx    = mb->mv_x &  band->is_halfpel;
-                    cy    = mb->mv_y &  band->is_halfpel;
+                        dmv_x = mb->mv_x >> band->is_halfpel;
+                        dmv_y = mb->mv_y >> band->is_halfpel;
+                        cx    = mb->mv_x &  band->is_halfpel;
+                        cy    = mb->mv_y &  band->is_halfpel;
 
-                    if (   mb->xpos + dmv_x < 0
-                        || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
-                        || mb->ypos + dmv_y < 0
-                        || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
-                        av_log(avctx, AV_LOG_ERROR, "MV out of bounds\n");
-                        return AVERROR_INVALIDDATA;
+                        if (   mb->xpos + dmv_x < 0
+                            || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
+                            || mb->ypos + dmv_y < 0
+                            || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
+                            av_log(avctx, AV_LOG_ERROR, "MV out of bounds\n");
+                            return AVERROR_INVALIDDATA;
+                        }
                     }
                 }
-            }
                 ref_mb++;
             }
 
