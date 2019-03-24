@@ -775,24 +775,29 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
     const int16_t   *src;
     int16_t         *dst;
     ivi_mc_func     mc_no_delta_func;
+    int             clear_first = !band->qdelta_present && !band->plane && !band->band_num;
+    int             mb_size     = band->mb_size;
+    int             xend        = tile->xpos + tile->width;
+    int             is_halfpel  = band->is_halfpel;
+    int             pitch       = band->pitch;
 
-    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size)) {
+    if (tile->num_MBs != IVI_MBs_PER_TILE(tile->width, tile->height, mb_size)) {
         av_log(avctx, AV_LOG_ERROR, "Allocated tile size %d mismatches "
                "parameters %d in ivi_process_empty_tile()\n",
-               tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, band->mb_size));
+               tile->num_MBs, IVI_MBs_PER_TILE(tile->width, tile->height, mb_size));
         return AVERROR_INVALIDDATA;
     }
 
-    offs       = tile->ypos * band->pitch + tile->xpos;
+    offs       = tile->ypos * pitch + tile->xpos;
     mb         = tile->mbs;
     ref_mb     = tile->ref_mbs;
-    row_offset = band->mb_size * band->pitch;
+    row_offset = mb_size * pitch;
     need_mc    = 0; /* reset the mc tracking flag */
 
-    for (y = tile->ypos; y < (tile->ypos + tile->height); y += band->mb_size) {
+    for (y = tile->ypos; y < (tile->ypos + tile->height); y += mb_size) {
         mb_offset = offs;
 
-        for (x = tile->xpos; x < (tile->xpos + tile->width); x += band->mb_size) {
+        for (x = tile->xpos; x < xend; x += mb_size) {
             mb->xpos     = x;
             mb->ypos     = y;
             mb->buf_offs = mb_offset;
@@ -800,7 +805,7 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
             mb->type = 1; /* set the macroblocks type = INTER */
             mb->cbp  = 0; /* all blocks are empty */
 
-            if (!band->qdelta_present && !band->plane && !band->band_num) {
+            if (clear_first) {
                 mb->q_delta = band->glob_quant;
                 mb->mv_x    = 0;
                 mb->mv_y    = 0;
@@ -823,15 +828,15 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
                     {
                         int dmv_x, dmv_y, cx, cy;
 
-                        dmv_x = mb->mv_x >> band->is_halfpel;
-                        dmv_y = mb->mv_y >> band->is_halfpel;
-                        cx    = mb->mv_x &  band->is_halfpel;
-                        cy    = mb->mv_y &  band->is_halfpel;
+                        dmv_x = mb->mv_x >> is_halfpel;
+                        dmv_y = mb->mv_y >> is_halfpel;
+                        cx    = mb->mv_x &  is_halfpel;
+                        cy    = mb->mv_y &  is_halfpel;
 
                         if (   mb->xpos + dmv_x < 0
-                            || mb->xpos + dmv_x + band->mb_size + cx > band->pitch
+                            || mb->xpos + dmv_x + mb_size + cx > pitch
                             || mb->ypos + dmv_y < 0
-                            || mb->ypos + dmv_y + band->mb_size + cy > band->aheight) {
+                            || mb->ypos + dmv_y + mb_size + cy > band->aheight) {
                             av_log(avctx, AV_LOG_ERROR, "MV out of bounds\n");
                             return AVERROR_INVALIDDATA;
                         }
@@ -841,13 +846,13 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
             }
 
             mb++;
-            mb_offset += band->mb_size;
+            mb_offset += mb_size;
         } // for x
         offs += row_offset;
     } // for y
 
     if (band->inherit_mv && need_mc) { /* apply motion compensation if there is at least one non-zero motion vector */
-        num_blocks = (band->mb_size != band->blk_size) ? 4 : 1; /* number of blocks per mb */
+        num_blocks = (mb_size != band->blk_size) ? 4 : 1; /* number of blocks per mb */
         mc_no_delta_func = (band->blk_size == 8) ? ff_ivi_mc_8x8_no_delta
                                                  : ff_ivi_mc_4x4_no_delta;
 
@@ -864,7 +869,7 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
 
             for (blk = 0; blk < num_blocks; blk++) {
                 /* adjust block position in the buffer according with its number */
-                offs = mb->buf_offs + band->blk_size * ((blk & 1) + !!(blk & 2) * band->pitch);
+                offs = mb->buf_offs + band->blk_size * ((blk & 1) + !!(blk & 2) * pitch);
                 ret = ivi_mc(band, mc_no_delta_func, 0, offs,
                              mv_x, mv_y, 0, 0, mc_type, -1);
                 if (ret < 0)
@@ -873,12 +878,12 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band
         }
     } else {
         /* copy data from the reference tile into the current one */
-        src = band->ref_buf + tile->ypos * band->pitch + tile->xpos;
-        dst = band->buf     + tile->ypos * band->pitch + tile->xpos;
+        src = band->ref_buf + tile->ypos * pitch + tile->xpos;
+        dst = band->buf     + tile->ypos * pitch + tile->xpos;
         for (y = 0; y < tile->height; y++) {
             memcpy(dst, src, tile->width*sizeof(band->buf[0]));
-            src += band->pitch;
-            dst += band->pitch;
+            src += pitch;
+            dst += pitch;
         }
     }
 
