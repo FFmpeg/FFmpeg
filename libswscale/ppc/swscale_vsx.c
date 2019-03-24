@@ -726,6 +726,61 @@ write422(const vector int16_t vy1, const vector int16_t vy2,
     }
 }
 
+#define SETUP(x, buf0, buf1, alpha) { \
+    x = vec_ld(0, buf0); \
+    tmp = vec_mule(x, alpha); \
+    tmp2 = vec_mulo(x, alpha); \
+    tmp3 = vec_mergeh(tmp, tmp2); \
+    tmp4 = vec_mergel(tmp, tmp2); \
+\
+    x = vec_ld(0, buf1); \
+    tmp = vec_mule(x, alpha); \
+    tmp2 = vec_mulo(x, alpha); \
+    tmp5 = vec_mergeh(tmp, tmp2); \
+    tmp6 = vec_mergel(tmp, tmp2); \
+\
+    tmp3 = vec_add(tmp3, tmp5); \
+    tmp4 = vec_add(tmp4, tmp6); \
+\
+    tmp3 = vec_sra(tmp3, shift19); \
+    tmp4 = vec_sra(tmp4, shift19); \
+    x = vec_packs(tmp3, tmp4); \
+}
+
+static av_always_inline void
+yuv2422_2_vsx_template(SwsContext *c, const int16_t *buf[2],
+                     const int16_t *ubuf[2], const int16_t *vbuf[2],
+                     const int16_t *abuf[2], uint8_t *dest, int dstW,
+                     int yalpha, int uvalpha, int y,
+                     enum AVPixelFormat target)
+{
+    const int16_t *buf0  = buf[0],  *buf1  = buf[1],
+                  *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
+                  *vbuf0 = vbuf[0], *vbuf1 = vbuf[1];
+    const int16_t  yalpha1 = 4096 - yalpha;
+    const int16_t uvalpha1 = 4096 - uvalpha;
+    vector int16_t vy1, vy2, vu, vv;
+    vector int32_t tmp, tmp2, tmp3, tmp4, tmp5, tmp6;
+    const vector int16_t vyalpha1 = vec_splats(yalpha1);
+    const vector int16_t vuvalpha1 = vec_splats(uvalpha1);
+    const vector uint32_t shift19 = vec_splats(19U);
+    int i;
+    av_assert2(yalpha  <= 4096U);
+    av_assert2(uvalpha <= 4096U);
+
+    for (i = 0; i < ((dstW + 1) >> 1); i += 8) {
+
+        SETUP(vy1, &buf0[i * 2], &buf1[i * 2], vyalpha1)
+        SETUP(vy2, &buf0[(i + 4) * 2], &buf1[(i + 4) * 2], vyalpha1)
+        SETUP(vu, &ubuf0[i], &ubuf1[i], vuvalpha1)
+        SETUP(vv, &vbuf0[i], &vbuf1[i], vuvalpha1)
+
+        write422(vy1, vy2, vu, vv, &dest[i * 4], target);
+    }
+}
+
+#undef SETUP
+
 static av_always_inline void
 yuv2422_1_vsx_template(SwsContext *c, const int16_t *buf0,
                      const int16_t *ubuf[2], const int16_t *vbuf[2],
@@ -786,7 +841,18 @@ yuv2422_1_vsx_template(SwsContext *c, const int16_t *buf0,
     }
 }
 
+#define YUV2PACKEDWRAPPER2(name, base, ext, fmt) \
+static void name ## ext ## _2_vsx(SwsContext *c, const int16_t *buf[2], \
+                                const int16_t *ubuf[2], const int16_t *vbuf[2], \
+                                const int16_t *abuf[2], uint8_t *dest, int dstW, \
+                                int yalpha, int uvalpha, int y) \
+{ \
+    name ## base ## _2_vsx_template(c, buf, ubuf, vbuf, abuf, \
+                                  dest, dstW, yalpha, uvalpha, y, fmt); \
+}
+
 #define YUV2PACKEDWRAPPER(name, base, ext, fmt) \
+YUV2PACKEDWRAPPER2(name, base, ext, fmt) \
 static void name ## ext ## _1_vsx(SwsContext *c, const int16_t *buf0, \
                                 const int16_t *ubuf[2], const int16_t *vbuf[2], \
                                 const int16_t *abuf0, uint8_t *dest, int dstW, \
@@ -909,12 +975,15 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
         switch (dstFormat) {
             case AV_PIX_FMT_YUYV422:
                 c->yuv2packed1 = yuv2yuyv422_1_vsx;
+                c->yuv2packed2 = yuv2yuyv422_2_vsx;
             break;
             case AV_PIX_FMT_YVYU422:
                 c->yuv2packed1 = yuv2yvyu422_1_vsx;
+                c->yuv2packed2 = yuv2yvyu422_2_vsx;
             break;
             case AV_PIX_FMT_UYVY422:
                 c->yuv2packed1 = yuv2uyvy422_1_vsx;
+                c->yuv2packed2 = yuv2uyvy422_2_vsx;
             break;
         }
     }
