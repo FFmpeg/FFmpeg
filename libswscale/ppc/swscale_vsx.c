@@ -726,6 +726,93 @@ write422(const vector int16_t vy1, const vector int16_t vy2,
     }
 }
 
+static av_always_inline void
+yuv2422_X_vsx_template(SwsContext *c, const int16_t *lumFilter,
+                     const int16_t **lumSrc, int lumFilterSize,
+                     const int16_t *chrFilter, const int16_t **chrUSrc,
+                     const int16_t **chrVSrc, int chrFilterSize,
+                     const int16_t **alpSrc, uint8_t *dest, int dstW,
+                     int y, enum AVPixelFormat target)
+{
+    int i, j;
+    vector int16_t vy1, vy2, vu, vv;
+    vector int32_t vy32[4], vu32[2], vv32[2], tmp, tmp2, tmp3, tmp4;
+    vector int16_t vlumFilter[MAX_FILTER_SIZE], vchrFilter[MAX_FILTER_SIZE];
+    const vector int32_t start = vec_splats(1 << 18);
+    const vector uint32_t shift19 = vec_splats(19U);
+
+    for (i = 0; i < lumFilterSize; i++)
+        vlumFilter[i] = vec_splats(lumFilter[i]);
+    for (i = 0; i < chrFilterSize; i++)
+        vchrFilter[i] = vec_splats(chrFilter[i]);
+
+    for (i = 0; i < ((dstW + 1) >> 1); i += 8) {
+        vy32[0] =
+        vy32[1] =
+        vy32[2] =
+        vy32[3] =
+        vu32[0] =
+        vu32[1] =
+        vv32[0] =
+        vv32[1] = start;
+
+        for (j = 0; j < lumFilterSize; j++) {
+            vv = vec_ld(0, &lumSrc[j][i * 2]);
+            tmp = vec_mule(vv, vlumFilter[j]);
+            tmp2 = vec_mulo(vv, vlumFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vy32[0] = vec_adds(vy32[0], tmp3);
+            vy32[1] = vec_adds(vy32[1], tmp4);
+
+            vv = vec_ld(0, &lumSrc[j][(i + 4) * 2]);
+            tmp = vec_mule(vv, vlumFilter[j]);
+            tmp2 = vec_mulo(vv, vlumFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vy32[2] = vec_adds(vy32[2], tmp3);
+            vy32[3] = vec_adds(vy32[3], tmp4);
+        }
+
+        for (j = 0; j < chrFilterSize; j++) {
+            vv = vec_ld(0, &chrUSrc[j][i]);
+            tmp = vec_mule(vv, vchrFilter[j]);
+            tmp2 = vec_mulo(vv, vchrFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vu32[0] = vec_adds(vu32[0], tmp3);
+            vu32[1] = vec_adds(vu32[1], tmp4);
+
+            vv = vec_ld(0, &chrVSrc[j][i]);
+            tmp = vec_mule(vv, vchrFilter[j]);
+            tmp2 = vec_mulo(vv, vchrFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vv32[0] = vec_adds(vv32[0], tmp3);
+            vv32[1] = vec_adds(vv32[1], tmp4);
+        }
+
+        for (j = 0; j < 4; j++) {
+            vy32[j] = vec_sra(vy32[j], shift19);
+        }
+        for (j = 0; j < 2; j++) {
+            vu32[j] = vec_sra(vu32[j], shift19);
+            vv32[j] = vec_sra(vv32[j], shift19);
+        }
+
+        vy1 = vec_packs(vy32[0], vy32[1]);
+        vy2 = vec_packs(vy32[2], vy32[3]);
+        vu = vec_packs(vu32[0], vu32[1]);
+        vv = vec_packs(vv32[0], vv32[1]);
+
+        write422(vy1, vy2, vu, vv, &dest[i * 4], target);
+    }
+}
+
 #define SETUP(x, buf0, buf1, alpha) { \
     x = vec_ld(0, buf0); \
     tmp = vec_mule(x, alpha); \
@@ -841,7 +928,21 @@ yuv2422_1_vsx_template(SwsContext *c, const int16_t *buf0,
     }
 }
 
+#define YUV2PACKEDWRAPPERX(name, base, ext, fmt) \
+static void name ## ext ## _X_vsx(SwsContext *c, const int16_t *lumFilter, \
+                                const int16_t **lumSrc, int lumFilterSize, \
+                                const int16_t *chrFilter, const int16_t **chrUSrc, \
+                                const int16_t **chrVSrc, int chrFilterSize, \
+                                const int16_t **alpSrc, uint8_t *dest, int dstW, \
+                                int y) \
+{ \
+    name ## base ## _X_vsx_template(c, lumFilter, lumSrc, lumFilterSize, \
+                                  chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                                  alpSrc, dest, dstW, y, fmt); \
+}
+
 #define YUV2PACKEDWRAPPER2(name, base, ext, fmt) \
+YUV2PACKEDWRAPPERX(name, base, ext, fmt) \
 static void name ## ext ## _2_vsx(SwsContext *c, const int16_t *buf[2], \
                                 const int16_t *ubuf[2], const int16_t *vbuf[2], \
                                 const int16_t *abuf[2], uint8_t *dest, int dstW, \
@@ -976,14 +1077,17 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
             case AV_PIX_FMT_YUYV422:
                 c->yuv2packed1 = yuv2yuyv422_1_vsx;
                 c->yuv2packed2 = yuv2yuyv422_2_vsx;
+                c->yuv2packedX = yuv2yuyv422_X_vsx;
             break;
             case AV_PIX_FMT_YVYU422:
                 c->yuv2packed1 = yuv2yvyu422_1_vsx;
                 c->yuv2packed2 = yuv2yvyu422_2_vsx;
+                c->yuv2packedX = yuv2yvyu422_X_vsx;
             break;
             case AV_PIX_FMT_UYVY422:
                 c->yuv2packed1 = yuv2uyvy422_1_vsx;
                 c->yuv2packed2 = yuv2uyvy422_2_vsx;
+                c->yuv2packedX = yuv2uyvy422_X_vsx;
             break;
         }
     }
