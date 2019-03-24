@@ -806,10 +806,11 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                 mb->mv_y    = 0;
             }
 
-            if (band->inherit_qdelta && ref_mb)
+            if (ref_mb) {
+            if (band->inherit_qdelta)
                 mb->q_delta = ref_mb->q_delta;
 
-            if (band->inherit_mv && ref_mb) {
+            if (band->inherit_mv) {
                 /* motion vector inheritance */
                 if (mv_scale) {
                     mb->mv_x = ivi_scale_mv(ref_mb->mv_x, mv_scale);
@@ -836,10 +837,10 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
                     }
                 }
             }
+                ref_mb++;
+            }
 
             mb++;
-            if (ref_mb)
-                ref_mb++;
             mb_offset += band->mb_size;
         } // for x
         offs += row_offset;
