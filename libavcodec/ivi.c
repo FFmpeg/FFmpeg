@@ -79,7 +79,7 @@ typedef void (*ivi_mc_avg_func) (int16_t *buf, const int16_t *ref_buf1,
                                  const int16_t *ref_buf2,
                                  ptrdiff_t pitch, int mc_type, int mc_type2);
 
-static int ivi_mc(IVIBandDesc *band, ivi_mc_func mc, ivi_mc_avg_func mc_avg,
+static int ivi_mc(const IVIBandDesc *band, ivi_mc_func mc, ivi_mc_avg_func mc_avg,
                   int offs, int mv_x, int mv_y, int mv_x2, int mv_y2,
                   int mc_type, int mc_type2)
 {
@@ -379,7 +379,7 @@ av_cold int ff_ivi_init_planes(AVCodecContext *avctx, IVIPlaneDesc *planes, cons
     return 0;
 }
 
-static int ivi_init_tiles(IVIBandDesc *band, IVITile *ref_tile,
+static int ivi_init_tiles(const IVIBandDesc *band, IVITile *ref_tile,
                           int p, int b, int t_height, int t_width)
 {
     int x, y;
@@ -493,7 +493,7 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     return len;
 }
 
-static int ivi_dc_transform(IVIBandDesc *band, int *prev_dc, int buf_offs,
+static int ivi_dc_transform(const IVIBandDesc *band, int *prev_dc, int buf_offs,
                             int blk_size)
 {
     int buf_size = band->pitch * band->aheight - buf_offs;
@@ -508,7 +508,7 @@ static int ivi_dc_transform(IVIBandDesc *band, int *prev_dc, int buf_offs,
     return 0;
 }
 
-static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
+static int ivi_decode_coded_blocks(GetBitContext *gb, const IVIBandDesc *band,
                                    ivi_mc_func mc, ivi_mc_avg_func mc_avg,
                                    int mv_x, int mv_y,
                                    int mv_x2, int mv_y2,
@@ -619,7 +619,7 @@ static int ivi_decode_coded_blocks(GetBitContext *gb, IVIBandDesc *band,
  *  @param[in]      tile  pointer to the tile descriptor
  *  @return     result code: 0 - OK, -1 = error (corrupted blocks data)
  */
-static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
+static int ivi_decode_blocks(GetBitContext *gb, const IVIBandDesc *band,
                              IVITile *tile, AVCodecContext *avctx)
 {
     int mbn, blk, num_blocks, blk_size, ret, is_intra;
@@ -766,7 +766,7 @@ static int ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band,
  *  @param[in]  tile      pointer to the tile descriptor
  *  @param[in]  mv_scale  scaling factor for motion vectors
  */
-static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
+static int ivi_process_empty_tile(AVCodecContext *avctx, const IVIBandDesc *band,
                                   IVITile *tile, int32_t mv_scale)
 {
     int             x, y, need_mc, mbn, blk, num_blocks, mv_x, mv_y, mc_type;
@@ -887,7 +887,7 @@ static int ivi_process_empty_tile(AVCodecContext *avctx, IVIBandDesc *band,
 
 
 #ifdef DEBUG
-static uint16_t ivi_calc_band_checksum(IVIBandDesc *band)
+static uint16_t ivi_calc_band_checksum(const IVIBandDesc *band)
 {
     int         x, y;
     int16_t     *src, checksum;
