@@ -664,6 +664,143 @@ YUV2RGBWRAPPER(yuv2, rgb_full, xbgr32_full, AV_PIX_FMT_ABGR,  0)
 YUV2RGBWRAPPER(yuv2, rgb_full, rgb24_full,  AV_PIX_FMT_RGB24, 0)
 YUV2RGBWRAPPER(yuv2, rgb_full, bgr24_full,  AV_PIX_FMT_BGR24, 0)
 
+static av_always_inline void
+write422(const vector int16_t vy1, const vector int16_t vy2,
+         const vector int16_t vu, const vector int16_t vv,
+         uint8_t *dest, const enum AVPixelFormat target)
+{
+    vector uint8_t vd1, vd2, tmp;
+    const vector uint8_t yuyv1 = (vector uint8_t) {
+                                 0x0, 0x10, 0x1, 0x18,
+                                 0x2, 0x11, 0x3, 0x19,
+                                 0x4, 0x12, 0x5, 0x1a,
+                                 0x6, 0x13, 0x7, 0x1b };
+    const vector uint8_t yuyv2 = (vector uint8_t) {
+                                 0x8, 0x14, 0x9, 0x1c,
+                                 0xa, 0x15, 0xb, 0x1d,
+                                 0xc, 0x16, 0xd, 0x1e,
+                                 0xe, 0x17, 0xf, 0x1f };
+    const vector uint8_t yvyu1 = (vector uint8_t) {
+                                 0x0, 0x18, 0x1, 0x10,
+                                 0x2, 0x19, 0x3, 0x11,
+                                 0x4, 0x1a, 0x5, 0x12,
+                                 0x6, 0x1b, 0x7, 0x13 };
+    const vector uint8_t yvyu2 = (vector uint8_t) {
+                                 0x8, 0x1c, 0x9, 0x14,
+                                 0xa, 0x1d, 0xb, 0x15,
+                                 0xc, 0x1e, 0xd, 0x16,
+                                 0xe, 0x1f, 0xf, 0x17 };
+    const vector uint8_t uyvy1 = (vector uint8_t) {
+                                 0x10, 0x0, 0x18, 0x1,
+                                 0x11, 0x2, 0x19, 0x3,
+                                 0x12, 0x4, 0x1a, 0x5,
+                                 0x13, 0x6, 0x1b, 0x7 };
+    const vector uint8_t uyvy2 = (vector uint8_t) {
+                                 0x14, 0x8, 0x1c, 0x9,
+                                 0x15, 0xa, 0x1d, 0xb,
+                                 0x16, 0xc, 0x1e, 0xd,
+                                 0x17, 0xe, 0x1f, 0xf };
+
+    vd1 = vec_packsu(vy1, vy2);
+    vd2 = vec_packsu(vu, vv);
+
+    switch (target) {
+    case AV_PIX_FMT_YUYV422:
+        tmp = vec_perm(vd1, vd2, yuyv1);
+        vec_st(tmp, 0, dest);
+        tmp = vec_perm(vd1, vd2, yuyv2);
+        vec_st(tmp, 16, dest);
+    break;
+    case AV_PIX_FMT_YVYU422:
+        tmp = vec_perm(vd1, vd2, yvyu1);
+        vec_st(tmp, 0, dest);
+        tmp = vec_perm(vd1, vd2, yvyu2);
+        vec_st(tmp, 16, dest);
+    break;
+    case AV_PIX_FMT_UYVY422:
+        tmp = vec_perm(vd1, vd2, uyvy1);
+        vec_st(tmp, 0, dest);
+        tmp = vec_perm(vd1, vd2, uyvy2);
+        vec_st(tmp, 16, dest);
+    break;
+    }
+}
+
+static av_always_inline void
+yuv2422_1_vsx_template(SwsContext *c, const int16_t *buf0,
+                     const int16_t *ubuf[2], const int16_t *vbuf[2],
+                     const int16_t *abuf0, uint8_t *dest, int dstW,
+                     int uvalpha, int y, enum AVPixelFormat target)
+{
+    const int16_t *ubuf0 = ubuf[0], *vbuf0 = vbuf[0];
+    vector int16_t vy1, vy2, vu, vv, tmp;
+    const vector int16_t add64 = vec_splats((int16_t) 64);
+    const vector int16_t add128 = vec_splats((int16_t) 128);
+    const vector uint16_t shift7 = vec_splat_u16(7);
+    const vector uint16_t shift8 = vec_splat_u16(8);
+    int i;
+
+    if (uvalpha < 2048) {
+        for (i = 0; i < ((dstW + 1) >> 1); i += 8) {
+            vy1 = vec_ld(0, &buf0[i * 2]);
+            vy2 = vec_ld(0, &buf0[(i + 4) * 2]);
+            vu = vec_ld(0, &ubuf0[i]);
+            vv = vec_ld(0, &vbuf0[i]);
+
+            vy1 = vec_add(vy1, add64);
+            vy2 = vec_add(vy2, add64);
+            vu = vec_add(vu, add64);
+            vv = vec_add(vv, add64);
+
+            vy1 = vec_sra(vy1, shift7);
+            vy2 = vec_sra(vy2, shift7);
+            vu = vec_sra(vu, shift7);
+            vv = vec_sra(vv, shift7);
+
+            write422(vy1, vy2, vu, vv, &dest[i * 4], target);
+        }
+    } else {
+        const int16_t *ubuf1 = ubuf[1], *vbuf1 = vbuf[1];
+        for (i = 0; i < ((dstW + 1) >> 1); i += 8) {
+            vy1 = vec_ld(0, &buf0[i * 2]);
+            vy2 = vec_ld(0, &buf0[(i + 4) * 2]);
+            vu = vec_ld(0, &ubuf0[i]);
+            tmp = vec_ld(0, &ubuf1[i]);
+            vu = vec_adds(vu, tmp);
+            vv = vec_ld(0, &vbuf0[i]);
+            tmp = vec_ld(0, &vbuf1[i]);
+            vv = vec_adds(vv, tmp);
+
+            vy1 = vec_add(vy1, add64);
+            vy2 = vec_add(vy2, add64);
+            vu = vec_adds(vu, add128);
+            vv = vec_adds(vv, add128);
+
+            vy1 = vec_sra(vy1, shift7);
+            vy2 = vec_sra(vy2, shift7);
+            vu = vec_sra(vu, shift8);
+            vv = vec_sra(vv, shift8);
+
+            write422(vy1, vy2, vu, vv, &dest[i * 4], target);
+        }
+    }
+}
+
+#define YUV2PACKEDWRAPPER(name, base, ext, fmt) \
+static void name ## ext ## _1_vsx(SwsContext *c, const int16_t *buf0, \
+                                const int16_t *ubuf[2], const int16_t *vbuf[2], \
+                                const int16_t *abuf0, uint8_t *dest, int dstW, \
+                                int uvalpha, int y) \
+{ \
+    name ## base ## _1_vsx_template(c, buf0, ubuf, vbuf, \
+                                  abuf0, dest, dstW, uvalpha, \
+                                  y, fmt); \
+}
+
+YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, AV_PIX_FMT_YUYV422)
+YUV2PACKEDWRAPPER(yuv2, 422, yvyu422, AV_PIX_FMT_YVYU422)
+YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, AV_PIX_FMT_UYVY422)
+
 #endif /* !HAVE_BIGENDIAN */
 
 #endif /* HAVE_VSX */
@@ -766,6 +903,18 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                         c->yuv2packed1 = yuv2xbgr32_full_1_vsx;
                     }
                 }
+            break;
+        }
+    } else { /* !SWS_FULL_CHR_H_INT */
+        switch (dstFormat) {
+            case AV_PIX_FMT_YUYV422:
+                c->yuv2packed1 = yuv2yuyv422_1_vsx;
+            break;
+            case AV_PIX_FMT_YVYU422:
+                c->yuv2packed1 = yuv2yvyu422_1_vsx;
+            break;
+            case AV_PIX_FMT_UYVY422:
+                c->yuv2packed1 = yuv2uyvy422_1_vsx;
             break;
         }
     }
