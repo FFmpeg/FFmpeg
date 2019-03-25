@@ -107,6 +107,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     /* generate the VPS */
     vps.vps_max_layers     = 1;
     vps.vps_max_sub_layers = sps.max_sub_layers;
+    vps.vps_temporal_id_nesting_flag = sps.temporal_id_nesting_flag;
     memcpy(&vps.ptl, &sps.ptl, sizeof(vps.ptl));
     vps.vps_sub_layer_ordering_info_present_flag = 1;
     for (i = 0; i < HEVC_MAX_SUB_LAYERS; i++) {
@@ -121,6 +122,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     vps.vps_time_scale                      = sps.vui.vui_time_scale;
     vps.vps_poc_proportional_to_timing_flag = sps.vui.vui_poc_proportional_to_timing_flag;
     vps.vps_num_ticks_poc_diff_one          = sps.vui.vui_num_ticks_poc_diff_one_minus1 + 1;
+    vps.vps_num_hrd_parameters              = 0;
 
     /* generate the encoded RBSP form of the VPS */
     ret = ff_hevc_encode_nal_vps(&vps, sps.vps_id, vps_rbsp_buf, sizeof(vps_rbsp_buf));
@@ -138,8 +140,7 @@ static int generate_fake_vps(QSVEncContext *q, AVCodecContext *avctx)
     bytestream2_put_byte(&pbc, 1);                 // header
 
     while (bytestream2_get_bytes_left(&gbc)) {
-        uint32_t b = bytestream2_peek_be24(&gbc);
-        if (b <= 3) {
+        if (bytestream2_get_bytes_left(&gbc) >= 3 && bytestream2_peek_be24(&gbc) <= 3) {
             bytestream2_put_be24(&pbc, 3);
             bytestream2_skip(&gbc, 2);
         } else
