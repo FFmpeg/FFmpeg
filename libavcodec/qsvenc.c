@@ -468,13 +468,6 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     int target_bitrate_kbps, max_bitrate_kbps, brc_param_multiplier;
     int buffer_size_in_kilobytes, initial_delay_in_kilobytes;
     int ret;
-    mfxVersion ver;
-
-    ret = MFXQueryVersion(q->session,&ver);
-    if (ret != MFX_ERR_NONE) {
-        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
-        return AVERROR_UNKNOWN;
-    }
 
     ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
     if (ret < 0)
@@ -530,7 +523,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
     // If the minor version is greater than or equal to 19,
     // then can use the same alignment settings as H.264 for HEVC
     q->width_align = (avctx->codec_id != AV_CODEC_ID_HEVC ||
-                      QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 19)) ? 16 : 32;
+                      QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 19)) ? 16 : 32;
     q->param.mfx.FrameInfo.Width = FFALIGN(avctx->width, q->width_align);
 
     if (avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
@@ -729,7 +722,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 #if QSV_HAVE_MF
-            if (QSV_RUNTIME_VERSION_ATLEAST(ver, 1, 25)) {
+            if (QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 25)) {
                 q->extmfp.Header.BufferId     = MFX_EXTBUFF_MULTI_FRAME_PARAM;
                 q->extmfp.Header.BufferSz     = sizeof(q->extmfp);
 
@@ -984,6 +977,12 @@ int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q)
     ret = qsvenc_init_session(avctx, q);
     if (ret < 0)
         return ret;
+
+    ret = MFXQueryVersion(q->session,&q->ver);
+    if (ret < 0) {
+        return ff_qsv_print_error(avctx, ret,
+                                  "Error querying mfx version");
+    }
 
     // in the mfxInfoMFX struct, JPEG is different from other codecs
     switch (avctx->codec_id) {

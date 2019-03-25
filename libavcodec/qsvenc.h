@@ -131,6 +131,8 @@ typedef struct QSVEncContext {
 
     QSVFramesContext frames_ctx;
 
+    mfxVersion          ver;
+
     // options set by the caller
     int async_depth;
     int idr_interval;
