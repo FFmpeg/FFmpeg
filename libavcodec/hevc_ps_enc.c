@@ -67,7 +67,7 @@ int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
                            uint8_t *buf, int buf_size)
 {
     PutBitContext pb;
-    int i;
+    int i, data_size;
 
     init_put_bits(&pb, buf, buf_size);
     put_bits(&pb,  4, id);
@@ -103,6 +103,7 @@ int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
         if (vps->vps_poc_proportional_to_timing_flag)
             set_ue_golomb(&pb, vps->vps_num_ticks_poc_diff_one - 1);
 
+        set_ue_golomb(&pb, vps->vps_num_hrd_parameters);
         if (vps->vps_num_hrd_parameters) {
             avpriv_report_missing_feature(NULL, "Writing HRD parameters");
             return AVERROR_PATCHWELCOME;
@@ -114,5 +115,8 @@ int ff_hevc_encode_nal_vps(HEVCVPS *vps, unsigned int id,
     put_bits(&pb, 1, 1);    // stop bit
     avpriv_align_put_bits(&pb);
 
-    return put_bits_count(&pb) / 8;
+    data_size = put_bits_count(&pb) / 8;
+    flush_put_bits(&pb);
+
+    return data_size;
 }
