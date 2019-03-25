@@ -18359,7 +18359,7 @@ This filter accepts the following options:
 
 @table @option
 @item zoom, z
-Set the zoom expression. Default is 1.
+Set the zoom expression. Range is 1-10. Default is 1.
 
 @item x
 @item y
