@@ -11417,6 +11417,15 @@ focus distance is only used for vignetting and only slightly affects the
 vignetting correction process. If unknown, leave it at the default value (which
 is 1000).
 
+@item scale
+The scale factor which is applied after transformation. After correction the
+video is no longer necessarily rectangular. This parameter controls how much of
+the resulting image is visible. The value 0 means that a value will be chosen
+automatically such that there is little or no unmapped area in the output
+image. 1.0 means that no additional scaling is done. Lower values may result
+in more of the corrected image being visible, while higher values may avoid
+unmapped areas in the output.
+
 @item target_geometry
 The target geometry of the output image/video. The following values are valid
 options:
