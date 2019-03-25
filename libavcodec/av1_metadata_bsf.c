@@ -46,6 +46,8 @@ typedef struct AV1MetadataContext {
 
     AVRational tick_rate;
     int num_ticks_per_picture;
+
+    int delete_padding;
 } AV1MetadataContext;
 
 
@@ -155,6 +157,19 @@ static int av1_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to insert Temporal Delimiter.\n");
             goto fail;
+        }
+    }
+
+    if (ctx->delete_padding) {
+        for (i = 0; i < frag->nb_units; i++) {
+            if (frag->units[i].type == AV1_OBU_PADDING) {
+                err = ff_cbs_delete_unit(ctx->cbc, frag, i);
+                if (err < 0) {
+                    av_log(bsf, AV_LOG_ERROR, "Failed to delete Padding OBU.\n");
+                    goto fail;
+                }
+                --i;
+            }
         }
     }
 
@@ -274,6 +289,10 @@ static const AVOption av1_metadata_options[] = {
     { "num_ticks_per_picture", "Set display ticks per picture for CFR streams",
         OFFSET(num_ticks_per_picture), AV_OPT_TYPE_INT,
         { .i64 = -1 }, -1, INT_MAX, FLAGS },
+
+    { "delete_padding", "Delete all Padding OBUs",
+        OFFSET(delete_padding), AV_OPT_TYPE_BOOL,
+        { .i64 = 0 }, 0, 1, FLAGS},
 
     { NULL }
 };
