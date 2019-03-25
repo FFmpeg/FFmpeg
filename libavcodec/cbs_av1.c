@@ -960,7 +960,7 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
 
     if (obu->header.obu_extension_flag) {
         priv->temporal_id = obu->header.temporal_id;
-        priv->spatial_id  = obu->header.temporal_id;
+        priv->spatial_id  = obu->header.spatial_id;
 
         if (obu->header.obu_type != AV1_OBU_SEQUENCE_HEADER &&
             obu->header.obu_type != AV1_OBU_TEMPORAL_DELIMITER &&
