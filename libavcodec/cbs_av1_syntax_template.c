@@ -1755,3 +1755,27 @@ static int FUNC(metadata_obu)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+static int FUNC(padding_obu)(CodedBitstreamContext *ctx, RWContext *rw,
+                             AV1RawPadding *current)
+{
+    int i, err;
+
+    HEADER("Padding");
+
+#ifdef READ
+    // The payload runs up to the start of the trailing bits, but there might
+    // be arbitrarily many trailing zeroes so we need to read through twice.
+    current->payload_size = cbs_av1_get_payload_bytes_left(rw);
+
+    current->payload_ref = av_buffer_alloc(current->payload_size);
+    if (!current->payload_ref)
+        return AVERROR(ENOMEM);
+    current->payload = current->payload_ref->data;
+#endif
+
+    for (i = 0; i < current->payload_size; i++)
+        xf(8, obu_padding_byte[i], current->payload[i], 0x00, 0xff, 1, i);
+
+    return 0;
+}

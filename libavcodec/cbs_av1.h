@@ -364,6 +364,12 @@ typedef struct AV1RawMetadata {
     } metadata;
 } AV1RawMetadata;
 
+typedef struct AV1RawPadding {
+    uint8_t     *payload;
+    size_t       payload_size;
+    AVBufferRef *payload_ref;
+} AV1RawPadding;
+
 
 typedef struct AV1RawOBU {
     AV1RawOBUHeader header;
@@ -377,6 +383,7 @@ typedef struct AV1RawOBU {
         AV1RawTileGroup      tile_group;
         AV1RawTileList       tile_list;
         AV1RawMetadata       metadata;
+        AV1RawPadding        padding;
     } obu;
 } AV1RawOBU;
 

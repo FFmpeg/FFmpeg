@@ -868,6 +868,11 @@ static void cbs_av1_free_tile_data(AV1RawTileData *td)
     av_buffer_unref(&td->data_ref);
 }
 
+static void cbs_av1_free_padding(AV1RawPadding *pd)
+{
+    av_buffer_unref(&pd->payload_ref);
+}
+
 static void cbs_av1_free_metadata(AV1RawMetadata *md)
 {
     switch (md->metadata_type) {
@@ -893,6 +898,9 @@ static void cbs_av1_free_obu(void *unit, uint8_t *content)
         break;
     case AV1_OBU_METADATA:
         cbs_av1_free_metadata(&obu->obu.metadata);
+        break;
+    case AV1_OBU_PADDING:
+        cbs_av1_free_padding(&obu->obu.padding);
         break;
     }
 
@@ -1068,6 +1076,12 @@ static int cbs_av1_read_unit(CodedBitstreamContext *ctx,
         }
         break;
     case AV1_OBU_PADDING:
+        {
+            err = cbs_av1_read_padding_obu(ctx, &gbc, &obu->obu.padding);
+            if (err < 0)
+                return err;
+        }
+        break;
     default:
         return AVERROR(ENOSYS);
     }
@@ -1193,6 +1207,12 @@ static int cbs_av1_write_obu(CodedBitstreamContext *ctx,
         }
         break;
     case AV1_OBU_PADDING:
+        {
+            err = cbs_av1_write_padding_obu(ctx, pbc, &obu->obu.padding);
+            if (err < 0)
+                return err;
+        }
+        break;
     default:
         return AVERROR(ENOSYS);
     }
