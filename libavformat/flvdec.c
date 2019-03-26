@@ -986,144 +986,144 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 retry:
     /* pkt size is repeated at end. skip it */
-        pos  = avio_tell(s->pb);
-        type = (avio_r8(s->pb) & 0x1F);
-        orig_size =
-        size = avio_rb24(s->pb);
-        flv->sum_flv_tag_size += size + 11;
-        dts  = avio_rb24(s->pb);
-        dts |= (unsigned)avio_r8(s->pb) << 24;
-        av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
-        if (avio_feof(s->pb))
-            return AVERROR_EOF;
-        avio_skip(s->pb, 3); /* stream id, always 0 */
-        flags = 0;
+    pos  = avio_tell(s->pb);
+    type = (avio_r8(s->pb) & 0x1F);
+    orig_size =
+    size = avio_rb24(s->pb);
+    flv->sum_flv_tag_size += size + 11;
+    dts  = avio_rb24(s->pb);
+    dts |= (unsigned)avio_r8(s->pb) << 24;
+    av_log(s, AV_LOG_TRACE, "type:%d, size:%d, last:%d, dts:%"PRId64" pos:%"PRId64"\n", type, size, last, dts, avio_tell(s->pb));
+    if (avio_feof(s->pb))
+        return AVERROR_EOF;
+    avio_skip(s->pb, 3); /* stream id, always 0 */
+    flags = 0;
 
-        if (flv->validate_next < flv->validate_count) {
-            int64_t validate_pos = flv->validate_index[flv->validate_next].pos;
-            if (pos == validate_pos) {
-                if (FFABS(dts - flv->validate_index[flv->validate_next].dts) <=
-                    VALIDATE_INDEX_TS_THRESH) {
-                    flv->validate_next++;
-                } else {
-                    clear_index_entries(s, validate_pos);
-                    flv->validate_count = 0;
-                }
-            } else if (pos > validate_pos) {
+    if (flv->validate_next < flv->validate_count) {
+        int64_t validate_pos = flv->validate_index[flv->validate_next].pos;
+        if (pos == validate_pos) {
+            if (FFABS(dts - flv->validate_index[flv->validate_next].dts) <=
+                VALIDATE_INDEX_TS_THRESH) {
+                flv->validate_next++;
+            } else {
                 clear_index_entries(s, validate_pos);
                 flv->validate_count = 0;
             }
+        } else if (pos > validate_pos) {
+            clear_index_entries(s, validate_pos);
+            flv->validate_count = 0;
         }
+    }
 
-        if (size == 0) {
-            ret = FFERROR_REDO;
-            goto leave;
-        }
+    if (size == 0) {
+        ret = FFERROR_REDO;
+        goto leave;
+    }
 
-        next = size + avio_tell(s->pb);
+    next = size + avio_tell(s->pb);
 
-        if (type == FLV_TAG_TYPE_AUDIO) {
-            stream_type = FLV_STREAM_TYPE_AUDIO;
-            flags    = avio_r8(s->pb);
-            size--;
-        } else if (type == FLV_TAG_TYPE_VIDEO) {
-            stream_type = FLV_STREAM_TYPE_VIDEO;
-            flags    = avio_r8(s->pb);
-            size--;
-            if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
-                goto skip;
-        } else if (type == FLV_TAG_TYPE_META) {
-            stream_type=FLV_STREAM_TYPE_SUBTITLE;
-            if (size > 13 + 1 + 4) { // Header-type metadata stuff
-                int type;
-                meta_pos = avio_tell(s->pb);
-                type = flv_read_metabody(s, next);
-                if (type == 0 && dts == 0 || type < 0) {
-                    if (type < 0 && flv->validate_count &&
-                        flv->validate_index[0].pos     > next &&
-                        flv->validate_index[0].pos - 4 < next
-                    ) {
-                        av_log(s, AV_LOG_WARNING, "Adjusting next position due to index mismatch\n");
-                        next = flv->validate_index[0].pos - 4;
-                    }
-                    goto skip;
-                } else if (type == TYPE_ONTEXTDATA) {
-                    avpriv_request_sample(s, "OnTextData packet");
-                    return flv_data_packet(s, pkt, dts, next);
-                } else if (type == TYPE_ONCAPTION) {
-                    return flv_data_packet(s, pkt, dts, next);
-                } else if (type == TYPE_UNKNOWN) {
-                    stream_type = FLV_STREAM_TYPE_DATA;
+    if (type == FLV_TAG_TYPE_AUDIO) {
+        stream_type = FLV_STREAM_TYPE_AUDIO;
+        flags    = avio_r8(s->pb);
+        size--;
+    } else if (type == FLV_TAG_TYPE_VIDEO) {
+        stream_type = FLV_STREAM_TYPE_VIDEO;
+        flags    = avio_r8(s->pb);
+        size--;
+        if ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_VIDEO_INFO_CMD)
+            goto skip;
+    } else if (type == FLV_TAG_TYPE_META) {
+        stream_type=FLV_STREAM_TYPE_SUBTITLE;
+        if (size > 13 + 1 + 4) { // Header-type metadata stuff
+            int type;
+            meta_pos = avio_tell(s->pb);
+            type = flv_read_metabody(s, next);
+            if (type == 0 && dts == 0 || type < 0) {
+                if (type < 0 && flv->validate_count &&
+                    flv->validate_index[0].pos     > next &&
+                    flv->validate_index[0].pos - 4 < next
+                ) {
+                    av_log(s, AV_LOG_WARNING, "Adjusting next position due to index mismatch\n");
+                    next = flv->validate_index[0].pos - 4;
                 }
-                avio_seek(s->pb, meta_pos, SEEK_SET);
+                goto skip;
+            } else if (type == TYPE_ONTEXTDATA) {
+                avpriv_request_sample(s, "OnTextData packet");
+                return flv_data_packet(s, pkt, dts, next);
+            } else if (type == TYPE_ONCAPTION) {
+                return flv_data_packet(s, pkt, dts, next);
+            } else if (type == TYPE_UNKNOWN) {
+                stream_type = FLV_STREAM_TYPE_DATA;
             }
-        } else {
-            av_log(s, AV_LOG_DEBUG,
-                   "Skipping flv packet: type %d, size %d, flags %d.\n",
-                   type, size, flags);
+            avio_seek(s->pb, meta_pos, SEEK_SET);
+        }
+    } else {
+        av_log(s, AV_LOG_DEBUG,
+               "Skipping flv packet: type %d, size %d, flags %d.\n",
+               type, size, flags);
 skip:
-            if (avio_seek(s->pb, next, SEEK_SET) != next) {
-                 // This can happen if flv_read_metabody above read past
-                 // next, on a non-seekable input, and the preceding data has
-                 // been flushed out from the IO buffer.
-                 av_log(s, AV_LOG_ERROR, "Unable to seek to the next packet\n");
-                 return AVERROR_INVALIDDATA;
-            }
-            ret = FFERROR_REDO;
-            goto leave;
+        if (avio_seek(s->pb, next, SEEK_SET) != next) {
+            // This can happen if flv_read_metabody above read past
+            // next, on a non-seekable input, and the preceding data has
+            // been flushed out from the IO buffer.
+            av_log(s, AV_LOG_ERROR, "Unable to seek to the next packet\n");
+            return AVERROR_INVALIDDATA;
         }
+        ret = FFERROR_REDO;
+        goto leave;
+    }
 
-        /* skip empty data packets */
-        if (!size) {
-            ret = FFERROR_REDO;
-            goto leave;
+    /* skip empty data packets */
+    if (!size) {
+        ret = FFERROR_REDO;
+        goto leave;
+    }
+
+    /* now find stream */
+    for (i = 0; i < s->nb_streams; i++) {
+        st = s->streams[i];
+        if (stream_type == FLV_STREAM_TYPE_AUDIO) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
+                (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags)))
+                break;
+        } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+                (s->video_codec_id || flv_same_video_codec(st->codecpar, flags)))
+                break;
+        } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
+                break;
+        } else if (stream_type == FLV_STREAM_TYPE_DATA) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+                break;
         }
+    }
+    if (i == s->nb_streams) {
+        static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_DATA};
+        st = create_stream(s, stream_types[stream_type]);
+        if (!st)
+            return AVERROR(ENOMEM);
 
-        /* now find stream */
-        for (i = 0; i < s->nb_streams; i++) {
-            st = s->streams[i];
-            if (stream_type == FLV_STREAM_TYPE_AUDIO) {
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-                    (s->audio_codec_id || flv_same_audio_codec(st->codecpar, flags)))
-                    break;
-            } else if (stream_type == FLV_STREAM_TYPE_VIDEO) {
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    (s->video_codec_id || flv_same_video_codec(st->codecpar, flags)))
-                    break;
-            } else if (stream_type == FLV_STREAM_TYPE_SUBTITLE) {
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_SUBTITLE)
-                    break;
-            } else if (stream_type == FLV_STREAM_TYPE_DATA) {
-                if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA)
-                    break;
-            }
-        }
-        if (i == s->nb_streams) {
-            static const enum AVMediaType stream_types[] = {AVMEDIA_TYPE_VIDEO, AVMEDIA_TYPE_AUDIO, AVMEDIA_TYPE_SUBTITLE, AVMEDIA_TYPE_DATA};
-            st = create_stream(s, stream_types[stream_type]);
-            if (!st)
-                return AVERROR(ENOMEM);
+    }
+    av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
 
-        }
-        av_log(s, AV_LOG_TRACE, "%d %X %d \n", stream_type, flags, st->discard);
+    if (flv->time_pos <= pos) {
+        dts += flv->time_offset;
+    }
 
-        if (flv->time_pos <= pos) {
-            dts += flv->time_offset;
-        }
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
+        ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+         stream_type == FLV_STREAM_TYPE_AUDIO))
+        av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
 
-        if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
-            ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
-              stream_type == FLV_STREAM_TYPE_AUDIO))
-            av_add_index_entry(st, pos, dts, size, 0, AVINDEX_KEYFRAME);
-
-        if (  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))
-            ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && (stream_type == FLV_STREAM_TYPE_VIDEO)))
-            || st->discard >= AVDISCARD_ALL
-        ) {
-            avio_seek(s->pb, next, SEEK_SET);
-            ret = FFERROR_REDO;
-            goto leave;
-        }
+    if (  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))
+          ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && (stream_type == FLV_STREAM_TYPE_VIDEO)))
+          || st->discard >= AVDISCARD_ALL
+    ) {
+        avio_seek(s->pb, next, SEEK_SET);
+        ret = FFERROR_REDO;
+        goto leave;
+    }
 
     // if not streamed and no duration from metadata then seek to end to find
     // the duration from the timestamps
