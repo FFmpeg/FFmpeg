@@ -810,22 +810,37 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
     };
 #endif
 
-    mfxExtBuffer *ext_buffers[] = {
-        (mfxExtBuffer*)&extradata,
-        (mfxExtBuffer*)&co,
-#if QSV_HAVE_CO2
-        (mfxExtBuffer*)&co2,
-#endif
-#if QSV_HAVE_CO3
-        (mfxExtBuffer*)&co3,
-#endif
+#if QSV_HAVE_CO_VPS
+    uint8_t vps_buf[128];
+    mfxExtCodingOptionVPS extradata_vps = {
+        .Header.BufferId = MFX_EXTBUFF_CODING_OPTION_VPS,
+        .Header.BufferSz = sizeof(extradata_vps),
+        .VPSBuffer       = vps_buf,
+        .VPSBufSize      = sizeof(vps_buf),
     };
+#endif
+
+    mfxExtBuffer *ext_buffers[2 + QSV_HAVE_CO2 + QSV_HAVE_CO3 + QSV_HAVE_CO_VPS];
 
     int need_pps = avctx->codec_id != AV_CODEC_ID_MPEG2VIDEO;
-    int ret;
+    int ret, ext_buf_num = 0, extradata_offset = 0;
+
+    ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&extradata;
+    ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&co;
+#if QSV_HAVE_CO2
+    ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&co2;
+#endif
+#if QSV_HAVE_CO3
+    ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&co3;
+#endif
+#if QSV_HAVE_CO_VPS
+    q->hevc_vps = ((avctx->codec_id == AV_CODEC_ID_HEVC) && QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 17));
+    if (q->hevc_vps)
+        ext_buffers[ext_buf_num++] = (mfxExtBuffer*)&extradata_vps;
+#endif
 
     q->param.ExtParam    = ext_buffers;
-    q->param.NumExtParam = FF_ARRAY_ELEMS(ext_buffers);
+    q->param.NumExtParam = ext_buf_num;
 
     ret = MFXVideoENCODE_GetVideoParam(q->session, &q->param);
     if (ret < 0)
@@ -834,20 +849,37 @@ static int qsv_retrieve_enc_params(AVCodecContext *avctx, QSVEncContext *q)
 
     q->packet_size = q->param.mfx.BufferSizeInKB * q->param.mfx.BRCParamMultiplier * 1000;
 
-    if (!extradata.SPSBufSize || (need_pps && !extradata.PPSBufSize)) {
+    if (!extradata.SPSBufSize || (need_pps && !extradata.PPSBufSize)
+#if QSV_HAVE_CO_VPS
+        || (q->hevc_vps && !extradata_vps.VPSBufSize)
+#endif
+    ) {
         av_log(avctx, AV_LOG_ERROR, "No extradata returned from libmfx.\n");
         return AVERROR_UNKNOWN;
     }
 
-    avctx->extradata = av_malloc(extradata.SPSBufSize + need_pps * extradata.PPSBufSize +
-                                 AV_INPUT_BUFFER_PADDING_SIZE);
+    avctx->extradata_size = extradata.SPSBufSize + need_pps * extradata.PPSBufSize;
+#if QSV_HAVE_CO_VPS
+    avctx->extradata_size += q->hevc_vps * extradata_vps.VPSBufSize;
+#endif
+
+    avctx->extradata = av_malloc(avctx->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata)
         return AVERROR(ENOMEM);
 
-    memcpy(avctx->extradata,                        sps_buf, extradata.SPSBufSize);
-    if (need_pps)
-        memcpy(avctx->extradata + extradata.SPSBufSize, pps_buf, extradata.PPSBufSize);
-    avctx->extradata_size = extradata.SPSBufSize + need_pps * extradata.PPSBufSize;
+#if QSV_HAVE_CO_VPS
+    if (q->hevc_vps) {
+        memcpy(avctx->extradata, vps_buf, extradata_vps.VPSBufSize);
+        extradata_offset += extradata_vps.VPSBufSize;
+    }
+#endif
+
+    memcpy(avctx->extradata + extradata_offset, sps_buf, extradata.SPSBufSize);
+    extradata_offset += extradata.SPSBufSize;
+    if (need_pps) {
+        memcpy(avctx->extradata + extradata_offset, pps_buf, extradata.PPSBufSize);
+        extradata_offset += extradata.PPSBufSize;
+    }
     memset(avctx->extradata + avctx->extradata_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     cpb_props = ff_add_cpb_side_data(avctx);

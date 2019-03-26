@@ -194,10 +194,12 @@ static av_cold int qsv_enc_init(AVCodecContext *avctx)
     if (ret < 0)
         return ret;
 
-    ret = generate_fake_vps(&q->qsv, avctx);
-    if (ret < 0) {
-        ff_qsv_enc_close(avctx, &q->qsv);
-        return ret;
+    if (!q->qsv.hevc_vps) {
+        ret = generate_fake_vps(&q->qsv, avctx);
+        if (ret < 0) {
+            ff_qsv_enc_close(avctx, &q->qsv);
+            return ret;
+        }
     }
 
     return 0;
