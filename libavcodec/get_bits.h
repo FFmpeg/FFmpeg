@@ -226,34 +226,32 @@ static inline int get_bits_count(const GetBitContext *s)
 }
 
 #if CACHED_BITSTREAM_READER
-static inline void refill_32(GetBitContext *s)
+static inline void refill_32(GetBitContext *s, int is_le)
 {
 #if !UNCHECKED_BITSTREAM_READER
     if (s->index >> 3 >= s->buffer_end - s->buffer)
         return;
 #endif
 
-#ifdef BITSTREAM_READER_LE
+    if (is_le)
     s->cache       = (uint64_t)AV_RL32(s->buffer + (s->index >> 3)) << s->bits_left | s->cache;
-#else
+    else
     s->cache       = s->cache | (uint64_t)AV_RB32(s->buffer + (s->index >> 3)) << (32 - s->bits_left);
-#endif
     s->index     += 32;
     s->bits_left += 32;
 }
 
-static inline void refill_64(GetBitContext *s)
+static inline void refill_64(GetBitContext *s, int is_le)
 {
 #if !UNCHECKED_BITSTREAM_READER
     if (s->index >> 3 >= s->buffer_end - s->buffer)
         return;
 #endif
 
-#ifdef BITSTREAM_READER_LE
+    if (is_le)
     s->cache = AV_RL64(s->buffer + (s->index >> 3));
-#else
+    else
     s->cache = AV_RB64(s->buffer + (s->index >> 3));
-#endif
     s->index += 64;
     s->bits_left = 64;
 }
@@ -385,7 +383,11 @@ static inline unsigned int get_bits(GetBitContext *s, int n)
 
     av_assert2(n>0 && n<=32);
     if (n > s->bits_left) {
-        refill_32(s);
+#ifdef BITSTREAM_READER_LE
+        refill_32(s, 1);
+#else
+        refill_32(s, 0);
+#endif
         if (s->bits_left < 32)
             s->bits_left = n;
     }
@@ -420,7 +422,7 @@ static inline unsigned int get_bits_le(GetBitContext *s, int n)
 #if CACHED_BITSTREAM_READER
     av_assert2(n>0 && n<=32);
     if (n > s->bits_left) {
-        refill_32(s);
+        refill_32(s, 1);
         if (s->bits_left < 32)
             s->bits_left = n;
     }
@@ -446,7 +448,11 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
     register unsigned int tmp;
 #if CACHED_BITSTREAM_READER
     if (n > s->bits_left)
-        refill_32(s);
+#ifdef BITSTREAM_READER_LE
+        refill_32(s, 1);
+#else
+        refill_32(s, 0);
+#endif
 
     tmp = show_val(s, n);
 #else
@@ -474,7 +480,11 @@ static inline void skip_bits(GetBitContext *s, int n)
             n -= skip;
             s->index += skip;
         }
-        refill_64(s);
+#ifdef BITSTREAM_READER_LE
+        refill_64(s, 1);
+#else
+        refill_64(s, 0);
+#endif
         if (n)
             skip_remaining(s, n);
     }
@@ -489,7 +499,11 @@ static inline unsigned int get_bits1(GetBitContext *s)
 {
 #if CACHED_BITSTREAM_READER
     if (!s->bits_left)
-        refill_64(s);
+#ifdef BITSTREAM_READER_LE
+        refill_64(s, 1);
+#else
+        refill_64(s, 0);
+#endif
 
 #ifdef BITSTREAM_READER_LE
     return get_val(s, 1, 1);
@@ -605,16 +619,8 @@ static inline int check_marker(void *logctx, GetBitContext *s, const char *msg)
     return bit;
 }
 
-/**
- * Initialize GetBitContext.
- * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
- *        larger than the actual read bits because some optimized bitstream
- *        readers read 32 or 64 bit at once and could read over the end
- * @param bit_size the size of the buffer in bits
- * @return 0 on success, AVERROR_INVALIDDATA if the buffer_size would overflow.
- */
-static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
-                                int bit_size)
+static inline int init_get_bits_xe(GetBitContext *s, const uint8_t *buffer,
+                                   int bit_size, int is_le)
 {
     int buffer_size;
     int ret = 0;
@@ -634,10 +640,30 @@ static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
     s->index              = 0;
 
 #if CACHED_BITSTREAM_READER
-    refill_64(s);
+    s->cache              = 0;
+    s->bits_left          = 0;
+    refill_64(s, is_le);
 #endif
 
     return ret;
+}
+
+/**
+ * Initialize GetBitContext.
+ * @param buffer bitstream buffer, must be AV_INPUT_BUFFER_PADDING_SIZE bytes
+ *        larger than the actual read bits because some optimized bitstream
+ *        readers read 32 or 64 bit at once and could read over the end
+ * @param bit_size the size of the buffer in bits
+ * @return 0 on success, AVERROR_INVALIDDATA if the buffer_size would overflow.
+ */
+static inline int init_get_bits(GetBitContext *s, const uint8_t *buffer,
+                                int bit_size)
+{
+#ifdef BITSTREAM_READER_LE
+    return init_get_bits_xe(s, buffer, bit_size, 1);
+#else
+    return init_get_bits_xe(s, buffer, bit_size, 0);
+#endif
 }
 
 /**
@@ -654,6 +680,14 @@ static inline int init_get_bits8(GetBitContext *s, const uint8_t *buffer,
     if (byte_size > INT_MAX / 8 || byte_size < 0)
         byte_size = -1;
     return init_get_bits(s, buffer, byte_size * 8);
+}
+
+static inline int init_get_bits8_le(GetBitContext *s, const uint8_t *buffer,
+                                    int byte_size)
+{
+    if (byte_size > INT_MAX / 8 || byte_size < 0)
+        byte_size = -1;
+    return init_get_bits_xe(s, buffer, byte_size * 8, 1);
 }
 
 static inline const uint8_t *align_get_bits(GetBitContext *s)

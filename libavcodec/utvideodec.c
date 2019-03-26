@@ -258,11 +258,11 @@ static int decode_plane(UtvideoContext *c, int plane_no,
             GetBitContext cbit, pbit;
             uint8_t *dest, *p;
 
-            ret = init_get_bits8(&cbit, c->control_stream[plane_no][slice], c->control_stream_size[plane_no][slice]);
+            ret = init_get_bits8_le(&cbit, c->control_stream[plane_no][slice], c->control_stream_size[plane_no][slice]);
             if (ret < 0)
                 return ret;
 
-            ret = init_get_bits8(&pbit, c->packed_stream[plane_no][slice], c->packed_stream_size[plane_no][slice]);
+            ret = init_get_bits8_le(&pbit, c->packed_stream[plane_no][slice], c->packed_stream_size[plane_no][slice]);
             if (ret < 0)
                 return ret;
 
