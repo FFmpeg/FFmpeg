@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
@@ -76,6 +77,12 @@ typedef struct FLVContext {
     int64_t time_offset;
     int64_t time_pos;
 } FLVContext;
+
+/* AMF date type */
+typedef struct amf_date {
+    double   milliseconds;
+    int16_t  timezone;
+} amf_date;
 
 static int probe(const AVProbeData *p, int live)
 {
@@ -471,6 +478,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     AMFDataType amf_type;
     char str_val[1024];
     double num_val;
+    amf_date date;
 
     num_val  = 0;
     ioc      = s->pb;
@@ -542,7 +550,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
     }
     break;
     case AMF_DATA_TYPE_DATE:
-        avio_skip(ioc, 8 + 2);  // timestamp (double) and UTC offset (int16)
+        // timestamp (double) and UTC offset (int16)
+        date.milliseconds = av_int2double(avio_rb64(ioc));
+        date.timezone = avio_rb16(ioc);
         break;
     default:                    // unsupported type, we couldn't skip
         av_log(s, AV_LOG_ERROR, "unsupported amf type %d\n", amf_type);
@@ -641,8 +651,18 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream,
         } else if (amf_type == AMF_DATA_TYPE_NUMBER) {
             snprintf(str_val, sizeof(str_val), "%.f", num_val);
             av_dict_set(&s->metadata, key, str_val, 0);
-        } else if (amf_type == AMF_DATA_TYPE_STRING)
+        } else if (amf_type == AMF_DATA_TYPE_STRING) {
             av_dict_set(&s->metadata, key, str_val, 0);
+        } else if (amf_type == AMF_DATA_TYPE_DATE) {
+            time_t time;
+            struct tm t;
+            char datestr[128];
+            time =  date.milliseconds / 1000; // to seconds
+            localtime_r(&time, &t);
+            strftime(datestr, sizeof(datestr), "%a, %d %b %Y %H:%M:%S %z", &t);
+
+            av_dict_set(&s->metadata, key, datestr, 0);
+        }
     }
 
     return 0;
