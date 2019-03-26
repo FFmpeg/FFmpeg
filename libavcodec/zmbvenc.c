@@ -340,6 +340,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
         c->fmt = ZMBV_FMT_16BPP;
         c->bypp = 2;
         break;
+#ifdef ZMBV_ENABLE_24BPP
+    case AV_PIX_FMT_BGR24:
+        c->fmt = ZMBV_FMT_24BPP;
+        c->bypp = 3;
+        break;
+#endif //ZMBV_ENABLE_24BPP
     case AV_PIX_FMT_BGR0:
         c->fmt = ZMBV_FMT_32BPP;
         c->bypp = 4;
@@ -434,6 +440,9 @@ AVCodec ff_zmbv_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_PAL8,
                                                      AV_PIX_FMT_RGB555LE,
                                                      AV_PIX_FMT_RGB565LE,
+#ifdef ZMBV_ENABLE_24BPP
+                                                     AV_PIX_FMT_BGR24,
+#endif //ZMBV_ENABLE_24BPP
                                                      AV_PIX_FMT_BGR0,
                                                      AV_PIX_FMT_NONE },
 };
