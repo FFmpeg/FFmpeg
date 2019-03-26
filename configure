@@ -6471,9 +6471,12 @@ if enabled_all opencl libdrm ; then
 fi
 
 if enabled_all opencl vaapi ; then
-    enabled opencl_drm_beignet && enable opencl_vaapi_beignet
-    check_type "CL/cl.h CL/cl_va_api_media_sharing_intel.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
-        enable opencl_vaapi_intel_media
+    if enabled opencl_drm_beignet ; then
+        enable opencl_vaapi_beignet
+    else
+        check_type "CL/cl.h CL/cl_va_api_media_sharing_intel.h" "clCreateFromVA_APIMediaSurfaceINTEL_fn" &&
+            enable opencl_vaapi_intel_media
+    fi
 fi
 
 if enabled_all opencl dxva2 ; then
