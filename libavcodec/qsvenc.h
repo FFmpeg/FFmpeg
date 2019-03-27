@@ -153,7 +153,6 @@ typedef struct QSVEncContext {
 
     int single_sei_nal_unit;
     int max_dec_frame_buffering;
-    int trellis;
 
     int bitrate_limit;
     int mbbrc;
