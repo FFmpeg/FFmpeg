@@ -683,7 +683,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 #if QSV_HAVE_TRELLIS
-            q->extco2.Trellis = q->trellis;
+            if (avctx->trellis >= 0)
+                q->extco2.Trellis = (avctx->trellis == 0) ? MFX_TRELLIS_OFF : (MFX_TRELLIS_I | MFX_TRELLIS_P | MFX_TRELLIS_B);
+            else
+                q->extco2.Trellis = MFX_TRELLIS_UNKNOWN;
 #endif
 
 #if QSV_VERSION_ATLEAST(1, 8)
