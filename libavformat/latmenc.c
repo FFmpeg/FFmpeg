@@ -91,7 +91,7 @@ static int latm_write_header(AVFormatContext *s)
         return 0;
     if (par->codec_id != AV_CODEC_ID_AAC && par->codec_id != AV_CODEC_ID_MP4ALS) {
         av_log(ctx, AV_LOG_ERROR, "Only AAC, LATM and ALS are supported\n");
-        return AVERROR_INVALIDDATA;
+        return AVERROR(EINVAL);
     }
 
     if (par->extradata_size > 0 &&
