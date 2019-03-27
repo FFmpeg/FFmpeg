@@ -1203,11 +1203,29 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
             MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
             AVIOContext *pb = matroska->ctx->pb;
             int64_t pos = avio_tell(pb);
-            if (level->length != EBML_UNKNOWN_LENGTH &&
-                (pos + length) > (level->start + level->length)) {
+
+            if (length != EBML_UNKNOWN_LENGTH &&
+                level->length != EBML_UNKNOWN_LENGTH) {
+                uint64_t elem_end = pos + length,
+                        level_end = level->start + level->length;
+
+                if (level_end < elem_end) {
+                    av_log(matroska->ctx, AV_LOG_ERROR,
+                           "Element at 0x%"PRIx64" ending at 0x%"PRIx64" exceeds "
+                           "containing master element ending at 0x%"PRIx64"\n",
+                           pos, elem_end, level_end);
+                    return AVERROR_INVALIDDATA;
+                }
+            } else if (level->length != EBML_UNKNOWN_LENGTH) {
+                av_log(matroska->ctx, AV_LOG_ERROR, "Unknown-sized element "
+                       "at 0x%"PRIx64" inside parent with finite size\n", pos);
+                return AVERROR_INVALIDDATA;
+            } else if (length == EBML_UNKNOWN_LENGTH && id != MATROSKA_ID_CLUSTER) {
+                // According to the specifications only clusters and segments
+                // are allowed to be unknown-sized.
                 av_log(matroska->ctx, AV_LOG_ERROR,
-                       "Invalid length 0x%"PRIx64" > 0x%"PRIx64" in parent\n",
-                       length, level->start + level->length);
+                       "Found unknown-sized element other than a cluster at "
+                       "0x%"PRIx64". Dropping the invalid element.\n", pos);
                 return AVERROR_INVALIDDATA;
             }
         }
