@@ -182,11 +182,13 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_push_function(p->session, gnutls_url_push);
     gnutls_transport_set_ptr(p->session, c->tcp);
     gnutls_priority_set_direct(p->session, "NORMAL", NULL);
-    ret = gnutls_handshake(p->session);
-    if (ret) {
-        ret = print_tls_error(h, ret);
-        goto fail;
-    }
+    do {
+        ret = gnutls_handshake(p->session);
+        if (gnutls_error_is_fatal(ret)) {
+            ret = print_tls_error(h, ret);
+            goto fail;
+        }
+    } while (ret);
     p->need_shutdown = 1;
     if (c->verify) {
         unsigned int status, cert_list_size;
