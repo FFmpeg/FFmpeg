@@ -629,9 +629,10 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 #endif
     }
 
-    // the HEVC encoder plugin currently fails if coding options
-    // are provided
-    if (avctx->codec_id != AV_CODEC_ID_HEVC) {
+    // The HEVC encoder plugin currently fails with some old libmfx version if coding options
+    // are provided. Can't find the extract libmfx version which fixed it, just enable it from
+    // V1.28 in order to keep compatibility security.
+    if ((avctx->codec_id != AV_CODEC_ID_HEVC) || QSV_RUNTIME_VERSION_ATLEAST(q->ver, 1, 28)) {
         q->extco.Header.BufferId      = MFX_EXTBUFF_CODING_OPTION;
         q->extco.Header.BufferSz      = sizeof(q->extco);
 
