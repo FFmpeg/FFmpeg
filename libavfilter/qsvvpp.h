@@ -36,8 +36,8 @@
      MFX_VERSION_MAJOR == (MAJOR) && MFX_VERSION_MINOR >= (MINOR))
 
 #define QSV_RUNTIME_VERSION_ATLEAST(MFX_VERSION, MAJOR, MINOR) \
-    (MFX_VERSION.Major > (MAJOR)) ||                           \
-    (MFX_VERSION.Major == (MAJOR) && MFX_VERSION.Minor >= (MINOR))
+    ((MFX_VERSION.Major > (MAJOR)) ||                           \
+    (MFX_VERSION.Major == (MAJOR) && MFX_VERSION.Minor >= (MINOR)))
 
 typedef struct QSVVPPContext QSVVPPContext;
 
