@@ -127,7 +127,7 @@ static int xcbgrab_reposition(AVFormatContext *s,
         int left   = x + f;
         int right  = x + w - f;
         int top    = y + f;
-        int bottom = y + h + f;
+        int bottom = y + h - f;
         if (p_x > right) {
             x += p_x - right;
         } else if (p_x < left) {
