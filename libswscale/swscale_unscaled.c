@@ -150,10 +150,10 @@ static int planarToNv12Wrapper(SwsContext *c, const uint8_t *src[],
               dstParam[0], dstStride[0]);
 
     if (c->dstFormat == AV_PIX_FMT_NV12)
-        interleaveBytes(src[1], src[2], dst, c->srcW / 2, srcSliceH / 2,
+        interleaveBytes(src[1], src[2], dst, c->chrSrcW, c->chrSrcH,
                         srcStride[1], srcStride[2], dstStride[1]);
     else
-        interleaveBytes(src[2], src[1], dst, c->srcW / 2, srcSliceH / 2,
+        interleaveBytes(src[2], src[1], dst, c->chrSrcW, c->chrSrcH,
                         srcStride[2], srcStride[1], dstStride[1]);
 
     return srcSliceH;
@@ -171,10 +171,10 @@ static int nv12ToPlanarWrapper(SwsContext *c, const uint8_t *src[],
               dstParam[0], dstStride[0]);
 
     if (c->srcFormat == AV_PIX_FMT_NV12)
-        deinterleaveBytes(src[1], dst1, dst2,c->srcW / 2, srcSliceH / 2,
+        deinterleaveBytes(src[1], dst1, dst2, c->chrSrcW, c->chrSrcH,
                           srcStride[1], dstStride[1], dstStride[2]);
     else
-        deinterleaveBytes(src[1], dst2, dst1, c->srcW / 2, srcSliceH / 2,
+        deinterleaveBytes(src[1], dst2, dst1, c->chrSrcW, c->chrSrcH,
                           srcStride[1], dstStride[2], dstStride[1]);
 
     return srcSliceH;
