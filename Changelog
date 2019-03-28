@@ -1,6 +1,79 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.4.6:
+- avcodec/hevcdec: Avoid only partly skiping duplicate first slices
+- lavc/bmp: Avoid a heap buffer overwrite for 1bpp input.
+- avcodec/truemotion2: Fix integer overflow in tm2_null_res_block()
+- avcodec/dfa: Check the chunk header is not truncated
+- avcodec/dvbsubdec: Check object position
+- avcodec/cdgraphics: Use ff_set_dimensions()
+- avformat/gdv: Check fps
+- avcodec/scpr: Fix use of uninitialized variable
+- avcodec/qpeg: Limit copy in qpeg_decode_intra() to the available bytes
+- avcodec/aic: Check remaining bits in aic_decode_coeffs()
+- avcodec/gdv: Check for truncated tags in decompress_5()
+- avcodec/bethsoftvideo: Check block_type
+- avcodec/jpeg2000dwt: Fix integer overflow in dwt_decode97_int()
+- avcodec/error_resilience: Use a symmetric check for skipping MV estimation
+- avcodec/mlpdec: Insuffient typo
+- avcodec/zmbv: obtain frame later
+- avcodec/jvdec: Check available input space before decode8x8()
+- avcodec/h264_direct: Fix overflow in POC comparission
+- avformat/webmdashenc: Check id in adaption_sets
+- avformat/http: Fix Out-of-Bounds access in process_line()
+- avformat/ftp: Fix Out-of-Bounds Access and Information Leak in ftp.c:393
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for handling braces
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for tag scaning
+- avformat/matroskadec: Do not leak queued packets on sync errors
+- avformat/mov: Do not use reference stream in mov_read_sidx() if there is no reference stream
+- avcodec/sbrdsp_fixed.c: remove input value limit for sbr_sum_square_c()
+- avformat/mov: validate chunk_count vs stsc_data
+- avformat/mov.c: require tfhd to begin parsing trun
+- avcodec/pgssubdec: Check for duplicate display segments
+- avformat/rtsp: Check number of streams in sdp_parse_line()
+- avformat/rtsp: Clear reply in every iteration in ff_rtsp_connect()
+- avcodec/fic: Check that there is input left in fic_decode_block()
+- avcodec/tiff: Check for 12bit gray fax
+- avutil/imgutils: Optimize memset_bytes() by using av_memcpy_backptr()
+- avutil/mem: Optimize fill32() by unrolling and using 64bit
+- configure: bump year
+- avcodec/diracdec: Check component quant
+- avcodec/tests/rangecoder: initialize array to avoid valgrind warning
+- avcodec/h264_slice: Fix integer overflow in implicit_weight_table()
+- avcodec/exr: set layer_match in all branches
+- avcodec/exr: Check for duplicate channel index
+- avcodec/4xm: Fix returned error codes
+- avcodec/v4l2_m2m: fix cant typo
+- avcodec/mjpegbdec: Fix some misplaced {} and spaces
+- avformat/wvdec: detect and error out on WavPack DSD files
+- avcodec/mips: Fix failed case: hevc-conformance-AMP_A_Samsung_* when enable msa
+- avcodec/fic: Fail on invalid slice size/off
+- postproc/postprocess_template: remove FF_REG_sp from clobber list
+- postproc/postprocess_template: Avoid using %4 for the threshold compare
+- avcodec/rpza: Check that there is enough data for all the blocks
+- avcodec/rpza: Move frame allocation to a later point
+- avcodec/avcodec: Document the data type for AV_PKT_DATA_MPEGTS_STREAM_ID
+- avformat/mpegts: Fix side data type for stream id
+- tests/fate/filter-video: increase fuzz for fate-filter-refcmp-psnr-rgb
+- avcodec/mjpegdec: Fix indention of ljpeg_decode_yuv_scan()
+- lavf/id3v2: fail read_apic on EOF reading mimetype
+- avformat/nutenc: Document trailer index assert better
+- lavf/mov: ensure only one tkhd per trak
+- avcodec/ppc/hevcdsp: Fix build failures with powerpc-linux-gnu-gcc-4.8 with --disable-optimizations
+- avcodec/msvideo1: Check for too small dimensions
+- avcodec/wmv2dec: Skip I frame if its smaller than 1/8 of the minimal size
+- avcodec/msmpeg4dec: Skip frame if its smaller than 1/8 of the minimal size
+- avcodec/truemotion2rt: Fix rounding in input size check
+- avcodec/truemotion2: fix integer overflows in tm2_low_chroma()
+- avcodec/pngdec: Check compression method
+- fftools/ffmpeg: Repair reinit_filter feature
+- avcodec/shorten: Fix integer overflow with offset
+- avcodec/cavsdec: Propagate error codes inside decode_mb_i()
+- avcodec/mpegaudio_parser: Consume more than 0 bytes in case of the unsupported mp3adu case
+- avcodec/hevcdec: decode at most one slice reporting being the first in the picture
+- avfilter/af_silenceremove: fix possible crash if supplied duration is negative
+
 version 3.4.5:
 - avutil/integer: Fix integer overflow in av_mul_i()
 - avcodec/msrle: Check that the input is large enough to contain a end of picture code
