@@ -728,7 +728,8 @@ static av_cold int aom_init(AVCodecContext *avctx,
     }
 #endif
 #ifdef AOM_CTRL_AV1E_SET_ROW_MT
-    codecctl_int(avctx, AV1E_SET_ROW_MT, ctx->row_mt);
+    if (ctx->row_mt >= 0)
+        codecctl_int(avctx, AV1E_SET_ROW_MT, ctx->row_mt);
 #endif
 #ifdef AOM_CTRL_AV1E_SET_ENABLE_INTRABC
     if (ctx->enable_intrabc >= 0)
@@ -1082,7 +1083,7 @@ static const AVOption options[] = {
     { "tiles",            "Tile columns x rows", OFFSET(tile_cols), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, VE },
     { "tile-columns",     "Log2 of number of tile columns to use", OFFSET(tile_cols_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",        "Log2 of number of tile rows to use",    OFFSET(tile_rows_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
-    { "row-mt",           "Enable row based multi-threading",      OFFSET(row_mt),         AV_OPT_TYPE_BOOL, {.i64 = 0},  0, 1, VE},
+    { "row-mt",           "Enable row based multi-threading",      OFFSET(row_mt),         AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-cdef",      "Enable CDEF filtering",                 OFFSET(enable_cdef),    AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-global-motion",  "Enable global motion",             OFFSET(enable_global_motion), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "enable-intrabc",  "Enable intra block copy prediction mode", OFFSET(enable_intrabc), AV_OPT_TYPE_BOOL, {.i64 = -1},  0, 1, VE},
