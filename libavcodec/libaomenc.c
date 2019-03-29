@@ -66,36 +66,69 @@ typedef struct AOMEncoderContext {
     struct FrameListData *coded_frame_list;
     int cpu_used;
     int auto_alt_ref;
+    int arnr_max_frames;
+    int arnr_strength;
+    int aq_mode;
     int lag_in_frames;
     int error_resilient;
     int crf;
     int static_thresh;
     int drop_threshold;
+    int denoise_noise_level;
+    int denoise_block_size;
     uint64_t sse[4];
     int have_sse; /**< true if we have pending sse[] */
     uint64_t frame_number;
+    int rc_undershoot_pct;
+    int rc_overshoot_pct;
+    int minsection_pct;
+    int maxsection_pct;
+    int frame_parallel;
     int tile_cols, tile_rows;
     int tile_cols_log2, tile_rows_log2;
     aom_superblock_size_t superblock_size;
     int uniform_tiles;
     int row_mt;
+    int enable_cdef;
+    int enable_global_motion;
+    int enable_intrabc;
 } AOMContext;
 
 static const char *const ctlidstr[] = {
     [AOME_SET_CPUUSED]          = "AOME_SET_CPUUSED",
     [AOME_SET_CQ_LEVEL]         = "AOME_SET_CQ_LEVEL",
     [AOME_SET_ENABLEAUTOALTREF] = "AOME_SET_ENABLEAUTOALTREF",
+    [AOME_SET_ARNR_MAXFRAMES]   = "AOME_SET_ARNR_MAXFRAMES",
+    [AOME_SET_ARNR_STRENGTH]    = "AOME_SET_ARNR_STRENGTH",
     [AOME_SET_STATIC_THRESHOLD] = "AOME_SET_STATIC_THRESHOLD",
     [AV1E_SET_COLOR_RANGE]      = "AV1E_SET_COLOR_RANGE",
     [AV1E_SET_COLOR_PRIMARIES]  = "AV1E_SET_COLOR_PRIMARIES",
     [AV1E_SET_MATRIX_COEFFICIENTS] = "AV1E_SET_MATRIX_COEFFICIENTS",
     [AV1E_SET_TRANSFER_CHARACTERISTICS] = "AV1E_SET_TRANSFER_CHARACTERISTICS",
+    [AV1E_SET_AQ_MODE]          = "AV1E_SET_AQ_MODE",
+    [AV1E_SET_FRAME_PARALLEL_DECODING] = "AV1E_SET_FRAME_PARALLEL_DECODING",
     [AV1E_SET_SUPERBLOCK_SIZE]  = "AV1E_SET_SUPERBLOCK_SIZE",
     [AV1E_SET_TILE_COLUMNS]     = "AV1E_SET_TILE_COLUMNS",
     [AV1E_SET_TILE_ROWS]        = "AV1E_SET_TILE_ROWS",
 #ifdef AOM_CTRL_AV1E_SET_ROW_MT
     [AV1E_SET_ROW_MT]           = "AV1E_SET_ROW_MT",
 #endif
+#ifdef AOM_CTRL_AV1E_SET_DENOISE_NOISE_LEVEL
+    [AV1E_SET_DENOISE_NOISE_LEVEL] =  "AV1E_SET_DENOISE_NOISE_LEVEL",
+#endif
+#ifdef AOM_CTRL_AV1E_SET_DENOISE_BLOCK_SIZE
+    [AV1E_SET_DENOISE_BLOCK_SIZE] =   "AV1E_SET_DENOISE_BLOCK_SIZE",
+#endif
+#ifdef AOM_CTRL_AV1E_SET_MAX_REFERENCE_FRAMES
+    [AV1E_SET_MAX_REFERENCE_FRAMES] = "AV1E_SET_MAX_REFERENCE_FRAMES",
+#endif
+#ifdef AOM_CTRL_AV1E_SET_ENABLE_GLOBAL_MOTION
+    [AV1E_SET_ENABLE_GLOBAL_MOTION] = "AV1E_SET_ENABLE_GLOBAL_MOTION",
+#endif
+#ifdef AOM_CTRL_AV1E_SET_ENABLE_INTRABC
+    [AV1E_SET_ENABLE_INTRABC]   = "AV1E_SET_ENABLE_INTRABC",
+#endif
+    [AV1E_SET_ENABLE_CDEF]      = "AV1E_SET_ENABLE_CDEF",
 };
 
 static av_cold void log_encoder_error(AVCodecContext *avctx, const char *desc)
@@ -567,10 +600,14 @@ static av_cold int aom_init(AVCodecContext *avctx,
 
     // 0-100 (0 => CBR, 100 => VBR)
     enccfg.rc_2pass_vbr_bias_pct       = round(avctx->qcompress * 100);
-    if (avctx->bit_rate)
+    if (ctx->minsection_pct >= 0)
+        enccfg.rc_2pass_vbr_minsection_pct = ctx->minsection_pct;
+    else if (avctx->bit_rate)
         enccfg.rc_2pass_vbr_minsection_pct =
             avctx->rc_min_rate * 100LL / avctx->bit_rate;
-    if (avctx->rc_max_rate)
+    if (ctx->maxsection_pct >= 0)
+        enccfg.rc_2pass_vbr_maxsection_pct = ctx->maxsection_pct;
+    else if (avctx->rc_max_rate)
         enccfg.rc_2pass_vbr_maxsection_pct =
             avctx->rc_max_rate * 100LL / avctx->bit_rate;
 
@@ -581,6 +618,11 @@ static av_cold int aom_init(AVCodecContext *avctx,
         enccfg.rc_buf_initial_sz =
             avctx->rc_initial_buffer_occupancy * 1000LL / avctx->bit_rate;
     enccfg.rc_buf_optimal_sz = enccfg.rc_buf_sz * 5 / 6;
+
+    if (ctx->rc_undershoot_pct >= 0)
+        enccfg.rc_undershoot_pct = ctx->rc_undershoot_pct;
+    if (ctx->rc_overshoot_pct >= 0)
+        enccfg.rc_overshoot_pct = ctx->rc_overshoot_pct;
 
     // _enc_init() will balk if kf_min_dist differs from max w/AOM_KF_AUTO
     if (avctx->keyint_min >= 0 && avctx->keyint_min == avctx->gop_size)
@@ -643,7 +685,12 @@ static av_cold int aom_init(AVCodecContext *avctx,
     codecctl_int(avctx, AOME_SET_CPUUSED, ctx->cpu_used);
     if (ctx->auto_alt_ref >= 0)
         codecctl_int(avctx, AOME_SET_ENABLEAUTOALTREF, ctx->auto_alt_ref);
-
+    if (ctx->arnr_max_frames >= 0)
+        codecctl_int(avctx, AOME_SET_ARNR_MAXFRAMES,   ctx->arnr_max_frames);
+    if (ctx->arnr_strength >= 0)
+        codecctl_int(avctx, AOME_SET_ARNR_STRENGTH,    ctx->arnr_strength);
+    if (ctx->enable_cdef >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_CDEF, ctx->enable_cdef);
     codecctl_int(avctx, AOME_SET_STATIC_THRESHOLD, ctx->static_thresh);
     if (ctx->crf >= 0)
         codecctl_int(avctx, AOME_SET_CQ_LEVEL,          ctx->crf);
@@ -651,6 +698,10 @@ static av_cold int aom_init(AVCodecContext *avctx,
     codecctl_int(avctx, AV1E_SET_COLOR_PRIMARIES, avctx->color_primaries);
     codecctl_int(avctx, AV1E_SET_MATRIX_COEFFICIENTS, avctx->colorspace);
     codecctl_int(avctx, AV1E_SET_TRANSFER_CHARACTERISTICS, avctx->color_trc);
+    if (ctx->aq_mode >= 0)
+        codecctl_int(avctx, AV1E_SET_AQ_MODE, ctx->aq_mode);
+    if (ctx->frame_parallel >= 0)
+        codecctl_int(avctx, AV1E_SET_FRAME_PARALLEL_DECODING, ctx->frame_parallel);
     set_color_range(avctx);
 
     codecctl_int(avctx, AV1E_SET_SUPERBLOCK_SIZE, ctx->superblock_size);
@@ -659,8 +710,29 @@ static av_cold int aom_init(AVCodecContext *avctx,
         codecctl_int(avctx, AV1E_SET_TILE_ROWS,    ctx->tile_rows_log2);
     }
 
+#ifdef AOM_CTRL_AV1E_SET_DENOISE_NOISE_LEVEL
+    if (ctx->denoise_noise_level >= 0)
+        codecctl_int(avctx, AV1E_SET_DENOISE_NOISE_LEVEL, ctx->denoise_noise_level);
+#endif
+#ifdef AOM_CTRL_AV1E_SET_DENOISE_BLOCK_SIZE
+    if (ctx->denoise_block_size >= 0)
+        codecctl_int(avctx, AV1E_SET_DENOISE_BLOCK_SIZE, ctx->denoise_block_size);
+#endif
+#ifdef AOM_CTRL_AV1E_SET_ENABLE_GLOBAL_MOTION
+    if (ctx->enable_global_motion >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_GLOBAL_MOTION, ctx->enable_global_motion);
+#endif
+#ifdef AOM_CTRL_AV1E_SET_MAX_REFERENCE_FRAMES
+    if (avctx->refs >= 3) {
+        codecctl_int(avctx, AV1E_SET_MAX_REFERENCE_FRAMES, avctx->refs);
+    }
+#endif
 #ifdef AOM_CTRL_AV1E_SET_ROW_MT
     codecctl_int(avctx, AV1E_SET_ROW_MT, ctx->row_mt);
+#endif
+#ifdef AOM_CTRL_AV1E_SET_ENABLE_INTRABC
+    if (ctx->enable_intrabc >= 0)
+        codecctl_int(avctx, AV1E_SET_ENABLE_INTRABC, ctx->enable_intrabc);
 #endif
 
     // provide dummy value to initialize wrapper, values will be updated each _encode()
@@ -988,16 +1060,33 @@ static const AVOption options[] = {
                          "frames (2-pass only)",                   OFFSET(auto_alt_ref),    AV_OPT_TYPE_INT, {.i64 = -1},      -1,      2,       VE},
     { "lag-in-frames",   "Number of frames to look ahead at for "
                          "alternate reference frame selection",    OFFSET(lag_in_frames),   AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE},
+    { "arnr-max-frames", "altref noise reduction max frame count", OFFSET(arnr_max_frames), AV_OPT_TYPE_INT, {.i64 = -1},      -1,      INT_MAX, VE},
+    { "arnr-strength",   "altref noise reduction filter strength", OFFSET(arnr_strength),   AV_OPT_TYPE_INT, {.i64 = -1},      -1,      6,       VE},
+    { "aq-mode",         "adaptive quantization mode",             OFFSET(aq_mode),         AV_OPT_TYPE_INT, {.i64 = -1},      -1,      4, VE, "aq_mode"},
+    { "none",            "Aq not used",         0, AV_OPT_TYPE_CONST, {.i64 = 0}, 0, 0, VE, "aq_mode"},
+    { "variance",        "Variance based Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 1}, 0, 0, VE, "aq_mode"},
+    { "complexity",      "Complexity based Aq", 0, AV_OPT_TYPE_CONST, {.i64 = 2}, 0, 0, VE, "aq_mode"},
+    { "cyclic",          "Cyclic Refresh Aq",   0, AV_OPT_TYPE_CONST, {.i64 = 3}, 0, 0, VE, "aq_mode"},
     { "error-resilience", "Error resilience configuration", OFFSET(error_resilient), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, VE, "er"},
     { "default",         "Improve resiliency against losses of whole frames", 0, AV_OPT_TYPE_CONST, {.i64 = AOM_ERROR_RESILIENT_DEFAULT}, 0, 0, VE, "er"},
     { "crf",              "Select the quality for constant quality mode", offsetof(AOMContext, crf), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 63, VE },
     { "static-thresh",    "A change threshold on blocks below which they will be skipped by the encoder", OFFSET(static_thresh), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, VE },
     { "drop-threshold",   "Frame drop threshold", offsetof(AOMContext, drop_threshold), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, VE },
+    { "denoise-noise-level", "Amount of noise to be removed", OFFSET(denoise_noise_level), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, VE},
+    { "denoise-block-size", "Denoise block size ", OFFSET(denoise_block_size), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, VE},
+    { "undershoot-pct",   "Datarate undershoot (min) target (%)", OFFSET(rc_undershoot_pct), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 100, VE},
+    { "overshoot-pct",    "Datarate overshoot (max) target (%)", OFFSET(rc_overshoot_pct), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 1000, VE},
+    { "minsection-pct",   "GOP min bitrate (% of target)", OFFSET(minsection_pct), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 100, VE},
+    { "maxsection-pct",   "GOP max bitrate (% of target)", OFFSET(maxsection_pct), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 5000, VE},
+    { "frame-parallel",   "Enable frame parallel decodability features", OFFSET(frame_parallel),  AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
     { "tiles",            "Tile columns x rows", OFFSET(tile_cols), AV_OPT_TYPE_IMAGE_SIZE, { .str = NULL }, 0, 0, VE },
     { "tile-columns",     "Log2 of number of tile columns to use", OFFSET(tile_cols_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "tile-rows",        "Log2 of number of tile rows to use",    OFFSET(tile_rows_log2), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 6, VE},
     { "row-mt",           "Enable row based multi-threading",      OFFSET(row_mt),         AV_OPT_TYPE_BOOL, {.i64 = 0},  0, 1, VE},
-    { NULL }
+    { "enable-cdef",      "Enable CDEF filtering",                 OFFSET(enable_cdef),    AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-global-motion",  "Enable global motion",             OFFSET(enable_global_motion), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE},
+    { "enable-intrabc",  "Enable intra block copy prediction mode", OFFSET(enable_intrabc), AV_OPT_TYPE_BOOL, {.i64 = -1},  0, 1, VE},
+    { NULL },
 };
 
 static const AVCodecDefault defaults[] = {
