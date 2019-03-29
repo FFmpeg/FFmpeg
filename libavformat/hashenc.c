@@ -88,7 +88,7 @@ static int hash_write_trailer(struct AVFormatContext *s)
 
 #if CONFIG_HASH_MUXER
 static const AVClass hashenc_class = {
-    .class_name = "hash encoder class",
+    .class_name = "hash muxer",
     .item_name  = av_default_item_name,
     .option     = hash_options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -111,7 +111,7 @@ AVOutputFormat ff_hash_muxer = {
 
 #if CONFIG_MD5_MUXER
 static const AVClass md5enc_class = {
-    .class_name = "MD5 encoder class",
+    .class_name = "MD5 muxer",
     .item_name  = av_default_item_name,
     .option     = md5_options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -217,7 +217,7 @@ static int framehash_write_trailer(struct AVFormatContext *s)
 
 #if CONFIG_FRAMEHASH_MUXER
 static const AVClass framehash_class = {
-    .class_name = "frame hash encoder class",
+    .class_name = "frame hash muxer",
     .item_name  = av_default_item_name,
     .option     = hash_options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -240,7 +240,7 @@ AVOutputFormat ff_framehash_muxer = {
 
 #if CONFIG_FRAMEMD5_MUXER
 static const AVClass framemd5_class = {
-    .class_name = "frame hash encoder class",
+    .class_name = "frame MD5 muxer",
     .item_name  = av_default_item_name,
     .option     = md5_options,
     .version    = LIBAVUTIL_VERSION_INT,
