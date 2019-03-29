@@ -488,9 +488,18 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
         }
     }
 
+    if (q->low_power) {
 #if QSV_HAVE_VDENC
-    q->param.mfx.LowPower           = q->low_power ? MFX_CODINGOPTION_ON : MFX_CODINGOPTION_OFF;
+        q->param.mfx.LowPower = MFX_CODINGOPTION_ON;
+#else
+        av_log(avctx, AV_LOG_WARNING, "The low_power option is "
+                            "not supported with this MSDK version.\n");
+        q->low_power = 0;
+        q->param.mfx.LowPower = MFX_CODINGOPTION_OFF;
 #endif
+    } else
+        q->param.mfx.LowPower = MFX_CODINGOPTION_OFF;
+
     q->param.mfx.CodecProfile       = q->profile;
     q->param.mfx.TargetUsage        = avctx->compression_level;
     q->param.mfx.GopPicSize         = FFMAX(0, avctx->gop_size);
