@@ -221,7 +221,7 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
     }
     else {
         s = s + 32;
-        round = 1 << (s-1);
+        round = s ? 1 << (s-1) : 0;
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)coefs[i] * c + round) >> s);
             coefs[i] = out * ssign;
