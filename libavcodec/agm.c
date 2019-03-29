@@ -71,8 +71,13 @@ typedef struct AGMContext {
     unsigned flags;
     unsigned fflags;
 
+    uint8_t *output;
+    unsigned output_size;
+
     MotionVector *mvectors;
-    int           mvectors_size;
+    unsigned      mvectors_size;
+
+    VLC vlc;
 
     AVFrame *prev_frame;
 
@@ -81,6 +86,13 @@ typedef struct AGMContext {
 
     ScanTable scantable;
     DECLARE_ALIGNED(32, int16_t, block)[64];
+
+    int16_t *wblocks;
+    unsigned wblocks_size;
+
+    int      *map;
+    unsigned  map_size;
+
     IDCTDSPContext idsp;
 } AGMContext;
 
@@ -173,7 +185,84 @@ static int read_code(GetBitContext *gb, int *oskip, int *level, int *map, int mo
     return 0;
 }
 
-static int decode_intra_block(AGMContext *s, GetBitContext *gb, int size,
+static int decode_intra_blocks(AGMContext *s, GetBitContext *gb,
+                               const int *quant_matrix, int *skip, int *dc_level)
+{
+    const uint8_t *scantable = s->scantable.permutated;
+    int level, ret, map = 0;
+
+    memset(s->wblocks, 0, s->wblocks_size);
+
+    for (int i = 0; i < 64; i++) {
+        int16_t *block = s->wblocks + scantable[i];
+
+        for (int j = 0; j < s->blocks_w;) {
+            if (*skip > 0) {
+                int rskip;
+
+                rskip = FFMIN(*skip, s->blocks_w - j);
+                j += rskip;
+                if (i == 0) {
+                    for (int k = 0; k < rskip; k++)
+                        block[64 * k] = *dc_level * quant_matrix[0];
+                }
+                block += rskip * 64;
+                *skip -= rskip;
+            } else {
+                ret = read_code(gb, skip, &level, &map, s->flags & 1);
+                if (ret < 0)
+                    return ret;
+
+                if (i == 0)
+                    *dc_level += level;
+
+                block[0] = (i == 0 ? *dc_level : level) * quant_matrix[i];
+                block += 64;
+                j++;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int decode_inter_blocks(AGMContext *s, GetBitContext *gb,
+                               const int *quant_matrix, int *skip,
+                               int *map)
+{
+    const uint8_t *scantable = s->scantable.permutated;
+    int level, ret;
+
+    memset(s->wblocks, 0, s->wblocks_size);
+    memset(s->map, 0, s->map_size);
+
+    for (int i = 0; i < 64; i++) {
+        int16_t *block = s->wblocks + scantable[i];
+
+        for (int j = 0; j < s->blocks_w;) {
+            if (*skip > 0) {
+                int rskip;
+
+                rskip = FFMIN(*skip, s->blocks_w - j);
+                j += rskip;
+                block += rskip * 64;
+                *skip -= rskip;
+            } else {
+                ret = read_code(gb, skip, &level, &map[j], s->flags & 1);
+                if (ret < 0)
+                    return ret;
+
+                block[0] = level * quant_matrix[i];
+                block += 64;
+                j++;
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int decode_intra_block(AGMContext *s, GetBitContext *gb,
                               const int *quant_matrix, int *skip, int *dc_level)
 {
     const uint8_t *scantable = s->scantable.permutated;
@@ -218,18 +307,38 @@ static int decode_intra_plane(AGMContext *s, GetBitContext *gb, int size,
                               int plane)
 {
     int ret, skip = 0, dc_level = 0;
+    const int offset = s->plus ? 0 : 1024;
 
     if ((ret = init_get_bits8(gb, s->gbyte.buffer, size)) < 0)
         return ret;
 
-    for (int y = 0; y < s->blocks_h; y++) {
-        for (int x = 0; x < s->blocks_w; x++) {
-            ret = decode_intra_block(s, gb, size, quant_matrix, &skip, &dc_level);
+    if (s->flags & 1) {
+        av_fast_padded_malloc(&s->wblocks, &s->wblocks_size,
+                              64 * s->blocks_w * sizeof(*s->wblocks));
+        if (!s->wblocks)
+            return AVERROR(ENOMEM);
+
+        for (int y = 0; y < s->blocks_h; y++) {
+            ret = decode_intra_blocks(s, gb, quant_matrix, &skip, &dc_level);
             if (ret < 0)
                 return ret;
 
-            s->idsp.idct_put(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
-                             frame->linesize[plane], s->block);
+            for (int x = 0; x < s->blocks_w; x++) {
+                s->wblocks[64 * x] += offset;
+                s->idsp.idct_put(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                 frame->linesize[plane], s->wblocks + 64 * x);
+            }
+        }
+    } else {
+        for (int y = 0; y < s->blocks_h; y++) {
+            for (int x = 0; x < s->blocks_w; x++) {
+                ret = decode_intra_block(s, gb, quant_matrix, &skip, &dc_level);
+                if (ret < 0)
+                    return ret;
+
+                s->idsp.idct_put(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                 frame->linesize[plane], s->block);
+            }
         }
     }
 
@@ -242,7 +351,7 @@ static int decode_intra_plane(AGMContext *s, GetBitContext *gb, int size,
     return 0;
 }
 
-static int decode_inter_block(AGMContext *s, GetBitContext *gb, int size,
+static int decode_inter_block(AGMContext *s, GetBitContext *gb,
                               const int *quant_matrix, int *skip,
                               int *map)
 {
@@ -281,7 +390,54 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
     if ((ret = init_get_bits8(gb, s->gbyte.buffer, size)) < 0)
         return ret;
 
-    if (s->flags & 2) {
+    if (s->flags == 3) {
+        av_fast_padded_malloc(&s->wblocks, &s->wblocks_size,
+                              64 * s->blocks_w * sizeof(*s->wblocks));
+        if (!s->wblocks)
+            return AVERROR(ENOMEM);
+
+        av_fast_padded_malloc(&s->map, &s->map_size,
+                              s->blocks_w * sizeof(*s->map));
+        if (!s->map)
+            return AVERROR(ENOMEM);
+
+        for (int y = 0; y < s->blocks_h; y++) {
+            ret = decode_inter_blocks(s, gb, quant_matrix, &skip, s->map);
+            if (ret < 0)
+                return ret;
+
+            for (int x = 0; x < s->blocks_w; x++) {
+                int shift = plane == 0;
+                int mvpos = (y >> shift) * (s->blocks_w >> shift) + (x >> shift);
+                int orig_mv_x = s->mvectors[mvpos].x;
+                int mv_x = s->mvectors[mvpos].x / (1 + !shift);
+                int mv_y = s->mvectors[mvpos].y / (1 + !shift);
+                int h = s->avctx->coded_height >> !shift;
+                int w = s->avctx->coded_width  >> !shift;
+                int map = s->map[x];
+
+                if (orig_mv_x >= -32) {
+                    if (y * 8 + mv_y < 0 || y * 8 + mv_y >= h ||
+                        x * 8 + mv_x < 0 || x * 8 + mv_x >= w)
+                        return AVERROR_INVALIDDATA;
+
+                    copy_block8(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                prev->data[plane] + ((s->blocks_h - 1 - y) * 8 - mv_y) * prev->linesize[plane] + (x * 8 + mv_x),
+                                frame->linesize[plane], prev->linesize[plane], 8);
+                    if (map) {
+                        s->idsp.idct(s->wblocks + x * 64);
+                        for (int i = 0; i < 64; i++)
+                            s->wblocks[i + x * 64] = (s->wblocks[i + x * 64] + 1) & 0xFFFC;
+                        s->idsp.add_pixels_clamped(&s->wblocks[x*64], frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                                   frame->linesize[plane]);
+                    }
+                } else if (map) {
+                    s->idsp.idct_put(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                     frame->linesize[plane], s->wblocks + x * 64);
+                }
+            }
+        }
+    } else if (s->flags & 2) {
         for (int y = 0; y < s->blocks_h; y++) {
             for (int x = 0; x < s->blocks_w; x++) {
                 int shift = plane == 0;
@@ -293,7 +449,7 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
                 int w = s->avctx->coded_width  >> !shift;
                 int map = 0;
 
-                ret = decode_inter_block(s, gb, size, quant_matrix, &skip, &map);
+                ret = decode_inter_block(s, gb, quant_matrix, &skip, &map);
                 if (ret < 0)
                     return ret;
 
@@ -318,12 +474,35 @@ static int decode_inter_plane(AGMContext *s, GetBitContext *gb, int size,
                 }
             }
         }
+    } else if (s->flags & 1) {
+        av_fast_padded_malloc(&s->wblocks, &s->wblocks_size,
+                              64 * s->blocks_w * sizeof(*s->wblocks));
+        if (!s->wblocks)
+            return AVERROR(ENOMEM);
+
+        av_fast_padded_malloc(&s->map, &s->map_size,
+                              s->blocks_w * sizeof(*s->map));
+        if (!s->map)
+            return AVERROR(ENOMEM);
+
+        for (int y = 0; y < s->blocks_h; y++) {
+            ret = decode_inter_blocks(s, gb, quant_matrix, &skip, s->map);
+            if (ret < 0)
+                return ret;
+
+            for (int x = 0; x < s->blocks_w; x++) {
+                if (!s->map[x])
+                    continue;
+                s->idsp.idct_add(frame->data[plane] + (s->blocks_h - 1 - y) * 8 * frame->linesize[plane] + x * 8,
+                                 frame->linesize[plane], s->wblocks + 64 * x);
+            }
+        }
     } else {
         for (int y = 0; y < s->blocks_h; y++) {
             for (int x = 0; x < s->blocks_w; x++) {
                 int map = 0;
 
-                ret = decode_inter_block(s, gb, size, quant_matrix, &skip, &map);
+                ret = decode_inter_block(s, gb, quant_matrix, &skip, &map);
                 if (ret < 0)
                     return ret;
 
@@ -501,6 +680,179 @@ static int decode_inter(AVCodecContext *avctx, GetBitContext *gb,
     return 0;
 }
 
+typedef struct Node {
+    int parent;
+    int child[2];
+} Node;
+
+static void get_tree_codes(uint32_t *codes, Node *nodes, int idx, uint32_t pfx, int bitpos)
+{
+    if (idx < 256 && idx >= 0) {
+        codes[idx] = pfx;
+    } else {
+        get_tree_codes(codes, nodes, nodes[idx].child[0], pfx + (0 << bitpos), bitpos + 1);
+        get_tree_codes(codes, nodes, nodes[idx].child[1], pfx + (1 << bitpos), bitpos + 1);
+    }
+}
+
+static void make_new_tree(const uint8_t *bitlens, uint32_t *codes)
+{
+    int zlcount = 0, curlen, idx, nindex, last, llast;
+    int blcounts[32] = { 0 };
+    int syms[8192];
+    Node nodes[512];
+    int node_idx[1024];
+    int old_idx[512];
+
+    for (int i = 0; i < 256; i++) {
+        int bitlen = bitlens[i];
+        int blcount = blcounts[bitlen];
+
+        zlcount += bitlen < 1;
+        syms[(bitlen << 8) + blcount] = i;
+        blcounts[bitlen]++;
+    }
+
+    for (int i = 0; i < 512; i++) {
+        nodes[i].child[0] = -1;
+        nodes[i].child[1] = -1;
+    }
+
+    for (int i = 0; i < 256; i++) {
+        node_idx[i] = 257 + i;;
+    }
+
+    curlen = 1;
+    node_idx[512] = 256;
+    last = 255;
+    nindex = 1;
+
+    for (curlen = 1; curlen < 32; curlen++) {
+        if (blcounts[curlen] > 0) {
+            int max_zlcount = zlcount + blcounts[curlen];
+
+            for (int i = 0; zlcount < 256 && zlcount < max_zlcount; zlcount++, i++) {
+                int p = node_idx[nindex - 1 + 512];
+                int ch = syms[256 * curlen + i];
+
+                if (nodes[p].child[0] == -1) {
+                    nodes[p].child[0] = ch;
+                } else {
+                    nodes[p].child[1] = ch;
+                    nindex--;
+                }
+                nodes[ch].parent = p;
+            }
+        }
+        llast = last - 1;
+        idx = 0;
+        while (nindex > 0) {
+            int p, ch;
+
+            last = llast - idx;
+            p = node_idx[nindex - 1 + 512];
+            ch = node_idx[last];
+            if (nodes[p].child[0] == -1) {
+                nodes[p].child[0] = ch;
+            } else {
+                nodes[p].child[1] = ch;
+                nindex--;
+            }
+            old_idx[idx] = ch;
+            nodes[ch].parent = p;
+            if (idx == llast)
+                goto next;
+            idx++;
+            if (nindex <= 0) {
+                for (int i = 0; i < idx; i++)
+                    node_idx[512 + i] = old_idx[i];
+            }
+        }
+        nindex = idx;
+    }
+
+next:
+
+    get_tree_codes(codes, nodes, 256, 0, 0);
+}
+
+static int build_huff(const uint8_t *bitlen, VLC *vlc)
+{
+    uint32_t new_codes[256];
+    uint8_t bits[256];
+    uint8_t symbols[256];
+    uint32_t codes[256];
+    int nb_codes = 0;
+
+    make_new_tree(bitlen, new_codes);
+
+    for (int i = 0; i < 256; i++) {
+        if (bitlen[i]) {
+            bits[nb_codes] = bitlen[i];
+            codes[nb_codes] = new_codes[i];
+            symbols[nb_codes] = i;
+            nb_codes++;
+        }
+    }
+
+    ff_free_vlc(vlc);
+    return ff_init_vlc_sparse(vlc, 13, nb_codes,
+                              bits, 1, 1,
+                              codes, 4, 4,
+                              symbols, 1, 1,
+                              INIT_VLC_LE);
+}
+
+static int decode_huffman2(AVCodecContext *avctx, int header, int size)
+{
+    AGMContext *s = avctx->priv_data;
+    GetBitContext *gb = &s->gb;
+    uint8_t lens[256];
+    unsigned output_size;
+    int ret, x, len;
+
+    if ((ret = init_get_bits8(gb, s->gbyte.buffer,
+                              bytestream2_get_bytes_left(&s->gbyte))) < 0)
+        return ret;
+
+    output_size = get_bits_long(gb, 32);
+
+    av_fast_padded_malloc(&s->output, &s->output_size, output_size);
+    if (!s->output)
+        return AVERROR(ENOMEM);
+
+    x = get_bits(gb, 1);
+    len = 4 + get_bits(gb, 1);
+    if (x) {
+        int cb[8] = { 0 };
+        int count = get_bits(gb, 3) + 1;
+
+        for (int i = 0; i < count; i++)
+            cb[i] = get_bits(gb, len);
+
+        for (int i = 0; i < 256; i++) {
+            int idx = get_bits(gb, 3);
+            lens[i] = cb[idx];
+        }
+    } else {
+        for (int i = 0; i < 256; i++)
+            lens[i] = get_bits(gb, len);
+    }
+
+    if ((ret = build_huff(lens, &s->vlc)) < 0)
+        return ret;
+
+    x = 0;
+    while (get_bits_left(gb) > 0 && x < output_size) {
+        int val = get_vlc2(gb, s->vlc.table, s->vlc.bits, 3);
+        if (val < 0)
+            return AVERROR_INVALIDDATA;
+        s->output[x++] = val;
+    }
+
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx, void *data,
                         int *got_frame, AVPacket *avpkt)
 {
@@ -509,6 +861,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     GetByteContext *gbyte = &s->gbyte;
     AVFrame *frame = data;
     int w, h, width, height, header;
+    unsigned compressed_size;
     int ret;
 
     if (!avpkt->size)
@@ -524,13 +877,19 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size < s->bitstream_size + 8)
         return AVERROR_INVALIDDATA;
 
-    s->key_frame = s->fflags & 0x1;
+    s->key_frame = avpkt->flags & AV_PKT_FLAG_KEY;
     frame->key_frame = s->key_frame;
     frame->pict_type = s->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
     if (header) {
-        av_log(avctx, AV_LOG_ERROR, "header: %X\n", header);
-        return AVERROR_PATCHWELCOME;
+        if (avctx->codec_tag == MKTAG('A', 'G', 'M', '0') ||
+            avctx->codec_tag == MKTAG('A', 'G', 'M', '1'))
+            return AVERROR_PATCHWELCOME;
+        else
+            ret = decode_huffman2(avctx, header, (avpkt->size - s->bitstream_size) - 8);
+        if (ret < 0)
+            return ret;
+        bytestream2_init(gbyte, s->output, s->output_size);
     }
 
     s->flags = 0;
@@ -564,9 +923,14 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     for (int i = 0; i < 3; i++)
         s->size[i] = bytestream2_get_le32(gbyte);
+    if (header)
+        compressed_size = s->output_size;
+    else
+        compressed_size = avpkt->size;
     if (s->size[0] < 0 || s->size[1] < 0 || s->size[2] < 0 ||
-        32LL + s->size[0] + s->size[1] + s->size[2] > avpkt->size)
+        32LL + s->size[0] + s->size[1] + s->size[2] > compressed_size) {
         return AVERROR_INVALIDDATA;
+    }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
@@ -608,7 +972,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     s->avctx = avctx;
-    s->plus = avctx->codec_tag == MKTAG('A', 'G', 'M', '3');
+    s->plus = avctx->codec_tag == MKTAG('A', 'G', 'M', '3') ||
+              avctx->codec_tag == MKTAG('A', 'G', 'M', '7');
 
     avctx->idct_algo = FF_IDCT_SIMPLE;
     ff_idctdsp_init(&s->idsp, avctx);
@@ -632,9 +997,16 @@ static av_cold int decode_close(AVCodecContext *avctx)
 {
     AGMContext *s = avctx->priv_data;
 
+    ff_free_vlc(&s->vlc);
     av_frame_free(&s->prev_frame);
     av_freep(&s->mvectors);
     s->mvectors_size = 0;
+    av_freep(&s->wblocks);
+    s->wblocks_size = 0;
+    av_freep(&s->output);
+    s->output_size = 0;
+    av_freep(&s->map);
+    s->map_size = 0;
 
     return 0;
 }
