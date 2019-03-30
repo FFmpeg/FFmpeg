@@ -180,8 +180,6 @@ static void filter(AVFilterContext *ctx, AVFrame *dst,
                     parity, tff);
     }
 
-    CHECK_CU(cu->cuStreamSynchronize(s->stream));
-
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
     return;
