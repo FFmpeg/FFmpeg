@@ -20587,10 +20587,15 @@ ebur128=metadata=1,adrawgraph=lavfi.r128.M:min=-120:max=5
 @anchor{ebur128}
 @section ebur128
 
-EBU R128 scanner filter. This filter takes an audio stream as input and outputs
-it unchanged. By default, it logs a message at a frequency of 10Hz with the
+EBU R128 scanner filter. This filter takes an audio stream and analyzes its loudness
+level. By default, it logs a message at a frequency of 10Hz with the
 Momentary loudness (identified by @code{M}), Short-term loudness (@code{S}),
 Integrated loudness (@code{I}) and Loudness Range (@code{LRA}).
+
+The filter can only analyze streams which have a sampling rate of 48000 Hz and whose
+sample format is double-precision floating point. The input stream will be converted to
+this specification, if needed. Users may need to insert aformat and/or aresample filters
+after this filter to obtain the original parameters.
 
 The filter also has a video output (see the @var{video} option) with a real
 time graph to observe the loudness evolution. The graphic contains the logged
