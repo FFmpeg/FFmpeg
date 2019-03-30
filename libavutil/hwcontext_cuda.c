@@ -268,10 +268,6 @@ static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
             goto exit;
     }
 
-    ret = CHECK_CU(cu->cuStreamSynchronize(hwctx->stream));
-    if (ret < 0)
-        goto exit;
-
 exit:
     CHECK_CU(cu->cuCtxPopCurrent(&dummy));
 
