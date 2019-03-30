@@ -123,7 +123,8 @@ static av_cold int avisynth_load_library(void)
         return AVERROR_UNKNOWN;
 
 #define LOAD_AVS_FUNC(name, continue_on_fail)                          \
-        avs_library.name = dlsym(avs_library.library, #name);          \
+        avs_library.name = (name ## _func)                             \
+                           dlsym(avs_library.library, #name);          \
         if (!continue_on_fail && !avs_library.name)                    \
             goto fail;
 
