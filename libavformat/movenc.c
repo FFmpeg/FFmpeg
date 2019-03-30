@@ -6381,7 +6381,7 @@ static int mov_write_header(AVFormatContext *s)
                 nb_tracks++;
     }
 
-    if (mov->mode == MODE_MOV || mov->mode == MODE_MP4)
+    if (mov->nb_meta_tmcd)
         tmcd_track = nb_tracks;
 
     for (i = 0; i < s->nb_streams; i++) {
