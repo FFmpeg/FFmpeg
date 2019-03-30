@@ -553,10 +553,6 @@ static int cuvid_output_frame(AVCodecContext *avctx, AVFrame *frame)
 
                 offset += height;
             }
-
-            ret = CHECK_CU(ctx->cudl->cuStreamSynchronize(device_hwctx->stream));
-            if (ret < 0)
-                goto error;
         } else if (avctx->pix_fmt == AV_PIX_FMT_NV12      ||
                    avctx->pix_fmt == AV_PIX_FMT_P010      ||
                    avctx->pix_fmt == AV_PIX_FMT_P016      ||
