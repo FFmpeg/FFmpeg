@@ -1,6 +1,15 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.1.3:
+- avcodec/hevcdec: Avoid only partly skiping duplicate first slices
+- lavc/bmp: Avoid a heap buffer overwrite for 1bpp input.
+- avcodec/mpegpicture: Check size of edge_emu_buffer
+- avformat/mov: Fix potential integer overflow in entry check in mov_read_trun()
+- avcodec/truemotion2: Fix integer overflow in tm2_null_res_block()
+- avcodec/cbs_av1: fix range of values for Mastering Display Color Volume Metadata OBUs
+- avcodec/av1_parser: don't abort parsing the first frame if extradata parsing fails
+
 version 4.1.2:
 - avcodec/dfa: Check the chunk header is not truncated
 - avcodec/clearvideo: Check remaining data in P frames
