@@ -1797,6 +1797,7 @@ redirect:
                  sessioncookie);
         av_opt_set(rt->rtsp_hd_out->priv_data, "headers", headers, 0);
         av_opt_set(rt->rtsp_hd_out->priv_data, "chunked_post", "0", 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "send_expect_100", "0", 0);
 
         /* Initialize the authentication state for the POST session. The HTTP
          * protocol implementation doesn't properly handle multi-pass

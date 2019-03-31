@@ -385,6 +385,11 @@ ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{p
 wget --post-file=somefile.ogg http://@var{server}:@var{port}
 @end example
 
+@item send_expect_100
+Send an Expect: 100-continue header for POST. If set to 1 it will send, if set
+to 0 it won't, if set to -1 it will try to send if it is applicable. Default
+value is -1.
+
 @end table
 
 @subsection HTTP Cookies

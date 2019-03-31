@@ -113,6 +113,7 @@ typedef struct HTTPContext {
     uint8_t *inflate_buffer;
 #endif /* CONFIG_ZLIB */
     AVDictionary *chained_options;
+    /* -1 = try to send if applicable, 0 = always disabled, 1 = always enabled */
     int send_expect_100;
     char *method;
     int reconnect;
@@ -155,7 +156,7 @@ static const AVOption options[] = {
     { "auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, { .i64 = HTTP_AUTH_NONE }, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D | E, "auth_type"},
     { "none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_NONE }, 0, 0, D | E, "auth_type"},
     { "basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_BASIC }, 0, 0, D | E, "auth_type"},
-    { "send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, E },
     { "location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
@@ -1179,16 +1180,21 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                                                 local_path, method);
     proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
                                                 local_path, method);
-    if (post && !s->post_data) {
-        send_expect_100 = s->send_expect_100;
-        /* The user has supplied authentication but we don't know the auth type,
-         * send Expect: 100-continue to get the 401 response including the
-         * WWW-Authenticate header, or an 100 continue if no auth actually
-         * is needed. */
-        if (auth && *auth &&
-            s->auth_state.auth_type == HTTP_AUTH_NONE &&
-            s->http_code != 401)
-            send_expect_100 = 1;
+
+     if (post && !s->post_data) {
+        if (s->send_expect_100 != -1) {
+            send_expect_100 = s->send_expect_100;
+        } else {
+            send_expect_100 = 0;
+            /* The user has supplied authentication but we don't know the auth type,
+             * send Expect: 100-continue to get the 401 response including the
+             * WWW-Authenticate header, or an 100 continue if no auth actually
+             * is needed. */
+            if (auth && *auth &&
+                s->auth_state.auth_type == HTTP_AUTH_NONE &&
+                s->http_code != 401)
+                send_expect_100 = 1;
+        }
     }
 
 #if FF_API_HTTP_USER_AGENT
