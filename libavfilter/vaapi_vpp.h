@@ -42,6 +42,7 @@ typedef struct VAAPIVPPContext {
 
     AVBufferRef       *input_frames_ref;
     AVHWFramesContext *input_frames;
+    VARectangle        input_region;
 
     enum AVPixelFormat output_format;
     int output_width;   // computed width
@@ -69,6 +70,11 @@ int ff_vaapi_vpp_config_output(AVFilterLink *outlink);
 
 int ff_vaapi_vpp_colour_standard(enum AVColorSpace av_cs);
 
+int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
+                             VAProcPipelineParameterBuffer *params,
+                             const AVFrame *input_frame,
+                             AVFrame *output_frame);
+
 int ff_vaapi_vpp_make_param_buffers(AVFilterContext *avctx,
                                     int type,
                                     const void *data,
@@ -77,6 +83,6 @@ int ff_vaapi_vpp_make_param_buffers(AVFilterContext *avctx,
 
 int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
                                 VAProcPipelineParameterBuffer *params,
-                                VASurfaceID output_surface);
+                                AVFrame *output_frame);
 
 #endif /* AVFILTER_VAAPI_VPP_H */

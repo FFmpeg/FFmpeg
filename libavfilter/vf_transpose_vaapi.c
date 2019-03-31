@@ -123,9 +123,6 @@ static int transpose_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_fra
     VAAPIVPPContext *vpp_ctx   = avctx->priv;
     TransposeVAAPIContext *ctx = avctx->priv;
     AVFrame *output_frame      = NULL;
-    VASurfaceID input_surface, output_surface;
-    VARectangle input_region, output_region;
-
     VAProcPipelineParameterBuffer params;
     int err;
 
@@ -139,10 +136,6 @@ static int transpose_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_fra
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);
 
-    input_surface = (VASurfaceID)(uintptr_t)input_frame->data[3];
-    av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for transpose vpp input.\n",
-           input_surface);
-
     output_frame = ff_get_video_buffer(outlink, vpp_ctx->output_width,
                                        vpp_ctx->output_height);
     if (!output_frame) {
@@ -150,40 +143,15 @@ static int transpose_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_fra
         goto fail;
     }
 
-    output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
-    av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for transpose vpp output.\n",
-           output_surface);
-    memset(&params, 0, sizeof(params));
-    input_region = (VARectangle) {
-        .x      = 0,
-        .y      = 0,
-        .width  = input_frame->width,
-        .height = input_frame->height,
-    };
-
-    output_region = (VARectangle) {
-        .x      = 0,
-        .y      = 0,
-        .width  = output_frame->width,
-        .height = output_frame->height,
-    };
+    err = ff_vaapi_vpp_init_params(avctx, &params,
+                                   input_frame, output_frame);
+    if (err < 0)
+        goto fail;
 
     params.rotation_state = ctx->rotation_state;
-    params.mirror_state = ctx->mirror_state;
+    params.mirror_state   = ctx->mirror_state;
 
-    params.filters     = &vpp_ctx->filter_buffers[0];
-    params.num_filters = vpp_ctx->nb_filter_buffers;
-
-    params.surface = input_surface;
-    params.surface_region = &input_region;
-    params.surface_color_standard =
-        ff_vaapi_vpp_colour_standard(input_frame->colorspace);
-
-    params.output_region = &output_region;
-    params.output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
-    params.output_color_standard = params.surface_color_standard;
-
-    err = ff_vaapi_vpp_render_picture(avctx, &params, output_surface);
+    err = ff_vaapi_vpp_render_picture(avctx, &params, output_frame);
     if (err < 0)
         goto fail;
 

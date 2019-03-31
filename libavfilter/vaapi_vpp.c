@@ -248,6 +248,52 @@ int ff_vaapi_vpp_colour_standard(enum AVColorSpace av_cs)
     }
 }
 
+int ff_vaapi_vpp_init_params(AVFilterContext *avctx,
+                             VAProcPipelineParameterBuffer *params,
+                             const AVFrame *input_frame,
+                             AVFrame *output_frame)
+{
+    VAAPIVPPContext *ctx = avctx->priv;
+    VASurfaceID input_surface;
+
+    ctx->input_region = (VARectangle) {
+        .x      = input_frame->crop_left,
+        .y      = input_frame->crop_top,
+        .width  = input_frame->width -
+                 (input_frame->crop_left + input_frame->crop_right),
+        .height = input_frame->height -
+                 (input_frame->crop_top + input_frame->crop_bottom),
+    };
+    output_frame->crop_top    = 0;
+    output_frame->crop_bottom = 0;
+    output_frame->crop_left   = 0;
+    output_frame->crop_right  = 0;
+
+    input_surface = (VASurfaceID)(uintptr_t)input_frame->data[3],
+
+    *params = (VAProcPipelineParameterBuffer) {
+        .surface                 = input_surface,
+        .surface_region          = &ctx->input_region,
+        .surface_color_standard  =
+            ff_vaapi_vpp_colour_standard(input_frame->colorspace),
+        .output_region           = NULL,
+        .output_background_color = VAAPI_VPP_BACKGROUND_BLACK,
+        .output_color_standard   =
+            ff_vaapi_vpp_colour_standard(input_frame->colorspace),
+        .pipeline_flags          = 0,
+        .filter_flags            = VA_FRAME_PICTURE,
+
+        // Filter and reference data filled by the filter itself.
+
+#if VA_CHECK_VERSION(1, 1, 0)
+        .rotation_state = VA_ROTATION_NONE,
+        .mirror_state   = VA_MIRROR_NONE,
+#endif
+    };
+
+    return 0;
+}
+
 int ff_vaapi_vpp_make_param_buffers(AVFilterContext *avctx,
                                     int type,
                                     const void *data,
@@ -279,12 +325,15 @@ int ff_vaapi_vpp_make_param_buffers(AVFilterContext *avctx,
 
 int ff_vaapi_vpp_render_picture(AVFilterContext *avctx,
                                 VAProcPipelineParameterBuffer *params,
-                                VASurfaceID output_surface)
+                                AVFrame *output_frame)
 {
+    VAAPIVPPContext *ctx = avctx->priv;
+    VASurfaceID output_surface;
     VABufferID params_id;
     VAStatus vas;
-    int err = 0;
-    VAAPIVPPContext *ctx   = avctx->priv;
+    int err;
+
+    output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
 
     vas = vaBeginPicture(ctx->hwctx->display,
                          ctx->va_context, output_surface);

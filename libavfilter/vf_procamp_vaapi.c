@@ -131,9 +131,7 @@ static int procamp_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     AVFilterLink *outlink    = avctx->outputs[0];
     VAAPIVPPContext *vpp_ctx = avctx->priv;
     AVFrame *output_frame = NULL;
-    VASurfaceID input_surface, output_surface;
     VAProcPipelineParameterBuffer params;
-    VARectangle input_region;
     int err;
 
     av_log(avctx, AV_LOG_DEBUG, "Filter input: %s, %ux%u (%"PRId64").\n",
@@ -143,10 +141,6 @@ static int procamp_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
     if (vpp_ctx->va_context == VA_INVALID_ID)
         return AVERROR(EINVAL);
 
-    input_surface = (VASurfaceID)(uintptr_t)input_frame->data[3];
-    av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for procamp input.\n",
-           input_surface);
-
     output_frame = ff_get_video_buffer(outlink, vpp_ctx->output_width,
                                        vpp_ctx->output_height);
     if (!output_frame) {
@@ -154,33 +148,15 @@ static int procamp_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame
         goto fail;
     }
 
-    output_surface = (VASurfaceID)(uintptr_t)output_frame->data[3];
-    av_log(avctx, AV_LOG_DEBUG, "Using surface %#x for procamp output.\n",
-           output_surface);
-    memset(&params, 0, sizeof(params));
-    input_region = (VARectangle) {
-        .x      = 0,
-        .y      = 0,
-        .width  = input_frame->width,
-        .height = input_frame->height,
-    };
-
-    params.surface = input_surface;
-    params.surface_region = &input_region;
-    params.surface_color_standard =
-        ff_vaapi_vpp_colour_standard(input_frame->colorspace);
-
-    params.output_region = NULL;
-    params.output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
-    params.output_color_standard = params.surface_color_standard;
-
-    params.pipeline_flags = 0;
-    params.filter_flags = VA_FRAME_PICTURE;
+    err = ff_vaapi_vpp_init_params(avctx, &params,
+                                   input_frame, output_frame);
+    if (err < 0)
+        goto fail;
 
     params.filters     = &vpp_ctx->filter_buffers[0];
     params.num_filters = 1;
 
-    err = ff_vaapi_vpp_render_picture(avctx, &params, output_surface);
+    err = ff_vaapi_vpp_render_picture(avctx, &params, output_frame);
     if (err < 0)
         goto fail;
 
