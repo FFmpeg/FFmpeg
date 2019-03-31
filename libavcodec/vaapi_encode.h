@@ -314,6 +314,10 @@ typedef struct VAAPIEncodeContext {
     int idr_counter;
     int gop_counter;
     int end_of_stream;
+
+    // The encoder does not support cropping information, so warn about
+    // it the first time we encounter any nonzero crop fields.
+    int             crop_warned;
 } VAAPIEncodeContext;
 
 enum {

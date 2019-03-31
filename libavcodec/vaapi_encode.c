@@ -913,6 +913,21 @@ static int vaapi_encode_clear_old(AVCodecContext *avctx)
     return 0;
 }
 
+static int vaapi_encode_check_frame(AVCodecContext *avctx,
+                                    const AVFrame *frame)
+{
+    VAAPIEncodeContext *ctx = avctx->priv_data;
+
+    if ((frame->crop_top  || frame->crop_bottom ||
+         frame->crop_left || frame->crop_right) && !ctx->crop_warned) {
+        av_log(avctx, AV_LOG_WARNING, "Cropping information on input "
+               "frames ignored due to lack of API support.\n");
+        ctx->crop_warned = 1;
+    }
+
+    return 0;
+}
+
 int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
@@ -922,6 +937,10 @@ int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     if (frame) {
         av_log(avctx, AV_LOG_DEBUG, "Input frame: %ux%u (%"PRId64").\n",
                frame->width, frame->height, frame->pts);
+
+        err = vaapi_encode_check_frame(avctx, frame);
+        if (err < 0)
+            return err;
 
         pic = vaapi_encode_alloc(avctx);
         if (!pic)
