@@ -199,6 +199,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         /* If necessary, uncompress tiles, and hijack the bytestream reader */
         if (packed_tiles_size != tiles_nb * TILE_SIZE) {
             uLongf length = tiles_nb * TILE_SIZE;
+
+            if (bytestream2_get_bytes_left(gbc) < packed_tiles_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+
             inflated_tiles = av_malloc(length);
             if (!inflated_tiles) {
                 ret = AVERROR(ENOMEM);
