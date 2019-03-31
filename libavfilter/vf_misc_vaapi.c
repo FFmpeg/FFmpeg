@@ -84,10 +84,9 @@ static int denoise_vaapi_build_filter_params(AVFilterContext *avctx)
     denoise.value =  map(ctx->denoise, DENOISE_MIN, DENOISE_MAX,
                          caps.range.min_value,
                          caps.range.max_value);
-    ff_vaapi_vpp_make_param_buffers(avctx, VAProcFilterParameterBufferType,
-                                    &denoise, sizeof(denoise), 1);
-
-    return 0;
+    return ff_vaapi_vpp_make_param_buffers(avctx,
+                                           VAProcFilterParameterBufferType,
+                                           &denoise, sizeof(denoise), 1);
 }
 
 static int sharpness_vaapi_build_filter_params(AVFilterContext *avctx)
@@ -116,11 +115,9 @@ static int sharpness_vaapi_build_filter_params(AVFilterContext *avctx)
                           SHARPNESS_MIN, SHARPNESS_MAX,
                           caps.range.min_value,
                           caps.range.max_value);
-    ff_vaapi_vpp_make_param_buffers(avctx,
-                                    VAProcFilterParameterBufferType,
-                                    &sharpness, sizeof(sharpness), 1);
-
-    return 0;
+    return ff_vaapi_vpp_make_param_buffers(avctx,
+                                           VAProcFilterParameterBufferType,
+                                           &sharpness, sizeof(sharpness), 1);
 }
 
 static int misc_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
