@@ -29,7 +29,6 @@
 
 #include "avcodec.h"
 #include "internal.h"
-#include "h264.h"
 #include "qsv.h"
 #include "qsv_internal.h"
 #include "qsvenc.h"
