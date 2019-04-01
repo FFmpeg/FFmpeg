@@ -520,6 +520,139 @@ yuv2NBPSX(16, LE, 0, 16, int32_t)
         break; \
         }
 
+static av_always_inline void
+yuv2rgb_full_X_vsx_template(SwsContext *c, const int16_t *lumFilter,
+                          const int16_t **lumSrc, int lumFilterSize,
+                          const int16_t *chrFilter, const int16_t **chrUSrc,
+                          const int16_t **chrVSrc, int chrFilterSize,
+                          const int16_t **alpSrc, uint8_t *dest,
+                          int dstW, int y, enum AVPixelFormat target, int hasAlpha)
+{
+    vector int16_t vv;
+    vector int32_t vy32_l, vy32_r, vu32_l, vu32_r, vv32_l, vv32_r, tmp32;
+    vector int32_t R_l, R_r, G_l, G_r, B_l, B_r;
+    vector int32_t tmp, tmp2, tmp3, tmp4;
+    vector uint16_t rd16, gd16, bd16;
+    vector uint8_t rd, bd, gd, ad, out0, out1, tmp8;
+    vector int16_t vlumFilter[MAX_FILTER_SIZE], vchrFilter[MAX_FILTER_SIZE];
+    const vector int32_t ystart = vec_splats(1 << 9);
+    const vector int32_t uvstart = vec_splats((1 << 9) - (128 << 19));
+    const vector uint16_t zero16 = vec_splat_u16(0);
+    const vector int32_t y_offset = vec_splats(c->yuv2rgb_y_offset);
+    const vector int32_t y_coeff = vec_splats(c->yuv2rgb_y_coeff);
+    const vector int32_t y_add = vec_splats(1 << 21);
+    const vector int32_t v2r_coeff = vec_splats(c->yuv2rgb_v2r_coeff);
+    const vector int32_t v2g_coeff = vec_splats(c->yuv2rgb_v2g_coeff);
+    const vector int32_t u2g_coeff = vec_splats(c->yuv2rgb_u2g_coeff);
+    const vector int32_t u2b_coeff = vec_splats(c->yuv2rgb_u2b_coeff);
+    const vector int32_t rgbclip = vec_splats(1 << 30);
+    const vector int32_t zero32 = vec_splat_s32(0);
+    const vector uint32_t shift22 = vec_splats(22U);
+    const vector uint32_t shift10 = vec_splat_u32(10);
+    int i, j;
+
+    // Various permutations
+    const vector uint8_t perm3rg0 = (vector uint8_t) {0x0, 0x10, 0,
+                                                      0x1, 0x11, 0,
+                                                      0x2, 0x12, 0,
+                                                      0x3, 0x13, 0,
+                                                      0x4, 0x14, 0,
+                                                      0x5 };
+    const vector uint8_t perm3rg1 = (vector uint8_t) {     0x15, 0,
+                                                      0x6, 0x16, 0,
+                                                      0x7, 0x17, 0 };
+    const vector uint8_t perm3tb0 = (vector uint8_t) {0x0, 0x1, 0x10,
+                                                      0x3, 0x4, 0x11,
+                                                      0x6, 0x7, 0x12,
+                                                      0x9, 0xa, 0x13,
+                                                      0xc, 0xd, 0x14,
+                                                      0xf };
+    const vector uint8_t perm3tb1 = (vector uint8_t) {     0x0, 0x15,
+                                                      0x2, 0x3, 0x16,
+                                                      0x5, 0x6, 0x17 };
+
+    ad = vec_splats((uint8_t) 255);
+
+    for (i = 0; i < lumFilterSize; i++)
+        vlumFilter[i] = vec_splats(lumFilter[i]);
+    for (i = 0; i < chrFilterSize; i++)
+        vchrFilter[i] = vec_splats(chrFilter[i]);
+
+    for (i = 0; i < dstW; i += 8) {
+        vy32_l =
+        vy32_r = ystart;
+        vu32_l =
+        vu32_r =
+        vv32_l =
+        vv32_r = uvstart;
+
+        for (j = 0; j < lumFilterSize; j++) {
+            vv = vec_ld(0, &lumSrc[j][i]);
+            tmp = vec_mule(vv, vlumFilter[j]);
+            tmp2 = vec_mulo(vv, vlumFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vy32_l = vec_adds(vy32_l, tmp3);
+            vy32_r = vec_adds(vy32_r, tmp4);
+        }
+
+        for (j = 0; j < chrFilterSize; j++) {
+            vv = vec_ld(0, &chrUSrc[j][i]);
+            tmp = vec_mule(vv, vchrFilter[j]);
+            tmp2 = vec_mulo(vv, vchrFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vu32_l = vec_adds(vu32_l, tmp3);
+            vu32_r = vec_adds(vu32_r, tmp4);
+
+            vv = vec_ld(0, &chrVSrc[j][i]);
+            tmp = vec_mule(vv, vchrFilter[j]);
+            tmp2 = vec_mulo(vv, vchrFilter[j]);
+            tmp3 = vec_mergeh(tmp, tmp2);
+            tmp4 = vec_mergel(tmp, tmp2);
+
+            vv32_l = vec_adds(vv32_l, tmp3);
+            vv32_r = vec_adds(vv32_r, tmp4);
+        }
+
+        vy32_l = vec_sra(vy32_l, shift10);
+        vy32_r = vec_sra(vy32_r, shift10);
+        vu32_l = vec_sra(vu32_l, shift10);
+        vu32_r = vec_sra(vu32_r, shift10);
+        vv32_l = vec_sra(vv32_l, shift10);
+        vv32_r = vec_sra(vv32_r, shift10);
+
+        vy32_l = vec_sub(vy32_l, y_offset);
+        vy32_r = vec_sub(vy32_r, y_offset);
+        vy32_l = vec_mul(vy32_l, y_coeff);
+        vy32_r = vec_mul(vy32_r, y_coeff);
+        vy32_l = vec_add(vy32_l, y_add);
+        vy32_r = vec_add(vy32_r, y_add);
+
+        R_l = vec_mul(vv32_l, v2r_coeff);
+        R_l = vec_add(R_l, vy32_l);
+        R_r = vec_mul(vv32_r, v2r_coeff);
+        R_r = vec_add(R_r, vy32_r);
+        G_l = vec_mul(vv32_l, v2g_coeff);
+        tmp32 = vec_mul(vu32_l, u2g_coeff);
+        G_l = vec_add(G_l, vy32_l);
+        G_l = vec_add(G_l, tmp32);
+        G_r = vec_mul(vv32_r, v2g_coeff);
+        tmp32 = vec_mul(vu32_r, u2g_coeff);
+        G_r = vec_add(G_r, vy32_r);
+        G_r = vec_add(G_r, tmp32);
+
+        B_l = vec_mul(vu32_l, u2b_coeff);
+        B_l = vec_add(B_l, vy32_l);
+        B_r = vec_mul(vu32_r, u2b_coeff);
+        B_r = vec_add(B_r, vy32_r);
+
+        WRITERGB
+    }
+}
+
 #define SETUP(x, buf0, alpha1, buf1, alpha) { \
     x = vec_ld(0, buf0); \
     tmp = vec_mule(x, alpha1); \
@@ -977,6 +1110,19 @@ yuv2rgb_1_vsx_template(SwsContext *c, const int16_t *buf0,
 
 #undef WRITERGB
 
+#define YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha) \
+static void name ## ext ## _X_vsx(SwsContext *c, const int16_t *lumFilter, \
+                                const int16_t **lumSrc, int lumFilterSize, \
+                                const int16_t *chrFilter, const int16_t **chrUSrc, \
+                                const int16_t **chrVSrc, int chrFilterSize, \
+                                const int16_t **alpSrc, uint8_t *dest, int dstW, \
+                                int y) \
+{ \
+    name ## base ## _X_vsx_template(c, lumFilter, lumSrc, lumFilterSize, \
+                                  chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                                  alpSrc, dest, dstW, y, fmt, hasAlpha); \
+}
+
 #define YUV2RGBWRAPPERX2(name, base, ext, fmt, hasAlpha) \
 static void name ## ext ## _2_vsx(SwsContext *c, const int16_t *buf[2], \
                                 const int16_t *ubuf[2], const int16_t *vbuf[2], \
@@ -1020,6 +1166,14 @@ YUV2RGBWRAPPERX2(yuv2, rgb_full, xbgr32_full, AV_PIX_FMT_ABGR,  0)
 
 YUV2RGBWRAPPERX2(yuv2, rgb_full, rgb24_full,  AV_PIX_FMT_RGB24, 0)
 YUV2RGBWRAPPERX2(yuv2, rgb_full, bgr24_full,  AV_PIX_FMT_BGR24, 0)
+
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgrx32_full, AV_PIX_FMT_BGRA,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgbx32_full, AV_PIX_FMT_RGBA,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, xrgb32_full, AV_PIX_FMT_ARGB,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, xbgr32_full, AV_PIX_FMT_ABGR,  0)
+
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgb24_full,  AV_PIX_FMT_RGB24, 0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgr24_full,  AV_PIX_FMT_BGR24, 0)
 
 static av_always_inline void
 write422(const vector int16_t vy1, const vector int16_t vy2,
@@ -1394,12 +1548,14 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
                     c->yuv2packed1 = yuv2rgb24_full_1_vsx;
                     c->yuv2packed2 = yuv2rgb24_full_2_vsx;
+                    c->yuv2packedX = yuv2rgb24_full_X_vsx;
                 }
             break;
             case AV_PIX_FMT_BGR24:
                 if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
                     c->yuv2packed1 = yuv2bgr24_full_1_vsx;
                     c->yuv2packed2 = yuv2bgr24_full_2_vsx;
+                    c->yuv2packedX = yuv2bgr24_full_X_vsx;
                 }
             break;
             case AV_PIX_FMT_BGRA:
@@ -1407,6 +1563,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2bgrx32_full_1_vsx;
                         c->yuv2packed2 = yuv2bgrx32_full_2_vsx;
+                        c->yuv2packedX = yuv2bgrx32_full_X_vsx;
                     }
                 }
             break;
@@ -1415,6 +1572,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2rgbx32_full_1_vsx;
                         c->yuv2packed2 = yuv2rgbx32_full_2_vsx;
+                        c->yuv2packedX = yuv2rgbx32_full_X_vsx;
                     }
                 }
             break;
@@ -1423,6 +1581,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xrgb32_full_1_vsx;
                         c->yuv2packed2 = yuv2xrgb32_full_2_vsx;
+                        c->yuv2packedX = yuv2xrgb32_full_X_vsx;
                     }
                 }
             break;
@@ -1431,6 +1590,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xbgr32_full_1_vsx;
                         c->yuv2packed2 = yuv2xbgr32_full_2_vsx;
+                        c->yuv2packedX = yuv2xbgr32_full_X_vsx;
                     }
                 }
             break;
