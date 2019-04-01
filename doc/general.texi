@@ -677,7 +677,7 @@ library:
 @item Psygnosis YOP             @tab   @tab X
 @end multitable
 
-@code{X} means that encoding (resp. decoding) is supported.
+@code{X} means that the feature in that column (encoding / decoding) is supported.
 
 @section Image Formats
 
@@ -747,7 +747,7 @@ following image formats are supported:
     @tab X Window Dump image format
 @end multitable
 
-@code{X} means that encoding (resp. decoding) is supported.
+@code{X} means that the feature in that column (encoding / decoding) is supported.
 
 @code{E} means that support is provided through an external library.
 
@@ -1029,7 +1029,7 @@ following image formats are supported:
     @tab Encoder works only in PAL8.
 @end multitable
 
-@code{X} means that encoding (resp. decoding) is supported.
+@code{X} means that the feature in that column (encoding / decoding) is supported.
 
 @code{E} means that support is provided through an external library.
 
@@ -1248,7 +1248,7 @@ following image formats are supported:
 @item Xbox Media Audio 2     @tab     @tab  X
 @end multitable
 
-@code{X} means that encoding (resp. decoding) is supported.
+@code{X} means that the feature in that column (encoding / decoding) is supported.
 
 @code{E} means that support is provided through an external library.
 
