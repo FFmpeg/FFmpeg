@@ -52,6 +52,21 @@ For Linux and OS X, the supported AviSynth variant is
 @url{https://github.com/avxsynth/avxsynth, AvxSynth}.
 
 @float NOTE
+In 2016, AviSynth+ added support for building with GCC. However, due to
+the eccentricities of Windows' calling conventions, 32-bit GCC builds
+of AviSynth+ are not compatible with typical 32-bit builds of FFmpeg.
+
+By default, FFmpeg assumes compatibility with 32-bit MSVC builds of
+AviSynth+ since that is the most widely-used and entrenched build
+configuration.  Users can override this and enable support for 32-bit
+GCC builds of AviSynth+ by passing @code{-DAVSC_WIN32_GCC32} to
+@code{--extra-cflags} when configuring FFmpeg.
+
+64-bit builds of FFmpeg are not affected, and can use either MSVC or
+GCC builds of AviSynth+ without any special flags.
+@end float
+
+@float NOTE
 AviSynth and AvxSynth are loaded dynamically.  Distributors can build FFmpeg
 with @code{--enable-avisynth}, and the binaries will work regardless of the
 end user having AviSynth or AvxSynth installed - they'll only need to be
