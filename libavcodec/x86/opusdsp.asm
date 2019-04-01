@@ -38,10 +38,9 @@ cglobal opus_deemphasis, 4, 4, 8, out, in, coeff, len
 %endif
 %if ARCH_X86_32
     VBROADCASTSS m0, coeffm
+%elif WIN64
+    shufps m0, m2, m2, 0
 %else
-%if WIN64
-    SWAP 0, 2
-%endif
     shufps m0, m0, 0
 %endif
 
