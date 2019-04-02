@@ -452,7 +452,7 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     int header, start_line;
     int height, row_ptr;
     int has_palette = 0;
-    int ret;
+    int ret, size;
 
     bytestream2_init(&s->g, avpkt->data, avpkt->size);
 
@@ -461,7 +461,10 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         return avpkt->size;
 
     /* start after the chunk size */
-    bytestream2_seek(&s->g, 4, SEEK_SET);
+    size = bytestream2_get_be32(&s->g) & 0x3FFFFFFF;
+    if (size - avpkt->size >  size * (int64_t)avctx->discard_damaged_percentage / 100)
+        return AVERROR_INVALIDDATA;
+
 
     /* fetch the header */
     header = bytestream2_get_be16(&s->g);
