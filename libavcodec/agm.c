@@ -103,6 +103,9 @@ static int read_code(GetBitContext *gb, int *oskip, int *level, int *map, int mo
 {
     int len = 0, skip = 0, max;
 
+    if (get_bits_left(gb) < 2)
+        return AVERROR_INVALIDDATA;
+
     if (show_bits(gb, 2)) {
         switch (show_bits(gb, 4)) {
         case 1:
