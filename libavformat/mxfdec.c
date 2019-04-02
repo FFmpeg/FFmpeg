@@ -429,19 +429,19 @@ static int mxf_get_stream_index(AVFormatContext *s, KLVPacket *klv, int body_sid
     return s->nb_streams == 1 && s->streams[0]->priv_data ? 0 : -1;
 }
 
-static int find_body_sid_by_offset(MXFContext *mxf, int64_t offset)
+static int find_body_sid_by_absolute_offset(MXFContext *mxf, int64_t offset)
 {
     // we look for partition where the offset is placed
     int a, b, m;
-    int64_t this_partition;
+    int64_t pack_ofs;
 
     a = -1;
     b = mxf->partitions_count;
 
     while (b - a > 1) {
-        m         = (a + b) >> 1;
-        this_partition = mxf->partitions[m].this_partition;
-        if (this_partition <= offset)
+        m = (a + b) >> 1;
+        pack_ofs = mxf->partitions[m].pack_ofs;
+        if (pack_ofs <= offset)
             a = m;
         else
             b = m;
@@ -590,7 +590,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     if (!IS_KLV_KEY(klv, mxf_essence_element_key))
         return AVERROR_INVALIDDATA;
 
-    body_sid = find_body_sid_by_offset(mxf, klv->offset);
+    body_sid = find_body_sid_by_absolute_offset(mxf, klv->offset);
     index = mxf_get_stream_index(s, klv, body_sid);
     if (index < 0)
         return AVERROR_INVALIDDATA;
@@ -3471,7 +3471,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_canopus_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
-            int body_sid = find_body_sid_by_offset(mxf, klv.offset);
+            int body_sid = find_body_sid_by_absolute_offset(mxf, klv.offset);
             int index = mxf_get_stream_index(s, &klv, body_sid);
             int64_t next_ofs;
             AVStream *st;
