@@ -128,7 +128,7 @@ ffmpeg(){
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"
     done
-    run ffmpeg${PROGSUF} ${ffmpeg_args}
+    run ffmpeg${PROGSUF}${EXECSUF} ${ffmpeg_args}
 }
 
 framecrc(){
@@ -245,7 +245,7 @@ stream_remux(){
 
 # FIXME: There is a certain duplication between the avconv-related helper
 # functions above and below that should be refactored.
-ffmpeg2="$target_exec ${target_path}/ffmpeg"
+ffmpeg2="$target_exec ${target_path}/ffmpeg${PROGSUF}${EXECSUF}"
 raw_src="${target_path}/tests/vsynth1/%02d.pgm"
 pcm_src="${target_path}/tests/data/asynth1.sw"
 crcfile="tests/data/$test.lavf.crc"
