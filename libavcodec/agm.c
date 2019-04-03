@@ -562,7 +562,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     for (int i = 0; i < 3; i++)
         s->size[i] = bytestream2_get_le32(gbyte);
-    if (32LL + s->size[0] + s->size[1] + s->size[2] > avpkt->size)
+    if (s->size[0] < 0 || s->size[1] < 0 || s->size[2] < 0 ||
+        32LL + s->size[0] + s->size[1] + s->size[2] > avpkt->size)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
