@@ -3138,9 +3138,12 @@ static void mxf_read_random_index_pack(AVFormatContext *s)
         goto end;
     avio_seek(s->pb, file_size - length, SEEK_SET);
     if (klv_read_packet(&klv, s->pb) < 0 ||
-        !IS_KLV_KEY(klv.key, mxf_random_index_pack_key) ||
-        klv.length != length - 20)
+        !IS_KLV_KEY(klv.key, mxf_random_index_pack_key))
         goto end;
+    if (klv.next_klv != file_size || klv.length <= 4 || (klv.length - 4) % 12) {
+        av_log(s, AV_LOG_WARNING, "Invalid RIP KLV length\n");
+        goto end;
+    }
 
     avio_skip(s->pb, klv.length - 12);
     mxf->footer_partition = avio_rb64(s->pb);
