@@ -535,11 +535,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     s->flags = 0;
     w = bytestream2_get_le32(gbyte);
+    h = bytestream2_get_le32(gbyte);
+    if (w == INT32_MIN || h == INT32_MIN)
+        return AVERROR_INVALIDDATA;
     if (w < 0) {
         w = -w;
         s->flags |= 2;
     }
-    h = bytestream2_get_le32(gbyte);
     if (h < 0) {
         h = -h;
         s->flags |= 1;
