@@ -694,8 +694,10 @@ static int put_flac_codecpriv(AVFormatContext *s,
         av_dict_set(&dict, "WAVEFORMATEXTENSIBLE_CHANNEL_MASK", buf, 0);
 
         len = ff_vorbiscomment_length(dict, vendor);
-        if (len >= ((1<<24) - 4))
+        if (len >= ((1<<24) - 4)) {
+            av_dict_free(&dict);
             return AVERROR(EINVAL);
+        }
 
         data = av_malloc(len + 4);
         if (!data) {
