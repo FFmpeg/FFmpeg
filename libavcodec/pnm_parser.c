@@ -60,7 +60,22 @@ retry:
         }
         next = END_NOT_FOUND;
     } else if (pnmctx.type < 4) {
+              uint8_t *bs  = pnmctx.bytestream;
+        const uint8_t *end = pnmctx.bytestream_end;
+
         next = END_NOT_FOUND;
+        while (bs < end) {
+            int c = *bs++;
+            if (c == '#')  {
+                while (c != '\n' && bs < end)
+                    c = *bs++;
+            } else if (c == 'P') {
+                next = bs - pnmctx.bytestream_start + skip - 1;
+                if (pnmctx.bytestream_start != buf + skip)
+                    next -= pc->index;
+                break;
+            }
+        }
     } else {
         next = pnmctx.bytestream - pnmctx.bytestream_start + skip
                + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
