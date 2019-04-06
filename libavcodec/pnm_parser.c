@@ -70,19 +70,17 @@ retry:
                     c = *bs++;
             } else if (c == 'P') {
                 next = bs - pnmctx.bytestream_start + skip - 1;
-                if (pnmctx.bytestream_start != buf + skip)
-                    next -= pc->index;
                 break;
             }
         }
     } else {
         next = pnmctx.bytestream - pnmctx.bytestream_start + skip
                + av_image_get_buffer_size(avctx->pix_fmt, avctx->width, avctx->height, 1);
-        if (pnmctx.bytestream_start != buf + skip)
-            next -= pc->index;
-        if (next > buf_size)
-            next = END_NOT_FOUND;
     }
+    if (next != END_NOT_FOUND && pnmctx.bytestream_start != buf + skip)
+        next -= pc->index;
+    if (next > buf_size)
+        next = END_NOT_FOUND;
 
     if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
         *poutbuf      = NULL;
