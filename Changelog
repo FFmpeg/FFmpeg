@@ -21,6 +21,7 @@ version <next>:
 - Support decoding of HEVC 4:4:4 content in nvdec and cuviddec
 - removed libndi-newtek
 - agm decoder
+- KUX demuxer
 
 
 version 4.1:

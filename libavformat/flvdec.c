@@ -113,6 +113,20 @@ static int live_flv_probe(const AVProbeData *p)
     return probe(p, 1);
 }
 
+static int kux_probe(const AVProbeData *p)
+{
+    const uint8_t *d = p->buf;
+
+    if (d[0] == 'K' &&
+        d[1] == 'D' &&
+        d[2] == 'K' &&
+        d[3] == 0 &&
+        d[4] == 0) {
+        return AVPROBE_SCORE_EXTENSION + 1;
+    }
+    return 0;
+}
+
 static void add_keyframes_index(AVFormatContext *s)
 {
     FLVContext *flv   = s->priv_data;
@@ -737,6 +751,10 @@ static int flv_read_header(AVFormatContext *s)
     FLVContext *flv = s->priv_data;
     int offset;
     int pre_tag_size = 0;
+
+    /* Actual FLV data at 0xe40000 in KUX file */
+    if(!strcmp(s->iformat->name, "kux"))
+        avio_skip(s->pb, 0xe40000);
 
     avio_skip(s->pb, 4);
     flags = avio_r8(s->pb);
@@ -1385,4 +1403,24 @@ AVInputFormat ff_live_flv_demuxer = {
     .extensions     = "flv",
     .priv_class     = &live_flv_class,
     .flags          = AVFMT_TS_DISCONT
+};
+
+static const AVClass kux_class = {
+    .class_name = "kuxdec",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+AVInputFormat ff_kux_demuxer = {
+    .name           = "kux",
+    .long_name      = NULL_IF_CONFIG_SMALL("KUX (YouKu)"),
+    .priv_data_size = sizeof(FLVContext),
+    .read_probe     = kux_probe,
+    .read_header    = flv_read_header,
+    .read_packet    = flv_read_packet,
+    .read_seek      = flv_read_seek,
+    .read_close     = flv_read_close,
+    .extensions     = "kux",
+    .priv_class     = &kux_class,
 };
