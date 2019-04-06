@@ -67,8 +67,12 @@ static int activate(AVFilterContext *ctx)
         return ret;
 
     if (ret > 0) {
-        if ((!s->pad || (s->pad && frame->nb_samples == s->nb_out_samples)))
-            return ff_filter_frame(outlink, frame);
+        if ((!s->pad || (s->pad && frame->nb_samples == s->nb_out_samples))) {
+            ret = ff_filter_frame(outlink, frame);
+            if (ff_framequeue_queued_samples(inlink) >= s->nb_out_samples)
+                ff_filter_set_ready(ctx, 100);
+            return ret;
+        }
 
         pad_frame = ff_get_audio_buffer(outlink, s->nb_out_samples);
         if (!pad_frame) {
