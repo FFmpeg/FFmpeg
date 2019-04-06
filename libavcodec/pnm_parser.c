@@ -47,6 +47,7 @@ retry:
         pnmctx.bytestream       = (uint8_t *) buf + skip; /* casts avoid warnings */
         pnmctx.bytestream_end   = (uint8_t *) buf + buf_size - skip;
     }
+    next = END_NOT_FOUND;
     if (ff_pnm_decode_header(avctx, &pnmctx) < 0) {
         if (pnmctx.bytestream < pnmctx.bytestream_end) {
             if (pc->index) {
@@ -58,12 +59,10 @@ retry:
             }
             goto retry;
         }
-        next = END_NOT_FOUND;
     } else if (pnmctx.type < 4) {
               uint8_t *bs  = pnmctx.bytestream;
         const uint8_t *end = pnmctx.bytestream_end;
 
-        next = END_NOT_FOUND;
         while (bs < end) {
             int c = *bs++;
             if (c == '#')  {
