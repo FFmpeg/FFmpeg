@@ -313,7 +313,7 @@ static int mov_write_amr_tag(AVIOContext *pb, MOVTrack *track)
     return 0x11;
 }
 
-static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_ac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     GetBitContext gbc;
     PutBitContext pbc;
@@ -321,7 +321,7 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     int fscod, bsid, bsmod, acmod, lfeon, frmsizecod;
 
     if (track->vos_len < 7) {
-        av_log(pb, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Cannot write moov atom before AC3 packets."
                " Set the delay_moov flag to fix this.\n");
         return AVERROR(EINVAL);
@@ -535,7 +535,7 @@ end:
 }
 #endif
 
-static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_eac3_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     PutBitContext pbc;
     uint8_t *buf;
@@ -543,7 +543,7 @@ static int mov_write_eac3_tag(AVIOContext *pb, MOVTrack *track)
     int size, i;
 
     if (!track->eac3_priv) {
-        av_log(pb, AV_LOG_ERROR,
+        av_log(s, AV_LOG_ERROR,
                "Cannot write moov atom before EAC3 packets parsed.\n");
         return AVERROR(EINVAL);
     }
@@ -748,14 +748,14 @@ static int mov_write_dfla_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-static int mov_write_dops_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_dops_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "dOps");
     avio_w8(pb, 0); /* Version */
     if (track->par->extradata_size < 19) {
-        av_log(pb, AV_LOG_ERROR, "invalid extradata size\n");
+        av_log(s, AV_LOG_ERROR, "invalid extradata size\n");
         return AVERROR_INVALIDDATA;
     }
     /* extradata contains an Ogg OpusHead, other than byte-ordering and
@@ -825,9 +825,9 @@ static int mov_write_wave_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     } else if (track->par->codec_id == AV_CODEC_ID_AMR_NB) {
         mov_write_amr_tag(pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_AC3) {
-        mov_write_ac3_tag(pb, track);
+        mov_write_ac3_tag(s, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_EAC3) {
-        mov_write_eac3_tag(pb, track);
+        mov_write_eac3_tag(s, pb, track);
     } else if (track->par->codec_id == AV_CODEC_ID_ALAC ||
                track->par->codec_id == AV_CODEC_ID_QDM2) {
         mov_write_extradata_tag(pb, track);
@@ -1134,9 +1134,9 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     else if (track->par->codec_id == AV_CODEC_ID_AMR_NB)
         ret = mov_write_amr_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_AC3)
-        ret = mov_write_ac3_tag(pb, track);
+        ret = mov_write_ac3_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_EAC3)
-        ret = mov_write_eac3_tag(pb, track);
+        ret = mov_write_eac3_tag(s, pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_ALAC)
         ret = mov_write_extradata_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_WMAPRO)
@@ -1144,7 +1144,7 @@ static int mov_write_audio_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     else if (track->par->codec_id == AV_CODEC_ID_FLAC)
         ret = mov_write_dfla_tag(pb, track);
     else if (track->par->codec_id == AV_CODEC_ID_OPUS)
-        ret = mov_write_dops_tag(pb, track);
+        ret = mov_write_dops_tag(s, pb, track);
     else if (track->vos_len > 0)
         ret = mov_write_glbl_tag(pb, track);
 
@@ -1691,12 +1691,12 @@ static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
     return update_size(pb, pos);
 }
 
-static int mov_write_st3d_tag(AVIOContext *pb, AVStereo3D *stereo_3d)
+static int mov_write_st3d_tag(AVFormatContext *s, AVIOContext *pb, AVStereo3D *stereo_3d)
 {
     int8_t stereo_mode;
 
     if (stereo_3d->flags != 0) {
-        av_log(pb, AV_LOG_WARNING, "Unsupported stereo_3d flags %x. st3d not written.\n", stereo_3d->flags);
+        av_log(s, AV_LOG_WARNING, "Unsupported stereo_3d flags %x. st3d not written.\n", stereo_3d->flags);
         return 0;
     }
 
@@ -1711,7 +1711,7 @@ static int mov_write_st3d_tag(AVIOContext *pb, AVStereo3D *stereo_3d)
         stereo_mode = 2;
         break;
     default:
-        av_log(pb, AV_LOG_WARNING, "Unsupported stereo_3d type %s. st3d not written.\n", av_stereo3d_type_name(stereo_3d->type));
+        av_log(s, AV_LOG_WARNING, "Unsupported stereo_3d type %s. st3d not written.\n", av_stereo3d_type_name(stereo_3d->type));
         return 0;
     }
     avio_wb32(pb, 13); /* size */
@@ -1729,7 +1729,7 @@ static int mov_write_sv3d_tag(AVFormatContext *s, AVIOContext *pb, AVSphericalMa
     if (spherical_mapping->projection != AV_SPHERICAL_EQUIRECTANGULAR &&
         spherical_mapping->projection != AV_SPHERICAL_EQUIRECTANGULAR_TILE &&
         spherical_mapping->projection != AV_SPHERICAL_CUBEMAP) {
-        av_log(pb, AV_LOG_WARNING, "Unsupported projection %d. sv3d not written.\n", spherical_mapping->projection);
+        av_log(s, AV_LOG_WARNING, "Unsupported projection %d. sv3d not written.\n", spherical_mapping->projection);
         return 0;
     }
 
@@ -1807,27 +1807,25 @@ static int mov_write_pasp_tag(AVIOContext *pb, MOVTrack *track)
     return 16;
 }
 
-static int mov_write_gama_tag(AVIOContext *pb, MOVTrack *track, double gamma)
+static int mov_write_gama_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *track, double gamma)
 {
     uint32_t gama = 0;
-    if (gamma <= 0.0)
-    {
+    if (gamma <= 0.0) {
         gamma = avpriv_get_gamma_from_trc(track->par->color_trc);
     }
-    av_log(pb, AV_LOG_DEBUG, "gamma value %g\n", gamma);
+    av_log(s, AV_LOG_DEBUG, "gamma value %g\n", gamma);
 
     if (gamma > 1e-6) {
         gama = (uint32_t)lrint((double)(1<<16) * gamma);
-        av_log(pb, AV_LOG_DEBUG, "writing gama value %"PRId32"\n", gama);
+        av_log(s, AV_LOG_DEBUG, "writing gama value %"PRId32"\n", gama);
 
         av_assert0(track->mode == MODE_MOV);
         avio_wb32(pb, 12);
         ffio_wfourcc(pb, "gama");
         avio_wb32(pb, gama);
         return 12;
-    }
-    else {
-        av_log(pb, AV_LOG_WARNING, "gamma value unknown, unable to write gama atom\n");
+    } else {
+        av_log(s, AV_LOG_WARNING, "gamma value unknown, unable to write gama atom\n");
     }
     return 0;
 }
@@ -1941,7 +1939,7 @@ static void find_compressor(char * compressor_name, int len, MOVTrack *track)
     }
 }
 
-static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
+static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext *mov, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
     char compressor_name[32] = { 0 };
@@ -2076,7 +2074,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
 
     if (mov->flags & FF_MOV_FLAG_WRITE_GAMA) {
         if (track->mode == MODE_MOV)
-            mov_write_gama_tag(pb, track, mov->gamma);
+            mov_write_gama_tag(s, pb, track, mov->gamma);
         else
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'gama' atom. Format is not MOV.\n");
     }
@@ -2092,7 +2090,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tr
         AVSphericalMapping* spherical_mapping = (AVSphericalMapping*)av_stream_get_side_data(track->st, AV_PKT_DATA_SPHERICAL, NULL);
 
         if (stereo_3d)
-            mov_write_st3d_tag(pb, stereo_3d);
+            mov_write_st3d_tag(s, pb, stereo_3d);
         if (spherical_mapping)
             mov_write_sv3d_tag(mov->fc, pb, spherical_mapping);
     }
@@ -2233,7 +2231,7 @@ static int mov_write_stsd_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContext
     avio_wb32(pb, 0); /* version & flags */
     avio_wb32(pb, 1); /* entry count */
     if (track->par->codec_type == AVMEDIA_TYPE_VIDEO)
-        ret = mov_write_video_tag(pb, mov, track);
+        ret = mov_write_video_tag(s, pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_AUDIO)
         ret = mov_write_audio_tag(s, pb, mov, track);
     else if (track->par->codec_type == AVMEDIA_TYPE_SUBTITLE)
