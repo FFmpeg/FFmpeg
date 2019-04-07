@@ -2553,6 +2553,24 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         }
     }
 
+    for (int i = 0; i < mxf->fc->nb_streams; i++) {
+        MXFTrack *track1 = mxf->fc->streams[i]->priv_data;
+        if (track1 && track1->body_sid) {
+            for (int j = i + 1; j < mxf->fc->nb_streams; j++) {
+                MXFTrack *track2 = mxf->fc->streams[j]->priv_data;
+                if (track2 && track1->body_sid == track2->body_sid && track1->wrapping != track2->wrapping) {
+                    if (track1->wrapping == UnknownWrapped)
+                        track1->wrapping = track2->wrapping;
+                    else if (track2->wrapping == UnknownWrapped)
+                        track2->wrapping = track1->wrapping;
+                    else
+                        av_log(mxf->fc, AV_LOG_ERROR, "stream %d and stream %d have the same BodySID (%d) "
+                                                      "with different wrapping\n", i, j, track1->body_sid);
+                }
+            }
+        }
+    }
+
     ret = 0;
 fail_and_free:
     return ret;
