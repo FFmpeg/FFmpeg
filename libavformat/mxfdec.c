@@ -1545,10 +1545,7 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
  */
 static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
 {
-    int x;
-    int64_t ret = 0;
-
-    for (x = 0; x < mxf->partitions_count; x++) {
+    for (int x = mxf->partitions_count - 1; x >= 0; x--) {
         MXFPartition *p = &mxf->partitions[x];
 
         if (p->body_sid != body_sid)
@@ -1557,10 +1554,10 @@ static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
         if (!p->essence_length)
             return 0;
 
-        ret = p->essence_offset + p->essence_length;
+        return p->essence_offset + p->essence_length;
     }
 
-    return ret;
+    return 0;
 }
 
 /* EditUnit -> absolute offset */
