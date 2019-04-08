@@ -1419,8 +1419,9 @@ static int opencl_get_plane_format(enum AVPixelFormat pixfmt,
         // from the same component.
         if (step && comp->step != step)
             return AVERROR(EINVAL);
-        order = order * 10 + c + 1;
+
         depth = comp->depth;
+        order = order * 10 + comp->offset / ((depth + 7) / 8) + 1;
         step  = comp->step;
         alpha = (desc->flags & AV_PIX_FMT_FLAG_ALPHA &&
                  c == desc->nb_components - 1);
@@ -1456,14 +1457,10 @@ static int opencl_get_plane_format(enum AVPixelFormat pixfmt,
     case order: image_format->image_channel_order = type; break;
     switch (order) {
         CHANNEL_ORDER(1,    CL_R);
-        CHANNEL_ORDER(2,    CL_R);
-        CHANNEL_ORDER(3,    CL_R);
-        CHANNEL_ORDER(4,    CL_R);
         CHANNEL_ORDER(12,   CL_RG);
-        CHANNEL_ORDER(23,   CL_RG);
         CHANNEL_ORDER(1234, CL_RGBA);
+        CHANNEL_ORDER(2341, CL_ARGB);
         CHANNEL_ORDER(3214, CL_BGRA);
-        CHANNEL_ORDER(4123, CL_ARGB);
 #ifdef CL_ABGR
         CHANNEL_ORDER(4321, CL_ABGR);
 #endif
