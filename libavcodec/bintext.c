@@ -93,8 +93,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
             break;
         }
     }
-    if (avctx->width < FONT_WIDTH || avctx->height < s->font_height)
+    if (avctx->width < FONT_WIDTH || avctx->height < s->font_height) {
+        av_log(avctx, AV_LOG_ERROR, "Resolution too small for font.\n");
         return AVERROR_INVALIDDATA;
+    }
 
     return 0;
 }
