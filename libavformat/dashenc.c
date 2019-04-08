@@ -145,6 +145,8 @@ typedef struct DASHContext {
     int ignore_io_errors;
     int lhls;
     int master_publish_rate;
+    int nr_of_streams_to_flush;
+    int nr_of_streams_flushed;
 } DASHContext;
 
 static struct codec_string {
@@ -1089,6 +1091,7 @@ static int dash_init(AVFormatContext *s)
     char *ptr;
     char basename[1024];
 
+    c->nr_of_streams_to_flush = 0;
     if (c->single_file_name)
         c->single_file = 1;
     if (c->single_file)
@@ -1302,12 +1305,18 @@ static int dash_init(AVFormatContext *s)
         os->max_pts = AV_NOPTS_VALUE;
         os->last_dts = AV_NOPTS_VALUE;
         os->segment_index = 1;
+
+        if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            c->nr_of_streams_to_flush++;
     }
 
     if (!c->has_video && c->seg_duration <= 0) {
         av_log(s, AV_LOG_WARNING, "no video stream and no seg duration set\n");
         return AVERROR(EINVAL);
     }
+
+    c->nr_of_streams_flushed = 0;
+
     return 0;
 }
 
@@ -1616,8 +1625,16 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
             }
         }
     }
-    if (ret >= 0)
+    if (ret >= 0) {
+        if (c->has_video) {
+            c->nr_of_streams_flushed++;
+            if (c->nr_of_streams_flushed != c->nr_of_streams_to_flush)
+                return ret;
+
+            c->nr_of_streams_flushed = 0;
+        }
         ret = write_manifest(s, final);
+    }
     return ret;
 }
 
