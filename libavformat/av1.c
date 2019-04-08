@@ -372,6 +372,7 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     put_bits(&pbc, 1, seq_params.chroma_subsampling_x);
     put_bits(&pbc, 1, seq_params.chroma_subsampling_y);
     put_bits(&pbc, 2, seq_params.chroma_sample_position);
+    put_bits(&pbc, 8, 0); // padding
     flush_put_bits(&pbc);
 
     avio_write(pb, header, sizeof(header));
