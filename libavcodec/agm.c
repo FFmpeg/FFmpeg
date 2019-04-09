@@ -68,10 +68,13 @@ typedef struct AGMContext {
     int blocks_h;
     int size[3];
     int plus;
+    int dct;
+    int rgb;
     unsigned flags;
     unsigned fflags;
 
     uint8_t *output;
+    unsigned padded_output_size;
     unsigned output_size;
 
     MotionVector *mvectors;
@@ -562,6 +565,227 @@ static void compute_quant_matrix(AGMContext *s, double qscale)
     }
 }
 
+static int decode_raw_intra_rgb(AVCodecContext *avctx, GetByteContext *gbyte, AVFrame *frame)
+{
+    uint8_t *dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
+    uint8_t r = 0, g = 0, b = 0;
+
+    for (int y = 0; y < avctx->height; y++) {
+        for (int x = 0; x < avctx->width; x++) {
+            dst[x*3+0] = bytestream2_get_byte(gbyte) + r;
+            r = dst[x*3+0];
+            dst[x*3+1] = bytestream2_get_byte(gbyte) + g;
+            g = dst[x*3+1];
+            dst[x*3+2] = bytestream2_get_byte(gbyte) + b;
+            b = dst[x*3+2];
+        }
+        dst -= frame->linesize[0];
+    }
+
+    return 0;
+}
+
+static int fill_pixels(uint8_t **y0, uint8_t **y1,
+                       uint8_t **u, uint8_t **v,
+                       int ylinesize, int ulinesize, int vlinesize,
+                       uint8_t *fill,
+                       int *nx, int *ny, int *np, int w, int h)
+{
+    uint8_t *y0dst = *y0;
+    uint8_t *y1dst = *y1;
+    uint8_t *udst = *u;
+    uint8_t *vdst = *v;
+    int x = *nx, y = *ny, pos = *np;
+
+    if (pos == 0) {
+        y0dst[2*x+0] += fill[0];
+        y0dst[2*x+1] += fill[1];
+        y1dst[2*x+0] += fill[2];
+        y1dst[2*x+1] += fill[3];
+        pos++;
+    } else if (pos == 1) {
+        udst[x] += fill[0];
+        vdst[x] += fill[1];
+        x++;
+        if (x >= w) {
+            x = 0;
+            y++;
+            if (y >= h)
+                return 1;
+            y0dst -= 2*ylinesize;
+            y1dst -= 2*ylinesize;
+            udst  -=   ulinesize;
+            vdst  -=   vlinesize;
+        }
+        y0dst[2*x+0] += fill[2];
+        y0dst[2*x+1] += fill[3];
+        pos++;
+    } else if (pos == 2) {
+        y1dst[2*x+0] += fill[0];
+        y1dst[2*x+1] += fill[1];
+        udst[x]      += fill[2];
+        vdst[x]      += fill[3];
+        x++;
+        if (x >= w) {
+            x = 0;
+            y++;
+            if (y >= h)
+                return 1;
+            y0dst -= 2*ylinesize;
+            y1dst -= 2*ylinesize;
+            udst  -=   ulinesize;
+            vdst  -=   vlinesize;
+        }
+        pos = 0;
+    }
+
+    *y0 = y0dst;
+    *y1 = y1dst;
+    *u = udst;
+    *v = vdst;
+    *np = pos;
+    *nx = x;
+    *ny = y;
+
+    return 0;
+}
+
+static int decode_runlen_rgb(AVCodecContext *avctx, GetByteContext *gbyte, AVFrame *frame)
+{
+    uint8_t *dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
+    int runlen, y = 0, x = 0;
+    uint8_t fill[4];
+    unsigned code;
+
+    while (bytestream2_get_bytes_left(gbyte) > 0) {
+        code = bytestream2_peek_le32(gbyte);
+        runlen = code & 0xFFFFFF;
+
+        if (code >> 24 == 0x77) {
+            bytestream2_skip(gbyte, 4);
+
+            for (int i = 0; i < 4; i++)
+                fill[i] = bytestream2_get_byte(gbyte);
+
+            while (runlen > 0) {
+                runlen--;
+
+                for (int i = 0; i < 4; i++) {
+                    dst[x] += fill[i];
+                    x++;
+                    if (x >= frame->width * 3) {
+                        x = 0;
+                        y++;
+                        dst -= frame->linesize[0];
+                        if (y >= frame->height)
+                            return 0;
+                    }
+                }
+            }
+        } else {
+            for (int i = 0; i < 4; i++)
+                fill[i] = bytestream2_get_byte(gbyte);
+
+            for (int i = 0; i < 4; i++) {
+                dst[x] += fill[i];
+                x++;
+                if (x >= frame->width * 3) {
+                    x = 0;
+                    y++;
+                    dst -= frame->linesize[0];
+                    if (y >= frame->height)
+                        return 0;
+                }
+            }
+        }
+    }
+
+    return 0;
+}
+
+static int decode_runlen(AVCodecContext *avctx, GetByteContext *gbyte, AVFrame *frame)
+{
+    uint8_t *y0dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
+    uint8_t *y1dst = y0dst - frame->linesize[0];
+    uint8_t *udst = frame->data[1] + ((avctx->height >> 1) - 1) * frame->linesize[1];
+    uint8_t *vdst = frame->data[2] + ((avctx->height >> 1) - 1) * frame->linesize[2];
+    int runlen, y = 0, x = 0, pos = 0;
+    uint8_t fill[4];
+    unsigned code;
+
+    while (bytestream2_get_bytes_left(gbyte) > 0) {
+        code = bytestream2_peek_le32(gbyte);
+        runlen = code & 0xFFFFFF;
+
+        if (code >> 24 == 0x77) {
+            bytestream2_skip(gbyte, 4);
+
+            for (int i = 0; i < 4; i++)
+                fill[i] = bytestream2_get_byte(gbyte);
+
+            while (runlen > 0) {
+                runlen--;
+
+                if (fill_pixels(&y0dst, &y1dst, &udst, &vdst,
+                                frame->linesize[0],
+                                frame->linesize[1],
+                                frame->linesize[2],
+                                fill, &x, &y, &pos,
+                                avctx->width / 2,
+                                avctx->height / 2))
+                    return 0;
+            }
+        } else {
+            for (int i = 0; i < 4; i++)
+                fill[i] = bytestream2_get_byte(gbyte);
+
+            if (fill_pixels(&y0dst, &y1dst, &udst, &vdst,
+                            frame->linesize[0],
+                            frame->linesize[1],
+                            frame->linesize[2],
+                            fill, &x, &y, &pos,
+                            avctx->width / 2,
+                            avctx->height / 2))
+                return 0;
+        }
+    }
+
+    return 0;
+}
+
+static int decode_raw_intra(AVCodecContext *avctx, GetByteContext *gbyte, AVFrame *frame)
+{
+    uint8_t *y0dst = frame->data[0] + (avctx->height - 1) * frame->linesize[0];
+    uint8_t *y1dst = y0dst - frame->linesize[0];
+    uint8_t *udst = frame->data[1] + ((avctx->height >> 1) - 1) * frame->linesize[1];
+    uint8_t *vdst = frame->data[2] + ((avctx->height >> 1) - 1) * frame->linesize[2];
+    uint8_t ly0 = 0, ly1 = 0, ly2 = 0, ly3 = 0, lu = 0, lv = 0;
+
+    for (int y = 0; y < avctx->height / 2; y++) {
+        for (int x = 0; x < avctx->width / 2; x++) {
+            y0dst[x*2+0] = bytestream2_get_byte(gbyte) + ly0;
+            ly0 = y0dst[x*2+0];
+            y0dst[x*2+1] = bytestream2_get_byte(gbyte) + ly1;
+            ly1 = y0dst[x*2+1];
+            y1dst[x*2+0] = bytestream2_get_byte(gbyte) + ly2;
+            ly2 = y1dst[x*2+0];
+            y1dst[x*2+1] = bytestream2_get_byte(gbyte) + ly3;
+            ly3 = y1dst[x*2+1];
+            udst[x] = bytestream2_get_byte(gbyte) + lu;
+            lu = udst[x];
+            vdst[x] = bytestream2_get_byte(gbyte) + lv;
+            lv = vdst[x];
+        }
+
+        y0dst -= 2*frame->linesize[0];
+        y1dst -= 2*frame->linesize[0];
+        udst  -= frame->linesize[1];
+        vdst  -= frame->linesize[2];
+    }
+
+    return 0;
+}
+
 static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame)
 {
     AGMContext *s = avctx->priv_data;
@@ -808,16 +1032,15 @@ static int decode_huffman2(AVCodecContext *avctx, int header, int size)
     AGMContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     uint8_t lens[256];
-    unsigned output_size;
     int ret, x, len;
 
     if ((ret = init_get_bits8(gb, s->gbyte.buffer,
                               bytestream2_get_bytes_left(&s->gbyte))) < 0)
         return ret;
 
-    output_size = get_bits_long(gb, 32);
+    s->output_size = get_bits_long(gb, 32);
 
-    av_fast_padded_malloc(&s->output, &s->output_size, output_size);
+    av_fast_padded_malloc(&s->output, &s->padded_output_size, s->output_size);
     if (!s->output)
         return AVERROR(ENOMEM);
 
@@ -843,7 +1066,7 @@ static int decode_huffman2(AVCodecContext *avctx, int header, int size)
         return ret;
 
     x = 0;
-    while (get_bits_left(gb) > 0 && x < output_size) {
+    while (get_bits_left(gb) > 0 && x < s->output_size) {
         int val = get_vlc2(gb, s->vlc.table, s->vlc.bits, 3);
         if (val < 0)
             return AVERROR_INVALIDDATA;
@@ -862,6 +1085,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int w, h, width, height, header;
     unsigned compressed_size;
+    long skip;
     int ret;
 
     if (!avpkt->size)
@@ -877,7 +1101,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size < s->bitstream_size + 8)
         return AVERROR_INVALIDDATA;
 
-    s->key_frame = avpkt->flags & AV_PKT_FLAG_KEY;
+    s->key_frame = (avpkt->flags & AV_PKT_FLAG_KEY);
     frame->key_frame = s->key_frame;
     frame->pict_type = s->key_frame ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
 
@@ -890,53 +1114,65 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         if (ret < 0)
             return ret;
         bytestream2_init(gbyte, s->output, s->output_size);
+    } else if (!s->dct) {
+        bytestream2_skip(gbyte, 4);
     }
 
-    s->flags = 0;
-    w = bytestream2_get_le32(gbyte);
-    h = bytestream2_get_le32(gbyte);
-    if (w == INT32_MIN || h == INT32_MIN)
-        return AVERROR_INVALIDDATA;
-    if (w < 0) {
-        w = -w;
-        s->flags |= 2;
-    }
-    if (h < 0) {
-        h = -h;
-        s->flags |= 1;
-    }
+    if (s->dct) {
+        s->flags = 0;
+        w = bytestream2_get_le32(gbyte);
+        h = bytestream2_get_le32(gbyte);
+        if (w == INT32_MIN || h == INT32_MIN)
+            return AVERROR_INVALIDDATA;
+        if (w < 0) {
+            w = -w;
+            s->flags |= 2;
+        }
+        if (h < 0) {
+            h = -h;
+            s->flags |= 1;
+        }
 
-    width  = avctx->width;
-    height = avctx->height;
-    if (w < width || h < height || w & 7 || h & 7)
-        return AVERROR_INVALIDDATA;
+        width  = avctx->width;
+        height = avctx->height;
+        if (w < width || h < height || w & 7 || h & 7)
+            return AVERROR_INVALIDDATA;
 
-    ret = ff_set_dimensions(avctx, w, h);
-    if (ret < 0)
-        return ret;
-    avctx->width = width;
-    avctx->height = height;
+        ret = ff_set_dimensions(avctx, w, h);
+        if (ret < 0)
+            return ret;
+        avctx->width = width;
+        avctx->height = height;
 
-    s->compression = bytestream2_get_le32(gbyte);
-    if (s->compression < 0 || s->compression > 100)
-        return AVERROR_INVALIDDATA;
+        s->compression = bytestream2_get_le32(gbyte);
+        if (s->compression < 0 || s->compression > 100)
+            return AVERROR_INVALIDDATA;
 
-    for (int i = 0; i < 3; i++)
-        s->size[i] = bytestream2_get_le32(gbyte);
-    if (header)
-        compressed_size = s->output_size;
-    else
-        compressed_size = avpkt->size;
-    if (s->size[0] < 0 || s->size[1] < 0 || s->size[2] < 0 ||
-        32LL + s->size[0] + s->size[1] + s->size[2] > compressed_size) {
-        return AVERROR_INVALIDDATA;
+        for (int i = 0; i < 3; i++)
+            s->size[i] = bytestream2_get_le32(gbyte);
+        if (header) {
+            compressed_size = s->output_size;
+            skip = 8LL;
+        } else {
+            compressed_size = avpkt->size;
+            skip = 32LL;
+        }
+        if (s->size[0] < 0 || s->size[1] < 0 || s->size[2] < 0 ||
+            skip + s->size[0] + s->size[1] + s->size[2] > compressed_size) {
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;
 
     if (frame->key_frame) {
-        ret = decode_intra(avctx, gb, frame);
+        if (!s->dct && !s->rgb)
+            ret = decode_raw_intra(avctx, gbyte, frame);
+        else if (!s->dct && s->rgb)
+            ret = decode_raw_intra_rgb(avctx, gbyte, frame);
+        else
+            ret = decode_intra(avctx, gb, frame);
     } else {
         if (!s->prev_frame->data[0]) {
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
@@ -949,7 +1185,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 return ret;
         }
 
-        ret = decode_inter(avctx, gb, frame, s->prev_frame);
+        if (s->dct) {
+            ret = decode_inter(avctx, gb, frame, s->prev_frame);
+        } else if (!s->dct && !s->rgb) {
+            ret = decode_runlen(avctx, gbyte, frame);
+        } else {
+            ret = decode_runlen_rgb(avctx, gbyte, frame);
+        }
     }
     if (ret < 0)
         return ret;
@@ -970,10 +1212,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     AGMContext *s = avctx->priv_data;
 
-    avctx->pix_fmt = AV_PIX_FMT_YUV420P;
+    s->rgb = avctx->codec_tag == MKTAG('A', 'G', 'M', '4');
+    avctx->pix_fmt = s->rgb ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUV420P;
     s->avctx = avctx;
     s->plus = avctx->codec_tag == MKTAG('A', 'G', 'M', '3') ||
               avctx->codec_tag == MKTAG('A', 'G', 'M', '7');
+
+    s->dct = avctx->codec_tag != MKTAG('A', 'G', 'M', '4') &&
+             avctx->codec_tag != MKTAG('A', 'G', 'M', '5');
 
     avctx->idct_algo = FF_IDCT_SIMPLE;
     ff_idctdsp_init(&s->idsp, avctx);
@@ -1004,7 +1250,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     av_freep(&s->wblocks);
     s->wblocks_size = 0;
     av_freep(&s->output);
-    s->output_size = 0;
+    s->padded_output_size = 0;
     av_freep(&s->map);
     s->map_size = 0;
 
