@@ -4697,7 +4697,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             pts = frag_stream_info->first_tfra_pts;
             av_log(c->fc, AV_LOG_DEBUG, "found mfra time %"PRId64
                     ", using it for pts\n", pts);
-        } else if (frag_stream_info->sidx_pts != AV_NOPTS_VALUE) {
+        } else if (!c->ignore_sidx_index && frag_stream_info->sidx_pts != AV_NOPTS_VALUE) {
+            // only use sidx to seek moof fragment, should not be used in other cases
             // FIXME: sidx earliest_presentation_time is *PTS*, s.b.
             // pts = frag_stream_info->sidx_pts;
             dts = frag_stream_info->sidx_pts - sc->time_offset;
@@ -7223,7 +7224,17 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->current_sap = AV_NOPTS_VALUE;
     pkt->next_sap    = AV_NOPTS_VALUE;
     if (mov && sc->has_sidx) {
-        int64_t search_index = search_frag_timestamp(&mov->frag_index, st, pkt->dts + sc->time_offset);
+        int64_t timestamp = AV_NOPTS_VALUE;
+        if (mov->ignore_sidx_index) {
+            if (pkt->pts != AV_NOPTS_VALUE) {
+                timestamp = pkt->pts;
+            } else {
+                timestamp = pkt->dts;
+            }
+        } else {
+            timestamp = pkt->dts + sc->time_offset;
+        }
+        int64_t search_index = search_frag_timestamp(&mov->frag_index, st, timestamp);
         if (search_index >= 0 && search_index < mov->frag_index.nb_items) {
             //pkt->current_sap = get_frag_time(&mov->frag_index, search_index, st->id);
             //pkt->current_sap = av_rescale_q(pkt->current_sap, st->time_base, AV_TIME_BASE_Q);
@@ -7474,6 +7485,9 @@ static const AVOption mov_options[] = {
         {.i64 = 0}, 0, 1, FLAGS },
 
     {"allow_multi_extradata", "", OFFSET(allow_multi_extradata), AV_OPT_TYPE_BOOL, {.i64 = 0},
+        0, 1, FLAGS},
+
+    {"ignore_sidx_index", "ignore sidx when build index", OFFSET(ignore_sidx_index), AV_OPT_TYPE_BOOL, {.i64 = 1},
         0, 1, FLAGS},
     { NULL },
 };

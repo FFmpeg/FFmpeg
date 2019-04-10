@@ -276,6 +276,7 @@ typedef struct MOVContext {
     int enable_drefs;
     int allow_multi_extradata;
     int has_extradata;
+    int ignore_sidx_index;
     int32_t movie_display_matrix[3][3]; ///< display matrix from mvhd
 } MOVContext;
 
