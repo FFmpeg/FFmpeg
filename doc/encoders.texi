@@ -1434,6 +1434,29 @@ value is 1, which will be slow and high quality.
 Enable use of alternate reference frames.  Defaults to the internal
 default of the library.
 
+@item arnr-max-frames (@emph{frames})
+Set altref noise reduction max frame count. Default is -1.
+
+@item arnr-strength (@emph{strength})
+Set altref noise reduction filter strength. Range is -1 to 6. Default is -1.
+
+@item aq-mode (@emph{aq-mode})
+Set adaptive quantization mode. Possible values:
+
+@table @samp
+@item none (@emph{0})
+Disabled.
+
+@item variance (@emph{1})
+Variance-based.
+
+@item complexity (@emph{2})
+Complexity-based.
+
+@item cyclic (@emph{3})
+Cyclic refresh.
+@end table
+
 @item lag-in-frames
 Set the maximum number of frames which the encoder may keep in flight
 at any one time for lookahead purposes.  Defaults to the internal
@@ -1466,6 +1489,35 @@ buffer falls below this percentage, frames will be dropped until it
 has refilled above the threshold.  Defaults to zero (no frames are
 dropped).
 
+@item denoise-noise-level (@emph{level})
+Amount of noise to be removed for grain synthesis. Grain synthesis is disabled if
+this option is not set or set to 0.
+
+@item denoise-block-size (@emph{pixels})
+Block size used for denoising for grain synthesis. If not set, AV1 codec
+uses the default value of 32.
+
+@item undershoot-pct (@emph{pct})
+Set datarate undershoot (min) percentage of the target bitrate. Range is -1 to 100.
+Default is -1.
+
+@item overshoot-pct (@emph{pct})
+Set datarate overshoot (max) percentage of the target bitrate. Range is -1 to 1000.
+Default is -1.
+
+@item minsection-pct (@emph{pct})
+Minimum percentage variation of the GOP bitrate from the target bitrate. If minsection-pct
+is not set, the libaomenc wrapper computes it as follows: @code{(minrate * 100 / bitrate)}.
+Range is -1 to 100. Default is -1 (unset).
+
+@item maxsection-pct (@emph{pct})
+Maximum percentage variation of the GOP bitrate from the target bitrate. If maxsection-pct
+is not set, the libaomenc wrapper computes it as follows: @code{(maxrate * 100 / bitrate)}.
+Range is -1 to 5000. Default is -1 (unset).
+
+@item frame-parallel (@emph{boolean})
+Enable frame parallel decodability features. Default is true.
+
 @item tiles
 Set the number of tiles to encode the input video with, as columns x
 rows.  Larger numbers allow greater parallelism in both encoding and
@@ -1479,6 +1531,17 @@ Provided for compatibility with libvpx/VP9.
 
 @item row-mt (Requires libaom >= 1.0.0-759-g90a15f4f2)
 Enable row based multi-threading. Disabled by default.
+
+@item enable-cdef (@emph{boolean})
+Enable Constrained Directional Enhancement Filter. The libaom-av1
+encoder enables CDEF by default.
+
+@item enable-global-motion (@emph{boolean})
+Enable the use of global motion for block prediction. Default is true.
+
+@item enable-intrabc (@emph{boolean})
+Enable block copy mode for intra block prediction. This mode is
+useful for screen content. Default is true.
 
 @end table
 
