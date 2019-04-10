@@ -23,7 +23,7 @@
 #include "config.h"
 
 #if !HAVE_GMTIME_R && !defined(gmtime_r)
-static inline struct tm *gmtime_r(const time_t* clock, struct tm *result)
+static inline struct tm *ff_gmtime_r(const time_t* clock, struct tm *result)
 {
     struct tm *ptr = gmtime(clock);
     if (!ptr)
@@ -31,10 +31,11 @@ static inline struct tm *gmtime_r(const time_t* clock, struct tm *result)
     *result = *ptr;
     return result;
 }
+#define gmtime_r ff_gmtime_r
 #endif
 
 #if !HAVE_LOCALTIME_R && !defined(localtime_r)
-static inline struct tm *localtime_r(const time_t* clock, struct tm *result)
+static inline struct tm *ff_localtime_r(const time_t* clock, struct tm *result)
 {
     struct tm *ptr = localtime(clock);
     if (!ptr)
@@ -42,6 +43,7 @@ static inline struct tm *localtime_r(const time_t* clock, struct tm *result)
     *result = *ptr;
     return result;
 }
+#define localtime_r ff_localtime_r
 #endif
 
 #endif /* AVUTIL_TIME_INTERNAL_H */
