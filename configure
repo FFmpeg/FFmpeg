@@ -4543,9 +4543,7 @@ check_func  gethrtime
 check_func  getopt
 check_func  getrusage
 check_func  gettimeofday
-check_func  gmtime_r
 check_func  isatty
-check_func  localtime_r
 check_func  mkstemp
 check_func  mmap
 check_func  mprotect
@@ -4561,6 +4559,8 @@ check_func  usleep
 check_func_headers io.h setmode
 check_func_headers mach/mach_time.h mach_absolute_time
 check_func_headers stdlib.h getenv
+check_func_headers time.h gmtime_r
+check_func_headers time.h localtime_r
 
 check_func_headers windows.h GetProcessAffinityMask
 check_func_headers windows.h GetProcessTimes
