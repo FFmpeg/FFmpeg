@@ -1203,6 +1203,11 @@ static int dash_init(AVFormatContext *s)
                        "Override -init_seg_name and/or -media_seg_name and/or "
                        "-single_file_name to end with the extension .webm\n");
             }
+            if (c->streaming) {
+                // Streaming not supported as matroskaenc buffers internally before writing the output
+                av_log(s, AV_LOG_WARNING, "One or more streams in WebM output format. Streaming option will be ignored\n");
+                c->streaming = 0;
+            }
         }
 
         ctx->oformat = av_guess_format(os->format_name, NULL, NULL);
