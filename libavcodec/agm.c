@@ -1178,6 +1178,9 @@ static int decode_frame(AVCodecContext *avctx, void *data,
             av_log(avctx, AV_LOG_ERROR, "Missing reference frame.\n");
             return AVERROR_INVALIDDATA;
         }
+        if (s->prev_frame-> width != frame->width ||
+            s->prev_frame->height != frame->height)
+            return AVERROR_INVALIDDATA;
 
         if (!(s->flags & 2)) {
             ret = av_frame_copy(frame, s->prev_frame);
