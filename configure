@@ -3076,7 +3076,7 @@ vc1_parser_select="vc1dsp"
 
 # bitstream_filters
 aac_adtstoasc_bsf_select="adts_header"
-av1_frame_split_select="cbs_av1"
+av1_frame_split_bsf_select="cbs_av1"
 av1_metadata_bsf_select="cbs_av1"
 eac3_core_bsf_select="ac3_parser"
 filter_units_bsf_select="cbs"
