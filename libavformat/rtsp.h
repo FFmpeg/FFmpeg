@@ -399,6 +399,7 @@ typedef struct RTSPState {
 
     char default_lang[4];
     int buffer_size;
+    int pkt_size;
 
     const URLProtocol **protocols;
 } RTSPState;
