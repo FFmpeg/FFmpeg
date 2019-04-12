@@ -23,6 +23,7 @@ version <next>:
 - agm decoder
 - KUX demuxer
 - AV1 frame split bitstream filter
+- lscr decoder
 
 
 version 4.1:

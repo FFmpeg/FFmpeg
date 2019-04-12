@@ -455,6 +455,7 @@ enum AVCodecID {
     AV_CODEC_ID_HYMT,
     AV_CODEC_ID_ARBC,
     AV_CODEC_ID_AGM,
+    AV_CODEC_ID_LSCR,
 
     /* various PCM "codecs" */
     AV_CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
