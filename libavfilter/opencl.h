@@ -73,6 +73,44 @@ typedef struct OpenCLFilterContext {
             goto fail;                                         \
         }                                                      \
     } while(0)
+/**
+  * release an OpenCL Kernel
+  */
+#define CL_RELEASE_KERNEL(k)                                  \
+do {                                                          \
+    if (k) {                                                  \
+        cle = clReleaseKernel(k);                             \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL kernel: %d.\n", cle);              \
+    }                                                         \
+} while(0)
+
+/**
+  * release an OpenCL Memory Object
+  */
+#define CL_RELEASE_MEMORY(m)                                  \
+do {                                                          \
+    if (m) {                                                  \
+        cle = clReleaseMemObject(m);                          \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL memory: %d.\n", cle);              \
+    }                                                         \
+} while(0)
+
+/**
+  * release an OpenCL Command Queue
+  */
+#define CL_RELEASE_QUEUE(q)                                   \
+do {                                                          \
+    if (q) {                                                  \
+        cle = clReleaseCommandQueue(q);                       \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL command queue: %d.\n", cle);       \
+    }                                                         \
+} while(0)
 
 /**
  * Return that all inputs and outputs support only AV_PIX_FMT_OPENCL.
