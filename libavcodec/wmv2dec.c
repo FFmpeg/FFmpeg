@@ -230,6 +230,9 @@ int ff_wmv2_decode_secondary_picture_header(MpegEncContext *s)
             s->rl_chroma_table_index = s->rl_table_index;
         }
 
+        if (get_bits_left(&s->gb) < 2)
+            return AVERROR_INVALIDDATA;
+
         s->dc_table_index   = get_bits1(&s->gb);
         s->mv_table_index   = get_bits1(&s->gb);
 
