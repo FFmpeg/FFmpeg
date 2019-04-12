@@ -25,17 +25,6 @@ Audible Format 2, 3, and 4 demuxer.
 
 This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
 
-@section applehttp
-
-Apple HTTP Live Streaming demuxer.
-
-This demuxer presents all AVStreams from all variant streams.
-The id field is set to the bitrate variant index number. By setting
-the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
-the caller can decide which variant streams to actually receive.
-The total bitrate of the variant that the stream belongs to is
-available in a metadata key named "variant_bitrate".
-
 @section apng
 
 Animated Portable Network Graphics demuxer.
@@ -319,6 +308,15 @@ infinitely.
 @section hls
 
 HLS demuxer
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
 
 It accepts the following options:
 

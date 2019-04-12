@@ -2318,14 +2318,14 @@ static const AVOption hls_options[] = {
 };
 
 static const AVClass hls_class = {
-    .class_name = "hls,applehttp",
+    .class_name = "hls demuxer",
     .item_name  = av_default_item_name,
     .option     = hls_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVInputFormat ff_hls_demuxer = {
-    .name           = "hls,applehttp",
+    .name           = "hls",
     .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming"),
     .priv_class     = &hls_class,
     .priv_data_size = sizeof(HLSContext),
