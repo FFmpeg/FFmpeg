@@ -282,6 +282,7 @@ extern AVFilter ff_vf_mix;
 extern AVFilter ff_vf_mpdecimate;
 extern AVFilter ff_vf_negate;
 extern AVFilter ff_vf_nlmeans;
+extern AVFilter ff_vf_nlmeans_opencl;
 extern AVFilter ff_vf_nnedi;
 extern AVFilter ff_vf_noformat;
 extern AVFilter ff_vf_noise;

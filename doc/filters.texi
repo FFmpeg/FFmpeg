@@ -19350,6 +19350,10 @@ Make every semi-green pixel in the input transparent with some slight blending:
 @end example
 @end itemize
 
+@section nlmeans_opencl
+
+Non-local Means denoise filter through OpenCL, this filter accepts same options as @ref{nlmeans}.
+
 @section overlay_opencl
 
 Overlay one video on top of another.
