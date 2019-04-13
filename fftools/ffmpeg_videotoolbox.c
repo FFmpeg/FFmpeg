@@ -51,10 +51,12 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
     case kCVPixelFormatType_422YpCbCr8:       vt->tmp_frame->format = AV_PIX_FMT_UYVY422; break;
     case kCVPixelFormatType_32BGRA:           vt->tmp_frame->format = AV_PIX_FMT_BGRA; break;
 #ifdef kCFCoreFoundationVersionNumber10_7
-    case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange: vt->tmp_frame->format = AV_PIX_FMT_NV12; break;
+    case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange:
+    case kCVPixelFormatType_420YpCbCr8BiPlanarFullRange: vt->tmp_frame->format = AV_PIX_FMT_NV12; break;
 #endif
 #if HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
-    case kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange: vt->tmp_frame->format = AV_PIX_FMT_P010; break;
+    case kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange:
+    case kCVPixelFormatType_420YpCbCr10BiPlanarFullRange: vt->tmp_frame->format = AV_PIX_FMT_P010; break;
 #endif
     default:
         av_log(NULL, AV_LOG_ERROR,
