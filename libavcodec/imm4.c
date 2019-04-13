@@ -523,6 +523,13 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void decode_flush(AVCodecContext *avctx)
+{
+    IMM4Context *s = avctx->priv_data;
+
+    av_frame_unref(s->prev_frame);
+}
+
 static av_cold int decode_close(AVCodecContext *avctx)
 {
     IMM4Context *s = avctx->priv_data;
@@ -543,6 +550,7 @@ AVCodec ff_imm4_decoder = {
     .init             = decode_init,
     .close            = decode_close,
     .decode           = decode_frame,
+    .flush            = decode_flush,
     .capabilities     = AV_CODEC_CAP_DR1,
     .caps_internal    = FF_CODEC_CAP_INIT_THREADSAFE |
                         FF_CODEC_CAP_INIT_CLEANUP,
