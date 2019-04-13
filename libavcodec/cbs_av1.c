@@ -574,6 +574,17 @@ static int cbs_av1_get_relative_dist(const AV1RawSequenceHeader *seq,
     return diff;
 }
 
+static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
+{
+    GetBitContext tmp = *gbc;
+    size_t size = 0;
+    for (int i = 0; get_bits_left(&tmp) >= 8; i++) {
+        if (get_bits(&tmp, 8))
+            size = i;
+    }
+    return size;
+}
+
 
 #define HEADER(name) do { \
         ff_cbs_trace_header(ctx, name); \

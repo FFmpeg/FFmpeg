@@ -1674,15 +1674,7 @@ static int FUNC(metadata_itut_t35)(CodedBitstreamContext *ctx, RWContext *rw,
 #ifdef READ
     // The payload runs up to the start of the trailing bits, but there might
     // be arbitrarily many trailing zeroes so we need to read through twice.
-    {
-        GetBitContext tmp = *rw;
-        current->payload_size = 0;
-        for (i = 0; get_bits_left(rw) >= 8; i++) {
-            if (get_bits(rw, 8))
-                current->payload_size = i;
-        }
-        *rw = tmp;
-    }
+    current->payload_size = cbs_av1_get_payload_bytes_left(rw);
 
     current->payload_ref = av_buffer_alloc(current->payload_size);
     if (!current->payload_ref)
