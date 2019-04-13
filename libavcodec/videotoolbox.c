@@ -26,6 +26,7 @@
 #include "vt_internal.h"
 #include "libavutil/avutil.h"
 #include "libavutil/hwcontext.h"
+#include "libavutil/pixdesc.h"
 #include "bytestream.h"
 #include "decode.h"
 #include "h264dec.h"
@@ -1020,6 +1021,19 @@ static int videotoolbox_uninit(AVCodecContext *avctx)
     return 0;
 }
 
+static enum AVPixelFormat videotoolbox_best_pixel_format(AVCodecContext *avctx) {
+    const AVPixFmtDescriptor *descriptor = av_pix_fmt_desc_get(avctx->pix_fmt);
+    if (!descriptor)
+        return AV_PIX_FMT_NV12; // same as av_videotoolbox_alloc_context()
+
+    int depth = descriptor->comp[0].depth;
+    if (depth > 8) {
+        return AV_PIX_FMT_P010;
+    }
+
+    return AV_PIX_FMT_NV12;
+}
+
 static int videotoolbox_common_init(AVCodecContext *avctx)
 {
     VTContext *vtctx = avctx->internal->hwaccel_priv_data;
@@ -1053,7 +1067,7 @@ static int videotoolbox_common_init(AVCodecContext *avctx)
 
         hw_frames = (AVHWFramesContext*)avctx->hw_frames_ctx->data;
         hw_frames->format = AV_PIX_FMT_VIDEOTOOLBOX;
-        hw_frames->sw_format = AV_PIX_FMT_NV12; // same as av_videotoolbox_alloc_context()
+        hw_frames->sw_format = videotoolbox_best_pixel_format(avctx);
         hw_frames->width = avctx->width;
         hw_frames->height = avctx->height;
 
@@ -1097,7 +1111,7 @@ static int videotoolbox_frame_params(AVCodecContext *avctx,
     frames_ctx->format            = AV_PIX_FMT_VIDEOTOOLBOX;
     frames_ctx->width             = avctx->coded_width;
     frames_ctx->height            = avctx->coded_height;
-    frames_ctx->sw_format         = AV_PIX_FMT_NV12;
+    frames_ctx->sw_format         = videotoolbox_best_pixel_format(avctx);
 
     return 0;
 }
@@ -1194,16 +1208,26 @@ const AVHWAccel ff_mpeg4_videotoolbox_hwaccel = {
     .priv_data_size = sizeof(VTContext),
 };
 
-AVVideotoolboxContext *av_videotoolbox_alloc_context(void)
+static AVVideotoolboxContext *av_videotoolbox_alloc_context_with_pix_fmt(enum AVPixelFormat pix_fmt)
 {
     AVVideotoolboxContext *ret = av_mallocz(sizeof(*ret));
 
     if (ret) {
         ret->output_callback = videotoolbox_decoder_callback;
-        ret->cv_pix_fmt_type = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+
+        OSType cv_pix_fmt_type = av_map_videotoolbox_format_from_pixfmt(pix_fmt);
+        if (cv_pix_fmt_type == 0) {
+            cv_pix_fmt_type = kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+        }
+        ret->cv_pix_fmt_type = cv_pix_fmt_type;
     }
 
     return ret;
+}
+
+AVVideotoolboxContext *av_videotoolbox_alloc_context(void)
+{
+    return av_videotoolbox_alloc_context_with_pix_fmt(AV_PIX_FMT_NONE);
 }
 
 int av_videotoolbox_default_init(AVCodecContext *avctx)
@@ -1213,7 +1237,7 @@ int av_videotoolbox_default_init(AVCodecContext *avctx)
 
 int av_videotoolbox_default_init2(AVCodecContext *avctx, AVVideotoolboxContext *vtctx)
 {
-    avctx->hwaccel_context = vtctx ?: av_videotoolbox_alloc_context();
+    avctx->hwaccel_context = vtctx ?: av_videotoolbox_alloc_context_with_pix_fmt(videotoolbox_best_pixel_format(avctx));
     if (!avctx->hwaccel_context)
         return AVERROR(ENOMEM);
     return videotoolbox_start(avctx);

@@ -53,6 +53,9 @@ static int videotoolbox_retrieve_data(AVCodecContext *s, AVFrame *frame)
 #ifdef kCFCoreFoundationVersionNumber10_7
     case kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange: vt->tmp_frame->format = AV_PIX_FMT_NV12; break;
 #endif
+#if HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
+    case kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange: vt->tmp_frame->format = AV_PIX_FMT_P010; break;
+#endif
     default:
         av_log(NULL, AV_LOG_ERROR,
                "%s: Unsupported pixel format: %s\n",
