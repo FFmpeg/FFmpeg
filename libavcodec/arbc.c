@@ -121,7 +121,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     bytestream2_skip(&s->gb, 8);
     nb_segments = bytestream2_get_le16(&s->gb);
     if (nb_segments == 0)
-        keyframe = 0;
+        return avpkt->size;
 
     if (7 * nb_segments > bytestream2_get_bytes_left(&s->gb))
         return AVERROR_INVALIDDATA;
