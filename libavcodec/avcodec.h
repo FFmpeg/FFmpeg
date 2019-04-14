@@ -860,6 +860,11 @@ typedef struct RcOverride{
  */
 #define AV_CODEC_FLAG_QPEL            (1 <<  4)
 /**
+ * Don't output frames whose parameters differ from first
+ * decoded frame in stream.
+ */
+#define AV_CODEC_FLAG_DROPCHANGED     (1 <<  5)
+/**
  * Use internal 2pass ratecontrol in first pass mode.
  */
 #define AV_CODEC_FLAG_PASS1           (1 <<  9)
@@ -4918,6 +4923,9 @@ int avcodec_send_packet(AVCodecContext *avctx, const AVPacket *avpkt);
  *      AVERROR_EOF:       the decoder has been fully flushed, and there will be
  *                         no more output frames
  *      AVERROR(EINVAL):   codec not opened, or it is an encoder
+ *      AVERROR_INPUT_CHANGED:   current decoded frame has changed parameters
+ *                               with respect to first decoded frame. Applicable
+ *                               when flag AV_CODEC_FLAG_DROPCHANGED is set.
  *      other negative values: legitimate decoding errors
  */
 int avcodec_receive_frame(AVCodecContext *avctx, AVFrame *frame);

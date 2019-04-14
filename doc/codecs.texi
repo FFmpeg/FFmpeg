@@ -55,6 +55,8 @@ Do not draw edges.
 @item psnr
 Set error[?] variables during encoding.
 @item truncated
+@item drop_changed
+Don't output frames whose parameters differ from first decoded frame in stream.
 
 @item ildct
 Use interlaced DCT.

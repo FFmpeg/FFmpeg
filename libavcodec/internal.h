@@ -218,6 +218,14 @@ typedef struct AVCodecInternal {
 
     /* to prevent infinite loop on errors when draining */
     int nb_draining_errors;
+
+    /* used when avctx flag AV_CODEC_FLAG_DROPCHANGED is set */
+    int changed_frames_dropped;
+    int initial_format;
+    int initial_width, initial_height;
+    int initial_sample_rate;
+    int initial_channels;
+    uint64_t initial_channel_layout;
 } AVCodecInternal;
 
 struct AVCodecDefault {
