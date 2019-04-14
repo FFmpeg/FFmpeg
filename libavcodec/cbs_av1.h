@@ -325,7 +325,20 @@ typedef struct AV1RawMetadataHDRMDCV {
 
 typedef struct AV1RawMetadataScalability {
     uint8_t scalability_mode_idc;
-    // TODO: more stuff.
+    uint8_t spatial_layers_cnt_minus_1;
+    uint8_t spatial_layer_dimensions_present_flag;
+    uint8_t spatial_layer_description_present_flag;
+    uint8_t temporal_group_description_present_flag;
+    uint8_t scalability_structure_reserved_3bits;
+    uint16_t spatial_layer_max_width[4];
+    uint16_t spatial_layer_max_height[4];
+    uint8_t spatial_layer_ref_id[4];
+    uint8_t temporal_group_size;
+    uint8_t temporal_group_temporal_id[255];
+    uint8_t temporal_group_temporal_switching_up_point_flag[255];
+    uint8_t temporal_group_spatial_switching_up_point_flag[255];
+    uint8_t temporal_group_ref_cnt[255];
+    uint8_t temporal_group_ref_pic_diff[255][7];
 } AV1RawMetadataScalability;
 
 typedef struct AV1RawMetadataITUTT35 {

@@ -1653,12 +1653,64 @@ static int FUNC(metadata_hdr_mdcv)(CodedBitstreamContext *ctx, RWContext *rw,
     return 0;
 }
 
+static int FUNC(scalability_structure)(CodedBitstreamContext *ctx, RWContext *rw,
+                                       AV1RawMetadataScalability *current)
+{
+    CodedBitstreamAV1Context *priv = ctx->priv_data;
+    const AV1RawSequenceHeader *seq;
+    int err, i, j;
+
+    if (!priv->sequence_header) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "No sequence header available: "
+               "unable to parse scalability metadata.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    seq = priv->sequence_header;
+
+    fb(2, spatial_layers_cnt_minus_1);
+    flag(spatial_layer_dimensions_present_flag);
+    flag(spatial_layer_description_present_flag);
+    flag(temporal_group_description_present_flag);
+    fc(3, scalability_structure_reserved_3bits, 0, 0);
+    if (current->spatial_layer_dimensions_present_flag) {
+        for (i = 0; i <= current->spatial_layers_cnt_minus_1; i++) {
+            fcs(16, spatial_layer_max_width[i],
+                0, seq->max_frame_width_minus_1 + 1, 1, i);
+            fcs(16, spatial_layer_max_height[i],
+                0, seq->max_frame_height_minus_1 + 1, 1, i);
+        }
+    }
+    if (current->spatial_layer_description_present_flag) {
+        for (i = 0; i <= current->spatial_layers_cnt_minus_1; i++)
+            fbs(8, spatial_layer_ref_id[i], 1, i);
+    }
+    if (current->temporal_group_description_present_flag) {
+        fb(8, temporal_group_size);
+        for (i = 0; i < current->temporal_group_size; i++) {
+            fbs(3, temporal_group_temporal_id[i], 1, i);
+            flags(temporal_group_temporal_switching_up_point_flag[i], 1, i);
+            flags(temporal_group_spatial_switching_up_point_flag[i], 1, i);
+            fbs(3, temporal_group_ref_cnt[i], 1, i);
+            for (j = 0; j < current->temporal_group_ref_cnt[i]; j++) {
+                fbs(8, temporal_group_ref_pic_diff[i][j], 2, i, j);
+            }
+        }
+    }
+
+    return 0;
+}
+
 static int FUNC(metadata_scalability)(CodedBitstreamContext *ctx, RWContext *rw,
                                       AV1RawMetadataScalability *current)
 {
-    // TODO: scalability metadata.
+    int err;
 
-    return AVERROR_PATCHWELCOME;
+    fb(8, scalability_mode_idc);
+
+    if (current->scalability_mode_idc == AV1_SCALABILITY_SS)
+        CHECK(FUNC(scalability_structure)(ctx, rw, current));
+
+    return 0;
 }
 
 static int FUNC(metadata_itut_t35)(CodedBitstreamContext *ctx, RWContext *rw,
