@@ -38,15 +38,16 @@ typedef struct ARBCContext {
     AVFrame *prev_frame;
 } ARBCContext;
 
-static void fill_tile4(AVCodecContext *avctx, int color, AVFrame *frame)
+static int fill_tile4(AVCodecContext *avctx, int color, AVFrame *frame)
 {
     ARBCContext *s = avctx->priv_data;
     GetByteContext *gb = &s->gb;
     int nb_tiles = bytestream2_get_le16(gb);
     int h = avctx->height - 1;
+    int pixels_overwritten = 0;
 
     if ((avctx->width / 4 + 1) * (avctx->height / 4 + 1) < nb_tiles)
-        return;
+        return 0;
 
     for (int i = 0; i < nb_tiles; i++) {
         int y = bytestream2_get_byte(gb);
@@ -63,14 +64,16 @@ static void fill_tile4(AVCodecContext *avctx, int color, AVFrame *frame)
                         continue;
                     }
                     AV_WB24(&frame->data[0][frame->linesize[0] * (h - j) + 3 * k], color);
+                    pixels_overwritten ++;
                 }
                 mask = mask << 1;
             }
         }
     }
+    return pixels_overwritten;
 }
 
-static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
+static int fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
                        int color, AVFrame *frame)
 {
     ARBCContext *s = avctx->priv_data;
@@ -79,9 +82,10 @@ static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
     const int step_w = tile_width / 4;
     int nb_tiles = bytestream2_get_le16(gb);
     int h = avctx->height - 1;
+    int pixels_overwritten = 0;
 
     if ((avctx->width / tile_width + 1) * (avctx->height / tile_height + 1) < nb_tiles)
-        return;
+        return 0;
 
     for (int i = 0; i < nb_tiles; i++) {
         int y = bytestream2_get_byte(gb);
@@ -100,11 +104,13 @@ static void fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
                             AV_WB24(&frame->data[0][frame->linesize[0] * (h - (j + m)) + 3 * (k + n)], color);
                         }
                     }
+                    pixels_overwritten += FFMIN(step_h, avctx->height - j) * FFMIN(step_w, avctx->width - k);
                 }
                 mask = mask << 1;
             }
         }
     }
+    return pixels_overwritten;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
@@ -112,7 +118,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 {
     ARBCContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    int ret, nb_segments, keyframe = 1;
+    int ret, nb_segments;
+    int prev_pixels = avctx->width * avctx->height;
 
     if (avpkt->size < 10)
         return AVERROR_INVALIDDATA;
@@ -151,23 +158,23 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         resolution_flag = bytestream2_get_byte(&s->gb);
 
         if (resolution_flag & 0x10)
-            fill_tileX(avctx, 1024, 1024, fill, frame);
+            prev_pixels -= fill_tileX(avctx, 1024, 1024, fill, frame);
         if (resolution_flag & 0x08)
-            fill_tileX(avctx, 256, 256, fill, frame);
+            prev_pixels -= fill_tileX(avctx, 256, 256, fill, frame);
         if (resolution_flag & 0x04)
-            fill_tileX(avctx, 64, 64, fill, frame);
+            prev_pixels -= fill_tileX(avctx, 64, 64, fill, frame);
         if (resolution_flag & 0x02)
-            fill_tileX(avctx, 16, 16, fill, frame);
+            prev_pixels -= fill_tileX(avctx, 16, 16, fill, frame);
         if (resolution_flag & 0x01)
-            fill_tile4(avctx, fill, frame);
+            prev_pixels -= fill_tile4(avctx, fill, frame);
     }
 
     av_frame_unref(s->prev_frame);
     if ((ret = av_frame_ref(s->prev_frame, frame)) < 0)
         return ret;
 
-    frame->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
-    frame->key_frame = keyframe;
+    frame->pict_type = prev_pixels <= 0 ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    frame->key_frame = prev_pixels <= 0;
     *got_frame = 1;
 
     return avpkt->size;
