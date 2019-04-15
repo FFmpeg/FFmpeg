@@ -1744,6 +1744,9 @@ redirect:
         char httpname[1024];
         char sessioncookie[17];
         char headers[1024];
+        AVDictionary *options = NULL;
+
+        av_dict_set_int(&options, "timeout", rt->stimeout, 0);
 
         ff_url_join(httpname, sizeof(httpname), https_tunnel ? "https" : "http", auth, host, port, "%s", path);
         snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
@@ -1774,7 +1777,8 @@ redirect:
         }
 
         /* complete the connection */
-        if (ffurl_connect(rt->rtsp_hd, NULL)) {
+        if (ffurl_connect(rt->rtsp_hd, &options)) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1818,10 +1822,12 @@ redirect:
         ff_http_init_auth_state(rt->rtsp_hd_out, rt->rtsp_hd);
 
         /* complete the connection */
-        if (ffurl_connect(rt->rtsp_hd_out, NULL)) {
+        if (ffurl_connect(rt->rtsp_hd_out, &options)) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
+        av_dict_free(&options);
     } else {
         int ret;
         /* open the tcp connection */
