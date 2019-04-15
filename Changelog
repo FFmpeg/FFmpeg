@@ -24,6 +24,7 @@ version <next>:
 - KUX demuxer
 - AV1 frame split bitstream filter
 - lscr decoder
+- lagfun filter
 
 
 version 4.1:

@@ -11356,6 +11356,21 @@ kerndeint=map=1
 @end example
 @end itemize
 
+@section lagfun
+
+Slowly update darker pixels.
+
+This filter makes short flashes of light appear longer.
+This filter accepts the following options:
+
+@table @option
+@item decay
+Set factor for decaying. Default is .95. Allowed range is from 0 to 1.
+
+@item planes
+Set which planes to filter. Default is all. Allowed range is from 0 to 15.
+@end table
+
 @section lenscorrection
 
 Correct radial lens distortion
