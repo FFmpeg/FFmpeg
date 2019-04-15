@@ -1986,8 +1986,11 @@ static int FUNC(sei_time_code)(CodedBitstreamContext *ctx, RWContext *rw,
 
             us(5, time_offset_length[i], 0, 31, 1, i);
             if (current->time_offset_length[i] > 0)
-                us(current->time_offset_length[i], time_offset_value[i],
-                   0, MAX_UINT_BITS(current->time_offset_length[i]), 1, i);
+                is(current->time_offset_length[i], time_offset_value[i],
+                   MIN_INT_BITS(current->time_offset_length[i]),
+                   MAX_INT_BITS(current->time_offset_length[i]), 1, i);
+            else
+                infer(time_offset_value[i], 0);
         }
     }
 

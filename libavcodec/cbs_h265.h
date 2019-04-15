@@ -659,7 +659,7 @@ typedef struct H265RawSEITimeCode {
     uint8_t  minutes_flag[3];
     uint8_t  hours_flag[3];
     uint8_t  time_offset_length[3];
-    uint32_t time_offset_value[3];
+    int32_t  time_offset_value[3];
 } H265RawSEITimeCode;
 
 typedef struct H265RawSEIMasteringDisplayColourVolume {
