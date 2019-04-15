@@ -1161,6 +1161,34 @@ static int parse_manifest_adaptationset(AVFormatContext *s, const char *url,
     return 0;
 }
 
+static int parse_programinformation(AVFormatContext *s, xmlNodePtr node)
+{
+    xmlChar *val = NULL;
+
+    node = xmlFirstElementChild(node);
+    while (node) {
+        if (!av_strcasecmp(node->name, "Title")) {
+            val = xmlNodeGetContent(node);
+            if (val) {
+                av_dict_set(&s->metadata, "Title", val, 0);
+            }
+        } else if (!av_strcasecmp(node->name, "Source")) {
+            val = xmlNodeGetContent(node);
+            if (val) {
+                av_dict_set(&s->metadata, "Source", val, 0);
+            }
+        } else if (!av_strcasecmp(node->name, "Copyright")) {
+            val = xmlNodeGetContent(node);
+            if (val) {
+                av_dict_set(&s->metadata, "Copyright", val, 0);
+            }
+        }
+        node = xmlNextElementSibling(node);
+        xmlFree(val);
+    }
+    return 0;
+}
+
 static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
 {
     DASHContext *c = s->priv_data;
@@ -1310,6 +1338,8 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
                     if (c->period_start > 0)
                         c->media_presentation_duration = c->period_duration;
                 }
+            } else if (!av_strcasecmp(node->name, "ProgramInformation")) {
+                parse_programinformation(s, node);
             }
             node = xmlNextElementSibling(node);
         }
