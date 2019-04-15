@@ -247,6 +247,11 @@ static void init_band_stepsize(AVCodecContext *avctx,
         }
     }
 
+    if (band->f_stepsize > (INT_MAX >> 15)) {
+        band->f_stepsize = 0;
+        av_log(avctx, AV_LOG_ERROR, "stepsize out of range\n");
+    }
+
     band->i_stepsize = band->f_stepsize * (1 << 15);
 
     /* FIXME: In OpenJPEG code stepsize = stepsize * 0.5. Why?
