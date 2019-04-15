@@ -81,9 +81,27 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
                           const int *subscripts, uint32_t value,
                           uint32_t range_min, uint32_t range_max);
 
-// The largest value representable in N bits, suitable for use as
+int ff_cbs_read_signed(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                       int width, const char *name,
+                       const int *subscripts, int32_t *write_to,
+                       int32_t range_min, int32_t range_max);
+
+int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
+                        int width, const char *name,
+                        const int *subscripts, int32_t value,
+                        int32_t range_min, int32_t range_max);
+
+// The largest unsigned value representable in N bits, suitable for use as
 // range_max in the above functions.
 #define MAX_UINT_BITS(length) ((UINT64_C(1) << (length)) - 1)
+
+// The largest signed value representable in N bits, suitable for use as
+// range_max in the above functions.
+#define MAX_INT_BITS(length) ((INT64_C(1) << ((length) - 1)) - 1)
+
+// The smallest signed value representable in N bits, suitable for use as
+// range_min in the above functions.
+#define MIN_INT_BITS(length) (-(INT64_C(1) << ((length) - 1)))
 
 
 extern const CodedBitstreamType ff_cbs_type_av1;

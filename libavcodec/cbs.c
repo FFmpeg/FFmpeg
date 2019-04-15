@@ -504,6 +504,85 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
     return 0;
 }
 
+int ff_cbs_read_signed(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                       int width, const char *name,
+                       const int *subscripts, int32_t *write_to,
+                       int32_t range_min, int32_t range_max)
+{
+    int32_t value;
+    int position;
+
+    av_assert0(width > 0 && width <= 32);
+
+    if (get_bits_left(gbc) < width) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid value at "
+               "%s: bitstream ended.\n", name);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (ctx->trace_enable)
+        position = get_bits_count(gbc);
+
+    value = get_sbits_long(gbc, width);
+
+    if (ctx->trace_enable) {
+        char bits[33];
+        int i;
+        for (i = 0; i < width; i++)
+            bits[i] = value & (1U << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
+
+        ff_cbs_trace_syntax_element(ctx, position, name, subscripts,
+                                    bits, value);
+    }
+
+    if (value < range_min || value > range_max) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
+               "%"PRId32", but must be in [%"PRId32",%"PRId32"].\n",
+               name, value, range_min, range_max);
+        return AVERROR_INVALIDDATA;
+    }
+
+    *write_to = value;
+    return 0;
+}
+
+int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
+                        int width, const char *name,
+                        const int *subscripts, int32_t value,
+                        int32_t range_min, int32_t range_max)
+{
+    av_assert0(width > 0 && width <= 32);
+
+    if (value < range_min || value > range_max) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
+               "%"PRId32", but must be in [%"PRId32",%"PRId32"].\n",
+               name, value, range_min, range_max);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (put_bits_left(pbc) < width)
+        return AVERROR(ENOSPC);
+
+    if (ctx->trace_enable) {
+        char bits[33];
+        int i;
+        for (i = 0; i < width; i++)
+            bits[i] = value & (1U << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
+
+        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
+                                    name, subscripts, bits, value);
+    }
+
+    if (width < 32)
+        put_sbits(pbc, width, value);
+    else
+        put_bits32(pbc, value);
+
+    return 0;
+}
+
 
 int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
                               CodedBitstreamUnit *unit,
