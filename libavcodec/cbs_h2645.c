@@ -255,6 +255,8 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define flag(name) u(1, name, 0, 1)
 #define ue(name, range_min, range_max) \
         xue(name, current->name, range_min, range_max, 0)
+#define i(width, name, range_min, range_max) \
+        xi(width, name, current->name, range_min, range_max, 0)
 #define se(name, range_min, range_max) \
         xse(name, current->name, range_min, range_max, 0)
 
@@ -264,6 +266,8 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
         xu(1, name, current->name, 0, 1, subs, __VA_ARGS__)
 #define ues(name, range_min, range_max, subs, ...) \
         xue(name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define is(width, name, range_min, range_max, subs, ...) \
+        xi(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
 #define ses(name, range_min, range_max, subs, ...) \
         xse(name, current->name, range_min, range_max, subs, __VA_ARGS__)
 
@@ -287,6 +291,13 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define xue(name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = range_min; \
         CHECK(cbs_read_ue_golomb(ctx, rw, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), \
+                                 &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+#define xi(width, name, var, range_min, range_max, subs, ...) do { \
+        int32_t value = range_min; \
+        CHECK(ff_cbs_read_signed(ctx, rw, width, #name, \
                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \
         var = value; \
@@ -338,6 +349,7 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef READWRITE
 #undef RWContext
 #undef xu
+#undef xi
 #undef xue
 #undef xse
 #undef infer
@@ -359,6 +371,12 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #define xue(name, var, range_min, range_max, subs, ...) do { \
         uint32_t value = var; \
         CHECK(cbs_write_ue_golomb(ctx, rw, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), \
+                                  value, range_min, range_max)); \
+    } while (0)
+#define xi(width, name, var, range_min, range_max, subs, ...) do { \
+        int32_t value = var; \
+        CHECK(ff_cbs_write_signed(ctx, rw, width, #name, \
                                   SUBSCRIPTS(subs, __VA_ARGS__), \
                                   value, range_min, range_max)); \
     } while (0)
@@ -402,9 +420,11 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef READWRITE
 #undef RWContext
 #undef xu
+#undef xi
 #undef xue
 #undef xse
 #undef u
+#undef i
 #undef flag
 #undef ue
 #undef se
