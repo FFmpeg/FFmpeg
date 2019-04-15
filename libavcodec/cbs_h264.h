@@ -253,7 +253,7 @@ typedef struct H264RawSEIPicTimestamp {
     uint8_t minutes_value;
     uint8_t hours_flag;
     uint8_t hours_value;
-    uint32_t time_offset;
+    int32_t time_offset;
 } H264RawSEIPicTimestamp;
 
 typedef struct H264RawSEIPicTiming {

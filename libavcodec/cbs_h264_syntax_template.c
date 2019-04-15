@@ -592,8 +592,9 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
         time_offset_length = 24;
 
     if (time_offset_length > 0)
-        u(time_offset_length, time_offset,
-          0, MAX_UINT_BITS(time_offset_length));
+        i(time_offset_length, time_offset,
+          MIN_INT_BITS(time_offset_length),
+          MAX_INT_BITS(time_offset_length));
     else
         infer(time_offset, 0);
 
