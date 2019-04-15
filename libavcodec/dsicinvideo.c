@@ -266,8 +266,11 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
                              cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
         break;
     case 37:
-        cin_decode_huffman(buf, bitmap_frame_size,
+        res = cin_decode_huffman(buf, bitmap_frame_size,
                            cin->bitmap_table[CIN_CUR_BMP], cin->bitmap_size);
+
+        if (cin->bitmap_size - avctx->discard_damaged_percentage*cin->bitmap_size/100 > res)
+            return AVERROR_INVALIDDATA;
         break;
     case 38:
         res = cin_decode_lzss(buf, bitmap_frame_size,
