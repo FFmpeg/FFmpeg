@@ -207,62 +207,6 @@ static int cbs_av1_write_leb128(CodedBitstreamContext *ctx, PutBitContext *pbc,
     return 0;
 }
 
-static int cbs_av1_read_su(CodedBitstreamContext *ctx, GetBitContext *gbc,
-                           int width, const char *name,
-                           const int *subscripts, int32_t *write_to)
-{
-    int position;
-    int32_t value;
-
-    if (ctx->trace_enable)
-        position = get_bits_count(gbc);
-
-    if (get_bits_left(gbc) < width) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid signed value at "
-               "%s: bitstream ended.\n", name);
-        return AVERROR_INVALIDDATA;
-    }
-
-    value = get_sbits(gbc, width);
-
-    if (ctx->trace_enable) {
-        char bits[33];
-        int i;
-        for (i = 0; i < width; i++)
-            bits[i] = value & (1 << (width - i - 1)) ? '1' : '0';
-        bits[i] = 0;
-
-        ff_cbs_trace_syntax_element(ctx, position,
-                                    name, subscripts, bits, value);
-    }
-
-    *write_to = value;
-    return 0;
-}
-
-static int cbs_av1_write_su(CodedBitstreamContext *ctx, PutBitContext *pbc,
-                            int width, const char *name,
-                            const int *subscripts, int32_t value)
-{
-    if (put_bits_left(pbc) < width)
-        return AVERROR(ENOSPC);
-
-    if (ctx->trace_enable) {
-        char bits[33];
-        int i;
-        for (i = 0; i < width; i++)
-            bits[i] = value & (1 << (width - i - 1)) ? '1' : '0';
-        bits[i] = 0;
-
-        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
-                                    name, subscripts, bits, value);
-    }
-
-    put_sbits(pbc, width, value);
-
-    return 0;
-}
-
 static int cbs_av1_read_ns(CodedBitstreamContext *ctx, GetBitContext *gbc,
                            uint32_t n, const char *name,
                            const int *subscripts, uint32_t *write_to)
@@ -639,8 +583,10 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 
 #define xsu(width, name, var, subs, ...) do { \
         int32_t value = 0; \
-        CHECK(cbs_av1_read_su(ctx, rw, width, #name, \
-                              SUBSCRIPTS(subs, __VA_ARGS__), &value)); \
+        CHECK(ff_cbs_read_signed(ctx, rw, width, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), &value, \
+                                 MIN_INT_BITS(width), \
+                                 MAX_INT_BITS(width))); \
         var = value; \
     } while (0)
 
@@ -723,8 +669,10 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
     } while (0)
 
 #define xsu(width, name, var, subs, ...) do { \
-        CHECK(cbs_av1_write_su(ctx, rw, width, #name, \
-                               SUBSCRIPTS(subs, __VA_ARGS__), var)); \
+        CHECK(ff_cbs_write_signed(ctx, rw, width, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), var, \
+                                  MIN_INT_BITS(width), \
+                                  MAX_INT_BITS(width))); \
     } while (0)
 
 #define uvlc(name, range_min, range_max) do { \
