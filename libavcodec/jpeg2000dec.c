@@ -832,15 +832,21 @@ static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
 static uint8_t get_plt(Jpeg2000DecoderContext *s, int n)
 {
     int i;
+    int v;
 
     av_log(s->avctx, AV_LOG_DEBUG,
             "PLT marker at pos 0x%X\n", bytestream2_tell(&s->g) - 4);
 
+    if (n < 4)
+        return AVERROR_INVALIDDATA;
+
     /*Zplt =*/ bytestream2_get_byte(&s->g);
 
     for (i = 0; i < n - 3; i++) {
-        bytestream2_get_byte(&s->g);
+        v = bytestream2_get_byte(&s->g);
     }
+    if (v & 0x80)
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }
