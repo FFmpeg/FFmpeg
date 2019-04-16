@@ -33,7 +33,7 @@
 // Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  58
 #define LIBAVFORMAT_VERSION_MINOR  27
-#define LIBAVFORMAT_VERSION_MICRO 102
+#define LIBAVFORMAT_VERSION_MICRO 103
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
                                                LIBAVFORMAT_VERSION_MINOR, \
