@@ -863,7 +863,8 @@ static int qsv_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     mfxStatus err;
     int ret = 0;
     /* make a copy if the input is not padded as libmfx requires */
-    AVFrame tmp_frame, *src_frame;
+    AVFrame tmp_frame;
+    const AVFrame *src_frame;
     int realigned = 0;
 
 
