@@ -80,6 +80,7 @@ OBJS-$(CONFIG_ASETRATE_FILTER)               += af_asetrate.o
 OBJS-$(CONFIG_ASETTB_FILTER)                 += settb.o
 OBJS-$(CONFIG_ASHOWINFO_FILTER)              += af_ashowinfo.o
 OBJS-$(CONFIG_ASIDEDATA_FILTER)              += f_sidedata.o
+OBJS-$(CONFIG_ASOFTCLIP_FILTER)              += af_asoftclip.o
 OBJS-$(CONFIG_ASPLIT_FILTER)                 += split.o
 OBJS-$(CONFIG_ASTATS_FILTER)                 += af_astats.o
 OBJS-$(CONFIG_ASTREAMSELECT_FILTER)          += f_streamselect.o framesync.o

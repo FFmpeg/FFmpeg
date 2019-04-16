@@ -2104,6 +2104,33 @@ audio, the data is treated as if all the planes were concatenated.
 A list of Adler-32 checksums for each data plane.
 @end table
 
+@section asoftclip
+Apply audio soft clipping.
+
+Soft clipping is a type of distortion effect where the amplitude of a signal is saturated
+along a smooth curve, rather than the abrupt shape of hard-clipping.
+
+This filter accepts the following options:
+
+@table @option
+@item type
+Set type of soft-clipping.
+
+It accepts the following values:
+@table @option
+@item tanh
+@item atan
+@item cubic
+@item exp
+@item alg
+@item quintic
+@item sin
+@end table
+
+@item param
+Set additional parameter which controls sigmoid function.
+@end table
+
 @anchor{astats}
 @section astats
 

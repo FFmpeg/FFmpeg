@@ -25,6 +25,7 @@ version <next>:
 - AV1 frame split bitstream filter
 - lscr decoder
 - lagfun filter
+- asoftclip filter
 
 
 version 4.1:
