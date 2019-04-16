@@ -6002,6 +6002,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
     }
 
     /* adjust stsd index */
+    if (sc->chunk_count) {
     time_sample = 0;
     for (i = 0; i < sc->stsc_count; i++) {
         int next = time_sample + mov_get_stsc_samples(sc, i);
@@ -6011,6 +6012,7 @@ static int mov_seek_stream(AVFormatContext *s, AVStream *st, int64_t timestamp, 
             break;
         }
         time_sample = next;
+    }
     }
 
     ret = mov_seek_auxiliary_info(s, sc);
