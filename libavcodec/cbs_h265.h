@@ -35,7 +35,6 @@ enum {
 };
 
 typedef struct H265RawNALUnitHeader {
-    uint8_t forbidden_zero_bit;
     uint8_t nal_unit_type;
     uint8_t nuh_layer_id;
     uint8_t nuh_temporal_id_plus1;

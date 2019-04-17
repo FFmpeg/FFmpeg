@@ -33,7 +33,7 @@ static int FUNC(nal_unit_header)(CodedBitstreamContext *ctx, RWContext *rw,
 {
     int err;
 
-    u(1, forbidden_zero_bit, 0, 0);
+    fixed(1, forbidden_zero_bit, 0);
 
     if (expected_nal_unit_type >= 0)
         u(6, nal_unit_type, expected_nal_unit_type,
