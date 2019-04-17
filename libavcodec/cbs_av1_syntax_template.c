@@ -1753,19 +1753,19 @@ static int FUNC(metadata_timecode)(CodedBitstreamContext *ctx, RWContext *rw,
     fb(9, n_frames);
 
     if (current->full_timestamp_flag) {
-        fb(6, seconds_value);
-        fb(6, minutes_value);
-        fb(5, hours_value);
+        fc(6, seconds_value, 0, 59);
+        fc(6, minutes_value, 0, 59);
+        fc(5, hours_value,   0, 23);
     } else {
         flag(seconds_flag);
         if (current->seconds_flag) {
-            fb(6, seconds_value);
+            fc(6, seconds_value, 0, 59);
             flag(minutes_flag);
             if (current->minutes_flag) {
-                fb(6, minutes_value);
+                fc(6, minutes_value, 0, 59);
                 flag(hours_flag);
                 if (current->hours_flag)
-                    fb(5, hours_value);
+                    fc(5, hours_value, 0, 23);
             }
         }
     }
@@ -1773,6 +1773,8 @@ static int FUNC(metadata_timecode)(CodedBitstreamContext *ctx, RWContext *rw,
     fb(5, time_offset_length);
     if (current->time_offset_length > 0)
         fb(current->time_offset_length, time_offset_value);
+    else
+        infer(time_offset_length, 0);
 
     return 0;
 }
