@@ -1308,9 +1308,16 @@ Shorter signals than the chosen attack time will be left untouched.
 Set input level before filtering.
 Default is 1. Allowed range is from 0.015625 to 64.
 
+@item mode
+Set the mode of operation. Can be @code{upward} or @code{downward}.
+Default is @code{downward}. If set to @code{upward} mode, higher parts of signal
+will be amplified, expanding dynamic range in upward direction.
+Otherwise, in case of @code{downward} lower parts of signal will be reduced.
+
 @item range
 Set the level of gain reduction when the signal is below the threshold.
 Default is 0.06125. Allowed range is from 0 to 1.
+Setting this to 0 disables reduction and then filter behaves like expander.
 
 @item threshold
 If a signal rises above this level the gain reduction is released.
@@ -4331,9 +4338,16 @@ The filter accepts the following options:
 Set input level before filtering.
 Default is 1. Allowed range is from 0.015625 to 64.
 
+@item mode
+Set the mode of operation. Can be @code{upward} or @code{downward}.
+Default is @code{downward}. If set to @code{upward} mode, higher parts of signal
+will be amplified, expanding dynamic range in upward direction.
+Otherwise, in case of @code{downward} lower parts of signal will be reduced.
+
 @item range
 Set the level of gain reduction when the signal is below the threshold.
 Default is 0.06125. Allowed range is from 0 to 1.
+Setting this to 0 disables reduction and then filter behaves like expander.
 
 @item threshold
 If a signal rises above this level the gain reduction is released.
