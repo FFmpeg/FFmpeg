@@ -1631,7 +1631,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         }
     }
     if (ret >= 0) {
-        if (c->has_video) {
+        if (c->has_video && !final) {
             c->nr_of_streams_flushed++;
             if (c->nr_of_streams_flushed != c->nr_of_streams_to_flush)
                 return ret;
