@@ -252,22 +252,30 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 
 #define u(width, name, range_min, range_max) \
         xu(width, name, current->name, range_min, range_max, 0)
-#define flag(name) u(1, name, 0, 1)
+#define ub(width, name) \
+        xu(width, name, current->name, 0, MAX_UINT_BITS(width), 0)
+#define flag(name) ub(1, name)
 #define ue(name, range_min, range_max) \
         xue(name, current->name, range_min, range_max, 0)
 #define i(width, name, range_min, range_max) \
         xi(width, name, current->name, range_min, range_max, 0)
+#define ib(width, name) \
+        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), 0)
 #define se(name, range_min, range_max) \
         xse(name, current->name, range_min, range_max, 0)
 
 #define us(width, name, range_min, range_max, subs, ...) \
         xu(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define ubs(width, name, subs, ...) \
+        xu(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
 #define flags(name, subs, ...) \
         xu(1, name, current->name, 0, 1, subs, __VA_ARGS__)
 #define ues(name, range_min, range_max, subs, ...) \
         xue(name, current->name, range_min, range_max, subs, __VA_ARGS__)
 #define is(width, name, range_min, range_max, subs, ...) \
         xi(width, name, current->name, range_min, range_max, subs, __VA_ARGS__)
+#define ibs(width, name, subs, ...) \
+        xi(width, name, current->name, MIN_INT_BITS(width), MAX_INT_BITS(width), subs, __VA_ARGS__)
 #define ses(name, range_min, range_max, subs, ...) \
         xse(name, current->name, range_min, range_max, subs, __VA_ARGS__)
 

@@ -34,8 +34,8 @@ static int FUNC(nal_unit_header)(CodedBitstreamContext *ctx, RWContext *rw,
     int err;
 
     u(1, forbidden_zero_bit, 0, 0);
-    u(2, nal_ref_idc,        0, 3);
-    u(5, nal_unit_type,      0, 31);
+    ub(2, nal_ref_idc);
+    ub(5, nal_unit_type);
 
     if (!(1 << current->nal_unit_type & valid_type_mask)) {
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid NAL unit type %d.\n",
@@ -91,8 +91,8 @@ static int FUNC(hrd_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
     int err, i;
 
     ue(cpb_cnt_minus1, 0, 31);
-    u(4, bit_rate_scale, 0, 15);
-    u(4, cpb_size_scale, 0, 15);
+    ub(4, bit_rate_scale);
+    ub(4, cpb_size_scale);
 
     for (i = 0; i <= current->cpb_cnt_minus1; i++) {
         ues(bit_rate_value_minus1[i], 0, UINT32_MAX - 1, 1, i);
@@ -100,10 +100,10 @@ static int FUNC(hrd_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
         flags(cbr_flag[i], 1, i);
     }
 
-    u(5, initial_cpb_removal_delay_length_minus1, 0, 31);
-    u(5, cpb_removal_delay_length_minus1,         0, 31);
-    u(5, dpb_output_delay_length_minus1,          0, 31);
-    u(5, time_offset_length,                      0, 31);
+    ub(5, initial_cpb_removal_delay_length_minus1);
+    ub(5, cpb_removal_delay_length_minus1);
+    ub(5, dpb_output_delay_length_minus1);
+    ub(5, time_offset_length);
 
     return 0;
 }
@@ -115,10 +115,10 @@ static int FUNC(vui_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(aspect_ratio_info_present_flag);
     if (current->aspect_ratio_info_present_flag) {
-        u(8, aspect_ratio_idc, 0, 255);
+        ub(8, aspect_ratio_idc);
         if (current->aspect_ratio_idc == 255) {
-            u(16, sar_width,  0, 65535);
-            u(16, sar_height, 0, 65535);
+            ub(16, sar_width);
+            ub(16, sar_height);
         }
     } else {
         infer(aspect_ratio_idc, 0);
@@ -130,13 +130,13 @@ static int FUNC(vui_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
 
     flag(video_signal_type_present_flag);
     if (current->video_signal_type_present_flag) {
-        u(3, video_format, 0, 7);
+        ub(3, video_format);
         flag(video_full_range_flag);
         flag(colour_description_present_flag);
         if (current->colour_description_present_flag) {
-            u(8, colour_primaries,         0, 255);
-            u(8, transfer_characteristics, 0, 255);
-            u(8, matrix_coefficients,      0, 255);
+            ub(8, colour_primaries);
+            ub(8, transfer_characteristics);
+            ub(8, matrix_coefficients);
         }
     } else {
         infer(video_format,             5);
@@ -263,7 +263,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
                                 1 << H264_NAL_SPS));
 
-    u(8, profile_idc, 0, 255);
+    ub(8, profile_idc);
 
     flag(constraint_set0_flag);
     flag(constraint_set1_flag);
@@ -274,7 +274,7 @@ static int FUNC(sps)(CodedBitstreamContext *ctx, RWContext *rw,
 
     u(2, reserved_zero_2bits,  0, 0);
 
-    u(8, level_idc, 0, 255);
+    ub(8, level_idc);
 
     ue(seq_parameter_set_id, 0, 31);
 
@@ -386,8 +386,8 @@ static int FUNC(sps_extension)(CodedBitstreamContext *ctx, RWContext *rw,
         flag(alpha_incr_flag);
 
         bits = current->bit_depth_aux_minus8 + 9;
-        u(bits, alpha_opaque_value,      0, MAX_UINT_BITS(bits));
-        u(bits, alpha_transparent_value, 0, MAX_UINT_BITS(bits));
+        ub(bits, alpha_opaque_value);
+        ub(bits, alpha_transparent_value);
     }
 
     flag(additional_extension_flag);
@@ -565,7 +565,7 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
     flag(full_timestamp_flag);
     flag(discontinuity_flag);
     flag(cnt_dropped_flag);
-    u(8, n_frames, 0, 255);
+    ub(8, n_frames);
     if (current->full_timestamp_flag) {
             u(6, seconds_value, 0, 59);
             u(6, minutes_value, 0, 59);
@@ -592,9 +592,7 @@ static int FUNC(sei_pic_timestamp)(CodedBitstreamContext *ctx, RWContext *rw,
         time_offset_length = 24;
 
     if (time_offset_length > 0)
-        i(time_offset_length, time_offset,
-          MIN_INT_BITS(time_offset_length),
-          MAX_INT_BITS(time_offset_length));
+        ib(time_offset_length, time_offset);
     else
         infer(time_offset, 0);
 
@@ -647,10 +645,8 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
             return AVERROR_INVALIDDATA;
         }
 
-        u(hrd->cpb_removal_delay_length_minus1 + 1, cpb_removal_delay,
-          0, MAX_UINT_BITS(hrd->cpb_removal_delay_length_minus1 + 1));
-        u(hrd->dpb_output_delay_length_minus1 + 1, dpb_output_delay,
-          0, MAX_UINT_BITS(hrd->dpb_output_delay_length_minus1 + 1));
+        ub(hrd->cpb_removal_delay_length_minus1 + 1, cpb_removal_delay);
+        ub(hrd->dpb_output_delay_length_minus1 + 1, dpb_output_delay);
     }
 
     if (sps->vui.pic_struct_present_flag) {
@@ -790,7 +786,7 @@ static int FUNC(sei_display_orientation)(CodedBitstreamContext *ctx, RWContext *
     if (!current->display_orientation_cancel_flag) {
         flag(hor_flip);
         flag(ver_flip);
-        u(16, anticlockwise_rotation, 0, 65535);
+        ub(16, anticlockwise_rotation);
         ue(display_orientation_repetition_period, 0, 16384);
         flag(display_orientation_extension_flag);
     }
@@ -996,7 +992,7 @@ static int FUNC(aud)(CodedBitstreamContext *ctx, RWContext *rw,
     CHECK(FUNC(nal_unit_header)(ctx, rw, &current->nal_unit_header,
                                 1 << H264_NAL_AUD));
 
-    u(3, primary_pic_type, 0, 7);
+    ub(3, primary_pic_type);
 
     CHECK(FUNC(rbsp_trailing_bits)(ctx, rw));
 
@@ -1232,8 +1228,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
     if (sps->separate_colour_plane_flag)
         u(2, colour_plane_id, 0, 2);
 
-    u(sps->log2_max_frame_num_minus4 + 4, frame_num,
-      0, MAX_UINT_BITS(sps->log2_max_frame_num_minus4 + 4));
+    ub(sps->log2_max_frame_num_minus4 + 4, frame_num);
 
     if (!sps->frame_mbs_only_flag) {
         flag(field_pic_flag);
@@ -1250,8 +1245,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
         ue(idr_pic_id, 0, 65535);
 
     if (sps->pic_order_cnt_type == 0) {
-        u(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, pic_order_cnt_lsb,
-          0, MAX_UINT_BITS(sps->log2_max_pic_order_cnt_lsb_minus4 + 4));
+        ub(sps->log2_max_pic_order_cnt_lsb_minus4 + 4, pic_order_cnt_lsb);
         if (pps->bottom_field_pic_order_in_frame_present_flag &&
             !current->field_pic_flag)
             se(delta_pic_order_cnt_bottom, INT32_MIN + 1, INT32_MAX);
