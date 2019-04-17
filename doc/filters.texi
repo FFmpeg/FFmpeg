@@ -390,6 +390,10 @@ The filter accepts the following options:
 @item level_in
 Set input gain. Default is 1. Range is between 0.015625 and 64.
 
+@item mode
+Set mode of compressor operation. Can be @code{upward} or @code{downward}.
+Default is @code{downward}.
+
 @item threshold
 If a signal of stream rises above this level it will affect the gain
 reduction.
@@ -4246,6 +4250,10 @@ The filter accepts the following options:
 @table @option
 @item level_in
 Set input gain. Default is 1. Range is between 0.015625 and 64.
+
+@item mode
+Set mode of compressor operation. Can be @code{upward} or @code{downward}.
+Default is @code{downward}.
 
 @item threshold
 If a signal of second stream raises above this level it will affect the gain
