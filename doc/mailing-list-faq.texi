@@ -257,6 +257,21 @@ with the subject @emph{set delivery off}. To re-enable mail delivery send a
 message to @email{ffmpeg-user-request@@ffmpeg.org} with the subject
 @emph{set delivery on}.
 
+@section Why is the mailing list munging my address?
+
+This is due to subscribers that use a mail service with a DMARC reject policy
+which adds difficulties to mailing list operators.
+
+The mailing list must re-write (munge) the @emph{From:} header for such users;
+otherwise their mail service will reject and bounce the message resulting in
+automatic unsubscribing from the mailing list.
+
+When sending a message these users will see @emph{via <mailing list name>}
+added to their name and the @emph{From:} address munged to the address of
+the particular mailing list.
+
+If you want to avoid this then please use a different mail service.
+
 @chapter Rules and Etiquette
 
 @section What are the rules and the proper etiquette?
