@@ -392,7 +392,7 @@ fate-filter-hdcd-s32p: REF = 0c5513e83eedaa10ab6fac9ddc173cf5
 
 FATE_AFILTER-yes += fate-filter-formats
 fate-filter-formats: libavfilter/tests/formats$(EXESUF)
-fate-filter-formats: CMD = run libavfilter/tests/formats
+fate-filter-formats: CMD = run libavfilter/tests/formats$(EXESUF)
 
 FATE_SAMPLES_AVCONV += $(FATE_AFILTER_SAMPLES-yes)
 FATE_FFMPEG += $(FATE_AFILTER-yes)

@@ -33,7 +33,7 @@ FATE_CHECKASM = fate-checkasm-aacpsdsp                                  \
                 fate-checkasm-vp9dsp                                    \
 
 $(FATE_CHECKASM): tests/checkasm/checkasm$(EXESUF)
-$(FATE_CHECKASM): CMD = run tests/checkasm/checkasm --test=$(@:fate-checkasm-%=%)
+$(FATE_CHECKASM): CMD = run tests/checkasm/checkasm$(EXESUF) --test=$(@:fate-checkasm-%=%)
 $(FATE_CHECKASM): CMP = null
 
 FATE += $(FATE_CHECKASM)
