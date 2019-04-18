@@ -45,7 +45,7 @@ tests/data/hls_segment_size.m3u8: TAG = GEN
 tests/data/hls_segment_size.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
 	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_segment_size 300000 -map 0 \
-	-hls_list_size 0 -codec:a mp2fixed -hls_segment_filename $(TARGET_PATH)/tests/data/live_endlist_%d.ts \
+	-hls_list_size 0 -codec:a mp2fixed -hls_segment_filename $(TARGET_PATH)/tests/data/hls_segment_size_%d.ts \
 	$(TARGET_PATH)/tests/data/hls_segment_size.m3u8 2>/dev/null
 
 FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-hls-segment-size
