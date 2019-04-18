@@ -1817,7 +1817,7 @@ means unlimited.
 @item auto-alt-ref
 Enable use of alternate reference frames (2-pass only).
 Values greater than 1 enable multi-layer alternate reference frames (VP9 only).
-@item arnr-max-frames
+@item arnr-maxframes
 Set altref noise reduction max frame count.
 @item arnr-type
 Set altref noise reduction filter type: backward, forward, centered.
