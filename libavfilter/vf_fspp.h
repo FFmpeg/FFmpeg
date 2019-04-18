@@ -31,7 +31,7 @@
 #define DCTSIZE 8
 #define DCTSIZE_S "8"
 
-#define FIX(x,s)  ((int) ((x) * (1 << s) + 0.5) & 0xffff)
+#define FIX(x,s)  ((x) * (1 << s) + 0.5)
 
 #define MULTIPLY16H(x,k)   (((x) * (k)) >> 16)
 #define THRESHOLD(r,x,t)                         \
