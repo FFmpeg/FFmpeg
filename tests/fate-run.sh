@@ -5,7 +5,7 @@ export LC_ALL=C
 base=$(dirname $0)
 . "${base}/md5.sh"
 
-base64=tests/base64
+base64=tests/base64${HOSTEXECSUF}
 
 test="${1#fate-}"
 target_samples=$2
@@ -45,7 +45,7 @@ compare(){
 }
 
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" $cmp_unit $cmp_shift 0) || return 1
+    psnr=$(tests/tiny_psnr${HOSTEXECSUF} "$1" "$2" $cmp_unit $cmp_shift 0) || return 1
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
@@ -206,7 +206,7 @@ enc_dec(){
     ffmpeg $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
-    tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
+    tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
 }
 
 transcode(){
@@ -455,7 +455,7 @@ audio_match(){
     cleanfiles="$cleanfiles $decfile"
 
     ffmpeg -i "$sample" -bitexact $extra_args -y $decfile
-    tests/audiomatch $decfile $trefile
+    tests/audiomatch${HOSTEXECSUF} $decfile $trefile
 }
 
 concat(){
