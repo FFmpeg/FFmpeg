@@ -169,12 +169,12 @@ typedef struct MatroskaMuxContext {
  * offset, 4 bytes for target EBML ID */
 #define MAX_SEEKENTRY_SIZE 21
 
-/** per-cuepoint-track - 5 1-byte EBML IDs, 5 1-byte EBML sizes, 4
- * 8-byte uint max */
-#define MAX_CUETRACKPOS_SIZE 42
+/** per-cuepoint-track - 5 1-byte EBML IDs, 5 1-byte EBML sizes, 3 8-byte uint max
+ * and one 1-byte uint for the track number (this assumes MAX_TRACKS to be <= 255) */
+#define MAX_CUETRACKPOS_SIZE 35
 
-/** per-cuepoint - 2 1-byte EBML IDs, 2 1-byte EBML sizes, 8-byte uint max */
-#define MAX_CUEPOINT_SIZE(num_tracks) 12 + MAX_CUETRACKPOS_SIZE * num_tracks
+/** per-cuepoint - 1 1-byte EBML ID, 1 1-byte EBML size, 8-byte uint max */
+#define MAX_CUEPOINT_CONTENT_SIZE(num_tracks) 10 + MAX_CUETRACKPOS_SIZE * num_tracks
 
 /** Seek preroll value for opus */
 #define OPUS_SEEK_PREROLL 80000000
@@ -605,7 +605,7 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
             ctp_nb ++;
         }
 
-        cuepoint = start_ebml_master(dyn_cp, MATROSKA_ID_POINTENTRY, MAX_CUEPOINT_SIZE(ctp_nb));
+        cuepoint = start_ebml_master(dyn_cp, MATROSKA_ID_POINTENTRY, MAX_CUEPOINT_CONTENT_SIZE(ctp_nb));
         put_ebml_uint(dyn_cp, MATROSKA_ID_CUETIME, pts);
 
         // put all the entries from different tracks that have the exact same
