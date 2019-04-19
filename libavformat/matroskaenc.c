@@ -379,14 +379,12 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
     ebml_master master)
 {
-    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
 
         uint8_t *buf;
         int size = avio_get_dyn_buf(*dyn_cp, &buf);
 
         avio_write(pb, buf, size);
         end_ebml_master(pb, master);
-    }
 }
 
 static void put_xiph_size(AVIOContext *pb, int size)
