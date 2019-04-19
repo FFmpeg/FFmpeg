@@ -4112,22 +4112,22 @@ case "$toolchain" in
         # behaviour if the regexp was unable to match anything, since this
         # successfully parses the version number of existing supported
         # versions that require the converter (MSVC 2010 and 2012).
-        cl_major_ver=$(cl 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
+        cl_major_ver=$(cl.exe 2>&1 | sed -n 's/.*Version \([[:digit:]]\{1,\}\)\..*/\1/p')
         if [ -z "$cl_major_ver" ] || [ $cl_major_ver -ge 18 ]; then
-            cc_default="cl"
-            cxx_default="cl"
+            cc_default="cl.exe"
+            cxx_default="cl.exe"
         else
             die "Unsupported MSVC version (2013 or newer required)"
         fi
         ld_default="$source_path/compat/windows/mslink"
-        nm_default="dumpbin -symbols"
-        ar_default="lib"
+        nm_default="dumpbin.exe -symbols"
+        ar_default="lib.exe"
         case "$arch" in
         aarch64|arm64)
-            as_default="armasm64"
+            as_default="armasm64.exe"
             ;;
         arm*)
-            as_default="armasm"
+            as_default="armasm.exe"
             ;;
         esac
         target_os_default="win32"
