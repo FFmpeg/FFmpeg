@@ -523,6 +523,95 @@ static int parse_m3d(AVFilterContext *ctx, FILE *f)
     return 0;
 }
 
+static int parse_cinespace(AVFilterContext *ctx, FILE *f)
+{
+    LUT3DContext *lut3d = ctx->priv;
+    char line[MAX_LINE_SIZE];
+    float in_min[3]  = {0.0, 0.0, 0.0};
+    float in_max[3]  = {1.0, 1.0, 1.0};
+    float out_min[3] = {0.0, 0.0, 0.0};
+    float out_max[3] = {1.0, 1.0, 1.0};
+    int inside_metadata = 0, size;
+
+    NEXT_LINE(skip_line(line));
+    if (strncmp(line, "CSPLUTV100", 10)) {
+        av_log(ctx, AV_LOG_ERROR, "Not cineSpace LUT format\n");
+        return AVERROR(EINVAL);
+    }
+
+    NEXT_LINE(skip_line(line));
+    if (strncmp(line, "3D", 2)) {
+        av_log(ctx, AV_LOG_ERROR, "Not 3D LUT format\n");
+        return AVERROR(EINVAL);
+    }
+
+    while (1) {
+        NEXT_LINE(skip_line(line));
+
+        if (!strncmp(line, "BEGIN METADATA", 14)) {
+            inside_metadata = 1;
+            continue;
+        }
+        if (!strncmp(line, "END METADATA", 12)) {
+            inside_metadata = 0;
+            continue;
+        }
+        if (inside_metadata == 0) {
+            int size_r, size_g, size_b;
+
+            for (int i = 0; i < 3; i++) {
+                int npoints = strtol(line, NULL, 0);
+
+                if (npoints != 2) {
+                    av_log(ctx, AV_LOG_ERROR, "Unsupported number of pre-lut points.\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+
+                NEXT_LINE(skip_line(line));
+                if (av_sscanf(line, "%f %f", &in_min[i], &in_max[i]) != 2)
+                    return AVERROR_INVALIDDATA;
+                NEXT_LINE(skip_line(line));
+                if (av_sscanf(line, "%f %f", &out_min[i], &out_max[i]) != 2)
+                    return AVERROR_INVALIDDATA;
+                NEXT_LINE(skip_line(line));
+            }
+
+            if (av_sscanf(line, "%d %d %d", &size_r, &size_g, &size_b) != 3)
+                return AVERROR(EINVAL);
+            if (size_r != size_g || size_r != size_b) {
+                av_log(ctx, AV_LOG_ERROR, "Unsupported size combination: %dx%dx%d.\n", size_r, size_g, size_b);
+                return AVERROR_PATCHWELCOME;
+            }
+
+            size = size_r;
+            if (size < 2 || size > MAX_LEVEL) {
+                av_log(ctx, AV_LOG_ERROR, "Too large or invalid 3D LUT size\n");
+                return AVERROR(EINVAL);
+            }
+
+            lut3d->lutsize = size;
+
+            for (int k = 0; k < size; k++) {
+                for (int j = 0; j < size; j++) {
+                    for (int i = 0; i < size; i++) {
+                        struct rgbvec *vec = &lut3d->lut[i][j][k];
+                        if (k != 0 || j != 0 || i != 0)
+                            NEXT_LINE(skip_line(line));
+                        if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
+                            return AVERROR_INVALIDDATA;
+                        vec->r *= out_max[0] - out_min[0];
+                        vec->g *= out_max[1] - out_min[1];
+                        vec->b *= out_max[2] - out_min[2];
+                    }
+                }
+            }
+
+            break;
+        }
+    }
+    return 0;
+}
+
 static void set_identity_matrix(LUT3DContext *lut3d, int size)
 {
     int i, j, k;
@@ -704,6 +793,8 @@ static av_cold int lut3d_init(AVFilterContext *ctx)
         ret = parse_cube(ctx, f);
     } else if (!av_strcasecmp(ext, "m3d")) {
         ret = parse_m3d(ctx, f);
+    } else if (!av_strcasecmp(ext, "csp")) {
+        ret = parse_cinespace(ctx, f);
     } else {
         av_log(ctx, AV_LOG_ERROR, "Unrecognized '.%s' file type\n", ext);
         ret = AVERROR(EINVAL);
