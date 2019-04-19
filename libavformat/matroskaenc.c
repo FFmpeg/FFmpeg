@@ -2059,9 +2059,7 @@ static int mkv_blockgroup_size(int pkt_size)
     int size = pkt_size + 4;
     size += ebml_num_size(size);
     size += 2;              // EBML ID for block and block duration
-    size += 8;              // max size of block duration
-    size += ebml_num_size(size);
-    size += 1;              // blockgroup EBML ID
+    size += 9;              // max size of block duration incl. length field
     return size;
 }
 
