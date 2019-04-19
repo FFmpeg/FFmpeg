@@ -336,20 +336,15 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
                                    ebml_master *master, uint32_t elementid, uint64_t expectedsize)
 {
-    int ret;
+    int ret, bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
 
     if ((ret = avio_open_dyn_buf(dyn_cp)) < 0)
         return ret;
-
-    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
 
         put_ebml_id(pb, elementid);
         *master = (ebml_master) { avio_tell(pb), bytes };
         if (mkv->write_crc)
             put_ebml_void(*dyn_cp, 6); /* Reserve space for CRC32 so position/size calculations using avio_tell() take it into account */
-    } else
-        *master = start_ebml_master(*dyn_cp, elementid, expectedsize);
 
     return 0;
 }
@@ -360,7 +355,6 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
     uint8_t *buf, crc[4];
     int size, skip = 0;
 
-    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         size = avio_close_dyn_buf(*dyn_cp, &buf);
         put_ebml_num(pb, size, master.sizebytes);
         if (mkv->write_crc) {
@@ -369,11 +363,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
             put_ebml_binary(pb, EBML_ID_CRC32, crc, sizeof(crc));
         }
         avio_write(pb, buf + skip, size - skip);
-    } else {
-        end_ebml_master(*dyn_cp, master);
-        size = avio_close_dyn_buf(*dyn_cp, &buf);
-        avio_write(pb, buf, size);
-    }
+
     av_free(buf);
     *dyn_cp = NULL;
 }
