@@ -134,7 +134,7 @@ typedef struct MatroskaMuxContext {
     int64_t         cluster_pts;
     int64_t         duration_offset;
     int64_t         duration;
-    mkv_seekhead    *main_seekhead;
+    mkv_seekhead    *seekhead;
     mkv_cues        *cues;
     mkv_track       *tracks;
     mkv_attachments *attachments;
@@ -416,9 +416,9 @@ static void mkv_free(MatroskaMuxContext *mkv) {
         avio_close_dyn_buf(mkv->tags_bc, &buf);
         av_free(buf);
     }
-    if (mkv->main_seekhead) {
-        av_freep(&mkv->main_seekhead->entries);
-        av_freep(&mkv->main_seekhead);
+    if (mkv->seekhead) {
+        av_freep(&mkv->seekhead->entries);
+        av_freep(&mkv->seekhead);
     }
     if (mkv->cues) {
         av_freep(&mkv->cues->entries);
@@ -496,7 +496,7 @@ static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid
 static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
 {
     AVIOContext *dyn_cp;
-    mkv_seekhead *seekhead = mkv->main_seekhead;
+    mkv_seekhead *seekhead = mkv->seekhead;
     ebml_master metaseek, seekentry;
     int64_t currentpos;
     int i;
@@ -538,8 +538,8 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
         currentpos = seekhead->filepos;
     }
 fail:
-    av_freep(&mkv->main_seekhead->entries);
-    av_freep(&mkv->main_seekhead);
+    av_freep(&mkv->seekhead->entries);
+    av_freep(&mkv->seekhead);
 
     return currentpos;
 }
@@ -1458,7 +1458,7 @@ static int mkv_write_tracks(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int i, ret, default_stream_exists = 0;
 
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
+    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TRACKS, avio_tell(pb));
     if (ret < 0)
         return ret;
 
@@ -1495,7 +1495,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     if (!s->nb_chapters || mkv->wrote_chapters)
         return 0;
 
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CHAPTERS, avio_tell(pb));
+    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_CHAPTERS, avio_tell(pb));
     if (ret < 0) return ret;
 
     ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &chapters, MATROSKA_ID_CHAPTERS, 0);
@@ -1586,7 +1586,7 @@ static int mkv_write_tag_targets(AVFormatContext *s,
     int ret;
 
     if (!tags->pos) {
-        ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_TAGS, avio_tell(s->pb));
+        ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TAGS, avio_tell(s->pb));
         if (ret < 0) return ret;
 
         start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, tags, MATROSKA_ID_TAGS, 0);
@@ -1753,7 +1753,7 @@ static int mkv_write_attachments(AVFormatContext *s)
 
     av_lfg_init(&c, av_get_random_seed());
 
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
+    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
     if (ret < 0) return ret;
 
     ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &attachments, MATROSKA_ID_ATTACHMENTS, 0);
@@ -1902,18 +1902,16 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->segment = start_ebml_master(pb, MATROSKA_ID_SEGMENT, 0);
     mkv->segment_offset = avio_tell(pb);
 
-    // we write 2 seek heads - one at the end of the file to point to each
-    // cluster, and one at the beginning to point to all other level one
-    // elements (including the seek head at the end of the file), which
-    // isn't more than 10 elements if we only write one of each other
-    // currently defined level 1 element
-    mkv->main_seekhead    = mkv_start_seekhead(pb, mkv->segment_offset, 10);
-    if (!mkv->main_seekhead) {
+    // we write a seek head at the beginning to point to all other level
+    // one elements, which aren't more than 10 elements as we write only one
+    // of every other currently defined level 1 element
+    mkv->seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 10);
+    if (!mkv->seekhead) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
 
-    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_INFO, avio_tell(pb));
+    ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_INFO, avio_tell(pb));
     if (ret < 0) goto fail;
 
     ret = start_ebml_master_crc32(pb, &mkv->info_bc, mkv, &mkv->info, MATROSKA_ID_INFO, 0);
@@ -2619,7 +2617,7 @@ static int mkv_write_trailer(AVFormatContext *s)
                 cuespos = mkv_write_cues(s, mkv->cues, mkv->tracks, s->nb_streams);
             }
 
-            ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_CUES,
+            ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_CUES,
                                          cuespos);
             if (ret < 0)
                 return ret;
