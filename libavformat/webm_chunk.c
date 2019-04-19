@@ -52,7 +52,7 @@ typedef struct WebMChunkContext {
     int chunk_index;
     char *http_method;
     uint64_t duration_written;
-    int prev_pts;
+    int64_t prev_pts;
     ff_const59 AVOutputFormat *oformat;
     AVFormatContext *avf;
 } WebMChunkContext;
@@ -129,6 +129,7 @@ static int webm_chunk_write_header(AVFormatContext *s)
     wc->oformat = av_guess_format("webm", s->url, "video/webm");
     if (!wc->oformat)
         return AVERROR_MUXER_NOT_FOUND;
+    wc->prev_pts = AV_NOPTS_VALUE;
 
     ret = chunk_mux_init(s);
     if (ret < 0)
@@ -216,9 +217,10 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
-                                             st->time_base,
-                                             (AVRational) {1, 1000});
+        if (wc->prev_pts != AV_NOPTS_VALUE)
+            wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
+                                                 st->time_base,
+                                                 (AVRational) {1, 1000});
         wc->prev_pts = pkt->pts;
     }
 
