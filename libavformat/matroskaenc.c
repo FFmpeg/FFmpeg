@@ -2265,15 +2265,10 @@ static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
 
     end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
     mkv->cluster_pos = -1;
-    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         av_log(s, AV_LOG_DEBUG,
                "Starting new cluster at offset %" PRIu64 " bytes, "
-               "pts %" PRIu64 "dts %" PRIu64 "\n",
+               "pts %" PRIu64 ", dts %" PRIu64 "\n",
                avio_tell(s->pb), pkt->pts, pkt->dts);
-    else
-        av_log(s, AV_LOG_DEBUG, "Starting new cluster, "
-               "pts %" PRIu64 "dts %" PRIu64 "\n",
-               pkt->pts, pkt->dts);
     avio_flush(s->pb);
 }
 
@@ -2551,12 +2546,9 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
         if (mkv->cluster_pos != -1) {
             end_ebml_master_crc32(s->pb, &mkv->dyn_bc, mkv, mkv->cluster);
             mkv->cluster_pos = -1;
-            if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
                 av_log(s, AV_LOG_DEBUG,
                        "Flushing cluster at offset %" PRIu64 " bytes\n",
                        avio_tell(s->pb));
-            else
-                av_log(s, AV_LOG_DEBUG, "Flushing cluster\n");
             avio_flush(s->pb);
         }
         return 1;
