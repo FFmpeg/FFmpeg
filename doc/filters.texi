@@ -11671,6 +11671,8 @@ Currently supported formats:
 @table @samp
 @item cube
 Iridas
+@item csp
+cineSpace
 @end table
 
 @item interp

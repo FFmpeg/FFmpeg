@@ -1019,6 +1019,81 @@ static void set_identity_matrix_1d(LUT1DContext *lut1d, int size)
     }
 }
 
+static int parse_cinespace_1d(AVFilterContext *ctx, FILE *f)
+{
+    LUT1DContext *lut1d = ctx->priv;
+    char line[MAX_LINE_SIZE];
+    float in_min[3]  = {0.0, 0.0, 0.0};
+    float in_max[3]  = {1.0, 1.0, 1.0};
+    float out_min[3] = {0.0, 0.0, 0.0};
+    float out_max[3] = {1.0, 1.0, 1.0};
+    int inside_metadata = 0, size;
+
+    NEXT_LINE(skip_line(line));
+    if (strncmp(line, "CSPLUTV100", 10)) {
+        av_log(ctx, AV_LOG_ERROR, "Not cineSpace LUT format\n");
+        return AVERROR(EINVAL);
+    }
+
+    NEXT_LINE(skip_line(line));
+    if (strncmp(line, "1D", 2)) {
+        av_log(ctx, AV_LOG_ERROR, "Not 1D LUT format\n");
+        return AVERROR(EINVAL);
+    }
+
+    while (1) {
+        NEXT_LINE(skip_line(line));
+
+        if (!strncmp(line, "BEGIN METADATA", 14)) {
+            inside_metadata = 1;
+            continue;
+        }
+        if (!strncmp(line, "END METADATA", 12)) {
+            inside_metadata = 0;
+            continue;
+        }
+        if (inside_metadata == 0) {
+            for (int i = 0; i < 3; i++) {
+                int npoints = strtol(line, NULL, 0);
+
+                if (npoints != 2) {
+                    av_log(ctx, AV_LOG_ERROR, "Unsupported number of pre-lut points.\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+
+                NEXT_LINE(skip_line(line));
+                if (av_sscanf(line, "%f %f", &in_min[i], &in_max[i]) != 2)
+                    return AVERROR_INVALIDDATA;
+                NEXT_LINE(skip_line(line));
+                if (av_sscanf(line, "%f %f", &out_min[i], &out_max[i]) != 2)
+                    return AVERROR_INVALIDDATA;
+                NEXT_LINE(skip_line(line));
+            }
+
+            size = strtol(line, NULL, 0);
+
+            if (size < 2 || size > MAX_1D_LEVEL) {
+                av_log(ctx, AV_LOG_ERROR, "Too large or invalid 1D LUT size\n");
+                return AVERROR(EINVAL);
+            }
+
+            lut1d->lutsize = size;
+
+            for (int i = 0; i < size; i++) {
+                NEXT_LINE(skip_line(line));
+                if (av_sscanf(line, "%f %f %f", &lut1d->lut[0][i], &lut1d->lut[1][i], &lut1d->lut[2][i]) != 3)
+                    return AVERROR_INVALIDDATA;
+                lut1d->lut[0][i] *= out_max[0] - out_min[0];
+                lut1d->lut[1][i] *= out_max[1] - out_min[1];
+                lut1d->lut[2][i] *= out_max[2] - out_min[2];
+            }
+
+            break;
+        }
+    }
+    return 0;
+}
+
 static int parse_cube_1d(AVFilterContext *ctx, FILE *f)
 {
     LUT1DContext *lut1d = ctx->priv;
@@ -1400,6 +1475,8 @@ static av_cold int lut1d_init(AVFilterContext *ctx)
 
     if (!av_strcasecmp(ext, "cube") || !av_strcasecmp(ext, "1dlut")) {
         ret = parse_cube_1d(ctx, f);
+    } else if (!av_strcasecmp(ext, "csp")) {
+        ret = parse_cinespace_1d(ctx, f);
     } else {
         av_log(ctx, AV_LOG_ERROR, "Unrecognized '.%s' file type\n", ext);
         ret = AVERROR(EINVAL);
