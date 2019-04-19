@@ -58,8 +58,7 @@
 #include "libavcodec/internal.h"
 
 typedef struct ebml_master {
-    int64_t         pos;                ///< absolute offset in the containing AVIOContext where the size field starts
-                                        ///< for level 1 elements or else where the master's elements start
+    int64_t         pos;                ///< absolute offset in the containing AVIOContext where the master's elements start
     int             sizebytes;          ///< how many bytes were reserved for the size
 } ebml_master;
 
@@ -122,15 +121,14 @@ typedef struct MatroskaMuxContext {
     const AVClass   *class;
     int             mode;
     AVIOContext     *tags_bc;
-    ebml_master     tags;
+    int64_t         tags_pos;
     AVIOContext     *info_bc;
-    ebml_master     info;
+    int64_t         info_pos;
     AVIOContext     *tracks_bc;
-    ebml_master     tracks_master;
+    int64_t         tracks_pos;
     ebml_master     segment;
     int64_t         segment_offset;
     AVIOContext     *cluster_bc;
-    ebml_master     cluster;
     int64_t         cluster_pos;        ///< file offset of the current cluster
     int64_t         cluster_pts;
     int64_t         duration_offset;
@@ -334,7 +332,7 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 }
 
 static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
-                                   ebml_master *master, uint32_t elementid)
+                                   uint32_t elementid)
 {
     int ret;
 
@@ -342,15 +340,13 @@ static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matros
         return ret;
 
     put_ebml_id(pb, elementid);
-    *master = (ebml_master) { avio_tell(pb), 0 };
     if (mkv->write_crc)
         put_ebml_void(*dyn_cp, 6); /* Reserve space for CRC32 so position/size calculations using avio_tell() take it into account */
 
     return 0;
 }
 
-static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
-                                  ebml_master master)
+static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv)
 {
     uint8_t *buf, crc[4];
     int size, skip = 0;
@@ -372,10 +368,12 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 * Complete ebml master without destroying the buffer, allowing for later updates
 */
 static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
-                                              ebml_master master)
+                                              int64_t *pos)
 {
     uint8_t *buf;
     int size = avio_get_dyn_buf(*dyn_cp, &buf);
+
+    *pos = avio_tell(pb);
 
     put_ebml_num(pb, size, 0);
     avio_write(pb, buf, size);
@@ -489,7 +487,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
 {
     AVIOContext *dyn_cp;
     mkv_seekhead *seekhead = mkv->seekhead;
-    ebml_master metaseek, seekentry;
+    ebml_master seekentry;
     int64_t currentpos;
     int i;
 
@@ -502,7 +500,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
         }
     }
 
-    if (start_ebml_master_crc32(pb, &dyn_cp, mkv, &metaseek, MATROSKA_ID_SEEKHEAD) < 0) {
+    if (start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_SEEKHEAD) < 0) {
         currentpos = -1;
         goto fail;
     }
@@ -519,7 +517,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, MatroskaMuxContext *mkv)
         put_ebml_uint(dyn_cp, MATROSKA_ID_SEEKPOSITION, entry->segmentpos);
         end_ebml_master(dyn_cp, seekentry);
     }
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, metaseek);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
     if (seekhead->reserved_size > 0) {
         uint64_t remaining = seekhead->filepos + seekhead->reserved_size - avio_tell(pb);
@@ -572,12 +570,11 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *dyn_cp, *pb = s->pb;
-    ebml_master cues_element;
     int64_t currentpos;
     int i, j, ret;
 
     currentpos = avio_tell(pb);
-    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &cues_element, MATROSKA_ID_CUES);
+    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_CUES);
     if (ret < 0)
         return ret;
 
@@ -623,7 +620,7 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
         i += j - 1;
         end_ebml_master(dyn_cp, cuepoint);
     }
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, cues_element);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
     return currentpos;
 }
@@ -1453,7 +1450,7 @@ static int mkv_write_tracks(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    ret = start_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, &mkv->tracks_master, MATROSKA_ID_TRACKS);
+    ret = start_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, MATROSKA_ID_TRACKS);
     if (ret < 0)
         return ret;
 
@@ -1468,9 +1465,9 @@ static int mkv_write_tracks(AVFormatContext *s)
     }
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-        end_ebml_master_crc32_preliminary(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
+        end_ebml_master_crc32_preliminary(pb, &mkv->tracks_bc, mkv, &mkv->tracks_pos);
     else
-        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv);
 
     return 0;
 }
@@ -1479,7 +1476,7 @@ static int mkv_write_chapters(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *dyn_cp, *pb = s->pb;
-    ebml_master chapters, editionentry;
+    ebml_master editionentry;
     AVRational scale = {1, 1E9};
     int i, ret;
 
@@ -1489,7 +1486,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_CHAPTERS, avio_tell(pb));
     if (ret < 0) return ret;
 
-    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &chapters, MATROSKA_ID_CHAPTERS);
+    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_CHAPTERS);
     if (ret < 0) return ret;
 
     editionentry = start_ebml_master(dyn_cp, MATROSKA_ID_EDITIONENTRY, 0);
@@ -1527,7 +1524,7 @@ static int mkv_write_chapters(AVFormatContext *s)
         end_ebml_master(dyn_cp, chapteratom);
     }
     end_ebml_master(dyn_cp, editionentry);
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, chapters);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
     mkv->wrote_chapters = 1;
     return 0;
@@ -1568,19 +1565,18 @@ static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
 }
 
 static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
-                                 unsigned int uid, ebml_master *tags,
-                                 ebml_master* tag)
+                                 unsigned int uid, ebml_master *tag)
 {
     AVIOContext *pb;
     MatroskaMuxContext *mkv = s->priv_data;
     ebml_master targets;
     int ret;
 
-    if (!tags->pos) {
+    if (!mkv->tags_bc) {
         ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_TAGS, avio_tell(s->pb));
         if (ret < 0) return ret;
 
-        start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, tags, MATROSKA_ID_TAGS);
+        start_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS);
     }
     pb = mkv->tags_bc;
 
@@ -1607,14 +1603,14 @@ static int mkv_check_tag_name(const char *name, uint32_t elementid)
 }
 
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid,
-                         unsigned int uid, ebml_master *tags)
+                         unsigned int uid)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ebml_master tag;
     int ret;
     AVDictionaryEntry *t = NULL;
 
-    ret = mkv_write_tag_targets(s, elementid, uid, tags, &tag);
+    ret = mkv_write_tag_targets(s, elementid, uid, &tag);
     if (ret < 0)
         return ret;
 
@@ -1649,7 +1645,7 @@ static int mkv_write_tags(AVFormatContext *s)
     ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
     if (mkv_check_tag(s->metadata, 0)) {
-        ret = mkv_write_tag(s, s->metadata, 0, 0, &mkv->tags);
+        ret = mkv_write_tag(s, s->metadata, 0, 0);
         if (ret < 0) return ret;
     }
 
@@ -1662,7 +1658,7 @@ static int mkv_write_tags(AVFormatContext *s)
         if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID))
             continue;
 
-        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &mkv->tags);
+        ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1);
         if (ret < 0) return ret;
     }
 
@@ -1676,7 +1672,7 @@ static int mkv_write_tags(AVFormatContext *s)
             if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
                 continue;
 
-            mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &mkv->tags, &tag_target);
+            mkv_write_tag_targets(s, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tag_target);
             pb = mkv->tags_bc;
 
             tag = start_ebml_master(pb, MATROSKA_ID_SIMPLETAG, 0);
@@ -1698,7 +1694,7 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID))
                 continue;
 
-            ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + mkv->chapter_id_offset, &mkv->tags);
+            ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + mkv->chapter_id_offset);
             if (ret < 0)
                 return ret;
         }
@@ -1712,17 +1708,17 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID))
                 continue;
 
-            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID, attachment->fileuid, &mkv->tags);
+            ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_ATTACHUID, attachment->fileuid);
             if (ret < 0)
                 return ret;
         }
     }
 
-    if (mkv->tags.pos) {
+    if (mkv->tags_bc) {
         if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-            end_ebml_master_crc32_preliminary(s->pb, &mkv->tags_bc, mkv, mkv->tags);
+            end_ebml_master_crc32_preliminary(s->pb, &mkv->tags_bc, mkv, &mkv->tags_pos);
         else
-            end_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, mkv->tags);
+            end_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv);
     }
     return 0;
 }
@@ -1731,7 +1727,6 @@ static int mkv_write_attachments(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *dyn_cp, *pb = s->pb;
-    ebml_master attachments;
     AVLFG c;
     int i, ret;
 
@@ -1747,7 +1742,7 @@ static int mkv_write_attachments(AVFormatContext *s)
     ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
     if (ret < 0) return ret;
 
-    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, &attachments, MATROSKA_ID_ATTACHMENTS);
+    ret = start_ebml_master_crc32(pb, &dyn_cp, mkv, MATROSKA_ID_ATTACHMENTS);
     if (ret < 0) return ret;
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -1820,7 +1815,7 @@ static int mkv_write_attachments(AVFormatContext *s)
         mkv->attachments->entries[mkv->attachments->num_entries].stream_idx = i;
         mkv->attachments->entries[mkv->attachments->num_entries++].fileuid  = fileuid;
     }
-    end_ebml_master_crc32(pb, &dyn_cp, mkv, attachments);
+    end_ebml_master_crc32(pb, &dyn_cp, mkv);
 
     return 0;
 }
@@ -1906,7 +1901,7 @@ static int mkv_write_header(AVFormatContext *s)
     ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_INFO, avio_tell(pb));
     if (ret < 0) goto fail;
 
-    ret = start_ebml_master_crc32(pb, &mkv->info_bc, mkv, &mkv->info, MATROSKA_ID_INFO);
+    ret = start_ebml_master_crc32(pb, &mkv->info_bc, mkv, MATROSKA_ID_INFO);
     if (ret < 0)
         return ret;
     pb = mkv->info_bc;
@@ -1965,9 +1960,9 @@ static int mkv_write_header(AVFormatContext *s)
         }
     }
     if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-        end_ebml_master_crc32_preliminary(s->pb, &mkv->info_bc, mkv, mkv->info);
+        end_ebml_master_crc32_preliminary(s->pb, &mkv->info_bc, mkv, &mkv->info_pos);
     else
-        end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, mkv->info);
+        end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv);
     pb = s->pb;
 
     // initialize stream_duration fields
@@ -2263,7 +2258,7 @@ static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
 
-    end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv, mkv->cluster);
+    end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv);
     mkv->cluster_pos = -1;
     av_log(s, AV_LOG_DEBUG,
            "Starting new cluster at offset %" PRIu64 " bytes, "
@@ -2408,7 +2403,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
 
     if (mkv->cluster_pos == -1) {
         mkv->cluster_pos = avio_tell(s->pb);
-        ret = start_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv, &mkv->cluster, MATROSKA_ID_CLUSTER);
+        ret = start_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv, MATROSKA_ID_CLUSTER);
         if (ret < 0)
             return ret;
         put_ebml_uint(mkv->cluster_bc, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
@@ -2544,7 +2539,7 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt) {
         if (mkv->cluster_pos != -1) {
-            end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv, mkv->cluster);
+            end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv);
             mkv->cluster_pos = -1;
             av_log(s, AV_LOG_DEBUG,
                    "Flushing cluster at offset %" PRIu64 " bytes\n",
@@ -2575,7 +2570,7 @@ static int mkv_write_trailer(AVFormatContext *s)
     }
 
     if (mkv->cluster_bc) {
-        end_ebml_master_crc32(pb, &mkv->cluster_bc, mkv, mkv->cluster);
+        end_ebml_master_crc32(pb, &mkv->cluster_bc, mkv);
     }
 
     ret = mkv_write_chapters(s);
@@ -2623,12 +2618,12 @@ static int mkv_write_trailer(AVFormatContext *s)
         currentpos = avio_tell(pb);
         avio_seek(mkv->info_bc, mkv->duration_offset, SEEK_SET);
         put_ebml_float(mkv->info_bc, MATROSKA_ID_DURATION, mkv->duration);
-        avio_seek(pb, mkv->info.pos, SEEK_SET);
-        end_ebml_master_crc32(pb, &mkv->info_bc, mkv, mkv->info);
+        avio_seek(pb, mkv->info_pos, SEEK_SET);
+        end_ebml_master_crc32(pb, &mkv->info_bc, mkv);
 
         // write tracks master
-        avio_seek(pb, mkv->tracks_master.pos, SEEK_SET);
-        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, mkv->tracks_master);
+        avio_seek(pb, mkv->tracks_pos, SEEK_SET);
+        end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv);
 
         // update stream durations
         if (!mkv->is_live && mkv->stream_durations) {
@@ -2655,9 +2650,9 @@ static int mkv_write_trailer(AVFormatContext *s)
             }
             avio_seek(mkv->tags_bc, curr, SEEK_SET);
         }
-        if (mkv->tags.pos && !mkv->is_live) {
-            avio_seek(pb, mkv->tags.pos, SEEK_SET);
-            end_ebml_master_crc32(pb, &mkv->tags_bc, mkv, mkv->tags);
+        if (mkv->tags_bc && !mkv->is_live) {
+            avio_seek(pb, mkv->tags_pos, SEEK_SET);
+            end_ebml_master_crc32(pb, &mkv->tags_bc, mkv);
         }
 
         avio_seek(pb, currentpos, SEEK_SET);
