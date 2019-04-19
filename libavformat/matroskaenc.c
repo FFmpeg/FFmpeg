@@ -58,8 +58,9 @@
 #include "libavcodec/internal.h"
 
 typedef struct ebml_master {
-    int64_t         pos;                ///< absolute offset in the file where the master's elements start
-    int             sizebytes;          ///< how many bytes were reserved for the size
+    int64_t         pos;                ///< absolute offset in the containing AVIOContext where the size field starts
+                                        ///< for level 1 elements or else where the master's elements start
+    int             sizebytes;          ///< how many bytes were reserved/shall be used for the size
 } ebml_master;
 
 typedef struct mkv_seekhead_entry {
@@ -316,6 +317,7 @@ static ebml_master start_ebml_master(AVIOContext *pb, uint32_t elementid,
                                      uint64_t expectedsize)
 {
     int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
+
     put_ebml_id(pb, elementid);
     put_ebml_size_unknown(pb, bytes);
     return (ebml_master) {avio_tell(pb), bytes };
@@ -340,7 +342,10 @@ static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matros
         return ret;
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
-        *master = start_ebml_master(pb, elementid, expectedsize);
+        int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
+
+        put_ebml_id(pb, elementid);
+        *master = (ebml_master) { avio_tell(pb), bytes };
         if (mkv->write_crc)
             put_ebml_void(*dyn_cp, 6); /* Reserve space for CRC32 so position/size calculations using avio_tell() take it into account */
     } else
@@ -357,13 +362,13 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         size = avio_close_dyn_buf(*dyn_cp, &buf);
+        put_ebml_num(pb, size, master.sizebytes);
         if (mkv->write_crc) {
             skip = 6; /* Skip reserved 6-byte long void element from the dynamic buffer. */
             AV_WL32(crc, av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, buf + skip, size - skip) ^ UINT32_MAX);
             put_ebml_binary(pb, EBML_ID_CRC32, crc, sizeof(crc));
         }
         avio_write(pb, buf + skip, size - skip);
-        end_ebml_master(pb, master);
     } else {
         end_ebml_master(*dyn_cp, master);
         size = avio_close_dyn_buf(*dyn_cp, &buf);
@@ -383,8 +388,8 @@ static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext **dyn
         uint8_t *buf;
         int size = avio_get_dyn_buf(*dyn_cp, &buf);
 
+    put_ebml_num(pb, size, master.sizebytes);
         avio_write(pb, buf, size);
-        end_ebml_master(pb, master);
 }
 
 static void put_xiph_size(AVIOContext *pb, int size)
