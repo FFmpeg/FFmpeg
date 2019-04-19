@@ -341,7 +341,7 @@ static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matros
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         *master = start_ebml_master(pb, elementid, expectedsize);
-        if (mkv->write_crc && mkv->mode != MODE_WEBM)
+        if (mkv->write_crc)
             put_ebml_void(*dyn_cp, 6); /* Reserve space for CRC32 so position/size calculations using avio_tell() take it into account */
     } else
         *master = start_ebml_master(*dyn_cp, elementid, expectedsize);
@@ -357,7 +357,7 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, Matrosk
 
     if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         size = avio_close_dyn_buf(*dyn_cp, &buf);
-        if (mkv->write_crc && mkv->mode != MODE_WEBM) {
+        if (mkv->write_crc) {
             skip = 6; /* Skip reserved 6-byte long void element from the dynamic buffer. */
             AV_WL32(crc, av_crc(av_crc_get_table(AV_CRC_32_IEEE_LE), UINT32_MAX, buf + skip, size - skip) ^ UINT32_MAX);
             put_ebml_binary(pb, EBML_ID_CRC32, crc, sizeof(crc));
@@ -1867,9 +1867,10 @@ static int mkv_write_header(AVFormatContext *s)
     int ret, i, version = 2;
     int64_t creation_time;
 
-    if (!strcmp(s->oformat->name, "webm"))
-        mkv->mode = MODE_WEBM;
-    else
+    if (!strcmp(s->oformat->name, "webm")) {
+        mkv->mode      = MODE_WEBM;
+        mkv->write_crc = 0;
+    } else
         mkv->mode = MODE_MATROSKAv2;
 
     if (mkv->mode != MODE_WEBM ||
