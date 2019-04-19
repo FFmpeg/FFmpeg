@@ -687,8 +687,8 @@ static inline void tm2_update_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     /* update chroma */
     for (j = 0; j < 2; j++) {
         for (i = 0; i < 2; i++) {
-            U[i] = Uo[i] + GET_TOK(ctx, TM2_UPD);
-            V[i] = Vo[i] + GET_TOK(ctx, TM2_UPD);
+            U[i] = Uo[i] + (unsigned)GET_TOK(ctx, TM2_UPD);
+            V[i] = Vo[i] + (unsigned)GET_TOK(ctx, TM2_UPD);
         }
         U  += Ustride;
         V  += Vstride;
