@@ -63,7 +63,7 @@ typedef struct ebml_master {
 } ebml_master;
 
 typedef struct mkv_seekhead_entry {
-    unsigned int    elementid;
+    uint32_t        elementid;
     uint64_t        segmentpos;
 } mkv_seekhead_entry;
 
@@ -182,12 +182,12 @@ typedef struct MatroskaMuxContext {
 /** Seek preroll value for opus */
 #define OPUS_SEEK_PREROLL 80000000
 
-static int ebml_id_size(unsigned int id)
+static int ebml_id_size(uint32_t id)
 {
     return (av_log2(id + 1) - 1) / 7 + 1;
 }
 
-static void put_ebml_id(AVIOContext *pb, unsigned int id)
+static void put_ebml_id(AVIOContext *pb, uint32_t id)
 {
     int i = ebml_id_size(id);
     while (i--)
@@ -242,7 +242,7 @@ static void put_ebml_num(AVIOContext *pb, uint64_t num, int bytes)
         avio_w8(pb, (uint8_t)(num >> i * 8));
 }
 
-static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
+static void put_ebml_uint(AVIOContext *pb, uint32_t elementid, uint64_t val)
 {
     int i, bytes = 1;
     uint64_t tmp = val;
@@ -255,7 +255,7 @@ static void put_ebml_uint(AVIOContext *pb, unsigned int elementid, uint64_t val)
         avio_w8(pb, (uint8_t)(val >> i * 8));
 }
 
-static void put_ebml_sint(AVIOContext *pb, unsigned int elementid, int64_t val)
+static void put_ebml_sint(AVIOContext *pb, uint32_t elementid, int64_t val)
 {
     int i, bytes = 1;
     uint64_t tmp = 2*(val < 0 ? val^-1 : val);
@@ -268,14 +268,14 @@ static void put_ebml_sint(AVIOContext *pb, unsigned int elementid, int64_t val)
         avio_w8(pb, (uint8_t)(val >> i * 8));
 }
 
-static void put_ebml_float(AVIOContext *pb, unsigned int elementid, double val)
+static void put_ebml_float(AVIOContext *pb, uint32_t elementid, double val)
 {
     put_ebml_id(pb, elementid);
     put_ebml_num(pb, 8, 0);
     avio_wb64(pb, av_double2int(val));
 }
 
-static void put_ebml_binary(AVIOContext *pb, unsigned int elementid,
+static void put_ebml_binary(AVIOContext *pb, uint32_t elementid,
                             const void *buf, int size)
 {
     put_ebml_id(pb, elementid);
@@ -283,7 +283,7 @@ static void put_ebml_binary(AVIOContext *pb, unsigned int elementid,
     avio_write(pb, buf, size);
 }
 
-static void put_ebml_string(AVIOContext *pb, unsigned int elementid,
+static void put_ebml_string(AVIOContext *pb, uint32_t elementid,
                             const char *str)
 {
     put_ebml_binary(pb, elementid, str, strlen(str));
@@ -312,7 +312,7 @@ static void put_ebml_void(AVIOContext *pb, uint64_t size)
     ffio_fill(pb, 0, currentpos + size - avio_tell(pb));
 }
 
-static ebml_master start_ebml_master(AVIOContext *pb, unsigned int elementid,
+static ebml_master start_ebml_master(AVIOContext *pb, uint32_t elementid,
                                      uint64_t expectedsize)
 {
     int bytes = expectedsize ? ebml_num_size(expectedsize) : 8;
@@ -332,7 +332,7 @@ static void end_ebml_master(AVIOContext *pb, ebml_master master)
 }
 
 static int start_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
-                                   ebml_master *master, unsigned int elementid, uint64_t expectedsize)
+                                   ebml_master *master, uint32_t elementid, uint64_t expectedsize)
 {
     int ret;
 
@@ -463,7 +463,7 @@ static mkv_seekhead *mkv_start_seekhead(AVIOContext *pb, int64_t segment_offset,
     return new_seekhead;
 }
 
-static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, unsigned int elementid, uint64_t filepos)
+static int mkv_add_seekhead_entry(mkv_seekhead *seekhead, uint32_t elementid, uint64_t filepos)
 {
     mkv_seekhead_entry *entries = seekhead->entries;
 
@@ -1575,7 +1575,7 @@ static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
 }
 
 static int mkv_write_tag_targets(AVFormatContext *s,
-                                 unsigned int elementid, unsigned int uid,
+                                 uint32_t elementid, unsigned int uid,
                                  ebml_master *tags, ebml_master* tag)
 {
     AVIOContext *pb;
@@ -1599,7 +1599,7 @@ static int mkv_write_tag_targets(AVFormatContext *s,
     return 0;
 }
 
-static int mkv_check_tag_name(const char *name, unsigned int elementid)
+static int mkv_check_tag_name(const char *name, uint32_t elementid)
 {
     return av_strcasecmp(name, "title") &&
            av_strcasecmp(name, "stereo_mode") &&
@@ -1613,7 +1613,7 @@ static int mkv_check_tag_name(const char *name, unsigned int elementid)
              av_strcasecmp(name, "mimetype")));
 }
 
-static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
+static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid,
                          unsigned int uid, ebml_master *tags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1637,7 +1637,7 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
     return 0;
 }
 
-static int mkv_check_tag(AVDictionary *m, unsigned int elementid)
+static int mkv_check_tag(AVDictionary *m, uint32_t elementid)
 {
     AVDictionaryEntry *t = NULL;
 
@@ -2117,7 +2117,7 @@ fail:
 }
 
 static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
-                            unsigned int blockid, AVPacket *pkt, int keyframe)
+                            uint32_t blockid, AVPacket *pkt, int keyframe)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
