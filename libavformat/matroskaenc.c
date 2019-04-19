@@ -164,6 +164,9 @@ typedef struct MatroskaMuxContext {
     int allow_raw_vfw;
 } MatroskaMuxContext;
 
+/** 2 bytes * 7 for EBML IDs, 7 1-byte EBML lengths, 6 1-byte uint,
+ * 8 byte for "matroska" doctype string */
+#define MAX_EBML_HEADER_SIZE 35
 
 /** 2 bytes * 3 for EBML IDs, 3 1-byte EBML lengths, 8 bytes for 64 bit
  * offset, 4 bytes for target EBML ID */
@@ -1886,7 +1889,7 @@ static int mkv_write_header(AVFormatContext *s)
         ret = AVERROR(ENOMEM);
         goto fail;
     }
-    ebml_header = start_ebml_master(pb, EBML_ID_HEADER, 0);
+    ebml_header = start_ebml_master(pb, EBML_ID_HEADER, MAX_EBML_HEADER_SIZE);
     put_ebml_uint   (pb, EBML_ID_EBMLVERSION        ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLREADVERSION    ,           1);
     put_ebml_uint   (pb, EBML_ID_EBMLMAXIDLENGTH    ,           4);
