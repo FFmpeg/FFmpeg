@@ -2404,7 +2404,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
     ts += mkv->tracks[pkt->stream_index].ts_offset;
 
     if (mkv->cluster_pos != -1) {
-        int64_t cluster_time = ts - mkv->cluster_pts + mkv->tracks[pkt->stream_index].ts_offset;
+        int64_t cluster_time = ts - mkv->cluster_pts;
         if ((int16_t)cluster_time != cluster_time) {
             av_log(s, AV_LOG_WARNING, "Starting new cluster due to timestamp\n");
             mkv_start_new_cluster(s, pkt);
