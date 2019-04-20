@@ -879,12 +879,19 @@ Deprecated see -bsf
 
 @item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 @item -force_key_frames[:@var{stream_specifier}] expr:@var{expr} (@emph{output,per-stream})
-Force key frames at the specified timestamps, more precisely at the first
-frames after each specified time.
+@item -force_key_frames[:@var{stream_specifier}] source (@emph{output,per-stream})
 
-If the argument is prefixed with @code{expr:}, the string @var{expr}
-is interpreted like an expression and is evaluated for each frame. A
-key frame is forced in case the evaluation is non-zero.
+@var{force_key_frames} can take arguments of the following form:
+
+@table @option
+
+@item @var{time}[,@var{time}...]
+If the argument consists of timestamps, ffmpeg will round the specified times to the nearest
+output timestamp as per the encoder time base and force a keyframe at the first frame having
+timestamp equal or greater than the computed timestamp. Note that if the encoder time base is too
+coarse, then the keyframes may be forced on frames with timestamps lower than the specified time.
+The default encoder time base is the inverse of the output framerate but may be set otherwise
+via @code{-enc_time_base}.
 
 If one of the times is "@code{chapters}[@var{delta}]", it is expanded into
 the time of the beginning of all chapters in the file, shifted by
@@ -897,6 +904,11 @@ before the beginning of every chapter:
 @example
 -force_key_frames 0:05:00,chapters-0.1
 @end example
+
+@item expr:@var{expr}
+If the argument is prefixed with @code{expr:}, the string @var{expr}
+is interpreted like an expression and is evaluated for each frame. A
+key frame is forced in case the evaluation is non-zero.
 
 The expression in @var{expr} can contain the following constants:
 @table @option
@@ -924,6 +936,12 @@ starting from second 13:
 @example
 -force_key_frames expr:if(isnan(prev_forced_t),gte(t,13),gte(t,prev_forced_t+5))
 @end example
+
+@item source
+If the argument is @code{source}, ffmpeg will force a key frame if
+the current frame being encoded is marked as a key frame in its source.
+
+@end table
 
 Note that forcing too many keyframes is very harmful for the lookahead
 algorithms of certain encoders: using fixed-GOP options or similar
