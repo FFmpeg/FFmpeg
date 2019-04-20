@@ -137,9 +137,9 @@ static const uint8_t parity_table[256] = { 0, 1, 1, 0, 1, 0, 0, 1,
 
 struct Screen {
     /* +1 is used to compensate null character of string */
-    uint8_t characters[SCREEN_ROWS][SCREEN_COLUMNS+1];
-    uint8_t colors[SCREEN_ROWS][SCREEN_COLUMNS+1];
-    uint8_t fonts[SCREEN_ROWS][SCREEN_COLUMNS+1];
+    uint8_t characters[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t colors[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t fonts[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     /*
      * Bitmask of used rows; if a bit is not set, the
      * corresponding row is not used.
