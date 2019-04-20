@@ -15,6 +15,10 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-04-20 - 3153a6502a - lavc 58.52.100 - avcodec.h
+  Add AV_CODEC_FLAG_DROPCHANGED to allow avcodec_receive_frame to drop
+  frames whose parameters differ from first decoded frame in stream.
+
 2019-04-12 - abfeba9724 - lavf 58.27.102
   Rename hls,applehttp demuxer to hls
 
