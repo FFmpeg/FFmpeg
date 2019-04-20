@@ -25,6 +25,7 @@
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
+#include "window_func.h"
 
 typedef struct AudioSurroundContext {
     const AVClass *class;
@@ -38,6 +39,8 @@ typedef struct AudioSurroundContext {
     float fc_out;
     float lfe_in;
     float lfe_out;
+    int   win_func;
+    float overlap;
 
     float *input_levels;
     float *output_levels;
@@ -1288,10 +1291,15 @@ fail:
     if (!s->window_func_lut)
         return AVERROR(ENOMEM);
 
+    generate_window_func(s->window_func_lut, s->buf_size, s->win_func, &overlap);
+    if (s->overlap == 1)
+        s->overlap = overlap;
+
     for (i = 0; i < s->buf_size; i++)
-        s->window_func_lut[i] = sqrtf(0.5 * (1 - cosf(2 * M_PI * i / s->buf_size)) / s->buf_size);
-    overlap = .5;
-    s->hop_size = s->buf_size * (1. - overlap);
+        s->window_func_lut[i] = sqrtf(s->window_func_lut[i] / s->buf_size);
+    s->hop_size = s->buf_size * (1. - s->overlap);
+    if (s->hop_size <= 0)
+        return AVERROR(EINVAL);
 
     return 0;
 }
@@ -1449,6 +1457,29 @@ static const AVOption surround_options[] = {
     { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "lfe_in",    "set lfe channel input level",  OFFSET(lfe_in),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "lfe_out",   "set lfe channel output level", OFFSET(lfe_out),             AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, FLAGS, "win_func" },
+        { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, FLAGS, "win_func" },
+        { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, FLAGS, "win_func" },
+        { "hann",     "Hann",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hanning",  "Hanning",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HANNING},  0, 0, FLAGS, "win_func" },
+        { "hamming",  "Hamming",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_HAMMING},  0, 0, FLAGS, "win_func" },
+        { "blackman", "Blackman",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BLACKMAN}, 0, 0, FLAGS, "win_func" },
+        { "welch",    "Welch",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_WELCH},    0, 0, FLAGS, "win_func" },
+        { "flattop",  "Flat-top",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_FLATTOP},  0, 0, FLAGS, "win_func" },
+        { "bharris",  "Blackman-Harris",  0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHARRIS},  0, 0, FLAGS, "win_func" },
+        { "bnuttall", "Blackman-Nuttall", 0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BNUTTALL}, 0, 0, FLAGS, "win_func" },
+        { "bhann",    "Bartlett-Hann",    0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BHANN},    0, 0, FLAGS, "win_func" },
+        { "sine",     "Sine",             0, AV_OPT_TYPE_CONST, {.i64=WFUNC_SINE},     0, 0, FLAGS, "win_func" },
+        { "nuttall",  "Nuttall",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_NUTTALL},  0, 0, FLAGS, "win_func" },
+        { "lanczos",  "Lanczos",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_LANCZOS},  0, 0, FLAGS, "win_func" },
+        { "gauss",    "Gauss",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_GAUSS},    0, 0, FLAGS, "win_func" },
+        { "tukey",    "Tukey",            0, AV_OPT_TYPE_CONST, {.i64=WFUNC_TUKEY},    0, 0, FLAGS, "win_func" },
+        { "dolph",    "Dolph-Chebyshev",  0, AV_OPT_TYPE_CONST, {.i64=WFUNC_DOLPH},    0, 0, FLAGS, "win_func" },
+        { "cauchy",   "Cauchy",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_CAUCHY},   0, 0, FLAGS, "win_func" },
+        { "parzen",   "Parzen",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_PARZEN},   0, 0, FLAGS, "win_func" },
+        { "poisson",  "Poisson",          0, AV_OPT_TYPE_CONST, {.i64=WFUNC_POISSON},  0, 0, FLAGS, "win_func" },
+        { "bohman",   "Bohman",           0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BOHMAN},   0, 0, FLAGS, "win_func" },
+    { "overlap", "set window overlap", OFFSET(overlap), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS },
     { NULL }
 };
 

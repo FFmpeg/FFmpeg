@@ -4882,6 +4882,13 @@ Set LFE input volume. By default, this is @var{1}.
 
 @item lfe_out
 Set LFE output volume. By default, this is @var{1}.
+
+@item win_func
+Set window function, default is @code{hann}.
+
+@item overlap
+Set window overlap. If set to 1, the recommended overlap for selected
+window function will be picked. Default is @code{0.5}.
 @end table
 
 @section treble, highshelf
