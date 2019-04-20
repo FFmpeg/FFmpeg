@@ -257,20 +257,25 @@ with the subject @emph{set delivery off}. To re-enable mail delivery send a
 message to @email{ffmpeg-user-request@@ffmpeg.org} with the subject
 @emph{set delivery on}.
 
+@anchor{Why is the mailing list munging my address?}
 @section Why is the mailing list munging my address?
 
-This is due to subscribers that use a mail service with a DMARC reject policy
+This is due to subscribers that use an email service with a DMARC reject policy
 which adds difficulties to mailing list operators.
 
 The mailing list must re-write (munge) the @emph{From:} header for such users;
-otherwise their mail service will reject and bounce the message resulting in
+otherwise their email service will reject and bounce the message resulting in
 automatic unsubscribing from the mailing list.
 
 When sending a message these users will see @emph{via <mailing list name>}
 added to their name and the @emph{From:} address munged to the address of
 the particular mailing list.
 
-If you want to avoid this then please use a different mail service.
+If you want to avoid this then please use a different email service.
+
+Note that ffmpeg-devel does not apply any munging as it causes issues with
+patch authorship. As a result users with an email service with a DMARC reject
+policy may be automatically unsubscribed due to rejected and bounced messages.
 
 @chapter Rules and Etiquette
 
@@ -369,6 +374,15 @@ form a multi-part message is recommended by email standards.
 @item
 Check your spam folder.
 @end itemize
+
+@anchor{Why do I keep getting unsubscribed from ffmpeg-devel?}
+@section Why do I keep getting unsubscribed from ffmpeg-devel?
+
+Users with an email service that has a DMARC reject or quarantine policy may be
+automatically unsubscribed from the ffmpeg-devel mailing list due to the mailing
+list messages being continuously rejected and bounced back.
+
+Consider using a different email service.
 
 @anchor{Who do I contact if I have a problem with the mailing list?}
 @section Who do I contact if I have a problem with the mailing list?
