@@ -127,7 +127,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         break;
 
     case F0R_PARAM_STRING:
-        val.str = param;
+        val.str = (f0r_param_string *)param;
         break;
     }
 
