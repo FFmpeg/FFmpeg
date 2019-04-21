@@ -42,6 +42,7 @@ typedef struct GIFContext {
 
 static int gif_write_header(AVFormatContext *s)
 {
+    fprintf(stderr, "write header?\n");
     if (s->nb_streams != 1 ||
         s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO ||
         s->streams[0]->codecpar->codec_id   != AV_CODEC_ID_GIF) {
@@ -52,11 +53,13 @@ static int gif_write_header(AVFormatContext *s)
 
     avpriv_set_pts_info(s->streams[0], 64, 1, 100);
 
+    fprintf(stderr, "write header ok\n");
     return 0;
 }
 
 static int gif_parse_packet(AVFormatContext *s, uint8_t *data, int size)
 {
+    fprintf(stderr, "gif parse packet\n");
     GetByteContext gb;
     int x;
 
@@ -94,6 +97,7 @@ static int gif_get_delay(GIFContext *gif, AVPacket *prev, AVPacket *new)
 
 static int gif_write_packet(AVFormatContext *s, AVPacket *new_pkt)
 {
+    fprintf(stderr, "write packet?\n");
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
     AVPacket *pkt = gif->prev_pkt;
@@ -102,6 +106,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *new_pkt)
         gif->prev_pkt = av_packet_alloc();
         if (!gif->prev_pkt)
             return AVERROR(ENOMEM);
+        fprintf(stderr, "ref packet?\n");
         return av_packet_ref(gif->prev_pkt, new_pkt);
     }
 
@@ -171,6 +176,7 @@ static int gif_write_packet(AVFormatContext *s, AVPacket *new_pkt)
 
 static int gif_write_trailer(AVFormatContext *s)
 {
+    fprintf(stderr, "giftrailer\n");
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
 
