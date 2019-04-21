@@ -919,7 +919,7 @@ static void get_tree_codes(uint32_t *codes, Node *nodes, int idx, uint32_t pfx, 
     }
 }
 
-static void make_new_tree(const uint8_t *bitlens, uint32_t *codes)
+static int make_new_tree(const uint8_t *bitlens, uint32_t *codes)
 {
     int zlcount = 0, curlen, idx, nindex, last, llast;
     int blcounts[32] = { 0 };
@@ -958,6 +958,9 @@ static void make_new_tree(const uint8_t *bitlens, uint32_t *codes)
             for (int i = 0; zlcount < 256 && zlcount < max_zlcount; zlcount++, i++) {
                 int p = node_idx[nindex - 1 + 512];
                 int ch = syms[256 * curlen + i];
+
+                if (nindex <= 0)
+                    return AVERROR_INVALIDDATA;
 
                 if (nodes[p].child[0] == -1) {
                     nodes[p].child[0] = ch;
@@ -998,6 +1001,7 @@ static void make_new_tree(const uint8_t *bitlens, uint32_t *codes)
 next:
 
     get_tree_codes(codes, nodes, 256, 0, 0);
+    return 0;
 }
 
 static int build_huff(const uint8_t *bitlen, VLC *vlc)
@@ -1008,7 +1012,9 @@ static int build_huff(const uint8_t *bitlen, VLC *vlc)
     uint32_t codes[256];
     int nb_codes = 0;
 
-    make_new_tree(bitlen, new_codes);
+    int ret = make_new_tree(bitlen, new_codes);
+    if (ret < 0)
+        return ret;
 
     for (int i = 0; i < 256; i++) {
         if (bitlen[i]) {
