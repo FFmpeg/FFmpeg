@@ -943,7 +943,7 @@ static int make_new_tree(const uint8_t *bitlens, uint32_t *codes)
     }
 
     for (int i = 0; i < 256; i++) {
-        node_idx[i] = 257 + i;;
+        node_idx[i] = 257 + i;
     }
 
     curlen = 1;
