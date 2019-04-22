@@ -121,6 +121,8 @@ static int zmbv_decode_xor_8(ZmbvContext *c)
             for (j = 0; j < bh2; j++) {
                 if (my + j < 0 || my + j >= c->height) {
                     memset(out, 0, bw2);
+                } else if (mx >= 0 && mx + bw2 <= c->width){
+                    memcpy(out, tprev, sizeof(*out) * bw2);
                 } else {
                     for (i = 0; i < bw2; i++) {
                         if (mx + i < 0 || mx + i >= c->width)
@@ -193,6 +195,8 @@ static int zmbv_decode_xor_16(ZmbvContext *c)
             for (j = 0; j < bh2; j++) {
                 if (my + j < 0 || my + j >= c->height) {
                     memset(out, 0, bw2 * 2);
+                } else if (mx >= 0 && mx + bw2 <= c->width){
+                    memcpy(out, tprev, sizeof(*out) * bw2);
                 } else {
                     for (i = 0; i < bw2; i++) {
                         if (mx + i < 0 || mx + i >= c->width)
@@ -270,6 +274,8 @@ static int zmbv_decode_xor_24(ZmbvContext *c)
             for (j = 0; j < bh2; j++) {
                 if (my + j < 0 || my + j >= c->height) {
                     memset(out, 0, bw2 * 3);
+                } else if (mx >= 0 && mx + bw2 <= c->width){
+                    memcpy(out, tprev, 3 * bw2);
                 } else {
                     for (i = 0; i < bw2; i++){
                         if (mx + i < 0 || mx + i >= c->width) {
@@ -351,6 +357,8 @@ static int zmbv_decode_xor_32(ZmbvContext *c)
             for (j = 0; j < bh2; j++) {
                 if (my + j < 0 || my + j >= c->height) {
                     memset(out, 0, bw2 * 4);
+                } else if (mx >= 0 && mx + bw2 <= c->width){
+                    memcpy(out, tprev, sizeof(*out) * bw2);
                 } else {
                     for (i = 0; i < bw2; i++){
                         if (mx + i < 0 || mx + i >= c->width)
