@@ -2141,6 +2141,9 @@ Bit_depth
 Dynamic_range
 Zero_crossings
 Zero_crossings_rate
+Number_of_NaNs
+Number_of_Infs
+Number_of_denormals
 
 and for Overall:
 DC_offset
@@ -2158,6 +2161,9 @@ Flat_factor
 Peak_count
 Bit_depth
 Number_of_samples
+Number_of_NaNs
+Number_of_Infs
+Number_of_denormals
 
 For example full key look like this @code{lavfi.astats.1.DC_offset} or
 this @code{lavfi.astats.Overall.Peak_count}.
