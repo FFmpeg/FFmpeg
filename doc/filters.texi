@@ -4871,6 +4871,12 @@ Set LFE low cut off frequency. By default, this is @var{128} Hz.
 @item lfe_high
 Set LFE high cut off frequency. By default, this is @var{256} Hz.
 
+@item lfe_mode
+Set LFE mode, can be @var{add} or @var{sub}. Default is @var{add}.
+In @var{add} mode, LFE channel is created from input audio and added to output.
+In @var{sub} mode, LFE channel is created from input audio and added to output but
+also all non-LFE output channels are subtracted with output LFE channel.
+
 @item fc_in
 Set front center input volume. By default, this is @var{1}.
 

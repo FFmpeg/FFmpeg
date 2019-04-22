@@ -39,6 +39,7 @@ typedef struct AudioSurroundContext {
     float fc_out;
     float lfe_in;
     float lfe_out;
+    int   lfe_mode;
     int   win_func;
     float overlap;
 
@@ -237,12 +238,13 @@ static void stereo_position(float a, float p, float *x, float *y)
 }
 
 static inline void get_lfe(int output_lfe, int n, float lowcut, float highcut,
-                           float *lfe_mag, float *mag_total)
+                           float *lfe_mag, float *mag_total, int lfe_mode)
 {
     if (output_lfe && n < highcut) {
         *lfe_mag    = n < lowcut ? 1.f : .5f*(1.f+cosf(M_PI*(lowcut-n)/(lowcut-highcut)));
         *lfe_mag   *= *mag_total;
-        *mag_total -= *lfe_mag;
+        if (lfe_mode)
+            *mag_total -= *lfe_mag;
     } else {
         *lfe_mag = 0.f;
     }
@@ -306,7 +308,7 @@ static void upmix_2_1(AVFilterContext *ctx,
     dstr = (float *)s->output->extended_data[1];
     dstlfe = (float *)s->output->extended_data[2];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     l_mag = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
     r_mag = sqrtf(.5f * (-x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -366,7 +368,7 @@ static void upmix_3_1(AVFilterContext *ctx,
     dstc = (float *)s->output->extended_data[2];
     dstlfe = (float *)s->output->extended_data[3];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     c_mag = sqrtf(1.f - fabsf(x))   * ((y + 1.f) * .5f) * mag_total;
     l_mag = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -402,7 +404,7 @@ static void upmix_3_1_surround(AVFilterContext *ctx,
     dstc = (float *)s->output->extended_data[2];
     dstlfe = (float *)s->output->extended_data[3];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
 
     l_mag = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
     r_mag = sqrtf(.5f * (-x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -471,7 +473,7 @@ static void upmix_4_1(AVFilterContext *ctx,
     dstlfe = (float *)s->output->extended_data[3];
     dstb = (float *)s->output->extended_data[4];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     dstlfe[2 * n    ] = lfe_mag * cosf(c_phase);
     dstlfe[2 * n + 1] = lfe_mag * sinf(c_phase);
@@ -551,7 +553,7 @@ static void upmix_5_1_back(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[4];
     dstrs = (float *)s->output->extended_data[5];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     c_mag  = sqrtf(1.f - fabsf(x))   * ((y + 1.f) * .5f) * mag_total;
     l_mag  = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -598,7 +600,7 @@ static void upmix_5_1_back_surround(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[4];
     dstrs = (float *)s->output->extended_data[5];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &c_mag, s->lfe_mode);
 
     l_mag = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
     r_mag = sqrtf(.5f * (-x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -741,7 +743,7 @@ static void upmix_7_1(AVFilterContext *ctx,
     dstls = (float *)s->output->extended_data[6];
     dstrs = (float *)s->output->extended_data[7];
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     c_mag  = sqrtf(1.f - fabsf(x))   * ((y + 1.f) * .5f) * mag_total;
     l_mag  = sqrtf(.5f * ( x + 1.f)) * ((y + 1.f) * .5f) * mag_total;
@@ -802,7 +804,7 @@ static void upmix_7_1_5_0_side(AVFilterContext *ctx,
 
     c_phase = atan2f(c_im, c_re);
 
-    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total);
+    get_lfe(s->output_lfe, n, s->lowcut, s->highcut, &lfe_mag, &mag_total, s->lfe_mode);
 
     fl_mag = sqrtf(.5f * (xl + 1.f)) * ((yl + 1.f) * .5f) * mag_totall;
     fr_mag = sqrtf(.5f * (xr + 1.f)) * ((yr + 1.f) * .5f) * mag_totalr;
@@ -1462,6 +1464,9 @@ static const AVOption surround_options[] = {
     { "lfe",       "output LFE",                OFFSET(output_lfe),             AV_OPT_TYPE_BOOL,   {.i64=1},     0,   1, FLAGS },
     { "lfe_low",   "LFE low cut off",           OFFSET(lowcutf),                AV_OPT_TYPE_INT,    {.i64=128},   0, 256, FLAGS },
     { "lfe_high",  "LFE high cut off",          OFFSET(highcutf),               AV_OPT_TYPE_INT,    {.i64=256},   0, 512, FLAGS },
+    { "lfe_mode",  "set LFE channel mode",      OFFSET(lfe_mode),               AV_OPT_TYPE_INT,    {.i64=0},     0,   1, FLAGS, "lfe_mode" },
+    {  "add",      "just add LFE channel",                  0,                  AV_OPT_TYPE_CONST,  {.i64=0},     0,   1, FLAGS, "lfe_mode" },
+    {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, FLAGS, "lfe_mode" },
     { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "lfe_in",    "set lfe channel input level",  OFFSET(lfe_in),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
