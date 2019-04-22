@@ -2940,7 +2940,7 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (duration > 0 &&
         duration <= INT64_MAX - sc->duration_for_fps &&
-        total_sample_count <= INT64_MAX - sc->nb_frames_for_fps
+        total_sample_count <= INT_MAX - sc->nb_frames_for_fps
     ) {
         sc->duration_for_fps  += duration;
         sc->nb_frames_for_fps += total_sample_count;
@@ -4897,7 +4897,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         sc->data_size += sample_size;
 
         if (sample_duration <= INT64_MAX - sc->duration_for_fps &&
-            1 <= INT64_MAX - sc->nb_frames_for_fps
+            1 <= INT_MAX - sc->nb_frames_for_fps
         ) {
             sc->duration_for_fps += sample_duration;
             sc->nb_frames_for_fps ++;
