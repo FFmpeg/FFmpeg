@@ -4883,6 +4883,48 @@ Set front center input volume. By default, this is @var{1}.
 @item fc_out
 Set front center output volume. By default, this is @var{1}.
 
+@item fl_in
+Set front left input volume. By default, this is @var{1}.
+
+@item fl_out
+Set front left output volume. By default, this is @var{1}.
+
+@item fr_in
+Set front right input volume. By default, this is @var{1}.
+
+@item fr_out
+Set front right output volume. By default, this is @var{1}.
+
+@item sl_in
+Set side left input volume. By default, this is @var{1}.
+
+@item sl_out
+Set side left output volume. By default, this is @var{1}.
+
+@item sr_in
+Set side right input volume. By default, this is @var{1}.
+
+@item sr_out
+Set side right output volume. By default, this is @var{1}.
+
+@item bl_in
+Set back left input volume. By default, this is @var{1}.
+
+@item bl_out
+Set back left output volume. By default, this is @var{1}.
+
+@item br_in
+Set back right input volume. By default, this is @var{1}.
+
+@item br_out
+Set back right output volume. By default, this is @var{1}.
+
+@item bc_in
+Set back center input volume. By default, this is @var{1}.
+
+@item bc_out
+Set back center output volume. By default, this is @var{1}.
+
 @item lfe_in
 Set LFE input volume. By default, this is @var{1}.
 

@@ -39,6 +39,20 @@ typedef struct AudioSurroundContext {
     float level_out;
     float fc_in;
     float fc_out;
+    float fl_in;
+    float fl_out;
+    float fr_in;
+    float fr_out;
+    float sl_in;
+    float sl_out;
+    float sr_in;
+    float sr_out;
+    float bl_in;
+    float bl_out;
+    float br_in;
+    float br_out;
+    float bc_in;
+    float bc_out;
     float lfe_in;
     float lfe_out;
     int   lfe_mode;
@@ -202,6 +216,27 @@ static int config_input(AVFilterLink *inlink)
     ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_FRONT_CENTER);
     if (ch >= 0)
         s->input_levels[ch] *= s->fc_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_FRONT_LEFT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->fl_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_FRONT_RIGHT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->fr_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_SIDE_LEFT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->sl_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_SIDE_RIGHT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->sr_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_BACK_LEFT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->bl_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_BACK_RIGHT);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->br_in;
+    ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_BACK_CENTER);
+    if (ch >= 0)
+        s->input_levels[ch] *= s->bc_in;
     ch = av_get_channel_layout_channel_index(inlink->channel_layout, AV_CH_LOW_FREQUENCY);
     if (ch >= 0)
         s->input_levels[ch] *= s->lfe_in;
@@ -244,6 +279,27 @@ static int config_output(AVFilterLink *outlink)
     ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_FRONT_CENTER);
     if (ch >= 0)
         s->output_levels[ch] *= s->fc_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_FRONT_LEFT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->fl_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_FRONT_RIGHT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->fr_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_SIDE_LEFT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->sl_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_SIDE_RIGHT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->sr_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_BACK_LEFT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->bl_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_BACK_RIGHT);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->br_out;
+    ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_BACK_CENTER);
+    if (ch >= 0)
+        s->output_levels[ch] *= s->bc_out;
     ch = av_get_channel_layout_channel_index(outlink->channel_layout, AV_CH_LOW_FREQUENCY);
     if (ch >= 0)
         s->output_levels[ch] *= s->lfe_out;
@@ -1620,6 +1676,20 @@ static const AVOption surround_options[] = {
     {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, FLAGS, "lfe_mode" },
     { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "fl_in",     "set front left channel input level",    OFFSET(fl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "fl_out",    "set front left channel output level",   OFFSET(fl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "fr_in",     "set front right channel input level",   OFFSET(fr_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "fr_out",    "set front right channel output level",  OFFSET(fr_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "sl_in",     "set side left channel input level",     OFFSET(sl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "sl_out",    "set side left channel output level",    OFFSET(sl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "sr_in",     "set side right channel input level",    OFFSET(sr_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "sr_out",    "set side right channel output level",   OFFSET(sr_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "bl_in",     "set back left channel input level",     OFFSET(bl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "bl_out",    "set back left channel output level",    OFFSET(bl_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "br_in",     "set back right channel input level",    OFFSET(br_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "br_out",    "set back right channel output level",   OFFSET(br_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "bc_in",     "set back center channel input level",   OFFSET(bc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
+    { "bc_out",    "set back center channel output level",  OFFSET(bc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "lfe_in",    "set lfe channel input level",  OFFSET(lfe_in),              AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "lfe_out",   "set lfe channel output level", OFFSET(lfe_out),             AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "allx",      "set all channel's x spread",         OFFSET(all_x),         AV_OPT_TYPE_FLOAT,  {.dbl=-1},   -1,  15, FLAGS },
