@@ -4901,6 +4901,9 @@ Set spread usage of stereo image across X axis for each channel.
 @item fcy, fly, fry, bly, bry, sly, sry, bcy
 Set spread usage of stereo image across Y axis for each channel.
 
+@item win_size
+Set window size. Allowed range is from @var{1024} to @var{65536}. Default size is @var{4096}.
+
 @item win_func
 Set window function.
 

@@ -40,6 +40,7 @@ typedef struct AudioSurroundContext {
     float lfe_in;
     float lfe_out;
     int   lfe_mode;
+    int   win_size;
     int   win_func;
     float overlap;
 
@@ -1416,7 +1417,7 @@ fail:
         return AVERROR(EINVAL);
     }
 
-    s->buf_size = 4096;
+    s->buf_size = 1 << av_log2(s->win_size);
     s->pts = AV_NOPTS_VALUE;
 
     s->window_func_lut = av_calloc(s->buf_size, sizeof(*s->window_func_lut));
@@ -1615,6 +1616,7 @@ static const AVOption surround_options[] = {
     { "sly",       "set side left channel y spread",     OFFSET(sl_y),          AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  15, FLAGS },
     { "sry",       "set side right channel y spread",    OFFSET(sr_y),          AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  15, FLAGS },
     { "bcy",       "set back center channel y spread",   OFFSET(bc_y),          AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  15, FLAGS },
+    { "win_size", "set window size", OFFSET(win_size), AV_OPT_TYPE_INT, {.i64 = 4096}, 1024, 65536, FLAGS },
     { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, FLAGS, "win_func" },
         { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, FLAGS, "win_func" },
         { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, FLAGS, "win_func" },
