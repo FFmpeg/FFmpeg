@@ -93,7 +93,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         double d;
         f0r_param_color_t col;
         f0r_param_position_t pos;
-        f0r_param_string *str;
+        f0r_param_string str;
     } val;
     char *tail;
     uint8_t rgba[4];
@@ -127,7 +127,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         break;
 
     case F0R_PARAM_STRING:
-        val.str = (f0r_param_string *)param;
+        val.str = param;
         break;
     }
 
