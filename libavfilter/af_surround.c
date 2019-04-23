@@ -24,6 +24,8 @@
 #include "libavcodec/avfft.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
+#include "internal.h"
 #include "formats.h"
 #include "window_func.h"
 
@@ -90,6 +92,7 @@ typedef struct AudioSurroundContext {
     float *window_func_lut;
 
     int64_t pts;
+    int eof;
 
     void (*filter)(AVFilterContext *ctx);
     void (*upmix_stereo)(AVFilterContext *ctx,
@@ -1491,70 +1494,91 @@ static int ifft_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int filter_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioSurroundContext *s = ctx->priv;
+    AVFrame *out;
     int ret;
 
-    ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
-                              in->nb_samples);
-    if (ret >= 0 && s->pts == AV_NOPTS_VALUE)
-        s->pts = in->pts;
-
-    av_frame_free(&in);
+    ret = av_audio_fifo_peek(s->fifo, (void **)s->input->extended_data, s->buf_size);
     if (ret < 0)
         return ret;
 
-    while (av_audio_fifo_size(s->fifo) >= s->buf_size) {
-        AVFrame *out;
+    ctx->internal->execute(ctx, fft_channel, NULL, NULL, inlink->channels);
 
-        ret = av_audio_fifo_peek(s->fifo, (void **)s->input->extended_data, s->buf_size);
-        if (ret < 0)
-            return ret;
+    s->filter(ctx);
 
-        ctx->internal->execute(ctx, fft_channel, NULL, NULL, inlink->channels);
+    out = ff_get_audio_buffer(outlink, s->hop_size);
+    if (!out)
+        return AVERROR(ENOMEM);
 
-        s->filter(ctx);
+    ctx->internal->execute(ctx, ifft_channel, out, NULL, outlink->channels);
 
-        out = ff_get_audio_buffer(outlink, s->hop_size);
-        if (!out)
-            return AVERROR(ENOMEM);
+    out->pts = s->pts;
+    if (s->pts != AV_NOPTS_VALUE)
+        s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
+    av_audio_fifo_drain(s->fifo, FFMIN(av_audio_fifo_size(s->fifo), s->hop_size));
 
-        ctx->internal->execute(ctx, ifft_channel, out, NULL, outlink->channels);
-
-        out->pts = s->pts;
-        if (s->pts != AV_NOPTS_VALUE)
-            s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
-        av_audio_fifo_drain(s->fifo, s->hop_size);
-        ret = ff_filter_frame(outlink, out);
-        if (ret < 0)
-            return ret;
-    }
-
-    return 0;
+    return ff_filter_frame(outlink, out);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AudioSurroundContext *s = ctx->priv;
-    int ret = 0;
+    AVFrame *in = NULL;
+    int ret = 0, status;
+    int64_t pts;
 
-    ret = ff_request_frame(ctx->inputs[0]);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (ret == AVERROR_EOF && av_audio_fifo_size(s->fifo) > 0 && av_audio_fifo_size(s->fifo) < s->buf_size) {
-        AVFrame *in;
+    if (!s->eof && av_audio_fifo_size(s->fifo) < s->buf_size) {
+        ret = ff_inlink_consume_frame(inlink, &in);
+        if (ret < 0)
+            return ret;
 
-        in = ff_get_audio_buffer(outlink, s->buf_size - av_audio_fifo_size(s->fifo));
-        if (!in)
-            return AVERROR(ENOMEM);
-        ret = filter_frame(ctx->inputs[0], in);
-        av_audio_fifo_drain(s->fifo, s->buf_size);
+        if (ret > 0) {
+            ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
+                                      in->nb_samples);
+            if (ret >= 0 && s->pts == AV_NOPTS_VALUE)
+                s->pts = in->pts;
+
+            av_frame_free(&in);
+            if (ret < 0)
+                return ret;
+        }
     }
 
-    return ret;
+    if ((av_audio_fifo_size(s->fifo) >= s->buf_size) ||
+        (av_audio_fifo_size(s->fifo) > 0 && s->eof)) {
+        ret = filter_frame(inlink);
+        if (av_audio_fifo_size(s->fifo) >= s->buf_size)
+            ff_filter_set_ready(ctx, 100);
+        return ret;
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            s->eof = 1;
+            if (av_audio_fifo_size(s->fifo) >= 0) {
+                ff_filter_set_ready(ctx, 100);
+                return 0;
+            }
+        }
+    }
+
+    if (s->eof && av_audio_fifo_size(s->fifo) <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1649,7 +1673,6 @@ static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     { NULL }
@@ -1659,7 +1682,6 @@ static const AVFilterPad outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
         .config_props  = config_output,
     },
     { NULL }
@@ -1673,6 +1695,7 @@ AVFilter ff_af_surround = {
     .priv_class     = &surround_class,
     .init           = init,
     .uninit         = uninit,
+    .activate       = activate,
     .inputs         = inputs,
     .outputs        = outputs,
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
