@@ -127,6 +127,7 @@ extern AVCodec ff_frwu_decoder;
 extern AVCodec ff_g2m_decoder;
 extern AVCodec ff_gdv_decoder;
 extern AVCodec ff_gif_encoder;
+extern AVCodec ff_giflossy_encoder;
 extern AVCodec ff_gif_decoder;
 extern AVCodec ff_h261_encoder;
 extern AVCodec ff_h261_decoder;
