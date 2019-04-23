@@ -2124,10 +2124,14 @@ static void mkv_write_block(AVFormatContext *s, AVIOContext *pb,
 
     ts += mkv->tracks[pkt->stream_index].ts_offset;
 
-    av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
-           "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", keyframe %d\n",
-           avio_tell(pb), pkt->size, pkt->pts, pkt->dts, pkt->duration,
-           keyframe != 0);
+    /* The following string is identical to the one in mkv_write_vtt_blocks
+     * so that only one copy needs to exist in binaries. */
+    av_log(s, AV_LOG_DEBUG,
+           "Writing block of size %d with pts %" PRId64 ", dts %" PRId64 ", "
+           "duration %" PRId64 " at relative offset %" PRId64 " in cluster "
+           "at offset %" PRId64 ". TrackNumber %d, keyframe %d\n",
+           pkt->size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
+           mkv->cluster_pos, track_number, keyframe != 0);
     if (par->codec_id == AV_CODEC_ID_H264 && par->extradata_size > 0 &&
         (AV_RB24(par->extradata) == 1 || AV_RB32(par->extradata) == 1))
         ff_avc_parse_nal_units_buf(pkt->data, &data, &size);
@@ -2231,9 +2235,14 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
 
     size = id_size + 1 + settings_size + 1 + pkt->size;
 
-    av_log(s, AV_LOG_DEBUG, "Writing block at offset %" PRIu64 ", size %d, "
-           "pts %" PRId64 ", dts %" PRId64 ", duration %" PRId64 ", flags %d\n",
-           avio_tell(pb), size, pkt->pts, pkt->dts, pkt->duration, flags);
+    /* The following string is identical to the one in mkv_write_block so that
+     * only one copy needs to exist in binaries. */
+    av_log(s, AV_LOG_DEBUG,
+           "Writing block of size %d with pts %" PRId64 ", dts %" PRId64 ", "
+           "duration %" PRId64 " at relative offset %" PRId64 " in cluster "
+           "at offset %" PRId64 ". TrackNumber %d, keyframe %d\n",
+           size, pkt->pts, pkt->dts, pkt->duration, avio_tell(pb),
+           mkv->cluster_pos, pkt->stream_index + 1, 1);
 
     blockgroup = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, mkv_blockgroup_size(size));
 
