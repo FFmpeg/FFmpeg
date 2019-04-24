@@ -24,9 +24,6 @@ SECTION_RODATA
 
          ; 0.85..^1    0.85..^2    0.85..^3    0.85..^4
 tab_st: dd 0x3f599a00, 0x3f38f671, 0x3f1d382a, 0x3f05a32f
-tab_x0: dd 0x0,        0x3f599a00, 0x3f599a00, 0x3f599a00
-tab_x1: dd 0x0,        0x0,        0x3f38f671, 0x3f38f671
-tab_x2: dd 0x0,        0x0,        0x0,        0x3f1d382a
 
 SECTION .text
 
@@ -45,9 +42,9 @@ cglobal opus_deemphasis, 4, 4, 8, out, in, coeff, len
 %endif
 
     movaps m4, [tab_st]
-    movaps m5, [tab_x0]
-    movaps m6, [tab_x1]
-    movaps m7, [tab_x2]
+    VBROADCASTSS m5, m4
+    shufps m6, m4, m4, q1111
+    shufps m7, m4, m4, q2222
 
 .loop:
     movaps  m1, [inq]                ; x0, x1, x2, x3
