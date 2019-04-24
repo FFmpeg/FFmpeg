@@ -338,7 +338,7 @@ static void stereo_position(float a, float p, float *x, float *y)
 {
     av_assert2(a >= -1.f && a <= 1.f);
     av_assert2(p >= 0.f && p <= M_PI);
-    *x = av_clipf(a+FFMAX(0, sinf(p-M_PI_2))*FFDIFFSIGN(a,0), -1, 1);
+    *x = av_clipf(a+a*FFMAX(0, p*p-M_PI_2), -1, 1);
     *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1, 1);
 }
 
@@ -1112,7 +1112,7 @@ static void filter_stereo(AVFilterContext *ctx)
         float r_phase = atan2f(r_im, r_re);
         float phase_dif = fabsf(l_phase - r_phase);
         float mag_sum = l_mag + r_mag;
-        float mag_dif = mag_sum < 0.000001 ? 0.f : (l_mag - r_mag) / mag_sum;
+        float mag_dif = mag_sum < 0.000001 ? FFDIFFSIGN(l_mag, r_mag) : (l_mag - r_mag) / mag_sum;
         float mag_total = hypotf(l_mag, r_mag);
         float x, y;
 
@@ -1148,7 +1148,7 @@ static void filter_surround(AVFilterContext *ctx)
         float r_phase = atan2f(r_im, r_re);
         float phase_dif = fabsf(l_phase - r_phase);
         float mag_sum = l_mag + r_mag;
-        float mag_dif = mag_sum < 0.000001 ? 0.f : (l_mag - r_mag) / mag_sum;
+        float mag_dif = mag_sum < 0.000001 ? FFDIFFSIGN(l_mag, r_mag) : (l_mag - r_mag) / mag_sum;
         float mag_total = hypotf(l_mag, r_mag);
         float x, y;
 
@@ -1183,7 +1183,7 @@ static void filter_2_1(AVFilterContext *ctx)
         float r_phase = atan2f(r_im, r_re);
         float phase_dif = fabsf(l_phase - r_phase);
         float mag_sum = l_mag + r_mag;
-        float mag_dif = mag_sum < 0.000001 ? 0.f : (l_mag - r_mag) / mag_sum;
+        float mag_dif = mag_sum < 0.000001 ? FFDIFFSIGN(l_mag, r_mag) : (l_mag - r_mag) / mag_sum;
         float mag_total = hypotf(l_mag, r_mag);
         float x, y;
 
@@ -1227,8 +1227,8 @@ static void filter_5_0_side(AVFilterContext *ctx)
         float phase_difr = fabsf(fr_phase - sr_phase);
         float magl_sum = fl_mag + sl_mag;
         float magr_sum = fr_mag + sr_mag;
-        float mag_difl = magl_sum < 0.000001 ? 0.f : (fl_mag - sl_mag) / magl_sum;
-        float mag_difr = magr_sum < 0.000001 ? 0.f : (fr_mag - sr_mag) / magr_sum;
+        float mag_difl = magl_sum < 0.000001 ? FFDIFFSIGN(fl_mag, sl_mag) : (fl_mag - sl_mag) / magl_sum;
+        float mag_difr = magr_sum < 0.000001 ? FFDIFFSIGN(fr_mag, sr_mag) : (fr_mag - sr_mag) / magr_sum;
         float mag_totall = hypotf(fl_mag, sl_mag);
         float mag_totalr = hypotf(fr_mag, sr_mag);
         float bl_phase = atan2f(fl_im + sl_im, fl_re + sl_re);
@@ -1286,8 +1286,8 @@ static void filter_5_1_side(AVFilterContext *ctx)
         float phase_difr = fabsf(fr_phase - sr_phase);
         float magl_sum = fl_mag + sl_mag;
         float magr_sum = fr_mag + sr_mag;
-        float mag_difl = magl_sum < 0.000001 ? 0.f : (fl_mag - sl_mag) / magl_sum;
-        float mag_difr = magr_sum < 0.000001 ? 0.f : (fr_mag - sr_mag) / magr_sum;
+        float mag_difl = magl_sum < 0.000001 ? FFDIFFSIGN(fl_mag, sl_mag) : (fl_mag - sl_mag) / magl_sum;
+        float mag_difr = magr_sum < 0.000001 ? FFDIFFSIGN(fr_mag, sr_mag) : (fr_mag - sr_mag) / magr_sum;
         float mag_totall = hypotf(fl_mag, sl_mag);
         float mag_totalr = hypotf(fr_mag, sr_mag);
         float bl_phase = atan2f(fl_im + sl_im, fl_re + sl_re);
@@ -1345,8 +1345,8 @@ static void filter_5_1_back(AVFilterContext *ctx)
         float phase_difr = fabsf(fr_phase - br_phase);
         float magl_sum = fl_mag + bl_mag;
         float magr_sum = fr_mag + br_mag;
-        float mag_difl = magl_sum < 0.000001 ? 0.f : (fl_mag - bl_mag) / magl_sum;
-        float mag_difr = magr_sum < 0.000001 ? 0.f : (fr_mag - br_mag) / magr_sum;
+        float mag_difl = magl_sum < 0.000001 ? FFDIFFSIGN(fl_mag, bl_mag) : (fl_mag - bl_mag) / magl_sum;
+        float mag_difr = magr_sum < 0.000001 ? FFDIFFSIGN(fr_mag, br_mag) : (fr_mag - br_mag) / magr_sum;
         float mag_totall = hypotf(fl_mag, bl_mag);
         float mag_totalr = hypotf(fr_mag, br_mag);
         float sl_phase = atan2f(fl_im + bl_im, fl_re + bl_re);
