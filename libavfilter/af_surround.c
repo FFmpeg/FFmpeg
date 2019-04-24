@@ -1042,7 +1042,7 @@ static void upmix_7_1_5_1(AVFilterContext *ctx,
     lb_mag = powf(.5f * (-xl + 1.f), s->bl_x) * powf((yl + 1.f) * .5f, s->bl_y) * mag_totall;
     rb_mag = powf(.5f * (-xr + 1.f), s->br_x) * powf((yr + 1.f) * .5f, s->br_y) * mag_totalr;
     ls_mag = powf(1.f - fabsf(xl), s->sl_x) * powf((yl + 1.f) * .5f, s->sl_y) * mag_totall;
-    rs_mag = powf(1.f - fabsf(xr), s->sl_x) * powf((yr + 1.f) * .5f, s->sr_y) * mag_totalr;
+    rs_mag = powf(1.f - fabsf(xr), s->sr_x) * powf((yr + 1.f) * .5f, s->sr_y) * mag_totalr;
 
     dstl[2 * n    ] = fl_mag * cosf(fl_phase);
     dstl[2 * n + 1] = fl_mag * sinf(fl_phase);
