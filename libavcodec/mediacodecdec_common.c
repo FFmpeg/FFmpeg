@@ -634,18 +634,18 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             return 0;
         }
 
-            size = FFMIN(pkt->size - offset, size);
-            memcpy(data, pkt->data + offset, size);
-            offset += size;
+        size = FFMIN(pkt->size - offset, size);
+        memcpy(data, pkt->data + offset, size);
+        offset += size;
 
-            status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, size, pts, 0);
-            if (status < 0) {
-                av_log(avctx, AV_LOG_ERROR, "Failed to queue input buffer (status = %d)\n", status);
-                return AVERROR_EXTERNAL;
-            }
+        status = ff_AMediaCodec_queueInputBuffer(codec, index, 0, size, pts, 0);
+        if (status < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Failed to queue input buffer (status = %d)\n", status);
+            return AVERROR_EXTERNAL;
+        }
 
-            av_log(avctx, AV_LOG_TRACE,
-                   "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
+        av_log(avctx, AV_LOG_TRACE,
+               "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
     }
 
     if (offset == 0)
