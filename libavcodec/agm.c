@@ -1049,6 +1049,9 @@ static int decode_huffman2(AVCodecContext *avctx, int header, int size)
 
     s->output_size = get_bits_long(gb, 32);
 
+    if (s->output_size > avctx->width * avctx->height * 9LL + 10000)
+        return AVERROR_INVALIDDATA;
+
     av_fast_padded_malloc(&s->output, &s->padded_output_size, s->output_size);
     if (!s->output)
         return AVERROR(ENOMEM);
