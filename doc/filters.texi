@@ -4877,6 +4877,10 @@ In @var{add} mode, LFE channel is created from input audio and added to output.
 In @var{sub} mode, LFE channel is created from input audio and added to output but
 also all non-LFE output channels are subtracted with output LFE channel.
 
+@item angle
+Set angle of stereo surround transform, Allowed range is from @var{0} to @var{360}.
+Default is @var{90}.
+
 @item fc_in
 Set front center input volume. By default, this is @var{1}.
 

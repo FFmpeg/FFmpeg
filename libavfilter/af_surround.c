@@ -56,6 +56,7 @@ typedef struct AudioSurroundContext {
     float lfe_in;
     float lfe_out;
     int   lfe_mode;
+    float angle;
     int   win_size;
     int   win_func;
     float overlap;
@@ -310,6 +311,26 @@ static int config_output(AVFilterLink *outlink)
         return AVERROR(ENOMEM);
 
     return 0;
+}
+
+static void stereo_transform(float *x, float *y, float angle)
+{
+    float reference, r, a;
+
+    if (angle == 90.f)
+        return;
+
+    reference = angle * M_PI / 180.f;
+    r = hypotf(*x, *y);
+    a = atan2f(*x, *y);
+
+    if (fabsf(a) <= M_PI_4)
+        a *= reference / M_PI_2;
+    else
+        a = M_PI + 2 * (-2 * M_PI + reference) * (M_PI - fabsf(a)) * FFDIFFSIGN(a, 0) / (3 * M_PI);
+
+    *x = av_clipf(sinf(a) * r, -1, 1);
+    *y = av_clipf(cosf(a) * r, -1, 1);
 }
 
 static void stereo_position(float a, float p, float *x, float *y)
@@ -1096,6 +1117,7 @@ static void filter_stereo(AVFilterContext *ctx)
             phase_dif = 2 * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
+        stereo_transform(&x, &y, s->angle);
 
         s->upmix_stereo(ctx, l_phase, r_phase, c_phase, mag_total, x, y, n);
     }
@@ -1131,6 +1153,7 @@ static void filter_surround(AVFilterContext *ctx)
             phase_dif = 2 * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
+        stereo_transform(&x, &y, s->angle);
 
         s->upmix_3_0(ctx, l_phase, r_phase, c_phase, c_mag, mag_total, x, y, n);
     }
@@ -1165,6 +1188,7 @@ static void filter_2_1(AVFilterContext *ctx)
             phase_dif = 2 * M_PI - phase_dif;
 
         stereo_position(mag_dif, phase_dif, &x, &y);
+        stereo_transform(&x, &y, s->angle);
 
         s->upmix_2_1(ctx, l_phase, r_phase, c_phase, mag_total, lfe_re, lfe_im, x, y, n);
     }
@@ -1674,6 +1698,7 @@ static const AVOption surround_options[] = {
     { "lfe_mode",  "set LFE channel mode",      OFFSET(lfe_mode),               AV_OPT_TYPE_INT,    {.i64=0},     0,   1, FLAGS, "lfe_mode" },
     {  "add",      "just add LFE channel",                  0,                  AV_OPT_TYPE_CONST,  {.i64=0},     0,   1, FLAGS, "lfe_mode" },
     {  "sub",      "substract LFE channel with others",     0,                  AV_OPT_TYPE_CONST,  {.i64=1},     0,   1, FLAGS, "lfe_mode" },
+    { "angle",     "set soundfield transform angle",        OFFSET(angle),      AV_OPT_TYPE_FLOAT,  {.dbl=90},    0, 360, FLAGS },
     { "fc_in",     "set front center channel input level",  OFFSET(fc_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fc_out",    "set front center channel output level", OFFSET(fc_out),     AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
     { "fl_in",     "set front left channel input level",    OFFSET(fl_in),      AV_OPT_TYPE_FLOAT,  {.dbl=1},     0,  10, FLAGS },
