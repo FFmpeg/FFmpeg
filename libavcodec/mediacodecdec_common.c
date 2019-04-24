@@ -632,7 +632,8 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
 
             s->draining = 1;
             return 0;
-        } else {
+        }
+
             size = FFMIN(pkt->size - offset, size);
             memcpy(data, pkt->data + offset, size);
             offset += size;
@@ -645,7 +646,6 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
 
             av_log(avctx, AV_LOG_TRACE,
                    "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
-        }
     }
 
     if (offset == 0)
