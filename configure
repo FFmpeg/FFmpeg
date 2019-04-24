@@ -503,9 +503,13 @@ log(){
 }
 
 log_file(){
-    log BEGIN $1
-    pr -n -t $1 >> $logfile
-    log END $1
+    log BEGIN "$1"
+    log_file_i=1
+    while IFS= read -r log_file_line; do
+        printf '%5d\t%s\n' "$log_file_i" "$log_file_line"
+        log_file_i=$(($log_file_i+1))
+    done < "$1" >> "$logfile"
+    log END "$1"
 }
 
 warn(){
