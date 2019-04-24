@@ -24,19 +24,35 @@
 #include "parser.h" //for ParseContext
 #include "pnm.h"
 
+typedef struct PNMParseContext {
+    ParseContext pc;
+    int remaining_bytes;
+}PNMParseContext;
 
 static int pnm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                      const uint8_t **poutbuf, int *poutbuf_size,
                      const uint8_t *buf, int buf_size)
 {
-    ParseContext *pc = s->priv_data;
+    PNMParseContext *pnmpc = s->priv_data;
+    ParseContext *pc = &pnmpc->pc;
     PNMContext pnmctx;
-    int next;
+    int next = END_NOT_FOUND;
     int skip = 0;
 
     for (; pc->overread > 0; pc->overread--) {
         pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
     }
+
+    if (pnmpc->remaining_bytes) {
+        int inc = FFMIN(pnmpc->remaining_bytes, buf_size);
+        skip += inc;
+        pnmpc->remaining_bytes -= inc;
+
+        if (!pnmpc->remaining_bytes)
+            next = skip;
+        goto end;
+    }
+
 retry:
     if (pc->index) {
         pnmctx.bytestream_start =
@@ -47,7 +63,6 @@ retry:
         pnmctx.bytestream       = (uint8_t *) buf + skip; /* casts avoid warnings */
         pnmctx.bytestream_end   = (uint8_t *) buf + buf_size - skip;
     }
-    next = END_NOT_FOUND;
     if (ff_pnm_decode_header(avctx, &pnmctx) < 0) {
         if (pnmctx.bytestream < pnmctx.bytestream_end) {
             if (pc->index) {
@@ -79,9 +94,11 @@ retry:
     }
     if (next != END_NOT_FOUND && pnmctx.bytestream_start != buf + skip)
         next -= pc->index;
-    if (next > buf_size)
+    if (next > buf_size) {
+        pnmpc->remaining_bytes = next - buf_size;
         next = END_NOT_FOUND;
-
+    }
+end:
     if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
         *poutbuf      = NULL;
         *poutbuf_size = 0;
@@ -95,7 +112,7 @@ retry:
 AVCodecParser ff_pnm_parser = {
     .codec_ids      = { AV_CODEC_ID_PGM, AV_CODEC_ID_PGMYUV, AV_CODEC_ID_PPM,
                         AV_CODEC_ID_PBM, AV_CODEC_ID_PAM },
-    .priv_data_size = sizeof(ParseContext),
+    .priv_data_size = sizeof(PNMParseContext),
     .parser_parse   = pnm_parse,
     .parser_close   = ff_parse_close,
 };
