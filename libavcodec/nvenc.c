@@ -1560,12 +1560,15 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
     NVENCSTATUS nv_status;
 
-    int i;
+    int i, first_round;
 
     if (ctx->nb_registered_frames == FF_ARRAY_ELEMS(ctx->registered_frames)) {
+        for (first_round = 1; first_round >= 0; first_round--) {
         for (i = 0; i < ctx->nb_registered_frames; i++) {
             if (!ctx->registered_frames[i].mapped) {
                 if (ctx->registered_frames[i].regptr) {
+                    if (first_round)
+                        continue;
                     nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
                     if (nv_status != NV_ENC_SUCCESS)
                         return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
@@ -1574,6 +1577,7 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
                 }
                 return i;
             }
+        }
         }
     } else {
         return ctx->nb_registered_frames++;
@@ -1846,13 +1850,6 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
                 res = nvenc_print_error(avctx, nv_status, "Failed unmapping input resource");
                 goto error;
             }
-            nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].regptr);
-            if (nv_status != NV_ENC_SUCCESS) {
-                res = nvenc_print_error(avctx, nv_status, "Failed unregistering input resource");
-                goto error;
-            }
-            ctx->registered_frames[tmpoutsurf->reg_idx].ptr = NULL;
-            ctx->registered_frames[tmpoutsurf->reg_idx].regptr = NULL;
         } else if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped < 0) {
             res = AVERROR_BUG;
             goto error;
