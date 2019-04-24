@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/audio_fifo.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
@@ -335,6 +336,8 @@ static void stereo_transform(float *x, float *y, float angle)
 
 static void stereo_position(float a, float p, float *x, float *y)
 {
+    av_assert2(a >= -1.f && a <= 1.f);
+    av_assert2(p >= 0.f && p <= M_PI);
     *x = av_clipf(a+FFMAX(0, sinf(p-M_PI_2))*FFDIFFSIGN(a,0), -1, 1);
     *y = av_clipf(cosf(a*M_PI_2+M_PI)*cosf(M_PI_2-p/M_PI)*M_LN10+1, -1, 1);
 }
