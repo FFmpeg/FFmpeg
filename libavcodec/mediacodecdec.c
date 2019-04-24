@@ -461,6 +461,7 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             ret = ff_mediacodec_dec_send(avctx, s->ctx, &null_pkt, true);
             if (ret < 0)
                 return ret;
+            return ff_mediacodec_dec_receive(avctx, s->ctx, frame, true);
         } else if (ret == AVERROR(EAGAIN) && s->ctx->current_input_buffer < 0) {
             return ff_mediacodec_dec_receive(avctx, s->ctx, frame, true);
         } else if (ret < 0) {
