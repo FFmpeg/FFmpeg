@@ -1564,20 +1564,20 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
 
     if (ctx->nb_registered_frames == FF_ARRAY_ELEMS(ctx->registered_frames)) {
         for (first_round = 1; first_round >= 0; first_round--) {
-        for (i = 0; i < ctx->nb_registered_frames; i++) {
-            if (!ctx->registered_frames[i].mapped) {
-                if (ctx->registered_frames[i].regptr) {
-                    if (first_round)
-                        continue;
-                    nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
-                    if (nv_status != NV_ENC_SUCCESS)
-                        return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
-                    ctx->registered_frames[i].ptr = NULL;
-                    ctx->registered_frames[i].regptr = NULL;
+            for (i = 0; i < ctx->nb_registered_frames; i++) {
+                if (!ctx->registered_frames[i].mapped) {
+                    if (ctx->registered_frames[i].regptr) {
+                        if (first_round)
+                            continue;
+                        nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
+                        if (nv_status != NV_ENC_SUCCESS)
+                            return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
+                        ctx->registered_frames[i].ptr = NULL;
+                        ctx->registered_frames[i].regptr = NULL;
+                    }
+                    return i;
                 }
-                return i;
             }
-        }
         }
     } else {
         return ctx->nb_registered_frames++;
