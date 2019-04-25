@@ -25,7 +25,7 @@
 
 #include "dnn_backend_native.h"
 
-static DNNReturnType set_input_output_native(void *model, DNNData *input, DNNData *output)
+static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, DNNData *output, const char *output_name)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
     InputParams *input_params;

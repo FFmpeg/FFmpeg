@@ -40,7 +40,7 @@ typedef struct DNNModel{
     void *model;
     // Sets model input and output, while allocating additional memory for intermediate calculations.
     // Should be called at least once before model execution.
-    DNNReturnType (*set_input_output)(void *model, DNNData *input, DNNData *output);
+    DNNReturnType (*set_input_output)(void *model, DNNData *input, const char *input_name, DNNData *output, const char *output_name);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
