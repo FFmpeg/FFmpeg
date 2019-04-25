@@ -274,9 +274,6 @@ static av_cold void uninit(AVFilterContext *context)
     int i;
     SRContext *sr_context = context->priv;
 
-    if (sr_context->backend_type == DNN_TF)
-        av_freep(&sr_context->output.data);
-
     if (sr_context->dnn_module){
         (sr_context->dnn_module->free_model)(&sr_context->model);
         av_freep(&sr_context->dnn_module);
