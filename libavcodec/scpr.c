@@ -575,6 +575,9 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (ret < 0)
         return ret;
 
+    if (bytestream2_get_bytes_left(gb) > 5)
+        return AVERROR_INVALIDDATA;
+
     if (avctx->bits_per_coded_sample != 16) {
         ret = av_frame_ref(data, s->current_frame);
         if (ret < 0)
