@@ -64,6 +64,7 @@ typedef struct LUT3DContext {
     uint8_t rgba_map[4];
     int step;
     avfilter_action_func *interp;
+    struct rgbvec scale;
     struct rgbvec lut[MAX_LEVEL][MAX_LEVEL][MAX_LEVEL];
     int lutsize;
 #if CONFIG_HALDCLUT_FILTER
@@ -219,7 +220,9 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
     const uint8_t *srcbrow = in->data[1] + slice_start * in->linesize[1];                              \
     const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];                              \
     const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];                              \
-    const float scale = (1. / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                                \
+    const float scale_r = (lut3d->scale.r / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
+    const float scale_g = (lut3d->scale.g / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
+    const float scale_b = (lut3d->scale.b / ((1<<depth) - 1)) * (lut3d->lutsize - 1);                  \
                                                                                                        \
     for (y = slice_start; y < slice_end; y++) {                                                        \
         uint##nbits##_t *dstg = (uint##nbits##_t *)grow;                                               \
@@ -231,9 +234,9 @@ static int interp_##nbits##_##name##_p##depth(AVFilterContext *ctx, void *arg, i
         const uint##nbits##_t *srcr = (const uint##nbits##_t *)srcrrow;                                \
         const uint##nbits##_t *srca = (const uint##nbits##_t *)srcarow;                                \
         for (x = 0; x < in->width; x++) {                                                              \
-            const struct rgbvec scaled_rgb = {srcr[x] * scale,                                         \
-                                              srcg[x] * scale,                                         \
-                                              srcb[x] * scale};                                        \
+            const struct rgbvec scaled_rgb = {srcr[x] * scale_r,                                       \
+                                              srcg[x] * scale_g,                                       \
+                                              srcb[x] * scale_b};                                      \
             struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                     \
             dstr[x] = av_clip_uintp2(vec.r * (float)((1<<depth) - 1), depth);                          \
             dstg[x] = av_clip_uintp2(vec.g * (float)((1<<depth) - 1), depth);                          \
@@ -295,15 +298,17 @@ static int interp_##nbits##_##name(AVFilterContext *ctx, void *arg, int jobnr, i
     const int slice_end   = (in->height * (jobnr+1)) / nb_jobs;                                     \
     uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];                          \
     const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];                          \
-    const float scale = (1. / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);                             \
+    const float scale_r = (lut3d->scale.r / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
+    const float scale_g = (lut3d->scale.g / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
+    const float scale_b = (lut3d->scale.b / ((1<<nbits) - 1)) * (lut3d->lutsize - 1);               \
                                                                                                     \
     for (y = slice_start; y < slice_end; y++) {                                                     \
         uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                                           \
         const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;                               \
         for (x = 0; x < in->width * step; x += step) {                                              \
-            const struct rgbvec scaled_rgb = {src[x + r] * scale,                                   \
-                                              src[x + g] * scale,                                   \
-                                              src[x + b] * scale};                                  \
+            const struct rgbvec scaled_rgb = {src[x + r] * scale_r,                                 \
+                                              src[x + g] * scale_g,                                 \
+                                              src[x + b] * scale_b};                                \
             struct rgbvec vec = interp_##name(lut3d, &scaled_rgb);                                  \
             dst[x + r] = av_clip_uint##nbits(vec.r * (float)((1<<nbits) - 1));                      \
             dst[x + g] = av_clip_uint##nbits(vec.g * (float)((1<<nbits) - 1));                      \
@@ -417,15 +422,17 @@ try_again:
                         } while (skip_line(line));
                         if (av_sscanf(line, "%f %f %f", &vec->r, &vec->g, &vec->b) != 3)
                             return AVERROR_INVALIDDATA;
-                        vec->r *= max[0] - min[0];
-                        vec->g *= max[1] - min[1];
-                        vec->b *= max[2] - min[2];
                     }
                 }
             }
             break;
         }
     }
+
+    lut3d->scale.r = av_clipf(1. / (max[0] - min[0]), 0.f, 1.f);
+    lut3d->scale.g = av_clipf(1. / (max[1] - min[1]), 0.f, 1.f);
+    lut3d->scale.b = av_clipf(1. / (max[2] - min[2]), 0.f, 1.f);
+
     return 0;
 }
 
@@ -609,6 +616,11 @@ static int parse_cinespace(AVFilterContext *ctx, FILE *f)
             break;
         }
     }
+
+    lut3d->scale.r = av_clipf(1. / (in_max[0] - in_min[0]), 0.f, 1.f);
+    lut3d->scale.g = av_clipf(1. / (in_max[1] - in_min[1]), 0.f, 1.f);
+    lut3d->scale.b = av_clipf(1. / (in_max[2] - in_min[2]), 0.f, 1.f);
+
     return 0;
 }
 
@@ -764,6 +776,8 @@ static av_cold int lut3d_init(AVFilterContext *ctx)
     FILE *f;
     const char *ext;
     LUT3DContext *lut3d = ctx->priv;
+
+    lut3d->scale.r = lut3d->scale.g = lut3d->scale.b = 1.f;
 
     if (!lut3d->file) {
         set_identity_matrix(lut3d, 32);
@@ -1016,6 +1030,7 @@ static int update_apply_clut(FFFrameSync *fs)
 static av_cold int haldclut_init(AVFilterContext *ctx)
 {
     LUT3DContext *lut3d = ctx->priv;
+    lut3d->scale.r = lut3d->scale.g = lut3d->scale.b = 1.f;
     lut3d->fs.on_event = update_apply_clut;
     return 0;
 }
@@ -1087,6 +1102,7 @@ typedef struct LUT1DContext {
     const AVClass *class;
     char *file;
     int interpolation;          ///<interp_1d_mode
+    struct rgbvec scale;
     uint8_t rgba_map[4];
     int step;
     float lut[3][MAX_1D_LEVEL];
@@ -1182,6 +1198,11 @@ static int parse_cinespace_1d(AVFilterContext *ctx, FILE *f)
             break;
         }
     }
+
+    lut1d->scale.r = av_clipf(1. / (in_max[0] - in_min[0]), 0.f, 1.f);
+    lut1d->scale.g = av_clipf(1. / (in_max[1] - in_min[1]), 0.f, 1.f);
+    lut1d->scale.b = av_clipf(1. / (in_max[2] - in_min[2]), 0.f, 1.f);
+
     return 0;
 }
 
@@ -1227,13 +1248,15 @@ try_again:
                 } while (skip_line(line));
                 if (av_sscanf(line, "%f %f %f", &lut1d->lut[0][i], &lut1d->lut[1][i], &lut1d->lut[2][i]) != 3)
                     return AVERROR_INVALIDDATA;
-                lut1d->lut[0][i] *= max[0] - min[0];
-                lut1d->lut[1][i] *= max[1] - min[1];
-                lut1d->lut[2][i] *= max[2] - min[2];
             }
             break;
         }
     }
+
+    lut1d->scale.r = av_clipf(1. / (max[0] - min[0]), 0.f, 1.f);
+    lut1d->scale.g = av_clipf(1. / (max[1] - min[1]), 0.f, 1.f);
+    lut1d->scale.b = av_clipf(1. / (max[2] - min[2]), 0.f, 1.f);
+
     return 0;
 }
 
@@ -1349,7 +1372,9 @@ static int interp_1d_##nbits##_##name##_p##depth(AVFilterContext *ctx,       \
     const uint8_t *srcrrow = in->data[2] + slice_start * in->linesize[2];    \
     const uint8_t *srcarow = in->data[3] + slice_start * in->linesize[3];    \
     const float factor = (1 << depth) - 1;                                   \
-    const float scale = (1. / factor) * (lut1d->lutsize - 1);                \
+    const float scale_r = (lut1d->scale.r / factor) * (lut1d->lutsize - 1);  \
+    const float scale_g = (lut1d->scale.g / factor) * (lut1d->lutsize - 1);  \
+    const float scale_b = (lut1d->scale.b / factor) * (lut1d->lutsize - 1);  \
                                                                              \
     for (y = slice_start; y < slice_end; y++) {                              \
         uint##nbits##_t *dstg = (uint##nbits##_t *)grow;                     \
@@ -1361,9 +1386,9 @@ static int interp_1d_##nbits##_##name##_p##depth(AVFilterContext *ctx,       \
         const uint##nbits##_t *srcr = (const uint##nbits##_t *)srcrrow;      \
         const uint##nbits##_t *srca = (const uint##nbits##_t *)srcarow;      \
         for (x = 0; x < in->width; x++) {                                    \
-            float r = srcr[x] * scale;                                       \
-            float g = srcg[x] * scale;                                       \
-            float b = srcb[x] * scale;                                       \
+            float r = srcr[x] * scale_r;                                     \
+            float g = srcg[x] * scale_g;                                     \
+            float b = srcb[x] * scale_b;                                     \
             r = interp_1d_##name(lut1d, 0, r);                               \
             g = interp_1d_##name(lut1d, 1, g);                               \
             b = interp_1d_##name(lut1d, 2, b);                               \
@@ -1441,15 +1466,17 @@ static int interp_1d_##nbits##_##name(AVFilterContext *ctx, void *arg,       \
     uint8_t       *dstrow = out->data[0] + slice_start * out->linesize[0];   \
     const uint8_t *srcrow = in ->data[0] + slice_start * in ->linesize[0];   \
     const float factor = (1 << nbits) - 1;                                   \
-    const float scale = (1. / factor) * (lut1d->lutsize - 1);                \
+    const float scale_r = (lut1d->scale.r / factor) * (lut1d->lutsize - 1);  \
+    const float scale_g = (lut1d->scale.g / factor) * (lut1d->lutsize - 1);  \
+    const float scale_b = (lut1d->scale.b / factor) * (lut1d->lutsize - 1);  \
                                                                              \
     for (y = slice_start; y < slice_end; y++) {                              \
         uint##nbits##_t *dst = (uint##nbits##_t *)dstrow;                    \
         const uint##nbits##_t *src = (const uint##nbits##_t *)srcrow;        \
         for (x = 0; x < in->width * step; x += step) {                       \
-            float rr = src[x + r] * scale;                                   \
-            float gg = src[x + g] * scale;                                   \
-            float bb = src[x + b] * scale;                                   \
+            float rr = src[x + r] * scale_r;                                 \
+            float gg = src[x + g] * scale_g;                                 \
+            float bb = src[x + b] * scale_b;                                 \
             rr = interp_1d_##name(lut1d, 0, rr);                             \
             gg = interp_1d_##name(lut1d, 1, gg);                             \
             bb = interp_1d_##name(lut1d, 2, bb);                             \
@@ -1543,6 +1570,8 @@ static av_cold int lut1d_init(AVFilterContext *ctx)
     FILE *f;
     const char *ext;
     LUT1DContext *lut1d = ctx->priv;
+
+    lut1d->scale.r = lut1d->scale.g = lut1d->scale.b = 1.f;
 
     if (!lut1d->file) {
         set_identity_matrix_1d(lut1d, 32);
