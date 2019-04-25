@@ -121,18 +121,29 @@ static int config_props(AVFilterLink *inlink)
     sr_context->input.height = inlink->h * sr_context->scale_factor;
     sr_context->input.channels = 1;
 
-    result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, "x", &sr_context->output, "y");
+    result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, "x", "y");
     if (result != DNN_SUCCESS){
         av_log(context, AV_LOG_ERROR, "could not set input and output for the model\n");
+        return AVERROR(EIO);
+    }
+
+    result = (sr_context->dnn_module->execute_model)(sr_context->model, &sr_context->output);
+    if (result != DNN_SUCCESS){
+        av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
         return AVERROR(EIO);
     }
 
     if (sr_context->input.height != sr_context->output.height || sr_context->input.width != sr_context->output.width){
         sr_context->input.width = inlink->w;
         sr_context->input.height = inlink->h;
-        result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, "x", &sr_context->output, "y");
+        result = (sr_context->model->set_input_output)(sr_context->model->model, &sr_context->input, "x", "y");
         if (result != DNN_SUCCESS){
             av_log(context, AV_LOG_ERROR, "could not set input and output for the model\n");
+            return AVERROR(EIO);
+        }
+        result = (sr_context->dnn_module->execute_model)(sr_context->model, &sr_context->output);
+        if (result != DNN_SUCCESS){
+            av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
             return AVERROR(EIO);
         }
         sr_context->scale_factor = 0;
@@ -245,7 +256,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_free(&in);
 
-    dnn_result = (sr_context->dnn_module->execute_model)(sr_context->model);
+    dnn_result = (sr_context->dnn_module->execute_model)(sr_context->model, &sr_context->output);
     if (dnn_result != DNN_SUCCESS){
         av_log(context, AV_LOG_ERROR, "failed to execute loaded model\n");
         return AVERROR(EIO);
@@ -262,6 +273,9 @@ static av_cold void uninit(AVFilterContext *context)
 {
     int i;
     SRContext *sr_context = context->priv;
+
+    if (sr_context->backend_type == DNN_TF)
+        av_freep(&sr_context->output.data);
 
     if (sr_context->dnn_module){
         (sr_context->dnn_module->free_model)(&sr_context->model);

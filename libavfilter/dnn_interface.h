@@ -38,9 +38,9 @@ typedef struct DNNData{
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
     void *model;
-    // Sets model input and output, while allocating additional memory for intermediate calculations.
+    // Sets model input and output.
     // Should be called at least once before model execution.
-    DNNReturnType (*set_input_output)(void *model, DNNData *input, const char *input_name, DNNData *output, const char *output_name);
+    DNNReturnType (*set_input_output)(void *model, DNNData *input, const char *input_name, const char *output_name);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.
@@ -48,7 +48,7 @@ typedef struct DNNModule{
     // Loads model and parameters from given file. Returns NULL if it is not possible.
     DNNModel *(*load_model)(const char *model_filename);
     // Executes model with specified input and output. Returns DNN_ERROR otherwise.
-    DNNReturnType (*execute_model)(const DNNModel *model);
+    DNNReturnType (*execute_model)(const DNNModel *model, DNNData *output);
     // Frees memory allocated for model.
     void (*free_model)(DNNModel **model);
 } DNNModule;
