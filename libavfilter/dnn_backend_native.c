@@ -25,7 +25,7 @@
 
 #include "dnn_backend_native.h"
 
-static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char *output_name)
+static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
     InputParams *input_params;
@@ -275,7 +275,7 @@ static void depth_to_space(const float *input, float *output, int block_size, in
     }
 }
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output)
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model->model;
     int cur_width, cur_height, cur_channels;
@@ -317,10 +317,13 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
         }
     }
 
-    output->data = network->layers[network->layers_num - 1].output;
-    output->height = cur_height;
-    output->width = cur_width;
-    output->channels = cur_channels;
+    // native mode does not support multiple outputs yet
+    if (nb_output > 1)
+        return DNN_ERROR;
+    outputs[0].data = network->layers[network->layers_num - 1].output;
+    outputs[0].height = cur_height;
+    outputs[0].width = cur_width;
+    outputs[0].channels = cur_channels;
 
     return DNN_SUCCESS;
 }

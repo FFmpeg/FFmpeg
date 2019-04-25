@@ -26,6 +26,7 @@
 #include "dnn_backend_tf.h"
 #include "dnn_backend_native.h"
 #include "libavformat/avio.h"
+#include "libavutil/avassert.h"
 
 #include <tensorflow/c/c_api.h>
 
@@ -33,9 +34,11 @@ typedef struct TFModel{
     TF_Graph *graph;
     TF_Session *session;
     TF_Status *status;
-    TF_Output input, output;
+    TF_Output input;
     TF_Tensor *input_tensor;
-    TF_Tensor *output_tensor;
+    TF_Output *outputs;
+    TF_Tensor **output_tensors;
+    uint32_t nb_output;
 } TFModel;
 
 static void free_buffer(void *data, size_t length)
@@ -76,7 +79,7 @@ static TF_Buffer *read_graph(const char *model_filename)
     return graph_buf;
 }
 
-static DNNReturnType set_input_output_tf(void *model, DNNData *input, const char *input_name, const char *output_name)
+static DNNReturnType set_input_output_tf(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     TFModel *tf_model = (TFModel *)model;
     int64_t input_dims[] = {1, input->height, input->width, input->channels};
@@ -100,11 +103,38 @@ static DNNReturnType set_input_output_tf(void *model, DNNData *input, const char
     input->data = (float *)TF_TensorData(tf_model->input_tensor);
 
     // Output operation
-    tf_model->output.oper = TF_GraphOperationByName(tf_model->graph, output_name);
-    if (!tf_model->output.oper){
+    if (nb_output == 0)
+        return DNN_ERROR;
+
+    av_freep(&tf_model->outputs);
+    tf_model->outputs = av_malloc_array(nb_output, sizeof(*tf_model->outputs));
+    if (!tf_model->outputs)
+        return DNN_ERROR;
+    for (int i = 0; i < nb_output; ++i) {
+        tf_model->outputs[i].oper = TF_GraphOperationByName(tf_model->graph, output_names[i]);
+        if (!tf_model->outputs[i].oper){
+            av_freep(&tf_model->outputs);
+            return DNN_ERROR;
+        }
+        tf_model->outputs[i].index = 0;
+    }
+
+    if (tf_model->output_tensors) {
+        for (uint32_t i = 0; i < tf_model->nb_output; ++i) {
+            if (tf_model->output_tensors[i]) {
+                TF_DeleteTensor(tf_model->output_tensors[i]);
+                tf_model->output_tensors[i] = NULL;
+            }
+        }
+    }
+    av_freep(&tf_model->output_tensors);
+    tf_model->output_tensors = av_mallocz_array(nb_output, sizeof(*tf_model->output_tensors));
+    if (!tf_model->output_tensors) {
+        av_freep(&tf_model->outputs);
         return DNN_ERROR;
     }
-    tf_model->output.index = 0;
+
+    tf_model->nb_output = nb_output;
 
     if (tf_model->session){
         TF_CloseSession(tf_model->session, tf_model->status);
@@ -484,25 +514,36 @@ DNNModel *ff_dnn_load_model_tf(const char *model_filename)
 
 
 
-DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNData *output)
+DNNReturnType ff_dnn_execute_model_tf(const DNNModel *model, DNNData *outputs, uint32_t nb_output)
 {
     TFModel *tf_model = (TFModel *)model->model;
-    if (tf_model->output_tensor)
-        TF_DeleteTensor(tf_model->output_tensor);
+    uint32_t nb = FFMIN(nb_output, tf_model->nb_output);
+    if (nb == 0)
+        return DNN_ERROR;
+
+    av_assert0(tf_model->output_tensors);
+    for (uint32_t i = 0; i < tf_model->nb_output; ++i) {
+        if (tf_model->output_tensors[i]) {
+            TF_DeleteTensor(tf_model->output_tensors[i]);
+            tf_model->output_tensors[i] = NULL;
+        }
+    }
 
     TF_SessionRun(tf_model->session, NULL,
                   &tf_model->input, &tf_model->input_tensor, 1,
-                  &tf_model->output, &tf_model->output_tensor, 1,
+                  tf_model->outputs, tf_model->output_tensors, nb,
                   NULL, 0, NULL, tf_model->status);
 
     if (TF_GetCode(tf_model->status) != TF_OK){
         return DNN_ERROR;
     }
 
-    output->height = TF_Dim(tf_model->output_tensor, 1);
-    output->width = TF_Dim(tf_model->output_tensor, 2);
-    output->channels = TF_Dim(tf_model->output_tensor, 3);
-    output->data = TF_TensorData(tf_model->output_tensor);
+    for (uint32_t i = 0; i < nb; ++i) {
+        outputs[i].height = TF_Dim(tf_model->output_tensors[i], 1);
+        outputs[i].width = TF_Dim(tf_model->output_tensors[i], 2);
+        outputs[i].channels = TF_Dim(tf_model->output_tensors[i], 3);
+        outputs[i].data = TF_TensorData(tf_model->output_tensors[i]);
+    }
 
     return DNN_SUCCESS;
 }
@@ -526,9 +567,16 @@ void ff_dnn_free_model_tf(DNNModel **model)
         if (tf_model->input_tensor){
             TF_DeleteTensor(tf_model->input_tensor);
         }
-        if (tf_model->output_tensor){
-            TF_DeleteTensor(tf_model->output_tensor);
+        if (tf_model->output_tensors) {
+            for (uint32_t i = 0; i < tf_model->nb_output; ++i) {
+                if (tf_model->output_tensors[i]) {
+                    TF_DeleteTensor(tf_model->output_tensors[i]);
+                    tf_model->output_tensors[i] = NULL;
+                }
+            }
         }
+        av_freep(&tf_model->outputs);
+        av_freep(&tf_model->output_tensors);
         av_freep(&tf_model);
         av_freep(model);
     }

@@ -63,7 +63,7 @@ typedef struct ConvolutionalNetwork{
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename);
 
-DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output);
+DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output);
 
 void ff_dnn_free_model_native(DNNModel **model);
 
