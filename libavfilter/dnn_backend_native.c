@@ -24,8 +24,9 @@
  */
 
 #include "dnn_backend_native.h"
+#include "libavutil/avassert.h"
 
-static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
+static DNNReturnType set_input_output_native(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
     InputParams *input_params;
@@ -45,6 +46,7 @@ static DNNReturnType set_input_output_native(void *model, DNNData *input, const 
         if (input->data){
             av_freep(&input->data);
         }
+        av_assert0(input->dt == DNN_FLOAT);
         network->layers[0].output = input->data = av_malloc(cur_height * cur_width * cur_channels * sizeof(float));
         if (!network->layers[0].output){
             return DNN_ERROR;

@@ -40,7 +40,8 @@ typedef struct SRContext {
     DNNBackendType backend_type;
     DNNModule *dnn_module;
     DNNModel *model;
-    DNNData input, output;
+    DNNInputData input;
+    DNNData output;
     int scale_factor;
     struct SwsContext *sws_contexts[3];
     int sws_slice_h, sws_input_linesize, sws_output_linesize;
@@ -86,6 +87,7 @@ static av_cold int init(AVFilterContext *context)
         return AVERROR(EIO);
     }
 
+    sr_context->input.dt = DNN_FLOAT;
     sr_context->sws_contexts[0] = NULL;
     sr_context->sws_contexts[1] = NULL;
     sr_context->sws_contexts[2] = NULL;
