@@ -829,7 +829,7 @@ static uint8_t get_tlm(Jpeg2000DecoderContext *s, int n)
     return 0;
 }
 
-static uint8_t get_plt(Jpeg2000DecoderContext *s, int n)
+static int get_plt(Jpeg2000DecoderContext *s, int n)
 {
     int i;
     int v;
