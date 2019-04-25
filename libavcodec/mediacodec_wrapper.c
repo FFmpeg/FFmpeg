@@ -469,6 +469,11 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
                     goto done;
                 }
 
+                if (codec_name) {
+                    (*env)->DeleteLocalRef(env, codec_name);
+                    codec_name = NULL;
+                }
+
                 /* Skip software decoders */
                 if (
                     strstr(name, "OMX.google") ||
