@@ -1337,6 +1337,10 @@ char *ff_AMediaCodec_getName(FFAMediaCodec *codec)
     ret = ff_jni_jstring_to_utf_chars(env, name, codec);
 
 fail:
+    if (name) {
+        (*env)->DeleteLocalRef(env, name);
+    }
+
     return ret;
 }
 
