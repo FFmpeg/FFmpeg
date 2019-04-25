@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -154,17 +155,8 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, fsize;
 
-    // Parse all the ID3 headers between frames
-    while (1) {
-        ret = av_get_packet(s->pb, pkt, FFMAX(ID3v2_HEADER_SIZE, ADTS_HEADER_SIZE));
-        if (ret >= ID3v2_HEADER_SIZE && ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
-            if ((ret = handle_id3(s, pkt)) >= 0) {
-                continue;
-            }
-        }
-        break;
-    }
-
+retry:
+    ret = av_get_packet(s->pb, pkt, ADTS_HEADER_SIZE);
     if (ret < 0)
         return ret;
 
@@ -174,8 +166,24 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if ((AV_RB16(pkt->data) >> 4) != 0xfff) {
-        av_packet_unref(pkt);
-        return AVERROR_INVALIDDATA;
+        // Parse all the ID3 headers between frames
+        int append = ID3v2_HEADER_SIZE - ADTS_HEADER_SIZE;
+
+        av_assert2(append > 0);
+        ret = av_append_packet(s->pb, pkt, append);
+        if (ret != append) {
+            av_packet_unref(pkt);
+            return AVERROR(EIO);
+        }
+        if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
+            av_packet_unref(pkt);
+            return AVERROR_INVALIDDATA;
+        }
+        ret = handle_id3(s, pkt);
+        if (ret < 0)
+            return ret;
+
+        goto retry;
     }
 
     fsize = (AV_RB32(pkt->data + 3) >> 13) & 0x1FFF;
