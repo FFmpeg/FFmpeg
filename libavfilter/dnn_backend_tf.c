@@ -440,6 +440,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     for (layer = 0; layer < conv_network->layers_num; ++layer){
         switch (conv_network->layers[layer].type){
         case INPUT:
+            layer_add_res = DNN_SUCCESS;
             break;
         case CONV:
             layer_add_res = add_conv_layer(tf_model, transpose_op, &op,
