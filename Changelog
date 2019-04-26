@@ -26,6 +26,7 @@ version <next>:
 - lscr decoder
 - lagfun filter
 - asoftclip filter
+- Support decoding of HEVC 4:4:4 content in vdpau
 
 
 version 4.1:
