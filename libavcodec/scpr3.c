@@ -1038,6 +1038,9 @@ static int decompress_p3(AVCodecContext *avctx,
                          s->range_model3.freqs[1],
                          s->range_model3.cnts,
                          s->range_model3.dectab, &temp);
+    if (ret < 0)
+        return ret;
+
     min += temp << 8;
     ret |= decode_value3(s, 255, &s->range_model3.cntsum,
                          s->range_model3.freqs[0],
