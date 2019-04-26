@@ -392,8 +392,6 @@ char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int e
     struct JNIAMediaCodecListFields jfields = { 0 };
     struct JNIAMediaFormatFields mediaformat_jfields = { 0 };
 
-    jobject format = NULL;
-    jobject codec = NULL;
     jobject codec_name = NULL;
 
     jobject info = NULL;
@@ -571,14 +569,6 @@ done_with_info:
     }
 
 done:
-    if (format) {
-        (*env)->DeleteLocalRef(env, format);
-    }
-
-    if (codec) {
-        (*env)->DeleteLocalRef(env, codec);
-    }
-
     if (codec_name) {
         (*env)->DeleteLocalRef(env, codec_name);
     }
