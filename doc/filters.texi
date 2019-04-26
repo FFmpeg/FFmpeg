@@ -22704,6 +22704,20 @@ Cubic root.
 @end table
 
 Default is linear.
+
+@item draw
+Set the draw mode.
+
+Available values are:
+@table @samp
+@item scale
+Scale pixel values for each drawn sample.
+
+@item full
+Draw every sample directly.
+@end table
+
+Default value is @code{scale}.
 @end table
 
 @subsection Examples
