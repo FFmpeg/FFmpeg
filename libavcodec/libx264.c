@@ -821,8 +821,13 @@ FF_ENABLE_DEPRECATION_WARNINGS
     x4->params.vui.i_sar_height = sh;
     x4->params.i_timebase_den = avctx->time_base.den;
     x4->params.i_timebase_num = avctx->time_base.num;
-    x4->params.i_fps_num = avctx->time_base.den;
-    x4->params.i_fps_den = avctx->time_base.num * avctx->ticks_per_frame;
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        x4->params.i_fps_num = avctx->framerate.num;
+        x4->params.i_fps_den = avctx->framerate.den;
+    } else {
+        x4->params.i_fps_num = avctx->time_base.den;
+        x4->params.i_fps_den = avctx->time_base.num * avctx->ticks_per_frame;
+    }
 
     x4->params.analyse.b_psnr = avctx->flags & AV_CODEC_FLAG_PSNR;
 
