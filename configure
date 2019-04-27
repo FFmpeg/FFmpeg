@@ -3843,8 +3843,22 @@ die_unknown(){
 }
 
 print_in_columns() {
-    cols=$(expr $ncols / 24)
-    cat | tr ' ' '\n' | sort | pr -r "-$cols" -w $ncols -t
+    tr ' ' '\n' | sort | tr '\r\n' '  ' | awk -v col_width=24 -v width="$ncols" '
+    {
+        num_cols = width > col_width ? int(width / col_width) : 1;
+        num_rows = int((NF + num_cols-1) / num_cols);
+        y = x = 1;
+        for (y = 1; y <= num_rows; y++) {
+            i = y;
+            for (x = 1; x <= num_cols; x++) {
+                if (i <= NF) {
+                  line = sprintf("%s%-" col_width "s", line, $i);
+                }
+                i = i + num_rows;
+            }
+            print line; line = "";
+        }
+    }' | sed 's/ *$//'
 }
 
 show_list() {
