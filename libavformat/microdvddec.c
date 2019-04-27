@@ -102,6 +102,8 @@ static int microdvd_read_header(AVFormatContext *s)
         if (!len)
             break;
         line[strcspn(line, "\r\n")] = 0;
+        if (!*p)
+            continue;
         if (i++ < 3) {
             int frame;
             double fps;
