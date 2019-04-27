@@ -110,8 +110,13 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     }
 
     ctx->params->frameNumThreads = avctx->thread_count;
-    ctx->params->fpsNum          = avctx->time_base.den;
-    ctx->params->fpsDenom        = avctx->time_base.num * avctx->ticks_per_frame;
+    if (avctx->framerate.num > 0 && avctx->framerate.den > 0) {
+        ctx->params->fpsNum      = avctx->framerate.num;
+        ctx->params->fpsDenom    = avctx->framerate.den;
+    } else {
+        ctx->params->fpsNum      = avctx->time_base.den;
+        ctx->params->fpsDenom    = avctx->time_base.num * avctx->ticks_per_frame;
+    }
     ctx->params->sourceWidth     = avctx->width;
     ctx->params->sourceHeight    = avctx->height;
     ctx->params->bEnablePsnr     = !!(avctx->flags & AV_CODEC_FLAG_PSNR);
