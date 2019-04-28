@@ -22226,6 +22226,19 @@ logarithmic
 
 Default value is @samp{sqrt}.
 
+@item fscale
+Specify frequency scale.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item log
+logarithmic
+@end table
+
+Default value is @samp{lin}.
+
 @item saturation
 Set saturation modifier for displayed colors. Negative values provide
 alternative color scheme. @code{0} is no saturation at all.
@@ -22397,6 +22410,19 @@ logarithmic
 5th root
 @end table
 Default value is @samp{log}.
+
+@item fscale
+Specify frequency scale.
+
+It accepts the following values:
+@table @samp
+@item lin
+linear
+@item log
+logarithmic
+@end table
+
+Default value is @samp{lin}.
 
 @item saturation
 Set saturation modifier for displayed colors. Negative values provide
