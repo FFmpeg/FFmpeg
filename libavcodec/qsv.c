@@ -83,6 +83,19 @@ int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile)
     return MFX_PROFILE_UNKNOWN;
 }
 
+int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level)
+{
+    if (level == FF_LEVEL_UNKNOWN)
+        return MFX_LEVEL_UNKNOWN;
+
+    switch (codec_id) {
+    case AV_CODEC_ID_HEVC:
+        return level / 3;
+    default:
+        return level;
+    }
+}
+
 static const struct {
     mfxStatus   mfxerr;
     int         averr;
