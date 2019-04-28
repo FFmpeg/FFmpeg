@@ -382,8 +382,11 @@ static int decompress_p(AVCodecContext *avctx,
 
     ret  = decode_value(s, s->range_model, 256, 1, &min);
     ret |= decode_value(s, s->range_model, 256, 1, &temp);
+    if (ret < 0)
+        return ret;
+
     min += temp << 8;
-    ret |= decode_value(s, s->range_model, 256, 1, &max);
+    ret  = decode_value(s, s->range_model, 256, 1, &max);
     ret |= decode_value(s, s->range_model, 256, 1, &temp);
     if (ret < 0)
         return ret;
