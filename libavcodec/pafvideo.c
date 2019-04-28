@@ -285,6 +285,10 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
+    if ((code & 0xF) == 0 &&
+        c->video_size / 32 - (int64_t)bytestream2_get_bytes_left(&c->gb) > c->video_size / 32 * (int64_t)avctx->discard_damaged_percentage / 100)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
         return ret;
 
