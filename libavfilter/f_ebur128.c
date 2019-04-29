@@ -420,7 +420,7 @@ static int config_audio_output(AVFilterLink *outlink)
 
     for (i = 0; i < nb_channels; i++) {
         /* channel weighting */
-        const uint16_t chl = av_channel_layout_extract_channel(outlink->channel_layout, i);
+        const uint64_t chl = av_channel_layout_extract_channel(outlink->channel_layout, i);
         if (chl & (AV_CH_LOW_FREQUENCY|AV_CH_LOW_FREQUENCY_2)) {
             ebur128->ch_weighting[i] = 0;
         } else if (chl & BACK_MASK) {
