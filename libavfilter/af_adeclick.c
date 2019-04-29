@@ -22,7 +22,9 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
+#include "internal.h"
 
 typedef struct DeclickChannel {
     double *auxiliary;
@@ -73,6 +75,7 @@ typedef struct AudioDeclickContext {
     uint64_t nb_samples;
     uint64_t detected_errors;
     int samples_left;
+    int eof;
 
     AVAudioFifo *fifo;
     double *window_func_lut;
@@ -544,68 +547,57 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     return 0;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int filter_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
     AudioDeclickContext *s = ctx->priv;
     AVFrame *out = NULL;
-    int ret = 0;
+    int ret = 0, j, ch, detected_errors = 0;
+    ThreadData td;
 
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = in->pts;
+    out = ff_get_audio_buffer(outlink, s->hop_size);
+    if (!out)
+        return AVERROR(ENOMEM);
 
-    ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
-                              in->nb_samples);
-    av_frame_free(&in);
+    ret = av_audio_fifo_peek(s->fifo, (void **)s->in->extended_data,
+                             s->window_size);
+    if (ret < 0)
+        goto fail;
 
-    while (av_audio_fifo_size(s->fifo) >= s->window_size) {
-        int j, ch, detected_errors = 0;
-        ThreadData td;
+    td.out = out;
+    ret = ctx->internal->execute(ctx, filter_channel, &td, NULL, inlink->channels);
+    if (ret < 0)
+        goto fail;
 
-        out = ff_get_audio_buffer(outlink, s->hop_size);
-        if (!out)
-            return AVERROR(ENOMEM);
+    for (ch = 0; ch < s->in->channels; ch++) {
+        double *is = (double *)s->is->extended_data[ch];
 
-        ret = av_audio_fifo_peek(s->fifo, (void **)s->in->extended_data,
-                                 s->window_size);
-        if (ret < 0)
-            break;
-
-        td.out = out;
-        ret = ctx->internal->execute(ctx, filter_channel, &td, NULL, inlink->channels);
-        if (ret < 0)
-            goto fail;
-
-        for (ch = 0; ch < s->in->channels; ch++) {
-            double *is = (double *)s->is->extended_data[ch];
-
-            for (j = 0; j < s->hop_size; j++) {
-                if (is[j])
-                    detected_errors++;
-            }
+        for (j = 0; j < s->hop_size; j++) {
+            if (is[j])
+                detected_errors++;
         }
+    }
 
-        av_audio_fifo_drain(s->fifo, s->hop_size);
+    av_audio_fifo_drain(s->fifo, s->hop_size);
 
-        if (s->samples_left > 0)
-            out->nb_samples = FFMIN(s->hop_size, s->samples_left);
+    if (s->samples_left > 0)
+        out->nb_samples = FFMIN(s->hop_size, s->samples_left);
 
-        out->pts = s->pts;
-        s->pts += s->hop_size;
+    out->pts = s->pts;
+    s->pts += s->hop_size;
 
-        s->detected_errors += detected_errors;
-        s->nb_samples += out->nb_samples * inlink->channels;
+    s->detected_errors += detected_errors;
+    s->nb_samples += out->nb_samples * inlink->channels;
 
-        ret = ff_filter_frame(outlink, out);
-        if (ret < 0)
-            break;
+    ret = ff_filter_frame(outlink, out);
+    if (ret < 0)
+        goto fail;
 
-        if (s->samples_left > 0) {
-            s->samples_left -= s->hop_size;
-            if (s->samples_left <= 0)
-                av_audio_fifo_drain(s->fifo, av_audio_fifo_size(s->fifo));
-        }
+    if (s->samples_left > 0) {
+        s->samples_left -= s->hop_size;
+        if (s->samples_left <= 0)
+            av_audio_fifo_drain(s->fifo, av_audio_fifo_size(s->fifo));
     }
 
 fail:
@@ -614,27 +606,58 @@ fail:
     return ret;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = outlink->src;
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
     AudioDeclickContext *s = ctx->priv;
-    int ret = 0;
+    AVFrame *in;
+    int ret, status;
+    int64_t pts;
 
-    ret = ff_request_frame(ctx->inputs[0]);
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (ret == AVERROR_EOF && av_audio_fifo_size(s->fifo) > 0) {
-        if (!s->samples_left)
+    ret = ff_inlink_consume_samples(inlink, s->window_size, s->window_size, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0) {
+        if (s->pts == AV_NOPTS_VALUE)
+            s->pts = in->pts;
+
+        ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
+                                  in->nb_samples);
+        av_frame_free(&in);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (av_audio_fifo_size(s->fifo) >= s->window_size ||
+        s->samples_left > 0)
+        return filter_frame(inlink);
+
+    if (av_audio_fifo_size(s->fifo) >= s->window_size) {
+        ff_filter_set_ready(ctx, 100);
+        return 0;
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            s->eof = 1;
             s->samples_left = av_audio_fifo_size(s->fifo) - s->overlap_skip;
-
-        if (s->samples_left > 0) {
-            AVFrame *in = ff_get_audio_buffer(outlink, s->window_size - s->samples_left);
-            if (!in)
-                return AVERROR(ENOMEM);
-            ret = filter_frame(ctx->inputs[0], in);
+            ff_filter_set_ready(ctx, 100);
+            return 0;
         }
     }
 
-    return ret;
+    if (s->eof && s->samples_left <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -697,7 +720,6 @@ static const AVFilterPad inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     { NULL }
@@ -707,7 +729,6 @@ static const AVFilterPad outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -719,6 +740,7 @@ AVFilter ff_af_adeclick = {
     .priv_size     = sizeof(AudioDeclickContext),
     .priv_class    = &adeclick_class,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
@@ -746,6 +768,7 @@ AVFilter ff_af_adeclip = {
     .priv_size     = sizeof(AudioDeclickContext),
     .priv_class    = &adeclip_class,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
