@@ -382,7 +382,7 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&s->in[i]);
 }
 
-static const AVFilterPad audiovectorscope_inputs[] = {
+static const AVFilterPad ahistogram_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
@@ -392,7 +392,7 @@ static const AVFilterPad audiovectorscope_inputs[] = {
     { NULL }
 };
 
-static const AVFilterPad audiovectorscope_outputs[] = {
+static const AVFilterPad ahistogram_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
@@ -407,7 +407,7 @@ AVFilter ff_avf_ahistogram = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioHistogramContext),
-    .inputs        = audiovectorscope_inputs,
-    .outputs       = audiovectorscope_outputs,
+    .inputs        = ahistogram_inputs,
+    .outputs       = ahistogram_outputs,
     .priv_class    = &ahistogram_class,
 };
