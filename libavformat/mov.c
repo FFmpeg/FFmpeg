@@ -7292,6 +7292,8 @@ static int mov_seek_sap(AVFormatContext *s, AVStream *st, int index)
         return mov_switch_root(s, -1, index);
     if (index + 1 < mov->frag_index.nb_items)
         mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
+    else if (mov->fix_fragment_seek)
+        mov->next_root_atom = 0;
     return 0;
 }
 
@@ -7310,7 +7312,8 @@ static int mov_seek_fragment(AVFormatContext *s, AVStream *st, int64_t timestamp
         return mov_switch_root(s, -1, index);
     if (index + 1 < mov->frag_index.nb_items)
         mov->next_root_atom = mov->frag_index.item[index + 1].moof_offset;
-
+    else if (mov->fix_fragment_seek)
+        mov->next_root_atom = 0;
     return 0;
 }
 
@@ -7488,6 +7491,9 @@ static const AVOption mov_options[] = {
         0, 1, FLAGS},
 
     {"ignore_sidx_index", "ignore sidx when build index", OFFSET(ignore_sidx_index), AV_OPT_TYPE_BOOL, {.i64 = 1},
+        0, 1, FLAGS},
+
+    {"fix_fragment_seek", "fix fragment seek problem", OFFSET(fix_fragment_seek), AV_OPT_TYPE_BOOL, {.i64 = 1},
         0, 1, FLAGS},
     { NULL },
 };
