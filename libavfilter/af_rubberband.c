@@ -37,6 +37,7 @@ typedef struct RubberBandContext {
         smoothing, formant, opitch, channels;
     int64_t nb_samples_out;
     int64_t nb_samples_in;
+    int64_t first_pts;
     int nb_samples;
 } RubberBandContext;
 
@@ -124,6 +125,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
     int ret = 0, nb_samples;
 
+    if (s->first_pts == AV_NOPTS_VALUE)
+        s->first_pts = in->pts;
+
     rubberband_process(s->rbs, (const float *const *)in->data, in->nb_samples, ff_outlink_get_status(inlink));
     s->nb_samples_in += in->nb_samples;
 
@@ -134,7 +138,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             av_frame_free(&in);
             return AVERROR(ENOMEM);
         }
-        out->pts = av_rescale_q(s->nb_samples_out,
+        out->pts = s->first_pts + av_rescale_q(s->nb_samples_out,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
         nb_samples = rubberband_retrieve(s->rbs, (float *const *)out->data, nb_samples);
@@ -162,6 +166,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     s->nb_samples = rubberband_get_samples_required(s->rbs);
+    s->first_pts = AV_NOPTS_VALUE;
 
     return 0;
 }
