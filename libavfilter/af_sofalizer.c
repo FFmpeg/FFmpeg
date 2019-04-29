@@ -35,6 +35,7 @@
 #include "libavutil/intmath.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 #include "audio.h"
 
@@ -81,6 +82,7 @@ typedef struct SOFAlizerContext {
     int buffer_length;          /* is: longest IR plus max. delay in all SOFA files */
                                 /* then choose next power of 2 */
     int n_fft;                  /* number of samples in one FFT block */
+    int nb_samples;
 
                                 /* netCDF variables */
     int *delay[2];              /* broadband delay for each channel/IR to be convolved */
@@ -603,6 +605,31 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    SOFAlizerContext *s = ctx->priv;
+    AVFrame *in;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (s->nb_samples)
+        ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &in);
+    else
+        ret = ff_inlink_consume_frame(inlink, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
+}
+
 static int query_formats(AVFilterContext *ctx)
 {
     struct SOFAlizerContext *s = ctx->priv;
@@ -964,11 +991,8 @@ static int config_input(AVFilterLink *inlink)
     SOFAlizerContext *s = ctx->priv;
     int ret;
 
-    if (s->type == FREQUENCY_DOMAIN) {
-        inlink->partial_buf_size =
-        inlink->min_samples =
-        inlink->max_samples = s->framesize;
-    }
+    if (s->type == FREQUENCY_DOMAIN)
+        s->nb_samples = s->framesize;
 
     /* gain -3 dB per channel */
     s->gain_lfe = expf((s->gain - 3 * inlink->channels + s->lfe_gain) / 20 * M_LN10);
@@ -1047,7 +1071,6 @@ static const AVFilterPad inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -1066,6 +1089,7 @@ AVFilter ff_af_sofalizer = {
     .priv_size     = sizeof(SOFAlizerContext),
     .priv_class    = &sofalizer_class,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     .query_formats = query_formats,
     .inputs        = inputs,
