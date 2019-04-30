@@ -1927,13 +1927,13 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
 #if !HAVE_BIGENDIAN
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {
-        c->hyScale = c->hcScale = hScale_real_vsx;
-        if (c->flags & SWS_FAST_BILINEAR && c->dstW >= c->srcW && c->chrDstW >= c->chrSrcW) {
-            c->hyscale_fast = hyscale_fast_vsx;
-            c->hcscale_fast = hcscale_fast_vsx;
-        }
+            c->hyScale = c->hcScale = hScale_real_vsx;
+            if (c->flags & SWS_FAST_BILINEAR && c->dstW >= c->srcW && c->chrDstW >= c->chrSrcW) {
+                c->hyscale_fast = hyscale_fast_vsx;
+                c->hcscale_fast = hcscale_fast_vsx;
+            }
         } else {
-        c->hyScale = c->hcScale = hScale8To19_vsx;
+            c->hyScale = c->hcScale = hScale8To19_vsx;
         }
     }
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) &&
