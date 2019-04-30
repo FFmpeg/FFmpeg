@@ -2074,6 +2074,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
 #if HAVE_VSX
     enum AVPixelFormat dstFormat = c->dstFormat;
     const int cpu_flags = av_get_cpu_flags();
+    const unsigned char power8 = HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8;
 
     if (!(cpu_flags & AV_CPU_FLAG_VSX))
         return;
@@ -2090,7 +2091,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
             c->hyScale = c->hcScale = hScale8To19_vsx;
         }
     } else {
-        if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+        if (power8) {
             c->hyScale = c->hcScale = c->dstBpc > 14 ? hScale16To19_vsx
                                                      : hScale16To15_vsx;
         }
@@ -2144,21 +2145,21 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
     if (c->flags & SWS_FULL_CHR_H_INT) {
         switch (dstFormat) {
             case AV_PIX_FMT_RGB24:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     c->yuv2packed1 = yuv2rgb24_full_1_vsx;
                     c->yuv2packed2 = yuv2rgb24_full_2_vsx;
                     c->yuv2packedX = yuv2rgb24_full_X_vsx;
                 }
             break;
             case AV_PIX_FMT_BGR24:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     c->yuv2packed1 = yuv2bgr24_full_1_vsx;
                     c->yuv2packed2 = yuv2bgr24_full_2_vsx;
                     c->yuv2packedX = yuv2bgr24_full_X_vsx;
                 }
             break;
             case AV_PIX_FMT_BGRA:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2bgrx32_full_1_vsx;
                         c->yuv2packed2 = yuv2bgrx32_full_2_vsx;
@@ -2167,7 +2168,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_RGBA:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2rgbx32_full_1_vsx;
                         c->yuv2packed2 = yuv2rgbx32_full_2_vsx;
@@ -2176,7 +2177,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_ARGB:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xrgb32_full_1_vsx;
                         c->yuv2packed2 = yuv2xrgb32_full_2_vsx;
@@ -2185,7 +2186,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_ABGR:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xbgr32_full_1_vsx;
                         c->yuv2packed2 = yuv2xbgr32_full_2_vsx;
@@ -2212,7 +2213,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 c->yuv2packedX = yuv2uyvy422_X_vsx;
             break;
             case AV_PIX_FMT_BGRA:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2bgrx32_1_vsx;
                         c->yuv2packed2 = yuv2bgrx32_2_vsx;
@@ -2220,7 +2221,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_RGBA:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2rgbx32_1_vsx;
                         c->yuv2packed2 = yuv2rgbx32_2_vsx;
@@ -2228,7 +2229,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_ARGB:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xrgb32_1_vsx;
                         c->yuv2packed2 = yuv2xrgb32_2_vsx;
@@ -2236,7 +2237,7 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_ABGR:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     if (!c->needAlpha) {
                         c->yuv2packed1 = yuv2xbgr32_1_vsx;
                         c->yuv2packed2 = yuv2xbgr32_2_vsx;
@@ -2244,13 +2245,13 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
                 }
             break;
             case AV_PIX_FMT_RGB24:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     c->yuv2packed1 = yuv2rgb24_1_vsx;
                     c->yuv2packed2 = yuv2rgb24_2_vsx;
                 }
             break;
             case AV_PIX_FMT_BGR24:
-                if (HAVE_POWER8 && cpu_flags & AV_CPU_FLAG_POWER8) {
+                if (power8) {
                     c->yuv2packed1 = yuv2bgr24_1_vsx;
                     c->yuv2packed2 = yuv2bgr24_2_vsx;
                 }
