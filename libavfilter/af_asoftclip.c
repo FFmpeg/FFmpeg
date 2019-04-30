@@ -284,4 +284,5 @@ AVFilter ff_af_asoftclip = {
     .priv_class     = &asoftclip_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
