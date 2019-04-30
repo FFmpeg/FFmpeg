@@ -74,6 +74,8 @@ typedef struct DynamicAudioNormalizerContext {
     cqueue **gain_history_original;
     cqueue **gain_history_minimum;
     cqueue **gain_history_smoothed;
+
+    cqueue *is_enabled;
 } DynamicAudioNormalizerContext;
 
 #define OFFSET(x) offsetof(DynamicAudioNormalizerContext, x)
@@ -282,6 +284,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->gain_history_minimum);
     av_freep(&s->gain_history_smoothed);
 
+    cqueue_free(s->is_enabled);
+    s->is_enabled = NULL;
+
     av_freep(&s->weights);
 
     ff_bufqueue_discard_all(&s->queue);
@@ -308,10 +313,11 @@ static int config_input(AVFilterLink *inlink)
     s->gain_history_minimum = av_calloc(inlink->channels, sizeof(*s->gain_history_minimum));
     s->gain_history_smoothed = av_calloc(inlink->channels, sizeof(*s->gain_history_smoothed));
     s->weights = av_malloc_array(s->filter_size, sizeof(*s->weights));
+    s->is_enabled = cqueue_create(s->filter_size);
     if (!s->prev_amplification_factor || !s->dc_correction_value ||
         !s->compress_threshold || !s->fade_factors[0] || !s->fade_factors[1] ||
         !s->gain_history_original || !s->gain_history_minimum ||
-        !s->gain_history_smoothed || !s->weights)
+        !s->gain_history_smoothed || !s->is_enabled || !s->weights)
         return AVERROR(ENOMEM);
 
     for (c = 0; c < inlink->channels; c++) {
@@ -631,7 +637,7 @@ static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
     }
 }
 
-static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
+static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame, int enabled)
 {
     int c, i;
 
@@ -641,7 +647,7 @@ static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
 
         cqueue_dequeue(s->gain_history_smoothed[c], &current_amplification_factor);
 
-        for (i = 0; i < frame->nb_samples; i++) {
+        for (i = 0; i < frame->nb_samples && enabled; i++) {
             const double amplification_factor = fade(s->prev_amplification_factor[c],
                                                      current_amplification_factor, i,
                                                      s->fade_factors);
@@ -664,13 +670,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int ret = 1;
 
     if (!cqueue_empty(s->gain_history_smoothed[0])) {
+        double is_enabled;
         AVFrame *out = ff_bufqueue_get(&s->queue);
 
-        amplify_frame(s, out);
+        cqueue_dequeue(s->is_enabled, &is_enabled);
+
+        amplify_frame(s, out, is_enabled > 0.);
         ret = ff_filter_frame(outlink, out);
     }
 
     av_frame_make_writable(in);
+    cqueue_enqueue(s->is_enabled, !ctx->is_disabled);
     analyze_frame(s, in);
     ff_bufqueue_add(ctx, &s->queue, in);
 
@@ -795,4 +805,5 @@ AVFilter ff_af_dynaudnorm = {
     .inputs        = avfilter_af_dynaudnorm_inputs,
     .outputs       = avfilter_af_dynaudnorm_outputs,
     .priv_class    = &dynaudnorm_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
