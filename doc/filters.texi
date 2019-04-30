@@ -22248,6 +22248,58 @@ Set minimum amplitude used in @code{log} amplitude scaler.
 
 @end table
 
+@section showspatial
+
+Convert stereo input audio to a video output, representing the spatial relationship
+between two channels.
+
+The filter accepts the following options:
+
+@table @option
+@item size, s
+Specify the video size for the output. For the syntax of this option, check the
+@ref{video size syntax,,"Video size" section in the ffmpeg-utils manual,ffmpeg-utils}.
+Default value is @code{512x512}.
+
+@item win_size
+Set window size. Allowed range is from @var{1024} to @var{65536}. Default size is @var{4096}.
+
+@item win_func
+Set window function.
+
+It accepts the following values:
+@table @samp
+@item rect
+@item bartlett
+@item hann
+@item hanning
+@item hamming
+@item blackman
+@item welch
+@item flattop
+@item bharris
+@item bnuttall
+@item bhann
+@item sine
+@item nuttall
+@item lanczos
+@item gauss
+@item tukey
+@item dolph
+@item cauchy
+@item parzen
+@item poisson
+@item bohman
+@end table
+
+Default value is @code{hann}.
+
+@item overlap
+Set ratio of overlap window. Default value is @code{0.5}.
+When value is @code{1} overlap is set to recommended size for specific
+window function currently used.
+@end table
+
 @anchor{showspectrum}
 @section showspectrum
 

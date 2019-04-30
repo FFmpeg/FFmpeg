@@ -30,6 +30,7 @@ version <next>:
 - colorhold filter
 - xmedian filter
 - asr filter
+- showspatial multimedia filter
 
 
 version 4.1:

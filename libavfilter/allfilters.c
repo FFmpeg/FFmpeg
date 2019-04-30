@@ -443,6 +443,7 @@ extern AVFilter ff_avf_avectorscope;
 extern AVFilter ff_avf_concat;
 extern AVFilter ff_avf_showcqt;
 extern AVFilter ff_avf_showfreqs;
+extern AVFilter ff_avf_showspatial;
 extern AVFilter ff_avf_showspectrum;
 extern AVFilter ff_avf_showspectrumpic;
 extern AVFilter ff_avf_showvolume;
