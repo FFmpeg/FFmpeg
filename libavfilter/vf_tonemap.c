@@ -191,10 +191,36 @@ static void tonemap(TonemapContext *s, AVFrame *out, const AVFrame *in,
     *b_out *= sig / sig_orig;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+    const AVPixFmtDescriptor *desc;
+    double peak;
+} ThreadData;
+
+static int tonemap_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    TonemapContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+    const AVPixFmtDescriptor *desc = td->desc;
+    const int slice_start = (in->height * jobnr) / nb_jobs;
+    const int slice_end = (in->height * (jobnr+1)) / nb_jobs;
+    double peak = td->peak;
+
+    for (int y = slice_start; y < slice_end; y++)
+        for (int x = 0; x < out->width; x++)
+            tonemap(s, out, in, desc, x, y, peak);
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *link, AVFrame *in)
 {
-    TonemapContext *s = link->dst->priv;
-    AVFilterLink *outlink = link->dst->outputs[0];
+    AVFilterContext *ctx = link->dst;
+    TonemapContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    ThreadData td;
     AVFrame *out;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     const AVPixFmtDescriptor *odesc = av_pix_fmt_desc_get(outlink->format);
@@ -245,9 +271,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     /* do the tone map */
-    for (y = 0; y < out->height; y++)
-        for (x = 0; x < out->width; x++)
-            tonemap(s, out, in, desc, x, y, peak);
+    td.out = out;
+    td.in = in;
+    td.desc = desc;
+    td.peak = peak;
+    ctx->internal->execute(ctx, tonemap_slice, &td, NULL, FFMIN(in->height, ff_filter_get_nb_threads(ctx)));
 
     /* copy/generate alpha if needed */
     if (desc->flags & AV_PIX_FMT_FLAG_ALPHA && odesc->flags & AV_PIX_FMT_FLAG_ALPHA) {
@@ -315,4 +343,5 @@ AVFilter ff_vf_tonemap = {
     .priv_class      = &tonemap_class,
     .inputs          = tonemap_inputs,
     .outputs         = tonemap_outputs,
+    .flags           = AVFILTER_FLAG_SLICE_THREADS,
 };
