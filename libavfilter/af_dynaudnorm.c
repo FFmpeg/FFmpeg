@@ -715,6 +715,7 @@ static int flush(AVFilterLink *outlink)
 
         s->pts = out->pts;
         ret = ff_filter_frame(outlink, out);
+        s->delay = s->queue.available;
     }
 
     return ret;
