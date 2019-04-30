@@ -1853,6 +1853,64 @@ static void hcscale_fast_vsx(SwsContext *c, int16_t *dst1, int16_t *dst2,
 
 #undef HCSCALE
 
+static void hScale8To19_vsx(SwsContext *c, int16_t *_dst, int dstW,
+                            const uint8_t *src, const int16_t *filter,
+                            const int32_t *filterPos, int filterSize)
+{
+    int i, j;
+    int32_t *dst = (int32_t *) _dst;
+    vector int16_t vfilter, vin;
+    vector uint8_t vin8;
+    vector int32_t vout;
+    const vector uint8_t vzero = vec_splat_u8(0);
+    const vector uint8_t vunusedtab[8] = {
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+                          0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf},
+        (vector uint8_t) {0x0, 0x1, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10,
+                          0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x10, 0x10, 0x10, 0x10,
+                          0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x10, 0x10,
+                          0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+                          0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+                          0x8, 0x9, 0x10, 0x10, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+                          0x8, 0x9, 0xa, 0xb, 0x10, 0x10, 0x10, 0x10},
+        (vector uint8_t) {0x0, 0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7,
+                          0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0x10, 0x10},
+    };
+    const vector uint8_t vunused = vunusedtab[filterSize % 8];
+
+    if (filterSize == 1) {
+        for (i = 0; i < dstW; i++) {
+            int srcPos = filterPos[i];
+            int val    = 0;
+            for (j = 0; j < filterSize; j++) {
+                val += ((int)src[srcPos + j]) * filter[filterSize * i + j];
+            }
+            dst[i] = FFMIN(val >> 3, (1 << 19) - 1); // the cubic equation does overflow ...
+        }
+    } else {
+        for (i = 0; i < dstW; i++) {
+            const int srcPos = filterPos[i];
+            vout = vec_splat_s32(0);
+            for (j = 0; j < filterSize; j += 8) {
+                vin8 = vec_vsx_ld(0, &src[srcPos + j]);
+                vin = (vector int16_t) vec_mergeh(vin8, vzero);
+                if (j + 8 > filterSize) // Remove the unused elements on the last round
+                    vin = vec_perm(vin, (vector int16_t) vzero, vunused);
+
+                vfilter = vec_vsx_ld(0, &filter[filterSize * i + j]);
+                vout = vec_msums(vin, vfilter, vout);
+            }
+            vout = vec_sums(vout, (vector int32_t) vzero);
+            dst[i] = FFMIN(vout[3] >> 3, (1 << 19) - 1);
+        }
+    }
+}
+
 #endif /* !HAVE_BIGENDIAN */
 
 #endif /* HAVE_VSX */
@@ -1867,11 +1925,15 @@ av_cold void ff_sws_init_swscale_vsx(SwsContext *c)
         return;
 
 #if !HAVE_BIGENDIAN
-    if (c->srcBpc == 8 && c->dstBpc <= 14) {
+    if (c->srcBpc == 8) {
+        if (c->dstBpc <= 14) {
         c->hyScale = c->hcScale = hScale_real_vsx;
         if (c->flags & SWS_FAST_BILINEAR && c->dstW >= c->srcW && c->chrDstW >= c->chrSrcW) {
             c->hyscale_fast = hyscale_fast_vsx;
             c->hcscale_fast = hcscale_fast_vsx;
+        }
+        } else {
+        c->hyScale = c->hcScale = hScale8To19_vsx;
         }
     }
     if (!is16BPS(dstFormat) && !isNBPS(dstFormat) &&
