@@ -119,8 +119,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->o2 = s->o1;
         s->o1 = oside;
 
-        dst[0] = (mid + oside) * level_out;
-        dst[1] = (mid - oside) * level_out;
+        if (ctx->is_disabled) {
+            dst[0] = src[0];
+            dst[1] = src[1];
+        } else {
+            dst[0] = (mid + oside) * level_out;
+            dst[1] = (mid - oside) * level_out;
+        }
     }
 
     if (out != in)
@@ -167,4 +172,5 @@ AVFilter ff_af_crossfeed = {
     .priv_class     = &crossfeed_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };
