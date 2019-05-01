@@ -177,10 +177,9 @@ static int activate(AVFilterContext *ctx)
 
             frozen = is_frozen(s, s->reference_frame, frame);
             if (duration >= s->duration) {
-                if (frozen) {
-                    if (!s->frozen)
-                        set_meta(s, frame, "lavfi.freezedetect.freeze_start", av_ts2timestr(s->reference_frame->pts, &inlink->time_base));
-                } else {
+                if (!s->frozen)
+                    set_meta(s, frame, "lavfi.freezedetect.freeze_start", av_ts2timestr(s->reference_frame->pts, &inlink->time_base));
+                if (!frozen) {
                     set_meta(s, frame, "lavfi.freezedetect.freeze_duration", av_ts2timestr(duration, &AV_TIME_BASE_Q));
                     set_meta(s, frame, "lavfi.freezedetect.freeze_end", av_ts2timestr(frame->pts, &inlink->time_base));
                 }
