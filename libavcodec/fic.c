@@ -356,7 +356,7 @@ static int fic_decode_frame(AVCodecContext *avctx, void *data,
     sdata = src + tsize + FIC_HEADER_SIZE + 4 * nslices;
     msize = avpkt->size - nslices * 4 - tsize - FIC_HEADER_SIZE;
 
-    if (msize <= 0) {
+    if (msize <= ctx->aligned_width/8 * (ctx->aligned_height/8) / 8) {
         av_log(avctx, AV_LOG_ERROR, "Not enough frame data to decode.\n");
         return AVERROR_INVALIDDATA;
     }
