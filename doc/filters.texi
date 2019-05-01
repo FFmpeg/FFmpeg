@@ -21136,6 +21136,14 @@ They accept the following options:
 @item limit
 Time limit for the pauses. Any pause longer than that will be considered
 a timestamp discontinuity and reset the timer. Default is 2 seconds.
+@item speed
+Speed factor for processing. The value must be a float larger than zero.
+Values larger than 1.0 will result in faster than realtime processing,
+smaller will slow processing down. The @var{limit} is automatically adapted
+accordingly. Default is 1.0.
+
+A processing speed faster than what is possible without these filters cannot
+be achieved.
 @end table
 
 @anchor{select}
