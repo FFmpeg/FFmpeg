@@ -153,7 +153,6 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (avpkt->size <= 32)
         return AVERROR_INVALIDDATA;
 
-    memset(s->decbuffer, 0, s->size);
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
     bytestream2_init_writer(&s->pb, s->decbuffer, s->size);
     ret = decompress(&s->gb, AV_RL32(avpkt->data + 28) >> 1, &s->pb, s->lut);
@@ -161,6 +160,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     if (bytestream2_get_bytes_left_p(&s->pb) > s->size * (int64_t)avctx->discard_damaged_percentage / 100)
         return AVERROR_INVALIDDATA;
+
+    av_assert0(s->size >= bytestream2_get_bytes_left_p(&s->pb));
+    memset(s->decbuffer + bytestream2_tell_p(&s->pb), 0, bytestream2_get_bytes_left_p(&s->pb));
+
     vertical_predict((uint32_t *)s->decbuffer, 0, (uint32_t *)s->initial_line, s->stride, 1);
     vertical_predict((uint32_t *)s->decbuffer, s->stride, (uint32_t *)s->decbuffer, s->stride, avctx->height - 1);
 
