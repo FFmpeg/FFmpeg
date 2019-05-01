@@ -120,7 +120,8 @@ typedef struct BiquadsContext {
 
     void (*filter)(struct BiquadsContext *s, const void *ibuf, void *obuf, int len,
                    double *i1, double *i2, double *o1, double *o2,
-                   double b0, double b1, double b2, double a1, double a2, int *clippings);
+                   double b0, double b1, double b2, double a1, double a2, int *clippings,
+                   int disabled);
 } BiquadsContext;
 
 static av_cold int init(AVFilterContext *ctx)
@@ -177,7 +178,8 @@ static void biquad_## name (BiquadsContext *s,                                \
                             double *in1, double *in2,                         \
                             double *out1, double *out2,                       \
                             double b0, double b1, double b2,                  \
-                            double a1, double a2, int *clippings)             \
+                            double a1, double a2, int *clippings,             \
+                            int disabled)                                     \
 {                                                                             \
     const type *ibuf = input;                                                 \
     type *obuf = output;                                                      \
@@ -192,7 +194,9 @@ static void biquad_## name (BiquadsContext *s,                                \
     for (i = 0; i+1 < len; i++) {                                             \
         o2 = i2 * b2 + i1 * b1 + ibuf[i] * b0 + o2 * a2 + o1 * a1;            \
         i2 = ibuf[i];                                                         \
-        if (need_clipping && o2 < min) {                                      \
+        if (disabled) {                                                       \
+            obuf[i] = i2;                                                     \
+        } else if (need_clipping && o2 < min) {                               \
             (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o2 > max) {                               \
@@ -204,7 +208,9 @@ static void biquad_## name (BiquadsContext *s,                                \
         i++;                                                                  \
         o1 = i1 * b2 + i2 * b1 + ibuf[i] * b0 + o1 * a2 + o2 * a1;            \
         i1 = ibuf[i];                                                         \
-        if (need_clipping && o1 < min) {                                      \
+        if (disabled) {                                                       \
+            obuf[i] = i1;                                                     \
+        } else if (need_clipping && o1 < min) {                               \
             (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o1 > max) {                               \
@@ -220,7 +226,9 @@ static void biquad_## name (BiquadsContext *s,                                \
         i1 = ibuf[i];                                                         \
         o2 = o1;                                                              \
         o1 = o0;                                                              \
-        if (need_clipping && o0 < min) {                                      \
+        if (disabled) {                                                       \
+            obuf[i] = i1;                                                     \
+        } else if (need_clipping && o0 < min) {                               \
             (*clippings)++;                                                   \
             obuf[i] = min;                                                    \
         } else if (need_clipping && o0 > max) {                               \
@@ -442,7 +450,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
 
         s->filter(s, buf->extended_data[ch], out_buf->extended_data[ch], buf->nb_samples,
                   &s->cache[ch].i1, &s->cache[ch].i2, &s->cache[ch].o1, &s->cache[ch].o2,
-                  s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings);
+                  s->b0, s->b1, s->b2, s->a1, s->a2, &s->cache[ch].clippings, ctx->is_disabled);
     }
 
     return 0;
@@ -653,7 +661,7 @@ AVFilter ff_af_##name_ = {                         \
     .outputs       = outputs,                            \
     .priv_class    = &name_##_class,                     \
     .process_command = process_command,                  \
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,        \
+    .flags         = AVFILTER_FLAG_SLICE_THREADS | AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL, \
 }
 
 #if CONFIG_EQUALIZER_FILTER
