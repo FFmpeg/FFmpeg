@@ -197,8 +197,11 @@ static int decklink_setup_video(AVFormatContext *avctx, AVStream *st)
                " Check available formats with -list_formats 1.\n");
         return -1;
     }
-    if (ctx->dlo->EnableVideoOutput(ctx->bmd_mode,
-                                    ctx->supports_vanc ? bmdVideoOutputVANC : bmdVideoOutputFlagDefault) != S_OK) {
+    if (ctx->supports_vanc && ctx->dlo->EnableVideoOutput(ctx->bmd_mode, bmdVideoOutputVANC) != S_OK) {
+        av_log(avctx, AV_LOG_WARNING, "Could not enable video output with VANC! Trying without...\n");
+        ctx->supports_vanc = 0;
+    }
+    if (!ctx->supports_vanc && ctx->dlo->EnableVideoOutput(ctx->bmd_mode, bmdVideoOutputFlagDefault) != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not enable video output!\n");
         return -1;
     }

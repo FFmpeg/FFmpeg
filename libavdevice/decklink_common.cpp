@@ -273,21 +273,15 @@ int ff_decklink_set_format(AVFormatContext *avctx,
 #if BLACKMAGIC_DECKLINK_API_VERSION >= 0x0b000000
     if (direction == DIRECTION_IN) {
         if (ctx->dli->DoesSupportVideoMode(ctx->video_input, ctx->bmd_mode, (BMDPixelFormat) cctx->raw_format,
-                                           bmdVideoInputFlagDefault,
+                                           bmdSupportedVideoModeDefault,
                                            &support) != S_OK)
             return -1;
     } else {
         BMDDisplayMode actualMode = ctx->bmd_mode;
-        if (!ctx->supports_vanc || ctx->dlo->DoesSupportVideoMode(bmdVideoConnectionUnspecified, ctx->bmd_mode, ctx->raw_format,
-                                                                  bmdVideoOutputVANC,
-                                                                  &actualMode, &support) != S_OK || !support || ctx->bmd_mode != actualMode) {
-            /* Try without VANC enabled */
-            if (ctx->dlo->DoesSupportVideoMode(bmdVideoConnectionUnspecified, ctx->bmd_mode, ctx->raw_format,
-                                               bmdVideoOutputFlagDefault,
-                                               &actualMode, &support) != S_OK || !support || ctx->bmd_mode != actualMode) {
-                return -1;
-            }
-            ctx->supports_vanc = 0;
+        if (ctx->dlo->DoesSupportVideoMode(bmdVideoConnectionUnspecified, ctx->bmd_mode, ctx->raw_format,
+                                           bmdSupportedVideoModeDefault,
+                                           &actualMode, &support) != S_OK || !support || ctx->bmd_mode != actualMode) {
+            return -1;
         }
 
     }
