@@ -637,21 +637,15 @@ static void reverse_mono_decorr(struct Decorr *dpp)
     }
 }
 
+#define count_bits(av) ((av) ? 32 - ff_clz(av) : 0)
+
 static uint32_t log2sample(uint32_t v, int limit, uint32_t *result)
 {
-    uint32_t dbits;
+    uint32_t dbits = count_bits(v);
 
     if ((v += v >> 9) < (1 << 8)) {
-        dbits = nbits_table[v];
         *result += (dbits << 8) + wp_log2_table[(v << (9 - dbits)) & 0xff];
     } else {
-        if (v < (1 << 16))
-            dbits = nbits_table[v >> 8] + 8;
-        else if (v < (1 << 24))
-            dbits = nbits_table[v >> 16] + 16;
-        else
-            dbits = nbits_table[v >> 24] + 24;
-
         *result += dbits = (dbits << 8) + wp_log2_table[(v >> (dbits - 9)) & 0xff];
 
         if (limit && dbits >= limit)
@@ -1968,14 +1962,6 @@ static int wv_stereo(WavPackEncodeContext *s,
     }
     return 0;
 }
-
-#define count_bits(av) ( \
- (av) < (1 << 8) ? nbits_table[av] : \
-  ( \
-   (av) < (1 << 16) ? nbits_table[(av) >> 8] + 8 : \
-   ((av) < (1 << 24) ? nbits_table[(av) >> 16] + 16 : nbits_table[(av) >> 24] + 24) \
-  ) \
-)
 
 static void encode_flush(WavPackEncodeContext *s)
 {
