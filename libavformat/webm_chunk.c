@@ -84,7 +84,7 @@ static int chunk_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
+static int get_chunk_filename(AVFormatContext *s, int is_header, char filename[MAX_FILENAME_SIZE])
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
