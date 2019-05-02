@@ -77,7 +77,7 @@ cglobal v210_planar_unpack_%1, 5, 5, 8
     vpermd m2, m6, m2                  ; 00 00 00 00 yB yA y9 y8 y7 y6 y5 y4 y3 y2 y1 y0
     movu   [r1+2*r4], m2
 
-    vpblendd m1, m0, 0xaa              ; 00 v5 u5 v4 00 u4 v3 u3 00 v2 u2 v1 00 u1 v0 u0
+    vpblendd m1, m1, m0, 0xaa          ; 00 v5 u5 v4 00 u4 v3 u3 00 v2 u2 v1 00 u1 v0 u0
     pshufb m1, m5                      ; 00 v5 v4 v3 00 u5 u4 u3 00 v2 v1 v0 00 u2 u1 u0
     vpermq m1, m1, 0xd8                ; 00 v5 v4 v3 00 v2 v1 v0 00 u5 u4 u3 00 u2 u1 u0
     pshufb m1, m7                      ; 00 00 v5 v4 v3 v2 v1 v0 00 00 u5 u4 u3 u2 u1 u0
