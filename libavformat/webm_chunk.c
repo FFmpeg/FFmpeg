@@ -92,11 +92,16 @@ static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
         return AVERROR(EINVAL);
     }
     if (is_header) {
+        int len;
         if (!wc->header_filename) {
             av_log(oc, AV_LOG_ERROR, "No header filename provided\n");
             return AVERROR(EINVAL);
         }
-        av_strlcpy(filename, wc->header_filename, MAX_FILENAME_SIZE);
+        len = av_strlcpy(filename, wc->header_filename, MAX_FILENAME_SIZE);
+        if (len >= MAX_FILENAME_SIZE) {
+            av_log(oc, AV_LOG_ERROR, "Header filename too long\n");
+            return AVERROR(EINVAL);
+        }
     } else {
         if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
                                   s->filename, wc->chunk_index - 1) < 0) {
