@@ -39,12 +39,12 @@ SECTION .text
 %macro v210_planar_unpack 1
 
 ; v210_planar_unpack(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width)
-cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2)
-    movsxdifnidn r4, r4d
-    lea    r1, [r1+2*r4]
-    add    r2, r4
-    add    r3, r4
-    neg    r4
+cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2), src, y, u, v, w
+    movsxdifnidn wq, wd
+    lea    yq, [yq+2*wq]
+    add    uq, wq
+    add    vq, wq
+    neg    wq
 
     VBROADCASTI128   m3, [v210_mult]
 
@@ -60,9 +60,9 @@ cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2)
 
 .loop:
 %ifidn %1, unaligned
-    movu   m0, [r0]    ; yB v5 yA  u5 y9 v4  y8 u4 y7  v3 y6 u3  y5 v2 y4  u2 y3 v1  y2 u1 y1  v0 y0 u0
+    movu   m0, [srcq]  ; yB v5 yA  u5 y9 v4  y8 u4 y7  v3 y6 u3  y5 v2 y4  u2 y3 v1  y2 u1 y1  v0 y0 u0
 %else
-    mova   m0, [r0]
+    mova   m0, [srcq]
 %endif
 
     pmullw m1, m0, m3
@@ -74,29 +74,29 @@ cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2)
     vpblendd m2, m1, m0, 0x55          ; yB yA 00 y9 y8 y7 00 y6 y5 y4 00 y3 y2 y1 00 y0
     pshufb m2, m4                      ; 00 00 yB yA y9 y8 y7 y6 00 00 y5 y4 y3 y2 y1 y0
     vpermd m2, m6, m2                  ; 00 00 00 00 yB yA y9 y8 y7 y6 y5 y4 y3 y2 y1 y0
-    movu   [r1+2*r4], m2
+    movu   [yq+2*wq], m2
 
     vpblendd m1, m1, m0, 0xaa          ; 00 v5 u5 v4 00 u4 v3 u3 00 v2 u2 v1 00 u1 v0 u0
     pshufb m1, m5                      ; 00 v5 v4 v3 00 u5 u4 u3 00 v2 v1 v0 00 u2 u1 u0
     vpermq m1, m1, 0xd8                ; 00 v5 v4 v3 00 v2 v1 v0 00 u5 u4 u3 00 u2 u1 u0
     pshufb m1, m7                      ; 00 00 v5 v4 v3 v2 v1 v0 00 00 u5 u4 u3 u2 u1 u0
 
-    movu   [r2+r4], xm1
-    vextracti128 [r3+r4], m1, 1
+    movu   [uq+wq], xm1
+    vextracti128 [vq+wq], m1, 1
 %else
     shufps m2, m1, m0, 0x8d            ; 00 y9 00 y6 yB yA y8 y7 00 y3 00 y0 y5 y4 y2 y1
     pshufb m2, m4                      ; 00 00 yB yA y9 y8 y7 y6 00 00 y5 y4 y3 y2 y1 y0
-    movu   [r1+2*r4], m2
+    movu   [yq+2*wq], m2
 
     shufps m1, m0, 0xd8                ; 00 v5 00 u4 u5 v4 v3 u3 00 v2 00 u1 u2 v1 v0 u0
     pshufb m1, m5                      ; 00 v5 v4 v3 00 u5 u4 u3 00 v2 v1 v0 00 u2 u1 u0
 
-    movq   [r2+r4], m1
-    movhps [r3+r4], m1
+    movq   [uq+wq], m1
+    movhps [vq+wq], m1
 %endif
 
-    add r0, mmsize
-    add r4, (mmsize*3)/8
+    add srcq, mmsize
+    add wq, (mmsize*3)/8
     jl  .loop
 
     REP_RET
