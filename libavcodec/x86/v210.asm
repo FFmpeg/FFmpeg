@@ -47,7 +47,6 @@ cglobal v210_planar_unpack_%1, 5, 5, 8
     neg    r4
 
     VBROADCASTI128   m3, [v210_mult]
-    VBROADCASTI128   m5, [v210_chroma_shuf]
 
 %if cpuflag(avx2)
     VBROADCASTI128   m4, [v210_luma_shuf_avx2]
