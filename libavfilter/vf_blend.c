@@ -23,7 +23,6 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
-#include "bufferqueue.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
