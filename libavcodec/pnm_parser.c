@@ -69,6 +69,7 @@ retry:
         if (pnmctx.bytestream < pnmctx.bytestream_end) {
             if (pc->index) {
                 pc->index = 0;
+                pnmpc->ascii_scan = 0;
             } else {
                 unsigned step = FFMAX(1, pnmctx.bytestream - pnmctx.bytestream_start);
 
