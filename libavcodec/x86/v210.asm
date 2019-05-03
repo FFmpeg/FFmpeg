@@ -39,7 +39,7 @@ SECTION .text
 %macro v210_planar_unpack 1
 
 ; v210_planar_unpack(const uint32_t *src, uint16_t *y, uint16_t *u, uint16_t *v, int width)
-cglobal v210_planar_unpack_%1, 5, 5, 8
+cglobal v210_planar_unpack_%1, 5, 5, 6 + 2 * cpuflag(avx2)
     movsxdifnidn r4, r4d
     lea    r1, [r1+2*r4]
     add    r2, r4
