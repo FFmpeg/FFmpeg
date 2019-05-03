@@ -18418,6 +18418,20 @@ Set the scaling dimension: @code{2} for @code{2xBR}, @code{3} for
 Default is @code{3}.
 @end table
 
+@section xmedian
+Pick median pixels from several input videos.
+
+The filter accept the following options:
+
+@table @option
+@item nb_inputs
+Set number of inputs. This must be odd number.
+Default is 3. Allowed range is from 3 to 255.
+
+@item planes
+Set which planes to filter. Default value is @code{15}, by which all planes are processed.
+@end table
+
 @section xstack
 Stack video inputs into custom layout.
 

@@ -28,6 +28,7 @@ version <next>:
 - asoftclip filter
 - Support decoding of HEVC 4:4:4 content in vdpau
 - colorhold filter
+- xmedian filter
 
 
 version 4.1:
