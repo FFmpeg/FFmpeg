@@ -805,6 +805,12 @@ static int cuvid_test_capabilities(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
+    if ((probed_width * probed_height) / 256 > caps->nMaxMBCount) {
+        av_log(avctx, AV_LOG_ERROR, "Video macroblock count %d exceeds maximum of %d\n",
+               (int)(probed_width * probed_height) / 256, caps->nMaxMBCount);
+        return AVERROR(EINVAL);
+    }
+
     return 0;
 }
 
