@@ -1,5 +1,4 @@
 /*
- * MLP parser prototypes
  * Copyright (c) 2007 Ian Caulfield
  *
  * This file is part of FFmpeg.
@@ -19,13 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * MLP parser prototypes
- */
-
-#ifndef AVCODEC_MLP_PARSER_H
-#define AVCODEC_MLP_PARSER_H
+#ifndef AVCODEC_MLP_PARSE_H
+#define AVCODEC_MLP_PARSE_H
 
 #include "get_bits.h"
 
@@ -64,8 +58,5 @@ typedef struct MLPHeaderInfo
 
 
 int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb);
-uint64_t ff_truehd_layout(int chanmap);
 
-extern const uint64_t ff_mlp_layout[32];
-
-#endif /* AVCODEC_MLP_PARSER_H */
+#endif /* AVCODEC_MLP_PARSE_H */

@@ -21,7 +21,7 @@
 #include "avcodec.h"
 #include "bsf.h"
 #include "get_bits.h"
-#include "mlp_parser.h"
+#include "mlp_parse.h"
 #include "mlp.h"
 
 typedef struct AccessUnit {
