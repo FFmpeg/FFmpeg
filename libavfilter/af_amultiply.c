@@ -34,7 +34,6 @@ typedef struct AudioMultiplyContext {
     const AVClass *class;
 
     AVFrame *frames[2];
-    int64_t pts;
     int planes;
     int channels;
     int samples_align;
@@ -95,21 +94,20 @@ static int activate(AVFilterContext *ctx)
         }
     }
 
-    if (nb_samples > 0 && s->frames[0] && s->frames[1]) {
+    if (s->frames[0] && s->frames[1]) {
         AVFrame *out;
         int plane_samples;
 
         if (av_sample_fmt_is_planar(ctx->inputs[0]->format))
-            plane_samples = FFALIGN(nb_samples, s->samples_align);
+            plane_samples = FFALIGN(s->frames[0]->nb_samples, s->samples_align);
         else
-            plane_samples = FFALIGN(nb_samples * s->channels, s->samples_align);
+            plane_samples = FFALIGN(s->frames[0]->nb_samples * s->channels, s->samples_align);
 
-        out = ff_get_audio_buffer(ctx->outputs[0], nb_samples);
+        out = ff_get_audio_buffer(ctx->outputs[0], s->frames[0]->nb_samples);
         if (!out)
             return AVERROR(ENOMEM);
 
-        out->pts = s->pts;
-        s->pts += nb_samples;
+        out->pts = s->frames[0]->pts;
 
         if (av_get_packed_sample_fmt(ctx->inputs[0]->format) == AV_SAMPLE_FMT_FLT) {
             for (i = 0; i < s->planes; i++) {
