@@ -701,15 +701,15 @@ static inline void tm2_update_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     TM2_RECALC_BLOCK(V, Vstride, (clast + 2), (ctx->CD + 2));
 
     /* update deltas */
-    ctx->D[0] = Yo[3] - last[3];
-    ctx->D[1] = Yo[3 + oYstride] - Yo[3];
-    ctx->D[2] = Yo[3 + oYstride * 2] - Yo[3 + oYstride];
-    ctx->D[3] = Yo[3 + oYstride * 3] - Yo[3 + oYstride * 2];
+    ctx->D[0] = (unsigned)Yo[3] - last[3];
+    ctx->D[1] = (unsigned)Yo[3 + oYstride] - Yo[3];
+    ctx->D[2] = (unsigned)Yo[3 + oYstride * 2] - Yo[3 + oYstride];
+    ctx->D[3] = (unsigned)Yo[3 + oYstride * 3] - Yo[3 + oYstride * 2];
 
     for (j = 0; j < 4; j++) {
         d = last[3];
         for (i = 0; i < 4; i++) {
-            Y[i]    = Yo[i] + GET_TOK(ctx, TM2_UPD);
+            Y[i]    = Yo[i] + (unsigned)GET_TOK(ctx, TM2_UPD);
             last[i] = Y[i];
         }
         ctx->D[j] = last[3] - d;
