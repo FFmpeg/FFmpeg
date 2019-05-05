@@ -17984,6 +17984,10 @@ Set the green luma coefficient.
 
 @item blum
 Set the blue luma coefficient.
+
+@item alternate
+If @code{intensity} is negative and this is set to 1, colors will change,
+otherwise colors will be less saturated, more towards gray.
 @end table
 
 @anchor{vignette}

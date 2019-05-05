@@ -31,6 +31,7 @@ typedef struct VibranceContext {
     float intensity;
     float balance[3];
     float lcoeffs[3];
+    int alternate;
 
     int depth;
 
@@ -54,12 +55,13 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
     const float bc = s->lcoeffs[1];
     const float rc = s->lcoeffs[2];
     const float intensity = s->intensity;
+    const float alternate = s->alternate ? 1.f : -1.f;
     const float gintensity = intensity * s->balance[0];
     const float bintensity = intensity * s->balance[1];
     const float rintensity = intensity * s->balance[2];
-    const float sgintensity = FFSIGN(intensity);
-    const float sbintensity = FFSIGN(intensity);
-    const float srintensity = FFSIGN(intensity);
+    const float sgintensity = alternate * FFSIGN(gintensity);
+    const float sbintensity = alternate * FFSIGN(bintensity);
+    const float srintensity = alternate * FFSIGN(rintensity);
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int glinesize = frame->linesize[0];
@@ -112,12 +114,13 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
     const int width = frame->width;
     const int height = frame->height;
     const float intensity = s->intensity;
+    const float alternate = s->alternate ? 1.f : -1.f;
     const float gintensity = intensity * s->balance[0];
     const float bintensity = intensity * s->balance[1];
     const float rintensity = intensity * s->balance[2];
-    const float sgintensity = FFSIGN(intensity);
-    const float sbintensity = FFSIGN(intensity);
-    const float srintensity = FFSIGN(intensity);
+    const float sgintensity = alternate * FFSIGN(gintensity);
+    const float sbintensity = alternate * FFSIGN(bintensity);
+    const float srintensity = alternate * FFSIGN(rintensity);
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int glinesize = frame->linesize[0] / 2;
@@ -231,6 +234,7 @@ static const AVOption vibrance_options[] = {
     { "rlum", "set the red luma coefficient",   OFFSET(lcoeffs[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.072186}, 0,  1, VF },
     { "glum", "set the green luma coefficient", OFFSET(lcoeffs[0]), AV_OPT_TYPE_FLOAT, {.dbl=0.715158}, 0,  1, VF },
     { "blum", "set the blue luma coefficient",  OFFSET(lcoeffs[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.212656}, 0,  1, VF },
+    { "alternate", "use alternate colors",      OFFSET(alternate),  AV_OPT_TYPE_BOOL,  {.i64=0},        0,  1, VF },
     { NULL }
 };
 
