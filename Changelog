@@ -29,6 +29,7 @@ version <next>:
 - Support decoding of HEVC 4:4:4 content in vdpau
 - colorhold filter
 - xmedian filter
+- asr filter
 
 
 version 4.1:

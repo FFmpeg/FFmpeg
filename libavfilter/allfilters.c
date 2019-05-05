@@ -74,6 +74,7 @@ extern AVFilter ff_af_ashowinfo;
 extern AVFilter ff_af_asidedata;
 extern AVFilter ff_af_asoftclip;
 extern AVFilter ff_af_asplit;
+extern AVFilter ff_af_asr;
 extern AVFilter ff_af_astats;
 extern AVFilter ff_af_astreamselect;
 extern AVFilter ff_af_atempo;

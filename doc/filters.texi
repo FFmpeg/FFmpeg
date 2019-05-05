@@ -2131,6 +2131,41 @@ It accepts the following values:
 Set additional parameter which controls sigmoid function.
 @end table
 
+@section asr
+Automatic Speech Recognition
+
+This filter uses PocketSphinx for speech recognition. To enable
+compilation of this filter, you need to configure FFmpeg with
+@code{--enable-pocketsphinx}.
+
+It accepts the following options:
+
+@table @option
+@item rate
+Set sampling rate of input audio. Defaults is @code{16000}.
+This need to match speech models, otherwise one will get poor results.
+
+@item hmm
+Set dictionary containing acoustic model files.
+
+@item dict
+Set pronunciation dictionary.
+
+@item lm
+Set language model file.
+
+@item lmctl
+Set language model set.
+
+@item lmname
+Set which language model to use.
+
+@item logfn
+Set output for log messages.
+@end table
+
+The filter exports recognized speech as the frame metadata @code{lavfi.asr.text}.
+
 @anchor{astats}
 @section astats
 
