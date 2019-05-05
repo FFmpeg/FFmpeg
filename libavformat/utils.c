@@ -4730,7 +4730,7 @@ void av_url_split(char *proto, int proto_size,
                   char *hostname, int hostname_size,
                   int *port_ptr, char *path, int path_size, const char *url)
 {
-    const char *p, *ls, *ls2, *ls3, *at, *at2, *col, *brk;
+    const char *p, *ls, *ls2, *at, *at2, *col, *brk;
 
     if (port_ptr)
         *port_ptr = -1;
@@ -4760,9 +4760,6 @@ void av_url_split(char *proto, int proto_size,
     /* separate path from hostname */
     ls = strchr(p, '/');
     ls2 = strchr(p, '?');
-    ls3 = strchr(p, '@');
-    if (ls3 && ls3 > ls && (!ls2 || ls2 > ls3))
-        ls = strchr(ls3, '/');
     if (!ls)
         ls = ls2;
     else if (ls && ls2)
