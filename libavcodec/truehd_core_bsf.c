@@ -174,6 +174,12 @@ fail:
     return ret;
 }
 
+static void truehd_core_flush(AVBSFContext *ctx)
+{
+    TrueHDCoreContext *s = ctx->priv_data;
+    memset(&s->hdr, 0, sizeof(s->hdr));
+}
+
 static const enum AVCodecID codec_ids[] = {
     AV_CODEC_ID_TRUEHD, AV_CODEC_ID_NONE,
 };
@@ -182,5 +188,6 @@ const AVBitStreamFilter ff_truehd_core_bsf = {
     .name           = "truehd_core",
     .priv_data_size = sizeof(TrueHDCoreContext),
     .filter         = truehd_core_filter,
+    .flush          = truehd_core_flush,
     .codec_ids      = codec_ids,
 };
