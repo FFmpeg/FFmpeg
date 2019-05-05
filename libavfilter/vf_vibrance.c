@@ -49,6 +49,7 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
     AVFrame *frame = arg;
     const int width = frame->width;
     const int height = frame->height;
+    const float scale = 1.f / 255.f;
     const float gc = s->lcoeffs[0];
     const float bc = s->lcoeffs[1];
     const float rc = s->lcoeffs[2];
@@ -56,6 +57,9 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
     const float gintensity = intensity * s->balance[0];
     const float bintensity = intensity * s->balance[1];
     const float rintensity = intensity * s->balance[2];
+    const float sgintensity = FFSIGN(intensity);
+    const float sbintensity = FFSIGN(intensity);
+    const float srintensity = FFSIGN(intensity);
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int glinesize = frame->linesize[0];
@@ -67,16 +71,16 @@ static int vibrance_slice8(AVFilterContext *avctx, void *arg, int jobnr, int nb_
 
     for (int y = slice_start; y < slice_end; y++) {
         for (int x = 0; x < width; x++) {
-            float g = gptr[x] / 255.f;
-            float b = bptr[x] / 255.f;
-            float r = rptr[x] / 255.f;
+            float g = gptr[x] * scale;
+            float b = bptr[x] * scale;
+            float r = rptr[x] * scale;
             float max_color = FFMAX3(r, g, b);
             float min_color = FFMIN3(r, g, b);
             float color_saturation = max_color - min_color;
             float luma = g * gc + r * rc + b * bc;
-            const float cg = 1.f + gintensity * (1.f - FFSIGN(gintensity) * color_saturation);
-            const float cb = 1.f + bintensity * (1.f - FFSIGN(bintensity) * color_saturation);
-            const float cr = 1.f + rintensity * (1.f - FFSIGN(rintensity) * color_saturation);
+            const float cg = 1.f + gintensity * (1.f - sgintensity * color_saturation);
+            const float cb = 1.f + bintensity * (1.f - sbintensity * color_saturation);
+            const float cr = 1.f + rintensity * (1.f - srintensity * color_saturation);
 
             g = lerpf(luma, g, cg);
             b = lerpf(luma, b, cb);
@@ -101,6 +105,7 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
     AVFrame *frame = arg;
     const int depth = s->depth;
     const float max = (1 << depth) - 1;
+    const float scale = 1.f / max;
     const float gc = s->lcoeffs[0];
     const float bc = s->lcoeffs[1];
     const float rc = s->lcoeffs[2];
@@ -110,6 +115,9 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
     const float gintensity = intensity * s->balance[0];
     const float bintensity = intensity * s->balance[1];
     const float rintensity = intensity * s->balance[2];
+    const float sgintensity = FFSIGN(intensity);
+    const float sbintensity = FFSIGN(intensity);
+    const float srintensity = FFSIGN(intensity);
     const int slice_start = (height * jobnr) / nb_jobs;
     const int slice_end = (height * (jobnr + 1)) / nb_jobs;
     const int glinesize = frame->linesize[0] / 2;
@@ -121,16 +129,16 @@ static int vibrance_slice16(AVFilterContext *avctx, void *arg, int jobnr, int nb
 
     for (int y = slice_start; y < slice_end; y++) {
         for (int x = 0; x < width; x++) {
-            float g = gptr[x] / max;
-            float b = bptr[x] / max;
-            float r = rptr[x] / max;
+            float g = gptr[x] * scale;
+            float b = bptr[x] * scale;
+            float r = rptr[x] * scale;
             float max_color = FFMAX3(r, g, b);
             float min_color = FFMIN3(r, g, b);
             float color_saturation = max_color - min_color;
             float luma = g * gc + r * rc + b * bc;
-            const float cg = 1.f + gintensity * (1.f - FFSIGN(gintensity) * color_saturation);
-            const float cb = 1.f + bintensity * (1.f - FFSIGN(bintensity) * color_saturation);
-            const float cr = 1.f + rintensity * (1.f - FFSIGN(rintensity) * color_saturation);
+            const float cg = 1.f + gintensity * (1.f - sgintensity * color_saturation);
+            const float cb = 1.f + bintensity * (1.f - sbintensity * color_saturation);
+            const float cr = 1.f + rintensity * (1.f - srintensity * color_saturation);
 
             g = lerpf(luma, g, cg);
             b = lerpf(luma, b, cb);
