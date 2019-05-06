@@ -27,6 +27,7 @@
 
 #if CONFIG_LIBDRM
 #   include <va/va_drmcommon.h>
+#   include <xf86drm.h>
 #   include <drm_fourcc.h>
 #   ifndef DRM_FORMAT_MOD_INVALID
 #       define DRM_FORMAT_MOD_INVALID ((1ULL << 56) - 1)
@@ -1521,26 +1522,69 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
 #if HAVE_VAAPI_DRM
-    if (!display && try_drm) {
-        // Try to open the device as a DRM path.
-        // Default to using the first render node if the user did not
-        // supply a path.
-        const char *path = device ? device : "/dev/dri/renderD128";
-        priv->drm_fd = open(path, O_RDWR);
-        if (priv->drm_fd < 0) {
-            av_log(ctx, AV_LOG_VERBOSE, "Cannot open DRM device %s.\n",
-                   path);
-        } else {
-            display = vaGetDisplayDRM(priv->drm_fd);
-            if (!display) {
-                av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
-                       "from DRM device %s.\n", path);
-                return AVERROR_UNKNOWN;
+    while (!display && try_drm) {
+        // If the device is specified, try to open it as a DRM device node.
+        // If not, look for a usable render node, possibly restricted to those
+        // using a specified kernel driver.
+        int loglevel = try_all ? AV_LOG_VERBOSE : AV_LOG_ERROR;
+        if (device) {
+            priv->drm_fd = open(device, O_RDWR);
+            if (priv->drm_fd < 0) {
+                av_log(ctx, loglevel, "Failed to open %s as "
+                       "DRM device node.\n", device);
+                break;
             }
-
-            av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
-                   "DRM device %s.\n", path);
+        } else {
+            const AVDictionaryEntry *kernel_driver;
+            char path[64];
+            int n, max_devices = 8;
+            kernel_driver = av_dict_get(opts, "kernel_driver", NULL, 0);
+            for (n = 0; n < max_devices; n++) {
+                snprintf(path, sizeof(path),
+                         "/dev/dri/renderD%d", 128 + n);
+                priv->drm_fd = open(path, O_RDWR);
+                if (priv->drm_fd < 0) {
+                    av_log(ctx, AV_LOG_VERBOSE, "Cannot open "
+                           "DRM render node for device %d.\n", n);
+                    break;
+                }
+#if CONFIG_LIBDRM
+                if (kernel_driver) {
+                    drmVersion *info;
+                    info = drmGetVersion(priv->drm_fd);
+                    if (strcmp(kernel_driver->value, info->name)) {
+                        av_log(ctx, AV_LOG_VERBOSE, "Ignoring device %d "
+                               "with non-matching kernel driver (%s).\n",
+                               n, info->name);
+                        drmFreeVersion(info);
+                        close(priv->drm_fd);
+                        priv->drm_fd = -1;
+                        continue;
+                    }
+                    av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
+                           "DRM render node for device %d, "
+                           "with matching kernel driver (%s).\n",
+                           n, info->name);
+                    drmFreeVersion(info);
+                } else
+#endif
+                {
+                    av_log(ctx, AV_LOG_VERBOSE, "Trying to use "
+                           "DRM render node for device %d.\n", n);
+                }
+                break;
+            }
+            if (n >= max_devices)
+                break;
         }
+
+        display = vaGetDisplayDRM(priv->drm_fd);
+        if (!display) {
+            av_log(ctx, AV_LOG_VERBOSE, "Cannot open a VA display "
+                   "from DRM device %s.\n", device);
+            return AVERROR_EXTERNAL;
+        }
+        break;
     }
 #endif
 
