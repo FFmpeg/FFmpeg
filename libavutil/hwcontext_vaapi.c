@@ -1469,6 +1469,8 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 {
     VAAPIDevicePriv *priv;
     VADisplay display = NULL;
+    const AVDictionaryEntry *ent;
+    int try_drm, try_x11, try_all;
 
     priv = av_mallocz(sizeof(*priv));
     if (!priv)
@@ -1479,8 +1481,26 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
     ctx->user_opaque = priv;
     ctx->free        = vaapi_device_free;
 
+    ent = av_dict_get(opts, "connection_type", NULL, 0);
+    if (ent) {
+        try_all = try_drm = try_x11 = 0;
+        if (!strcmp(ent->value, "drm")) {
+            try_drm = 1;
+        } else if (!strcmp(ent->value, "x11")) {
+            try_x11 = 1;
+        } else {
+            av_log(ctx, AV_LOG_ERROR, "Invalid connection type %s.\n",
+                   ent->value);
+            return AVERROR(EINVAL);
+        }
+    } else {
+        try_all = 1;
+        try_drm = HAVE_VAAPI_DRM;
+        try_x11 = HAVE_VAAPI_X11;
+    }
+
 #if HAVE_VAAPI_X11
-    if (!display && !(device && device[0] == '/')) {
+    if (!display && try_x11) {
         // Try to open the device as an X11 display.
         priv->x11_display = XOpenDisplay(device);
         if (!priv->x11_display) {
@@ -1501,7 +1521,7 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
 #if HAVE_VAAPI_DRM
-    if (!display) {
+    if (!display && try_drm) {
         // Try to open the device as a DRM path.
         // Default to using the first render node if the user did not
         // supply a path.
@@ -1525,8 +1545,12 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
 #endif
 
     if (!display) {
-        av_log(ctx, AV_LOG_ERROR, "No VA display found for "
-               "device: %s.\n", device ? device : "");
+        if (device)
+            av_log(ctx, AV_LOG_ERROR, "No VA display found for "
+                   "device %s.\n", device);
+        else
+            av_log(ctx, AV_LOG_ERROR, "No VA display found for "
+                   "any default device.\n");
         return AVERROR(EINVAL);
     }
 
