@@ -103,6 +103,29 @@ static int vaapi_encode_make_param_buffer(AVCodecContext *avctx,
     return 0;
 }
 
+static int vaapi_encode_make_misc_param_buffer(AVCodecContext *avctx,
+                                               VAAPIEncodePicture *pic,
+                                               int type,
+                                               const void *data, size_t len)
+{
+    // Construct the buffer on the stack - 1KB is much larger than any
+    // current misc parameter buffer type (the largest is EncQuality at
+    // 224 bytes).
+    uint8_t buffer[1024];
+    VAEncMiscParameterBuffer header = {
+        .type = type,
+    };
+    size_t buffer_size = sizeof(header) + len;
+    av_assert0(buffer_size <= sizeof(buffer));
+
+    memcpy(buffer, &header, sizeof(header));
+    memcpy(buffer + sizeof(header), data, len);
+
+    return vaapi_encode_make_param_buffer(avctx, pic,
+                                          VAEncMiscParameterBufferType,
+                                          buffer, buffer_size);
+}
+
 static int vaapi_encode_wait(AVCodecContext *avctx,
                              VAAPIEncodePicture *pic)
 {
@@ -212,10 +235,10 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
 
     if (pic->type == PICTURE_TYPE_IDR) {
         for (i = 0; i < ctx->nb_global_params; i++) {
-            err = vaapi_encode_make_param_buffer(avctx, pic,
-                                                 VAEncMiscParameterBufferType,
-                                                 (char*)ctx->global_params[i],
-                                                 ctx->global_params_size[i]);
+            err = vaapi_encode_make_misc_param_buffer(avctx, pic,
+                                                      ctx->global_params_type[i],
+                                                      ctx->global_params[i],
+                                                      ctx->global_params_size[i]);
             if (err < 0)
                 goto fail;
         }
@@ -1047,14 +1070,15 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     return 0;
 }
 
-static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx,
-                                                  VAEncMiscParameterBuffer *buffer,
-                                                  size_t size)
+
+static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx, int type,
+                                                  void *buffer, size_t size)
 {
     VAAPIEncodeContext *ctx = avctx->priv_data;
 
     av_assert0(ctx->nb_global_params < MAX_GLOBAL_PARAMS);
 
+    ctx->global_params_type[ctx->nb_global_params] = type;
     ctx->global_params     [ctx->nb_global_params] = buffer;
     ctx->global_params_size[ctx->nb_global_params] = size;
 
@@ -1588,8 +1612,7 @@ rc_mode_found:
                    rc_bits_per_second, rc_window_size);
         }
 
-        ctx->rc_params.misc.type = VAEncMiscParameterTypeRateControl;
-        ctx->rc_params.rc = (VAEncMiscParameterRateControl) {
+        ctx->rc_params = (VAEncMiscParameterRateControl) {
             .bits_per_second    = rc_bits_per_second,
             .target_percentage  = rc_target_percentage,
             .window_size        = rc_window_size,
@@ -1604,7 +1627,9 @@ rc_mode_found:
             .quality_factor     = rc_quality,
 #endif
         };
-        vaapi_encode_add_global_param(avctx, &ctx->rc_params.misc,
+        vaapi_encode_add_global_param(avctx,
+                                      VAEncMiscParameterTypeRateControl,
+                                      &ctx->rc_params,
                                       sizeof(ctx->rc_params));
     }
 
@@ -1613,12 +1638,13 @@ rc_mode_found:
                "initial fullness %"PRId64" bits.\n",
                hrd_buffer_size, hrd_initial_buffer_fullness);
 
-        ctx->hrd_params.misc.type = VAEncMiscParameterTypeHRD;
-        ctx->hrd_params.hrd = (VAEncMiscParameterHRD) {
+        ctx->hrd_params = (VAEncMiscParameterHRD) {
             .initial_buffer_fullness = hrd_initial_buffer_fullness,
             .buffer_size             = hrd_buffer_size,
         };
-        vaapi_encode_add_global_param(avctx, &ctx->hrd_params.misc,
+        vaapi_encode_add_global_param(avctx,
+                                      VAEncMiscParameterTypeHRD,
+                                      &ctx->hrd_params,
                                       sizeof(ctx->hrd_params));
     }
 
@@ -1632,11 +1658,13 @@ rc_mode_found:
     av_log(avctx, AV_LOG_VERBOSE, "RC framerate: %d/%d (%.2f fps).\n",
            fr_num, fr_den, (double)fr_num / fr_den);
 
-    ctx->fr_params.misc.type = VAEncMiscParameterTypeFrameRate;
-    ctx->fr_params.fr.framerate = (unsigned int)fr_den << 16 | fr_num;
-
+    ctx->fr_params = (VAEncMiscParameterFrameRate) {
+        .framerate = (unsigned int)fr_den << 16 | fr_num,
+    };
 #if VA_CHECK_VERSION(0, 40, 0)
-    vaapi_encode_add_global_param(avctx, &ctx->fr_params.misc,
+    vaapi_encode_add_global_param(avctx,
+                                  VAEncMiscParameterTypeFrameRate,
+                                  &ctx->fr_params,
                                   sizeof(ctx->fr_params));
 #endif
 
@@ -1898,10 +1926,12 @@ static av_cold int vaapi_encode_init_quality(AVCodecContext *avctx)
             quality = attr.value;
         }
 
-        ctx->quality_params.misc.type = VAEncMiscParameterTypeQualityLevel;
-        ctx->quality_params.quality.quality_level = quality;
-
-        vaapi_encode_add_global_param(avctx, &ctx->quality_params.misc,
+        ctx->quality_params = (VAEncMiscParameterBufferQualityLevel) {
+            .quality_level = quality,
+        };
+        vaapi_encode_add_global_param(avctx,
+                                      VAEncMiscParameterTypeQualityLevel,
+                                      &ctx->quality_params,
                                       sizeof(ctx->quality_params));
     }
 #else

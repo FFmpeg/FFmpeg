@@ -471,9 +471,9 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
             (ctx->va_bit_rate >> hrd->bit_rate_scale + 6) - 1;
 
         hrd->cpb_size_scale =
-            av_clip_uintp2(av_log2(ctx->hrd_params.hrd.buffer_size) - 15 - 4, 4);
+            av_clip_uintp2(av_log2(ctx->hrd_params.buffer_size) - 15 - 4, 4);
         hrd->cpb_size_value_minus1[0] =
-            (ctx->hrd_params.hrd.buffer_size >> hrd->cpb_size_scale + 4) - 1;
+            (ctx->hrd_params.buffer_size >> hrd->cpb_size_scale + 4) - 1;
 
         // CBR mode as defined for the HRD cannot be achieved without filler
         // data, so this flag cannot be set even with VAAPI CBR modes.
@@ -488,8 +488,8 @@ static int vaapi_encode_h264_init_sequence_params(AVCodecContext *avctx)
 
         // This calculation can easily overflow 32 bits.
         bp->nal.initial_cpb_removal_delay[0] = 90000 *
-            (uint64_t)ctx->hrd_params.hrd.initial_buffer_fullness /
-            ctx->hrd_params.hrd.buffer_size;
+            (uint64_t)ctx->hrd_params.initial_buffer_fullness /
+            ctx->hrd_params.buffer_size;
         bp->nal.initial_cpb_removal_delay_offset[0] = 0;
     } else {
         sps->vui.nal_hrd_parameters_present_flag = 0;
