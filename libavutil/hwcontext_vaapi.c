@@ -1500,27 +1500,6 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
         try_x11 = HAVE_VAAPI_X11;
     }
 
-#if HAVE_VAAPI_X11
-    if (!display && try_x11) {
-        // Try to open the device as an X11 display.
-        priv->x11_display = XOpenDisplay(device);
-        if (!priv->x11_display) {
-            av_log(ctx, AV_LOG_VERBOSE, "Cannot open X11 display "
-                   "%s.\n", XDisplayName(device));
-        } else {
-            display = vaGetDisplay(priv->x11_display);
-            if (!display) {
-                av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
-                       "from X11 display %s.\n", XDisplayName(device));
-                return AVERROR_UNKNOWN;
-            }
-
-            av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
-                   "X11 display %s.\n", XDisplayName(device));
-        }
-    }
-#endif
-
 #if HAVE_VAAPI_DRM
     while (!display && try_drm) {
         // If the device is specified, try to open it as a DRM device node.
@@ -1585,6 +1564,27 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
             return AVERROR_EXTERNAL;
         }
         break;
+    }
+#endif
+
+#if HAVE_VAAPI_X11
+    if (!display && try_x11) {
+        // Try to open the device as an X11 display.
+        priv->x11_display = XOpenDisplay(device);
+        if (!priv->x11_display) {
+            av_log(ctx, AV_LOG_VERBOSE, "Cannot open X11 display "
+                   "%s.\n", XDisplayName(device));
+        } else {
+            display = vaGetDisplay(priv->x11_display);
+            if (!display) {
+                av_log(ctx, AV_LOG_ERROR, "Cannot open a VA display "
+                       "from X11 display %s.\n", XDisplayName(device));
+                return AVERROR_UNKNOWN;
+            }
+
+            av_log(ctx, AV_LOG_VERBOSE, "Opened VA display via "
+                   "X11 display %s.\n", XDisplayName(device));
+        }
     }
 #endif
 
