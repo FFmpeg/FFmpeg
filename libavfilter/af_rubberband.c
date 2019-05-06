@@ -148,7 +148,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     av_frame_free(&in);
-    return ret;
+    return ret  < 0 ? ret : nb_samples;
 }
 
 static int config_input(AVFilterLink *inlink)
@@ -184,8 +184,11 @@ static int activate(AVFilterContext *ctx)
     ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &in);
     if (ret < 0)
         return ret;
-    if (ret > 0)
-        return filter_frame(inlink, in);
+    if (ret > 0) {
+        ret = filter_frame(inlink, in);
+        if (ret > 0)
+            return ret;
+    }
 
     FF_FILTER_FORWARD_STATUS(inlink, outlink);
     FF_FILTER_FORWARD_WANTED(outlink, inlink);
