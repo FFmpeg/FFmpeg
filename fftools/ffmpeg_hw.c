@@ -155,10 +155,12 @@ int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
         ++p;
         q = strchr(p, ',');
         if (q) {
-            device = av_strndup(p, q - p);
-            if (!device) {
-                err = AVERROR(ENOMEM);
-                goto fail;
+            if (q - p > 0) {
+                device = av_strndup(p, q - p);
+                if (!device) {
+                    err = AVERROR(ENOMEM);
+                    goto fail;
+                }
             }
             err = av_dict_parse_string(&options, q + 1, "=", ",", 0);
             if (err < 0) {
@@ -168,7 +170,8 @@ int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
         }
 
         err = av_hwdevice_ctx_create(&device_ref, type,
-                                     device ? device : p, options, 0);
+                                     q ? device : p[0] ? p : NULL,
+                                     options, 0);
         if (err < 0)
             goto fail;
 
