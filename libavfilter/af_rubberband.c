@@ -186,7 +186,7 @@ static int activate(AVFilterContext *ctx)
         return ret;
     if (ret > 0) {
         ret = filter_frame(inlink, in);
-        if (ret > 0)
+        if (ret != 0)
             return ret;
     }
 
