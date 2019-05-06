@@ -175,6 +175,12 @@ typedef struct AVAppDnsEvent
     int64_t  dns_time;
 } AVAppDnsEvent;
 
+typedef struct{
+    volatile void * item;
+    volatile int item_switch_req;
+    void* mutex;
+}IJKItemApplication;
+
 typedef struct AVApplicationContext AVApplicationContext;
 struct AVApplicationContext {
     const AVClass *av_class;    /**< information for av_log(). Set by av_application_open(). */
@@ -184,6 +190,8 @@ struct AVApplicationContext {
     int dash_video_recv_buffer_size;
     int (*func_on_app_event)(AVApplicationContext *h, int event_type ,void *obj, size_t size);
     int (*func_app_ctrl)(int what, int64_t arg0, void *obj, size_t size);
+    int ioproxy;
+    int active_reconnect;
 };
 
 int  av_application_alloc(AVApplicationContext **ph, void *opaque);

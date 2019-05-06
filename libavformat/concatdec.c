@@ -547,6 +547,8 @@ static int concat_read_header(AVFormatContext *avf, AVDictionary **options)
     if ((ret = open_file(avf, 0)) < 0)
         goto fail;
     av_bprint_finalize(&bp, NULL);
+    if (cat->avf && cat->avf->iformat && cat->avf->iformat->name)
+        av_dict_set(&avf->metadata, "ijk_file_name", cat->avf->iformat->name, 0);
     return 0;
 
 fail:

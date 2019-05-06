@@ -1620,6 +1620,8 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         if (size < 0)
             return size;
     }
+    if (s ->app_ctx && s ->app_ctx->active_reconnect)
+        return AVERROR_IO_INTERRUPT;
 
     size = http_read_stream(h, buf, size);
     if (size > 0)

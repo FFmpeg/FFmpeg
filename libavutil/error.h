@@ -85,7 +85,7 @@
 #define AVERROR_TCP_CONNECT_TIMEOUT -1001
 #define AVERROR_TCP_READ_TIMEOUT -1002
 #define AVERROR_TCP_WRITE_TIMEOUT -1003
-
+#define AVERROR_IO_INTERRUPT -1004
 /**
  * Put a description of the AVERROR code errnum in errbuf.
  * In case of failure the global variable errno is set to indicate the

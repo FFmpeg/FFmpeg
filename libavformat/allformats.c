@@ -455,6 +455,7 @@ extern AVOutputFormat ff_yuv4mpegpipe_muxer;
 extern AVInputFormat  ff_ijklivehook_demuxer;
 extern AVInputFormat  ff_ijkswitch_demuxer;
 extern AVInputFormat  ff_ijkdash_demuxer;
+extern AVInputFormat  ff_ijkioproxy_demuxer;
 /* image demuxers */
 extern AVInputFormat  ff_image_bmp_pipe_demuxer;
 extern AVInputFormat  ff_image_dds_pipe_demuxer;
