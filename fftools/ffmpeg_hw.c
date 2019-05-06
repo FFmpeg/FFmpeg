@@ -99,7 +99,7 @@ int hw_device_init_from_string(const char *arg, HWDevice **dev_out)
     // -> av_hwdevice_ctx_create_derived()
 
     AVDictionary *options = NULL;
-    char *type_name = NULL, *name = NULL, *device = NULL;
+    const char *type_name = NULL, *name = NULL, *device = NULL;
     enum AVHWDeviceType type;
     HWDevice *dev, *src;
     AVBufferRef *device_ref = NULL;

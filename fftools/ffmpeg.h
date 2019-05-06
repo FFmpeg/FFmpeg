@@ -72,7 +72,7 @@ typedef struct HWAccel {
 } HWAccel;
 
 typedef struct HWDevice {
-    char *name;
+    const char *name;
     enum AVHWDeviceType type;
     AVBufferRef *device_ref;
 } HWDevice;
