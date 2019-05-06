@@ -66,6 +66,7 @@ typedef struct H265ProfileDescriptor {
     uint16_t cpb_nal_factor;
     float format_capability_factor;
     float min_cr_scale_factor;
+    uint8_t max_dpb_pic_buf;
 } H265ProfileDescriptor;
 
 
