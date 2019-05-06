@@ -1206,6 +1206,7 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
     QSVDevicePriv *priv;
     enum AVHWDeviceType child_device_type;
     AVHWDeviceContext *child_device;
+    AVDictionary *child_device_opts;
     AVDictionaryEntry *e;
 
     mfxIMPL impl;
@@ -1220,9 +1221,17 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
 
     e = av_dict_get(opts, "child_device", NULL, 0);
 
-    if (CONFIG_VAAPI)
+    child_device_opts = NULL;
+    if (CONFIG_VAAPI) {
         child_device_type = AV_HWDEVICE_TYPE_VAAPI;
-    else if (CONFIG_DXVA2)
+        // libmfx does not actually implement VAAPI properly, rather it
+        // depends on the specific behaviour of a matching iHD driver when
+        // used on recent Intel hardware.  Set options to the VAAPI device
+        // creation so that we should pick a usable setup by default if
+        // possible, even when multiple devices and drivers are available.
+        av_dict_set(&child_device_opts, "kernel_driver", "i915", 0);
+        av_dict_set(&child_device_opts, "driver",        "iHD",  0);
+    } else if (CONFIG_DXVA2)
         child_device_type = AV_HWDEVICE_TYPE_DXVA2;
     else {
         av_log(ctx, AV_LOG_ERROR, "No supported child device type is enabled\n");
@@ -1230,7 +1239,7 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
     }
 
     ret = av_hwdevice_ctx_create(&priv->child_device_ctx, child_device_type,
-                                 e ? e->value : NULL, NULL, 0);
+                                 e ? e->value : NULL, child_device_opts, 0);
     if (ret < 0)
         return ret;
 
