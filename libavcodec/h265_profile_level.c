@@ -175,7 +175,7 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
                                                int max_dec_pic_buffering)
 {
     const H265ProfileDescriptor *profile;
-    int pic_size, lbr_flag, hbr_factor;
+    int pic_size, tier_flag, lbr_flag, hbr_factor;
     int i;
 
     if (ptl)
@@ -189,10 +189,13 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
 
     pic_size = width * height;
 
-    if (ptl)
-        lbr_flag = ptl->general_lower_bit_rate_constraint_flag;
-    else
-        lbr_flag = profile->lower_bit_rate > 0;
+    if (ptl) {
+        tier_flag = ptl->general_tier_flag;
+        lbr_flag  = ptl->general_lower_bit_rate_constraint_flag;
+    } else {
+        tier_flag = 0;
+        lbr_flag  = profile->lower_bit_rate > 0;
+    }
     if (profile->profile_idc == 1 || profile->profile_idc == 2) {
         hbr_factor = 1;
     } else if (profile->high_throughput) {
@@ -208,6 +211,9 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
         const H265LevelDescriptor *level = &h265_levels[i];
         int max_br, max_dpb_size;
 
+        if (tier_flag && !level->max_br_high)
+            continue;
+
         if (pic_size > level->max_luma_ps)
             continue;
         if (width  * width  > 8 * level->max_luma_ps)
@@ -222,7 +228,7 @@ const H265LevelDescriptor *ff_h265_guess_level(const H265RawProfileTierLevel *pt
         if (tile_cols > level->max_tile_cols)
             continue;
 
-        if (ptl && ptl->general_tier_flag)
+        if (tier_flag)
             max_br = level->max_br_high;
         else
             max_br = level->max_br_main;
