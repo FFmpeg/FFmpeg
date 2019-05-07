@@ -63,11 +63,9 @@ typedef struct Gif_CodeTable {
 } Gif_CodeTable;
 
 typedef struct Gif_Color {
-    // uint8_t haspixel;      /* semantics assigned by user */
     uint8_t gfc_red;       /* red component (0-255) */
     uint8_t gfc_green;     /* green component (0-255) */
     uint8_t gfc_blue;      /* blue component (0-255) */
-    // uint32_t pixel;        /* semantics assigned by user */
 } Gif_Color;
 
 typedef struct Gif_Colormap {
@@ -87,7 +85,6 @@ typedef struct Gif_Writer {
 } Gif_Writer;
 
 typedef struct Gif_Image {
-    // uint8_t **img;              /* img[y][x] == image byte (x,y) */
     const uint8_t *image_data;
 
     uint16_t width;
@@ -127,3 +124,6 @@ typedef struct Gif_Stream {
     uint16_t screen_height;
     long loopcount;             /* -1 means no loop count */
 } Gif_Stream;
+
+/* Used to hold accumulated error for the current candidate match */
+typedef struct gfc_rgbdiff {signed short r, g, b;} gfc_rgbdiff;
