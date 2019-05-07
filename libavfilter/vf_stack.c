@@ -83,6 +83,15 @@ static av_cold int init(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
 
     if (!strcmp(ctx->filter->name, "xstack")) {
+        if (!s->layout) {
+            if (s->nb_inputs == 2)
+                s->layout = "0_0|w0_0";
+            else {
+                av_log(ctx, AV_LOG_ERROR, "No layout specified.\n");
+                return AVERROR(EINVAL);
+            }
+        }
+
         s->items = av_calloc(s->nb_inputs, sizeof(*s->items));
         if (!s->items)
             return AVERROR(ENOMEM);
@@ -385,7 +394,7 @@ AVFilter ff_vf_vstack = {
 
 static const AVOption xstack_options[] = {
     { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=2}, 2, INT_MAX, .flags = FLAGS },
-    { "layout", "set custom layout", OFFSET(layout), AV_OPT_TYPE_STRING, {.str="0_0|w0_0"}, 0, 0, .flags = FLAGS },
+    { "layout", "set custom layout", OFFSET(layout), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, .flags = FLAGS },
     { "shortest", "force termination when the shortest input terminates", OFFSET(shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, .flags = FLAGS },
     { NULL },
 };
