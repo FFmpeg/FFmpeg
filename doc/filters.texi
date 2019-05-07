@@ -18388,6 +18388,9 @@ where X is video input from which to take width or height.
 Multiple values can be used when separated by '+'. In such
 case values are summed together.
 
+For 2 inputs, a default layout of @code{0_0|w0_0} is set. In all other cases,
+a layout must be set by the user.
+
 @item shortest
 If set to 1, force the output to terminate when the shortest input
 terminates. Default value is 0.
