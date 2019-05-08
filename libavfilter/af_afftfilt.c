@@ -26,6 +26,7 @@
 #include "libavcodec/avfft.h"
 #include "libavutil/eval.h"
 #include "audio.h"
+#include "filters.h"
 #include "window_func.h"
 
 typedef struct AFFTFiltContext {
@@ -46,7 +47,7 @@ typedef struct AFFTFiltContext {
     int hop_size;
     float overlap;
     AVFrame *buffer;
-    int start, end;
+    int eof;
     int win_func;
     float win_scale;
     float *window_func_lut;
@@ -240,7 +241,7 @@ static int config_input(AVFilterLink *inlink)
     return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
+static int filter_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AVFilterLink *outlink = ctx->outputs[0];
@@ -249,140 +250,163 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     const float f = 1. / s->win_scale;
     double values[VAR_VARS_NB];
     AVFrame *out, *in = NULL;
-    int ch, n, ret, i, j, k;
-    int start = s->start, end = s->end;
+    int ch, n, ret, i;
 
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = frame->pts;
-
-    ret = av_audio_fifo_write(s->fifo, (void **)frame->extended_data, frame->nb_samples);
-    av_frame_free(&frame);
-    if (ret < 0)
-        return ret;
-
-    while (av_audio_fifo_size(s->fifo) >= window_size) {
-        if (!in) {
-            in = ff_get_audio_buffer(outlink, window_size);
-            if (!in)
-                return AVERROR(ENOMEM);
-        }
-
-        ret = av_audio_fifo_peek(s->fifo, (void **)in->extended_data, window_size);
-        if (ret < 0)
-            break;
-
-        for (ch = 0; ch < inlink->channels; ch++) {
-            const float *src = (float *)in->extended_data[ch];
-            FFTComplex *fft_data = s->fft_data[ch];
-
-            for (n = 0; n < in->nb_samples; n++) {
-                fft_data[n].re = src[n] * s->window_func_lut[n];
-                fft_data[n].im = 0;
-            }
-
-            for (; n < window_size; n++) {
-                fft_data[n].re = 0;
-                fft_data[n].im = 0;
-            }
-        }
-
-        values[VAR_PTS]         = s->pts;
-        values[VAR_SAMPLE_RATE] = inlink->sample_rate;
-        values[VAR_NBBINS]      = window_size / 2;
-        values[VAR_CHANNELS]    = inlink->channels;
-
-        for (ch = 0; ch < inlink->channels; ch++) {
-            FFTComplex *fft_data = s->fft_data[ch];
-
-            av_fft_permute(s->fft, fft_data);
-            av_fft_calc(s->fft, fft_data);
-        }
-
-        for (ch = 0; ch < inlink->channels; ch++) {
-            FFTComplex *fft_data = s->fft_data[ch];
-            FFTComplex *fft_temp = s->fft_temp[ch];
-            float *buf = (float *)s->buffer->extended_data[ch];
-            int x;
-            values[VAR_CHANNEL] = ch;
-
-            for (n = 0; n <= window_size / 2; n++) {
-                float fr, fi;
-
-                values[VAR_BIN] = n;
-                values[VAR_REAL] = fft_data[n].re;
-                values[VAR_IMAG] = fft_data[n].im;
-
-                fr = av_expr_eval(s->real[ch], values, s);
-                fi = av_expr_eval(s->imag[ch], values, s);
-
-                fft_temp[n].re = fr;
-                fft_temp[n].im = fi;
-            }
-
-            for (n = window_size / 2 + 1, x = window_size / 2 - 1; n < window_size; n++, x--) {
-                fft_temp[n].re =  fft_temp[x].re;
-                fft_temp[n].im = -fft_temp[x].im;
-            }
-
-            av_fft_permute(s->ifft, fft_temp);
-            av_fft_calc(s->ifft, fft_temp);
-
-            start = s->start;
-            end = s->end;
-            k = end;
-            for (i = 0, j = start; j < k && i < window_size; i++, j++) {
-                buf[j] += s->fft_temp[ch][i].re * f;
-            }
-
-            for (; i < window_size; i++, j++) {
-                buf[j] = s->fft_temp[ch][i].re * f;
-            }
-
-            start += s->hop_size;
-            end = j;
-        }
-
-        s->start = start;
-        s->end = end;
-
-        if (start >= window_size) {
-            float *dst, *buf;
-
-            start -= window_size;
-            end   -= window_size;
-
-            s->start = start;
-            s->end = end;
-
-            out = ff_get_audio_buffer(outlink, window_size);
-            if (!out) {
-                ret = AVERROR(ENOMEM);
-                break;
-            }
-
-            out->pts = s->pts;
-            s->pts += window_size;
-
-            for (ch = 0; ch < inlink->channels; ch++) {
-                dst = (float *)out->extended_data[ch];
-                buf = (float *)s->buffer->extended_data[ch];
-
-                for (n = 0; n < window_size; n++) {
-                    dst[n] = buf[n] * (1 - s->overlap);
-                }
-                memmove(buf, buf + window_size, window_size * 4);
-            }
-
-            ret = ff_filter_frame(outlink, out);
-            if (ret < 0)
-                break;
-        }
-
-        av_audio_fifo_drain(s->fifo, s->hop_size);
+    if (!in) {
+        in = ff_get_audio_buffer(outlink, window_size);
+        if (!in)
+            return AVERROR(ENOMEM);
     }
 
+    ret = av_audio_fifo_peek(s->fifo, (void **)in->extended_data, window_size);
+    if (ret < 0)
+        goto fail;
+
+    for (ch = 0; ch < inlink->channels; ch++) {
+        const float *src = (float *)in->extended_data[ch];
+        FFTComplex *fft_data = s->fft_data[ch];
+
+        for (n = 0; n < in->nb_samples; n++) {
+            fft_data[n].re = src[n] * s->window_func_lut[n];
+            fft_data[n].im = 0;
+        }
+
+        for (; n < window_size; n++) {
+            fft_data[n].re = 0;
+            fft_data[n].im = 0;
+        }
+    }
+
+    values[VAR_PTS]         = s->pts;
+    values[VAR_SAMPLE_RATE] = inlink->sample_rate;
+    values[VAR_NBBINS]      = window_size / 2;
+    values[VAR_CHANNELS]    = inlink->channels;
+
+    for (ch = 0; ch < inlink->channels; ch++) {
+        FFTComplex *fft_data = s->fft_data[ch];
+
+        av_fft_permute(s->fft, fft_data);
+        av_fft_calc(s->fft, fft_data);
+    }
+
+    for (ch = 0; ch < inlink->channels; ch++) {
+        FFTComplex *fft_data = s->fft_data[ch];
+        FFTComplex *fft_temp = s->fft_temp[ch];
+        float *buf = (float *)s->buffer->extended_data[ch];
+        int x;
+        values[VAR_CHANNEL] = ch;
+
+        for (n = 0; n <= window_size / 2; n++) {
+            float fr, fi;
+
+            values[VAR_BIN] = n;
+            values[VAR_REAL] = fft_data[n].re;
+            values[VAR_IMAG] = fft_data[n].im;
+
+            fr = av_expr_eval(s->real[ch], values, s);
+            fi = av_expr_eval(s->imag[ch], values, s);
+
+            fft_temp[n].re = fr;
+            fft_temp[n].im = fi;
+        }
+
+        for (n = window_size / 2 + 1, x = window_size / 2 - 1; n < window_size; n++, x--) {
+            fft_temp[n].re =  fft_temp[x].re;
+            fft_temp[n].im = -fft_temp[x].im;
+        }
+
+        av_fft_permute(s->ifft, fft_temp);
+        av_fft_calc(s->ifft, fft_temp);
+
+        for (i = 0; i < window_size; i++) {
+            buf[i] += s->fft_temp[ch][i].re * f;
+        }
+    }
+
+    out = ff_get_audio_buffer(outlink, s->hop_size);
+    if (!out) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
+
+    out->pts = s->pts;
+    s->pts += s->hop_size;
+
+    for (ch = 0; ch < inlink->channels; ch++) {
+        float *dst = (float *)out->extended_data[ch];
+        float *buf = (float *)s->buffer->extended_data[ch];
+
+        for (n = 0; n < s->hop_size; n++)
+            dst[n] = buf[n] * (1.f - s->overlap);
+        memmove(buf, buf + s->hop_size, window_size * 4);
+    }
+
+    ret = ff_filter_frame(outlink, out);
+    if (ret < 0)
+        goto fail;
+
+    av_audio_fifo_drain(s->fifo, s->hop_size);
+
+fail:
     av_frame_free(&in);
     return ret < 0 ? ret : 0;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AFFTFiltContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret = 0, status;
+    int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!s->eof && av_audio_fifo_size(s->fifo) < s->window_size) {
+        ret = ff_inlink_consume_frame(inlink, &in);
+        if (ret < 0)
+            return ret;
+
+        if (ret > 0) {
+            ret = av_audio_fifo_write(s->fifo, (void **)in->extended_data,
+                                      in->nb_samples);
+            if (ret >= 0 && s->pts == AV_NOPTS_VALUE)
+                s->pts = in->pts;
+
+            av_frame_free(&in);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    if ((av_audio_fifo_size(s->fifo) >= s->window_size) ||
+        (av_audio_fifo_size(s->fifo) > 0 && s->eof)) {
+        ret = filter_frame(inlink);
+        if (av_audio_fifo_size(s->fifo) >= s->window_size)
+            ff_filter_set_ready(ctx, 100);
+        return ret;
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            s->eof = 1;
+            if (av_audio_fifo_size(s->fifo) >= 0) {
+                ff_filter_set_ready(ctx, 100);
+                return 0;
+            }
+        }
+    }
+
+    if (s->eof && av_audio_fifo_size(s->fifo) <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -450,7 +474,6 @@ static const AVFilterPad inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -470,6 +493,7 @@ AVFilter ff_af_afftfilt = {
     .priv_class      = &afftfilt_class,
     .inputs          = inputs,
     .outputs         = outputs,
+    .activate        = activate,
     .query_formats   = query_formats,
     .uninit          = uninit,
 };
