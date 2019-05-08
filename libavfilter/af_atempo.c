@@ -103,6 +103,9 @@ typedef struct ATempoContext {
     // 1: output sample position
     int64_t position[2];
 
+    // first input timestamp, all other timestamps are offset by this one
+    int64_t start_pts;
+
     // sample format:
     enum AVSampleFormat format;
 
@@ -186,6 +189,7 @@ static void yae_clear(ATempoContext *atempo)
 
     atempo->nfrag = 0;
     atempo->state = YAE_LOAD_FRAGMENT;
+    atempo->start_pts = AV_NOPTS_VALUE;
 
     atempo->position[0] = 0;
     atempo->position[1] = 0;
@@ -1068,7 +1072,7 @@ static int push_samples(ATempoContext *atempo,
     atempo->dst_buffer->nb_samples  = n_out;
 
     // adjust the PTS:
-    atempo->dst_buffer->pts =
+    atempo->dst_buffer->pts = atempo->start_pts +
         av_rescale_q(atempo->nsamples_out,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
@@ -1096,6 +1100,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
 
     const uint8_t *src = src_buffer->data[0];
     const uint8_t *src_end = src + n_in * atempo->stride;
+
+    if (atempo->start_pts == AV_NOPTS_VALUE)
+        atempo->start_pts = av_rescale_q(src_buffer->pts,
+                                         inlink->time_base,
+                                         outlink->time_base);
 
     while (src < src_end) {
         if (!atempo->dst_buffer) {
