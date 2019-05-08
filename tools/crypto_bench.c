@@ -19,7 +19,7 @@
  */
 
 /* Optional external libraries; can be enabled using:
- * make VERSUS=crypto+gcrypt+tomcrypt tools/crypto_bench */
+ * make VERSUS=crypto+gcrypt+tomcrypt+mbedcrypto tools/crypto_bench */
 #define USE_crypto           0x01    /* OpenSSL's libcrypto */
 #define USE_gcrypt           0x02    /* GnuTLS's libgcrypt */
 #define USE_tomcrypt         0x04    /* LibTomCrypt */
