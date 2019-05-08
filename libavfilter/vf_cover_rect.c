@@ -152,7 +152,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     if (!xendptr || *xendptr || !yendptr || *yendptr ||
-        !wendptr || *wendptr || !hendptr || !hendptr
+        !wendptr || *wendptr || !hendptr || *hendptr
     ) {
         return ff_filter_frame(ctx->outputs[0], in);
     }
