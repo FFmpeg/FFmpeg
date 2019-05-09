@@ -38,6 +38,9 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
     struct vdpau_picture_context *pic_ctx = pic->hwaccel_picture_private;
 
     VdpPictureInfoHEVC *info = &pic_ctx->info.hevc;
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+    VdpPictureInfoHEVC444 *info2 = &pic_ctx->info.hevc_444;
+#endif
 
     const HEVCSPS *sps = h->ps.sps;
     const HEVCPPS *pps = h->ps.pps;
@@ -355,6 +358,41 @@ static int vdpau_hevc_start_frame(AVCodecContext *avctx,
         }
     }
 
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+    if (sps->sps_range_extension_flag) {
+        info2->sps_range_extension_flag             = 1;
+        info2->transformSkipRotationEnableFlag      = sps->transform_skip_rotation_enabled_flag;
+        info2->transformSkipContextEnableFlag       = sps->transform_skip_context_enabled_flag;
+        info2->implicitRdpcmEnableFlag              = sps->implicit_rdpcm_enabled_flag;
+        info2->explicitRdpcmEnableFlag              = sps->explicit_rdpcm_enabled_flag;
+        info2->extendedPrecisionProcessingFlag      = sps->extended_precision_processing_flag;
+        info2->intraSmoothingDisabledFlag           = sps->intra_smoothing_disabled_flag;
+        info2->highPrecisionOffsetsEnableFlag       = sps->high_precision_offsets_enabled_flag;
+        info2->persistentRiceAdaptationEnableFlag   = sps->persistent_rice_adaptation_enabled_flag;
+        info2->cabacBypassAlignmentEnableFlag       = sps->cabac_bypass_alignment_enabled_flag;
+    } else {
+        info2->sps_range_extension_flag = 0;
+    }
+    if (pps->pps_range_extensions_flag) {
+        info2->pps_range_extension_flag             = 1;
+        info2->log2MaxTransformSkipSize             = pps->log2_max_transform_skip_block_size;
+        info2->crossComponentPredictionEnableFlag   = pps->cross_component_prediction_enabled_flag;
+        info2->chromaQpAdjustmentEnableFlag         = pps->chroma_qp_offset_list_enabled_flag;
+        info2->diffCuChromaQpAdjustmentDepth        = pps->diff_cu_chroma_qp_offset_depth;
+        info2->chromaQpAdjustmentTableSize          = pps->chroma_qp_offset_list_len_minus1 + 1;
+        info2->log2SaoOffsetScaleLuma               = pps->log2_sao_offset_scale_luma;
+        info2->log2SaoOffsetScaleChroma             = pps->log2_sao_offset_scale_chroma;
+        for (ssize_t i = 0; i < info2->chromaQpAdjustmentTableSize; i++)
+        {
+            info2->cb_qp_adjustment[i] = pps->cb_qp_offset_list[i];
+            info2->cr_qp_adjustment[i] = pps->cr_qp_offset_list[i];
+        }
+
+    } else {
+        info2->pps_range_extension_flag = 0;
+    }
+#endif
+
     return ff_vdpau_common_start_frame(pic_ctx, buffer, size);
 }
 
@@ -405,6 +443,9 @@ static int vdpau_hevc_init(AVCodecContext *avctx)
         break;
     case FF_PROFILE_HEVC_MAIN_STILL_PICTURE:
         profile = VDP_DECODER_PROFILE_HEVC_MAIN_STILL;
+        break;
+    case FF_PROFILE_HEVC_REXT:
+        profile = VDP_DECODER_PROFILE_HEVC_MAIN_444;
         break;
     default:
         return AVERROR(ENOTSUP);

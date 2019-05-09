@@ -25,7 +25,7 @@
 #include "rawdec.h"
 #include "libavutil/intreadwrite.h"
 
-static int av_always_inline mlp_thd_probe(AVProbeData *p, uint32_t sync)
+static int av_always_inline mlp_thd_probe(const AVProbeData *p, uint32_t sync)
 {
     const uint8_t *buf, *last_buf = p->buf, *end = p->buf + p->buf_size;
     int frames = 0, valid = 0, size = 0;
@@ -51,7 +51,7 @@ static int av_always_inline mlp_thd_probe(AVProbeData *p, uint32_t sync)
 }
 
 #if CONFIG_MLP_DEMUXER
-static int mlp_probe(AVProbeData *p)
+static int mlp_probe(const AVProbeData *p)
 {
     return mlp_thd_probe(p, 0xf8726fbb);
 }
@@ -69,7 +69,7 @@ AVInputFormat ff_mlp_demuxer = {
 #endif
 
 #if CONFIG_TRUEHD_DEMUXER
-static int thd_probe(AVProbeData *p)
+static int thd_probe(const AVProbeData *p)
 {
     return mlp_thd_probe(p, 0xf8726fba);
 }

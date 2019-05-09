@@ -80,16 +80,27 @@ static void qpeg_decode_intra(QpegContext *qctx, uint8_t *dst,
 
             p = bytestream2_get_byte(&qctx->buffer);
             for(i = 0; i < run; i++) {
-                dst[filled++] = p;
+                int step = FFMIN(run - i, width - filled);
+                memset(dst+filled, p, step);
+                filled += step;
+                i      += step - 1;
                 if (filled >= width) {
                     filled = 0;
                     dst -= stride;
                     rows_to_go--;
+                    while (run - i > width && rows_to_go > 0) {
+                        memset(dst, p, width);
+                        dst -= stride;
+                        rows_to_go--;
+                        i += width;
+                    }
                     if(rows_to_go <= 0)
                         break;
                 }
             }
         } else {
+            if (bytestream2_get_bytes_left(&qctx->buffer) < copy)
+                copy = bytestream2_get_bytes_left(&qctx->buffer);
             for(i = 0; i < copy; i++) {
                 dst[filled++] = bytestream2_get_byte(&qctx->buffer);
                 if (filled >= width) {

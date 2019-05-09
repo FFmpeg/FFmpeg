@@ -522,7 +522,7 @@ static int rm_read_multi(AVFormatContext *s, AVIOContext *pb,
 
         size2 = avio_rb32(pb);
         ret = ff_rm_read_mdpr_codecdata(s, s->pb, st2, st2->priv_data,
-                                        size2, mime);
+                                        size2, NULL);
         if (ret < 0)
             return ret;
     }
@@ -1067,7 +1067,7 @@ static int rm_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int rm_probe(AVProbeData *p)
+static int rm_probe(const AVProbeData *p)
 {
     /* check file header */
     if ((p->buf[0] == '.' && p->buf[1] == 'R' &&
@@ -1158,7 +1158,7 @@ AVInputFormat ff_rdt_demuxer = {
     .flags          = AVFMT_NOFILE,
 };
 
-static int ivr_probe(AVProbeData *p)
+static int ivr_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, ".R1M\x0\x1\x1", 7) &&
         memcmp(p->buf, ".REC", 4))
@@ -1269,6 +1269,8 @@ static int ivr_read_header(AVFormatContext *s)
                 if (avio_rb32(pb) == MKBETAG('M', 'L', 'T', 'I')) {
                     ret = rm_read_multi(s, pb, st, NULL);
                 } else {
+                    if (avio_feof(pb))
+                        return AVERROR_INVALIDDATA;
                     avio_seek(pb, -4, SEEK_CUR);
                     ret = ff_rm_read_mdpr_codecdata(s, pb, st, st->priv_data, len, NULL);
                 }

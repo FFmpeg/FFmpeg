@@ -112,7 +112,7 @@ typedef struct OpusStreamContext {
     DECLARE_ALIGNED(32, float, celt_buf)[2][960];
     float *celt_output[2];
 
-    float redundancy_buf[2][960];
+    DECLARE_ALIGNED(32, float, redundancy_buf)[2][960];
     float *redundancy_output[2];
 
     /* data buffers for the final output data */

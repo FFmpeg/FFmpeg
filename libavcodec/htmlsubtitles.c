@@ -24,6 +24,7 @@
 #include "libavutil/common.h"
 #include "libavutil/parseutils.h"
 #include "htmlsubtitles.h"
+#include <ctype.h>
 
 static int html_color_parse(void *log_ctx, const char *str)
 {
@@ -44,14 +45,32 @@ static void rstrip_spaces_buf(AVBPrint *buf)
             buf->str[--buf->len] = 0;
 }
 
+/*
+ * Fast code for scanning text enclosed in braces. Functionally
+ * equivalent to this sscanf call:
+ *
+ * sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0
+ */
+static int scanbraces(const char* in) {
+    if (strncmp(in, "{\\an", 4) != 0) {
+        return 0;
+    }
+    if (!isdigit(in[4])) {
+        return 0;
+    }
+    if (in[5] != '}') {
+        return 0;
+    }
+    return 1;
+}
+
 /* skip all {\xxx} substrings except for {\an%d}
    and all microdvd like styles such as {Y:xxx} */
 static void handle_open_brace(AVBPrint *dst, const char **inp, int *an, int *closing_brace_missing)
 {
-    int len = 0;
     const char *in = *inp;
 
-    *an += sscanf(in, "{\\an%*1u}%n", &len) >= 0 && len > 0;
+    *an += scanbraces(in);
 
     if (!*closing_brace_missing) {
         if (   (*an != 1 && in[1] == '\\')
@@ -73,6 +92,34 @@ struct font_tag {
     int size;
     uint32_t color;
 };
+
+/*
+ * Fast code for scanning the rest of a tag. Functionally equivalent to
+ * this sscanf call:
+ *
+ * sscanf(in, "%127[^<>]>%n", buffer, lenp) == 2
+ */
+static int scantag(const char* in, char* buffer, int* lenp) {
+    int len;
+
+    for (len = 0; len < 128; len++) {
+        const char c = *in++;
+        switch (c) {
+        case '\0':
+            return 0;
+        case '<':
+            return 0;
+        case '>':
+            buffer[len] = '\0';
+            *lenp = len+1;
+            return 1;
+        default:
+            break;
+        }
+        buffer[len] = c;
+    }
+    return 0;
+}
 
 /*
  * The general politic of the convert is to mask unsupported tags or formatting
@@ -155,7 +202,7 @@ int ff_htmlmarkup_to_ass(void *log_ctx, AVBPrint *dst, const char *in)
 
             len = 0;
 
-            if (sscanf(in+tag_close+1, "%127[^<>]>%n", buffer, &len) >= 1 && len > 0) {
+            if (scantag(in+tag_close+1, buffer, &len) && len > 0) {
                 const int skip = len + tag_close;
                 const char *tagname = buffer;
                 while (*tagname == ' ') {

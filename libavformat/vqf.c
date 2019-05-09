@@ -32,7 +32,7 @@ typedef struct VqfContext {
     int remaining_bits;
 } VqfContext;
 
-static int vqf_probe(AVProbeData *probe_packet)
+static int vqf_probe(const AVProbeData *probe_packet)
 {
     if (AV_RL32(probe_packet->buf) != MKTAG('T','W','I','N'))
         return 0;

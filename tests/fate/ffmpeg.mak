@@ -93,6 +93,10 @@ fate-copy-trac2211-avi: $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 fate-copy-trac2211-avi: CMD = transcode "h264 -r 14" $(TARGET_SAMPLES)/h264/bbc2.sample.h264\
                           avi "-c:a copy -c:v copy"
 
+FATE_STREAMCOPY-$(call ENCDEC, APNG, APNG) += fate-copy-apng
+fate-copy-apng: fate-lavf-apng
+fate-copy-apng: CMD = transcode apng tests/data/lavf/lavf.apng apng "-c:v copy"
+
 FATE_STREAMCOPY-$(call DEMMUX, OGG, OGG) += fate-limited_input_seek fate-limited_input_seek-copyts
 fate-limited_input_seek: $(TARGET_SAMPLES)/vorbis/moog_small.ogg
 fate-limited_input_seek: CMD = md5 -ss 1.5 -t 1.3 -i $(TARGET_SAMPLES)/vorbis/moog_small.ogg -c:a copy -fflags +bitexact -f ogg

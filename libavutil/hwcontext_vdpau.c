@@ -73,8 +73,10 @@ static const VDPAUPixFmtMap pix_fmts_422[] = {
 };
 
 static const VDPAUPixFmtMap pix_fmts_444[] = {
-    { VDP_YCBCR_FORMAT_YV12, AV_PIX_FMT_YUV444P },
-    { 0,                     AV_PIX_FMT_NONE,   },
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+    { VDP_YCBCR_FORMAT_Y_U_V_444, AV_PIX_FMT_YUV444P },
+#endif
+    { 0,                          AV_PIX_FMT_NONE,   },
 };
 
 static const struct {
@@ -349,7 +351,11 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(EINVAL);
     }
 
-    if (vdpau_format == VDP_YCBCR_FORMAT_YV12)
+    if ((vdpau_format == VDP_YCBCR_FORMAT_YV12)
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+            || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444)
+#endif
+            )
         FFSWAP(void*, data[1], data[2]);
 
     err = priv->get_data(surf, vdpau_format, data, linesize);
@@ -400,7 +406,11 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(EINVAL);
     }
 
-    if (vdpau_format == VDP_YCBCR_FORMAT_YV12)
+    if ((vdpau_format == VDP_YCBCR_FORMAT_YV12)
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+            || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444)
+#endif
+            )
         FFSWAP(const void*, data[1], data[2]);
 
     err = priv->put_data(surf, vdpau_format, data, linesize);

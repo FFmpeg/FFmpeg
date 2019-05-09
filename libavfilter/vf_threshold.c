@@ -61,11 +61,57 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12 , AV_PIX_FMT_GBRAP16,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10,
-        AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+}
+
+typedef struct ThreadData {
+    AVFrame *in;
+    AVFrame *threshold;
+    AVFrame *min;
+    AVFrame *max;
+    AVFrame *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    ThresholdContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *min = td->min;
+    AVFrame *max = td->max;
+    AVFrame *threshold = td->threshold;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        const int h = s->height[p];
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+
+        if (!(s->planes & (1 << p))) {
+            av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],
+                                out->linesize[p],
+                                in->data[p] + slice_start * in->linesize[p],
+                                in->linesize[p],
+                                s->width[p] * s->bpc,
+                                slice_end - slice_start);
+            continue;
+        }
+        s->threshold(in->data[p] + slice_start * in->linesize[p],
+                     threshold->data[p] + slice_start * threshold->linesize[p],
+                     min->data[p] + slice_start * min->linesize[p],
+                     max->data[p] + slice_start * max->linesize[p],
+                     out->data[p] + slice_start * out->linesize[p],
+                     in->linesize[p], threshold->linesize[p],
+                     min->linesize[p], max->linesize[p],
+                     out->linesize[p],
+                     s->width[p], slice_end - slice_start);
+    }
+
+    return 0;
 }
 
 static int process_frame(FFFrameSync *fs)
@@ -74,6 +120,7 @@ static int process_frame(FFFrameSync *fs)
     ThresholdContext *s = fs->opaque;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *in, *threshold, *min, *max;
+    ThreadData td;
     int ret;
 
     if ((ret = ff_framesync_get_frame(&s->fs, 0, &in,        0)) < 0 ||
@@ -87,29 +134,18 @@ static int process_frame(FFFrameSync *fs)
         if (!out)
             return AVERROR(ENOMEM);
     } else {
-        int p;
-
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, in);
 
-        for (p = 0; p < s->nb_planes; p++) {
-            if (!(s->planes & (1 << p))) {
-                av_image_copy_plane(out->data[p], out->linesize[p],
-                                    in->data[p], in->linesize[p],
-                                    s->width[p] * s->bpc,
-                                    s->height[p]);
-                continue;
-            }
-            s->threshold(in->data[p], threshold->data[p],
-                         min->data[p], max->data[p],
-                         out->data[p],
-                         in->linesize[p], threshold->linesize[p],
-                         min->linesize[p], max->linesize[p],
-                         out->linesize[p],
-                         s->width[p], s->height[p]);
-        }
+        td.out = out;
+        td.in = in;
+        td.threshold = threshold;
+        td.min = min;
+        td.max = max;
+        ctx->internal->execute(ctx, filter_slice, &td, NULL,
+                               FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
     }
 
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
@@ -324,5 +360,5 @@ AVFilter ff_vf_threshold = {
     .activate      = activate,
     .inputs        = inputs,
     .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

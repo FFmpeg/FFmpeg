@@ -305,13 +305,19 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 
 #define prob(name, subs, ...) do { \
         uint8_t prob_coded; \
-        int8_t prob; \
+        uint8_t prob; \
         xf(1, name.prob_coded, prob_coded, subs, __VA_ARGS__); \
         if (prob_coded) \
             xf(8, name.prob, prob, subs, __VA_ARGS__); \
         else \
             prob = 255; \
         current->name = prob; \
+    } while (0)
+
+#define fixed(width, name, value) do { \
+        av_unused uint32_t fixed_value = value; \
+        CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
+                                   0, &fixed_value, value, value)); \
     } while (0)
 
 #define infer(name, value) do { \
@@ -331,6 +337,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #undef fle
 #undef delta_q
 #undef prob
+#undef fixed
 #undef infer
 #undef byte_alignment
 
@@ -370,6 +377,11 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
             xf(8, name.prob, current->name, subs, __VA_ARGS__); \
     } while (0)
 
+#define fixed(width, name, value) do { \
+        CHECK(ff_cbs_write_unsigned(ctx, rw, width, #name, \
+                                    0, value, value, value)); \
+    } while (0)
+
 #define infer(name, value) do { \
         if (current->name != (value)) { \
             av_log(ctx->log_ctx, AV_LOG_WARNING, "Warning: " \
@@ -392,6 +404,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #undef fle
 #undef delta_q
 #undef prob
+#undef fixed
 #undef infer
 #undef byte_alignment
 
@@ -444,7 +457,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
         }
         if (pos + index_size != frag->data_size) {
             av_log(ctx->log_ctx, AV_LOG_WARNING, "Extra padding at "
-                   "end of superframe: %zu bytes.\n",
+                   "end of superframe: %"SIZE_SPECIFIER" bytes.\n",
                    frag->data_size - (pos + index_size));
         }
 
@@ -525,7 +538,7 @@ static int cbs_vp9_write_unit(CodedBitstreamContext *ctx,
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
                    "sufficiently large write buffer (last attempt "
-                   "%zu bytes).\n", priv->write_buffer_size);
+                   "%"SIZE_SPECIFIER" bytes).\n", priv->write_buffer_size);
             return err;
         }
     }

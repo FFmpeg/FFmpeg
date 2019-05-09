@@ -186,7 +186,7 @@ static void print_guid(ff_asf_guid *g)
 #define print_guid(g) while(0)
 #endif
 
-static int asf_probe(AVProbeData *pd)
+static int asf_probe(const AVProbeData *pd)
 {
     /* check file header */
     if (!ff_guidcmp(pd->buf, &ff_asf_header))

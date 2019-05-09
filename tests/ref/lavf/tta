@@ -1,3 +1,3 @@
-d86c5cccb2554143d34d1786ab460a31 *./tests/data/lavf/lavf.tta
-43200 ./tests/data/lavf/lavf.tta
-./tests/data/lavf/lavf.tta CRC=0x3a1da17e
+d86c5cccb2554143d34d1786ab460a31 *tests/data/lavf/lavf.tta
+43200 tests/data/lavf/lavf.tta
+tests/data/lavf/lavf.tta CRC=0x3a1da17e

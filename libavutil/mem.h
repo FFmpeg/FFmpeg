@@ -339,7 +339,7 @@ av_alloc_size(2, 3) void *av_realloc_array(void *ptr, size_t nmemb, size_t size)
  * @warning Unlike av_malloc(), the allocated memory is not guaranteed to be
  *          correctly aligned.
  */
-av_alloc_size(2, 3) int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
+int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
 
 /**
  * Reallocate the given buffer if it is not large enough, otherwise do nothing.
@@ -363,10 +363,10 @@ av_alloc_size(2, 3) int av_reallocp_array(void *ptr, size_t nmemb, size_t size);
  * @endcode
  *
  * @param[in,out] ptr      Already allocated buffer, or `NULL`
- * @param[in,out] size     Pointer to current size of buffer `ptr`. `*size` is
- *                         changed to `min_size` in case of success or 0 in
- *                         case of failure
- * @param[in]     min_size New size of buffer `ptr`
+ * @param[in,out] size     Pointer to the size of buffer `ptr`. `*size` is
+ *                         updated to the new allocated size, in particular 0
+ *                         in case of failure.
+ * @param[in]     min_size Desired minimal size of buffer `ptr`
  * @return `ptr` if the buffer is large enough, a pointer to newly reallocated
  *         buffer if the buffer was not large enough, or `NULL` in case of
  *         error
@@ -397,10 +397,10 @@ void *av_fast_realloc(void *ptr, unsigned int *size, size_t min_size);
  * @param[in,out] ptr      Pointer to pointer to an already allocated buffer.
  *                         `*ptr` will be overwritten with pointer to new
  *                         buffer on success or `NULL` on failure
- * @param[in,out] size     Pointer to current size of buffer `*ptr`. `*size` is
- *                         changed to `min_size` in case of success or 0 in
- *                         case of failure
- * @param[in]     min_size New size of buffer `*ptr`
+ * @param[in,out] size     Pointer to the size of buffer `*ptr`. `*size` is
+ *                         updated to the new allocated size, in particular 0
+ *                         in case of failure.
+ * @param[in]     min_size Desired minimal size of buffer `*ptr`
  * @see av_realloc()
  * @see av_fast_mallocz()
  */
@@ -418,10 +418,10 @@ void av_fast_malloc(void *ptr, unsigned int *size, size_t min_size);
  * @param[in,out] ptr      Pointer to pointer to an already allocated buffer.
  *                         `*ptr` will be overwritten with pointer to new
  *                         buffer on success or `NULL` on failure
- * @param[in,out] size     Pointer to current size of buffer `*ptr`. `*size` is
- *                         changed to `min_size` in case of success or 0 in
- *                         case of failure
- * @param[in]     min_size New size of buffer `*ptr`
+ * @param[in,out] size     Pointer to the size of buffer `*ptr`. `*size` is
+ *                         updated to the new allocated size, in particular 0
+ *                         in case of failure.
+ * @param[in]     min_size Desired minimal size of buffer `*ptr`
  * @see av_fast_malloc()
  */
 void av_fast_mallocz(void *ptr, unsigned int *size, size_t min_size);

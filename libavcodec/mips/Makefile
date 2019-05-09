@@ -22,6 +22,7 @@ OBJS-$(CONFIG_HEVC_DECODER)               += mips/hevcdsp_init_mips.o      \
                                              mips/hevcpred_init_mips.o
 OBJS-$(CONFIG_VP9_DECODER)                += mips/vp9dsp_init_mips.o
 OBJS-$(CONFIG_VP8_DECODER)                += mips/vp8dsp_init_mips.o
+OBJS-$(CONFIG_VP3DSP)                     += mips/vp3dsp_init_mips.o
 OBJS-$(CONFIG_H264DSP)                    += mips/h264dsp_init_mips.o
 OBJS-$(CONFIG_H264QPEL)                   += mips/h264qpel_init_mips.o
 OBJS-$(CONFIG_H264CHROMA)                 += mips/h264chroma_init_mips.o
@@ -54,6 +55,7 @@ MSA-OBJS-$(CONFIG_VP9_DECODER)            += mips/vp9_mc_msa.o             \
 MSA-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8_mc_msa.o             \
                                              mips/vp8_idct_msa.o           \
                                              mips/vp8_lpf_msa.o
+MSA-OBJS-$(CONFIG_VP3DSP)                 += mips/vp3dsp_idct_msa.o
 MSA-OBJS-$(CONFIG_H264DSP)                += mips/h264dsp_msa.o            \
                                              mips/h264idct_msa.o
 MSA-OBJS-$(CONFIG_H264QPEL)               += mips/h264qpel_msa.o
@@ -84,3 +86,6 @@ MMI-OBJS-$(CONFIG_VP8_DECODER)            += mips/vp8dsp_mmi.o
 MMI-OBJS-$(CONFIG_HPELDSP)                += mips/hpeldsp_mmi.o
 MMI-OBJS-$(CONFIG_VC1_DECODER)            += mips/vc1dsp_mmi.o
 MMI-OBJS-$(CONFIG_WMV2DSP)                += mips/wmv2dsp_mmi.o
+MMI-OBJS-$(CONFIG_HEVC_DECODER)           += mips/hevcdsp_mmi.o
+MMI-OBJS-$(CONFIG_VP3DSP)                 += mips/vp3dsp_idct_mmi.o
+MMI-OBJS-$(CONFIG_VP9_DECODER)            += mips/vp9_mc_mmi.o

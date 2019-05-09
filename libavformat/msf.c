@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int msf_probe(AVProbeData *p)
+static int msf_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "MSF", 3))
         return 0;

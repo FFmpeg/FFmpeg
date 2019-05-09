@@ -551,7 +551,11 @@ static const uint32_t ff_flashsv2_default_palette[128] = {
 static av_cold int flashsv2_decode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
-    flashsv_decode_init(avctx);
+    int ret;
+
+    ret = flashsv_decode_init(avctx);
+    if (ret < 0)
+        return ret;
     s->pal = ff_flashsv2_default_palette;
     s->ver = 2;
 

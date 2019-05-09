@@ -232,7 +232,7 @@ static int probe_openmpt_extension(AVProbeData *p)
     return 0;
 }
 
-static int read_probe_openmpt(AVProbeData *p)
+static int read_probe_openmpt(const AVProbeData *p)
 {
 #if OPENMPT_API_VERSION_AT_LEAST(0,3,0)
     int probe_result;
@@ -259,7 +259,7 @@ static int read_probe_openmpt(AVProbeData *p)
                 } else {
                     /* The file extension is unknown and we have very few data
                      * bytes available. libopenmpt cannot decide anything here,
-                     * and returning any score > 0 would result in successfull
+                     * and returning any score > 0 would result in successful
                      * probing of random data.
                      */
                     return 0;

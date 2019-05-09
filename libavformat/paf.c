@@ -53,7 +53,7 @@ typedef struct PAFDemuxContext {
     int got_audio;
 } PAFDemuxContext;
 
-static int read_probe(AVProbeData *p)
+static int read_probe(const AVProbeData *p)
 {
     if ((p->buf_size >= strlen(MAGIC)) &&
         !memcmp(p->buf, MAGIC, strlen(MAGIC)))

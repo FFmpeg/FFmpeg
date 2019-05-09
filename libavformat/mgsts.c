@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "riff.h"
 
-static int read_probe(AVProbeData *p)
+static int read_probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf     ) != 0x000E ||
         AV_RB32(p->buf +  4) != 0x0050 ||

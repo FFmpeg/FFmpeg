@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int epaf_probe(AVProbeData *p)
+static int epaf_probe(const AVProbeData *p)
 {
     if (((AV_RL32(p->buf) == MKTAG('f','a','p',' ') &&
           AV_RL32(p->buf + 8) == 1) ||

@@ -51,7 +51,7 @@ typedef struct MTVDemuxContext {
 
 } MTVDemuxContext;
 
-static int mtv_probe(AVProbeData *p)
+static int mtv_probe(const AVProbeData *p)
 {
     /* we need at least 57 bytes from the header
      * to try parsing all required fields

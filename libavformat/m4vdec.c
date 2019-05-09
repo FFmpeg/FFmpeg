@@ -30,7 +30,7 @@
 #define SLICE_STARTCODE      0x1B7
 #define EXT_STARTCODE        0x1B8
 
-static int mpeg4video_probe(AVProbeData *probe_packet)
+static int mpeg4video_probe(const AVProbeData *probe_packet)
 {
     uint32_t temp_buffer = -1;
     int VO = 0, VOL = 0, VOP = 0, VISO = 0, res = 0;

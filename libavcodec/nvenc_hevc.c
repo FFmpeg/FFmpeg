@@ -116,6 +116,17 @@ static const AVOption options[] = {
                                                             OFFSET(cqp),          AV_OPT_TYPE_INT,   { .i64 = -1 }, -1, 51, VE },
     { "weighted_pred","Set 1 to enable weighted prediction",
                                                             OFFSET(weighted_pred),AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, 1, VE },
+#ifdef NVENC_HAVE_HEVC_BFRAME_REF_MODE
+    { "b_ref_mode",   "Use B frames as references",         OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = NV_ENC_BFRAME_REF_MODE_DISABLED }, NV_ENC_BFRAME_REF_MODE_DISABLED, NV_ENC_BFRAME_REF_MODE_MIDDLE, VE, "b_ref_mode" },
+    { "disabled",     "B frames will not be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_DISABLED }, 0, 0, VE, "b_ref_mode" },
+    { "each",         "Each B frame will be used for reference", 0,               AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_EACH }, 0, 0, VE, "b_ref_mode" },
+    { "middle",       "Only (number of B frames)/2 will be used for reference", 0,AV_OPT_TYPE_CONST, { .i64 = NV_ENC_BFRAME_REF_MODE_MIDDLE }, 0, 0, VE, "b_ref_mode" },
+#else
+    { "b_ref_mode",   "(not supported)",                    OFFSET(b_ref_mode),   AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE, "b_ref_mode" },
+    { "disabled",     "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0,       VE, "b_ref_mode" },
+    { "each",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0,       VE, "b_ref_mode" },
+    { "middle",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0,       VE, "b_ref_mode" },
+#endif
     { NULL }
 };
 

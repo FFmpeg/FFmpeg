@@ -162,7 +162,7 @@ static void vector_pow43(int *coefs, int len)
     }
 }
 
-static void subband_scale(int *dst, int *src, int scale, int offset, int len)
+static void subband_scale(int *dst, int *src, int scale, int offset, int len, void *log_context)
 {
     int ssign = scale < 0 ? -1 : 1;
     int s = FFABS(scale);
@@ -189,7 +189,7 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
             dst[i] = out * (unsigned)ssign;
         }
     } else {
-        av_log(NULL, AV_LOG_ERROR, "Overflow in subband_scale()\n");
+        av_log(log_context, AV_LOG_ERROR, "Overflow in subband_scale()\n");
     }
 }
 
@@ -221,7 +221,7 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
     }
     else {
         s = s + 32;
-        round = 1 << (s-1);
+        round = s ? 1 << (s-1) : 0;
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)coefs[i] * c + round) >> s);
             coefs[i] = out * ssign;
@@ -436,7 +436,7 @@ static void apply_independent_coupling_fixed(AACContext *ac,
     else {
       for (i = 0; i < len; i++) {
           tmp = (int)(((int64_t)src[i] * c + (int64_t)0x1000000000) >> 37);
-          dest[i] += tmp * (1 << shift);
+          dest[i] += tmp * (1U << shift);
       }
     }
 }

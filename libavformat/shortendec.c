@@ -25,7 +25,7 @@
 #include "rawdec.h"
 #include "libavcodec/golomb.h"
 
-static int shn_probe(AVProbeData *p)
+static int shn_probe(const AVProbeData *p)
 {
     GetBitContext gb;
     int version, internal_ftype, channels, blocksize;

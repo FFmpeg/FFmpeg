@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int adp_probe(AVProbeData *p)
+static int adp_probe(const AVProbeData *p)
 {
     int i, changes = 0;
     uint8_t last = 0;

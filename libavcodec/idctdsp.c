@@ -258,9 +258,11 @@ av_cold void ff_idctdsp_init(IDCTDSPContext *c, AVCodecContext *avctx)
         if (avctx->bits_per_raw_sample == 10 || avctx->bits_per_raw_sample == 9) {
             /* 10-bit MPEG-4 Simple Studio Profile requires a higher precision IDCT
                However, it only uses idct_put */
-            if (avctx->codec_id == AV_CODEC_ID_MPEG4 && avctx->profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO)
+            if (c->mpeg4_studio_profile) {
                 c->idct_put              = ff_simple_idct_put_int32_10bit;
-            else {
+                c->idct_add              = NULL;
+                c->idct                  = NULL;
+            } else {
                 c->idct_put              = ff_simple_idct_put_int16_10bit;
                 c->idct_add              = ff_simple_idct_add_int16_10bit;
                 c->idct                  = ff_simple_idct_int16_10bit;

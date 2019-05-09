@@ -92,3 +92,6 @@ PCMDEF(alaw, "PCM A-law",
 
 PCMDEF(mulaw, "PCM mu-law",
        "ul", AV_CODEC_ID_PCM_MULAW)
+
+PCMDEF(vidc, "PCM Archimedes VIDC",
+       NULL, AV_CODEC_ID_PCM_VIDC)

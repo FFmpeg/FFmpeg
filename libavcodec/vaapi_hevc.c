@@ -122,8 +122,6 @@ static int vaapi_hevc_start_frame(AVCodecContext          *avctx,
     pic->pic.output_surface = ff_vaapi_get_surface_id(h->ref->frame);
 
     pic->pic_param = (VAPictureParameterBufferHEVC) {
-        .pic_fields.value                             = 0,
-        .slice_parsing_fields.value                   = 0,
         .pic_width_in_luma_samples                    = sps->width,
         .pic_height_in_luma_samples                   = sps->height,
         .log2_min_luma_coding_block_size_minus3       = sps->log2_min_cb_size - 3,

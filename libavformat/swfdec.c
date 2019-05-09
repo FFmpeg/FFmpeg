@@ -61,7 +61,7 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
 }
 
 
-static int swf_probe(AVProbeData *p)
+static int swf_probe(const AVProbeData *p)
 {
     GetBitContext gb;
     int len, xmin, xmax, ymin, ymax;

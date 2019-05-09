@@ -24,7 +24,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int pvf_probe(AVProbeData *p)
+static int pvf_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "PVF1\n", 5))
         return AVPROBE_SCORE_MAX;

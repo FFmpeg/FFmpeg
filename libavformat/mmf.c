@@ -180,7 +180,7 @@ static int mmf_write_trailer(AVFormatContext *s)
 }
 #endif /* CONFIG_MMF_MUXER */
 
-static int mmf_probe(AVProbeData *p)
+static int mmf_probe(const AVProbeData *p)
 {
     /* check file header */
     if (p->buf[0] == 'M' && p->buf[1] == 'M' &&

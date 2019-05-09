@@ -126,7 +126,7 @@ static void predict_width(AVCodecParameters *par, uint64_t fsize, int got_width)
         par->width = fsize > 4000 ? (160<<3) : (80<<3);
 }
 
-static int bin_probe(AVProbeData *p)
+static int bin_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
     int magic = 0, sauce = 0;
@@ -204,7 +204,7 @@ static int bintext_read_header(AVFormatContext *s)
 #endif /* CONFIG_BINTEXT_DEMUXER */
 
 #if CONFIG_XBIN_DEMUXER
-static int xbin_probe(AVProbeData *p)
+static int xbin_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
 
@@ -302,7 +302,7 @@ static const uint8_t idf_magic[] = {
     0x04, 0x31, 0x2e, 0x34, 0x00, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x15, 0x00
 };
 
-static int idf_probe(AVProbeData *p)
+static int idf_probe(const AVProbeData *p)
 {
     if (p->buf_size < sizeof(idf_magic))
         return 0;

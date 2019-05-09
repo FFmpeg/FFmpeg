@@ -123,7 +123,7 @@ static const uint8_t ver2_state[256] = {
      40,  40,  41,  79,  43,  44,  45,  45, 48,   48,  64,  50,  51,  52,  88,  52,
      53,  74,  55,  57,  58,  58,  74,  60, 101,  61,  62,  84,  66,  66,  68,  69,
      87,  82,  71,  97,  73,  73,  82,  75, 111,  77,  94,  78,  87,  81,  83,  97,
-     85,  83,  94,  86,  99,  89,  90,  99, 111,  92,  93,  134, 95,  98,  105, 98,
+     85,  83,  94,  86,  99,  89,  90,  99, 111,  92,  93,  134, 95,  98, 105,  98,
     105, 110, 102, 108, 102, 118, 103, 106, 106, 113, 109, 112, 114, 112, 116, 125,
     115, 116, 117, 117, 126, 119, 125, 121, 121, 123, 145, 124, 126, 131, 127, 129,
     165, 130, 132, 138, 133, 135, 145, 136, 137, 139, 146, 141, 143, 142, 144, 148,
@@ -449,7 +449,7 @@ static int write_extradata(FFV1Context *f)
         put_symbol(c, state, f->intra = (f->avctx->gop_size < 2), 0);
     }
 
-    f->avctx->extradata_size = ff_rac_terminate(c);
+    f->avctx->extradata_size = ff_rac_terminate(c, 0);
     v = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, f->avctx->extradata, f->avctx->extradata_size);
     AV_WL32(f->avctx->extradata + f->avctx->extradata_size, v);
     f->avctx->extradata_size += 4;
@@ -1065,9 +1065,7 @@ retry:
         encode_slice_header(f, fs);
     }
     if (fs->ac == AC_GOLOMB_RICE) {
-        if (f->version > 2)
-            put_rac(&fs->c, (uint8_t[]) { 129 }, 0);
-        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c) : 0;
+        fs->ac_byte_count = f->version > 2 || (!x && !y) ? ff_rac_terminate(&fs->c, f->version > 2) : 0;
         init_put_bits(&fs->pb,
                       fs->c.bytestream_start + fs->ac_byte_count,
                       fs->c.bytestream_end - fs->c.bytestream_start - fs->ac_byte_count);
@@ -1232,9 +1230,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         int bytes;
 
         if (fs->ac != AC_GOLOMB_RICE) {
-            uint8_t state = 129;
-            put_rac(&fs->c, &state, 0);
-            bytes = ff_rac_terminate(&fs->c);
+            bytes = ff_rac_terminate(&fs->c, 1);
         } else {
             flush_put_bits(&fs->pb); // FIXME: nicer padding
             bytes = fs->ac_byte_count + (put_bits_count(&fs->pb) + 7) / 8;

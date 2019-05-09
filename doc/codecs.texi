@@ -55,6 +55,9 @@ Do not draw edges.
 @item psnr
 Set error[?] variables during encoding.
 @item truncated
+@item drop_changed
+Don't output frames whose parameters differ from first decoded frame in stream.
+Error AVERROR_INPUT_CHANGED is returned when a frame is dropped.
 
 @item ildct
 Use interlaced DCT.
@@ -775,8 +778,6 @@ Place global headers at every keyframe instead of in extradata.
 Frame data might be split into multiple chunks.
 @item showall
 Show all frames before the first keyframe.
-@item skiprd
-Deprecated, use mpegvideo private options instead.
 @item export_mvs
 Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
 for codecs that support it. See also @file{doc/examples/export_mvs.c}.
@@ -1232,7 +1233,7 @@ instead of alpha. Default is 0.
 @item dump_separator @var{string} (@emph{input})
 Separator used to separate the fields printed on the command line about the
 Stream parameters.
-For example to separate the fields with newlines and indention:
+For example, to separate the fields with newlines and indentation:
 @example
 ffprobe -dump_separator "
                           "  -i ~/videos/matrixbench_mpeg2.mpg

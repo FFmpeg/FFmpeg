@@ -47,7 +47,7 @@ int main(void)
             retry:;
         }
         if (retry >= 3) {
-            printf("rsf %d: FAIL at %d with %X\n", rsf, j, seeds[j]);
+            printf("rsf %d: FAIL at %d with %"PRIX32"\n", rsf, j, seeds[j]);
             return 1;
         }
     }

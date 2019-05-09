@@ -103,6 +103,9 @@ typedef struct ATempoContext {
     // 1: output sample position
     int64_t position[2];
 
+    // first input timestamp, all other timestamps are offset by this one
+    int64_t start_pts;
+
     // sample format:
     enum AVSampleFormat format;
 
@@ -149,11 +152,16 @@ typedef struct ATempoContext {
     uint64_t nsamples_out;
 } ATempoContext;
 
+#define YAE_ATEMPO_MIN 0.5
+#define YAE_ATEMPO_MAX 100.0
+
 #define OFFSET(x) offsetof(ATempoContext, x)
 
 static const AVOption atempo_options[] = {
     { "tempo", "set tempo scale factor",
-      OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, 0.5, 2.0,
+      OFFSET(tempo), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 },
+      YAE_ATEMPO_MIN,
+      YAE_ATEMPO_MAX,
       AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM },
     { NULL }
 };
@@ -181,6 +189,7 @@ static void yae_clear(ATempoContext *atempo)
 
     atempo->nfrag = 0;
     atempo->state = YAE_LOAD_FRAGMENT;
+    atempo->start_pts = AV_NOPTS_VALUE;
 
     atempo->position[0] = 0;
     atempo->position[1] = 0;
@@ -331,9 +340,9 @@ static int yae_set_tempo(AVFilterContext *ctx, const char *arg_tempo)
         return AVERROR(EINVAL);
     }
 
-    if (tempo < 0.5 || tempo > 2.0) {
-        av_log(ctx, AV_LOG_ERROR, "Tempo value %f exceeds [0.5, 2.0] range\n",
-               tempo);
+    if (tempo < YAE_ATEMPO_MIN || tempo > YAE_ATEMPO_MAX) {
+        av_log(ctx, AV_LOG_ERROR, "Tempo value %f exceeds [%f, %f] range\n",
+               tempo, YAE_ATEMPO_MIN, YAE_ATEMPO_MAX);
         return AVERROR(EINVAL);
     }
 
@@ -439,8 +448,8 @@ static int yae_load_data(ATempoContext *atempo,
         return 0;
     }
 
-    // samples are not expected to be skipped:
-    av_assert0(read_size <= atempo->ring);
+    // samples are not expected to be skipped, unless tempo is greater than 2:
+    av_assert0(read_size <= atempo->ring || atempo->tempo > 2.0);
 
     while (atempo->position[0] < stop_here && src < src_end) {
         int src_samples = (src_end - src) / atempo->stride;
@@ -1063,7 +1072,7 @@ static int push_samples(ATempoContext *atempo,
     atempo->dst_buffer->nb_samples  = n_out;
 
     // adjust the PTS:
-    atempo->dst_buffer->pts =
+    atempo->dst_buffer->pts = atempo->start_pts +
         av_rescale_q(atempo->nsamples_out,
                      (AVRational){ 1, outlink->sample_rate },
                      outlink->time_base);
@@ -1091,6 +1100,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *src_buffer)
 
     const uint8_t *src = src_buffer->data[0];
     const uint8_t *src_end = src + n_in * atempo->stride;
+
+    if (atempo->start_pts == AV_NOPTS_VALUE)
+        atempo->start_pts = av_rescale_q(src_buffer->pts,
+                                         inlink->time_base,
+                                         outlink->time_base);
 
     while (src < src_end) {
         if (!atempo->dst_buffer) {

@@ -19,12 +19,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "libavutil/hwcontext.h"
-#include "libavutil/hwcontext_opencl.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 
-#include "avfilter.h"
 #include "formats.h"
 #include "opencl.h"
 
@@ -339,4 +336,17 @@ int ff_opencl_filter_work_size_from_image(AVFilterContext *avctx,
     work_size[1] = height;
 
     return 0;
+}
+
+void ff_opencl_print_const_matrix_3x3(AVBPrint *buf, const char *name_str,
+                                      double mat[3][3])
+{
+    int i, j;
+    av_bprintf(buf, "__constant float %s[9] = {\n", name_str);
+    for (i = 0; i < 3; i++) {
+        for (j = 0; j < 3; j++)
+            av_bprintf(buf, " %.5ff,", mat[i][j]);
+        av_bprintf(buf, "\n");
+    }
+    av_bprintf(buf, "};\n");
 }

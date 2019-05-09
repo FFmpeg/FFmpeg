@@ -368,7 +368,7 @@ EBUR128_FILTER(double, 1.0)
 
 static double ebur128_energy_to_loudness(double energy)
 {
-    return 10 * (log(energy) / log(10.0)) - 0.691;
+    return 10 * log10(energy) - 0.691;
 }
 
 static size_t find_histogram_index(double energy)

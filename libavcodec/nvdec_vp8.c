@@ -87,7 +87,7 @@ static int nvdec_vp8_frame_params(AVCodecContext *avctx,
                                   AVBufferRef *hw_frames_ctx)
 {
     // VP8 uses a fixed size pool of 3 possible reference frames
-    return ff_nvdec_frame_params(avctx, hw_frames_ctx, 3);
+    return ff_nvdec_frame_params(avctx, hw_frames_ctx, 3, 0);
 }
 
 AVHWAccel ff_vp8_nvdec_hwaccel = {

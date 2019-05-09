@@ -149,11 +149,14 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     if (avpkt.size) {
         ret = v4l2_try_start(avctx);
-        if (ret)
+        if (ret) {
+            av_packet_unref(&avpkt);
             return 0;
+        }
     }
 
 dequeue:
+    av_packet_unref(&avpkt);
     return ff_v4l2_context_dequeue_frame(capture, frame);
 }
 
@@ -221,7 +224,8 @@ AVCodec ff_ ## NAME ## _v4l2m2m_decoder = { \
     .receive_frame  = v4l2_receive_frame,\
     .close          = ff_v4l2_m2m_codec_end,\
     .bsfs           = bsf_name, \
-    .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+    .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | \
+                      AV_CODEC_CAP_AVOID_PROBING, \
     .wrapper_name   = "v4l2m2m", \
 };
 

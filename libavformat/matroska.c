@@ -103,6 +103,22 @@ const CodecTags ff_mkv_codec_tags[]={
     {""                 , AV_CODEC_ID_NONE}
 };
 
+const CodecTags ff_webm_codec_tags[] = {
+    {"V_VP8"            , AV_CODEC_ID_VP8},
+    {"V_VP9"            , AV_CODEC_ID_VP9},
+    {"V_AV1"            , AV_CODEC_ID_AV1},
+
+    {"A_VORBIS"         , AV_CODEC_ID_VORBIS},
+    {"A_OPUS"           , AV_CODEC_ID_OPUS},
+
+    {"D_WEBVTT/SUBTITLES"   , AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/CAPTIONS"    , AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/DESCRIPTIONS", AV_CODEC_ID_WEBVTT},
+    {"D_WEBVTT/METADATA"    , AV_CODEC_ID_WEBVTT},
+
+    {""                 , AV_CODEC_ID_NONE}
+};
+
 const CodecMime ff_mkv_image_mime_tags[] = {
     {"image/gif"                  , AV_CODEC_ID_GIF},
     {"image/jpeg"                 , AV_CODEC_ID_MJPEG},

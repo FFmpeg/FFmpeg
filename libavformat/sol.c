@@ -32,7 +32,7 @@
 /* if we don't know the size in advance */
 #define AU_UNKNOWN_SIZE ((uint32_t)(~0))
 
-static int sol_probe(AVProbeData *p)
+static int sol_probe(const AVProbeData *p)
 {
     /* check file header */
     uint16_t magic = AV_RL32(p->buf);

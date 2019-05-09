@@ -36,7 +36,7 @@ typedef struct {
 } MicroDVDContext;
 
 
-static int microdvd_probe(AVProbeData *p)
+static int microdvd_probe(const AVProbeData *p)
 {
     unsigned char c;
     const uint8_t *ptr = p->buf;
@@ -102,6 +102,8 @@ static int microdvd_read_header(AVFormatContext *s)
         if (!len)
             break;
         line[strcspn(line, "\r\n")] = 0;
+        if (!*p)
+            continue;
         if (i++ < 3) {
             int frame;
             double fps;

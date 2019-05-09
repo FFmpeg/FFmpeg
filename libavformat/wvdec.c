@@ -40,6 +40,7 @@ enum WV_FLAGS {
     WV_HBAL   = 0x0400,
     WV_MCINIT = 0x0800,
     WV_MCEND  = 0x1000,
+    WV_DSD    = 0x80000000,
 };
 
 static const int wv_rates[16] = {
@@ -59,7 +60,7 @@ typedef struct WVContext {
     int64_t apetag_start;
 } WVContext;
 
-static int wv_probe(AVProbeData *p)
+static int wv_probe(const AVProbeData *p)
 {
     /* check file header */
     if (p->buf_size <= 32)
@@ -95,6 +96,11 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
     if (ret < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid block header.\n");
         return ret;
+    }
+
+    if (wc->header.flags & WV_DSD) {
+        avpriv_report_missing_feature(ctx, "WV DSD");
+        return AVERROR_PATCHWELCOME;
     }
 
     if (wc->header.version < 0x402 || wc->header.version > 0x410) {
@@ -153,10 +159,17 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb)
                 case 3:
                     chmask = avio_rl32(pb);
                     break;
+                case 4:
+                    avio_skip(pb, 1);
+                    chan  |= (avio_r8(pb) & 0xF) << 8;
+                    chan  += 1;
+                    chmask = avio_rl24(pb);
+                    break;
                 case 5:
                     avio_skip(pb, 1);
                     chan  |= (avio_r8(pb) & 0xF) << 8;
-                    chmask = avio_rl24(pb);
+                    chan  += 1;
+                    chmask = avio_rl32(pb);
                     break;
                 default:
                     av_log(ctx, AV_LOG_ERROR,

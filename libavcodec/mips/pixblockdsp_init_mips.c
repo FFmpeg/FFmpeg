@@ -60,10 +60,10 @@ static av_cold void pixblockdsp_init_mmi(PixblockDSPContext *c,
 void ff_pixblockdsp_init_mips(PixblockDSPContext *c, AVCodecContext *avctx,
                               unsigned high_bit_depth)
 {
-#if HAVE_MSA
-    pixblockdsp_init_msa(c, avctx, high_bit_depth);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     pixblockdsp_init_mmi(c, avctx, high_bit_depth);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    pixblockdsp_init_msa(c, avctx, high_bit_depth);
+#endif  // #if HAVE_MSA
 }

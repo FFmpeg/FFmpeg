@@ -34,7 +34,8 @@
  * For no string, set to an empty string.
  * @return The length in bytes.
  */
-int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string);
+int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
+                                AVChapter **chapters, unsigned int nb_chapters);
 
 /**
  * Write a VorbisComment into a buffer. The buffer, p, must have enough
@@ -45,9 +46,12 @@ int64_t ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string);
  * @param p The buffer in which to write.
  * @param m The metadata struct to write.
  * @param vendor_string The vendor string to write.
+ * @param chapters The chapters to write.
+ * @param nb_chapters The number of chapters to write.
  */
 int ff_vorbiscomment_write(uint8_t **p, AVDictionary **m,
-                           const char *vendor_string);
+                           const char *vendor_string,
+                           AVChapter **chapters, unsigned int nb_chapters);
 
 extern const AVMetadataConv ff_vorbiscomment_metadata_conv[];
 

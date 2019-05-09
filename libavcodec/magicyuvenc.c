@@ -57,7 +57,6 @@ typedef struct MagicYUVContext {
     int                  planes;
     uint8_t              format;
     AVFrame             *p;
-    int                  max;
     int                  slice_height;
     int                  nb_slices;
     int                  correlate;
@@ -148,6 +147,7 @@ static void median_predict(MagicYUVContext *s,
 static av_cold int magy_encode_init(AVCodecContext *avctx)
 {
     MagicYUVContext *s = avctx->priv_data;
+    PutByteContext pb;
     int i;
 
     switch (avctx->pix_fmt) {
@@ -213,6 +213,34 @@ static av_cold int magy_encode_init(AVCodecContext *avctx)
     case GRADIENT: s->predict = gradient_predict; break;
     case MEDIAN:   s->predict = median_predict;   break;
     }
+
+    avctx->extradata_size = 32;
+
+    avctx->extradata = av_mallocz(avctx->extradata_size +
+                                  AV_INPUT_BUFFER_PADDING_SIZE);
+
+    if (!avctx->extradata) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate extradata.\n");
+        return AVERROR(ENOMEM);
+    }
+
+    bytestream2_init_writer(&pb, avctx->extradata, avctx->extradata_size);
+    bytestream2_put_le32(&pb, MKTAG('M', 'A', 'G', 'Y'));
+    bytestream2_put_le32(&pb, 32);
+    bytestream2_put_byte(&pb, 7);
+    bytestream2_put_byte(&pb, s->format);
+    bytestream2_put_byte(&pb, 12);
+    bytestream2_put_byte(&pb, 0);
+
+    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_byte(&pb, 0);
+    bytestream2_put_byte(&pb, 32);
+    bytestream2_put_byte(&pb, 0);
+
+    bytestream2_put_le32(&pb, avctx->width);
+    bytestream2_put_le32(&pb, avctx->height);
+    bytestream2_put_le32(&pb, avctx->width);
+    bytestream2_put_le32(&pb, avctx->height);
 
     return 0;
 }
@@ -347,7 +375,7 @@ static int encode_table(AVCodecContext *avctx, uint8_t *dst,
         counts[i].value = 255 - i;
     }
 
-    magy_huffman_compute_bits(counts, he, 256, 16);
+    magy_huffman_compute_bits(counts, he, 256, 12);
 
     calculate_codes(he);
 
@@ -407,12 +435,16 @@ static int magy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     bytestream2_init_writer(&pb, pkt->data, pkt->size);
     bytestream2_put_le32(&pb, MKTAG('M', 'A', 'G', 'Y'));
-    bytestream2_put_le32(&pb, 32);
-    bytestream2_put_byte(&pb, 7);
+    bytestream2_put_le32(&pb, 32); // header size
+    bytestream2_put_byte(&pb, 7);  // version
     bytestream2_put_byte(&pb, s->format);
+    bytestream2_put_byte(&pb, 12); // max huffman length
+    bytestream2_put_byte(&pb, 0);
+
     bytestream2_put_byte(&pb, 0);
     bytestream2_put_byte(&pb, 0);
-    bytestream2_put_le32(&pb, 0);
+    bytestream2_put_byte(&pb, 32); // coder type
+    bytestream2_put_byte(&pb, 0);
 
     bytestream2_put_le32(&pb, avctx->width);
     bytestream2_put_le32(&pb, avctx->height);
@@ -549,7 +581,7 @@ AVCodec ff_magicyuv_encoder = {
     .init             = magy_encode_init,
     .close            = magy_encode_close,
     .encode2          = magy_encode_frame,
-    .capabilities     = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY | AV_CODEC_CAP_EXPERIMENTAL,
+    .capabilities     = AV_CODEC_CAP_FRAME_THREADS | AV_CODEC_CAP_INTRA_ONLY,
     .pix_fmts         = (const enum AVPixelFormat[]) {
                           AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_YUV422P,
                           AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P, AV_PIX_FMT_GRAY8,

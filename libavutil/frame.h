@@ -158,6 +158,27 @@ enum AVFrameSideDataType {
      */
     AV_FRAME_DATA_QP_TABLE_DATA,
 #endif
+
+    /**
+     * Timecode which conforms to SMPTE ST 12-1. The data is an array of 4 uint32_t
+     * where the first uint32_t describes how many (1-3) of the other timecodes are used.
+     * The timecode format is described in the av_timecode_get_smpte_from_framenum()
+     * function in libavutil/timecode.c.
+     */
+    AV_FRAME_DATA_S12M_TIMECODE,
+
+    /**
+     * HDR dynamic metadata associated with a video frame. The payload is
+     * an AVDynamicHDRPlus type and contains information for color
+     * volume transform - application 4 of SMPTE 2094-40:2016 standard.
+     */
+    AV_FRAME_DATA_DYNAMIC_HDR_PLUS,
+
+    /**
+     * Regions Of Interest, the data is an array of AVRegionOfInterest type, the number of
+     * array element is implied by AVFrameSideData.size / AVRegionOfInterest.self_size.
+     */
+    AV_FRAME_DATA_REGIONS_OF_INTEREST,
 };
 
 enum AVActiveFormatDescription {
@@ -184,6 +205,35 @@ typedef struct AVFrameSideData {
     AVDictionary *metadata;
     AVBufferRef *buf;
 } AVFrameSideData;
+
+/**
+ * Structure to hold Region Of Interest.
+ *
+ * self_size specifies the size of this data structure. This value
+ * should be set to sizeof(AVRegionOfInterest). EINVAL is returned if self_size is zero.
+ *
+ * Number of pixels to discard from the top/bottom/left/right border of
+ * the frame to obtain the region of interest of the frame.
+ * They are encoder dependent and will be extended internally
+ * if the codec requires an alignment.
+ * If the regions overlap, the last value in the list will be used.
+ *
+ * qoffset is quant offset, and base rule here:
+ * returns EINVAL if AVRational.den is zero.
+ * the value (num/den) range is [-1.0, 1.0], clamp to +-1.0 if out of range.
+ * 0 means no picture quality change,
+ * negative offset asks for better quality (and the best with value -1.0),
+ * positive offset asks for worse quality (and the worst with value 1.0).
+ * How to explain/implement the different quilaity requirement is encoder dependent.
+ */
+typedef struct AVRegionOfInterest {
+    uint32_t self_size;
+    int top;
+    int bottom;
+    int left;
+    int right;
+    AVRational qoffset;
+} AVRegionOfInterest;
 
 /**
  * This structure describes decoded (raw) audio or video data.
@@ -381,7 +431,6 @@ typedef struct AVFrame {
      * that time,
      * the decoder reorders values as needed and sets AVFrame.reordered_opaque
      * to exactly one of the values provided by the user through AVCodecContext.reordered_opaque
-     * @deprecated in favor of pkt_pts
      */
     int64_t reordered_opaque;
 

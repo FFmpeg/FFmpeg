@@ -25,7 +25,7 @@
 #include "avio.h"
 #include "internal.h"
 
-static int fsb_probe(AVProbeData *p)
+static int fsb_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "FSB", 3) || p->buf[3] - '0' < 1 || p->buf[3] - '0' > 5)
         return 0;

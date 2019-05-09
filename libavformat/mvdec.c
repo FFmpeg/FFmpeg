@@ -46,7 +46,7 @@ typedef struct MvContext {
 
 #define AUDIO_FORMAT_SIGNED 401
 
-static int mv_probe(AVProbeData *p)
+static int mv_probe(const AVProbeData *p)
 {
     if (AV_RB32(p->buf) == MKBETAG('M', 'O', 'V', 'I') &&
         AV_RB16(p->buf + 4) < 3)

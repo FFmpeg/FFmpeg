@@ -93,13 +93,13 @@ int ff_get_cpu_flags_ppc(void)
                 if (buf[i + 1] & PPC_FEATURE_HAS_VSX)
                     ret |= AV_CPU_FLAG_VSX;
 #endif
-#ifdef PPC_FEATURE_ARCH_2_07
-                if (buf[i + 1] & PPC_FEATURE_HAS_POWER8)
-                    ret |= AV_CPU_FLAG_POWER8;
-#endif
                 if (ret & AV_CPU_FLAG_VSX)
                     av_assert0(ret & AV_CPU_FLAG_ALTIVEC);
-                goto out;
+            } else if (buf[i] == AT_HWCAP2) {
+#ifdef PPC_FEATURE2_ARCH_2_07
+                if (buf[i + 1] & PPC_FEATURE2_ARCH_2_07)
+                    ret |= AV_CPU_FLAG_POWER8;
+#endif
             }
         }
     }

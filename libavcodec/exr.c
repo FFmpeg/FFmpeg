@@ -1389,6 +1389,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                         if (*ch_gb.buffer == '.')
                             ch_gb.buffer++;         /* skip dot if not given */
                     } else {
+                        layer_match = 0;
                         av_log(s->avctx, AV_LOG_INFO,
                                "Channel doesn't match layer : %s.\n", ch_gb.buffer);
                     }
@@ -1463,6 +1464,11 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                     }
                     s->pixel_type                     = current_pixel_type;
                     s->channel_offsets[channel_index] = s->current_channel_offset;
+                } else if (channel_index >= 0) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                            "Multiple channels with index %d.\n", channel_index);
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
                 }
 
                 s->channels = av_realloc(s->channels,

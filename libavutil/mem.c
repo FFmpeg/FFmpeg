@@ -399,6 +399,18 @@ static void fill32(uint8_t *dst, int len)
 {
     uint32_t v = AV_RN32(dst - 4);
 
+#if HAVE_FAST_64BIT
+    uint64_t v2= v + ((uint64_t)v<<32);
+    while (len >= 32) {
+        AV_WN64(dst   , v2);
+        AV_WN64(dst+ 8, v2);
+        AV_WN64(dst+16, v2);
+        AV_WN64(dst+24, v2);
+        dst += 32;
+        len -= 32;
+    }
+#endif
+
     while (len >= 4) {
         AV_WN32(dst, v);
         dst += 4;

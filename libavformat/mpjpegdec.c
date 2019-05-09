@@ -111,7 +111,7 @@ static int mpjpeg_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int mpjpeg_read_probe(AVProbeData *p)
+static int mpjpeg_read_probe(const AVProbeData *p)
 {
     AVIOContext *pb;
     int ret = 0;
@@ -375,7 +375,7 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(MPJPEGDemuxContext, x)
 
 #define DEC AV_OPT_FLAG_DECODING_PARAM
-const AVOption mpjpeg_options[] = {
+static const AVOption mpjpeg_options[] = {
     { "strict_mime_boundary",  "require MIME boundaries match", OFFSET(strict_mime_boundary), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, DEC },
     { NULL }
 };

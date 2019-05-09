@@ -17,6 +17,7 @@
 /dict
 /display
 /error
+/encryption_info
 /eval
 /fifo
 /file
@@ -24,6 +25,7 @@
 /hmac
 /hwdevice
 /imgutils
+/integer
 /lfg
 /lls
 /log

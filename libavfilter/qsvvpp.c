@@ -142,7 +142,7 @@ static int pix_fmt_to_mfx_fourcc(int format)
         return MFX_FOURCC_NV12;
     case AV_PIX_FMT_YUYV422:
         return MFX_FOURCC_YUY2;
-    case AV_PIX_FMT_RGB32:
+    case AV_PIX_FMT_BGRA:
         return MFX_FOURCC_RGB4;
     }
 
@@ -501,6 +501,11 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
             handle_type = handle_types[i];
             break;
         }
+    }
+
+    if (ret != MFX_ERR_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
     }
 
     /* create a "slave" session with those same properties, to be used for vpp */

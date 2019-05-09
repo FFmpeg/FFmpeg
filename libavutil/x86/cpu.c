@@ -127,7 +127,7 @@ int ff_get_cpu_flags_x86(void)
             rval |= AV_CPU_FLAG_SSE4;
         if (ecx & 0x00100000 )
             rval |= AV_CPU_FLAG_SSE42;
-        if (ecx & 0x01000000 )
+        if (ecx & 0x02000000 )
             rval |= AV_CPU_FLAG_AESNI;
 #if HAVE_AVX
         /* Check OXSAVE and AVX bits */

@@ -252,6 +252,7 @@ static int vp5_parse_coeff(VP56Context *s)
             for (i=coeff_idx; i<=ctx_last; i++)
                 s->coeff_ctx[ff_vp56_b6to4[b]][i] = 5;
         s->above_blocks[s->above_block_idx[b]].not_null_dc = s->coeff_ctx[ff_vp56_b6to4[b]][0];
+        s->idct_selector[b] = 63;
     }
     return 0;
 }

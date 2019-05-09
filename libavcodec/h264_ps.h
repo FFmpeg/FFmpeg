@@ -36,6 +36,7 @@
 
 #define MAX_SPS_COUNT          32
 #define MAX_PPS_COUNT         256
+#define MAX_LOG2_MAX_FRAME_NUM    (12 + 4)
 
 /**
  * Sequence parameter set
@@ -80,7 +81,7 @@ typedef struct SPS {
     uint32_t num_units_in_tick;
     uint32_t time_scale;
     int fixed_frame_rate_flag;
-    short offset_for_ref_frame[256]; // FIXME dyn aloc?
+    int32_t offset_for_ref_frame[256];
     int bitstream_restriction_flag;
     int num_reorder_frames;
     int scaling_matrix_present;

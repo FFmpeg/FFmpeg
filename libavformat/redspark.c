@@ -32,7 +32,7 @@ typedef struct RedSparkContext {
     int         samples_count;
 } RedSparkContext;
 
-static int redspark_probe(AVProbeData *p)
+static int redspark_probe(const AVProbeData *p)
 {
     uint32_t key, data;
     uint8_t header[8];

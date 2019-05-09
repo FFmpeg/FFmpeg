@@ -79,7 +79,7 @@ static void init_peak_table_defaults(CFHDContext *s)
 {
     s->peak.level  = 0;
     s->peak.offset = 0;
-    s->peak.base   = NULL;
+    memset(&s->peak.base, 0, sizeof(s->peak.base));
 }
 
 static void init_frame_defaults(CFHDContext *s)
@@ -133,7 +133,7 @@ static inline void peak_table(int16_t *band, Peak *peak, int length)
     int i;
     for (i = 0; i < length; i++)
         if (abs(band[i]) > peak->level)
-            band[i] = *(peak->base++);
+            band[i] = bytestream2_get_le16(&peak->base);
 }
 
 static inline void process_alpha(int16_t *alpha, int width)
@@ -537,16 +537,16 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
         } else if (tag == -75) {
             s->peak.offset &= ~0xffff;
             s->peak.offset |= (data & 0xffff);
-            s->peak.base    = (int16_t *) gb.buffer;
+            s->peak.base    = gb;
             s->peak.level   = 0;
         } else if (tag == -76) {
             s->peak.offset &= 0xffff;
-            s->peak.offset |= (data & 0xffff)<<16;
-            s->peak.base    = (int16_t *) gb.buffer;
+            s->peak.offset |= (data & 0xffffU)<<16;
+            s->peak.base    = gb;
             s->peak.level   = 0;
         } else if (tag == -74 && s->peak.offset) {
             s->peak.level = data;
-            s->peak.base += s->peak.offset / 2 - 2;
+            bytestream2_seek(&s->peak.base, s->peak.offset - 4, SEEK_CUR);
         } else
             av_log(avctx, AV_LOG_DEBUG,  "Unknown tag %i data %x\n", tag, data);
 
@@ -668,11 +668,6 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                         for (i = 0; i < run; i++)
                             *coeff_data++ = coeff;
                     }
-                    if (s->peak.level)
-                        peak_table(coeff_data - expected, &s->peak, expected);
-                    if (s->difference_coding)
-                        difference_coding(s->plane[s->channel_num].subband[s->subband_num_actual], highpass_width, highpass_height);
-
                 } else {
                     while (1) {
                         UPDATE_CACHE(re, &s->gb);
@@ -692,11 +687,6 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                         for (i = 0; i < run; i++)
                             *coeff_data++ = coeff;
                     }
-                    if (s->peak.level)
-                        peak_table(coeff_data - expected, &s->peak, expected);
-                    if (s->difference_coding)
-                        difference_coding(s->plane[s->channel_num].subband[s->subband_num_actual], highpass_width, highpass_height);
-
                 }
                 CLOSE_READER(re, &s->gb);
             }
@@ -706,6 +696,10 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
                 ret = AVERROR(EINVAL);
                 goto end;
             }
+            if (s->peak.level)
+                peak_table(coeff_data - count, &s->peak, count);
+            if (s->difference_coding)
+                difference_coding(s->plane[s->channel_num].subband[s->subband_num_actual], highpass_width, highpass_height);
 
             bytes = FFALIGN(AV_CEIL_RSHIFT(get_bits_count(&s->gb), 3), 4);
             if (bytes > bytestream2_get_bytes_left(&gb)) {

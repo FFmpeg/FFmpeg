@@ -48,7 +48,7 @@ trap 'rm -f -- $libname' EXIT
 if [ -n "$AR" ]; then
     $AR rcs ${libname} $@ >/dev/null
 else
-    lib -out:${libname} $@ >/dev/null
+    lib.exe -out:${libname} $@ >/dev/null
 fi
 if [ $? != 0 ]; then
     echo "Could not create temporary library." >&2
@@ -108,7 +108,7 @@ if [ -n "$NM" ]; then
               cut -d' ' -f3 |
               sed -e "s/^${prefix}//")
 else
-    dump=$(dumpbin -linkermember:1 ${libname} |
+    dump=$(dumpbin.exe -linkermember:1 ${libname} |
               sed -e '/public symbols/,$!d' -e '/^ \{1,\}Summary/,$d' -e "s/ \{1,\}${prefix}/ /" -e 's/ \{1,\}/ /g' |
               tail -n +2 |
               cut -d' ' -f3)

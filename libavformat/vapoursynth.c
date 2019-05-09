@@ -177,7 +177,7 @@ static av_cold int read_header_vs(AVFormatContext *s)
     char dummy;
     const VSVideoInfo *info;
     struct VSState *vss_state;
-    int err;
+    int err = 0;
 
     vss_state = av_mallocz(sizeof(*vss_state));
     if (!vss_state) {
@@ -469,7 +469,7 @@ static int read_seek_vs(AVFormatContext *s, int stream_idx, int64_t ts, int flag
     return 0;
 }
 
-static av_cold int probe_vs(AVProbeData *p)
+static av_cold int probe_vs(const AVProbeData *p)
 {
     // Explicitly do not support this. VS scripts are written in Python, and
     // can run arbitrary code on the user's system.

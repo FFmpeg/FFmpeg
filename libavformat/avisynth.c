@@ -123,7 +123,8 @@ static av_cold int avisynth_load_library(void)
         return AVERROR_UNKNOWN;
 
 #define LOAD_AVS_FUNC(name, continue_on_fail)                          \
-        avs_library.name = dlsym(avs_library.library, #name);          \
+        avs_library.name = (name ## _func)                             \
+                           dlsym(avs_library.library, #name);          \
         if (!continue_on_fail && !avs_library.name)                    \
             goto fail;
 
@@ -323,6 +324,10 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         st->codecpar->format = AV_PIX_FMT_YUVA420P10;
         planar               = 4;
         break;
+    case AVS_CS_YUVA422P12:
+        st->codecpar->format = AV_PIX_FMT_YUVA422P12;
+        planar               = 4;
+        break;
     case AVS_CS_YUVA444P16:
         st->codecpar->format = AV_PIX_FMT_YUVA444P16;
         planar               = 4;
@@ -356,6 +361,11 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         st->codecpar->format = AV_PIX_FMT_GBRP16;
         planar               = 3;
         break;
+    /* Single precision floating point Planar RGB (AviSynth+) */
+    case AVS_CS_RGBPS:
+        st->codecpar->format = AV_PIX_FMT_GBRPF32;
+        planar               = 3;
+        break;
     /* Planar RGB pix_fmts with Alpha (AviSynth+) */
     case AVS_CS_RGBAP:
         st->codecpar->format = AV_PIX_FMT_GBRAP;
@@ -373,9 +383,31 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         st->codecpar->format = AV_PIX_FMT_GBRAP16;
         planar               = 5;
         break;
-    /* GRAY16 (AviSynth+) */
+    /* Single precision floating point Planar RGB with Alpha (AviSynth+) */
+    case AVS_CS_RGBAPS:
+        st->codecpar->format = AV_PIX_FMT_GBRAPF32;
+        planar               = 5;
+        break;
+    /* 10~16-bit gray pix_fmts (AviSynth+) */
+    case AVS_CS_Y10:
+        st->codecpar->format = AV_PIX_FMT_GRAY10;
+        planar               = 2;
+        break;
+    case AVS_CS_Y12:
+        st->codecpar->format = AV_PIX_FMT_GRAY12;
+        planar               = 2;
+        break;
+    case AVS_CS_Y14:
+        st->codecpar->format = AV_PIX_FMT_GRAY14;
+        planar               = 2;
+        break;
     case AVS_CS_Y16:
         st->codecpar->format = AV_PIX_FMT_GRAY16;
+        planar               = 2;
+        break;
+    /* Single precision floating point gray (AviSynth+) */
+    case AVS_CS_Y32:
+        st->codecpar->format = AV_PIX_FMT_GRAYF32;
         planar               = 2;
         break;
     /* pix_fmts added in AviSynth 2.6 */

@@ -1899,7 +1899,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
-    pkt->size = ff_rac_terminate(c);
+    pkt->size = ff_rac_terminate(c, 0);
     if (s->current_picture->key_frame)
         pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

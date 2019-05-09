@@ -383,4 +383,5 @@ AVFilter ff_vf_normalize = {
     .query_formats = query_formats,
     .inputs        = inputs,
     .outputs       = outputs,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

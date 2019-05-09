@@ -116,7 +116,7 @@ static int64_t read_line(AVBPrint *buf, AVIOContext *pb)
     return pos;
 }
 
-static int lrc_probe(AVProbeData *p)
+static int lrc_probe(const AVProbeData *p)
 {
     int64_t offset = 0;
     int64_t mm;

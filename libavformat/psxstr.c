@@ -68,7 +68,7 @@ typedef struct StrDemuxContext {
 
 static const uint8_t sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
 
-static int str_probe(AVProbeData *p)
+static int str_probe(const AVProbeData *p)
 {
     const uint8_t *sector= p->buf;
     const uint8_t *end= sector + p->buf_size;

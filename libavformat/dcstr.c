@@ -22,7 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int dcstr_probe(AVProbeData *p)
+static int dcstr_probe(const AVProbeData *p)
 {
     if (p->buf_size < 224 || memcmp(p->buf + 213, "Sega Stream", 11))
         return 0;

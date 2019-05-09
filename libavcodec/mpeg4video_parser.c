@@ -89,13 +89,13 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
 
     if (avctx->extradata_size && pc->first_picture) {
         init_get_bits(gb, avctx->extradata, avctx->extradata_size * 8);
-        ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
-        if (ret < -1)
+        ret = ff_mpeg4_decode_picture_header(dec_ctx, gb, 1);
+        if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "Failed to parse extradata\n");
     }
 
     init_get_bits(gb, buf, 8 * buf_size);
-    ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
+    ret = ff_mpeg4_decode_picture_header(dec_ctx, gb, 0);
     if (s->width && (!avctx->width || !avctx->height ||
                      !avctx->coded_width || !avctx->coded_height)) {
         ret = ff_set_dimensions(avctx, s->width, s->height);

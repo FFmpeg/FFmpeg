@@ -371,7 +371,7 @@ static const ff_asf_guid mediasubtype_dtvccdata =
 static const ff_asf_guid mediasubtype_mpeg2_sections =
     {0x79,0x85,0x9F,0x4A,0xF8,0x6B,0x92,0x43,0x8A,0x6D,0xD2,0xDD,0x09,0xFA,0x78,0x61};
 
-static int read_probe(AVProbeData *p)
+static int read_probe(const AVProbeData *p)
 {
     return ff_guidcmp(p->buf, ff_wtv_guid) ? 0 : AVPROBE_SCORE_MAX;
 }

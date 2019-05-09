@@ -437,7 +437,7 @@ static void guess_mv(ERContext *s)
     }
 
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
-        num_avail <= mb_width / 2) {
+        num_avail <= FFMAX(mb_width, mb_height) / 2) {
         for (mb_y = 0; mb_y < mb_height; mb_y++) {
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
@@ -814,8 +814,7 @@ static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
        !s->cur_pic.f                                                  ||
-       s->cur_pic.field_picture                                       ||
-       s->avctx->profile == FF_PROFILE_MPEG4_SIMPLE_STUDIO
+       s->cur_pic.field_picture
     )
         return 0;
     return 1;

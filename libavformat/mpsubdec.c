@@ -31,7 +31,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } MPSubContext;
 
-static int mpsub_probe(AVProbeData *p)
+static int mpsub_probe(const AVProbeData *p)
 {
     const char *ptr     = p->buf;
     const char *ptr_end = p->buf + p->buf_size;

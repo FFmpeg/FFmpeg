@@ -40,6 +40,7 @@
 #include "libavutil/timer.h"
 
 void checkasm_check_aacpsdsp(void);
+void checkasm_check_afir(void);
 void checkasm_check_alacdsp(void);
 void checkasm_check_audiodsp(void);
 void checkasm_check_blend(void);
@@ -68,6 +69,7 @@ void checkasm_check_sbrdsp(void);
 void checkasm_check_synth_filter(void);
 void checkasm_check_sw_rgb(void);
 void checkasm_check_utvideodsp(void);
+void checkasm_check_v210dec(void);
 void checkasm_check_v210enc(void);
 void checkasm_check_vf_hflip(void);
 void checkasm_check_vf_threshold(void);

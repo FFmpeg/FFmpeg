@@ -102,6 +102,22 @@ int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
     return 0;
 }
 
+int av_mediacodec_render_buffer_at_time(AVMediaCodecBuffer *buffer, int64_t time)
+{
+    MediaCodecDecContext *ctx = buffer->ctx;
+    int released = atomic_fetch_add(&buffer->released, 1);
+
+    if (!released && (ctx->delay_flush || buffer->serial == atomic_load(&ctx->serial))) {
+        atomic_fetch_sub(&ctx->hw_buffer_count, 1);
+        av_log(ctx->avctx, AV_LOG_DEBUG,
+               "Rendering output buffer %zd (%p) ts=%"PRId64" with time=%"PRId64" [%d pending]\n",
+               buffer->index, buffer, buffer->pts, time, atomic_load(&ctx->hw_buffer_count));
+        return ff_AMediaCodec_releaseOutputBufferAtTime(ctx->codec, buffer->index, time);
+    }
+
+    return 0;
+}
+
 #else
 
 #include <stdlib.h>
@@ -121,6 +137,11 @@ void av_mediacodec_default_free(AVCodecContext *avctx)
 }
 
 int av_mediacodec_release_buffer(AVMediaCodecBuffer *buffer, int render)
+{
+    return AVERROR(ENOSYS);
+}
+
+int av_mediacodec_render_buffer_at_time(AVMediaCodecBuffer *buffer, int64_t time)
 {
     return AVERROR(ENOSYS);
 }

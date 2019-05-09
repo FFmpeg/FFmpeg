@@ -17,7 +17,6 @@ data_hash=adler32:b3ccc147
 [STREAM]
 index=0
 codec_name=hap
-codec_long_name=Vidvox Hap
 profile=unknown
 codec_type=video
 codec_time_base=1/25
@@ -68,6 +67,6 @@ DISPOSITION:clean_effects=0
 DISPOSITION:attached_pic=0
 DISPOSITION:timed_thumbnails=0
 TAG:language=eng
-TAG:handler_name=DataHandler
+TAG:handler_name=Module de gestion video
 TAG:encoder=HAPQ
 [/STREAM]

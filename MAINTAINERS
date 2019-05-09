@@ -39,7 +39,7 @@ QuickTime faststart:
 Miscellaneous Areas
 ===================
 
-documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Lou Logan, Gyan Doshi
+documentation                           Stefano Sabatini, Mike Melanson, Timothy Gu, Gyan Doshi
 project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Doeffinger, Alexander Strasser, Nikolay Aleksandrov
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
@@ -52,8 +52,8 @@ Communication
 
 website                                 Deby Barbara Lepage
 fate.ffmpeg.org                         Timothy Gu
-Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos, Lou Logan
-mailing lists                           Baptiste Coudurier, Lou Logan
+Trac bug tracker                        Alexander Strasser, Michael Niedermayer, Carl Eugen Hoyos
+mailing lists                           Baptiste Coudurier
 Google+                                 Paul B Mahol, Michael Niedermayer, Alexander Strasser
 Twitter                                 Lou Logan, Reynaldo H. Verdejo Pinochet
 Launchpad                               Timothy Gu
@@ -143,6 +143,7 @@ Codecs:
   asv*                                  Michael Niedermayer
   atrac3plus*                           Maxim Poliakovski
   audiotoolbox*                         Rodger Combs
+  avs2*                                 Huiwen Ren
   bgmc.c, bgmc.h                        Thilo Borgmann
   binkaudio.c                           Peter Ross
   cavs*                                 Stefan Gehrer
@@ -167,7 +168,6 @@ Codecs:
   eacmv*, eaidct*, eat*                 Peter Ross
   evrc*                                 Paul B Mahol
   exif.c, exif.h                        Thilo Borgmann
-  exr.c                                 Martin Vignali
   ffv1*                                 Michael Niedermayer
   ffwavesynth.c                         Nicolas George
   fifo.c                                Jan Sebechlebsky
@@ -189,6 +189,7 @@ Codecs:
   libcelt_dec.c                         Nicolas George
   libcodec2.c                           Tomas Härdin
   libdirac*                             David Conrad
+  libdavs2.c                            Huiwen Ren
   libgsm.c                              Michel Bardiaux
   libkvazaar.c                          Arttu Ylä-Outinen
   libopenjpeg.c                         Jaikrishnan Menon
@@ -219,7 +220,7 @@ Codecs:
   ptx.c                                 Ivo van Poorten
   qcelp*                                Reynaldo H. Verdejo Pinochet
   qdm2.c, qdm2data.h                    Roberto Togni
-  qsv*                                  Mark Thompson
+  qsv*                                  Mark Thompson, Zhong Li
   qtrle.c                               Mike Melanson
   ra144.c, ra144.h, ra288.c, ra288.h    Roberto Togni
   resample2.c                           Michael Niedermayer
@@ -332,6 +333,7 @@ Filters:
   vf_bwdif                              Thomas Mundt (CC <thomas.mundt@hr.de>)
   vf_chromakey.c                        Timo Rothenpieler
   vf_colorchannelmixer.c                Paul B Mahol
+  vf_colorconstancy.c                   Mina Sami    (CC <minas.gorgy@gmail.com>)
   vf_colorbalance.c                     Paul B Mahol
   vf_colorkey.c                         Timo Rothenpieler
   vf_colorlevels.c                      Paul B Mahol
@@ -359,6 +361,7 @@ Filters:
   vf_ssim.c                             Paul B Mahol
   vf_stereo3d.c                         Paul B Mahol
   vf_telecine.c                         Paul B Mahol
+  vf_tonemap_opencl.c                   Ruiling Song
   vf_yadif.c                            Michael Niedermayer
   vf_zoompan.c                          Paul B Mahol
 
@@ -412,7 +415,6 @@ Muxers/Demuxers:
   flvenc.c                              Michael Niedermayer, Steven Liu
   gxf.c                                 Reimar Doeffinger
   gxfenc.c                              Baptiste Coudurier
-  hls.c                                 Anssi Hannula
   hlsenc.c                              Christian Suloway, Steven Liu
   idcin.c                               Mike Melanson
   idroqdec.c                            Mike Melanson
@@ -523,9 +525,10 @@ Operating systems / CPU architectures
 =====================================
 
 Alpha                                   Falk Hueffner
-MIPS                                    Manojkumar Bhosale
+MIPS                                    Manojkumar Bhosale, Shiyou Yin
 Mac OS X / PowerPC                      Romain Dolbeau, Guillaume Poirier
 Amiga / PowerPC                         Colin Ward
+Linux / PowerPC                         Lauri Kasanen
 Windows MinGW                           Alex Beregszaszi, Ramiro Polla
 Windows Cygwin                          Victor Paesa
 Windows MSVC                            Matthew Oliver, Hendrik Leppkes

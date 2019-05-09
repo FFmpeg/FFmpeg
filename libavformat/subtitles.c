@@ -417,7 +417,7 @@ ptrdiff_t ff_subtitles_read_line(FFTextReader *tr, char *buf, size_t size)
         buf[cur++] = c;
         buf[cur] = '\0';
     }
-    if (ff_text_peek_r8(tr) == '\r')
+    while (ff_text_peek_r8(tr) == '\r')
         ff_text_r8(tr);
     if (ff_text_peek_r8(tr) == '\n')
         ff_text_r8(tr);

@@ -107,7 +107,7 @@ static int spdif_get_offset_and_codec(AVFormatContext *s,
    samples = 4096 */
 #define SPDIF_MAX_OFFSET 16384
 
-static int spdif_probe(AVProbeData *p)
+static int spdif_probe(const AVProbeData *p)
 {
     enum AVCodecID codec;
     return ff_spdif_probe (p->buf, p->buf_size, &codec);

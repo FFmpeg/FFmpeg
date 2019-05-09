@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "rawdec.h"
 
-static int wsd_probe(AVProbeData *p)
+static int wsd_probe(const AVProbeData *p)
 {
     if (p->buf_size < 45 || memcmp(p->buf, "1bit", 4) ||
         !AV_RB32(p->buf + 36) || !p->buf[44] ||

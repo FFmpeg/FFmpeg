@@ -21,6 +21,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <atomic>
+using std::atomic;
+
 /* Include internal.h first to avoid conflict between winsock.h (used by
  * DeckLink headers) and winsock2.h (used by libavformat) in MSVC++ builds */
 extern "C" {
@@ -96,6 +99,44 @@ static VANCLineNumber vanc_line_numbers[] = {
 
     /* For all other modes, for which we don't support VANC */
     {bmdModeUnknown, 0, -1, -1, -1}
+};
+
+class decklink_allocator : public IDeckLinkMemoryAllocator
+{
+public:
+        decklink_allocator(): _refs(1) { }
+        virtual ~decklink_allocator() { }
+
+        // IDeckLinkMemoryAllocator methods
+        virtual HRESULT STDMETHODCALLTYPE AllocateBuffer(unsigned int bufferSize, void* *allocatedBuffer)
+        {
+            void *buf = av_malloc(bufferSize + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (!buf)
+                return E_OUTOFMEMORY;
+            *allocatedBuffer = buf;
+            return S_OK;
+        }
+        virtual HRESULT STDMETHODCALLTYPE ReleaseBuffer(void* buffer)
+        {
+            av_free(buffer);
+            return S_OK;
+        }
+        virtual HRESULT STDMETHODCALLTYPE Commit() { return S_OK; }
+        virtual HRESULT STDMETHODCALLTYPE Decommit() { return S_OK; }
+
+        // IUnknown methods
+        virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID iid, LPVOID *ppv) { return E_NOINTERFACE; }
+        virtual ULONG   STDMETHODCALLTYPE AddRef(void) { return ++_refs; }
+        virtual ULONG   STDMETHODCALLTYPE Release(void)
+        {
+            int ret = --_refs;
+            if (!ret)
+                delete this;
+            return ret;
+        }
+
+private:
+        std::atomic<int>  _refs;
 };
 
 extern "C" {
@@ -555,8 +596,7 @@ public:
         virtual HRESULT STDMETHODCALLTYPE VideoInputFrameArrived(IDeckLinkVideoInputFrame*, IDeckLinkAudioInputPacket*);
 
 private:
-        ULONG           m_refCount;
-        pthread_mutex_t m_mutex;
+        std::atomic<int>  _refs;
         AVFormatContext *avctx;
         decklink_ctx    *ctx;
         int no_video;
@@ -564,42 +604,30 @@ private:
         int64_t initial_audio_pts;
 };
 
-decklink_input_callback::decklink_input_callback(AVFormatContext *_avctx) : m_refCount(0)
+decklink_input_callback::decklink_input_callback(AVFormatContext *_avctx) : _refs(1)
 {
     avctx = _avctx;
     decklink_cctx       *cctx = (struct decklink_cctx *)avctx->priv_data;
     ctx = (struct decklink_ctx *)cctx->ctx;
     no_video = 0;
     initial_audio_pts = initial_video_pts = AV_NOPTS_VALUE;
-    pthread_mutex_init(&m_mutex, NULL);
 }
 
 decklink_input_callback::~decklink_input_callback()
 {
-    pthread_mutex_destroy(&m_mutex);
 }
 
 ULONG decklink_input_callback::AddRef(void)
 {
-    pthread_mutex_lock(&m_mutex);
-    m_refCount++;
-    pthread_mutex_unlock(&m_mutex);
-
-    return (ULONG)m_refCount;
+    return ++_refs;
 }
 
 ULONG decklink_input_callback::Release(void)
 {
-    pthread_mutex_lock(&m_mutex);
-    m_refCount--;
-    pthread_mutex_unlock(&m_mutex);
-
-    if (m_refCount == 0) {
+    int ret = --_refs;
+    if (!ret)
         delete this;
-        return 0;
-    }
-
-    return (ULONG)m_refCount;
+    return ret;
 }
 
 static int64_t get_pkt_pts(IDeckLinkVideoInputFrame *videoFrame,
@@ -675,6 +703,16 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
         return S_OK;
     }
 
+    // Drop the frames till system's timestamp aligns with the configured value.
+    if (0 == ctx->frameCount && cctx->timestamp_align) {
+        AVRational remainder = av_make_q(av_gettime() % cctx->timestamp_align, 1000000);
+        AVRational frame_duration = av_inv_q(ctx->video_st->r_frame_rate);
+        if (av_cmp_q(remainder, frame_duration) > 0) {
+            ++ctx->dropped;
+            return S_OK;
+        }
+    }
+
     ctx->frameCount++;
     if (ctx->audio_pts_source == PTS_SRC_WALLCLOCK || ctx->video_pts_source == PTS_SRC_WALLCLOCK)
         wallclock = av_gettime_relative();
@@ -724,6 +762,35 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                         "- Frames dropped %u\n", ctx->frameCount, ++ctx->dropped);
             }
             no_video = 0;
+
+            // Handle Timecode (if requested)
+            if (ctx->tc_format) {
+                IDeckLinkTimecode *timecode;
+                if (videoFrame->GetTimecode(ctx->tc_format, &timecode) == S_OK) {
+                    const char *tc = NULL;
+                    DECKLINK_STR decklink_tc;
+                    if (timecode->GetString(&decklink_tc) == S_OK) {
+                        tc = DECKLINK_STRDUP(decklink_tc);
+                        DECKLINK_FREE(decklink_tc);
+                    }
+                    timecode->Release();
+                    if (tc) {
+                        AVDictionary* metadata_dict = NULL;
+                        int metadata_len;
+                        uint8_t* packed_metadata;
+                        if (av_dict_set(&metadata_dict, "timecode", tc, AV_DICT_DONT_STRDUP_VAL) >= 0) {
+                            packed_metadata = av_packet_pack_dictionary(metadata_dict, &metadata_len);
+                            av_dict_free(&metadata_dict);
+                            if (packed_metadata) {
+                                if (av_packet_add_side_data(&pkt, AV_PKT_DATA_STRINGS_METADATA, packed_metadata, metadata_len) < 0)
+                                    av_freep(&packed_metadata);
+                            }
+                        }
+                    }
+                } else {
+                    av_log(avctx, AV_LOG_DEBUG, "Unable to find timecode.\n");
+                }
+            }
         }
 
         pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, abs_wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts, cctx->copyts);
@@ -924,6 +991,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 {
     struct decklink_cctx *cctx = (struct decklink_cctx *)avctx->priv_data;
     struct decklink_ctx *ctx;
+    class decklink_allocator *allocator;
+    class decklink_input_callback *input_callback;
     AVStream *st;
     HRESULT result;
     char fname[1024];
@@ -939,6 +1008,8 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
     ctx->teletext_lines = cctx->teletext_lines;
     ctx->preroll      = cctx->preroll;
     ctx->duplex_mode  = cctx->duplex_mode;
+    if (cctx->tc_format > 0 && (unsigned int)cctx->tc_format < FF_ARRAY_ELEMS(decklink_timecode_format_map))
+        ctx->tc_format = decklink_timecode_format_map[cctx->tc_format];
     if (cctx->video_input > 0 && (unsigned int)cctx->video_input < FF_ARRAY_ELEMS(decklink_video_connection_map))
         ctx->video_input = decklink_video_connection_map[cctx->video_input];
     if (cctx->audio_input > 0 && (unsigned int)cctx->audio_input < FF_ARRAY_ELEMS(decklink_audio_connection_map))
@@ -1001,6 +1072,12 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
 
+    if (ff_decklink_set_configs(avctx, DIRECTION_IN) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set input configuration\n");
+        ret = AVERROR(EIO);
+        goto error;
+    }
+
     /* List supported formats. */
     if (ctx->list_formats) {
         ff_decklink_list_formats(avctx, DIRECTION_IN);
@@ -1008,14 +1085,21 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         goto error;
     }
 
-    if (ff_decklink_set_configs(avctx, DIRECTION_IN) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Could not set input configuration\n");
-        ret = AVERROR(EIO);
+    input_callback = new decklink_input_callback(avctx);
+    ret = (ctx->dli->SetCallback(input_callback) == S_OK ? 0 : AVERROR_EXTERNAL);
+    input_callback->Release();
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot set input callback\n");
         goto error;
     }
 
-    ctx->input_callback = new decklink_input_callback(avctx);
-    ctx->dli->SetCallback(ctx->input_callback);
+    allocator = new decklink_allocator();
+    ret = (ctx->dli->SetVideoInputFrameMemoryAllocator(allocator) == S_OK ? 0 : AVERROR_EXTERNAL);
+    allocator->Release();
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot set custom memory allocator\n");
+        goto error;
+    }
 
     if (mode_num == 0 && !cctx->format_code) {
         if (decklink_autodetect(cctx) < 0) {
@@ -1083,14 +1167,14 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         break;
     case bmdFormat8BitARGB:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->format      = AV_PIX_FMT_0RGB;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;
     case bmdFormat8BitBGRA:
         st->codecpar->codec_id    = AV_CODEC_ID_RAWVIDEO;
-        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->format      = AV_PIX_FMT_BGR0;
+        st->codecpar->codec_tag   = avcodec_pix_fmt_to_codec_tag((enum AVPixelFormat)st->codecpar->format);
         st->codecpar->bit_rate    = av_rescale(ctx->bmd_width * ctx->bmd_height * 32, st->time_base.den, st->time_base.num);
         break;
     case bmdFormat10BitRGB:
@@ -1178,6 +1262,15 @@ int ff_decklink_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     struct decklink_ctx *ctx = (struct decklink_ctx *)cctx->ctx;
 
     avpacket_queue_get(&ctx->queue, pkt, 1);
+
+    if (ctx->tc_format && !(av_dict_get(ctx->video_st->metadata, "timecode", NULL, 0))) {
+        int size;
+        const uint8_t *side_metadata = av_packet_get_side_data(pkt, AV_PKT_DATA_STRINGS_METADATA, &size);
+        if (side_metadata) {
+           if (av_packet_unpack_dictionary(side_metadata, size, &ctx->video_st->metadata) < 0)
+               av_log(avctx, AV_LOG_ERROR, "Unable to set timecode\n");
+        }
+    }
 
     return 0;
 }

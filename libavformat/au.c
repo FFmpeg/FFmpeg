@@ -57,7 +57,7 @@ static const AVCodecTag codec_au_tags[] = {
 
 #if CONFIG_AU_DEMUXER
 
-static int au_probe(AVProbeData *p)
+static int au_probe(const AVProbeData *p)
 {
     if (p->buf[0] == '.' && p->buf[1] == 's' &&
         p->buf[2] == 'n' && p->buf[3] == 'd')
@@ -140,7 +140,7 @@ static int au_read_header(AVFormatContext *s)
     unsigned int tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
-    int bps;
+    int bps, ba = 0;
     enum AVCodecID codec;
     AVStream *st;
 
@@ -178,6 +178,7 @@ static int au_read_header(AVFormatContext *s)
         } else {
             const uint8_t bpcss[] = {4, 0, 3, 5};
             av_assert0(id >= 23 && id < 23 + 4);
+            ba = bpcss[id - 23];
             bps = bpcss[id - 23];
         }
     } else if (!bps) {
@@ -205,7 +206,7 @@ static int au_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = rate;
     st->codecpar->bits_per_coded_sample = bps;
     st->codecpar->bit_rate    = channels * rate * bps;
-    st->codecpar->block_align = FFMAX(bps * st->codecpar->channels / 8, 1);
+    st->codecpar->block_align = ba ? ba : FFMAX(bps * st->codecpar->channels / 8, 1);
     if (data_size != AU_UNKNOWN_SIZE)
         st->duration = (((int64_t)data_size)<<3) / (st->codecpar->channels * (int64_t)bps);
 

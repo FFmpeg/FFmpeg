@@ -76,7 +76,8 @@
 
 #define COMMON_OPTS() \
     { "reorder_queue_size", "set number of packets to buffer for handling of reordered packets", OFFSET(reordering_queue_size), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, DEC }, \
-    { "buffer_size",        "Underlying protocol send/receive buffer size",                  OFFSET(buffer_size),           AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, DEC|ENC } \
+    { "buffer_size",        "Underlying protocol send/receive buffer size",                  OFFSET(buffer_size),           AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, DEC|ENC }, \
+    { "pkt_size",           "Underlying protocol send packet size",                          OFFSET(pkt_size),              AV_OPT_TYPE_INT, { .i64 = -1 }, -1, INT_MAX, ENC } \
 
 
 const AVOption ff_rtsp_options[] = {
@@ -87,6 +88,7 @@ const AVOption ff_rtsp_options[] = {
     { "tcp", "TCP", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_TCP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
     { "udp_multicast", "UDP multicast", 0, AV_OPT_TYPE_CONST, {.i64 = 1 << RTSP_LOWER_TRANSPORT_UDP_MULTICAST}, 0, 0, DEC, "rtsp_transport" },
     { "http", "HTTP tunneling", 0, AV_OPT_TYPE_CONST, {.i64 = (1 << RTSP_LOWER_TRANSPORT_HTTP)}, 0, 0, DEC, "rtsp_transport" },
+    { "https", "HTTPS tunneling", 0, AV_OPT_TYPE_CONST, {.i64 = (1 << RTSP_LOWER_TRANSPORT_HTTPS )}, 0, 0, DEC, "rtsp_transport" },
     RTSP_FLAG_OPTS("rtsp_flags", "set RTSP flags"),
     { "listen", "wait for incoming connections", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_LISTEN}, 0, 0, DEC, "rtsp_flags" },
     { "prefer_tcp", "try RTP via TCP first, if available", 0, AV_OPT_TYPE_CONST, {.i64 = RTSP_FLAG_PREFER_TCP}, 0, 0, DEC|ENC, "rtsp_flags" },
@@ -131,6 +133,8 @@ static AVDictionary *map_to_opts(RTSPState *rt)
 
     snprintf(buf, sizeof(buf), "%d", rt->buffer_size);
     av_dict_set(&opts, "buffer_size", buf, 0);
+    snprintf(buf, sizeof(buf), "%d", rt->pkt_size);
+    av_dict_set(&opts, "pkt_size", buf, 0);
 
     return opts;
 }
@@ -454,7 +458,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         } else if (!strcmp(st_type, "text")) {
             codec_type = AVMEDIA_TYPE_SUBTITLE;
         }
-        if (codec_type == AVMEDIA_TYPE_UNKNOWN || !(rt->media_type_mask & (1 << codec_type))) {
+        if (codec_type == AVMEDIA_TYPE_UNKNOWN ||
+            !(rt->media_type_mask & (1 << codec_type)) ||
+            rt->nb_rtsp_streams >= s->max_streams
+        ) {
             s1->skip_media = 1;
             return;
         }
@@ -1663,9 +1670,10 @@ int ff_rtsp_connect(AVFormatContext *s)
     char tcpname[1024], cmd[2048], auth[128];
     const char *lower_rtsp_proto = "tcp";
     int port, err, tcp_fd;
-    RTSPMessageHeader reply1 = {0}, *reply = &reply1;
+    RTSPMessageHeader reply1, *reply = &reply1;
     int lower_transport_mask = 0;
     int default_port = RTSP_DEFAULT_PORT;
+    int https_tunnel = 0;
     char real_challenge[64] = "";
     struct sockaddr_storage peer;
     socklen_t peer_len = sizeof(peer);
@@ -1684,7 +1692,9 @@ int ff_rtsp_connect(AVFormatContext *s)
         s->max_delay = s->iformat ? DEFAULT_REORDERING_DELAY : 0;
 
     rt->control_transport = RTSP_MODE_PLAIN;
-    if (rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTP)) {
+    if (rt->lower_transport_mask & ((1 << RTSP_LOWER_TRANSPORT_HTTP) |
+                                    (1 << RTSP_LOWER_TRANSPORT_HTTPS))) {
+        https_tunnel = !!(rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTPS));
         rt->lower_transport_mask = 1 << RTSP_LOWER_TRANSPORT_TCP;
         rt->control_transport = RTSP_MODE_TUNNEL;
     }
@@ -1692,6 +1702,7 @@ int ff_rtsp_connect(AVFormatContext *s)
     rt->lower_transport_mask &= (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
 
 redirect:
+    memset(&reply1, 0, sizeof(reply1));
     /* extract hostname and port */
     av_url_split(proto, sizeof(proto), auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->url);
@@ -1736,8 +1747,11 @@ redirect:
         char httpname[1024];
         char sessioncookie[17];
         char headers[1024];
+        AVDictionary *options = NULL;
 
-        ff_url_join(httpname, sizeof(httpname), "http", auth, host, port, "%s", path);
+        av_dict_set_int(&options, "timeout", rt->stimeout, 0);
+
+        ff_url_join(httpname, sizeof(httpname), https_tunnel ? "https" : "http", auth, host, port, "%s", path);
         snprintf(sessioncookie, sizeof(sessioncookie), "%08x%08x",
                  av_get_random_seed(), av_get_random_seed());
 
@@ -1766,7 +1780,8 @@ redirect:
         }
 
         /* complete the connection */
-        if (ffurl_connect(rt->rtsp_hd, NULL)) {
+        if (ffurl_connect(rt->rtsp_hd, &options)) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
@@ -1789,6 +1804,7 @@ redirect:
                  sessioncookie);
         av_opt_set(rt->rtsp_hd_out->priv_data, "headers", headers, 0);
         av_opt_set(rt->rtsp_hd_out->priv_data, "chunked_post", "0", 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "send_expect_100", "0", 0);
 
         /* Initialize the authentication state for the POST session. The HTTP
          * protocol implementation doesn't properly handle multi-pass
@@ -1809,10 +1825,12 @@ redirect:
         ff_http_init_auth_state(rt->rtsp_hd_out, rt->rtsp_hd);
 
         /* complete the connection */
-        if (ffurl_connect(rt->rtsp_hd_out, NULL)) {
+        if (ffurl_connect(rt->rtsp_hd_out, &options)) {
+            av_dict_free(&options);
             err = AVERROR(EIO);
             goto fail;
         }
+        av_dict_free(&options);
     } else {
         int ret;
         /* open the tcp connection */
@@ -2277,7 +2295,7 @@ end:
 #endif /* CONFIG_RTPDEC */
 
 #if CONFIG_SDP_DEMUXER
-static int sdp_probe(AVProbeData *p1)
+static int sdp_probe(const AVProbeData *p1)
 {
     const char *p = p1->buf, *p_end = p1->buf + p1->buf_size;
 
@@ -2416,7 +2434,7 @@ AVInputFormat ff_sdp_demuxer = {
 #endif /* CONFIG_SDP_DEMUXER */
 
 #if CONFIG_RTP_DEMUXER
-static int rtp_probe(AVProbeData *p)
+static int rtp_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "rtp:", NULL))
         return AVPROBE_SCORE_MAX;

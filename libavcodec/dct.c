@@ -178,6 +178,7 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
 {
     int n = 1 << nbits;
     int i;
+    int ret;
 
     memset(s, 0, sizeof(*s));
 
@@ -194,9 +195,9 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
         if (!s->csc2)
             return AVERROR(ENOMEM);
 
-        if (ff_rdft_init(&s->rdft, nbits, inverse == DCT_III) < 0) {
+        if ((ret = ff_rdft_init(&s->rdft, nbits, inverse == DCT_III)) < 0) {
             av_freep(&s->csc2);
-            return -1;
+            return ret;
         }
 
         for (i = 0; i < n / 2; i++)

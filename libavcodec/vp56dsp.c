@@ -72,27 +72,8 @@ av_cold void ff_vp5dsp_init(VP56DSPContext *s)
 #endif /* CONFIG_VP5_DECODER */
 
 #if CONFIG_VP6_DECODER
-static int vp6_adjust(int v, int t)
-{
-    int V = v, s = v >> 31;
-    V ^= s;
-    V -= s;
-    if (V-t-1 >= (unsigned)(t-1))
-        return v;
-    V = 2*t - V;
-    V += s;
-    V ^= s;
-    return V;
-}
-
-VP56_EDGE_FILTER(vp6, hor, 1, stride)
-VP56_EDGE_FILTER(vp6, ver, stride, 1)
-
 av_cold void ff_vp6dsp_init(VP56DSPContext *s)
 {
-    s->edge_filter_hor = vp6_edge_filter_hor;
-    s->edge_filter_ver = vp6_edge_filter_ver;
-
     s->vp6_filter_diag4 = ff_vp6_filter_diag4_c;
 
     if (ARCH_ARM)

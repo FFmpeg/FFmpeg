@@ -28,6 +28,7 @@
 #include "avcodec.h"
 #include "fdctdsp.h"
 #include "put_bits.h"
+#include "profiles.h"
 #include "bytestream.h"
 #include "internal.h"
 #include "proresdata.h"
@@ -221,6 +222,7 @@ typedef struct ProresThreadData {
     DECLARE_ALIGNED(16, int16_t, blocks)[MAX_PLANES][64 * 4 * MAX_MBS_PER_SLICE];
     DECLARE_ALIGNED(16, uint16_t, emu_buf)[16 * 16];
     int16_t custom_q[64];
+    int16_t custom_chroma_q[64];
     struct TrellisNode *nodes;
 } ProresThreadData;
 
@@ -231,6 +233,7 @@ typedef struct ProresContext {
     int16_t quants[MAX_STORED_Q][64];
     int16_t quants_chroma[MAX_STORED_Q][64];
     int16_t custom_q[64];
+    int16_t custom_chroma_q[64];
     const uint8_t *quant_mat;
     const uint8_t *quant_chroma_mat;
     const uint8_t *scantable;
@@ -573,7 +576,7 @@ static int encode_slice(AVCodecContext *avctx, const AVFrame *pic,
         qmat_chroma = ctx->quants_chroma[quant];
     } else {
         qmat = ctx->custom_q;
-        qmat_chroma = ctx->custom_q;
+        qmat_chroma = ctx->custom_chroma_q;
         for (i = 0; i < 64; i++) {
             qmat[i] = ctx->quant_mat[i] * quant;
             qmat_chroma[i] = ctx->quant_chroma_mat[i] * quant;
@@ -901,7 +904,7 @@ static int find_slice_quant(AVCodecContext *avctx,
                 qmat_chroma = ctx->quants_chroma[q];
             } else {
                 qmat = td->custom_q;
-                qmat_chroma = td->custom_q;
+                qmat_chroma = td->custom_chroma_q;
                 for (i = 0; i < 64; i++) {
                     qmat[i] = ctx->quant_mat[i] * q;
                     qmat_chroma[i] = ctx->quant_chroma_mat[i] * q;
@@ -1431,4 +1434,5 @@ AVCodec ff_prores_ks_encoder = {
                           AV_PIX_FMT_YUVA444P10, AV_PIX_FMT_NONE
                       },
     .priv_class     = &proresenc_class,
+    .profiles       = NULL_IF_CONFIG_SMALL(ff_prores_profiles),
 };

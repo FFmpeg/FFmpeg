@@ -36,7 +36,7 @@ typedef struct CdataDemuxContext {
   unsigned int audio_pts;
 } CdataDemuxContext;
 
-static int cdata_probe(AVProbeData *p)
+static int cdata_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
 

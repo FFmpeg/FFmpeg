@@ -31,7 +31,7 @@ typedef struct SMUSHContext {
     int video_stream_index;
 } SMUSHContext;
 
-static int smush_read_probe(AVProbeData *p)
+static int smush_read_probe(const AVProbeData *p)
 {
     if (((AV_RL32(p->buf)     == MKTAG('S', 'A', 'N', 'M') &&
           AV_RL32(p->buf + 8) == MKTAG('S', 'H', 'D', 'R')) ||

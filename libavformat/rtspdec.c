@@ -699,7 +699,7 @@ static int rtsp_listen(AVFormatContext *s)
     }
 }
 
-static int rtsp_probe(AVProbeData *p)
+static int rtsp_probe(const AVProbeData *p)
 {
     if (
 #if CONFIG_TLS_PROTOCOL

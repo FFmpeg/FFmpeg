@@ -342,6 +342,7 @@ static inline void shuffle_bytes_0321_c(const uint8_t *src, uint8_t *dst,
     }
 }
 
+#if !HAVE_BIGENDIAN
 #define DEFINE_SHUFFLE_BYTES(name, a, b, c, d)                          \
 static void shuffle_bytes_##name (const uint8_t *src,                   \
                                         uint8_t *dst, int src_size)     \
@@ -359,6 +360,7 @@ static void shuffle_bytes_##name (const uint8_t *src,                   \
 DEFINE_SHUFFLE_BYTES(1230_c, 1, 2, 3, 0)
 DEFINE_SHUFFLE_BYTES(3012_c, 3, 0, 1, 2)
 DEFINE_SHUFFLE_BYTES(3210_c, 3, 2, 1, 0)
+#endif
 
 static inline void rgb24tobgr24_c(const uint8_t *src, uint8_t *dst, int src_size)
 {

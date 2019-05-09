@@ -38,19 +38,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-
-typedef enum {
-    TRANSPOSE_PT_TYPE_NONE,
-    TRANSPOSE_PT_TYPE_LANDSCAPE,
-    TRANSPOSE_PT_TYPE_PORTRAIT,
-} PassthroughType;
-
-enum TransposeDir {
-    TRANSPOSE_CCLOCK_FLIP,
-    TRANSPOSE_CLOCK,
-    TRANSPOSE_CCLOCK,
-    TRANSPOSE_CLOCK_FLIP,
-};
+#include "transpose.h"
 
 typedef struct TransVtable {
     void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,

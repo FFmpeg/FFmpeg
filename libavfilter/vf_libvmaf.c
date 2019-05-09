@@ -62,6 +62,9 @@ typedef struct LIBVMAFContext {
     int ssim;
     int ms_ssim;
     char *pool;
+    int n_threads;
+    int n_subsample;
+    int enable_conf_interval;
     int error;
 } LIBVMAFContext;
 
@@ -78,6 +81,9 @@ static const AVOption libvmaf_options[] = {
     {"ssim",  "Enables computing ssim along with vmaf.",                                OFFSET(ssim), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"ms_ssim",  "Enables computing ms-ssim along with vmaf.",                          OFFSET(ms_ssim), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     {"pool",  "Set the pool method to be used for computing vmaf.",                     OFFSET(pool), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 1, FLAGS},
+    {"n_threads", "Set number of threads to be used when computing vmaf.",              OFFSET(n_threads), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT_MAX, FLAGS},
+    {"n_subsample", "Set interval for frame subsampling used when computing vmaf.",     OFFSET(n_subsample), AV_OPT_TYPE_INT, {.i64=1}, 1, UINT_MAX, FLAGS},
+    {"enable_conf_interval",  "Enables confidence interval.",                           OFFSET(enable_conf_interval), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -166,7 +172,8 @@ static void compute_vmaf_score(LIBVMAFContext *s)
                             read_frame, s, s->model_path, s->log_path,
                             s->log_fmt, 0, 0, s->enable_transform,
                             s->phone_model, s->psnr, s->ssim,
-                            s->ms_ssim, s->pool);
+                            s->ms_ssim, s->pool,
+                            s->n_threads, s->n_subsample, s->enable_conf_interval);
 }
 
 static void *call_vmaf(void *ctx)

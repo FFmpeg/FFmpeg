@@ -50,6 +50,13 @@ static void v210_planar_unpack_c(const uint32_t *src, uint16_t *y, uint16_t *u, 
     }
 }
 
+av_cold void ff_v210dec_init(V210DecContext *s)
+{
+    s->unpack_frame = v210_planar_unpack_c;
+    if (ARCH_X86)
+        ff_v210_x86_init(s);
+}
+
 static av_cold int decode_init(AVCodecContext *avctx)
 {
     V210DecContext *s = avctx->priv_data;
@@ -57,10 +64,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt             = AV_PIX_FMT_YUV422P10;
     avctx->bits_per_raw_sample = 10;
 
-    s->unpack_frame            = v210_planar_unpack_c;
-
-    if (HAVE_MMX)
-        ff_v210_x86_init(s);
+    s->aligned_input = 0;
+    ff_v210dec_init(s);
 
     return 0;
 }
@@ -102,8 +107,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     aligned_input = !((uintptr_t)psrc & 0xf) && !(stride & 0xf);
     if (aligned_input != s->aligned_input) {
         s->aligned_input = aligned_input;
-        if (HAVE_MMX)
-            ff_v210_x86_init(s);
+        ff_v210dec_init(s);
     }
 
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
@@ -119,13 +123,21 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         const uint32_t *src = (const uint32_t*)psrc;
         uint32_t val;
 
-        w = (avctx->width / 6) * 6;
+        w = (avctx->width / 12) * 12;
         s->unpack_frame(src, y, u, v, w);
 
         y += w;
         u += w >> 1;
         v += w >> 1;
         src += (w << 1) / 3;
+
+        if (w < avctx->width - 5) {
+            READ_PIXELS(u, y, v);
+            READ_PIXELS(y, u, y);
+            READ_PIXELS(v, y, u);
+            READ_PIXELS(y, v, y);
+            w += 6;
+        }
 
         if (w < avctx->width - 1) {
             READ_PIXELS(u, y, v);

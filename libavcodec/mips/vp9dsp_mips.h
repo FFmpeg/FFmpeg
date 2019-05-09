@@ -234,4 +234,54 @@ void ff_tm_16x16_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
 void ff_tm_32x32_msa(uint8_t *dst, ptrdiff_t stride, const uint8_t *left,
                      const uint8_t *top);
 
+#define VP9_8TAP_MIPS_MMI_FUNC(SIZE, type, type_idx)                         \
+void ff_put_8tap_##type##_##SIZE##h_mmi(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_put_8tap_##type##_##SIZE##v_mmi(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_put_8tap_##type##_##SIZE##hv_mmi(uint8_t *dst, ptrdiff_t dststride,  \
+                                         const uint8_t *src,                 \
+                                         ptrdiff_t srcstride,                \
+                                         int h, int mx, int my);             \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##h_mmi(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##v_mmi(uint8_t *dst, ptrdiff_t dststride,   \
+                                        const uint8_t *src,                  \
+                                        ptrdiff_t srcstride,                 \
+                                        int h, int mx, int my);              \
+                                                                             \
+void ff_avg_8tap_##type##_##SIZE##hv_mmi(uint8_t *dst, ptrdiff_t dststride,  \
+                                         const uint8_t *src,                 \
+                                         ptrdiff_t srcstride,                \
+                                         int h, int mx, int my);
+
+VP9_8TAP_MIPS_MMI_FUNC(64, regular, FILTER_8TAP_REGULAR);
+VP9_8TAP_MIPS_MMI_FUNC(32, regular, FILTER_8TAP_REGULAR);
+VP9_8TAP_MIPS_MMI_FUNC(16, regular, FILTER_8TAP_REGULAR);
+VP9_8TAP_MIPS_MMI_FUNC(8, regular, FILTER_8TAP_REGULAR);
+VP9_8TAP_MIPS_MMI_FUNC(4, regular, FILTER_8TAP_REGULAR);
+
+VP9_8TAP_MIPS_MMI_FUNC(64, sharp, FILTER_8TAP_SHARP);
+VP9_8TAP_MIPS_MMI_FUNC(32, sharp, FILTER_8TAP_SHARP);
+VP9_8TAP_MIPS_MMI_FUNC(16, sharp, FILTER_8TAP_SHARP);
+VP9_8TAP_MIPS_MMI_FUNC(8, sharp, FILTER_8TAP_SHARP);
+VP9_8TAP_MIPS_MMI_FUNC(4, sharp, FILTER_8TAP_SHARP);
+
+VP9_8TAP_MIPS_MMI_FUNC(64, smooth, FILTER_8TAP_SMOOTH);
+VP9_8TAP_MIPS_MMI_FUNC(32, smooth, FILTER_8TAP_SMOOTH);
+VP9_8TAP_MIPS_MMI_FUNC(16, smooth, FILTER_8TAP_SMOOTH);
+VP9_8TAP_MIPS_MMI_FUNC(8, smooth, FILTER_8TAP_SMOOTH);
+VP9_8TAP_MIPS_MMI_FUNC(4, smooth, FILTER_8TAP_SMOOTH);
+#undef VP9_8TAP_MIPS_MMI_FUNC
+
 #endif  // #ifndef AVCODEC_MIPS_VP9DSP_MIPS_H

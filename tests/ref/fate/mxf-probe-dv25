@@ -137,6 +137,7 @@ TAG:file_package_umid=0x060A2B340101010501010D4313000000F2E2FCE98722F14F947F08DE
 format_name=mxf
 duration=1.000000
 bit_rate=30679040
+TAG:operational_pattern_ul=060e2b34.04010101.0d010201.01010900
 TAG:uid=a741d0c7-244a-bc4a-bd36-3323d04f8954
 TAG:generation_uid=c1d7a0ee-89d6-754d-bd52-cdf42b53de9f
 TAG:company_name=AVID

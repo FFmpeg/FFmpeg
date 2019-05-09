@@ -62,7 +62,7 @@ typedef struct VmdDemuxContext {
     unsigned char vmd_header[VMD_HEADER_SIZE];
 } VmdDemuxContext;
 
-static int vmd_probe(AVProbeData *p)
+static int vmd_probe(const AVProbeData *p)
 {
     int w, h, sample_rate;
     if (p->buf_size < 806)

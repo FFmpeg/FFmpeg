@@ -350,7 +350,7 @@ static int modplug_read_seek(AVFormatContext *s, int stream_idx, int64_t ts, int
 
 static const char modplug_extensions[] = "669,abc,amf,ams,dbm,dmf,dsm,far,it,mdl,med,mid,mod,mt2,mtm,okt,psm,ptm,s3m,stm,ult,umx,xm,itgz,itr,itz,mdgz,mdr,mdz,s3gz,s3r,s3z,xmgz,xmr,xmz";
 
-static int modplug_probe(AVProbeData *p)
+static int modplug_probe(const AVProbeData *p)
 {
     if (av_match_ext(p->filename, modplug_extensions)) {
         if (p->buf_size < 16384)

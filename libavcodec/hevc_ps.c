@@ -70,6 +70,14 @@ static const AVRational vui_sar[] = {
     {  2,   1 },
 };
 
+static const uint8_t hevc_sub_width_c[] = {
+    1, 2, 2, 1
+};
+
+static const uint8_t hevc_sub_height_c[] = {
+    1, 2, 1, 1
+};
+
 static void remove_pps(HEVCParamSets *s, int id)
 {
     if (s->pps_list[id] && s->pps == (const HEVCPPS*)s->pps_list[id]->data)
@@ -628,8 +636,8 @@ static void decode_vui(GetBitContext *gb, AVCodecContext *avctx,
         vui->default_display_window_flag = get_bits1(gb);
 
     if (vui->default_display_window_flag) {
-        int vert_mult  = 1 + (sps->chroma_format_idc < 2);
-        int horiz_mult = 1 + (sps->chroma_format_idc < 3);
+        int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
+        int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
         vui->def_disp_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
         vui->def_disp_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
         vui->def_disp_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
@@ -923,8 +931,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         return ret;
 
     if (get_bits1(gb)) { // pic_conformance_flag
-        int vert_mult  = 1 + (sps->chroma_format_idc < 2);
-        int horiz_mult = 1 + (sps->chroma_format_idc < 3);
+        int vert_mult  = hevc_sub_height_c[sps->chroma_format_idc];
+        int horiz_mult = hevc_sub_width_c[sps->chroma_format_idc];
         sps->pic_conf_win.left_offset   = get_ue_golomb_long(gb) * horiz_mult;
         sps->pic_conf_win.right_offset  = get_ue_golomb_long(gb) * horiz_mult;
         sps->pic_conf_win.top_offset    = get_ue_golomb_long(gb) *  vert_mult;
@@ -1094,22 +1102,17 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
         decode_vui(gb, avctx, apply_defdispwin, sps);
 
     if (get_bits1(gb)) { // sps_extension_flag
-        int sps_extension_flag[1];
-        for (i = 0; i < 1; i++)
-            sps_extension_flag[i] = get_bits1(gb);
+        sps->sps_range_extension_flag = get_bits1(gb);
         skip_bits(gb, 7); //sps_extension_7bits = get_bits(gb, 7);
-        if (sps_extension_flag[0]) {
-            int extended_precision_processing_flag;
-            int cabac_bypass_alignment_enabled_flag;
-
+        if (sps->sps_range_extension_flag) {
             sps->transform_skip_rotation_enabled_flag = get_bits1(gb);
             sps->transform_skip_context_enabled_flag  = get_bits1(gb);
             sps->implicit_rdpcm_enabled_flag = get_bits1(gb);
 
             sps->explicit_rdpcm_enabled_flag = get_bits1(gb);
 
-            extended_precision_processing_flag = get_bits1(gb);
-            if (extended_precision_processing_flag)
+            sps->extended_precision_processing_flag = get_bits1(gb);
+            if (sps->extended_precision_processing_flag)
                 av_log(avctx, AV_LOG_WARNING,
                    "extended_precision_processing_flag not yet implemented\n");
 
@@ -1121,8 +1124,8 @@ int ff_hevc_parse_sps(HEVCSPS *sps, GetBitContext *gb, unsigned int *sps_id,
 
             sps->persistent_rice_adaptation_enabled_flag = get_bits1(gb);
 
-            cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
-            if (cabac_bypass_alignment_enabled_flag)
+            sps->cabac_bypass_alignment_enabled_flag  = get_bits1(gb);
+            if (sps->cabac_bypass_alignment_enabled_flag)
                 av_log(avctx, AV_LOG_WARNING,
                    "cabac_bypass_alignment_enabled_flag not yet implemented\n");
         }
@@ -1680,9 +1683,9 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps->slice_header_extension_present_flag = get_bits1(gb);
 
     if (get_bits1(gb)) { // pps_extension_present_flag
-        int pps_range_extensions_flag = get_bits1(gb);
-        /* int pps_extension_7bits = */ get_bits(gb, 7);
-        if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps_range_extensions_flag) {
+        pps->pps_range_extensions_flag = get_bits1(gb);
+        skip_bits(gb, 7); // pps_extension_7bits
+        if (sps->ptl.general_ptl.profile_idc == FF_PROFILE_HEVC_REXT && pps->pps_range_extensions_flag) {
             if ((ret = pps_range_extensions(gb, avctx, pps, sps)) < 0)
                 goto err;
         }

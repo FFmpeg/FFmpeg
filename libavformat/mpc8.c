@@ -73,7 +73,7 @@ static inline int64_t bs_get_v(const uint8_t **bs)
     return v - br;
 }
 
-static int mpc8_probe(AVProbeData *p)
+static int mpc8_probe(const AVProbeData *p)
 {
     const uint8_t *bs = p->buf + 4;
     const uint8_t *bs_end = bs + p->buf_size;

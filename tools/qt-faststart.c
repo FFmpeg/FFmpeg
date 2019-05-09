@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
 #include <string.h>
+#include <limits.h>
 
 #ifdef __MINGW32__
 #undef fseeko
@@ -43,8 +44,6 @@
 
 #define MIN(a,b) ((a) > (b) ? (b) : (a))
 
-#define BE_16(x) ((((uint8_t*)(x))[0] <<  8) | ((uint8_t*)(x))[1])
-
 #define BE_32(x) (((uint32_t)(((uint8_t*)(x))[0]) << 24) |  \
                              (((uint8_t*)(x))[1]  << 16) |  \
                              (((uint8_t*)(x))[2]  <<  8) |  \
@@ -58,6 +57,18 @@
                   ((uint64_t)(((uint8_t*)(x))[5]) << 16) |  \
                   ((uint64_t)(((uint8_t*)(x))[6]) <<  8) |  \
                   ((uint64_t)( (uint8_t*)(x))[7]))
+
+#define AV_WB32(p, val)    {                    \
+    ((uint8_t*)(p))[0] = ((val) >> 24) & 0xff;  \
+    ((uint8_t*)(p))[1] = ((val) >> 16) & 0xff;  \
+    ((uint8_t*)(p))[2] = ((val) >> 8) & 0xff;   \
+    ((uint8_t*)(p))[3] = (val) & 0xff;          \
+    }
+
+#define AV_WB64(p, val)    {                    \
+    AV_WB32(p, (val) >> 32)                     \
+    AV_WB32(p + 4, val)                         \
+    }
 
 #define BE_FOURCC(ch0, ch1, ch2, ch3)           \
     ( (uint32_t)(unsigned char)(ch3)        |   \
@@ -79,11 +90,342 @@
 #define UUID_ATOM QT_ATOM('u', 'u', 'i', 'd')
 
 #define CMOV_ATOM QT_ATOM('c', 'm', 'o', 'v')
+#define TRAK_ATOM QT_ATOM('t', 'r', 'a', 'k')
+#define MDIA_ATOM QT_ATOM('m', 'd', 'i', 'a')
+#define MINF_ATOM QT_ATOM('m', 'i', 'n', 'f')
+#define STBL_ATOM QT_ATOM('s', 't', 'b', 'l')
 #define STCO_ATOM QT_ATOM('s', 't', 'c', 'o')
 #define CO64_ATOM QT_ATOM('c', 'o', '6', '4')
 
 #define ATOM_PREAMBLE_SIZE    8
 #define COPY_BUFFER_SIZE   33554432
+#define MAX_FTYP_ATOM_SIZE 1048576
+
+typedef struct {
+    uint32_t type;
+    uint32_t header_size;
+    uint64_t size;
+    unsigned char *data;
+} atom_t;
+
+typedef struct {
+    uint64_t moov_atom_size;
+    uint64_t stco_offset_count;
+    uint64_t stco_data_size;
+    int stco_overflow;
+    uint32_t depth;
+} update_chunk_offsets_context_t;
+
+typedef struct {
+    unsigned char *dest;
+    uint64_t original_moov_size;
+    uint64_t new_moov_size;
+} upgrade_stco_context_t;
+
+typedef int (*parse_atoms_callback_t)(void *context, atom_t *atom);
+
+static int parse_atoms(
+    unsigned char *buf,
+    uint64_t size,
+    parse_atoms_callback_t callback,
+    void *context)
+{
+    unsigned char *pos = buf;
+    unsigned char *end = pos + size;
+    atom_t atom;
+    int ret;
+
+    while (end - pos >= ATOM_PREAMBLE_SIZE) {
+        atom.size = BE_32(pos);
+        atom.type = BE_32(pos + 4);
+        pos += ATOM_PREAMBLE_SIZE;
+        atom.header_size = ATOM_PREAMBLE_SIZE;
+
+        switch (atom.size) {
+        case 1:
+            if (end - pos < 8) {
+                fprintf(stderr, "not enough room for 64 bit atom size\n");
+                return -1;
+            }
+
+            atom.size = BE_64(pos);
+            pos += 8;
+            atom.header_size = ATOM_PREAMBLE_SIZE + 8;
+            break;
+
+        case 0:
+            atom.size = ATOM_PREAMBLE_SIZE + end - pos;
+            break;
+        }
+
+        if (atom.size < atom.header_size) {
+            fprintf(stderr, "atom size %"PRIu64" too small\n", atom.size);
+            return -1;
+        }
+
+        atom.size -= atom.header_size;
+
+        if (atom.size > end - pos) {
+            fprintf(stderr, "atom size %"PRIu64" too big\n", atom.size);
+            return -1;
+        }
+
+        atom.data = pos;
+        ret = callback(context, &atom);
+        if (ret < 0) {
+            return ret;
+        }
+
+        pos += atom.size;
+    }
+
+    return 0;
+}
+
+static int update_stco_offsets(update_chunk_offsets_context_t *context, atom_t *atom)
+{
+    uint32_t current_offset;
+    uint32_t offset_count;
+    unsigned char *pos;
+    unsigned char *end;
+
+    printf(" patching stco atom...\n");
+    if (atom->size < 8) {
+        fprintf(stderr, "stco atom size %"PRIu64" too small\n", atom->size);
+        return -1;
+    }
+
+    offset_count = BE_32(atom->data + 4);
+    if (offset_count > (atom->size - 8) / 4) {
+        fprintf(stderr, "stco offset count %"PRIu32" too big\n", offset_count);
+        return -1;
+    }
+
+    context->stco_offset_count += offset_count;
+    context->stco_data_size += atom->size - 8;
+
+    for (pos = atom->data + 8, end = pos + offset_count * 4;
+        pos < end;
+        pos += 4) {
+        current_offset = BE_32(pos);
+        if (current_offset > UINT_MAX - context->moov_atom_size) {
+            context->stco_overflow = 1;
+        }
+        current_offset += context->moov_atom_size;
+        AV_WB32(pos, current_offset);
+    }
+
+    return 0;
+}
+
+static int update_co64_offsets(update_chunk_offsets_context_t *context, atom_t *atom)
+{
+    uint64_t current_offset;
+    uint32_t offset_count;
+    unsigned char *pos;
+    unsigned char *end;
+
+    printf(" patching co64 atom...\n");
+    if (atom->size < 8) {
+        fprintf(stderr, "co64 atom size %"PRIu64" too small\n", atom->size);
+        return -1;
+    }
+
+    offset_count = BE_32(atom->data + 4);
+    if (offset_count > (atom->size - 8) / 8) {
+        fprintf(stderr, "co64 offset count %"PRIu32" too big\n", offset_count);
+        return -1;
+    }
+
+    for (pos = atom->data + 8, end = pos + offset_count * 8;
+        pos < end;
+        pos += 8) {
+        current_offset = BE_64(pos);
+        current_offset += context->moov_atom_size;
+        AV_WB64(pos, current_offset);
+    }
+
+    return 0;
+}
+
+static int update_chunk_offsets_callback(void *ctx, atom_t *atom)
+{
+    update_chunk_offsets_context_t *context = ctx;
+    int ret;
+
+    switch (atom->type) {
+    case STCO_ATOM:
+        return update_stco_offsets(context, atom);
+
+    case CO64_ATOM:
+        return update_co64_offsets(context, atom);
+
+    case MOOV_ATOM:
+    case TRAK_ATOM:
+    case MDIA_ATOM:
+    case MINF_ATOM:
+    case STBL_ATOM:
+        context->depth++;
+        if (context->depth > 10) {
+            fprintf(stderr, "atoms too deeply nested\n");
+            return -1;
+        }
+
+        ret = parse_atoms(
+            atom->data,
+            atom->size,
+            update_chunk_offsets_callback,
+            context);
+        context->depth--;
+        return ret;
+    }
+
+    return 0;
+}
+
+static void set_atom_size(unsigned char *header, uint32_t header_size, uint64_t size)
+{
+    switch (header_size) {
+    case 8:
+        AV_WB32(header, size);
+        break;
+
+    case 16:
+        AV_WB64(header + 8, size);
+        break;
+    }
+}
+
+static void upgrade_stco_atom(upgrade_stco_context_t *context, atom_t *atom)
+{
+    unsigned char *pos;
+    unsigned char *end;
+    uint64_t new_offset;
+    uint32_t offset_count;
+    uint32_t original_offset;
+
+    /* Note: not performing validations since they were performed on the first pass */
+
+    offset_count = BE_32(atom->data + 4);
+
+    /* write the header */
+    memcpy(context->dest, atom->data - atom->header_size, atom->header_size + 8);
+    AV_WB32(context->dest + 4, CO64_ATOM);
+    set_atom_size(context->dest, atom->header_size, atom->header_size + 8 + offset_count * 8);
+    context->dest += atom->header_size + 8;
+
+    /* write the data */
+    for (pos = atom->data + 8, end = pos + offset_count * 4;
+        pos < end;
+        pos += 4) {
+        original_offset = BE_32(pos) - context->original_moov_size;
+        new_offset = (uint64_t)original_offset + context->new_moov_size;
+        AV_WB64(context->dest, new_offset);
+        context->dest += 8;
+    }
+}
+
+static int upgrade_stco_callback(void *ctx, atom_t *atom)
+{
+    upgrade_stco_context_t *context = ctx;
+    unsigned char *start_pos;
+    uint64_t copy_size;
+
+    switch (atom->type) {
+    case STCO_ATOM:
+        upgrade_stco_atom(context, atom);
+        break;
+
+    case MOOV_ATOM:
+    case TRAK_ATOM:
+    case MDIA_ATOM:
+    case MINF_ATOM:
+    case STBL_ATOM:
+        /* write the atom header */
+        memcpy(context->dest, atom->data - atom->header_size, atom->header_size);
+        start_pos = context->dest;
+        context->dest += atom->header_size;
+
+        /* parse internal atoms*/
+        if (parse_atoms(
+            atom->data,
+            atom->size,
+            upgrade_stco_callback,
+            context) < 0) {
+            return -1;
+        }
+
+        /* update the atom size */
+        set_atom_size(start_pos, atom->header_size, context->dest - start_pos);
+        break;
+
+    default:
+        copy_size = atom->header_size + atom->size;
+        memcpy(context->dest, atom->data - atom->header_size, copy_size);
+        context->dest += copy_size;
+        break;
+    }
+
+    return 0;
+}
+
+static int update_moov_atom(
+    unsigned char **moov_atom,
+    uint64_t *moov_atom_size)
+{
+    update_chunk_offsets_context_t update_context = { 0 };
+    upgrade_stco_context_t upgrade_context;
+    unsigned char *new_moov_atom;
+
+    update_context.moov_atom_size = *moov_atom_size;
+
+    if (parse_atoms(
+        *moov_atom,
+        *moov_atom_size,
+        update_chunk_offsets_callback,
+        &update_context) < 0) {
+        return -1;
+    }
+
+    if (!update_context.stco_overflow) {
+        return 0;
+    }
+
+    printf(" upgrading stco atoms to co64...\n");
+    upgrade_context.new_moov_size = *moov_atom_size +
+        update_context.stco_offset_count * 8 -
+        update_context.stco_data_size;
+
+    new_moov_atom = malloc(upgrade_context.new_moov_size);
+    if (new_moov_atom == NULL) {
+        fprintf(stderr, "could not allocate %"PRIu64" bytes for updated moov atom\n",
+            upgrade_context.new_moov_size);
+        return -1;
+    }
+
+    upgrade_context.original_moov_size = *moov_atom_size;
+    upgrade_context.dest = new_moov_atom;
+
+    if (parse_atoms(
+        *moov_atom,
+        *moov_atom_size,
+        upgrade_stco_callback,
+        &upgrade_context) < 0) {
+        free(new_moov_atom);
+        return -1;
+    }
+
+    free(*moov_atom);
+    *moov_atom = new_moov_atom;
+    *moov_atom_size = upgrade_context.new_moov_size;
+
+    if (upgrade_context.dest != *moov_atom + *moov_atom_size) {
+        fprintf(stderr, "unexpected - wrong number of moov bytes written\n");
+        return -1;
+    }
+
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -98,12 +440,11 @@ int main(int argc, char *argv[])
     unsigned char *ftyp_atom = NULL;
     uint64_t moov_atom_size;
     uint64_t ftyp_atom_size = 0;
-    uint64_t i, j;
-    uint32_t offset_count;
-    uint64_t current_offset;
     int64_t start_offset = 0;
     unsigned char *copy_buffer = NULL;
     int bytes_to_copy;
+    uint64_t free_size = 0;
+    uint64_t moov_size = 0;
 
     if (argc != 3) {
         printf("Usage: qt-faststart <infile.mov> <outfile.mov>\n"
@@ -133,11 +474,16 @@ int main(int argc, char *argv[])
 
         /* keep ftyp atom */
         if (atom_type == FTYP_ATOM) {
+            if (atom_size > MAX_FTYP_ATOM_SIZE) {
+                fprintf(stderr, "ftyp atom size %"PRIu64" too big\n",
+                       atom_size);
+                goto error_out;
+            }
             ftyp_atom_size = atom_size;
             free(ftyp_atom);
             ftyp_atom = malloc(ftyp_atom_size);
             if (!ftyp_atom) {
-                printf("could not allocate %"PRIu64" bytes for ftyp atom\n",
+                fprintf(stderr, "could not allocate %"PRIu64" bytes for ftyp atom\n",
                        atom_size);
                 goto error_out;
             }
@@ -181,7 +527,7 @@ int main(int argc, char *argv[])
             (atom_type != PICT_ATOM) &&
             (atom_type != UUID_ATOM) &&
             (atom_type != FTYP_ATOM)) {
-            printf("encountered non-QT top-level atom (is this a QuickTime file?)\n");
+            fprintf(stderr, "encountered non-QT top-level atom (is this a QuickTime file?)\n");
             break;
         }
         atom_offset += atom_size;
@@ -191,6 +537,15 @@ int main(int argc, char *argv[])
          * able to continue scanning sensibly after this atom, so break. */
         if (atom_size < 8)
             break;
+
+        if (atom_type == MOOV_ATOM)
+            moov_size = atom_size;
+
+        if (moov_size && atom_type == FREE_ATOM) {
+            free_size += atom_size;
+            atom_type = MOOV_ATOM;
+            atom_size = moov_size;
+        }
     }
 
     if (atom_type != MOOV_ATOM) {
@@ -200,9 +555,14 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+    if (atom_size < 16) {
+        fprintf(stderr, "bad moov atom size\n");
+        goto error_out;
+    }
+
     /* moov atom was, in fact, the last atom in the chunk; load the whole
      * moov atom */
-    if (fseeko(infile, -atom_size, SEEK_END)) {
+    if (fseeko(infile, -(atom_size + free_size), SEEK_END)) {
         perror(argv[1]);
         goto error_out;
     }
@@ -214,7 +574,7 @@ int main(int argc, char *argv[])
     moov_atom_size = atom_size;
     moov_atom      = malloc(moov_atom_size);
     if (!moov_atom) {
-        printf("could not allocate %"PRIu64" bytes for moov atom\n", atom_size);
+        fprintf(stderr, "could not allocate %"PRIu64" bytes for moov atom\n", atom_size);
         goto error_out;
     }
     if (fread(moov_atom, atom_size, 1, infile) != 1) {
@@ -225,7 +585,7 @@ int main(int argc, char *argv[])
     /* this utility does not support compressed atoms yet, so disqualify
      * files with compressed QT atoms */
     if (BE_32(&moov_atom[12]) == CMOV_ATOM) {
-        printf("this utility does not support compressed moov atoms yet\n");
+        fprintf(stderr, "this utility does not support compressed moov atoms yet\n");
         goto error_out;
     }
 
@@ -233,56 +593,8 @@ int main(int argc, char *argv[])
     fclose(infile);
     infile = NULL;
 
-    /* crawl through the moov chunk in search of stco or co64 atoms */
-    for (i = 4; i < moov_atom_size - 4; i++) {
-        atom_type = BE_32(&moov_atom[i]);
-        if (atom_type == STCO_ATOM) {
-            printf(" patching stco atom...\n");
-            atom_size = BE_32(&moov_atom[i - 4]);
-            if (i + atom_size - 4 > moov_atom_size) {
-                printf(" bad atom size\n");
-                goto error_out;
-            }
-            offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12 + offset_count * UINT64_C(4) > moov_atom_size) {
-                printf(" bad atom size/element count\n");
-                goto error_out;
-            }
-            for (j = 0; j < offset_count; j++) {
-                current_offset  = BE_32(&moov_atom[i + 12 + j * 4]);
-                current_offset += moov_atom_size;
-                moov_atom[i + 12 + j * 4 + 0] = (current_offset >> 24) & 0xFF;
-                moov_atom[i + 12 + j * 4 + 1] = (current_offset >> 16) & 0xFF;
-                moov_atom[i + 12 + j * 4 + 2] = (current_offset >>  8) & 0xFF;
-                moov_atom[i + 12 + j * 4 + 3] = (current_offset >>  0) & 0xFF;
-            }
-            i += atom_size - 4;
-        } else if (atom_type == CO64_ATOM) {
-            printf(" patching co64 atom...\n");
-            atom_size = BE_32(&moov_atom[i - 4]);
-            if (i + atom_size - 4 > moov_atom_size) {
-                printf(" bad atom size\n");
-                goto error_out;
-            }
-            offset_count = BE_32(&moov_atom[i + 8]);
-            if (i + 12 + offset_count * UINT64_C(8) > moov_atom_size) {
-                printf(" bad atom size/element count\n");
-                goto error_out;
-            }
-            for (j = 0; j < offset_count; j++) {
-                current_offset  = BE_64(&moov_atom[i + 12 + j * 8]);
-                current_offset += moov_atom_size;
-                moov_atom[i + 12 + j * 8 + 0] = (current_offset >> 56) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 1] = (current_offset >> 48) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 2] = (current_offset >> 40) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 3] = (current_offset >> 32) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 4] = (current_offset >> 24) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 5] = (current_offset >> 16) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 6] = (current_offset >>  8) & 0xFF;
-                moov_atom[i + 12 + j * 8 + 7] = (current_offset >>  0) & 0xFF;
-            }
-            i += atom_size - 4;
-        }
+    if (update_moov_atom(&moov_atom, &moov_atom_size) < 0) {
+        goto error_out;
     }
 
     /* re-open the input file and open the output file */
@@ -327,7 +639,7 @@ int main(int argc, char *argv[])
     bytes_to_copy = MIN(COPY_BUFFER_SIZE, last_offset);
     copy_buffer = malloc(bytes_to_copy);
     if (!copy_buffer) {
-        printf("could not allocate %d bytes for copy_buffer\n", bytes_to_copy);
+        fprintf(stderr, "could not allocate %d bytes for copy_buffer\n", bytes_to_copy);
         goto error_out;
     }
     printf(" copying rest of file...\n");

@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "ast.h"
 
-static int ast_probe(AVProbeData *p)
+static int ast_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('S','T','R','M'))
         return 0;

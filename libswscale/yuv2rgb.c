@@ -993,7 +993,7 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
     default:
         if(!isPlanar(c->dstFormat) || bpp <= 24)
             av_log(c, AV_LOG_ERROR, "%ibpp not supported by yuv2rgb\n", bpp);
-        return -1;
+        return AVERROR(EINVAL);
     }
     return 0;
 }

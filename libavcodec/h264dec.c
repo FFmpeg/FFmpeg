@@ -609,9 +609,10 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
 
     if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
         h->current_slice = 0;
-        if (!h->first_field)
+        if (!h->first_field) {
             h->cur_pic_ptr = NULL;
-        ff_h264_sei_uninit(&h->sei);
+            ff_h264_sei_uninit(&h->sei);
+        }
     }
 
     if (h->nal_length_size == 4) {
@@ -621,8 +622,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
             h->is_avc = 1;
     }
 
-    ret = ff_h2645_packet_split(&h->pkt, buf, buf_size, avctx, h->is_avc,
-                                h->nal_length_size, avctx->codec_id, avctx->flags2 & AV_CODEC_FLAG2_FAST);
+    ret = ff_h2645_packet_split(&h->pkt, buf, buf_size, avctx, h->is_avc, h->nal_length_size,
+                                avctx->codec_id, avctx->flags2 & AV_CODEC_FLAG2_FAST, 0);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Error splitting the input into NAL units.\n");
@@ -656,11 +657,6 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size)
                 goto end;
             }
             if(!idr_cleared) {
-                if (h->current_slice && (avctx->active_thread_type & FF_THREAD_SLICE)) {
-                    av_log(h, AV_LOG_ERROR, "invalid mixed IDR / non IDR frames cannot be decoded in slice multithreading mode\n");
-                    ret = AVERROR_INVALIDDATA;
-                    goto end;
-                }
                 idr(h); // FIXME ensure we don't lose some frames if there is reordering
             }
             idr_cleared = 1;
@@ -854,6 +850,8 @@ static int is_extra(const uint8_t *buf, int buf_size)
 {
     int cnt= buf[5]&0x1f;
     const uint8_t *p= buf+6;
+    if (!cnt)
+        return 0;
     while(cnt--){
         int nalsize= AV_RB16(p) + 2;
         if(nalsize > buf_size - (p-buf) || (p[2] & 0x9F) != 7)
@@ -983,7 +981,7 @@ static int h264_decode_frame(AVCodecContext *avctx, void *data,
                                      &h->ps, &h->is_avc, &h->nal_length_size,
                                      avctx->err_recognition, avctx);
     }
-    if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
+    if (h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC) {
         if (is_extra(buf, buf_size))
             return ff_h264_decode_extradata(buf, buf_size,
                                             &h->ps, &h->is_avc, &h->nal_length_size,

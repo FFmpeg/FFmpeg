@@ -1,3 +1,3 @@
-c3c38cba600722c87c0e75bd0688b7fc *./tests/data/lavf/lavf.caf
-88323 ./tests/data/lavf/lavf.caf
-./tests/data/lavf/lavf.caf CRC=0x3a1da17e
+c3c38cba600722c87c0e75bd0688b7fc *tests/data/lavf/lavf.caf
+88323 tests/data/lavf/lavf.caf
+tests/data/lavf/lavf.caf CRC=0x3a1da17e

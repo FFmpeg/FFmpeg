@@ -45,6 +45,7 @@
                            AV_PIX_FMT_RGB48, AV_PIX_FMT_RGBA64
 
 #define GRAY_PIXEL_FORMATS AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8,                  \
+                           AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, \
                            AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16
 
 #define YUV_PIXEL_FORMATS  AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUVA420P, \

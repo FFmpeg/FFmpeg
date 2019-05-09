@@ -115,6 +115,8 @@ void ff_dirac_init_arith_decoder(DiracArith *c, GetBitContext *gb, int length)
 
     c->counter = -16;
     c->range   = 0xffff;
+    c->error   = 0;
+    c->overread= 0;
 
     for (i = 0; i < DIRAC_CTX_COUNT; i++)
         c->contexts[i] = 0x8000;

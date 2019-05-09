@@ -28,8 +28,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
-#define FF_BUFQUEUE_SIZE 256
-#include "bufferqueue.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 #include "audio.h"
@@ -48,7 +47,6 @@ typedef struct ConcatContext {
         int64_t pts;
         int64_t nb_frames;
         unsigned eof;
-        struct FFBufQueue queue;
     } *in;
 } ConcatContext;
 
@@ -185,24 +183,6 @@ static int push_frame(AVFilterContext *ctx, unsigned in_no, AVFrame *buf)
     return ff_filter_frame(outlink, buf);
 }
 
-static int process_frame(AVFilterLink *inlink, AVFrame *buf)
-{
-    AVFilterContext *ctx  = inlink->dst;
-    ConcatContext *cat    = ctx->priv;
-    unsigned in_no = FF_INLINK_IDX(inlink);
-
-    if (in_no < cat->cur_idx) {
-        av_log(ctx, AV_LOG_ERROR, "Frame after EOF on input %s\n",
-               ctx->input_pads[in_no].name);
-        av_frame_free(&buf);
-    } else if (in_no >= cat->cur_idx + ctx->nb_outputs) {
-        ff_bufqueue_add(ctx, &cat->in[in_no].queue, buf);
-    } else {
-        return push_frame(ctx, in_no, buf);
-    }
-    return 0;
-}
-
 static AVFrame *get_video_buffer(AVFilterLink *inlink, int w, int h)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -219,11 +199,6 @@ static AVFrame *get_audio_buffer(AVFilterLink *inlink, int nb_samples)
     AVFilterLink *outlink = ctx->outputs[in_no % ctx->nb_outputs];
 
     return ff_get_audio_buffer(outlink, nb_samples);
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
-{
-    return process_frame(inlink, buf);
 }
 
 static void close_input(AVFilterContext *ctx, unsigned in_no)
@@ -306,55 +281,8 @@ static int flush_segment(AVFilterContext *ctx)
             if (ret < 0)
                 return ret;
         }
-        /* flush queued buffers */
-        /* possible enhancement: flush in PTS order */
-        str_max = cat->cur_idx + ctx->nb_outputs;
-        for (str = cat->cur_idx; str < str_max; str++) {
-            while (cat->in[str].queue.available) {
-                ret = push_frame(ctx, str, ff_bufqueue_get(&cat->in[str].queue));
-                if (ret < 0)
-                    return ret;
-            }
-        }
     }
     return 0;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    ConcatContext *cat   = ctx->priv;
-    unsigned out_no = FF_OUTLINK_IDX(outlink);
-    unsigned in_no  = out_no + cat->cur_idx;
-    unsigned str, str_max;
-    int ret;
-
-    while (1) {
-        if (in_no >= ctx->nb_inputs)
-            return AVERROR_EOF;
-        if (!cat->in[in_no].eof) {
-            ret = ff_request_frame(ctx->inputs[in_no]);
-            if (ret != AVERROR_EOF)
-                return ret;
-            close_input(ctx, in_no);
-        }
-        /* cycle on all inputs to finish the segment */
-        /* possible enhancement: request in PTS order */
-        str_max = cat->cur_idx + ctx->nb_outputs - 1;
-        for (str = cat->cur_idx; cat->nb_in_active;
-             str = str == str_max ? cat->cur_idx : str + 1) {
-            if (cat->in[str].eof)
-                continue;
-            ret = ff_request_frame(ctx->inputs[str]);
-            if (ret != AVERROR_EOF)
-                return ret;
-            close_input(ctx, str);
-        }
-        ret = flush_segment(ctx);
-        if (ret < 0)
-            return ret;
-        in_no += ctx->nb_outputs;
-    }
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -371,7 +299,6 @@ static av_cold int init(AVFilterContext *ctx)
                     .type             = type,
                     .get_video_buffer = get_video_buffer,
                     .get_audio_buffer = get_audio_buffer,
-                    .filter_frame     = filter_frame,
                 };
                 pad.name = av_asprintf("in%d:%c%d", seg, "va"[type], str);
                 if ((ret = ff_insert_inpad(ctx, ctx->nb_inputs, &pad)) < 0) {
@@ -387,7 +314,6 @@ static av_cold int init(AVFilterContext *ctx)
             AVFilterPad pad = {
                 .type          = type,
                 .config_props  = config_output,
-                .request_frame = request_frame,
             };
             pad.name = av_asprintf("out:%c%d", "va"[type], str);
             if ((ret = ff_insert_outpad(ctx, ctx->nb_outputs, &pad)) < 0) {
@@ -409,13 +335,86 @@ static av_cold void uninit(AVFilterContext *ctx)
     ConcatContext *cat = ctx->priv;
     unsigned i;
 
-    for (i = 0; i < ctx->nb_inputs; i++) {
+    for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
-        ff_bufqueue_discard_all(&cat->in[i].queue);
-    }
     for (i = 0; i < ctx->nb_outputs; i++)
         av_freep(&ctx->output_pads[i].name);
     av_freep(&cat->in);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    ConcatContext *cat = ctx->priv;
+    AVFrame *frame;
+    unsigned i, j;
+    int ret, status;
+    int64_t pts;
+
+    /* Forward status back */
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        status = ff_outlink_get_status(ctx->outputs[i]);
+        if (!status)
+            continue;
+        for (j = i; j < ctx->nb_inputs; j += ctx->nb_outputs) {
+            if (!cat->in[j].eof) {
+                cat->in[j].eof = 1;
+                ff_inlink_set_status(ctx->inputs[j], status);
+                return 0;
+            }
+        }
+
+    }
+
+    /* Forward available frames */
+    if (cat->cur_idx < ctx->nb_inputs) {
+        for (i = 0; i < ctx->nb_outputs; i++) {
+            ret = ff_inlink_consume_frame(ctx->inputs[cat->cur_idx + i], &frame);
+            if (ret < 0)
+                return ret;
+            if (ret) {
+                ff_filter_set_ready(ctx, 10);
+                return push_frame(ctx, cat->cur_idx + i, frame);
+            }
+        }
+    }
+
+    /* Forward status change */
+    if (cat->cur_idx < ctx->nb_inputs) {
+        for (i = 0; i < ctx->nb_outputs; i++) {
+            ret = ff_inlink_acknowledge_status(ctx->inputs[cat->cur_idx + i], &status, &pts);
+            /* TODO use pts */
+            if (ret > 0) {
+                close_input(ctx, cat->cur_idx + i);
+                if (cat->cur_idx + ctx->nb_outputs >= ctx->nb_inputs) {
+                    ff_outlink_set_status(ctx->outputs[i], status, pts);
+                }
+                if (!cat->nb_in_active) {
+                    ret = flush_segment(ctx);
+                    if (ret < 0)
+                        return ret;
+                }
+                ff_filter_set_ready(ctx, 10);
+                return 0;
+            }
+        }
+    }
+
+    ret = FFERROR_NOT_READY;
+    for (i = 0; i < ctx->nb_outputs; i++) {
+        if (ff_outlink_frame_wanted(ctx->outputs[i])) {
+            if (cat->in[cat->cur_idx + i].eof) {
+                for (j = 0; j < ctx->nb_outputs; j++)
+                    if (!cat->in[cat->cur_idx + j].eof)
+                        ff_inlink_request_frame(ctx->inputs[cat->cur_idx + j]);
+                return 0;
+            } else {
+                ff_inlink_request_frame(ctx->inputs[cat->cur_idx + i]);
+                ret = 0;
+            }
+        }
+    }
+
+    return ret;
 }
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
@@ -437,6 +436,7 @@ AVFilter ff_avf_concat = {
     .init          = init,
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .priv_size     = sizeof(ConcatContext),
     .inputs        = NULL,
     .outputs       = NULL,

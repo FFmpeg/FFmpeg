@@ -812,9 +812,11 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
         }
     }
 
+    // Detect unmarked random access points
     if (   err >= 0
         && h->long_ref_count==0
         && (   h->short_ref_count<=2
+            || pps_ref_count[0] <= 2 && pps_ref_count[1] <= 1 && h->avctx->has_b_frames
             || pps_ref_count[0] <= 1 + (h->picture_structure != PICT_FRAME) && pps_ref_count[1] <= 1)
         && pps_ref_count[0]<=2 + (h->picture_structure != PICT_FRAME) + (2*!h->has_recovery_point)
         && h->cur_pic_ptr->f->pict_type == AV_PICTURE_TYPE_I){

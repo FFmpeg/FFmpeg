@@ -58,7 +58,7 @@ typedef struct MmDemuxContext {
   unsigned int audio_pts, video_pts;
 } MmDemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     int len, type, fps, w, h;
     if (p->buf_size < MM_HEADER_LEN_AV + MM_PREAMBLE_SIZE)

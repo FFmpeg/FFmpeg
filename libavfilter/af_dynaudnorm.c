@@ -34,6 +34,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct cqueue {
@@ -67,10 +68,14 @@ typedef struct DynamicAudioNormalizerContext {
 
     int channels;
     int delay;
+    int eof;
+    int64_t pts;
 
     cqueue **gain_history_original;
     cqueue **gain_history_minimum;
     cqueue **gain_history_smoothed;
+
+    cqueue *is_enabled;
 } DynamicAudioNormalizerContext;
 
 #define OFFSET(x) offsetof(DynamicAudioNormalizerContext, x)
@@ -279,6 +284,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->gain_history_minimum);
     av_freep(&s->gain_history_smoothed);
 
+    cqueue_free(s->is_enabled);
+    s->is_enabled = NULL;
+
     av_freep(&s->weights);
 
     ff_bufqueue_discard_all(&s->queue);
@@ -292,10 +300,7 @@ static int config_input(AVFilterLink *inlink)
 
     uninit(ctx);
 
-    s->frame_len =
-    inlink->min_samples =
-    inlink->max_samples =
-    inlink->partial_buf_size = frame_size(inlink->sample_rate, s->frame_len_msec);
+    s->frame_len = frame_size(inlink->sample_rate, s->frame_len_msec);
     av_log(ctx, AV_LOG_DEBUG, "frame len %d\n", s->frame_len);
 
     s->fade_factors[0] = av_malloc_array(s->frame_len, sizeof(*s->fade_factors[0]));
@@ -308,10 +313,11 @@ static int config_input(AVFilterLink *inlink)
     s->gain_history_minimum = av_calloc(inlink->channels, sizeof(*s->gain_history_minimum));
     s->gain_history_smoothed = av_calloc(inlink->channels, sizeof(*s->gain_history_smoothed));
     s->weights = av_malloc_array(s->filter_size, sizeof(*s->weights));
+    s->is_enabled = cqueue_create(s->filter_size);
     if (!s->prev_amplification_factor || !s->dc_correction_value ||
         !s->compress_threshold || !s->fade_factors[0] || !s->fade_factors[1] ||
         !s->gain_history_original || !s->gain_history_minimum ||
-        !s->gain_history_smoothed || !s->weights)
+        !s->gain_history_smoothed || !s->is_enabled || !s->weights)
         return AVERROR(ENOMEM);
 
     for (c = 0; c < inlink->channels; c++) {
@@ -631,7 +637,7 @@ static void analyze_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
     }
 }
 
-static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
+static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame, int enabled)
 {
     int c, i;
 
@@ -641,7 +647,7 @@ static void amplify_frame(DynamicAudioNormalizerContext *s, AVFrame *frame)
 
         cqueue_dequeue(s->gain_history_smoothed[c], &current_amplification_factor);
 
-        for (i = 0; i < frame->nb_samples; i++) {
+        for (i = 0; i < frame->nb_samples && enabled; i++) {
             const double amplification_factor = fade(s->prev_amplification_factor[c],
                                                      current_amplification_factor, i,
                                                      s->fade_factors);
@@ -661,15 +667,20 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterContext *ctx = inlink->dst;
     DynamicAudioNormalizerContext *s = ctx->priv;
     AVFilterLink *outlink = inlink->dst->outputs[0];
-    int ret = 0;
+    int ret = 1;
 
     if (!cqueue_empty(s->gain_history_smoothed[0])) {
+        double is_enabled;
         AVFrame *out = ff_bufqueue_get(&s->queue);
 
-        amplify_frame(s, out);
+        cqueue_dequeue(s->is_enabled, &is_enabled);
+
+        amplify_frame(s, out, is_enabled > 0.);
         ret = ff_filter_frame(outlink, out);
     }
 
+    av_frame_make_writable(in);
+    cqueue_enqueue(s->is_enabled, !ctx->is_disabled);
     analyze_frame(s, in);
     ff_bufqueue_add(ctx, &s->queue, in);
 
@@ -701,34 +712,76 @@ static int flush_buffer(DynamicAudioNormalizerContext *s, AVFilterLink *inlink,
     return filter_frame(inlink, out);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int flush(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     DynamicAudioNormalizerContext *s = ctx->priv;
     int ret = 0;
 
-    ret = ff_request_frame(ctx->inputs[0]);
+    if (!cqueue_empty(s->gain_history_smoothed[0])) {
+        ret = flush_buffer(s, ctx->inputs[0], outlink);
+    } else if (s->queue.available) {
+        AVFrame *out = ff_bufqueue_get(&s->queue);
 
-    if (ret == AVERROR_EOF && !ctx->is_disabled && s->delay) {
-        if (!cqueue_empty(s->gain_history_smoothed[0])) {
-            ret = flush_buffer(s, ctx->inputs[0], outlink);
-        } else if (s->queue.available) {
-            AVFrame *out = ff_bufqueue_get(&s->queue);
-
-            ret = ff_filter_frame(outlink, out);
-        }
+        s->pts = out->pts;
+        ret = ff_filter_frame(outlink, out);
+        s->delay = s->queue.available;
     }
 
     return ret;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    DynamicAudioNormalizerContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret = 0, status;
+    int64_t pts;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (!s->eof) {
+        ret = ff_inlink_consume_samples(inlink, s->frame_len, s->frame_len, &in);
+        if (ret < 0)
+            return ret;
+        if (ret > 0) {
+            ret = filter_frame(inlink, in);
+            if (ret <= 0)
+                return ret;
+        }
+
+        if (ff_inlink_queued_samples(inlink) >= s->frame_len) {
+            ff_filter_set_ready(ctx, 10);
+            return 0;
+        }
+    }
+
+    if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF)
+            s->eof = 1;
+    }
+
+    if (s->eof && s->delay > 0)
+        return flush(outlink);
+
+    if (s->eof && s->delay <= 0) {
+        ff_outlink_set_status(outlink, AVERROR_EOF, s->pts);
+        return 0;
+    }
+
+    if (!s->eof)
+        FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad avfilter_af_dynaudnorm_inputs[] = {
     {
         .name           = "default",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = filter_frame,
         .config_props   = config_input,
-        .needs_writable = 1,
     },
     { NULL }
 };
@@ -737,7 +790,6 @@ static const AVFilterPad avfilter_af_dynaudnorm_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -749,7 +801,9 @@ AVFilter ff_af_dynaudnorm = {
     .priv_size     = sizeof(DynamicAudioNormalizerContext),
     .init          = init,
     .uninit        = uninit,
+    .activate      = activate,
     .inputs        = avfilter_af_dynaudnorm_inputs,
     .outputs       = avfilter_af_dynaudnorm_outputs,
     .priv_class    = &dynaudnorm_class,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
 };

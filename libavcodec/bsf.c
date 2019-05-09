@@ -172,6 +172,16 @@ int av_bsf_init(AVBSFContext *ctx)
     return 0;
 }
 
+void av_bsf_flush(AVBSFContext *ctx)
+{
+    ctx->internal->eof = 0;
+
+    av_packet_unref(ctx->internal->buffer_pkt);
+
+    if (ctx->filter->flush)
+        ctx->filter->flush(ctx);
+}
+
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt)
 {
     int ret;
@@ -340,6 +350,15 @@ static int bsf_list_filter(AVBSFContext *bsf, AVPacket *out)
     return ret;
 }
 
+static void bsf_list_flush(AVBSFContext *bsf)
+{
+    BSFListContext *lst = bsf->priv_data;
+
+    for (int i = 0; i < lst->nb_bsfs; i++)
+        av_bsf_flush(lst->bsfs[i]);
+    lst->idx = lst->flushed_idx = 0;
+}
+
 static void bsf_list_close(AVBSFContext *bsf)
 {
     BSFListContext *lst = bsf->priv_data;
@@ -388,6 +407,7 @@ const AVBitStreamFilter ff_list_bsf = {
         .priv_class     = &bsf_list_class,
         .init           = bsf_list_init,
         .filter         = bsf_list_filter,
+        .flush          = bsf_list_flush,
         .close          = bsf_list_close,
 };
 

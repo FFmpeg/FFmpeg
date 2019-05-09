@@ -33,7 +33,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } MPL2Context;
 
-static int mpl2_probe(AVProbeData *p)
+static int mpl2_probe(const AVProbeData *p)
 {
     int i;
     char c;

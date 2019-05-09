@@ -62,7 +62,7 @@ typedef struct WsVqaDemuxContext {
     int video_stream_index;
 } WsVqaDemuxContext;
 
-static int wsvqa_probe(AVProbeData *p)
+static int wsvqa_probe(const AVProbeData *p)
 {
     /* need 12 bytes to qualify */
     if (p->buf_size < 12)

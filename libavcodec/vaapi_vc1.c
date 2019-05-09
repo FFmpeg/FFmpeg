@@ -467,6 +467,7 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
     const MpegEncContext *s = &v->s;
     VAAPIDecodePicture *pic = s->current_picture_ptr->hwaccel_picture_private;
     VASliceParameterBufferVC1 slice_param;
+    int mb_height;
     int err;
 
     /* Current bit buffer is beyond any marker for VC-1, so skip it */
@@ -475,12 +476,17 @@ static int vaapi_vc1_decode_slice(AVCodecContext *avctx, const uint8_t *buffer, 
         size -= 4;
     }
 
+    if (v->fcm == ILACE_FIELD)
+        mb_height = avctx->coded_height + 31 >> 5;
+    else
+        mb_height = avctx->coded_height + 15 >> 4;
+
     slice_param = (VASliceParameterBufferVC1) {
         .slice_data_size         = size,
         .slice_data_offset       = 0,
         .slice_data_flag         = VA_SLICE_DATA_FLAG_ALL,
         .macroblock_offset       = get_bits_count(&s->gb),
-        .slice_vertical_position = s->mb_y,
+        .slice_vertical_position = s->mb_y % mb_height,
     };
 
     err = ff_vaapi_decode_make_slice_buffer(avctx, pic,

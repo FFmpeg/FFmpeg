@@ -30,37 +30,43 @@ latency. Must be an integer not lesser than 32. It is 5000000 by default.
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
 
-@item fflags @var{flags} (@emph{input/output})
-Set format flags.
+@item fflags @var{flags}
+Set format flags. Some are implemented for a limited number of formats.
 
-Possible values:
+Possible values for input files:
 @table @samp
-@item ignidx
-Ignore index.
+@item discardcorrupt
+Discard corrupted packets.
 @item fastseek
 Enable fast, but inaccurate seeks for some formats.
 @item genpts
-Generate PTS.
+Generate missing PTS if DTS is present.
+@item igndts
+Ignore DTS if PTS is set. Inert when nofillin is set.
+@item ignidx
+Ignore index.
+@item keepside (@emph{deprecated},@emph{inert})
+@item nobuffer
+Reduce the latency introduced by buffering during initial input streams analysis.
 @item nofillin
-Do not fill in missing values that can be exactly calculated.
+Do not fill in missing values in packet fields that can be exactly calculated.
 @item noparse
 Disable AVParsers, this needs @code{+nofillin} too.
-@item igndts
-Ignore DTS.
-@item discardcorrupt
-Discard corrupted frames.
 @item sortdts
-Try to interleave output packets by DTS.
-@item keepside
-Do not merge side data.
-@item latm
-Enable RTP MP4A-LATM payload.
-@item nobuffer
-Reduce the latency introduced by optional buffering
+Try to interleave output packets by DTS. At present, available only for AVIs with an index.
+@end table
+
+Possible values for output files:
+@table @samp
+@item autobsf
+Automatically apply bitstream filters as required by the output format. Enabled by default.
 @item bitexact
 Only write platform-, build- and time-independent data.
 This ensures that file and data checksums are reproducible and match between
 platforms. Its primary use is for regression testing.
+@item flush_packets
+Write out packets immediately.
+@item latm (@emph{deprecated},@emph{inert})
 @item shortest
 Stop muxing at the end of the shortest stream.
 It may be needed to increase max_interleave_delta to avoid flushing the longer
@@ -205,7 +211,7 @@ is @code{0} (meaning that no offset is applied).
 @item dump_separator @var{string} (@emph{input})
 Separator used to separate the fields printed on the command line about the
 Stream parameters.
-For example to separate the fields with newlines and indention:
+For example, to separate the fields with newlines and indentation:
 @example
 ffprobe -dump_separator "
                           "  -i ~/videos/matrixbench_mpeg2.mpg
@@ -214,6 +220,10 @@ ffprobe -dump_separator "
 @item max_streams @var{integer} (@emph{input})
 Specifies the maximum number of streams. This can be used to reject files that
 would require too many resources due to a large number of streams.
+
+@item skip_estimate_duration_from_pts @var{bool} (@emph{input})
+Skip estimation of input duration when calculated using PTS.
+At present, applicable for MPEG-PS and MPEG-TS.
 @end table
 
 @c man end FORMAT OPTIONS
@@ -224,30 +234,10 @@ would require too many resources due to a large number of streams.
 Format stream specifiers allow selection of one or more streams that
 match specific properties.
 
-Possible forms of stream specifiers are:
-@table @option
-@item @var{stream_index}
-Matches the stream with this index.
-
-@item @var{stream_type}[:@var{stream_index}]
-@var{stream_type} is one of following: 'v' for video, 'a' for audio,
-'s' for subtitle, 'd' for data, and 't' for attachments. If
-@var{stream_index} is given, then it matches the stream number
-@var{stream_index} of this type. Otherwise, it matches all streams of
-this type.
-
-@item p:@var{program_id}[:@var{stream_index}]
-If @var{stream_index} is given, then it matches the stream with number
-@var{stream_index} in the program with the id
-@var{program_id}. Otherwise, it matches all streams in the program.
-
-@item #@var{stream_id}
-Matches the stream by a format-specific ID.
-@end table
-
 The exact semantics of stream specifiers is defined by the
 @code{avformat_match_stream_specifier()} function declared in the
-@file{libavformat/avformat.h} header.
+@file{libavformat/avformat.h} header and documented in the
+@ref{Stream specifiers,,Stream specifiers section in the ffmpeg(1) manual,ffmpeg}.
 
 @ifclear config-writeonly
 @include demuxers.texi

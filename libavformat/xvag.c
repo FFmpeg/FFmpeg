@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int xvag_probe(AVProbeData *p)
+static int xvag_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "XVAG", 4) ||
         memcmp(p->buf+32, "fmat", 4))

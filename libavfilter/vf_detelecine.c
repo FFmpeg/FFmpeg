@@ -206,6 +206,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
 
     if (s->nskip_fields >= 2) {
         s->nskip_fields -= 2;
+        av_frame_free(&inpicref);
         return 0;
     } else if (s->nskip_fields >= 1) {
         for (i = 0; i < s->nb_planes; i++) {
@@ -216,6 +217,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
         }
         s->occupied = 1;
         s->nskip_fields--;
+        av_frame_free(&inpicref);
         return 0;
     }
 

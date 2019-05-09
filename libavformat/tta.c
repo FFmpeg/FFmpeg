@@ -35,7 +35,7 @@ typedef struct TTAContext {
     int last_frame_size;
 } TTAContext;
 
-static int tta_probe(AVProbeData *p)
+static int tta_probe(const AVProbeData *p)
 {
     if (AV_RL32(&p->buf[0]) == MKTAG('T', 'T', 'A', '1') &&
         (AV_RL16(&p->buf[4]) == 1 || AV_RL16(&p->buf[4]) == 2) &&

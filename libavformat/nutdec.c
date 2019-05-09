@@ -149,7 +149,7 @@ static int64_t find_startcode(AVIOContext *bc, uint64_t code, int64_t pos)
     }
 }
 
-static int nut_probe(AVProbeData *p)
+static int nut_probe(const AVProbeData *p)
 {
     int i;
 
@@ -582,7 +582,7 @@ static int decode_info_header(NUTContext *nut)
             if (stream_id_plus1 && !strcmp(name, "r_frame_rate")) {
                 sscanf(str_value, "%d/%d", &st->r_frame_rate.num, &st->r_frame_rate.den);
                 if (st->r_frame_rate.num >= 1000LL*st->r_frame_rate.den ||
-                    st->r_frame_rate.num < 0 || st->r_frame_rate.num < 0)
+                    st->r_frame_rate.num < 0 || st->r_frame_rate.den < 0)
                     st->r_frame_rate.num = st->r_frame_rate.den = 0;
                 continue;
             }
@@ -1016,9 +1016,9 @@ static int decode_frame_header(NUTContext *nut, int64_t *pts, int *stream_id,
     }
     stc = &nut->stream[*stream_id];
     if (flags & FLAG_CODED_PTS) {
-        int coded_pts = ffio_read_varlen(bc);
+        int64_t coded_pts = ffio_read_varlen(bc);
         // FIXME check last_pts validity?
-        if (coded_pts < (1 << stc->msb_pts_shift)) {
+        if (coded_pts < (1LL << stc->msb_pts_shift)) {
             *pts = ff_lsb2full(stc, coded_pts);
         } else
             *pts = coded_pts - (1LL << stc->msb_pts_shift);

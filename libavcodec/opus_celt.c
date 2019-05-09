@@ -202,40 +202,10 @@ static void celt_postfilter_apply_transition(CeltBlock *block, float *data)
     }
 }
 
-static void celt_postfilter_apply(CeltBlock *block, float *data, int len)
-{
-    const int T = block->pf_period;
-    float g0, g1, g2;
-    float x0, x1, x2, x3, x4;
-    int i;
-
-    if (block->pf_gains[0] == 0.0 || len <= 0)
-        return;
-
-    g0 = block->pf_gains[0];
-    g1 = block->pf_gains[1];
-    g2 = block->pf_gains[2];
-
-    x4 = data[-T - 2];
-    x3 = data[-T - 1];
-    x2 = data[-T];
-    x1 = data[-T + 1];
-
-    for (i = 0; i < len; i++) {
-        x0 = data[i - T + 2];
-        data[i] += g0 * x2        +
-                   g1 * (x1 + x3) +
-                   g2 * (x0 + x4);
-        x4 = x3;
-        x3 = x2;
-        x2 = x1;
-        x1 = x0;
-    }
-}
-
 static void celt_postfilter(CeltFrame *f, CeltBlock *block)
 {
     int len = f->blocksize * f->blocks;
+    const int filter_len = len - 2 * CELT_OVERLAP;
 
     celt_postfilter_apply_transition(block, block->buf + 1024);
 
@@ -247,8 +217,11 @@ static void celt_postfilter(CeltFrame *f, CeltBlock *block)
 
     if (len > CELT_OVERLAP) {
         celt_postfilter_apply_transition(block, block->buf + 1024 + CELT_OVERLAP);
-        celt_postfilter_apply(block, block->buf + 1024 + 2 * CELT_OVERLAP,
-                              len - 2 * CELT_OVERLAP);
+
+        if (block->pf_gains[0] > FLT_EPSILON && filter_len > 0)
+            f->opusdsp.postfilter(block->buf + 1024 + 2 * CELT_OVERLAP,
+                                  block->pf_period, block->pf_gains,
+                                  filter_len);
 
         block->pf_period_old = block->pf_period;
         memcpy(block->pf_gains_old, block->pf_gains, sizeof(block->pf_gains));
@@ -462,7 +435,6 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
     /* transform and output for each output channel */
     for (i = 0; i < f->output_channels; i++) {
         CeltBlock *block = &f->block[i];
-        float m = block->emph_coeff;
 
         /* iMDCT and overlap-add */
         for (j = 0; j < f->blocks; j++) {
@@ -480,14 +452,10 @@ int ff_celt_decode_frame(CeltFrame *f, OpusRangeCoder *rc,
         /* postfilter */
         celt_postfilter(f, block);
 
-        /* deemphasis and output scaling */
-        for (j = 0; j < frame_size; j++) {
-            const float tmp = block->buf[1024 - frame_size + j] + m;
-            m = tmp * CELT_EMPH_COEFF;
-            output[i][j] = tmp;
-        }
-
-        block->emph_coeff = m;
+        /* deemphasis */
+        block->emph_coeff = f->opusdsp.deemphasis(output[i],
+                                                  &block->buf[1024 - frame_size],
+                                                  block->emph_coeff, frame_size);
     }
 
     if (channels == 1)
@@ -596,6 +564,7 @@ int ff_celt_init(AVCodecContext *avctx, CeltFrame **f, int output_channels,
         goto fail;
     }
 
+    ff_opus_dsp_init(&frm->opusdsp);
     ff_celt_flush(frm);
 
     *f = frm;

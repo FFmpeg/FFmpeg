@@ -36,6 +36,7 @@
 #include "libavutil/bprint.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/png.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include "id3v1.h"
@@ -590,7 +591,7 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
                       int isv34)
 {
     int enc, pic_type;
-    char mimetype[64];
+    char mimetype[64] = {0};
     const CodecMime *mime     = ff_id3v2_mime_tags;
     enum AVCodecID id         = AV_CODEC_ID_NONE;
     ID3v2ExtraMetaAPIC *apic  = NULL;
@@ -612,7 +613,9 @@ static void read_apic(AVFormatContext *s, AVIOContext *pb, int taglen,
     if (isv34) {
         taglen -= avio_get_str(pb, taglen, mimetype, sizeof(mimetype));
     } else {
-        avio_read(pb, mimetype, 3);
+        if (avio_read(pb, mimetype, 3) < 0)
+            goto fail;
+
         mimetype[3] = 0;
         taglen    -= 3;
     }
@@ -1156,7 +1159,7 @@ int ff_id3v2_parse_apic(AVFormatContext *s, ID3v2ExtraMeta **extra_meta)
         st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codecpar->codec_id   = apic->id;
 
-        if (AV_RB64(apic->buf->data) == 0x89504e470d0a1a0a)
+        if (AV_RB64(apic->buf->data) == PNGSIG)
             st->codecpar->codec_id = AV_CODEC_ID_PNG;
 
         if (apic->description[0])

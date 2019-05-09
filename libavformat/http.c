@@ -113,6 +113,7 @@ typedef struct HTTPContext {
     uint8_t *inflate_buffer;
 #endif /* CONFIG_ZLIB */
     AVDictionary *chained_options;
+    /* -1 = try to send if applicable, 0 = always disabled, 1 = always enabled */
     int send_expect_100;
     char *method;
     int reconnect;
@@ -155,7 +156,7 @@ static const AVOption options[] = {
     { "auth_type", "HTTP authentication type", OFFSET(auth_state.auth_type), AV_OPT_TYPE_INT, { .i64 = HTTP_AUTH_NONE }, HTTP_AUTH_NONE, HTTP_AUTH_BASIC, D | E, "auth_type"},
     { "none", "No auth method set, autodetect", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_NONE }, 0, 0, D | E, "auth_type"},
     { "basic", "HTTP basic authentication", 0, AV_OPT_TYPE_CONST, { .i64 = HTTP_AUTH_BASIC }, 0, 0, D | E, "auth_type"},
-    { "send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "send_expect_100", "Force sending an Expect: 100-continue header for POST", OFFSET(send_expect_100), AV_OPT_TYPE_BOOL, { .i64 = -1 }, -1, 1, E },
     { "location", "The actual location of the data received", OFFSET(location), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, D | E },
     { "offset", "initial byte offset", OFFSET(off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
     { "end_offset", "try to limit the request to bytes preceding this offset", OFFSET(end_off), AV_OPT_TYPE_INT64, { .i64 = 0 }, 0, INT64_MAX, D },
@@ -541,7 +542,7 @@ static int http_open(URLContext *h, const char *uri, int flags,
         int len = strlen(s->headers);
         if (len < 2 || strcmp("\r\n", s->headers + len - 2)) {
             av_log(h, AV_LOG_WARNING,
-                   "No trailing CRLF found in HTTP header.\n");
+                   "No trailing CRLF found in HTTP header. Adding it.\n");
             ret = av_reallocp(&s->headers, len + 3);
             if (ret < 0)
                 return ret;
@@ -915,7 +916,7 @@ static int process_line(URLContext *h, char *line, int line_count,
             while (av_isspace(*p))
                 p++;
             resource = p;
-            while (!av_isspace(*p))
+            while (*p && !av_isspace(*p))
                 p++;
             *(p++) = '\0';
             av_log(h, AV_LOG_TRACE, "Requested resource: %s\n", resource);
@@ -1179,16 +1180,21 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
                                                 local_path, method);
     proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
                                                 local_path, method);
-    if (post && !s->post_data) {
-        send_expect_100 = s->send_expect_100;
-        /* The user has supplied authentication but we don't know the auth type,
-         * send Expect: 100-continue to get the 401 response including the
-         * WWW-Authenticate header, or an 100 continue if no auth actually
-         * is needed. */
-        if (auth && *auth &&
-            s->auth_state.auth_type == HTTP_AUTH_NONE &&
-            s->http_code != 401)
-            send_expect_100 = 1;
+
+     if (post && !s->post_data) {
+        if (s->send_expect_100 != -1) {
+            send_expect_100 = s->send_expect_100;
+        } else {
+            send_expect_100 = 0;
+            /* The user has supplied authentication but we don't know the auth type,
+             * send Expect: 100-continue to get the 401 response including the
+             * WWW-Authenticate header, or an 100 continue if no auth actually
+             * is needed. */
+            if (auth && *auth &&
+                s->auth_state.auth_type == HTTP_AUTH_NONE &&
+                s->http_code != 401)
+                send_expect_100 = 1;
+        }
     }
 
 #if FF_API_HTTP_USER_AGENT
@@ -1504,12 +1510,13 @@ static int http_read_stream_all(URLContext *h, uint8_t *buf, int size)
     return pos;
 }
 
-static void update_metadata(HTTPContext *s, char *data)
+static void update_metadata(URLContext *h, char *data)
 {
     char *key;
     char *val;
     char *end;
     char *next = data;
+    HTTPContext *s = h->priv_data;
 
     while (*next) {
         key = next;
@@ -1525,6 +1532,7 @@ static void update_metadata(HTTPContext *s, char *data)
         val += 2;
 
         av_dict_set(&s->metadata, key, val, 0);
+        av_log(h, AV_LOG_VERBOSE, "Metadata update for %s: %s\n", key, val);
 
         next = end + 2;
     }
@@ -1559,7 +1567,7 @@ static int store_icy(URLContext *h, int size)
             data[len + 1] = 0;
             if ((ret = av_opt_set(s, "icy_metadata_packet", data, 0)) < 0)
                 return ret;
-            update_metadata(s, data);
+            update_metadata(h, data);
         }
         s->icy_data_read = 0;
         remaining        = s->icy_metaint;
@@ -1650,7 +1658,7 @@ static int http_close(URLContext *h)
     av_freep(&s->inflate_buffer);
 #endif /* CONFIG_ZLIB */
 
-    if (!s->end_chunked_post)
+    if (s->hd && !s->end_chunked_post)
         /* Close the write direction by sending the end of chunked encoding. */
         ret = http_shutdown(h, h->flags);
 
@@ -1690,6 +1698,13 @@ static int64_t http_seek_internal(URLContext *h, int64_t off, int whence, int fo
 
     if (s->off && h->is_streamed)
         return AVERROR(ENOSYS);
+
+    /* do not try to make a new connection if seeking past the end of the file */
+    if (s->end_off || s->filesize != UINT64_MAX) {
+        uint64_t end_pos = s->end_off ? s->end_off : s->filesize;
+        if (s->off >= end_pos)
+            return s->off;
+    }
 
     /* we save the old context in case the seek fails */
     old_buf_size = s->buf_end - s->buf_ptr;

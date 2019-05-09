@@ -202,6 +202,11 @@ static int init_out_session(AVFilterContext *ctx)
         }
     }
 
+    if (err != MFX_ERR_NONE) {
+        av_log(ctx, AV_LOG_ERROR, "Error getting the session handle\n");
+        return AVERROR_UNKNOWN;
+    }
+
     /* create a "slave" session with those same properties, to be used for
      * actual deinterlacing */
     err = MFXInit(impl, &ver, &s->session);
@@ -414,9 +419,11 @@ static int submit_frame(AVFilterContext *ctx, AVFrame *frame,
     qf->surface.Info.PicStruct = !qf->frame->interlaced_frame ? MFX_PICSTRUCT_PROGRESSIVE :
                                  (qf->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
                                                            MFX_PICSTRUCT_FIELD_BFF);
-    if (qf->frame->repeat_pict == 1)
+    if (qf->frame->repeat_pict == 1) {
         qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FIELD_REPEATED;
-    else if (qf->frame->repeat_pict == 2)
+        qf->surface.Info.PicStruct |= qf->frame->top_field_first ? MFX_PICSTRUCT_FIELD_TFF :
+                                                            MFX_PICSTRUCT_FIELD_BFF;
+    } else if (qf->frame->repeat_pict == 2)
         qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_DOUBLING;
     else if (qf->frame->repeat_pict == 4)
         qf->surface.Info.PicStruct |= MFX_PICSTRUCT_FRAME_TRIPLING;

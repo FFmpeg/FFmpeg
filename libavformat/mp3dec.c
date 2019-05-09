@@ -66,7 +66,7 @@ static int check(AVIOContext *pb, int64_t pos, uint32_t *header);
 
 /* mp3 read */
 
-static int mp3_read_probe(AVProbeData *p)
+static int mp3_read_probe(const AVProbeData *p)
 {
     int max_frames, first_frames = 0;
     int whole_used = 0;

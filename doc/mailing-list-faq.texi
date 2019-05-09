@@ -47,7 +47,8 @@ We cannot provide help for scripts and/or third-party tools.
 @anchor{How do I ask a question or send a message to a mailing list?}
 @section How do I ask a question or send a message to a mailing list?
 
-All you have to do is send an email:
+First you must @ref{How do I subscribe?, subscribe}. Then all you have to do is
+send an email:
 
 @itemize
 @item
@@ -57,48 +58,13 @@ ffmpeg-user mailing list.
 @item
 Email @email{libav-user@@ffmpeg.org} to send a message to the
 libav-user mailing list.
+
+@item
+Email @email{ffmpeg-devel@@ffmpeg.org} to send a message to the
+ffmpeg-devel mailing list.
 @end itemize
-
-If you are not subscribed to the mailing list then your question must be
-manually approved. Approval may take several days, but the wait is
-usually less. If you want the message to be sent with no delay then you
-must subscribe first. See @ref{How do I subscribe?}
-
-Please do not send a message, subscribe, and re-send the message: this
-results in duplicates, causes more work for the admins, and may lower
-your chance at getting an answer. However, you may do so if you first
-@ref{How do I delete my message in the moderation queue?, delete your original message from the moderation queue}.
 
 @chapter Subscribing / Unsubscribing
-
-@section What does subscribing do?
-
-Subscribing allows two things:
-
-@itemize
-@item
-Your messages will show up in the mailing list without waiting in the
-moderation queue and needing to be manually approved by a mailing list
-admin.
-
-@item
-You will receive all messages to the mailing list including replies to
-your messages. Non-subscribed users do not receive any messages.
-@end itemize
-
-@section Do I need to subscribe?
-
-No. You can still send a message to the mailing list without
-subscribing. See @ref{How do I ask a question or send a message to a mailing list?}
-
-However, your message will need to be manually approved by a mailing
-list admin, and you will not receive any mailing list messages or
-replies.
-
-You can ask to be CCd in your message, but replying users will
-sometimes forget to do so.
-
-You may also view and reply to messages via the @ref{Where are the archives?, archives}.
 
 @anchor{How do I subscribe?}
 @section How do I subscribe?
@@ -124,6 +90,9 @@ The process is the same for the other mailing lists.
 Please avoid asking a mailing list admin to unsubscribe you unless you
 are absolutely unable to do so by yourself. See @ref{Who do I contact if I have a problem with the mailing list?}
 
+Note that it is possible to temporarily halt message delivery (vacation mode).
+See @ref{How do I disable mail delivery without unsubscribing?}
+
 @chapter Moderation Queue
 @anchor{Why is my message awaiting moderator approval?}
 @section Why is my message awaiting moderator approval?
@@ -134,8 +103,6 @@ must be manually approved by a mailing list admin:
 These are:
 
 @itemize
-@item
-Messages from users who are @strong{not} subscribed.
 
 @item
 Messages that exceed the @ref{What is the message size limit?, message size limit}.
@@ -148,13 +115,13 @@ or is abusive towards others).
 
 @section How long does it take for my message in the moderation queue to be approved?
 
-The queue is usually checked once or twice a day, but on occasion
-several days may pass before someone checks the queue.
+The queue is not checked on a regular basis. You can ask on the
+@t{#ffmpeg-devel} IRC channel on Freenode for someone to approve your message.
 
 @anchor{How do I delete my message in the moderation queue?}
 @section How do I delete my message in the moderation queue?
 
-You should have received an email with the subject @emph{Your message to ffmpeg-user awaits moderator approval}.
+You should have received an email with the subject @emph{Your message to <mailing list name> awaits moderator approval}.
 A link is in the message that will allow you to delete your message
 unless a mailing list admin already approved or rejected it.
 
@@ -175,6 +142,9 @@ Click the email link at the top of the message just under the subject
 title. The link will provide the proper headers to keep the message
 within the thread.
 
+Note that you must be subscribed to send a message to the ffmpeg-user or
+libav-user mailing lists.
+
 @section How do I search the archives?
 
 Perform a site search using your favorite search engine. Example:
@@ -187,11 +157,12 @@ Perform a site search using your favorite search engine. Example:
 
 You can ask for help in the official @t{#ffmpeg} IRC channel on Freenode.
 
-Some users prefer the third-party Nabble interface which presents the
-mailing lists in a typical forum layout.
+Some users prefer the third-party @url{http://www.ffmpeg-archive.org/, Nabble}
+interface which presents the mailing lists in a typical forum layout.
 
-There are also numerous third-party help sites such as Super User and
-r/ffmpeg on reddit.
+There are also numerous third-party help sites such as
+@url{https://superuser.com/tags/ffmpeg, Super User} and
+@url{https://www.reddit.com/r/ffmpeg/, r/ffmpeg on reddit}.
 
 @anchor{What is top-posting?}
 @section What is top-posting?
@@ -203,16 +174,15 @@ Instead, use trimmed interleaved/inline replies (@url{https://lists.ffmpeg.org/p
 @anchor{What is the message size limit?}
 @section What is the message size limit?
 
-The message size limit is 500 kilobytes for the user lists and 1000
-kilobytes for ffmpeg-devel. Please provide links to larger files instead
-of attaching them.
+The message size limit is 1000 kilobytes. Please provide links to larger files
+instead of attaching them.
 
 @section Where can I upload sample files?
 
 Anywhere that is not too annoying for us to use.
 
 Google Drive and Dropbox are acceptable if you need a file host, and
-0x0.st is good for files under 256 MiB.
+@url{https://0x0.st/, 0x0.st} is good for files under 256 MiB.
 
 Small, short samples are preferred if possible.
 
@@ -258,6 +228,54 @@ Use the @emph{List-Id}. For example, the ffmpeg-user mailing list is
 or headers.
 
 You can then filter the mailing list messages to their own folder.
+
+@anchor{How do I disable mail delivery without unsubscribing?}
+@section How do I disable mail delivery without unsubscribing?
+
+Sometimes you may want to temporarily stop receiving all mailing list
+messages. This "vacation mode" is simple to do:
+
+@enumerate
+@item
+Go to the @url{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-user/, ffmpeg-user mailing list info page}
+
+@item
+Enter your email address in the box at very bottom of the page and click the
+@emph{Unsubscribe or edit options} box.
+
+@item
+Enter your password and click the @emph{Log in} button.
+
+@item
+Look for the @emph{Mail delivery} option. Here you can disable/enable mail
+delivery. If you check @emph{Set globally} it will apply your choice to all
+other FFmpeg mailing lists you are subscribed to.
+@end enumerate
+
+Alternatively, from your subscribed address, send a message to @email{ffmpeg-user-request@@ffmpeg.org}
+with the subject @emph{set delivery off}. To re-enable mail delivery send a
+message to @email{ffmpeg-user-request@@ffmpeg.org} with the subject
+@emph{set delivery on}.
+
+@anchor{Why is the mailing list munging my address?}
+@section Why is the mailing list munging my address?
+
+This is due to subscribers that use an email service with a DMARC reject policy
+which adds difficulties to mailing list operators.
+
+The mailing list must re-write (munge) the @emph{From:} header for such users;
+otherwise their email service will reject and bounce the message resulting in
+automatic unsubscribing from the mailing list.
+
+When sending a message these users will see @emph{via <mailing list name>}
+added to their name and the @emph{From:} address munged to the address of
+the particular mailing list.
+
+If you want to avoid this then please use a different email service.
+
+Note that ffmpeg-devel does not apply any munging as it causes issues with
+patch authorship. As a result users with an email service with a DMARC reject
+policy may be automatically unsubscribed due to rejected and bounced messages.
 
 @chapter Rules and Etiquette
 
@@ -356,6 +374,15 @@ form a multi-part message is recommended by email standards.
 @item
 Check your spam folder.
 @end itemize
+
+@anchor{Why do I keep getting unsubscribed from ffmpeg-devel?}
+@section Why do I keep getting unsubscribed from ffmpeg-devel?
+
+Users with an email service that has a DMARC reject or quarantine policy may be
+automatically unsubscribed from the ffmpeg-devel mailing list due to the mailing
+list messages being continuously rejected and bounced back.
+
+Consider using a different email service.
 
 @anchor{Who do I contact if I have a problem with the mailing list?}
 @section Who do I contact if I have a problem with the mailing list?

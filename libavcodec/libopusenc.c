@@ -271,12 +271,22 @@ static av_cold int libopus_encode_init(AVCodecContext *avctx)
     case 960:
     case 1920:
     case 2880:
+#ifdef OPUS_FRAMESIZE_120_MS
+    case 3840:
+    case 4800:
+    case 5760:
+#endif
         opus->opts.packet_size =
         avctx->frame_size      = frame_size * avctx->sample_rate / 48000;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid frame duration: %g.\n"
-               "Frame duration must be exactly one of: 2.5, 5, 10, 20, 40 or 60.\n",
+               "Frame duration must be exactly one of: 2.5, 5, 10, 20, 40"
+#ifdef OPUS_FRAMESIZE_120_MS
+               ", 60, 80, 100 or 120.\n",
+#else
+               " or 60.\n",
+#endif
                opus->opts.frame_duration);
         return AVERROR(EINVAL);
     }
@@ -463,10 +473,10 @@ static int libopus_encode(AVCodecContext *avctx, AVPacket *avpkt,
         memset(audio, 0, opus->opts.packet_size * sample_size);
     }
 
-    /* Maximum packet size taken from opusenc in opus-tools. 60ms packets
-     * consist of 3 frames in one packet. The maximum frame size is 1275
+    /* Maximum packet size taken from opusenc in opus-tools. 120ms packets
+     * consist of 6 frames in one packet. The maximum frame size is 1275
      * bytes along with the largest possible packet header of 7 bytes. */
-    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 3 + 7) * opus->stream_count, 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, (1275 * 6 + 7) * opus->stream_count, 0)) < 0)
         return ret;
 
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
@@ -534,7 +544,7 @@ static const AVOption libopus_options[] = {
         { "voip",           "Favor improved speech intelligibility",   0, AV_OPT_TYPE_CONST, { .i64 = OPUS_APPLICATION_VOIP },                0, 0, FLAGS, "application" },
         { "audio",          "Favor faithfulness to the input",         0, AV_OPT_TYPE_CONST, { .i64 = OPUS_APPLICATION_AUDIO },               0, 0, FLAGS, "application" },
         { "lowdelay",       "Restrict to only the lowest delay modes", 0, AV_OPT_TYPE_CONST, { .i64 = OPUS_APPLICATION_RESTRICTED_LOWDELAY }, 0, 0, FLAGS, "application" },
-    { "frame_duration", "Duration of a frame in milliseconds", OFFSET(frame_duration), AV_OPT_TYPE_FLOAT, { .dbl = 20.0 }, 2.5, 60.0, FLAGS },
+    { "frame_duration", "Duration of a frame in milliseconds", OFFSET(frame_duration), AV_OPT_TYPE_FLOAT, { .dbl = 20.0 }, 2.5, 120.0, FLAGS },
     { "packet_loss",    "Expected packet loss percentage",     OFFSET(packet_loss),    AV_OPT_TYPE_INT,   { .i64 = 0 },    0,   100,  FLAGS },
     { "vbr",            "Variable bit rate mode",              OFFSET(vbr),            AV_OPT_TYPE_INT,   { .i64 = 1 },    0,   2,    FLAGS, "vbr" },
         { "off",            "Use constant bit rate", 0, AV_OPT_TYPE_CONST, { .i64 = 0 }, 0, 0, FLAGS, "vbr" },

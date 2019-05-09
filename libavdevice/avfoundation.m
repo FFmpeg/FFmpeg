@@ -35,6 +35,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/time.h"
+#include "libavutil/imgutils.h"
 #include "avdevice.h"
 
 static const int avf_time_base = 1000000;
@@ -892,6 +893,49 @@ fail:
     return AVERROR(EIO);
 }
 
+static int copy_cvpixelbuffer(AVFormatContext *s,
+                               CVPixelBufferRef image_buffer,
+                               AVPacket *pkt)
+{
+    AVFContext *ctx = s->priv_data;
+    int src_linesize[4];
+    const uint8_t *src_data[4];
+    int width  = CVPixelBufferGetWidth(image_buffer);
+    int height = CVPixelBufferGetHeight(image_buffer);
+    int status;
+
+    memset(src_linesize, 0, sizeof(src_linesize));
+    memset(src_data, 0, sizeof(src_data));
+
+    status = CVPixelBufferLockBaseAddress(image_buffer, 0);
+    if (status != kCVReturnSuccess) {
+        av_log(s, AV_LOG_ERROR, "Could not lock base address: %d\n", status);
+        return AVERROR_EXTERNAL;
+    }
+
+    if (CVPixelBufferIsPlanar(image_buffer)) {
+        size_t plane_count = CVPixelBufferGetPlaneCount(image_buffer);
+        int i;
+        for(i = 0; i < plane_count; i++){
+            src_linesize[i] = CVPixelBufferGetBytesPerRowOfPlane(image_buffer, i);
+            src_data[i] = CVPixelBufferGetBaseAddressOfPlane(image_buffer, i);
+        }
+    } else {
+        src_linesize[0] = CVPixelBufferGetBytesPerRow(image_buffer);
+        src_data[0] = CVPixelBufferGetBaseAddress(image_buffer);
+    }
+
+    status = av_image_copy_to_buffer(pkt->data, pkt->size,
+                                     src_data, src_linesize,
+                                     ctx->pixel_format, width, height, 1);
+
+
+
+    CVPixelBufferUnlockBaseAddress(image_buffer, 0);
+
+    return status;
+}
+
 static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVFContext* ctx = (AVFContext*)s->priv_data;
@@ -903,7 +947,7 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
         image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
 
         if (ctx->current_frame != nil) {
-            void *data;
+            int status;
             if (av_new_packet(pkt, (int)CVPixelBufferGetDataSize(image_buffer)) < 0) {
                 return AVERROR(EIO);
             }
@@ -919,14 +963,12 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index  = ctx->video_stream_index;
             pkt->flags        |= AV_PKT_FLAG_KEY;
 
-            CVPixelBufferLockBaseAddress(image_buffer, 0);
-
-            data = CVPixelBufferGetBaseAddress(image_buffer);
-            memcpy(pkt->data, data, pkt->size);
-
-            CVPixelBufferUnlockBaseAddress(image_buffer, 0);
+            status = copy_cvpixelbuffer(s, image_buffer, pkt);
             CFRelease(ctx->current_frame);
             ctx->current_frame = nil;
+
+            if (status < 0)
+                return status;
         } else if (ctx->current_audio_frame != nil) {
             CMBlockBufferRef block_buffer = CMSampleBufferGetDataBuffer(ctx->current_audio_frame);
             int block_buffer_size         = CMBlockBufferGetDataLength(block_buffer);

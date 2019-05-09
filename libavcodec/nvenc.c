@@ -25,11 +25,14 @@
 
 #include "libavutil/hwcontext_cuda.h"
 #include "libavutil/hwcontext.h"
+#include "libavutil/cuda_check.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "internal.h"
+
+#define CHECK_CU(x) FF_CUDA_CHECK_DL(avctx, dl_fn->cuda_dl, x)
 
 #define NVENC_CAP 0x30
 #define IS_CBR(rc) (rc == NV_ENC_PARAMS_RC_CBR ||             \
@@ -119,7 +122,19 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if NVENCAPI_CHECK_VERSION(8, 1)
+#if NVENCAPI_CHECK_VERSION(9, 0)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "418.81";
+# else
+    const char *minver = "418.30";
+# endif
+#elif NVENCAPI_CHECK_VERSION(8, 2)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "397.93";
+# else
+    const char *minver = "396.24";
+#endif
+#elif NVENCAPI_CHECK_VERSION(8, 1)
 # if defined(_WIN32) || defined(__CYGWIN__)
     const char *minver = "390.77";
 # else
@@ -183,37 +198,23 @@ static int nvenc_push_context(AVCodecContext *avctx)
 {
     NvencContext *ctx            = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
-    CUresult cu_res;
 
     if (ctx->d3d11_device)
         return 0;
 
-    cu_res = dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuCtxPushCurrent failed\n");
-        return AVERROR_EXTERNAL;
-    }
-
-    return 0;
+    return CHECK_CU(dl_fn->cuda_dl->cuCtxPushCurrent(ctx->cu_context));
 }
 
 static int nvenc_pop_context(AVCodecContext *avctx)
 {
     NvencContext *ctx            = avctx->priv_data;
     NvencDynLoadFunctions *dl_fn = &ctx->nvenc_dload_funcs;
-    CUresult cu_res;
     CUcontext dummy;
 
     if (ctx->d3d11_device)
         return 0;
 
-    cu_res = dl_fn->cuda_dl->cuCtxPopCurrent(&dummy);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuCtxPopCurrent failed\n");
-        return AVERROR_EXTERNAL;
-    }
-
-    return 0;
+    return CHECK_CU(dl_fn->cuda_dl->cuCtxPopCurrent(&dummy));
 }
 
 static av_cold int nvenc_open_session(AVCodecContext *avctx)
@@ -406,32 +407,23 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
     char name[128] = { 0};
     int major, minor, ret;
-    CUresult cu_res;
     CUdevice cu_device;
     int loglevel = AV_LOG_VERBOSE;
 
     if (ctx->device == LIST_DEVICES)
         loglevel = AV_LOG_INFO;
 
-    cu_res = dl_fn->cuda_dl->cuDeviceGet(&cu_device, idx);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Cannot access the CUDA device %d\n",
-               idx);
-        return -1;
-    }
+    ret = CHECK_CU(dl_fn->cuda_dl->cuDeviceGet(&cu_device, idx));
+    if (ret < 0)
+        return ret;
 
-    cu_res = dl_fn->cuda_dl->cuDeviceGetName(name, sizeof(name), cu_device);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuDeviceGetName failed on device %d\n", idx);
-        return -1;
-    }
+    ret = CHECK_CU(dl_fn->cuda_dl->cuDeviceGetName(name, sizeof(name), cu_device));
+    if (ret < 0)
+        return ret;
 
-    cu_res = dl_fn->cuda_dl->cuDeviceComputeCapability(&major, &minor, cu_device);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_ERROR, "cuDeviceComputeCapability failed on device %d\n", idx);
-        return -1;
-    }
+    ret = CHECK_CU(dl_fn->cuda_dl->cuDeviceComputeCapability(&major, &minor, cu_device));
+    if (ret < 0)
+        return ret;
 
     av_log(avctx, loglevel, "[ GPU #%d - < %s > has Compute SM %d.%d ]\n", idx, name, major, minor);
     if (((major << 4) | minor) < NVENC_CAP) {
@@ -442,11 +434,9 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
     if (ctx->device != idx && ctx->device != ANY_DEVICE)
         return -1;
 
-    cu_res = dl_fn->cuda_dl->cuCtxCreate(&ctx->cu_context_internal, 0, cu_device);
-    if (cu_res != CUDA_SUCCESS) {
-        av_log(avctx, AV_LOG_FATAL, "Failed creating CUDA context for NVENC: 0x%x\n", (int)cu_res);
+    ret = CHECK_CU(dl_fn->cuda_dl->cuCtxCreate(&ctx->cu_context_internal, 0, cu_device));
+    if (ret < 0)
         goto fail;
-    }
 
     ctx->cu_context = ctx->cu_context_internal;
 
@@ -477,7 +467,7 @@ fail3:
         return ret;
 
 fail2:
-    dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal);
+    CHECK_CU(dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal));
     ctx->cu_context_internal = NULL;
 
 fail:
@@ -555,17 +545,11 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
     } else {
         int i, nb_devices = 0;
 
-        if ((dl_fn->cuda_dl->cuInit(0)) != CUDA_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Cannot init CUDA\n");
+        if (CHECK_CU(dl_fn->cuda_dl->cuInit(0)) < 0)
             return AVERROR_UNKNOWN;
-        }
 
-        if ((dl_fn->cuda_dl->cuDeviceGetCount(&nb_devices)) != CUDA_SUCCESS) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Cannot enumerate the CUDA devices\n");
+        if (CHECK_CU(dl_fn->cuda_dl->cuDeviceGetCount(&nb_devices)) < 0)
             return AVERROR_UNKNOWN;
-        }
 
         if (!nb_devices) {
             av_log(avctx, AV_LOG_FATAL, "No CUDA capable devices found\n");
@@ -1098,6 +1082,10 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
     hevc->tier = ctx->tier;
 
+#ifdef NVENC_HAVE_HEVC_BFRAME_REF_MODE
+    hevc->useBFramesAsRef = ctx->b_ref_mode;
+#endif
+
     return 0;
 }
 
@@ -1460,7 +1448,7 @@ av_cold int ff_nvenc_encode_close(AVCodecContext *avctx)
     ctx->nvencoder = NULL;
 
     if (ctx->cu_context_internal)
-        dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal);
+        CHECK_CU(dl_fn->cuda_dl->cuCtxDestroy(ctx->cu_context_internal));
     ctx->cu_context = ctx->cu_context_internal = NULL;
 
 #if CONFIG_D3D11VA
@@ -1572,19 +1560,23 @@ static int nvenc_find_free_reg_resource(AVCodecContext *avctx)
     NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &dl_fn->nvenc_funcs;
     NVENCSTATUS nv_status;
 
-    int i;
+    int i, first_round;
 
     if (ctx->nb_registered_frames == FF_ARRAY_ELEMS(ctx->registered_frames)) {
-        for (i = 0; i < ctx->nb_registered_frames; i++) {
-            if (!ctx->registered_frames[i].mapped) {
-                if (ctx->registered_frames[i].regptr) {
-                    nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
-                    if (nv_status != NV_ENC_SUCCESS)
-                        return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
-                    ctx->registered_frames[i].ptr = NULL;
-                    ctx->registered_frames[i].regptr = NULL;
+        for (first_round = 1; first_round >= 0; first_round--) {
+            for (i = 0; i < ctx->nb_registered_frames; i++) {
+                if (!ctx->registered_frames[i].mapped) {
+                    if (ctx->registered_frames[i].regptr) {
+                        if (first_round)
+                            continue;
+                        nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[i].regptr);
+                        if (nv_status != NV_ENC_SUCCESS)
+                            return nvenc_print_error(avctx, nv_status, "Failed unregistering unused input resource");
+                        ctx->registered_frames[i].ptr = NULL;
+                        ctx->registered_frames[i].regptr = NULL;
+                    }
+                    return i;
                 }
-                return i;
             }
         }
     } else {
@@ -1858,13 +1850,6 @@ static int process_output_surface(AVCodecContext *avctx, AVPacket *pkt, NvencSur
                 res = nvenc_print_error(avctx, nv_status, "Failed unmapping input resource");
                 goto error;
             }
-            nv_status = p_nvenc->nvEncUnregisterResource(ctx->nvencoder, ctx->registered_frames[tmpoutsurf->reg_idx].regptr);
-            if (nv_status != NV_ENC_SUCCESS) {
-                res = nvenc_print_error(avctx, nv_status, "Failed unregistering input resource");
-                goto error;
-            }
-            ctx->registered_frames[tmpoutsurf->reg_idx].ptr = NULL;
-            ctx->registered_frames[tmpoutsurf->reg_idx].regptr = NULL;
         } else if (ctx->registered_frames[tmpoutsurf->reg_idx].mapped < 0) {
             res = AVERROR_BUG;
             goto error;
@@ -2051,8 +2036,16 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     if ((!ctx->cu_context && !ctx->d3d11_device) || !ctx->nvencoder)
         return AVERROR(EINVAL);
 
-    if (ctx->encoder_flushing)
-        return AVERROR_EOF;
+    if (ctx->encoder_flushing) {
+        if (avctx->internal->draining)
+            return AVERROR_EOF;
+
+        ctx->encoder_flushing = 0;
+        ctx->first_packet_output = 0;
+        ctx->initial_pts[0] = AV_NOPTS_VALUE;
+        ctx->initial_pts[1] = AV_NOPTS_VALUE;
+        av_fifo_reset(ctx->timestamp_list);
+    }
 
     if (frame) {
         in_surf = get_free_frame(ctx);
@@ -2099,7 +2092,7 @@ int ff_nvenc_send_frame(AVCodecContext *avctx, const AVFrame *frame)
 
         pic_params.inputTimeStamp = frame->pts;
 
-        if (av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
+        if (ctx->a53_cc && av_frame_get_side_data(frame, AV_FRAME_DATA_A53_CC)) {
             if (ff_alloc_a53_sei(frame, sizeof(NV_ENC_SEI_PAYLOAD), (void**)&sei_data, &sei_size) < 0) {
                 av_log(ctx, AV_LOG_ERROR, "Not enough memory for closed captions, skipping\n");
             }

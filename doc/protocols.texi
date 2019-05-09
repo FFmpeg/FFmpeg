@@ -193,6 +193,20 @@ Set I/O operation maximum block size, in bytes. Default value is
 @code{INT_MAX}, which results in not limiting the requested block size.
 Setting this value reasonably low improves user termination request reaction
 time, which is valuable for files on slow medium.
+
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
+
+@item seekable
+Controls if seekability is advertised on the file. 0 means non-seekable, -1
+means auto (seekable for normal files, non-seekable for named pipes).
+
+Many demuxers handle seekable and non-seekable resources differently,
+overriding this might speed up opening certain files at the cost of losing some
+features (e.g. accurate seeking).
 @end table
 
 @section ftp
@@ -228,17 +242,6 @@ NOTE: Protocol can be used as output, but it is recommended to not do
 it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
-
-This protocol accepts the following options:
-
-@table @option
-@item follow
-If set to 1, the protocol will retry reading at the end of the file, allowing
-reading files that still are being written. In order for this to terminate,
-you either need to use the rw_timeout option, or use the interrupt callback
-(for API users).
-
-@end table
 
 @section gopher
 
@@ -389,6 +392,11 @@ ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{p
 # Client can also be done with wget:
 wget --post-file=somefile.ogg http://@var{server}:@var{port}
 @end example
+
+@item send_expect_100
+Send an Expect: 100-continue header for POST. If set to 1 it will send, if set
+to 0 it won't, if set to -1 it will try to send if it is applicable. Default
+value is -1.
 
 @end table
 
@@ -1210,6 +1218,17 @@ IP Type of Service. Applies to sender only. Default value is 0xB8.
 @item ipttl=@var{ttl}
 IP Time To Live. Applies to sender only. Default value is 64.
 
+@item latency
+Timestamp-based Packet Delivery Delay.
+Used to absorb bursts of missed packet retransmissions.
+This flag sets both @option{rcvlatency} and @option{peerlatency}
+to the same value. Note that prior to version 1.3.0
+this is the only flag to set the latency, however
+this is effectively equivalent to setting @option{peerlatency},
+when side is sender and @option{rcvlatency}
+when side is receiver, and the bidirectional stream
+sending is not supported.
+
 @item listen_timeout
 Set socket listen timeout.
 
@@ -1255,6 +1274,25 @@ only if @option{pbkeylen} is non-zero. It is used on
 the receiver only if the received data is encrypted.
 The configured passphrase cannot be recovered (write-only).
 
+@item payload_size=@var{bytes}
+Sets the maximum declared size of a packet transferred
+during the single call to the sending function in Live
+mode. Use 0 if this value isn't used (which is default in
+file mode).
+Default is -1 (automatic), which typically means MPEG-TS;
+if you are going to use SRT
+to send any different kind of payload, such as, for example,
+wrapping a live stream in very small frames, then you can
+use a bigger maximum frame size, though not greater than
+1456 bytes.
+
+@item pkt_size=@var{bytes}
+Alias for @samp{payload_size}.
+
+@item peerlatency
+The latency value (as described in @option{rcvlatency}) that is
+set by the sender side as a minimum value for the receiver.
+
 @item pbkeylen=@var{bytes}
 Sender encryption key length, in bytes.
 Only can be set to 0, 16, 24 and 32.
@@ -1263,11 +1301,23 @@ Not required on receiver (set to 0),
 key size obtained from sender in HaiCrypt handshake.
 Default value is 0.
 
+@item rcvlatency
+The time that should elapse since the moment when the
+packet was sent and the moment when it's delivered to
+the receiver application in the receiving function.
+This time should be a buffer time large enough to cover
+the time spent for sending, unexpectedly extended RTT
+time, and the time needed to retransmit the lost UDP
+packet. The effective latency value will be the maximum
+of this options' value and the value of @option{peerlatency}
+set by the peer side. Before version 1.3.0 this option
+is only available as @option{latency}.
+
 @item recv_buffer_size=@var{bytes}
-Set receive buffer size, expressed in bytes.
+Set UDP receive buffer size, expressed in bytes.
 
 @item send_buffer_size=@var{bytes}
-Set send buffer size, expressed in bytes.
+Set UDP send buffer size, expressed in bytes.
 
 @item rw_timeout
 Set raise error timeout for read/write optations.
@@ -1287,9 +1337,86 @@ have no chance of being delivered in time. It was
 automatically enabled in the sender if the receiver
 supports it.
 
-@item tsbpddelay
-Timestamp-based Packet Delivery Delay.
-Used to absorb burst of missed packet retransmission.
+@item sndbuf=@var{bytes}
+Set send buffer size, expressed in bytes.
+
+@item rcvbuf=@var{bytes}
+Set receive buffer size, expressed in bytes.
+
+Receive buffer must not be greater than @option{ffs}.
+
+@item lossmaxttl=@var{packets}
+The value up to which the Reorder Tolerance may grow. When
+Reorder Tolerance is > 0, then packet loss report is delayed
+until that number of packets come in. Reorder Tolerance
+increases every time a "belated" packet has come, but it
+wasn't due to retransmission (that is, when UDP packets tend
+to come out of order), with the difference between the latest
+sequence and this packet's sequence, and not more than the
+value of this option. By default it's 0, which means that this
+mechanism is turned off, and the loss report is always sent
+immediately upon experiencing a "gap" in sequences.
+
+@item minversion
+The minimum SRT version that is required from the peer. A connection
+to a peer that does not satisfy the minimum version requirement
+will be rejected.
+
+The version format in hex is 0xXXYYZZ for x.y.z in human readable
+form.
+
+@item streamid=@var{string}
+A string limited to 512 characters that can be set on the socket prior
+to connecting. This stream ID will be able to be retrieved by the
+listener side from the socket that is returned from srt_accept and
+was connected by a socket with that set stream ID. SRT does not enforce
+any special interpretation of the contents of this string.
+This option doesn’t make sense in Rendezvous connection; the result
+might be that simply one side will override the value from the other
+side and it’s the matter of luck which one would win
+
+@item smoother=@var{live|file}
+The type of Smoother used for the transmission for that socket, which
+is responsible for the transmission and congestion control. The Smoother
+type must be exactly the same on both connecting parties, otherwise
+the connection is rejected.
+
+@item messageapi=@var{1|0}
+When set, this socket uses the Message API, otherwise it uses Buffer
+API. Note that in live mode (see @option{transtype}) there’s only
+message API available. In File mode you can chose to use one of two modes:
+
+Stream API (default, when this option is false). In this mode you may
+send as many data as you wish with one sending instruction, or even use
+dedicated functions that read directly from a file. The internal facility
+will take care of any speed and congestion control. When receiving, you
+can also receive as many data as desired, the data not extracted will be
+waiting for the next call. There is no boundary between data portions in
+the Stream mode.
+
+Message API. In this mode your single sending instruction passes exactly
+one piece of data that has boundaries (a message). Contrary to Live mode,
+this message may span across multiple UDP packets and the only size
+limitation is that it shall fit as a whole in the sending buffer. The
+receiver shall use as large buffer as necessary to receive the message,
+otherwise the message will not be given up. When the message is not
+complete (not all packets received or there was a packet loss) it will
+not be given up.
+
+@item transtype=@var{live|file}
+Sets the transmission type for the socket, in particular, setting this
+option sets multiple other parameters to their default values as required
+for a particular transmission type.
+
+live: Set options as for live transmission. In this mode, you should
+send by one sending instruction only so many data that fit in one UDP packet,
+and limited to the value defined first in @option{payload_size} (1316 is
+default in this mode). There is no speed control in this mode, only the
+bandwidth control, if configured, in order to not exceed the bandwidth with
+the overhead transmission (retransmitted and control packets).
+
+file: Set options as for non-live transmission. See @option{messageapi}
+for further explanations
 
 @end table
 
@@ -1397,6 +1524,9 @@ Set send buffer size, expressed bytes.
 
 @item tcp_nodelay=@var{1|0}
 Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
+
+@item tcp_mss=@var{bytes}
+Set maximum segment size for outgoing TCP packets, expressed in bytes.
 @end table
 
 The following example shows how to setup a listening TCP connection
@@ -1503,9 +1633,8 @@ packet bursts.
 Override the local UDP port to bind with.
 
 @item localaddr=@var{addr}
-Choose the local IP address. This is useful e.g. if sending multicast
-and the host has multiple interfaces, where the user can choose
-which interface to send on by specifying the IP address of that interface.
+Local IP address of a network interface used for sending packets or joining
+multicast groups.
 
 @item pkt_size=@var{size}
 Set the size in bytes of UDP packets.
@@ -1528,12 +1657,12 @@ For receiving, this gives the benefit of only receiving packets from
 the specified peer address/port.
 
 @item sources=@var{address}[,@var{address}]
-Only receive packets sent to the multicast group from one of the
-specified sender IP addresses.
+Only receive packets sent from the specified addresses. In case of multicast,
+also subscribe to multicast traffic coming from these addresses only.
 
 @item block=@var{address}[,@var{address}]
-Ignore packets sent to the multicast group from the specified
-sender IP addresses.
+Ignore packets sent from the specified addresses. In case of multicast, also
+exclude the source addresses in the multicast subscription.
 
 @item fifo_size=@var{units}
 Set the UDP receiving circular buffer size, expressed as a number of

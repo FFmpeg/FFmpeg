@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int hevc_probe(AVProbeData *p)
+static int hevc_probe(const AVProbeData *p)
 {
     uint32_t code = -1;
     int vps = 0, sps = 0, pps = 0, irap = 0;

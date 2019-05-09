@@ -40,7 +40,7 @@ typedef struct VivoContext {
     uint8_t  text[1024 + 1];
 } VivoContext;
 
-static int vivo_probe(AVProbeData *p)
+static int vivo_probe(const AVProbeData *p)
 {
     const unsigned char *buf = p->buf;
     unsigned c, length = 0;
@@ -166,7 +166,7 @@ static int vivo_read_header(AVFormatContext *s)
             value = strchr(key, ':');
             if (!value) {
                 av_log(s, AV_LOG_WARNING, "missing colon in key:value pair '%s'\n",
-                       value);
+                       key);
                 continue;
             }
 

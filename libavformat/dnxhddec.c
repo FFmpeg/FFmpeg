@@ -25,7 +25,7 @@
 #include "rawdec.h"
 #include "libavcodec/dnxhddata.h"
 
-static int dnxhd_probe(AVProbeData *p)
+static int dnxhd_probe(const AVProbeData *p)
 {
     int w, h, compression_id;
     if (p->buf_size < 0x2c)

@@ -82,7 +82,7 @@ static int s337m_get_offset_and_codec(AVFormatContext *s,
     return 0;
 }
 
-static int s337m_probe(AVProbeData *p)
+static int s337m_probe(const AVProbeData *p)
 {
     uint64_t state = 0;
     int markers[3] = { 0 };

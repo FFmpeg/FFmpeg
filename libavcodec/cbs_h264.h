@@ -38,7 +38,6 @@ enum {
 
 
 typedef struct H264RawNALUnitHeader {
-    uint8_t forbidden_zero_bit;
     uint8_t nal_ref_idc;
     uint8_t nal_unit_type;
 
@@ -253,7 +252,7 @@ typedef struct H264RawSEIPicTimestamp {
     uint8_t minutes_value;
     uint8_t hours_flag;
     uint8_t hours_value;
-    uint32_t time_offset;
+    int32_t time_offset;
 } H264RawSEIPicTimestamp;
 
 typedef struct H264RawSEIPicTiming {

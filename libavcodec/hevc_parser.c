@@ -194,7 +194,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
     ff_hevc_reset_sei(sei);
 
     ret = ff_h2645_packet_split(&ctx->pkt, buf, buf_size, avctx, ctx->is_avc,
-                                ctx->nal_length_size, AV_CODEC_ID_HEVC, 1);
+                                ctx->nal_length_size, AV_CODEC_ID_HEVC, 1, 0);
     if (ret < 0)
         return ret;
 
@@ -239,7 +239,7 @@ static int parse_nal_units(AVCodecParserContext *s, const uint8_t *buf,
         }
     }
     /* didn't find a picture! */
-    av_log(avctx, AV_LOG_ERROR, "missing picture in access unit\n");
+    av_log(avctx, AV_LOG_ERROR, "missing picture in access unit with size %d\n", buf_size);
     return -1;
 }
 
@@ -294,6 +294,8 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int next;
     HEVCParserContext *ctx = s->priv_data;
     ParseContext *pc = &ctx->pc;
+    int is_dummy_buf = !buf_size;
+    const uint8_t *dummy_buf = buf;
 
     if (avctx->extradata && !ctx->parsed_extradata) {
         ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size, &ctx->ps, &ctx->sei,
@@ -313,7 +315,10 @@ static int hevc_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         }
     }
 
-    parse_nal_units(s, buf, buf_size, avctx);
+    is_dummy_buf &= (dummy_buf == buf);
+
+    if (!is_dummy_buf)
+        parse_nal_units(s, buf, buf_size, avctx);
 
     *poutbuf      = buf;
     *poutbuf_size = buf_size;

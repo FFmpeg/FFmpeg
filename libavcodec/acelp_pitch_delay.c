@@ -118,7 +118,7 @@ int16_t ff_acelp_decode_gain_code(
                (mr_energy >> 15) - 25
            );
 #else
-    mr_energy = gain_corr_factor * exp(M_LN10 / (20 << 23) * mr_energy) /
+    mr_energy = gain_corr_factor * ff_exp10((double)mr_energy / (20 << 23)) /
                 sqrt(adsp->scalarproduct_int16(fc_v, fc_v, subframe_size));
     return mr_energy >> 12;
 #endif

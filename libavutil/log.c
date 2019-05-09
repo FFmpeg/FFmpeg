@@ -247,9 +247,9 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                         AVBPrint part[4], int *print_prefix, int type[2])
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
-    av_bprint_init(part+0, 0, 1);
-    av_bprint_init(part+1, 0, 1);
-    av_bprint_init(part+2, 0, 1);
+    av_bprint_init(part+0, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(part+1, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(part+2, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(part+3, 0, 65536);
 
     if(type) type[0] = type[1] = AV_CLASS_CATEGORY_NA + 16;

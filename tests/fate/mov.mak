@@ -16,8 +16,10 @@ FATE_MOV = fate-mov-3elist \
            fate-mov-frag-overlap \
            fate-mov-bbi-elst-starts-b \
            fate-mov-neg-firstpts-discard-frames \
+           fate-mov-stream-shorter-than-movie \
 
 FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
+                   fate-mov-neg-firstpts-discard-vorbis \
                    fate-mov-aac-2048-priming \
                    fate-mov-zombie \
                    fate-mov-init-nonkeyframe \
@@ -26,11 +28,15 @@ FATE_MOV_FFPROBE = fate-mov-neg-firstpts-discard \
                    fate-mov-guess-delay-1 \
                    fate-mov-guess-delay-2 \
                    fate-mov-guess-delay-3 \
+                   fate-mov-mp4-with-mov-in24-ver \
+
+FATE_MOV_FASTSTART = fate-mov-faststart-4gb-overflow \
 
 FATE_SAMPLES_AVCONV += $(FATE_MOV)
 FATE_SAMPLES_FFPROBE += $(FATE_MOV_FFPROBE)
+FATE_SAMPLES_FASTSTART += $(FATE_MOV_FASTSTART)
 
-fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE)
+fate-mov: $(FATE_MOV) $(FATE_MOV_FFPROBE) $(FATE_MOV_FASTSTART)
 
 # Make sure we handle edit lists correctly in normal cases.
 fate-mov-1elist-noctts: CMD = framemd5 -i $(TARGET_SAMPLES)/mov/mov-1elist-noctts.mov
@@ -85,8 +91,15 @@ fate-mov-bbi-elst-starts-b: CMD = framemd5 -flags +bitexact -acodec aac_fixed -i
 # Makes sure that the stream start_time is not negative when the first packet is a DISCARD packet with negative timestamp.
 fate-mov-neg-firstpts-discard: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=start_time -bitexact $(TARGET_SAMPLES)/mov/mov_neg_first_pts_discard.mov
 
+# Makes sure that the VORBIS audio stream start_time is not negative when the first few packets are DISCARD packets
+# with negative timestamps (skip_samples is not set for Vorbis, so ffmpeg computes start_time as negative if not specified by demuxer).
+fate-mov-neg-firstpts-discard-vorbis: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=start_time -bitexact $(TARGET_SAMPLES)/mov/mov_neg_first_pts_discard_vorbis.mp4
+
 # Makes sure that expected frames are generated for mov_neg_first_pts_discard.mov with -vsync 1
 fate-mov-neg-firstpts-discard-frames: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_neg_first_pts_discard.mov -vsync 1
+
+# Makes sure that no frame is dropped/duplicated with fps filter due to start_time / duration miscalculations.
+fate-mov-stream-shorter-than-movie: CMD = framemd5 -flags +bitexact -i $(TARGET_SAMPLES)/mov/mov_stream_shorter_than_movie.mov -vf fps=fps=24 -an
 
 fate-mov-aac-2048-priming: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_packets -print_format compact $(TARGET_SAMPLES)/mov/aac-2048-priming.mov
 
@@ -105,3 +118,9 @@ fate-mov-gpmf-remux: REF = 8f48e435ee1f6b7e173ea756141eabf3
 fate-mov-guess-delay-1: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_nopyramid_nobsrestriction.mp4
 fate-mov-guess-delay-2: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_3bf_pyramid_nobsrestriction.mp4
 fate-mov-guess-delay-3: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=has_b_frames -select_streams v $(TARGET_SAMPLES)/h264/h264_4bf_pyramid_nobsrestriction.mp4
+
+fate-mov-faststart-4gb-overflow: CMD = run tools/qt-faststart$(EXESUF) $(TARGET_SAMPLES)/mov/faststart-4gb-overflow.mov faststart-4gb-overflow-output.mov > /dev/null ; do_md5sum faststart-4gb-overflow-output.mov | cut -d " " -f1 ; rm faststart-4gb-overflow-output.mov
+fate-mov-faststart-4gb-overflow: CMP = oneline
+fate-mov-faststart-4gb-overflow: REF = bc875921f151871e787c4b4023269b29
+
+fate-mov-mp4-with-mov-in24-ver: CMD = run ffprobe$(PROGSSUF)$(EXESUF) -show_entries stream=codec_name -select_streams 1 $(TARGET_SAMPLES)/mov/mp4-with-mov-in24-ver.mp4

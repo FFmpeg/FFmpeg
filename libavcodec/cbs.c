@@ -29,11 +29,17 @@
 
 
 static const CodedBitstreamType *cbs_type_table[] = {
+#if CONFIG_CBS_AV1
+    &ff_cbs_type_av1,
+#endif
 #if CONFIG_CBS_H264
     &ff_cbs_type_h264,
 #endif
 #if CONFIG_CBS_H265
     &ff_cbs_type_h265,
+#endif
+#if CONFIG_CBS_JPEG
+    &ff_cbs_type_jpeg,
 #endif
 #if CONFIG_CBS_MPEG2
     &ff_cbs_type_mpeg2,
@@ -44,11 +50,17 @@ static const CodedBitstreamType *cbs_type_table[] = {
 };
 
 const enum AVCodecID ff_cbs_all_codec_ids[] = {
+#if CONFIG_CBS_AV1
+    AV_CODEC_ID_AV1,
+#endif
 #if CONFIG_CBS_H264
     AV_CODEC_ID_H264,
 #endif
 #if CONFIG_CBS_H265
     AV_CODEC_ID_H265,
+#endif
+#if CONFIG_CBS_JPEG
+    AV_CODEC_ID_MJPEG,
 #endif
 #if CONFIG_CBS_MPEG2
     AV_CODEC_ID_MPEG2VIDEO,
@@ -124,20 +136,28 @@ static void cbs_unit_uninit(CodedBitstreamContext *ctx,
     unit->data_bit_padding = 0;
 }
 
-void ff_cbs_fragment_uninit(CodedBitstreamContext *ctx,
-                            CodedBitstreamFragment *frag)
+void ff_cbs_fragment_reset(CodedBitstreamContext *ctx,
+                           CodedBitstreamFragment *frag)
 {
     int i;
 
     for (i = 0; i < frag->nb_units; i++)
         cbs_unit_uninit(ctx, &frag->units[i]);
-    av_freep(&frag->units);
     frag->nb_units = 0;
 
     av_buffer_unref(&frag->data_ref);
     frag->data             = NULL;
     frag->data_size        = 0;
     frag->data_bit_padding = 0;
+}
+
+void ff_cbs_fragment_free(CodedBitstreamContext *ctx,
+                          CodedBitstreamFragment *frag)
+{
+    ff_cbs_fragment_reset(ctx, frag);
+
+    av_freep(&frag->units);
+    frag->nb_units_allocated = 0;
 }
 
 static int cbs_read_fragment_content(CodedBitstreamContext *ctx,
@@ -204,8 +224,6 @@ int ff_cbs_read_extradata(CodedBitstreamContext *ctx,
 {
     int err;
 
-    memset(frag, 0, sizeof(*frag));
-
     err = cbs_fill_fragment_data(ctx, frag, par->extradata,
                                  par->extradata_size);
     if (err < 0)
@@ -223,8 +241,6 @@ int ff_cbs_read_packet(CodedBitstreamContext *ctx,
                        const AVPacket *pkt)
 {
     int err;
-
-    memset(frag, 0, sizeof(*frag));
 
     if (pkt->buf) {
         frag->data_ref = av_buffer_ref(pkt->buf);
@@ -252,8 +268,6 @@ int ff_cbs_read(CodedBitstreamContext *ctx,
                 const uint8_t *data, size_t size)
 {
     int err;
-
-    memset(frag, 0, sizeof(*frag));
 
     err = cbs_fill_fragment_data(ctx, frag, data, size);
     if (err < 0)
@@ -490,6 +504,85 @@ int ff_cbs_write_unsigned(CodedBitstreamContext *ctx, PutBitContext *pbc,
     return 0;
 }
 
+int ff_cbs_read_signed(CodedBitstreamContext *ctx, GetBitContext *gbc,
+                       int width, const char *name,
+                       const int *subscripts, int32_t *write_to,
+                       int32_t range_min, int32_t range_max)
+{
+    int32_t value;
+    int position;
+
+    av_assert0(width > 0 && width <= 32);
+
+    if (get_bits_left(gbc) < width) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid value at "
+               "%s: bitstream ended.\n", name);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (ctx->trace_enable)
+        position = get_bits_count(gbc);
+
+    value = get_sbits_long(gbc, width);
+
+    if (ctx->trace_enable) {
+        char bits[33];
+        int i;
+        for (i = 0; i < width; i++)
+            bits[i] = value & (1U << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
+
+        ff_cbs_trace_syntax_element(ctx, position, name, subscripts,
+                                    bits, value);
+    }
+
+    if (value < range_min || value > range_max) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
+               "%"PRId32", but must be in [%"PRId32",%"PRId32"].\n",
+               name, value, range_min, range_max);
+        return AVERROR_INVALIDDATA;
+    }
+
+    *write_to = value;
+    return 0;
+}
+
+int ff_cbs_write_signed(CodedBitstreamContext *ctx, PutBitContext *pbc,
+                        int width, const char *name,
+                        const int *subscripts, int32_t value,
+                        int32_t range_min, int32_t range_max)
+{
+    av_assert0(width > 0 && width <= 32);
+
+    if (value < range_min || value > range_max) {
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "%s out of range: "
+               "%"PRId32", but must be in [%"PRId32",%"PRId32"].\n",
+               name, value, range_min, range_max);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (put_bits_left(pbc) < width)
+        return AVERROR(ENOSPC);
+
+    if (ctx->trace_enable) {
+        char bits[33];
+        int i;
+        for (i = 0; i < width; i++)
+            bits[i] = value & (1U << (width - i - 1)) ? '1' : '0';
+        bits[i] = 0;
+
+        ff_cbs_trace_syntax_element(ctx, put_bits_count(pbc),
+                                    name, subscripts, bits, value);
+    }
+
+    if (width < 32)
+        put_sbits(pbc, width, value);
+    else
+        put_bits32(pbc, value);
+
+    return 0;
+}
+
 
 int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
                               CodedBitstreamUnit *unit,
@@ -536,20 +629,34 @@ static int cbs_insert_unit(CodedBitstreamContext *ctx,
 {
     CodedBitstreamUnit *units;
 
-    units = av_malloc_array(frag->nb_units + 1, sizeof(*units));
-    if (!units)
-        return AVERROR(ENOMEM);
+    if (frag->nb_units < frag->nb_units_allocated) {
+        units = frag->units;
 
-    if (position > 0)
-        memcpy(units, frag->units, position * sizeof(*units));
-    if (position < frag->nb_units)
-        memcpy(units + position + 1, frag->units + position,
-               (frag->nb_units - position) * sizeof(*units));
+        if (position < frag->nb_units)
+            memmove(units + position + 1, units + position,
+                    (frag->nb_units - position) * sizeof(*units));
+    } else {
+        units = av_malloc_array(frag->nb_units + 1, sizeof(*units));
+        if (!units)
+            return AVERROR(ENOMEM);
+
+        ++frag->nb_units_allocated;
+
+        if (position > 0)
+            memcpy(units, frag->units, position * sizeof(*units));
+
+        if (position < frag->nb_units)
+            memcpy(units + position + 1, frag->units + position,
+                   (frag->nb_units - position) * sizeof(*units));
+    }
 
     memset(units + position, 0, sizeof(*units));
 
-    av_freep(&frag->units);
-    frag->units = units;
+    if (units != frag->units) {
+        av_free(frag->units);
+        frag->units = units;
+    }
+
     ++frag->nb_units;
 
     return 0;
@@ -640,16 +747,10 @@ int ff_cbs_delete_unit(CodedBitstreamContext *ctx,
 
     --frag->nb_units;
 
-    if (frag->nb_units == 0) {
-        av_freep(&frag->units);
-
-    } else {
+    if (frag->nb_units > 0)
         memmove(frag->units + position,
                 frag->units + position + 1,
                 (frag->nb_units - position) * sizeof(*frag->units));
-
-        // Don't bother reallocating the unit array.
-    }
 
     return 0;
 }

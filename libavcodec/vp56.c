@@ -33,6 +33,8 @@
 
 void ff_vp56_init_dequant(VP56Context *s, int quantizer)
 {
+    if (s->quantizer != quantizer)
+        ff_vp3dsp_set_bounding_values(s->bounding_values_array, ff_vp56_filter_threshold[quantizer]);
     s->quantizer = quantizer;
     s->dequant_dc = ff_vp56_dc_dequant[quantizer] << 2;
     s->dequant_ac = ff_vp56_ac_dequant[quantizer] << 2;
@@ -196,12 +198,8 @@ static void vp56_decode_4mv(VP56Context *s, int row, int col)
     s->macroblocks[row * s->mb_width + col].mv = s->mv[3];
 
     /* chroma vectors are average luma vectors */
-    if (s->avctx->codec->id == AV_CODEC_ID_VP5) {
-        s->mv[4].x = s->mv[5].x = RSHIFT(mv.x,2);
-        s->mv[4].y = s->mv[5].y = RSHIFT(mv.y,2);
-    } else {
-        s->mv[4] = s->mv[5] = (VP56mv) {mv.x/4, mv.y/4};
-    }
+    s->mv[4].x = s->mv[5].x = RSHIFT(mv.x,2);
+    s->mv[4].y = s->mv[5].y = RSHIFT(mv.y,2);
 }
 
 static VP56mb vp56_decode_mv(VP56Context *s, int row, int col)
@@ -324,9 +322,17 @@ static void vp56_add_predictors_dc(VP56Context *s, VP56Frame ref_frame)
 static void vp56_deblock_filter(VP56Context *s, uint8_t *yuv,
                                 ptrdiff_t stride, int dx, int dy)
 {
+    if (s->avctx->codec->id == AV_CODEC_ID_VP5) {
     int t = ff_vp56_filter_threshold[s->quantizer];
     if (dx)  s->vp56dsp.edge_filter_hor(yuv +         10-dx , stride, t);
     if (dy)  s->vp56dsp.edge_filter_ver(yuv + stride*(10-dy), stride, t);
+    } else {
+        int * bounding_values = s->bounding_values_array + 127;
+        if (dx)
+            ff_vp3dsp_h_loop_filter_12(yuv +         10-dx, stride, bounding_values);
+        if (dy)
+            ff_vp3dsp_v_loop_filter_12(yuv + stride*(10-dy), stride, bounding_values);
+    }
 }
 
 static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
@@ -400,6 +406,24 @@ static void vp56_mc(VP56Context *s, int b, int plane, uint8_t *src,
     }
 }
 
+static void vp56_idct_put(VP56Context *s, uint8_t * dest, ptrdiff_t stride, int16_t *block, int selector)
+{
+    if (selector > 10 || selector == 1)
+        s->vp3dsp.idct_put(dest, stride, block);
+    else
+        ff_vp3dsp_idct10_put(dest, stride, block);
+}
+
+static void vp56_idct_add(VP56Context *s, uint8_t * dest, ptrdiff_t stride, int16_t *block, int selector)
+{
+    if (selector > 10)
+        s->vp3dsp.idct_add(dest, stride, block);
+    else if (selector > 1)
+        ff_vp3dsp_idct10_add(dest, stride, block);
+    else
+        s->vp3dsp.idct_dc_add(dest, stride, block);
+}
+
 static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, int is_alpha, VP56mb mb_type)
 {
     int b, ab, b_max, plane, off;
@@ -420,8 +444,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
         case VP56_MB_INTRA:
             for (b=0; b<b_max; b++) {
                 plane = ff_vp56_b2p[b+ab];
-                s->vp3dsp.idct_put(frame_current->data[plane] + s->block_offset[b],
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_put(s, frame_current->data[plane] + s->block_offset[b],
+                                s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
 
@@ -433,8 +457,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
                 s->hdsp.put_pixels_tab[1][0](frame_current->data[plane] + off,
                                              frame_ref->data[plane] + off,
                                              s->stride[plane], 8);
-                s->vp3dsp.idct_add(frame_current->data[plane] + off,
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_add(s, frame_current->data[plane] + off,
+                              s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
 
@@ -451,8 +475,8 @@ static av_always_inline void vp56_render_mb(VP56Context *s, int row, int col, in
                 plane = ff_vp56_b2p[b+ab];
                 vp56_mc(s, b, plane, frame_ref->data[plane], s->stride[plane],
                         16*col+x_off, 16*row+y_off);
-                s->vp3dsp.idct_add(frame_current->data[plane] + s->block_offset[b],
-                                s->stride[plane], s->block_coeff[b]);
+                vp56_idct_add(s, frame_current->data[plane] + s->block_offset[b],
+                              s->stride[plane], s->block_coeff[b], s->idct_selector[b]);
             }
             break;
     }

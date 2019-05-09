@@ -189,6 +189,17 @@ static int vp9_superframe_init(AVBSFContext *ctx)
     return 0;
 }
 
+static void vp9_superframe_flush(AVBSFContext *ctx)
+{
+    VP9BSFContext *s = ctx->priv_data;
+    int n;
+
+    // unref cached data
+    for (n = 0; n < s->n_cache; n++)
+        av_packet_unref(s->cache[n]);
+    s->n_cache = 0;
+}
+
 static void vp9_superframe_close(AVBSFContext *ctx)
 {
     VP9BSFContext *s = ctx->priv_data;
@@ -208,6 +219,7 @@ const AVBitStreamFilter ff_vp9_superframe_bsf = {
     .priv_data_size = sizeof(VP9BSFContext),
     .filter         = vp9_superframe_filter,
     .init           = vp9_superframe_init,
+    .flush          = vp9_superframe_flush,
     .close          = vp9_superframe_close,
     .codec_ids      = codec_ids,
 };

@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (p->buf_size < 2096)
         return 0;

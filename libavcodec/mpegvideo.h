@@ -455,6 +455,7 @@ typedef struct MpegEncContext {
     /* MPEG-2-specific - I wished not to have to support this mess. */
     int progressive_sequence;
     int mpeg_f_code[2][2];
+    int a53_cc;
 
     // picture structure defines are loaded from mpegutils.h
     int picture_structure;
@@ -509,6 +510,8 @@ typedef struct MpegEncContext {
     int (*decode_mb)(struct MpegEncContext *s, int16_t block[12][64]); // used by some codecs to avoid a switch()
 
     int32_t (*block32)[12][64];
+    int dpcm_direction;          // 0 = DCT, 1 = DPCM top to bottom scan, -1 = DPCM bottom to top scan
+    int16_t (*dpcm_macroblock)[3][256];
 
 #define SLICE_OK         0
 #define SLICE_ERROR     -1
@@ -661,6 +664,7 @@ FF_MPV_OPT_CMP_FUNC, \
 {"ps", "RTP payload size in bytes",                             FF_MPV_OFFSET(rtp_payload_size), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"mepc", "Motion estimation bitrate penalty compensation (1.0 = 256)", FF_MPV_OFFSET(me_penalty_compensation), AV_OPT_TYPE_INT, {.i64 = 256 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
 {"mepre", "pre motion estimation", FF_MPV_OFFSET(me_pre), AV_OPT_TYPE_INT, {.i64 = 0 }, INT_MIN, INT_MAX, FF_MPV_OPT_FLAGS }, \
+{"a53cc", "Use A53 Closed Captions (if available)", FF_MPV_OFFSET(a53_cc), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FF_MPV_OPT_FLAGS }, \
 
 extern const AVOption ff_mpv_generic_options[];
 

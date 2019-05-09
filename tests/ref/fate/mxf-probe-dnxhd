@@ -167,6 +167,7 @@ TAG:timecode=01:00:00:00
 format_name=mxf
 duration=0.250250
 bit_rate=25340195
+TAG:operational_pattern_ul=060e2b34.04010102.0d010201.10030000
 TAG:project_name=UHD
 TAG:uid=784c8132-ae36-ed4d-b0ff-2edf1f3f2d92
 TAG:generation_uid=b6bcfcab-70ff-7331-c47c-478869de11d2

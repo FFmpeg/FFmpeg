@@ -196,6 +196,7 @@ FATE_H264  := $(FATE_H264:%=fate-h264-conformance-%)                    \
               fate-h264-3386                                            \
               fate-h264-missing-frame                                   \
               fate-h264-ref-pic-mod-overflow                            \
+              fate-h264-timecode
 
 FATE_H264-$(call DEMDEC, H264, H264) += $(FATE_H264)
 FATE_H264-$(call DEMDEC,  MOV, H264) += fate-h264-crop-to-container
@@ -440,6 +441,7 @@ fate-h264-twofields-packet:                       CMD = framecrc -i $(TARGET_SAM
 fate-h264-unescaped-extradata:                    CMD = framecrc -i $(TARGET_SAMPLES)/h264/unescaped_extradata.mp4 -an -frames 10
 fate-h264-3386:                                   CMD = framecrc -i $(TARGET_SAMPLES)/h264/bbc2.sample.h264
 fate-h264-missing-frame:                          CMD = framecrc -i $(TARGET_SAMPLES)/h264/nondeterministic_cut.h264
+fate-h264-timecode:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/crew_cif_timecode-2.h264
 
 fate-h264-reinit-%:                               CMD = framecrc -i $(TARGET_SAMPLES)/h264/$(@:fate-h264-%=%).h264 -vf format=yuv444p10le,scale=w=352:h=288
 

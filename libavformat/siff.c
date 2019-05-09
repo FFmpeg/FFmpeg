@@ -62,7 +62,7 @@ typedef struct SIFFContext {
     uint8_t gmc[4];
 } SIFFContext;
 
-static int siff_probe(AVProbeData *p)
+static int siff_probe(const AVProbeData *p)
 {
     uint32_t tag = AV_RL32(p->buf + 8);
     /* check file header */

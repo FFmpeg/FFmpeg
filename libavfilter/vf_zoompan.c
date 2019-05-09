@@ -167,7 +167,7 @@ static int output_single_frame(AVFilterContext *ctx, AVFrame *in, double *var_va
     var_values[VAR_PDURATION] = s->prev_nb_frames;
     var_values[VAR_TIME] = pts * av_q2d(outlink->time_base);
     var_values[VAR_FRAME] = i;
-    var_values[VAR_ON] = outlink->frame_count_in + 1;
+    var_values[VAR_ON] = outlink->frame_count_in;
 
     *zoom = av_expr_eval(s->zoom_expr, var_values, NULL);
 
@@ -274,8 +274,8 @@ static int activate(AVFilterContext *ctx)
         s->var_values[VAR_IN_H]  = s->var_values[VAR_IH] = s->in->height;
         s->var_values[VAR_OUT_W] = s->var_values[VAR_OW] = s->w;
         s->var_values[VAR_OUT_H] = s->var_values[VAR_OH] = s->h;
-        s->var_values[VAR_IN]    = inlink->frame_count_out + 1;
-        s->var_values[VAR_ON]    = outlink->frame_count_in + 1;
+        s->var_values[VAR_IN]    = inlink->frame_count_out - 1;
+        s->var_values[VAR_ON]    = outlink->frame_count_in;
         s->var_values[VAR_PX]    = s->x;
         s->var_values[VAR_PY]    = s->y;
         s->var_values[VAR_X]     = 0;

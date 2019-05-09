@@ -189,6 +189,9 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_YA8:
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YA16:
         color_space = OPJ_CLRSPC_GRAY;
@@ -612,6 +615,9 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     case AV_PIX_FMT_YUVA444P:
         cpyresult = libopenjpeg_copy_unpacked8(avctx, frame, image);
         break;
+    case AV_PIX_FMT_GRAY10:
+    case AV_PIX_FMT_GRAY12:
+    case AV_PIX_FMT_GRAY14:
     case AV_PIX_FMT_GRAY16:
     case AV_PIX_FMT_YUV420P9:
     case AV_PIX_FMT_YUV422P9:
@@ -763,6 +769,7 @@ AVCodec ff_libopenjpeg_encoder = {
         AV_PIX_FMT_RGBA64, AV_PIX_FMT_GBR24P,
         AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_YA8, AV_PIX_FMT_GRAY16, AV_PIX_FMT_YA16,
+        AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA420P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA422P,
         AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUVA444P,

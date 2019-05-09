@@ -63,29 +63,37 @@ static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
     uint8_t *d;
     int shift = *plane * bits_per_plane;
     unsigned mask  = ((1U << bits_per_plane) - 1) << shift;
+    int xl = *x;
+    int yl = *y;
+    int planel = *plane;
     value   <<= shift;
 
+    d = frame->data[0] + yl * frame->linesize[0];
     while (run > 0) {
         int j;
         for (j = 8-bits_per_plane; j >= 0; j -= bits_per_plane) {
-            d = frame->data[0] + *y * frame->linesize[0];
-            d[*x] |= (value >> j) & mask;
-            *x += 1;
-            if (*x == s->width) {
-                *y -= 1;
-                *x = 0;
-                if (*y < 0) {
-                   *y = s->height - 1;
-                   *plane += 1;
-                   if (*plane >= s->nb_planes)
-                       return;
+            d[xl] |= (value >> j) & mask;
+            xl += 1;
+            if (xl == s->width) {
+                yl -= 1;
+                xl = 0;
+                if (yl < 0) {
+                   yl = s->height - 1;
+                   planel += 1;
+                   if (planel >= s->nb_planes)
+                       goto end;
                    value <<= bits_per_plane;
                    mask  <<= bits_per_plane;
                 }
+                d = frame->data[0] + yl * frame->linesize[0];
             }
         }
         run--;
     }
+end:
+    *x = xl;
+    *y = yl;
+    *plane = planel;
 }
 
 static const uint8_t cga_mode45_index[6][4] = {
@@ -235,6 +243,9 @@ static int decode_frame(AVCodecContext *avctx,
                 }
             }
         }
+
+        if (s->nb_planes - plane > 1)
+            return AVERROR_INVALIDDATA;
 
         if (plane < s->nb_planes && x < avctx->width) {
             int run = (y + 1) * avctx->width - x;

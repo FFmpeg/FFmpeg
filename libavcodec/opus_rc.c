@@ -167,7 +167,7 @@ void ff_opus_rc_put_raw(OpusRangeCoder *rc, uint32_t val, uint32_t count)
     rc->rb.cachelen = (rc->rb.cachelen + to_write) % 32;
 
     if (!rc->rb.cachelen && count) {
-        AV_WB32(rc->rb.position, rc->rb.cacheval);
+        AV_WB32((uint8_t *)rc->rb.position, rc->rb.cacheval);
         rc->rb.bytes    += 4;
         rc->rb.position -= 4;
         rc->rb.cachelen = count - to_write;

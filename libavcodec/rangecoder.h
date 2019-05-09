@@ -48,7 +48,24 @@ typedef struct RangeCoder {
 
 void ff_init_range_encoder(RangeCoder *c, uint8_t *buf, int buf_size);
 void ff_init_range_decoder(RangeCoder *c, const uint8_t *buf, int buf_size);
-int ff_rac_terminate(RangeCoder *c);
+
+/**
+ * Terminates the range coder
+ * @param version version 0 requires the decoder to know the data size in bytes
+ *                version 1 needs about 1 bit more space but does not need to
+ *                          carry the size from encoder to decoder
+ */
+int ff_rac_terminate(RangeCoder *c, int version);
+
+/**
+ * Check if at the current position there is a valid looking termination
+ * @param version version 0 requires the decoder to know the data size in bytes
+ *                version 1 needs about 1 bit more space but does not need to
+ *                          carry the size from encoder to decoder
+ * @returns negative AVERROR code on error or non negative.
+ */
+int ff_rac_check_termination(RangeCoder *c, int version);
+
 void ff_build_rac_states(RangeCoder *c, int factor, int max_p);
 
 static inline void renorm_encoder(RangeCoder *c)

@@ -1927,7 +1927,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
             if (cbt_m1 < NOISE_BT - 1) {
                 for (group = 0; group < (int)g_len; group++, cfo+=128) {
                     ac->vector_pow43(cfo, off_len);
-                    ac->subband_scale(cfo, cfo, sf[idx], 34, off_len);
+                    ac->subband_scale(cfo, cfo, sf[idx], 34, off_len, ac->avctx);
                 }
             }
         }
@@ -2158,7 +2158,7 @@ static void apply_intensity_stereo(AACContext *ac,
                                       coef0 + group * 128 + offsets[i],
                                       scale,
                                       23,
-                                      offsets[i + 1] - offsets[i]);
+                                      offsets[i + 1] - offsets[i] ,ac->avctx);
 #else
                         ac->fdsp->vector_fmul_scalar(coef1 + group * 128 + offsets[i],
                                                     coef0 + group * 128 + offsets[i],
@@ -3122,6 +3122,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     int samples = 0, multiplier, audio_found = 0, pce_found = 0;
     int is_dmono, sce_count = 0;
     int payload_alignment;
+    uint8_t che_presence[4][MAX_ELEM_ID] = {{0}};
 
     ac->frame = data;
 
@@ -3159,6 +3160,17 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         }
 
         if (elem_type < TYPE_DSE) {
+            if (che_presence[elem_type][elem_id]) {
+                int error = che_presence[elem_type][elem_id] > 1;
+                av_log(ac->avctx, error ? AV_LOG_ERROR : AV_LOG_DEBUG, "channel element %d.%d duplicate\n",
+                       elem_type, elem_id);
+                if (error) {
+                    err = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
+            }
+            che_presence[elem_type][elem_id]++;
+
             if (!(che=get_che(ac, elem_type, elem_id))) {
                 av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n",
                        elem_type, elem_id);

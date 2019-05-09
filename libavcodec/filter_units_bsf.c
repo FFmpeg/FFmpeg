@@ -139,7 +139,7 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
 
         // Don't return packets with nothing in them.
         av_packet_free(&in);
-        ff_cbs_fragment_uninit(ctx->cbc, frag);
+        ff_cbs_fragment_reset(ctx->cbc, frag);
     }
 
     err = ff_cbs_write_packet(ctx->cbc, out, frag);
@@ -153,7 +153,7 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
         goto fail;
 
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, frag);
+    ff_cbs_fragment_reset(ctx->cbc, frag);
     av_packet_free(&in);
 
     return err;
@@ -199,18 +199,18 @@ static int filter_units_init(AVBSFContext *bsf)
     ctx->cbc->nb_decompose_unit_types = 0;
 
     if (bsf->par_in->extradata) {
-        CodedBitstreamFragment ps;
+        CodedBitstreamFragment *frag = &ctx->fragment;
 
-        err = ff_cbs_read_extradata(ctx->cbc, &ps, bsf->par_in);
+        err = ff_cbs_read_extradata(ctx->cbc, frag, bsf->par_in);
         if (err < 0) {
             av_log(bsf, AV_LOG_ERROR, "Failed to read extradata.\n");
         } else {
-            err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, &ps);
+            err = ff_cbs_write_extradata(ctx->cbc, bsf->par_out, frag);
             if (err < 0)
                 av_log(bsf, AV_LOG_ERROR, "Failed to write extradata.\n");
         }
 
-        ff_cbs_fragment_uninit(ctx->cbc, &ps);
+        ff_cbs_fragment_reset(ctx->cbc, frag);
     }
 
     return err;
@@ -222,6 +222,7 @@ static void filter_units_close(AVBSFContext *bsf)
 
     av_freep(&ctx->type_list);
 
+    ff_cbs_fragment_free(ctx->cbc, &ctx->fragment);
     ff_cbs_close(&ctx->cbc);
 }
 

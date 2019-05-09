@@ -312,7 +312,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_log(avctx, AV_LOG_TRACE,
             "Frame: width=%d stride=%d height=%d slice-height=%d "
-            "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s\n"
+            "crop-top=%d crop-bottom=%d crop-left=%d crop-right=%d encoder=%s "
             "destination linesizes=%d,%d,%d\n" ,
             avctx->width, s->stride, avctx->height, s->slice_height,
             s->crop_top, s->crop_bottom, s->crop_left, s->crop_right, s->codec_name,
@@ -389,13 +389,14 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
     s->stride = s->stride > 0 ? s->stride : s->width;
 
     AMEDIAFORMAT_GET_INT32(s->slice_height, "slice-height", 0);
-    s->slice_height = s->slice_height > 0 ? s->slice_height : s->height;
 
-    if (strstr(s->codec_name, "OMX.Nvidia.")) {
+    if (strstr(s->codec_name, "OMX.Nvidia.") && s->slice_height == 0) {
         s->slice_height = FFALIGN(s->height, 16);
     } else if (strstr(s->codec_name, "OMX.SEC.avc.dec")) {
         s->slice_height = avctx->height;
         s->stride = avctx->width;
+    } else if (s->slice_height == 0) {
+        s->slice_height = s->height;
     }
 
     AMEDIAFORMAT_GET_INT32(s->color_format, "color-format", 1);
@@ -442,6 +443,8 @@ static int mediacodec_dec_flush_codec(AVCodecContext *avctx, MediaCodecDecContex
 {
     FFAMediaCodec *codec = s->codec;
     int status;
+
+    s->output_buffer_count = 0;
 
     s->draining = 0;
     s->flushing = 0;
@@ -670,7 +673,10 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
         /* If the codec is flushing or need to be flushed, block for a fair
          * amount of time to ensure we got a frame */
         output_dequeue_timeout_us = OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US;
-    } else if (!wait) {
+    } else if (s->output_buffer_count == 0 || !wait) {
+        /* If the codec hasn't produced any frames, do not block so we
+         * can push data to it as fast as possible, and get the first
+         * frame */
         output_dequeue_timeout_us = 0;
     }
 
@@ -704,6 +710,7 @@ int ff_mediacodec_dec_receive(AVCodecContext *avctx, MediaCodecDecContext *s,
                 }
             }
 
+            s->output_buffer_count++;
             return 0;
         } else {
             status = ff_AMediaCodec_releaseOutputBuffer(codec, index, 0);

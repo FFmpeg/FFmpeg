@@ -1068,7 +1068,7 @@ static int read_gab2_sub(AVFormatContext *s, AVStream *st, AVPacket *pkt)
         uint8_t desc[256];
         int score      = AVPROBE_SCORE_EXTENSION, ret;
         AVIStream *ast = st->priv_data;
-        AVInputFormat *sub_demuxer;
+        ff_const59 AVInputFormat *sub_demuxer;
         AVRational time_base;
         int size;
         AVIOContext *pb = avio_alloc_context(pkt->data + 7,
@@ -1228,6 +1228,11 @@ start_sync:
         // detect ##ix chunk and skip
         if (d[2] == 'i' && d[3] == 'x' && n < s->nb_streams) {
             avio_skip(pb, size);
+            goto start_sync;
+        }
+
+        if (d[2] == 'w' && d[3] == 'c' && n < s->nb_streams) {
+            avio_skip(pb, 16 * 3 + 8);
             goto start_sync;
         }
 
@@ -1915,7 +1920,7 @@ static int avi_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int avi_probe(AVProbeData *p)
+static int avi_probe(const AVProbeData *p)
 {
     int i;
 

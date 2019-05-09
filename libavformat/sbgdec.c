@@ -1367,7 +1367,7 @@ static int encode_intervals(struct sbg_script *s, AVCodecParameters *par,
     return 0;
 }
 
-static av_cold int sbg_read_probe(AVProbeData *p)
+static av_cold int sbg_read_probe(const AVProbeData *p)
 {
     int r, score;
     struct sbg_script script = { 0 };

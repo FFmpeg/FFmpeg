@@ -48,6 +48,15 @@ static const AVOption options[] = {
     { "unset",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 0}, 0, 0,    DEC, "duplex_mode"},
     { "half",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 1}, 0, 0,    DEC, "duplex_mode"},
     { "full",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 2}, 0, 0,    DEC, "duplex_mode"},
+    { "timecode_format", "timecode format",           OFFSET(tc_format),  AV_OPT_TYPE_INT,   { .i64 = 0}, 0, 7,    DEC, "tc_format"},
+    { "none",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 0}, 0, 0,    DEC, "tc_format"},
+    { "rp188vitc",     NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 1}, 0, 0,    DEC, "tc_format"},
+    { "rp188vitc2",    NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 2}, 0, 0,    DEC, "tc_format"},
+    { "rp188ltc",      NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 3}, 0, 0,    DEC, "tc_format"},
+    { "rp188any",      NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 4}, 0, 0,    DEC, "tc_format"},
+    { "vitc",          NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 5}, 0, 0,    DEC, "tc_format"},
+    { "vitc2",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 6}, 0, 0,    DEC, "tc_format"},
+    { "serial",        NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 7}, 0, 0,    DEC, "tc_format"},
     { "video_input",  "video input",              OFFSET(video_input),    AV_OPT_TYPE_INT,   { .i64 = 0}, 0, 6,    DEC, "video_input"},
     { "unset",         NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 0}, 0, 0,    DEC, "video_input"},
     { "sdi",           NULL,                                          0,  AV_OPT_TYPE_CONST, { .i64 = 1}, 0, 0,    DEC, "video_input"},
@@ -75,6 +84,7 @@ static const AVOption options[] = {
     { "queue_size",    "input queue buffer size",   OFFSET(queue_size),   AV_OPT_TYPE_INT64, { .i64 = (1024 * 1024 * 1024)}, 0, INT64_MAX, DEC },
     { "audio_depth",   "audio bitdepth (16 or 32)", OFFSET(audio_depth),  AV_OPT_TYPE_INT,   { .i64 = 16}, 16, 32, DEC },
     { "decklink_copyts", "copy timestamps, do not remove the initial offset", OFFSET(copyts), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, DEC },
+    { "timestamp_align", "capture start time alignment (in seconds)", OFFSET(timestamp_align), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, DEC },
     { NULL },
 };
 

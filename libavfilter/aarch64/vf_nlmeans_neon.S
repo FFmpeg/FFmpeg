@@ -22,7 +22,7 @@
 
 // acc_sum_store(ABCD) = {X+A, X+A+B, X+A+B+C, X+A+B+C+D}
 .macro acc_sum_store x, xb
-        dup             v24.4S, v24.4S[3]                               // ...X -> XXXX
+        dup             v24.4S, v24.S[3]                                // ...X -> XXXX
         ext             v25.16B, v26.16B, \xb, #12                      // ext(0000,ABCD,12)=0ABC
         add             v24.4S, v24.4S, \x                              // XXXX+ABCD={X+A,X+B,X+C,X+D}
         add             v24.4S, v24.4S, v25.4S                          // {X+A,X+B+A,X+C+B,X+D+C}       (+0ABC)
@@ -37,7 +37,7 @@ function ff_compute_safe_ssd_integral_image_neon, export=1
         movi            v26.4S, #0                                      // used as zero for the "rotations" in acc_sum_store
         sub             x3, x3, w6, UXTW                                // s1 padding (s1_linesize - w)
         sub             x5, x5, w6, UXTW                                // s2 padding (s2_linesize - w)
-        sub             x9, x0, x1, UXTW #2                             // dst_top
+        sub             x9, x0, w1, UXTW #2                             // dst_top
         sub             x1, x1, w6, UXTW                                // dst padding (dst_linesize_32 - w)
         lsl             x1, x1, #2                                      // dst padding expressed in bytes
 1:      mov             w10, w6                                         // width copy for each line

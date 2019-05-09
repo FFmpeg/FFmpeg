@@ -1018,7 +1018,7 @@ static int init_report(const char *env)
         av_free(key);
     }
 
-    av_bprint_init(&filename, 0, 1);
+    av_bprint_init(&filename, 0, AV_BPRINT_SIZE_AUTOMATIC);
     expand_filename_template(&filename,
                              av_x_if_null(filename_template, "%p-%t.log"), tm);
     av_free(filename_template);
@@ -1956,7 +1956,10 @@ static void show_help_bsf(const char *name)
 {
     const AVBitStreamFilter *bsf = av_bsf_get_by_name(name);
 
-    if (!bsf) {
+    if (!name) {
+        av_log(NULL, AV_LOG_ERROR, "No bitstream filter name specified.\n");
+        return;
+    } else if (!bsf) {
         av_log(NULL, AV_LOG_ERROR, "Unknown bit stream filter '%s'.\n", name);
         return;
     }

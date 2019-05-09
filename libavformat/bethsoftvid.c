@@ -55,7 +55,7 @@ typedef struct BVID_DemuxContext
 
 } BVID_DemuxContext;
 
-static int vid_probe(AVProbeData *p)
+static int vid_probe(const AVProbeData *p)
 {
     // little-endian VID tag, file starts with "VID\0"
     if (AV_RL32(p->buf) != MKTAG('V', 'I', 'D', 0))

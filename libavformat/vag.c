@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int vag_probe(AVProbeData *p)
+static int vag_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "VAGp\0\0\0", 7))
         return 0;

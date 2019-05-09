@@ -42,7 +42,7 @@
 // alignment. They should always request the exact alignment value they need.
 // This is to make sure that plugins work over the widest range of AviSynth
 // builds possible.
-#define FRAME_ALIGN 32
+#define FRAME_ALIGN 64
 
 #if   defined(_M_AMD64) || defined(__x86_64)
 #   define X86_64
@@ -50,6 +50,21 @@
 #   define X86_32
 #else
 #   error Unsupported CPU architecture.
+#endif
+
+#if   defined(_MSC_VER)
+#   define MSVC
+#elif defined(__GNUC__)
+#   define GCC
+#elif defined(__clang__)
+#   define CLANG
+#else
+#   error Unsupported compiler.
+#endif
+
+#if   defined(GCC)
+#   undef __forceinline
+#   define __forceinline inline
 #endif
 
 #endif //AVS_CONFIG_H

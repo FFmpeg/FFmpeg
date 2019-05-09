@@ -22,7 +22,7 @@
 #include "img2.h"
 #include "libavcodec/bytestream.h"
 
-static int alias_pix_read_probe(AVProbeData *p)
+static int alias_pix_read_probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     const uint8_t *end = b + p->buf_size;

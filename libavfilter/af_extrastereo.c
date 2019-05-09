@@ -128,4 +128,5 @@ AVFilter ff_af_extrastereo = {
     .priv_class     = &extrastereo_class,
     .inputs         = inputs,
     .outputs        = outputs,
+    .flags          = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };

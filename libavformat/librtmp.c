@@ -261,7 +261,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     LibRTMPContext *ctx = s->priv_data;
     RTMP *r = &ctx->rtmp;
 
-    return RTMP_Write(r, buf, size);
+    int ret = RTMP_Write(r, buf, size);
+    if (!ret)
+        return AVERROR_EOF;
+    return ret;
 }
 
 static int rtmp_read(URLContext *s, uint8_t *buf, int size)
@@ -269,7 +272,10 @@ static int rtmp_read(URLContext *s, uint8_t *buf, int size)
     LibRTMPContext *ctx = s->priv_data;
     RTMP *r = &ctx->rtmp;
 
-    return RTMP_Read(r, buf, size);
+    int ret = RTMP_Read(r, buf, size);
+    if (!ret)
+        return AVERROR_EOF;
+    return ret;
 }
 
 static int rtmp_read_pause(URLContext *s, int pause)

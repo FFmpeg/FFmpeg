@@ -79,7 +79,7 @@ static int is_qcelp_13k_guid(const uint8_t *guid) {
         && !memcmp(guid+1, guid_qcelp_13k_part, sizeof(guid_qcelp_13k_part));
 }
 
-static int qcp_probe(AVProbeData *pd)
+static int qcp_probe(const AVProbeData *pd)
 {
     if (AV_RL32(pd->buf  ) == AV_RL32("RIFF") &&
         AV_RL64(pd->buf+8) == AV_RL64("QLCMfmt "))

@@ -91,6 +91,17 @@ fail:
     return ret;
 }
 
+int ff_raw_subtitle_read_header(AVFormatContext *s)
+{
+    AVStream *st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+    st->codecpar->codec_type = AVMEDIA_TYPE_SUBTITLE;
+    st->codecpar->codec_id = s->iformat->raw_codec_id;
+    st->start_time = 0;
+    return 0;
+}
+
 int ff_raw_data_read_header(AVFormatContext *s)
 {
     AVStream *st = avformat_new_stream(s, NULL);
@@ -123,7 +134,7 @@ AVInputFormat ff_data_demuxer = {
 #endif
 
 #if CONFIG_MJPEG_DEMUXER
-static int mjpeg_probe(AVProbeData *p)
+static int mjpeg_probe(const AVProbeData *p)
 {
     int i;
     int state = -1;

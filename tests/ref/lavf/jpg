@@ -1,3 +1,3 @@
-1e7c6d937f21c045e0b238a83f62f3c5 *./tests/data/images/jpg/02.jpg
-./tests/data/images/jpg/%02d.jpg CRC=0xe3509f33
-26037 ./tests/data/images/jpg/02.jpg
+1e7c6d937f21c045e0b238a83f62f3c5 *tests/data/images/jpg/02.jpg
+tests/data/images/jpg/%02d.jpg CRC=0xe3509f33
+26037 tests/data/images/jpg/02.jpg

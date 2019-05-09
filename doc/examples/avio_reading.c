@@ -117,11 +117,12 @@ int main(int argc, char *argv[])
 
 end:
     avformat_close_input(&fmt_ctx);
+
     /* note: the internal buffer could have changed, and be != avio_ctx_buffer */
-    if (avio_ctx) {
+    if (avio_ctx)
         av_freep(&avio_ctx->buffer);
-        av_freep(&avio_ctx);
-    }
+    avio_context_free(&avio_ctx);
+
     av_file_unmap(buffer, buffer_size);
 
     if (ret < 0) {

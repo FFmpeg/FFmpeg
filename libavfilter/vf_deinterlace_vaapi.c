@@ -113,6 +113,7 @@ static int deint_vaapi_build_filter_params(AVFilterContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "Deinterlacing mode %d (%s) is "
                    "not supported.\n", ctx->mode,
                    deint_vaapi_mode_name(ctx->mode));
+            return AVERROR(EINVAL);
         }
     }
 
@@ -256,7 +257,7 @@ static int deint_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_frame)
             ff_vaapi_vpp_colour_standard(input_frame->colorspace);
 
         params.output_region = NULL;
-        params.output_background_color = 0xff000000;
+        params.output_background_color = VAAPI_VPP_BACKGROUND_BLACK;
         params.output_color_standard = params.surface_color_standard;
 
         params.pipeline_flags = 0;

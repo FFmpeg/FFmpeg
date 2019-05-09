@@ -539,7 +539,7 @@ static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
     return oc->read_packet(s, pkt);
 }
 
-static int oma_read_probe(AVProbeData *p)
+static int oma_read_probe(const AVProbeData *p)
 {
     const uint8_t *buf = p->buf;
     unsigned tag_len = 0;

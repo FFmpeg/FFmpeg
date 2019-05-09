@@ -297,17 +297,17 @@ static int config_output(AVFilterLink *outlink)
     for (i = 0; i < max; i++) {
         r = g = b = i;
 
-        r = av_clip_uintp2(r + s->cyan_red.shadows         * shadows[r],    depth);
-        r = av_clip_uintp2(r + s->cyan_red.midtones        * midtones[r],   depth);
-        r = av_clip_uintp2(r + s->cyan_red.highlights      * highlights[r], depth);
+        r = av_clip_uintp2_c(r + s->cyan_red.shadows         * shadows[r],    depth);
+        r = av_clip_uintp2_c(r + s->cyan_red.midtones        * midtones[r],   depth);
+        r = av_clip_uintp2_c(r + s->cyan_red.highlights      * highlights[r], depth);
 
-        g = av_clip_uintp2(g + s->magenta_green.shadows    * shadows[g],    depth);
-        g = av_clip_uintp2(g + s->magenta_green.midtones   * midtones[g],   depth);
-        g = av_clip_uintp2(g + s->magenta_green.highlights * highlights[g], depth);
+        g = av_clip_uintp2_c(g + s->magenta_green.shadows    * shadows[g],    depth);
+        g = av_clip_uintp2_c(g + s->magenta_green.midtones   * midtones[g],   depth);
+        g = av_clip_uintp2_c(g + s->magenta_green.highlights * highlights[g], depth);
 
-        b = av_clip_uintp2(b + s->yellow_blue.shadows      * shadows[b],    depth);
-        b = av_clip_uintp2(b + s->yellow_blue.midtones     * midtones[b],   depth);
-        b = av_clip_uintp2(b + s->yellow_blue.highlights   * highlights[b], depth);
+        b = av_clip_uintp2_c(b + s->yellow_blue.shadows      * shadows[b],    depth);
+        b = av_clip_uintp2_c(b + s->yellow_blue.midtones     * midtones[b],   depth);
+        b = av_clip_uintp2_c(b + s->yellow_blue.highlights   * highlights[b], depth);
 
         s->lut[R][i] = r;
         s->lut[G][i] = g;

@@ -193,10 +193,10 @@ static av_cold void vp8dsp_init_mmi(VP8DSPContext *dsp)
 
 av_cold void ff_vp8dsp_init_mips(VP8DSPContext *dsp)
 {
-#if HAVE_MSA
-    vp8dsp_init_msa(dsp);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     vp8dsp_init_mmi(dsp);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    vp8dsp_init_msa(dsp);
+#endif  // #if HAVE_MSA
 }

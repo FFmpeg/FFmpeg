@@ -41,8 +41,9 @@ static const vec_u8 mask[2] = {
     { 0x04, 0x05, 0x0C, 0x0D, 0x14, 0x15, 0x1C, 0x1D, 0x06, 0x07, 0x0E, 0x0F, 0x16, 0x17, 0x1E, 0x1F },
 };
 
-static void transform4x4(vec_s16 src_01, vec_s16 src_23, vec_s32 res[4],
-                         const int shift, int16_t *coeffs)
+static av_always_inline void transform4x4(vec_s16 src_01, vec_s16 src_23,
+                                          vec_s32 res[4], const int shift,
+                                          int16_t *coeffs)
 {
     vec_s16 src_02, src_13;
     vec_s32 zero = vec_splat_s32(0);
@@ -57,7 +58,13 @@ static void transform4x4(vec_s16 src_01, vec_s16 src_23, vec_s32 res[4],
     e1 = vec_msums(src_02, trans4[2], zero);
     o1 = vec_msums(src_13, trans4[3], zero);
 
-    add = vec_sl(vec_splat_s32(1), vec_splat_u32(shift - 1));
+    switch(shift) {
+    case  7: add = vec_sl(vec_splat_s32(1), vec_splat_u32( 7 - 1)); break;
+    case 10: add = vec_sl(vec_splat_s32(1), vec_splat_u32(10 - 1)); break;
+    case 12: add = vec_sl(vec_splat_s32(1), vec_splat_u32(12 - 1)); break;
+    default: abort();
+    }
+
     e0 = vec_add(e0, add);
     e1 = vec_add(e1, add);
 
@@ -67,10 +74,18 @@ static void transform4x4(vec_s16 src_01, vec_s16 src_23, vec_s32 res[4],
     res[3] = vec_sub(e0, o0);
 }
 
-static void scale(vec_s32 res[4], vec_s16 res_packed[2], int shift)
+static av_always_inline void scale(vec_s32 res[4], vec_s16 res_packed[2],
+                                   const int shift)
 {
     int i;
-    vec_u32 v_shift = vec_splat_u32(shift);
+    vec_u32 v_shift;
+
+    switch(shift) {
+    case  7: v_shift = vec_splat_u32(7) ; break;
+    case 10: v_shift = vec_splat_u32(10); break;
+    case 12: v_shift = vec_splat_u32(12); break;
+    default: abort();
+    }
 
     for (i = 0; i < 4; i++)
         res[i] = vec_sra(res[i], v_shift);

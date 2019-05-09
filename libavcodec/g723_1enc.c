@@ -42,7 +42,8 @@
 
 static av_cold int g723_1_encode_init(AVCodecContext *avctx)
 {
-    G723_1_Context *p = avctx->priv_data;
+    G723_1_Context *s = avctx->priv_data;
+    G723_1_ChannelContext *p = &s->ch[0];
 
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
@@ -386,7 +387,7 @@ static void iir_filter(int16_t *fir_coef, int16_t *iir_coef,
  * @param flt_coef filter coefficients
  * @param unq_lpc  unquantized lpc vector
  */
-static void perceptual_filter(G723_1_Context *p, int16_t *flt_coef,
+static void perceptual_filter(G723_1_ChannelContext *p, int16_t *flt_coef,
                               int16_t *unq_lpc, int16_t *buf)
 {
     int16_t vector[FRAME_LEN + LPC_ORDER];
@@ -635,7 +636,7 @@ static void synth_percept_filter(int16_t *qnt_lpc, int16_t *perf_lpc,
  * @param buf   input signal
  * @param index the current subframe index
  */
-static void acb_search(G723_1_Context *p, int16_t *residual,
+static void acb_search(G723_1_ChannelContext *p, int16_t *residual,
                        int16_t *impulse_resp, const int16_t *buf,
                        int index)
 {
@@ -963,7 +964,7 @@ static void pack_fcb_param(G723_1_Subframe *subfrm, FCBParam *optim,
  * @param buf          target vector
  * @param impulse_resp impulse response of the combined filter
  */
-static void fcb_search(G723_1_Context *p, int16_t *impulse_resp,
+static void fcb_search(G723_1_ChannelContext *p, int16_t *impulse_resp,
                        int16_t *buf, int index)
 {
     FCBParam optim;
@@ -995,7 +996,7 @@ static void fcb_search(G723_1_Context *p, int16_t *impulse_resp,
  * @param frame output buffer
  * @param size  size of the buffer
  */
-static int pack_bitstream(G723_1_Context *p, AVPacket *avpkt)
+static int pack_bitstream(G723_1_ChannelContext *p, AVPacket *avpkt)
 {
     PutBitContext pb;
     int info_bits = 0;
@@ -1056,7 +1057,8 @@ static int pack_bitstream(G723_1_Context *p, AVPacket *avpkt)
 static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                                const AVFrame *frame, int *got_packet_ptr)
 {
-    G723_1_Context *p = avctx->priv_data;
+    G723_1_Context *s = avctx->priv_data;
+    G723_1_ChannelContext *p = &s->ch[0];
     int16_t unq_lpc[LPC_ORDER * SUBFRAMES];
     int16_t qnt_lpc[LPC_ORDER * SUBFRAMES];
     int16_t cur_lsp[LPC_ORDER];
@@ -1189,6 +1191,11 @@ static int g723_1_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     return 0;
 }
 
+static const AVCodecDefault defaults[] = {
+    { "b", "6300" },
+    { NULL },
+};
+
 AVCodec ff_g723_1_encoder = {
     .name           = "g723_1",
     .long_name      = NULL_IF_CONFIG_SMALL("G.723.1"),
@@ -1197,6 +1204,7 @@ AVCodec ff_g723_1_encoder = {
     .priv_data_size = sizeof(G723_1_Context),
     .init           = g723_1_encode_init,
     .encode2        = g723_1_encode_frame,
+    .defaults       = defaults,
     .sample_fmts    = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },

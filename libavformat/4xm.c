@@ -81,7 +81,7 @@ typedef struct FourxmDemuxContext {
     AVRational fps;
 } FourxmDemuxContext;
 
-static int fourxm_probe(AVProbeData *p)
+static int fourxm_probe(const AVProbeData *p)
 {
     if ((AV_RL32(&p->buf[0]) != RIFF_TAG) ||
         (AV_RL32(&p->buf[8]) != FOURXMV_TAG))

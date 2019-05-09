@@ -32,6 +32,14 @@ static void vector_fmul_c(float *dst, const float *src0, const float *src1,
         dst[i] = src0[i] * src1[i];
 }
 
+static void vector_dmul_c(double *dst, const double *src0, const double *src1,
+                          int len)
+{
+    int i;
+    for (i = 0; i < len; i++)
+        dst[i] = src0[i] * src1[i];
+}
+
 static void vector_fmac_scalar_c(float *dst, const float *src, float mul,
                                  int len)
 {
@@ -131,6 +139,7 @@ av_cold AVFloatDSPContext *avpriv_float_dsp_alloc(int bit_exact)
         return NULL;
 
     fdsp->vector_fmul = vector_fmul_c;
+    fdsp->vector_dmul = vector_dmul_c;
     fdsp->vector_fmac_scalar = vector_fmac_scalar_c;
     fdsp->vector_fmul_scalar = vector_fmul_scalar_c;
     fdsp->vector_dmac_scalar = vector_dmac_scalar_c;

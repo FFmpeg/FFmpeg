@@ -25,6 +25,7 @@
 // it was introduced in OpenCL 2.0.
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 
+#include "libavutil/bprint.h"
 #include "libavutil/buffer.h"
 #include "libavutil/hwcontext.h"
 #include "libavutil/hwcontext_opencl.h"
@@ -45,6 +46,71 @@ typedef struct OpenCLFilterContext {
     int                output_width;
     int                output_height;
 } OpenCLFilterContext;
+
+
+/**
+ * set argument to specific Kernel.
+ * This macro relies on usage of local label "fail" and variables:
+ * avctx, cle and err.
+ */
+#define CL_SET_KERNEL_ARG(kernel, arg_num, type, arg)          \
+    cle = clSetKernelArg(kernel, arg_num, sizeof(type), arg);  \
+    if (cle != CL_SUCCESS) {                                   \
+        av_log(avctx, AV_LOG_ERROR, "Failed to set kernel "    \
+               "argument %d: error %d.\n", arg_num, cle);      \
+        err = AVERROR(EIO);                                    \
+        goto fail;                                             \
+    }
+
+/**
+ * A helper macro to handle OpenCL errors. It will assign errcode to
+ * variable err, log error msg, and jump to fail label on error.
+ */
+#define CL_FAIL_ON_ERROR(errcode, ...) do {                    \
+        if (cle != CL_SUCCESS) {                               \
+            av_log(avctx, AV_LOG_ERROR, __VA_ARGS__);          \
+            err = errcode;                                     \
+            goto fail;                                         \
+        }                                                      \
+    } while(0)
+/**
+  * release an OpenCL Kernel
+  */
+#define CL_RELEASE_KERNEL(k)                                  \
+do {                                                          \
+    if (k) {                                                  \
+        cle = clReleaseKernel(k);                             \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL kernel: %d.\n", cle);              \
+    }                                                         \
+} while(0)
+
+/**
+  * release an OpenCL Memory Object
+  */
+#define CL_RELEASE_MEMORY(m)                                  \
+do {                                                          \
+    if (m) {                                                  \
+        cle = clReleaseMemObject(m);                          \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL memory: %d.\n", cle);              \
+    }                                                         \
+} while(0)
+
+/**
+  * release an OpenCL Command Queue
+  */
+#define CL_RELEASE_QUEUE(q)                                   \
+do {                                                          \
+    if (q) {                                                  \
+        cle = clReleaseCommandQueue(q);                       \
+        if (cle != CL_SUCCESS)                                \
+            av_log(avctx, AV_LOG_ERROR, "Failed to release "  \
+                   "OpenCL command queue: %d.\n", cle);       \
+    }                                                         \
+} while(0)
 
 /**
  * Return that all inputs and outputs support only AV_PIX_FMT_OPENCL.
@@ -97,5 +163,12 @@ int ff_opencl_filter_work_size_from_image(AVFilterContext *avctx,
                                           size_t *work_size,
                                           AVFrame *frame, int plane,
                                           int block_alignment);
+/**
+ * Print a 3x3 matrix into a buffer as __constant array, which could
+ * be included in an OpenCL program.
+*/
+
+void ff_opencl_print_const_matrix_3x3(AVBPrint *buf, const char *name_str,
+                                      double mat[3][3]);
 
 #endif /* AVFILTER_OPENCL_H */

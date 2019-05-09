@@ -72,56 +72,102 @@ static av_cold int gdv_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static void scaleup(uint8_t *dst, const uint8_t *src, int w)
+{
+    int x;
+    for (x = 0; x < w - 7; x+=8) {
+        dst[x + 0] =
+        dst[x + 1] = src[(x>>1) + 0];
+        dst[x + 2] =
+        dst[x + 3] = src[(x>>1) + 1];
+        dst[x + 4] =
+        dst[x + 5] = src[(x>>1) + 2];
+        dst[x + 6] =
+        dst[x + 7] = src[(x>>1) + 3];
+    }
+    for (; x < w; x++) {
+        dst[x] = src[(x>>1)];
+    }
+}
+
+static void scaleup_rev(uint8_t *dst, const uint8_t *src, int w)
+{
+    int x;
+
+    for (x = w - 1; (x+1) & 7; x--) {
+        dst[x] = src[(x>>1)];
+    }
+    for (x -= 7; x >= 0; x -= 8) {
+        dst[x + 6] =
+        dst[x + 7] = src[(x>>1) + 3];
+        dst[x + 4] =
+        dst[x + 5] = src[(x>>1) + 2];
+        dst[x + 2] =
+        dst[x + 3] = src[(x>>1) + 1];
+        dst[x + 0] =
+        dst[x + 1] = src[(x>>1) + 0];
+    }
+}
+
+static void scaledown(uint8_t *dst, const uint8_t *src, int w)
+{
+    int x;
+    for (x = 0; x < w - 7; x+=8) {
+        dst[x + 0] = src[2*x + 0];
+        dst[x + 1] = src[2*x + 2];
+        dst[x + 2] = src[2*x + 4];
+        dst[x + 3] = src[2*x + 6];
+        dst[x + 4] = src[2*x + 8];
+        dst[x + 5] = src[2*x +10];
+        dst[x + 6] = src[2*x +12];
+        dst[x + 7] = src[2*x +14];
+    }
+    for (; x < w; x++) {
+        dst[x] = src[2*x];
+    }
+}
+
 static void rescale(GDVContext *gdv, uint8_t *dst, int w, int h, int scale_v, int scale_h)
 {
-    int i, j, y, x;
+    int j, y;
 
     if ((gdv->scale_v == scale_v) && (gdv->scale_h == scale_h)) {
         return;
     }
 
-    if (gdv->scale_h && gdv->scale_v) {
+    if (gdv->scale_v) {
         for (j = 0; j < h; j++) {
             int y = h - j - 1;
-            for (i = 0; i < w; i++) {
-                int x = w - i - 1;
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x/2 + (y/2) * (w/2)];
-            }
+            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
+            uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>!!gdv->scale_h) * (w>>1);
+
+            scaleup_rev(dst1, src1, w);
         }
     } else if (gdv->scale_h) {
         for (j = 0; j < h; j++) {
             int y = h - j - 1;
-            for (x = 0; x < w; x++) {
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x + (y/2) * w];
-            }
-        }
-    } else if (gdv->scale_v) {
-        for (j = 0; j < h; j++) {
-            int y = h - j - 1;
-            for (i = 0; i < w; i++) {
-                int x = w - i - 1;
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x/2 + y * (w/2)];
-            }
+            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
+            uint8_t *src1 = dst + PREAMBLE_SIZE + (y>>1) * w;
+            memcpy(dst1, src1, w);
         }
     }
 
     if (scale_h && scale_v) {
-        for (y = 0; y < h/2; y++) {
-            for (x = 0; x < w/2; x++) {
-                dst[PREAMBLE_SIZE + x + y * (w/2)] = dst[PREAMBLE_SIZE + x*2 + y*2 * w];
-            }
+        for (y = 0; y < (h>>1); y++) {
+            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * (w>>1);
+            uint8_t *src1 = dst + PREAMBLE_SIZE + y*2 * w;
+            scaledown(dst1, src1, w>>1);
         }
     } else if (scale_h) {
-        for (y = 0; y < h/2; y++) {
-            for (x = 0; x < w; x++) {
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x + y*2 * w];
-            }
+        for (y = 0; y < (h>>1); y++) {
+            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
+            uint8_t *src1 = dst + PREAMBLE_SIZE + y*2 * w;
+            memcpy(dst1, src1, w);
         }
     } else if (scale_v) {
         for (y = 0; y < h; y++) {
-            for (x = 0; x < w/2; x++) {
-                dst[PREAMBLE_SIZE + x + y * w] = dst[PREAMBLE_SIZE + x*2 + y * w];
-            }
+            uint8_t *dst1 = dst + PREAMBLE_SIZE + y * w;
+            scaledown(dst1, dst1, w>>1);
         }
     }
 
@@ -228,6 +274,10 @@ static int decompress_2(AVCodecContext *avctx)
             break;
         }
     }
+
+    if (bytestream2_get_bytes_left_p(pb) > 0)
+        return AVERROR_INVALIDDATA;
+
     return 0;
 }
 
@@ -244,6 +294,8 @@ static int decompress_5(AVCodecContext *avctx, unsigned skip)
 
     while (bytestream2_get_bytes_left_p(pb) > 0 && bytestream2_get_bytes_left(gb) > 0) {
         int tag = read_bits2(&bits, gb);
+        if (bytestream2_get_bytes_left(gb) < 1)
+            return AVERROR_INVALIDDATA;
         if (tag == 0) {
             bytestream2_put_byte(pb, bytestream2_get_byte(gb));
         } else if (tag == 1) {
@@ -423,6 +475,8 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
     if (pal && pal_size == AVPALETTE_SIZE)
         memcpy(gdv->pal, pal, AVPALETTE_SIZE);
 
+    if (compression < 2 && bytestream2_get_bytes_left(gb) < 256*3)
+        return AVERROR_INVALIDDATA;
     rescale(gdv, gdv->frame, avctx->width, avctx->height,
             !!(flags & 0x10), !!(flags & 0x20));
 
@@ -430,8 +484,6 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
     case 1:
         memset(gdv->frame + PREAMBLE_SIZE, 0, gdv->frame_size - PREAMBLE_SIZE);
     case 0:
-        if (bytestream2_get_bytes_left(gb) < 256*3)
-            return AVERROR_INVALIDDATA;
         for (i = 0; i < 256; i++) {
             unsigned r = bytestream2_get_byte(gb);
             unsigned g = bytestream2_get_byte(gb);
@@ -456,34 +508,33 @@ static int gdv_decode_frame(AVCodecContext *avctx, void *data,
     default:
         av_assert0(0);
     }
+    if (ret < 0)
+        return ret;
 
     memcpy(frame->data[1], gdv->pal, AVPALETTE_SIZE);
     dst = frame->data[0];
 
     if (!gdv->scale_v && !gdv->scale_h) {
         int sidx = PREAMBLE_SIZE, didx = 0;
-        int y, x;
+        int y;
 
         for (y = 0; y < avctx->height; y++) {
-            for (x = 0; x < avctx->width; x++) {
-                dst[x+didx] = gdv->frame[x+sidx];
-            }
+            memcpy(dst + didx, gdv->frame + sidx, avctx->width);
             sidx += avctx->width;
             didx += frame->linesize[0];
         }
     } else {
         int sidx = PREAMBLE_SIZE, didx = 0;
-        int y, x;
+        int y;
 
         for (y = 0; y < avctx->height; y++) {
             if (!gdv->scale_v) {
-                for (x = 0; x < avctx->width; x++) {
-                    dst[didx + x] = gdv->frame[sidx + x];
-                }
+                memcpy(dst + didx, gdv->frame + sidx, avctx->width);
             } else {
-                for (x = 0; x < avctx->width; x++) {
-                    dst[didx + x] = gdv->frame[sidx + x/2];
-                }
+                uint8_t *dst2 = dst + didx;
+                uint8_t *src2 = gdv->frame + sidx;
+
+                scaleup(dst2, src2, avctx->width);
             }
             if (!gdv->scale_h || ((y & 1) == 1)) {
                 sidx += !gdv->scale_v ? avctx->width : avctx->width/2;

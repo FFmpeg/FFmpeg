@@ -208,8 +208,12 @@ int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
         return vdpau_error(status);
     if (avctx->codec_id == AV_CODEC_ID_HEVC && strncmp(info_string, "NVIDIA ", 7) == 0 &&
         !(avctx->hwaccel_flags & AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH)) {
-        av_log(avctx, AV_LOG_VERBOSE, "HEVC with NVIDIA VDPAU drivers is buggy, skipping.\n");
-        return AVERROR(ENOTSUP);
+        int driver_version = 0;
+        sscanf(info_string, "NVIDIA VDPAU Driver Shared Library  %d", &driver_version);
+        if (driver_version < 410) {
+            av_log(avctx, AV_LOG_VERBOSE, "HEVC with NVIDIA VDPAU drivers is buggy, skipping.\n");
+            return AVERROR(ENOTSUP);
+        }
     }
 
     status = vdctx->get_proc_address(vdctx->device,

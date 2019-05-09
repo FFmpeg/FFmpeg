@@ -26,6 +26,10 @@
 #include "avcodec.h"
 #include "internal.h"
 
+#define MIN_ELEMENT ' '
+#define MAX_ELEMENT 0xfe
+#define NB_ELEMENTS (MAX_ELEMENT - MIN_ELEMENT + 1)
+
 typedef struct XPMContext {
     uint32_t  *pixels;
     int        pixels_size;
@@ -290,10 +294,10 @@ static int ascii2index(const uint8_t *cpixel, int cpp)
     int n = 0, m = 1, i;
 
     for (i = 0; i < cpp; i++) {
-        if (*p < ' ' || *p > '~')
+        if (*p < MIN_ELEMENT || *p > MAX_ELEMENT)
             return AVERROR_INVALIDDATA;
-        n += (*p++ - ' ') * m;
-        m *= 95;
+        n += (*p++ - MIN_ELEMENT) * m;
+        m *= NB_ELEMENTS;
     }
     return n;
 }
@@ -346,7 +350,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
 
     size = 1;
     for (i = 0; i < cpp; i++)
-        size *= 95;
+        size *= NB_ELEMENTS;
 
     if (ncolors <= 0 || ncolors > size) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of colors: %d\n", ncolors);

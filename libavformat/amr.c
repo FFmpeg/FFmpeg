@@ -71,7 +71,7 @@ static int amr_write_packet(AVFormatContext *s, AVPacket *pkt)
 }
 #endif /* CONFIG_AMR_MUXER */
 
-static int amr_probe(AVProbeData *p)
+static int amr_probe(const AVProbeData *p)
 {
     // Only check for "#!AMR" which could be amr-wb, amr-nb.
     // This will also trigger multichannel files: "#!AMR_MC1.0\n" and
@@ -176,7 +176,7 @@ AVInputFormat ff_amr_demuxer = {
 #endif
 
 #if CONFIG_AMRNB_DEMUXER
-static int amrnb_probe(AVProbeData *p)
+static int amrnb_probe(const AVProbeData *p)
 {
     int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
@@ -184,12 +184,11 @@ static int amrnb_probe(AVProbeData *p)
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 9 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrnb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
@@ -201,7 +200,7 @@ static int amrnb_probe(AVProbeData *p)
             i++;
         }
     }
-    if (valid > 100 && valid > invalid)
+    if (valid > 100 && valid >> 4 > invalid)
         return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
@@ -233,7 +232,7 @@ AVInputFormat ff_amrnb_demuxer = {
 #endif
 
 #if CONFIG_AMRWB_DEMUXER
-static int amrwb_probe(AVProbeData *p)
+static int amrwb_probe(const AVProbeData *p)
 {
     int mode, i = 0, valid = 0, invalid = 0;
     const uint8_t *b = p->buf;
@@ -241,12 +240,11 @@ static int amrwb_probe(AVProbeData *p)
     while (i < p->buf_size) {
         mode = b[i] >> 3 & 0x0F;
         if (mode < 10 && (b[i] & 0x4) == 0x4) {
-            int last = mode;
+            int last = b[i];
             int size = amrwb_packed_size[mode];
             while (size--) {
                 if (b[++i] != last)
                     break;
-                last = b[i];
             }
             if (size > 0) {
                 valid++;
@@ -258,8 +256,8 @@ static int amrwb_probe(AVProbeData *p)
             i++;
         }
     }
-    if (valid > 100 && valid > invalid)
-        return AVPROBE_SCORE_EXTENSION / 2 - 1;
+    if (valid > 100 && valid >> 4 > invalid)
+        return AVPROBE_SCORE_EXTENSION / 2 + 1;
     return 0;
 }
 

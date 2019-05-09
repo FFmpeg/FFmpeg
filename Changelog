@@ -2,6 +2,34 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version <next>:
+- tpad filter
+- AV1 decoding support through libdav1d
+- dedot filter
+- chromashift and rgbashift filters
+- freezedetect filter
+- truehd_core bitstream filter
+- dhav demuxer
+- PCM-DVD encoder
+- GIF parser
+- vividas demuxer
+- hymt decoder
+- anlmdn filter
+- maskfun filter
+- hcom demuxer and decoder
+- ARBC decoder
+- libaribb24 based ARIB STD-B24 caption support (profiles A and C)
+- Support decoding of HEVC 4:4:4 content in nvdec and cuviddec
+- removed libndi-newtek
+- agm decoder
+- KUX demuxer
+- AV1 frame split bitstream filter
+- lscr decoder
+- lagfun filter
+- asoftclip filter
+- Support decoding of HEVC 4:4:4 content in vdpau
+
+
+version 4.1:
 - deblock filter
 - tmix filter
 - amplify filter
@@ -9,6 +37,40 @@ version <next>:
 - aderivative and aintegral audio filters
 - pal75bars and pal100bars video filter sources
 - support mbedTLS based TLS
+- adeclick filter
+- adeclip filter
+- libtensorflow backend for DNN based filters like srcnn
+- vc1 decoder is now bit-exact
+- ATRAC9 decoder
+- lensfun wrapper filter
+- colorconstancy filter
+- AVS2 video decoder via libdavs2
+- IMM4 video decoder
+- Brooktree ProSumer video decoder
+- MatchWare Screen Capture Codec decoder
+- WinCam Motion Video decoder
+- 1D LUT filter (lut1d)
+- RemotelyAnywhere Screen Capture decoder
+- cue and acue filters
+- support for AV1 in MP4
+- transpose_npp filter
+- AVS2 video encoder via libxavs2
+- amultiply filter
+- Block-Matching 3d (bm3d) denoising filter
+- acrossover filter
+- ilbc decoder
+- audio denoiser as afftdn filter
+- AV1 parser
+- SER demuxer
+- sinc audio filter source
+- chromahold filter
+- setparams filter
+- vibrance filter
+- decoding S12M timecode in h264
+- xstack filter
+- pcm vidc decoder and encoder
+- (a)graphmonitor filter
+- yadif_cuda filter
 
 
 version 4.0:

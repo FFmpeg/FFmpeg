@@ -23,9 +23,6 @@
  * Audio merging filter
  */
 
-#define FF_INTERNAL_FIELDS 1
-#include "framequeue.h"
-
 #include "libavutil/avstring.h"
 #include "libavutil/bprint.h"
 #include "libavutil/channel_layout.h"
@@ -166,7 +163,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->sample_rate = ctx->inputs[0]->sample_rate;
     outlink->time_base   = ctx->inputs[0]->time_base;
 
-    av_bprint_init(&bp, 0, 1);
+    av_bprint_init(&bp, 0, AV_BPRINT_SIZE_AUTOMATIC);
     for (i = 0; i < s->nb_inputs; i++) {
         av_bprintf(&bp, "%sin%d:", i ? " + " : "", i);
         av_bprint_channel_layout(&bp, -1, ctx->inputs[i]->channel_layout);
@@ -285,9 +282,9 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
 
-    nb_samples = ff_framequeue_queued_samples(&ctx->inputs[0]->fifo);
+    nb_samples = ff_inlink_queued_samples(ctx->inputs[0]);
     for (i = 1; i < ctx->nb_inputs && nb_samples > 0; i++) {
-        nb_samples = FFMIN(ff_framequeue_queued_samples(&ctx->inputs[i]->fifo), nb_samples);
+        nb_samples = FFMIN(ff_inlink_queued_samples(ctx->inputs[i]), nb_samples);
     }
 
     if (nb_samples) {
@@ -297,7 +294,7 @@ static int activate(AVFilterContext *ctx)
     }
 
     for (i = 0; i < ctx->nb_inputs; i++) {
-        if (ff_framequeue_queued_samples(&ctx->inputs[i]->fifo))
+        if (ff_inlink_queued_samples(ctx->inputs[i]))
             continue;
 
         if (ff_inlink_acknowledge_status(ctx->inputs[i], &status, &pts)) {

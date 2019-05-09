@@ -30,7 +30,7 @@
 #include "get_bits.h"
 
 typedef struct VP9SFSplitContext {
-    AVPacket buffer_pkt;
+    AVPacket *buffer_pkt;
 
     int nb_frames;
     int next_frame;
@@ -43,13 +43,13 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
     VP9SFSplitContext *s = ctx->priv_data;
     AVPacket *in;
     int i, j, ret, marker;
-    int is_superframe = !!s->buffer_pkt.data;
+    int is_superframe = !!s->buffer_pkt->data;
 
-    if (!s->buffer_pkt.data) {
-        ret = ff_bsf_get_packet_ref(ctx, &s->buffer_pkt);
+    if (!s->buffer_pkt->data) {
+        ret = ff_bsf_get_packet_ref(ctx, s->buffer_pkt);
         if (ret < 0)
             return ret;
-        in = &s->buffer_pkt;
+        in = s->buffer_pkt;
 
         marker = in->data[in->size - 1];
         if ((marker & 0xe0) == 0xc0) {
@@ -90,7 +90,7 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
         GetBitContext gb;
         int profile, invisible = 0;
 
-        ret = av_packet_ref(out, &s->buffer_pkt);
+        ret = av_packet_ref(out, s->buffer_pkt);
         if (ret < 0)
             goto fail;
 
@@ -101,7 +101,7 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
         s->next_frame++;
 
         if (s->next_frame >= s->nb_frames)
-            av_packet_unref(&s->buffer_pkt);
+            av_packet_unref(s->buffer_pkt);
 
         ret = init_get_bits8(&gb, out->data, out->size);
         if (ret < 0)
@@ -121,26 +121,45 @@ static int vp9_superframe_split_filter(AVBSFContext *ctx, AVPacket *out)
             out->pts = AV_NOPTS_VALUE;
 
     } else {
-        av_packet_move_ref(out, &s->buffer_pkt);
+        av_packet_move_ref(out, s->buffer_pkt);
     }
 
     return 0;
 fail:
     if (ret < 0)
         av_packet_unref(out);
-    av_packet_unref(&s->buffer_pkt);
+    av_packet_unref(s->buffer_pkt);
     return ret;
+}
+
+static int vp9_superframe_split_init(AVBSFContext *ctx)
+{
+    VP9SFSplitContext *s = ctx->priv_data;
+
+    s->buffer_pkt = av_packet_alloc();
+    if (!s->buffer_pkt)
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static void vp9_superframe_split_flush(AVBSFContext *ctx)
+{
+    VP9SFSplitContext *s = ctx->priv_data;
+    av_packet_unref(s->buffer_pkt);
 }
 
 static void vp9_superframe_split_uninit(AVBSFContext *ctx)
 {
     VP9SFSplitContext *s = ctx->priv_data;
-    av_packet_unref(&s->buffer_pkt);
+    av_packet_free(&s->buffer_pkt);
 }
 
 const AVBitStreamFilter ff_vp9_superframe_split_bsf = {
     .name = "vp9_superframe_split",
     .priv_data_size = sizeof(VP9SFSplitContext),
+    .init           = vp9_superframe_split_init,
+    .flush          = vp9_superframe_split_flush,
     .close          = vp9_superframe_split_uninit,
     .filter         = vp9_superframe_split_filter,
     .codec_ids      = (const enum AVCodecID []){ AV_CODEC_ID_VP9, AV_CODEC_ID_NONE },

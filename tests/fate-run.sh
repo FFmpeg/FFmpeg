@@ -5,7 +5,7 @@ export LC_ALL=C
 base=$(dirname $0)
 . "${base}/md5.sh"
 
-base64=tests/base64
+base64=tests/base64${HOSTEXECSUF}
 
 test="${1#fate-}"
 target_samples=$2
@@ -25,6 +25,7 @@ cmp_unit=${15:-2}
 gen=${16:-no}
 hwaccel=${17:-none}
 report_type=${18:-standard}
+keep=${19:-0}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -44,7 +45,7 @@ compare(){
 }
 
 do_tiny_psnr(){
-    psnr=$(tests/tiny_psnr "$1" "$2" $cmp_unit $cmp_shift 0) || return 1
+    psnr=$(tests/tiny_psnr${HOSTEXECSUF} "$1" "$2" $cmp_unit $cmp_shift 0) || return 1
     val=$(expr "$psnr" : ".*$3: *\([0-9.]*\)")
     size1=$(expr "$psnr" : '.*bytes: *\([0-9]*\)')
     size2=$(expr "$psnr" : '.*bytes:[ 0-9]*/ *\([0-9]*\)')
@@ -85,11 +86,11 @@ runecho(){
 }
 
 probefmt(){
-    run ffprobe${PROGSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries format=format_name -print_format default=nw=1:nk=1 -v 0 "$@"
 }
 
 probetags(){
-    run ffprobe${PROGSUF} -show_entries format_tags -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_entries format_tags -v 0 "$@"
 }
 
 runlocal(){
@@ -98,24 +99,24 @@ runlocal(){
 }
 
 probeframes(){
-    run ffprobe${PROGSUF} -show_frames -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_frames -v 0 "$@"
 }
 
 probechapters(){
-    run ffprobe${PROGSUF} -show_chapters -v 0 "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -show_chapters -v 0 "$@"
 }
 
 probegaplessinfo(){
     filename="$1"
     shift
-    run ffprobe${PROGSUF} -bitexact -select_streams a -show_entries format=start_time,duration:stream=index,start_pts,duration_ts -v 0 "$filename" "$@"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -show_entries format=start_time,duration:stream=index,start_pts,duration_ts -v 0 "$filename" "$@"
     pktfile1="${outdir}/${test}.pkts"
     framefile1="${outdir}/${test}.frames"
     cleanfiles="$cleanfiles $pktfile1 $framefile1"
-    run ffprobe${PROGSUF} -bitexact -select_streams a -of compact -count_packets -show_entries packet=pts,dts,duration,flags:stream=nb_read_packets -v 0 "$filename" "$@" > "$pktfile1"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_packets -show_entries packet=pts,dts,duration,flags:stream=nb_read_packets -v 0 "$filename" "$@" > "$pktfile1"
     head -n 8 "$pktfile1"
     tail -n 9 "$pktfile1"
-    run ffprobe${PROGSUF} -bitexact -select_streams a -of compact -count_frames -show_entries frame=pkt_pts,pkt_dts,best_effort_timestamp,pkt_duration,nb_samples:stream=nb_read_frames -v 0 "$filename" "$@" > "$framefile1"
+    run ffprobe${PROGSUF}${EXECSUF} -bitexact -select_streams a -of compact -count_frames -show_entries frame=pkt_pts,pkt_dts,best_effort_timestamp,pkt_duration,nb_samples:stream=nb_read_frames -v 0 "$filename" "$@" > "$framefile1"
     head -n 8 "$framefile1"
     tail -n 9 "$framefile1"
 }
@@ -127,7 +128,7 @@ ffmpeg(){
         [ x${arg} = x-i ] && ffmpeg_args="${ffmpeg_args} ${dec_opts}"
         ffmpeg_args="${ffmpeg_args} ${arg}"
     done
-    run ffmpeg${PROGSUF} ${ffmpeg_args}
+    run ffmpeg${PROGSUF}${EXECSUF} ${ffmpeg_args}
 }
 
 framecrc(){
@@ -205,7 +206,7 @@ enc_dec(){
     ffmpeg $8 $DEC_OPTS -i $tencfile $ENC_OPTS $dec_opt $FLAGS \
         -f $dec_fmt -y $tdecfile || return
     do_md5sum $decfile
-    tests/tiny_psnr $srcfile $decfile $cmp_unit $cmp_shift
+    tests/tiny_psnr${HOSTEXECSUF} $srcfile $decfile $cmp_unit $cmp_shift
 }
 
 transcode(){
@@ -242,16 +243,110 @@ stream_remux(){
         -f framecrc - || return
 }
 
-lavffatetest(){
-    t="${test#lavf-fate-}"
-    ref=${base}/ref/lavf-fate/$t
-    ${base}/lavf-regression.sh $t lavf-fate tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
+# FIXME: There is a certain duplication between the avconv-related helper
+# functions above and below that should be refactored.
+ffmpeg2="$target_exec ${target_path}/ffmpeg${PROGSUF}${EXECSUF}"
+raw_src="${target_path}/tests/vsynth1/%02d.pgm"
+pcm_src="${target_path}/tests/data/asynth1.sw"
+crcfile="tests/data/$test.lavf.crc"
+target_crcfile="${target_path}/$crcfile"
+
+[ "${V-0}" -gt 0 ] && echov=echov || echov=:
+
+echov(){
+    echo "$@" >&3
 }
 
-lavftest(){
+AVCONV_OPTS="-nostdin -nostats -y -cpuflags $cpuflags"
+COMMON_OPTS="-flags +bitexact -idct simple -sws_flags +accurate_rnd+bitexact -fflags +bitexact"
+DEC_OPTS="$COMMON_OPTS -threads $threads"
+ENC_OPTS="$COMMON_OPTS -threads 1 -dct fastint"
+
+run_avconv(){
+    $echov $ffmpeg2 $AVCONV_OPTS $*
+    $ffmpeg2 $AVCONV_OPTS $*
+}
+
+do_avconv(){
+    f="$1"
+    shift
+    set -- $* ${target_path}/$f
+    run_avconv $*
+    do_md5sum $f
+    echo $(wc -c $f)
+}
+
+do_avconv_crc(){
+    f="$1"
+    shift
+    run_avconv $* -f crc "$target_crcfile"
+    echo "$f $(cat $crcfile)"
+}
+
+lavf_audio(){
     t="${test#lavf-}"
-    ref=${base}/ref/lavf/$t
-    ${base}/lavf-regression.sh $t lavf tests/vsynth1 "$target_exec" "$target_path" "$threads" "$thread_type" "$cpuflags" "$target_samples"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS $1 -ar 44100 -f s16le -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10 $2
+    do_avconv_crc $file $DEC_OPTS $3 -i $target_path/$file
+}
+
+lavf_container(){
+    t="${test#lavf-}"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le $1 -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -b:a 64k -t 1 -qscale:v 10 $2
+    test $3 = "disable_crc" ||
+        do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
+}
+
+lavf_container_attach() {          lavf_container "" "$1 -attach ${raw_src%/*}/00.pgm -metadata:s:t mimetype=image/x-portable-greymap"; }
+lavf_container_timecode_nodrop() { lavf_container "" "$1 -timecode 02:56:14:13"; }
+lavf_container_timecode_drop()   { lavf_container "" "$1 -timecode 02:56:14.13 -r 30000/1001"; }
+
+lavf_container_timecode()
+{
+    lavf_container_timecode_nodrop "$@"
+    lavf_container_timecode_drop "$@"
+    lavf_container "" "$1"
+}
+
+lavf_container_fate()
+{
+    t="${test#lavf-fate-}"
+    outdir="tests/data/lavf-fate"
+    file=${outdir}/lavf.$t
+    input="${target_samples}/$1"
+    do_avconv $file $DEC_OPTS $2 -i "$input" "$ENC_OPTS -metadata title=lavftest" -vcodec copy -acodec copy
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
+}
+
+lavf_image(){
+    t="${test#lavf-}"
+    outdir="tests/data/images/$t"
+    mkdir -p "$outdir"
+    file=${outdir}/%02d.$t
+    run_avconv $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $1 "$ENC_OPTS -metadata title=lavftest" -frames 13 -y -qscale 10 $target_path/$file
+    do_md5sum ${outdir}/02.$t
+    do_avconv_crc $file $DEC_OPTS $2 -i $target_path/$file $2
+    echo $(wc -c ${outdir}/02.$t)
+}
+
+lavf_image2pipe(){
+    t="${test#lavf-}"
+    t="${t%pipe}"
+    outdir="tests/data/lavf"
+    file=${outdir}/${t}pipe.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src -f image2pipe "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10
+    do_avconv_crc $file $DEC_OPTS -f image2pipe -i $target_path/$file
+}
+
+lavf_video(){
+    t="${test#lavf-}"
+    outdir="tests/data/lavf"
+    file=${outdir}/lavf.$t
+    do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src "$ENC_OPTS -metadata title=lavftest" -t 1 -qscale 10 $1 $2
+    do_avconv_crc $file $DEC_OPTS -i $target_path/$file $1
 }
 
 refcmp_metadata(){
@@ -261,6 +356,17 @@ refcmp_metadata(){
     ffmpeg $FLAGS $ENC_OPTS \
         -lavfi "testsrc2=size=300x200:rate=1:duration=5,format=${pixfmt},split[ref][tmp];[tmp]avgblur=4[enc];[enc][ref]${refcmp},metadata=print:file=-" \
         -f null /dev/null | awk -v ref=${ref} -v fuzz=${fuzz} -f ${base}/refcmp-metadata.awk -
+}
+
+pixfmt_conversion(){
+    conversion="${test#pixfmt-}"
+    outdir="tests/data/pixfmt"
+    raw_dst="$outdir/$conversion.out.yuv"
+    file=${outdir}/${conversion}.yuv
+    run_avconv $DEC_OPTS -r 1 -f image2 -c:v pgmyuv -i $raw_src \
+               $ENC_OPTS -f rawvideo -t 1 -s 352x288 -pix_fmt $conversion $target_path/$raw_dst
+    do_avconv $file $DEC_OPTS -f rawvideo -s 352x288 -pix_fmt $conversion -i $target_path/$raw_dst \
+              $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt yuv444p
 }
 
 video_filter(){
@@ -280,7 +386,7 @@ pixfmts(){
     prefilter_chain=$2
     nframes=${3:-1}
 
-    showfiltfmts="$target_exec $target_path/libavfilter/tests/filtfmts"
+    showfiltfmts="$target_exec $target_path/libavfilter/tests/filtfmts${EXECSUF}"
     scale_exclude_fmts=${outfile}_scale_exclude_fmts
     scale_in_fmts=${outfile}_scale_in_fmts
     scale_out_fmts=${outfile}_scale_out_fmts
@@ -349,7 +455,7 @@ audio_match(){
     cleanfiles="$cleanfiles $decfile"
 
     ffmpeg -i "$sample" -bitexact $extra_args -y $decfile
-    tests/audiomatch $decfile $trefile
+    tests/audiomatch${HOSTEXECSUF} $decfile $trefile
 }
 
 concat(){
@@ -365,18 +471,16 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-        run ffprobe${PROGSUF} -bitexact -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | tr -d '\r' > $packetfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | tr -d '\r' > $packetfile
         do_md5sum $packetfile
     else
-        run ffprobe${PROGSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
     fi
 }
 
 null(){
     :
 }
-
-mkdir -p "$outdir"
 
 # Disable globbing: command arguments may contain globbing characters and
 # must be kept verbatim
@@ -428,7 +532,9 @@ if test $err != 0 && test $gen != "no" ; then
 fi
 
 if test $err = 0; then
-    rm -f $outfile $errfile $cmpfile $cleanfiles
+    if test $keep = 0; then
+        rm -f $outfile $errfile $cmpfile $cleanfiles
+    fi
 elif test $gen = "no"; then
     echo "Test $test failed. Look at $errfile for details."
     test "${V:-0}" -gt 0 && cat $errfile

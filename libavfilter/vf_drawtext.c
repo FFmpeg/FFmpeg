@@ -916,6 +916,14 @@ static int func_pts(AVFilterContext *ctx, AVBPrint *bp,
                 sign = '-';
                 ms = -ms;
             }
+            if (argc >= 3) {
+                if (!strcmp(argv[2], "24HH")) {
+                    ms %= 24 * 60 * 60 * 1000;
+                } else {
+                    av_log(ctx, AV_LOG_ERROR, "Invalid argument '%s'\n", argv[2]);
+                    return AVERROR(EINVAL);
+                }
+            }
             av_bprintf(bp, "%c%02d:%02d:%02d.%03d", sign,
                        (int)(ms / (60 * 60 * 1000)),
                        (int)(ms / (60 * 1000)) % 60,
@@ -1399,8 +1407,8 @@ static int draw_text(AVFilterContext *ctx, AVFrame *frame,
     update_color_with_alpha(s, &bordercolor, s->bordercolor);
     update_color_with_alpha(s, &boxcolor   , s->boxcolor   );
 
-    box_w = FFMIN(width - 1 , max_text_line_w);
-    box_h = FFMIN(height - 1, y + s->max_glyph_h);
+    box_w = max_text_line_w;
+    box_h = y + s->max_glyph_h;
 
     if (s->fix_bounds) {
 

@@ -214,7 +214,7 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, frag);
+    ff_cbs_fragment_reset(ctx->cbc, frag);
 
     if (err < 0)
         av_packet_unref(out);
@@ -255,13 +255,15 @@ static int mpeg2_metadata_init(AVBSFContext *bsf)
 
     err = 0;
 fail:
-    ff_cbs_fragment_uninit(ctx->cbc, frag);
+    ff_cbs_fragment_reset(ctx->cbc, frag);
     return err;
 }
 
 static void mpeg2_metadata_close(AVBSFContext *bsf)
 {
     MPEG2MetadataContext *ctx = bsf->priv_data;
+
+    ff_cbs_fragment_free(ctx->cbc, &ctx->fragment);
     ff_cbs_close(&ctx->cbc);
 }
 

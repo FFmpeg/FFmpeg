@@ -208,6 +208,9 @@ static int aic_decode_coeffs(GetBitContext *gb, int16_t *dst,
     int mb, idx;
     unsigned val;
 
+    if (get_bits_left(gb) < 5)
+        return AVERROR_INVALIDDATA;
+
     has_skips  = get_bits1(gb);
     coeff_type = get_bits1(gb);
     coeff_bits = get_bits(gb, 3);

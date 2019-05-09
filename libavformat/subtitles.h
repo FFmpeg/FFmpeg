@@ -188,7 +188,7 @@ static av_always_inline int ff_subtitles_next_line(const char *ptr)
 {
     int n = strcspn(ptr, "\r\n");
     ptr += n;
-    if (*ptr == '\r') {
+    while (*ptr == '\r') {
         ptr++;
         n++;
     }

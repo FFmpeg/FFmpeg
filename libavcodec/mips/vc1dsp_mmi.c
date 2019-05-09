@@ -27,118 +27,97 @@
 #include "hpeldsp_mips.h"
 #include "libavutil/mips/mmiutils.h"
 
+#define VC1_INV_TRANCS_8_TYPE1(o1, o2, r1, r2, r3, r4, c0)                  \
+        "li         %[tmp0],    "#r1"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp13]                             \n\t" \
+        "punpcklwd  %[ftmp13],  %[ftmp13],  %[ftmp13]                 \n\t" \
+        "li         %[tmp0],    "#r2"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp14]                             \n\t" \
+        "punpcklwd  %[ftmp14],  %[ftmp14],  %[ftmp14]                 \n\t" \
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp1],   %[ftmp1],   %[ftmp2]                  \n\t" \
+        "pmaddhw    %[ftmp2],   %[ftmp6],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp3],   %[ftmp8],   %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp2],   %[ftmp2],   %[ftmp3]                  \n\t" \
+                                                                            \
+        "li         %[tmp0],    "#r3"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp13]                             \n\t" \
+        "punpcklwd  %[ftmp13],  %[ftmp13],  %[ftmp13]                 \n\t" \
+        "li         %[tmp0],    "#r4"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp14]                             \n\t" \
+        "punpcklwd  %[ftmp14],  %[ftmp14],  %[ftmp14]                 \n\t" \
+        "pmaddhw    %[ftmp3],   %[ftmp9],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp4],   %[ftmp11],  %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp3],   %[ftmp3],   %[ftmp4]                  \n\t" \
+        "pmaddhw    %[ftmp4],   %[ftmp10],  %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp13],  %[ftmp12],  %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp4],   %[ftmp4],   %[ftmp13]                 \n\t" \
+                                                                            \
+        "paddw      %[ftmp1],   %[ftmp1],   "#c0"                     \n\t" \
+        "paddw      %[ftmp2],   %[ftmp2],   "#c0"                     \n\t" \
+        "paddw      %[ftmp13],  %[ftmp1],   %[ftmp3]                  \n\t" \
+        "psubw      %[ftmp14],  %[ftmp1],   %[ftmp3]                  \n\t" \
+        "paddw      %[ftmp1],   %[ftmp2],   %[ftmp4]                  \n\t" \
+        "psubw      %[ftmp3],   %[ftmp2],   %[ftmp4]                  \n\t" \
+        "psraw      %[ftmp13],  %[ftmp13],  %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp1],   %[ftmp1],   %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp14],  %[ftmp14],  %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp3],   %[ftmp3],   %[ftmp0]                  \n\t" \
+        "punpcklhw  %[ftmp2],   %[ftmp13],  %[ftmp1]                  \n\t" \
+        "punpckhhw  %[ftmp4],   %[ftmp13],  %[ftmp1]                  \n\t" \
+        "punpcklhw  "#o1",      %[ftmp2],   %[ftmp4]                  \n\t" \
+        "punpcklhw  %[ftmp2],   %[ftmp14],  %[ftmp3]                  \n\t" \
+        "punpckhhw  %[ftmp4],   %[ftmp14],  %[ftmp3]                  \n\t" \
+        "punpcklhw  "#o2",      %[ftmp2],   %[ftmp4]                  \n\t"
 
-#define VC1_INV_TRANCS_8_STEP1_MMI(fp1,   fp2,   fp3,   fp4,                \
-                                   o1,    o2,    o3,    o4,                 \
-                                   t1,    t2,    t3,    t4,                 \
-                                   ff_p1, ff_p2, ff_p3, ff_p4)              \
-        "pmullh     "#t1"   ,   "#fp1"  ,   "#ff_p1"                \n\t"   \
-        "pmullh     "#t2"   ,   "#fp2"  ,   "#ff_p2"                \n\t"   \
-        "pmullh     "#t3"   ,   "#fp3"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#t4"   ,   "#fp4"  ,   "#ff_p4"                \n\t"   \
-        "paddh      "#o1"   ,   "#t1"   ,   "#t2"                   \n\t"   \
-        "paddh      "#o1"   ,   "#o1"   ,   "#t3"                   \n\t"   \
-        "paddh      "#o1"   ,   "#o1"   ,   "#t4"                   \n\t"   \
+#define VC1_INV_TRANCS_8_TYPE2(o1, o2, r1, r2, r3, r4, c0, c1)              \
+        "li         %[tmp0],    "#r1"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp13]                             \n\t" \
+        "punpcklwd  %[ftmp13],  %[ftmp13],  %[ftmp13]                 \n\t" \
+        "li         %[tmp0],    "#r2"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp14]                             \n\t" \
+        "punpcklwd  %[ftmp14],  %[ftmp14],  %[ftmp14]                 \n\t" \
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp1],   %[ftmp1],   %[ftmp2]                  \n\t" \
+        "pmaddhw    %[ftmp2],   %[ftmp6],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp3],   %[ftmp8],   %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp2],   %[ftmp2],   %[ftmp3]                  \n\t" \
                                                                             \
-        "pmullh     "#t1"   ,   "#fp1"  ,   "#ff_p2"                \n\t"   \
-        "pmullh     "#t2"   ,   "#fp2"  ,   "#ff_p4"                \n\t"   \
-        "pmullh     "#t3"   ,   "#fp3"  ,   "#ff_p1"                \n\t"   \
-        "pmullh     "#t4"   ,   "#fp4"  ,   "#ff_p3"                \n\t"   \
-        "psubh      "#o2"   ,   "#t1"   ,   "#t2"                   \n\t"   \
-        "psubh      "#o2"   ,   "#o2"   ,   "#t3"                   \n\t"   \
-        "psubh      "#o2"   ,   "#o2"   ,   "#t4"                   \n\t"   \
+        "li         %[tmp0],    "#r3"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp13]                             \n\t" \
+        "punpcklwd  %[ftmp13],  %[ftmp13],  %[ftmp13]                 \n\t" \
+        "li         %[tmp0],    "#r4"                                 \n\t" \
+        "mtc1       %[tmp0],    %[ftmp14]                             \n\t" \
+        "punpcklwd  %[ftmp14],  %[ftmp14],  %[ftmp14]                 \n\t" \
+        "pmaddhw    %[ftmp3],   %[ftmp9],   %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp4],   %[ftmp11],  %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp3],   %[ftmp3],   %[ftmp4]                  \n\t" \
+        "pmaddhw    %[ftmp4],   %[ftmp10],  %[ftmp13]                 \n\t" \
+        "pmaddhw    %[ftmp13],  %[ftmp12],  %[ftmp14]                 \n\t" \
+        "paddw      %[ftmp4],   %[ftmp4],   %[ftmp13]                 \n\t" \
                                                                             \
-        "pmullh     "#t1"   ,   "#fp1"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#t2"   ,   "#fp2"  ,   "#ff_p1"                \n\t"   \
-        "pmullh     "#t3"   ,   "#fp3"  ,   "#ff_p4"                \n\t"   \
-        "pmullh     "#t4"   ,   "#fp4"  ,   "#ff_p2"                \n\t"   \
-        "psubh      "#o3"   ,   "#t1"   ,   "#t2"                   \n\t"   \
-        "paddh      "#o3"   ,   "#o3"   ,   "#t3"                   \n\t"   \
-        "paddh      "#o3"   ,   "#o3"   ,   "#t4"                   \n\t"   \
-                                                                            \
-        "pmullh     "#t1"   ,   "#fp1"  ,   "#ff_p4"                \n\t"   \
-        "pmullh     "#t2"   ,   "#fp2"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#t3"   ,   "#fp3"  ,   "#ff_p2"                \n\t"   \
-        "pmullh     "#t4"   ,   "#fp4"  ,   "#ff_p1"                \n\t"   \
-        "psubh      "#o4"   ,   "#t1"   ,   "#t2"                   \n\t"   \
-        "paddh      "#o4"   ,   "#o4"   ,   "#t3"                   \n\t"   \
-        "psubh      "#o4"   ,   "#o4"   ,   "#t4"                   \n\t"
-
-
-#define VC1_INV_TRANCS_8_STEP2_MMI(fp1,   fp2,   fp3,   fp4,                \
-                                   fp5,   fp6,   fp7,   fp8,                \
-                                   o1,    o2,    o3,    o4,                 \
-                                   ff_p1, ff_p2, ff_p3, ff_pw)              \
-        "paddh      "#fp5"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "psubh      "#fp6"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "pmullh     "#fp5"  ,   "#fp5"  ,   "#ff_p1"                \n\t"   \
-        "pmullh     "#fp6"  ,   "#fp6"  ,   "#ff_p1"                \n\t"   \
-        "paddh      "#fp5"  ,   "#fp5"  ,   "#ff_pw"                \n\t"   \
-        "paddh      "#fp6"  ,   "#fp6"  ,   "#ff_pw"                \n\t"   \
-                                                                            \
-        "pmullh     "#fp1"  ,   "#fp3"  ,   "#ff_p2"                \n\t"   \
-        "pmullh     "#fp2"  ,   "#fp4"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#fp3"  ,   "#fp3"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#fp4"  ,   "#fp4"  ,   "#ff_p2"                \n\t"   \
-        "paddh      "#fp7"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "psubh      "#fp8"  ,   "#fp3"  ,   "#fp4"                  \n\t"   \
-                                                                            \
-        "paddh      "#fp1"  ,   "#fp5"  ,   "#fp7"                  \n\t"   \
-        "paddh      "#fp2"  ,   "#fp6"  ,   "#fp8"                  \n\t"   \
-        "psubh      "#fp3"  ,   "#fp6"  ,   "#fp8"                  \n\t"   \
-        "psubh      "#fp4"  ,   "#fp5"  ,   "#fp7"                  \n\t"   \
-                                                                            \
-        "paddh      "#fp5"  ,   "#fp1"  ,   "#o1"                   \n\t"   \
-        "paddh      "#fp6"  ,   "#fp2"  ,   "#o2"                   \n\t"   \
-        "paddh      "#fp7"  ,   "#fp3"  ,   "#o3"                   \n\t"   \
-        "paddh      "#fp8"  ,   "#fp4"  ,   "#o4"                   \n\t"   \
-                                                                            \
-        "psubh      "#fp4"  ,   "#fp4"  ,   "#o4"                   \n\t"   \
-        "psubh      "#fp3"  ,   "#fp3"  ,   "#o3"                   \n\t"   \
-        "psubh      "#fp2"  ,   "#fp2"  ,   "#o2"                   \n\t"   \
-        "psubh      "#fp1"  ,   "#fp1"  ,   "#o1"                   \n\t"
-
-
-#define VC1_INV_TRANCS_4_STEP1_MMI(fp1,   fp2,   fp3,   fp4,                \
-                                   fp5,   fp6,   fp7,   fp8,                \
-                                   ff_p1, ff_p2, ff_p3, ff_pw)              \
-        "paddh      "#fp5"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "psubh      "#fp6"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "pmullh     "#fp5"  ,   "#fp5"  ,   "#ff_p1"                \n\t"   \
-        "pmullh     "#fp6"  ,   "#fp6"  ,   "#ff_p1"                \n\t"   \
-        "paddh      "#fp5"  ,   "#fp5"  ,   "#ff_pw"                \n\t"   \
-        "paddh      "#fp6"  ,   "#fp6"  ,   "#ff_pw"                \n\t"   \
-                                                                            \
-        "pmullh     "#fp1"  ,   "#fp3"  ,   "#ff_p2"                \n\t"   \
-        "pmullh     "#fp2"  ,   "#fp4"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#fp3"  ,   "#fp3"  ,   "#ff_p3"                \n\t"   \
-        "pmullh     "#fp4"  ,   "#fp4"  ,   "#ff_p2"                \n\t"   \
-        "paddh      "#fp7"  ,   "#fp1"  ,   "#fp2"                  \n\t"   \
-        "psubh      "#fp8"  ,   "#fp3"  ,   "#fp4"                  \n\t"   \
-                                                                            \
-        "paddh      "#fp1"  ,   "#fp5"  ,   "#fp7"                  \n\t"   \
-        "psubh      "#fp2"  ,   "#fp6"  ,   "#fp8"                  \n\t"   \
-        "paddh      "#fp3"  ,   "#fp6"  ,   "#fp8"                  \n\t"   \
-        "psubh      "#fp4"  ,   "#fp5"  ,   "#fp7"                  \n\t"
-
-
-#define VC1_INV_TRANCS_4_STEP2_MMI(fp1, fp2, fp3, fp4,                      \
-                                   fp5, fp6, fp7, fp8, zero)                \
-        "punpcklbh  "#fp5"  ,   "#fp5"  ,   "#zero"                 \n\t"   \
-        "punpcklbh  "#fp6"  ,   "#fp6"  ,   "#zero"                 \n\t"   \
-        "punpcklbh  "#fp7"  ,   "#fp7"  ,   "#zero"                 \n\t"   \
-        "punpcklbh  "#fp8"  ,   "#fp8"  ,   "#zero"                 \n\t"   \
-                                                                            \
-        "paddh      "#fp1"  ,   "#fp1"  ,   "#fp5"                  \n\t"   \
-        "paddh      "#fp2"  ,   "#fp2"  ,   "#fp6"                  \n\t"   \
-        "paddh      "#fp3"  ,   "#fp3"  ,   "#fp7"                  \n\t"   \
-        "paddh      "#fp4"  ,   "#fp4"  ,   "#fp8"                  \n\t"   \
-                                                                            \
-        "packushb   "#fp1"  ,   "#fp1"  ,   "#zero"                 \n\t"   \
-        "packushb   "#fp2"  ,   "#fp2"  ,   "#zero"                 \n\t"   \
-        "packushb   "#fp3"  ,   "#fp3"  ,   "#zero"                 \n\t"   \
-        "packushb   "#fp4"  ,   "#fp4"  ,   "#zero"                 \n\t"
-
+        "paddw      %[ftmp13],  %[ftmp1],   %[ftmp3]                  \n\t" \
+        "psubw      %[ftmp14],  %[ftmp1],   %[ftmp3]                  \n\t" \
+        "paddw      %[ftmp14],  %[ftmp14],  "#c1"                     \n\t" \
+        "paddw      %[ftmp1],   %[ftmp2],   %[ftmp4]                  \n\t" \
+        "psubw      %[ftmp3],   %[ftmp2],   %[ftmp4]                  \n\t" \
+        "paddw      %[ftmp3],   %[ftmp3],   "#c1"                     \n\t" \
+        "paddw      %[ftmp13],  %[ftmp13],  "#c0"                     \n\t" \
+        "paddw      %[ftmp14],  %[ftmp14],  "#c0"                     \n\t" \
+        "paddw      %[ftmp1],   %[ftmp1],   "#c0"                     \n\t" \
+        "paddw      %[ftmp3],   %[ftmp3],   "#c0"                     \n\t" \
+        "psraw      %[ftmp13],  %[ftmp13],  %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp1],   %[ftmp1],   %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp14],  %[ftmp14],  %[ftmp0]                  \n\t" \
+        "psraw      %[ftmp3],   %[ftmp3],   %[ftmp0]                  \n\t" \
+        "punpcklhw  %[ftmp2],   %[ftmp13],  %[ftmp1]                  \n\t" \
+        "punpckhhw  %[ftmp4],   %[ftmp13],  %[ftmp1]                  \n\t" \
+        "punpcklhw  "#o1",      %[ftmp2],   %[ftmp4]                  \n\t" \
+        "punpcklhw  %[ftmp2],   %[ftmp14],  %[ftmp3]                  \n\t" \
+        "punpckhhw  %[ftmp4],   %[ftmp14],  %[ftmp3]                  \n\t" \
+        "punpcklhw  "#o2",      %[ftmp2],   %[ftmp4]                  \n\t"
 
 /* Do inverse transform on 8x8 block */
 void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
@@ -216,137 +195,202 @@ void ff_vc1_inv_trans_8x8_dc_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *blo
 void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
 {
     DECLARE_ALIGNED(16, int16_t, temp[64]);
-    int16_t *src = block;
-    int16_t *dst = temp;
-    double ftmp[16];
-    uint32_t count, tmp[1];
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_1_local) = {0x0000000100000001ULL};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
+    double ftmp[23];
+    uint64_t tmp[1];
 
-    // 1st loop
     __asm__ volatile (
+        /* 1st loop: start */
         "li         %[tmp0],    0x03                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
-        "li         %[count],   0x02                                    \n\t"
 
-        "1:                                                             \n\t"
-        MMI_LDC1(%[ftmp5], %[src], 0x10)
-        MMI_LDC1(%[ftmp6], %[src], 0x30)
-        MMI_LDC1(%[ftmp7], %[src], 0x50)
-        MMI_LDC1(%[ftmp8], %[src], 0x70)
+       // 1st part
+        MMI_LDC1(%[ftmp1], %[block], 0x00)
+        MMI_LDC1(%[ftmp11], %[block], 0x10)
+        MMI_LDC1(%[ftmp2], %[block], 0x20)
+        MMI_LDC1(%[ftmp12], %[block], 0x30)
+        MMI_LDC1(%[ftmp3], %[block], 0x40)
+        MMI_LDC1(%[ftmp13], %[block], 0x50)
+        MMI_LDC1(%[ftmp4], %[block], 0x60)
+        MMI_LDC1(%[ftmp14], %[block], 0x70)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
 
-        VC1_INV_TRANCS_8_STEP1_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ff_pw_16], %[ff_pw_15], %[ff_pw_9],
-                                   %[ff_pw_4])
+        "punpcklhw  %[ftmp9],  %[ftmp11],  %[ftmp12]                    \n\t"
+        "punpckhhw  %[ftmp10], %[ftmp11],  %[ftmp12]                    \n\t"
+        "punpcklhw  %[ftmp11], %[ftmp13],  %[ftmp14]                    \n\t"
+        "punpckhhw  %[ftmp12], %[ftmp13],  %[ftmp14]                    \n\t"
 
-        MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x40)
-        MMI_LDC1(%[ftmp3], %[src], 0x20)
-        MMI_LDC1(%[ftmp4], %[src], 0x60)
+        /* ftmp15:dst03,dst02,dst01,dst00 ftmp22:dst73,dst72,dst71,dst70 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp15], %[ftmp22], 0x0010000c, 0x0006000c,
+                               0x000f0010, 0x00040009, %[ff_pw_4])
 
-        VC1_INV_TRANCS_8_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ff_pw_12], %[ff_pw_16], %[ff_pw_6],
-                                   %[ff_pw_4])
+        /* ftmp16:dst13,dst12,dst11,dst10 ftmp21:dst63,dst62,dst61,dst60 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp16], %[ftmp21], 0x0006000c, 0xfff0fff4,
+                               0xfffc000f, 0xfff7fff0, %[ff_pw_4])
 
+        /* ftmp17:dst23,dst22,dst21,dst20 ftmp20:dst53,dst52,dst51,dst50 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp17], %[ftmp20], 0xfffa000c, 0x0010fff4,
+                               0xfff00009, 0x000f0004, %[ff_pw_4])
 
-        PSRAH_8_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                    %[ftmp4], %[ftmp3], %[ftmp2], %[ftmp1], %[ftmp0])
+        /* ftmp18:dst33,dst32,dst31,dst30 ftmp19:dst43,dst42,dst41,dst40 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp18], %[ftmp19], 0xfff0000c, 0xfffa000c,
+                               0xfff70004, 0xfff0000f, %[ff_pw_4])
 
-        TRANSPOSE_4H(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
+        TRANSPOSE_4H(%[ftmp15], %[ftmp16], %[ftmp17], %[ftmp18],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
-        MMI_SDC1(%[ftmp5], %[dst], 0x00)
-        MMI_SDC1(%[ftmp6], %[dst], 0x10)
-        MMI_SDC1(%[ftmp7], %[dst], 0x20)
-        MMI_SDC1(%[ftmp8], %[dst], 0x30)
+        TRANSPOSE_4H(%[ftmp19], %[ftmp20], %[ftmp21], %[ftmp22],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
 
-        TRANSPOSE_4H(%[ftmp4], %[ftmp3], %[ftmp2], %[ftmp1],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
+        MMI_SDC1(%[ftmp15], %[temp], 0x00)
+        MMI_SDC1(%[ftmp19], %[temp], 0x08)
+        MMI_SDC1(%[ftmp16], %[temp], 0x10)
+        MMI_SDC1(%[ftmp20], %[temp], 0x18)
+        MMI_SDC1(%[ftmp17], %[temp], 0x20)
+        MMI_SDC1(%[ftmp21], %[temp], 0x28)
+        MMI_SDC1(%[ftmp18], %[temp], 0x30)
+        MMI_SDC1(%[ftmp22], %[temp], 0x38)
 
-        MMI_SDC1(%[ftmp4], %[dst], 0x08)
-        MMI_SDC1(%[ftmp3], %[dst], 0x18)
-        MMI_SDC1(%[ftmp2], %[dst], 0x28)
-        MMI_SDC1(%[ftmp1], %[dst], 0x38)
+       // 2nd part
+        MMI_LDC1(%[ftmp1], %[block], 0x08)
+        MMI_LDC1(%[ftmp11], %[block], 0x18)
+        MMI_LDC1(%[ftmp2], %[block], 0x28)
+        MMI_LDC1(%[ftmp12], %[block], 0x38)
+        MMI_LDC1(%[ftmp3], %[block], 0x48)
+        MMI_LDC1(%[ftmp13], %[block], 0x58)
+        MMI_LDC1(%[ftmp4], %[block], 0x68)
+        MMI_LDC1(%[ftmp14], %[block], 0x78)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
 
-        "addiu      %[count],   %[count],  -0x01                        \n\t"
-        PTR_ADDIU  "%[src],     %[src],     0x08                        \n\t"
-        PTR_ADDIU  "%[dst],     %[dst],     0x40                        \n\t"
-        "bnez       %[count],   1b                                      \n\t"
-        : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
-          [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
-          [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
-          [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
-          [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
-          [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
-          [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
-          [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
-          [tmp0]"=&r"(tmp[0]),
-          [count]"=&r"(count),
-          [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_4]"f"(ff_pw_4),        [ff_pw_6]"f"(ff_pw_6),
-          [ff_pw_9]"f"(ff_pw_9),        [ff_pw_12]"f"(ff_pw_12),
-          [ff_pw_15]"f"(ff_pw_15),      [ff_pw_16]"f"(ff_pw_16)
-        : "memory"
-    );
+        "punpcklhw  %[ftmp9],   %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpckhhw  %[ftmp10],  %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp13],  %[ftmp14]                   \n\t"
+        "punpckhhw  %[ftmp12],  %[ftmp13],  %[ftmp14]                   \n\t"
 
-    src = temp;
-    dst = block;
+        /* ftmp15:dst03,dst02,dst01,dst00 ftmp22:dst73,dst72,dst71,dst70 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp15], %[ftmp22], 0x0010000c, 0x0006000c,
+                               0x000f0010, 0x00040009, %[ff_pw_4])
 
-    // 2nd loop
-    __asm__ volatile (
+        /* ftmp16:dst13,dst12,dst11,dst10 ftmp21:dst63,dst62,dst61,dst60 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp16], %[ftmp21], 0x0006000c, 0xfff0fff4,
+                               0xfffc000f, 0xfff7fff0, %[ff_pw_4])
+
+        /* ftmp17:dst23,dst22,dst21,dst20 ftmp20:dst53,dst52,dst51,dst50 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp17], %[ftmp20], 0xfffa000c, 0x0010fff4,
+                               0xfff00009, 0x000f0004, %[ff_pw_4])
+
+        /* ftmp18:dst33,dst32,dst31,dst30 ftmp19:dst43,dst42,dst41,dst40 */
+        VC1_INV_TRANCS_8_TYPE1(%[ftmp18], %[ftmp19], 0xfff0000c, 0xfffa000c,
+                               0xfff70004, 0xfff0000f, %[ff_pw_4])
+
+        TRANSPOSE_4H(%[ftmp15], %[ftmp16], %[ftmp17], %[ftmp18],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
+
+        TRANSPOSE_4H(%[ftmp19], %[ftmp20], %[ftmp21], %[ftmp22],
+                     %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4])
+
+        MMI_SDC1(%[ftmp19], %[temp], 0x48)
+        MMI_SDC1(%[ftmp20], %[temp], 0x58)
+        MMI_SDC1(%[ftmp21], %[temp], 0x68)
+        MMI_SDC1(%[ftmp22], %[temp], 0x78)
+        /* 1st loop: end */
+
+        /* 2nd loop: start */
         "li         %[tmp0],    0x07                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
-        "li         %[count],   0x02                                    \n\t"
 
-        "1:                                                             \n\t"
-        MMI_LDC1(%[ftmp5], %[src], 0x10)
-        MMI_LDC1(%[ftmp6], %[src], 0x30)
-        MMI_LDC1(%[ftmp7], %[src], 0x50)
-        MMI_LDC1(%[ftmp8], %[src], 0x70)
+        // 1st part
+        MMI_LDC1(%[ftmp1], %[temp], 0x00)
+        MMI_LDC1(%[ftmp11], %[temp], 0x10)
+        MMI_LDC1(%[ftmp2], %[temp], 0x20)
+        MMI_LDC1(%[ftmp12], %[temp], 0x30)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp15],  %[ftmp17]                   \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp15],  %[ftmp17]                   \n\t"
 
-        VC1_INV_TRANCS_8_STEP1_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ff_pw_16], %[ff_pw_15], %[ff_pw_9],
-                                   %[ff_pw_4])
+        "punpcklhw  %[ftmp9],   %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpckhhw  %[ftmp10],  %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp16],  %[ftmp18]                   \n\t"
+        "punpckhhw  %[ftmp12],  %[ftmp16],  %[ftmp18]                   \n\t"
 
-        MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x40)
-        MMI_LDC1(%[ftmp3], %[src], 0x20)
-        MMI_LDC1(%[ftmp4], %[src], 0x60)
+        /* ftmp15:dst03,dst02,dst01,dst00 ftmp22:dst73,dst72,dst71,dst70 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp15], %[ftmp22], 0x0010000c, 0x0006000c,
+                               0x000f0010, 0x00040009, %[ff_pw_64], %[ff_pw_1])
 
-        VC1_INV_TRANCS_8_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ff_pw_12], %[ff_pw_16], %[ff_pw_6],
-                                   %[ff_pw_64])
+        /* ftmp16:dst13,dst12,dst11,dst10 ftmp21:dst63,dst62,dst61,dst60 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp16], %[ftmp21], 0x0006000c, 0xfff0fff4,
+                               0xfffc000f, 0xfff7fff0, %[ff_pw_64], %[ff_pw_1])
 
-        "paddh      %[ftmp4],   %[ftmp4],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp3],   %[ftmp3],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp2],   %[ftmp2],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp1],   %[ftmp1],   %[ff_pw_1]                  \n\t"
+        /* ftmp17:dst23,dst22,dst21,dst20 ftmp20:dst53,dst52,dst51,dst50 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp17], %[ftmp20], 0xfffa000c, 0x0010fff4,
+                               0xfff00009, 0x000f0004, %[ff_pw_64], %[ff_pw_1])
 
-        PSRAH_8_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                    %[ftmp4], %[ftmp3], %[ftmp2], %[ftmp1], %[ftmp0])
+        /* ftmp18:dst33,dst32,dst31,dst30 ftmp19:dst43,dst42,dst41,dst40 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp18], %[ftmp19], 0xfff0000c, 0xfffa000c,
+                               0xfff70004, 0xfff0000f, %[ff_pw_64], %[ff_pw_1])
 
-        MMI_SDC1(%[ftmp5], %[dst], 0x00)
-        MMI_SDC1(%[ftmp6], %[dst], 0x10)
-        MMI_SDC1(%[ftmp7], %[dst], 0x20)
-        MMI_SDC1(%[ftmp8], %[dst], 0x30)
+        MMI_SDC1(%[ftmp15], %[block], 0x00)
+        MMI_SDC1(%[ftmp16], %[block], 0x10)
+        MMI_SDC1(%[ftmp17], %[block], 0x20)
+        MMI_SDC1(%[ftmp18], %[block], 0x30)
+        MMI_SDC1(%[ftmp19], %[block], 0x40)
+        MMI_SDC1(%[ftmp20], %[block], 0x50)
+        MMI_SDC1(%[ftmp21], %[block], 0x60)
+        MMI_SDC1(%[ftmp22], %[block], 0x70)
 
-        MMI_SDC1(%[ftmp4], %[dst], 0x40)
-        MMI_SDC1(%[ftmp3], %[dst], 0x50)
-        MMI_SDC1(%[ftmp2], %[dst], 0x60)
-        MMI_SDC1(%[ftmp1], %[dst], 0x70)
+       // 2nd part
+        MMI_LDC1(%[ftmp1], %[temp], 0x08)
+        MMI_LDC1(%[ftmp11], %[temp], 0x18)
+        MMI_LDC1(%[ftmp2], %[temp], 0x28)
+        MMI_LDC1(%[ftmp12], %[temp], 0x38)
+        MMI_LDC1(%[ftmp3], %[temp], 0x48)
+        MMI_LDC1(%[ftmp13], %[temp], 0x58)
+        MMI_LDC1(%[ftmp4], %[temp], 0x68)
+        MMI_LDC1(%[ftmp14], %[temp], 0x78)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
 
-        "addiu      %[count],   %[count],  -0x01                        \n\t"
-        PTR_ADDIU  "%[src],     %[src],     0x08                        \n\t"
-        PTR_ADDIU  "%[dst],     %[dst],     0x08                        \n\t"
-        "bnez       %[count],   1b                                      \n\t"
+        "punpcklhw  %[ftmp9],   %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpckhhw  %[ftmp10],  %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp13],  %[ftmp14]                   \n\t"
+        "punpckhhw  %[ftmp12],  %[ftmp13],  %[ftmp14]                   \n\t"
+
+        /* ftmp15:dst03,dst02,dst01,dst00 ftmp22:dst73,dst72,dst71,dst70 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp15], %[ftmp22], 0x0010000c, 0x0006000c,
+                               0x000f0010, 0x00040009, %[ff_pw_64], %[ff_pw_1])
+
+        /* ftmp16:dst13,dst12,dst11,dst10 ftmp21:dst63,dst62,dst61,dst60 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp16], %[ftmp21], 0x0006000c, 0xfff0fff4,
+                               0xfffc000f, 0xfff7fff0, %[ff_pw_64], %[ff_pw_1])
+
+        /* ftmp17:dst23,dst22,dst21,dst20 ftmp20:dst53,dst52,dst51,dst50 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp17], %[ftmp20], 0xfffa000c, 0x0010fff4,
+                               0xfff00009, 0x000f0004, %[ff_pw_64], %[ff_pw_1])
+
+        /* ftmp18:dst33,dst32,dst31,dst30 ftmp19:dst43,dst42,dst41,dst40 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp18], %[ftmp19], 0xfff0000c, 0xfffa000c,
+                               0xfff70004, 0xfff0000f, %[ff_pw_64], %[ff_pw_1])
+
+        MMI_SDC1(%[ftmp15], %[block], 0x08)
+        MMI_SDC1(%[ftmp16], %[block], 0x18)
+        MMI_SDC1(%[ftmp17], %[block], 0x28)
+        MMI_SDC1(%[ftmp18], %[block], 0x38)
+        MMI_SDC1(%[ftmp19], %[block], 0x48)
+        MMI_SDC1(%[ftmp20], %[block], 0x58)
+        MMI_SDC1(%[ftmp21], %[block], 0x68)
+        MMI_SDC1(%[ftmp22], %[block], 0x78)
+        /* 2nd loop: end */
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
@@ -355,13 +399,14 @@ void ff_vc1_inv_trans_8x8_mmi(int16_t block[64])
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
           [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
           [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
-          [tmp0]"=&r"(tmp[0]),
-          [count]"=&r"(count),
-          [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_1]"f"(ff_pw_1),        [ff_pw_4]"f"(ff_pw_4),
-          [ff_pw_6]"f"(ff_pw_6),        [ff_pw_9]"f"(ff_pw_9),
-          [ff_pw_12]"f"(ff_pw_12),      [ff_pw_15]"f"(ff_pw_15),
-          [ff_pw_16]"f"(ff_pw_16),      [ff_pw_64]"f"(ff_pw_64)
+          [ftmp16]"=&f"(ftmp[16]),      [ftmp17]"=&f"(ftmp[17]),
+          [ftmp18]"=&f"(ftmp[18]),      [ftmp19]"=&f"(ftmp[19]),
+          [ftmp20]"=&f"(ftmp[20]),      [ftmp21]"=&f"(ftmp[21]),
+          [ftmp22]"=&f"(ftmp[22]),
+          [tmp0]"=&r"(tmp[0])
+        : [ff_pw_1]"f"(ff_pw_1_local),  [ff_pw_64]"f"(ff_pw_64_local),
+          [ff_pw_4]"f"(ff_pw_4_local), [block]"r"(block),
+          [temp]"r"(temp)
         : "memory"
     );
 }
@@ -431,66 +476,377 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
     int16_t *dst = block;
     double ftmp[16];
     uint32_t tmp[1];
-    mips_reg addr[1];
-    DECLARE_VAR_LOW32;
+    int16_t count = 4;
+    DECLARE_ALIGNED(16, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
+    DECLARE_ALIGNED(16, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
+    int16_t coeff[64] = {12, 16,  16,  15,  12,   9,   6,   4,
+                         12, 15,   6,  -4, -12, -16, -16,  -9,
+                         12,  9,  -6, -16, -12,   4,  16,  15,
+                         12,  4, -16,  -9,  12,  15,  -6, -16,
+                         12, -4, -16,   9,  12, -15,  -6,  16,
+                         12, -9,  -6,  16, -12,  -4,  16, -15,
+                         12, -15,  6,   4, -12,  16, -16,   9,
+                         12, -16, 16, -15,  12,  -9,   6,  -4};
 
     // 1st loop
     __asm__ volatile (
-        MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x08)
-        MMI_LDC1(%[ftmp3], %[src], 0x10)
-        MMI_LDC1(%[ftmp4], %[src], 0x18)
-        MMI_LDC1(%[ftmp5], %[src], 0x20)
-        MMI_LDC1(%[ftmp6], %[src], 0x28)
-        MMI_LDC1(%[ftmp7], %[src], 0x30)
-        MMI_LDC1(%[ftmp8], %[src], 0x38)
-
-        //             a1        b1        a3        b2
-        TRANSPOSE_4H(%[ftmp1], %[ftmp3], %[ftmp5], %[ftmp7],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
-
-        //             a2        b3        a4        b4
-        TRANSPOSE_4H(%[ftmp2], %[ftmp4], %[ftmp6], %[ftmp8],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
-
-        // input b1 b2 b3 b4
-        VC1_INV_TRANCS_8_STEP1_MMI(%[ftmp3], %[ftmp7], %[ftmp4], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp0], %[ftmp13], %[ftmp14], %[ftmp15],
-                                   %[ff_pw_16], %[ff_pw_15], %[ff_pw_9],
-                                   %[ff_pw_4])
-        // input a1 a2 a3 a4
-        VC1_INV_TRANCS_8_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp5], %[ftmp6],
-                                   %[ftmp3], %[ftmp7], %[ftmp4], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ff_pw_12], %[ff_pw_16], %[ff_pw_6],
-                                   %[ff_pw_4])
-
         "li         %[tmp0],    0x03                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
 
-        PSRAH_8_MMI(%[ftmp3], %[ftmp7], %[ftmp4], %[ftmp8],
-                    %[ftmp6], %[ftmp5], %[ftmp2], %[ftmp1], %[ftmp0])
+        "1:                                                             \n\t"
+        MMI_LDC1(%[ftmp1], %[src], 0x00)
+        MMI_LDC1(%[ftmp2], %[src], 0x08)
 
-        TRANSPOSE_4H(%[ftmp3], %[ftmp7], %[ftmp4], %[ftmp8],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
+        /* ftmp11: dst1,dst0 */
+        MMI_LDC1(%[ftmp3], %[coeff], 0x00)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x08)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x10)
+        MMI_LDC1(%[ftmp6], %[coeff], 0x18)
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp7],   %[ftmp8]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp5]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp6]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "punpcklwd  %[ftmp7],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhwd  %[ftmp8],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "paddw      %[ftmp11],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "paddw      %[ftmp11],  %[ftmp11],  %[ff_pw_4]                  \n\t"
 
-        MMI_SDC1(%[ftmp3], %[dst], 0x00)
-        MMI_SDC1(%[ftmp7], %[dst], 0x10)
-        MMI_SDC1(%[ftmp4], %[dst], 0x20)
-        MMI_SDC1(%[ftmp8], %[dst], 0x30)
+        /* ftmp12: dst3,dst2 */
+        MMI_LDC1(%[ftmp3], %[coeff], 0x20)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x28)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x30)
+        MMI_LDC1(%[ftmp6], %[coeff], 0x38)
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp7],   %[ftmp8]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp5]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp6]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "punpcklwd  %[ftmp7],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhwd  %[ftmp8],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "paddw      %[ftmp12],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "paddw      %[ftmp12],  %[ftmp12],  %[ff_pw_4]                  \n\t"
 
-        TRANSPOSE_4H(%[ftmp6], %[ftmp5], %[ftmp2], %[ftmp1],
-                     %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                     %[ftmp13], %[tmp0],  %[ftmp14], %[ftmp15])
+        /* ftmp13: dst5,dst4 */
+        MMI_LDC1(%[ftmp3], %[coeff], 0x40)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x48)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x50)
+        MMI_LDC1(%[ftmp6], %[coeff], 0x58)
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp7],   %[ftmp8]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp5]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp6]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "punpcklwd  %[ftmp7],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhwd  %[ftmp8],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "paddw      %[ftmp13],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "paddw      %[ftmp13],  %[ftmp13],  %[ff_pw_4]                  \n\t"
 
-        MMI_SDC1(%[ftmp6], %[dst], 0x08)
-        MMI_SDC1(%[ftmp5], %[dst], 0x18)
-        MMI_SDC1(%[ftmp2], %[dst], 0x28)
-        MMI_SDC1(%[ftmp1], %[dst], 0x38)
+        /* ftmp14: dst7,dst6 */
+        MMI_LDC1(%[ftmp3], %[coeff], 0x60)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x68)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x70)
+        MMI_LDC1(%[ftmp6], %[coeff], 0x78)
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp7],   %[ftmp8]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp1],   %[ftmp5]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp2],   %[ftmp6]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "punpcklwd  %[ftmp7],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhwd  %[ftmp8],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "paddw      %[ftmp14],  %[ftmp7],   %[ftmp8]                    \n\t"
+        "paddw      %[ftmp14],  %[ftmp14],  %[ff_pw_4]                  \n\t"
+
+        /* ftmp9: dst3,dst2,dst1,dst0    ftmp10: dst7,dst6,dst5,dst4 */
+        "psraw      %[ftmp11],  %[ftmp11],  %[ftmp0]                    \n\t"
+        "psraw      %[ftmp12],  %[ftmp12],  %[ftmp0]                    \n\t"
+        "psraw      %[ftmp13],  %[ftmp13],  %[ftmp0]                    \n\t"
+        "psraw      %[ftmp14],  %[ftmp14],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp11],  %[ftmp12]                   \n\t"
+        "punpcklhw  %[ftmp9],   %[ftmp7],   %[ftmp8]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp13],  %[ftmp14]                   \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp13],  %[ftmp14]                   \n\t"
+        "punpcklhw  %[ftmp10],  %[ftmp7],   %[ftmp8]                    \n\t"
+        MMI_SDC1(%[ftmp9], %[dst], 0x00)
+        MMI_SDC1(%[ftmp10], %[dst], 0x08)
+
+        PTR_ADDIU  "%[src],     %[src],     0x10                        \n\t"
+        PTR_ADDIU  "%[dst],     %[dst],     0x10                        \n\t"
+        "addiu      %[count],   %[count],   -0x01                       \n\t"
+        "bnez       %[count],   1b                                      \n\t"
+        : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
+          [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
+          [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
+          [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
+          [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
+          [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
+          [ftmp14]"=&f"(ftmp[14]),      [tmp0]"=&r"(tmp[0]),
+          [src]"+&r"(src), [dst]"+&r"(dst), [count]"+&r"(count)
+        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
+        : "memory"
+    );
+
+    src = block;
+
+    // 2nd loop
+    __asm__ volatile (
+        "li         %[tmp0],    0x44                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp15]                               \n\t"
+
+        // 1st part
+        "li         %[tmp0],    0x07                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
+        MMI_LDC1(%[ftmp1], %[src], 0x00)
+        MMI_LDC1(%[ftmp2], %[src], 0x10)
+        MMI_LDC1(%[ftmp3], %[src], 0x20)
+        MMI_LDC1(%[ftmp4], %[src], 0x30)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
+
+        /* ftmp11: dst03,dst02,dst01,dst00 */
+        "li         %[tmp0],    0x00160011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp12: dst13,dst12,dst11,dst10 */
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xffeaffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp12],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp13: dst23,dst22,dst21,dst20 */
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x0016ffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp13],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp14: dst33,dst32,dst31,dst30 */
+        "li         %[tmp0],    0xffea0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp14],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        MMI_LWC1(%[ftmp1], %[dest], 0x00)
+        PTR_ADDU    "%[tmp0],   %[dest],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp4], %[tmp0], 0x00)
+        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],   %[ftmp11]                   \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],   %[ftmp12]                   \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],   %[ftmp13]                   \n\t"
+        "paddh      %[ftmp4],   %[ftmp4],   %[ftmp14]                   \n\t"
+        "packushb   %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        MMI_SWC1(%[ftmp1], %[dest], 0x00)
+        PTR_ADDU   "%[tmp0],    %[dest],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp4], %[tmp0], 0x00)
+
+        // 2nd part
+        "li         %[tmp0],    0x07                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
+        MMI_LDC1(%[ftmp1], %[src], 0x08)
+        MMI_LDC1(%[ftmp2], %[src], 0x18)
+        MMI_LDC1(%[ftmp3], %[src], 0x28)
+        MMI_LDC1(%[ftmp4], %[src], 0x38)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
+
+        /* ftmp11: dst03,dst02,dst01,dst00 */
+        "li         %[tmp0],    0x00160011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp12: dst13,dst12,dst11,dst10 */
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xffeaffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp12],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp13: dst23,dst22,dst21,dst20 */
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x0016ffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp13],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        /* ftmp14: dst33,dst32,dst31,dst30 */
+        "li         %[tmp0],    0xffea0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp14],  %[ftmp1],   %[ftmp2]                    \n\t"
+
+        MMI_LWC1(%[ftmp1], %[dest], 0x04)
+        PTR_ADDU    "%[tmp0],   %[dest],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp2], %[tmp0], 0x04)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp3], %[tmp0], 0x04)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp4], %[tmp0], 0x04)
+        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],   %[ftmp11]                   \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],   %[ftmp12]                   \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],   %[ftmp13]                   \n\t"
+        "paddh      %[ftmp4],   %[ftmp4],   %[ftmp14]                   \n\t"
+        "packushb   %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        MMI_SWC1(%[ftmp1], %[dest], 0x04)
+        PTR_ADDU   "%[tmp0],    %[dest],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp2], %[tmp0], 0x04)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp3], %[tmp0], 0x04)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp4], %[tmp0], 0x04)
+
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
@@ -500,100 +856,9 @@ void ff_vc1_inv_trans_8x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
           [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
           [tmp0]"=&r"(tmp[0])
-        : [src]"r"(src),                [dst]"r"(dst),
-          [ff_pw_4]"f"(ff_pw_4),        [ff_pw_6]"f"(ff_pw_6),
-          [ff_pw_9]"f"(ff_pw_9),        [ff_pw_12]"f"(ff_pw_12),
-          [ff_pw_15]"f"(ff_pw_15),      [ff_pw_16]"f"(ff_pw_16)
-        : "memory"
-    );
-
-    src = block;
-
-    // 2nd loop
-    __asm__ volatile (
-        "li         %[tmp0],    0x07                                    \n\t"
-        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
-        "mtc1       %[tmp0],    %[ftmp9]                                \n\t"
-
-        // dest low 32bit
-        MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x20)
-        MMI_LDC1(%[ftmp3], %[src], 0x30)
-        MMI_LDC1(%[ftmp4], %[src], 0x10)
-
-        VC1_INV_TRANCS_4_STEP1_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ff_pw_17], %[ff_pw_10], %[ff_pw_22],
-                                   %[ff_pw_64])
-
-        PSRAH_4_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4], %[ftmp9])
-
-        MMI_LWC1(%[ftmp5], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp6], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp7], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp8], %[addr0], 0x00)
-
-        VC1_INV_TRANCS_4_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp0])
-
-        MMI_SWC1(%[ftmp1], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp2], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp3], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp4], %[addr0], 0x00)
-
-        // dest high 32bit
-        MMI_LDC1(%[ftmp1], %[src], 0x08)
-        MMI_LDC1(%[ftmp2], %[src], 0x28)
-        MMI_LDC1(%[ftmp3], %[src], 0x38)
-        MMI_LDC1(%[ftmp4], %[src], 0x18)
-
-        VC1_INV_TRANCS_4_STEP1_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ff_pw_17], %[ff_pw_10], %[ff_pw_22],
-                                   %[ff_pw_64])
-
-        PSRAH_4_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4], %[ftmp9])
-
-        MMI_LWC1(%[ftmp5], %[dest], 0x04)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp6], %[addr0], 0x04)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp7], %[addr0], 0x04)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp8], %[addr0], 0x04)
-
-        VC1_INV_TRANCS_4_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp0])
-
-        MMI_SWC1(%[ftmp1], %[dest], 0x04)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp2], %[addr0], 0x04)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp3], %[addr0], 0x04)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp4], %[addr0], 0x04)
-
-        : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
-          [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
-          [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
-          [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
-          [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
-          [tmp0]"=&r"(tmp[0]),
-          RESTRICT_ASM_LOW32
-          [addr0]"=&r"(addr[0])
-        : [src]"r"(src),                [dest]"r"(dest),
-          [linesize]"r"((mips_reg)linesize),
-          [ff_pw_17]"f"(ff_pw_17),      [ff_pw_22]"f"(ff_pw_22),
-          [ff_pw_10]"f"(ff_pw_10),      [ff_pw_64]"f"(ff_pw_64)
-        : "memory"
+        : [ff_pw_64]"f"(ff_pw_64_local),
+          [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
+        :"memory"
     );
 }
 #endif
@@ -676,47 +941,51 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int16_t *src = block;
     int16_t *dst = block;
-    double ftmp[16];
-    uint32_t count, tmp[1];
-    mips_reg addr[1];
-    DECLARE_VAR_LOW32;
+    double ftmp[23];
+    uint32_t count = 8, tmp[1];
+    int16_t coeff[16] = {17, 22, 17, 10,
+                         17, 10,-17,-22,
+                         17,-10,-17, 22,
+                         17,-22, 17,-10};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_1_local) = {0x0000000100000001ULL};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
 
     // 1st loop
     __asm__ volatile (
-        "li         %[count],   0x02                                    \n\t"
+
         "li         %[tmp0],    0x03                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
 
+        MMI_LDC1(%[ftmp2], %[coeff], 0x00)
+        MMI_LDC1(%[ftmp3], %[coeff], 0x08)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x10)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x18)
         "1:                                                             \n\t"
+        /* ftmp8: dst3,dst2,dst1,dst0 */
         MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x10)
-        MMI_LDC1(%[ftmp3], %[src], 0x20)
-        MMI_LDC1(%[ftmp4], %[src], 0x30)
+        "pmaddhw    %[ftmp6],   %[ftmp2],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp3],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp4],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp9],   %[ftmp5],   %[ftmp1]                    \n\t"
+        "punpcklwd  %[ftmp10],  %[ftmp6],   %[ftmp7]                    \n\t"
+        "punpckhwd  %[ftmp11],  %[ftmp6],   %[ftmp7]                    \n\t"
+        "punpcklwd  %[ftmp6],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpckhwd  %[ftmp7],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "paddw      %[ftmp8],   %[ftmp10],  %[ftmp11]                   \n\t"
+        "paddw      %[ftmp9],   %[ftmp6],   %[ftmp7]                    \n\t"
+        "paddw      %[ftmp8],   %[ftmp8],   %[ff_pw_4]                  \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_4]                  \n\t"
+        "psraw      %[ftmp8],   %[ftmp8],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp6],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpckhhw  %[ftmp7],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpcklhw  %[ftmp8],   %[ftmp6],   %[ftmp7]                    \n\t"
+        MMI_SDC1(%[ftmp8], %[dst], 0x00)
 
-        TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp10], %[ftmp11])
-
-        //                              t1        t2        t3        t4
-        VC1_INV_TRANCS_4_STEP1_MMI(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ff_pw_17], %[ff_pw_10], %[ff_pw_22],
-                                   %[ff_pw_4])
-
-        PSRAH_4_MMI(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2], %[ftmp0])
-
-        TRANSPOSE_4H(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp10], %[ftmp11])
-
-        MMI_SDC1(%[ftmp1], %[dst], 0x00)
-        MMI_SDC1(%[ftmp3], %[dst], 0x10)
-        MMI_SDC1(%[ftmp4], %[dst], 0x20)
-        MMI_SDC1(%[ftmp2], %[dst], 0x30)
-
-        "addiu      %[count],   %[count],  -0x01                        \n\t"
-        PTR_ADDIU  "%[src],     %[src],     0x40                        \n\t"
-        PTR_ADDIU  "%[dst],     %[dst],     0x40                        \n\t"
+        PTR_ADDIU  "%[src],     %[src],     0x10                        \n\t"
+        PTR_ADDIU  "%[dst],     %[dst],     0x10                        \n\t"
+        "addiu      %[count],   %[count],   -0x01                       \n\t"
         "bnez       %[count],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
@@ -724,11 +993,9 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
           [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
-          [tmp0]"=&r"(tmp[0]),
-          [count]"=&r"(count),
+          [tmp0]"=&r"(tmp[0]),          [count]"+&r"(count),
           [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_17]"f"(ff_pw_17),      [ff_pw_10]"f"(ff_pw_10),
-          [ff_pw_22]"f"(ff_pw_22),      [ff_pw_4]"f"(ff_pw_4)
+        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
         : "memory"
     );
 
@@ -739,99 +1006,114 @@ void ff_vc1_inv_trans_4x8_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
         "li         %[tmp0],    0x07                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
 
-        MMI_LDC1(%[ftmp5], %[src], 0x10)
-        MMI_LDC1(%[ftmp6], %[src], 0x30)
-        MMI_LDC1(%[ftmp7], %[src], 0x50)
-        MMI_LDC1(%[ftmp8], %[src], 0x70)
-
-        VC1_INV_TRANCS_8_STEP1_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ff_pw_16], %[ff_pw_15], %[ff_pw_9],
-                                   %[ff_pw_4])
-
         MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x40)
-        MMI_LDC1(%[ftmp3], %[src], 0x20)
+        MMI_LDC1(%[ftmp2], %[src], 0x20)
+        MMI_LDC1(%[ftmp3], %[src], 0x40)
         MMI_LDC1(%[ftmp4], %[src], 0x60)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
 
-        VC1_INV_TRANCS_8_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ff_pw_12], %[ff_pw_16], %[ff_pw_6],
-                                   %[ff_pw_64])
+        MMI_LDC1(%[ftmp1], %[src], 0x10)
+        MMI_LDC1(%[ftmp2], %[src], 0x30)
+        MMI_LDC1(%[ftmp3], %[src], 0x50)
+        MMI_LDC1(%[ftmp4], %[src], 0x70)
+        "punpcklhw  %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp12],  %[ftmp3],   %[ftmp4]                    \n\t"
 
-        "paddh      %[ftmp4],   %[ftmp4],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp3],   %[ftmp3],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp2],   %[ftmp2],   %[ff_pw_1]                  \n\t"
-        "paddh      %[ftmp1],   %[ftmp1],   %[ff_pw_1]                  \n\t"
+        /* ftmp15:dst03,dst02,dst01,dst00 ftmp22:dst73,dst72,dst71,dst70 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp15], %[ftmp22], 0x0010000c, 0x0006000c,
+                               0x000f0010, 0x00040009, %[ff_pw_64], %[ff_pw_1])
 
-        PSRAH_8_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                    %[ftmp4], %[ftmp3], %[ftmp2], %[ftmp1], %[ftmp0])
+        /* ftmp16:dst13,dst12,dst11,dst10 ftmp21:dst63,dst62,dst61,dst60 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp16], %[ftmp21], 0x0006000c, 0xfff0fff4,
+                               0xfffc000f, 0xfff7fff0, %[ff_pw_64], %[ff_pw_1])
 
+        /* ftmp17:dst23,dst22,dst21,dst20 ftmp20:dst53,dst52,dst51,dst50 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp17], %[ftmp20], 0xfffa000c, 0x0010fff4,
+                               0xfff00009, 0x000f0004, %[ff_pw_64], %[ff_pw_1])
+
+        /* ftmp18:dst33,dst32,dst31,dst30 ftmp19:dst43,dst42,dst41,dst40 */
+        VC1_INV_TRANCS_8_TYPE2(%[ftmp18], %[ftmp19], 0xfff0000c, 0xfffa000c,
+                               0xfff70004, 0xfff0000f, %[ff_pw_64], %[ff_pw_1])
+
+        MMI_LWC1(%[ftmp1], %[dest], 0x00)
+        PTR_ADDU  "%[tmp0],   %[dest],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp4], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp5], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp6], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp7], %[tmp0], 0x00)
+        PTR_ADDU  "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp8], %[tmp0], 0x00)
         "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp5],   %[ftmp5],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp6],   %[ftmp6],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp7],   %[ftmp7],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp8],   %[ftmp8],   %[ftmp0]                    \n\t"
 
-        // dest low
-        MMI_LWC1(%[ftmp9], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp10], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp11], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp12], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],   %[ftmp15]                   \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],   %[ftmp16]                   \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],   %[ftmp17]                   \n\t"
+        "paddh      %[ftmp4],   %[ftmp4],   %[ftmp18]                   \n\t"
+        "paddh      %[ftmp5],   %[ftmp5],   %[ftmp19]                   \n\t"
+        "paddh      %[ftmp6],   %[ftmp6],   %[ftmp20]                   \n\t"
+        "paddh      %[ftmp7],   %[ftmp7],   %[ftmp21]                   \n\t"
+        "paddh      %[ftmp8],   %[ftmp8],   %[ftmp22]                   \n\t"
 
-        VC1_INV_TRANCS_4_STEP2_MMI(%[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp0])
+        "packushb   %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp5],   %[ftmp5],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp6],   %[ftmp6],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp7],   %[ftmp7],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp8],   %[ftmp8],   %[ftmp0]                    \n\t"
 
-        // dest high
-        MMI_LWC1(%[ftmp9], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp10], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp11], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp12], %[addr0], 0x00)
+        MMI_SWC1(%[ftmp1], %[dest], 0x00)
+        PTR_ADDU   "%[tmp0],    %[dest],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp4], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp5], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp6], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp7], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp8], %[tmp0], 0x00)
 
-        VC1_INV_TRANCS_4_STEP2_MMI(%[ftmp4], %[ftmp3], %[ftmp2], %[ftmp1],
-                                   %[ftmp9], %[ftmp10], %[ftmp11], %[ftmp12],
-                                   %[ftmp0])
-
-        // dest low
-        MMI_SWC1(%[ftmp5], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp6], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp7], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp8], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-
-        // dest high
-        MMI_SWC1(%[ftmp4], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp3], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp2], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp1], %[addr0], 0x00)
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
-          [ftmp12]"=&f"(ftmp[12]),
-          [tmp0]"=&r"(tmp[0]),
-          RESTRICT_ASM_LOW32
-          [addr0]"=&r"(addr[0]),
-          [dest]"+&r"(dest)
-        : [src]"r"(src),                [linesize]"r"(linesize),
-          [ff_pw_1]"f"(ff_pw_1),        [ff_pw_4]"f"(ff_pw_4),
-          [ff_pw_6]"f"(ff_pw_6),        [ff_pw_9]"f"(ff_pw_9),
-          [ff_pw_12]"f"(ff_pw_12),      [ff_pw_15]"f"(ff_pw_15),
-          [ff_pw_16]"f"(ff_pw_16),      [ff_pw_64]"f"(ff_pw_64)
+          [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
+          [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
+          [ftmp16]"=&f"(ftmp[16]),      [ftmp17]"=&f"(ftmp[17]),
+          [ftmp18]"=&f"(ftmp[18]),      [ftmp19]"=&f"(ftmp[19]),
+          [ftmp20]"=&f"(ftmp[20]),      [ftmp21]"=&f"(ftmp[21]),
+          [ftmp22]"=&f"(ftmp[22]),
+          [tmp0]"=&r"(tmp[0])
+        : [ff_pw_1]"f"(ff_pw_1_local),  [ff_pw_64]"f"(ff_pw_64_local),
+          [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
         : "memory"
     );
 }
@@ -890,51 +1172,58 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
 {
     int16_t *src = block;
     int16_t *dst = block;
-    double ftmp[12];
-    uint32_t tmp[1];
-    mips_reg addr[1];
-    DECLARE_VAR_LOW32;
-
+    double ftmp[16];
+    uint32_t count = 4, tmp[1];
+    int16_t coeff[16] = {17, 22, 17, 10,
+                         17, 10,-17,-22,
+                         17,-10,-17, 22,
+                         17,-22, 17,-10};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_4_local) = {0x0000000400000004ULL};
+    DECLARE_ALIGNED(8, const uint64_t, ff_pw_64_local)= {0x0000004000000040ULL};
     // 1st loop
     __asm__ volatile (
+
         "li         %[tmp0],    0x03                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
-
+        MMI_LDC1(%[ftmp2], %[coeff], 0x00)
+        MMI_LDC1(%[ftmp3], %[coeff], 0x08)
+        MMI_LDC1(%[ftmp4], %[coeff], 0x10)
+        MMI_LDC1(%[ftmp5], %[coeff], 0x18)
+        "1:                                                             \n\t"
+        /* ftmp8: dst3,dst2,dst1,dst0 */
         MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x10)
-        MMI_LDC1(%[ftmp3], %[src], 0x20)
-        MMI_LDC1(%[ftmp4], %[src], 0x30)
+        "pmaddhw    %[ftmp6],   %[ftmp2],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp7],   %[ftmp3],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp8],   %[ftmp4],   %[ftmp1]                    \n\t"
+        "pmaddhw    %[ftmp9],   %[ftmp5],   %[ftmp1]                    \n\t"
+        "punpcklwd  %[ftmp10],  %[ftmp6],   %[ftmp7]                    \n\t"
+        "punpckhwd  %[ftmp11],  %[ftmp6],   %[ftmp7]                    \n\t"
+        "punpcklwd  %[ftmp6],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpckhwd  %[ftmp7],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "paddw      %[ftmp8],   %[ftmp10],  %[ftmp11]                   \n\t"
+        "paddw      %[ftmp9],   %[ftmp6],   %[ftmp7]                    \n\t"
+        "paddw      %[ftmp8],   %[ftmp8],   %[ff_pw_4]                  \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_4]                  \n\t"
+        "psraw      %[ftmp8],   %[ftmp8],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp6],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpckhhw  %[ftmp7],   %[ftmp8],   %[ftmp9]                    \n\t"
+        "punpcklhw  %[ftmp8],   %[ftmp6],   %[ftmp7]                    \n\t"
+        MMI_SDC1(%[ftmp8], %[dst], 0x00)
 
-        TRANSPOSE_4H(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp10], %[ftmp11])
-
-        //                              t1        t2        t3        t4
-        VC1_INV_TRANCS_4_STEP1_MMI(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ff_pw_17], %[ff_pw_10], %[ff_pw_22],
-                                   %[ff_pw_4])
-
-        PSRAH_4_MMI(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2], %[ftmp0])
-
-        TRANSPOSE_4H(%[ftmp1], %[ftmp3], %[ftmp4], %[ftmp2],
-                     %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                     %[ftmp9], %[tmp0],  %[ftmp10], %[ftmp11])
-
-        MMI_SDC1(%[ftmp1], %[dst], 0x00)
-        MMI_SDC1(%[ftmp3], %[dst], 0x10)
-        MMI_SDC1(%[ftmp4], %[dst], 0x20)
-        MMI_SDC1(%[ftmp2], %[dst], 0x30)
+        PTR_ADDIU  "%[src],     %[src],     0x10                        \n\t"
+        PTR_ADDIU  "%[dst],     %[dst],     0x10                        \n\t"
+        "addiu      %[count],   %[count],   -0x01                       \n\t"
+        "bnez       %[count],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
-          [tmp0]"=&r"(tmp[0]),
+          [tmp0]"=&r"(tmp[0]),          [count]"+&r"(count),
           [src]"+&r"(src),              [dst]"+&r"(dst)
-        : [ff_pw_17]"f"(ff_pw_17),      [ff_pw_10]"f"(ff_pw_10),
-          [ff_pw_22]"f"(ff_pw_22),      [ff_pw_4]"f"(ff_pw_4)
+        : [ff_pw_4]"f"(ff_pw_4_local),  [coeff]"r"(coeff)
         : "memory"
     );
 
@@ -944,54 +1233,143 @@ void ff_vc1_inv_trans_4x4_mmi(uint8_t *dest, ptrdiff_t linesize, int16_t *block)
     __asm__ volatile (
         "li         %[tmp0],    0x07                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp0]                                \n\t"
+        "li         %[tmp0],    0x44                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp15]                               \n\t"
 
-        // dest low 32bit
         MMI_LDC1(%[ftmp1], %[src], 0x00)
-        MMI_LDC1(%[ftmp2], %[src], 0x20)
-        MMI_LDC1(%[ftmp3], %[src], 0x30)
-        MMI_LDC1(%[ftmp4], %[src], 0x10)
+        MMI_LDC1(%[ftmp2], %[src], 0x10)
+        MMI_LDC1(%[ftmp3], %[src], 0x20)
+        MMI_LDC1(%[ftmp4], %[src], 0x30)
+        "punpcklhw  %[ftmp5],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpckhhw  %[ftmp6],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "punpcklhw  %[ftmp7],   %[ftmp3],   %[ftmp4]                    \n\t"
+        "punpckhhw  %[ftmp8],   %[ftmp3],   %[ftmp4]                    \n\t"
 
-        VC1_INV_TRANCS_4_STEP1_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ff_pw_17], %[ff_pw_10], %[ff_pw_22],
-                                   %[ff_pw_64])
+        /* ftmp11: dst03,dst02,dst01,dst00 */
+        "li         %[tmp0],    0x00160011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp11],  %[ftmp1],   %[ftmp2]                    \n\t"
 
-        PSRAH_4_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4], %[ftmp0])
+        /* ftmp12: dst13,dst12,dst11,dst10 */
+        "li         %[tmp0],    0x000a0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xffeaffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp12],  %[ftmp1],   %[ftmp2]                    \n\t"
 
-        MMI_LWC1(%[ftmp5], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp6], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp7], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_LWC1(%[ftmp8], %[addr0], 0x00)
+        /* ftmp13: dst23,dst22,dst21,dst20 */
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0x0016ffef                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp13],  %[ftmp1],   %[ftmp2]                    \n\t"
 
-        "xor        %[ftmp9],   %[ftmp9],  %[ftmp9]                     \n\t"
+        /* ftmp14: dst33,dst32,dst31,dst30 */
+        "li         %[tmp0],    0xffea0011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp3]                                \n\t"
+        "pshufh     %[ftmp3],   %[ftmp3],   %[ftmp15]                   \n\t"
+        "li         %[tmp0],    0xfff60011                              \n\t"
+        "mtc1       %[tmp0],    %[ftmp4]                                \n\t"
+        "pshufh     %[ftmp4],   %[ftmp4],   %[ftmp15]                   \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp5],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp7],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp1],   %[ftmp2]                    \n\t"
+        "pmaddhw    %[ftmp1],   %[ftmp6],   %[ftmp3]                    \n\t"
+        "pmaddhw    %[ftmp2],   %[ftmp8],   %[ftmp4]                    \n\t"
+        "paddw      %[ftmp10],  %[ftmp1],   %[ftmp2]                    \n\t"
+        "paddw      %[ftmp9],   %[ftmp9],   %[ff_pw_64]                 \n\t"
+        "paddw      %[ftmp10],  %[ftmp10],  %[ff_pw_64]                 \n\t"
+        "psraw      %[ftmp9],   %[ftmp9],   %[ftmp0]                    \n\t"
+        "psraw      %[ftmp10],  %[ftmp10],  %[ftmp0]                    \n\t"
+        "punpcklhw  %[ftmp1],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpckhhw  %[ftmp2],   %[ftmp9],   %[ftmp10]                   \n\t"
+        "punpcklhw  %[ftmp14],  %[ftmp1],   %[ftmp2]                    \n\t"
 
-        VC1_INV_TRANCS_4_STEP2_MMI(%[ftmp1], %[ftmp2], %[ftmp3], %[ftmp4],
-                                   %[ftmp5], %[ftmp6], %[ftmp7], %[ftmp8],
-                                   %[ftmp9])
+        MMI_LWC1(%[ftmp1], %[dest], 0x00)
+        PTR_ADDU    "%[tmp0],   %[dest],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU    "%[tmp0],   %[tmp0],    %[linesize]                 \n\t"
+        MMI_LWC1(%[ftmp4], %[tmp0], 0x00)
+        "xor        %[ftmp0],   %[ftmp0],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "punpcklbh  %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
+        "paddh      %[ftmp1],   %[ftmp1],   %[ftmp11]                   \n\t"
+        "paddh      %[ftmp2],   %[ftmp2],   %[ftmp12]                   \n\t"
+        "paddh      %[ftmp3],   %[ftmp3],   %[ftmp13]                   \n\t"
+        "paddh      %[ftmp4],   %[ftmp4],   %[ftmp14]                   \n\t"
+        "packushb   %[ftmp1],   %[ftmp1],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp2],   %[ftmp2],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp3],   %[ftmp3],   %[ftmp0]                    \n\t"
+        "packushb   %[ftmp4],   %[ftmp4],   %[ftmp0]                    \n\t"
 
         MMI_SWC1(%[ftmp1], %[dest], 0x00)
-        PTR_ADDU   "%[addr0],   %[dest],    %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp2], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp3], %[addr0], 0x00)
-        PTR_ADDU   "%[addr0],   %[addr0],   %[linesize]                 \n\t"
-        MMI_SWC1(%[ftmp4], %[addr0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[dest],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp2], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp3], %[tmp0], 0x00)
+        PTR_ADDU   "%[tmp0],    %[tmp0],    %[linesize]                 \n\t"
+        MMI_SWC1(%[ftmp4], %[tmp0], 0x00)
+
         : [ftmp0]"=&f"(ftmp[0]),        [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),        [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),        [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),        [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),        [ftmp9]"=&f"(ftmp[9]),
-          [tmp0]"=&r"(tmp[0]),
-          RESTRICT_ASM_LOW32
-          [addr0]"=&r"(addr[0])
-        : [src]"r"(src),                [dest]"r"(dest),
-          [linesize]"r"((mips_reg)linesize),
-          [ff_pw_17]"f"(ff_pw_17),      [ff_pw_22]"f"(ff_pw_22),
-          [ff_pw_10]"f"(ff_pw_10),      [ff_pw_64]"f"(ff_pw_64)
-        : "memory"
+          [ftmp10]"=&f"(ftmp[10]),      [ftmp11]"=&f"(ftmp[11]),
+          [ftmp12]"=&f"(ftmp[12]),      [ftmp13]"=&f"(ftmp[13]),
+          [ftmp14]"=&f"(ftmp[14]),      [ftmp15]"=&f"(ftmp[15]),
+          [tmp0]"=&r"(tmp[0])
+        : [ff_pw_64]"f"(ff_pw_64_local),
+          [src]"r"(src), [dest]"r"(dest), [linesize]"r"(linesize)
+        :"memory"
     );
 }
 
@@ -1019,12 +1397,13 @@ void ff_vc1_h_overlap_mmi(uint8_t *src, int stride)
     }
 }
 
-void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right)
+void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags)
 {
     int i;
     int a, b, c, d;
     int d1, d2;
-    int rnd1 = 4, rnd2 = 3;
+    int rnd1 = flags & 2 ? 3 : 4;
+    int rnd2 = 7 - rnd1;
     for (i = 0; i < 8; i++) {
         a  = left[6];
         b  = left[7];
@@ -1038,10 +1417,12 @@ void ff_vc1_h_s_overlap_mmi(int16_t *left, int16_t *right)
         right[0] = ((c << 3) + d2 + rnd1) >> 3;
         right[1] = ((d << 3) + d1 + rnd2) >> 3;
 
-        right += 8;
-        left  += 8;
-        rnd2   = 7 - rnd2;
-        rnd1   = 7 - rnd1;
+        right += right_stride;
+        left  += left_stride;
+        if (flags & 1) {
+            rnd2   = 7 - rnd2;
+            rnd1   = 7 - rnd1;
+        }
     }
 }
 
@@ -1433,8 +1814,8 @@ static void OPNAME ## vc1_shift2_mmi(uint8_t *dst, const uint8_t *src,      \
         : RESTRICT_ASM_LOW32            RESTRICT_ASM_ADDRT                  \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [offset]"r"(offset),          [offset_x2n]"r"(-2*offset),         \
-          [stride]"g"(stride),          [rnd]"m"(rnd),                      \
-          [stride1]"g"(stride-offset),                                      \
+          [stride]"r"(stride),          [rnd]"m"(rnd),                      \
+          [stride1]"r"(stride-offset),                                      \
           [ff_pw_9]"m"(ff_pw_9)                                             \
         : "$8", "$9", "$10", "$f0", "$f2", "$f4", "$f6", "$f8", "$f10",     \
           "$f12", "$f14", "$f16", "memory"                                  \
@@ -1658,7 +2039,7 @@ OPNAME ## vc1_## NAME ## _mmi(uint8_t *dst, const uint8_t *src,             \
           [h]"+r"(h),                                                       \
           [src]"+r"(src),               [dst]"+r"(dst)                      \
         : [offset_x1]"r"(offset),       [offset_x2]"r"(2*offset),           \
-          [offset_x3]"r"(3*offset),     [stride]"g"(stride),                \
+          [offset_x3]"r"(3*offset),     [stride]"r"(stride),                \
           [rnd]"m"(rnd),                                                    \
           [ff_pw_53]"m"(ff_pw_53),      [ff_pw_18]"m"(ff_pw_18),            \
           [ff_pw_3]"f"(ff_pw_3)                                             \

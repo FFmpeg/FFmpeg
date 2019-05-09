@@ -95,12 +95,12 @@ Stuff that didn't reach the codebase:
   - 0cef06df0 checkasm: add HEVC MC tests
   - e7078e842 hevcdsp: add x86 SIMD for MC
   - 7993ec19a hevc: Add hevc_get_pixel_4/8/12/16/24/32/48/64
-- new bitstream reader (see http://ffmpeg.org/pipermail/ffmpeg-devel/2017-April/209609.html)
 - use av_cpu_max_align() instead of hardcoding alignment requirements (see https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/215834.html)
   - f44ec22e0 lavc: use av_cpu_max_align() instead of hardcoding alignment requirements
   - 4de220d2e frame: allow align=0 (meaning automatic) for av_frame_get_buffer()
 - Support recovery from an already present HLS playlist (see 16cb06bb30)
 - Remove all output devices (see 8e7e042d41, 8d3db95f20, 6ce13070bd, d46cd24986 and https://ffmpeg.org/pipermail/ffmpeg-devel/2017-September/216904.html)
+- avcodec/libaomenc: export the Sequence Header OBU as extradata (See a024c3ce9a)
 
 Collateral damage that needs work locally:
 ------------------------------------------

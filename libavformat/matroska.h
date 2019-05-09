@@ -360,6 +360,7 @@ typedef struct CodecTags{
 #define MATROSKA_VIDEO_STEREO_PLANE_COUNT  3
 
 extern const CodecTags ff_mkv_codec_tags[];
+extern const CodecTags ff_webm_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 extern const CodecMime ff_mkv_image_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];

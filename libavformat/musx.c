@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int musx_probe(AVProbeData *p)
+static int musx_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "MUSX", 4))
         return 0;

@@ -34,7 +34,7 @@
 #include "internal.h"
 #include "libavutil/crc.h"
 #include "parser.h"
-#include "mlp_parser.h"
+#include "mlp_parse.h"
 #include "mlpdsp.h"
 #include "mlp.h"
 #include "config.h"
@@ -1195,7 +1195,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
         }
 
         if (length < header_size + substr_header_size) {
-            av_log(m->avctx, AV_LOG_ERROR, "Insuffient data for headers\n");
+            av_log(m->avctx, AV_LOG_ERROR, "Insufficient data for headers\n");
             goto error;
         }
 

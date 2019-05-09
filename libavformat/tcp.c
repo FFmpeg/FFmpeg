@@ -42,6 +42,9 @@ typedef struct TCPContext {
     int recv_buffer_size;
     int send_buffer_size;
     int tcp_nodelay;
+#if !HAVE_WINSOCK2_H
+    int tcp_mss;
+#endif /* !HAVE_WINSOCK2_H */
 } TCPContext;
 
 #define OFFSET(x) offsetof(TCPContext, x)
@@ -54,6 +57,9 @@ static const AVOption options[] = {
     { "send_buffer_size", "Socket send buffer size (in bytes)",                OFFSET(send_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "recv_buffer_size", "Socket receive buffer size (in bytes)",             OFFSET(recv_buffer_size), AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
     { "tcp_nodelay", "Use TCP_NODELAY to disable nagle's algorithm",           OFFSET(tcp_nodelay), AV_OPT_TYPE_BOOL, { .i64 = 0 },             0, 1, .flags = D|E },
+#if !HAVE_WINSOCK2_H
+    { "tcp_mss",     "Maximum segment size for outgoing TCP packets",          OFFSET(tcp_mss),     AV_OPT_TYPE_INT, { .i64 = -1 },         -1, INT_MAX, .flags = D|E },
+#endif /* !HAVE_WINSOCK2_H */
     { NULL }
 };
 
@@ -63,6 +69,35 @@ static const AVClass tcp_class = {
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
+
+static void customize_fd(void *ctx, int fd)
+{
+    TCPContext *s = ctx;
+    /* Set the socket's send or receive buffer sizes, if specified.
+       If unspecified or setting fails, system default is used. */
+    if (s->recv_buffer_size > 0) {
+        if (setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size))) {
+            ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(SO_RCVBUF)");
+        }
+    }
+    if (s->send_buffer_size > 0) {
+        if (setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size))) {
+            ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(SO_SNDBUF)");
+        }
+    }
+    if (s->tcp_nodelay > 0) {
+        if (setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay))) {
+            ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(TCP_NODELAY)");
+        }
+    }
+#if !HAVE_WINSOCK2_H
+    if (s->tcp_mss > 0) {
+        if (setsockopt (fd, IPPROTO_TCP, TCP_MAXSEG, &s->tcp_mss, sizeof (s->tcp_mss))) {
+            ff_log_net_error(ctx, AV_LOG_WARNING, "setsockopt(TCP_MAXSEG)");
+        }
+    }
+#endif /* !HAVE_WINSOCK2_H */
+}
 
 /* return non zero if error */
 static int tcp_open(URLContext *h, const char *uri, int flags)
@@ -123,7 +158,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
     cur_ai = ai;
 
- restart:
 #if HAVE_STRUCT_SOCKADDR_IN6
     // workaround for IOS9 getaddrinfo in IPv6 only network use hardcode IPv4 address can not resolve port number.
     if (cur_ai->ai_family == AF_INET6){
@@ -134,24 +168,19 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
 #endif
 
-    fd = ff_socket(cur_ai->ai_family,
-                   cur_ai->ai_socktype,
-                   cur_ai->ai_protocol);
-    if (fd < 0) {
-        ret = ff_neterrno();
-        goto fail;
-    }
-
-    /* Set the socket's send or receive buffer sizes, if specified.
-       If unspecified or setting fails, system default is used. */
-    if (s->recv_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
-    }
-    if (s->send_buffer_size > 0) {
-        setsockopt (fd, SOL_SOCKET, SO_SNDBUF, &s->send_buffer_size, sizeof (s->send_buffer_size));
-    }
-    if (s->tcp_nodelay > 0) {
-        setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, &s->tcp_nodelay, sizeof (s->tcp_nodelay));
+    if (s->listen > 0) {
+        while (cur_ai && fd < 0) {
+            fd = ff_socket(cur_ai->ai_family,
+                           cur_ai->ai_socktype,
+                           cur_ai->ai_protocol);
+            if (fd < 0) {
+                ret = ff_neterrno();
+                cur_ai = cur_ai->ai_next;
+            }
+        }
+        if (fd < 0)
+            goto fail1;
+        customize_fd(s, fd);
     }
 
     if (s->listen == 2) {
@@ -166,14 +195,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         // Socket descriptor already closed here. Safe to overwrite to client one.
         fd = ret;
     } else {
-        if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
-                                     s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
-
-            if (ret == AVERROR_EXIT)
-                goto fail1;
-            else
-                goto fail;
-        }
+        ret = ff_connect_parallel(ai, s->open_timeout / 1000, 3, h, &fd, customize_fd, s);
+        if (ret < 0)
+            goto fail1;
     }
 
     h->is_streamed = 1;
@@ -182,15 +206,6 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     freeaddrinfo(ai);
     return 0;
 
- fail:
-    if (cur_ai->ai_next) {
-        /* Retry with the next sockaddr */
-        cur_ai = cur_ai->ai_next;
-        if (fd >= 0)
-            closesocket(fd);
-        ret = 0;
-        goto restart;
-    }
  fail1:
     if (fd >= 0)
         closesocket(fd);

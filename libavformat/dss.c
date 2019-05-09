@@ -58,7 +58,7 @@ typedef struct DSSDemuxContext {
     int dss_header_size;
 } DSSDemuxContext;
 
-static int dss_probe(AVProbeData *p)
+static int dss_probe(const AVProbeData *p)
 {
     if (   AV_RL32(p->buf) != MKTAG(0x2, 'd', 's', 's')
         && AV_RL32(p->buf) != MKTAG(0x3, 'd', 's', 's'))

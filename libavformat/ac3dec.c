@@ -25,7 +25,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
+static int ac3_eac3_probe(const AVProbeData *p, enum AVCodecID expected_codec_id)
 {
     int max_frames, first_frames = 0, frames;
     const uint8_t *buf, *buf2, *end;
@@ -47,7 +47,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
             uint16_t frame_size;
             int i, ret;
 
-            if(!memcmp(buf2, "\x1\x10\0\0\0\0\0\0", 8)) {
+            if(!memcmp(buf2, "\x1\x10", 2)) {
                 if (buf2 + 16 > end)
                     break;
                 buf2+=16;
@@ -97,7 +97,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum AVCodecID expected_codec_id)
 }
 
 #if CONFIG_AC3_DEMUXER
-static int ac3_probe(AVProbeData *p)
+static int ac3_probe(const AVProbeData *p)
 {
     return ac3_eac3_probe(p, AV_CODEC_ID_AC3);
 }
@@ -115,7 +115,7 @@ AVInputFormat ff_ac3_demuxer = {
 #endif
 
 #if CONFIG_EAC3_DEMUXER
-static int eac3_probe(AVProbeData *p)
+static int eac3_probe(const AVProbeData *p)
 {
     return ac3_eac3_probe(p, AV_CODEC_ID_EAC3);
 }
