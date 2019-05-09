@@ -94,6 +94,9 @@ static int fill_tileX(AVCodecContext *avctx, int tile_width, int tile_height,
         int start_y = y * tile_height, start_x = x * tile_width;
         int end_y = start_y + tile_height, end_x = start_x + tile_width;
 
+        if (start_x >= avctx->width || start_y >= avctx->height)
+            continue;
+
         for (int j = start_y; j < end_y; j += step_h) {
             for (int k = start_x; k < end_x; k += step_w) {
                 if (mask & 0x8000U) {
