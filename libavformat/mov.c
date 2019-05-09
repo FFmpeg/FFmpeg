@@ -5020,7 +5020,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return AVERROR_PATCHWELCOME;
         }
         avio_rb32(pb); // sap_flags
-        timestamp = av_rescale_q(pts, st->time_base, timescale);
+        timestamp = av_rescale_q(pts, timescale, st->time_base);
 
         index = update_frag_index(c, offset);
         frag_stream_info = get_frag_stream_info(&c->frag_index, index, track_id);
