@@ -115,6 +115,4 @@ compatible with the LGPL.
 
 The NVENC library, while its header file is licensed under the compatible MIT
 license, requires a proprietary binary blob at run time, and is deemed to be
-incompatible with the GPL. We are not certain if it is compatible with the
-LGPL, but we require `--enable-nonfree` even with LGPL configurations in case
-it is not.
+incompatible with the GPL.
