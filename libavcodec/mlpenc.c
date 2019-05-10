@@ -2232,10 +2232,8 @@ static int mlp_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
         return 1;
 
     /* add current frame to queue */
-    if (frame) {
-        if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
-            return ret;
-    }
+    if ((ret = ff_af_queue_add(&ctx->afq, frame)) < 0)
+        return ret;
 
     data = frame->data[0];
 
