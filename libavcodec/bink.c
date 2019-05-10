@@ -1046,8 +1046,6 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
         if ((ret = read_runs(c->avctx, gb, &c->bundle[BINK_SRC_RUN])) < 0)
             return ret;
 
-        if (by == bh)
-            break;
         dst  = frame->data[plane_idx]  + 8*by*stride;
         prev = (c->last->data[plane_idx] ? c->last->data[plane_idx]
                                          : frame->data[plane_idx]) + 8*by*stride;
