@@ -1,6 +1,48 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 3.2.14:
+- avcodec/jvdec: Use ff_get_buffer() when the content is not reused
+- avcodec/truemotion2: Fix 2 integer overflows in tm2_update_block()
+- avcodec/jpeg2000: Check stepsize before using it
+- avcodec/aacdec_fixed: Fix undefined shift in noise_scale()
+- avutil/avstring: Fix bug and undefined behavior in av_strncasecmp()
+- avformat/mov: Skip stsd adjustment without chunks
+- avformat/aadec: Check for scanf() failure
+- avcodec/ccaption_dec: Add a blank like at the end to avoid rollup reading from outside
+- avcodec/ivi: Move buffer/block end check to caller of ivi_dc_transform()
+- avcodec/diracdec: Use 64bit in intermediate of global motion vector field generation
+- avcodec/truemotion2: Fix integer overflow in tm2_decode_blocks()
+- avcodec/rscc: Check that the to be uncompressed input is large enough
+- avcodec/hevcdec: Avoid only partly skiping duplicate first slices
+- lavc/bmp: Avoid a heap buffer overwrite for 1bpp input.
+- avcodec/truemotion2: Fix integer overflow in tm2_null_res_block()
+- avcodec/dfa: Check the chunk header is not truncated
+- avcodec/dvbsubdec: Check object position
+- avcodec/cdgraphics: Use ff_set_dimensions()
+- avcodec/qpeg: Limit copy in qpeg_decode_intra() to the available bytes
+- avcodec/aic: Check remaining bits in aic_decode_coeffs()
+- avcodec/bethsoftvideo: Check block_type
+- avcodec/jpeg2000dwt: Fix integer overflow in dwt_decode97_int()
+- avcodec/error_resilience: Use a symmetric check for skipping MV estimation
+- avcodec/mlpdec: Insuffient typo
+- avcodec/zmbv: obtain frame later
+- avcodec/jvdec: Check available input space before decode8x8()
+- avcodec/h264_direct: Fix overflow in POC comparission
+- avformat/webmdashenc: Check id in adaption_sets
+- avformat/http: Fix Out-of-Bounds access in process_line()
+- avformat/ftp: Fix Out-of-Bounds Access and Information Leak in ftp.c:393
+- avformat/matroskadec: Do not leak queued packets on sync errors
+- avformat/mov: validate chunk_count vs stsc_data
+- avformat/mov.c: require tfhd to begin parsing trun
+- avcodec/pgssubdec: Check for duplicate display segments
+- avformat/rtsp: Check number of streams in sdp_parse_line()
+- avformat/rtsp: Clear reply in every iteration in ff_rtsp_connect()
+- avcodec/fic: Check that there is input left in fic_decode_block()
+- avutil/mem: Optimize fill32() by unrolling and using 64bit
+- avcodec/hevcdec: decode at most one slice reporting being the first in the picture
+- avfilter/af_silenceremove: fix possible crash if supplied duration is negative
+
 version 3.2.13:
 - avcodec/tests/rangecoder: initialize array to avoid valgrind warning
 - avcodec/h264_slice: Fix integer overflow in implicit_weight_table()
