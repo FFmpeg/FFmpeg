@@ -456,7 +456,7 @@ static int calculate_bitrate(AVFormatContext *s)
             continue;
         duration = st->index_entries[j-1].timestamp - st->index_entries[0].timestamp;
         bitrate = av_rescale(8*len, st->time_base.den, duration * st->time_base.num);
-        if (bitrate <= INT_MAX && bitrate > 0) {
+        if (bitrate > 0) {
             st->codecpar->bit_rate = bitrate;
         }
     }
