@@ -748,11 +748,11 @@ static int apng_encode_frame(AVCodecContext *avctx, const AVFrame *pict,
     original_bytestream_end = s->bytestream_end;
 
     temp_bytestream = av_malloc(original_bytestream_end - original_bytestream);
-    temp_bytestream_end = temp_bytestream + (original_bytestream_end - original_bytestream);
     if (!temp_bytestream) {
         ret = AVERROR(ENOMEM);
         goto fail;
     }
+    temp_bytestream_end = temp_bytestream + (original_bytestream_end - original_bytestream);
 
     for (last_fctl_chunk.dispose_op = 0; last_fctl_chunk.dispose_op < 3; ++last_fctl_chunk.dispose_op) {
         // 0: APNG_DISPOSE_OP_NONE
