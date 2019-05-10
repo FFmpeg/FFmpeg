@@ -144,7 +144,7 @@ void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe)
         int sum = sce0->ics.ltp.used[sfb] + sce1->ics.ltp.used[sfb];
         if (sum != 2) {
             sce0->ics.ltp.used[sfb] = 0;
-        } else if (sum == 2) {
+        } else {
             count++;
         }
     }
