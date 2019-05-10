@@ -51,6 +51,8 @@ grayf32be           cf40ec06a8abe54852b7f85a00549eec
 grayf32le           b672526c9da9c8959ab881f242f6890a
 nv12                92cda427f794374731ec0321ee00caac
 nv21                1bcfc197f4fb95de85ba58182d8d2f69
+nv24                514c8f12082f0737e558778cbe7de258
+nv42                ece9baae1c5de579dac2c66a89e08ef3
 p010be              8b2de2eb6b099bbf355bfc55a0694ddc
 p010le              373b50c766dfd0a8e79c9a73246d803a
 p016be              8b2de2eb6b099bbf355bfc55a0694ddc

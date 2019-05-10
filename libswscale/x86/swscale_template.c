@@ -1499,8 +1499,8 @@ static av_cold void RENAME(sws_init_swscale)(SwsContext *c)
     enum AVPixelFormat dstFormat = c->dstFormat;
 
     c->use_mmx_vfilter= 0;
-    if (!is16BPS(dstFormat) && !isNBPS(dstFormat) && dstFormat != AV_PIX_FMT_NV12
-        && dstFormat != AV_PIX_FMT_NV21 && dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE
+    if (!is16BPS(dstFormat) && !isNBPS(dstFormat) && !isSemiPlanarYUV(dstFormat)
+        && dstFormat != AV_PIX_FMT_GRAYF32BE && dstFormat != AV_PIX_FMT_GRAYF32LE
         && !(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {

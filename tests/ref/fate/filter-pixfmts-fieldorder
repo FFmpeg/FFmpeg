@@ -49,6 +49,8 @@ gray9be             ec877f5bcf0ea275a6f36c12cc9adf11
 gray9le             fba944fde7923d5089f4f52d12988b9e
 grayf32be           1aa7960131f880c54fe3c77f13448674
 grayf32le           4029ac9d197f255794c1b9e416520fc7
+nv24                4fdbef26042c77f012df114e666efdb2
+nv42                59608290fece913e6b7d61edf581a529
 rgb0                2e3d8c91c7a83d451593dfd06607ff39
 rgb24               b82577f8215d3dc2681be60f1da247af
 rgb444be            1c3afc3a0c53c51139c76504f59bb1f4

@@ -53,6 +53,8 @@ monob               7810c4857822ccfc844d78f5e803269a
 monow               90a947bfcd5f2261e83b577f48ec57b1
 nv12                261ebe585ae2aa4e70d39a10c1679294
 nv21                2909feacd27bebb080c8e0fa41795269
+nv24                334420b9d3df84499d2ca16bb66eed2b
+nv42                ba4063e2795c17fea3c8a646b01fd1f5
 p010be              06e9354b6e0e38ba41736352cedc0bd5
 p010le              fd18d322bffbf5816902c13102872e22
 p016be              06e9354b6e0e38ba41736352cedc0bd5

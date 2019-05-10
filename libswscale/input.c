@@ -1020,9 +1020,11 @@ av_cold void ff_sws_init_input_funcs(SwsContext *c)
         c->chrToYV12 = uyvyToUV_c;
         break;
     case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_NV24:
         c->chrToYV12 = nv12ToUV_c;
         break;
     case AV_PIX_FMT_NV21:
+    case AV_PIX_FMT_NV42:
         c->chrToYV12 = nv21ToUV_c;
         break;
     case AV_PIX_FMT_RGB8:
