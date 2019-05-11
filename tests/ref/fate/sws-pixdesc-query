@@ -347,6 +347,19 @@ isPlanarYUV:
   yuvj440p
   yuvj444p
 
+isSemiPlanarYUV:
+  nv12
+  nv16
+  nv20be
+  nv20le
+  nv21
+  nv24
+  nv42
+  p010be
+  p010le
+  p016be
+  p016le
+
 isRGB:
   0bgr
   0rgb

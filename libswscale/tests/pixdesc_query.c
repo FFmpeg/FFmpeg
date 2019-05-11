@@ -32,6 +32,7 @@ static const struct {
     {"isBE",        isBE},
     {"isYUV",       isYUV},
     {"isPlanarYUV", isPlanarYUV},
+    {"isSemiPlanarYUV", isSemiPlanarYUV},
     {"isRGB",       isRGB},
     {"Gray",        isGray},
     {"RGBinInt",    isRGBinInt},
