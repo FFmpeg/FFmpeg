@@ -248,6 +248,9 @@ static int hqa_decode_frame(HQContext *ctx, AVFrame *pic, size_t data_size)
     int width, height, quant;
     const uint8_t *src = ctx->gbc.buffer;
 
+    if (bytestream2_get_bytes_left(&ctx->gbc) < 8 + 4*(num_slices + 1))
+        return AVERROR_INVALIDDATA;
+
     width  = bytestream2_get_be16(&ctx->gbc);
     height = bytestream2_get_be16(&ctx->gbc);
 
