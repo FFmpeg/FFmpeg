@@ -1687,6 +1687,7 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
 
     url = av_mallocz(c->max_url_size);
     if (!url) {
+        ret = AVERROR(ENOMEM);
         goto cleanup;
     }
 
@@ -1701,9 +1702,6 @@ static int open_input(DASHContext *c, struct representation *pls, struct fragmen
     av_log(pls->parent, AV_LOG_VERBOSE, "DASH request for url '%s', offset %"PRId64", playlist %d\n",
            url, seg->url_offset, pls->rep_idx);
     ret = open_url(pls->parent, &pls->input, url, c->avio_opts, opts, NULL);
-    if (ret < 0) {
-        goto cleanup;
-    }
 
 cleanup:
     av_free(url);
