@@ -1793,8 +1793,8 @@ restart:
         ret = open_input(c, v, v->cur_seg);
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback)) {
-                goto end;
                 ret = AVERROR_EXIT;
+                goto end;
             }
             av_log(v->parent, AV_LOG_WARNING, "Failed to open fragment of playlist %d\n", v->rep_idx);
             v->cur_seq_no++;
