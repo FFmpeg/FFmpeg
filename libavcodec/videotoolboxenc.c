@@ -762,6 +762,11 @@ static int get_cv_pixel_format(AVCodecContext* avctx,
         *av_pixel_format = range == AVCOL_RANGE_JPEG ?
                                         kCVPixelFormatType_420YpCbCr8PlanarFullRange :
                                         kCVPixelFormatType_420YpCbCr8Planar;
+    } else if (fmt == AV_PIX_FMT_P010LE) {
+        *av_pixel_format = range == AVCOL_RANGE_JPEG ?
+                                        kCVPixelFormatType_420YpCbCr10BiPlanarFullRange :
+                                        kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
+        *av_pixel_format = kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange;
     } else {
         return AVERROR(EINVAL);
     }
@@ -1986,6 +1991,17 @@ static int get_cv_pixel_info(
         strides[2] = frame ? frame->linesize[2] : (avctx->width + 1) / 2;
         break;
 
+    case AV_PIX_FMT_P010LE:
+        *plane_count = 2;
+        widths[0] = avctx->width;
+        heights[0] = avctx->height;
+        strides[0] = frame ? frame->linesize[0] : (avctx->width * 2 + 63) & -64;
+
+        widths[1] = (avctx->width + 1) / 2;
+        heights[1] = (avctx->height + 1) / 2;
+        strides[1] = frame ? frame->linesize[1] : ((avctx->width + 1) / 2 + 63) & -64;
+        break;
+
     default:
         av_log(
                avctx,
@@ -2348,21 +2364,11 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
                                     CFDictionaryRef  pixel_buffer_info)
 {
     VTEncContext *vtctx = avctx->priv_data;
-    AVFrame *frame = av_frame_alloc();
-    int y_size = avctx->width * avctx->height;
-    int chroma_size = (avctx->width / 2) * (avctx->height / 2);
-    CMSampleBufferRef buf = NULL;
     int status;
-
-    if (!frame)
-        return AVERROR(ENOMEM);
-
-    frame->buf[0] = av_buffer_alloc(y_size + 2 * chroma_size);
-
-    if(!frame->buf[0]){
-        status = AVERROR(ENOMEM);
-        goto pe_cleanup;
-    }
+    CVPixelBufferPoolRef pool = NULL;
+    CVPixelBufferRef pix_buf = NULL;
+    CMTime time;
+    CMSampleBufferRef buf = NULL;
 
     status = vtenc_create_encoder(avctx,
                                   codec_type,
@@ -2374,39 +2380,38 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
     if (status)
         goto pe_cleanup;
 
-    frame->data[0] = frame->buf[0]->data;
-    memset(frame->data[0],   0,      y_size);
-
-    frame->data[1] = frame->buf[0]->data + y_size;
-    memset(frame->data[1], 128, chroma_size);
-
-
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-        frame->data[2] = frame->buf[0]->data + y_size + chroma_size;
-        memset(frame->data[2], 128, chroma_size);
+    pool = VTCompressionSessionGetPixelBufferPool(vtctx->session);
+    if(!pool){
+        av_log(avctx, AV_LOG_ERROR, "Error getting pixel buffer pool.\n");
+        goto pe_cleanup;
     }
 
-    frame->linesize[0] = avctx->width;
+    status = CVPixelBufferPoolCreatePixelBuffer(NULL,
+                                                pool,
+                                                &pix_buf);
 
-    if (avctx->pix_fmt == AV_PIX_FMT_YUV420P) {
-        frame->linesize[1] =
-        frame->linesize[2] = (avctx->width + 1) / 2;
-    } else {
-        frame->linesize[1] = (avctx->width + 1) / 2;
+    if(status != kCVReturnSuccess){
+        av_log(avctx, AV_LOG_ERROR, "Error creating frame from pool: %d\n", status);
+        goto pe_cleanup;
     }
 
-    frame->format          = avctx->pix_fmt;
-    frame->width           = avctx->width;
-    frame->height          = avctx->height;
-    frame->colorspace      = avctx->colorspace;
-    frame->color_range     = avctx->color_range;
-    frame->color_trc       = avctx->color_trc;
-    frame->color_primaries = avctx->color_primaries;
+    unsigned pbuftype = CVPixelBufferGetPixelFormatType(pix_buf);
 
-    frame->pts = 0;
-    status = vtenc_send_frame(avctx, vtctx, frame);
+    time = CMTimeMake(0, avctx->time_base.den);
+    status = VTCompressionSessionEncodeFrame(vtctx->session,
+                                             pix_buf,
+                                             time,
+                                             kCMTimeInvalid,
+                                             NULL,
+                                             NULL,
+                                             NULL);
+
     if (status) {
-        av_log(avctx, AV_LOG_ERROR, "Error sending frame: %d\n", status);
+        av_log(avctx,
+               AV_LOG_ERROR,
+               "Error sending frame for extradata: %d\n",
+               status);
+
         goto pe_cleanup;
     }
 
@@ -2433,9 +2438,6 @@ pe_cleanup:
 
     vtctx->session = NULL;
     vtctx->frame_ct_out = 0;
-
-    av_frame_unref(frame);
-    av_frame_free(&frame);
 
     av_assert0(status != 0 || (avctx->extradata && avctx->extradata_size > 0));
 
@@ -2475,10 +2477,18 @@ static av_cold int vtenc_close(AVCodecContext *avctx)
     return 0;
 }
 
-static const enum AVPixelFormat pix_fmts[] = {
+static const enum AVPixelFormat avc_pix_fmts[] = {
     AV_PIX_FMT_VIDEOTOOLBOX,
     AV_PIX_FMT_NV12,
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_NONE
+};
+
+static const enum AVPixelFormat hevc_pix_fmts[] = {
+    AV_PIX_FMT_VIDEOTOOLBOX,
+    AV_PIX_FMT_NV12,
+    AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_P010LE,
     AV_PIX_FMT_NONE
 };
 
@@ -2539,7 +2549,7 @@ AVCodec ff_h264_videotoolbox_encoder = {
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_H264,
     .priv_data_size   = sizeof(VTEncContext),
-    .pix_fmts         = pix_fmts,
+    .pix_fmts         = avc_pix_fmts,
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
@@ -2571,7 +2581,7 @@ AVCodec ff_hevc_videotoolbox_encoder = {
     .type             = AVMEDIA_TYPE_VIDEO,
     .id               = AV_CODEC_ID_HEVC,
     .priv_data_size   = sizeof(VTEncContext),
-    .pix_fmts         = pix_fmts,
+    .pix_fmts         = hevc_pix_fmts,
     .init             = vtenc_init,
     .encode2          = vtenc_frame,
     .close            = vtenc_close,
