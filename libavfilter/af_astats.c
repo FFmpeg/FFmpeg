@@ -196,6 +196,7 @@ static void reset_stats(AudioStatsContext *s)
         p->nb_nans = 0;
         p->nb_infs = 0;
         p->nb_denormals = 0;
+        p->last = NAN;
     }
 }
 
@@ -285,10 +286,12 @@ static inline void update_stat(AudioStatsContext *s, ChannelStats *p, double d, 
     p->sigma_x += nd;
     p->sigma_x2 += nd * nd;
     p->avg_sigma_x2 = p->avg_sigma_x2 * s->mult + (1.0 - s->mult) * nd * nd;
-    p->min_diff = FFMIN(p->min_diff, fabs(d - p->last));
-    p->max_diff = FFMAX(p->max_diff, fabs(d - p->last));
-    p->diff1_sum += fabs(d - p->last);
-    p->diff1_sum_x2 += (d - p->last) * (d - p->last);
+    if (!isnan(p->last)) {
+        p->min_diff = FFMIN(p->min_diff, fabs(d - p->last));
+        p->max_diff = FFMAX(p->max_diff, fabs(d - p->last));
+        p->diff1_sum += fabs(d - p->last);
+        p->diff1_sum_x2 += (d - p->last) * (d - p->last);
+    }
     p->last = d;
     p->mask |= i;
     p->imask &= i;
