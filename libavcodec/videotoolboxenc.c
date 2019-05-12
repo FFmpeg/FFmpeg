@@ -210,6 +210,7 @@ typedef struct VTEncContext {
     int64_t frames_after;
 
     int64_t allow_sw;
+    int64_t require_sw;
 
     bool flushing;
     bool has_b_frames;
@@ -1314,7 +1315,11 @@ static int vtenc_configure_encoder(AVCodecContext *avctx)
     if (!enc_info) return AVERROR(ENOMEM);
 
 #if !TARGET_OS_IPHONE
-    if (!vtctx->allow_sw) {
+    if(vtctx->require_sw) {
+        CFDictionarySetValue(enc_info,
+                             compat_keys.kVTVideoEncoderSpecification_EnableHardwareAcceleratedVideoEncoder,
+                             kCFBooleanFalse);
+    } else if (!vtctx->allow_sw) {
         CFDictionarySetValue(enc_info,
                              compat_keys.kVTVideoEncoderSpecification_RequireHardwareAcceleratedVideoEncoder,
                              kCFBooleanTrue);
@@ -2542,6 +2547,8 @@ static const enum AVPixelFormat pix_fmts[] = {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 #define COMMON_OPTIONS \
     { "allow_sw", "Allow software encoding", OFFSET(allow_sw), AV_OPT_TYPE_BOOL, \
+        { .i64 = 0 }, 0, 1, VE }, \
+    { "require_sw", "Require software encoding", OFFSET(require_sw), AV_OPT_TYPE_BOOL, \
         { .i64 = 0 }, 0, 1, VE }, \
     { "realtime", "Hint that encoding should happen in real-time if not faster (e.g. capturing from camera).", \
         OFFSET(realtime), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, VE }, \
