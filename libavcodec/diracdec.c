@@ -1551,6 +1551,11 @@ static int dirac_unpack_block_motion_data(DiracContext *s)
                 }
         }
 
+    for (i = 0; i < 4 + 2*s->num_refs; i++) {
+        if (arith[i].error)
+            return arith[i].error;
+    }
+
     return 0;
 }
 
