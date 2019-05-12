@@ -174,10 +174,10 @@ static void reset_stats(AudioStatsContext *s)
         ChannelStats *p = &s->chstats[c];
 
         p->min = p->nmin = p->min_sigma_x2 = DBL_MAX;
-        p->max = p->nmax = p->max_sigma_x2 = DBL_MIN;
+        p->max = p->nmax = p->max_sigma_x2 =-DBL_MAX;
         p->min_non_zero = DBL_MAX;
         p->min_diff = DBL_MAX;
-        p->max_diff = DBL_MIN;
+        p->max_diff = 0;
         p->sigma_x = 0;
         p->sigma_x2 = 0;
         p->avg_sigma_x2 = 0;
@@ -339,15 +339,15 @@ static void set_metadata(AudioStatsContext *s, AVDictionary **metadata)
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0;
     uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0;
     double min_runs = 0, max_runs = 0,
-           min = DBL_MAX, max = DBL_MIN, min_diff = DBL_MAX, max_diff = 0,
-           nmin = DBL_MAX, nmax = DBL_MIN,
+           min = DBL_MAX, max =-DBL_MAX, min_diff = DBL_MAX, max_diff = 0,
+           nmin = DBL_MAX, nmax =-DBL_MAX,
            max_sigma_x = 0,
            diff1_sum = 0,
            diff1_sum_x2 = 0,
            sigma_x = 0,
            sigma_x2 = 0,
            min_sigma_x2 = DBL_MAX,
-           max_sigma_x2 = DBL_MIN;
+           max_sigma_x2 =-DBL_MAX;
     AVRational depth;
     int c;
 
@@ -562,15 +562,15 @@ static void print_stats(AVFilterContext *ctx)
     uint64_t mask = 0, imask = 0xFFFFFFFFFFFFFFFF, min_count = 0, max_count = 0, nb_samples = 0;
     uint64_t nb_nans = 0, nb_infs = 0, nb_denormals = 0;
     double min_runs = 0, max_runs = 0,
-           min = DBL_MAX, max = DBL_MIN, min_diff = DBL_MAX, max_diff = 0,
-           nmin = DBL_MAX, nmax = DBL_MIN,
+           min = DBL_MAX, max =-DBL_MAX, min_diff = DBL_MAX, max_diff = 0,
+           nmin = DBL_MAX, nmax =-DBL_MAX,
            max_sigma_x = 0,
            diff1_sum_x2 = 0,
            diff1_sum = 0,
            sigma_x = 0,
            sigma_x2 = 0,
            min_sigma_x2 = DBL_MAX,
-           max_sigma_x2 = DBL_MIN;
+           max_sigma_x2 =-DBL_MAX;
     AVRational depth;
     int c;
 
