@@ -79,7 +79,7 @@ static int lvf_read_header(AVFormatContext *s)
 
             st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
             st->codecpar->codec_tag   = avio_rl16(s->pb);
-            st->codecpar->channels    = avio_rl16(s->pb);
+            st->codecpar->ch_layout.nb_channels = avio_rl16(s->pb);
             st->codecpar->sample_rate = avio_rl16(s->pb);
             avio_skip(s->pb, 8);
             st->codecpar->bits_per_coded_sample = avio_r8(s->pb);
