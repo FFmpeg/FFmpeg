@@ -99,7 +99,7 @@ static int gdv_read_header(AVFormatContext *ctx)
         ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
         ast->codecpar->codec_tag   = 0;
         ast->codecpar->sample_rate = avio_rl16(pb);
-        ast->codecpar->channels    = 1 + !!(snd_flags & 2);
+        ast->codecpar->ch_layout.nb_channels = 1 + !!(snd_flags & 2);
         if (snd_flags & 8) {
             ast->codecpar->codec_id = AV_CODEC_ID_GREMLIN_DPCM;
         } else {
@@ -108,7 +108,8 @@ static int gdv_read_header(AVFormatContext *ctx)
 
         avpriv_set_pts_info(ast, 64, 1, ast->codecpar->sample_rate);
         gdv->audio_size = (ast->codecpar->sample_rate / fps) *
-                           ast->codecpar->channels * (1 + !!(snd_flags & 4)) / (1 + !!(snd_flags & 8));
+                           ast->codecpar->ch_layout.nb_channels *
+                           (1 + !!(snd_flags & 4)) / (1 + !!(snd_flags & 8));
         gdv->is_audio = 1;
     } else {
         avio_skip(pb, 2);
