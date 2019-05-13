@@ -48,12 +48,12 @@ static int acm_read_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
 
-    st->codecpar->channels    = AV_RL16(st->codecpar->extradata +  8);
+    st->codecpar->ch_layout.nb_channels = AV_RL16(st->codecpar->extradata +  8);
     st->codecpar->sample_rate = AV_RL16(st->codecpar->extradata + 10);
-    if (st->codecpar->channels <= 0 || st->codecpar->sample_rate <= 0)
+    if (st->codecpar->ch_layout.nb_channels <= 0 || st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
     st->start_time         = 0;
-    st->duration           = AV_RL32(st->codecpar->extradata +  4) / st->codecpar->channels;
+    st->duration           = AV_RL32(st->codecpar->extradata +  4) / st->codecpar->ch_layout.nb_channels;
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL_RAW;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
