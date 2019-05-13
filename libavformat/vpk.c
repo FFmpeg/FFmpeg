@@ -59,14 +59,14 @@ static int vpk_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rl32(s->pb);
     if (st->codecpar->sample_rate <= 0 || st->codecpar->block_align <= 0)
         return AVERROR_INVALIDDATA;
-    st->codecpar->channels    = avio_rl32(s->pb);
-    if (st->codecpar->channels <= 0)
+    st->codecpar->ch_layout.nb_channels = avio_rl32(s->pb);
+    if (st->codecpar->ch_layout.nb_channels <= 0)
         return AVERROR_INVALIDDATA;
-    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28LL) / 16;
+    samples_per_block      = ((st->codecpar->block_align / st->codecpar->ch_layout.nb_channels) * 28LL) / 16;
     if (samples_per_block <= 0)
         return AVERROR_INVALIDDATA;
     vpk->block_count       = (st->duration + (samples_per_block - 1)) / samples_per_block;
-    vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codecpar->channels / 28;
+    vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codecpar->ch_layout.nb_channels / 28;
 
     if (offset < avio_tell(s->pb))
         return AVERROR_INVALIDDATA;
@@ -85,14 +85,14 @@ static int vpk_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     vpk->current_block++;
     if (vpk->current_block == vpk->block_count) {
-        unsigned size = vpk->last_block_size / par->channels;
-        unsigned skip = (par->block_align - vpk->last_block_size) / par->channels;
+        unsigned size = vpk->last_block_size / par->ch_layout.nb_channels;
+        unsigned skip = (par->block_align - vpk->last_block_size) / par->ch_layout.nb_channels;
         uint64_t pos = avio_tell(s->pb);
 
         ret = av_new_packet(pkt, vpk->last_block_size);
         if (ret < 0)
             return ret;
-        for (i = 0; i < par->channels; i++) {
+        for (i = 0; i < par->ch_layout.nb_channels; i++) {
             ret = avio_read(s->pb, pkt->data + i * size, size);
             avio_skip(s->pb, skip);
             if (ret != size) {
