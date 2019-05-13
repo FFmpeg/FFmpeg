@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.14:
+- libswcale: Fix possible string overflow in test.
+- avcodec/hq_hqa: Check available space before reading slice offsets
+- lavf/webm_chunk: Respect buffer size
 - avcodec/jvdec: Use ff_get_buffer() when the content is not reused
 - avcodec/truemotion2: Fix 2 integer overflows in tm2_update_block()
 - avcodec/jpeg2000: Check stepsize before using it
