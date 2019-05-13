@@ -372,9 +372,9 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
         avio_r8(pb); // '5'
         avio_r8(pb); //codec_id
         avio_rl16(pb); //codec_subid
-        st->codecpar->channels = avio_rl16(pb); // channels
+        st->codecpar->ch_layout.nb_channels = avio_rl16(pb); // channels
         st->codecpar->sample_rate = avio_rl32(pb); // sample_rate
-        if (st->codecpar->sample_rate <= 0 || st->codecpar->channels <= 0)
+        if (st->codecpar->sample_rate <= 0 || st->codecpar->ch_layout.nb_channels <= 0)
             return AVERROR_INVALIDDATA;
         avio_seek(pb, 10, SEEK_CUR); // data_1
         q = avio_r8(pb);
@@ -655,7 +655,8 @@ static int viv_read_packet(AVFormatContext *s,
         astream = s->streams[pkt->stream_index];
 
         pkt->pts = av_rescale_q(viv->audio_sample, av_make_q(1, astream->codecpar->sample_rate), astream->time_base);
-        viv->audio_sample += viv->audio_subpackets[viv->current_audio_subpacket].pcm_bytes / 2 / astream->codecpar->channels;
+        viv->audio_sample += viv->audio_subpackets[viv->current_audio_subpacket].pcm_bytes / 2 /
+                             astream->codecpar->ch_layout.nb_channels;
         pkt->flags |= AV_PKT_FLAG_KEY;
         viv->current_audio_subpacket++;
         return 0;
