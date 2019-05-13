@@ -63,7 +63,7 @@ static int read_header(AVFormatContext *s)
     st->codecpar->codec_id=AV_CODEC_ID_G729;
     st->codecpar->sample_rate=8000;
     st->codecpar->block_align = 16;
-    st->codecpar->channels=1;
+    st->codecpar->ch_layout.nb_channels = 1;
 
     avpriv_set_pts_info(st, 64, 1, 100);
     return 0;
@@ -124,14 +124,14 @@ static int write_header(AVFormatContext *s)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if ((par->codec_id != AV_CODEC_ID_G729) || par->channels != 1) {
+    if ((par->codec_id != AV_CODEC_ID_G729) || par->ch_layout.nb_channels != 1) {
         av_log(s, AV_LOG_ERROR,
                "only codec g729 with 1 channel is supported by this format\n");
         return AVERROR(EINVAL);
     }
 
     par->bits_per_coded_sample = 16;
-    par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
+    par->block_align = (par->bits_per_coded_sample * par->ch_layout.nb_channels) >> 3;
 
     return 0;
 }
