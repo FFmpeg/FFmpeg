@@ -38,6 +38,7 @@ typedef struct Libdav1dContext {
 
     Dav1dData data;
     int tile_threads;
+    int frame_threads;
     int apply_grain;
 } Libdav1dContext;
 
@@ -114,6 +115,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
 {
     Libdav1dContext *dav1d = c->priv_data;
     Dav1dSettings s;
+    int threads = (c->thread_count ? c->thread_count : av_cpu_count()) * 3 / 2;
     int res;
 
     av_log(c, AV_LOG_INFO, "libdav1d %s\n", dav1d_version());
@@ -124,9 +126,16 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.allocator.cookie = dav1d;
     s.allocator.alloc_picture_callback = libdav1d_picture_allocator;
     s.allocator.release_picture_callback = libdav1d_picture_release;
-    s.n_tile_threads = dav1d->tile_threads;
     s.apply_grain = dav1d->apply_grain;
-    s.n_frame_threads = FFMIN(c->thread_count ? c->thread_count : av_cpu_count(), DAV1D_MAX_FRAME_THREADS);
+
+    s.n_tile_threads = dav1d->tile_threads
+                     ? dav1d->tile_threads
+                     : FFMIN(floor(sqrt(threads)), DAV1D_MAX_TILE_THREADS);
+    s.n_frame_threads = dav1d->frame_threads
+                      ? dav1d->frame_threads
+                      : FFMIN(ceil(threads / s.n_tile_threads), DAV1D_MAX_FRAME_THREADS);
+    av_log(c, AV_LOG_DEBUG, "Using %d frame threads, %d tile threads\n",
+           s.n_frame_threads, s.n_tile_threads);
 
     res = dav1d_open(&dav1d->c, &s);
     if (res < 0)
@@ -317,7 +326,8 @@ static av_cold int libdav1d_close(AVCodecContext *c)
 #define OFFSET(x) offsetof(Libdav1dContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption libdav1d_options[] = {
-    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 1 }, 1, DAV1D_MAX_TILE_THREADS, VD },
+    { "tilethreads", "Tile threads", OFFSET(tile_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_TILE_THREADS, VD },
+    { "framethreads", "Frame threads", OFFSET(frame_threads), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, DAV1D_MAX_FRAME_THREADS, VD },
     { "filmgrain", "Apply Film Grain", OFFSET(apply_grain), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, VD },
     { NULL }
 };
