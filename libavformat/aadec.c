@@ -178,7 +178,7 @@ static int aa_read_header(AVFormatContext *s)
     } else if (!strcmp(codec_name, "acelp85")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 19;
-        st->codecpar->channels = 1;
+        st->codecpar->ch_layout.nb_channels = 1;
         st->codecpar->sample_rate = 8500;
         st->codecpar->bit_rate = 8500;
         sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
@@ -186,7 +186,7 @@ static int aa_read_header(AVFormatContext *s)
     } else if (!strcmp(codec_name, "acelp16")) {
         st->codecpar->codec_id = AV_CODEC_ID_SIPR;
         st->codecpar->block_align = 20;
-        st->codecpar->channels = 1;
+        st->codecpar->ch_layout.nb_channels = 1;
         st->codecpar->sample_rate = 16000;
         st->codecpar->bit_rate = 16000;
         sti->need_parsing = AVSTREAM_PARSE_FULL_RAW;
