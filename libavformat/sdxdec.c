@@ -54,7 +54,7 @@ static int sdx_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channels = 1;
+    st->codecpar->ch_layout.nb_channels = 1;
     st->codecpar->sample_rate = avio_rl32(s->pb);
     switch (depth) {
     case 8:
