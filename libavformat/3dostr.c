@@ -102,15 +102,15 @@ static int threedostr_read_header(AVFormatContext *s)
 
             st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
             st->codecpar->sample_rate = avio_rb32(s->pb);
-            st->codecpar->channels    = avio_rb32(s->pb);
-            if (st->codecpar->channels <= 0 || st->codecpar->sample_rate <= 0)
+            st->codecpar->ch_layout.nb_channels = avio_rb32(s->pb);
+            if (st->codecpar->ch_layout.nb_channels <= 0 || st->codecpar->sample_rate <= 0)
                 return AVERROR_INVALIDDATA;
             codec                  = avio_rl32(s->pb);
             avio_skip(s->pb, 4);
             if (ctrl_size == 20 || ctrl_size == 3 || ctrl_size == -1)
-                st->duration       = (avio_rb32(s->pb) - 1) / st->codecpar->channels;
+                st->duration       = (avio_rb32(s->pb) - 1) / st->codecpar->ch_layout.nb_channels;
             else
-                st->duration       = avio_rb32(s->pb) * 16 / st->codecpar->channels;
+                st->duration       = avio_rb32(s->pb) * 16 / st->codecpar->ch_layout.nb_channels;
             size -= 56;
             found_shdr = 1;
             break;
@@ -135,7 +135,7 @@ static int threedostr_read_header(AVFormatContext *s)
     switch (codec) {
     case MKTAG('S','D','X','2'):
         st->codecpar->codec_id    = AV_CODEC_ID_SDX2_DPCM;
-        st->codecpar->block_align = 1 * st->codecpar->channels;
+        st->codecpar->block_align = 1 * st->codecpar->ch_layout.nb_channels;
         break;
     default:
         avpriv_request_sample(s, "codec %X", codec);
@@ -178,7 +178,7 @@ static int threedostr_read_packet(AVFormatContext *s, AVPacket *pkt)
             ret = av_get_packet(s->pb, pkt, size);
             pkt->pos = pos;
             pkt->stream_index = 0;
-            pkt->duration = size / st->codecpar->channels;
+            pkt->duration = size / st->codecpar->ch_layout.nb_channels;
             return ret;
         default:
             av_log(s, AV_LOG_DEBUG, "skipping unknown chunk: %X\n", chunk);
