@@ -54,7 +54,7 @@ static int sdr2_read_header(AVFormatContext *s)
     ffstream(st)->need_parsing = AVSTREAM_PARSE_FULL;
 
     ast->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    ast->codecpar->channels    = 1;
+    ast->codecpar->ch_layout.nb_channels = 1;
     ast->codecpar->sample_rate = 8000;
     ast->codecpar->codec_id    = AV_CODEC_ID_PCM_S16LE;
     avpriv_set_pts_info(ast, 64, 1, 8000);
