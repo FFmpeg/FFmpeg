@@ -38,12 +38,11 @@ static int afc_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id   = AV_CODEC_ID_ADPCM_AFC;
-    st->codecpar->channels   = 2;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->ch_layout  = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
 
     if ((ret = ff_alloc_extradata(st->codecpar, 1)) < 0)
         return ret;
-    st->codecpar->extradata[0] = 8 * st->codecpar->channels;
+    st->codecpar->extradata[0] = 8 * st->codecpar->ch_layout.nb_channels;
 
     c->data_end = avio_rb32(s->pb) + 32LL;
     st->duration = avio_rb32(s->pb);
