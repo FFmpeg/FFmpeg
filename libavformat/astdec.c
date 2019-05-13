@@ -57,14 +57,14 @@ static int ast_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    st->codecpar->channels = avio_rb16(s->pb);
-    if (!st->codecpar->channels)
+    st->codecpar->ch_layout.nb_channels = avio_rb16(s->pb);
+    if (!st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
-    if (st->codecpar->channels == 2)
-        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-    else if (st->codecpar->channels == 4)
-        st->codecpar->channel_layout = AV_CH_LAYOUT_4POINT0;
+    if (st->codecpar->ch_layout.nb_channels == 2)
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+    else if (st->codecpar->ch_layout.nb_channels == 4)
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_4POINT0;
 
     avio_skip(s->pb, 2);
     st->codecpar->sample_rate = avio_rb32(s->pb);
@@ -90,10 +90,11 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     pos  = avio_tell(s->pb);
     type = avio_rl32(s->pb);
     size = avio_rb32(s->pb);
-    if (!s->streams[0]->codecpar->channels || size > INT_MAX / s->streams[0]->codecpar->channels)
+    if (!s->streams[0]->codecpar->ch_layout.nb_channels ||
+        size > INT_MAX / s->streams[0]->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
-    size *= s->streams[0]->codecpar->channels;
+    size *= s->streams[0]->codecpar->ch_layout.nb_channels;
     if ((ret = avio_skip(s->pb, 24)) < 0) // padding
         return ret;
 

@@ -84,7 +84,7 @@ static int ast_write_header(AVFormatContext *s)
     avio_wb32(pb, 0); /* File size minus header */
     avio_wb16(pb, codec_tag);
     avio_wb16(pb, 16); /* Bit depth */
-    avio_wb16(pb, par->channels);
+    avio_wb16(pb, par->ch_layout.nb_channels);
     avio_wb16(pb, 0); /* Loop flag */
     avio_wb32(pb, par->sample_rate);
 
@@ -109,7 +109,7 @@ static int ast_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     ASTMuxContext *ast = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
-    int size = pkt->size / par->channels;
+    int size = pkt->size / par->ch_layout.nb_channels;
 
     if (s->streams[0]->nb_frames == 0)
         ast->fbs = size;
