@@ -5,7 +5,6 @@
 #media_type 0: audio
 #codec_id 0: qdm2
 #sample_rate 0: 44100
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,        0,      370, 0x4d1897fc
 0,       4096,       4096,        0,      370, 0xea999da0

@@ -11,7 +11,6 @@ a5f259b0d7590e1ef77e09c3a75d0801 *tests/data/fate/matroska-dovi-write-config8.ma
 #media_type 1: audio
 #codec_id 1: aac
 #sample_rate 1: 44100
-#channel_layout 1: 3
 #channel_layout_name 1: stereo
 0,        -67,          0,       33,    63375, 0xc76606ab, S=1,        8
 0,        -34,        133,       33,    46706, 0x0e08a7e5, F=0x0

@@ -10,7 +10,6 @@
 #media_type 1: audio
 #codec_id 1: mp3
 #sample_rate 1: 44100
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 0,        -37,         43,       40,     9156, 0xe5bd034a, S=1,       40
 1,          0,          0,       26,      417, 0x7198c15e

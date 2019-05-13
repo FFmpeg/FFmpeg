@@ -5,7 +5,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s24le
 #sample_rate 0: 48000
-#channel_layout 0: 60f
 #channel_layout_name 0: 5.1(side)
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,      512,     9216, 13a95890b5f0947d6f058ca9c30a3e01

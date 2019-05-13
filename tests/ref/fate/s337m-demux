@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: dolby_e
 #sample_rate 0: 44800
-#channel_layout 0: 60f
 #channel_layout_name 0: 5.1(side)
 0,          0,          0,     3600,     7664, 0x7e73f2fd
 0,       3600,       3600,     3600,     7664, 0x8b980ec8

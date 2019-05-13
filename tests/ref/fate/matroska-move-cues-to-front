@@ -4,13 +4,11 @@
 #media_type 0: audio
 #codec_id 0: pcm_s24be
 #sample_rate 0: 192000
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 #tb 1: 1/1000
 #media_type 1: audio
 #codec_id 1: pcm_s24le
 #sample_rate 1: 192000
-#channel_layout 1: 3
 #channel_layout_name 1: stereo
 0,          0,          0,        3,     4092, 0x71f10ea0
 1,          0,          0,        3,     4092, 0xa6320ea0

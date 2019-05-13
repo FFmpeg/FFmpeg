@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s16le
 #sample_rate 0: 44100
-#channel_layout 0: 0
 #channel_layout_name 0: 5 channels
 0,          0,          0,      186,     1860, 0x2480a20e
 0,        186,        186,      186,     1860, 0xde9e9c40

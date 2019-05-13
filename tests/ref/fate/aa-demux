@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: sipr
 #sample_rate 0: 8500
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,    18000,       19, 0x36e10529
 0,      18000,      18000,    18000,       19, 0x70810a69

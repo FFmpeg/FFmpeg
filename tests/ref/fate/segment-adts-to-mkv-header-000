@@ -3,7 +3,6 @@
 #media_type 0: audio
 #codec_id 0: aac
 #sample_rate 0: 16000
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,       64,        4, 0x02f70117
 0,         64,         64,       64,      163, 0xd5f85007

@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_dvd
 #sample_rate 0: 44100
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,     2040,     2005, 0x8e98e563
 0,       2090,       2090,     2069,     2033, 0xd6f2f455

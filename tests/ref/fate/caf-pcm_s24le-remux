@@ -4,7 +4,6 @@ ee0072a92044cbad68795cf93546c517 *tests/data/fate/caf-pcm_s24le-remux.caf
 #media_type 0: audio
 #codec_id 0: pcm_s24le
 #sample_rate 0: 192000
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,      682,     4092, 0xa6320ea0
 0,        682,        682,      682,     4092, 0x27732317

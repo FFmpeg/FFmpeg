@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s16le
 #sample_rate 0: 44100
-#channel_layout 0: 3
 0,          0,          0,     1024,     4096, 0xb9c5fefd
 0,       1024,       1024,     1024,     4096, 0xb2ae0a90
 0,       2048,       2048,     1024,     4096, 0x97e6e9f3
@@ -266,7 +265,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s16le
 #sample_rate 0: 44100
-#channel_layout 0: 3
 0,          0,          0,     1024,     4096, 0xfd510c8e
 0,       1024,       1024,     1024,     4096, 0x09dcf895
 0,       2048,       2048,     1024,     4096, 0xd8cbe29f

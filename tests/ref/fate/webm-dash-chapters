@@ -5,7 +5,6 @@ f97445ba73e182c888fa077348384083 *tests/data/fate/webm-dash-chapters.webm
 #media_type 0: audio
 #codec_id 0: vorbis
 #sample_rate 0: 44100
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,        5,       28, 0xefcf103e
 0,          6,          6,       26,      198, 0xfbbe5eb5

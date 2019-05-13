@@ -4,13 +4,11 @@
 #media_type 0: audio
 #codec_id 0: flac
 #sample_rate 0: 48000
-#channel_layout 0: 3f
 #channel_layout_name 0: 5.1
 #tb 1: 651/31250000
 #media_type 1: audio
 #codec_id 1: flac
 #sample_rate 1: 48000
-#channel_layout 1: 60f
 #channel_layout_name 1: 5.1(side)
 0,          0,          0,     4096,       26, 0x50f80431
 1,          0,          0,     4096,       26, 0x50f80431

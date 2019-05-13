@@ -4,7 +4,6 @@ d4a9481090a8bab1a3f072a8108a1d6a *tests/data/fate/cover-art-aiff-id3v2-remux.aif
 #media_type 0: audio
 #codec_id 0: pcm_s16be
 #sample_rate 0: 44100
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 #tb 1: 1/90000
 #media_type 1: video

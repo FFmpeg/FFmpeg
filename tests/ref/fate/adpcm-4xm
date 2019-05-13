@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s16le
 #sample_rate 0: 22050
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,     1472,     5888, 0x9086e310
 0,       1476,       1476,     1472,     5888, 0xac8491f5

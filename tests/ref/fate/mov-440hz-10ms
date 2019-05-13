@@ -5,7 +5,6 @@
 #media_type 0: audio
 #codec_id 0: pcm_s16le
 #sample_rate 0: 44100
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,      960,     1920, 44e7e48ff08835ce30e93c7971dae7df

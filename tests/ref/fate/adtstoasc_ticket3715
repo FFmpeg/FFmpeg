@@ -5,7 +5,6 @@
 #media_type 0: audio
 #codec_id 0: aac
 #sample_rate 0: 44100
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,     1024,      371, 0x14b11a4f
 0,       1024,       1024,     1024,      402, 0x2f00c487

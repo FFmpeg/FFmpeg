@@ -7,7 +7,6 @@
 #media_type 1: audio
 #codec_id 1: ac3
 #sample_rate 1: 44100
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 1,       -256,       -256,     1536,      416, 0xef8ccbe3
 0,          0,          0,        1,     8749, 0x57039d10, S=1,        8

@@ -8,7 +8,6 @@
 #media_type 1: audio
 #codec_id 1: mp2
 #sample_rate 1: 48000
-#channel_layout 1: 3
 #channel_layout_name 1: stereo
 0,          0, -9223372036854775808,        1,     5951, 0xe9118e0d
 1,          0,          0,     2160,      768, 0xaebcbebb

@@ -4,7 +4,6 @@
 #media_type 0: audio
 #codec_id 0: amr_nb
 #sample_rate 0: 8000
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,      160,       27, 0xc9970c51
 0,        160,        160,      160,       27, 0xbaa00d05

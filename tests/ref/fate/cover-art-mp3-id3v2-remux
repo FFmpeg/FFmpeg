@@ -4,7 +4,6 @@ c1b55a9a92226cd72d3f53ccd830d127 *tests/data/fate/cover-art-mp3-id3v2-remux.mp3
 #media_type 0: audio
 #codec_id 0: mp3
 #sample_rate 0: 44100
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 #tb 1: 1/90000
 #media_type 1: video

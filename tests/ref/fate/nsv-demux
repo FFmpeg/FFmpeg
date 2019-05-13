@@ -7,7 +7,6 @@
 #media_type 1: audio
 #codec_id 1: mp3
 #sample_rate 1: 11025
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 0,          0,          0,        1,       12, 0x1396035f
 0,          1,          1,        1,       24, 0x8ab80ac7, F=0x0

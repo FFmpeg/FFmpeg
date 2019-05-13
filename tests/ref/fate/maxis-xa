@@ -2,7 +2,6 @@
 #media_type 0: audio
 #codec_id 0: adpcm_ea_maxis_xa
 #sample_rate 0: 22050
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,       28,       30, 0x51750711
 0,         28,         28,       28,       30, 0x9ca20c2a

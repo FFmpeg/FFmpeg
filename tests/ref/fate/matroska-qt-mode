@@ -10,7 +10,6 @@
 #media_type 1: audio
 #codec_id 1: pcm_u8
 #sample_rate 1: 22050
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 0,          0,          0,       66,     3340, 0xcdb26464
 1,          0,          0,       46,     1024, 0x3c0f001e

@@ -7,7 +7,6 @@
 #media_type 1: audio
 #codec_id 1: pcm_s8_planar
 #sample_rate 1: 11025
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 0,          0,          0,        1,    22688, 0xc954a244
 1,          0,          0,     1884,     1884, 0x06925e3e

@@ -10,7 +10,6 @@ eaeb2b429cadcfd3d0984e2270126564 *tests/data/fate/autorotate.mov
 #media_type 1: audio
 #codec_id 1: ac3
 #sample_rate 1: 44100
-#channel_layout 1: 4
 #channel_layout_name 1: mono
 0,       -512,          0,      512,     6997, 0x55c700f6, S=1,       40
 1,       -256,       -256,     1536,      416, 0x92ddc529, S=2,       10,        4

@@ -5,7 +5,6 @@ a00bd18f70b66286e67d84f0df034a48 *tests/data/fate/caf-amr_nb-remux.caf
 #media_type 0: audio
 #codec_id 0: amr_nb
 #sample_rate 0: 8000
-#channel_layout 0: 4
 #channel_layout_name 0: mono
 0,          0,          0,      160,       13, 0x2bf906f6
 0,        160,        160,      160,       13, 0x28bd0756

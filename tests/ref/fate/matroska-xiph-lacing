@@ -3,7 +3,6 @@
 #media_type 0: audio
 #codec_id 0: vorbis
 #sample_rate 0: 44100
-#channel_layout 0: 3
 #channel_layout_name 0: stereo
 0,          0,          0,      128,       84, 0x1beb2cc9
 0,        128,        128,      576,      533, 0xa5d425e9
