@@ -2,6 +2,9 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.2.14:
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for handling braces
+- avcodec/htmlsubtitles: Fixes denial of service due to use of sscanf in inner loop for tag scaning
+- avcodec/htmlsubtitles: Be a bit more picky on syntax
 - libswcale: Fix possible string overflow in test.
 - avcodec/hq_hqa: Check available space before reading slice offsets
 - lavf/webm_chunk: Respect buffer size
