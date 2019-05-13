@@ -54,8 +54,9 @@ static int msf_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     codec                  = avio_rb32(s->pb);
-    st->codecpar->channels    = avio_rb32(s->pb);
-    if (st->codecpar->channels <= 0 || st->codecpar->channels >= INT_MAX / 1024)
+    st->codecpar->ch_layout.nb_channels = avio_rb32(s->pb);
+    if (st->codecpar->ch_layout.nb_channels <= 0 ||
+        st->codecpar->ch_layout.nb_channels >= INT_MAX / 1024)
         return AVERROR_INVALIDDATA;
     size = avio_rb32(s->pb);
     st->codecpar->sample_rate = avio_rb32(s->pb);
@@ -65,19 +66,19 @@ static int msf_read_header(AVFormatContext *s)
     switch (codec) {
     case 0: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16BE; break;
     case 1: st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE; break;
-    case 3: st->codecpar->block_align = 16 * st->codecpar->channels;
+    case 3: st->codecpar->block_align = 16 * st->codecpar->ch_layout.nb_channels;
             st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX; break;
     case 4:
     case 5:
-    case 6: st->codecpar->block_align = (codec == 4 ? 96 : codec == 5 ? 152 : 192) * st->codecpar->channels;
-            if (st->codecpar->channels > UINT16_MAX / 2048)
+    case 6: st->codecpar->block_align = (codec == 4 ? 96 : codec == 5 ? 152 : 192) * st->codecpar->ch_layout.nb_channels;
+            if (st->codecpar->ch_layout.nb_channels > UINT16_MAX / 2048)
                 return AVERROR_INVALIDDATA;
             ret = ff_alloc_extradata(st->codecpar, 14);
             if (ret < 0)
                 return ret;
             memset(st->codecpar->extradata, 0, st->codecpar->extradata_size);
             AV_WL16(st->codecpar->extradata, 1); /* version */
-            AV_WL16(st->codecpar->extradata+2, 2048 * st->codecpar->channels); /* unknown size */
+            AV_WL16(st->codecpar->extradata+2, 2048 * st->codecpar->ch_layout.nb_channels); /* unknown size */
             AV_WL16(st->codecpar->extradata+6, codec == 4 ? 1 : 0); /* joint stereo */
             AV_WL16(st->codecpar->extradata+8, codec == 4 ? 1 : 0); /* joint stereo (repeat?) */
             AV_WL16(st->codecpar->extradata+10, 1);
@@ -99,7 +100,7 @@ static int msf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    return av_get_packet(s->pb, pkt, par->block_align ? par->block_align : 1024 * par->channels);
+    return av_get_packet(s->pb, pkt, par->block_align ? par->block_align : 1024 * par->ch_layout.nb_channels);
 }
 
 const AVInputFormat ff_msf_demuxer = {
