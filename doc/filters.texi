@@ -6449,6 +6449,11 @@ The color which will not be replaced with neutral chroma.
 Similarity percentage with the above color.
 0.01 matches only the exact key color, while 1.0 matches everything.
 
+@item blend
+Blend percentage.
+0.0 makes pixels either fully gray, or not gray at all.
+Higher values result in more preserved color.
+
 @item yuv
 Signals that the color passed is already in YUV instead of RGB.
 

@@ -128,7 +128,12 @@ static int do_chromahold_slice(AVFilterContext *avctx, void *arg, int jobnr, int
             diff = sqrt((du * du + dv * dv) / (255.0 * 255.0));
 
             alpha = diff > ctx->similarity;
-            if (alpha) {
+            if (ctx->blend > 0.0001) {
+                double f = 1. - av_clipd((diff - ctx->similarity) / ctx->blend, 0.0, 1.0);
+
+                frame->data[1][frame->linesize[1] * y + x] = 128 + (u - 128) * f;
+                frame->data[2][frame->linesize[2] * y + x] = 128 + (v - 128) * f;
+            } else if (alpha) {
                 frame->data[1][frame->linesize[1] * y + x] = 128;
                 frame->data[2][frame->linesize[2] * y + x] = 128;
             }
@@ -262,6 +267,7 @@ AVFilter ff_vf_chromakey = {
 static const AVOption chromahold_options[] = {
     { "color", "set the chromahold key color", OFFSET(chromakey_rgba), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "similarity", "set the chromahold similarity value", OFFSET(similarity), AV_OPT_TYPE_FLOAT, { .dbl = 0.01 }, 0.01, 1.0, FLAGS },
+    { "blend", "set the chromahold blend value", OFFSET(blend), AV_OPT_TYPE_FLOAT, { .dbl = 0.0 }, 0.0, 1.0, FLAGS },
     { "yuv", "color parameter is in yuv instead of rgb", OFFSET(is_yuv), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, FLAGS },
     { NULL }
 };
