@@ -42,7 +42,7 @@ static AVStream *aptx_read_header_common(AVFormatContext *s)
         return NULL;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->format = AV_SAMPLE_FMT_S32P;
-    st->codecpar->channels = 2;
+    st->codecpar->ch_layout.nb_channels = 2;
     st->codecpar->sample_rate = s1->sample_rate;
     st->start_time = 0;
     return st;
