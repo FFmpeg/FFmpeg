@@ -15316,6 +15316,12 @@ Scale a subtitle stream (b) to match the main video (a) in size before overlayin
 @example
 'scale2ref[b][a];[a][b]overlay'
 @end example
+
+@item
+Scale a logo to 1/10th the height of a video, while preserving its display aspect ratio.
+@example
+[logo-in][video-in]scale2ref=w=oh*mdar:h=ih/10[logo-out][video-out]
+@end example
 @end itemize
 
 @anchor{selectivecolor}
