@@ -88,7 +88,7 @@ static int read_header(AVFormatContext *s)
     }
 
     st->codecpar->frame_size=80;
-    st->codecpar->channels=1;
+    st->codecpar->ch_layout.nb_channels = 1;
     avpriv_set_pts_info(st, 64, 1, 100);
 
     st->codecpar->codec_id=AV_CODEC_ID_G729;
