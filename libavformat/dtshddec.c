@@ -104,7 +104,7 @@ static int dtshd_read_header(AVFormatContext *s)
             duration *= avio_rb16(pb); // samples_per_frames
             st->duration = duration;
             avio_skip(pb, 5);
-            st->codecpar->channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
+            st->codecpar->ch_layout.nb_channels = ff_dca_count_chs_for_mask(avio_rb16(pb));
             st->codecpar->initial_padding = avio_rb16(pb);
             avio_skip(pb, chunk_size - 21);
             break;
