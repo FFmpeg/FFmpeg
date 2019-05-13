@@ -308,22 +308,22 @@ static int fileTest(uint8_t *ref[4], int refStride[4], int w, int h, FILE *fp,
     while (fgets(buf, sizeof(buf), fp)) {
         struct Results r;
         enum AVPixelFormat srcFormat;
-        char srcStr[13];
+        char srcStr[21];
         int srcW = 0, srcH = 0;
         enum AVPixelFormat dstFormat;
-        char dstStr[13];
+        char dstStr[21];
         int dstW = 0, dstH = 0;
         int flags;
         int ret;
 
         ret = sscanf(buf,
-                     " %12s %dx%d -> %12s %dx%d flags=%d CRC=%x"
+                     " %20s %dx%d -> %20s %dx%d flags=%d CRC=%x"
                      " SSD=%"SCNu64 ", %"SCNu64 ", %"SCNu64 ", %"SCNu64 "\n",
                      srcStr, &srcW, &srcH, dstStr, &dstW, &dstH,
                      &flags, &r.crc, &r.ssdY, &r.ssdU, &r.ssdV, &r.ssdA);
         if (ret != 12) {
             srcStr[0] = dstStr[0] = 0;
-            ret       = sscanf(buf, "%12s -> %12s\n", srcStr, dstStr);
+            ret       = sscanf(buf, "%20s -> %20s\n", srcStr, dstStr);
         }
 
         srcFormat = av_get_pix_fmt(srcStr);
