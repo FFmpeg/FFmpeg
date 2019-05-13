@@ -1446,8 +1446,7 @@ static av_cold int sbg_read_header(AVFormatContext *avf)
     sti = ffstream(st);
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id       = AV_CODEC_ID_FFWAVESYNTH;
-    st->codecpar->channels       = 2;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    st->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->codecpar->sample_rate    = sbg->sample_rate;
     st->codecpar->frame_size     = sbg->frame_size;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
