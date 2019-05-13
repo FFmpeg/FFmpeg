@@ -209,8 +209,8 @@ static int read_header(AVFormatContext *s)
 
     loop = avio_r8(s->pb); // loop flag
     st->codecpar->codec_id = codec;
-    st->codecpar->channels = avio_r8(s->pb);
-    if (!st->codecpar->channels)
+    st->codecpar->ch_layout.nb_channels = avio_r8(s->pb);
+    if (!st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
     avio_skip(s->pb, 1); // padding
@@ -246,14 +246,14 @@ static int read_header(AVFormatContext *s)
     }
 
     b->block_size = read32(s);
-    if (b->block_size > UINT32_MAX / st->codecpar->channels)
+    if (b->block_size > UINT32_MAX / st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
     b->samples_per_block = read32(s);
     b->last_block_used_bytes = read32(s);
     b->last_block_samples = read32(s);
     b->last_block_size = read32(s);
-    if (b->last_block_size > UINT32_MAX / st->codecpar->channels)
+    if (b->last_block_size > UINT32_MAX / st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
     if (b->last_block_used_bytes > b->last_block_size)
         return AVERROR_INVALIDDATA;
@@ -266,24 +266,24 @@ static int read_header(AVFormatContext *s)
         if (!bfstm)
             toffset = read32(s) + 16LL;
         else
-            toffset = toffset + read32(s) + st->codecpar->channels * 8 - 8;
+            toffset = toffset + read32(s) + st->codecpar->ch_layout.nb_channels * 8 - 8;
         if (toffset > size)
             return AVERROR_INVALIDDATA;
 
         if (!bfstm) {
-            avio_skip(s->pb, pos + toffset - avio_tell(s->pb) - 8LL * (st->codecpar->channels + 1));
-            for (ch = 0; ch < st->codecpar->channels; ch++) {
+            avio_skip(s->pb, pos + toffset - avio_tell(s->pb) - 8LL * (st->codecpar->ch_layout.nb_channels + 1));
+            for (ch = 0; ch < st->codecpar->ch_layout.nb_channels; ch++) {
                 avio_skip(s->pb, 4);
                 b->offsets[ch].channel = ch;
                 b->offsets[ch].offset = read32(s);
             }
 
-            qsort(b->offsets, st->codecpar->channels, sizeof(*b->offsets), sort_offsets);
+            qsort(b->offsets, st->codecpar->ch_layout.nb_channels, sizeof(*b->offsets), sort_offsets);
         }
 
         avio_skip(s->pb, pos + toffset - avio_tell(s->pb));
 
-        for (ch = 0; ch < st->codecpar->channels; ch++) {
+        for (ch = 0; ch < st->codecpar->ch_layout.nb_channels; ch++) {
             if (!bfstm)
                 avio_skip(s->pb, pos + 16LL + b->offsets[ch].offset - avio_tell(s->pb));
 
@@ -313,7 +313,7 @@ static int read_header(AVFormatContext *s)
                 codec != AV_CODEC_ID_ADPCM_THP_LE)
                 goto skip;
 
-            asize = b->block_count * st->codecpar->channels * 4;
+            asize = b->block_count * st->codecpar->ch_layout.nb_channels * 4;
             if (size < asize)
                 return AVERROR_INVALIDDATA;
             if (b->adpc) {
@@ -369,6 +369,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecParameters *par = s->streams[0]->codecpar;
     BRSTMDemuxContext *b = s->priv_data;
     uint32_t samples, size, skip = 0;
+    int channels = par->ch_layout.nb_channels;
     int ret, i;
 
     if (avio_feof(s->pb))
@@ -404,24 +405,24 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         if (size > (INT_MAX - 32 - 4) ||
-            (32 + 4 + size) > (INT_MAX / par->channels) ||
-            (32 + 4 + size) * par->channels > INT_MAX - 8)
+            (32 + 4 + size) > (INT_MAX / channels) ||
+            (32 + 4 + size) * channels > INT_MAX - 8)
             return AVERROR_INVALIDDATA;
-        if ((ret = av_new_packet(pkt, 8 + (32 + 4 + size) * par->channels)) < 0)
+        if ((ret = av_new_packet(pkt, 8 + (32 + 4 + size) * channels)) < 0)
             return ret;
         dst = pkt->data;
         if (par->codec_id == AV_CODEC_ID_ADPCM_THP_LE) {
-            bytestream_put_le32(&dst, size * par->channels);
+            bytestream_put_le32(&dst, size * channels);
             bytestream_put_le32(&dst, samples);
         } else {
-            bytestream_put_be32(&dst, size * par->channels);
+            bytestream_put_be32(&dst, size * channels);
             bytestream_put_be32(&dst, samples);
         }
-        bytestream_put_buffer(&dst, b->table, 32 * par->channels);
-        bytestream_put_buffer(&dst, b->adpc + 4 * par->channels *
-                                    (b->current_block - 1), 4 * par->channels);
+        bytestream_put_buffer(&dst, b->table, 32 * channels);
+        bytestream_put_buffer(&dst, b->adpc + 4 * channels *
+                                    (b->current_block - 1), 4 * channels);
 
-        for (i = 0; i < par->channels; i++) {
+        for (i = 0; i < channels; i++) {
             ret = avio_read(s->pb, dst, size);
             dst += size;
             avio_skip(s->pb, skip);
@@ -431,7 +432,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         pkt->duration = samples;
     } else {
-        size *= par->channels;
+        size *= channels;
         ret = av_get_packet(s->pb, pkt, size);
     }
 
@@ -456,7 +457,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
     if (timestamp >= b->block_count)
         timestamp = b->block_count - 1;
     ret = avio_seek(s->pb, b->data_start + timestamp * b->block_size *
-                           st->codecpar->channels, SEEK_SET);
+                           st->codecpar->ch_layout.nb_channels, SEEK_SET);
     if (ret < 0)
         return ret;
 
