@@ -395,7 +395,7 @@ retry:
         default: avpriv_request_sample(s, "Unknown audio codec %X", dhav->audio_codec);
         }
         st->duration              = dhav->duration;
-        st->codecpar->channels    = dhav->audio_channels;
+        st->codecpar->ch_layout.nb_channels = dhav->audio_channels;
         st->codecpar->sample_rate = dhav->sample_rate;
         st->priv_data = dst = av_mallocz(sizeof(DHAVStream));
         if (!st->priv_data)
