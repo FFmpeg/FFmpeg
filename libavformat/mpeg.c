@@ -621,8 +621,7 @@ skip:
     st->codecpar->codec_id   = codec_id;
     if (   st->codecpar->codec_id == AV_CODEC_ID_PCM_MULAW
         || st->codecpar->codec_id == AV_CODEC_ID_PCM_ALAW) {
-        st->codecpar->channels = 1;
-        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
         st->codecpar->sample_rate = 8000;
     }
     sti->request_probe = request_probe;
