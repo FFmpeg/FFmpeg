@@ -68,7 +68,7 @@ static int epaf_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channels    = channels;
+    st->codecpar->ch_layout.nb_channels = channels;
     st->codecpar->sample_rate = sample_rate;
     switch (codec) {
     case 0:
@@ -84,7 +84,8 @@ static int epaf_read_header(AVFormatContext *s)
     }
 
     st->codecpar->bits_per_coded_sample = av_get_bits_per_sample(st->codecpar->codec_id);
-    st->codecpar->block_align = st->codecpar->bits_per_coded_sample * st->codecpar->channels / 8;
+    st->codecpar->block_align = st->codecpar->bits_per_coded_sample *
+                                st->codecpar->ch_layout.nb_channels / 8;
 
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
