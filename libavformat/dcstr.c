@@ -41,7 +41,7 @@ static int dcstr_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channels    = avio_rl32(s->pb);
+    st->codecpar->ch_layout.nb_channels = avio_rl32(s->pb);
     st->codecpar->sample_rate = avio_rl32(s->pb);
     if (st->codecpar->sample_rate <= 0)
         return AVERROR_INVALIDDATA;
@@ -50,14 +50,16 @@ static int dcstr_read_header(AVFormatContext *s)
     avio_skip(s->pb, 4);
     st->duration           = avio_rl32(s->pb);
     mult                   = avio_rl32(s->pb);
-    if (st->codecpar->channels <= 0 || mult <= 0 || mult > INT_MAX / st->codecpar->channels) {
-        av_log(s, AV_LOG_ERROR, "invalid number of channels %d x %d\n", st->codecpar->channels, mult);
+    if (st->codecpar->ch_layout.nb_channels <= 0 || mult <= 0 ||
+        mult > INT_MAX / st->codecpar->ch_layout.nb_channels) {
+        av_log(s, AV_LOG_ERROR, "invalid number of channels %d x %d\n",
+               st->codecpar->ch_layout.nb_channels, mult);
         return AVERROR_INVALIDDATA;
     }
-    st->codecpar->channels *= mult;
-    if (!align || align > INT_MAX / st->codecpar->channels)
+    st->codecpar->ch_layout.nb_channels *= mult;
+    if (!align || align > INT_MAX / st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
-    st->codecpar->block_align = align * st->codecpar->channels;
+    st->codecpar->block_align = align * st->codecpar->ch_layout.nb_channels;
 
     switch (codec) {
     case  4: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_AICA;       break;
