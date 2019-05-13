@@ -55,18 +55,18 @@ static int genh_read_header(AVFormatContext *s)
         return AVERROR(ENOMEM);
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->channels    = avio_rl32(s->pb);
-    if (st->codecpar->channels <= 0 || st->codecpar->channels > FF_SANE_NB_CHANNELS)
+    st->codecpar->ch_layout.nb_channels    = avio_rl32(s->pb);
+    if (st->codecpar->ch_layout.nb_channels <= 0)
         return AVERROR_INVALIDDATA;
-    if (st->codecpar->channels == 1)
-        st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
-    else if (st->codecpar->channels == 2)
-        st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
+    if (st->codecpar->ch_layout.nb_channels == 1)
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
+    else if (st->codecpar->ch_layout.nb_channels == 2)
+        st->codecpar->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     align                  =
     c->interleave_size     = avio_rl32(s->pb);
-    if (align < 0 || align > INT_MAX / st->codecpar->channels)
+    if (align < 0 || align > INT_MAX / st->codecpar->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
-    st->codecpar->block_align = align * st->codecpar->channels;
+    st->codecpar->block_align = align * st->codecpar->ch_layout.nb_channels;
     st->codecpar->sample_rate = avio_rl32(s->pb);
     avio_skip(s->pb, 4);
     st->duration = avio_rl32(s->pb);
@@ -76,7 +76,7 @@ static int genh_read_header(AVFormatContext *s)
     case  0: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_PSX;        break;
     case  1:
     case 11: st->codecpar->bits_per_coded_sample = 4;
-             st->codecpar->block_align = 36 * st->codecpar->channels;
+             st->codecpar->block_align = 36 * st->codecpar->ch_layout.nb_channels;
              st->codecpar->codec_id = AV_CODEC_ID_ADPCM_IMA_WAV;    break;
     case  2: st->codecpar->codec_id = AV_CODEC_ID_ADPCM_DTK;        break;
     case  3: st->codecpar->codec_id = st->codecpar->block_align > 0 ?
@@ -122,13 +122,13 @@ static int genh_read_header(AVFormatContext *s)
     coef_splitted[1] = avio_rl32(s->pb);
 
     if (st->codecpar->codec_id == AV_CODEC_ID_ADPCM_THP) {
-        if (st->codecpar->channels > 2) {
-            avpriv_request_sample(s, "channels %d>2", st->codecpar->channels);
+        if (st->codecpar->ch_layout.nb_channels > 2) {
+            avpriv_request_sample(s, "channels %d>2", st->codecpar->ch_layout.nb_channels);
             return AVERROR_PATCHWELCOME;
         }
 
-        ff_alloc_extradata(st->codecpar, 32 * st->codecpar->channels);
-        for (ch = 0; ch < st->codecpar->channels; ch++) {
+        ff_alloc_extradata(st->codecpar, 32 * st->codecpar->ch_layout.nb_channels);
+        for (ch = 0; ch < st->codecpar->ch_layout.nb_channels; ch++) {
             if (coef_type & 1) {
                 avpriv_request_sample(s, "coef_type & 1");
                 return AVERROR_PATCHWELCOME;
@@ -139,7 +139,7 @@ static int genh_read_header(AVFormatContext *s)
         }
 
         if (c->dsp_int_type == 1) {
-            st->codecpar->block_align = 8 * st->codecpar->channels;
+            st->codecpar->block_align = 8 * st->codecpar->ch_layout.nb_channels;
             if (c->interleave_size != 1 &&
                 c->interleave_size != 2 &&
                 c->interleave_size != 4)
@@ -164,16 +164,16 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (c->dsp_int_type == 1 && par->codec_id == AV_CODEC_ID_ADPCM_THP &&
-        par->channels > 1) {
+        par->ch_layout.nb_channels > 1) {
         int i, ch;
 
         if (avio_feof(s->pb))
             return AVERROR_EOF;
-        ret = av_new_packet(pkt, 8 * par->channels);
+        ret = av_new_packet(pkt, 8 * par->ch_layout.nb_channels);
         if (ret < 0)
             return ret;
         for (i = 0; i < 8 / c->interleave_size; i++) {
-            for (ch = 0; ch < par->channels; ch++) {
+            for (ch = 0; ch < par->ch_layout.nb_channels; ch++) {
                 pkt->data[ch * 8 + i*c->interleave_size+0] = avio_r8(s->pb);
                 pkt->data[ch * 8 + i*c->interleave_size+1] = avio_r8(s->pb);
             }
@@ -183,7 +183,8 @@ static int genh_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = av_get_packet(s->pb, pkt, par->block_align * 1024);
 
     } else {
-        ret = av_get_packet(s->pb, pkt, par->block_align ? par->block_align : 1024 * par->channels);
+        ret = av_get_packet(s->pb, pkt, par->block_align ? par->block_align :
+                                                           1024 * par->ch_layout.nb_channels);
     }
 
     pkt->stream_index = 0;
