@@ -55,8 +55,7 @@ static int adp_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type     = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id       = AV_CODEC_ID_ADPCM_DTK;
-    st->codecpar->channel_layout = AV_CH_LAYOUT_STEREO;
-    st->codecpar->channels       = 2;
+    st->codecpar->ch_layout      = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
     st->codecpar->sample_rate    = 48000;
     st->start_time            = 0;
     if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
