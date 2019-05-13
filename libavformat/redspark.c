@@ -97,26 +97,26 @@ static int redspark_read_header(AVFormatContext *s)
     st->duration = bytestream2_get_be32u(&gbc) * 14;
     redspark->samples_count = 0;
     bytestream2_skipu(&gbc, 10);
-    par->channels = bytestream2_get_byteu(&gbc);
-    if (!par->channels) {
+    par->ch_layout.nb_channels = bytestream2_get_byteu(&gbc);
+    if (!par->ch_layout.nb_channels) {
         return AVERROR_INVALIDDATA;
     }
 
-    coef_off = 0x54 + par->channels * 8;
+    coef_off = 0x54 + par->ch_layout.nb_channels * 8;
     if (bytestream2_get_byteu(&gbc)) // Loop flag
         coef_off += 16;
 
-    if (coef_off + par->channels * (32 + 14) > HEADER_SIZE) {
+    if (coef_off + par->ch_layout.nb_channels * (32 + 14) > HEADER_SIZE) {
         return AVERROR_INVALIDDATA;
     }
 
-    if (ff_alloc_extradata(par, 32 * par->channels)) {
+    if (ff_alloc_extradata(par, 32 * par->ch_layout.nb_channels)) {
         return AVERROR_INVALIDDATA;
     }
 
     /* Get the ADPCM table */
     bytestream2_seek(&gbc, coef_off, SEEK_SET);
-    for (i = 0; i < par->channels; i++) {
+    for (i = 0; i < par->ch_layout.nb_channels; i++) {
         if (bytestream2_get_bufferu(&gbc, par->extradata + i * 32, 32) != 32) {
             return AVERROR_INVALIDDATA;
         }
@@ -132,7 +132,7 @@ static int redspark_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     AVCodecParameters *par = s->streams[0]->codecpar;
     RedSparkContext *redspark = s->priv_data;
-    uint32_t size = 8 * par->channels;
+    uint32_t size = 8 * par->ch_layout.nb_channels;
     int ret;
 
     if (avio_feof(s->pb) || redspark->samples_count == s->streams[0]->duration)
