@@ -66,6 +66,8 @@ Set custom interval, in seconds, for seeking using left/right keys. Default is 1
 Disable graphical display.
 @item -noborder
 Borderless window.
+@item -alwaysontop
+Window always on top. Available on: X11 with SDL >= 2.0.5, Windows SDL >= 2.0.6.
 @item -volume
 Set the startup volume. 0 means silence, 100 means no volume reduction or
 amplification. Negative values are treated as 0, values above 100 are treated

@@ -324,6 +324,7 @@ static int seek_by_bytes = -1;
 static float seek_interval = 10;
 static int display_disable;
 static int borderless;
+static int alwaysontop;
 static int startup_volume = 100;
 static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
@@ -3581,6 +3582,7 @@ static const OptionDef options[] = {
     { "seek_interval", OPT_FLOAT | HAS_ARG, { &seek_interval }, "set seek interval for left/right keys, in seconds", "seconds" },
     { "nodisp", OPT_BOOL, { &display_disable }, "disable graphical display" },
     { "noborder", OPT_BOOL, { &borderless }, "borderless window" },
+    { "alwaysontop", OPT_BOOL, { &alwaysontop }, "window always on top" },
     { "volume", OPT_INT | HAS_ARG, { &startup_volume}, "set startup volume 0=min 100=max", "volume" },
     { "f", HAS_ARG, { .func_arg = opt_format }, "force format", "fmt" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, { .func_arg = opt_frame_pix_fmt }, "set pixel format", "format" },
@@ -3722,6 +3724,12 @@ int main(int argc, char **argv)
 
     if (!display_disable) {
         int flags = SDL_WINDOW_HIDDEN;
+        if (alwaysontop)
+#if SDL_VERSION_ATLEAST(2,0,5)
+            flags |= SDL_WINDOW_ALWAYS_ON_TOP;
+#else
+            av_log(NULL, AV_LOG_WARNING, "Your SDL version doesn't support SDL_WINDOW_ALWAYS_ON_TOP. Feature will be inactive.\n");
+#endif
         if (borderless)
             flags |= SDL_WINDOW_BORDERLESS;
         else
