@@ -8970,6 +8970,29 @@ a third argument may be supplied: a strftime() format string.
 By default, @var{YYYY-MM-DD HH:MM:SS} format will be used.
 @end table
 
+@subsection Commands
+
+This filter supports altering parameters via commands:
+@table @option
+@item reinit
+Alter existing filter parameters.
+
+Syntax for the argument is the same as for filter invocation, e.g.
+
+@example
+fontsize=56:fontcolor=green:text='Hello World'
+@end example
+
+Full filter invocation with sendcmd would look like this:
+
+@example
+sendcmd=c='56.0 drawtext reinit fontsize=56\:fontcolor=green\:text=Hello\\ World'
+@end example
+@end table
+
+If the entire argument can't be parsed or applied as valid values then the filter will
+continue with its existing parameters.
+
 @subsection Examples
 
 @itemize
