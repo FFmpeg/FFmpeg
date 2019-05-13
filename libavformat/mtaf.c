@@ -54,9 +54,9 @@ static int mtaf_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_MTAF;
-    st->codecpar->channels    = 2 * stream_count;
+    st->codecpar->ch_layout.nb_channels = 2 * stream_count;
     st->codecpar->sample_rate = 48000;
-    st->codecpar->block_align = 0x110 * st->codecpar->channels / 2;
+    st->codecpar->block_align = 0x110 * st->codecpar->ch_layout.nb_channels / 2;
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
     avio_seek(s->pb, 0x800, SEEK_SET);
