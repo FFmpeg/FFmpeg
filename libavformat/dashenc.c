@@ -1611,11 +1611,11 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         for (i = 0; i < s->nb_streams; i++) {
             OutputStream *os = &c->streams[i];
             if (os->ctx && os->ctx_inited) {
-                int file_size = avio_tell(os->ctx->pb);
+                int64_t file_size = avio_tell(os->ctx->pb);
                 av_write_trailer(os->ctx);
                 if (c->global_sidx) {
                     int j, start_index, start_number;
-                    int sidx_size = avio_tell(os->ctx->pb) - file_size;
+                    int64_t sidx_size = avio_tell(os->ctx->pb) - file_size;
                     get_start_index_number(os, c, &start_index, &start_number);
                     if (start_index >= os->nb_segments ||
                         os->segment_type != SEGMENT_TYPE_MP4)
