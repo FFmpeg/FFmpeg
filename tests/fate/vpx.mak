@@ -34,6 +34,9 @@ fate-vp31: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp3/vp31.avi
 FATE_SAMPLES_AVCONV += $(FATE_VP3-yes)
 fate-vp3: $(FATE_VP3-yes)
 
+FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP4) += fate-vp4
+fate-vp4: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp4/KTkvw8dg1J8.avi
+
 FATE_SAMPLES_AVCONV-$(call DEMDEC, AVI, VP5) += fate-vp5
 fate-vp5: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vp5/potter512-400-partial.avi -an
 
