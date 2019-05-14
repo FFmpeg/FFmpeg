@@ -391,6 +391,7 @@ static void mp3_update_xing(AVFormatContext *s)
     uint16_t tag_crc;
     uint8_t *toc;
     int i, rg_size;
+    int64_t old_pos = avio_tell(s->pb);
 
     /* replace "Xing" identification string with "Info" for CBR files. */
     if (!mp3->has_variable_bitrate)
@@ -450,7 +451,7 @@ static void mp3_update_xing(AVFormatContext *s)
 
     avio_seek(s->pb,  mp3->xing_frame_offset, SEEK_SET);
     avio_write(s->pb, mp3->xing_frame, mp3->xing_frame_size);
-    avio_seek(s->pb, 0, SEEK_END);
+    avio_seek(s->pb, old_pos, SEEK_SET);
 }
 
 static int mp3_write_trailer(struct AVFormatContext *s)
