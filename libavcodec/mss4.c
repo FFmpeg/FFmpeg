@@ -552,6 +552,11 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                "Empty frame found but it is not a skip frame.\n");
         return AVERROR_INVALIDDATA;
     }
+    mb_width  = FFALIGN(width,  16) >> 4;
+    mb_height = FFALIGN(height, 16) >> 4;
+
+    if (frame_type != SKIP_FRAME && 8*buf_size < 8*HEADER_SIZE + mb_width*mb_height)
+        return AVERROR_INVALIDDATA;
 
     if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
         return ret;
@@ -574,9 +579,6 @@ static int mss4_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     if ((ret = init_get_bits8(&gb, buf + HEADER_SIZE, buf_size - HEADER_SIZE)) < 0)
         return ret;
-
-    mb_width  = FFALIGN(width,  16) >> 4;
-    mb_height = FFALIGN(height, 16) >> 4;
     dst[0] = c->pic->data[0];
     dst[1] = c->pic->data[1];
     dst[2] = c->pic->data[2];
