@@ -84,9 +84,11 @@ static av_cold int init(AVFilterContext *ctx)
 
     if (!strcmp(ctx->filter->name, "xstack")) {
         if (!s->layout) {
-            if (s->nb_inputs == 2)
-                s->layout = "0_0|w0_0";
-            else {
+            if (s->nb_inputs == 2) {
+                s->layout = av_strdup("0_0|w0_0");
+                if (!s->layout)
+                    return AVERROR(ENOMEM);
+            } else {
                 av_log(ctx, AV_LOG_ERROR, "No layout specified.\n");
                 return AVERROR(EINVAL);
             }
