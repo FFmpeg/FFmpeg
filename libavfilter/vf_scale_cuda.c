@@ -357,7 +357,7 @@ static int call_resize_kernel(AVFilterContext *ctx, CUfunction func, int channel
         .res.pitch2D.numChannels = channels,
         .res.pitch2D.width = src_width,
         .res.pitch2D.height = src_height,
-        .res.pitch2D.pitchInBytes = src_pitch,
+        .res.pitch2D.pitchInBytes = src_pitch * pixel_size,
         .res.pitch2D.devPtr = (CUdeviceptr)src_dptr,
     };
 
