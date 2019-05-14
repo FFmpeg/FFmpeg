@@ -1535,6 +1535,9 @@ static int decode_frame_lscr(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret, nb_blocks, offset = 0;
 
+    if (avpkt->size < 2)
+        return AVERROR_INVALIDDATA;
+
     bytestream2_init(gb, avpkt->data, avpkt->size);
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
