@@ -272,6 +272,16 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
+
+            /* if the new-style channel layout is set, convert it to old one
+             * for old-style muxers */
+            if (par->ch_layout.nb_channels &&
+                !par->channels) {
+                par->channels       = par->ch_layout.nb_channels;
+                par->channel_layout = par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                      par->ch_layout.u.mask : 0;
+            }
+
             if (!par->block_align)
                 par->block_align = par->channels *
                                    av_get_bits_per_sample(par->codec_id) >> 3;
