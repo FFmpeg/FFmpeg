@@ -206,6 +206,18 @@ static int update_stream_avctx(AVFormatContext *s)
             }
         }
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (st->codecpar->ch_layout.nb_channels &&
+            !st->codecpar->channels) {
+            st->codecpar->channels = st->codecpar->ch_layout.nb_channels;
+            st->codecpar->channel_layout = st->codecpar->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                                           st->codecpar->ch_layout.u.mask : 0;
+
+        }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
         /* update internal codec context, for the parser */
         ret = avcodec_parameters_to_context(sti->avctx, st->codecpar);
         if (ret < 0)
@@ -1333,8 +1345,12 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                 return ret;
             st->codecpar->sample_rate = sti->avctx->sample_rate;
             st->codecpar->bit_rate = sti->avctx->bit_rate;
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
             st->codecpar->channels = sti->avctx->channels;
             st->codecpar->channel_layout = sti->avctx->channel_layout;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
             st->codecpar->codec_id = sti->avctx->codec_id;
         } else {
             /* free packet */

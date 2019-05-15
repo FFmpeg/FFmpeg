@@ -282,8 +282,24 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                                       par->ch_layout.u.mask : 0;
             }
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+            /* if the caller is using the deprecated channel layout API,
+             * convert it to the new style */
+            if (!par->ch_layout.nb_channels &&
+                par->channels) {
+                if (par->channel_layout) {
+                    av_channel_layout_from_mask(&par->ch_layout, par->channel_layout);
+                } else {
+                    par->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+                    par->ch_layout.nb_channels = par->channels;
+                }
+            }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
+
             if (!par->block_align)
-                par->block_align = par->channels *
+                par->block_align = par->ch_layout.nb_channels *
                                    av_get_bits_per_sample(par->codec_id) >> 3;
             break;
         case AVMEDIA_TYPE_VIDEO:

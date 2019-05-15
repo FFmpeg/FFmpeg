@@ -525,7 +525,7 @@ int av_find_best_stream(AVFormatContext *ic, enum AVMediaType type,
             continue;
         if (wanted_stream_nb >= 0 && real_stream_index != wanted_stream_nb)
             continue;
-        if (type == AVMEDIA_TYPE_AUDIO && !(par->channels && par->sample_rate))
+        if (type == AVMEDIA_TYPE_AUDIO && !(par->ch_layout.nb_channels && par->sample_rate))
             continue;
         if (decoder_ret) {
             decoder = ff_find_decoder(ic, st, par->codec_id);
@@ -1523,7 +1523,7 @@ static int match_stream_specifier(const AVFormatContext *s, const AVStream *st,
             int val;
             switch (par->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
-                val = par->sample_rate && par->channels;
+                val = par->sample_rate && par->ch_layout.nb_channels;
                 if (par->format == AV_SAMPLE_FMT_NONE)
                     return 0;
                 break;
