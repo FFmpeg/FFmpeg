@@ -894,7 +894,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 
         ctx->priv = old;
         uninit(ctx);
-        av_freep(old);
+        av_freep(&old);
 
         ctx->priv = new;
         return config_input(ctx->inputs[0]);
@@ -903,7 +903,7 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 
 fail:
     av_log(ctx, AV_LOG_ERROR, "Failed to process command. Continuing with existing parameters.\n");
-    av_freep(new);
+    av_freep(&new);
     return ret;
 }
 
