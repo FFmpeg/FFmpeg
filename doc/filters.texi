@@ -18231,6 +18231,10 @@ implemented based on the de-interlace algorithm written by Jim
 Easterbrook for BBC R&D, the Weston 3 field deinterlacing filter
 uses filter coefficients calculated by BBC R&D.
 
+This filter use field-dominance information in frame to decide which
+of each pair of fields to place first in the output.
+If it gets it wrong use @ref{setfield} filter before @code{w3fdif} filter.
+
 There are two sets of filter coefficients, so called "simple":
 and "complex". Which set of filter coefficients is used can
 be set by passing an optional parameter:
