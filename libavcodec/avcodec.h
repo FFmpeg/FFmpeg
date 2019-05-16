@@ -924,6 +924,11 @@ typedef struct RcOverride{
 #define AV_CODEC_FLAG2_IGNORE_CROP    (1 << 16)
 
 /**
+ * Produce fake audio silence frame after drainning done.
+ */
+#define AV_CODEC_FLAG2_DRAIN_SILENCE    (1 << 18)
+
+/**
  * Show all frames before the first keyframe
  */
 #define AV_CODEC_FLAG2_SHOW_ALL       (1 << 22)
