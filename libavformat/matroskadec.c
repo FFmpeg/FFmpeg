@@ -882,9 +882,6 @@ static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
 {
     int n = 0;
 
-    if (size > 8)
-        return AVERROR_INVALIDDATA;
-
     /* big-endian ordering; build up number */
     *num = 0;
     while (n++ < size)
@@ -900,9 +897,6 @@ static int ebml_read_uint(AVIOContext *pb, int size, uint64_t *num)
 static int ebml_read_sint(AVIOContext *pb, int size, int64_t *num)
 {
     int n = 1;
-
-    if (size > 8)
-        return AVERROR_INVALIDDATA;
 
     if (size == 0) {
         *num = 0;
@@ -1161,6 +1155,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
 {
     static const uint64_t max_lengths[EBML_TYPE_COUNT] = {
         [EBML_UINT]  = 8,
+        [EBML_SINT]  = 8,
         [EBML_FLOAT] = 8,
         // max. 16 MB for strings
         [EBML_STR]   = 0x1000000,
