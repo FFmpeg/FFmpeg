@@ -20,6 +20,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 typedef struct SeparateFieldsContext {
@@ -101,21 +102,51 @@ clone:
     return ff_filter_frame(outlink, inpicref);
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int flush_frame(AVFilterLink *outlink, int64_t pts, int64_t *out_pts)
 {
     AVFilterContext *ctx = outlink->src;
     SeparateFieldsContext *s = ctx->priv;
-    int ret;
+    int ret = 0;
 
-    ret = ff_request_frame(ctx->inputs[0]);
-    if (ret == AVERROR_EOF && s->second) {
-        s->second->pts *= 2;
+    if (s->second) {
+        *out_pts = s->second->pts += pts;
         extract_field(s->second, s->nb_planes, s->second->top_field_first);
         ret = ff_filter_frame(outlink, s->second);
-        s->second = 0;
+        s->second = NULL;
     }
 
     return ret;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *in;
+    int64_t pts;
+    int ret, status;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    ret = ff_inlink_consume_frame(inlink, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    if (ff_inlink_acknowledge_status(inlink, &status, &pts)) {
+        if (status == AVERROR_EOF) {
+            int64_t out_pts = pts;
+
+            ret = flush_frame(outlink, pts, &out_pts);
+            ff_outlink_set_status(outlink, status, out_pts);
+            return ret;
+        }
+    }
+
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -129,7 +160,6 @@ static const AVFilterPad separatefields_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -139,7 +169,6 @@ static const AVFilterPad separatefields_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_props_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -148,6 +177,7 @@ AVFilter ff_vf_separatefields = {
     .name        = "separatefields",
     .description = NULL_IF_CONFIG_SMALL("Split input video frames into fields."),
     .priv_size   = sizeof(SeparateFieldsContext),
+    .activate    = activate,
     .uninit      = uninit,
     .inputs      = separatefields_inputs,
     .outputs     = separatefields_outputs,
