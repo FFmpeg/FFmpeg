@@ -697,7 +697,7 @@ static int gen_mdct_exptab(AVTXContext *s, int len4, double scale)
 
 av_cold void av_tx_uninit(AVTXContext **ctx)
 {
-    if (!ctx)
+    if (!(*ctx))
         return;
 
     av_free((*ctx)->pfatab);
