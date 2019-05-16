@@ -194,12 +194,12 @@ static void subband_scale(int *dst, int *src, int scale, int offset, int len)
 
 static void noise_scale(int *coefs, int scale, int band_energy, int len)
 {
-    int ssign = scale < 0 ? -1 : 1;
-    int s = FFABS(scale);
+    int s = -scale;
     unsigned int round;
     int i, out, c = exp2tab[s & 3];
     int nlz = 0;
 
+    av_assert0(s >= 0);
     while (band_energy > 0x7fff) {
         band_energy >>= 1;
         nlz++;
@@ -215,7 +215,7 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
         round = s ? 1 << (s-1) : 0;
         for (i=0; i<len; i++) {
             out = (int)(((int64_t)coefs[i] * c) >> 32);
-            coefs[i] = ((int)(out+round) >> s) * ssign;
+            coefs[i] = -((int)(out+round) >> s);
         }
     }
     else {
@@ -223,7 +223,7 @@ static void noise_scale(int *coefs, int scale, int band_energy, int len)
         round = s ? 1 << (s-1) : 0;
         for (i=0; i<len; i++) {
             out = (int)((int64_t)((int64_t)coefs[i] * c + round) >> s);
-            coefs[i] = out * ssign;
+            coefs[i] = -out;
         }
     }
 }
