@@ -722,15 +722,10 @@ static const EbmlSyntax matroska_cluster_parsing[] = {
     { MATROSKA_ID_SIMPLEBLOCK,     EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_CLUSTERPOSITION, EBML_NONE },
     { MATROSKA_ID_CLUSTERPREVSIZE, EBML_NONE },
-    { MATROSKA_ID_INFO,            EBML_NONE },
-    { MATROSKA_ID_CUES,            EBML_NONE },
-    { MATROSKA_ID_TAGS,            EBML_NONE },
-    { MATROSKA_ID_SEEKHEAD,        EBML_NONE },
-    { MATROSKA_ID_CLUSTER,         EBML_STOP },
-    { 0 } /* We don't want to go back to level 0, so don't add the parent. */
+    CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_cluster[] = {
+static const EbmlSyntax matroska_cluster_initial[] = {
     { MATROSKA_ID_CLUSTERTIMECODE, EBML_UINT, 0, offsetof(MatroskaCluster, timecode) },
     { MATROSKA_ID_BLOCKGROUP,      EBML_STOP },
     { MATROSKA_ID_SIMPLEBLOCK,     EBML_STOP },
@@ -739,12 +734,20 @@ static const EbmlSyntax matroska_cluster[] = {
     CHILD_OF(matroska_segment)
 };
 
+static const EbmlSyntax matroska_cluster_enter[] = {
+    { MATROSKA_ID_CLUSTER,     EBML_NEST, 0, 0, { .n = matroska_cluster_initial } },
+    { 0 }
+};
+
 static const EbmlSyntax matroska_clusters[] = {
-    { MATROSKA_ID_CLUSTER,  EBML_NEST, 0, 0, { .n = matroska_cluster } },
-    { MATROSKA_ID_INFO,     EBML_NONE },
-    { MATROSKA_ID_CUES,     EBML_NONE },
-    { MATROSKA_ID_TAGS,     EBML_NONE },
-    { MATROSKA_ID_SEEKHEAD, EBML_NONE },
+    { MATROSKA_ID_CLUSTER,     EBML_STOP },
+    { MATROSKA_ID_CUES,        EBML_NONE },
+    { MATROSKA_ID_TAGS,        EBML_NONE },
+    { MATROSKA_ID_INFO,        EBML_NONE },
+    { MATROSKA_ID_TRACKS,      EBML_NONE },
+    { MATROSKA_ID_ATTACHMENTS, EBML_NONE },
+    { MATROSKA_ID_CHAPTERS,    EBML_NONE },
+    { MATROSKA_ID_SEEKHEAD,    EBML_NONE },
     { 0 } /* We don't want to go back to level 0, so don't add the parent. */
 };
 #undef CHILD_OF
@@ -812,24 +815,6 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 
     matroska->done = 1;
     return pb->error ? pb->error : AVERROR_EOF;
-}
-
-/*
- * Return: Whether we reached the end of a level in the hierarchy or not.
- */
-static int ebml_level_end(MatroskaDemuxContext *matroska)
-{
-    AVIOContext *pb = matroska->ctx->pb;
-    int64_t pos = avio_tell(pb);
-
-    if (matroska->num_levels > 0) {
-        MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
-        if (pos - level->start >= level->length || matroska->current_id) {
-            matroska->num_levels--;
-            return 1;
-        }
-    }
-    return (matroska->is_live && matroska->ctx->pb->eof_reached) ? 1 : 0;
 }
 
 /*
@@ -3604,49 +3589,52 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     MatroskaCluster *cluster = &matroska->current_cluster;
     MatroskaBlock     *block = &cluster->block;
     int res;
-    res = ebml_parse(matroska,
-                     matroska_cluster_parsing,
-                     cluster);
-    if (res == 1) {
-        /* New Cluster */
-        if (cluster->pos)
-            ebml_level_end(matroska);
-        cluster->pos = avio_tell(matroska->ctx->pb);
-        /* sizeof the ID which was already read */
-        if (matroska->current_id)
-            cluster->pos -= 4;
-        res = ebml_parse(matroska,
-                         matroska_clusters,
-                         cluster);
-        /* Try parsing the block again. */
-        if (res == 1)
-            res = ebml_parse(matroska,
-                             matroska_cluster_parsing,
-                             cluster);
-        else
-            cluster->pos = 0;
+
+    av_assert0(matroska->num_levels <= 2);
+
+    if (matroska->num_levels == 1) {
+        res = ebml_parse(matroska, matroska_clusters, NULL);
+
+        if (res == 1) {
+            /* Found a cluster: subtract the size of the ID already read. */
+            cluster->pos = avio_tell(matroska->ctx->pb) - 4;
+
+            res = ebml_parse(matroska, matroska_cluster_enter, cluster);
+            if (res < 0)
+                return res;
+        }
     }
 
-    if (res >= 0 && block->bin.size > 0) {
+    if (matroska->num_levels == 2) {
+        int err = 0;
+        /* We are inside a cluster. */
+        res = ebml_parse(matroska, matroska_cluster_parsing, cluster);
+
+        if (res >= 0 && block->bin.size > 0) {
             int is_keyframe = block->non_simple ? block->reference == INT64_MIN : -1;
             uint8_t* additional = block->additional.size > 0 ?
                                     block->additional.data : NULL;
 
-            res = matroska_parse_block(matroska, block->bin.buf, block->bin.data,
+            err = matroska_parse_block(matroska, block->bin.buf, block->bin.data,
                                        block->bin.size, block->bin.pos,
-                                       matroska->current_cluster.timecode,
-                                       block->duration, is_keyframe,
-                                       additional, block->additional_id,
-                                       block->additional.size,
-                                       cluster->pos,
+                                       cluster->timecode, block->duration,
+                                       is_keyframe, additional, block->additional_id,
+                                       block->additional.size, cluster->pos,
                                        block->discard_padding);
-    }
+        }
 
     if (res == LEVEL_ENDED)
         cluster->pos = 0;
 
     ebml_free(matroska_blockgroup, block);
     memset(block, 0, sizeof(*block));
+
+        if (err < 0)
+            return err;
+    } else if (!matroska->num_levels) {
+        matroska->done = 1;
+        return AVERROR_EOF;
+    }
 
     return res;
 }
