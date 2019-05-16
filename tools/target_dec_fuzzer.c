@@ -137,6 +137,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint8_t *last = data;
     const uint8_t *end = data + size;
     uint32_t it = 0;
+    uint64_t ec_pixels = 0;
     int (*decode_handler)(AVCodecContext *avctx, AVFrame *picture,
                           int *got_picture_ptr,
                           const AVPacket *avpkt) = NULL;
@@ -244,7 +245,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             av_frame_unref(frame);
             int ret = decode_handler(ctx, frame, &got_frame, &avpkt);
 
-            if (it > 20)
+            ec_pixels += ctx->width * ctx->height;
+            if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
                 ctx->error_concealment = 0;
 
             if (ret <= 0 || ret > avpkt.size)
