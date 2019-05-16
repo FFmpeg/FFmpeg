@@ -1390,7 +1390,10 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             matroska->cues_parsing_deferred = 0;
         if (syntax->type == EBML_LEVEL1 &&
             (level1_elem = matroska_find_level1_elem(matroska, syntax->id))) {
-            if (level1_elem->parsed)
+            if (!level1_elem->pos) {
+                // Zero is not a valid position for a level 1 element.
+                level1_elem->pos = pos;
+            } else if (level1_elem->pos != pos)
                 av_log(matroska->ctx, AV_LOG_ERROR, "Duplicate element\n");
             level1_elem->parsed = 1;
         }
