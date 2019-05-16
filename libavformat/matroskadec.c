@@ -2788,7 +2788,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
 
     if (!type) {
         *laces    = 1;
-        *lace_buf = av_mallocz(sizeof(int));
+        *lace_buf = av_malloc(sizeof(**lace_buf));
         if (!*lace_buf)
             return AVERROR(ENOMEM);
 
@@ -2800,7 +2800,7 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     *laces    = *data + 1;
     data     += 1;
     size     -= 1;
-    lace_size = av_mallocz(*laces * sizeof(int));
+    lace_size = av_malloc_array(*laces, sizeof(*lace_size));
     if (!lace_size)
         return AVERROR(ENOMEM);
 
@@ -2810,6 +2810,8 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
         uint8_t temp;
         uint32_t total = 0;
         for (n = 0; res == 0 && n < *laces - 1; n++) {
+            lace_size[n] = 0;
+
             while (1) {
                 if (size <= total) {
                     res = AVERROR_INVALIDDATA;
