@@ -1056,40 +1056,17 @@ static int matroska_ebmlnum_sint(MatroskaDemuxContext *matroska,
     return res;
 }
 
-static int ebml_parse_elem(MatroskaDemuxContext *matroska,
-                           EbmlSyntax *syntax, void *data);
+static int ebml_parse(MatroskaDemuxContext *matroska,
+                      EbmlSyntax *syntax, void *data);
 
-static int ebml_parse_id(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                         uint32_t id, void *data)
+static EbmlSyntax *ebml_parse_id(EbmlSyntax *syntax, uint32_t id)
 {
     int i;
     for (i = 0; syntax[i].id; i++)
         if (id == syntax[i].id)
             break;
-    if (!syntax[i].id && id == MATROSKA_ID_CLUSTER &&
-        matroska->num_levels > 0                   &&
-        matroska->levels[matroska->num_levels - 1].length == EBML_UNKNOWN_LENGTH)
-        return 0;  // we reached the end of an unknown size cluster
-    if (!syntax[i].id && id != EBML_ID_VOID && id != EBML_ID_CRC32) {
-        av_log(matroska->ctx, AV_LOG_DEBUG, "Unknown entry 0x%"PRIX32"\n", id);
-    }
-    return ebml_parse_elem(matroska, &syntax[i], data);
-}
 
-static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
-                      void *data)
-{
-    if (!matroska->current_id) {
-        uint64_t id;
-        int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id, 0);
-        if (res < 0) {
-            // in live mode, finish parsing if EOF is reached.
-            return (matroska->is_live && matroska->ctx->pb->eof_reached &&
-                    res == AVERROR_EOF) ? 1 : res;
-        }
-        matroska->current_id = id | 1 << 7 * res;
-    }
-    return ebml_parse_id(matroska, syntax, matroska->current_id, data);
+    return &syntax[i];
 }
 
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
@@ -1174,8 +1151,8 @@ static MatroskaLevel1Element *matroska_find_level1_elem(MatroskaDemuxContext *ma
     return elem;
 }
 
-static int ebml_parse_elem(MatroskaDemuxContext *matroska,
-                           EbmlSyntax *syntax, void *data)
+static int ebml_parse(MatroskaDemuxContext *matroska,
+                      EbmlSyntax *syntax, void *data)
 {
     static const uint64_t max_lengths[EBML_TYPE_COUNT] = {
         [EBML_UINT]  = 8,
@@ -1189,11 +1166,33 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         // no limits for anything else
     };
     AVIOContext *pb = matroska->ctx->pb;
-    uint32_t id = syntax->id;
+    uint32_t id;
     uint64_t length;
     int res;
     void *newelem;
     MatroskaLevel1Element *level1_elem;
+
+    if (!matroska->current_id) {
+        uint64_t id;
+        res = ebml_read_num(matroska, pb, 4, &id, 0);
+        if (res < 0) {
+            // in live mode, finish parsing if EOF is reached.
+            return (matroska->is_live && pb->eof_reached &&
+                    res == AVERROR_EOF) ? 1 : res;
+        }
+        matroska->current_id = id | 1 << 7 * res;
+    }
+
+    id = matroska->current_id;
+
+    syntax = ebml_parse_id(syntax, id);
+    if (!syntax->id && id == MATROSKA_ID_CLUSTER &&
+        matroska->num_levels > 0                 &&
+        matroska->levels[matroska->num_levels - 1].length == EBML_UNKNOWN_LENGTH)
+        return 0;  // we reached the end of an unknown size cluster
+    if (!syntax->id && id != EBML_ID_VOID && id != EBML_ID_CRC32) {
+        av_log(matroska->ctx, AV_LOG_DEBUG, "Unknown entry 0x%"PRIX32"\n", id);
+    }
 
     data = (char *) data + syntax->data_offset;
     if (syntax->list_elem_size) {
