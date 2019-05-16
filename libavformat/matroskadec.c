@@ -3491,8 +3491,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
             int is_keyframe = blocks[i].non_simple ? blocks[i].reference == INT64_MIN : -1;
             uint8_t* additional = blocks[i].additional.size > 0 ?
                                     blocks[i].additional.data : NULL;
-            if (!blocks[i].non_simple)
-                blocks[i].duration = 0;
+
             res = matroska_parse_block(matroska, blocks[i].bin.buf, blocks[i].bin.data,
                                        blocks[i].bin.size, blocks[i].bin.pos,
                                        matroska->current_cluster.timecode,
