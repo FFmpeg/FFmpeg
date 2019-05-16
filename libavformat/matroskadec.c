@@ -770,7 +770,6 @@ static int matroska_reset_status(MatroskaDemuxContext *matroska,
 
     matroska->current_id = id;
     matroska->num_levels = 1;
-    matroska->current_cluster.pos = 0;
     matroska->resync_pos = avio_tell(matroska->ctx->pb);
     if (id)
         matroska->resync_pos -= (av_log2(id) + 7) / 8;
@@ -1750,8 +1749,8 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
             }
         }
     }
-    /* Seek back - notice that in all instances where this is used it is safe
-     * to set the level to 1 and unset the position of the current cluster. */
+    /* Seek back - notice that in all instances where this is used
+     * it is safe to set the level to 1. */
     matroska_reset_status(matroska, saved_id, before_pos);
 
     return ret;
@@ -3606,7 +3605,6 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     }
 
     if (matroska->num_levels == 2) {
-        int err = 0;
         /* We are inside a cluster. */
         res = ebml_parse(matroska, matroska_cluster_parsing, cluster);
 
@@ -3615,7 +3613,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
             uint8_t* additional = block->additional.size > 0 ?
                                     block->additional.data : NULL;
 
-            err = matroska_parse_block(matroska, block->bin.buf, block->bin.data,
+            res = matroska_parse_block(matroska, block->bin.buf, block->bin.data,
                                        block->bin.size, block->bin.pos,
                                        cluster->timecode, block->duration,
                                        is_keyframe, additional, block->additional_id,
@@ -3623,14 +3621,8 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
                                        block->discard_padding);
         }
 
-    if (res == LEVEL_ENDED)
-        cluster->pos = 0;
-
     ebml_free(matroska_blockgroup, block);
     memset(block, 0, sizeof(*block));
-
-        if (err < 0)
-            return err;
     } else if (!matroska->num_levels) {
         matroska->done = 1;
         return AVERROR_EOF;
