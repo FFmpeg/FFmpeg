@@ -133,7 +133,7 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
 
     if (uses_superframe_syntax && s->n_cache > 0) {
         av_log(ctx, AV_LOG_ERROR,
-               "Mixing of superframe syntax and naked VP9 frames not supported");
+               "Mixing of superframe syntax and naked VP9 frames not supported\n");
         res = AVERROR(ENOSYS);
         goto done;
     } else if ((!invisible || uses_superframe_syntax) && !s->n_cache) {
@@ -142,7 +142,7 @@ static int vp9_superframe_filter(AVBSFContext *ctx, AVPacket *out)
         goto done;
     } else if (s->n_cache + 1 >= MAX_CACHE) {
         av_log(ctx, AV_LOG_ERROR,
-               "Too many invisible frames");
+               "Too many invisible frames\n");
         res = AVERROR_INVALIDDATA;
         goto done;
     }
