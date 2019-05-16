@@ -1281,15 +1281,20 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 av_log(matroska->ctx, AV_LOG_ERROR, "Unknown-sized element "
                        "at 0x%"PRIx64" inside parent with finite size\n", pos);
                 return AVERROR_INVALIDDATA;
-            } else if (id != MATROSKA_ID_CLUSTER) {
-                // According to the specifications only clusters and segments
-                // are allowed to be unknown-sized.
-                av_log(matroska->ctx, AV_LOG_ERROR,
-                       "Found unknown-sized element other than a cluster at "
-                       "0x%"PRIx64". Dropping the invalid element.\n", pos);
-                return AVERROR_INVALIDDATA;
-            } else
+            } else {
                 level_check = 0;
+                if (id != MATROSKA_ID_CLUSTER && (syntax->type == EBML_LEVEL1
+                                              ||  syntax->type == EBML_NEST)) {
+                    // According to the current specifications only clusters and
+                    // segments are allowed to be unknown-length. We also accept
+                    // other unknown-length master elements.
+                    av_log(matroska->ctx, AV_LOG_WARNING,
+                           "Found unknown-length element 0x%"PRIX32" other than "
+                           "a cluster at 0x%"PRIx64". Spec-incompliant, but "
+                           "parsing will nevertheless be attempted.\n", id, pos);
+                    update_pos = -1;
+                }
+            }
         } else
             level_check = 0;
 
@@ -1355,7 +1360,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             }
         }
 
-        if (update_pos) {
+        if (update_pos > 0) {
             // We have found an element that is allowed at this place
             // in the hierarchy and it passed all checks, so treat the beginning
             // of the element as the "last known good" position.
