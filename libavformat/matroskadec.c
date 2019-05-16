@@ -2715,15 +2715,19 @@ static int matroska_read_header(AVFormatContext *s)
             attachments[j].stream = st;
 
             if (st->codecpar->codec_id != AV_CODEC_ID_NONE) {
+                AVPacket *pkt = &st->attached_pic;
+
                 st->disposition         |= AV_DISPOSITION_ATTACHED_PIC;
                 st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
 
-                av_init_packet(&st->attached_pic);
-                if ((res = av_new_packet(&st->attached_pic, attachments[j].bin.size)) < 0)
-                    return res;
-                memcpy(st->attached_pic.data, attachments[j].bin.data, attachments[j].bin.size);
-                st->attached_pic.stream_index = st->index;
-                st->attached_pic.flags       |= AV_PKT_FLAG_KEY;
+                av_init_packet(pkt);
+                pkt->buf = av_buffer_ref(attachments[j].bin.buf);
+                if (!pkt->buf)
+                    return AVERROR(ENOMEM);
+                pkt->data         = attachments[j].bin.data;
+                pkt->size         = attachments[j].bin.size;
+                pkt->stream_index = st->index;
+                pkt->flags       |= AV_PKT_FLAG_KEY;
             } else {
                 st->codecpar->codec_type = AVMEDIA_TYPE_ATTACHMENT;
                 if (ff_alloc_extradata(st->codecpar, attachments[j].bin.size))
