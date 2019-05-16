@@ -1068,36 +1068,36 @@ static EbmlSyntax *ebml_parse_id(EbmlSyntax *syntax, uint32_t id)
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                            void *data)
 {
-    int i, res;
+    int res;
 
     if (data) {
-    for (i = 0; syntax[i].id; i++)
-        switch (syntax[i].type) {
-        case EBML_UINT:
-            *(uint64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.u;
-            break;
-        case EBML_SINT:
-            *(int64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.i;
-            break;
-        case EBML_FLOAT:
-            *(double *) ((char *) data + syntax[i].data_offset) = syntax[i].def.f;
-            break;
-        case EBML_STR:
-        case EBML_UTF8:
-            // the default may be NULL
-            if (syntax[i].def.s) {
-                uint8_t **dst = (uint8_t **) ((uint8_t *) data + syntax[i].data_offset);
-                *dst = av_strdup(syntax[i].def.s);
-                if (!*dst)
-                    return AVERROR(ENOMEM);
+        for (int i = 0; syntax[i].id; i++)
+            switch (syntax[i].type) {
+            case EBML_UINT:
+                *(uint64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.u;
+                break;
+            case EBML_SINT:
+                *(int64_t *) ((char *) data + syntax[i].data_offset) = syntax[i].def.i;
+                break;
+            case EBML_FLOAT:
+                *(double *) ((char *) data + syntax[i].data_offset) = syntax[i].def.f;
+                break;
+            case EBML_STR:
+            case EBML_UTF8:
+                // the default may be NULL
+                if (syntax[i].def.s) {
+                    uint8_t **dst = (uint8_t **) ((uint8_t *) data + syntax[i].data_offset);
+                    *dst = av_strdup(syntax[i].def.s);
+                    if (!*dst)
+                        return AVERROR(ENOMEM);
+                }
+                break;
             }
-            break;
-        }
 
-    if (!matroska->levels[matroska->num_levels - 1].length) {
-        matroska->num_levels--;
-        return 0;
-    }
+        if (!matroska->levels[matroska->num_levels - 1].length) {
+            matroska->num_levels--;
+            return 0;
+        }
     }
 
     do {
@@ -1229,18 +1229,18 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
     }
 
     if (data) {
-    data = (char *) data + syntax->data_offset;
-    if (syntax->list_elem_size) {
-        EbmlList *list = data;
-        void *newelem = av_realloc_array(list->elem, list->nb_elem + 1,
-                                               syntax->list_elem_size);
-        if (!newelem)
-            return AVERROR(ENOMEM);
-        list->elem = newelem;
-        data = (char *) list->elem + list->nb_elem * syntax->list_elem_size;
-        memset(data, 0, syntax->list_elem_size);
-        list->nb_elem++;
-    }
+        data = (char *) data + syntax->data_offset;
+        if (syntax->list_elem_size) {
+            EbmlList *list = data;
+            void *newelem = av_realloc_array(list->elem, list->nb_elem + 1,
+                                                   syntax->list_elem_size);
+            if (!newelem)
+                return AVERROR(ENOMEM);
+            list->elem = newelem;
+            data = (char *) list->elem + list->nb_elem * syntax->list_elem_size;
+            memset(data, 0, syntax->list_elem_size);
+            list->nb_elem++;
+        }
     }
 
     if (syntax->type != EBML_STOP) {
