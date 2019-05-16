@@ -322,7 +322,6 @@ typedef struct MatroskaDemuxContext {
     /* EBML stuff */
     int num_levels;
     MatroskaLevel levels[EBML_MAX_DEPTH];
-    int level_up;
     uint32_t current_id;
 
     uint64_t time_scale;
@@ -1611,7 +1610,6 @@ static void matroska_convert_tags(AVFormatContext *s)
 static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
                                          uint64_t pos)
 {
-    uint32_t level_up       = matroska->level_up;
     uint32_t saved_id       = matroska->current_id;
     int64_t before_pos = avio_tell(matroska->ctx->pb);
     MatroskaLevel level;
@@ -1647,7 +1645,6 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
     }
     /* seek back */
     avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
-    matroska->level_up   = level_up;
     matroska->current_id = saved_id;
 
     return ret;
@@ -3582,7 +3579,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     MatroskaDemuxContext *matroska = s->priv_data;
     MatroskaTrack *tracks = NULL;
     AVStream *st = s->streams[stream_index];
-    int i, index, index_min;
+    int i, index;
 
     /* Parse the CUES now since we need the index data to seek. */
     if (matroska->cues_parsing_deferred > 0) {
@@ -3609,7 +3606,6 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     if (index < 0 || (matroska->cues_parsing_deferred < 0 && index == st->nb_index_entries - 1))
         goto err;
 
-    index_min = index;
     tracks = matroska->tracks.elem;
     for (i = 0; i < matroska->tracks.nb_elem; i++) {
         tracks[i].audio.pkt_cnt        = 0;
@@ -3618,7 +3614,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         tracks[i].end_timecode         = 0;
     }
 
-    avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
+    avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
     matroska->current_id       = 0;
     if (flags & AVSEEK_FLAG_ANY) {
         st->skip_to_keyframe = 0;
