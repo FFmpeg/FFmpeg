@@ -716,26 +716,21 @@ static const EbmlSyntax matroska_blockgroup[] = {
     CHILD_OF(matroska_cluster_parsing)
 };
 
+// The following array contains SimpleBlock and BlockGroup twice
+// in order to reuse the other values for matroska_cluster_enter.
 static const EbmlSyntax matroska_cluster_parsing[] = {
-    { MATROSKA_ID_CLUSTERTIMECODE, EBML_UINT, 0, offsetof(MatroskaCluster, timecode) },
-    { MATROSKA_ID_BLOCKGROUP,      EBML_NEST, 0, 0, { .n = matroska_blockgroup } },
     { MATROSKA_ID_SIMPLEBLOCK,     EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
-    { MATROSKA_ID_CLUSTERPOSITION, EBML_NONE },
-    { MATROSKA_ID_CLUSTERPREVSIZE, EBML_NONE },
-    CHILD_OF(matroska_segment)
-};
-
-static const EbmlSyntax matroska_cluster_initial[] = {
+    { MATROSKA_ID_BLOCKGROUP,      EBML_NEST, 0, 0, { .n = matroska_blockgroup } },
     { MATROSKA_ID_CLUSTERTIMECODE, EBML_UINT, 0, offsetof(MatroskaCluster, timecode) },
-    { MATROSKA_ID_BLOCKGROUP,      EBML_STOP },
     { MATROSKA_ID_SIMPLEBLOCK,     EBML_STOP },
+    { MATROSKA_ID_BLOCKGROUP,      EBML_STOP },
     { MATROSKA_ID_CLUSTERPOSITION, EBML_NONE },
     { MATROSKA_ID_CLUSTERPREVSIZE, EBML_NONE },
     CHILD_OF(matroska_segment)
 };
 
 static const EbmlSyntax matroska_cluster_enter[] = {
-    { MATROSKA_ID_CLUSTER,     EBML_NEST, 0, 0, { .n = matroska_cluster_initial } },
+    { MATROSKA_ID_CLUSTER,     EBML_NEST, 0, 0, { .n = &matroska_cluster_parsing[2] } },
     { 0 }
 };
 
@@ -1063,6 +1058,9 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
 static EbmlSyntax *ebml_parse_id(EbmlSyntax *syntax, uint32_t id)
 {
     int i;
+
+    // Whoever touches this should be aware of the duplication
+    // existing in matroska_cluster_parsing.
     for (i = 0; syntax[i].id; i++)
         if (id == syntax[i].id)
             break;
