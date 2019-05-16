@@ -330,7 +330,7 @@ typedef struct MatroskaCluster {
 } MatroskaCluster;
 
 typedef struct MatroskaLevel1Element {
-    uint64_t pos;
+    int64_t  pos;
     uint32_t id;
     int parsed;
 } MatroskaLevel1Element;
@@ -1795,16 +1795,14 @@ static void matroska_convert_tags(AVFormatContext *s)
 }
 
 static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
-                                         uint64_t pos)
+                                         int64_t pos)
 {
     uint32_t saved_id  = matroska->current_id;
     int64_t before_pos = avio_tell(matroska->ctx->pb);
-    int64_t offset;
     int ret = 0;
 
     /* seek */
-    offset = pos + matroska->segment_start;
-    if (avio_seek(matroska->ctx->pb, offset, SEEK_SET) == offset) {
+    if (avio_seek(matroska->ctx->pb, pos, SEEK_SET) == pos) {
         /* We don't want to lose our seekhead level, so we add
          * a dummy. This is a crude hack. */
         if (matroska->num_levels == EBML_MAX_DEPTH) {
@@ -1842,8 +1840,8 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
 
     for (i = 0; i < seekhead_list->nb_elem; i++) {
         MatroskaSeekhead *seekheads = seekhead_list->elem;
-        uint32_t id  = seekheads[i].id;
-        uint64_t pos = seekheads[i].pos;
+        uint32_t id = seekheads[i].id;
+        int64_t pos = seekheads[i].pos + matroska->segment_start;
 
         MatroskaLevel1Element *elem = matroska_find_level1_elem(matroska, id);
         if (!elem || elem->parsed)
