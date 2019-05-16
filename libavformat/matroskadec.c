@@ -310,8 +310,8 @@ typedef struct MatroskaCluster {
 } MatroskaCluster;
 
 typedef struct MatroskaLevel1Element {
-    uint64_t id;
     uint64_t pos;
+    uint32_t id;
     int parsed;
 } MatroskaLevel1Element;
 
