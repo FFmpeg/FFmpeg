@@ -762,8 +762,6 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {
     AVIOContext *pb = matroska->ctx->pb;
     uint32_t id;
-    matroska->current_id = 0;
-    matroska->num_levels = 0;
 
     /* Try to seek to the last position to resync from. If this doesn't work,
      * we resync from the earliest position available: The start of the buffer. */
@@ -783,7 +781,13 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
             id == MATROSKA_ID_CUES     || id == MATROSKA_ID_TAGS        ||
             id == MATROSKA_ID_SEEKHEAD || id == MATROSKA_ID_ATTACHMENTS ||
             id == MATROSKA_ID_CLUSTER  || id == MATROSKA_ID_CHAPTERS) {
-            matroska->current_id = id;
+            /* Prepare the context for parsing of a level 1 element. */
+            matroska_reset_status(matroska, id, -1);
+            /* Given that we are here means that an error has occured,
+             * so treat the segment as unknown length in order not to
+             * discard valid data that happens to be beyond the designated
+             * end of the segment. */
+            matroska->levels[0].length = EBML_UNKNOWN_LENGTH;
             return 0;
         }
         id = (id << 8) | avio_r8(pb);
@@ -1679,18 +1683,11 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
             matroska->current_id                   = 0;
 
             ret = ebml_parse(matroska, matroska_segment, matroska);
-
-            /* remove dummy level */
-            while (matroska->num_levels) {
-                uint64_t length = matroska->levels[--matroska->num_levels].length;
-                if (length == EBML_UNKNOWN_LENGTH)
-                    break;
-            }
         }
     }
-    /* seek back */
-    avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
-    matroska->current_id = saved_id;
+    /* Seek back - notice that in all instances where this is used it is safe
+     * to set the level to 1 and unset the position of the current cluster. */
+    matroska_reset_status(matroska, saved_id, before_pos);
 
     return ret;
 }
@@ -3604,9 +3601,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     timestamp = FFMAX(timestamp, st->index_entries[0].timestamp);
 
     if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
-        avio_seek(s->pb, st->index_entries[st->nb_index_entries - 1].pos,
-                  SEEK_SET);
-        matroska->current_id = 0;
+        matroska_reset_status(matroska, 0, st->index_entries[st->nb_index_entries - 1].pos);
         while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0 || index == st->nb_index_entries - 1) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
@@ -3626,8 +3621,8 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
         tracks[i].end_timecode         = 0;
     }
 
-    avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
-    matroska->current_id       = 0;
+    /* We seek to a level 1 element, so set the appropriate status. */
+    matroska_reset_status(matroska, 0, st->index_entries[index].pos);
     if (flags & AVSEEK_FLAG_ANY) {
         st->skip_to_keyframe = 0;
         matroska->skip_to_timecode = timestamp;
@@ -3637,18 +3632,16 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     }
     matroska->skip_to_keyframe = 1;
     matroska->done             = 0;
-    matroska->num_levels       = 0;
     ff_update_cur_dts(s, st, st->index_entries[index].timestamp);
     return 0;
 err:
     // slightly hackish but allows proper fallback to
     // the generic seeking code.
+    matroska_reset_status(matroska, 0, -1);
     matroska_clear_queue(matroska);
-    matroska->current_id = 0;
     st->skip_to_keyframe =
     matroska->skip_to_keyframe = 0;
     matroska->done = 0;
-    matroska->num_levels = 0;
     return -1;
 }
 
@@ -3711,6 +3704,7 @@ static CueDesc get_cue_desc(AVFormatContext *s, int64_t ts, int64_t cues_start) 
 static int webm_clusters_start_with_keyframe(AVFormatContext *s)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
+    uint32_t id = matroska->current_id;
     int64_t cluster_pos, before_pos;
     int index, rv = 1;
     if (s->streams[0]->nb_index_entries <= 0) return 0;
@@ -3731,8 +3725,8 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
         read = ebml_read_length(matroska, matroska->ctx->pb, &cluster_length);
         if (read < 0)
             break;
-        avio_seek(s->pb, cluster_pos, SEEK_SET);
-        matroska->current_id = 0;
+
+        matroska_reset_status(matroska, 0, cluster_pos);
         matroska_clear_queue(matroska);
         if (matroska_parse_cluster(matroska) < 0 ||
             !matroska->queue) {
@@ -3746,7 +3740,10 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
             break;
         }
     }
-    avio_seek(s->pb, before_pos, SEEK_SET);
+
+    /* Restore the status after matroska_read_header: */
+    matroska_reset_status(matroska, id, before_pos);
+
     return rv;
 }
 
