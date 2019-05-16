@@ -79,7 +79,6 @@ typedef enum {
     EBML_BIN,
     EBML_NEST,
     EBML_LEVEL1,
-    EBML_PASS,
     EBML_STOP,
     EBML_SINT,
     EBML_TYPE_COUNT
@@ -694,7 +693,6 @@ static const EbmlSyntax matroska_blockadditions[] = {
 static const EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_BLOCK,          EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_BLOCKADDITIONS, EBML_NEST, 0, 0, { .n = matroska_blockadditions} },
-    { MATROSKA_ID_SIMPLEBLOCK,    EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock, duration) },
     { MATROSKA_ID_DISCARDPADDING, EBML_SINT, 0, offsetof(MatroskaBlock, discard_padding) },
     { MATROSKA_ID_BLOCKREFERENCE, EBML_SINT, 0, offsetof(MatroskaBlock, reference), { .i = INT64_MIN } },
@@ -706,7 +704,7 @@ static const EbmlSyntax matroska_blockgroup[] = {
 static const EbmlSyntax matroska_cluster_parsing[] = {
     { MATROSKA_ID_CLUSTERTIMECODE, EBML_UINT, 0, offsetof(MatroskaCluster, timecode) },
     { MATROSKA_ID_BLOCKGROUP,      EBML_NEST, 0, 0, { .n = matroska_blockgroup } },
-    { MATROSKA_ID_SIMPLEBLOCK,     EBML_PASS, 0, 0, { .n = matroska_blockgroup } },
+    { MATROSKA_ID_SIMPLEBLOCK,     EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_CLUSTERPOSITION, EBML_NONE },
     { MATROSKA_ID_CLUSTERPREVSIZE, EBML_NONE },
     { MATROSKA_ID_INFO,            EBML_NONE },
@@ -1161,7 +1159,7 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         list->nb_elem++;
     }
 
-    if (syntax->type != EBML_PASS && syntax->type != EBML_STOP) {
+    if (syntax->type != EBML_STOP) {
         matroska->current_id = 0;
         if ((res = ebml_read_length(matroska, pb, &length)) < 0)
             return res;
@@ -1235,8 +1233,6 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
             level1_elem->parsed = 1;
         }
         return ebml_parse_nest(matroska, syntax->def.n, data);
-    case EBML_PASS:
-        return ebml_parse_id(matroska, syntax->def.n, id, data);
     case EBML_STOP:
         return 1;
     default:
