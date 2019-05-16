@@ -2646,6 +2646,9 @@ static int matroska_read_header(AVFormatContext *s)
         pos = avio_tell(matroska->ctx->pb);
         res = ebml_parse(matroska, matroska_segment, matroska);
     }
+    /* Set data_offset as it might be needed later by seek_frame_generic. */
+    if (matroska->current_id == MATROSKA_ID_CLUSTER)
+        s->internal->data_offset = avio_tell(matroska->ctx->pb) - 4;
     matroska_execute_seekhead(matroska);
 
     if (!matroska->time_scale)
