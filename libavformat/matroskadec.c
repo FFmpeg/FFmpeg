@@ -3359,7 +3359,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     track = matroska_find_track_by_num(matroska, num);
     if (!track || !track->stream) {
         av_log(matroska->ctx, AV_LOG_INFO,
-               "Invalid stream %"PRIu64" or size %u\n", num, size);
+               "Invalid stream %"PRIu64"\n", num);
         return AVERROR_INVALIDDATA;
     } else if (size <= 3)
         return 0;
