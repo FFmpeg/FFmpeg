@@ -1672,25 +1672,24 @@ static int decode_spectrum_and_dequant(AACContext *ac, INTFLOAT coef[1024],
                 }
             } else if (cbt_m1 == NOISE_BT - 1) {
                 for (group = 0; group < (AAC_SIGNE)g_len; group++, cfo+=128) {
-#if !USE_FIXED
-                    float scale;
-#endif /* !USE_FIXED */
                     INTFLOAT band_energy;
-
+#if USE_FIXED
                     for (k = 0; k < off_len; k++) {
                         ac->random_state  = lcg_random(ac->random_state);
-#if USE_FIXED
                         cfo[k] = ac->random_state >> 3;
-#else
-                        cfo[k] = ac->random_state;
-#endif /* USE_FIXED */
                     }
 
-#if USE_FIXED
                     band_energy = ac->fdsp->scalarproduct_fixed(cfo, cfo, off_len);
                     band_energy = fixed_sqrt(band_energy, 31);
                     noise_scale(cfo, sf[idx], band_energy, off_len);
 #else
+                    float scale;
+
+                    for (k = 0; k < off_len; k++) {
+                        ac->random_state  = lcg_random(ac->random_state);
+                        cfo[k] = ac->random_state;
+                    }
+
                     band_energy = ac->fdsp->scalarproduct_float(cfo, cfo, off_len);
                     scale = sf[idx] / sqrtf(band_energy);
                     ac->fdsp->vector_fmul_scalar(cfo, cfo, scale, off_len);
