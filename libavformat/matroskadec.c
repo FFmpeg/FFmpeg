@@ -1519,9 +1519,14 @@ static int matroska_probe(const AVProbeData *p)
     while (n < size)
         total = (total << 8) | p->buf[4 + n++];
 
-    /* Does the probe data contain the whole header? */
-    if (p->buf_size < 4 + size + total)
-        return 0;
+    if (total + 1 == 1ULL << (7 * size)){
+        /* Unknown-length header - simply parse the whole buffer. */
+        total = p->buf_size - 4 - size;
+    } else {
+        /* Does the probe data contain the whole header? */
+        if (p->buf_size < 4 + size + total)
+            return 0;
+    }
 
     /* The header should contain a known document type. For now,
      * we don't parse the whole header but simply check for the
