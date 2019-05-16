@@ -742,15 +742,18 @@ static int matroska_read_close(AVFormatContext *s);
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {
     AVIOContext *pb = matroska->ctx->pb;
-    int64_t ret;
     uint32_t id;
     matroska->current_id = 0;
     matroska->num_levels = 0;
 
-    /* seek to next position to resync from */
-    if ((ret = avio_seek(pb, last_pos + 1, SEEK_SET)) < 0) {
-        matroska->done = 1;
-        return ret;
+    /* Try to seek to the last position to resync from. If this doesn't work,
+     * we resync from the earliest position available: The start of the buffer. */
+    if (last_pos < avio_tell(pb) && avio_seek(pb, last_pos + 1, SEEK_SET) < 0) {
+        av_log(matroska->ctx, AV_LOG_WARNING,
+               "Seek to desired resync point failed. Seeking to "
+               "earliest point available instead.\n");
+        avio_seek(pb, FFMAX(avio_tell(pb) + (pb->buffer - pb->buf_ptr),
+                            last_pos + 1), SEEK_SET);
     }
 
     id = avio_rb32(pb);
@@ -768,7 +771,7 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
     }
 
     matroska->done = 1;
-    return AVERROR_EOF;
+    return pb->error ? pb->error : AVERROR_EOF;
 }
 
 /*
