@@ -1169,6 +1169,8 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                       EbmlSyntax *syntax, void *data)
 {
     static const uint64_t max_lengths[EBML_TYPE_COUNT] = {
+        // Forbid unknown-length EBML_NONE elements.
+        [EBML_NONE]  = EBML_UNKNOWN_LENGTH - 1,
         [EBML_UINT]  = 8,
         [EBML_SINT]  = 8,
         [EBML_FLOAT] = 8,
@@ -1253,12 +1255,6 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         matroska->current_id = 0;
         if ((res = ebml_read_length(matroska, pb, &length)) < 0)
             return res;
-        if (max_lengths[syntax->type] && length > max_lengths[syntax->type]) {
-            av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Invalid length 0x%"PRIx64" > 0x%"PRIx64" for syntax element %i\n",
-                   length, max_lengths[syntax->type], syntax->type);
-            return AVERROR_INVALIDDATA;
-        }
 
         pos_alt += res;
 
@@ -1296,6 +1292,26 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 level_check = 0;
         } else
             level_check = 0;
+
+        if (max_lengths[syntax->type] && length > max_lengths[syntax->type]) {
+            if (length != EBML_UNKNOWN_LENGTH) {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Invalid length 0x%"PRIx64" > 0x%"PRIx64" for element "
+                       "with ID 0x%"PRIX32" at 0x%"PRIx64"\n",
+                       length, max_lengths[syntax->type], id, pos);
+            } else if (syntax->type != EBML_NONE) {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Element with ID 0x%"PRIX32" at pos. 0x%"PRIx64" has "
+                       "unknown length, yet the length of an element of its "
+                       "type must be known.\n", id, pos);
+            } else {
+                av_log(matroska->ctx, AV_LOG_ERROR,
+                       "Found unknown-length element with ID 0x%"PRIX32" at "
+                       "pos. 0x%"PRIx64" for which no syntax for parsing is "
+                       "available.\n", id, pos);
+            }
+            return AVERROR_INVALIDDATA;
+        }
 
         if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
             // Loosing sync will likely manifest itself as encountering unknown
