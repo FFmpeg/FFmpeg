@@ -504,7 +504,7 @@ static void compound_mdct_##N##xM(AVTXContext *s, void *_dst, void *_src,      \
         fft##N(s->tmp + s->revtab[i], fft##N##in, m);                          \
     }                                                                          \
                                                                                \
-    for (int i = 0; i < 15; i++)                                               \
+    for (int i = 0; i < N; i++)                                                \
         fftp(s->tmp + m*i);                                                    \
                                                                                \
     for (int i = 0; i < len8; i++) {                                           \
