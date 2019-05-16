@@ -335,6 +335,7 @@ typedef struct MatroskaDemuxContext {
     int num_levels;
     MatroskaLevel levels[EBML_MAX_DEPTH];
     uint32_t current_id;
+    int64_t  resync_pos;
 
     uint64_t time_scale;
     double   duration;
@@ -754,6 +755,9 @@ static int matroska_reset_status(MatroskaDemuxContext *matroska,
     matroska->current_id = id;
     matroska->num_levels = 1;
     matroska->current_cluster.pos = 0;
+    matroska->resync_pos = avio_tell(matroska->ctx->pb);
+    if (id)
+        matroska->resync_pos -= (av_log2(id) + 7) / 8;
 
     return 0;
 }
@@ -1168,7 +1172,8 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
     AVIOContext *pb = matroska->ctx->pb;
     uint32_t id;
     uint64_t length;
-    int res;
+    int64_t pos = avio_tell(pb);
+    int res, update_pos = 1;
     void *newelem;
     MatroskaLevel1Element *level1_elem;
 
@@ -1181,7 +1186,8 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                     res == AVERROR_EOF) ? 1 : res;
         }
         matroska->current_id = id | 1 << 7 * res;
-    }
+    } else
+        pos -= (av_log2(matroska->current_id) + 7) / 8;
 
     id = matroska->current_id;
 
@@ -1192,6 +1198,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         return 0;  // we reached the end of an unknown size cluster
     if (!syntax->id && id != EBML_ID_VOID && id != EBML_ID_CRC32) {
         av_log(matroska->ctx, AV_LOG_DEBUG, "Unknown entry 0x%"PRIX32"\n", id);
+        update_pos = 0;
     }
 
     data = (char *) data + syntax->data_offset;
@@ -1245,6 +1252,13 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                        "0x%"PRIx64". Dropping the invalid element.\n", pos);
                 return AVERROR_INVALIDDATA;
             }
+        }
+
+        if (update_pos) {
+            // We have found an element that is allowed at this place
+            // in the hierarchy and it passed all checks, so treat the beginning
+            // of the element as the "last known good" position.
+            matroska->resync_pos = pos;
         }
     }
 
@@ -3570,12 +3584,16 @@ static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
     MatroskaDemuxContext *matroska = s->priv_data;
     int ret = 0;
 
+    if (matroska->resync_pos == -1) {
+        // This can only happen if generic seeking has been used.
+        matroska->resync_pos = avio_tell(s->pb);
+    }
+
     while (matroska_deliver_packet(matroska, pkt)) {
-        int64_t pos = avio_tell(matroska->ctx->pb);
         if (matroska->done)
             return (ret < 0) ? ret : AVERROR_EOF;
         if (matroska_parse_cluster(matroska) < 0)
-            ret = matroska_resync(matroska, pos);
+            ret = matroska_resync(matroska, matroska->resync_pos);
     }
 
     return 0;
@@ -3637,6 +3655,7 @@ err:
     // slightly hackish but allows proper fallback to
     // the generic seeking code.
     matroska_reset_status(matroska, 0, -1);
+    matroska->resync_pos = -1;
     matroska_clear_queue(matroska);
     st->skip_to_keyframe =
     matroska->skip_to_keyframe = 0;
