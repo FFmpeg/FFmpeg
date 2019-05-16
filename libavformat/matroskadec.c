@@ -976,7 +976,8 @@ static int ebml_read_ascii(AVIOContext *pb, int size, char **str)
  * Read the next element as binary data.
  * 0 is success, < 0 or NEEDS_CHECKING is failure.
  */
-static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
+static int ebml_read_binary(AVIOContext *pb, int length,
+                            int64_t pos, EbmlBin *bin)
 {
     int ret;
 
@@ -987,7 +988,7 @@ static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
 
     bin->data = bin->buf->data;
     bin->size = length;
-    bin->pos  = avio_tell(pb);
+    bin->pos  = pos;
     if ((ret = avio_read(pb, bin->data, length)) != length) {
         av_buffer_unref(&bin->buf);
         bin->data = NULL;
@@ -1003,9 +1004,9 @@ static int ebml_read_binary(AVIOContext *pb, int length, EbmlBin *bin)
  * are supposed to be sub-elements which can be read separately.
  * 0 is success, < 0 is failure.
  */
-static int ebml_read_master(MatroskaDemuxContext *matroska, uint64_t length)
+static int ebml_read_master(MatroskaDemuxContext *matroska,
+                            uint64_t length, int64_t pos)
 {
-    AVIOContext *pb = matroska->ctx->pb;
     MatroskaLevel *level;
 
     if (matroska->num_levels >= EBML_MAX_DEPTH) {
@@ -1015,7 +1016,7 @@ static int ebml_read_master(MatroskaDemuxContext *matroska, uint64_t length)
     }
 
     level         = &matroska->levels[matroska->num_levels++];
-    level->start  = avio_tell(pb);
+    level->start  = pos;
     level->length = length;
 
     return 0;
@@ -1173,7 +1174,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
     AVIOContext *pb = matroska->ctx->pb;
     uint32_t id;
     uint64_t length;
-    int64_t pos = avio_tell(pb);
+    int64_t pos = avio_tell(pb), pos_alt;
     int res, update_pos = 1, level_check;
     void *newelem;
     MatroskaLevel1Element *level1_elem;
@@ -1201,8 +1202,11 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             return res;
         }
         matroska->current_id = id | 1 << 7 * res;
-    } else
-        pos -= (av_log2(matroska->current_id) + 7) / 8;
+        pos_alt = pos + res;
+    } else {
+        pos_alt = pos;
+        pos    -= (av_log2(matroska->current_id) + 7) / 8;
+    }
 
     id = matroska->current_id;
 
@@ -1247,14 +1251,15 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                    length, max_lengths[syntax->type], syntax->type);
             return AVERROR_INVALIDDATA;
         }
+
+        pos_alt += res;
+
         if (matroska->num_levels > 0) {
             MatroskaLevel *level = &matroska->levels[matroska->num_levels - 1];
-            AVIOContext *pb = matroska->ctx->pb;
-            int64_t pos = avio_tell(pb);
 
             if (length != EBML_UNKNOWN_LENGTH &&
                 level->length != EBML_UNKNOWN_LENGTH) {
-                uint64_t elem_end = pos + length,
+                uint64_t elem_end = pos_alt + length,
                         level_end = level->start + level->length;
 
                 if (elem_end < level_end) {
@@ -1309,14 +1314,14 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         res = ebml_read_ascii(pb, length, data);
         break;
     case EBML_BIN:
-        res = ebml_read_binary(pb, length, data);
+        res = ebml_read_binary(pb, length, pos_alt, data);
         break;
     case EBML_LEVEL1:
     case EBML_NEST:
-        if ((res = ebml_read_master(matroska, length)) < 0)
+        if ((res = ebml_read_master(matroska, length, pos_alt)) < 0)
             return res;
         if (id == MATROSKA_ID_SEGMENT)
-            matroska->segment_start = avio_tell(matroska->ctx->pb);
+            matroska->segment_start = pos_alt;
         if (id == MATROSKA_ID_CUES)
             matroska->cues_parsing_deferred = 0;
         if (syntax->type == EBML_LEVEL1 &&
