@@ -739,6 +739,25 @@ static const char *const matroska_doctypes[] = { "matroska", "webm" };
 
 static int matroska_read_close(AVFormatContext *s);
 
+/*
+ * This function prepares the status for parsing of level 1 elements.
+ */
+static int matroska_reset_status(MatroskaDemuxContext *matroska,
+                                 uint32_t id, int64_t position)
+{
+    if (position >= 0) {
+        int err = avio_seek(matroska->ctx->pb, position, SEEK_SET);
+        if (err < 0)
+            return err;
+    }
+
+    matroska->current_id = id;
+    matroska->num_levels = 1;
+    matroska->current_cluster.pos = 0;
+
+    return 0;
+}
+
 static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
 {
     AVIOContext *pb = matroska->ctx->pb;
