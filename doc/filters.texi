@@ -16537,9 +16537,8 @@ Efficient Sub-Pixel Convolutional Neural Network model (ESPCN).
 See @url{https://arxiv.org/abs/1609.05158}.
 @end itemize
 
-Training scripts as well as scripts for model generation can be found at
-@url{https://github.com/XueweiMeng/sr/tree/sr_dnn_native}. Original repository
-is at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
+Training scripts as well as scripts for model generation are provided in
+the repository at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
 
 The filter accepts the following options:
 
