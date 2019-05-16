@@ -73,6 +73,12 @@
                                          * still need to be performed */
 #define LEVEL_ENDED                   3 /* return value of ebml_parse when the
                                          * syntax level used for parsing ended. */
+#define SKIP_THRESHOLD      1024 * 1024 /* In non-seekable mode, if more than SKIP_THRESHOLD
+                                         * of unkown, potentially damaged data is encountered,
+                                         * it is considered an error. */
+#define UNKNOWN_EQUIV         50 * 1024 /* An unknown element is considered equivalent
+                                         * to this many bytes of unknown data for the
+                                         * SKIP_THRESHOLD check. */
 
 typedef enum {
     EBML_NONE,
@@ -338,6 +344,7 @@ typedef struct MatroskaDemuxContext {
     int      num_levels;
     uint32_t current_id;
     int64_t  resync_pos;
+    int      unknown_count;
 
     uint64_t time_scale;
     double   duration;
@@ -763,8 +770,9 @@ static int matroska_reset_status(MatroskaDemuxContext *matroska,
             return err;
     }
 
-    matroska->current_id = id;
-    matroska->num_levels = 1;
+    matroska->current_id    = id;
+    matroska->num_levels    = 1;
+    matroska->unknown_count = 0;
     matroska->resync_pos = avio_tell(matroska->ctx->pb);
     if (id)
         matroska->resync_pos -= (av_log2(id) + 7) / 8;
@@ -1288,6 +1296,48 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 level_check = 0;
         } else
             level_check = 0;
+
+        if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
+            // Loosing sync will likely manifest itself as encountering unknown
+            // elements which are not reliably distinguishable from elements
+            // belonging to future extensions of the format.
+            // We use a heuristic to detect such situations: If the current
+            // element is not expected at the current syntax level and there
+            // were only a few unknown elements in a row, then the element is
+            // skipped or considered defective based upon the length of the
+            // current element (i.e. how much would be skipped); if there were
+            // more than a few skipped elements in a row and skipping the current
+            // element would lead us more than SKIP_THRESHOLD away from the last
+            // known good position, then it is inferred that an error occured.
+            // The dependency on the number of unknown elements in a row exists
+            // because the distance to the last known good position is
+            // automatically big if the last parsed element was big.
+            // In both cases, each unknown element is considered equivalent to
+            // UNKNOWN_EQUIV of skipped bytes for the check.
+            // The whole check is only done for non-seekable output, because
+            // in this situation skipped data can't simply be rechecked later.
+            // This is especially important when using unkown length elements
+            // as the check for whether a child exceeds its containing master
+            // element is not effective in this situation.
+            if (update_pos) {
+                matroska->unknown_count = 0;
+            } else {
+                int64_t dist = length + UNKNOWN_EQUIV * matroska->unknown_count++;
+
+                if (matroska->unknown_count > 3)
+                    dist += pos_alt - matroska->resync_pos;
+
+                if (dist > SKIP_THRESHOLD) {
+                    av_log(matroska->ctx, AV_LOG_ERROR,
+                           "Unknown element %"PRIX32" at pos. 0x%"PRIx64" with "
+                           "length 0x%"PRIx64" considered as invalid data. Last "
+                           "known good position 0x%"PRIx64", %d unknown elements"
+                           " in a row\n", id, pos, length, matroska->resync_pos,
+                           matroska->unknown_count);
+                    return AVERROR_INVALIDDATA;
+                }
+            }
+        }
 
         if (update_pos) {
             // We have found an element that is allowed at this place
