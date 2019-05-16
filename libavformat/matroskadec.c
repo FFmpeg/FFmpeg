@@ -3656,15 +3656,17 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
     cluster_pos = s->streams[0]->index_entries[index].pos;
     before_pos = avio_tell(s->pb);
     while (1) {
-        int64_t cluster_id = 0, cluster_length = 0;
+        uint64_t cluster_id, cluster_length;
+        int read;
         AVPacket *pkt;
         avio_seek(s->pb, cluster_pos, SEEK_SET);
         // read cluster id and length
-        ebml_read_num(matroska, matroska->ctx->pb, 4, &cluster_id);
-        ebml_read_length(matroska, matroska->ctx->pb, &cluster_length);
-        if (cluster_id != 0xF43B675) { // done with all clusters
+        read = ebml_read_num(matroska, matroska->ctx->pb, 4, &cluster_id);
+        if (read < 0 || cluster_id != 0xF43B675) // done with all clusters
             break;
-        }
+        read = ebml_read_length(matroska, matroska->ctx->pb, &cluster_length);
+        if (read < 0)
+            break;
         avio_seek(s->pb, cluster_pos, SEEK_SET);
         matroska->current_id = 0;
         matroska_clear_queue(matroska);
@@ -3673,7 +3675,8 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
             break;
         }
         pkt = &matroska->queue->pkt;
-        cluster_pos += cluster_length + 12; // 12 is the offset of the cluster id and length.
+        // 4 + read is the length of the cluster id and the cluster length field.
+        cluster_pos += 4 + read + cluster_length;
         if (!(pkt->flags & AV_PKT_FLAG_KEY)) {
             rv = 0;
             break;
