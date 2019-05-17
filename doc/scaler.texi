@@ -5,7 +5,8 @@
 The video scaler supports the following named options.
 
 Options may be set by specifying -@var{option} @var{value} in the
-FFmpeg tools. For programmatic use, they can be set explicitly in the
+FFmpeg tools, with a few API-only exceptions noted below.
+For programmatic use, they can be set explicitly in the
 @code{SwsContext} options or through the @file{libavutil/opt.h} API.
 
 @table @option
@@ -68,22 +69,22 @@ Select full chroma input.
 Enable bitexact output.
 @end table
 
-@item srcw
+@item srcw @var{(API only)}
 Set source width.
 
-@item srch
+@item srch @var{(API only)}
 Set source height.
 
-@item dstw
+@item dstw @var{(API only)}
 Set destination width.
 
-@item dsth
+@item dsth @var{(API only)}
 Set destination height.
 
-@item src_format
+@item src_format @var{(API only)}
 Set source pixel format (must be expressed as an integer).
 
-@item dst_format
+@item dst_format @var{(API only)}
 Set destination pixel format (must be expressed as an integer).
 
 @item src_range
