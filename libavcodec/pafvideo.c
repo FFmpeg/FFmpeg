@@ -293,9 +293,6 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
         return ret;
 
     if (code & 0x20) {  // frame is keyframe
-        for (i = 0; i < 4; i++)
-            memset(c->frame[i], 0, c->frame_size);
-
         memset(c->pic->data[1], 0, AVPALETTE_SIZE);
         c->current_frame  = 0;
         c->pic->key_frame = 1;
@@ -331,6 +328,10 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
         }
         c->pic->palette_has_changed = 1;
     }
+
+    if (code & 0x20)
+        for (i = 0; i < 4; i++)
+            memset(c->frame[i], 0, c->frame_size);
 
     switch (code & 0x0F) {
     case 0:
