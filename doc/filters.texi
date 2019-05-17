@@ -12910,6 +12910,7 @@ Set character blacklist.
 @end table
 
 The filter exports recognized text as the frame metadata @code{lavfi.ocr.text}.
+The filter exports confidence of recognized words as the frame metadata @code{lavfi.ocr.confidence}.
 
 @section ocv
 

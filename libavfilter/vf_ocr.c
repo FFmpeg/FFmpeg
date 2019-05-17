@@ -100,11 +100,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFilterLink *outlink = ctx->outputs[0];
     OCRContext *s = ctx->priv;
     char *result;
+    int *confs;
 
     result = TessBaseAPIRect(s->tess, in->data[0], 1,
                              in->linesize[0], 0, 0, in->width, in->height);
+    confs = TessBaseAPIAllWordConfidences(s->tess);
     av_dict_set(metadata, "lavfi.ocr.text", result, 0);
+    for (int i = 0; confs[i] != -1; i++) {
+        char number[256];
+
+        snprintf(number, sizeof(number), "%d ", confs[i]);
+        av_dict_set(metadata, "lavfi.ocr.confidence", number, AV_DICT_APPEND);
+    }
+
     TessDeleteText(result);
+    TessDeleteIntArray(confs);
 
     return ff_filter_frame(outlink, in);
 }
