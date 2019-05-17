@@ -87,11 +87,13 @@ Set source pixel format (must be expressed as an integer).
 @item dst_format @var{(API only)}
 Set destination pixel format (must be expressed as an integer).
 
-@item src_range
-Select source range.
+@item src_range @var{(boolean)}
+If value is set to @code{1}, indicates source is full range. Default value is
+@code{0}, which indicates source is limited range.
 
-@item dst_range
-Select destination range.
+@item dst_range @var{(boolean)}
+If value is set to @code{1}, enable full range for destination. Default value
+is @code{0}, which enables limited range.
 
 @anchor{sws_params}
 @item param0, param1
