@@ -34,6 +34,8 @@ typedef enum {INPUT, CONV, DEPTH_TO_SPACE} DNNLayerType;
 
 typedef enum {RELU, TANH, SIGMOID} DNNActivationFunc;
 
+typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNConvPaddingParam;
+
 typedef struct Layer{
     DNNLayerType type;
     float *output;
@@ -43,6 +45,7 @@ typedef struct Layer{
 typedef struct ConvolutionalParams{
     int32_t input_num, output_num, kernel_size;
     DNNActivationFunc activation;
+    DNNConvPaddingParam padding_method;
     float *kernel;
     float *biases;
 } ConvolutionalParams;
