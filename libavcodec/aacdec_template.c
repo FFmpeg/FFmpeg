@@ -2492,6 +2492,9 @@ static void apply_tns(INTFLOAT coef_param[1024], TemporalNoiseShaping *tns,
     INTFLOAT tmp[TNS_MAX_ORDER+1];
     UINTFLOAT *coef = coef_param;
 
+    if(!mmm)
+        return;
+
     for (w = 0; w < ics->num_windows; w++) {
         bottom = ics->num_swb;
         for (filt = 0; filt < tns->n_filt[w]; filt++) {
