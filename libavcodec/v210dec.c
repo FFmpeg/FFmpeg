@@ -104,7 +104,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         && avpkt->size - 64 >= stride * avctx->height)
         psrc += 64;
 
-    aligned_input = !((uintptr_t)psrc & 0xf) && !(stride & 0xf);
+    aligned_input = !((uintptr_t)psrc & 0x1f) && !(stride & 0x1f);
     if (aligned_input != s->aligned_input) {
         s->aligned_input = aligned_input;
         ff_v210dec_init(s);
