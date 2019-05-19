@@ -343,7 +343,7 @@ static int activate(AVFilterContext *ctx)
 
     FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
 
-    if (!s->eof && (s->nb_frames < s->size || !s->loop)) {
+    if (!s->eof && (s->nb_frames < s->size || !s->loop || !s->size)) {
         ret = ff_inlink_consume_frame(inlink, &frame);
         if (ret < 0)
             return ret;
@@ -352,11 +352,13 @@ static int activate(AVFilterContext *ctx)
     }
 
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
-        if (status == AVERROR_EOF)
+        if (status == AVERROR_EOF) {
+            s->size = s->nb_frames;
             s->eof = 1;
+        }
     }
 
-    if (s->eof && (s->loop == 0 || s->nb_frames < s->size)) {
+    if (s->eof && (!s->loop || !s->size)) {
         ff_outlink_set_status(outlink, AVERROR_EOF, s->duration);
         return 0;
     }
