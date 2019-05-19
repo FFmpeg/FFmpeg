@@ -1,4 +1,4 @@
-9af1caa30e99cc422c8a0734051f7f95 *tests/data/fate/vsynth3-mov-bgr24.mov
+0141cd3b6e8eea836d392adf6949afc4 *tests/data/fate/vsynth3-mov-bgr24.mov
 174093 tests/data/fate/vsynth3-mov-bgr24.mov
 693aff10c094f8bd31693f74cf79d2b2 *tests/data/fate/vsynth3-mov-bgr24.out.rawvideo
 stddev:    3.67 PSNR: 36.82 MAXDIFF:   43 bytes:    86700/    86700

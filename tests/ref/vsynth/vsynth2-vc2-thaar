@@ -1,4 +1,4 @@
-51b03663f4187f4eea11c5311669a2cc *tests/data/fate/vsynth2-vc2-thaar.mov
+866641af5f57980f9da4c78c105155f1 *tests/data/fate/vsynth2-vc2-thaar.mov
 1470300 tests/data/fate/vsynth2-vc2-thaar.mov
 8f629e5cea24cc804d6aeadceacf0b2a *tests/data/fate/vsynth2-vc2-thaar.out.rawvideo
 stddev:    0.37 PSNR: 56.66 MAXDIFF:    7 bytes:  7603200/   760320

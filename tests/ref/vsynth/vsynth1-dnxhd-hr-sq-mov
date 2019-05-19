@@ -1,4 +1,4 @@
-7d7fb47e926aa565b51661264f1a39e9 *tests/data/fate/vsynth1-dnxhd-hr-sq-mov.mov
+31544b301d8a23101c1cf03d26546fb8 *tests/data/fate/vsynth1-dnxhd-hr-sq-mov.mov
 2560763 tests/data/fate/vsynth1-dnxhd-hr-sq-mov.mov
 66d29f91cdf038753894dd42e65d997a *tests/data/fate/vsynth1-dnxhd-hr-sq-mov.out.rawvideo
 stddev:    5.77 PSNR: 32.91 MAXDIFF:   58 bytes:  7603200/   760320

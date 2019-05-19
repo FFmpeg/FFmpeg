@@ -6219,7 +6219,7 @@ static int mov_init(AVFormatContext *s)
         track->par = st->codecpar;
         track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);
         if (track->language < 0)
-            track->language = 0;
+            track->language = 32767;  // Unspecified Macintosh language code
         track->mode = mov->mode;
         track->tag  = mov_find_codec_tag(s, track);
         if (!track->tag) {

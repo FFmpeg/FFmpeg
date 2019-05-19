@@ -1,4 +1,4 @@
-d6380bf54ac3e452c190ce302c264bf0 *tests/data/fate/acodec-pcm-s32be.mov
+2a4d853ef4916ca5081fafe234d18596 *tests/data/fate/acodec-pcm-s32be.mov
 2117527 tests/data/fate/acodec-pcm-s32be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-pcm-s32be.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

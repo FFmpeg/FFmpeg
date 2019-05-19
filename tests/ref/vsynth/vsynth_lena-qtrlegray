@@ -1,4 +1,4 @@
-2c4e69b59d8e8e19903c843575806d5f *tests/data/fate/vsynth_lena-qtrlegray.mov
+8db6b52b706a91f483c37eaa2f011cfe *tests/data/fate/vsynth_lena-qtrlegray.mov
 5111283 tests/data/fate/vsynth_lena-qtrlegray.mov
 d7bfbe259af9ae323bb94b09c33570a5 *tests/data/fate/vsynth_lena-qtrlegray.out.rawvideo
 stddev:   18.65 PSNR: 22.72 MAXDIFF:   72 bytes:  7603200/  7603200

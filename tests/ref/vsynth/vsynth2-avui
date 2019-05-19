@@ -1,4 +1,4 @@
-8f6ab410bb6b5dc4599e12968dbd0366 *tests/data/fate/vsynth2-avui.mov
+4a08755db5e09933a45178bc6f5f61b6 *tests/data/fate/vsynth2-avui.mov
 42625037 tests/data/fate/vsynth2-avui.mov
 36d7ca943916e1743cefa609eba0205c *tests/data/fate/vsynth2-avui.out.rawvideo
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  7603200/  7603200

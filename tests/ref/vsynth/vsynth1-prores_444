@@ -1,4 +1,4 @@
-48b30df581b35bf3ce1bc335327323a6 *tests/data/fate/vsynth1-prores_444.mov
+509e0407dff118c775dcaa4f509a4aae *tests/data/fate/vsynth1-prores_444.mov
 7778954 tests/data/fate/vsynth1-prores_444.mov
 e0da52b5d58171294d1b299539801ae0 *tests/data/fate/vsynth1-prores_444.out.rawvideo
 stddev:    2.80 PSNR: 39.17 MAXDIFF:   44 bytes:  7603200/  7603200
