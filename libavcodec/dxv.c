@@ -745,6 +745,9 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
     int skip0, skip1, oi0 = 0, oi1 = 0;
     int ret, state0 = 0, state1 = 0;
 
+    if (op_offset < 12)
+        return AVERROR_INVALIDDATA;
+
     dst = tex_data;
     bytestream2_skip(gb, op_offset - 12);
     if (op_size0 > max_op_size0)
