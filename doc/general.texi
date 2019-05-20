@@ -97,6 +97,13 @@ Raw codec2 files are also supported.
 To make sense of them the mode in use needs to be specified as a format option:
 @code{ffmpeg -f codec2raw -mode 1300 -i input.raw output.wav}.
 
+@section dav1d
+
+FFmpeg can make use of the dav1d library for AV1 video decoding.
+
+Go to @url{https://code.videolan.org/videolan/dav1d} and follow the instructions for
+installing the library. Then pass @code{--enable-libdav1d} to configure to enable it.
+
 @section davs2
 
 FFmpeg can make use of the davs2 library for AVS2-P2/IEEE1857.4 video decoding.

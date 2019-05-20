@@ -47,6 +47,32 @@ top-field-first is assumed
 
 @end table
 
+@section libdav1d
+
+dav1d AV1 decoder.
+
+libdav1d allows libavcodec to decode the AOMedia Video 1 (AV1) codec.
+Requires the presence of the libdav1d headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libdav1d}.
+
+@subsection Options
+
+The following option is supported by the libdav1d wrapper.
+
+@table @option
+
+@item framethreads
+Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+
+@item tilethreads
+Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
+
+@item filmgrain
+Apply film grain to the decoded video if present in the bitstream. The default value
+is true.
+
+@end table
+
 @section libdavs2
 
 AVS2-P2/IEEE1857.4 video decoder wrapper.
