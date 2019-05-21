@@ -32,7 +32,7 @@
 
 typedef enum {INPUT, CONV, DEPTH_TO_SPACE} DNNLayerType;
 
-typedef enum {RELU, TANH, SIGMOID} DNNActivationFunc;
+typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
 
 typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNConvPaddingParam;
 

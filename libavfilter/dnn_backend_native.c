@@ -270,6 +270,11 @@ static void convolve(const float *input, float *output, const ConvolutionalParam
                     break;
                 case SIGMOID:
                     output[n_filter] = 1.0f / (1.0f + exp(-output[n_filter]));
+                    break;
+                case NONE:
+                    break;
+                case LEAKY_RELU:
+                    output[n_filter] = FFMAX(output[n_filter], 0.0) + 0.2 * FFMIN(output[n_filter], 0.0);
                 }
             }
             output += conv_params->output_num;
