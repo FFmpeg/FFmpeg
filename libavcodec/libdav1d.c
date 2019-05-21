@@ -49,6 +49,10 @@ static const enum AVPixelFormat pix_fmt[][3] = {
     [DAV1D_PIXEL_LAYOUT_I444] = { AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV444P12 },
 };
 
+static const enum AVPixelFormat pix_fmt_rgb[3] = {
+    AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRP12,
+};
+
 static void libdav1d_log_callback(void *opaque, const char *fmt, va_list vl)
 {
     AVCodecContext *c = opaque;
@@ -225,7 +229,6 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     c->profile = p->seq_hdr->profile;
     c->level = ((p->seq_hdr->operating_points[0].major_level - 2) << 2)
                | p->seq_hdr->operating_points[0].minor_level;
-    frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
     frame->width = p->p.w;
     frame->height = p->p.h;
     if (c->width != p->p.w || c->height != p->p.h) {
@@ -246,6 +249,14 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->color_primaries = c->color_primaries = (enum AVColorPrimaries) p->seq_hdr->pri;
     frame->color_trc = c->color_trc = (enum AVColorTransferCharacteristic) p->seq_hdr->trc;
     frame->color_range = c->color_range = p->seq_hdr->color_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+
+    if (p->p.layout == DAV1D_PIXEL_LAYOUT_I444 &&
+        p->seq_hdr->mtrx == DAV1D_MC_IDENTITY &&
+        p->seq_hdr->pri  == DAV1D_COLOR_PRI_BT709 &&
+        p->seq_hdr->trc  == DAV1D_TRC_SRGB)
+        frame->format = c->pix_fmt = pix_fmt_rgb[p->seq_hdr->hbd];
+    else
+        frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
 
     // match timestamps and packet size
     frame->pts = frame->best_effort_timestamp = p->m.timestamp;
