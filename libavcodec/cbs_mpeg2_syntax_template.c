@@ -299,9 +299,9 @@ static int FUNC(picture_display_extension)(CodedBitstreamContext *ctx, RWContext
     HEADER("Picture Display Extension");
 
     for (i = 0; i < mpeg2->number_of_frame_centre_offsets; i++) {
-        ui(16, frame_centre_horizontal_offset[i]);
+        sis(16, frame_centre_horizontal_offset[i], 1, i);
         marker_bit();
-        ui(16, frame_centre_vertical_offset[i]);
+        sis(16, frame_centre_vertical_offset[i],   1, i);
         marker_bit();
     }
 

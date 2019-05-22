@@ -48,6 +48,8 @@
         xui(width, name, current->name, 0, MAX_UINT_BITS(width), subs, __VA_ARGS__)
 #define uirs(width, name, subs, ...) \
         xui(width, name, current->name, 1, MAX_UINT_BITS(width), subs, __VA_ARGS__)
+#define sis(width, name, subs, ...) \
+        xsi(width, name, current->name, subs, __VA_ARGS__)
 
 
 #define READ
@@ -59,6 +61,15 @@
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, range_min, range_max)); \
+        var = value; \
+    } while (0)
+
+#define xsi(width, name, var, subs, ...) do { \
+        int32_t value; \
+        CHECK(ff_cbs_read_signed(ctx, rw, width, #name, \
+                                 SUBSCRIPTS(subs, __VA_ARGS__), &value, \
+                                 MIN_INT_BITS(width), \
+                                 MAX_INT_BITS(width))); \
         var = value; \
     } while (0)
 
@@ -77,6 +88,7 @@
 #undef READWRITE
 #undef RWContext
 #undef xui
+#undef xsi
 #undef marker_bit
 #undef nextbits
 
@@ -91,6 +103,13 @@
                                     var, range_min, range_max)); \
     } while (0)
 
+#define xsi(width, name, var, subs, ...) do { \
+        CHECK(ff_cbs_write_signed(ctx, rw, width, #name, \
+                                  SUBSCRIPTS(subs, __VA_ARGS__), var, \
+                                  MIN_INT_BITS(width), \
+                                  MAX_INT_BITS(width))); \
+    } while (0)
+
 #define marker_bit() do { \
         CHECK(ff_cbs_write_unsigned(ctx, rw, 1, "marker_bit", NULL, 1, 1, 1)); \
     } while (0)
@@ -103,6 +122,7 @@
 #undef READWRITE
 #undef RWContext
 #undef xui
+#undef xsi
 #undef marker_bit
 #undef nextbits
 
