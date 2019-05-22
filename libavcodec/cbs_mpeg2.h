@@ -164,8 +164,8 @@ typedef struct MPEG2RawQuantMatrixExtension {
 } MPEG2RawQuantMatrixExtension;
 
 typedef struct MPEG2RawPictureDisplayExtension {
-    uint16_t frame_centre_horizontal_offset[3];
-    uint16_t frame_centre_vertical_offset[3];
+    int16_t frame_centre_horizontal_offset[3];
+    int16_t frame_centre_vertical_offset[3];
 } MPEG2RawPictureDisplayExtension;
 
 typedef struct MPEG2RawExtensionData {
