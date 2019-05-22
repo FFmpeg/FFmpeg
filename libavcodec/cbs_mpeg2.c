@@ -251,9 +251,7 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
                   group_of_pictures_header, NULL);
 #undef START
         default:
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unknown start code %02"PRIx32".\n",
-                   unit->type);
-            return AVERROR_INVALIDDATA;
+            return AVERROR(ENOSYS);
         }
     }
 

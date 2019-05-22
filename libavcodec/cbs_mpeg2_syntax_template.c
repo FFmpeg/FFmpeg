@@ -335,9 +335,9 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
         return FUNC(picture_coding_extension)
             (ctx, rw, &current->data.picture_coding);
     default:
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid extension ID %d.\n",
+        av_log(ctx->log_ctx, AV_LOG_ERROR, "Extension ID %d not supported.\n",
                current->extension_start_code_identifier);
-        return AVERROR_INVALIDDATA;
+        return AVERROR_PATCHWELCOME;
     }
 }
 
