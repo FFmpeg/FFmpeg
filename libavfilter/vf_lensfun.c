@@ -465,7 +465,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                vignetting_filter_slice,
                                &vignetting_thread_data,
                                NULL,
-                               FFMIN(outlink->h, ctx->graph->nb_threads));
+                               FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
     }
 
     if (lensfun->mode & (GEOMETRY_DISTORTION | SUBPIXEL_DISTORTION)) {
@@ -493,7 +493,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                                distortion_correction_filter_slice,
                                &distortion_correction_thread_data,
                                NULL,
-                               FFMIN(outlink->h, ctx->graph->nb_threads));
+                               FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
         av_frame_free(&in);
         return ff_filter_frame(outlink, out);
