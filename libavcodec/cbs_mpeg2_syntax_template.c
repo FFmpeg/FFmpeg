@@ -361,10 +361,11 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
             current->extra_information_length = k;
             if (k > 0) {
                 *rw = start;
-                current->extra_information =
-                    av_malloc(current->extra_information_length);
-                if (!current->extra_information)
+                current->extra_information_ref =
+                    av_buffer_alloc(current->extra_information_length);
+                if (!current->extra_information_ref)
                     return AVERROR(ENOMEM);
+                current->extra_information = current->extra_information_ref->data;
                 for (k = 0; k < current->extra_information_length; k++) {
                     xui(1, extra_bit_slice, bit, 0);
                     xui(8, extra_information_slice[k],
