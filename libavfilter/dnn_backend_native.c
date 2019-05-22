@@ -63,7 +63,7 @@ static DNNReturnType set_input_output_native(void *model, DNNInputData *input, c
             cur_channels = conv_params->output_num;
 
             if (conv_params->padding_method == VALID) {
-                int pad_size = conv_params->kernel_size - 1;
+                int pad_size = (conv_params->kernel_size - 1) * conv_params->dilation;
                 cur_height -= pad_size;
                 cur_width -= pad_size;
             }
@@ -164,6 +164,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
                 ff_dnn_free_model_native(&model);
                 return NULL;
             }
+            conv_params->dilation = (int32_t)avio_rl32(model_file_context);
             conv_params->padding_method = (int32_t)avio_rl32(model_file_context);
             conv_params->activation = (int32_t)avio_rl32(model_file_context);
             conv_params->input_num = (int32_t)avio_rl32(model_file_context);
@@ -171,7 +172,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             conv_params->kernel_size = (int32_t)avio_rl32(model_file_context);
             kernel_size = conv_params->input_num * conv_params->output_num *
                           conv_params->kernel_size * conv_params->kernel_size;
-            dnn_size += 20 + (kernel_size + conv_params->output_num << 2);
+            dnn_size += 24 + (kernel_size + conv_params->output_num << 2);
             if (dnn_size > file_size || conv_params->input_num <= 0 ||
                 conv_params->output_num <= 0 || conv_params->kernel_size <= 0){
                 avio_closep(&model_file_context);
@@ -233,7 +234,7 @@ static void convolve(const float *input, float *output, const ConvolutionalParam
     int src_linesize = width * conv_params->input_num;
     int filter_linesize = conv_params->kernel_size * conv_params->input_num;
     int filter_size = conv_params->kernel_size * filter_linesize;
-    int pad_size = (conv_params->padding_method == VALID) ? (conv_params->kernel_size - 1) / 2 : 0;
+    int pad_size = (conv_params->padding_method == VALID) ? (conv_params->kernel_size - 1) / 2 * conv_params->dilation : 0;
 
     for (int y = pad_size; y < height - pad_size; ++y) {
         for (int x = pad_size; x < width - pad_size; ++x) {
@@ -245,12 +246,12 @@ static void convolve(const float *input, float *output, const ConvolutionalParam
                         for (int kernel_x = 0; kernel_x < conv_params->kernel_size; ++kernel_x) {
                             float input_pel;
                             if (conv_params->padding_method == SAME_CLAMP_TO_EDGE) {
-                                int y_pos = CLAMP_TO_EDGE(y + kernel_y - radius, height);
-                                int x_pos = CLAMP_TO_EDGE(x + kernel_x - radius, width);
+                                int y_pos = CLAMP_TO_EDGE(y + (kernel_y - radius) * conv_params->dilation, height);
+                                int x_pos = CLAMP_TO_EDGE(x + (kernel_x - radius) * conv_params->dilation, width);
                                 input_pel = input[y_pos * src_linesize + x_pos * conv_params->input_num + ch];
                             } else {
-                                int y_pos = y + kernel_y - radius;
-                                int x_pos = x + kernel_x - radius;
+                                int y_pos = y + (kernel_y - radius) * conv_params->dilation;
+                                int x_pos = x + (kernel_x - radius) * conv_params->dilation;
                                 input_pel = (x_pos < 0 || x_pos >= width || y_pos < 0 || y_pos >= height) ? 0.0 :
                                                    input[y_pos * src_linesize + x_pos * conv_params->input_num + ch];
                             }
@@ -334,7 +335,7 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
             convolve(network->layers[layer - 1].output, network->layers[layer].output, conv_params, cur_width, cur_height);
             cur_channels = conv_params->output_num;
             if (conv_params->padding_method == VALID) {
-                int pad_size = conv_params->kernel_size - 1;
+                int pad_size = (conv_params->kernel_size - 1) * conv_params->dilation;
                 cur_height -= pad_size;
                 cur_width -= pad_size;
             }

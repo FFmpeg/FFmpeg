@@ -46,6 +46,7 @@ typedef struct ConvolutionalParams{
     int32_t input_num, output_num, kernel_size;
     DNNActivationFunc activation;
     DNNConvPaddingParam padding_method;
+    int32_t dilation;
     float *kernel;
     float *biases;
 } ConvolutionalParams;
