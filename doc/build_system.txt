@@ -36,11 +36,11 @@ install
 examples
     Build all examples located in doc/examples.
 
-libavformat/output-example
-    Build the libavformat basic example.
+checkheaders
+    Check headers dependencies.
 
-libswscale/swscale-test
-    Build the swscale self-test (useful also as an example).
+alltools
+    Build all tools in tools directory.
 
 config
     Reconfigure the project with the current configuration.
