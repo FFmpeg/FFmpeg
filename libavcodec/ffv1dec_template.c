@@ -86,10 +86,18 @@ static av_always_inline int RENAME(decode_line)(FFV1Context *s, int w,
                         run_mode = 2;
                     }
                 }
+                if (sample[1][x - 1] == sample[0][x - 1]) {
+                    while (run_count > 1 && w-x > 1) {
+                        sample[1][x] = sample[0][x];
+                        x++;
+                        run_count--;
+                    }
+                } else {
                 while (run_count > 1 && w-x > 1) {
                     sample[1][x] = RENAME(predict)(sample[1] + x, sample[0] + x);
                     x++;
                     run_count--;
+                }
                 }
                 run_count--;
                 if (run_count < 0) {
