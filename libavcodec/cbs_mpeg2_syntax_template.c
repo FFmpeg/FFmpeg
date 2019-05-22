@@ -26,14 +26,14 @@ static int FUNC(sequence_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     ui(8,  sequence_header_code);
 
-    ui(12, horizontal_size_value);
-    ui(12, vertical_size_value);
+    uir(12, horizontal_size_value);
+    uir(12, vertical_size_value);
 
     mpeg2->horizontal_size = current->horizontal_size_value;
     mpeg2->vertical_size   = current->vertical_size_value;
 
-    ui(4,  aspect_ratio_information);
-    ui(4,  frame_rate_code);
+    uir(4, aspect_ratio_information);
+    uir(4, frame_rate_code);
     ui(18, bit_rate_value);
 
     marker_bit();
@@ -44,13 +44,13 @@ static int FUNC(sequence_header)(CodedBitstreamContext *ctx, RWContext *rw,
     ui(1, load_intra_quantiser_matrix);
     if (current->load_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, intra_quantiser_matrix[i], 1, i);
+            uirs(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_non_intra_quantiser_matrix);
     if (current->load_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, non_intra_quantiser_matrix[i], 1, i);
+            uirs(8, non_intra_quantiser_matrix[i], 1, i);
     }
 
     return 0;
@@ -79,7 +79,7 @@ static int FUNC(user_data)(CodedBitstreamContext *ctx, RWContext *rw,
 #endif
 
     for (k = 0; k < current->user_data_length; k++)
-        xui(8, user_data, current->user_data[k], 0);
+        uis(8, user_data[k], 1, k);
 
     return 0;
 }
@@ -125,9 +125,25 @@ static int FUNC(sequence_display_extension)(CodedBitstreamContext *ctx, RWContex
 
     ui(1, colour_description);
     if (current->colour_description) {
-        ui(8, colour_primaries);
-        ui(8, transfer_characteristics);
-        ui(8, matrix_coefficients);
+#ifdef READ
+#define READ_AND_PATCH(name) do { \
+        ui(8, name); \
+        if (current->name == 0) { \
+            current->name = 2; \
+            av_log(ctx->log_ctx, AV_LOG_WARNING, "%s in a sequence display " \
+                   "extension had the invalid value 0. Setting it to 2 " \
+                   "(meaning unknown) instead.\n", #name); \
+        } \
+    } while (0)
+        READ_AND_PATCH(colour_primaries);
+        READ_AND_PATCH(transfer_characteristics);
+        READ_AND_PATCH(matrix_coefficients);
+#undef READ_AND_PATCH
+#else
+        uir(8, colour_primaries);
+        uir(8, transfer_characteristics);
+        uir(8, matrix_coefficients);
+#endif
     }
 
     ui(14, display_horizontal_size);
@@ -163,7 +179,7 @@ static int FUNC(picture_header)(CodedBitstreamContext *ctx, RWContext *rw,
     ui(8,  picture_start_code);
 
     ui(10, temporal_reference);
-    ui(3,  picture_coding_type);
+    uir(3, picture_coding_type);
     ui(16, vbv_delay);
 
     if (current->picture_coding_type == 2 ||
@@ -190,10 +206,10 @@ static int FUNC(picture_coding_extension)(CodedBitstreamContext *ctx, RWContext 
 
     HEADER("Picture Coding Extension");
 
-    ui(4, f_code[0][0]);
-    ui(4, f_code[0][1]);
-    ui(4, f_code[1][0]);
-    ui(4, f_code[1][1]);
+    uir(4, f_code[0][0]);
+    uir(4, f_code[0][1]);
+    uir(4, f_code[1][0]);
+    uir(4, f_code[1][1]);
 
     ui(2, intra_dc_precision);
     ui(2, picture_structure);
@@ -250,25 +266,25 @@ static int FUNC(quant_matrix_extension)(CodedBitstreamContext *ctx, RWContext *r
     ui(1, load_intra_quantiser_matrix);
     if (current->load_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, intra_quantiser_matrix[i], 1, i);
+            uirs(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_non_intra_quantiser_matrix);
     if (current->load_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, non_intra_quantiser_matrix[i], 1, i);
+            uirs(8, non_intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_chroma_intra_quantiser_matrix);
     if (current->load_chroma_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, intra_quantiser_matrix[i], 1, i);
+            uirs(8, intra_quantiser_matrix[i], 1, i);
     }
 
     ui(1, load_chroma_non_intra_quantiser_matrix);
     if (current->load_chroma_non_intra_quantiser_matrix) {
         for (i = 0; i < 64; i++)
-            uis(8, chroma_non_intra_quantiser_matrix[i], 1, i);
+            uirs(8, chroma_non_intra_quantiser_matrix[i], 1, i);
     }
 
     return 0;
@@ -342,7 +358,7 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
             ui(7, priority_breakpoint);
     }
 
-    ui(5, quantiser_scale_code);
+    uir(5, quantiser_scale_code);
 
     if (nextbits(1, 1, current->slice_extension_flag)) {
         ui(1, slice_extension_flag);
@@ -366,16 +382,16 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
                 if (!current->extra_information)
                     return AVERROR(ENOMEM);
                 for (k = 0; k < current->extra_information_length; k++) {
-                    xui(1, extra_bit_slice, bit, 0);
+                    xui(1, extra_bit_slice, bit, 1, 1, 0);
                     xui(8, extra_information_slice[k],
-                        current->extra_information[k], 1, k);
+                        current->extra_information[k], 0, 255, 1, k);
                 }
             }
 #else
             for (k = 0; k < current->extra_information_length; k++) {
-                xui(1, extra_bit_slice, 1, 0);
+                xui(1, extra_bit_slice, 1, 1, 1, 0);
                 xui(8, extra_information_slice[k],
-                    current->extra_information[k], 1, k);
+                    current->extra_information[k], 0, 255, 1, k);
             }
 #endif
         }
