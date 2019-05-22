@@ -303,19 +303,19 @@ static int FUNC(extension_data)(CodedBitstreamContext *ctx, RWContext *rw,
     ui(4, extension_start_code_identifier);
 
     switch (current->extension_start_code_identifier) {
-    case 1:
+    case MPEG2_EXTENSION_SEQUENCE:
         return FUNC(sequence_extension)
             (ctx, rw, &current->data.sequence);
-    case 2:
+    case MPEG2_EXTENSION_SEQUENCE_DISPLAY:
         return FUNC(sequence_display_extension)
             (ctx, rw, &current->data.sequence_display);
-    case 3:
+    case MPEG2_EXTENSION_QUANT_MATRIX:
         return FUNC(quant_matrix_extension)
             (ctx, rw, &current->data.quant_matrix);
-    case 7:
+    case MPEG2_EXTENSION_PICTURE_DISPLAY:
         return FUNC(picture_display_extension)
             (ctx, rw, &current->data.picture_display);
-    case 8:
+    case MPEG2_EXTENSION_PICTURE_CODING:
         return FUNC(picture_coding_extension)
             (ctx, rw, &current->data.picture_coding);
     default:

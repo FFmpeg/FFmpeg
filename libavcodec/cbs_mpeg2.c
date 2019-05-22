@@ -215,13 +215,16 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
                     return err; \
             } \
             break;
-            START(0x00, MPEG2RawPictureHeader,  picture_header,  NULL);
-            START(0xb2, MPEG2RawUserData,       user_data,
-                                            &cbs_mpeg2_free_user_data);
-            START(0xb3, MPEG2RawSequenceHeader, sequence_header, NULL);
-            START(0xb5, MPEG2RawExtensionData,  extension_data,  NULL);
-            START(0xb8, MPEG2RawGroupOfPicturesHeader,
-                                       group_of_pictures_header, NULL);
+            START(MPEG2_START_PICTURE,   MPEG2RawPictureHeader,
+                  picture_header,           NULL);
+            START(MPEG2_START_USER_DATA, MPEG2RawUserData,
+                  user_data,                &cbs_mpeg2_free_user_data);
+            START(MPEG2_START_SEQUENCE_HEADER, MPEG2RawSequenceHeader,
+                  sequence_header,          NULL);
+            START(MPEG2_START_EXTENSION, MPEG2RawExtensionData,
+                  extension_data,           NULL);
+            START(MPEG2_START_GROUP,     MPEG2RawGroupOfPicturesHeader,
+                  group_of_pictures_header, NULL);
 #undef START
         default:
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Unknown start code %02"PRIx32".\n",
@@ -244,11 +247,12 @@ static int cbs_mpeg2_write_header(CodedBitstreamContext *ctx,
     case start_code: \
         err = cbs_mpeg2_write_ ## func(ctx, pbc, unit->content); \
         break;
-        START(0x00, MPEG2RawPictureHeader,  picture_header);
-        START(0xb2, MPEG2RawUserData,       user_data);
-        START(0xb3, MPEG2RawSequenceHeader, sequence_header);
-        START(0xb5, MPEG2RawExtensionData,  extension_data);
-        START(0xb8, MPEG2RawGroupOfPicturesHeader, group_of_pictures_header);
+        START(MPEG2_START_PICTURE,         MPEG2RawPictureHeader,  picture_header);
+        START(MPEG2_START_USER_DATA,       MPEG2RawUserData,       user_data);
+        START(MPEG2_START_SEQUENCE_HEADER, MPEG2RawSequenceHeader, sequence_header);
+        START(MPEG2_START_EXTENSION,       MPEG2RawExtensionData,  extension_data);
+        START(MPEG2_START_GROUP,           MPEG2RawGroupOfPicturesHeader,
+                                                         group_of_pictures_header);
 #undef START
     default:
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Write unimplemented for start "
@@ -331,7 +335,7 @@ static int cbs_mpeg2_write_unit(CodedBitstreamContext *ctx,
 
     init_put_bits(&pbc, priv->write_buffer, priv->write_buffer_size);
 
-    if (unit->type >= 0x01 && unit->type <= 0xaf)
+    if (MPEG2_START_IS_SLICE(unit->type))
         err = cbs_mpeg2_write_slice(ctx, unit, &pbc);
     else
         err = cbs_mpeg2_write_header(ctx, unit, &pbc);
