@@ -273,15 +273,6 @@ static int init_muxer(AVFormatContext *s, AVDictionary **options)
                 goto fail;
             }
 
-            /* if the new-style channel layout is set, convert it to old one
-             * for old-style muxers */
-            if (par->ch_layout.nb_channels &&
-                !par->channels) {
-                par->channels       = par->ch_layout.nb_channels;
-                par->channel_layout = par->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                                      par->ch_layout.u.mask : 0;
-            }
-
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
             /* if the caller is using the deprecated channel layout API,

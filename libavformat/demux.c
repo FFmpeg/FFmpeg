@@ -194,18 +194,6 @@ static int update_stream_avctx(AVFormatContext *s)
             sti->parser = NULL;
         }
 
-        /* if the demuxer exports old channel layouts, convert it to new */
-        if (!st->codecpar->ch_layout.nb_channels &&
-            st->codecpar->channels) {
-            if (st->codecpar->channel_layout) {
-                av_channel_layout_from_mask(&st->codecpar->ch_layout,
-                                            st->codecpar->channel_layout);
-            } else {
-                st->codecpar->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-                st->codecpar->ch_layout.nb_channels = st->codecpar->channels;
-            }
-        }
-
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
         if (st->codecpar->ch_layout.nb_channels &&
