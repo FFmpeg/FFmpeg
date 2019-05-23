@@ -1007,7 +1007,7 @@ static int decompress_i3(AVCodecContext *avctx, uint32_t *dst, int linesize)
         ret = decode_run_i(avctx, ptype, run, &x, &y, clr,
                            dst, linesize, &lx, &ly,
                            backstep, off, &cx, &cx1);
-        if (run < 0)
+        if (ret < 0)
             return ret;
     }
 
