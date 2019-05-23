@@ -301,7 +301,8 @@ int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
         if (picture_structure == PICT_FRAME)
             field_poc[1] += pc->delta_poc_bottom;
     } else if (sps->poc_type == 1) {
-        int abs_frame_num, expected_delta_per_poc_cycle, expectedpoc;
+        int abs_frame_num;
+        int64_t expected_delta_per_poc_cycle, expectedpoc;
         int i;
 
         if (sps->poc_cycle_length != 0)
