@@ -55,6 +55,15 @@ typedef struct LoopContext {
 #define VFLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 #define OFFSET(x) offsetof(LoopContext, x)
 
+static void check_size(AVFilterContext *ctx)
+{
+    LoopContext *s = ctx->priv;
+
+    if (!s->size)
+        av_log(ctx, AV_LOG_WARNING, "Number of %s to loop is not set!\n",
+               ctx->input_pads[0].type == AVMEDIA_TYPE_VIDEO ? "frames" : "samples");
+}
+
 #if CONFIG_ALOOP_FILTER
 
 static int aconfig_input(AVFilterLink *inlink)
@@ -66,6 +75,8 @@ static int aconfig_input(AVFilterLink *inlink)
     s->left = av_audio_fifo_alloc(inlink->format, inlink->channels, 8192);
     if (!s->fifo || !s->left)
         return AVERROR(ENOMEM);
+
+    check_size(ctx);
 
     return 0;
 }
@@ -249,6 +260,8 @@ static av_cold int init(AVFilterContext *ctx)
     s->frames = av_calloc(s->size, sizeof(*s->frames));
     if (!s->frames)
         return AVERROR(ENOMEM);
+
+    check_size(ctx);
 
     return 0;
 }
