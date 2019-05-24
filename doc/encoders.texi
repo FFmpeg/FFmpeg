@@ -733,6 +733,14 @@ if set to 0.
 
 Default value is 0.
 
+@item eld_v2
+Enable ELDv2 (LD-MPS extension for ELD stereo signals) for ELDv2 if set to 1,
+disabled if set to 0.
+
+Note that option is available when fdk-aac version (AACENCODER_LIB_VL0.AACENCODER_LIB_VL1.AACENCODER_LIB_VL2) > (4.0.0).
+
+Default value is 0.
+
 @item signaling
 Set SBR/PS signaling style.
 
