@@ -410,9 +410,9 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
         "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
         "pandn      %[ftmp5],   %[ftmp5],       %[ftmp1]                \n\t"
         "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
-        PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
         MMI_SDXC1(%[ftmp5], %[addr0], %[block], 0x00)
         MMI_SDXC1(%[ftmp6], %[addr0], %[block], 0x08)
+        PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
         "blez       %[addr0],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
