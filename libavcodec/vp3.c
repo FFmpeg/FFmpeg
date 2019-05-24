@@ -988,9 +988,9 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         token = get_vlc2(gb, vlc_table, 11, 3);
         /* use the token to get a zero run, a coefficient, and an eob run */
         if ((unsigned) token <= 6U) {
-            eob_run = eob_run_base[token];
-            if (eob_run_get_bits[token])
-                eob_run += get_bits(gb, eob_run_get_bits[token]);
+            eob_run = eob_run_table[token].base;
+            if (eob_run_table[token].bits)
+                eob_run += get_bits(gb, eob_run_table[token].bits);
 
             if (!eob_run)
                 eob_run = INT_MAX;

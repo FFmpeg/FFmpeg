@@ -198,11 +198,10 @@ static const int8_t fixed_motion_vector_table[64] = {
 };
 
 /* only tokens 0..6 indicate eob runs */
-static const uint8_t eob_run_base[7] = {
-    1, 2, 3, 4, 8, 16, 0
-};
-static const uint8_t eob_run_get_bits[7] = {
-    0, 0, 0, 2, 3, 4, 12
+static const struct {
+    uint8_t base, bits;
+} eob_run_table[7] = {
+    {1, 0}, {2, 0}, {3, 0}, {4, 2}, {8, 3}, {16, 4}, {0, 12}
 };
 
 static const uint8_t zero_run_base[32] = {
