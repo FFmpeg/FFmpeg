@@ -164,6 +164,14 @@ av_cold int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
+    if(s-> in_sample_rate <= 0){
+        av_log(s, AV_LOG_ERROR, "Requested input sample rate %d is invalid\n", s->in_sample_rate);
+        return AVERROR(EINVAL);
+    }
+    if(s->out_sample_rate <= 0){
+        av_log(s, AV_LOG_ERROR, "Requested output sample rate %d is invalid\n", s->out_sample_rate);
+        return AVERROR(EINVAL);
+    }
     s->out.ch_count  = s-> user_out_ch_count;
     s-> in.ch_count  = s->  user_in_ch_count;
     s->used_ch_count = s->user_used_ch_count;
