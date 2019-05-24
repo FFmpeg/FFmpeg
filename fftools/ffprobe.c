@@ -165,6 +165,8 @@ typedef enum {
     SECTION_ID_FRAME_TAGS,
     SECTION_ID_FRAME_SIDE_DATA_LIST,
     SECTION_ID_FRAME_SIDE_DATA,
+    SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST,
+    SECTION_ID_FRAME_SIDE_DATA_TIMECODE,
     SECTION_ID_FRAME_LOG,
     SECTION_ID_FRAME_LOGS,
     SECTION_ID_LIBRARY_VERSION,
@@ -209,7 +211,9 @@ static struct section sections[] = {
     [SECTION_ID_FRAME] =              { SECTION_ID_FRAME, "frame", 0, { SECTION_ID_FRAME_TAGS, SECTION_ID_FRAME_SIDE_DATA_LIST, SECTION_ID_FRAME_LOGS, -1 } },
     [SECTION_ID_FRAME_TAGS] =         { SECTION_ID_FRAME_TAGS, "tags", SECTION_FLAG_HAS_VARIABLE_FIELDS, { -1 }, .element_name = "tag", .unique_name = "frame_tags" },
     [SECTION_ID_FRAME_SIDE_DATA_LIST] ={ SECTION_ID_FRAME_SIDE_DATA_LIST, "side_data_list", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA, -1 }, .element_name = "side_data", .unique_name = "frame_side_data_list" },
-    [SECTION_ID_FRAME_SIDE_DATA] =     { SECTION_ID_FRAME_SIDE_DATA, "side_data", 0, { -1 } },
+    [SECTION_ID_FRAME_SIDE_DATA] =     { SECTION_ID_FRAME_SIDE_DATA, "side_data", 0, { SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST, -1 } },
+    [SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST] =     { SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST, "timecodes", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_SIDE_DATA_TIMECODE, -1 } },
+    [SECTION_ID_FRAME_SIDE_DATA_TIMECODE] =     { SECTION_ID_FRAME_SIDE_DATA_TIMECODE, "timecode", 0, { -1 } },
     [SECTION_ID_FRAME_LOGS] =         { SECTION_ID_FRAME_LOGS, "logs", SECTION_FLAG_IS_ARRAY, { SECTION_ID_FRAME_LOG, -1 } },
     [SECTION_ID_FRAME_LOG] =          { SECTION_ID_FRAME_LOG, "log", 0, { -1 },  },
     [SECTION_ID_LIBRARY_VERSIONS] =   { SECTION_ID_LIBRARY_VERSIONS, "library_versions", SECTION_FLAG_IS_ARRAY, { SECTION_ID_LIBRARY_VERSION, -1 } },
@@ -2199,6 +2203,18 @@ static void show_frame(WriterContext *w, AVFrame *frame, AVStream *stream,
                 char tcbuf[AV_TIMECODE_STR_SIZE];
                 av_timecode_make_mpeg_tc_string(tcbuf, *(int64_t *)(sd->data));
                 print_str("timecode", tcbuf);
+            } else if (sd->type == AV_FRAME_DATA_S12M_TIMECODE && sd->size == 16) {
+                uint32_t *tc = (uint32_t*)sd->data;
+                int m = FFMIN(tc[0],3);
+                writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE_LIST);
+                for (int j = 1; j <= m ; j++) {
+                    char tcbuf[AV_TIMECODE_STR_SIZE];
+                    av_timecode_make_smpte_tc_string(tcbuf, tc[j], 0);
+                    writer_print_section_header(w, SECTION_ID_FRAME_SIDE_DATA_TIMECODE);
+                    print_str("value", tcbuf);
+                    writer_print_section_footer(w);
+                }
+                writer_print_section_footer(w);
             } else if (sd->type == AV_FRAME_DATA_MASTERING_DISPLAY_METADATA) {
                 AVMasteringDisplayMetadata *metadata = (AVMasteringDisplayMetadata *)sd->data;
 

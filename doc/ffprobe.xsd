@@ -147,9 +147,23 @@
         </xsd:sequence>
     </xsd:complexType>
     <xsd:complexType name="frameSideDataType">
+        <xsd:sequence>
+            <xsd:element name="timecodes" type="ffprobe:frameSideDataTimecodeList" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+
         <xsd:attribute name="side_data_type"              type="xsd:string"/>
         <xsd:attribute name="side_data_size"              type="xsd:int"   />
         <xsd:attribute name="timecode"                    type="xsd:string"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="frameSideDataTimecodeList">
+        <xsd:sequence>
+            <xsd:element name="timecode" type="ffprobe:frameSideDataTimecodeType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="frameSideDataTimecodeType">
+        <xsd:attribute name="value"              type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="subtitleType">
