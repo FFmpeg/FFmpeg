@@ -133,6 +133,14 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
+
+    ctx->params->vui.bEnableVideoSignalTypePresentFlag = 1;
+
+    ctx->params->vui.bEnableVideoFullRangeFlag = avctx->pix_fmt == AV_PIX_FMT_YUVJ420P ||
+                                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ422P ||
+                                                 avctx->pix_fmt == AV_PIX_FMT_YUVJ444P ||
+                                                 avctx->color_range == AVCOL_RANGE_JPEG;
+
     if ((avctx->color_primaries <= AVCOL_PRI_SMPTE432 &&
          avctx->color_primaries != AVCOL_PRI_UNSPECIFIED) ||
         (avctx->color_trc <= AVCOL_TRC_ARIB_STD_B67 &&
@@ -140,7 +148,6 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         (avctx->colorspace <= AVCOL_SPC_ICTCP &&
          avctx->colorspace != AVCOL_SPC_UNSPECIFIED)) {
 
-        ctx->params->vui.bEnableVideoSignalTypePresentFlag  = 1;
         ctx->params->vui.bEnableColorDescriptionPresentFlag = 1;
 
         // x265 validates the parameters internally
@@ -454,8 +461,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 static const enum AVPixelFormat x265_csp_eight[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUVJ422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_GBRP,
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
@@ -463,8 +473,11 @@ static const enum AVPixelFormat x265_csp_eight[] = {
 
 static const enum AVPixelFormat x265_csp_ten[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUVJ422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
@@ -477,8 +490,11 @@ static const enum AVPixelFormat x265_csp_ten[] = {
 
 static const enum AVPixelFormat x265_csp_twelve[] = {
     AV_PIX_FMT_YUV420P,
+    AV_PIX_FMT_YUVJ420P,
     AV_PIX_FMT_YUV422P,
+    AV_PIX_FMT_YUVJ422P,
     AV_PIX_FMT_YUV444P,
+    AV_PIX_FMT_YUVJ444P,
     AV_PIX_FMT_GBRP,
     AV_PIX_FMT_YUV420P10,
     AV_PIX_FMT_YUV422P10,
