@@ -218,6 +218,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     MixContext *s = ctx->priv;
     AVRational frame_rate = ctx->inputs[0]->frame_rate;
+    AVRational sar = ctx->inputs[0]->sample_aspect_ratio;
     AVFilterLink *inlink = ctx->inputs[0];
     int height = ctx->inputs[0]->h;
     int width = ctx->inputs[0]->w;
@@ -252,6 +253,7 @@ static int config_output(AVFilterLink *outlink)
     outlink->w          = width;
     outlink->h          = height;
     outlink->frame_rate = frame_rate;
+    outlink->sample_aspect_ratio = sar;
 
     if ((ret = ff_framesync_init(&s->fs, ctx, s->nb_inputs)) < 0)
         return ret;
