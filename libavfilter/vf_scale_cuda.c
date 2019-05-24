@@ -481,6 +481,9 @@ static int cudascale_scale(AVFilterContext *ctx, AVFrame *out, AVFrame *in)
     av_frame_move_ref(out, s->frame);
     av_frame_move_ref(s->frame, s->tmp_frame);
 
+    s->frame->width  = s->planes_out[0].width;
+    s->frame->height = s->planes_out[0].height;
+
     ret = av_frame_copy_props(out, in);
     if (ret < 0)
         return ret;
