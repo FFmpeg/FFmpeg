@@ -259,14 +259,14 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
 
 static int gif_image_write_image(AVCodecContext *avctx,
                                  uint8_t **bytestream, uint8_t *end,
-                                 const uint32_t *palette,
+                                 const uint32_t *local_palette,
                                  const uint8_t *buf, const int linesize,
                                  AVPacket *pkt)
 {
     GIFContext *s = avctx->priv_data;
     int disposal, len = 0, height = avctx->height, width = avctx->width, x, y;
     int x_start = 0, y_start = 0, trans = s->transparent_index;
-    int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !palette;
+    int bcid = -1, honor_transparency = (s->flags & GF_TRANSDIFF) && s->last_frame && !local_palette;
 
 
     if (!s->image && avctx->frame_number && is_image_translucent(avctx, buf, linesize)) {
@@ -274,12 +274,12 @@ static int gif_image_write_image(AVCodecContext *avctx,
         honor_transparency = 0;
         disposal = GCE_DISPOSAL_BACKGROUND;
     } else {
-        gif_crop_opaque(avctx, palette, buf, linesize, &width, &height, &x_start, &y_start);
+        gif_crop_opaque(avctx, local_palette, buf, linesize, &width, &height, &x_start, &y_start);
         disposal = GCE_DISPOSAL_INPLACE;
     }
 
     if (s->image || !avctx->frame_number) { /* GIF header */
-        const uint32_t *global_palette = palette ? palette : s->palette;
+        const uint32_t *global_palette = local_palette ? local_palette : s->palette;
         const AVRational sar = avctx->sample_aspect_ratio;
         int64_t aspect = 0;
 
@@ -314,7 +314,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
     if (trans < 0)
         honor_transparency = 0;
 
-    bcid = honor_transparency || disposal == GCE_DISPOSAL_BACKGROUND ? trans : get_palette_transparency_index(palette);
+    bcid = honor_transparency || disposal == GCE_DISPOSAL_BACKGROUND ? trans : get_palette_transparency_index(local_palette);
 
     /* graphic control extension */
     bytestream_put_byte(bytestream, GIF_EXTENSION_INTRODUCER);
@@ -332,16 +332,17 @@ static int gif_image_write_image(AVCodecContext *avctx,
     bytestream_put_le16(bytestream, width);
     bytestream_put_le16(bytestream, height);
 
-    if (!palette) {
+    if (!local_palette) {
         bytestream_put_byte(bytestream, 0x00); /* flags */
     } else {
         unsigned i;
         bytestream_put_byte(bytestream, 1<<7 | 0x7); /* flags */
         for (i = 0; i < AVPALETTE_COUNT; i++) {
-            const uint32_t v = palette[i];
+            const uint32_t v = local_palette[i];
             bytestream_put_be24(bytestream, v);
         }
     }
+
 
     assert(!honor_transparency);
 
@@ -353,17 +354,18 @@ static int gif_image_write_image(AVCodecContext *avctx,
         .height = height,
         .linesize = linesize,
     };
-    Gif_Color stub_palette[256];
-    for(int i=0; i < 256; i++) {
+    Gif_Color stub_palette[AVPALETTE_COUNT];
+    const uint32_t *palette = local_palette ? local_palette : s->palette;
+    for(int i=0; i < AVPALETTE_COUNT; i++) {
         stub_palette[i] = (Gif_Color){
-            .gfc_red = i, .gfc_green = i, .gfc_blue = i,
+            .gfc_red = palette[i]>>16, .gfc_green = palette[i]>>8, .gfc_blue = palette[i],
         };
     }
     Gif_Colormap gfcm = {
         .ncol = 256,
         .col = stub_palette,
     };
-    ff_lossy_write_compressed_data(&gfcm, &gfi, 8, 1000, bytestream, end);
+    ff_lossy_write_compressed_data(&gfcm, &gfi, 8, 10000, bytestream, end);
 
     const uint8_t *ptr = s->buf;
     while (len > 0) {
@@ -399,7 +401,7 @@ static av_cold int giflossy_encode_init(AVCodecContext *avctx)
 
     for (int i = 0; i < 256; i++) {
         int r=i, g=i, b=i;
-        s->palette[i] = b + (g << 8) + (r << 16) + (0xFFU << 24);
+        s->palette[i] = (rand() << 16) ^ rand();//b + (g << 8) + (r << 16) + (0xFFU << 24);
     }
 
     return 0;
@@ -410,7 +412,7 @@ static int giflossy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 {
     GIFContext *s = avctx->priv_data;
     uint8_t *outbuf_ptr, *end;
-    const uint32_t *palette = NULL;
+    const uint32_t *local_palette = NULL;
     int ret;
 
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*7/5 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
@@ -420,7 +422,7 @@ static int giflossy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
 
 
-    gif_image_write_image(avctx, &outbuf_ptr, end, palette,
+    gif_image_write_image(avctx, &outbuf_ptr, end, local_palette,
                           pict->data[0], pict->linesize[0], pkt);
     if (!s->last_frame && !s->image) {
         s->last_frame = av_frame_alloc();
@@ -470,7 +472,7 @@ AVCodec ff_giflossy_encoder = {
     .encode2        = giflossy_encode_frame,
     .close          = giflossy_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE
     },
     .priv_class     = &giflossy_class,
 };
@@ -504,23 +506,24 @@ gfc_reinit(Gif_CodeTable *gfc, Gif_Code clear_code)
 
 static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transaprent, int b_transparent, gfc_rgbdiff dither);
 
-static inline Gif_Color rgb_color_at_pos(const Gif_Image *gfi, unsigned pos)
+static inline Gif_RGBA rgba_color_at_pos(const Gif_Image *gfi, unsigned pos)
 {
-    const unsigned pixel_size = 3;
+    const unsigned pixel_size = 4;
     if (gfi->width * pixel_size != gfi->linesize) {
         abort();
         // unsigned y = pos / gfi->width, x = pos - y * gfi->width;
         // return gfi->image_data[y * gfi->linesize + x];
     }
-    return ((Gif_Color*)gfi->image_data)[pos];
+    return ((Gif_RGBA*)gfi->image_data)[pos];
 }
 
-static inline uint8_t gif_pixel_at_pos(const Gif_Colormap *gfcm, const Gif_Image *gfi, unsigned pos)
+static inline uint8_t gif_pixel_at_pos(const Gif_Colormap *gfcm, const Gif_Image *gfi, unsigned pos, gfc_rgbdiff dither)
 {
-    Gif_Color color = rgb_color_at_pos(gfi, pos);
-    int is_transparent = 0;
-    gfc_rgbdiff dither = {0,0,0};
+    Gif_RGBA rgba = rgba_color_at_pos(gfi, pos);
+    int is_transparent = rgba.a < 128;
+    Gif_Color color = {rgba.r, rgba.g, rgba.b};
 
+    // TODO: when using dispose=keep, compare to background pixel color if the source is transparent
     int best = 0;
     int min_diff = color_diff(color, gfcm->col[0], is_transparent, gfi->transparent == 0, dither);
     for(int i = 1; i < gfcm->ncol; i++) {
@@ -538,6 +541,7 @@ struct selected_node {
   Gif_Node *node; /* which node has been chosen by gfc_lookup_lossy */
   unsigned long pos, /* where the node ends */
   diff; /* what is the overall quality loss for that node */
+  gfc_rgbdiff dither;
 };
 
 
@@ -591,14 +595,15 @@ gfc_lookup_lossy(Gif_CodeTable *gfc, const Gif_Colormap *gfcm, Gif_Image *gfi,
 {
   unsigned image_endpos = gfi->width * gfi->height;
 
-  struct selected_node best_t = {node, pos, base_diff};
+  struct selected_node best_t = {node, pos, base_diff, dither};
   if (pos >= image_endpos) return best_t;
 
-  uint8_t suffix = gif_pixel_at_pos(gfcm, gfi, pos);
+  uint8_t suffix = gif_pixel_at_pos(gfcm, gfi, pos, dither);
   assert(!node || (node >= gfc->nodes && node < gfc->nodes + NODES_SIZE));
   assert(suffix < gfc->clear_code);
   if (!node) {
     /* prefix of the new node must be same as suffix of previously added node */
+    // TODO: calculate dither vs previous pos
     return gfc_lookup_lossy(gfc, gfcm, gfi, pos+1, &gfc->nodes[suffix], base_diff, (gfc_rgbdiff){0,0,0}, max_diff);
   }
 
@@ -808,7 +813,8 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
     /*****
      * Find the next code to output. */
     {
-      struct selected_node t = gfc_lookup_lossy(&gfc, gfcm, gfi, pos, NULL, 0, (gfc_rgbdiff){0,0,0}, loss);
+      gfc_rgbdiff dither = {0,0,0};
+      struct selected_node t = gfc_lookup_lossy(&gfc, gfcm, gfi, pos, NULL, 0, dither, loss);
 
       work_node = t.node;
       run = t.pos - pos;
@@ -817,7 +823,7 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
       if (pos < image_endpos) {
         /* Output the current code. */
         if (next_code < GIF_MAX_CODE) {
-          gfc_define(&gfc, work_node, gif_pixel_at_pos(gfcm, gfi, pos), next_code);
+          gfc_define(&gfc, work_node, gif_pixel_at_pos(gfcm, gfi, pos, dither), next_code);
           next_code++;
         } else
           next_code = GIF_MAX_CODE + 1; /* to match "> CUR_BUMP_CODE" above */

@@ -68,6 +68,13 @@ typedef struct Gif_Color {
     uint8_t gfc_blue;      /* blue component (0-255) */
 } Gif_Color;
 
+typedef struct Gif_RGBA {
+    uint8_t r;      /* red component (0-255) */
+    uint8_t g;      /* green component (0-255) */
+    uint8_t b;      /* blue component (0-255) */
+    uint8_t a;      /* alpha component (0-255) */
+} Gif_RGBA;
+
 typedef struct Gif_Colormap {
     int ncol;
     Gif_Color *col;
