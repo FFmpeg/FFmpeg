@@ -48,7 +48,8 @@ Select Gaussian rescaling algorithm.
 Select sinc rescaling algorithm.
 
 @item lanczos
-Select Lanczos rescaling algorithm.
+Select Lanczos rescaling algorithm. The default width (alpha) is 3 and can be
+changed by setting @code{param0}.
 
 @item spline
 Select natural bicubic spline rescaling algorithm.
