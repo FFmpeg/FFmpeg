@@ -30,6 +30,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "audio.h"
+#include "filters.h"
 #include "video.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -439,43 +440,64 @@ static int plot_freqs(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *in)
+static int filter_frame(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     ShowFreqsContext *s = ctx->priv;
     AVFrame *fin = NULL;
-    int consumed = 0;
     int ret = 0;
 
-    if (s->pts == AV_NOPTS_VALUE)
-        s->pts = in->pts - av_audio_fifo_size(s->fifo);
-
-    av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
-    while (av_audio_fifo_size(s->fifo) >= s->win_size) {
-        fin = ff_get_audio_buffer(inlink, s->win_size);
-        if (!fin) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
-        fin->pts = s->pts + consumed;
-        consumed += s->hop_size;
-        ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
-        if (ret < 0)
-            goto fail;
-
-        ret = plot_freqs(inlink, fin);
-        av_frame_free(&fin);
-        av_audio_fifo_drain(s->fifo, s->hop_size);
-        if (ret < 0)
-            goto fail;
+    fin = ff_get_audio_buffer(inlink, s->win_size);
+    if (!fin) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
-fail:
-    s->pts = AV_NOPTS_VALUE;
+    fin->pts = s->pts;
+    s->pts += s->hop_size;
+    ret = av_audio_fifo_peek(s->fifo, (void **)fin->extended_data, s->win_size);
+    if (ret < 0)
+        goto fail;
+
+    ret = plot_freqs(inlink, fin);
     av_frame_free(&fin);
-    av_frame_free(&in);
+    av_audio_fifo_drain(s->fifo, s->hop_size);
+
+fail:
+    av_frame_free(&fin);
     return ret;
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    ShowFreqsContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret = 0;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    if (av_audio_fifo_size(s->fifo) < s->win_size)
+        ret = ff_inlink_consume_samples(inlink, s->win_size, s->win_size, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0) {
+        av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
+        if (s->pts == AV_NOPTS_VALUE)
+            s->pts = in->pts;
+    }
+
+    if (av_audio_fifo_size(s->fifo) >= s->win_size) {
+        ret = filter_frame(inlink);
+        if (ret <= 0)
+            return ret;
+    }
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -500,7 +522,6 @@ static const AVFilterPad showfreqs_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -521,6 +542,7 @@ AVFilter ff_avf_showfreqs = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(ShowFreqsContext),
+    .activate      = activate,
     .inputs        = showfreqs_inputs,
     .outputs       = showfreqs_outputs,
     .priv_class    = &showfreqs_class,
