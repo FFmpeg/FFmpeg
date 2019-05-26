@@ -815,6 +815,19 @@ static int FUNC(sei_mastering_display_colour_volume)(CodedBitstreamContext *ctx,
     return 0;
 }
 
+static int FUNC(sei_alternative_transfer_characteristics)(CodedBitstreamContext *ctx,
+                                                          RWContext *rw,
+                                                          H264RawSEIAlternativeTransferCharacteristics *current)
+{
+    int err;
+
+    HEADER("Alternative Transfer Characteristics");
+
+    ub(8, preferred_transfer_characteristics);
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H264RawSEIPayload *current)
 {
@@ -865,6 +878,10 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
     case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
         CHECK(FUNC(sei_mastering_display_colour_volume)
               (ctx, rw, &current->payload.mastering_display_colour_volume));
+        break;
+    case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
+        CHECK(FUNC(sei_alternative_transfer_characteristics)
+              (ctx, rw, &current->payload.alternative_transfer_characteristics));
         break;
     default:
         {

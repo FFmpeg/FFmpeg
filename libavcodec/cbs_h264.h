@@ -314,6 +314,10 @@ typedef struct H264RawSEIMasteringDisplayColourVolume {
     uint32_t min_display_mastering_luminance;
 } H264RawSEIMasteringDisplayColourVolume;
 
+typedef struct H264RawSEIAlternativeTransferCharacteristics {
+    uint8_t preferred_transfer_characteristics;
+} H264RawSEIAlternativeTransferCharacteristics;
+
 typedef struct H264RawSEIPayload {
     uint32_t payload_type;
     uint32_t payload_size;
@@ -327,6 +331,8 @@ typedef struct H264RawSEIPayload {
         H264RawSEIRecoveryPoint recovery_point;
         H264RawSEIDisplayOrientation display_orientation;
         H264RawSEIMasteringDisplayColourVolume mastering_display_colour_volume;
+        H264RawSEIAlternativeTransferCharacteristics
+            alternative_transfer_characteristics;
         struct {
             uint8_t *data;
             size_t data_length;

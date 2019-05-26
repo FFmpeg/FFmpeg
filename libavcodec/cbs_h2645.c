@@ -458,6 +458,7 @@ static void cbs_h264_free_sei_payload(H264RawSEIPayload *payload)
     case H264_SEI_TYPE_RECOVERY_POINT:
     case H264_SEI_TYPE_DISPLAY_ORIENTATION:
     case H264_SEI_TYPE_MASTERING_DISPLAY_COLOUR_VOLUME:
+    case H264_SEI_TYPE_ALTERNATIVE_TRANSFER:
         break;
     case H264_SEI_TYPE_USER_DATA_REGISTERED:
         av_buffer_unref(&payload->payload.user_data_registered.data_ref);
