@@ -1260,7 +1260,7 @@ static int ipvideo_decode_frame(AVCodecContext *avctx,
             s->decoding_map_size = ((s->avctx->width / 8) * (s->avctx->height / 8)) * 2;
             s->decoding_map = buf + 8 + 14; /* 14 bits of op data */
             video_data_size -= s->decoding_map_size + 14;
-            if (video_data_size <= 0)
+            if (video_data_size <= 0 || s->decoding_map_size == 0)
                 return AVERROR_INVALIDDATA;
 
             if (buf_size < 8 + s->decoding_map_size + 14 + video_data_size)
