@@ -223,6 +223,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     frame->linesize[2] = p->stride[1];
 
     c->profile = p->seq_hdr->profile;
+    c->level = ((p->seq_hdr->operating_points[0].major_level - 2) << 2)
+               | p->seq_hdr->operating_points[0].minor_level;
     frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
     frame->width = p->p.w;
     frame->height = p->p.h;
