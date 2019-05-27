@@ -310,9 +310,10 @@ static int decode_lt_rps(HEVCContext *s, LongTermRPS *rps, GetBitContext *gb)
     return 0;
 }
 
-static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
-                                 const HEVCSPS *sps)
+static void export_stream_params(HEVCContext *s, const HEVCSPS *sps)
 {
+    AVCodecContext *avctx = s->avctx;
+    const HEVCParamSets *ps = &s->ps;
     const HEVCVPS *vps = (const HEVCVPS*)ps->vps_list[sps->vps_id]->data;
     const HEVCWindow *ow = &sps->output_window;
     unsigned int num = 0, den = 0;
@@ -355,6 +356,12 @@ static void export_stream_params(AVCodecContext *avctx, const HEVCParamSets *ps,
     if (num != 0 && den != 0)
         av_reduce(&avctx->framerate.den, &avctx->framerate.num,
                   num, den, 1 << 30);
+
+    if (s->sei.alternative_transfer.present &&
+        av_color_transfer_name(s->sei.alternative_transfer.preferred_transfer_characteristics) &&
+        s->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+        avctx->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
+    }
 }
 
 static enum AVPixelFormat get_format(HEVCContext *s, const HEVCSPS *sps)
@@ -447,7 +454,7 @@ static int set_sps(HEVCContext *s, const HEVCSPS *sps,
     if (ret < 0)
         goto fail;
 
-    export_stream_params(s->avctx, &s->ps, sps);
+    export_stream_params(s, sps);
 
     s->avctx->pix_fmt = pix_fmt;
 
@@ -2778,12 +2785,6 @@ static int set_side_data(HEVCContext *s)
         s->avctx->properties |= FF_CODEC_PROPERTY_CLOSED_CAPTIONS;
     }
 
-    if (s->sei.alternative_transfer.present &&
-        av_color_transfer_name(s->sei.alternative_transfer.preferred_transfer_characteristics) &&
-        s->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
-        s->avctx->color_trc = out->color_trc = s->sei.alternative_transfer.preferred_transfer_characteristics;
-    }
-
     return 0;
 }
 
@@ -3179,7 +3180,7 @@ static int hevc_decode_extradata(HEVCContext *s, uint8_t *buf, int length, int f
     for (i = 0; i < FF_ARRAY_ELEMS(s->ps.sps_list); i++) {
         if (first && s->ps.sps_list[i]) {
             const HEVCSPS *sps = (const HEVCSPS*)s->ps.sps_list[i]->data;
-            export_stream_params(s->avctx, &s->ps, sps);
+            export_stream_params(s, sps);
             break;
         }
     }
