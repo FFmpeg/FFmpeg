@@ -25,6 +25,7 @@
 
 #include "audio.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "internal.h"
 
 #define NBANDS 17
@@ -203,7 +204,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         dst = (float *)s->out->extended_data[ch];
         src = (float *)in->extended_data[ch];
 
-        for (i = 0; i < s->winlen; i++)
+        for (i = 0; i < in->nb_samples; i++)
             fsamples[i] = src[i];
         for (; i < s->tabsize; i++)
             fsamples[i] = 0;
@@ -238,6 +239,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     av_frame_free(&in);
 
     return ff_filter_frame(outlink, out);
+}
+
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    SuperEqualizerContext *s = ctx->priv;
+    AVFrame *in = NULL;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    ret = ff_inlink_consume_samples(inlink, s->winlen, s->winlen, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
 }
 
 static av_cold int init(AVFilterContext *ctx)
@@ -277,10 +300,6 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SuperEqualizerContext *s = ctx->priv;
 
-    inlink->partial_buf_size =
-    inlink->min_samples =
-    inlink->max_samples = s->winlen;
-
     s->out = ff_get_audio_buffer(inlink, s->tabsize);
     if (!s->out)
         return AVERROR(ENOMEM);
@@ -314,7 +333,6 @@ static const AVFilterPad superequalizer_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     { NULL }
@@ -363,6 +381,7 @@ AVFilter ff_af_superequalizer = {
     .priv_class    = &superequalizer_class,
     .query_formats = query_formats,
     .init          = init,
+    .activate      = activate,
     .uninit        = uninit,
     .inputs        = superequalizer_inputs,
     .outputs       = superequalizer_outputs,
