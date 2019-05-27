@@ -206,7 +206,7 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
         return res;
     }
 
-    av_assert0(p->data[0] != NULL);
+    av_assert0(p->data[0] && p->allocator_data);
 
     // This requires the custom allocator above
     frame->buf[0] = av_buffer_ref(p->allocator_data);
