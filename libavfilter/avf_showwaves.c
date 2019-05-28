@@ -416,7 +416,7 @@ static int config_output(AVFilterLink *outlink)
         showwaves->n = 1;
 
     if (!showwaves->n)
-        showwaves->n = FFMAX(1, ((double)inlink->sample_rate / (showwaves->w * av_q2d(showwaves->rate))) + 0.5);
+        showwaves->n = FFMAX(1, av_rescale_q(inlink->sample_rate, av_make_q(1, showwaves->w), showwaves->rate));
 
     showwaves->buf_idx = 0;
     if (!(showwaves->buf_idy = av_mallocz_array(nb_channels, sizeof(*showwaves->buf_idy)))) {
