@@ -211,7 +211,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioVectorScopeContext *s = ctx->priv;
 
-    s->nb_samples = FFMAX(1, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
+    s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
 
     return 0;
 }
