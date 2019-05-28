@@ -106,7 +106,7 @@ static int config_input(AVFilterLink *inlink)
     int nb_samples;
 
     if (s->do_video) {
-        nb_samples = FFMAX(1024, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
+        nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
         inlink->partial_buf_size =
         inlink->min_samples =
         inlink->max_samples = nb_samples;
