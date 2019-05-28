@@ -96,7 +96,7 @@ static int config_input(AVFilterLink *inlink)
     int ch;
     char *colors, *saveptr = NULL;
 
-    s->nb_samples = FFMAX(1, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
+    s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
     s->nb_channels = inlink->channels;
     s->depth = inlink->format == AV_SAMPLE_FMT_S16P ? 16 : 32;
 
