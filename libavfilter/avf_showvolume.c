@@ -165,7 +165,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ShowVolumeContext *s = ctx->priv;
 
-    s->nb_samples = FFMAX(1024, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
+    s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
     s->values = av_calloc(inlink->channels * VAR_VARS_NB, sizeof(double));
     if (!s->values)
         return AVERROR(ENOMEM);
