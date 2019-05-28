@@ -66,7 +66,7 @@ static void opus_write_extradata(AVCodecContext *avctx)
 
     bytestream_put_buffer(&bs, "OpusHead", 8);
     bytestream_put_byte  (&bs, 0x1);
-    bytestream_put_byte  (&bs, avctx->channels);
+    bytestream_put_byte  (&bs, avctx->ch_layout.nb_channels);
     bytestream_put_le16  (&bs, avctx->initial_padding);
     bytestream_put_le32  (&bs, avctx->sample_rate);
     bytestream_put_le16  (&bs, 0x0);
@@ -518,11 +518,16 @@ static void opus_packet_assembler(OpusEncContext *s, AVPacket *avpkt)
 static AVFrame *spawn_empty_frame(OpusEncContext *s)
 {
     AVFrame *f = av_frame_alloc();
+    int ret;
     if (!f)
         return NULL;
     f->format         = s->avctx->sample_fmt;
     f->nb_samples     = s->avctx->frame_size;
-    f->channel_layout = s->avctx->channel_layout;
+    ret = av_channel_layout_copy(&f->ch_layout, &s->avctx->ch_layout);
+    if (ret < 0) {
+        av_frame_free(&f);
+        return NULL;
+    }
     if (av_frame_get_buffer(f, 4)) {
         av_frame_free(&f);
         return NULL;
@@ -626,7 +631,7 @@ static av_cold int opus_encode_init(AVCodecContext *avctx)
     OpusEncContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-    s->channels = avctx->channels;
+    s->channels = avctx->ch_layout.nb_channels;
 
     /* Opus allows us to change the framesize on each packet (and each packet may
      * have multiple frames in it) but we can't change the codec's frame size on
@@ -734,8 +739,12 @@ const AVCodec ff_opus_encoder = {
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE | FF_CODEC_CAP_INIT_CLEANUP,
     .capabilities   = AV_CODEC_CAP_EXPERIMENTAL | AV_CODEC_CAP_SMALL_LAST_FRAME | AV_CODEC_CAP_DELAY,
     .supported_samplerates = (const int []){ 48000, 0 },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = (const uint64_t []){ AV_CH_LAYOUT_MONO,
                                             AV_CH_LAYOUT_STEREO, 0 },
+#endif
+    .ch_layouts      = (const AVChannelLayout []){ AV_CHANNEL_LAYOUT_MONO,
+                                                   AV_CHANNEL_LAYOUT_STEREO, { 0 } },
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_FLTP,
                                                      AV_SAMPLE_FMT_NONE },
 };

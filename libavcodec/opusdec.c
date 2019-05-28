@@ -458,7 +458,7 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         return ret;
     frame->nb_samples = 0;
 
-    for (i = 0; i < avctx->channels; i++) {
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         ChannelMap *map = &c->channel_maps[i];
         if (!map->copy)
             c->streams[map->stream_idx].out[map->channel_idx] = (float*)frame->extended_data[i];
@@ -541,7 +541,7 @@ static int opus_decode_packet(AVCodecContext *avctx, void *data,
         }
     }
 
-    for (i = 0; i < avctx->channels; i++) {
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         ChannelMap *map = &c->channel_maps[i];
 
         /* handle copied channels */

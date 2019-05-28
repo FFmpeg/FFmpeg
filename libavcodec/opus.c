@@ -296,14 +296,15 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
     static const uint8_t default_channel_map[2] = { 0, 1 };
 
     int (*channel_reorder)(int, int) = channel_reorder_unknown;
+    int channels = avctx->ch_layout.nb_channels;
 
     const uint8_t *extradata, *channel_map;
     int extradata_size;
-    int version, channels, map_type, streams, stereo_streams, i, j;
-    uint64_t layout;
+    int version, map_type, streams, stereo_streams, i, j, ret;
+    AVChannelLayout layout = { 0 };
 
     if (!avctx->extradata) {
-        if (avctx->channels > 2) {
+        if (channels > 2) {
             av_log(avctx, AV_LOG_ERROR,
                    "Multichannel configuration without extradata.\n");
             return AVERROR(EINVAL);
@@ -331,7 +332,7 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
     if (avctx->internal)
         avctx->internal->skip_samples = avctx->delay;
 
-    channels = avctx->extradata ? extradata[9] : (avctx->channels == 1) ? 1 : 2;
+    channels = avctx->extradata ? extradata[9] : (channels == 1) ? 1 : 2;
     if (!channels) {
         av_log(avctx, AV_LOG_ERROR, "Zero channel count specified in the extradata\n");
         return AVERROR_INVALIDDATA;
@@ -346,9 +347,11 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         if (channels > 2) {
             av_log(avctx, AV_LOG_ERROR,
                    "Channel mapping 0 is only specified for up to 2 channels\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
-        layout         = (channels == 1) ? AV_CH_LAYOUT_MONO : AV_CH_LAYOUT_STEREO;
+        layout         = (channels == 1) ? (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO :
+                                           (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
         streams        = 1;
         stereo_streams = channels - 1;
         channel_map    = default_channel_map;
@@ -356,7 +359,8 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         if (extradata_size < 21 + channels) {
             av_log(avctx, AV_LOG_ERROR, "Invalid extradata size: %d\n",
                    extradata_size);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         streams        = extradata[19];
@@ -365,16 +369,18 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             streams + stereo_streams > 255) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid stream/stereo stream count: %d/%d\n", streams, stereo_streams);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         if (map_type == 1) {
             if (channels > 8) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Channel mapping 1 is only specified for up to 8 channels\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
-            layout = ff_vorbis_channel_layouts[channels - 1];
+            av_channel_layout_copy(&layout, &ff_vorbis_ch_layouts[channels - 1]);
             channel_reorder = channel_reorder_vorbis;
         } else if (map_type == 2) {
             int ambisonic_order = ff_sqrt(channels) - 1;
@@ -384,15 +390,20 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
                        "Channel mapping 2 is only specified for channel counts"
                        " which can be written as (n + 1)^2 or (n + 1)^2 + 2"
                        " for nonnegative integer n\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
             if (channels > 227) {
                 av_log(avctx, AV_LOG_ERROR, "Too many channels\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
-            layout = 0;
-        } else
-            layout = 0;
+            layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            layout.nb_channels = channels;
+        } else {
+            layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+            layout.nb_channels = channels;
+        }
 
         channel_map = extradata + 21;
     } else {
@@ -401,8 +412,10 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
     }
 
     s->channel_maps = av_calloc(channels, sizeof(*s->channel_maps));
-    if (!s->channel_maps)
-        return AVERROR(ENOMEM);
+    if (!s->channel_maps) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     for (i = 0; i < channels; i++) {
         ChannelMap *map = &s->channel_maps[i];
@@ -415,7 +428,8 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid channel map for output channel %d: %d\n", i, idx);
             av_freep(&s->channel_maps);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         /* check that we did not see this index yet */
@@ -436,12 +450,15 @@ av_cold int ff_opus_parse_extradata(AVCodecContext *avctx,
         }
     }
 
-    avctx->channels       = channels;
-    avctx->channel_layout = layout;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout = layout;
     s->nb_streams         = streams;
     s->nb_stereo_streams  = stereo_streams;
 
     return 0;
+fail:
+    av_channel_layout_uninit(&layout);
+    return ret;
 }
 
 void ff_celt_quant_bands(CeltFrame *f, OpusRangeCoder *rc)
