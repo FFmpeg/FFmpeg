@@ -120,7 +120,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AudioHistogramContext *s = ctx->priv;
 
-    s->nb_samples = FFMAX(1, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
+    s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
     s->dchannels = s->dmode == SINGLE ? 1 : inlink->channels;
     s->shistogram = av_calloc(s->w, s->dchannels * sizeof(*s->shistogram));
     if (!s->shistogram)
