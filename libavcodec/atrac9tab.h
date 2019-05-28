@@ -33,7 +33,7 @@ enum ATRAC9BlockType {
 };
 
 typedef struct ATRAC9BlockConfig {
-    uint64_t channel_layout;
+    AVChannelLayout channel_layout;
     enum ATRAC9BlockType type[5];
     int plane_map[5][2];
     int count;
@@ -41,25 +41,25 @@ typedef struct ATRAC9BlockConfig {
 
 static const ATRAC9BlockConfig at9_block_layout[] = {
     { /* Mono */
-        .channel_layout  = AV_CH_LAYOUT_MONO,
+        .channel_layout  = AV_CHANNEL_LAYOUT_MONO,
         .type            = { ATRAC9_BLOCK_TYPE_SCE, },
         .count           = 1,
     },
     { /* Dual Mono */
-        .channel_layout  = AV_CH_LAYOUT_STEREO,
+        .channel_layout  = AV_CHANNEL_LAYOUT_STEREO,
         .type            = { ATRAC9_BLOCK_TYPE_SCE,
                              ATRAC9_BLOCK_TYPE_SCE, },
         .plane_map       = { { 0 }, { 1 }, },
         .count           = 2,
     },
     { /* Stereo */
-        .channel_layout  = AV_CH_LAYOUT_STEREO,
+        .channel_layout  = AV_CHANNEL_LAYOUT_STEREO,
         .type            = { ATRAC9_BLOCK_TYPE_CPE, },
         .plane_map       = { { 0, 1 }, },
         .count           = 1,
     },
     { /* 5.1 */
-        .channel_layout  = AV_CH_LAYOUT_5POINT1,
+        .channel_layout  = AV_CHANNEL_LAYOUT_5POINT1,
         .type            = { ATRAC9_BLOCK_TYPE_CPE,
                              ATRAC9_BLOCK_TYPE_SCE,
                              ATRAC9_BLOCK_TYPE_LFE,
@@ -68,7 +68,7 @@ static const ATRAC9BlockConfig at9_block_layout[] = {
         .count           = 4,
     },
     { /* 7.1 */
-        .channel_layout  = AV_CH_LAYOUT_7POINT1,
+        .channel_layout  = AV_CHANNEL_LAYOUT_7POINT1,
         .type            = { ATRAC9_BLOCK_TYPE_CPE,
                              ATRAC9_BLOCK_TYPE_SCE,
                              ATRAC9_BLOCK_TYPE_LFE,
@@ -78,7 +78,7 @@ static const ATRAC9BlockConfig at9_block_layout[] = {
         .count           = 5,
     },
     { /* Quad */
-        .channel_layout  = AV_CH_LAYOUT_QUAD,
+        .channel_layout  = AV_CHANNEL_LAYOUT_QUAD,
         .type            = { ATRAC9_BLOCK_TYPE_CPE,
                              ATRAC9_BLOCK_TYPE_CPE, },
         .plane_map       = { { 0, 1 }, { 2, 3 }, },
