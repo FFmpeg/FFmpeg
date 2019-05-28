@@ -42,17 +42,20 @@ static int dolby_e_parse(AVCodecParserContext *s2, AVCodecContext *avctx,
     s2->duration = FRAME_SAMPLES;
     switch (s->metadata.nb_channels) {
     case 4:
-        avctx->channel_layout = AV_CH_LAYOUT_4POINT0;
+        avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_4POINT0;
         break;
     case 6:
-        avctx->channel_layout = AV_CH_LAYOUT_5POINT1;
+        avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1;
         break;
     case 8:
-        avctx->channel_layout = AV_CH_LAYOUT_7POINT1;
+        avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1;
+        break;
+    default:
+        avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+        avctx->ch_layout.nb_channels = s->metadata.nb_channels;
         break;
     }
 
-    avctx->channels    = s->metadata.nb_channels;
     avctx->sample_rate = s->metadata.sample_rate;
     avctx->sample_fmt  = AV_SAMPLE_FMT_FLTP;
 

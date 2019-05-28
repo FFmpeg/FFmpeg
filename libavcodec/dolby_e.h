@@ -59,6 +59,8 @@ typedef struct DolbyEHeaderInfo {
      */
     int         multi_prog_warned;
 
+    int         output_channel_order;
+
     int         sample_rate;
     /** @} */
 } DolbyEHeaderInfo;
