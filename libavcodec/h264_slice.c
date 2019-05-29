@@ -1092,6 +1092,12 @@ static int h264_init_ps(H264Context *h, const H264SliceContext *sl, int first_sl
                 h->avctx->colorspace      = sps->colorspace;
             }
         }
+
+        if (h->sei.alternative_transfer.present &&
+            av_color_transfer_name(h->sei.alternative_transfer.preferred_transfer_characteristics) &&
+            h->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
+            h->avctx->color_trc = h->sei.alternative_transfer.preferred_transfer_characteristics;
+        }
     }
 
     if (!h->context_initialized || must_reinit || needs_reinit) {
@@ -1330,12 +1336,6 @@ static int h264_export_frame_props(H264Context *h)
             tc_sd[i + 1] = tc;
         }
         h->sei.picture_timing.timecode_cnt = 0;
-    }
-
-    if (h->sei.alternative_transfer.present &&
-        av_color_transfer_name(h->sei.alternative_transfer.preferred_transfer_characteristics) &&
-        h->sei.alternative_transfer.preferred_transfer_characteristics != AVCOL_TRC_UNSPECIFIED) {
-        h->avctx->color_trc = cur->f->color_trc = h->sei.alternative_transfer.preferred_transfer_characteristics;
     }
 
     return 0;
