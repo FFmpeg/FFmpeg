@@ -32,6 +32,7 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/mem_internal.h"
 #include "libavutil/thread.h"
+#include "libavutil/opt.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "libavutil/crc.h"
@@ -132,7 +133,10 @@ typedef struct SubStream {
 } SubStream;
 
 typedef struct MLPDecodeContext {
+    const AVClass  *class;
     AVCodecContext *avctx;
+
+    AVChannelLayout downmix_layout;
 
     /// Current access unit being read has a major sync.
     int         is_major_sync_unit;
@@ -169,39 +173,41 @@ typedef struct MLPDecodeContext {
     MLPDSPContext dsp;
 } MLPDecodeContext;
 
-static const uint64_t thd_channel_order[] = {
-    AV_CH_FRONT_LEFT, AV_CH_FRONT_RIGHT,                     // LR
-    AV_CH_FRONT_CENTER,                                      // C
-    AV_CH_LOW_FREQUENCY,                                     // LFE
-    AV_CH_SIDE_LEFT, AV_CH_SIDE_RIGHT,                       // LRs
-    AV_CH_TOP_FRONT_LEFT, AV_CH_TOP_FRONT_RIGHT,             // LRvh
-    AV_CH_FRONT_LEFT_OF_CENTER, AV_CH_FRONT_RIGHT_OF_CENTER, // LRc
-    AV_CH_BACK_LEFT, AV_CH_BACK_RIGHT,                       // LRrs
-    AV_CH_BACK_CENTER,                                       // Cs
-    AV_CH_TOP_CENTER,                                        // Ts
-    AV_CH_SURROUND_DIRECT_LEFT, AV_CH_SURROUND_DIRECT_RIGHT, // LRsd
-    AV_CH_WIDE_LEFT, AV_CH_WIDE_RIGHT,                       // LRw
-    AV_CH_TOP_FRONT_CENTER,                                  // Cvh
-    AV_CH_LOW_FREQUENCY_2,                                   // LFE2
+static const enum AVChannel thd_channel_order[] = {
+    AV_CHAN_FRONT_LEFT, AV_CHAN_FRONT_RIGHT,                     // LR
+    AV_CHAN_FRONT_CENTER,                                        // C
+    AV_CHAN_LOW_FREQUENCY,                                       // LFE
+    AV_CHAN_SIDE_LEFT, AV_CHAN_SIDE_RIGHT,                       // LRs
+    AV_CHAN_TOP_FRONT_LEFT, AV_CHAN_TOP_FRONT_RIGHT,             // LRvh
+    AV_CHAN_FRONT_LEFT_OF_CENTER, AV_CHAN_FRONT_RIGHT_OF_CENTER, // LRc
+    AV_CHAN_BACK_LEFT, AV_CHAN_BACK_RIGHT,                       // LRrs
+    AV_CHAN_BACK_CENTER,                                         // Cs
+    AV_CHAN_TOP_CENTER,                                          // Ts
+    AV_CHAN_SURROUND_DIRECT_LEFT, AV_CHAN_SURROUND_DIRECT_RIGHT, // LRsd
+    AV_CHAN_WIDE_LEFT, AV_CHAN_WIDE_RIGHT,                       // LRw
+    AV_CHAN_TOP_FRONT_CENTER,                                    // Cvh
+    AV_CHAN_LOW_FREQUENCY_2,                                     // LFE2
 };
 
-static int mlp_channel_layout_subset(uint64_t channel_layout, uint64_t mask)
+static int mlp_channel_layout_subset(AVChannelLayout *layout, uint64_t mask)
 {
-    return channel_layout && ((channel_layout & mask) == channel_layout);
+    return av_channel_layout_check(layout) &&
+           av_channel_layout_subset(layout, mask) ==
+           av_channel_layout_subset(layout, UINT64_MAX);
 }
 
-static uint64_t thd_channel_layout_extract_channel(uint64_t channel_layout,
-                                                   int index)
+static enum AVChannel thd_channel_layout_extract_channel(uint64_t channel_layout,
+                                                         int index)
 {
     int i;
 
-    if (av_get_channel_layout_nb_channels(channel_layout) <= index)
-        return 0;
+    if (av_popcount64(channel_layout) <= index)
+        return AV_CHAN_NONE;
 
     for (i = 0; i < FF_ARRAY_ELEMS(thd_channel_order); i++)
-        if (channel_layout & thd_channel_order[i] && !index--)
+        if (channel_layout & (1 << thd_channel_order[i]) && !index--)
             return thd_channel_order[i];
-    return 0;
+    return AV_CHAN_NONE;
 }
 
 static VLC huff_vlc[3];
@@ -290,6 +296,14 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
         m->substream[substr].lossless_check_data = 0xffffffff;
     ff_mlpdsp_init(&m->dsp);
 
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    if (avctx->request_channel_layout) {
+        av_channel_layout_uninit(&m->downmix_layout);
+        av_channel_layout_from_mask(&m->downmix_layout, avctx->request_channel_layout);
+    }
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
     ff_thread_once(&init_static_once, init_static);
 
     return 0;
@@ -410,7 +424,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
         }
         if (mh.channels_thd_stream1 == 2 &&
             mh.channels_thd_stream2 == 2 &&
-            m->avctx->channels == 2)
+            m->avctx->ch_layout.nb_channels == 2)
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;
         if ((substr = (mh.num_substreams > 1)))
             m->substream[0].mask = AV_CH_LAYOUT_STEREO;
@@ -419,14 +433,17 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
                 m->substream[2].mask = mh.channel_layout_thd_stream2;
             else
                 m->substream[2].mask = mh.channel_layout_thd_stream1;
-        if (m->avctx->channels > 2)
+        if (m->avctx->ch_layout.nb_channels > 2)
             m->substream[mh.num_substreams > 1].mask = mh.channel_layout_thd_stream1;
 
-        if (m->avctx->channels<=2 && m->substream[substr].mask == AV_CH_LAYOUT_MONO && m->max_decoded_substream == 1) {
+        if (m->avctx->ch_layout.nb_channels <= 2 &&
+            m->substream[substr].mask == AV_CH_LAYOUT_MONO && m->max_decoded_substream == 1) {
             av_log(m->avctx, AV_LOG_DEBUG, "Mono stream with 2 substreams, ignoring 2nd\n");
             m->max_decoded_substream = 0;
-            if (m->avctx->channels==2)
-                m->avctx->channel_layout = AV_CH_LAYOUT_STEREO;
+            if (m->avctx->ch_layout.nb_channels == 2) {
+                av_channel_layout_uninit(&m->avctx->ch_layout);
+                m->avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_STEREO;
+            }
         }
     }
 
@@ -548,7 +565,7 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     s->max_matrix_channel = max_matrix_channel;
     s->noise_type         = noise_type;
 
-    if (mlp_channel_layout_subset(m->avctx->request_channel_layout, s->mask) &&
+    if (mlp_channel_layout_subset(&m->downmix_layout, s->mask) &&
         m->max_decoded_substream > substr) {
         av_log(m->avctx, AV_LOG_DEBUG,
                "Extracting %d-channel downmix (0x%"PRIx64") from substream %d. "
@@ -580,10 +597,11 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     for (ch = 0; ch <= s->max_matrix_channel; ch++) {
         int ch_assign = get_bits(gbp, 6);
         if (m->avctx->codec_id == AV_CODEC_ID_TRUEHD) {
-            uint64_t channel = thd_channel_layout_extract_channel(s->mask,
-                                                                  ch_assign);
-            ch_assign = av_get_channel_layout_channel_index(s->mask,
-                                                            channel);
+            AVChannelLayout l;
+            enum AVChannel channel = thd_channel_layout_extract_channel(s->mask, ch_assign);
+
+            av_channel_layout_from_mask(&l, s->mask);
+            ch_assign = av_channel_layout_index_from_channel(&l, channel);
         }
         if (ch_assign < 0 || ch_assign > s->max_matrix_channel) {
             avpriv_request_sample(m->avctx,
@@ -623,21 +641,21 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
     }
 
     if (substr == m->max_decoded_substream) {
-        m->avctx->channels       = s->max_matrix_channel + 1;
-        m->avctx->channel_layout = s->mask;
+        av_channel_layout_uninit(&m->avctx->ch_layout);
+        av_channel_layout_from_mask(&m->avctx->ch_layout, s->mask);
         m->dsp.mlp_pack_output = m->dsp.mlp_select_pack_output(s->ch_assign,
                                                                s->output_shift,
                                                                s->max_matrix_channel,
                                                                m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
         if (m->avctx->codec_id == AV_CODEC_ID_MLP && m->needs_reordering) {
-            if (m->avctx->channel_layout == (AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY) ||
-                m->avctx->channel_layout == AV_CH_LAYOUT_5POINT0_BACK) {
+            if (s->mask == (AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY) ||
+                s->mask == AV_CH_LAYOUT_5POINT0_BACK) {
                 int i = s->ch_assign[4];
                 s->ch_assign[4] = s->ch_assign[3];
                 s->ch_assign[3] = s->ch_assign[2];
                 s->ch_assign[2] = i;
-            } else if (m->avctx->channel_layout == AV_CH_LAYOUT_5POINT1_BACK) {
+            } else if (s->mask == AV_CH_LAYOUT_5POINT1_BACK) {
                 FFSWAP(int, s->ch_assign[2], s->ch_assign[4]);
                 FFSWAP(int, s->ch_assign[3], s->ch_assign[5]);
             }
@@ -1078,7 +1096,7 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
     int ret;
     int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
-    if (m->avctx->channels != s->max_matrix_channel + 1) {
+    if (m->avctx->ch_layout.nb_channels != s->max_matrix_channel + 1) {
         av_log(m->avctx, AV_LOG_ERROR, "channel count mismatch\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1255,7 +1273,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data,
 
         if (substr != m->max_decoded_substream &&
             m->substream[m->max_decoded_substream].min_channel == 0 &&
-            m->substream[m->max_decoded_substream].max_channel == avctx->channels - 1)
+            m->substream[m->max_decoded_substream].max_channel == avctx->ch_layout.nb_channels - 1)
             goto skip_substr;
 
         init_get_bits(&gb, buf, substream_data_len[substr] * 8);
@@ -1372,6 +1390,28 @@ static void mlp_decode_flush(AVCodecContext *avctx)
     }
 }
 
+#define OFFSET(x) offsetof(MLPDecodeContext, x)
+#define FLAGS (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
+static const AVOption options[] = {
+    { "downmix", "Request a specific channel layout from the decoder", OFFSET(downmix_layout),
+        AV_OPT_TYPE_CHLAYOUT, {.str = NULL}, .flags = FLAGS },
+    { NULL },
+};
+
+static const AVClass mlp_decoder_class = {
+    .class_name = "MLP decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVClass truehd_decoder_class = {
+    .class_name = "TrueHD decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 #if CONFIG_MLP_DECODER
 const AVCodec ff_mlp_decoder = {
     .name           = "mlp",
@@ -1379,6 +1419,7 @@ const AVCodec ff_mlp_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_MLP,
     .priv_data_size = sizeof(MLPDecodeContext),
+    .priv_class     = &mlp_decoder_class,
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .flush          = mlp_decode_flush,
@@ -1393,6 +1434,7 @@ const AVCodec ff_truehd_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_TRUEHD,
     .priv_data_size = sizeof(MLPDecodeContext),
+    .priv_class     = &truehd_decoder_class,
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
     .flush          = mlp_decode_flush,

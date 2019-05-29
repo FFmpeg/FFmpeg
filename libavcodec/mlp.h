@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "libavutil/channel_layout.h"
+
 #define SYNC_MLP        0xbb
 #define SYNC_TRUEHD     0xba
 
@@ -135,7 +137,10 @@ typedef struct {
  */
 extern const ChannelInformation ff_mlp_ch_info[21];
 
+#if FF_API_OLD_CHANNEL_LAYOUT
 extern const uint64_t ff_mlp_channel_layouts[12];
+#endif
+extern const AVChannelLayout ff_mlp_ch_layouts[12];
 
 /** MLP uses checksums that seem to be based on the standard CRC algorithm, but
  *  are not (in implementation terms, the table lookup and XOR are reversed).

@@ -175,21 +175,17 @@ static int mlp_parse(AVCodecParserContext *s,
         avctx->frame_size =
         s->duration = mh.access_unit_size;
 
-        if(!avctx->channels || !avctx->channel_layout) {
+        av_channel_layout_uninit(&avctx->ch_layout);
         if (mh.stream_type == 0xbb) {
             /* MLP stream */
-            avctx->channels       = mh.channels_mlp;
-            avctx->channel_layout = mh.channel_layout_mlp;
+            av_channel_layout_from_mask(&avctx->ch_layout, mh.channel_layout_mlp);
         } else { /* mh.stream_type == 0xba */
             /* TrueHD stream */
             if (!mh.channels_thd_stream2) {
-                avctx->channels       = mh.channels_thd_stream1;
-                avctx->channel_layout = mh.channel_layout_thd_stream1;
+                av_channel_layout_from_mask(&avctx->ch_layout, mh.channel_layout_thd_stream1);
             } else {
-                avctx->channels       = mh.channels_thd_stream2;
-                avctx->channel_layout = mh.channel_layout_thd_stream2;
+                av_channel_layout_from_mask(&avctx->ch_layout, mh.channel_layout_thd_stream2);
             }
-        }
         }
 
         if (!mh.is_vbr) /* Stream is CBR */
