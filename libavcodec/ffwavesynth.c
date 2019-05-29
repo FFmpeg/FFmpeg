@@ -314,7 +314,7 @@ static av_cold int wavesynth_init(AVCodecContext *avc)
     struct wavesynth_context *ws = avc->priv_data;
     int i, r;
 
-    if (avc->channels > WS_MAX_CHANNELS) {
+    if (avc->ch_layout.nb_channels > WS_MAX_CHANNELS) {
         av_log(avc, AV_LOG_ERROR,
                "This implementation is limited to %d channels.\n",
                WS_MAX_CHANNELS);
@@ -438,11 +438,11 @@ static int wavesynth_decode(AVCodecContext *avc, void *rframe, int *rgot_frame,
         return r;
     pcm = (int16_t *)frame->data[0];
     for (s = 0; s < duration; s++, ts+=(uint64_t)1) {
-        memset(channels, 0, avc->channels * sizeof(*channels));
+        memset(channels, 0, avc->ch_layout.nb_channels * sizeof(*channels));
         if (ts >= ws->next_ts)
             wavesynth_enter_intervals(ws, ts);
         wavesynth_synth_sample(ws, ts, channels);
-        for (c = 0; c < avc->channels; c++)
+        for (c = 0; c < avc->ch_layout.nb_channels; c++)
             *(pcm++) = channels[c] >> 16;
     }
     ws->cur_ts += (uint64_t)duration;
