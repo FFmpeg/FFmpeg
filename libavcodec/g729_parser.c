@@ -49,9 +49,9 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
         if (avctx->codec_id == AV_CODEC_ID_ACELP_KELVIN)
             s->block_size++;
         // channels > 2 is invalid, we pass the packet on unchanged
-        if (avctx->channels > 2)
+        if (avctx->ch_layout.nb_channels > 2)
             s->block_size = 0;
-        s->block_size *= avctx->channels;
+        s->block_size *= avctx->ch_layout.nb_channels;
         s->duration   = avctx->frame_size;
     }
 
