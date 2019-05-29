@@ -98,7 +98,7 @@ static int mp3_header_decompress(AVBSFContext *ctx, AVPacket *out)
     }
     memcpy(out->data + frame_size - buf_size, buf, buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
 
-    if(ctx->par_in->channels==2){
+    if (ctx->par_in->ch_layout.nb_channels == 2){
         uint8_t *p= out->data + frame_size - buf_size;
         if(lsf){
             FFSWAP(int, p[1], p[2]);

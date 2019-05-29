@@ -79,7 +79,7 @@ static av_cold int MPA_encode_init(AVCodecContext *avctx)
     MpegAudioContext *s = avctx->priv_data;
     int freq = avctx->sample_rate;
     int bitrate = avctx->bit_rate;
-    int channels = avctx->channels;
+    int channels = avctx->ch_layout.nb_channels;
     int i, v, table;
     float a;
 

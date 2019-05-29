@@ -36,9 +36,14 @@ const AVCodec ff_mp2_encoder = {
     .supported_samplerates = (const int[]){
         44100, 48000,  32000, 22050, 24000, 16000, 0
     },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts       = (const uint64_t[]){ AV_CH_LAYOUT_MONO,
                                                  AV_CH_LAYOUT_STEREO,
                                                  0 },
+#endif
+    .ch_layouts            = (const AVChannelLayout[]){ AV_CHANNEL_LAYOUT_MONO,
+                                                        AV_CHANNEL_LAYOUT_STEREO,
+                                                        { 0 } },
     .defaults              = mp2_defaults,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
 };
