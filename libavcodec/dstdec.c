@@ -80,8 +80,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     DSTContext *s = avctx->priv_data;
     int i;
 
-    if (avctx->channels > DST_MAX_CHANNELS) {
-        avpriv_request_sample(avctx, "Channel count %d", avctx->channels);
+    if (avctx->ch_layout.nb_channels > DST_MAX_CHANNELS) {
+        avpriv_request_sample(avctx, "Channel count %d", avctx->ch_layout.nb_channels);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -97,7 +97,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
-    for (i = 0; i < avctx->channels; i++)
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++)
         memset(s->dsdctx[i].buf, 0x69, sizeof(s->dsdctx[i].buf));
 
     ff_init_dsd_data();
@@ -243,7 +243,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     unsigned map_ch_to_pelem[DST_MAX_CHANNELS];
     unsigned i, ch, same_map, dst_x_bit;
     unsigned half_prob[DST_MAX_CHANNELS];
-    const int channels = avctx->channels;
+    const int channels = avctx->ch_layout.nb_channels;
     DSTContext *s = avctx->priv_data;
     GetBitContext *gb = &s->gb;
     ArithCoder *ac = &s->ac;
