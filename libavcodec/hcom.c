@@ -44,7 +44,7 @@ static av_cold int hcom_init(AVCodecContext *avctx)
 {
     HCOMContext *s = avctx->priv_data;
 
-    if (avctx->channels != 1) {
+    if (avctx->ch_layout.nb_channels != 1) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR_INVALIDDATA;
     }
