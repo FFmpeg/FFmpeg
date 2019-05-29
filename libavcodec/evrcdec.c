@@ -235,8 +235,8 @@ static av_cold int evrc_decode_init(AVCodecContext *avctx)
     int i, n, idx = 0;
     float denom = 2.0 / (2.0 * 8.0 + 1.0);
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
     for (i = 0; i < FILTER_ORDER; i++) {
