@@ -44,17 +44,17 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int i;
     uint8_t silence;
 
-    if (!avctx->channels)
+    if (!avctx->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
     ff_init_dsd_data();
 
-    s = av_malloc_array(sizeof(DSDContext), avctx->channels);
+    s = av_malloc_array(sizeof(DSDContext), avctx->ch_layout.nb_channels);
     if (!s)
         return AVERROR(ENOMEM);
 
     silence = avctx->codec_id == AV_CODEC_ID_DSD_LSBF || avctx->codec_id == AV_CODEC_ID_DSD_LSBF_PLANAR ? DSD_SILENCE_REVERSED : DSD_SILENCE;
-    for (i = 0; i < avctx->channels; i++) {
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         s[i].pos = 0;
         memset(s[i].buf, silence, sizeof(s[i].buf));
     }
@@ -84,7 +84,7 @@ static int dsd_channel(AVCodecContext *avctx, void *tdata, int j, int threadnr)
         src_stride = 1;
     } else {
         src_next   = 1;
-        src_stride = avctx->channels;
+        src_stride = avctx->ch_layout.nb_channels;
     }
 
     ff_dsd2pcm_translate(&s[j], frame->nb_samples, lsbf,
@@ -101,17 +101,17 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int ret;
 
-    frame->nb_samples = avpkt->size / avctx->channels;
+    frame->nb_samples = avpkt->size / avctx->ch_layout.nb_channels;
 
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     td.frame = frame;
     td.avpkt = avpkt;
-    avctx->execute2(avctx, dsd_channel, &td, NULL, avctx->channels);
+    avctx->execute2(avctx, dsd_channel, &td, NULL, avctx->ch_layout.nb_channels);
 
     *got_frame_ptr = 1;
-    return frame->nb_samples * avctx->channels;
+    return frame->nb_samples * avctx->ch_layout.nb_channels;
 }
 
 #define DSD_DECODER(id_, name_, long_name_) \
