@@ -1456,8 +1456,8 @@ static av_cold int ilbc_decode_init(AVCodecContext *avctx)
     else
         return AVERROR_INVALIDDATA;
 
-    avctx->channels       = 1;
-    avctx->channel_layout = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
     avctx->sample_rate    = 8000;
     avctx->sample_fmt     = AV_SAMPLE_FMT_S16;
 
