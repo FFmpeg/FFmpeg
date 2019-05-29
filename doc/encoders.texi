@@ -1378,6 +1378,49 @@ makes it possible to store non-rgb pix_fmts.
 
 @end table
 
+@section librav1e
+
+rav1e AV1 encoder wrapper.
+
+Requires the presence of the rav1e headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-librav1e}.
+
+@subsection Options
+
+@table @option
+@item qmax
+Sets the maximum quantizer to use when using bitrate mode.
+
+@item qmin
+Sets the minimum quantizer to use when using bitrate mode.
+
+@item qp
+Uses quantizer mode to encode at the given quantizer.
+
+@item speed
+Selects the speed preset (0-10) to encode with.
+
+@item tiles
+Selects how many tiles to encode with.
+
+@item tile-rows
+Selects how many rows of tiles to encode with.
+
+@item tile-columns
+Selects how many columns of tiles to encode with.
+
+@item rav1e-params
+Set rav1e options using a list of @var{key}=@var{value} pairs separated
+by ":". See @command{rav1e --help} for a list of options.
+
+For example to specify librav1e encoding options with @option{-rav1e-params}:
+
+@example
+ffmpeg -i input -c:v librav1e -b:v 500K -rav1e-params speed=5:low_latency=true output.mp4
+@end example
+
+@end table
+
 @section libaom-av1
 
 libaom AV1 encoder wrapper.

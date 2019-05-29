@@ -253,6 +253,13 @@ FFmpeg can use the OpenJPEG libraries for decoding/encoding J2K videos.  Go to
 instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjpeg} to
 @file{./configure}.
 
+@section rav1e
+
+FFmpeg can make use of rav1e (Rust AV1 Encoder) via its C bindings to encode videos.
+Go to @url{https://github.com/xiph/rav1e/} and follow the instructions to build
+the C library. To enable using rav1e in FFmpeg, pass @code{--enable-librav1e}
+to @file{./configure}.
+
 @section TwoLAME
 
 FFmpeg can make use of the TwoLAME library for MP2 encoding.
