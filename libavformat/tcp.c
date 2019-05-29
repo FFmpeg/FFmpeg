@@ -80,7 +80,7 @@ static const AVOption options[] = {
 
     { "addrinfo_one_by_one",  "parse addrinfo one by one in getaddrinfo()",    OFFSET(addrinfo_one_by_one), AV_OPT_TYPE_INT, { .i64 = 0 },         0, 1, .flags = D|E },
     { "addrinfo_timeout", "set timeout (in microseconds) for getaddrinfo()",   OFFSET(addrinfo_timeout), AV_OPT_TYPE_INT, { .i64 = -1 },       -1, INT_MAX, .flags = D|E },
-    { "dns_cache_timeout", "dns cache TTL (in microseconds)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
+    { "dns_cache_timeout", "dns cache TTL (in millisecond)",   OFFSET(dns_cache_timeout), AV_OPT_TYPE_INT, { .i64 = 0 },       -1, INT64_MAX, .flags = D|E },
     { "dns_cache_clear", "clear dns cache",   OFFSET(dns_cache_clear), AV_OPT_TYPE_INT, { .i64 = 0},       -1, INT_MAX, .flags = D|E },
     { "fastopen", "enable fastopen",          OFFSET(fastopen), AV_OPT_TYPE_INT, { .i64 = 0},       0, INT_MAX, .flags = D|E },
     { "dash_audio_tcp", "dash audio tcp", OFFSET(dash_audio_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
@@ -357,6 +357,10 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     AVAppTcpIOControl control = {0};
     DnsCacheEntry *dns_entry = NULL;
     int64_t dns_time = 0;
+    int64_t tcp_time = 0;
+    char ipbuf[MAX_IP_LEN];
+    struct sockaddr_in *ipaddr;
+    char *c_ipaddr = NULL;
 
     if (s->open_timeout < 0) {
         s->open_timeout = 15000000;
@@ -432,8 +436,15 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (ret) {
             av_log(h, AV_LOG_ERROR,
                 "Failed to resolve hostname %s: %s\n",
-                hostname, gai_strerror(ret));
-            return AVERROR(EIO);
+                    hostname, gai_strerror(ret));
+            dns_time = (av_gettime() - dns_time) / 1000;
+            if (ret == ETIMEDOUT) {
+                ret = AVERROR_DNS_TIMEOUT;
+            } else {
+                ret = AVERROR_DNS_ERROR;
+            }
+            av_application_on_dns_did_open(s->app_ctx, hostname, NULL, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp,  ret);
+            return ret;
         }
 
         cur_ai = ai;
@@ -451,8 +462,22 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (!sockaddr_v6->sin6_port){
             sockaddr_v6->sin6_port = htons(port);
         }
+        c_ipaddr = (char *)inet_ntop(AF_INET, &sockaddr_v6->sin6_addr, ipbuf, MAX_IP_LEN);
     }
 #endif
+    if (cur_ai->ai_family != AF_INET6 && cur_ai && cur_ai->ai_addr) {
+        ipaddr = (struct sockaddr_in *)cur_ai->ai_addr;
+        c_ipaddr = (char *)inet_ntop(AF_INET, &ipaddr->sin_addr, ipbuf, MAX_IP_LEN);
+    }
+    if (dns_entry) {
+        av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_DNS_CACHE, dns_time, s->dash_audio_tcp, 0);
+    } else {
+        if (strstr(uri, c_ipaddr)) {
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_NO_USE, dns_time, s->dash_audio_tcp, 0);
+        } else {
+            av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_LOCAL_DNS, dns_time, s->dash_audio_tcp, 0);
+        }
+    }
 
     fd = ff_socket(cur_ai->ai_family,
                    cur_ai->ai_socktype,
@@ -499,31 +524,26 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
             av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_WILL_TCP_OPEN");
             goto fail1;
         }
-
+        tcp_time = av_gettime();
         if ((ret = ff_listen_connect(fd, cur_ai->ai_addr, cur_ai->ai_addrlen,
                                      s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
             if (ret == AVERROR(ETIMEDOUT)) {
                 ret = AVERROR_TCP_CONNECT_TIMEOUT;
             }
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, (av_gettime() - tcp_time) / 1000))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
             else
                 goto fail;
         } else {
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, (av_gettime() - tcp_time) / 1000);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
                 add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
                 av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
-            }
-            if (dns_entry) {
-                av_application_on_dns_did_open(s->app_ctx, hostname, control.ip, 1, dns_time);
-            } else {
-                av_application_on_dns_did_open(s->app_ctx, hostname, control.ip, 0, dns_time);
             }
             av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
         }
@@ -694,7 +714,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
         if ((ret = ff_sendto(fd, http_request, strlen(http_request), FAST_OPEN_FLAG,
                  cur_ai->ai_addr, cur_ai->ai_addrlen, s->open_timeout / 1000, h, !!cur_ai->ai_next)) < 0) {
             s->fastopen_success = 0;
-            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control))
+            if (av_application_on_tcp_did_open(s->app_ctx, ret, fd, &control, s->dash_audio_tcp, 0))
                 goto fail1;
             if (ret == AVERROR_EXIT)
                 goto fail1;
@@ -706,7 +726,7 @@ static int tcp_fast_open(URLContext *h, const char *http_request, const char *ur
             } else {
                 s->fastopen_success = 1;
             }
-            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control);
+            ret = av_application_on_tcp_did_open(s->app_ctx, 0, fd, &control, s->dash_audio_tcp, 0);
             if (ret) {
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
@@ -772,6 +792,7 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 {
     TCPContext *s = h->priv_data;
     int ret;
+    int nread = 0;
 
     if (!(h->flags & AVIO_FLAG_NONBLOCK)) {
         ret = ff_network_wait_fd_timeout(s->fd, 0, h->rw_timeout, &h->interrupt_callback);
@@ -795,7 +816,16 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
                 setsockopt (s->fd, SOL_SOCKET, SO_RCVBUF, &s->recv_buffer_size, sizeof (s->recv_buffer_size));
             }
         }
-        av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
+#ifdef FIONREAD
+        ioctl(s->fd, FIONREAD, &nread);
+#endif
+        if (s->dash_audio_tcp) {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_DASH_AUDIO);
+        } else if (s->dash_video_tcp) {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_DASH_VIDEO);
+        } else {
+            av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_NORMAL);
+        }
     }
     return ret < 0 ? ff_neterrno() : ret;
 }

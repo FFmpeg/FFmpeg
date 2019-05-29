@@ -23,6 +23,7 @@
 
 #include <errno.h>
 #include <stdint.h>
+#include <termios.h>
 
 #include "config.h"
 #include "libavutil/error.h"

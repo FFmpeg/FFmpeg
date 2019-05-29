@@ -376,7 +376,7 @@ static int quic_read(URLContext *h, uint8_t *buf, int size)
     ret = bvc_quic_client_read(s->handler, buf, size);
     if (ret > 0) {
         s->body_off += ret;
-        av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret);
+        av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, 0, 0);
     } else if (ret == 0 && s->body_off < s->body_len) {
         av_log(h, AV_LOG_ERROR,
             "Quic stream ends prematurely at %"PRIu64", should be %"PRIu64"\n", s->body_off, s->body_len);
