@@ -108,10 +108,6 @@ static const uint8_t lfe_index[7] = {
     1, 2, 3, 0, 1, 2, 3
 };
 
-static const uint8_t channel_counts[7] = {
-    1, 2, 3, 2, 3, 4, 5
-};
-
 static const uint16_t channel_layouts[7] = {
     AV_CH_LAYOUT_MONO,
     AV_CH_LAYOUT_STEREO,
@@ -1732,9 +1728,8 @@ int ff_dca_lbr_filter_frame(DCALbrDecoder *s, AVFrame *frame)
     AVCodecContext *avctx = s->avctx;
     int i, ret, nchannels, ch_conf = (s->ch_mask & 0x7) - 1;
     const int8_t *reorder;
+    uint64_t channel_mask = channel_layouts[ch_conf];
 
-    avctx->channel_layout = channel_layouts[ch_conf];
-    avctx->channels = nchannels = channel_counts[ch_conf];
     avctx->sample_rate = s->sample_rate;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     avctx->bits_per_raw_sample = 0;
@@ -1742,12 +1737,21 @@ int ff_dca_lbr_filter_frame(DCALbrDecoder *s, AVFrame *frame)
     avctx->bit_rate = s->bit_rate_scaled;
 
     if (s->flags & LBR_FLAG_LFE_PRESENT) {
-        avctx->channel_layout |= AV_CH_LOW_FREQUENCY;
-        avctx->channels++;
+        channel_mask |= AV_CH_LOW_FREQUENCY;
         reorder = channel_reorder_lfe[ch_conf];
     } else {
         reorder = channel_reorder_nolfe[ch_conf];
     }
+
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_from_mask(&avctx->ch_layout, channel_mask);
+#if FF_API_OLD_CHANNEL_LAYOUT
+FF_DISABLE_DEPRECATION_WARNINGS
+    avctx->channels = avctx->ch_layout.nb_channels;
+    avctx->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
+                            avctx->ch_layout.u.mask : 0;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
 
     frame->nb_samples = 1024 << s->freq_range;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)

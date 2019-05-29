@@ -2149,7 +2149,7 @@ static int filter_frame_fixed(DCACoreDecoder *s, AVFrame *frame)
                                        nsamples, s->ch_mask);
     }
 
-    for (i = 0; i < avctx->channels; i++) {
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         int32_t *samples = s->output_samples[s->ch_remap[i]];
         int32_t *plane = (int32_t *)frame->extended_data[i];
         for (n = 0; n < nsamples; n++)
@@ -2181,11 +2181,11 @@ static int filter_frame_float(DCACoreDecoder *s, AVFrame *frame)
         return ret;
 
     // Build reverse speaker to channel mapping
-    for (i = 0; i < avctx->channels; i++)
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++)
         output_samples[s->ch_remap[i]] = (float *)frame->extended_data[i];
 
     // Allocate space for extra channels
-    nchannels = av_popcount(s->ch_mask) - avctx->channels;
+    nchannels = av_popcount(s->ch_mask) - avctx->ch_layout.nb_channels;
     if (nchannels > 0) {
         av_fast_malloc(&s->output_buffer, &s->output_size,
                        nsamples * nchannels * sizeof(float));
