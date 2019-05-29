@@ -79,12 +79,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size < 14)
         return AVERROR_INVALIDDATA;
 
-    if (avctx->channels <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels: %d\n", avctx->channels);
+    if (avctx->ch_layout.nb_channels <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels: %d\n", avctx->ch_layout.nb_channels);
         return AVERROR_INVALIDDATA;
     }
 
-    s->max_samples = AV_RL32(avctx->extradata + 4) / avctx->channels;
+    s->max_samples = AV_RL32(avctx->extradata + 4) / avctx->ch_layout.nb_channels;
     if (s->max_samples == 0)
         s->max_samples = UINT64_MAX;
     s->level = AV_RL16(avctx->extradata + 12) & 0xf;
@@ -585,7 +585,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if ((ret = init_get_bits8(gb, buf, buf_size)) < 0)
         return ret;
 
-    frame->nb_samples = FFMIN(s->block_len / avctx->channels, s->max_samples);
+    frame->nb_samples = FFMIN(s->block_len / avctx->ch_layout.nb_channels, s->max_samples);
     s->max_samples -= FFMIN(frame->nb_samples, s->max_samples);
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
@@ -596,7 +596,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         return ret;
 
     samples = (int16_t *)frame->data[0];
-    for (n = 0; n < frame->nb_samples * avctx->channels; n++) {
+    for (n = 0; n < frame->nb_samples * avctx->ch_layout.nb_channels; n++) {
         int val = s->block[n] >> s->level;
         *samples++ = val;
     }
