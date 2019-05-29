@@ -174,6 +174,9 @@ static int gif_write_trailer(AVFormatContext *s)
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
 
+    if (!gif->prev_pkt)
+        return AVERROR(EINVAL);
+
     gif_write_packet(s, NULL);
 
     if (!gif->have_end)
