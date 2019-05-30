@@ -1090,7 +1090,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         s->predictor = value;
         break;
     case TIFF_SUB_IFDS:
-        s->sub_ifd = value;
+        if (count == 1)
+            s->sub_ifd = value;
+        else if (count > 1)
+            s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
         break;
     case TIFF_WHITE_LEVEL:
         s->white_level = value;
