@@ -8264,6 +8264,40 @@ delogo=x=0:y=0:w=100:h=77:band=10
 
 @end itemize
 
+@section derain
+
+Remove the rain in the input image/video by applying the derain methods based on
+convolutional neural networks. Supported models:
+
+@itemize
+@item
+Recurrent Squeeze-and-Excitation Context Aggregation Net (RESCAN).
+See @url{http://openaccess.thecvf.com/content_ECCV_2018/papers/Xia_Li_Recurrent_Squeeze-and-Excitation_Context_ECCV_2018_paper.pdf}.
+@end itemize
+
+Training scripts as well as scripts for model generation are provided in
+the repository at @url{https://github.com/XueweiMeng/derain_filter.git}.
+
+The filter accepts the following options:
+
+@table @option
+@item dnn_backend
+Specify which DNN backend to use for model loading and execution. This option accepts
+the following values:
+
+@table @samp
+@item native
+Native implementation of DNN loading and execution.
+@end table
+Default value is @samp{native}.
+
+@item model
+Set path to model file specifying network architecture and its parameters.
+Note that different backends use different file formats. TensorFlow backend
+can load files for both formats, while native backend can load files for only
+its format.
+@end table
+
 @section deshake
 
 Attempt to fix small changes in horizontal and/or vertical shift. This
