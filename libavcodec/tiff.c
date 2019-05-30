@@ -56,6 +56,7 @@ typedef struct TiffContext {
 
     int get_subimage;
     uint16_t get_page;
+    int get_thumbnail;
 
     int width, height;
     unsigned int bpp, bppcount;
@@ -70,6 +71,7 @@ typedef struct TiffContext {
     int predictor;
     int fill_order;
     uint32_t res[4];
+    int is_thumbnail;
 
     int is_bayer;
     uint8_t pattern[4];
@@ -948,6 +950,8 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     }
 
     switch (tag) {
+    case TIFF_SUBFILE:
+        s->is_thumbnail = (value != 0);
     case TIFF_WIDTH:
         s->width = value;
         break;
@@ -1387,6 +1391,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->le          = le;
     // TIFF_BPP is not a required tag and defaults to 1
 again:
+    s->is_thumbnail = 0;
     s->bppcount    = s->bpp = 1;
     s->photometric = TIFF_PHOTOMETRIC_NONE;
     s->compr       = TIFF_RAW;
@@ -1408,9 +1413,14 @@ again:
             return ret;
     }
 
-    /** whether we should look for this IFD's SubIFD */
-    retry_for_subifd = s->sub_ifd && s->get_subimage;
-    /** whether we should look for this multi-page IFD's next page */
+    if (s->get_thumbnail && !s->is_thumbnail) {
+        av_log(avctx, AV_LOG_INFO, "No embedded thumbnail present\n");
+        return AVERROR_EOF;
+    }
+
+    /** whether we should process this IFD's SubIFD */
+    retry_for_subifd = s->sub_ifd && (s->get_subimage || (!s->get_thumbnail && s->is_thumbnail));
+    /** whether we should process this multi-page IFD's next page */
     retry_for_page = s->get_page && s->cur_page + 1 < s->get_page;  // get_page is 1-indexed
 
     if (retry_for_page) {
@@ -1670,6 +1680,7 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(TiffContext, x)
 static const AVOption tiff_options[] = {
     { "subimage", "decode subimage instead if available", OFFSET(get_subimage), AV_OPT_TYPE_BOOL, {.i64=0},  0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
+    { "thumbnail", "decode embedded thumbnail subimage instead if available", OFFSET(get_thumbnail), AV_OPT_TYPE_BOOL, {.i64=0},  0, 1, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
     { "page", "page number of multi-page image to decode (starting from 1)", OFFSET(get_page), AV_OPT_TYPE_INT, {.i64=0}, 0, UINT16_MAX, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM },
     { NULL },
 };
