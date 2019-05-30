@@ -23,7 +23,7 @@
 #include "mem.h"
 
 /**
- * Add an element of to a dynamic array.
+ * Add an element to a dynamic array.
  *
  * The array is reallocated when its number of elements reaches powers of 2.
  * Therefore, the amortized cost of adding an element is constant.
