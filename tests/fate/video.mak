@@ -259,7 +259,7 @@ fate-mxpeg: CMD = framecrc -idct simple -flags +bitexact -i $(TARGET_SAMPLES)/mx
 
 # FIXME dropped frames in this test because of coarse timebase
 FATE_NUV += fate-nuv-rtjpeg
-fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/Today.nuv -an
+fate-nuv-rtjpeg: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/Today.nuv -an -r 1000
 
 FATE_NUV += fate-nuv-rtjpeg-fh
 fate-nuv-rtjpeg-fh: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/nuv/rtjpeg_frameheader.nuv -an
