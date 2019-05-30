@@ -51,6 +51,7 @@ const IdStrMap ff_img_tags[] = {
     { AV_CODEC_ID_TARGA,      "tga"      },
     { AV_CODEC_ID_TIFF,       "tiff"     },
     { AV_CODEC_ID_TIFF,       "tif"      },
+    { AV_CODEC_ID_TIFF,       "dng"      },
     { AV_CODEC_ID_SGI,        "sgi"      },
     { AV_CODEC_ID_PTX,        "ptx"      },
     { AV_CODEC_ID_PCX,        "pcx"      },

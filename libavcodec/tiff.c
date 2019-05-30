@@ -58,6 +58,7 @@ typedef struct TiffContext {
     uint16_t get_page;
     int get_thumbnail;
 
+    enum TiffType tiff_type;
     int width, height;
     unsigned int bpp, bppcount;
     uint32_t palette[256];
@@ -95,6 +96,11 @@ typedef struct TiffContext {
     int geotag_count;
     TiffGeoTag *geotags;
 } TiffContext;
+
+static void tiff_set_type(TiffContext *s, enum TiffType tiff_type) {
+    if (s->tiff_type < tiff_type) // Prioritize higher-valued entries
+        s->tiff_type = tiff_type;
+}
 
 static void free_geotags(TiffContext *const s)
 {
@@ -1095,7 +1101,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         else if (count > 1)
             s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
         break;
-    case TIFF_WHITE_LEVEL:
+    case DNG_WHITE_LEVEL:
         s->white_level = value;
         break;
     case TIFF_CFA_PATTERN_DIM:
@@ -1346,6 +1352,27 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     case TIFF_SOFTWARE_NAME:
         ADD_METADATA(count, "software", NULL);
         break;
+    case DNG_VERSION:
+        if (count == 4) {
+            unsigned int ver[4];
+            ver[0] = ff_tget(&s->gb, type, s->le);
+            ver[1] = ff_tget(&s->gb, type, s->le);
+            ver[2] = ff_tget(&s->gb, type, s->le);
+            ver[3] = ff_tget(&s->gb, type, s->le);
+
+            av_log(s->avctx, AV_LOG_DEBUG, "DNG file, version %u.%u.%u.%u\n",
+                ver[0], ver[1], ver[2], ver[3]);
+
+            tiff_set_type(s, TIFF_TYPE_DNG);
+        }
+        break;
+    case CINEMADNG_TIME_CODES:
+    case CINEMADNG_FRAME_RATE:
+    case CINEMADNG_T_STOP:
+    case CINEMADNG_REEL_NAME:
+    case CINEMADNG_CAMERA_LABEL:
+        tiff_set_type(s, TIFF_TYPE_CINEMADNG);
+        break;
     default:
         if (s->avctx->err_recognition & AV_EF_EXPLODE) {
             av_log(s->avctx, AV_LOG_ERROR,
@@ -1402,6 +1429,7 @@ again:
     s->white_level = 0;
     s->is_bayer    = 0;
     s->cur_page    = 0;
+    s->tiff_type   = TIFF_TYPE_TIFF;
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame

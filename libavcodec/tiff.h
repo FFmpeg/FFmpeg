@@ -20,7 +20,7 @@
 
 /**
  * @file
- * TIFF tables
+ * TIFF constants & data structures
  *
  * For more information about the TIFF format, check the official docs at:
  * http://partners.adobe.com/public/developer/tiff/index.html
@@ -33,7 +33,17 @@
 #include <stdint.h>
 #include "tiff_common.h"
 
-/** abridged list of TIFF tags */
+/** TIFF types in ascenting priority (last in the list is highest) */
+enum TiffType {
+    /** TIFF image based on the TIFF 6.0 or TIFF/EP (ISO 12234-2) specifications */
+    TIFF_TYPE_TIFF,
+    /** Digital Negative (DNG) image */
+    TIFF_TYPE_DNG,
+    /** Digital Negative (DNG) image part of an CinemaDNG image sequence */
+    TIFF_TYPE_CINEMADNG,
+};
+
+/** abridged list of TIFF and TIFF/EP tags */
 enum TiffTags {
     TIFF_SUBFILE            = 0xfe,
     TIFF_WIDTH              = 0x100,
@@ -85,10 +95,25 @@ enum TiffTags {
     TIFF_GEO_KEY_DIRECTORY  = 0x87AF,
     TIFF_GEO_DOUBLE_PARAMS  = 0x87B0,
     TIFF_GEO_ASCII_PARAMS   = 0x87B1,
-    TIFF_WHITE_LEVEL        = 0xC61D,
 };
 
-/** list of TIFF compression types */
+/** abridged list of DNG tags */
+enum DngTags {
+    DNG_VERSION             = 0xC612,
+    DNG_BACKWARD_VERSION    = 0xC613,
+    DNG_WHITE_LEVEL         = 0xC61D,
+};
+
+/** list of CinemaDNG tags */
+enum CinemaDngTags {
+    CINEMADNG_TIME_CODES    = 0xC763,
+    CINEMADNG_FRAME_RATE    = 0xC764,
+    CINEMADNG_T_STOP        = 0xC772,
+    CINEMADNG_REEL_NAME     = 0xC789,
+    CINEMADNG_CAMERA_LABEL  = 0xC7A1,
+};
+
+/** list of TIFF, TIFF/EP and DNG compression types */
 enum TiffCompr {
     TIFF_RAW = 1,
     TIFF_CCITT_RLE,
@@ -151,6 +176,7 @@ enum TiffGeoTagKey {
     TIFF_VERTICAL_UNITS_GEOKEY               = 4099
 };
 
+/** list of TIFF, TIFF/AP and DNG PhotometricInterpretation (TIFF_PHOTOMETRIC) values */
 enum TiffPhotometric {
     TIFF_PHOTOMETRIC_NONE       = -1,
     TIFF_PHOTOMETRIC_WHITE_IS_ZERO,      /* mono or grayscale, 0 is white */
@@ -163,7 +189,7 @@ enum TiffPhotometric {
     TIFF_PHOTOMETRIC_CIE_LAB    = 8,     /* 1976 CIE L*a*b* */
     TIFF_PHOTOMETRIC_ICC_LAB,            /* ICC L*a*b* */
     TIFF_PHOTOMETRIC_ITU_LAB,            /* ITU L*a*b* */
-    TIFF_PHOTOMETRIC_CFA        = 32803, /* Color Filter Array (DNG) */
+    TIFF_PHOTOMETRIC_CFA        = 32803, /* Color Filter Array (TIFF/AP and DNG) */
     TIFF_PHOTOMETRIC_LOG_L      = 32844, /* CIE Log2(L) */
     TIFF_PHOTOMETRIC_LOG_LUV,            /* CIE Log L*u*v* */
     TIFF_PHOTOMETRIC_LINEAR_RAW = 34892, /* Linear Raw (DNG) */
