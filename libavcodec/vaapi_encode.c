@@ -579,6 +579,8 @@ static int vaapi_encode_output(AVCodecContext *avctx,
     VAAPIEncodeContext *ctx = avctx->priv_data;
     VACodedBufferSegment *buf_list, *buf;
     VAStatus vas;
+    int total_size = 0;
+    uint8_t *ptr;
     int err;
 
     err = vaapi_encode_wait(avctx, pic);
@@ -595,15 +597,21 @@ static int vaapi_encode_output(AVCodecContext *avctx,
         goto fail;
     }
 
+    for (buf = buf_list; buf; buf = buf->next)
+        total_size += buf->size;
+
+    err = av_new_packet(pkt, total_size);
+    ptr = pkt->data;
+
+    if (err < 0)
+        goto fail_mapped;
+
     for (buf = buf_list; buf; buf = buf->next) {
         av_log(avctx, AV_LOG_DEBUG, "Output buffer: %u bytes "
                "(status %08x).\n", buf->size, buf->status);
 
-        err = av_new_packet(pkt, buf->size);
-        if (err < 0)
-            goto fail_mapped;
-
-        memcpy(pkt->data, buf->buf, buf->size);
+        memcpy(ptr, buf->buf, buf->size);
+        ptr += buf->size;
     }
 
     if (pic->type == PICTURE_TYPE_IDR)
