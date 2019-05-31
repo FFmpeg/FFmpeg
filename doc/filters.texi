@@ -10844,6 +10844,8 @@ Default is @code{1}.
 @code{haldclut} also has the same interpolation options as @ref{lut3d} (both
 filters share the same internals).
 
+This filter also supports the @ref{framesync} options.
+
 More information about the Hald CLUT can be found on Eskil Steenberg's website
 (Hald CLUT author) at @url{http://www.quelsolaar.com/technology/clut.html}.
 
@@ -11928,8 +11930,6 @@ Interpolate values using the 8 points defining a cube.
 Interpolate values using a tetrahedron.
 @end table
 @end table
-
-This filter also supports the @ref{framesync} options.
 
 @section lumakey
 
