@@ -367,6 +367,7 @@ static int query_formats(AVFilterContext *ctx)
     };
     static const enum AVPixelFormat out_pix_fmts[] = {
         AV_PIX_FMT_NV12,
+        AV_PIX_FMT_P010,
         AV_PIX_FMT_QSV,
         AV_PIX_FMT_NONE
     };
