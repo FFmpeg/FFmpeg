@@ -819,6 +819,15 @@ static int tcp_read(URLContext *h, uint8_t *buf, int size)
 #ifdef FIONREAD
         ioctl(s->fd, FIONREAD, &nread);
 #endif
+
+#ifdef SO_NREAD
+        int avail;
+        socklen_t avail_len = sizeof(avail);
+        if (nread <= 0 && !getsockopt(s->fd, SOL_SOCKET, SO_NREAD, &avail, &avail_len)) {
+            nread = avail;
+        }
+#endif // SO_NREAD
+
         if (s->dash_audio_tcp) {
             av_application_did_io_tcp_read(s->app_ctx, (void*)h, ret, nread, TCP_STREAM_TYPE_DASH_AUDIO);
         } else if (s->dash_video_tcp) {
