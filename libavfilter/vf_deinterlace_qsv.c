@@ -83,7 +83,7 @@ typedef struct QSVDeintContext {
     int mode;
 } QSVDeintContext;
 
-static void qsvdeint_uninit(AVFilterContext *ctx)
+static av_cold void qsvdeint_uninit(AVFilterContext *ctx)
 {
     QSVDeintContext *s = ctx->priv;
     QSVFrame *cur;

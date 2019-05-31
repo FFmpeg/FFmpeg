@@ -109,7 +109,7 @@ typedef struct QSVScaleContext {
     char *format_str;
 } QSVScaleContext;
 
-static int qsvscale_init(AVFilterContext *ctx)
+static av_cold int qsvscale_init(AVFilterContext *ctx)
 {
     QSVScaleContext *s = ctx->priv;
 
@@ -126,7 +126,7 @@ static int qsvscale_init(AVFilterContext *ctx)
     return 0;
 }
 
-static void qsvscale_uninit(AVFilterContext *ctx)
+static av_cold void qsvscale_uninit(AVFilterContext *ctx)
 {
     QSVScaleContext *s = ctx->priv;
 

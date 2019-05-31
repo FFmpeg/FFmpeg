@@ -345,7 +345,7 @@ static int overlay_qsv_init(AVFilterContext *ctx)
     return 0;
 }
 
-static void overlay_qsv_uninit(AVFilterContext *ctx)
+static av_cold void overlay_qsv_uninit(AVFilterContext *ctx)
 {
     QSVOverlayContext *vpp = ctx->priv;
 
