@@ -154,15 +154,12 @@ static int config_output(AVFilterLink *outlink)
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = ctx->inputs[0];
     ShowSpatialContext *s = ctx->priv;
-    int i, fft_bits, h, w;
+    int i, fft_bits;
     float overlap;
 
     outlink->w = s->w;
     outlink->h = s->h;
     outlink->sample_aspect_ratio = (AVRational){1,1};
-
-    h = s->h;
-    w = s->w;
 
     s->buf_size = 1 << av_log2(s->win_size);
     s->win_size = s->buf_size;
