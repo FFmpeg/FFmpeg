@@ -57,6 +57,10 @@ typedef struct VPPContext{
 
     int out_width;
     int out_height;
+    /**
+     * Output sw format. AV_PIX_FMT_NONE for no conversion.
+     */
+    enum AVPixelFormat out_format;
 
     AVRational framerate;       /* target framerate */
     int use_frc;                /* use framerate conversion */
@@ -79,6 +83,7 @@ typedef struct VPPContext{
 
     char *cx, *cy, *cw, *ch;
     char *ow, *oh;
+    char *output_format_str;
 } VPPContext;
 
 static const AVOption options[] = {
@@ -104,6 +109,8 @@ static const AVOption options[] = {
     { "width",  "Output video width",  OFFSET(ow), AV_OPT_TYPE_STRING, { .str="cw" }, 0, 255, .flags = FLAGS },
     { "h",      "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
     { "height", "Output video height", OFFSET(oh), AV_OPT_TYPE_STRING, { .str="w*ch/cw" }, 0, 255, .flags = FLAGS },
+    { "format", "Output pixel format", OFFSET(output_format_str), AV_OPT_TYPE_STRING, { .str = "same" }, .flags = FLAGS },
+
     { NULL }
 };
 
@@ -207,6 +214,23 @@ release:
     return ret;
 }
 
+static av_cold int vpp_init(AVFilterContext *ctx)
+{
+    VPPContext  *vpp  = ctx->priv;
+
+    if (!strcmp(vpp->output_format_str, "same")) {
+        vpp->out_format = AV_PIX_FMT_NONE;
+    } else {
+        vpp->out_format = av_get_pix_fmt(vpp->output_format_str);
+        if (vpp->out_format == AV_PIX_FMT_NONE) {
+            av_log(ctx, AV_LOG_ERROR, "Unrecognized output pixel format: %s\n", vpp->output_format_str);
+            return AVERROR(EINVAL);
+        }
+    }
+
+    return 0;
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
@@ -251,6 +275,7 @@ static int config_output(AVFilterLink *outlink)
     QSVVPPCrop      crop  = { 0 };
     mfxExtBuffer    *ext_buf[ENH_FILTERS_COUNT];
     AVFilterLink    *inlink = ctx->inputs[0];
+    enum AVPixelFormat in_format;
 
     outlink->w          = vpp->out_width;
     outlink->h          = vpp->out_height;
@@ -258,9 +283,18 @@ static int config_output(AVFilterLink *outlink)
     outlink->time_base  = av_inv_q(vpp->framerate);
 
     param.filter_frame  = NULL;
-    param.out_sw_format = AV_PIX_FMT_NV12;
     param.num_ext_buf   = 0;
     param.ext_buf       = ext_buf;
+
+    if (inlink->format == AV_PIX_FMT_QSV) {
+         if (!inlink->hw_frames_ctx || !inlink->hw_frames_ctx->data)
+             return AVERROR(EINVAL);
+         else
+             in_format = ((AVHWFramesContext*)inlink->hw_frames_ctx->data)->sw_format;
+    } else
+        in_format = inlink->format;
+
+    param.out_sw_format  = (vpp->out_format == AV_PIX_FMT_NONE) ? in_format : vpp->out_format;
 
     if (vpp->use_crop) {
         crop.in_idx = 0;
@@ -422,6 +456,7 @@ AVFilter ff_vf_vpp_qsv = {
     .description   = NULL_IF_CONFIG_SMALL("Quick Sync Video VPP."),
     .priv_size     = sizeof(VPPContext),
     .query_formats = query_formats,
+    .init          = vpp_init,
     .uninit        = vpp_uninit,
     .inputs        = vpp_inputs,
     .outputs       = vpp_outputs,
