@@ -188,7 +188,11 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 
     ret = ff_v4l2_m2m_codec_init(avctx);
     if (ret) {
+        V4L2m2mPriv *priv = avctx->priv_data;
         av_log(avctx, AV_LOG_ERROR, "can't configure decoder\n");
+        s->self_ref = NULL;
+        av_buffer_unref(&priv->context_ref);
+
         return ret;
     }
 
