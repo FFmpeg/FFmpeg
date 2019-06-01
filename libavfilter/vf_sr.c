@@ -286,9 +286,7 @@ static av_cold void uninit(AVFilterContext *context)
     }
 
     for (i = 0; i < 3; ++i){
-        if (sr_context->sws_contexts[i]){
-            sws_freeContext(sr_context->sws_contexts[i]);
-        }
+        sws_freeContext(sr_context->sws_contexts[i]);
     }
 }
 
