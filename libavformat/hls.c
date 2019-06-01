@@ -291,7 +291,7 @@ static void free_rendition_list(HLSContext *c)
 }
 
 /*
- * Used to reset a statically allocated AVPacket to a clean slate,
+ * Used to reset a statically allocated AVPacket to a clean state,
  * containing no data.
  */
 static void reset_packet(AVPacket *pkt)
@@ -476,17 +476,23 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
          * AVC SEI RBSP anyway */
         return NULL;
 
-    if (type == AVMEDIA_TYPE_UNKNOWN)
+    if (type == AVMEDIA_TYPE_UNKNOWN) {
+        av_log(c, AV_LOG_WARNING, "Can't support the type: %s\n", info->type);
         return NULL;
+    }
 
     /* URI is mandatory for subtitles as per spec */
-    if (type == AVMEDIA_TYPE_SUBTITLE && !info->uri[0])
+    if (type == AVMEDIA_TYPE_SUBTITLE && !info->uri[0]) {
+        av_log(c, AV_LOG_ERROR, "The URI tag is REQUIRED for subtitle.\n");
         return NULL;
+    }
 
     /* TODO: handle subtitles (each segment has to parsed separately) */
     if (c->ctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL)
-        if (type == AVMEDIA_TYPE_SUBTITLE)
+        if (type == AVMEDIA_TYPE_SUBTITLE) {
+            av_log(c, AV_LOG_WARNING, "Can't support the subtitle(uri: %s)\n", info->uri);
             return NULL;
+        }
 
     rend = av_mallocz(sizeof(struct rendition));
     if (!rend)
@@ -1202,12 +1208,12 @@ static int open_input(HLSContext *c, struct playlist *pls, struct segment *seg, 
             if (open_url(pls->parent, &pb, seg->key, c->avio_opts, opts, NULL) == 0) {
                 ret = avio_read(pb, pls->key, sizeof(pls->key));
                 if (ret != sizeof(pls->key)) {
-                    av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
+                    av_log(pls->parent, AV_LOG_ERROR, "Unable to read key file %s\n",
                            seg->key);
                 }
                 ff_format_io_close(pls->parent, &pb);
             } else {
-                av_log(NULL, AV_LOG_ERROR, "Unable to open key file %s\n",
+                av_log(pls->parent, AV_LOG_ERROR, "Unable to open key file %s\n",
                        seg->key);
             }
             av_strlcpy(pls->key_url, seg->key, sizeof(pls->key_url));
@@ -1419,7 +1425,7 @@ reload:
             reload_interval = v->target_duration / 2;
         }
         if (v->cur_seq_no < v->start_seq_no) {
-            av_log(NULL, AV_LOG_WARNING,
+            av_log(v->parent, AV_LOG_WARNING,
                    "skipping %d segments ahead, expired from playlists\n",
                    v->start_seq_no - v->cur_seq_no);
             v->cur_seq_no = v->start_seq_no;
@@ -1800,7 +1806,7 @@ static int hls_read_header(AVFormatContext *s)
         goto fail;
 
     if (c->n_variants == 0) {
-        av_log(NULL, AV_LOG_WARNING, "Empty playlist\n");
+        av_log(s, AV_LOG_WARNING, "Empty playlist\n");
         ret = AVERROR_EOF;
         goto fail;
     }
@@ -1815,7 +1821,7 @@ static int hls_read_header(AVFormatContext *s)
     }
 
     if (c->variants[0]->playlists[0]->n_segments == 0) {
-        av_log(NULL, AV_LOG_WARNING, "Empty playlist\n");
+        av_log(s, AV_LOG_WARNING, "Empty segment\n");
         ret = AVERROR_EOF;
         goto fail;
     }
