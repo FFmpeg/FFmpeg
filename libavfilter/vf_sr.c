@@ -29,6 +29,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "libavformat/avio.h"
 #include "libswscale/swscale.h"
 #include "dnn_interface.h"
@@ -205,7 +206,9 @@ static int config_props(AVFilterLink *inlink)
                 sws_dst_w = AV_CEIL_RSHIFT(sws_dst_w, 2);
                 break;
             default:
-                av_log(context, AV_LOG_ERROR, "could not create SwsContext for scaling for given input pixel format");
+                av_log(context, AV_LOG_ERROR,
+                       "could not create SwsContext for scaling for given input pixel format: %s\n",
+                       av_get_pix_fmt_name(inlink->format));
                 return AVERROR(EIO);
             }
             sr_context->sws_contexts[0] = sws_getContext(sws_src_w, sws_src_h, AV_PIX_FMT_GRAY8,
