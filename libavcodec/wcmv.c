@@ -154,6 +154,9 @@ static int decode_frame(AVCodecContext *avctx,
         bytestream2_seek(&gb, 2, SEEK_SET);
     }
 
+    if (bytestream2_get_bytes_left(&gb) < 8LL * blocks)
+        return AVERROR_INVALIDDATA;
+
     if (s->prev_frame->data[0]) {
         ret = av_frame_copy(frame, s->prev_frame);
         if (ret < 0)
