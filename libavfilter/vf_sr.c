@@ -72,17 +72,16 @@ static av_cold int init(AVFilterContext *context)
         av_log(context, AV_LOG_ERROR, "could not create DNN module for requested backend\n");
         return AVERROR(ENOMEM);
     }
+
     if (!sr_context->model_filename){
         av_log(context, AV_LOG_ERROR, "model file for network was not specified\n");
         return AVERROR(EIO);
-    } else {
-        if (!sr_context->dnn_module->load_model) {
-            av_log(context, AV_LOG_ERROR, "load_model for network was not specified\n");
-            return AVERROR(EIO);
-        } else {
-            sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
-        }
     }
+    if (!sr_context->dnn_module->load_model) {
+        av_log(context, AV_LOG_ERROR, "load_model for network was not specified\n");
+        return AVERROR(EIO);
+    }
+    sr_context->model = (sr_context->dnn_module->load_model)(sr_context->model_filename);
     if (!sr_context->model){
         av_log(context, AV_LOG_ERROR, "could not load DNN model\n");
         return AVERROR(EIO);
