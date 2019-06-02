@@ -1830,7 +1830,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
     /**
      * Expected format for var_stream_map string is as below:
      * "a:0,v:0 a:1,v:1"
-     * "a:0,agroup:a0,default:1,language:ENG a:1,agroup:a1,defalut:0 v:0,agroup:a0  v:1,agroup:a1"
+     * "a:0,agroup:a0,default:1,language:ENG a:1,agroup:a1,default:0 v:0,agroup:a0  v:1,agroup:a1"
      * This string specifies how to group the audio, video and subtitle streams
      * into different variant streams. The variant stream groups are separated
      * by space.
