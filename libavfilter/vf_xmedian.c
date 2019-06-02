@@ -88,10 +88,6 @@ static av_cold int init(AVFilterContext *ctx)
     XMedianContext *s = ctx->priv;
     int ret;
 
-    if (!(s->nb_inputs & 1))
-        av_log(s, AV_LOG_WARNING, "nb_intputs: %d is not odd number.\n", s->nb_inputs);
-
-    s->nb_inputs = s->nb_inputs | 1;
     s->radius = s->nb_inputs / 2;
     s->frames = av_calloc(s->nb_inputs, sizeof(*s->frames));
     if (!s->frames)
@@ -156,7 +152,10 @@ static int median_frames16(AVFilterContext *ctx, void *arg, int jobnr, int nb_jo
                 }
 
                 AV_QSORT(values, nb_inputs, int, comparei);
-                dst[x] = values[radius];
+                if (radius & 1)
+                    dst[x] = values[radius];
+                else
+                    dst[x] = (values[radius] + values[radius - 1]) >> 1;
             }
 
             dst += out->linesize[p] / 2;
@@ -195,7 +194,10 @@ static int median_frames8(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
                     values[i] = in[i]->data[p][y * in[i]->linesize[p] + x];
 
                 AV_QSORT(values, nb_inputs, int, comparei);
-                dst[x] = values[radius];
+                if (radius & 1)
+                    dst[x] = values[radius];
+                else
+                    dst[x] = (values[radius] + values[radius - 1]) >> 1;
             }
 
             dst += out->linesize[p];
@@ -319,8 +321,8 @@ static int activate(AVFilterContext *ctx)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption xmedian_options[] = {
-    { "nb_inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3},  3, 255, .flags = FLAGS },
-    { "planes",    "set planes to filter", OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=15}, 0,  15, .flags = FLAGS },
+    { "inputs", "set number of inputs", OFFSET(nb_inputs), AV_OPT_TYPE_INT, {.i64=3},  3, 255, .flags = FLAGS },
+    { "planes", "set planes to filter", OFFSET(planes),    AV_OPT_TYPE_INT, {.i64=15}, 0,  15, .flags = FLAGS },
     { NULL },
 };
 
