@@ -75,6 +75,8 @@ typedef struct HLSSegment {
     int discont;
     int64_t pos;
     int64_t size;
+    int64_t keyframe_pos;
+    int64_t keyframe_size;
     unsigned var_stream_idx;
 
     char key_uri[LINE_BUFFER_SIZE + 1];
@@ -99,6 +101,7 @@ typedef enum HLSFlags {
     HLS_TEMP_FILE = (1 << 11),
     HLS_PERIODIC_REKEY = (1 << 12),
     HLS_INDEPENDENT_SEGMENTS = (1 << 13),
+    HLS_I_FRAMES_ONLY = (1 << 14),
 } HLSFlags;
 
 typedef enum {
@@ -125,6 +128,9 @@ typedef struct VariantStream {
     double dpp;           // duration per packet
     int64_t start_pts;
     int64_t end_pts;
+    int64_t video_lastpos;
+    int64_t video_keyframe_pos;
+    int64_t video_keyframe_size;
     double duration;      // last segment duration computed so far, in seconds
     int64_t start_pos;    // last segment starting position
     int64_t size;         // last segment size
@@ -994,6 +1000,8 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     en->duration = duration;
     en->pos      = pos;
     en->size     = size;
+    en->keyframe_pos      = vs->video_keyframe_pos;
+    en->keyframe_size     = vs->video_keyframe_size;
     en->next     = NULL;
     en->discont  = 0;
 
@@ -1411,7 +1419,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     vs->discontinuity_set = 0;
     ff_hls_write_playlist_header(hls->m3u8_out, hls->version, hls->allowcache,
-                                 target_duration, sequence, hls->pl_type);
+                                 target_duration, sequence, hls->pl_type, hls->flags & HLS_I_FRAMES_ONLY);
 
     if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0 ){
         avio_printf(hls->m3u8_out, "#EXT-X-DISCONTINUITY\n");
@@ -1439,7 +1447,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
         ret = ff_hls_write_file_entry(hls->m3u8_out, en->discont, byterange_mode,
                                       en->duration, hls->flags & HLS_ROUND_DURATIONS,
                                       en->size, en->pos, vs->baseurl,
-                                      en->filename, prog_date_time_p);
+                                      en->filename, prog_date_time_p, en->keyframe_size, en->keyframe_pos, hls->flags & HLS_I_FRAMES_ONLY);
         if (ret < 0) {
             av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
         }
@@ -1455,11 +1463,11 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
             goto fail;
         }
         ff_hls_write_playlist_header(hls->sub_m3u8_out, hls->version, hls->allowcache,
-                                     target_duration, sequence, PLAYLIST_TYPE_NONE);
+                                     target_duration, sequence, PLAYLIST_TYPE_NONE, 0);
         for (en = vs->segments; en; en = en->next) {
             ret = ff_hls_write_file_entry(hls->sub_m3u8_out, 0, byterange_mode,
                                           en->duration, 0, en->size, en->pos,
-                                          vs->baseurl, en->sub_filename, NULL);
+                                          vs->baseurl, en->sub_filename, NULL, 0, 0, 0);
             if (ret < 0) {
                 av_log(s, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
             }
@@ -2205,7 +2213,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         vs->start_pts = pkt->pts;
     }
 
-    if (vs->has_video) {
+   if (vs->has_video) {
         can_split = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
                     ((pkt->flags & AV_PKT_FLAG_KEY) || (hls->flags & HLS_SPLIT_BY_TIME));
         is_ref_pkt = (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->stream_index == vs->reference_stream_index);
@@ -2240,6 +2248,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_write_frame(vs->avf, NULL); /* Flush any buffered data */
 
         new_start_pos = avio_tell(vs->avf->pb);
+
         if (hls->segment_type != SEGMENT_TYPE_FMP4) {
             avio_flush(oc->pb);
             vs->size = new_start_pos - vs->start_pos;
@@ -2368,6 +2377,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
     vs->packets_written++;
     if (oc->pb) {
         ret = ff_write_chained(oc, stream_index, pkt, s, 0);
+        if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) && (pkt->flags & AV_PKT_FLAG_KEY)) {
+            vs->video_keyframe_size = avio_tell(oc->pb) - vs->video_lastpos;
+            vs->video_keyframe_pos = vs->start_pos;
+        } else {
+            vs->video_lastpos = avio_tell(oc->pb);
+        }
+
         if (hls->ignore_io_errors)
             ret = 0;
     }
@@ -2919,6 +2935,7 @@ static const AVOption options[] = {
     {"second_level_segment_size", "include segment size in segment filenames when use_localtime", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SECOND_LEVEL_SEGMENT_SIZE }, 0, UINT_MAX,   E, "flags"},
     {"periodic_rekey", "reload keyinfo file periodically for re-keying", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_PERIODIC_REKEY }, 0, UINT_MAX,   E, "flags"},
     {"independent_segments", "add EXT-X-INDEPENDENT-SEGMENTS, whenever applicable", 0, AV_OPT_TYPE_CONST, { .i64 = HLS_INDEPENDENT_SEGMENTS }, 0, UINT_MAX, E, "flags"},
+    {"iframes_only", "add EXT-X-I-FRAMES-ONLY, whenever applicable", 0, AV_OPT_TYPE_CONST, { .i64 = HLS_I_FRAMES_ONLY }, 0, UINT_MAX, E, "flags"},
 #if FF_API_HLS_USE_LOCALTIME
     {"use_localtime", "set filename expansion with strftime at segment creation(will be deprecated )", OFFSET(use_localtime), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
 #endif

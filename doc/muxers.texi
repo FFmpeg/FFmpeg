@@ -852,6 +852,10 @@ including the file containing the AES encryption key.
 Add the @code{#EXT-X-INDEPENDENT-SEGMENTS} to playlists that has video segments
 and when all the segments of that playlist are guaranteed to start with a Key frame.
 
+@item iframes_only
+Add the @code{#EXT-X-I-FRAMES-ONLY} to playlists that has video segments
+and can play only I-frames in the @code{#EXT-X-BYTERANGE} mode.
+
 @item split_by_time
 Allow segments to start on frames other than keyframes. This improves
 behavior on some players when the time between keyframes is inconsistent,

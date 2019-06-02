@@ -471,7 +471,7 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
     }
 
     ff_hls_write_playlist_header(c->m3u8_out, 6, -1, target_duration,
-                                 start_number, PLAYLIST_TYPE_NONE);
+                                 start_number, PLAYLIST_TYPE_NONE, 0);
 
     ff_hls_write_init_file(c->m3u8_out, os->initfile, c->single_file,
                            os->init_range_length, os->init_start_pos);
@@ -491,7 +491,7 @@ static void write_hls_media_playlist(OutputStream *os, AVFormatContext *s,
                                 (double) seg->duration / timescale, 0,
                                 seg->range_length, seg->start_pos, NULL,
                                 c->single_file ? os->initfile : seg->file,
-                                &prog_date_time);
+                                &prog_date_time, 0, 0, 0);
         if (ret < 0) {
             av_log(os->ctx, AV_LOG_WARNING, "ff_hls_write_file_entry get error\n");
         }
