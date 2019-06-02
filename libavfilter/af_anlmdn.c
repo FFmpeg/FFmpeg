@@ -224,7 +224,10 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
             unsigned weight_lut_idx;
             float w;
 
-            av_assert2(distance >= 0.f);
+            if (distance < 0.f) {
+                cache[j] = 0.f;
+                continue;
+            }
             w = distance * sw;
             if (w >= smooth)
                 continue;
