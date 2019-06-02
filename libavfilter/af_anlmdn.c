@@ -29,7 +29,6 @@
 
 #include "af_anlmdndsp.h"
 
-#define MAX_DIFF         11.f
 #define WEIGHT_LUT_NBITS 20
 #define WEIGHT_LUT_SIZE  (1<<WEIGHT_LUT_NBITS)
 
@@ -41,6 +40,7 @@ typedef struct AudioNLMeansContext {
     float a;
     int64_t pd;
     int64_t rd;
+    float m;
     int om;
 
     float pdiff_lut_scale;
@@ -81,6 +81,7 @@ static const AVOption anlmdn_options[] = {
     {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AF, "mode" },
     {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AF, "mode" },
     {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AF, "mode" },
+    { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AF },
     { NULL }
 };
 
@@ -178,7 +179,7 @@ static int config_output(AVFilterLink *outlink)
     if (ret < 0)
         return ret;
 
-    s->pdiff_lut_scale = 1.f / MAX_DIFF * WEIGHT_LUT_SIZE;
+    s->pdiff_lut_scale = 1.f / s->m * WEIGHT_LUT_SIZE;
     for (int i = 0; i < WEIGHT_LUT_SIZE; i++) {
         float w = -i / s->pdiff_lut_scale;
 
@@ -201,6 +202,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
     float *cache = (float *)s->cache->extended_data[ch];
     const float sw = (65536.f / (4 * K + 2)) / sqrtf(s->a);
     float *dst = (float *)out->extended_data[ch] + s->offset;
+    const float smooth = s->m;
 
     for (int i = S; i < s->H + S; i++) {
         float P = 0.f, Q = 0.f;
@@ -224,7 +226,7 @@ static int filter_channel(AVFilterContext *ctx, void *arg, int ch, int nb_jobs)
 
             av_assert2(distance >= 0.f);
             w = distance * sw;
-            if (w >= MAX_DIFF)
+            if (w >= smooth)
                 continue;
             weight_lut_idx = w * s->pdiff_lut_scale;
             av_assert2(weight_lut_idx < WEIGHT_LUT_SIZE);

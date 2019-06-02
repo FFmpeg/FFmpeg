@@ -1801,6 +1801,9 @@ Pass only noise.
 
 Default value is @var{o}.
 @end table
+
+@item m
+Set smooth factor. Default value is @var{11}. Allowed range is from @var{1} to @var{15}.
 @end table
 
 @section anull
