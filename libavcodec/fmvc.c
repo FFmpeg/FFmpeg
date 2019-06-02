@@ -403,6 +403,9 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret, y, x;
 
+    if (avpkt->size < 8)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
 
