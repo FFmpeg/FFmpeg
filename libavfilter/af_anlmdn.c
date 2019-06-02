@@ -317,7 +317,7 @@ static int request_frame(AVFilterLink *outlink)
 
         if (s->eof_left < 0)
             s->eof_left = av_audio_fifo_size(s->fifo) - (s->S + s->K);
-        if (s->eof_left < 0)
+        if (s->eof_left <= 0)
             return AVERROR_EOF;
         in = ff_get_audio_buffer(outlink, s->H);
         if (!in)
