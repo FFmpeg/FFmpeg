@@ -112,7 +112,9 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
         }
     }
 
-    avccontext->channels = context->vi.channels;
+    av_channel_layout_uninit(&avccontext->ch_layout);
+    avccontext->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    avccontext->ch_layout.nb_channels = context->vi.channels;
     avccontext->sample_rate = context->vi.rate;
     avccontext->sample_fmt = AV_SAMPLE_FMT_S16;
     avccontext->time_base= (AVRational){1, avccontext->sample_rate};

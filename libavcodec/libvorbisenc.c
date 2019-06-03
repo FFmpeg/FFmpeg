@@ -96,6 +96,7 @@ static int vorbis_error_to_averror(int ov_err)
 static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
 {
     LibvorbisEncContext *s = avctx->priv_data;
+    int channels = avctx->ch_layout.nb_channels;
     double cfreq;
     int ret;
 
@@ -108,7 +109,7 @@ static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
         /* default to 3 if the user did not set quality or bitrate */
         if (!(avctx->flags & AV_CODEC_FLAG_QSCALE))
             q = 3.0;
-        if ((ret = vorbis_encode_setup_vbr(vi, avctx->channels,
+        if ((ret = vorbis_encode_setup_vbr(vi, channels,
                                            avctx->sample_rate,
                                            q / 10.0)))
             goto error;
@@ -117,7 +118,7 @@ static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
         int maxrate = avctx->rc_max_rate > 0 ? avctx->rc_max_rate : -1;
 
         /* average bitrate */
-        if ((ret = vorbis_encode_setup_managed(vi, avctx->channels,
+        if ((ret = vorbis_encode_setup_managed(vi, channels,
                                                avctx->sample_rate, maxrate,
                                                avctx->bit_rate, minrate)))
             goto error;
@@ -141,32 +142,31 @@ static av_cold int libvorbis_setup(vorbis_info *vi, AVCodecContext *avctx)
             goto error;
     }
 
-    if (avctx->channels == 3 &&
-            avctx->channel_layout != (AV_CH_LAYOUT_STEREO|AV_CH_FRONT_CENTER) ||
-        avctx->channels == 4 &&
-            avctx->channel_layout != AV_CH_LAYOUT_2_2 &&
-            avctx->channel_layout != AV_CH_LAYOUT_QUAD ||
-        avctx->channels == 5 &&
-            avctx->channel_layout != AV_CH_LAYOUT_5POINT0 &&
-            avctx->channel_layout != AV_CH_LAYOUT_5POINT0_BACK ||
-        avctx->channels == 6 &&
-            avctx->channel_layout != AV_CH_LAYOUT_5POINT1 &&
-            avctx->channel_layout != AV_CH_LAYOUT_5POINT1_BACK ||
-        avctx->channels == 7 &&
-            avctx->channel_layout != (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_CENTER) ||
-        avctx->channels == 8 &&
-            avctx->channel_layout != AV_CH_LAYOUT_7POINT1) {
-        if (avctx->channel_layout) {
+    if ((channels == 3 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_SURROUND)) ||
+        (channels == 4 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_2_2) &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_QUAD)) ||
+        (channels == 5 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0) &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT0_BACK)) ||
+        (channels == 6 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1) &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_5POINT1_BACK)) ||
+        (channels == 7 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_6POINT1)) ||
+        (channels == 8 &&
+         av_channel_layout_compare(&avctx->ch_layout, &(AVChannelLayout)AV_CHANNEL_LAYOUT_7POINT1))) {
+        if (avctx->ch_layout.order != AV_CHANNEL_ORDER_UNSPEC) {
             char name[32];
-            av_get_channel_layout_string(name, sizeof(name), avctx->channels,
-                                         avctx->channel_layout);
+            av_channel_layout_describe(&avctx->ch_layout, name, sizeof(name));
             av_log(avctx, AV_LOG_ERROR, "%s not supported by Vorbis: "
                                              "output stream will have incorrect "
                                              "channel layout.\n", name);
         } else {
             av_log(avctx, AV_LOG_WARNING, "No channel layout specified. The encoder "
                                                "will use Vorbis channel layout for "
-                                               "%d channels.\n", avctx->channels);
+                                               "%d channels.\n", channels);
         }
     }
 
