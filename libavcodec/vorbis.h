@@ -26,7 +26,10 @@
 extern const float ff_vorbis_floor1_inverse_db_table[256];
 extern const float * const ff_vorbis_vwin[8];
 extern const uint8_t ff_vorbis_channel_layout_offsets[8][8];
+#if FF_API_OLD_CHANNEL_LAYOUT
 extern const uint64_t ff_vorbis_channel_layouts[9];
+#endif
+extern const AVChannelLayout ff_vorbis_ch_layouts[9];
 
 typedef struct vorbis_floor1_entry {
     uint16_t x;
