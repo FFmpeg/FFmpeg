@@ -101,8 +101,9 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
 
-    lame_set_num_channels(s->gfp, avctx->channels);
-    lame_set_mode(s->gfp, avctx->channels > 1 ? s->joint_stereo ? JOINT_STEREO : STEREO : MONO);
+    lame_set_num_channels(s->gfp, avctx->ch_layout.nb_channels);
+    lame_set_mode(s->gfp, avctx->ch_layout.nb_channels > 1 ?
+                          s->joint_stereo ? JOINT_STEREO : STEREO : MONO);
 
     /* sample rate */
     lame_set_in_samplerate (s->gfp, avctx->sample_rate);
@@ -151,7 +152,7 @@ static av_cold int mp3lame_encode_init(AVCodecContext *avctx)
     /* allocate float sample buffers */
     if (avctx->sample_fmt == AV_SAMPLE_FMT_FLTP) {
         int ch;
-        for (ch = 0; ch < avctx->channels; ch++) {
+        for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
             s->samples_flt[ch] = av_malloc_array(avctx->frame_size,
                                            sizeof(*s->samples_flt[ch]));
             if (!s->samples_flt[ch]) {
@@ -208,7 +209,7 @@ static int mp3lame_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
                 av_log(avctx, AV_LOG_ERROR, "inadequate AVFrame plane padding\n");
                 return AVERROR(EINVAL);
             }
-            for (ch = 0; ch < avctx->channels; ch++) {
+            for (ch = 0; ch < avctx->ch_layout.nb_channels; ch++) {
                 s->fdsp->vector_fmul_scalar(s->samples_flt[ch],
                                            (const float *)frame->data[ch],
                                            32768.0f,
@@ -343,9 +344,15 @@ const AVCodec ff_libmp3lame_encoder = {
                                                              AV_SAMPLE_FMT_S16P,
                                                              AV_SAMPLE_FMT_NONE },
     .supported_samplerates = libmp3lame_sample_rates,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO,
                                                   0 },
+#endif
+    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+                                                         AV_CHANNEL_LAYOUT_STEREO,
+                                                         { 0 },
+    },
     .priv_class            = &libmp3lame_class,
     .defaults              = libmp3lame_defaults,
     .wrapper_name          = "libmp3lame",
