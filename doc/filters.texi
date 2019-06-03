@@ -1806,6 +1806,19 @@ Default value is @var{o}.
 Set smooth factor. Default value is @var{11}. Allowed range is from @var{1} to @var{15}.
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item s
+Change denoise strength. Argument is single float number.
+Syntax for the command is : "@var{s}"
+
+@item o
+Change output mode.
+Syntax for the command is : "i", "o" or "n" string.
+@end table
+
 @section anull
 
 Pass the audio source unchanged to the output.

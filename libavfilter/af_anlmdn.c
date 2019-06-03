@@ -22,6 +22,7 @@
 
 #include "libavutil/avassert.h"
 #include "libavutil/audio_fifo.h"
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
@@ -338,6 +339,29 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->cache);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    AudioNLMeansContext *s = ctx->priv;
+
+    if (!strcmp(cmd, "s")) {
+        float a;
+
+        if (av_sscanf(args, "%f", &a) == 1)
+            s->a = av_clipf(a, 0.00001, 10);
+    } else if (!strcmp(cmd, "o")) {
+        if (!strcmp(args, "i")) {
+            s->om = IN_MODE;
+        } else if (!strcmp(args, "o")) {
+            s->om = OUT_MODE;
+        } else if (!strcmp(args, "n")) {
+            s->om = NOISE_MODE;
+        }
+    }
+
+    return 0;
+}
+
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -366,6 +390,7 @@ AVFilter ff_af_anlmdn = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
+    .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };
