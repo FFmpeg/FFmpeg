@@ -1047,12 +1047,6 @@ int ff_vaapi_encode_receive_packet(AVCodecContext *avctx, AVPacket *pkt)
     return 0;
 }
 
-int ff_vaapi_encode2(AVCodecContext *avctx, AVPacket *pkt,
-                     const AVFrame *input_image, int *got_packet)
-{
-    return AVERROR(ENOSYS);
-}
-
 static av_cold void vaapi_encode_add_global_param(AVCodecContext *avctx,
                                                   VAEncMiscParameterBuffer *buffer,
                                                   size_t size)
