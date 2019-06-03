@@ -1057,6 +1057,10 @@ static int dxv_decode(AVCodecContext *avctx, void *data,
     avctx->pix_fmt = AV_PIX_FMT_RGBA;
     avctx->colorspace = AVCOL_SPC_RGB;
 
+    ctx->tex_funct = NULL;
+    ctx->tex_funct_planar[0] = NULL;
+    ctx->tex_funct_planar[1] = NULL;
+
     tag = bytestream2_get_le32(gbc);
     switch (tag) {
     case MKBETAG('D', 'X', 'T', '1'):
