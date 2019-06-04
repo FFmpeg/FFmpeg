@@ -120,7 +120,7 @@ add extradata to all packets
 @end table
 @end table
 
-If not specified it is assumed @samp{e}.
+If not specified it is assumed @samp{k}.
 
 For example the following @command{ffmpeg} command forces a global
 header (thus disabling individual packet headers) in the H.264 packets
