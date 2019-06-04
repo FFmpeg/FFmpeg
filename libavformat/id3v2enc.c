@@ -255,6 +255,42 @@ static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
     return 0;
 }
 
+static int write_ctoc(AVFormatContext *s, ID3v2EncContext *id3, int enc)
+{
+    uint8_t *dyn_buf = NULL;
+    AVIOContext *dyn_bc = NULL;
+    char name[123];
+    int len, ret;
+
+    if (s->nb_chapters == 0)
+        return 0;
+
+    if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
+        goto fail;
+
+    id3->len += avio_put_str(dyn_bc, "toc");
+    avio_wb16(dyn_bc, 0x03);
+    avio_w8(dyn_bc, s->nb_chapters);
+    for (int i = 0; i < s->nb_chapters; i++) {
+        snprintf(name, 122, "ch%d", i);
+        id3->len += avio_put_str(dyn_bc, name);
+    }
+    len = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    id3->len += 16 + ID3v2_HEADER_SIZE;
+
+    avio_wb32(s->pb, MKBETAG('C', 'T', 'O', 'C'));
+    avio_wb32(s->pb, len);
+    avio_wb16(s->pb, 0);
+    avio_write(s->pb, dyn_buf, len);
+
+fail:
+    if (dyn_bc && !dyn_buf)
+        avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    av_freep(&dyn_buf);
+
+    return ret;
+}
+
 static int write_chapter(AVFormatContext *s, ID3v2EncContext *id3, int id, int enc)
 {
     const AVRational time_base = {1, 1000};
@@ -304,6 +340,9 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
 
     ff_standardize_creation_time(s);
     if ((ret = write_metadata(s->pb, &s->metadata, id3, enc)) < 0)
+        return ret;
+
+    if ((ret = write_ctoc(s, id3, enc)) < 0)
         return ret;
 
     for (i = 0; i < s->nb_chapters; i++) {
