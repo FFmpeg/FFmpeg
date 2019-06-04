@@ -598,13 +598,13 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
 
     s->version = 2;
 
-    if (avctx->channels > MAX_CHANNELS)
+    if (avctx->ch_layout.nb_channels > MAX_CHANNELS)
     {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
         return AVERROR(EINVAL); /* only stereo or mono for now */
     }
 
-    if (avctx->channels == 2)
+    if (avctx->ch_layout.nb_channels == 2)
         s->decorrelation = MID_SIDE;
     else
         s->decorrelation = 3;
@@ -637,7 +637,7 @@ static av_cold int sonic_encode_init(AVCodecContext *avctx)
     for (i = 0; i < s->num_taps; i++)
         s->tap_quant[i] = ff_sqrt(i+1);
 
-    s->channels = avctx->channels;
+    s->channels = avctx->ch_layout.nb_channels;
     s->samplerate = avctx->sample_rate;
 
     s->block_align = 2048LL*s->samplerate/(44100*s->downsampling);
@@ -853,7 +853,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     int i;
     int ret;
 
-    s->channels = avctx->channels;
+    s->channels = avctx->ch_layout.nb_channels;
     s->samplerate = avctx->sample_rate;
 
     if (!avctx->extradata)
@@ -896,7 +896,9 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo streams are supported by now\n");
         return AVERROR_INVALIDDATA;
     }
-    avctx->channels = s->channels;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    avctx->ch_layout.nb_channels = s->channels;
 
     s->lossless = get_bits1(&gb);
     if (!s->lossless)
@@ -989,7 +991,7 @@ static int sonic_decode_frame(AVCodecContext *avctx,
 
     if (buf_size == 0) return 0;
 
-    frame->nb_samples = s->frame_size / avctx->channels;
+    frame->nb_samples = s->frame_size / avctx->ch_layout.nb_channels;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
         return ret;
     samples = (int16_t *)frame->data[0];
