@@ -560,12 +560,7 @@ static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transapren
   + (a.gfc_green-b.gfc_green+dither.g)*(a.gfc_green-b.gfc_green+dither.g)
   + (a.gfc_blue-b.gfc_blue+dither.b)*(a.gfc_blue-b.gfc_blue+dither.b);
 
-  unsigned int undith = (a.gfc_red-b.gfc_red+dither.r/2)*(a.gfc_red-b.gfc_red+dither.r/2)
-  + (a.gfc_green-b.gfc_green+dither.g/2)*(a.gfc_green-b.gfc_green+dither.g/2)
-  + (a.gfc_blue-b.gfc_blue+dither.b/2)*(a.gfc_blue-b.gfc_blue+dither.b/2);
-
-  /* Smaller error always wins, under assumption that dithering is not required and it's only done opportunistically */
-  return dith < undith ? dith : undith;
+  return dith;
 }
 
 
@@ -741,6 +736,7 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
   unsigned image_endpos = gfi->height * gfi->width;
 
   fprintf(stderr, "main write loop\n");
+  gfc_rgbdiff dither = {0,0,0};
 
   while (1) {
 
@@ -813,8 +809,8 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
     /*****
      * Find the next code to output. */
     {
-      gfc_rgbdiff dither = {0,0,0};
       struct selected_node t = gfc_lookup_lossy(&gfc, gfcm, gfi, pos, NULL, 0, dither, loss);
+      dither = t.dither;
 
       work_node = t.node;
       run = t.pos - pos;
@@ -823,7 +819,12 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
       if (pos < image_endpos) {
         /* Output the current code. */
         if (next_code < GIF_MAX_CODE) {
-          gfc_define(&gfc, work_node, gif_pixel_at_pos(gfcm, gfi, pos, dither), next_code);
+            Gif_RGBA wanted_color = rgba_color_at_pos(gfi, pos);
+            int selected_color_index = gif_pixel_at_pos(gfcm, gfi, pos, dither);
+
+            gfc_define(&gfc, work_node, selected_color_index, next_code);
+
+            dither = diffused_difference(gfcm->col[selected_color_index], Gif_Color{wanted_color.r, wanted_color.g, wanted_color.b});
           next_code++;
         } else
           next_code = GIF_MAX_CODE + 1; /* to match "> CUR_BUMP_CODE" above */
