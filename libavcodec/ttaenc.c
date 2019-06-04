@@ -56,7 +56,7 @@ static av_cold int tta_encode_init(AVCodecContext *avctx)
     s->bps = avctx->bits_per_raw_sample >> 3;
     avctx->frame_size = 256 * avctx->sample_rate / 245;
 
-    s->ch_ctx = av_malloc_array(avctx->channels, sizeof(*s->ch_ctx));
+    s->ch_ctx = av_malloc_array(avctx->ch_layout.nb_channels, sizeof(*s->ch_ctx));
     if (!s->ch_ctx)
         return AVERROR(ENOMEM);
 
@@ -89,7 +89,7 @@ static int tta_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     TTAEncContext *s = avctx->priv_data;
     PutBitContext pb;
     int ret, i, out_bytes, cur_chan, res, samples;
-    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->channels * s->bps;
+    int64_t pkt_size =  frame->nb_samples * 2LL * avctx->ch_layout.nb_channels * s->bps;
 
 pkt_alloc:
     cur_chan = 0, res = 0, samples = 0;
@@ -98,13 +98,13 @@ pkt_alloc:
     init_put_bits(&pb, avpkt->data, avpkt->size);
 
     // init per channel states
-    for (i = 0; i < avctx->channels; i++) {
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++) {
         s->ch_ctx[i].predictor = 0;
         ff_tta_filter_init(&s->ch_ctx[i].filter, ff_tta_filter_configs[s->bps - 1]);
         ff_tta_rice_init(&s->ch_ctx[i].rice, 10, 10);
     }
 
-    for (i = 0; i < frame->nb_samples * avctx->channels; i++) {
+    for (i = 0; i < frame->nb_samples * avctx->ch_layout.nb_channels; i++) {
         TTAChannel *c = &s->ch_ctx[cur_chan];
         TTAFilter *filter = &c->filter;
         TTARice *rice = &c->rice;
@@ -113,8 +113,8 @@ pkt_alloc:
 
         value = get_sample(frame, samples++, avctx->sample_fmt);
 
-        if (avctx->channels > 1) {
-            if (cur_chan < avctx->channels - 1)
+        if (avctx->ch_layout.nb_channels > 1) {
+            if (cur_chan < avctx->ch_layout.nb_channels - 1)
                 value  = res = get_sample(frame, samples, avctx->sample_fmt) - value;
             else
                 value -= res / 2;
@@ -176,7 +176,7 @@ pkt_alloc:
         if (k)
             put_bits(&pb, k, outval & (ff_tta_shift_1[k] - 1));
 
-        if (cur_chan < avctx->channels - 1)
+        if (cur_chan < avctx->ch_layout.nb_channels - 1)
             cur_chan++;
         else
             cur_chan = 0;
