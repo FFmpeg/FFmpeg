@@ -76,12 +76,12 @@ static av_cold int twolame_encode_init(AVCodecContext *avctx)
     twolame_set_copyright(s->glopts, s->copyright);
     twolame_set_original(s->glopts, s->original);
 
-    twolame_set_num_channels(s->glopts, avctx->channels);
+    twolame_set_num_channels(s->glopts, avctx->ch_layout.nb_channels);
     twolame_set_in_samplerate(s->glopts, avctx->sample_rate);
     twolame_set_out_samplerate(s->glopts, avctx->sample_rate);
 
     if (!avctx->bit_rate) {
-        if ((s->mode == TWOLAME_AUTO_MODE && avctx->channels == 1) || s->mode == TWOLAME_MONO)
+        if ((s->mode == TWOLAME_AUTO_MODE && avctx->ch_layout.nb_channels == 1) || s->mode == TWOLAME_MONO)
             avctx->bit_rate = avctx->sample_rate < 28000 ? 80000 : 192000;
         else
             avctx->bit_rate = avctx->sample_rate < 28000 ? 160000 : 384000;
@@ -227,10 +227,17 @@ const AVCodec ff_libtwolame_encoder = {
         AV_SAMPLE_FMT_S16P,
         AV_SAMPLE_FMT_NONE
     },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts = (const uint64_t[]) {
         AV_CH_LAYOUT_MONO,
         AV_CH_LAYOUT_STEREO,
         0 },
+#endif
+    .ch_layouts      = (const AVChannelLayout[]) {
+        AV_CHANNEL_LAYOUT_MONO,
+        AV_CHANNEL_LAYOUT_STEREO,
+        { 0 },
+    },
     .supported_samplerates = twolame_samplerates,
     .wrapper_name   = "libtwolame",
 };
