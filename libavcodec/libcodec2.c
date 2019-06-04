@@ -85,9 +85,9 @@ libcodec2_init_common_error:
 static av_cold int libcodec2_init_decoder(AVCodecContext *avctx)
 {
     avctx->sample_rate      = 8000;
-    avctx->channels         = 1;
     avctx->sample_fmt       = AV_SAMPLE_FMT_S16;
-    avctx->channel_layout   = AV_CH_LAYOUT_MONO;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout = (AVChannelLayout)AV_CHANNEL_LAYOUT_MONO;
 
     if (avctx->extradata_size != CODEC2_EXTRADATA_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "must have exactly %i bytes of extradata (got %i)\n",
@@ -104,7 +104,7 @@ static av_cold int libcodec2_init_encoder(AVCodecContext *avctx)
 
     //will need to be smarter once we get wideband support
     if (avctx->sample_rate != 8000 ||
-        avctx->channels != 1 ||
+        avctx->ch_layout.nb_channels != 1 ||
         avctx->sample_fmt != AV_SAMPLE_FMT_S16) {
         av_log(avctx, AV_LOG_ERROR, "only 8 kHz 16-bit mono allowed\n");
         return AVERROR(EINVAL);
@@ -188,7 +188,10 @@ const AVCodec ff_libcodec2_decoder = {
     .capabilities           = AV_CODEC_CAP_CHANNEL_CONF,
     .supported_samplerates  = (const int[]){ 8000, 0 },
     .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+#endif
+    .ch_layouts             = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
 };
 
 const AVCodec ff_libcodec2_encoder = {
@@ -203,6 +206,9 @@ const AVCodec ff_libcodec2_encoder = {
     .encode2                = libcodec2_encode,
     .supported_samplerates  = (const int[]){ 8000, 0 },
     .sample_fmts            = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE },
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts        = (const uint64_t[]) { AV_CH_LAYOUT_MONO, 0 },
+#endif
+    .ch_layouts             = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO, { 0 } },
     .priv_class             = &libcodec2_enc_class,
 };
