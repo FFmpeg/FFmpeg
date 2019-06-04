@@ -1701,26 +1701,6 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
 #if FF_API_OLD_CHANNEL_LAYOUT
 FF_DISABLE_DEPRECATION_WARNINGS
-        /* temporary compat layer for decoders setting the old-style channel
-         * layout fields; shall be removed after all the decoders are converted
-         * to the new API */
-        if ((avctx->channels > 0 && avctx->ch_layout.nb_channels != avctx->channels) ||
-            (avctx->channel_layout && (avctx->ch_layout.order != AV_CHANNEL_ORDER_NATIVE ||
-                                       avctx->ch_layout.u.mask != avctx->channel_layout))) {
-            av_channel_layout_uninit(&avctx->ch_layout);
-            if (avctx->channel_layout) {
-                if (av_popcount64(avctx->channel_layout) != avctx->channels) {
-                    av_log(avctx, AV_LOG_ERROR, "Inconsistent channel layout/channels\n");
-                    ret = AVERROR(EINVAL);
-                    goto fail;
-                }
-                av_channel_layout_from_mask(&avctx->ch_layout, avctx->channel_layout);
-            } else {
-                avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
-                avctx->ch_layout.nb_channels = avctx->channels;
-            }
-        }
-
         /* compat layer for old-style get_buffer() implementations */
         avctx->channels = avctx->ch_layout.nb_channels;
         avctx->channel_layout = (avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE) ?

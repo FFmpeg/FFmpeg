@@ -79,14 +79,6 @@ int ff_dca_set_channel_layout(AVCodecContext *avctx, int *ch_remap, int dca_mask
         av_channel_layout_from_mask(&avctx->ch_layout, wav_mask);
     }
 
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->channels = avctx->ch_layout.nb_channels;
-    avctx->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                            avctx->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     return nchannels;
 }
 

@@ -592,13 +592,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
     }
 
     av_channel_layout_copy(&avctx->ch_layout, &ac->oc[1].ch_layout);
-#if FF_API_OLD_CHANNEL_LAYOUT
-FF_DISABLE_DEPRECATION_WARNINGS
-    avctx->channels = avctx->ch_layout.nb_channels;
-    avctx->channel_layout = avctx->ch_layout.order == AV_CHANNEL_ORDER_NATIVE ?
-                            avctx->ch_layout.u.mask : 0;
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
     ac->oc[1].status = oc_type;
 
     if (get_new_frame) {

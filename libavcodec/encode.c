@@ -486,24 +486,9 @@ int ff_encode_preinit(AVCodecContext *avctx)
                 av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
             return AVERROR(EINVAL);
         }
-FF_DISABLE_DEPRECATION_WARNINGS
     }
 #if FF_API_OLD_CHANNEL_LAYOUT
-    else if (avctx->codec->channel_layouts) {
-        if (!avctx->channel_layout) {
-            av_log(avctx, AV_LOG_WARNING, "Channel layout not specified\n");
-        } else {
-            for (i = 0; avctx->codec->channel_layouts[i] != 0; i++)
-                if (avctx->channel_layout == avctx->codec->channel_layouts[i])
-                    break;
-            if (avctx->codec->channel_layouts[i] == 0) {
-                char buf[512];
-                av_get_channel_layout_string(buf, sizeof(buf), -1, avctx->channel_layout);
-                av_log(avctx, AV_LOG_ERROR, "Specified channel layout '%s' is not supported\n", buf);
-                return AVERROR(EINVAL);
-            }
-        }
-    }
+FF_DISABLE_DEPRECATION_WARNINGS
     if (avctx->channel_layout && avctx->channels) {
         int channels = av_get_channel_layout_nb_channels(avctx->channel_layout);
         if (channels != avctx->channels) {
