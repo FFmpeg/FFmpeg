@@ -190,14 +190,14 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    av_assert0(avctx->channels >= 0);
-    if (avctx->channels > WMALL_MAX_CHANNELS) {
+    av_assert0(avctx->ch_layout.nb_channels >= 0);
+    if (avctx->ch_layout.nb_channels > WMALL_MAX_CHANNELS) {
         avpriv_request_sample(avctx,
                               "More than " AV_STRINGIFY(WMALL_MAX_CHANNELS) " channels");
         return AVERROR_PATCHWELCOME;
     }
 
-    s->max_frame_size = MAX_FRAMESIZE * avctx->channels;
+    s->max_frame_size = MAX_FRAMESIZE * avctx->ch_layout.nb_channels;
     s->frame_data = av_mallocz(s->max_frame_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!s->frame_data)
         return AVERROR(ENOMEM);
@@ -244,7 +244,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     av_assert0(s->samples_per_frame <= WMALL_BLOCK_MAX_SIZE);
 
     /* init previous block len */
-    for (i = 0; i < avctx->channels; i++)
+    for (i = 0; i < avctx->ch_layout.nb_channels; i++)
         s->channel[i].prev_block_len = s->samples_per_frame;
 
     /* subframe info */
@@ -263,7 +263,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    s->num_channels = avctx->channels;
+    s->num_channels = avctx->ch_layout.nb_channels;
 
     /* extract lfe channel position */
     s->lfe_channel = -1;
@@ -279,7 +279,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (!s->frame)
         return AVERROR(ENOMEM);
 
-    avctx->channel_layout = channel_mask;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    av_channel_layout_from_mask(&avctx->ch_layout, channel_mask);
     return 0;
 }
 

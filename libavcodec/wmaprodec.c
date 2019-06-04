@@ -384,7 +384,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         s->decode_flags    = 0x10d6;
         s->bits_per_sample = 16;
         channel_mask       = 0; //AV_RL32(edata_ptr+2); /* not always in expected order */
-        if ((num_stream+1) * XMA_MAX_CHANNELS_STREAM > avctx->channels) /* stream config is 2ch + 2ch + ... + 1/2ch */
+        if ((num_stream+1) * XMA_MAX_CHANNELS_STREAM > avctx->ch_layout.nb_channels) /* stream config is 2ch + 2ch + ... + 1/2ch */
             s->nb_channels = 1;
         else
             s->nb_channels = 2;
@@ -402,7 +402,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         s->decode_flags    = AV_RL16(edata_ptr+14);
         channel_mask       = AV_RL32(edata_ptr+2);
         s->bits_per_sample = AV_RL16(edata_ptr);
-        s->nb_channels     = avctx->channels;
+        s->nb_channels     = avctx->ch_layout.nb_channels;
 
         if (s->bits_per_sample > 32 || s->bits_per_sample < 1) {
             avpriv_request_sample(avctx, "bits per sample is %d", s->bits_per_sample);
@@ -474,7 +474,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels per XMA stream %d\n",
                s->nb_channels);
         return AVERROR_INVALIDDATA;
-    } else if (s->nb_channels > WMAPRO_MAX_CHANNELS || s->nb_channels > avctx->channels) {
+    } else if (s->nb_channels > WMAPRO_MAX_CHANNELS || s->nb_channels > avctx->ch_layout.nb_channels) {
         avpriv_request_sample(avctx,
                               "More than %d channels", WMAPRO_MAX_CHANNELS);
         return AVERROR_PATCHWELCOME;
@@ -575,8 +575,13 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
     if (avctx->debug & FF_DEBUG_BITSTREAM)
         dump_context(s);
 
-    if (avctx->codec_id == AV_CODEC_ID_WMAPRO)
-        avctx->channel_layout = channel_mask;
+    if (avctx->codec_id == AV_CODEC_ID_WMAPRO) {
+        if (channel_mask) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            av_channel_layout_from_mask(&avctx->ch_layout, channel_mask);
+        } else
+            avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+    }
 
     ff_thread_once(&init_static_once, decode_init_static);
 
@@ -1775,7 +1780,7 @@ static int decode_packet(AVCodecContext *avctx, WMAProDecodeCtx *s,
         AVFrame *frame = data;
 
         if (s->trim_start < frame->nb_samples) {
-            for (int ch = 0; ch < frame->channels; ch++)
+            for (int ch = 0; ch < frame->ch_layout.nb_channels; ch++)
                 frame->extended_data[ch] += s->trim_start * 4;
 
             frame->nb_samples -= s->trim_start;
@@ -1952,13 +1957,18 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
     XMADecodeCtx *s = avctx->priv_data;
     int i, ret, start_channels = 0;
 
-    if (avctx->channels <= 0 || avctx->extradata_size == 0)
+    if (avctx->ch_layout.nb_channels <= 0 || avctx->extradata_size == 0)
         return AVERROR_INVALIDDATA;
 
     /* get stream config */
     if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size == 34) { /* XMA2WAVEFORMATEX */
+        unsigned int channel_mask = AV_RL32(avctx->extradata + 2);
+        if (channel_mask) {
+            av_channel_layout_uninit(&avctx->ch_layout);
+            av_channel_layout_from_mask(&avctx->ch_layout, channel_mask);
+        } else
+            avctx->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
         s->num_streams = AV_RL16(avctx->extradata);
-        avctx->channel_layout = AV_RL32(avctx->extradata + 2);
     } else if (avctx->codec_id == AV_CODEC_ID_XMA2 && avctx->extradata_size >= 2) { /* XMA2WAVEFORMAT */
         s->num_streams = avctx->extradata[1];
         if (avctx->extradata_size != (32 + ((avctx->extradata[0]==3)?0:8) + 4*s->num_streams)) {
@@ -1979,7 +1989,7 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
     }
 
     /* encoder supports up to 64 streams / 64*2 channels (would have to alloc arrays) */
-    if (avctx->channels > XMA_MAX_CHANNELS || s->num_streams > XMA_MAX_STREAMS ||
+    if (avctx->ch_layout.nb_channels > XMA_MAX_CHANNELS || s->num_streams > XMA_MAX_STREAMS ||
         s->num_streams <= 0
     ) {
         avpriv_request_sample(avctx, "More than %d channels in %d streams", XMA_MAX_CHANNELS, s->num_streams);
@@ -1999,7 +2009,7 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
         s->start_channel[i] = start_channels;
         start_channels += s->xma[i].nb_channels;
     }
-    if (start_channels != avctx->channels)
+    if (start_channels != avctx->ch_layout.nb_channels)
         return AVERROR_INVALIDDATA;
 
     for (int i = 0; i < XMA_MAX_STREAMS; i++) {

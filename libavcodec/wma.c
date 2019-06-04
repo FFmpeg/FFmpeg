@@ -78,6 +78,7 @@ static av_cold int init_coef_vlc(VLC *vlc, uint16_t **prun_table,
 av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
 {
     WMACodecContext *s = avctx->priv_data;
+    int channels = avctx->ch_layout.nb_channels;
     int i, ret;
     float bps1, high_freq;
     float bps;
@@ -85,7 +86,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     int coef_vlc_table;
 
     if (avctx->sample_rate <= 0 || avctx->sample_rate > 50000 ||
-        avctx->channels    <= 0 || avctx->channels    > 2     ||
+        channels           <= 0 || channels    > 2            ||
         avctx->bit_rate    <= 0)
         return -1;
 
@@ -106,7 +107,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     if (s->use_variable_block_len) {
         int nb_max, nb;
         nb = ((flags2 >> 3) & 3) + 1;
-        if ((avctx->bit_rate / avctx->channels) >= 32000)
+        if ((avctx->bit_rate / channels) >= 32000)
             nb += 2;
         nb_max = s->frame_len_bits - BLOCK_MIN_BITS;
         if (nb > nb_max)
@@ -135,7 +136,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     }
 
     bps                 = (float) avctx->bit_rate /
-                          (float) (avctx->channels * avctx->sample_rate);
+                          (float) (channels * avctx->sample_rate);
     s->byte_offset_bits = av_log2((int) (bps * s->frame_len / 8.0 + 0.5)) + 2;
     if (s->byte_offset_bits + 3 > MIN_CACHE_BITS) {
         av_log(avctx, AV_LOG_ERROR, "byte_offset_bits %d is too large\n", s->byte_offset_bits);
@@ -145,7 +146,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     /* compute high frequency value and choose if noise coding should
      * be activated */
     bps1 = bps;
-    if (avctx->channels == 2)
+    if (channels == 2)
         bps1 = bps * 1.6;
     if (sample_rate1 == 44100) {
         if (bps1 >= 0.61)
@@ -183,7 +184,7 @@ av_cold int ff_wma_init(AVCodecContext *avctx, int flags2)
     }
     ff_dlog(s->avctx, "flags2=0x%x\n", flags2);
     ff_dlog(s->avctx, "version=%d channels=%d sample_rate=%d bitrate=%"PRId64" block_align=%d\n",
-            s->version, avctx->channels, avctx->sample_rate, avctx->bit_rate,
+            s->version, channels, avctx->sample_rate, avctx->bit_rate,
             avctx->block_align);
     ff_dlog(s->avctx, "bps=%f bps1=%f high_freq=%f bitoffset=%d\n",
             bps, bps1, high_freq, s->byte_offset_bits);
