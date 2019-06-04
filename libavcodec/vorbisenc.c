@@ -276,7 +276,7 @@ static int create_vorbis_context(vorbis_enc_context *venc,
     const uint8_t *clens, *quant;
     int i, book, ret;
 
-    venc->channels    = avctx->channels;
+    venc->channels    = avctx->ch_layout.nb_channels;
     venc->sample_rate = avctx->sample_rate;
     venc->log2_blocksize[0] = venc->log2_blocksize[1] = 11;
 
@@ -1038,7 +1038,8 @@ static AVFrame *spawn_empty_frame(AVCodecContext *avctx, int channels)
 
     f->format = avctx->sample_fmt;
     f->nb_samples = avctx->frame_size;
-    f->channel_layout = avctx->channel_layout;
+    f->ch_layout.order = AV_CHANNEL_ORDER_UNSPEC;
+    f->ch_layout.nb_channels = channels;
 
     if (av_frame_get_buffer(f, 4)) {
         av_frame_free(&f);
@@ -1267,7 +1268,7 @@ static av_cold int vorbis_encode_init(AVCodecContext *avctx)
     vorbis_enc_context *venc = avctx->priv_data;
     int ret;
 
-    if (avctx->channels != 2) {
+    if (avctx->ch_layout.nb_channels != 2) {
         av_log(avctx, AV_LOG_ERROR, "Current FFmpeg Vorbis encoder only supports 2 channels.\n");
         return -1;
     }
