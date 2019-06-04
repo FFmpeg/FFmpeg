@@ -736,7 +736,6 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
   unsigned image_endpos = gfi->height * gfi->width;
 
   fprintf(stderr, "main write loop\n");
-  gfc_rgbdiff dither = {0,0,0};
 
   while (1) {
 
@@ -806,6 +805,7 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
     }
 
 
+  gfc_rgbdiff dither = {0,0,0};
     /*****
      * Find the next code to output. */
     {
@@ -819,12 +819,7 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
       if (pos < image_endpos) {
         /* Output the current code. */
         if (next_code < GIF_MAX_CODE) {
-            Gif_RGBA wanted_color = rgba_color_at_pos(gfi, pos);
-            int selected_color_index = gif_pixel_at_pos(gfcm, gfi, pos, dither);
-
-            gfc_define(&gfc, work_node, selected_color_index, next_code);
-
-            dither = diffused_difference(gfcm->col[selected_color_index], Gif_Color{wanted_color.r, wanted_color.g, wanted_color.b});
+          gfc_define(&gfc, work_node, gif_pixel_at_pos(gfcm, gfi, pos, dither), next_code);
           next_code++;
         } else
           next_code = GIF_MAX_CODE + 1; /* to match "> CUR_BUMP_CODE" above */
