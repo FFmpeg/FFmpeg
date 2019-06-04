@@ -61,13 +61,13 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
     struct libcelt_context *celt = c->priv_data;
     int err;
 
-    if (!c->channels || !c->frame_size ||
-        c->frame_size > INT_MAX / sizeof(int16_t) / c->channels)
+    if (!c->ch_layout.nb_channels || !c->frame_size ||
+        c->frame_size > INT_MAX / sizeof(int16_t) / c->ch_layout.nb_channels)
         return AVERROR(EINVAL);
     celt->mode = celt_mode_create(c->sample_rate, c->frame_size, &err);
     if (!celt->mode)
         return ff_celt_error_to_averror(err);
-    celt->dec = celt_decoder_create_custom(celt->mode, c->channels, &err);
+    celt->dec = celt_decoder_create_custom(celt->mode, c->ch_layout.nb_channels, &err);
     if (!celt->dec) {
         celt_mode_destroy(celt->mode);
         return ff_celt_error_to_averror(err);
@@ -119,8 +119,8 @@ static int libcelt_dec_decode(AVCodecContext *c, void *data,
         return ff_celt_error_to_averror(err);
     if (celt->discard) {
         frame->nb_samples -= celt->discard;
-        memmove(pcm, pcm + celt->discard * c->channels,
-                frame->nb_samples * c->channels * sizeof(int16_t));
+        memmove(pcm, pcm + celt->discard * c->ch_layout.nb_channels,
+                frame->nb_samples * c->ch_layout.nb_channels * sizeof(int16_t));
         celt->discard = 0;
     }
     *got_frame_ptr = 1;
