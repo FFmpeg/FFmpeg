@@ -733,9 +733,14 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         avctx->sample_rate = s->ti.sample_rate;
         set_sample_rate_params(avctx);
     }
-    if (s->ti.ch_layout)
-        avctx->channel_layout = s->ti.ch_layout;
-    avctx->channels = s->ti.channels;
+
+    av_channel_layout_uninit(&avctx->ch_layout);
+    if (s->ti.ch_layout) {
+        av_channel_layout_from_mask(&avctx->ch_layout, s->ti.ch_layout);
+    } else {
+        avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+        avctx->ch_layout.nb_channels = s->ti.channels;
+    }
 
     s->nb_samples = s->ti.last_frame_samples ? s->ti.last_frame_samples
                                              : s->ti.frame_samples;
@@ -746,7 +751,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     ff_thread_finish_setup(avctx);
 
     if (avctx->bits_per_raw_sample <= 16) {
-        int buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
+        int buf_size = av_samples_get_buffer_size(NULL, avctx->ch_layout.nb_channels,
                                                   s->nb_samples,
                                                   AV_SAMPLE_FMT_S32P, 0);
         if (buf_size < 0)
@@ -755,28 +760,28 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         if (!s->decode_buffer)
             return AVERROR(ENOMEM);
         ret = av_samples_fill_arrays((uint8_t **)s->decoded, NULL,
-                                     s->decode_buffer, avctx->channels,
+                                     s->decode_buffer, avctx->ch_layout.nb_channels,
                                      s->nb_samples, AV_SAMPLE_FMT_S32P, 0);
         if (ret < 0)
             return ret;
     } else {
-        for (chan = 0; chan < avctx->channels; chan++)
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++)
             s->decoded[chan] = (int32_t *)frame->extended_data[chan];
     }
 
     if (s->nb_samples < 16) {
-        for (chan = 0; chan < avctx->channels; chan++) {
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++) {
             int32_t *decoded = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
                 decoded[i] = get_sbits(gb, avctx->bits_per_raw_sample);
         }
     } else {
         if (s->ti.codec == TAK_CODEC_MONO_STEREO) {
-            for (chan = 0; chan < avctx->channels; chan++)
+            for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++)
                 if (ret = decode_channel(s, chan))
                     return ret;
 
-            if (avctx->channels == 2) {
+            if (avctx->ch_layout.nb_channels == 2) {
                 s->nb_subframes = get_bits(gb, 1) + 1;
                 if (s->nb_subframes > 1) {
                     s->subframe_len[1] = get_bits(gb, 6);
@@ -791,13 +796,13 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                 int ch_mask = 0;
 
                 chan = get_bits(gb, 4) + 1;
-                if (chan > avctx->channels)
+                if (chan > avctx->ch_layout.nb_channels)
                     return AVERROR_INVALIDDATA;
 
                 for (i = 0; i < chan; i++) {
                     int nbit = get_bits(gb, 4);
 
-                    if (nbit >= avctx->channels)
+                    if (nbit >= avctx->ch_layout.nb_channels)
                         return AVERROR_INVALIDDATA;
 
                     if (ch_mask & 1 << nbit)
@@ -807,10 +812,10 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                     if (s->mcdparams[i].present) {
                         s->mcdparams[i].index = get_bits(gb, 2);
                         s->mcdparams[i].chan2 = get_bits(gb, 4);
-                        if (s->mcdparams[i].chan2 >= avctx->channels) {
+                        if (s->mcdparams[i].chan2 >= avctx->ch_layout.nb_channels) {
                             av_log(avctx, AV_LOG_ERROR,
                                    "invalid channel 2 (%d) for %d channel(s)\n",
-                                   s->mcdparams[i].chan2, avctx->channels);
+                                   s->mcdparams[i].chan2, avctx->ch_layout.nb_channels);
                             return AVERROR_INVALIDDATA;
                         }
                         if (s->mcdparams[i].index == 1) {
@@ -828,7 +833,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
                     ch_mask |= 1 << nbit;
                 }
             } else {
-                chan = avctx->channels;
+                chan = avctx->ch_layout.nb_channels;
                 for (i = 0; i < chan; i++) {
                     s->mcdparams[i].present = 0;
                     s->mcdparams[i].chan1   = i;
@@ -854,7 +859,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
             }
         }
 
-        for (chan = 0; chan < avctx->channels; chan++) {
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++) {
             int32_t *decoded = s->decoded[chan];
 
             if (s->lpc_mode[chan])
@@ -885,7 +890,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
     /* convert to output buffer */
     switch (avctx->sample_fmt) {
     case AV_SAMPLE_FMT_U8P:
-        for (chan = 0; chan < avctx->channels; chan++) {
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++) {
             uint8_t *samples = (uint8_t *)frame->extended_data[chan];
             int32_t *decoded = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
@@ -893,7 +898,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_SAMPLE_FMT_S16P:
-        for (chan = 0; chan < avctx->channels; chan++) {
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++) {
             int16_t *samples = (int16_t *)frame->extended_data[chan];
             int32_t *decoded = s->decoded[chan];
             for (i = 0; i < s->nb_samples; i++)
@@ -901,7 +906,7 @@ static int tak_decode_frame(AVCodecContext *avctx, void *data,
         }
         break;
     case AV_SAMPLE_FMT_S32P:
-        for (chan = 0; chan < avctx->channels; chan++) {
+        for (chan = 0; chan < avctx->ch_layout.nb_channels; chan++) {
             int32_t *samples = (int32_t *)frame->extended_data[chan];
             for (i = 0; i < s->nb_samples; i++)
                 samples[i] *= 1U << 8;
