@@ -1948,7 +1948,7 @@ static int hls_read_header(AVFormatContext *s)
          * but for other streams we can rely on our user calling avformat_find_stream_info()
          * on us if they want to.
          */
-        if (pls->is_id3_timestamped) {
+        if (pls->is_id3_timestamped || (pls->n_renditions > 0 && pls->renditions[0]->type == AVMEDIA_TYPE_AUDIO)) {
             ret = avformat_find_stream_info(pls->ctx, NULL);
             if (ret < 0)
                 goto fail;
