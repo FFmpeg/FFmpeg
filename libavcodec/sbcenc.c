@@ -202,7 +202,7 @@ static int sbc_encode_init(AVCodecContext *avctx)
         sbc->msbc = 1;
 
     if (sbc->msbc) {
-        if (avctx->channels != 1) {
+        if (avctx->ch_layout.nb_channels != 1) {
             av_log(avctx, AV_LOG_ERROR, "mSBC require mono channel.\n");
             return AVERROR(EINVAL);
         }
@@ -227,7 +227,7 @@ static int sbc_encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
 
-        if (avctx->channels == 1) {
+        if (avctx->ch_layout.nb_channels == 1) {
             frame->mode = SBC_MODE_MONO;
             if (sbc->max_delay <= 3000 || avctx->bit_rate > 270000)
                 frame->subbands = 4;
@@ -251,7 +251,7 @@ static int sbc_encode_init(AVCodecContext *avctx)
 
         d = frame->blocks * ((frame->mode == SBC_MODE_DUAL_CHANNEL) + 1);
         frame->bitpool = (((avctx->bit_rate * frame->subbands * frame->blocks) / avctx->sample_rate)
-                          - 4 * frame->subbands * avctx->channels
+                          - 4 * frame->subbands * avctx->ch_layout.nb_channels
                           - (frame->mode == SBC_MODE_JOINT_STEREO)*frame->subbands - 32 + d/2) / d;
         if (avctx->global_quality > 0)
             frame->bitpool = avctx->global_quality / FF_QP2LAMBDA;
@@ -263,8 +263,8 @@ static int sbc_encode_init(AVCodecContext *avctx)
         if (avctx->sample_rate == avctx->codec->supported_samplerates[i])
             frame->frequency = i;
 
-    frame->channels = avctx->channels;
-    frame->codesize = frame->subbands * frame->blocks * avctx->channels * 2;
+    frame->channels = avctx->ch_layout.nb_channels;
+    frame->codesize = frame->subbands * frame->blocks * avctx->ch_layout.nb_channels * 2;
     frame->crc_ctx = av_crc_get_table(AV_CRC_8_EBU);
 
     memset(&sbc->dsp.X, 0, sizeof(sbc->dsp.X));
@@ -353,8 +353,13 @@ const AVCodec ff_sbc_encoder = {
     .init                  = sbc_encode_init,
     .encode2               = sbc_encode_frame,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},
+#endif
+    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+                                                         AV_CHANNEL_LAYOUT_STEREO,
+                                                         { 0 } },
     .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16,
                                                              AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]) { 16000, 32000, 44100, 48000, 0 },

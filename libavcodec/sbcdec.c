@@ -351,7 +351,9 @@ static int sbc_decode_frame(AVCodecContext *avctx,
     if (frame_length <= 0)
         return frame_length;
 
-    avctx->channels = sbc->frame.channels;
+    av_channel_layout_uninit(&avctx->ch_layout);
+    avctx->ch_layout.order       = AV_CHANNEL_ORDER_UNSPEC;
+    avctx->ch_layout.nb_channels = sbc->frame.channels;
 
     frame->nb_samples = sbc->frame.blocks * sbc->frame.subbands;
     if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
@@ -374,8 +376,13 @@ const AVCodec ff_sbc_decoder = {
     .decode                = sbc_decode_frame,
     .capabilities          = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_CHANNEL_CONF,
     .caps_internal         = FF_CODEC_CAP_INIT_THREADSAFE,
+#if FF_API_OLD_CHANNEL_LAYOUT
     .channel_layouts       = (const uint64_t[]) { AV_CH_LAYOUT_MONO,
                                                   AV_CH_LAYOUT_STEREO, 0},
+#endif
+    .ch_layouts            = (const AVChannelLayout[]) { AV_CHANNEL_LAYOUT_MONO,
+                                                         AV_CHANNEL_LAYOUT_STEREO,
+                                                         { 0 } },
     .sample_fmts           = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_S16P,
                                                              AV_SAMPLE_FMT_NONE },
     .supported_samplerates = (const int[]) { 16000, 32000, 44100, 48000, 0 },
