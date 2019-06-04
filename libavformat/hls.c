@@ -1473,7 +1473,7 @@ reload:
         uint8_t *http_version_opt = NULL;
         int r = av_opt_get(v->input, "http_version", AV_OPT_SEARCH_CHILDREN, &http_version_opt);
         if (r >= 0) {
-            c->http_multiple = strncmp((const char *)http_version_opt, "1.1", 3) == 0;
+            c->http_multiple = (!strncmp((const char *)http_version_opt, "1.1", 3) || !strncmp((const char *)http_version_opt, "2.0", 3));
             av_freep(&http_version_opt);
         }
     }
