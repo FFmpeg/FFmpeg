@@ -175,7 +175,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     if (size > 1024) {
         GetByteContext gbc;
-        bytestream2_init(&gbc, data + size - 1024, 1024);
+        int extradata_size;
+        size -= 1024;
+        bytestream2_init(&gbc, data + size, 1024);
         ctx->width                              = bytestream2_get_le32(&gbc);
         ctx->height                             = bytestream2_get_le32(&gbc);
         ctx->bit_rate                           = bytestream2_get_le64(&gbc);
@@ -183,9 +185,18 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         // Try to initialize a parser for this codec, note, this may fail which just means we test without one
         if (bytestream2_get_byte(&gbc) & 1)
             parser = av_parser_init(c->id);
+
+        extradata_size = bytestream2_get_le32(&gbc);
+        if (extradata_size < size) {
+            ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
+            if (ctx->extradata) {
+                ctx->extradata_size = extradata_size;
+                size -= ctx->extradata_size;
+                memcpy(ctx->extradata, data + size, ctx->extradata_size);
+            }
+        }
         if (av_image_check_size(ctx->width, ctx->height, 0, ctx))
             ctx->width = ctx->height = 0;
-        size -= 1024;
     }
 
     int res = avcodec_open2(ctx, c, NULL);
