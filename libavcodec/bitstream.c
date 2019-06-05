@@ -188,8 +188,9 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             }
             for (k = 0; k < nb; k++) {
                 int bits = table[j][1];
+                int oldsym  = table[j][0];
                 ff_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
-                if (bits != 0 && bits != n) {
+                if ((bits || oldsym) && (bits != n || oldsym != symbol)) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return AVERROR_INVALIDDATA;
                 }
