@@ -127,15 +127,15 @@ int ff_framesync_configure(FFFrameSync *fs)
         fs->opt_shortest = 1;
         fs->opt_eof_action = EOF_ACTION_ENDALL;
     }
-    if (fs->opt_shortest) {
-        for (i = 0; i < fs->nb_in; i++)
-            fs->in[i].after = EXT_STOP;
-    }
     if (!fs->opt_repeatlast) {
         for (i = 1; i < fs->nb_in; i++) {
             fs->in[i].after = EXT_NULL;
             fs->in[i].sync  = 0;
         }
+    }
+    if (fs->opt_shortest) {
+        for (i = 0; i < fs->nb_in; i++)
+            fs->in[i].after = EXT_STOP;
     }
 
     if (!fs->time_base.num) {
