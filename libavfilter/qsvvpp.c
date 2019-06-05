@@ -460,6 +460,8 @@ static int init_vpp_session(AVFilterContext *avctx, QSVVPPContext *s)
         out_frames_ctx->height            = FFALIGN(outlink->h, 32);
         out_frames_ctx->sw_format         = s->out_sw_format;
         out_frames_ctx->initial_pool_size = 64;
+        if (avctx->extra_hw_frames > 0)
+            out_frames_ctx->initial_pool_size += avctx->extra_hw_frames;
         out_frames_hwctx->frame_type      = s->out_mem_mode;
 
         ret = av_hwframe_ctx_init(out_frames_ref);
