@@ -538,11 +538,10 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
             s->frame_size = buf.bytesused;
 
         if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
-            av_log(ctx, AV_LOG_ERROR,
+            av_log(ctx, AV_LOG_WARNING,
                    "Dequeued v4l2 buffer contains %d bytes, but %d were expected. Flags: 0x%08X.\n",
                    buf.bytesused, s->frame_size, buf.flags);
-            enqueue_buffer(s, &buf);
-            return AVERROR_INVALIDDATA;
+            buf.bytesused = 0;
         }
     }
 
