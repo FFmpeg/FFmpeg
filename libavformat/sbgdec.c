@@ -197,7 +197,7 @@ static int str_to_time(const char *str, int64_t *rtime)
         if (end > cur + 1)
             cur = end;
     }
-    *rtime = (hours * 3600 + minutes * 60 + seconds) * AV_TIME_BASE;
+    *rtime = (hours * 3600LL + minutes * 60LL + seconds) * AV_TIME_BASE;
     return cur - str;
 }
 
