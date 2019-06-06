@@ -56,12 +56,12 @@ static int vpk_read_header(AVFormatContext *s)
     st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
     st->codecpar->block_align = avio_rl32(s->pb);
     st->codecpar->sample_rate = avio_rl32(s->pb);
-    if (st->codecpar->sample_rate <= 0)
+    if (st->codecpar->sample_rate <= 0 || st->codecpar->block_align <= 0)
         return AVERROR_INVALIDDATA;
     st->codecpar->channels    = avio_rl32(s->pb);
     if (st->codecpar->channels <= 0)
         return AVERROR_INVALIDDATA;
-    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28) / 16;
+    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28LL) / 16;
     if (samples_per_block <= 0)
         return AVERROR_INVALIDDATA;
     vpk->block_count       = (st->duration + (samples_per_block - 1)) / samples_per_block;
