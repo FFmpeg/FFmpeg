@@ -66,6 +66,9 @@ static int vpk_read_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     vpk->block_count       = (st->duration + (samples_per_block - 1)) / samples_per_block;
     vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codecpar->channels / 28;
+
+    if (offset < avio_tell(s->pb))
+        return AVERROR_INVALIDDATA;
     avio_skip(s->pb, offset - avio_tell(s->pb));
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 
