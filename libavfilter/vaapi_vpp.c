@@ -273,7 +273,7 @@ static void vaapi_vpp_fill_colour_standard(VAAPIColourProperties *props,
     int i, j, score, best_score, worst_score;
     VAProcColorStandardType best_standard;
 
-#if VA_CHECK_VERSION(1, 1, 0)
+#if VA_CHECK_VERSION(1, 3, 0)
     // If the driver supports explicit use of the standard values then just
     // use them and avoid doing any mapping.  (The driver may not support
     // some particular code point, but it still has enough information to
@@ -463,7 +463,7 @@ static int vaapi_vpp_colour_properties(AVFilterContext *avctx,
 
     // If the properties weren't filled completely in the output frame and
     // we chose a fixed standard then fill the known values in here.
-#if VA_CHECK_VERSION(1, 1, 0)
+#if VA_CHECK_VERSION(1, 3, 0)
     if (output_props.va_color_standard != VAProcColorStandardExplicit)
 #endif
     {
@@ -492,16 +492,20 @@ static int vaapi_vpp_colour_properties(AVFilterContext *avctx,
     params->input_color_properties = (VAProcColorProperties) {
         .chroma_sample_location   = input_props.va_chroma_sample_location,
         .color_range              = input_props.va_color_range,
+#if VA_CHECK_VERSION(1, 3, 0)
         .colour_primaries         = input_props.color_primaries,
         .transfer_characteristics = input_props.color_trc,
         .matrix_coefficients      = input_props.colorspace,
+#endif
     };
     params->output_color_properties = (VAProcColorProperties) {
         .chroma_sample_location   = output_props.va_chroma_sample_location,
         .color_range              = output_props.va_color_range,
+#if VA_CHECK_VERSION(1, 3, 0)
         .colour_primaries         = output_props.color_primaries,
         .transfer_characteristics = output_props.color_trc,
         .matrix_coefficients      = output_props.colorspace,
+#endif
     };
 #endif
 
