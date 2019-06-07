@@ -39,6 +39,11 @@
 enum { kCMVideoCodecType_HEVC = 'hvc1' };
 #endif
 
+#if !HAVE_KCVPIXELFORMATTYPE_420YPCBCR10BIPLANARVIDEORANGE
+enum { kCVPixelFormatType_420YpCbCr10BiPlanarFullRange = 'xf20' };
+enum { kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange = 'x420' };
+#endif
+
 typedef OSStatus (*getParameterSetAtIndex)(CMFormatDescriptionRef videoDesc,
                                            size_t parameterSetIndex,
                                            const uint8_t **parameterSetPointerOut,
