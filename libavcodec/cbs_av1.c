@@ -648,7 +648,6 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 #undef xf
 #undef xsu
 #undef uvlc
-#undef leb128
 #undef ns
 #undef increment
 #undef subexp
@@ -720,17 +719,17 @@ static size_t cbs_av1_get_payload_bytes_left(GetBitContext *gbc)
 
 #include "cbs_av1_syntax_template.c"
 
-#undef READ
+#undef WRITE
 #undef READWRITE
 #undef RWContext
 #undef xf
 #undef xsu
 #undef uvlc
-#undef leb128
 #undef ns
 #undef increment
 #undef subexp
 #undef delta_q
+#undef leb128
 #undef infer
 #undef byte_alignment
 

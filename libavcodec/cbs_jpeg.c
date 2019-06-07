@@ -75,7 +75,7 @@
 
 #include "cbs_jpeg_syntax_template.c"
 
-#undef READ
+#undef WRITE
 #undef READWRITE
 #undef RWContext
 #undef FUNC

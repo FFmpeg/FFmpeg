@@ -118,7 +118,7 @@
 
 #include "cbs_mpeg2_syntax_template.c"
 
-#undef READ
+#undef WRITE
 #undef READWRITE
 #undef RWContext
 #undef xui
