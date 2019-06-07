@@ -91,7 +91,7 @@ static uint32_t decode_key(uint8_t *buf)
 
     for (int i = 0; i < 32; i++) {
         unsigned p = keybits[i];
-        key |= !!(buf[p>>3] & (1<<(p&7))) << i;
+        key |= (unsigned)!!(buf[p>>3] & (1<<(p&7))) << i;
     }
 
     return key;
