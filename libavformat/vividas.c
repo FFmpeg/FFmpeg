@@ -78,11 +78,11 @@ static int viv_probe(const AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static const unsigned short keybits[32] = {
-     163,  416,  893,   82,  223,  572, 1137,  430,
-     659, 1104,   13,  626,  695,  972, 1465,  686,
-     843, 1216,  317, 1122, 1383,   92,  513, 1158,
-    1243,   48,  573, 1306, 1495,  396, 1009,  350,
+static const uint8_t keybits[32] = {
+ 20,  52, 111,  10,  27,  71, 142,  53,
+ 82, 138,   1,  78,  86, 121, 183,  85,
+105, 152,  39, 140, 172,  11,  64, 144,
+155,   6,  71, 163, 186,  49, 126,  43,
 };
 
 static uint32_t decode_key(uint8_t *buf)
@@ -91,7 +91,7 @@ static uint32_t decode_key(uint8_t *buf)
 
     for (int i = 0; i < 32; i++) {
         unsigned p = keybits[i];
-        key |= (unsigned)!!(buf[p>>3] & (1<<(p&7))) << i;
+        key |= ((buf[p] >> ((i*5+3)&7)) & 1u) << i;
     }
 
     return key;
