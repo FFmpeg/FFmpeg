@@ -182,6 +182,17 @@ static int seq_parse_frame_data(SeqDemuxContext *seq, AVIOContext *pb)
     return 0;
 }
 
+static int seq_read_close(AVFormatContext *s)
+{
+    int i;
+    SeqDemuxContext *seq = s->priv_data;
+
+    for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++)
+        av_freep(&seq->frame_buffers[i].data);
+
+    return 0;
+}
+
 static int seq_read_header(AVFormatContext *s)
 {
     int i, rc;
@@ -292,17 +303,6 @@ static int seq_read_packet(AVFormatContext *s, AVPacket *pkt)
     seq->current_frame_pts++;
 
     seq->audio_buffer_full = 0;
-    return 0;
-}
-
-static int seq_read_close(AVFormatContext *s)
-{
-    int i;
-    SeqDemuxContext *seq = s->priv_data;
-
-    for (i = 0; i < SEQ_NUM_FRAME_BUFFERS; i++)
-        av_freep(&seq->frame_buffers[i].data);
-
     return 0;
 }
 
