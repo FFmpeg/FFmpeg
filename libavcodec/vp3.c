@@ -931,6 +931,30 @@ static int unpack_block_qpis(Vp3DecodeContext *s, GetBitContext *gb)
     return 0;
 }
 
+static inline int get_eob_run(GetBitContext *gb, int token)
+{
+    int v = eob_run_table[token].base;
+    if (eob_run_table[token].bits)
+        v += get_bits(gb, eob_run_table[token].bits);
+    return v;
+}
+
+static inline int get_coeff(GetBitContext *gb, int token, int16_t *coeff)
+{
+    int bits_to_get, zero_run;
+
+    bits_to_get = coeff_get_bits[token];
+    if (bits_to_get)
+        bits_to_get = get_bits(gb, bits_to_get);
+    *coeff = coeff_tables[token][bits_to_get];
+
+    zero_run = zero_run_base[token];
+    if (zero_run_get_bits[token])
+        zero_run += get_bits(gb, zero_run_get_bits[token]);
+
+    return zero_run;
+}
+
 /*
  * This function is called by unpack_dct_coeffs() to extract the VLCs from
  * the bitstream. The VLCs encode tokens which are used to unpack DCT
@@ -952,7 +976,6 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int token;
     int zero_run  = 0;
     int16_t coeff = 0;
-    int bits_to_get;
     int blocks_ended;
     int coeff_i = 0;
     int num_coeffs      = s->num_coded_frags[plane][coeff_index];
@@ -988,10 +1011,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
         token = get_vlc2(gb, vlc_table, 11, 3);
         /* use the token to get a zero run, a coefficient, and an eob run */
         if ((unsigned) token <= 6U) {
-            eob_run = eob_run_table[token].base;
-            if (eob_run_table[token].bits)
-                eob_run += get_bits(gb, eob_run_table[token].bits);
-
+            eob_run = get_eob_run(gb, token);
             if (!eob_run)
                 eob_run = INT_MAX;
 
@@ -1009,14 +1029,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 eob_run         = 0;
             }
         } else if (token >= 0) {
-            bits_to_get = coeff_get_bits[token];
-            if (bits_to_get)
-                bits_to_get = get_bits(gb, bits_to_get);
-            coeff = coeff_tables[token][bits_to_get];
-
-            zero_run = zero_run_base[token];
-            if (zero_run_get_bits[token])
-                zero_run += get_bits(gb, zero_run_get_bits[token]);
+            zero_run = get_coeff(gb, token, &coeff);
 
             if (zero_run) {
                 dct_tokens[j++] = TOKEN_ZERO_RUN(coeff, zero_run);
