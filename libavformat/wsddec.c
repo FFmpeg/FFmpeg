@@ -137,7 +137,7 @@ static int wsd_read_header(AVFormatContext *s)
     if (!(channel_assign & 1)) {
         int i;
         for (i = 1; i < 32; i++)
-            if (channel_assign & (1 << i))
+            if ((channel_assign >> i) & 1)
                 st->codecpar->channel_layout |= wsd_to_av_channel_layoyt(s, i);
     }
 
