@@ -70,9 +70,12 @@ typedef struct LUT2Context {
     int tlut2;
     AVFrame *prev_frame;        /* only used with tlut2 */
 
-    void (*lut2)(struct LUT2Context *s, AVFrame *dst, AVFrame *srcx, AVFrame *srcy);
-
+    int (*lut2)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } LUT2Context;
+
+typedef struct ThreadData {
+    AVFrame *out, *srcx, *srcy;
+} ThreadData;
 
 #define OFFSET(x) offsetof(LUT2Context, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -238,24 +241,31 @@ static int config_inputy(AVFilterLink *inlink)
 }
 
 #define DEFINE_LUT2(zname, xname, yname, ztype, xtype, ytype, zdiv, xdiv, ydiv)  \
-static void lut2_##zname##_##xname##_##yname(struct LUT2Context *s,              \
-                                             AVFrame *out,                       \
-                                             AVFrame *srcx, AVFrame *srcy)       \
+static int lut2_##zname##_##xname##_##yname(AVFilterContext *ctx,                \
+                                             void *arg,                          \
+                                             int jobnr, int nb_jobs)             \
 {                                                                                \
+    LUT2Context *s = ctx->priv;                                                  \
+    ThreadData *td = arg;                                                        \
+    AVFrame *out = td->out;                                                      \
+    AVFrame *srcx = td->srcx;                                                    \
+    AVFrame *srcy = td->srcy;                                                    \
     const int odepth = s->odepth;                                                \
     int p, y, x;                                                                 \
                                                                                  \
     for (p = 0; p < s->nb_planes; p++) {                                         \
+        const int slice_start = (s->heightx[p] * jobnr) / nb_jobs;               \
+        const int slice_end = (s->heightx[p] * (jobnr+1)) / nb_jobs;             \
         const uint16_t *lut = s->lut[p];                                         \
         const xtype *srcxx;                                                      \
         const ytype *srcyy;                                                      \
         ztype *dst;                                                              \
                                                                                  \
-        dst   = (ztype *)out->data[p];                                           \
-        srcxx = (const xtype *)srcx->data[p];                                    \
-        srcyy = (const ytype *)srcy->data[p];                                    \
+        dst   = (ztype *)(out->data[p] + slice_start * out->linesize[p]);        \
+        srcxx = (const xtype *)(srcx->data[p] + slice_start * srcx->linesize[p]);\
+        srcyy = (const ytype *)(srcy->data[p] + slice_start * srcy->linesize[p]);\
                                                                                  \
-        for (y = 0; y < s->heightx[p]; y++) {                                    \
+        for (y = slice_start; y < slice_end; y++) {                              \
             for (x = 0; x < s->widthx[p]; x++) {                                 \
                 dst[x] = av_clip_uintp2_c(lut[(srcyy[x] << s->depthx) | srcxx[x]], odepth); \
             }                                                                    \
@@ -265,6 +275,7 @@ static void lut2_##zname##_##xname##_##yname(struct LUT2Context *s,             
             srcyy += srcy->linesize[p] / ydiv;                                   \
         }                                                                        \
     }                                                                            \
+    return 0;                                                                    \
 }
 
 DEFINE_LUT2(8,   8,  8,  uint8_t,  uint8_t,  uint8_t, 1, 1, 1)
@@ -293,12 +304,17 @@ static int process_frame(FFFrameSync *fs)
         if (!out)
             return AVERROR(ENOMEM);
     } else {
+        ThreadData td;
+
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, srcx);
 
-        s->lut2(s, out, srcx, srcy);
+        td.out  = out;
+        td.srcx = srcx;
+        td.srcy = srcy;
+        ctx->internal->execute(ctx, s->lut2, &td, NULL, FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
     }
 
     out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
@@ -538,7 +554,8 @@ AVFilter ff_vf_lut2 = {
     .activate      = activate,
     .inputs        = inputs,
     .outputs       = outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #if CONFIG_TLUT2_FILTER
@@ -564,6 +581,8 @@ static int tlut2_filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if (ctx->is_disabled) {
             out = av_frame_clone(frame);
         } else {
+            ThreadData td;
+
             out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
             if (!out) {
                 av_frame_free(&s->prev_frame);
@@ -572,7 +591,11 @@ static int tlut2_filter_frame(AVFilterLink *inlink, AVFrame *frame)
             }
 
             av_frame_copy_props(out, frame);
-            s->lut2(s, out, frame, s->prev_frame);
+
+            td.out  = out;
+            td.srcx = frame;
+            td.srcy = s->prev_frame;
+            ctx->internal->execute(ctx, s->lut2, &td, NULL, FFMIN(s->heightx[1], ff_filter_get_nb_threads(ctx)));
         }
         av_frame_free(&s->prev_frame);
         s->prev_frame = frame;
@@ -621,7 +644,8 @@ AVFilter ff_vf_tlut2 = {
     .uninit        = uninit,
     .inputs        = tlut2_inputs,
     .outputs       = tlut2_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
+                     AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif
