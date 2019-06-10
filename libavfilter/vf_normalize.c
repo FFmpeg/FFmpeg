@@ -76,6 +76,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -90,8 +91,9 @@ typedef struct NormalizeContext {
     float independence;
     float strength;
 
-    int co[4];          // Offsets to R,G,B,A bytes respectively in each pixel
+    uint8_t co[4];      // Offsets to R,G,B,A bytes respectively in each pixel
     int num_components; // Number of components in the pixel format
+    int step;
     int history_len;    // Number of frames to average; based on smoothing factor
     int frame_num;      // Increments on each frame, starting from 0.
 
@@ -147,8 +149,8 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
                 min[c].in = FFMIN(min[c].in, inp[s->co[c]]);
                 max[c].in = FFMAX(max[c].in, inp[s->co[c]]);
             }
-            inp += s->num_components;
-            outp += s->num_components;
+            inp += s->step;
+            outp += s->step;
         }
     }
 
@@ -237,8 +239,8 @@ static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
             if (s->num_components == 4)
                 // Copy alpha as-is.
                 outp[s->co[3]] = inp[s->co[3]];
-            inp += s->num_components;
-            outp += s->num_components;
+            inp += s->step;
+            outp += s->step;
         }
     }
 
@@ -286,9 +288,9 @@ static int config_input(AVFilterLink *inlink)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int c;
 
-    for (c = 0; c < 4; ++c)
-        s->co[c] = desc->comp[c].offset;
+    ff_fill_rgba_map(s->co, inlink->format);
     s->num_components = desc->nb_components;
+    s->step = av_get_padded_bits_per_pixel(desc) >> 3;
     // Convert smoothing value to history_len (a count of frames to average,
     // must be at least 1).  Currently this is a direct assignment, but the
     // smoothing value was originally envisaged as a number of seconds.  In
