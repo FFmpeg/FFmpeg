@@ -188,6 +188,7 @@ extern AVOutputFormat ff_ico_muxer;
 extern AVInputFormat  ff_idcin_demuxer;
 extern AVInputFormat  ff_idf_demuxer;
 extern AVInputFormat  ff_iff_demuxer;
+extern AVInputFormat  ff_ifv_demuxer;
 extern AVInputFormat  ff_ilbc_demuxer;
 extern AVOutputFormat ff_ilbc_muxer;
 extern AVInputFormat  ff_image2_demuxer;

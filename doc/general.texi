@@ -468,6 +468,8 @@ library:
 @item IEC61937 encapsulation @tab X @tab X
 @item IFF                       @tab   @tab X
     @tab Interchange File Format
+@item IFV                       @tab   @tab X
+    @tab A format used by some old CCTV DVRs.
 @item iLBC                      @tab X @tab X
 @item Interplay MVE             @tab   @tab X
     @tab Format used in various Interplay computer games.
