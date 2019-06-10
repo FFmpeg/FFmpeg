@@ -51,20 +51,7 @@
 #define AVAPP_CTRL_WILL_FILE_OPEN 0x20009 //AVAppIOControl
 
 
-#define AVAPP_SWITCH_CTRL_START       0x40000
-#define AVAPP_SWITCH_CTRL_CHECK       0x40001
-#define AVAPP_SWITCH_CTRL_FAIL        0x40002
-#define AVAPP_SWITCH_CTRL_RETRY       0x40003
-#define AVAPP_SWITCH_CTRL_SUCCESS     0x40004
-#define AVAPP_SWITCH_CTRL_BUFFERSTART 0x40005
-#define AVAPP_SWITCH_CTRL_BUFFEREND   0x40006
-
-#define AVAPP_CTRL_GET_DASH_STREAM_INFO  0x30001
-#define AVAPP_CTRL_SET_DASH_VIDEO_STREAM 0x30002
-#define AVAPP_EVENT_WILL_DASH_VIDEO_STREAM_CHANGE 0x30003
-#define AVAPP_EVENT_DID_DASH_VIDEO_STREAM_CHANGE  0x30004
-#define AVAPP_EVENT_WILL_DASH_VIDEO_SIZE_CHANGE   0x30005
-#define AVAPP_EVENT_DID_DASH_VIDEO_SIZE_CHANGE    0x30006
+#define AVAPP_SWITCH_CTRL_UPDATE_STREAM 0x40012
 
 #define MAX_IP_LEN 196
 
@@ -88,17 +75,6 @@ typedef struct AVAppDashStream
     int cur_video_id;
     int cur_audio_id;
 } AVAppDashStream;
-
-typedef struct AVAppDashChange
-{
-    int cur_video_id;
-    int next_video_id;
-    int64_t next_sap;
-    int error;
-    int retry;
-    int auto_switch;
-} AVAppDashChange;
-
 
 typedef struct AVAppIOControl {
     size_t  size;
@@ -159,33 +135,44 @@ typedef struct AVAppIOTraffic
     int     normal_nread;
 } AVAppIOTraffic;
 
-typedef struct AVAppSwitchControl{
-    int vid;
-    int aid;
 
-    int min_qn;
-    int max_qn;
-    int auto_switch_enable;
-    int64_t latest_pts;
-    int64_t switch_ts;
-    int64_t switch_sap;
+typedef enum {
+    SWITCH_AUDIO = 1,
+    SWITCH_VIDEO = 2,
+}SWITCH_MODE;
 
-    double buffer_level;
+typedef enum {
+    SWITCH_CMD_AUTO_SWITCH = 1,
+    SWITCH_CMD_AUDIO_ONLY,
+    SWITCH_CMD_GET_STREAM_INFO,
+    SWITCH_CMD_UPDATE_CACHE_INFO,
+ }SWITCH_CMD;
 
-    int current_serial;
-    int next_serial;
-    int64_t max_differ;
 
-    void * switch_mtx_ptr;
-    int retry_counter;
+typedef struct {
+    void *opaque;
+    /*
+       @param: opaque 表示上下文。
+       @param: switch_serial 由ffplay控制，每一次切换画质该值自增。
+       @param: switch_point 单位ms，用于表示切换的时间点，由ffplay估算出来。
+       @param: vid aid 音视频清晰度id。
+       @return: 0 表示成功 <0 表示失败
+     */
+    int (*switch_start)(void * opaque, int64_t switch_serial, int64_t switch_point, int vid, int aid);
 
-    AVAppDashChange change_info;
-    int active_reconnect;
-    int (*start_switch)(void *);
-    void * opaque;
-    int video_only;
-    int audio_only;
-} AVAppSwitchControl;
+    /*
+       @param: opaque 表示上下文
+       @param: switch_serial 由ffplay控制，每一次切换画质该值自增。
+       @param: switch_mode 表示切音频、切视频、切音视频 3种情况返回给ffplay
+       @return: <0 表示失败  -EAGIN 表示正在切换中  >0 表示真正的switch point
+       例如 ffplay下发switch point是3s，dash返回的实际switch point是5s
+     */
+    int64_t (*switch_wait_complete)(void * opaque, int64_t switch_serial, int *switch_mode);
+
+    // update prop buffer_level audio_only;
+    int (*switch_cmd)(void *oqaque, int cmd, AVDictionary **pm);
+}AVAppSwitchControl;
+
 
 typedef struct AVAppDnsEvent
 {
@@ -241,6 +228,7 @@ struct AVApplicationContext {
     int (*func_app_ctrl)(int what, int64_t arg0, void *obj, size_t size);
     int ioproxy;
     int active_reconnect;
+    int64_t active_reconnect_count;
 };
 #if CONFIG_HTTPS_PROTOCOL
 void dirty_openssl_extra(void);
@@ -260,8 +248,6 @@ void av_application_did_http_seek(AVApplicationContext *h, void *obj, const char
 
 void av_application_did_io_tcp_read(AVApplicationContext *h, void *obj, int bytes, int nread, int type);
 
-int  av_application_on_switch_control(AVApplicationContext *h, int event_type, AVAppSwitchControl *control);
-
 int  av_application_on_io_control(AVApplicationContext *h, int event_type, AVAppIOControl *control);
 
 int av_application_on_tcp_will_open(AVApplicationContext *h);
@@ -269,9 +255,6 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
 
 void av_application_on_async_statistic(AVApplicationContext *h, AVAppAsyncStatistic *statistic);
 void av_application_on_async_read_speed(AVApplicationContext *h, AVAppAsyncReadSpeed *speed);
-
-void av_application_on_dash_info(AVApplicationContext *h, int event_type, AVAppDashChange *info);
-
 void av_application_on_dns_will_open(AVApplicationContext *h, char *hostname);
 void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, char *ip, int dns_type, int64_t dns_time, int is_audio, int error_code);
 
