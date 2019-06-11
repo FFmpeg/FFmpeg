@@ -198,6 +198,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     if (cover->cover_frame)
         av_freep(&cover->cover_frame->data[0]);
+    av_frame_free(&cover->cover_frame);
 }
 
 static av_cold int init(AVFilterContext *ctx)
