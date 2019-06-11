@@ -582,9 +582,7 @@ void ff_blend_init(FilterParams *param, int depth)
         case BLEND_MULTIPLY:   param->blend = blend_multiply_8bit;   break;
         case BLEND_MULTIPLY128:param->blend = blend_multiply128_8bit;break;
         case BLEND_NEGATION:   param->blend = blend_negation_8bit;   break;
-        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop_8 :
-                                              param->opacity == 0 ? blend_copybottom_8 :
-                                              blend_normal_8bit;     break;
+        case BLEND_NORMAL:     param->blend = blend_normal_8bit;     break;
         case BLEND_OR:         param->blend = blend_or_8bit;         break;
         case BLEND_OVERLAY:    param->blend = blend_overlay_8bit;    break;
         case BLEND_PHOENIX:    param->blend = blend_phoenix_8bit;    break;
@@ -621,9 +619,7 @@ void ff_blend_init(FilterParams *param, int depth)
         case BLEND_MULTIPLY:   param->blend = blend_multiply_10bit;   break;
         case BLEND_MULTIPLY128:param->blend = blend_multiply128_10bit;break;
         case BLEND_NEGATION:   param->blend = blend_negation_10bit;   break;
-        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop_16 :
-                                              param->opacity == 0 ? blend_copybottom_16 :
-                                              blend_normal_16bit;    break;
+        case BLEND_NORMAL:     param->blend = blend_normal_16bit;     break;
         case BLEND_OR:         param->blend = blend_or_10bit;        break;
         case BLEND_OVERLAY:    param->blend = blend_overlay_10bit;   break;
         case BLEND_PHOENIX:    param->blend = blend_phoenix_10bit;   break;
@@ -660,9 +656,7 @@ void ff_blend_init(FilterParams *param, int depth)
         case BLEND_MULTIPLY:   param->blend = blend_multiply_12bit;   break;
         case BLEND_MULTIPLY128:param->blend = blend_multiply128_12bit;break;
         case BLEND_NEGATION:   param->blend = blend_negation_12bit;   break;
-        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop_16 :
-                                              param->opacity == 0 ? blend_copybottom_16 :
-                                              blend_normal_16bit;    break;
+        case BLEND_NORMAL:     param->blend = blend_normal_16bit;     break;
         case BLEND_OR:         param->blend = blend_or_12bit;        break;
         case BLEND_OVERLAY:    param->blend = blend_overlay_12bit;   break;
         case BLEND_PHOENIX:    param->blend = blend_phoenix_12bit;   break;
@@ -699,9 +693,7 @@ void ff_blend_init(FilterParams *param, int depth)
         case BLEND_MULTIPLY:   param->blend = blend_multiply_16bit;   break;
         case BLEND_MULTIPLY128:param->blend = blend_multiply128_16bit;break;
         case BLEND_NEGATION:   param->blend = blend_negation_16bit;   break;
-        case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop_16 :
-                                              param->opacity == 0 ? blend_copybottom_16 :
-                                              blend_normal_16bit;    break;
+        case BLEND_NORMAL:     param->blend = blend_normal_16bit;     break;
         case BLEND_OR:         param->blend = blend_or_16bit;        break;
         case BLEND_OVERLAY:    param->blend = blend_overlay_16bit;   break;
         case BLEND_PHOENIX:    param->blend = blend_phoenix_16bit;   break;
@@ -718,6 +710,11 @@ void ff_blend_init(FilterParams *param, int depth)
 
     if (param->opacity == 0 && param->mode != BLEND_NORMAL) {
         param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+    } else if (param->mode == BLEND_NORMAL) {
+        if (param->opacity == 1)
+            param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+        else if (param->opacity == 0)
+            param->blend = depth > 8 ? blend_copybottom_16 : blend_copybottom_8;
     }
 
     if (ARCH_X86)
