@@ -187,7 +187,7 @@ static av_always_inline
 int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
 {
     AVCodecContext *avctx = s->avctx;
-    int i, ret;
+    int i, ret, dim_reset = 0;
 
     if (width  != s->avctx->width || ((width+15)/16 != s->mb_width || (height+15)/16 != s->mb_height) && s->macroblocks_base ||
         height != s->avctx->height) {
@@ -196,9 +196,12 @@ int update_dimensions(VP8Context *s, int width, int height, int is_vp7)
         ret = ff_set_dimensions(s->avctx, width, height);
         if (ret < 0)
             return ret;
+
+        dim_reset = (s->macroblocks_base != NULL);
     }
 
-    if (!s->actually_webp && !is_vp7) {
+    if ((s->pix_fmt == AV_PIX_FMT_NONE || dim_reset) &&
+         !s->actually_webp && !is_vp7) {
         s->pix_fmt = get_pixel_format(s);
         if (s->pix_fmt < 0)
             return AVERROR(EINVAL);
