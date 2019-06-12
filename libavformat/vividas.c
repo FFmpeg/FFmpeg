@@ -205,7 +205,7 @@ static uint8_t *read_vblock(AVIOContext *src, uint32_t *size,
     decode_block(tmp, tmp, 4, key, k2, align);
 
     n = get_v(tmp);
-    if (!n)
+    if (n < 4)
         return NULL;
 
     buf = av_malloc(n);
