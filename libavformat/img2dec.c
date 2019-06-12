@@ -356,6 +356,7 @@ int ff_img_read_header(AVFormatContext *s1)
             }
             if (s1->flags & AVFMT_FLAG_CUSTOM_IO) {
                 avio_seek(s1->pb, 0, SEEK_SET);
+                av_freep(&probe_buffer);
             } else
                 ffio_rewind_with_probe_data(s1->pb, &probe_buffer, probe_buffer_size);
         }
