@@ -311,6 +311,7 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
     int ncolors, cpp, ret, i, j;
     int64_t size;
     uint32_t *dst;
+    int width, height;
 
     avctx->pix_fmt = AV_PIX_FMT_BGRA;
 
@@ -332,12 +333,12 @@ static int xpm_decode_frame(AVCodecContext *avctx, void *data,
 
     ptr += mod_strcspn(ptr, "\"");
     if (sscanf(ptr, "\"%u %u %u %u\",",
-               &avctx->width, &avctx->height, &ncolors, &cpp) != 4) {
+               &width, &height, &ncolors, &cpp) != 4) {
         av_log(avctx, AV_LOG_ERROR, "missing image parameters\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_set_dimensions(avctx, avctx->width, avctx->height)) < 0)
+    if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
         return ret;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
