@@ -100,7 +100,7 @@ static av_cold int omx_try_load(OMXContext *s, void *logctx,
     if (libname2) {
         s->lib2 = dlopen(libname2, RTLD_NOW | RTLD_GLOBAL);
         if (!s->lib2) {
-            av_log(logctx, AV_LOG_WARNING, "%s not found\n", libname);
+            av_log(logctx, AV_LOG_WARNING, "%s not found\n", libname2);
             return AVERROR_ENCODER_NOT_FOUND;
         }
         s->host_init = dlsym(s->lib2, "bcm_host_init");
