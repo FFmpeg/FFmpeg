@@ -141,8 +141,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
 
     ret = avformat_find_stream_info(avfmt, NULL);
-    if (ret < 0)
-        goto end;
 
     av_init_packet(&pkt);
 
