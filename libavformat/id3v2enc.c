@@ -269,7 +269,7 @@ static int write_ctoc(AVFormatContext *s, ID3v2EncContext *id3, int enc)
         goto fail;
 
     id3->len += avio_put_str(dyn_bc, "toc");
-    avio_wb16(dyn_bc, 0x03);
+    avio_w8(dyn_bc, 0x03);
     avio_w8(dyn_bc, s->nb_chapters);
     for (int i = 0; i < s->nb_chapters; i++) {
         snprintf(name, 122, "ch%d", i);
