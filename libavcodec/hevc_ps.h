@@ -347,8 +347,8 @@ typedef struct HEVCPPS {
     uint8_t tiles_enabled_flag;
     uint8_t entropy_coding_sync_enabled_flag;
 
-    int num_tile_columns;   ///< num_tile_columns_minus1 + 1
-    int num_tile_rows;      ///< num_tile_rows_minus1 + 1
+    uint16_t num_tile_columns;   ///< num_tile_columns_minus1 + 1
+    uint16_t num_tile_rows;      ///< num_tile_rows_minus1 + 1
     uint8_t uniform_spacing_flag;
     uint8_t loop_filter_across_tiles_enabled_flag;
 
