@@ -681,7 +681,7 @@ static inline void tm2_still_block(TM2Context *ctx, AVFrame *pic, int bx, int by
 static inline void tm2_update_block(TM2Context *ctx, AVFrame *pic, int bx, int by)
 {
     int i, j;
-    int d;
+    unsigned d;
     TM2_INIT_POINTERS_2();
 
     /* update chroma */
