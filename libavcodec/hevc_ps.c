@@ -1581,22 +1581,25 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
     pps->entropy_coding_sync_enabled_flag = get_bits1(gb);
 
     if (pps->tiles_enabled_flag) {
-        pps->num_tile_columns = get_ue_golomb_long(gb) + 1;
-        pps->num_tile_rows    = get_ue_golomb_long(gb) + 1;
-        if (pps->num_tile_columns <= 0 ||
-            pps->num_tile_columns >= sps->width) {
+        int num_tile_columns_minus1 = get_ue_golomb(gb);
+        int num_tile_rows_minus1    = get_ue_golomb(gb);
+
+        if (num_tile_columns_minus1 < 0 ||
+            num_tile_columns_minus1 >= sps->width - 1) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
-                   pps->num_tile_columns - 1);
-            ret = AVERROR_INVALIDDATA;
+                   num_tile_columns_minus1);
+            ret = num_tile_columns_minus1 < 0 ? num_tile_columns_minus1 : AVERROR_INVALIDDATA;
             goto err;
         }
-        if (pps->num_tile_rows <= 0 ||
-            pps->num_tile_rows >= sps->height) {
+        if (num_tile_rows_minus1 < 0 ||
+            num_tile_rows_minus1 >= sps->height - 1) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
-                   pps->num_tile_rows - 1);
-            ret = AVERROR_INVALIDDATA;
+                   num_tile_rows_minus1);
+            ret = num_tile_rows_minus1 < 0 ? num_tile_rows_minus1 : AVERROR_INVALIDDATA;
             goto err;
         }
+        pps->num_tile_columns = num_tile_columns_minus1 + 1;
+        pps->num_tile_rows    = num_tile_rows_minus1    + 1;
 
         pps->column_width = av_malloc_array(pps->num_tile_columns, sizeof(*pps->column_width));
         pps->row_height   = av_malloc_array(pps->num_tile_rows,    sizeof(*pps->row_height));
