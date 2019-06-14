@@ -2008,13 +2008,19 @@ static int is_common_init_section_exist(struct representation **pls, int n_pls)
     return 1;
 }
 
-static void copy_init_section(struct representation *rep_dest, struct representation *rep_src)
+static int copy_init_section(struct representation *rep_dest, struct representation *rep_src)
 {
     rep_dest->init_sec_buf = av_mallocz(rep_src->init_sec_buf_size);
+    if (!rep_dest->init_sec_buf) {
+        av_log(rep_dest->ctx, AV_LOG_WARNING, "Cannot alloc memory for init_sec_buf\n");
+        return AVERROR(ENOMEM);
+    }
     memcpy(rep_dest->init_sec_buf, rep_src->init_sec_buf, rep_src->init_sec_data_len);
     rep_dest->init_sec_buf_size = rep_src->init_sec_buf_size;
     rep_dest->init_sec_data_len = rep_src->init_sec_data_len;
     rep_dest->cur_timestamp = rep_src->cur_timestamp;
+
+    return 0;
 }
 
 
@@ -2048,7 +2054,9 @@ static int dash_read_header(AVFormatContext *s)
     for (i = 0; i < c->n_videos; i++) {
         struct representation *cur_video = c->videos[i];
         if (i > 0 && c->is_init_section_common_video) {
-            copy_init_section(cur_video,c->videos[0]);
+            ret = copy_init_section(cur_video,c->videos[0]);
+            if (ret < 0)
+                goto fail;
         }
         ret = open_demux_for_component(s, cur_video);
 
@@ -2064,7 +2072,9 @@ static int dash_read_header(AVFormatContext *s)
     for (i = 0; i < c->n_audios; i++) {
         struct representation *cur_audio = c->audios[i];
         if (i > 0 && c->is_init_section_common_audio) {
-            copy_init_section(cur_audio,c->audios[0]);
+            ret = copy_init_section(cur_audio,c->audios[0]);
+            if (ret < 0)
+                goto fail;
         }
         ret = open_demux_for_component(s, cur_audio);
 
@@ -2080,7 +2090,9 @@ static int dash_read_header(AVFormatContext *s)
     for (i = 0; i < c->n_subtitles; i++) {
         struct representation *cur_subtitle = c->subtitles[i];
         if (i > 0 && c->is_init_section_common_audio) {
-            copy_init_section(cur_subtitle,c->subtitles[0]);
+            ret = copy_init_section(cur_subtitle,c->subtitles[0]);
+            if (ret < 0)
+                goto fail;
         }
         ret = open_demux_for_component(s, cur_subtitle);
 
