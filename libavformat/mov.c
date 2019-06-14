@@ -4562,8 +4562,6 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVTrackExt *trex = NULL;
     int flags, track_id, i;
 
-    c->fragment.found_tfhd = 1;
-
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
 
@@ -4579,6 +4577,7 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_WARNING, "could not find corresponding trex (id %u)\n", track_id);
         return 0;
     }
+    c->fragment.found_tfhd = 1;
     frag->track_id = track_id;
     set_frag_stream(&c->frag_index, track_id);
 
