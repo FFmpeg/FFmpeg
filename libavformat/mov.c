@@ -4208,8 +4208,6 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVFragmentIndex* index = NULL;
     int flags, track_id, i, found = 0;
 
-    c->fragment.found_tfhd = 1;
-
     avio_r8(pb); /* version */
     flags = avio_rb24(pb);
 
@@ -4226,6 +4224,7 @@ static int mov_read_tfhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         av_log(c->fc, AV_LOG_ERROR, "could not find corresponding trex\n");
         return AVERROR_INVALIDDATA;
     }
+    c->fragment.found_tfhd = 1;
 
     frag->base_data_offset = flags & MOV_TFHD_BASE_DATA_OFFSET ?
                              avio_rb64(pb) : flags & MOV_TFHD_DEFAULT_BASE_IS_MOOF ?
