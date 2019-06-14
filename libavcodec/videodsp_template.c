@@ -44,7 +44,8 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src,
         src_y = 1 - block_h;
     }
     if (src_x >= w) {
-        src  += (w - 1 - src_x) * sizeof(pixel);
+        // The subtracted expression has an unsigned type and must thus not be negative
+        src  -= (1 + src_x - w) * sizeof(pixel);
         src_x = w - 1;
     } else if (src_x <= -block_w) {
         src  += (1 - block_w - src_x) * sizeof(pixel);
