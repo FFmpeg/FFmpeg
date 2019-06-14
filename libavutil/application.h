@@ -229,7 +229,9 @@ struct AVApplicationContext {
     int ioproxy;
     int active_reconnect;
 };
-
+#if CONFIG_HTTPS_PROTOCOL
+void dirty_openssl_extra(void);
+#endif
 int  av_application_alloc(AVApplicationContext **ph, void *opaque);
 int  av_application_open(AVApplicationContext **ph, void *opaque);
 void av_application_close(AVApplicationContext *h);

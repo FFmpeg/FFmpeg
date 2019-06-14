@@ -21,6 +21,12 @@
 #include "application.h"
 #include "libavformat/network.h"
 #include "libavutil/avstring.h"
+#if CONFIG_HTTPS_PROTOCOL
+    #include <openssl/evp.h>
+    void dirty_openssl_extra(void) {
+        OPENSSL_add_all_algorithms_noconf();
+    }
+#endif
 
 void av_application_on_io_traffic(AVApplicationContext *h, AVAppIOTraffic *event);
 
