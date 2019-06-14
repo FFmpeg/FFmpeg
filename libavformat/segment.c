@@ -180,6 +180,7 @@ static int segment_mux_init(AVFormatContext *s)
         }
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
+        st->avg_frame_rate = s->streams[i]->avg_frame_rate;
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
 
@@ -421,7 +422,7 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                     rate = s->streams[i]->avg_frame_rate;/* Get fps from the video stream */
                     err = av_timecode_init_from_string(&tc, rate, tcr->value, s);
                     if (err < 0) {
-                        av_log(s, AV_LOG_WARNING, "Could not increment timecode, error occurred during timecode creation.");
+                        av_log(s, AV_LOG_WARNING, "Could not increment global timecode, error occurred during timecode creation.\n");
                         break;
                     }
                     tc.start += (int)((seg->cur_entry.end_time - seg->cur_entry.start_time) * av_q2d(rate));/* increment timecode */
@@ -431,7 +432,23 @@ static int segment_end(AVFormatContext *s, int write_trailer, int is_last)
                 }
             }
         } else {
-            av_log(s, AV_LOG_WARNING, "Could not increment timecode, no timecode metadata found");
+            av_log(s, AV_LOG_WARNING, "Could not increment global timecode, no global timecode metadata found.\n");
+        }
+        for (i = 0; i < s->nb_streams; i++) {
+            if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+                char st_buf[AV_TIMECODE_STR_SIZE];
+                AVTimecode st_tc;
+                AVRational st_rate = s->streams[i]->avg_frame_rate;
+                AVDictionaryEntry *st_tcr = av_dict_get(s->streams[i]->metadata, "timecode", NULL, 0);
+                if (st_tcr) {
+                    if ((av_timecode_init_from_string(&st_tc, st_rate, st_tcr->value, s) < 0)) {
+                        av_log(s, AV_LOG_WARNING, "Could not increment stream %d timecode, error occurred during timecode creation.\n", i);
+                        continue;
+                    }
+                st_tc.start += (int)((seg->cur_entry.end_time - seg->cur_entry.start_time) * av_q2d(st_rate));    // increment timecode
+                av_dict_set(&s->streams[i]->metadata, "timecode", av_timecode_make_string(&st_tc, st_buf, 0), 0);
+                }
+            }
         }
     }
 
