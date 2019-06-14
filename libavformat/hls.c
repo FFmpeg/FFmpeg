@@ -849,6 +849,7 @@ static int parse_playlist(HLSContext *c, const char *url,
             if (ptr)
                 seg_offset = strtoll(ptr+1, NULL, 10);
         } else if (av_strstart(line, "#", NULL)) {
+            av_log(c->ctx, AV_LOG_INFO, "Skip ('%s')\n", line);
             continue;
         } else if (line[0]) {
             if (is_variant) {
@@ -1398,8 +1399,8 @@ restart:
         v->needed = playlist_needed(v);
 
         if (!v->needed) {
-            av_log(v->parent, AV_LOG_INFO, "No longer receiving playlist %d\n",
-                v->index);
+            av_log(v->parent, AV_LOG_INFO, "No longer receiving playlist %d ('%s')\n",
+                   v->index, v->url);
             return AVERROR_EOF;
         }
 
