@@ -10166,7 +10166,7 @@ Specifies the rectangle in which to search.
 
 @itemize
 @item
-Generate a representative palette of a given video using @command{ffmpeg}:
+Cover a rectangular object by the supplied image of a given video using @command{ffmpeg}:
 @example
 ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
 @end example
@@ -10200,7 +10200,7 @@ Default value is @var{blur}.
 
 @itemize
 @item
-Generate a representative palette of a given video using @command{ffmpeg}:
+Cover a rectangular object by the supplied image of a given video using @command{ffmpeg}:
 @example
 ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
 @end example
