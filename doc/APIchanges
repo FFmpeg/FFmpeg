@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-06-14 - XXXXXXXXXX - lavu 56.29.100 - frame.h
+  Add FF_DECODE_ERROR_CONCEALMENT_ACTIVE
+
 2019-05-15 - b79b29ddb1 - lavu 56.28.100 - tx.h
   Add av_tx_init(), av_tx_uninit() and related definitions.
 
