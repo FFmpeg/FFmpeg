@@ -210,10 +210,10 @@ static int rpl_read_header(AVFormatContext *s)
                     ast->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
                     break;
                 } else if (ast->codecpar->bits_per_coded_sample == 8) {
-                    if(av_strcasecmp(audio_type, "unsigned") >= 0) {
+                    if(av_stristr(audio_type, "unsigned") != NULL) {
                         ast->codecpar->codec_id = AV_CODEC_ID_PCM_U8;
                         break;
-                    } else if(av_strcasecmp(audio_type, "linear") >= 0) {
+                    } else if(av_stristr(audio_type, "linear") != NULL) {
                         ast->codecpar->codec_id = AV_CODEC_ID_PCM_S8;
                         break;
                     } else {
