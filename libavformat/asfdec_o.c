@@ -1165,7 +1165,7 @@ static int asf_read_replicated_data(AVFormatContext *s, ASFPacket *asf_pkt)
     } else
         avio_skip(pb, 4); // reading of media object size is already done
     asf_pkt->dts = avio_rl32(pb); // read presentation time
-    if (asf->rep_data_len && (asf->rep_data_len >= 8))
+    if (asf->rep_data_len >= 8)
         avio_skip(pb, asf->rep_data_len - 8); // skip replicated data
 
     return 0;
