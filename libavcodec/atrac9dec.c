@@ -539,9 +539,6 @@ static inline void apply_band_extension(ATRAC9Context *s, ATRAC9BlockData *b,
         at9_q_unit_to_coeff_idx[g_units[3]],
     };
 
-    if (!b->has_band_ext || !b->has_band_ext_data)
-        return;
-
     for (int ch = 0; ch <= stereo; ch++) {
         ATRAC9ChannelData *c = &b->channel[ch];
 
@@ -751,7 +748,9 @@ static int atrac9_decode_block(ATRAC9Context *s, GetBitContext *gb,
 
     apply_intensity_stereo(s, b, stereo);
     apply_scalefactors    (s, b, stereo);
-    apply_band_extension  (s, b, stereo);
+
+    if (b->has_band_ext && b->has_band_ext_data)
+        apply_band_extension  (s, b, stereo);
 
 imdct:
     for (int i = 0; i <= stereo; i++) {
