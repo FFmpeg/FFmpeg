@@ -295,6 +295,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
         avpriv_request_sample(avctx, "LOCO codec version %i", version);
     }
 
+    if (l->lossy > 65536U) {
+        av_log(avctx, AV_LOG_ERROR, "lossy %i is too large\n", l->lossy);
+        return AVERROR_INVALIDDATA;
+    }
+
     l->mode = AV_RL32(avctx->extradata + 4);
     switch (l->mode) {
     case LOCO_CYUY2:
