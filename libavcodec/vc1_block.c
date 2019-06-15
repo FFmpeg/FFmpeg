@@ -489,13 +489,15 @@ static inline int vc1_coded_block_pred(MpegEncContext * s, int n,
  * @param codingset set of VLC to decode data
  * @see 8.1.3.4
  */
-static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
+static int vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
                                 int *value, int codingset)
 {
     GetBitContext *gb = &v->s.gb;
     int index, run, level, lst, sign;
 
     index = get_vlc2(gb, ff_vc1_ac_coeff_table[codingset].table, AC_VLC_BITS, 3);
+    if (index < 0)
+        return index;
     if (index != ff_vc1_ac_sizes[codingset] - 1) {
         run   = vc1_index_decode_table[codingset][index][0];
         level = vc1_index_decode_table[codingset][index][1];
@@ -541,6 +543,8 @@ static void vc1_decode_ac_coeff(VC1Context *v, int *last, int *skip,
     *last  = lst;
     *skip  = run;
     *value = (level ^ -sign) + sign;
+
+    return 0;
 }
 
 /** Decode intra block in intra frames - should be faster than decode_intra_block
@@ -620,7 +624,9 @@ static int vc1_decode_i_block(VC1Context *v, int16_t block[64], int n,
             zz_table = v->zz_8x8[1];
 
         while (!last) {
-            vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            if (ret < 0)
+                return ret;
             i += skip;
             if (i > 63)
                 break;
@@ -792,7 +798,9 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
         }
 
         while (!last) {
-            vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            if (ret < 0)
+                return ret;
             i += skip;
             if (i > 63)
                 break;
@@ -972,7 +980,9 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
         int k;
 
         while (!last) {
-            vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, codingset);
+            if (ret < 0)
+                return ret;
             i += skip;
             if (i > 63)
                 break;
@@ -1135,7 +1145,9 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
         i    = 0;
         last = 0;
         while (!last) {
-            vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+            int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+            if (ret < 0)
+                return ret;
             i += skip;
             if (i > 63)
                 break;
@@ -1163,7 +1175,9 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
             i    = 0;
             off  = (j & 1) * 4 + (j & 2) * 16;
             while (!last) {
-                vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                if (ret < 0)
+                    return ret;
                 i += skip;
                 if (i > 15)
                     break;
@@ -1190,7 +1204,9 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
             i    = 0;
             off  = j * 32;
             while (!last) {
-                vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                if (ret < 0)
+                    return ret;
                 i += skip;
                 if (i > 31)
                     break;
@@ -1217,7 +1233,9 @@ static int vc1_decode_p_block(VC1Context *v, int16_t block[64], int n,
             i    = 0;
             off  = j * 4;
             while (!last) {
-                vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                int ret = vc1_decode_ac_coeff(v, &last, &skip, &value, v->codingset2);
+                if (ret < 0)
+                    return ret;
                 i += skip;
                 if (i > 31)
                     break;
