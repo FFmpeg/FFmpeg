@@ -1642,7 +1642,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
         } while (p < buf_end && (state & 0x7e) != 2*35 &&
                  (state & 0x7e) >= 2*32);
 
-        if ((state & 0x7e) < 2*16 && (state & 0x7e) >= 2*24)
+        if ((state & 0x7e) < 2*16 || (state & 0x7e) >= 2*24)
             extradd = 0;
         if ((state & 0x7e) != 2*35) { // AUD NAL
             data = av_malloc(pkt->size + 7 + extradd);
