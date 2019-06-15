@@ -67,7 +67,7 @@ static int activate(AVFilterContext *ctx)
         return ret;
 
     if (ret > 0) {
-        if ((!s->pad || (s->pad && frame->nb_samples == s->nb_out_samples))) {
+        if (!s->pad || frame->nb_samples == s->nb_out_samples) {
             ret = ff_filter_frame(outlink, frame);
             if (ff_inlink_queued_samples(inlink) >= s->nb_out_samples)
                 ff_filter_set_ready(ctx, 100);
