@@ -460,7 +460,7 @@ static inline void update_rice(APERice *rice, unsigned int x)
 
     if (rice->ksum < lim)
         rice->k--;
-    else if (rice->ksum >= (1 << (rice->k + 5)))
+    else if (rice->ksum >= (1 << (rice->k + 5)) && rice->k < 24)
         rice->k++;
 }
 
