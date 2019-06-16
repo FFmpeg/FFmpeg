@@ -267,7 +267,10 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
         in->type     = AV_RL32(edata + 16);
         in->channels = AV_RL32(edata + 20);
         edata += 24;
-        if (in->ts_start < cur_ts || in->ts_end <= in->ts_start)
+        if (in->ts_start < cur_ts ||
+            in->ts_end <= in->ts_start ||
+            (uint64_t)in->ts_end - in->ts_start > INT64_MAX
+        )
             return AVERROR(EINVAL);
         cur_ts = in->ts_start;
         dt = in->ts_end - in->ts_start;
