@@ -202,6 +202,8 @@ static inline int parse_band_ext(ATRAC9Context *s, ATRAC9BlockData *b,
     int ext_band = 0;
 
     if (b->has_band_ext) {
+        if (b->q_unit_cnt < 13)
+            return AVERROR_INVALIDDATA;
         ext_band = at9_tab_band_ext_group[b->q_unit_cnt - 13][2];
         if (stereo) {
             b->channel[1].band_ext = get_bits(gb, 2);
