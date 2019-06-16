@@ -646,7 +646,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
 
         // Repeat the slice end check from ff_h263_decode_mb with our active
         // bitstream size
-        if (ret != SLICE_ERROR) {
+        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&s->gb)) {
             int v = show_bits(&s->gb, 16);
 
             if (get_bits_count(&s->gb) + 16 > active_bits_size)
