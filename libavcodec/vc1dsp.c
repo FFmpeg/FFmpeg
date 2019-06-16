@@ -95,10 +95,10 @@ static void vc1_v_s_overlap_c(int16_t *top, int16_t *bottom)
         d1 = a - d;
         d2 = a - d + b - c;
 
-        top[48]   = ((a << 3) - d1 + rnd1) >> 3;
-        top[56]   = ((b << 3) - d2 + rnd2) >> 3;
-        bottom[0] = ((c << 3) + d2 + rnd1) >> 3;
-        bottom[8] = ((d << 3) + d1 + rnd2) >> 3;
+        top[48]   = ((a * 8) - d1 + rnd1) >> 3;
+        top[56]   = ((b * 8) - d2 + rnd2) >> 3;
+        bottom[0] = ((c * 8) + d2 + rnd1) >> 3;
+        bottom[8] = ((d * 8) + d1 + rnd2) >> 3;
 
         bottom++;
         top++;
@@ -122,10 +122,10 @@ static void vc1_h_s_overlap_c(int16_t *left, int16_t *right, int left_stride, in
         d1 = a - d;
         d2 = a - d + b - c;
 
-        left[6]  = ((a << 3) - d1 + rnd1) >> 3;
-        left[7]  = ((b << 3) - d2 + rnd2) >> 3;
-        right[0] = ((c << 3) + d2 + rnd1) >> 3;
-        right[1] = ((d << 3) + d1 + rnd2) >> 3;
+        left[6]  = ((a * 8) - d1 + rnd1) >> 3;
+        left[7]  = ((b * 8) - d2 + rnd2) >> 3;
+        right[0] = ((c * 8) + d2 + rnd1) >> 3;
+        right[1] = ((d * 8) + d1 + rnd2) >> 3;
 
         right += right_stride;
         left  += left_stride;
