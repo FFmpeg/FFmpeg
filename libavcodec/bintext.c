@@ -63,6 +63,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_ERROR, "not enough extradata\n");
             return AVERROR_INVALIDDATA;
         }
+        if (!s->font_height) {
+            av_log(avctx, AV_LOG_ERROR, "invalid font height\n");
+            return AVERROR_INVALIDDATA;
+        }
     } else {
         s->font_height = 8;
         s->flags = 0;
