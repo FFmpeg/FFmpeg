@@ -105,33 +105,33 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
     AVPacket *in = NULL;
     int err, i, j;
 
-        err = ff_bsf_get_packet(bsf, &in);
-        if (err < 0)
-            return err;
+    err = ff_bsf_get_packet(bsf, &in);
+    if (err < 0)
+        return err;
 
-        if (ctx->mode == NOOP) {
-            av_packet_move_ref(out, in);
-            av_packet_free(&in);
-            return 0;
-        }
+    if (ctx->mode == NOOP) {
+        av_packet_move_ref(out, in);
+        av_packet_free(&in);
+        return 0;
+    }
 
-        err = ff_cbs_read_packet(ctx->cbc, frag, in);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
-            goto fail;
-        }
+    err = ff_cbs_read_packet(ctx->cbc, frag, in);
+    if (err < 0) {
+        av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
+        goto fail;
+    }
 
-        for (i = 0; i < frag->nb_units; i++) {
-            for (j = 0; j < ctx->nb_types; j++) {
-                if (frag->units[i].type == ctx->type_list[j])
-                    break;
-            }
-            if (ctx->mode == REMOVE ? j <  ctx->nb_types
-                                    : j >= ctx->nb_types) {
-                ff_cbs_delete_unit(ctx->cbc, frag, i);
-                --i;
-            }
+    for (i = 0; i < frag->nb_units; i++) {
+        for (j = 0; j < ctx->nb_types; j++) {
+            if (frag->units[i].type == ctx->type_list[j])
+                break;
         }
+        if (ctx->mode == REMOVE ? j <  ctx->nb_types
+                                : j >= ctx->nb_types) {
+            ff_cbs_delete_unit(ctx->cbc, frag, i);
+            --i;
+        }
+    }
 
     if (frag->nb_units == 0) {
         // Don't return packets with nothing in them.
