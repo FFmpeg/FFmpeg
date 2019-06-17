@@ -357,7 +357,8 @@ int ff_cbs_write_packet(CodedBitstreamContext *ctx,
     if (!buf)
         return AVERROR(ENOMEM);
 
-    av_init_packet(pkt);
+    av_buffer_unref(&pkt->buf);
+
     pkt->buf  = buf;
     pkt->data = frag->data;
     pkt->size = frag->data_size;
