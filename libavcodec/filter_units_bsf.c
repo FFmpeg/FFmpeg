@@ -153,6 +153,8 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
         goto fail;
 
 fail:
+    if (err < 0)
+        av_packet_unref(out);
     ff_cbs_fragment_reset(ctx->cbc, frag);
     av_packet_free(&in);
 
