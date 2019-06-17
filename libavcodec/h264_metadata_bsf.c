@@ -289,8 +289,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i, j, has_sps;
     H264RawAUD aud;
-    uint8_t *displaymatrix_side_data = NULL;
-    size_t displaymatrix_side_data_size = 0;
 
     err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
@@ -487,7 +485,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
                     continue;
                 }
 
-                matrix = av_mallocz(9 * sizeof(int32_t));
+                matrix = av_malloc(9 * sizeof(int32_t));
                 if (!matrix) {
                     err = AVERROR(ENOMEM);
                     goto fail;
@@ -499,11 +497,17 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
                 av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
 
                 // If there are multiple display orientation messages in an
-                // access unit then ignore all but the first one.
-                av_freep(&displaymatrix_side_data);
-
-                displaymatrix_side_data      = (uint8_t*)matrix;
-                displaymatrix_side_data_size = 9 * sizeof(int32_t);
+                // access unit, then the last one added to the packet (i.e.
+                // the first one in the access unit) will prevail.
+                err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
+                                              (uint8_t*)matrix,
+                                              9 * sizeof(int32_t));
+                if (err < 0) {
+                    av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
+                           "displaymatrix side data to packet.\n");
+                    av_freep(matrix);
+                    goto fail;
+                }
             }
         }
     }
@@ -583,24 +587,11 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
         goto fail;
     }
 
-    if (displaymatrix_side_data) {
-        err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
-                                      displaymatrix_side_data,
-                                      displaymatrix_side_data_size);
-        if (err) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to attach extracted "
-                   "displaymatrix side data to packet.\n");
-            goto fail;
-        }
-        displaymatrix_side_data = NULL;
-    }
-
     ctx->done_first_au = 1;
 
     err = 0;
 fail:
     ff_cbs_fragment_reset(ctx->cbc, au);
-    av_freep(&displaymatrix_side_data);
 
     if (err < 0)
         av_packet_unref(pkt);
