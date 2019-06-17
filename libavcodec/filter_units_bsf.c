@@ -105,7 +105,6 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
     AVPacket *in = NULL;
     int err, i, j;
 
-    while (1) {
         err = ff_bsf_get_packet(bsf, &in);
         if (err < 0)
             return err;
@@ -134,12 +133,10 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *out)
             }
         }
 
-        if (frag->nb_units > 0)
-            break;
-
+    if (frag->nb_units == 0) {
         // Don't return packets with nothing in them.
-        av_packet_free(&in);
-        ff_cbs_fragment_reset(ctx->cbc, frag);
+        err = AVERROR(EAGAIN);
+        goto fail;
     }
 
     err = ff_cbs_write_packet(ctx->cbc, out, frag);
