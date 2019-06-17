@@ -17166,14 +17166,14 @@ Specify flags influencing the filter process.
 Available value for @var{flags} is:
 
 @table @option
-@item low_pass_filter, vlfp
+@item low_pass_filter, vlpf
 Enable linear vertical low-pass filtering in the filter.
 Vertical low-pass filtering is required when creating an interlaced
 destination from a progressive source which contains high-frequency
 vertical detail. Filtering will reduce interlace 'twitter' and Moire
 patterning.
 
-@item complex_filter, cvlfp
+@item complex_filter, cvlpf
 Enable complex vertical low-pass filtering.
 This will slightly less reduce interlace 'twitter' and Moire
 patterning but better retain detail and subjective sharpness impression.
