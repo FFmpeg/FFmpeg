@@ -1761,14 +1761,11 @@ fail:
     return ret;
 }
 
-static int format_name(char *buf, int buf_len, int index)
+static int format_name(const char *buf, char **s, int index)
 {
     const char *proto, *dir;
-    char *orig_buf_dup = NULL, *mod_buf = NULL, *mod_buf_dup = NULL;
+    char *orig_buf_dup = NULL, *mod_buf_dup = NULL;
     int ret = 0;
-
-    if (!av_stristr(buf, "%v"))
-        return ret;
 
     orig_buf_dup = av_strdup(buf);
     if (!orig_buf_dup) {
@@ -1776,18 +1773,22 @@ static int format_name(char *buf, int buf_len, int index)
         goto fail;
     }
 
-    if (replace_int_data_in_filename(&mod_buf, orig_buf_dup, 'v', index) < 1) {
+    if (!av_stristr(buf, "%v")) {
+        *s = orig_buf_dup;
+        return ret;
+    }
+
+    if (replace_int_data_in_filename(s, orig_buf_dup, 'v', index) < 1) {
         ret = AVERROR(EINVAL);
         goto fail;
     }
-    av_strlcpy(buf, mod_buf, buf_len);
 
     proto = avio_find_protocol_name(orig_buf_dup);
     dir = av_dirname(orig_buf_dup);
 
     /* if %v is present in the file's directory, create sub-directory */
     if (av_stristr(dir, "%v") && proto && !strcmp(proto, "file")) {
-        mod_buf_dup = av_strdup(buf);
+        mod_buf_dup = av_strdup(*s);
         if (!mod_buf_dup) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -1803,7 +1804,6 @@ static int format_name(char *buf, int buf_len, int index)
 fail:
     av_freep(&orig_buf_dup);
     av_freep(&mod_buf_dup);
-    av_freep(&mod_buf);
     return ret;
 }
 
@@ -2634,7 +2634,7 @@ static int hls_init(AVFormatContext *s)
             ret = AVERROR(ENOMEM);
             goto fail;
         }
-        ret = format_name(vs->m3u8_name, strlen(s->url) + 1, i);
+        ret = format_name(s->url, i, vs->m3u8_name);
         if (ret < 0)
             goto fail;
 
