@@ -1702,6 +1702,12 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     s->fft_order = av_log2(s->fft_size) + 1;
 
+    // Fail on unknown fft order
+    if ((s->fft_order < 7) || (s->fft_order > 9)) {
+        avpriv_request_sample(avctx, "Unknown FFT order %d", s->fft_order);
+        return AVERROR_PATCHWELCOME;
+    }
+
     // something like max decodable tones
     s->group_order = av_log2(s->group_size) + 1;
     s->frame_size = s->group_size / 16; // 16 iterations per super block
@@ -1735,11 +1741,6 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     else
         s->coeff_per_sb_select = 2;
 
-    // Fail on unknown fft order
-    if ((s->fft_order < 7) || (s->fft_order > 9)) {
-        avpriv_request_sample(avctx, "Unknown FFT order %d", s->fft_order);
-        return AVERROR_PATCHWELCOME;
-    }
     if (s->fft_size != (1 << (s->fft_order - 1))) {
         av_log(avctx, AV_LOG_ERROR, "FFT size %d not power of 2.\n", s->fft_size);
         return AVERROR_INVALIDDATA;
