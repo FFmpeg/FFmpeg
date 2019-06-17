@@ -117,16 +117,14 @@ static int filter_units_filter(AVBSFContext *bsf, AVPacket *pkt)
         goto fail;
     }
 
-    for (i = 0; i < frag->nb_units; i++) {
+    for (i = frag->nb_units - 1; i >= 0; i--) {
         for (j = 0; j < ctx->nb_types; j++) {
             if (frag->units[i].type == ctx->type_list[j])
                 break;
         }
         if (ctx->mode == REMOVE ? j <  ctx->nb_types
-                                : j >= ctx->nb_types) {
+                                : j >= ctx->nb_types)
             ff_cbs_delete_unit(ctx->cbc, frag, i);
-            --i;
-        }
     }
 
     if (frag->nb_units == 0) {

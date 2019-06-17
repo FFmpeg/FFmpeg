@@ -428,7 +428,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     }
 
     if (ctx->delete_filler) {
-        for (i = 0; i < au->nb_units; i++) {
+        for (i = au->nb_units - 1; i >= 0; i--) {
             if (au->units[i].type == H264_NAL_FILLER_DATA) {
                 // Filler NAL units.
                 err = ff_cbs_delete_unit(ctx->cbc, au, i);
@@ -437,7 +437,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                            "filler NAL.\n");
                     goto fail;
                 }
-                --i;
                 continue;
             }
 
@@ -445,7 +444,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                 // Filler SEI messages.
                 H264RawSEI *sei = au->units[i].content;
 
-                for (j = 0; j < sei->payload_count; j++) {
+                for (j = sei->payload_count - 1; j >= 0; j--) {
                     if (sei->payload[j].payload_type ==
                         H264_SEI_TYPE_FILLER_PAYLOAD) {
                         err = ff_cbs_h264_delete_sei_message(ctx->cbc, au,
@@ -455,10 +454,6 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                                    "filler SEI message.\n");
                             goto fail;
                         }
-                        // Renumbering might have happened, start again at
-                        // the same NAL unit position.
-                        --i;
-                        break;
                     }
                 }
             }
@@ -466,13 +461,13 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
     }
 
     if (ctx->display_orientation != PASS) {
-        for (i = 0; i < au->nb_units; i++) {
+        for (i = au->nb_units - 1; i >= 0; i--) {
             H264RawSEI *sei;
             if (au->units[i].type != H264_NAL_SEI)
                 continue;
             sei = au->units[i].content;
 
-            for (j = 0; j < sei->payload_count; j++) {
+            for (j = sei->payload_count - 1; j >= 0; j--) {
                 H264RawSEIDisplayOrientation *disp;
                 int32_t *matrix;
 
@@ -490,8 +485,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                                "display orientation SEI message.\n");
                         goto fail;
                     }
-                    --i;
-                    break;
+                    continue;
                 }
 
                 matrix = av_mallocz(9 * sizeof(int32_t));
@@ -506,7 +500,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
                 av_display_matrix_flip(matrix, disp->hor_flip, disp->ver_flip);
 
                 // If there are multiple display orientation messages in an
-                // access unit then ignore all but the last one.
+                // access unit then ignore all but the first one.
                 av_freep(&displaymatrix_side_data);
 
                 displaymatrix_side_data      = (uint8_t*)matrix;
