@@ -283,21 +283,20 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
     return 0;
 }
 
-static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 {
     H264MetadataContext *ctx = bsf->priv_data;
-    AVPacket *in = NULL;
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i, j, has_sps;
     H264RawAUD aud;
     uint8_t *displaymatrix_side_data = NULL;
     size_t displaymatrix_side_data_size = 0;
 
-    err = ff_bsf_get_packet(bsf, &in);
+    err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
         return err;
 
-    err = ff_cbs_read_packet(ctx->cbc, au, in);
+    err = ff_cbs_read_packet(ctx->cbc, au, pkt);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
         goto fail;
@@ -518,7 +517,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         int size;
         int write = 0;
 
-        data = av_packet_get_side_data(in, AV_PKT_DATA_DISPLAYMATRIX, &size);
+        data = av_packet_get_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX, &size);
         if (data && size >= 9 * sizeof(int32_t)) {
             int32_t matrix[9];
             int hflip, vflip;
@@ -578,18 +577,14 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    err = ff_cbs_write_packet(ctx->cbc, out, au);
+    err = ff_cbs_write_packet(ctx->cbc, pkt, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
         goto fail;
     }
 
-    err = av_packet_copy_props(out, in);
-    if (err < 0)
-        goto fail;
-
     if (displaymatrix_side_data) {
-        err = av_packet_add_side_data(out, AV_PKT_DATA_DISPLAYMATRIX,
+        err = av_packet_add_side_data(pkt, AV_PKT_DATA_DISPLAYMATRIX,
                                       displaymatrix_side_data,
                                       displaymatrix_side_data_size);
         if (err) {
@@ -608,8 +603,7 @@ fail:
     av_freep(&displaymatrix_side_data);
 
     if (err < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
 
     return err;
 }
