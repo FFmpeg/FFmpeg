@@ -61,7 +61,7 @@ static int m101_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     stride = AV_RL32(avctx->extradata + 5*4);
 
     if (avctx->pix_fmt == AV_PIX_FMT_YUV422P10)
-        min_stride = (avctx->width + 15) / 16 * 20;
+        min_stride = (avctx->width + 15) / 16 * 40;
 
     if (stride < min_stride || avpkt->size < stride * (uint64_t)avctx->height) {
         av_log(avctx, AV_LOG_ERROR, "stride (%d) is invalid for packet sized %d\n",
