@@ -49,8 +49,16 @@ static int oggvorbis_decode_init(AVCodecContext *avccontext) {
     vorbis_comment_init(&context->vc) ;
 
     if(p[0] == 0 && p[1] == 30) {
+        int sizesum = 0;
         for(i = 0; i < 3; i++){
             hsizes[i] = bytestream_get_be16((const uint8_t **)&p);
+            sizesum += 2 + hsizes[i];
+            if (sizesum > avccontext->extradata_size) {
+                av_log(avccontext, AV_LOG_ERROR, "vorbis extradata too small\n");
+                ret = AVERROR_INVALIDDATA;
+                goto error;
+            }
+
             headers[i] = p;
             p += hsizes[i];
         }
