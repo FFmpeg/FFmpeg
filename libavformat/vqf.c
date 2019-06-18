@@ -107,6 +107,9 @@ static int vqf_read_header(AVFormatContext *s)
 
     header_size = avio_rb32(s->pb);
 
+    if (header_size < 0)
+        return AVERROR_INVALIDDATA;
+
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id   = AV_CODEC_ID_TWINVQ;
     st->start_time = 0;
@@ -120,7 +123,7 @@ static int vqf_read_header(AVFormatContext *s)
 
         len = avio_rb32(s->pb);
 
-        if ((unsigned) len > INT_MAX/2) {
+        if ((unsigned) len > INT_MAX/2 || header_size < 8) {
             av_log(s, AV_LOG_ERROR, "Malformed header\n");
             return -1;
         }
