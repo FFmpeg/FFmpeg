@@ -306,7 +306,7 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
             rice_history_mult[ch] = get_bits(&alac->gb, 3);
             lpc_order[ch]         = get_bits(&alac->gb, 5);
 
-            if (lpc_order[ch] >= alac->max_samples_per_frame)
+            if (lpc_order[ch] >= alac->max_samples_per_frame || !lpc_quant[ch])
                 return AVERROR_INVALIDDATA;
 
             /* read the predictor table */
