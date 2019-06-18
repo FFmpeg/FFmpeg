@@ -962,6 +962,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
             ret = AVERROR(EINVAL);
             goto free_and_end;
         }
+        if (avctx->bits_per_coded_sample < 0) {
+            ret = AVERROR(EINVAL);
+            goto free_and_end;
+        }
         if (avctx->sub_charenc) {
             if (avctx->codec_type != AVMEDIA_TYPE_SUBTITLE) {
                 av_log(avctx, AV_LOG_ERROR, "Character encoding is only "
