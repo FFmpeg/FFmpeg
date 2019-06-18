@@ -702,15 +702,15 @@ static int read_dct_coeffs(BinkContext *c, GetBitContext *gb, int32_t block[64],
     return quant_idx;
 }
 
-static void unquantize_dct_coeffs(int32_t block[64], const int32_t quant[64],
+static void unquantize_dct_coeffs(int32_t block[64], const uint32_t quant[64],
                                   int coef_count, int coef_idx[64],
                                   const uint8_t *scan)
 {
     int i;
-    block[0] = (block[0] * quant[0]) >> 11;
+    block[0] = (int)(block[0] * quant[0]) >> 11;
     for (i = 0; i < coef_count; i++) {
         int idx = coef_idx[i];
-        block[scan[idx]] = (block[scan[idx]] * quant[idx]) >> 11;
+        block[scan[idx]] = (int)(block[scan[idx]] * quant[idx]) >> 11;
     }
 }
 
