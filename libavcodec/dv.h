@@ -31,6 +31,7 @@
 #include "dv_profile.h"
 #include "me_cmp.h"
 #include "vlc.h"
+#include "idctdsp.h"
 
 typedef struct DVwork_chunk {
     uint16_t buf_offset;
@@ -52,6 +53,7 @@ typedef struct DVVideoContext {
     me_cmp_func ildct_cmp;
     DVwork_chunk work_chunks[4 * 12 * 27];
     uint32_t idct_factor[2 * 4 * 16 * 64];
+    IDCTDSPContext idsp;
 
     int quant_deadzone;
 } DVVideoContext;

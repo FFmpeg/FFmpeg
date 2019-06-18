@@ -45,7 +45,6 @@
 #include "dv_profile_internal.h"
 #include "dvdata.h"
 #include "get_bits.h"
-#include "idctdsp.h"
 #include "internal.h"
 #include "put_bits.h"
 #include "simple_idct.h"
@@ -177,24 +176,22 @@ static void dv_init_weight_tables(DVVideoContext *ctx, const AVDVProfile *d)
 static av_cold int dvvideo_decode_init(AVCodecContext *avctx)
 {
     DVVideoContext *s = avctx->priv_data;
-    IDCTDSPContext idsp;
     int i;
 
-    memset(&idsp,0, sizeof(idsp));
-    ff_idctdsp_init(&idsp, avctx);
+    ff_idctdsp_init(&s->idsp, avctx);
 
     for (i = 0; i < 64; i++)
-        s->dv_zigzag[0][i] = idsp.idct_permutation[ff_zigzag_direct[i]];
+        s->dv_zigzag[0][i] = s->idsp.idct_permutation[ff_zigzag_direct[i]];
 
     if (avctx->lowres){
         for (i = 0; i < 64; i++){
             int j = ff_dv_zigzag248_direct[i];
-            s->dv_zigzag[1][i] = idsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
+            s->dv_zigzag[1][i] = s->idsp.idct_permutation[(j & 7) + (j & 8) * 4 + (j & 48) / 2];
         }
     }else
         memcpy(s->dv_zigzag[1], ff_dv_zigzag248_direct, sizeof(s->dv_zigzag[1]));
 
-    s->idct_put[0] = idsp.idct_put;
+    s->idct_put[0] = s->idsp.idct_put;
     s->idct_put[1] = ff_simple_idct248_put;
 
     return ff_dvvideo_init(avctx);
@@ -270,6 +267,49 @@ static inline void bit_copy(PutBitContext *pb, GetBitContext *gb)
     }
     if (bits_left > 0)
         put_bits(pb, bits_left, get_bits(gb, bits_left));
+}
+
+static av_always_inline void put_block_8x4(int16_t *block, uint8_t *restrict p, int stride)
+{
+    int i, j;
+    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
+
+    for (i = 0; i < 4; i++) {
+        for (j = 0; j < 8; j++)
+            p[j] = cm[block[j]];
+        block += 8;
+        p += stride;
+    }
+}
+
+static void dv100_idct_put_last_row_field_chroma(DVVideoContext *s, uint8_t *data,
+                                                 int stride, int16_t *blocks)
+{
+    s->idsp.idct(blocks + 0*64);
+    s->idsp.idct(blocks + 1*64);
+
+    put_block_8x4(blocks+0*64,       data,              stride<<1);
+    put_block_8x4(blocks+0*64 + 4*8, data + 8,          stride<<1);
+    put_block_8x4(blocks+1*64,       data + stride,     stride<<1);
+    put_block_8x4(blocks+1*64 + 4*8, data + 8 + stride, stride<<1);
+}
+
+static void dv100_idct_put_last_row_field_luma(DVVideoContext *s, uint8_t *data,
+                                               int stride, int16_t *blocks)
+{
+    s->idsp.idct(blocks + 0*64);
+    s->idsp.idct(blocks + 1*64);
+    s->idsp.idct(blocks + 2*64);
+    s->idsp.idct(blocks + 3*64);
+
+    put_block_8x4(blocks+0*64,       data,               stride<<1);
+    put_block_8x4(blocks+0*64 + 4*8, data + 16,          stride<<1);
+    put_block_8x4(blocks+1*64,       data + 8,           stride<<1);
+    put_block_8x4(blocks+1*64 + 4*8, data + 24,          stride<<1);
+    put_block_8x4(blocks+2*64,       data + stride,      stride<<1);
+    put_block_8x4(blocks+2*64 + 4*8, data + 16 + stride, stride<<1);
+    put_block_8x4(blocks+3*64,       data + 8  + stride, stride<<1);
+    put_block_8x4(blocks+3*64 + 4*8, data + 24 + stride, stride<<1);
 }
 
 /* mb_x and mb_y are in units of 8 pixels */
@@ -443,14 +483,18 @@ retry:
         }
         y_ptr    = s->frame->data[0] +
                    ((mb_y * s->frame->linesize[0] + mb_x) << log2_blocksize);
-        linesize = s->frame->linesize[0] << is_field_mode[mb_index];
-        mb[0].idct_put(y_ptr, linesize, block + 0 * 64);
-        if (s->sys->video_stype == 4) { /* SD 422 */
-            mb[2].idct_put(y_ptr + (1 << log2_blocksize),            linesize, block + 2 * 64);
+        if (mb_y == 134 && is_field_mode[mb_index]) {
+            dv100_idct_put_last_row_field_luma(s, y_ptr, s->frame->linesize[0], block);
         } else {
-            mb[1].idct_put(y_ptr + (1 << log2_blocksize),            linesize, block + 1 * 64);
-            mb[2].idct_put(y_ptr                         + y_stride, linesize, block + 2 * 64);
-            mb[3].idct_put(y_ptr + (1 << log2_blocksize) + y_stride, linesize, block + 3 * 64);
+            linesize = s->frame->linesize[0] << is_field_mode[mb_index];
+            mb[0].idct_put(y_ptr, linesize, block + 0 * 64);
+            if (s->sys->video_stype == 4) { /* SD 422 */
+                mb[2].idct_put(y_ptr + (1 << log2_blocksize),            linesize, block + 2 * 64);
+            } else {
+                mb[1].idct_put(y_ptr + (1 << log2_blocksize),            linesize, block + 1 * 64);
+                mb[2].idct_put(y_ptr                         + y_stride, linesize, block + 2 * 64);
+                mb[3].idct_put(y_ptr + (1 << log2_blocksize) + y_stride, linesize, block + 3 * 64);
+            }
         }
         mb    += 4;
         block += 4 * 64;
@@ -478,13 +522,19 @@ retry:
                 mb++;
             } else {
                 y_stride = (mb_y == 134) ? (1 << log2_blocksize) :
-                           s->frame->linesize[j] << ((!is_field_mode[mb_index]) * log2_blocksize);
-                linesize = s->frame->linesize[j] << is_field_mode[mb_index];
-                (mb++)->idct_put(c_ptr, linesize, block);
-                block += 64;
-                if (s->sys->bpm == 8) {
-                    (mb++)->idct_put(c_ptr + y_stride, linesize, block);
+                    s->frame->linesize[j] << ((!is_field_mode[mb_index]) * log2_blocksize);
+                if (mb_y == 134 && is_field_mode[mb_index]) {
+                    dv100_idct_put_last_row_field_chroma(s, c_ptr, s->frame->linesize[j], block);
+                    mb += 2;
+                    block += 2*64;
+                } else {
+                    linesize = s->frame->linesize[j] << is_field_mode[mb_index];
+                    (mb++)->idct_put(c_ptr, linesize, block);
                     block += 64;
+                    if (s->sys->bpm == 8) {
+                        (mb++)->idct_put(c_ptr + y_stride, linesize, block);
+                        block += 64;
+                    }
                 }
             }
         }
