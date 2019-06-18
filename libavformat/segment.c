@@ -181,6 +181,12 @@ static int segment_mux_init(AVFormatContext *s)
         st->sample_aspect_ratio = s->streams[i]->sample_aspect_ratio;
         st->time_base = s->streams[i]->time_base;
         st->avg_frame_rate = s->streams[i]->avg_frame_rate;
+#if FF_API_LAVF_AVCTX
+FF_DISABLE_DEPRECATION_WARNINGS
+        if (s->streams[i]->codecpar->codec_tag == MKTAG('t','m','c','d'))
+            st->codec->time_base = s->streams[i]->codec->time_base;
+FF_ENABLE_DEPRECATION_WARNINGS
+#endif
         av_dict_copy(&st->metadata, s->streams[i]->metadata, 0);
     }
 
