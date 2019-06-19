@@ -1885,7 +1885,7 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
 {
     HLSContext *hls = s->priv_data;
     VariantStream *vs;
-    int stream_index;
+    int stream_index, i, j;
     enum AVMediaType codec_type;
     int nb_varstreams, nb_streams;
     char *p, *q, *saveptr1, *saveptr2, *varstr, *keyval;
@@ -1987,6 +1987,23 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
                                                            atoi(val));
 
             if (stream_index >= 0 && nb_streams < vs->nb_streams) {
+                for(i = 0; nb_streams > 0 && i < nb_streams; i++) {
+                    if (vs->streams[i] == s->streams[stream_index]) {
+                        av_log(s, AV_LOG_ERROR, "Same elementary stream found more than once inside "
+                               "variant definition #%d\n", nb_varstreams - 1);
+                        return AVERROR(EINVAL);
+                    }
+                }
+                for(j = 0; nb_varstreams > 1 && j < nb_varstreams - 1; j++) {
+                    for(i = 0; i < hls->var_streams[j].nb_streams; i++) {
+                        if (hls->var_streams[j].streams[i] == s->streams[stream_index]) {
+                            av_log(s, AV_LOG_ERROR, "Same elementary stream found more than once "
+                                   "in two different variant definitions #%d and #%d\n",
+                                   j, nb_varstreams - 1);
+                            return AVERROR(EINVAL);
+                        }
+                    }
+                }
                 vs->streams[nb_streams++] = s->streams[stream_index];
             } else {
                 av_log(s, AV_LOG_ERROR, "Unable to map stream at %s\n", keyval);
