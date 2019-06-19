@@ -487,7 +487,7 @@ static void parse_bs_info(const uint32_t bs_info, unsigned int n,
 static int32_t decode_rice(GetBitContext *gb, unsigned int k)
 {
     int max = get_bits_left(gb) - k;
-    int q   = get_unary(gb, 0, max);
+    unsigned q = get_unary(gb, 0, max);
     int r   = k ? get_bits1(gb) : !(q & 1);
 
     if (k > 1) {
