@@ -97,6 +97,8 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *pkt)
                 err = ff_cbs_delete_unit(ctx->input, au, i);
                 if (err < 0)
                     goto fail;
+                i--;
+                continue;
             }
         }
         if (nal->type == H264_NAL_SLICE ||
