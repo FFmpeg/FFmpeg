@@ -179,18 +179,17 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
     return 0;
 }
 
-static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 {
     MPEG2MetadataContext *ctx = bsf->priv_data;
-    AVPacket *in = NULL;
     CodedBitstreamFragment *frag = &ctx->fragment;
     int err;
 
-    err = ff_bsf_get_packet(bsf, &in);
+    err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
         return err;
 
-    err = ff_cbs_read_packet(ctx->cbc, frag, in);
+    err = ff_cbs_read_packet(ctx->cbc, frag, pkt);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
         goto fail;
@@ -202,23 +201,18 @@ static int mpeg2_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         goto fail;
     }
 
-    err = ff_cbs_write_packet(ctx->cbc, out, frag);
+    err = ff_cbs_write_packet(ctx->cbc, pkt, frag);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
         goto fail;
     }
-
-    err = av_packet_copy_props(out, in);
-    if (err < 0)
-        goto fail;
 
     err = 0;
 fail:
     ff_cbs_fragment_reset(ctx->cbc, frag);
 
     if (err < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
 
     return err;
 }
