@@ -173,6 +173,40 @@ static int FUNC(group_of_pictures_header)(CodedBitstreamContext *ctx, RWContext 
     return 0;
 }
 
+static int FUNC(extra_information)(CodedBitstreamContext *ctx, RWContext *rw,
+                                   MPEG2RawExtraInformation *current,
+                                   const char *element_name, const char *marker_name)
+{
+    int err;
+    size_t k;
+#ifdef READ
+    GetBitContext start = *rw;
+    uint8_t bit;
+
+    for (k = 0; nextbits(1, 1, bit); k++)
+        skip_bits(rw, 1 + 8);
+    current->extra_information_length = k;
+    if (k > 0) {
+        *rw = start;
+        current->extra_information_ref =
+            av_buffer_allocz(k + AV_INPUT_BUFFER_PADDING_SIZE);
+        if (!current->extra_information_ref)
+            return AVERROR(ENOMEM);
+        current->extra_information = current->extra_information_ref->data;
+    }
+#endif
+
+    for (k = 0; k < current->extra_information_length; k++) {
+        bit(marker_name, 1);
+        xuia(8, element_name,
+             current->extra_information[k], 0, 255, 1, k);
+    }
+
+    bit(marker_name, 0);
+
+    return 0;
+}
+
 static int FUNC(picture_header)(CodedBitstreamContext *ctx, RWContext *rw,
                                 MPEG2RawPictureHeader *current)
 {
@@ -197,7 +231,8 @@ static int FUNC(picture_header)(CodedBitstreamContext *ctx, RWContext *rw,
         ui(3, backward_f_code);
     }
 
-    ui(1, extra_bit_picture);
+    CHECK(FUNC(extra_information)(ctx, rw, &current->extra_information_picture,
+                                  "extra_information_picture[k]", "extra_bit_picture"));
 
     return 0;
 }
@@ -369,39 +404,10 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
         ui(1, intra_slice);
         ui(1, slice_picture_id_enable);
         ui(6, slice_picture_id);
-
-        {
-            size_t k;
-#ifdef READ
-            GetBitContext start;
-            uint8_t bit;
-            start = *rw;
-            for (k = 0; nextbits(1, 1, bit); k++)
-                skip_bits(rw, 8);
-            current->extra_information_length = k;
-            if (k > 0) {
-                *rw = start;
-                current->extra_information_ref =
-                    av_buffer_alloc(current->extra_information_length);
-                if (!current->extra_information_ref)
-                    return AVERROR(ENOMEM);
-                current->extra_information = current->extra_information_ref->data;
-                for (k = 0; k < current->extra_information_length; k++) {
-                    xui(1, extra_bit_slice, bit, 1, 1, 0);
-                    xui(8, extra_information_slice[k],
-                        current->extra_information[k], 0, 255, 1, k);
-                }
-            }
-#else
-            for (k = 0; k < current->extra_information_length; k++) {
-                xui(1, extra_bit_slice, 1, 1, 1, 0);
-                xui(8, extra_information_slice[k],
-                    current->extra_information[k], 0, 255, 1, k);
-            }
-#endif
-        }
     }
-    ui(1, extra_bit_slice);
+
+    CHECK(FUNC(extra_information)(ctx, rw, &current->extra_information_slice,
+                                  "extra_information_slice[k]", "extra_bit_slice"));
 
     return 0;
 }

@@ -114,6 +114,12 @@ typedef struct MPEG2RawGroupOfPicturesHeader {
     uint8_t broken_link;
 } MPEG2RawGroupOfPicturesHeader;
 
+typedef struct MPEG2RawExtraInformation {
+    uint8_t     *extra_information;
+    AVBufferRef *extra_information_ref;
+    size_t       extra_information_length;
+} MPEG2RawExtraInformation;
+
 typedef struct MPEG2RawPictureHeader {
     uint8_t picture_start_code;
 
@@ -126,7 +132,7 @@ typedef struct MPEG2RawPictureHeader {
     uint8_t full_pel_backward_vector;
     uint8_t backward_f_code;
 
-    uint8_t extra_bit_picture;
+    MPEG2RawExtraInformation extra_information_picture;
 } MPEG2RawPictureHeader;
 
 typedef struct MPEG2RawPictureCodingExtension {
@@ -194,11 +200,7 @@ typedef struct MPEG2RawSliceHeader {
     uint8_t slice_picture_id_enable;
     uint8_t slice_picture_id;
 
-    uint8_t extra_bit_slice;
-
-    size_t extra_information_length;
-    uint8_t *extra_information;
-    AVBufferRef *extra_information_ref;
+    MPEG2RawExtraInformation extra_information_slice;
 } MPEG2RawSliceHeader;
 
 typedef struct MPEG2RawSlice {
