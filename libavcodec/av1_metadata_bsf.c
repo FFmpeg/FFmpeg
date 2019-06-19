@@ -133,6 +133,12 @@ static int av1_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
         goto fail;
     }
 
+    if (frag->nb_units == 0) {
+        av_log(bsf, AV_LOG_ERROR, "No OBU in packet.\n");
+        err = AVERROR_INVALIDDATA;
+        goto fail;
+    }
+
     for (i = 0; i < frag->nb_units; i++) {
         if (frag->units[i].type == AV1_OBU_SEQUENCE_HEADER) {
             obu = frag->units[i].content;
