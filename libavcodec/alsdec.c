@@ -1038,7 +1038,7 @@ static int decode_block(ALSDecContext *ctx, ALSBlockData *bd)
 
     if (*bd->shift_lsbs)
         for (smp = 0; smp < bd->block_length; smp++)
-            bd->raw_samples[smp] <<= *bd->shift_lsbs;
+            bd->raw_samples[smp] = (unsigned)bd->raw_samples[smp] << *bd->shift_lsbs;
 
     return 0;
 }
