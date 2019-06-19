@@ -767,8 +767,8 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         if (*bd->use_ltp) {
             int r, c;
 
-            bd->ltp_gain[0]   = decode_rice(gb, 1) << 3;
-            bd->ltp_gain[1]   = decode_rice(gb, 2) << 3;
+            bd->ltp_gain[0]   = decode_rice(gb, 1) * 8;
+            bd->ltp_gain[1]   = decode_rice(gb, 2) * 8;
 
             r                 = get_unary(gb, 0, 4);
             c                 = get_bits(gb, 2);
@@ -779,8 +779,8 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
             bd->ltp_gain[2]   = ltp_gain_values[r][c];
 
-            bd->ltp_gain[3]   = decode_rice(gb, 2) << 3;
-            bd->ltp_gain[4]   = decode_rice(gb, 1) << 3;
+            bd->ltp_gain[3]   = decode_rice(gb, 2) * 8;
+            bd->ltp_gain[4]   = decode_rice(gb, 1) * 8;
 
             *bd->ltp_lag      = get_bits(gb, ctx->ltp_lag_length);
             *bd->ltp_lag     += FFMAX(4, opt_order + 1);
@@ -1799,11 +1799,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         if (!ctx->cs_switch) {                                                       \
             for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
                 for (c = 0; c < avctx->channels; c++)                                \
-                    *dest++ = ctx->raw_samples[c][sample] << shift;                  \
+                    *dest++ = ctx->raw_samples[c][sample] * (1U << shift);            \
         } else {                                                                     \
             for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
                 for (c = 0; c < avctx->channels; c++)                                \
-                    *dest++ = ctx->raw_samples[sconf->chan_pos[c]][sample] << shift; \
+                    *dest++ = ctx->raw_samples[sconf->chan_pos[c]][sample] * (1U << shift); \
         }                                                                            \
     }
 
