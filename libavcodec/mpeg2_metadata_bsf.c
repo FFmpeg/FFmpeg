@@ -213,6 +213,18 @@ static int mpeg2_metadata_init(AVBSFContext *bsf)
     CodedBitstreamFragment *frag = &ctx->fragment;
     int err;
 
+#define VALIDITY_CHECK(name) do { \
+        if (!ctx->name) { \
+            av_log(bsf, AV_LOG_ERROR, "The value 0 for %s is " \
+                                      "forbidden.\n", #name); \
+            return AVERROR(EINVAL); \
+        } \
+    } while (0)
+    VALIDITY_CHECK(colour_primaries);
+    VALIDITY_CHECK(transfer_characteristics);
+    VALIDITY_CHECK(matrix_coefficients);
+#undef VALIDITY_CHECK
+
     err = ff_cbs_init(&ctx->cbc, AV_CODEC_ID_MPEG2VIDEO, bsf);
     if (err < 0)
         return err;

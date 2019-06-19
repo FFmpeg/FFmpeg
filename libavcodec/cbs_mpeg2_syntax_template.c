@@ -144,6 +144,10 @@ static int FUNC(sequence_display_extension)(CodedBitstreamContext *ctx, RWContex
         uir(8, transfer_characteristics);
         uir(8, matrix_coefficients);
 #endif
+    } else {
+        infer(colour_primaries,         2);
+        infer(transfer_characteristics, 2);
+        infer(matrix_coefficients,      2);
     }
 
     ui(14, display_horizontal_size);
