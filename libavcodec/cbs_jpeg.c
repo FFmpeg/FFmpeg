@@ -45,7 +45,7 @@
 #define FUNC(name) cbs_jpeg_read_ ## name
 
 #define xu(width, name, range_min, range_max, subs, ...) do { \
-        uint32_t value = range_min; \
+        uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, range_min, range_max)); \

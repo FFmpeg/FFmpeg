@@ -267,14 +267,14 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define RWContext GetBitContext
 
 #define xf(width, name, var, subs, ...) do { \
-        uint32_t value = 0; \
+        uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, 0, (1 << width) - 1)); \
         var = value; \
     } while (0)
 #define xs(width, name, var, subs, ...) do { \
-        int32_t value = 0; \
+        int32_t value; \
         CHECK(cbs_vp9_read_s(ctx, rw, width, #name, \
                              SUBSCRIPTS(subs, __VA_ARGS__), &value)); \
         var = value; \
@@ -282,7 +282,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
 
 
 #define increment(name, min, max) do { \
-        uint32_t value = 0; \
+        uint32_t value; \
         CHECK(cbs_vp9_read_increment(ctx, rw, min, max, #name, &value)); \
         current->name = value; \
     } while (0)
@@ -315,7 +315,7 @@ static int cbs_vp9_write_le(CodedBitstreamContext *ctx, PutBitContext *pbc,
     } while (0)
 
 #define fixed(width, name, value) do { \
-        av_unused uint32_t fixed_value = value; \
+        av_unused uint32_t fixed_value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    0, &fixed_value, value, value)); \
     } while (0)
