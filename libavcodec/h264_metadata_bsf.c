@@ -122,12 +122,11 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
         need_vui = 1;
     }
 
-#define SET_OR_INFER(field, value, present_flag, infer) do { \
-        if (value >= 0) { \
-            field = value; \
+#define SET_VUI_FIELD(field) do { \
+        if (ctx->field >= 0) { \
+            sps->vui.field = ctx->field; \
             need_vui = 1; \
-        } else if (!present_flag) \
-            field = infer; \
+        } \
     } while (0)
 
     if (ctx->video_format             >= 0 ||
@@ -136,33 +135,21 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
         ctx->transfer_characteristics >= 0 ||
         ctx->matrix_coefficients      >= 0) {
 
-        SET_OR_INFER(sps->vui.video_format, ctx->video_format,
-                     sps->vui.video_signal_type_present_flag, 5);
+        SET_VUI_FIELD(video_format);
 
-        SET_OR_INFER(sps->vui.video_full_range_flag,
-                     ctx->video_full_range_flag,
-                     sps->vui.video_signal_type_present_flag, 0);
+        SET_VUI_FIELD(video_full_range_flag);
 
         if (ctx->colour_primaries         >= 0 ||
             ctx->transfer_characteristics >= 0 ||
             ctx->matrix_coefficients      >= 0) {
 
-            SET_OR_INFER(sps->vui.colour_primaries,
-                         ctx->colour_primaries,
-                         sps->vui.colour_description_present_flag, 2);
-
-            SET_OR_INFER(sps->vui.transfer_characteristics,
-                         ctx->transfer_characteristics,
-                         sps->vui.colour_description_present_flag, 2);
-
-            SET_OR_INFER(sps->vui.matrix_coefficients,
-                         ctx->matrix_coefficients,
-                         sps->vui.colour_description_present_flag, 2);
+            SET_VUI_FIELD(colour_primaries);
+            SET_VUI_FIELD(transfer_characteristics);
+            SET_VUI_FIELD(matrix_coefficients);
 
             sps->vui.colour_description_present_flag = 1;
         }
         sps->vui.video_signal_type_present_flag = 1;
-        need_vui = 1;
     }
 
     if (ctx->chroma_sample_loc_type >= 0) {
@@ -186,9 +173,7 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
         sps->vui.timing_info_present_flag = 1;
         need_vui = 1;
     }
-    SET_OR_INFER(sps->vui.fixed_frame_rate_flag,
-                 ctx->fixed_frame_rate_flag,
-                 sps->vui.timing_info_present_flag, 0);
+    SET_VUI_FIELD(fixed_frame_rate_flag);
 
     if (sps->separate_colour_plane_flag || sps->chroma_format_idc == 0) {
         crop_unit_x = 1;

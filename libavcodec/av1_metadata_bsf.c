@@ -61,12 +61,7 @@ static int av1_metadata_update_sequence_header(AVBSFContext *bsf,
     if (ctx->color_primaries >= 0          ||
         ctx->transfer_characteristics >= 0 ||
         ctx->matrix_coefficients >= 0) {
-        if (!clc->color_description_present_flag) {
-            clc->color_description_present_flag = 1;
-            clc->color_primaries          = AVCOL_PRI_UNSPECIFIED;
-            clc->transfer_characteristics = AVCOL_TRC_UNSPECIFIED;
-            clc->matrix_coefficients      = AVCOL_SPC_UNSPECIFIED;
-        }
+        clc->color_description_present_flag = 1;
 
         if (ctx->color_primaries >= 0)
             clc->color_primaries = ctx->color_primaries;
