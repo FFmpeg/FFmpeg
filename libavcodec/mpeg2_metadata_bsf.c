@@ -53,7 +53,7 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
     MPEG2RawSequenceHeader            *sh = NULL;
     MPEG2RawSequenceExtension         *se = NULL;
     MPEG2RawSequenceDisplayExtension *sde = NULL;
-    int i, se_pos, add_sde = 0;
+    int i, se_pos;
 
     for (i = 0; i < frag->nb_units; i++) {
         if (frag->units[i].type == MPEG2_START_SEQUENCE_HEADER) {
@@ -115,7 +115,7 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
         ctx->transfer_characteristics >= 0 ||
         ctx->matrix_coefficients      >= 0) {
         if (!sde) {
-            add_sde = 1;
+            int err;
             ctx->sequence_display_extension.extension_start_code =
                 MPEG2_START_EXTENSION;
             ctx->sequence_display_extension.extension_start_code_identifier =
@@ -135,6 +135,16 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
                 .display_vertical_size =
                     se->vertical_size_extension << 12 | sh->vertical_size_value,
             };
+
+            err = ff_cbs_insert_unit_content(ctx->cbc, frag, se_pos + 1,
+                                             MPEG2_START_EXTENSION,
+                                             &ctx->sequence_display_extension,
+                                             NULL);
+            if (err < 0) {
+                av_log(bsf, AV_LOG_ERROR, "Failed to insert new sequence "
+                       "display extension.\n");
+                return err;
+            }
         }
 
         if (ctx->video_format >= 0)
@@ -147,32 +157,12 @@ static int mpeg2_metadata_update_fragment(AVBSFContext *bsf,
 
             if (ctx->colour_primaries >= 0)
                 sde->colour_primaries = ctx->colour_primaries;
-            else if (add_sde)
-                sde->colour_primaries = 2;
 
             if (ctx->transfer_characteristics >= 0)
                 sde->transfer_characteristics = ctx->transfer_characteristics;
-            else if (add_sde)
-                sde->transfer_characteristics = 2;
 
             if (ctx->matrix_coefficients >= 0)
                 sde->matrix_coefficients = ctx->matrix_coefficients;
-            else if (add_sde)
-                sde->matrix_coefficients = 2;
-        }
-    }
-
-    if (add_sde) {
-        int err;
-
-        err = ff_cbs_insert_unit_content(ctx->cbc, frag, se_pos + 1,
-                                         MPEG2_START_EXTENSION,
-                                         &ctx->sequence_display_extension,
-                                         NULL);
-        if (err < 0) {
-            av_log(bsf, AV_LOG_ERROR, "Failed to insert new sequence "
-                   "display extension.\n");
-            return err;
         }
     }
 
