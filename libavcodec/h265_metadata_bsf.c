@@ -336,18 +336,17 @@ static int h265_metadata_update_sps(AVBSFContext *bsf,
     return 0;
 }
 
-static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
+static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 {
     H265MetadataContext *ctx = bsf->priv_data;
-    AVPacket *in = NULL;
     CodedBitstreamFragment *au = &ctx->access_unit;
     int err, i;
 
-    err = ff_bsf_get_packet(bsf, &in);
+    err = ff_bsf_get_packet_ref(bsf, pkt);
     if (err < 0)
         return err;
 
-    err = ff_cbs_read_packet(ctx->cbc, au, in);
+    err = ff_cbs_read_packet(ctx->cbc, au, pkt);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to read packet.\n");
         goto fail;
@@ -419,23 +418,18 @@ static int h265_metadata_filter(AVBSFContext *bsf, AVPacket *out)
         }
     }
 
-    err = ff_cbs_write_packet(ctx->cbc, out, au);
+    err = ff_cbs_write_packet(ctx->cbc, pkt, au);
     if (err < 0) {
         av_log(bsf, AV_LOG_ERROR, "Failed to write packet.\n");
         goto fail;
     }
-
-    err = av_packet_copy_props(out, in);
-    if (err < 0)
-        goto fail;
 
     err = 0;
 fail:
     ff_cbs_fragment_reset(ctx->cbc, au);
 
     if (err < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
 
     return err;
 }
