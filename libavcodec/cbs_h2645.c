@@ -289,28 +289,28 @@ static int cbs_write_se_golomb(CodedBitstreamContext *ctx, PutBitContext *pbc,
 #define RWContext GetBitContext
 
 #define xu(width, name, var, range_min, range_max, subs, ...) do { \
-        uint32_t value = range_min; \
+        uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, range_min, range_max)); \
         var = value; \
     } while (0)
 #define xue(name, var, range_min, range_max, subs, ...) do { \
-        uint32_t value = range_min; \
+        uint32_t value; \
         CHECK(cbs_read_ue_golomb(ctx, rw, #name, \
                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \
         var = value; \
     } while (0)
 #define xi(width, name, var, range_min, range_max, subs, ...) do { \
-        int32_t value = range_min; \
+        int32_t value; \
         CHECK(ff_cbs_read_signed(ctx, rw, width, #name, \
                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \
         var = value; \
     } while (0)
 #define xse(name, var, range_min, range_max, subs, ...) do { \
-        int32_t value = range_min; \
+        int32_t value; \
         CHECK(cbs_read_se_golomb(ctx, rw, #name, \
                                  SUBSCRIPTS(subs, __VA_ARGS__), \
                                  &value, range_min, range_max)); \

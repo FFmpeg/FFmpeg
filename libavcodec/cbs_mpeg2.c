@@ -57,7 +57,7 @@
 #define RWContext GetBitContext
 
 #define xui(width, name, var, range_min, range_max, subs, ...) do { \
-        uint32_t value = 0; \
+        uint32_t value; \
         CHECK(ff_cbs_read_unsigned(ctx, rw, width, #name, \
                                    SUBSCRIPTS(subs, __VA_ARGS__), \
                                    &value, range_min, range_max)); \
