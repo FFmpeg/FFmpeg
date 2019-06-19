@@ -241,7 +241,7 @@ static inline int read_scalefactors(ATRAC9Context *s, ATRAC9BlockData *b,
                                     ATRAC9ChannelData *c, GetBitContext *gb,
                                     int channel_idx, int first_in_pkt)
 {
-    static const int mode_map[2][4] = { { 0, 1, 2, 3 }, { 0, 2, 3, 4 } };
+    static const uint8_t mode_map[2][4] = { { 0, 1, 2, 3 }, { 0, 2, 3, 4 } };
     const int mode = mode_map[channel_idx][get_bits(gb, 2)];
 
     memset(c->scalefactors, 0, sizeof(c->scalefactors));

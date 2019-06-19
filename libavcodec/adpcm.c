@@ -57,7 +57,7 @@
  */
 
 /* These are for CD-ROM XA ADPCM */
-static const int xa_adpcm_table[5][2] = {
+static const int8_t xa_adpcm_table[5][2] = {
     {   0,   0 },
     {  60,   0 },
     { 115, -52 },
@@ -65,7 +65,7 @@ static const int xa_adpcm_table[5][2] = {
     { 122, -60 }
 };
 
-static const int ea_adpcm_table[] = {
+static const int16_t ea_adpcm_table[] = {
     0,  240,  460,  392,
     0,    0, -208, -220,
     0,    1,    3,    4,
@@ -74,7 +74,7 @@ static const int ea_adpcm_table[] = {
 };
 
 // padded to zero where table size is less then 16
-static const int swf_index_tables[4][16] = {
+static const int8_t swf_index_tables[4][16] = {
     /*2*/ { -1, 2 },
     /*3*/ { -1, -1, 2, 4 },
     /*4*/ { -1, -1, -1, -1, 2, 4, 6, 8 },
@@ -484,7 +484,7 @@ static void adpcm_swf_decode(AVCodecContext *avctx, const uint8_t *buf, int buf_
 {
     ADPCMDecodeContext *c = avctx->priv_data;
     GetBitContext gb;
-    const int *table;
+    const int8_t *table;
     int k0, signmask, nb_bits, count;
     int size = buf_size*8;
     int i;

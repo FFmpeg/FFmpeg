@@ -650,7 +650,7 @@ static int FUNC(sei_pic_timing)(CodedBitstreamContext *ctx, RWContext *rw,
     }
 
     if (sps->vui.pic_struct_present_flag) {
-        static const int num_clock_ts[9] = {
+        static const uint8_t num_clock_ts[9] = {
             1, 1, 1, 2, 2, 3, 3, 2, 3
         };
         int i;

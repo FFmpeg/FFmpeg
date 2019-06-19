@@ -248,7 +248,7 @@ void ff_atrac3p_generate_tones(Atrac3pChanUnitCtx *ch_unit, AVFloatDSPContext *f
         out[i] += wavreg1[i] + wavreg2[i];
 }
 
-static const int subband_to_powgrp[ATRAC3P_SUBBANDS] = {
+static const uint8_t subband_to_powgrp[ATRAC3P_SUBBANDS] = {
     0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4
 };
 
@@ -411,7 +411,7 @@ static const float pwc_levs[16] = {
 };
 
 /** Map subband number to quant unit number. */
-static const int subband_to_qu[17] = {
+static const uint8_t subband_to_qu[17] = {
     0, 8, 12, 16, 18, 20, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32
 };
 

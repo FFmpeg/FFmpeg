@@ -206,8 +206,8 @@ static int FUNC(quantization_params)(CodedBitstreamContext *ctx, RWContext *rw,
 static int FUNC(segmentation_params)(CodedBitstreamContext *ctx, RWContext *rw,
                                      VP9RawFrameHeader *current)
 {
-    static const int segmentation_feature_bits[VP9_SEG_LVL_MAX]   = { 8, 6, 2, 0 };
-    static const int segmentation_feature_signed[VP9_SEG_LVL_MAX] = { 1, 1, 0, 0 };
+    static const uint8_t segmentation_feature_bits[VP9_SEG_LVL_MAX]   = { 8, 6, 2, 0 };
+    static const uint8_t segmentation_feature_signed[VP9_SEG_LVL_MAX] = { 1, 1, 0, 0 };
 
     int err, i, j;
 
