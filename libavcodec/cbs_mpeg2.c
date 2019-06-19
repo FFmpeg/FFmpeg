@@ -82,6 +82,10 @@
     (get_bits_left(rw) >= width && \
      (var = show_bits(rw, width)) == (compare))
 
+#define infer(name, value) do { \
+        current->name = value; \
+    } while (0)
+
 #include "cbs_mpeg2_syntax_template.c"
 
 #undef READ
@@ -91,6 +95,7 @@
 #undef xsi
 #undef marker_bit
 #undef nextbits
+#undef infer
 
 
 #define WRITE
@@ -116,6 +121,15 @@
 
 #define nextbits(width, compare, var) (var)
 
+#define infer(name, value) do { \
+        if (current->name != (value)) { \
+            av_log(ctx->log_ctx, AV_LOG_WARNING, "Warning: " \
+                   "%s does not match inferred value: " \
+                   "%"PRId64", but should be %"PRId64".\n", \
+                   #name, (int64_t)current->name, (int64_t)(value)); \
+        } \
+    } while (0)
+
 #include "cbs_mpeg2_syntax_template.c"
 
 #undef WRITE
@@ -125,6 +139,7 @@
 #undef xsi
 #undef marker_bit
 #undef nextbits
+#undef infer
 
 
 static void cbs_mpeg2_free_user_data(void *unit, uint8_t *content)
