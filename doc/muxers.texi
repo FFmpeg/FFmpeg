@@ -943,7 +943,21 @@ This example creates two hls variant streams. The first variant stream will
 contain video stream of bitrate 1000k and audio stream of bitrate 64k and the
 second variant stream will contain video stream of bitrate 256k and audio
 stream of bitrate 32k. Here, two media playlist with file names out_0.m3u8 and
-out_1.m3u8 will be created.
+out_1.m3u8 will be created. If you want something meaningful text instead of indexes
+in result names, you may specify names for each or some of the variants
+as in the following example.
+
+
+@example
+ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k -b:a:1 32k \
+  -map 0:v -map 0:a -map 0:v -map 0:a -f hls -var_stream_map "v:0,a:0,name:my_hd v:1,a:1,name:my_sd" \
+  http://example.com/live/out_%v.m3u8
+@end example
+
+This example creates two hls variant streams as in the previous one.
+But here, the two media playlist with file names out_my_hd.m3u8 and
+out_my_sd.m3u8 will be created.
+
 @example
 ffmpeg -re -i in.ts -b:v:0 1000k -b:v:1 256k -b:a:0 64k \
   -map 0:v -map 0:a -map 0:v -f hls -var_stream_map "v:0 a:0 v:1" \
