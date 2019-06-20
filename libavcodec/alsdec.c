@@ -1379,6 +1379,9 @@ static SoftFloat_IEEE754 multiply(SoftFloat_IEEE754 a, SoftFloat_IEEE754 b) {
     mantissa_temp = (uint64_t)a.mant * (uint64_t)b.mant;
     mask_64       = (uint64_t)0x1 << 47;
 
+    if (!mantissa_temp)
+        return FLOAT_0;
+
     // Count the valid bit count
     while (!(mantissa_temp & mask_64) && mask_64) {
         bit_count--;
