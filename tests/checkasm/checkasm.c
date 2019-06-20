@@ -268,6 +268,7 @@ static struct {
     int cpu_flag;
     const char *cpu_flag_name;
     const char *test_name;
+    int verbose;
 } state;
 
 /* PRNG state */
@@ -686,6 +687,8 @@ int main(int argc, char *argv[])
                 state.bench_pattern = "";
         } else if (!strncmp(argv[1], "--test=", 7)) {
             state.test_name = argv[1] + 7;
+        } else if (!strcmp(argv[1], "--verbose") || !strcmp(argv[1], "-v")) {
+            state.verbose = 1;
         } else {
             seed = strtoul(argv[1], NULL, 10);
         }
@@ -836,3 +839,42 @@ void checkasm_report(const char *name, ...)
             max_length = length;
     }
 }
+
+#define DEF_CHECKASM_CHECK_FUNC(type, fmt) \
+int checkasm_check_##type(const char *const file, const int line, \
+                          const type *buf1, ptrdiff_t stride1, \
+                          const type *buf2, ptrdiff_t stride2, \
+                          const int w, int h, const char *const name) \
+{ \
+    int y = 0; \
+    stride1 /= sizeof(*buf1); \
+    stride2 /= sizeof(*buf2); \
+    for (y = 0; y < h; y++) \
+        if (memcmp(&buf1[y*stride1], &buf2[y*stride2], w*sizeof(*buf1))) \
+            break; \
+    if (y == h) \
+        return 0; \
+    checkasm_fail_func("%s:%d", file, line); \
+    if (!state.verbose) \
+        return 1; \
+    fprintf(stderr, "%s:\n", name); \
+    while (h--) { \
+        for (int x = 0; x < w; x++) \
+            fprintf(stderr, " " fmt, buf1[x]); \
+        fprintf(stderr, "    "); \
+        for (int x = 0; x < w; x++) \
+            fprintf(stderr, " " fmt, buf2[x]); \
+        fprintf(stderr, "    "); \
+        for (int x = 0; x < w; x++) \
+            fprintf(stderr, "%c", buf1[x] != buf2[x] ? 'x' : '.'); \
+        buf1 += stride1; \
+        buf2 += stride2; \
+        fprintf(stderr, "\n"); \
+    } \
+    return 1; \
+}
+
+DEF_CHECKASM_CHECK_FUNC(uint8_t,  "%02x")
+DEF_CHECKASM_CHECK_FUNC(uint16_t, "%04x")
+DEF_CHECKASM_CHECK_FUNC(int16_t,  "%6d")
+DEF_CHECKASM_CHECK_FUNC(int32_t,  "%9d")
