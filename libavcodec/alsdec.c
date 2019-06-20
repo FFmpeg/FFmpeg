@@ -1998,6 +1998,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate quantized parcor coefficient buffer
     num_buffers = sconf->mc_coding ? avctx->channels : 1;
+    if (num_buffers * (uint64_t)num_buffers > INT_MAX) // protect chan_data_buffer allocation
+        return AVERROR_INVALIDDATA;
 
     ctx->quant_cof        = av_malloc_array(num_buffers, sizeof(*ctx->quant_cof));
     ctx->lpc_cof          = av_malloc_array(num_buffers, sizeof(*ctx->lpc_cof));
