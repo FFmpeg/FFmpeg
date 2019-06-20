@@ -794,14 +794,20 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // read first value and residuals in case of a random access block
     if (bd->ra_block) {
+        start = FFMIN(opt_order, 3);
+        av_assert0(sb_length <= sconf->frame_length);
+        if (sb_length <= start) {
+            // opt_order or sb_length may be corrupted, either way this is unsupported and not well defined in the specification
+            av_log(avctx, AV_LOG_ERROR, "Sub block length smaller or equal start\n");
+            return AVERROR_PATCHWELCOME;
+        }
+
         if (opt_order)
             bd->raw_samples[0] = decode_rice(gb, avctx->bits_per_raw_sample - 4);
         if (opt_order > 1)
             bd->raw_samples[1] = decode_rice(gb, FFMIN(s[0] + 3, ctx->s_max));
         if (opt_order > 2)
             bd->raw_samples[2] = decode_rice(gb, FFMIN(s[0] + 1, ctx->s_max));
-
-        start = FFMIN(opt_order, 3);
     }
 
     // read all residuals
