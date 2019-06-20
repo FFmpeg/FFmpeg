@@ -2031,11 +2031,17 @@ static int vp4_mc_loop_filter(Vp3DecodeContext *s, int plane, int motion_x, int 
              plane_width,
              plane_height);
 
+#define safe_loop_filter(name, ptr, stride, bounding_values) \
+    if ((uintptr_t)(ptr) & 7) \
+        s->vp3dsp.name##_unaligned(ptr, stride, bounding_values); \
+    else \
+        s->vp3dsp.name(ptr, stride, bounding_values);
+
         if (x_offset)
-            s->vp3dsp.h_loop_filter(loop + loop_stride + x_offset + 1, loop_stride, bounding_values);
+            safe_loop_filter(h_loop_filter, loop + loop_stride + x_offset + 1, loop_stride, bounding_values);
 
         if (y_offset)
-            s->vp3dsp.v_loop_filter(loop + (y_offset + 1)*loop_stride + 1, loop_stride, bounding_values);
+            safe_loop_filter(v_loop_filter, loop + (y_offset + 1)*loop_stride + 1, loop_stride, bounding_values);
     }
 
     for (i = 0; i < 9; i++)
