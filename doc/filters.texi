@@ -8962,7 +8962,10 @@ the width of the rendered text
 the x and y offset coordinates where the text is drawn.
 
 These parameters allow the @var{x} and @var{y} expressions to refer
-each other, so you can for example specify @code{y=x/dar}.
+to each other, so you can for example specify @code{y=x/dar}.
+
+@item pict_type
+A one character description of the current frame's picture type.
 @end table
 
 @anchor{drawtext_expansion}
@@ -9032,11 +9035,18 @@ The first argument is mandatory and specifies the metadata key.
 The second argument is optional and specifies a default value, used when the
 metadata key is not found or empty.
 
+Available metadata can be identified by inspecting entries
+starting with TAG included within each frame section
+printed by running @code{ffprobe -show_frames}.
+
+String metadata generated in filters leading to
+the drawtext filter are also available.
+
 @item n, frame_num
 The frame number, starting from 0.
 
 @item pict_type
-A 1 character description of the current picture type.
+A one character description of the current picture type.
 
 @item pts
 The timestamp of the current frame.
