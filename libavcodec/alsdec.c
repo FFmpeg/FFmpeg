@@ -2127,7 +2127,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 
 fail:
-    decode_end(avctx);
     return ret;
 }
 
@@ -2153,4 +2152,5 @@ AVCodec ff_als_decoder = {
     .decode         = decode_frame,
     .flush          = flush,
     .capabilities   = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
 };
