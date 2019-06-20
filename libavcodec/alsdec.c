@@ -867,7 +867,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
                     res >>= 1;
 
                     if (cur_k) {
-                        res  *= 1 << cur_k;
+                        res  *= 1U << cur_k;
                         res  |= get_bits_long(gb, cur_k);
                     }
                 }
