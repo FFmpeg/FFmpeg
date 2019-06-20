@@ -697,6 +697,7 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
         len_tab[j]  = len;
     }
 
+    ff_free_vlc(&f->pre_vlc);
     if (init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257, len_tab, 1, 1,
                  bits_tab, 4, 4, 0))
         return NULL;
