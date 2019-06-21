@@ -900,7 +900,7 @@ static int flic_decode_frame_24BPP(AVCodecContext *avctx,
                         } else {
                             if (bytestream2_tell(&g2) + 2*byte_run > stream_ptr_after_chunk)
                                 break;
-                            CHECK_PIXEL_PTR(2 * byte_run);
+                            CHECK_PIXEL_PTR(3 * byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
                                 pixel = bytestream2_get_le24(&g2);
                                 AV_WL24(&pixels[pixel_ptr], pixel);
