@@ -2429,9 +2429,7 @@ static int read_interval_packets(WriterContext *w, InputFile *ifile,
         }
         av_packet_unref(&pkt);
     }
-    av_init_packet(&pkt);
-    pkt.data = NULL;
-    pkt.size = 0;
+    av_packet_unref(&pkt);
     //Flush remaining frames that are cached in the decoder
     for (i = 0; i < fmt_ctx->nb_streams; i++) {
         pkt.stream_index = i;
