@@ -122,7 +122,7 @@ static void lcg_seek(uint32_t *s, int64_t dt)
         c = LCG_C;
     } else { /* coefficients for a step backward */
         a = LCG_AI;
-        c = (uint32_t)(LCG_AI * LCG_C);
+        c = (uint32_t)(-LCG_AI * LCG_C);
         dt = -dt;
     }
     while (dt) {
