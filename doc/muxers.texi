@@ -1089,6 +1089,9 @@ Set timeout for socket I/O operations. Applicable only for HTTP output.
 @item -ignore_io_errors
 Ignore IO errors during open, write and delete. Useful for long-duration runs with network output.
 
+@item headers
+Set custom HTTP headers, can override built in default headers. Applicable only for HTTP output.
+
 @end table
 
 @anchor{ico}

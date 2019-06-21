@@ -237,6 +237,7 @@ typedef struct HLSContext {
     AVIOContext *sub_m3u8_out;
     int64_t timeout;
     int ignore_io_errors;
+    char *headers;
     int has_default_key; /* has DEFAULT field of var_stream_map */
     int has_video_m3u8; /* has video stream m3u8 list */
 } HLSContext;
@@ -294,6 +295,8 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
         av_dict_set_int(options, "multiple_requests", 1, 0);
     if (c->timeout >= 0)
         av_dict_set_int(options, "timeout", c->timeout, 0);
+    if (c->headers)
+        av_dict_set(options, "headers", c->headers, 0);
 }
 
 static void write_codec_attr(AVStream *st, VariantStream *vs) {
@@ -3029,6 +3032,7 @@ static const AVOption options[] = {
     {"http_persistent", "Use persistent HTTP connections", OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 0 }, 0, 1, E },
     {"timeout", "set timeout for socket I/O operations", OFFSET(timeout), AV_OPT_TYPE_DURATION, { .i64 = -1 }, -1, INT_MAX, .flags = E },
     {"ignore_io_errors", "Ignore IO errors for stable long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    {"headers", "set custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { .str = NULL }, 0, 0, E },
     { NULL },
 };
 
