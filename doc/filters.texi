@@ -9002,6 +9002,17 @@ to each other, so you can for example specify @code{y=x/dar}.
 
 @item pict_type
 A one character description of the current frame's picture type.
+
+@item pkt_pos
+The current packet's position in the input file or stream
+(in bytes, from the start of the input). A value of -1 indicates
+this info is not available.
+
+@item pkt_duration
+The current packet's duration, in seconds.
+
+@item pkt_size
+The current packet's size (in bytes).
 @end table
 
 @anchor{drawtext_expansion}
