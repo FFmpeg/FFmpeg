@@ -679,6 +679,17 @@ typedef struct H265RawSEIAlternativeTransferCharacteristics {
     uint8_t preferred_transfer_characteristics;
 } H265RawSEIAlternativeTransferCharacteristics;
 
+typedef struct H265RawSEIAlphaChannelInfo {
+    uint8_t  alpha_channel_cancel_flag;
+    uint8_t  alpha_channel_use_idc;
+    uint8_t  alpha_channel_bit_depth_minus8;
+    uint16_t alpha_transparent_value;
+    uint16_t alpha_opaque_value;
+    uint8_t  alpha_channel_incr_flag;
+    uint8_t  alpha_channel_clip_flag;
+    uint8_t  alpha_channel_clip_type_flag;
+} H265RawSEIAlphaChannelInfo;
+
 typedef struct H265RawSEIPayload {
     uint32_t payload_type;
     uint32_t payload_size;
@@ -697,6 +708,7 @@ typedef struct H265RawSEIPayload {
         H265RawSEIContentLightLevelInfo content_light_level;
         H265RawSEIAlternativeTransferCharacteristics
             alternative_transfer_characteristics;
+        H265RawSEIAlphaChannelInfo alpha_channel_info;
         struct {
             uint8_t *data;
             size_t data_length;

@@ -531,6 +531,7 @@ static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
     case HEVC_SEI_TYPE_MASTERING_DISPLAY_INFO:
     case HEVC_SEI_TYPE_CONTENT_LIGHT_LEVEL_INFO:
     case HEVC_SEI_TYPE_ALTERNATIVE_TRANSFER_CHARACTERISTICS:
+    case HEVC_SEI_TYPE_ALPHA_CHANNEL_INFO:
         break;
     case HEVC_SEI_TYPE_USER_DATA_REGISTERED_ITU_T_T35:
         av_buffer_unref(&payload->payload.user_data_registered.data_ref);

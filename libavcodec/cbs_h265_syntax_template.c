@@ -2028,6 +2028,34 @@ static int FUNC(sei_alternative_transfer_characteristics)(CodedBitstreamContext 
     return 0;
 }
 
+static int FUNC(sei_alpha_channel_info)(CodedBitstreamContext *ctx,
+                                        RWContext *rw,
+                                        H265RawSEIAlphaChannelInfo *current)
+{
+    int err, length;
+
+    HEADER("Alpha Channel Information");
+
+    flag(alpha_channel_cancel_flag);
+    if (!current->alpha_channel_cancel_flag) {
+        ub(3, alpha_channel_use_idc);
+        ub(3, alpha_channel_bit_depth_minus8);
+        length = current->alpha_channel_bit_depth_minus8 + 9;
+        ub(length, alpha_transparent_value);
+        ub(length, alpha_opaque_value);
+        flag(alpha_channel_incr_flag);
+        flag(alpha_channel_clip_flag);
+        if (current->alpha_channel_clip_flag)
+            flag(alpha_channel_clip_type_flag);
+    } else {
+       infer(alpha_channel_use_idc,   2);
+       infer(alpha_channel_incr_flag, 0);
+       infer(alpha_channel_clip_flag, 0);
+    }
+
+    return 0;
+}
+
 static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
                              H265RawSEIPayload *current, int prefix)
 {
@@ -2080,6 +2108,7 @@ static int FUNC(sei_payload)(CodedBitstreamContext *ctx, RWContext *rw,
         SEI_TYPE_N(CONTENT_LIGHT_LEVEL_INFO, 1, 0, content_light_level);
         SEI_TYPE_N(ALTERNATIVE_TRANSFER_CHARACTERISTICS,
                                              1, 0, alternative_transfer_characteristics);
+        SEI_TYPE_N(ALPHA_CHANNEL_INFO,       1, 0, alpha_channel_info);
 
 #undef SEI_TYPE
     default:
