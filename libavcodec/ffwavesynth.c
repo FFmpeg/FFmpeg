@@ -113,18 +113,12 @@ static uint32_t lcg_next(uint32_t *s)
     return *s;
 }
 
-static void lcg_seek(uint32_t *s, int64_t dt)
+static void lcg_seek(uint32_t *s, uint32_t dt)
 {
     uint32_t a, c, t = *s;
 
-    if (dt >= 0) {
-        a = LCG_A;
-        c = LCG_C;
-    } else { /* coefficients for a step backward */
-        a = LCG_AI;
-        c = (uint32_t)(-LCG_AI * LCG_C);
-        dt = -dt;
-    }
+    a = LCG_A;
+    c = LCG_C;
     while (dt) {
         if (dt & 1)
             t = a * t + c;
