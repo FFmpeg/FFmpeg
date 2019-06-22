@@ -1514,7 +1514,7 @@ static int decode_frame(AVCodecContext *avctx,
     buf_size -= bytestream2_tell(gb);
     desc = av_pix_fmt_desc_get(avctx->pix_fmt);
 
-    if (!s->init && avctx->bits_per_coded_sample <= 8 &&
+    if (!s->init && avctx->bits_per_coded_sample <= 8 - (s->masking == MASK_HAS_MASK) &&
         avctx->pix_fmt == AV_PIX_FMT_PAL8) {
         if ((res = cmap_read_palette(avctx, (uint32_t *)frame->data[1])) < 0)
             return res;
