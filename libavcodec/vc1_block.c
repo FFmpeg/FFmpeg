@@ -2602,13 +2602,13 @@ static void vc1_decode_i_blocks(VC1Context *v)
                 if (v->rangeredfrm)
                     for (k = 0; k < 6; k++)
                         for (j = 0; j < 64; j++)
-                            v->block[v->cur_blk_idx][block_map[k]][j] <<= 1;
+                            v->block[v->cur_blk_idx][block_map[k]][j] *= 2;
                 vc1_put_blocks_clamped(v, 1);
             } else {
                 if (v->rangeredfrm)
                     for (k = 0; k < 6; k++)
                         for (j = 0; j < 64; j++)
-                            v->block[v->cur_blk_idx][block_map[k]][j] = (v->block[v->cur_blk_idx][block_map[k]][j] - 64) << 1;
+                            v->block[v->cur_blk_idx][block_map[k]][j] = (v->block[v->cur_blk_idx][block_map[k]][j] - 64) * 2;
                 vc1_put_blocks_clamped(v, 0);
             }
 
