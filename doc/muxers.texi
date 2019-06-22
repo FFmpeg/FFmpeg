@@ -656,7 +656,8 @@ This example will produce the playlists segment file sets:
 @file{file_1_000.ts}, @file{file_1_001.ts}, @file{file_1_002.ts}, etc.
 
 The string "%v" may be present in the filename or in the last directory name
-containing the file. If the string is present in the directory name, then
+containing the file, but only in one of them. (Additionally, %v may appear multiple times in the last
+sub-directory or filename.) If the string %v is present in the directory name, then
 sub-directories are created after expanding the directory name pattern. This
 enables creation of segments corresponding to different variant streams in
 subdirectories.

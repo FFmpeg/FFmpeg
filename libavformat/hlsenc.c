@@ -1792,15 +1792,15 @@ static int validate_name(int nb_vs, const char *fn)
     subdir_name = av_dirname(fn_dup);
 
     if (nb_vs > 1 && !av_stristr(filename, "%v") && !av_stristr(subdir_name, "%v")) {
-        av_log(NULL, AV_LOG_ERROR, "More than 1 variant streams are present, %%v is expected in the filename %s\n",
-                fn);
+        av_log(NULL, AV_LOG_ERROR, "More than 1 variant streams are present, %%v is expected "
+               "either in the filename or in the sub-directory name of file %s\n", fn);
         ret = AVERROR(EINVAL);
         goto fail;
     }
 
     if (av_stristr(filename, "%v") && av_stristr(subdir_name, "%v")) {
-        av_log(NULL, AV_LOG_ERROR, "%%v is expected either in filename or in the sub-directory name of file %s\n",
-                fn);
+        av_log(NULL, AV_LOG_ERROR, "%%v is expected either in the filename or "
+               "in the sub-directory name of file %s, but only in one of them\n", fn);
         ret = AVERROR(EINVAL);
         goto fail;
     }
