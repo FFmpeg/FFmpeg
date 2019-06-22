@@ -371,6 +371,8 @@ static av_cold int decode_end(AVCodecContext *avctx)
     av_freep(&s->planebuf);
     av_freep(&s->ham_buf);
     av_freep(&s->ham_palbuf);
+    av_freep(&s->mask_buf);
+    av_freep(&s->mask_palbuf);
     av_freep(&s->video[0]);
     av_freep(&s->video[1]);
     av_freep(&s->pal);
