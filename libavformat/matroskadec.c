@@ -71,6 +71,8 @@
 #define EBML_UNKNOWN_LENGTH  UINT64_MAX /* EBML unknown length, in uint64_t */
 #define NEEDS_CHECKING                2 /* Indicates that some error checks
                                          * still need to be performed */
+#define LEVEL_ENDED                   3 /* return value of ebml_parse when the
+                                         * syntax level used for parsing ended. */
 
 typedef enum {
     EBML_NONE,
@@ -1087,7 +1089,7 @@ static EbmlSyntax *ebml_parse_id(EbmlSyntax *syntax, uint32_t id)
 static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
                            void *data)
 {
-    int i, res = 0;
+    int i, res;
 
     for (i = 0; syntax[i].id; i++)
         switch (syntax[i].type) {
@@ -1112,10 +1114,16 @@ static int ebml_parse_nest(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
             break;
         }
 
-    while (!res && !ebml_level_end(matroska))
-        res = ebml_parse(matroska, syntax, data);
+    if (!matroska->levels[matroska->num_levels - 1].length) {
+        matroska->num_levels--;
+        return 0;
+    }
 
-    return res;
+    do {
+        res = ebml_parse(matroska, syntax, data);
+    } while (!res);
+
+    return res == LEVEL_ENDED ? 0 : res;
 }
 
 static int is_ebml_id_valid(uint32_t id)
@@ -1184,17 +1192,26 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
     uint32_t id;
     uint64_t length;
     int64_t pos = avio_tell(pb);
-    int res, update_pos = 1;
+    int res, update_pos = 1, level_check;
     void *newelem;
     MatroskaLevel1Element *level1_elem;
+    MatroskaLevel *level = matroska->num_levels ? &matroska->levels[matroska->num_levels - 1] : NULL;
 
     if (!matroska->current_id) {
         uint64_t id;
         res = ebml_read_num(matroska, pb, 4, &id, 0);
         if (res < 0) {
-            // in live mode, finish parsing if EOF is reached.
-            return (matroska->is_live && pb->eof_reached &&
-                    res == AVERROR_EOF) ? 1 : res;
+            if (pb->eof_reached && res == AVERROR_EOF) {
+                if (matroska->is_live)
+                    // in live mode, finish parsing if EOF is reached.
+                    return 1;
+                if (level && level->length == EBML_UNKNOWN_LENGTH && pos == avio_tell(pb)) {
+                    // Unknown-length levels automatically end at EOF.
+                    matroska->num_levels--;
+                    return LEVEL_ENDED;
+                }
+            }
+            return res;
         }
         matroska->current_id = id | 1 << 7 * res;
     } else
@@ -1203,13 +1220,22 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
     id = matroska->current_id;
 
     syntax = ebml_parse_id(syntax, id);
-    if (!syntax->id && id == MATROSKA_ID_CLUSTER &&
-        matroska->num_levels > 0                 &&
-        matroska->levels[matroska->num_levels - 1].length == EBML_UNKNOWN_LENGTH)
-        return 0;  // we reached the end of an unknown size cluster
     if (!syntax->id && id != EBML_ID_VOID && id != EBML_ID_CRC32) {
-        av_log(matroska->ctx, AV_LOG_DEBUG, "Unknown entry 0x%"PRIX32"\n", id);
-        update_pos = 0;
+        if (level && level->length == EBML_UNKNOWN_LENGTH) {
+            // Unknown-length levels end when an element from an upper level
+            // in the hierarchy is encountered.
+            while (syntax->def.n) {
+                syntax = ebml_parse_id(syntax->def.n, id);
+                if (syntax->id) {
+                    matroska->num_levels--;
+                    return LEVEL_ENDED;
+                }
+            };
+        }
+
+        av_log(matroska->ctx, AV_LOG_DEBUG, "Unknown entry 0x%"PRIX32" at pos. "
+                                            "%"PRId64"\n", id, pos);
+        update_pos = 0; /* Don't update resync_pos as an error might have happened. */
     }
 
     data = (char *) data + syntax->data_offset;
@@ -1244,26 +1270,34 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 uint64_t elem_end = pos + length,
                         level_end = level->start + level->length;
 
-                if (level_end < elem_end) {
+                if (elem_end < level_end) {
+                    level_check = 0;
+                } else if (elem_end == level_end) {
+                    level_check = LEVEL_ENDED;
+                } else {
                     av_log(matroska->ctx, AV_LOG_ERROR,
                            "Element at 0x%"PRIx64" ending at 0x%"PRIx64" exceeds "
                            "containing master element ending at 0x%"PRIx64"\n",
                            pos, elem_end, level_end);
                     return AVERROR_INVALIDDATA;
                 }
+            } else if (length != EBML_UNKNOWN_LENGTH) {
+                level_check = 0;
             } else if (level->length != EBML_UNKNOWN_LENGTH) {
                 av_log(matroska->ctx, AV_LOG_ERROR, "Unknown-sized element "
                        "at 0x%"PRIx64" inside parent with finite size\n", pos);
                 return AVERROR_INVALIDDATA;
-            } else if (length == EBML_UNKNOWN_LENGTH && id != MATROSKA_ID_CLUSTER) {
+            } else if (id != MATROSKA_ID_CLUSTER) {
                 // According to the specifications only clusters and segments
                 // are allowed to be unknown-sized.
                 av_log(matroska->ctx, AV_LOG_ERROR,
                        "Found unknown-sized element other than a cluster at "
                        "0x%"PRIx64". Dropping the invalid element.\n", pos);
                 return AVERROR_INVALIDDATA;
-            }
-        }
+            } else
+                level_check = 0;
+        } else
+            level_check = 0;
 
         if (update_pos) {
             // We have found an element that is allowed at this place
@@ -1304,7 +1338,9 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 av_log(matroska->ctx, AV_LOG_ERROR, "Duplicate element\n");
             level1_elem->parsed = 1;
         }
-        return ebml_parse_nest(matroska, syntax->def.n, data);
+        if (res = ebml_parse_nest(matroska, syntax->def.n, data))
+            return res;
+        break;
     case EBML_STOP:
         return 1;
     default:
@@ -1336,7 +1372,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
                 else
                     res = AVERROR_EOF;
             } else
-                res = 0;
+                goto level_check;
         }
 
         if (res == AVERROR_INVALIDDATA)
@@ -1347,8 +1383,24 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             av_log(matroska->ctx, AV_LOG_ERROR, "File ended prematurely\n");
             res = AVERROR(EIO);
         }
+
+        return res;
     }
-    return res;
+
+level_check:
+    if (level_check == LEVEL_ENDED && matroska->num_levels) {
+        level = &matroska->levels[matroska->num_levels - 1];
+        pos   = avio_tell(pb);
+
+        // Given that pos >= level->start no check for
+        // level->length != EBML_UNKNOWN_LENGTH is necessary.
+        while (matroska->num_levels && pos == level->start + level->length) {
+            matroska->num_levels--;
+            level--;
+        }
+    }
+
+    return level_check;
 }
 
 static void ebml_free(EbmlSyntax *syntax, void *data)
@@ -1707,6 +1759,10 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska,
             matroska->current_id                   = 0;
 
             ret = ebml_parse(matroska, matroska_segment, matroska);
+            if (ret == LEVEL_ENDED) {
+                /* This can only happen if the seek brought us beyond EOF. */
+                ret = AVERROR_EOF;
+            }
         }
     }
     /* Seek back - notice that in all instances where this is used it is safe
@@ -3567,9 +3623,11 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
             res = ebml_parse(matroska,
                              matroska_cluster_parsing,
                              cluster);
+        else
+            cluster->pos = 0;
     }
 
-    if (!res && block->bin.size > 0) {
+    if (res >= 0 && block->bin.size > 0) {
             int is_keyframe = block->non_simple ? block->reference == INT64_MIN : -1;
             uint8_t* additional = block->additional.size > 0 ?
                                     block->additional.data : NULL;
@@ -3583,6 +3641,9 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
                                        cluster->pos,
                                        block->discard_padding);
     }
+
+    if (res == LEVEL_ENDED)
+        cluster->pos = 0;
 
     ebml_free(matroska_blockgroup, block);
     memset(block, 0, sizeof(*block));
