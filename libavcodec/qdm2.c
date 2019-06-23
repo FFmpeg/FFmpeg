@@ -1289,6 +1289,10 @@ static void qdm2_fft_decode_tones(QDM2Context *q, int duration,
             }
             offset += (n - 2);
         } else {
+            if (local_int_10 <= 2) {
+                av_log(NULL, AV_LOG_ERROR, "qdm2_fft_decode_tones() stuck\n");
+                return;
+            }
             offset += qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2);
             while (offset >= (local_int_10 - 1)) {
                 offset       += (1 - (local_int_10 - 1));
