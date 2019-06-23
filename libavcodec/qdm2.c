@@ -408,7 +408,12 @@ static int fix_coding_method_array(int sb, int channels,
             }
             for (k = 0; k < run; k++) {
                 if (j + k < 128) {
-                    if (coding_method[ch][sb + (j + k) / 64][(j + k) % 64] > coding_method[ch][sb][j]) {
+                    int sbjk = sb + (j + k) / 64;
+                    if (sbjk > 29) {
+                        SAMPLES_NEEDED
+                        continue;
+                    }
+                    if (coding_method[ch][sbjk][(j + k) % 64] > coding_method[ch][sb][j]) {
                         if (k > 0) {
                             SAMPLES_NEEDED
                             //not debugged, almost never used
