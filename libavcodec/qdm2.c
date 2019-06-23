@@ -1704,8 +1704,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     s->group_size = bytestream2_get_be32(&gb);
     s->fft_size = bytestream2_get_be32(&gb);
     s->checksum_size = bytestream2_get_be32(&gb);
-    if (s->checksum_size >= 1U << 28) {
-        av_log(avctx, AV_LOG_ERROR, "data block size too large (%u)\n", s->checksum_size);
+    if (s->checksum_size >= 1U << 28 || !s->checksum_size) {
+        av_log(avctx, AV_LOG_ERROR, "data block size invalid (%u)\n", s->checksum_size);
         return AVERROR_INVALIDDATA;
     }
 
