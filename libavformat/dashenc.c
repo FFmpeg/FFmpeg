@@ -89,6 +89,7 @@ typedef struct OutputStream {
     int bit_rate;
     SegmentType segment_type;  /* segment type selected for this particular stream */
     const char *format_name;
+    const char *extension_name;
     const char *single_file_name;  /* file names selected for this particular stream */
     const char *init_seg_name;
     const char *media_seg_name;
@@ -217,6 +218,16 @@ static const char *get_format_str(SegmentType segment_type) {
     return NULL;
 }
 
+static const char *get_extension_str(SegmentType type, int single_file)
+{
+    switch (type) {
+
+    case SEGMENT_TYPE_MP4:  return single_file ? "mp4" : "m4s";
+    case SEGMENT_TYPE_WEBM: return "webm";
+    default: return NULL;
+    }
+}
+
 static int handle_io_open_error(AVFormatContext *s, int err, char *url) {
     DASHContext *c = s->priv_data;
     char errbuf[AV_ERROR_MAX_STRING_SIZE];
@@ -254,6 +265,12 @@ static int init_segment_types(AVFormatContext *s)
             av_log(s, AV_LOG_ERROR, "Could not select DASH segment type for stream %d\n", i);
             return AVERROR_MUXER_NOT_FOUND;
         }
+        os->extension_name = get_extension_str(segment_type, c->single_file);
+        if (!os->extension_name) {
+            av_log(s, AV_LOG_ERROR, "Could not get extension type for stream %d\n", i);
+            return AVERROR_MUXER_NOT_FOUND;
+        }
+
         has_mp4_streams |= segment_type == SEGMENT_TYPE_MP4;
     }
 
@@ -1179,17 +1196,17 @@ static int dash_init(AVFormatContext *s)
             return AVERROR(ENOMEM);
 
         if (c->init_seg_name) {
-            os->init_seg_name = av_strireplace(c->init_seg_name, "$ext$", os->format_name);
+            os->init_seg_name = av_strireplace(c->init_seg_name, "$ext$", os->extension_name);
             if (!os->init_seg_name)
                 return AVERROR(ENOMEM);
         }
         if (c->media_seg_name) {
-            os->media_seg_name = av_strireplace(c->media_seg_name, "$ext$", os->format_name);
+            os->media_seg_name = av_strireplace(c->media_seg_name, "$ext$", os->extension_name);
             if (!os->media_seg_name)
                 return AVERROR(ENOMEM);
         }
         if (c->single_file_name) {
-            os->single_file_name = av_strireplace(c->single_file_name, "$ext$", os->format_name);
+            os->single_file_name = av_strireplace(c->single_file_name, "$ext$", os->extension_name);
             if (!os->single_file_name)
                 return AVERROR(ENOMEM);
         }
