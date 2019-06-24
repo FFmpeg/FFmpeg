@@ -1001,15 +1001,21 @@ static int interleave_compare_dts(AVFormatContext *s, AVPacket *next,
     AVStream *st2 = s->streams[next->stream_index];
     int comp      = av_compare_ts(next->dts, st2->time_base, pkt->dts,
                                   st->time_base);
-    if (s->audio_preload && ((st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) != (st2->codecpar->codec_type == AVMEDIA_TYPE_AUDIO))) {
-        int64_t ts = av_rescale_q(pkt ->dts, st ->time_base, AV_TIME_BASE_Q) - s->audio_preload*(st ->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
-        int64_t ts2= av_rescale_q(next->dts, st2->time_base, AV_TIME_BASE_Q) - s->audio_preload*(st2->codecpar->codec_type == AVMEDIA_TYPE_AUDIO);
-        if (ts == ts2) {
-            ts= ( pkt ->dts* st->time_base.num*AV_TIME_BASE - s->audio_preload*(int64_t)(st ->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)* st->time_base.den)*st2->time_base.den
-               -( next->dts*st2->time_base.num*AV_TIME_BASE - s->audio_preload*(int64_t)(st2->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)*st2->time_base.den)* st->time_base.den;
-            ts2=0;
+    if (s->audio_preload) {
+        int preload  = st ->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
+        int preload2 = st2->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
+        if (preload != preload2) {
+            preload  *= s->audio_preload;
+            preload2 *= s->audio_preload;
+            int64_t ts = av_rescale_q(pkt ->dts, st ->time_base, AV_TIME_BASE_Q) - preload;
+            int64_t ts2= av_rescale_q(next->dts, st2->time_base, AV_TIME_BASE_Q) - preload2;
+            if (ts == ts2) {
+                ts  = ((uint64_t)pkt ->dts*st ->time_base.num*AV_TIME_BASE - (uint64_t)preload *st ->time_base.den)*st2->time_base.den
+                    - ((uint64_t)next->dts*st2->time_base.num*AV_TIME_BASE - (uint64_t)preload2*st2->time_base.den)*st ->time_base.den;
+                ts2 = 0;
+            }
+            comp = (ts2 > ts) - (ts2 < ts);
         }
-        comp= (ts>ts2) - (ts<ts2);
     }
 
     if (comp == 0)
