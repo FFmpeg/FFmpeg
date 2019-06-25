@@ -796,33 +796,32 @@ static int ebml_level_end(MatroskaDemuxContext *matroska)
  * Returns: number of bytes read, < 0 on error
  */
 static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
-                         int max_size, uint64_t *number)
+                         int max_size, uint64_t *number, int eof_forbidden)
 {
-    int read = 1, n = 1;
-    uint64_t total = 0;
+    int read, n = 1;
+    uint64_t total;
+    int64_t pos;
 
-    /* The first byte tells us the length in bytes - avio_r8() can normally
-     * return 0, but since that's not a valid first ebmlID byte, we can
-     * use it safely here to catch EOS. */
-    if (!(total = avio_r8(pb))) {
-        /* we might encounter EOS here */
-        if (!avio_feof(pb)) {
-            int64_t pos = avio_tell(pb);
-            av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
-                   pos, pos);
-            return pb->error ? pb->error : AVERROR(EIO);
-        }
-        return AVERROR_EOF;
-    }
+    /* The first byte tells us the length in bytes - except when it is zero. */
+    total = avio_r8(pb);
+    if (pb->eof_reached)
+        goto err;
 
     /* get the length of the EBML number */
     read = 8 - ff_log2_tab[total];
-    if (read > max_size) {
-        int64_t pos = avio_tell(pb) - 1;
-        av_log(matroska->ctx, AV_LOG_ERROR,
-               "Invalid EBML number size tag 0x%02x at pos %"PRIu64" (0x%"PRIx64")\n",
-               (uint8_t) total, pos, pos);
+
+    if (!total || read > max_size) {
+        pos = avio_tell(pb) - 1;
+        if (!total) {
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "0x00 at pos %"PRId64" (0x%"PRIx64") invalid as first byte "
+                   "of an EBML number\n", pos, pos);
+        } else {
+            av_log(matroska->ctx, AV_LOG_ERROR,
+                   "Length %d indicated by an EBML number's first byte 0x%02x "
+                   "at pos %"PRId64" (0x%"PRIx64") exceeds max length %d.\n",
+                   read, (uint8_t) total, pos, pos, max_size);
+        }
         return AVERROR_INVALIDDATA;
     }
 
@@ -831,9 +830,29 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
     while (n++ < read)
         total = (total << 8) | avio_r8(pb);
 
+    if (pb->eof_reached) {
+        eof_forbidden = 1;
+        goto err;
+    }
+
     *number = total;
 
     return read;
+
+err:
+    pos = avio_tell(pb);
+    if (pb->error) {
+        av_log(matroska->ctx, AV_LOG_ERROR,
+               "Read error at pos. %"PRIu64" (0x%"PRIx64")\n",
+               pos, pos);
+        return pb->error;
+    }
+    if (eof_forbidden) {
+        av_log(matroska->ctx, AV_LOG_ERROR, "File ended prematurely "
+               "at pos. %"PRIu64" (0x%"PRIx64")\n", pos, pos);
+        return AVERROR(EIO);
+    }
+    return AVERROR_EOF;
 }
 
 /**
@@ -844,7 +863,7 @@ static int ebml_read_num(MatroskaDemuxContext *matroska, AVIOContext *pb,
 static int ebml_read_length(MatroskaDemuxContext *matroska, AVIOContext *pb,
                             uint64_t *number)
 {
-    int res = ebml_read_num(matroska, pb, 8, number);
+    int res = ebml_read_num(matroska, pb, 8, number, 1);
     if (res > 0 && *number + 1 == 1ULL << (7 * res))
         *number = EBML_UNKNOWN_LENGTH;
     return res;
@@ -986,7 +1005,7 @@ static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
 {
     AVIOContext pb;
     ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
-    return ebml_read_num(matroska, &pb, FFMIN(size, 8), num);
+    return ebml_read_num(matroska, &pb, FFMIN(size, 8), num, 1);
 }
 
 /*
@@ -1033,7 +1052,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska, EbmlSyntax *syntax,
 {
     if (!matroska->current_id) {
         uint64_t id;
-        int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id);
+        int res = ebml_read_num(matroska, matroska->ctx->pb, 4, &id, 0);
         if (res < 0) {
             // in live mode, finish parsing if EOF is reached.
             return (matroska->is_live && matroska->ctx->pb->eof_reached &&
@@ -3326,7 +3345,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     int trust_default_duration = 1;
 
     if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
-        av_log(matroska->ctx, AV_LOG_ERROR, "EBML block data error\n");
         return n;
     }
     data += n;
@@ -3650,7 +3668,7 @@ static int webm_clusters_start_with_keyframe(AVFormatContext *s)
         AVPacket *pkt;
         avio_seek(s->pb, cluster_pos, SEEK_SET);
         // read cluster id and length
-        read = ebml_read_num(matroska, matroska->ctx->pb, 4, &cluster_id);
+        read = ebml_read_num(matroska, matroska->ctx->pb, 4, &cluster_id, 1);
         if (read < 0 || cluster_id != 0xF43B675) // done with all clusters
             break;
         read = ebml_read_length(matroska, matroska->ctx->pb, &cluster_length);
@@ -3868,7 +3886,7 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
         // cues_end is inclusive and the above sum is reduced by 1.
         uint64_t cues_length, cues_id;
         int bytes_read;
-        bytes_read = ebml_read_num   (matroska, matroska->ctx->pb,  4, &cues_id);
+        bytes_read = ebml_read_num   (matroska, matroska->ctx->pb, 4, &cues_id, 1);
         if (bytes_read < 0 || cues_id != (MATROSKA_ID_CUES & 0xfffffff))
             return bytes_read < 0 ? bytes_read : AVERROR_INVALIDDATA;
         bytes_read = ebml_read_length(matroska, matroska->ctx->pb, &cues_length);
