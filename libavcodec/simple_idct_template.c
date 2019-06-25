@@ -288,25 +288,25 @@ static inline void FUNC6(idctSparseColPut)(pixel *dest, ptrdiff_t line_size,
 static inline void FUNC6(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
                                           idctin *col)
 {
-    int a0, a1, a2, a3, b0, b1, b2, b3;
+    unsigned a0, a1, a2, a3, b0, b1, b2, b3;
 
     IDCT_COLS;
 
-    dest[0] = av_clip_pixel(dest[0] + ((a0 + b0) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a0 + b0) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a1 + b1) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a1 + b1) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a2 + b2) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a2 + b2) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a3 + b3) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a3 + b3) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a3 - b3) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a3 - b3) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a2 - b2) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a2 - b2) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a1 - b1) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a1 - b1) >> COL_SHIFT));
     dest += line_size;
-    dest[0] = av_clip_pixel(dest[0] + ((a0 - b0) >> COL_SHIFT));
+    dest[0] = av_clip_pixel(dest[0] + ((int)(a0 - b0) >> COL_SHIFT));
 }
 
 static inline void FUNC6(idctSparseCol)(idctin *col)
