@@ -1183,6 +1183,7 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         GetBitContext gb;
         int frame_size_code;
         int unk0, unk1, unk2, unk3, unk4;
+        int w,h;
 
         size = AV_RB32(&extradata[4]);
         if (size > extradata_end - extradata - 8) {
@@ -1195,38 +1196,41 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
         frame_size_code = get_bits(&gb, 3);
         switch (frame_size_code) {
         case 0:
-            avctx->width  = 160;
-            avctx->height = 120;
+            w = 160;
+            h = 120;
             break;
         case 1:
-            avctx->width  = 128;
-            avctx->height =  96;
+            w = 128;
+            h =  96;
             break;
         case 2:
-            avctx->width  = 176;
-            avctx->height = 144;
+            w = 176;
+            h = 144;
             break;
         case 3:
-            avctx->width  = 352;
-            avctx->height = 288;
+            w = 352;
+            h = 288;
             break;
         case 4:
-            avctx->width  = 704;
-            avctx->height = 576;
+            w = 704;
+            h = 576;
             break;
         case 5:
-            avctx->width  = 240;
-            avctx->height = 180;
+            w = 240;
+            h = 180;
             break;
         case 6:
-            avctx->width  = 320;
-            avctx->height = 240;
+            w = 320;
+            h = 240;
             break;
         case 7:
-            avctx->width  = get_bits(&gb, 12);
-            avctx->height = get_bits(&gb, 12);
+            w = get_bits(&gb, 12);
+            h = get_bits(&gb, 12);
             break;
         }
+        ret = ff_set_dimensions(avctx, w, h);
+        if (ret < 0)
+            goto fail;
 
         s->halfpel_flag  = get_bits1(&gb);
         s->thirdpel_flag = get_bits1(&gb);
