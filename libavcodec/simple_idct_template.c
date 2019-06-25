@@ -312,18 +312,18 @@ static inline void FUNC6(idctSparseColAdd)(pixel *dest, ptrdiff_t line_size,
 static inline void FUNC6(idctSparseCol)(idctin *col)
 #endif
 {
-    int a0, a1, a2, a3, b0, b1, b2, b3;
+    unsigned a0, a1, a2, a3, b0, b1, b2, b3;
 
     IDCT_COLS;
 
-    col[0 ] = ((a0 + b0) >> COL_SHIFT);
-    col[8 ] = ((a1 + b1) >> COL_SHIFT);
-    col[16] = ((a2 + b2) >> COL_SHIFT);
-    col[24] = ((a3 + b3) >> COL_SHIFT);
-    col[32] = ((a3 - b3) >> COL_SHIFT);
-    col[40] = ((a2 - b2) >> COL_SHIFT);
-    col[48] = ((a1 - b1) >> COL_SHIFT);
-    col[56] = ((a0 - b0) >> COL_SHIFT);
+    col[0 ] = ((int)(a0 + b0) >> COL_SHIFT);
+    col[8 ] = ((int)(a1 + b1) >> COL_SHIFT);
+    col[16] = ((int)(a2 + b2) >> COL_SHIFT);
+    col[24] = ((int)(a3 + b3) >> COL_SHIFT);
+    col[32] = ((int)(a3 - b3) >> COL_SHIFT);
+    col[40] = ((int)(a2 - b2) >> COL_SHIFT);
+    col[48] = ((int)(a1 - b1) >> COL_SHIFT);
+    col[56] = ((int)(a0 - b0) >> COL_SHIFT);
 }
 
 #ifndef EXTRA_SHIFT
