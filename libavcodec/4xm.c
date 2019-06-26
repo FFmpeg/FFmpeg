@@ -158,7 +158,7 @@ typedef struct FourXContext {
 #define FIX_1_847759065 121095
 #define FIX_2_613125930 171254
 
-#define MULTIPLY(var, const) (((var) * (const)) >> 16)
+#define MULTIPLY(var, const) ((int)((var) * (unsigned)(const)) >> 16)
 
 static void idct(int16_t block[64])
 {
