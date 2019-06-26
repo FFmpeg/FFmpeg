@@ -178,12 +178,13 @@ static void decode_block(uint8_t *src, uint8_t *dest, unsigned size,
     }
 }
 
-static uint32_t get_v(uint8_t *p)
+static uint32_t get_v(uint8_t *p, int len)
 {
     uint32_t v = 0;
+    const uint8_t *end = p + len;
 
     do {
-        if (v >= UINT_MAX / 128 - *p)
+        if (p >= end || v >= UINT_MAX / 128 - *p)
             return v;
         v <<= 7;
         v += *p & 0x7f;
@@ -204,7 +205,7 @@ static uint8_t *read_vblock(AVIOContext *src, uint32_t *size,
 
     decode_block(tmp, tmp, 4, key, k2, align);
 
-    n = get_v(tmp);
+    n = get_v(tmp, 4);
     if (n < 4)
         return NULL;
 
@@ -241,13 +242,13 @@ static uint8_t *read_sb_block(AVIOContext *src, unsigned *size,
     k2 = *key;
     decode_block(ibuf, sbuf, 8, *key, &k2, 0);
 
-    n = get_v(sbuf+2);
+    n = get_v(sbuf+2, 6);
 
     if (sbuf[0] != 'S' || sbuf[1] != 'B' || (expected_size>0 && n != expected_size)) {
         uint32_t tmpkey = recover_key(ibuf, expected_size);
         k2 = tmpkey;
         decode_block(ibuf, sbuf, 8, tmpkey, &k2, 0);
-        n = get_v(sbuf+2);
+        n = get_v(sbuf+2, 6);
         if (sbuf[0] != 'S' || sbuf[1] != 'B' || expected_size != n)
             return NULL;
         *key = tmpkey;
