@@ -110,6 +110,7 @@ static int scc_read_header(AVFormatContext *s)
         ts_end = (hh2 * 3600LL + mm2 * 60LL + ss2) * 1000LL + fs2 * 33;
         count++;
 
+try_again:
         lline = (char *)&line;
         lline += 12;
 
@@ -138,8 +139,12 @@ static int scc_read_header(AVFormatContext *s)
         sub->pts = ts_start;
         sub->duration = FFMAX(1200, ts_end - ts_start);
         memmove(line, line2, sizeof(line));
+        line2[0] = 0;
         FFSWAP(ptrdiff_t, len, len2);
     }
+
+    if (line[0])
+        goto try_again;
 
     ff_subtitles_queue_finalize(s, &scc->q);
 
