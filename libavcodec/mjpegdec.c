@@ -2115,7 +2115,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
     while (buf_end - buf_ptr > 1) {
         v  = *buf_ptr++;
         v2 = *buf_ptr;
-        if ((v == 0xff) && (v2 >= 0xc0) && (v2 <= 0xfe) && buf_ptr < buf_end) {
+        if ((v == 0xff) && (v2 >= SOF0) && (v2 <= COM) && buf_ptr < buf_end) {
             val = *buf_ptr++;
             goto found;
         }
@@ -2180,7 +2180,7 @@ int ff_mjpeg_find_marker(MJpegDecodeContext *s,
                         src--;
                     }
 
-                    if (x < 0xd0 || x > 0xd7) {
+                    if (x < RST0 || x > RST7) {
                         copy_data_segment(1);
                         if (x)
                             break;
@@ -2319,7 +2319,7 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             av_log(avctx, AV_LOG_DEBUG, "startcode: %X\n", start_code);
 
         /* process markers */
-        if (start_code >= 0xd0 && start_code <= 0xd7) {
+        if (start_code >= RST0 && start_code <= RST7) {
             av_log(avctx, AV_LOG_DEBUG,
                    "restart marker: %d\n", start_code & 0x0f);
             /* APP fields */
