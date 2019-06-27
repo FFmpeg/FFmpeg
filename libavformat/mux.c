@@ -1005,10 +1005,11 @@ static int interleave_compare_dts(AVFormatContext *s, AVPacket *next,
         int preload  = st ->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
         int preload2 = st2->codecpar->codec_type == AVMEDIA_TYPE_AUDIO;
         if (preload != preload2) {
+            int64_t ts, ts2;
             preload  *= s->audio_preload;
             preload2 *= s->audio_preload;
-            int64_t ts = av_rescale_q(pkt ->dts, st ->time_base, AV_TIME_BASE_Q) - preload;
-            int64_t ts2= av_rescale_q(next->dts, st2->time_base, AV_TIME_BASE_Q) - preload2;
+            ts = av_rescale_q(pkt ->dts, st ->time_base, AV_TIME_BASE_Q) - preload;
+            ts2= av_rescale_q(next->dts, st2->time_base, AV_TIME_BASE_Q) - preload2;
             if (ts == ts2) {
                 ts  = ((uint64_t)pkt ->dts*st ->time_base.num*AV_TIME_BASE - (uint64_t)preload *st ->time_base.den)*st2->time_base.den
                     - ((uint64_t)next->dts*st2->time_base.num*AV_TIME_BASE - (uint64_t)preload2*st2->time_base.den)*st ->time_base.den;
