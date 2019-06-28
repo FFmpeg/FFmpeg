@@ -220,64 +220,64 @@ In addition to the standard identifiers, an ffmpeg-specific "$ext$" identifier i
 When specified ffmpeg will replace $ext$ in the file name with muxing format's extensions such as mp4, webm etc.,
 
 @example
-ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264
--b:v:0 800k -b:v:1 300k -s:v:1 320x170 -profile:v:1 baseline
--profile:v:0 main -bf 1 -keyint_min 120 -g 120 -sc_threshold 0
--b_strategy 0 -ar:a:1 22050 -use_timeline 1 -use_template 1
--window_size 5 -adaptation_sets "id=0,streams=v id=1,streams=a"
+ffmpeg -re -i <input> -map 0 -map 0 -c:a libfdk_aac -c:v libx264 \
+-b:v:0 800k -b:v:1 300k -s:v:1 320x170 -profile:v:1 baseline \
+-profile:v:0 main -bf 1 -keyint_min 120 -g 120 -sc_threshold 0 \
+-b_strategy 0 -ar:a:1 22050 -use_timeline 1 -use_template 1 \
+-window_size 5 -adaptation_sets "id=0,streams=v id=1,streams=a" \
 -f dash /path/to/out.mpd
 @end example
 
 @table @option
-@item -min_seg_duration @var{microseconds}
+@item min_seg_duration @var{microseconds}
 This is a deprecated option to set the segment length in microseconds, use @var{seg_duration} instead.
-@item -seg_duration @var{duration}
+@item seg_duration @var{duration}
 Set the segment length in seconds (fractional value can be set). The value is
 treated as average segment duration when @var{use_template} is enabled and
 @var{use_timeline} is disabled and as minimum segment duration for all the other
 use cases.
-@item -window_size @var{size}
+@item window_size @var{size}
 Set the maximum number of segments kept in the manifest.
-@item -extra_window_size @var{size}
+@item extra_window_size @var{size}
 Set the maximum number of segments kept outside of the manifest before removing from disk.
-@item -remove_at_exit @var{remove}
+@item remove_at_exit @var{remove}
 Enable (1) or disable (0) removal of all segments when finished.
-@item -use_template @var{template}
+@item use_template @var{template}
 Enable (1) or disable (0) use of SegmentTemplate instead of SegmentList.
-@item -use_timeline @var{timeline}
+@item use_timeline @var{timeline}
 Enable (1) or disable (0) use of SegmentTimeline in SegmentTemplate.
-@item -single_file @var{single_file}
+@item single_file @var{single_file}
 Enable (1) or disable (0) storing all segments in one file, accessed using byte ranges.
-@item -single_file_name @var{file_name}
+@item single_file_name @var{file_name}
 DASH-templated name to be used for baseURL. Implies @var{single_file} set to "1". In the template, "$ext$" is replaced with the file name extension specific for the segment format.
-@item -init_seg_name @var{init_name}
+@item init_seg_name @var{init_name}
 DASH-templated name to used for the initialization segment. Default is "init-stream$RepresentationID$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
-@item -media_seg_name @var{segment_name}
+@item media_seg_name @var{segment_name}
 DASH-templated name to used for the media segments. Default is "chunk-stream$RepresentationID$-$Number%05d$.$ext$". "$ext$" is replaced with the file name extension specific for the segment format.
-@item -utc_timing_url @var{utc_url}
+@item utc_timing_url @var{utc_url}
 URL of the page that will return the UTC timestamp in ISO format. Example: "https://time.akamai.com/?iso"
 @item method @var{method}
 Use the given HTTP method to create output files. Generally set to PUT or POST.
-@item -http_user_agent @var{user_agent}
+@item http_user_agent @var{user_agent}
 Override User-Agent field in HTTP header. Applicable only for HTTP output.
-@item -http_persistent @var{http_persistent}
+@item http_persistent @var{http_persistent}
 Use persistent HTTP connections. Applicable only for HTTP output.
-@item -hls_playlist @var{hls_playlist}
+@item hls_playlist @var{hls_playlist}
 Generate HLS playlist files as well. The master playlist is generated with the filename master.m3u8.
 One media playlist file is generated for each stream with filenames media_0.m3u8, media_1.m3u8, etc.
-@item -streaming @var{streaming}
+@item streaming @var{streaming}
 Enable (1) or disable (0) chunk streaming mode of output. In chunk streaming
 mode, each frame will be a moof fragment which forms a chunk.
-@item -adaptation_sets @var{adaptation_sets}
+@item adaptation_sets @var{adaptation_sets}
 Assign streams to AdaptationSets. Syntax is "id=x,streams=a,b,c id=y,streams=d,e" with x and y being the IDs
 of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
 
 To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
-@item -timeout @var{timeout}
+@item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
-@item -index_correction @var{index_correction}
+@item index_correction @var{index_correction}
 Enable (1) or Disable (0) segment index correction logic. Applicable only when
 @var{use_template} is enabled and @var{use_timeline} is disabled.
 
@@ -288,16 +288,17 @@ corrects that index value.
 Typically this logic is needed in live streaming use cases. The network bandwidth
 fluctuations are common during long run streaming. Each fluctuation can cause
 the segment indexes fall behind the expected real time position.
-@item -format_options @var{options_list}
+@item format_options @var{options_list}
 Set container format (mp4/webm) options using a @code{:} separated list of
 key=value parameters. Values containing @code{:} special characters must be
 escaped.
 
-@item -global_sidx @var{global_sidx}
+@item global_sidx @var{global_sidx}
 Write global SIDX atom. Applicable only for single file, mp4 output, non-streaming mode.
 
-@item -dash_segment_type @var{dash_segment_type}
+@item dash_segment_type @var{dash_segment_type}
 Possible values:
+@table @option
 @item auto
 If this flag is set, the dash segment files format will be selected based on the stream codec. This is the default mode.
 
@@ -306,11 +307,12 @@ If this flag is set, the dash segment files will be in in ISOBMFF format.
 
 @item webm
 If this flag is set, the dash segment files will be in in WebM format.
+@end table
 
-@item -ignore_io_errors @var{ignore_io_errors}
+@item ignore_io_errors @var{ignore_io_errors}
 Ignore IO errors during open and write. Useful for long-duration runs with network output.
 
-@item -lhls @var{lhls}
+@item lhls @var{lhls}
 Enable Low-latency HLS(LHLS). Adds #EXT-X-PREFETCH tag with current segment's URI.
 Apple doesn't have an official spec for LHLS. Meanwhile hls.js player folks are
 trying to standardize a open LHLS spec. The draft spec is available in https://github.com/video-dev/hlsjs-rfcs/blob/lhls-spec/proposals/0001-lhls.md
@@ -318,7 +320,7 @@ This option will also try to comply with the above open spec, till Apple's spec 
 Applicable only when @var{streaming} and @var{hls_playlist} options are enabled.
 This is an experimental feature.
 
-@item -master_m3u8_publish_rate @var{master_m3u8_publish_rate}
+@item master_m3u8_publish_rate @var{master_m3u8_publish_rate}
 Publish master playlist repeatedly every after specified number of segment intervals.
 
 @end table
