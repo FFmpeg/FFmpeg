@@ -1358,8 +1358,10 @@ static int read_frame_header(SANMVideoContext *ctx, SANMFrameHeader *hdr)
 
 static void fill_frame(uint16_t *pbuf, int buf_size, uint16_t color)
 {
-    while (buf_size--)
+    if (buf_size--) {
         *pbuf++ = color;
+        av_memcpy_backptr((uint8_t*)pbuf, 2, 2*buf_size);
+    }
 }
 
 static int copy_output(SANMVideoContext *ctx, SANMFrameHeader *hdr)
