@@ -884,6 +884,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             high = s->plane[plane].l_h[7];
             for (i = 0; i < lowpass_height * 2; i++) {
                 horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+                if (avctx->pix_fmt == AV_PIX_FMT_GBRAP12 && act_plane == 3)
+                    process_alpha(dst, lowpass_width * 2);
                 low  += lowpass_width;
                 high += lowpass_width;
                 dst  += pic->linesize[act_plane] / 2;
