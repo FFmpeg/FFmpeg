@@ -1263,8 +1263,12 @@ static int create_master_playlist(AVFormatContext *s,
     AVDictionary *options = NULL;
     unsigned int i, j;
     int m3u8_name_size, ret, bandwidth;
-    char *m3u8_rel_name, *ccgroup;
+    char *m3u8_rel_name = NULL, *ccgroup;
     ClosedCaptionsStream *ccs;
+    const char *proto = avio_find_protocol_name(hls->master_m3u8_url);
+    int is_file_proto = proto && !strcmp(proto, "file");
+    int use_temp_file = is_file_proto && ((hls->flags & HLS_TEMP_FILE) || hls->master_publish_rate);
+    char temp_filename[1024];
 
     input_vs->m3u8_created = 1;
     if (!hls->master_m3u8_created) {
@@ -1280,12 +1284,12 @@ static int create_master_playlist(AVFormatContext *s,
     }
 
     set_http_options(s, &options, hls);
-
-    ret = hlsenc_io_open(s, &hls->m3u8_out, hls->master_m3u8_url, &options);
+    snprintf(temp_filename, sizeof(temp_filename), use_temp_file ? "%s.tmp" : "%s", hls->master_m3u8_url);
+    ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options);
     av_dict_free(&options);
     if (ret < 0) {
         av_log(NULL, AV_LOG_ERROR, "Failed to open master play list file '%s'\n",
-                hls->master_m3u8_url);
+                temp_filename);
         goto fail;
     }
 
@@ -1416,7 +1420,10 @@ fail:
     if(ret >=0)
         hls->master_m3u8_created = 1;
     av_freep(&m3u8_rel_name);
-    hlsenc_io_close(s, &hls->m3u8_out, hls->master_m3u8_url);
+    hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
+    if (use_temp_file)
+        ff_rename(temp_filename, hls->master_m3u8_url, s);
+
     return ret;
 }
 
@@ -1427,6 +1434,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     int target_duration = 0;
     int ret = 0;
     char temp_filename[1024];
+    char temp_vtt_filename[1024];
     int64_t sequence = FFMAX(hls->start_sequence, vs->sequence - vs->nb_entries);
     const char *proto = avio_find_protocol_name(vs->m3u8_name);
     int is_file_proto = proto && !strcmp(proto, "file");
@@ -1508,8 +1516,9 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
         ff_hls_write_end_list(hls->m3u8_out);
 
-    if( vs->vtt_m3u8_name ) {
-        if ((ret = hlsenc_io_open(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name, &options)) < 0) {
+    if (vs->vtt_m3u8_name) {
+        snprintf(temp_vtt_filename, sizeof(temp_vtt_filename), use_temp_file ? "%s.tmp" : "%s", vs->vtt_m3u8_name);
+        if ((ret = hlsenc_io_open(s, &hls->sub_m3u8_out, temp_vtt_filename, &options)) < 0) {
             if (hls->ignore_io_errors)
                 ret = 0;
             goto fail;
@@ -1534,8 +1543,11 @@ fail:
     av_dict_free(&options);
     hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
     hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
-    if (use_temp_file)
+    if (use_temp_file) {
         ff_rename(temp_filename, vs->m3u8_name, s);
+        if (vs->vtt_m3u8_name)
+            ff_rename(temp_vtt_filename, vs->vtt_m3u8_name, s);
+    }
     if (ret >= 0 && hls->master_pl_name)
         if (create_master_playlist(s, vs) < 0)
             av_log(s, AV_LOG_WARNING, "Master playlist creation failed\n");
@@ -2994,7 +3006,7 @@ static const AVOption options[] = {
     {"hls_fmp4_init_filename", "set fragment mp4 file init filename", OFFSET(fmp4_init_filename),   AV_OPT_TYPE_STRING, {.str = "init.mp4"},            0,       0,         E},
     {"hls_flags",     "set flags affecting HLS playlist and media file generation", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64 = 0 }, 0, UINT_MAX, E, "flags"},
     {"single_file",   "generate a single media file indexed with byte ranges", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_SINGLE_FILE }, 0, UINT_MAX,   E, "flags"},
-    {"temp_file", "write segment to temporary file and rename when complete", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_TEMP_FILE }, 0, UINT_MAX,   E, "flags"},
+    {"temp_file", "write segment and playlist to temporary file and rename when complete", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_TEMP_FILE }, 0, UINT_MAX,   E, "flags"},
     {"delete_segments", "delete segment files that are no longer part of the playlist", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DELETE_SEGMENTS }, 0, UINT_MAX,   E, "flags"},
     {"round_durations", "round durations in m3u8 to whole numbers", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_ROUND_DURATIONS }, 0, UINT_MAX,   E, "flags"},
     {"discont_start", "start the playlist with a discontinuity tag", 0, AV_OPT_TYPE_CONST, {.i64 = HLS_DISCONT_START }, 0, UINT_MAX,   E, "flags"},
