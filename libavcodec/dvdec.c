@@ -542,12 +542,19 @@ static int dvvideo_decode_frame(AVCodecContext *avctx, void *data,
 
     if ((ret = ff_thread_get_buffer(avctx, &frame, 0)) < 0)
         return ret;
-    frame.f->interlaced_frame = 1;
-    frame.f->top_field_first  = 0;
 
     /* Determine the codec's field order from the packet */
     if ( *vsc_pack == dv_video_control ) {
-        frame.f->top_field_first = !(vsc_pack[3] & 0x40);
+        if (avctx->height == 720) {
+            frame.f->interlaced_frame = 0;
+            frame.f->top_field_first = 0;
+        } else if (avctx->height == 1080) {
+            frame.f->interlaced_frame = 1;
+            frame.f->top_field_first = (vsc_pack[3] & 0x40) == 0x40;
+        } else {
+            frame.f->interlaced_frame = (vsc_pack[3] & 0x10) == 0x10;
+            frame.f->top_field_first = !(vsc_pack[3] & 0x40);
+        }
     }
 
     s->buf = buf;
