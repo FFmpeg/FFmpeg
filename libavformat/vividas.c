@@ -115,10 +115,7 @@ static unsigned recover_key(unsigned char sample[4], unsigned expected_size)
 
     put_v(plaintext+2, expected_size);
 
-    return (sample[0]^plaintext[0])|
-        ((sample[1]^plaintext[1])<<8)|
-        ((sample[2]^plaintext[2])<<16)|
-        ((sample[3]^plaintext[3])<<24);
+    return AV_RL32(sample) ^ AV_RL32(plaintext);
 }
 
 static void xor_block(void *p1, void *p2, unsigned size, int key, unsigned *key_ptr)
