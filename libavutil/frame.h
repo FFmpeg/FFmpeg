@@ -564,6 +564,7 @@ typedef struct AVFrame {
 #define FF_DECODE_ERROR_INVALID_BITSTREAM   1
 #define FF_DECODE_ERROR_MISSING_REFERENCE   2
 #define FF_DECODE_ERROR_CONCEALMENT_ACTIVE  4
+#define FF_DECODE_ERROR_DECODE_SLICES       8
 
     /**
      * number of audio channels, only used for audio.

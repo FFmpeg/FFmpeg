@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-06-21 - XXXXXXXXXX - lavu 56.30.100 - frame.h
+  Add FF_DECODE_ERROR_DECODE_SLICES
+
 2019-06-14 - XXXXXXXXXX - lavu 56.29.100 - frame.h
   Add FF_DECODE_ERROR_CONCEALMENT_ACTIVE
 
