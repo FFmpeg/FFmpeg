@@ -577,7 +577,7 @@ static int init_video_param(AVCodecContext *avctx, QSVEncContext *q)
 
     //libmfx BRC parameters are 16 bits thus maybe overflow, then BRCParamMultiplier is needed
     buffer_size_in_kilobytes   = avctx->rc_buffer_size / 8000;
-    initial_delay_in_kilobytes = avctx->rc_initial_buffer_occupancy / 1000;
+    initial_delay_in_kilobytes = avctx->rc_initial_buffer_occupancy / 8000;
     target_bitrate_kbps        = avctx->bit_rate / 1000;
     max_bitrate_kbps           = avctx->rc_max_rate / 1000;
     brc_param_multiplier       = (FFMAX(FFMAX3(target_bitrate_kbps, max_bitrate_kbps, buffer_size_in_kilobytes),
