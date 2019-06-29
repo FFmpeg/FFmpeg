@@ -269,8 +269,10 @@ static int rpl_read_header(AVFormatContext *s)
         read_line_and_int(pb, &error);           //   (file index)
     error |= read_line(pb, line, sizeof(line));  // offset to "helpful" sprite
     error |= read_line(pb, line, sizeof(line));  // size of "helpful" sprite
-    if (vst)
+    if (vst) {
         error |= read_line(pb, line, sizeof(line));  // offset to key frame list
+        vst->duration = number_of_chunks * rpl->frames_per_chunk;
+    }
 
     // Read the index
     avio_seek(pb, chunk_catalog_offset, SEEK_SET);
