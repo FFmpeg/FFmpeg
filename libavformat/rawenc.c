@@ -39,6 +39,18 @@ static int force_one_stream(AVFormatContext *s)
                s->oformat->name);
         return AVERROR(EINVAL);
     }
+    if (   s->oformat->audio_codec != AV_CODEC_ID_NONE
+        && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO) {
+        av_log(s, AV_LOG_ERROR, "%s files have exactly one audio stream\n",
+               s->oformat->name);
+        return AVERROR(EINVAL);
+    }
+    if (   s->oformat->video_codec != AV_CODEC_ID_NONE
+        && s->streams[0]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO) {
+        av_log(s, AV_LOG_ERROR, "%s files have exactly one video stream\n",
+               s->oformat->name);
+        return AVERROR(EINVAL);
+    }
     return 0;
 }
 
