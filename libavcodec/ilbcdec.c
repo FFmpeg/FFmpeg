@@ -724,7 +724,7 @@ static void construct_vector (
     int16_t cbvec0[SUBL];
     int16_t cbvec1[SUBL];
     int16_t cbvec2[SUBL];
-    int32_t a32;
+    unsigned a32;
     int16_t *gainPtr;
     int j;
 
@@ -745,9 +745,9 @@ static void construct_vector (
     for (j = 0; j < veclen; j++) {
         a32 = SPL_MUL_16_16(*gainPtr++, cbvec0[j]);
         a32 += SPL_MUL_16_16(*gainPtr++, cbvec1[j]);
-        a32 += (unsigned)SPL_MUL_16_16(*gainPtr, cbvec2[j]);
+        a32 += SPL_MUL_16_16(*gainPtr, cbvec2[j]);
         gainPtr -= 2;
-        decvector[j] = (a32 + 8192) >> 14;
+        decvector[j] = (int)(a32 + 8192) >> 14;
     }
 }
 
