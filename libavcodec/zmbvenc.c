@@ -240,8 +240,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
                 tprev = prev + x * c->bypp;
 
                 zmbv_me(c, tsrc, p->linesize[0], tprev, c->pstride, x, y, &mx, &my, &xored);
-                mv[0] = (mx << 1) | !!xored;
-                mv[1] = my << 1;
+                mv[0] = (mx * 2) | !!xored;
+                mv[1] = my * 2;
                 tprev += mx * c->bypp + my * c->pstride;
                 if(xored){
                     for(j = 0; j < bh2; j++){
