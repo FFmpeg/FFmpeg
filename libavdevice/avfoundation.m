@@ -690,7 +690,6 @@ static int avf_read_header(AVFormatContext *s)
             const char *name = [[device localizedName] UTF8String];
             index            = [devices indexOfObject:device];
             av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
-            index++;
         }
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         if (num_screens > 0) {
