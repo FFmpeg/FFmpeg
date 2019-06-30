@@ -93,6 +93,7 @@ extern AVFilter ff_af_compensationdelay;
 extern AVFilter ff_af_crossfeed;
 extern AVFilter ff_af_crystalizer;
 extern AVFilter ff_af_dcshift;
+extern AVFilter ff_af_deesser;
 extern AVFilter ff_af_drmeter;
 extern AVFilter ff_af_dynaudnorm;
 extern AVFilter ff_af_earwax;
