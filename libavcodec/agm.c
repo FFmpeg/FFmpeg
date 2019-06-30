@@ -918,7 +918,7 @@ static void get_tree_codes(uint32_t *codes, Node *nodes, int idx, uint32_t pfx, 
         codes[idx] = pfx;
     } else if (idx >= 0) {
         get_tree_codes(codes, nodes, nodes[idx].child[0], pfx + (0 << bitpos), bitpos + 1);
-        get_tree_codes(codes, nodes, nodes[idx].child[1], pfx + (1 << bitpos), bitpos + 1);
+        get_tree_codes(codes, nodes, nodes[idx].child[1], pfx + (1U << bitpos), bitpos + 1);
     }
 }
 
