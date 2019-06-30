@@ -1588,14 +1588,14 @@ int ff_hevc_decode_nal_pps(GetBitContext *gb, AVCodecContext *avctx,
         int num_tile_rows_minus1    = get_ue_golomb(gb);
 
         if (num_tile_columns_minus1 < 0 ||
-            num_tile_columns_minus1 >= sps->ctb_width - 1) {
+            num_tile_columns_minus1 >= sps->ctb_width) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_columns_minus1 out of range: %d\n",
                    num_tile_columns_minus1);
             ret = num_tile_columns_minus1 < 0 ? num_tile_columns_minus1 : AVERROR_INVALIDDATA;
             goto err;
         }
         if (num_tile_rows_minus1 < 0 ||
-            num_tile_rows_minus1 >= sps->ctb_height - 1) {
+            num_tile_rows_minus1 >= sps->ctb_height) {
             av_log(avctx, AV_LOG_ERROR, "num_tile_rows_minus1 out of range: %d\n",
                    num_tile_rows_minus1);
             ret = num_tile_rows_minus1 < 0 ? num_tile_rows_minus1 : AVERROR_INVALIDDATA;
