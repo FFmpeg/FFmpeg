@@ -60,9 +60,9 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         uint16_t *srcb = (uint16_t *)srcb_line;
         for (j = 0; j < avctx->width; j++) {
             uint32_t pixel;
-            uint16_t r = *srcr++;
-            uint16_t g = *srcg++;
-            uint16_t b = *srcb++;
+            unsigned r = *srcr++;
+            unsigned g = *srcg++;
+            unsigned b = *srcb++;
             if (avctx->codec_id == AV_CODEC_ID_R210)
                 pixel = (r << 20) | (g << 10) | b;
             else
