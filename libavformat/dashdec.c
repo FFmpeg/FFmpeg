@@ -842,7 +842,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
     xmlNodePtr representation_segmenttemplate_node = NULL;
     xmlNodePtr representation_baseurl_node = NULL;
     xmlNodePtr representation_segmentlist_node = NULL;
-    xmlNodePtr segmentlists_tab[2];
+    xmlNodePtr segmentlists_tab[3];
     xmlNodePtr fragment_timeline_node = NULL;
     xmlNodePtr fragment_templates_tab[5];
     char *duration_val = NULL;
@@ -1003,9 +1003,10 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             xmlNodePtr fragmenturl_node = NULL;
             segmentlists_tab[0] = representation_segmentlist_node;
             segmentlists_tab[1] = adaptionset_segmentlist_node;
+            segmentlists_tab[2] = period_segmentlist_node;
 
-            duration_val = get_val_from_nodes_tab(segmentlists_tab, 2, "duration");
-            timescale_val = get_val_from_nodes_tab(segmentlists_tab, 2, "timescale");
+            duration_val = get_val_from_nodes_tab(segmentlists_tab, 3, "duration");
+            timescale_val = get_val_from_nodes_tab(segmentlists_tab, 3, "timescale");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
