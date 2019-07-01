@@ -64,13 +64,13 @@ typedef enum {
 } CodecAttributeStatus;
 
 #define KEYSIZE 16
-#define LINE_BUFFER_SIZE 1024
+#define LINE_BUFFER_SIZE MAX_URL_SIZE
 #define HLS_MICROSECOND_UNIT   1000000
 #define POSTFIX_PATTERN "_%d"
 
 typedef struct HLSSegment {
-    char filename[1024];
-    char sub_filename[1024];
+    char filename[MAX_URL_SIZE];
+    char sub_filename[MAX_URL_SIZE];
     double duration; /* in seconds */
     int discont;
     int64_t pos;
@@ -149,7 +149,7 @@ typedef struct VariantStream {
     char *m3u8_name;
 
     double initial_prog_date_time;
-    char current_segment_final_filename_fmt[1024]; // when renaming segments
+    char current_segment_final_filename_fmt[MAX_URL_SIZE]; // when renaming segments
 
     char *fmp4_init_filename;
     char *base_output_dirname;
@@ -1111,7 +1111,7 @@ static int parse_playlist(AVFormatContext *s, const char *url, VariantStream *vs
     AVIOContext *in;
     int ret = 0, is_segment = 0;
     int64_t new_start_pos;
-    char line[1024];
+    char line[MAX_URL_SIZE];
     const char *ptr;
     const char *end;
 
@@ -1268,7 +1268,7 @@ static int create_master_playlist(AVFormatContext *s,
     const char *proto = avio_find_protocol_name(hls->master_m3u8_url);
     int is_file_proto = proto && !strcmp(proto, "file");
     int use_temp_file = is_file_proto && ((hls->flags & HLS_TEMP_FILE) || hls->master_publish_rate);
-    char temp_filename[1024];
+    char temp_filename[MAX_URL_SIZE];
 
     input_vs->m3u8_created = 1;
     if (!hls->master_m3u8_created) {
@@ -1433,8 +1433,8 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     HLSSegment *en;
     int target_duration = 0;
     int ret = 0;
-    char temp_filename[1024];
-    char temp_vtt_filename[1024];
+    char temp_filename[MAX_URL_SIZE];
+    char temp_vtt_filename[MAX_URL_SIZE];
     int64_t sequence = FFMAX(hls->start_sequence, vs->sequence - vs->nb_entries);
     const char *proto = avio_find_protocol_name(vs->m3u8_name);
     int is_file_proto = proto && !strcmp(proto, "file");
@@ -1594,7 +1594,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
         if (c->use_localtime) {
             time_t now0;
             struct tm *tm, tmpbuf;
-            int bufsize = strlen(vs->basename) + 1024;
+            int bufsize = strlen(vs->basename) + MAX_URL_SIZE;
             char *buf = av_mallocz(bufsize);
             if (!buf)
                 return AVERROR(ENOMEM);
