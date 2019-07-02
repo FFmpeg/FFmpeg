@@ -1376,7 +1376,7 @@ static void ape_unpack_mono(APEContext *ctx, int count)
 
 static void ape_unpack_stereo(APEContext *ctx, int count)
 {
-    int32_t left, right;
+    unsigned left, right;
     int32_t *decoded0 = ctx->decoded[0];
     int32_t *decoded1 = ctx->decoded[1];
 
@@ -1393,7 +1393,7 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
 
     /* Decorrelate and scale to output depth */
     while (count--) {
-        left = *decoded1 - (*decoded0 / 2);
+        left = *decoded1 - (unsigned)(*decoded0 / 2);
         right = left + *decoded0;
 
         *(decoded0++) = left;
