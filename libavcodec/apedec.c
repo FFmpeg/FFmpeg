@@ -125,8 +125,8 @@ typedef struct APEPredictor {
     int32_t filterA[2];
     int32_t filterB[2];
 
-    int32_t coeffsA[2][4];  ///< adaption coefficients
-    int32_t coeffsB[2][5];  ///< adaption coefficients
+    uint32_t coeffsA[2][4];  ///< adaption coefficients
+    uint32_t coeffsB[2][5];  ///< adaption coefficients
     int32_t historybuffer[HISTORY_SIZE + PREDICTOR_SIZE];
 
     unsigned int sample_pos;
@@ -829,7 +829,7 @@ static av_always_inline int filter_fast_3320(APEPredictor *p,
     }
 
     predictionA = p->buf[delayA] * 2 - p->buf[delayA - 1];
-    p->lastA[filter] = decoded + (predictionA  * p->coeffsA[filter][0] >> 9);
+    p->lastA[filter] = decoded + ((int32_t)(predictionA  * p->coeffsA[filter][0]) >> 9);
 
     if ((decoded ^ predictionA) > 0)
         p->coeffsA[filter][0]++;
