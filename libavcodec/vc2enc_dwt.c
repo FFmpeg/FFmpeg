@@ -66,7 +66,7 @@ static void vc2_subband_dwt_97(VC2TransformContext *t, dwtcoef *data,
      */
     for (y = 0; y < synth_height; y++) {
         for (x = 0; x < synth_width; x++)
-            synthl[x] = datal[x] << 1;
+            synthl[x] = datal[x] * 2;
         synthl += synth_width;
         datal += stride;
     }
