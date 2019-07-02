@@ -206,6 +206,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     SilenceRemoveContext *s = ctx->priv;
 
+    s->next_pts = AV_NOPTS_VALUE;
     s->window_size = FFMAX((inlink->sample_rate * s->window_ratio), 1) * inlink->channels;
     s->window = av_malloc_array(s->window_size, sizeof(*s->window));
     if (!s->window)
@@ -327,6 +328,9 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out;
 
     nb_samples_read = nb_samples_written = 0;
+
+    if (s->next_pts == AV_NOPTS_VALUE)
+        s->next_pts = in->pts;
 
     switch (s->mode) {
     case SILENCE_TRIM:
