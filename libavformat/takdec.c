@@ -80,6 +80,8 @@ static int tak_read_header(AVFormatContext *s)
 
         switch (type) {
         case TAK_METADATA_STREAMINFO:
+            if (st->codecpar->extradata)
+                return AVERROR_INVALIDDATA;
         case TAK_METADATA_LAST_FRAME:
         case TAK_METADATA_ENCODER:
             if (size <= 3)
