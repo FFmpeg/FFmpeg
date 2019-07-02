@@ -6239,6 +6239,9 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
         switch (st->codecpar->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 avctx[i] = create_video_decoder_from_codecpar(st->codecpar);
+                // fix when ticks_per_frame > 1
+                if (avctx[i])
+                    st->r_frame_rate =  avctx[i]->framerate;
                 break;
             case AVMEDIA_TYPE_AUDIO:
                 avctx[i] = create_audio_decoder_from_codecpar(st->codecpar);
