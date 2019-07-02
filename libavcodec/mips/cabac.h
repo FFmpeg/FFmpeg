@@ -72,7 +72,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c,
 
         "and          %[tmp0],       %[c_low],       %[cabac_mask] \n\t"
         "bnez         %[tmp0],       1f                            \n\t"
-        PTR_ADDI     "%[tmp0],       %[c_low],       -0X01         \n\t"
+        PTR_ADDIU    "%[tmp0],       %[c_low],       -0x01         \n\t"
         "xor          %[tmp0],       %[c_low],       %[tmp0]       \n\t"
         PTR_SRA      "%[tmp0],       %[tmp0],        0x0f          \n\t"
         PTR_ADDU     "%[tmp0],       %[tmp0],        %[tables]     \n\t"
