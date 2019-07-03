@@ -107,7 +107,7 @@ static int config_input(AVFilterLink *inlink)
         return AVERROR(ENOMEM);
 
     for (int i = 0; i < inlink->channels; i++) {
-        DeesserChannel *chan = &s->chan[i];;
+        DeesserChannel *chan = &s->chan[i];
 
         chan->ratioA = chan->ratioB = 1.0;
     }
