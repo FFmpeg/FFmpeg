@@ -418,9 +418,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
         case 0x0F0:
             avctx->pix_fmt = AV_PIX_FMT_GRAY16;
             break;
-        case 0x170:
-            avctx->pix_fmt = AV_PIX_FMT_GRAY8A;
-            break;
         case 0x470:
             avctx->pix_fmt = AV_PIX_FMT_GBRP;
             break;
