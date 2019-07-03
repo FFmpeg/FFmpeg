@@ -507,7 +507,10 @@ static int lut2_config_output(AVFilterLink *outlink)
     if ((ret = config_output(outlink)) < 0)
         return ret;
 
-    return ff_framesync_configure(&s->fs);
+    ret = ff_framesync_configure(&s->fs);
+    outlink->time_base = s->fs.time_base;
+
+    return ret;
 }
 
 static int activate(AVFilterContext *ctx)
