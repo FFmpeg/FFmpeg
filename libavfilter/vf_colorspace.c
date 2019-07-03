@@ -260,9 +260,9 @@ static int fill_gamma_table(ColorSpaceContext *s)
         s->delin_lut[n] = av_clip_int16(lrint(d * 28672.0));
 
         // linearize
-        if (v <= -in_beta) {
+        if (v <= -in_beta * in_delta) {
             l = -pow((1.0 - in_alpha - v) * in_ialpha, in_igamma);
-        } else if (v < in_beta) {
+        } else if (v < in_beta * in_delta) {
             l = v * in_idelta;
         } else {
             l = pow((v + in_alpha - 1.0) * in_ialpha, in_igamma);
