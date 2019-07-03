@@ -694,7 +694,13 @@ static int config_output(AVFilterLink *outlink)
         }
     }
 
-    return s->tblend ? 0 : ff_framesync_configure(&s->fs);
+    if (s->tblend)
+        return 0;
+
+    ret = ff_framesync_configure(&s->fs);
+    outlink->time_base = s->fs.time_base;
+
+    return ret;
 }
 
 #if CONFIG_BLEND_FILTER
