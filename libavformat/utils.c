@@ -3342,8 +3342,10 @@ int ff_rfps_add_frame(AVFormatContext *ic, AVStream *st, int64_t ts)
                 }
             }
         }
-        st->info->duration_count++;
-        st->info->rfps_duration_sum += duration;
+        if (st->info->rfps_duration_sum <= INT64_MAX - duration) {
+            st->info->duration_count++;
+            st->info->rfps_duration_sum += duration;
+        }
 
         if (st->info->duration_count % 10 == 0) {
             int n = st->info->duration_count;
