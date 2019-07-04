@@ -1041,6 +1041,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
+    av_freep(&avctx->subtitle_header);
     if (avctx->internal) {
         av_frame_free(&avctx->internal->to_free);
         av_frame_free(&avctx->internal->compat_decode_frame);
