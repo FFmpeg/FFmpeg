@@ -87,6 +87,15 @@ int ffio_read_size(AVIOContext *s, unsigned char *buf, int size);
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
 
 /**
+ * Reallocate a given buffer for AVIOContext.
+ *
+ * @param s the AVIOContext to realloc.
+ * @param buf_size required new buffer size.
+ * @return 0 on success, a negative AVERROR on failure.
+ */
+int ffio_realloc_buf(AVIOContext *s, int buf_size);
+
+/**
  * Ensures that the requested seekback buffer size will be available
  *
  * Will ensure that when reading sequentially up to buf_size, seeking
