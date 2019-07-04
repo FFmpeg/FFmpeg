@@ -1978,7 +1978,7 @@ static int open_demux_for_component(AVFormatContext *s, struct representation *p
             goto fail;
         }
         st->id = i;
-        avcodec_parameters_copy(st->codecpar, pls->ctx->streams[i]->codecpar);
+        avcodec_parameters_copy(st->codecpar, ist->codecpar);
         avpriv_set_pts_info(st, ist->pts_wrap_bits, ist->time_base.num, ist->time_base.den);
     }
 
