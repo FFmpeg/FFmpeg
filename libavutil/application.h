@@ -35,6 +35,8 @@
 #define AVAPP_EVENT_URL_CHANGED  7 // URL CHANGE EVENT
 #define AVAPP_EVENT_IJK_FIND_STREAM_INFO   8 // IJK FIND STREAM INFO EVENT
 
+#define AVAPP_EVENT_IJK_PKG_COUNT_TRACKER   9 // IJK pkg count EVENT
+
 #define AVAPP_EVENT_ASYNC_STATISTIC     0x11000 //AVAppAsyncStatistic
 #define AVAPP_EVENT_ASYNC_READ_SPEED    0x11001 //AVAppAsyncReadSpeed
 #define AVAPP_EVENT_IO_TRAFFIC          0x12204 //AVAppIOTraffic
@@ -214,6 +216,17 @@ typedef struct{
     int is_audio;
     int url_change_count;
 } AVAppUrlChanged;
+
+typedef struct{
+    int64_t revc_video_ten_pkg_timestamp;
+    int64_t revc_audio_ten_pkg_timestamp;
+    int64_t revc_video_first_pkg_timestamp;
+    int64_t revc_audio_first_pkg_timestamp;
+    int64_t first_video_will_http_timestamp;
+    int64_t first_audio_will_http_timestamp;
+    int64_t first_video_did_http_ok_timestamp;
+    int64_t first_audio_did_http_ok_timestamp;
+} AVAppPkgCountTracker;
 
 typedef struct AVApplicationContext AVApplicationContext;
 struct AVApplicationContext {
