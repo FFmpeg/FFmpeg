@@ -15151,6 +15151,8 @@ Set color space conforming to the United States Federal Communications
 Commission (FCC) Code of Federal Regulations (CFR) Title 47 (2003) 73.682 (a).
 
 @item bt601
+@item bt470
+@item smpte170m
 Set color space conforming to:
 
 @itemize
@@ -15167,6 +15169,9 @@ Society of Motion Picture and Television Engineers (SMPTE) ST 170:2004
 
 @item smpte240m
 Set color space conforming to SMPTE ST 240:1999.
+
+@item bt2020
+Set color space conforming to ITU-R BT.2020 non-constant luminance system.
 @end table
 
 @item in_range
