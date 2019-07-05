@@ -1,3 +1,5 @@
+// this has been copied from gif.c with intention of moving common parts to a third file shared between lossless and lossy gif encoders
+
 /*
  * Copyright (c) 2000 Fabrice Bellard
  * Copyright (c) 2002 Francois Revol
@@ -45,7 +47,7 @@
 
 typedef struct GIFContext {
     const AVClass *class;
-    void *lossy;
+    void *lossy; // not used. Added to keep the struct layout the same as the original GIFContext, because avcontext expects GIFContext struct.
     uint8_t *buf;
     int buf_size;
     AVFrame *last_frame;
@@ -61,6 +63,9 @@ enum {
     GF_OFFSETTING = 1<<0,
     GF_TRANSDIFF  = 1<<1,
 };
+
+
+// I'm not sure if these helper functions are still correct, since the input format has changed from 8-bit to RGBA
 
 static int is_image_translucent(AVCodecContext *avctx,
                                 const uint8_t *buf, const int linesize)
@@ -343,7 +348,7 @@ static int gif_image_write_image(AVCodecContext *avctx,
         }
     }
 
-
+    // needs to be reimplemented
     assert(!honor_transparency);
 
     fprintf(stderr, "linesize=%d, width=%d\n", linesize, width);
@@ -355,6 +360,8 @@ static int gif_image_write_image(AVCodecContext *avctx,
         .linesize = linesize,
     };
     Gif_Color stub_palette[AVPALETTE_COUNT];
+
+    // gifsicle uses RGB palette struct instead of RGBA-as-int format
     const uint32_t *palette = local_palette ? local_palette : s->palette;
     for(int i=0; i < AVPALETTE_COUNT; i++) {
         stub_palette[i] = (Gif_Color){
@@ -365,6 +372,10 @@ static int gif_image_write_image(AVCodecContext *avctx,
         .ncol = 256,
         .col = stub_palette,
     };
+
+    // the real giflossy compression is here
+    // 8 = number of bits used in the palette
+    // 10000 = lossy compression level (more = heavier compression)
     ff_lossy_write_compressed_data(&gfcm, &gfi, 8, 10000, bytestream, end);
 
     const uint8_t *ptr = s->buf;
@@ -399,6 +410,10 @@ static av_cold int giflossy_encode_init(AVCodecContext *avctx)
     if (!s->tmpl || !s->buf)
         return AVERROR(ENOMEM);
 
+    // uses fake random palette for testing. You should generate a good palette here.
+    // Note that ffmpeg's default fixed rgb232 pallette is awful and will make lossy compression ineffective.
+    // It's ideal to have per-frame palette (allows one pass encoding, and gives best compression).
+    // Optimized global palette may be acceptable, but it's unnecessary cost of 2-pass encoding, and gives fewer opportunities for compression.
     for (int i = 0; i < 256; i++) {
         int r=i, g=i, b=i;
         s->palette[i] = (rand() << 16) ^ rand();//b + (g << 8) + (r << 16) + (0xFFU << 24);
@@ -415,6 +430,7 @@ static int giflossy_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     const uint32_t *local_palette = NULL;
     int ret;
 
+    // this pre-allocation seems dodgy, but that's how ffmpeg's gif.c did it. I'd prefer to have a growable buffer.
     if ((ret = ff_alloc_packet2(avctx, pkt, avctx->width*avctx->height*7/5 + AV_INPUT_BUFFER_MIN_SIZE, 0)) < 0)
         return ret;
     outbuf_ptr = pkt->data;
@@ -472,7 +488,7 @@ AVCodec ff_giflossy_encoder = {
     .encode2        = giflossy_encode_frame,
     .close          = giflossy_encode_close,
     .pix_fmts       = (const enum AVPixelFormat[]){
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_NONE // Important that the input is not 8-bit, but RGBA (or RGB, if you convert it to contiguous RGBA buffer)
     },
     .priv_class     = &giflossy_class,
 };
@@ -504,8 +520,12 @@ gfc_reinit(Gif_CodeTable *gfc, Gif_Code clear_code)
   gfc->clear_code = clear_code;
 }
 
-static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transaprent, int b_transparent, gfc_rgbdiff dither);
+static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transparent, int b_transparent, gfc_rgbdiff dither);
 
+// This reads a pixel at offset pos as RGBA.
+// In gifsicle it's too tricky to support stride != width other than expensively dividing pos by width first,
+// so the simplest and most efficient solution would be to make sure the input buffer is contigous RGBA buffer
+// and just use buffer[pos]
 static inline Gif_RGBA rgba_color_at_pos(const Gif_Image *gfi, unsigned pos)
 {
     const unsigned pixel_size = 4;
@@ -517,6 +537,10 @@ static inline Gif_RGBA rgba_color_at_pos(const Gif_Image *gfi, unsigned pos)
     return ((Gif_RGBA*)gfi->image_data)[pos];
 }
 
+// it reads pixel at offset as palette index.
+//
+// The tricky bit here is conversion from RGB + dither to palette index.
+// Currentlty it's a naive search. It's used only twice per run, so it's not too bad for perf.
 static inline uint8_t gif_pixel_at_pos(const Gif_Colormap *gfcm, const Gif_Image *gfi, unsigned pos, gfc_rgbdiff dither)
 {
     Gif_RGBA rgba = rgba_color_at_pos(gfi, pos);
@@ -536,7 +560,7 @@ static inline uint8_t gif_pixel_at_pos(const Gif_Colormap *gfcm, const Gif_Image
     return best;
 }
 
-
+// temp for node selection
 struct selected_node {
   Gif_Node *node; /* which node has been chosen by gfc_lookup_lossy */
   unsigned long pos, /* where the node ends */
@@ -546,14 +570,14 @@ struct selected_node {
 
 
 /* Difference (MSE) between given color indexes + dithering error */
-static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transaprent, int b_transparent, gfc_rgbdiff dither)
+static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transparent, int b_transparent, gfc_rgbdiff dither)
 {
   /* if one is transparent and the other is not, then return maximum difference */
   /* TODO: figure out what color is in the canvas under the transparent pixel and match against that */
-  if (a_transaprent != b_transparent) return 1<<25;
+  if (a_transparent != b_transparent) return 1<<25;
 
   /* Two transparent colors are identical */
-  if (a_transaprent) return 0;
+  if (a_transparent) return 0;
 
   /* squared error with or without dithering. */
   unsigned int dith = (a.gfc_red-b.gfc_red+dither.r)*(a.gfc_red-b.gfc_red+dither.r)
@@ -565,9 +589,9 @@ static inline unsigned int color_diff(Gif_Color a, Gif_Color b, int a_transapren
 
 
 /* difference between expected color a+dither and color b (used to calculate dithering required) */
-static inline gfc_rgbdiff diffused_difference(Gif_Color a, Gif_Color b, int a_transaprent, int b_transaprent, gfc_rgbdiff dither)
+static inline gfc_rgbdiff diffused_difference(Gif_Color a, Gif_Color b, int a_transparent, int b_transaprent, gfc_rgbdiff dither)
 {
-  if (a_transaprent || b_transaprent) return (gfc_rgbdiff){0,0,0};
+  if (a_transparent || b_transaprent) return (gfc_rgbdiff){0,0,0};
 
   return (gfc_rgbdiff) {
     a.gfc_red - b.gfc_red + dither.r * 3/4,
@@ -668,6 +692,7 @@ gfc_change_node_to_table(Gif_CodeTable *gfc, Gif_Node *work_node,
   work_node->child.m = table;
 }
 
+// add new run to the lzw dictionary
 static inline void
 gfc_define(Gif_CodeTable *gfc, Gif_Node *work_node, uint8_t suffix,
            Gif_Code next_code)
@@ -694,6 +719,7 @@ gfc_define(Gif_CodeTable *gfc, Gif_Node *work_node, uint8_t suffix,
     gfc_change_node_to_table(gfc, work_node, next_node);
 }
 
+// main compression function
 static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, int min_code_bits, int loss, uint8_t **bytestream, uint8_t *end)
 {
     assert(gfcm);
@@ -810,7 +836,12 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
      * Find the next code to output. */
     {
       struct selected_node t = gfc_lookup_lossy(&gfc, gfcm, gfi, pos, NULL, 0, dither, loss);
-      dither = t.dither;
+      dither = t.dither; // passing dithering between runs may increase strenght of dithering overall.
+      // here the dither is merely a remapping error of the last pixel in the selected run (i.e. string of remapped pixels represented by an LZW code), and it's passed to the first pixel in the next run
+      // it would be even nicer to diffuse that error to the surrounding right and next line pixels.
+      // and even better it would be to get the full run, and floyd-steinberg diffuse error for the entire run, ratehr than just its last pixel.
+      // (proper diffusion was not possible in giflossy, because it used paletted input, but this implementation uses RGBA input, so it should be feasible
+      // to modify the RGBA buffer)
 
       work_node = t.node;
       run = t.pos - pos;
@@ -875,6 +906,7 @@ static int ff_lossy_write_compressed_data(Gif_Colormap *gfcm, Gif_Image *gfi, in
   bufpos = (bufpos + 7) >> 3;
   buf[(bufpos - 1) & 0xFFFFFF00] = (bufpos - 1) & 0xFF;
   buf[bufpos] = 0;
+  // I'm shocked that ffmpeg's bytestream_put_buffer doesn't check for buffer overrun
   bytestream_put_buffer(bytestream, buf, bufpos + 1);
 
   if (buf != stack_buffer) {
