@@ -456,8 +456,8 @@ static int lut_planar_16bits(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         const int in_linesize  =  in->linesize[plane] / 2;
         const int out_linesize = out->linesize[plane] / 2;
 
-        inrow  = (uint16_t *)(in ->data[plane] + slice_start * in_linesize);
-        outrow = (uint16_t *)(out->data[plane] + slice_start * out_linesize);
+        inrow  = (uint16_t *)in ->data[plane] + slice_start * in_linesize;
+        outrow = (uint16_t *)out->data[plane] + slice_start * out_linesize;
 
         for (i = slice_start; i < slice_end; i++) {
             for (j = 0; j < w; j++) {
