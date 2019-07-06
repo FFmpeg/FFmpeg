@@ -81,8 +81,6 @@ static int dnxhd_find_frame_end(DNXHDParserContext *dctx,
                 }
                 dctx->remaining = remaining;
                 if (buf_size - i + 47 >= dctx->remaining) {
-                    int remaining = dctx->remaining;
-
                     pc->frame_start_found = 0;
                     pc->state64 = -1;
                     dctx->cur_byte = 0;
