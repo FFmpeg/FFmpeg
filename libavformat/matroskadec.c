@@ -1259,12 +1259,13 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
         return 1;
     default:
         if (length) {
+            int64_t res2;
             if (ffio_limit(pb, length) != length) {
                 // ffio_limit emits its own error message,
                 // so we don't have to.
                 return AVERROR(EIO);
             }
-            if ((res = avio_skip(pb, length - 1)) >= 0) {
+            if ((res2 = avio_skip(pb, length - 1)) >= 0) {
                 // avio_skip might take us past EOF. We check for this
                 // by skipping only length - 1 bytes, reading a byte and
                 // checking the error flags. This is done in order to check
@@ -1272,7 +1273,8 @@ static int ebml_parse_elem(MatroskaDemuxContext *matroska,
                 // no filesize (that ffio_limit relies on) is available.
                 avio_r8(pb);
                 res = NEEDS_CHECKING;
-            }
+            } else
+                res = res2;
         } else
             res = 0;
     }
