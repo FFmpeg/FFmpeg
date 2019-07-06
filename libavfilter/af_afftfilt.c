@@ -49,7 +49,6 @@ typedef struct AFFTFiltContext {
     AVFrame *buffer;
     int eof;
     int win_func;
-    float win_scale;
     float *window_func_lut;
 } AFFTFiltContext;
 
@@ -138,7 +137,7 @@ static int config_input(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     AFFTFiltContext *s = ctx->priv;
     char *saveptr = NULL;
-    int ret = 0, ch, i;
+    int ret = 0, ch;
     float overlap;
     char *args;
     const char *last_expr = "1";
@@ -226,10 +225,6 @@ static int config_input(AVFilterLink *inlink)
     if (s->overlap == 1)
         s->overlap = overlap;
 
-    for (s->win_scale = 0, i = 0; i < s->window_size; i++) {
-        s->win_scale += s->window_func_lut[i] * s->window_func_lut[i];
-    }
-
     s->hop_size = s->window_size * (1 - s->overlap);
     if (s->hop_size <= 0)
         return AVERROR(EINVAL);
@@ -247,7 +242,7 @@ static int filter_frame(AVFilterLink *inlink)
     AVFilterLink *outlink = ctx->outputs[0];
     AFFTFiltContext *s = ctx->priv;
     const int window_size = s->window_size;
-    const float f = 1. / s->win_scale;
+    const float f = 1. / (s->window_size / 2);
     double values[VAR_VARS_NB];
     AVFrame *out, *in = NULL;
     int ch, n, ret, i;
