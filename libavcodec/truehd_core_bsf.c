@@ -46,7 +46,7 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     int in_size, out_size;
     int have_header = 0;
     int substream_bits = 0;
-    int start, end;
+    int end;
     uint16_t dts;
 
     ret = ff_bsf_get_packet(ctx, &in);
@@ -81,7 +81,6 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     if (s->hdr.num_substreams > MAX_SUBSTREAMS)
         goto fail;
 
-    start = get_bits_count(&gbc);
     for (i = 0; i < s->hdr.num_substreams; i++) {
         for (int j = 0; j < 4; j++)
             units[i].bits[j] = get_bits1(&gbc);
@@ -104,7 +103,7 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     if (size >= 0 && size <= in->size)
         out_size = size;
     if (out_size < in_size) {
-        int bpos = 0, reduce = (end - start - substream_bits) >> 4;
+        int bpos = 0, reduce = (end - have_header * 28 * 8 - substream_bits) >> 4;
         uint16_t parity_nibble = 0;
         uint16_t auheader;
 
@@ -117,8 +116,6 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         out->size -= reduce * 2;
         parity_nibble ^= out->size / 2;
 
-        if (out_size > 8)
-            AV_WN64(out->data + out_size - 8, 0);
         if (have_header) {
             memcpy(out->data + 4, in->data + 4, 28);
             out->data[16 + 4] = (out->data[16 + 4] & 0x0c) | (FFMIN(s->hdr.num_substreams, 3) << 4);
