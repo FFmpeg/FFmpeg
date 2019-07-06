@@ -45,7 +45,7 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     int ret, i, last_offset = 0;
     int in_size, out_size;
     int have_header = 0;
-    int substream_bits = 0;
+    int substream_bytes = 0;
     int end;
 
     ret = ff_bsf_get_packet(ctx, &in);
@@ -85,22 +85,24 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         units[i].offset = get_bits(&gbc, 12);
         if (i < 3) {
             last_offset = units[i].offset * 2;
-            substream_bits += 16;
+            substream_bytes += 2;
         }
 
         if (units[i].bits[0]) {
             units[i].optional = get_bits(&gbc, 16);
             if (i < 3)
-                substream_bits += 16;
+                substream_bytes += 2;
         }
     }
-    end = get_bits_count(&gbc);
+    end = get_bits_count(&gbc) >> 3;
 
-    out_size = ((end + 7) >> 3) + 4 + last_offset;
+    out_size = end + 4 + last_offset;
     if (out_size < in_size) {
-        int bpos = 0, reduce = (end - have_header * 28 * 8 - substream_bits) >> 4;
+        int bpos = 0, reduce = end - have_header * 28 - substream_bytes;
         uint16_t parity_nibble, dts = AV_RB16(in->data + 2);
         uint16_t auheader;
+
+        av_assert1(reduce % 2 == 0);
 
         ret = av_new_packet(out, out_size);
         if (ret < 0)
@@ -108,7 +110,7 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
 
         AV_WB16(out->data + 2, dts);
         parity_nibble = dts;
-        out->size -= reduce * 2;
+        out->size     -= reduce;
         parity_nibble ^= out->size / 2;
 
         if (have_header) {
@@ -146,8 +148,8 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         parity_nibble &= 0xF;
 
         memcpy(out->data + have_header * 28 + 4 + bpos,
-               in->data + 4 + (end >> 3),
-               out_size - (4 + (end >> 3)));
+               in->data + 4 + end,
+               out_size - (4 + end));
         auheader  = (parity_nibble ^ 0xF) << 12;
         auheader |= (out->size / 2) & 0x0fff;
         AV_WB16(out->data, auheader);
