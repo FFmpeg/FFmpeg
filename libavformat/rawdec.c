@@ -34,9 +34,10 @@
 
 int ff_raw_read_partial_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    FFRawDemuxerContext *raw = s->priv_data;
     int ret, size;
 
-    size = RAW_PACKET_SIZE;
+    size = raw->raw_packet_size;
 
     if (av_new_packet(pkt, size) < 0)
         return AVERROR(ENOMEM);
@@ -119,10 +120,17 @@ int ff_raw_data_read_header(AVFormatContext *s)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_rawvideo_options[] = {
     { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC},
+    { "raw_packet_size", "", OFFSET(raw_packet_size), AV_OPT_TYPE_INT, {.i64 = RAW_PACKET_SIZE }, 1, INT_MAX, DEC},
+    { NULL },
+};
+const AVOption ff_raw_options[] = {
+    { "raw_packet_size", "", OFFSET(raw_packet_size), AV_OPT_TYPE_INT, {.i64 = RAW_PACKET_SIZE }, 1, INT_MAX, DEC},
     { NULL },
 };
 
 #if CONFIG_DATA_DEMUXER
+FF_RAW_DEMUXER_CLASS(raw_data)
+
 AVInputFormat ff_data_demuxer = {
     .name           = "data",
     .long_name      = NULL_IF_CONFIG_SMALL("raw data"),
@@ -130,6 +138,8 @@ AVInputFormat ff_data_demuxer = {
     .read_packet    = ff_raw_read_partial_packet,
     .raw_codec_id   = AV_CODEC_ID_NONE,
     .flags          = AVFMT_NOTIMESTAMPS,
+    .priv_data_size = sizeof(FFRawDemuxerContext),\
+    .priv_class     = &raw_data_demuxer_class,\
 };
 #endif
 

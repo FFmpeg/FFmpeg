@@ -31,6 +31,8 @@
 #include "rawdec.h"
 
 typedef struct TAKDemuxContext {
+    AVClass *class;
+    int     raw_packet_size;
     int     mlast_frame;
     int64_t data_end;
 } TAKDemuxContext;
@@ -211,6 +213,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+FF_RAW_DEMUXER_CLASS(tak)
 AVInputFormat ff_tak_demuxer = {
     .name           = "tak",
     .long_name      = NULL_IF_CONFIG_SMALL("raw TAK"),
@@ -221,4 +224,5 @@ AVInputFormat ff_tak_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "tak",
     .raw_codec_id   = AV_CODEC_ID_TAK,
+    .priv_class     = &tak_demuxer_class,
 };

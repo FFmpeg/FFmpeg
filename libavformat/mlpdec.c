@@ -56,6 +56,7 @@ static int mlp_probe(const AVProbeData *p)
     return mlp_thd_probe(p, 0xf8726fbb);
 }
 
+FF_RAW_DEMUXER_CLASS(mlp)
 AVInputFormat ff_mlp_demuxer = {
     .name           = "mlp",
     .long_name      = NULL_IF_CONFIG_SMALL("raw MLP"),
@@ -65,6 +66,8 @@ AVInputFormat ff_mlp_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .extensions     = "mlp",
     .raw_codec_id   = AV_CODEC_ID_MLP,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &mlp_demuxer_class,
 };
 #endif
 
@@ -74,6 +77,7 @@ static int thd_probe(const AVProbeData *p)
     return mlp_thd_probe(p, 0xf8726fba);
 }
 
+FF_RAW_DEMUXER_CLASS(truehd)
 AVInputFormat ff_truehd_demuxer = {
     .name           = "truehd",
     .long_name      = NULL_IF_CONFIG_SMALL("raw TrueHD"),
@@ -83,6 +87,8 @@ AVInputFormat ff_truehd_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX | AVFMT_NOTIMESTAMPS,
     .extensions     = "thd",
     .raw_codec_id   = AV_CODEC_ID_TRUEHD,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &truehd_demuxer_class,
 };
 #endif
 

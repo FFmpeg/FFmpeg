@@ -102,6 +102,7 @@ static int ac3_probe(const AVProbeData *p)
     return ac3_eac3_probe(p, AV_CODEC_ID_AC3);
 }
 
+FF_RAW_DEMUXER_CLASS(ac3)
 AVInputFormat ff_ac3_demuxer = {
     .name           = "ac3",
     .long_name      = NULL_IF_CONFIG_SMALL("raw AC-3"),
@@ -111,6 +112,8 @@ AVInputFormat ff_ac3_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "ac3",
     .raw_codec_id   = AV_CODEC_ID_AC3,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &ac3_demuxer_class,
 };
 #endif
 
@@ -120,6 +123,7 @@ static int eac3_probe(const AVProbeData *p)
     return ac3_eac3_probe(p, AV_CODEC_ID_EAC3);
 }
 
+FF_RAW_DEMUXER_CLASS(eac3)
 AVInputFormat ff_eac3_demuxer = {
     .name           = "eac3",
     .long_name      = NULL_IF_CONFIG_SMALL("raw E-AC-3"),
@@ -129,5 +133,7 @@ AVInputFormat ff_eac3_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "eac3",
     .raw_codec_id   = AV_CODEC_ID_EAC3,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &eac3_demuxer_class,
 };
 #endif

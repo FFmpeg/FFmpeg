@@ -31,6 +31,8 @@
 #define SEEKPOINT_SIZE 18
 
 typedef struct FLACDecContext {
+    AVClass *class;
+    int raw_packet_size;
     int found_seektable;
 } FLACDecContext;
 
@@ -327,6 +329,7 @@ static int flac_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     return -1;
 }
 
+FF_RAW_DEMUXER_CLASS(flac)
 AVInputFormat ff_flac_demuxer = {
     .name           = "flac",
     .long_name      = NULL_IF_CONFIG_SMALL("raw FLAC"),
@@ -339,4 +342,5 @@ AVInputFormat ff_flac_demuxer = {
     .extensions     = "flac",
     .raw_codec_id   = AV_CODEC_ID_FLAC,
     .priv_data_size = sizeof(FLACDecContext),
+    .priv_class     = &flac_demuxer_class,
 };

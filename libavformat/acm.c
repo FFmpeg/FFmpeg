@@ -60,6 +60,7 @@ static int acm_read_header(AVFormatContext *s)
     return 0;
 }
 
+FF_RAW_DEMUXER_CLASS(acm)
 AVInputFormat ff_acm_demuxer = {
     .name           = "acm",
     .long_name      = NULL_IF_CONFIG_SMALL("Interplay ACM"),
@@ -69,4 +70,6 @@ AVInputFormat ff_acm_demuxer = {
     .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .extensions     = "acm",
     .raw_codec_id   = AV_CODEC_ID_INTERPLAY_ACM,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &acm_demuxer_class,
 };

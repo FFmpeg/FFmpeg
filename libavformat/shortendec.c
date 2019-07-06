@@ -59,6 +59,7 @@ static int shn_probe(const AVProbeData *p)
     return AVPROBE_SCORE_EXTENSION + 1;
 }
 
+FF_RAW_DEMUXER_CLASS(shorten)
 AVInputFormat ff_shorten_demuxer = {
     .name           = "shn",
     .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
@@ -68,4 +69,6 @@ AVInputFormat ff_shorten_demuxer = {
     .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK | AVFMT_NOTIMESTAMPS,
     .extensions     = "shn",
     .raw_codec_id   = AV_CODEC_ID_SHORTEN,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &shorten_demuxer_class,
 };
