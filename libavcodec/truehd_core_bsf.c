@@ -36,34 +36,33 @@ typedef struct TrueHDCoreContext {
     MLPHeaderInfo hdr;
 } TrueHDCoreContext;
 
-static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
+static int truehd_core_filter(AVBSFContext *ctx, AVPacket *pkt)
 {
     TrueHDCoreContext *s = ctx->priv_data;
     GetBitContext gbc;
     AccessUnit units[MAX_SUBSTREAMS];
-    AVPacket *in;
     int ret, i, last_offset = 0;
     int in_size, out_size;
     int have_header = 0;
     int substream_bytes = 0;
     int end;
 
-    ret = ff_bsf_get_packet(ctx, &in);
+    ret = ff_bsf_get_packet_ref(ctx, pkt);
     if (ret < 0)
         return ret;
 
-    if (in->size < 4) {
+    if (pkt->size < 4) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    in_size = (AV_RB16(in->data) & 0xFFF) * 2;
-    if (in_size < 4 || in_size > in->size) {
+    in_size = (AV_RB16(pkt->data) & 0xFFF) * 2;
+    if (in_size < 4 || in_size > pkt->size) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
 
-    ret = init_get_bits8(&gbc, in->data + 4, in->size - 4);
+    ret = init_get_bits8(&gbc, pkt->data + 4, pkt->size - 4);
     if (ret < 0)
         goto fail;
 
@@ -99,27 +98,31 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     out_size = end + 4 + last_offset;
     if (out_size < in_size) {
         int bpos = 0, reduce = end - have_header * 28 - substream_bytes;
-        uint16_t parity_nibble, dts = AV_RB16(in->data + 2);
+        uint16_t parity_nibble, dts = AV_RB16(pkt->data + 2);
         uint16_t auheader;
+        uint8_t header[28];
 
-        av_assert1(reduce % 2 == 0);
+        av_assert1(reduce >= 0 && reduce % 2 == 0);
 
-        ret = av_new_packet(out, out_size);
+        if (have_header) {
+            memcpy(header, pkt->data + 4, 28);
+            header[16]  = (header[16] & 0x0c) | (FFMIN(s->hdr.num_substreams, 3) << 4);
+            header[17] &= 0x7f;
+            header[25] &= 0xfe;
+            AV_WL16(header + 26, ff_mlp_checksum16(header, 26));
+        }
+
+        pkt->data += reduce;
+        out_size  -= reduce;
+        pkt->size  = out_size;
+
+        ret = av_packet_make_writable(pkt);
         if (ret < 0)
             goto fail;
 
-        AV_WB16(out->data + 2, dts);
+        AV_WB16(pkt->data + 2, dts);
         parity_nibble = dts;
-        out->size     -= reduce;
-        parity_nibble ^= out->size / 2;
-
-        if (have_header) {
-            memcpy(out->data + 4, in->data + 4, 28);
-            out->data[16 + 4] = (out->data[16 + 4] & 0x0c) | (FFMIN(s->hdr.num_substreams, 3) << 4);
-            out->data[17 + 4]&= 0x7f;
-            out->data[25 + 4] = out->data[25 + 4] & 0xfe;
-            AV_WL16(out->data + 4 + 26, ff_mlp_checksum16(out->data + 4, 26));
-        }
+        parity_nibble ^= out_size / 2;
 
         for (i = 0; i < FFMIN(s->hdr.num_substreams, 3); i++) {
             uint16_t substr_hdr = 0;
@@ -130,13 +133,13 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
             substr_hdr |= (units[i].bits[3] << 12);
             substr_hdr |=  units[i].offset;
 
-            AV_WB16(out->data + have_header * 28 + 4 + bpos, substr_hdr);
+            AV_WB16(pkt->data + have_header * 28 + 4 + bpos, substr_hdr);
 
             parity_nibble ^= substr_hdr;
             bpos          += 2;
 
             if (units[i].bits[0]) {
-                AV_WB16(out->data + have_header * 28 + 4 + bpos, units[i].optional);
+                AV_WB16(pkt->data + have_header * 28 + 4 + bpos, units[i].optional);
 
                 parity_nibble ^= units[i].optional;
                 bpos          += 2;
@@ -147,22 +150,17 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         parity_nibble ^= parity_nibble >> 4;
         parity_nibble &= 0xF;
 
-        memcpy(out->data + have_header * 28 + 4 + bpos,
-               in->data + 4 + end,
-               out_size - (4 + end));
         auheader  = (parity_nibble ^ 0xF) << 12;
-        auheader |= (out->size / 2) & 0x0fff;
-        AV_WB16(out->data, auheader);
+        auheader |= (out_size / 2) & 0x0fff;
+        AV_WB16(pkt->data, auheader);
 
-        ret = av_packet_copy_props(out, in);
-    } else {
-        av_packet_move_ref(out, in);
+        if (have_header)
+            memcpy(pkt->data + 4, header, 28);
     }
 
 fail:
     if (ret < 0)
-        av_packet_unref(out);
-    av_packet_free(&in);
+        av_packet_unref(pkt);
 
     return ret;
 }
