@@ -121,7 +121,8 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
             AV_WN64(out->data + out_size - 8, 0);
         if (have_header) {
             memcpy(out->data + 4, in->data + 4, 28);
-            out->data[16 + 4] = (out->data[16 + 4] & 0x0f) | (FFMIN(s->hdr.num_substreams, 3) << 4);
+            out->data[16 + 4] = (out->data[16 + 4] & 0x0c) | (FFMIN(s->hdr.num_substreams, 3) << 4);
+            out->data[17 + 4]&= 0x7f;
             out->data[25 + 4] = out->data[25 + 4] & 0xfe;
             out->data[26 + 4] = 0xff;
             out->data[27 + 4] = 0xff;
