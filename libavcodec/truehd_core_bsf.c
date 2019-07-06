@@ -42,12 +42,11 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     GetBitContext gbc;
     AccessUnit units[MAX_SUBSTREAMS];
     AVPacket *in;
-    int ret, i, size, last_offset = 0;
+    int ret, i, last_offset = 0;
     int in_size, out_size;
     int have_header = 0;
     int substream_bits = 0;
     int end;
-    uint16_t dts;
 
     ret = ff_bsf_get_packet(ctx, &in);
     if (ret < 0)
@@ -58,19 +57,11 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         goto fail;
     }
 
-    ret = init_get_bits(&gbc, in->data, 32);
-    if (ret < 0)
-        goto fail;
-
-    skip_bits(&gbc, 4);
-    in_size = get_bits(&gbc, 12) * 2;
+    in_size = (AV_RB16(in->data) & 0xFFF) * 2;
     if (in_size < 4 || in_size > in->size) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-
-    out_size = in_size;
-    dts = get_bits(&gbc, 16);
 
     ret = init_get_bits8(&gbc, in->data + 4, in->size - 4);
     if (ret < 0)
@@ -91,26 +82,24 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         for (int j = 0; j < 4; j++)
             units[i].bits[j] = get_bits1(&gbc);
 
-        units[i].offset = get_bits(&gbc, 12) * 2;
-        if (i < FFMIN(s->hdr.num_substreams, 3)) {
-            last_offset = units[i].offset;
+        units[i].offset = get_bits(&gbc, 12);
+        if (i < 3) {
+            last_offset = units[i].offset * 2;
             substream_bits += 16;
         }
 
         if (units[i].bits[0]) {
             units[i].optional = get_bits(&gbc, 16);
-            if (i < FFMIN(s->hdr.num_substreams, 3))
+            if (i < 3)
                 substream_bits += 16;
         }
     }
     end = get_bits_count(&gbc);
 
-    size = ((end + 7) >> 3) + 4 + last_offset;
-    if (size >= 0 && size <= in->size)
-        out_size = size;
+    out_size = ((end + 7) >> 3) + 4 + last_offset;
     if (out_size < in_size) {
         int bpos = 0, reduce = (end - have_header * 28 * 8 - substream_bits) >> 4;
-        uint16_t parity_nibble = 0;
+        uint16_t parity_nibble, dts = AV_RB16(in->data + 2);
         uint16_t auheader;
 
         ret = av_new_packet(out, out_size);
@@ -127,8 +116,6 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
             out->data[16 + 4] = (out->data[16 + 4] & 0x0c) | (FFMIN(s->hdr.num_substreams, 3) << 4);
             out->data[17 + 4]&= 0x7f;
             out->data[25 + 4] = out->data[25 + 4] & 0xfe;
-            out->data[26 + 4] = 0xff;
-            out->data[27 + 4] = 0xff;
             AV_WL16(out->data + 4 + 26, ff_mlp_checksum16(out->data + 4, 26));
         }
 
@@ -139,18 +126,18 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
             substr_hdr |= (units[i].bits[1] << 14);
             substr_hdr |= (units[i].bits[2] << 13);
             substr_hdr |= (units[i].bits[3] << 12);
-            substr_hdr |= (units[i].offset / 2) & 0x0FFF;
+            substr_hdr |=  units[i].offset;
 
             AV_WB16(out->data + have_header * 28 + 4 + bpos, substr_hdr);
 
-            parity_nibble ^= out->data[have_header * 28 + 4 + bpos++];
-            parity_nibble ^= out->data[have_header * 28 + 4 + bpos++];
+            parity_nibble ^= substr_hdr;
+            bpos          += 2;
 
             if (units[i].bits[0]) {
                 AV_WB16(out->data + have_header * 28 + 4 + bpos, units[i].optional);
 
-                parity_nibble ^= out->data[have_header * 28 + 4 + bpos++];
-                parity_nibble ^= out->data[have_header * 28 + 4 + bpos++];
+                parity_nibble ^= units[i].optional;
+                bpos          += 2;
             }
         }
 
