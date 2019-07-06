@@ -1421,7 +1421,7 @@ static SoftFloat_IEEE754 multiply(SoftFloat_IEEE754 a, SoftFloat_IEEE754 b) {
         return_val = 0x80000000U;
     }
 
-    return_val |= (a.exp + b.exp + bit_count - 47) << 23;
+    return_val |= ((unsigned)av_clip(a.exp + b.exp + bit_count - 47, -126, 127) << 23) & 0x7F800000;
     return_val |= mantissa;
     return av_bits2sf_ieee754(return_val);
 }
