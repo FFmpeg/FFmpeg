@@ -53,8 +53,10 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
     if (ret < 0)
         return ret;
 
-    if (in->size < 4)
+    if (in->size < 4) {
+        ret = AVERROR_INVALIDDATA;
         goto fail;
+    }
 
     ret = init_get_bits(&gbc, in->data, 32);
     if (ret < 0)
@@ -62,8 +64,10 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
 
     skip_bits(&gbc, 4);
     in_size = get_bits(&gbc, 12) * 2;
-    if (in_size < 4 || in_size > in->size)
+    if (in_size < 4 || in_size > in->size) {
+        ret = AVERROR_INVALIDDATA;
         goto fail;
+    }
 
     out_size = in_size;
     dts = get_bits(&gbc, 16);
@@ -73,13 +77,15 @@ static int truehd_core_filter(AVBSFContext *ctx, AVPacket *out)
         goto fail;
 
     if (show_bits_long(&gbc, 32) == 0xf8726fba) {
-        if ((ret = ff_mlp_read_major_sync(ctx, &s->hdr, &gbc)) != 0)
+        if ((ret = ff_mlp_read_major_sync(ctx, &s->hdr, &gbc)) < 0)
             goto fail;
         have_header = 1;
     }
 
-    if (s->hdr.num_substreams > MAX_SUBSTREAMS)
+    if (s->hdr.num_substreams > MAX_SUBSTREAMS) {
+        ret = AVERROR_INVALIDDATA;
         goto fail;
+    }
 
     for (i = 0; i < s->hdr.num_substreams; i++) {
         for (int j = 0; j < 4; j++)
