@@ -69,6 +69,13 @@ typedef struct VAAPIEncodePicture {
     int64_t         pts;
     int             force_idr;
 
+#if VA_CHECK_VERSION(1, 0, 0)
+    // ROI regions.
+    VAEncROI       *roi;
+#else
+    void           *roi;
+#endif
+
     int             type;
     int             b_depth;
     int             encode_issued;
@@ -304,9 +311,20 @@ typedef struct VAAPIEncodeContext {
     int gop_counter;
     int end_of_stream;
 
+    // Whether the driver supports ROI at all.
+    int             roi_allowed;
+    // Maximum number of regions supported by the driver.
+    int             roi_max_regions;
+    // Quantisation range for offset calculations.  Set by codec-specific
+    // code, as it may change based on parameters.
+    int             roi_quant_range;
+
     // The encoder does not support cropping information, so warn about
     // it the first time we encounter any nonzero crop fields.
     int             crop_warned;
+    // If the driver does not support ROI then warn the first time we
+    // encounter a frame with ROI side data.
+    int             roi_warned;
 } VAAPIEncodeContext;
 
 enum {

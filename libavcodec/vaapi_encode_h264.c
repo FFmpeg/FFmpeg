@@ -1130,6 +1130,8 @@ static av_cold int vaapi_encode_h264_configure(AVCodecContext *avctx)
         }
     }
 
+    ctx->roi_quant_range = 51 + 6 * (ctx->profile->depth - 8);
+
     return 0;
 }
 

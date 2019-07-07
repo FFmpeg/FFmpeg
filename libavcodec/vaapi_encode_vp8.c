@@ -173,6 +173,8 @@ static av_cold int vaapi_encode_vp8_configure(AVCodecContext *avctx)
     else
         priv->q_index_i = priv->q_index_p;
 
+    ctx->roi_quant_range = VP8_MAX_QUANT;
+
     return 0;
 }
 

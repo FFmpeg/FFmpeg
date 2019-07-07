@@ -552,6 +552,8 @@ static av_cold int vaapi_encode_mpeg2_configure(AVCodecContext *avctx)
     ctx->nb_slices  = ctx->slice_block_rows;
     ctx->slice_size = 1;
 
+    ctx->roi_quant_range = 31;
+
     return 0;
 }
 
