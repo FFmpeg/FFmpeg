@@ -167,13 +167,8 @@ static int av1_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
 
     if (ctx->delete_padding) {
         for (i = frag->nb_units - 1; i >= 0; i--) {
-            if (frag->units[i].type == AV1_OBU_PADDING) {
-                err = ff_cbs_delete_unit(ctx->cbc, frag, i);
-                if (err < 0) {
-                    av_log(bsf, AV_LOG_ERROR, "Failed to delete Padding OBU.\n");
-                    goto fail;
-                }
-            }
+            if (frag->units[i].type == AV1_OBU_PADDING)
+                ff_cbs_delete_unit(ctx->cbc, frag, i);
         }
     }
 

@@ -94,9 +94,7 @@ static int h264_redundant_pps_filter(AVBSFContext *bsf, AVPacket *pkt)
             if (!au_has_sps) {
                 av_log(bsf, AV_LOG_VERBOSE, "Deleting redundant PPS "
                        "at %"PRId64".\n", pkt->pts);
-                err = ff_cbs_delete_unit(ctx->input, au, i);
-                if (err < 0)
-                    goto fail;
+                ff_cbs_delete_unit(ctx->input, au, i);
                 i--;
                 continue;
             }

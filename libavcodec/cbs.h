@@ -380,10 +380,12 @@ int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
 
 /**
  * Delete a unit from a fragment and free all memory it uses.
+ *
+ * Requires position to be >= 0 and < frag->nb_units.
  */
-int ff_cbs_delete_unit(CodedBitstreamContext *ctx,
-                       CodedBitstreamFragment *frag,
-                       int position);
+void ff_cbs_delete_unit(CodedBitstreamContext *ctx,
+                        CodedBitstreamFragment *frag,
+                        int position);
 
 
 #endif /* AVCODEC_CBS_H */

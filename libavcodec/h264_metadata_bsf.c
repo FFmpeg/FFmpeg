@@ -427,13 +427,7 @@ static int h264_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     if (ctx->delete_filler) {
         for (i = au->nb_units - 1; i >= 0; i--) {
             if (au->units[i].type == H264_NAL_FILLER_DATA) {
-                // Filler NAL units.
-                err = ff_cbs_delete_unit(ctx->cbc, au, i);
-                if (err < 0) {
-                    av_log(bsf, AV_LOG_ERROR, "Failed to delete "
-                           "filler NAL.\n");
-                    goto fail;
-                }
+                ff_cbs_delete_unit(ctx->cbc, au, i);
                 continue;
             }
 

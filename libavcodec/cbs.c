@@ -737,12 +737,12 @@ int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_delete_unit(CodedBitstreamContext *ctx,
-                       CodedBitstreamFragment *frag,
-                       int position)
+void ff_cbs_delete_unit(CodedBitstreamContext *ctx,
+                        CodedBitstreamFragment *frag,
+                        int position)
 {
-    if (position < 0 || position >= frag->nb_units)
-        return AVERROR(EINVAL);
+    av_assert0(0 <= position && position < frag->nb_units
+                             && "Unit to be deleted not in fragment.");
 
     cbs_unit_uninit(ctx, &frag->units[position]);
 
@@ -752,6 +752,4 @@ int ff_cbs_delete_unit(CodedBitstreamContext *ctx,
         memmove(frag->units + position,
                 frag->units + position + 1,
                 (frag->nb_units - position) * sizeof(*frag->units));
-
-    return 0;
 }
