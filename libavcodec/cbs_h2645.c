@@ -1644,10 +1644,10 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
     return 0;
 }
 
-int ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
-                                   CodedBitstreamFragment *au,
-                                   CodedBitstreamUnit *nal,
-                                   int position)
+void ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
+                                    CodedBitstreamFragment *au,
+                                    CodedBitstreamUnit *nal,
+                                    int position)
 {
     H264RawSEI *sei = nal->content;
 
@@ -1662,7 +1662,6 @@ int ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
             if (&au->units[i] == nal)
                 break;
         }
-        av_assert0(i < au->nb_units && "NAL unit not in access unit.");
 
         ff_cbs_delete_unit(ctx, au, i);
     } else {
@@ -1673,6 +1672,4 @@ int ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,
                 sei->payload + position + 1,
                 (sei->payload_count - position) * sizeof(*sei->payload));
     }
-
-    return 0;
 }
