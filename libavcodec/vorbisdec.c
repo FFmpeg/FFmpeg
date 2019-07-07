@@ -1097,13 +1097,14 @@ static int vorbis_floor0_decode(vorbis_context *vc,
 {
     vorbis_floor0 *vf = &vfu->t0;
     float *lsp = vf->lsp;
-    unsigned amplitude, book_idx;
+    unsigned book_idx;
+    uint64_t amplitude;
     unsigned blockflag = vc->modes[vc->mode_number].blockflag;
 
     if (!vf->amplitude_bits)
         return 1;
 
-    amplitude = get_bits(&vc->gb, vf->amplitude_bits);
+    amplitude = get_bits64(&vc->gb, vf->amplitude_bits);
     if (amplitude > 0) {
         float last = 0;
         unsigned idx, lsp_len = 0;
@@ -1181,7 +1182,7 @@ static int vorbis_floor0_decode(vorbis_context *vc,
 
                 /* calculate linear floor value */
                 q = exp((((amplitude*vf->amplitude_offset) /
-                          (((1 << vf->amplitude_bits) - 1) * sqrt(p + q)))
+                          (((1ULL << vf->amplitude_bits) - 1) * sqrt(p + q)))
                          - vf->amplitude_offset) * .11512925f);
 
                 /* fill vector */
