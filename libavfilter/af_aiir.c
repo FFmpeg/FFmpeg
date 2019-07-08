@@ -57,6 +57,7 @@ typedef struct AudioIIRContext {
     const AVClass *class;
     char *a_str, *b_str, *g_str;
     double dry_gain, wet_gain;
+    double mix;
     int format;
     int process;
     int precision;
@@ -124,6 +125,7 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
     AudioIIRContext *s = ctx->priv;                                     \
     const double ig = s->dry_gain;                                      \
     const double og = s->wet_gain;                                      \
+    const double mix = s->mix;                                          \
     ThreadData *td = arg;                                               \
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
@@ -152,6 +154,7 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
                                                                         \
         oc[0] = sample;                                                 \
         sample *= og;                                                   \
+        sample = sample * mix + ic[0] * (1. - mix);                     \
         if (need_clipping && sample < min) {                            \
             (*clippings)++;                                             \
             dst[n] = min;                                               \
@@ -177,6 +180,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
     AudioIIRContext *s = ctx->priv;                                     \
     const double ig = s->dry_gain;                                      \
     const double og = s->wet_gain;                                      \
+    const double mix = s->mix;                                          \
     ThreadData *td = arg;                                               \
     AVFrame *in = td->in, *out = td->out;                               \
     const type *src = (const type *)in->extended_data[ch];              \
@@ -207,6 +211,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
             o1 = o0;                                                    \
             o0 *= og;                                                   \
                                                                         \
+            o0 = o0 * mix + (1. - mix) * sample;                        \
             if (need_clipping && o0 < min) {                            \
                 (*clippings)++;                                         \
                 dst[n] = min;                                           \
@@ -1074,6 +1079,7 @@ static const AVOption aiir_options[] = {
     { "flt", "single-precision floating-point",    0,                AV_OPT_TYPE_CONST,  {.i64=1},     0, 0, AF, "precision" },
     { "i32", "32-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=2},     0, 0, AF, "precision" },
     { "i16", "16-bit integers",                    0,                AV_OPT_TYPE_CONST,  {.i64=3},     0, 0, AF, "precision" },
+    { "mix", "set mix",                            OFFSET(mix),      AV_OPT_TYPE_DOUBLE, {.dbl=1},     0, 1, AF },
     { "response", "show IR frequency response",    OFFSET(response), AV_OPT_TYPE_BOOL,   {.i64=0},     0, 1, VF },
     { "channel", "set IR channel to display frequency response", OFFSET(ir_channel), AV_OPT_TYPE_INT, {.i64=0}, 0, 1024, VF },
     { "size",   "set video size",                  OFFSET(w),        AV_OPT_TYPE_IMAGE_SIZE, {.str = "hd720"}, 0, 0, VF },

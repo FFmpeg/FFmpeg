@@ -1409,6 +1409,10 @@ single-precision floating-point
 16-bit integers
 @end table
 
+@item mix
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item response
 Show IR frequency response, magnitude and phase in additional video stream.
 By default it is disabled.
