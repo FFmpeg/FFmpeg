@@ -51,6 +51,8 @@ typedef struct ReadEIA608Context {
     int black;
     float mpd, mhd, msd, mac, spw, bhd, wth, bth;
     int chp;
+    int lp;
+    uint8_t *temp;
 } ReadEIA608Context;
 
 #define OFFSET(x) offsetof(ReadEIA608Context, x)
@@ -68,6 +70,7 @@ static const AVOption readeia608_options[] = {
     { "th_w",     "set white color threshold",                                        OFFSET(wth),   AV_OPT_TYPE_FLOAT, {.dbl=.35},   0.1,       1, FLAGS },
     { "th_b",     "set black color threshold",                                        OFFSET(bth),   AV_OPT_TYPE_FLOAT, {.dbl=.15},     0,     0.5, FLAGS },
     { "chp",      "check and apply parity bit",                                       OFFSET(chp),   AV_OPT_TYPE_BOOL,  {.i64= 0},      0,       1, FLAGS },
+    { "lp",       "lowpass line prior to processing",                                 OFFSET(lp),    AV_OPT_TYPE_BOOL,  {.i64= 0},      0,       1, FLAGS },
     { NULL }
 };
 
@@ -114,6 +117,9 @@ static int config_input(AVFilterLink *inlink)
     s->max_start_diff = s->msd * ((1 << depth) - 1);
     s->white = s->wth * ((1 << depth) - 1);
     s->black = s->bth * ((1 << depth) - 1);
+    s->temp = av_calloc(inlink->w, sizeof(*s->temp));
+    if (!s->temp)
+        return AVERROR(ENOMEM);
 
     return 0;
 }
@@ -132,6 +138,25 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
     int s1, s2, s3, parity;
 
     src = &in->data[0][line * in->linesize[0]];
+
+    if (s->lp) {
+        uint8_t *dst = s->temp;
+        int w = inlink->w - 1;
+
+        for (i = 0; i < inlink->w; i++) {
+            int a = FFMAX(i - 3, 0);
+            int b = FFMAX(i - 2, 0);
+            int c = FFMAX(i - 1, 0);
+            int d = FFMIN(i + 3, w);
+            int e = FFMIN(i + 2, w);
+            int f = FFMIN(i + 1, w);
+
+            dst[i] = (src[a] + src[b] + src[c] + src[i] + src[d] + src[e] + src[f] + 6) / 7;
+        }
+
+        src = s->temp;
+    }
+
     for (i = 0; i < sync_width; i++) {
         max = FFMAX(max, src[i]);
         min = FFMIN(min, src[i]);
@@ -163,14 +188,18 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
         last = Y;
     }
 
-    if (peaks != 7)
+    if (peaks != 7) {
+        av_log(ctx, AV_LOG_DEBUG, "peaks: %d != 7\n", peaks);
         return;
+    }
 
     for (i = 1; i < 7; i++)
         max_peak_diff = FFMAX(max_peak_diff, FFABS(clock[i][0] - clock[i-1][0]));
 
-    if (max_peak_diff > s->max_peak_diff)
+    if (max_peak_diff > s->max_peak_diff) {
+        av_log(ctx, AV_LOG_DEBUG, "mhd: %d > %d\n", max_peak_diff, s->max_peak_diff);
         return;
+    }
 
     max = 0; min = INT_MAX;
     for (i = 1; i < 7; i++) {
@@ -179,15 +208,19 @@ static void extract_line(AVFilterContext *ctx, AVFilterLink *inlink, AVFrame *in
     }
 
     range = max - min;
-    if (range > s->max_period_diff)
+    if (range > s->max_period_diff) {
+        av_log(ctx, AV_LOG_DEBUG, "mpd: %d > %d\n", range, s->max_period_diff);
         return;
+    }
 
     s1 = src[sync_width + width_per_bit * 0 + width_per_bit / 2];
     s2 = src[sync_width + width_per_bit * 1 + width_per_bit / 2];
     s3 = src[sync_width + width_per_bit * 2 + width_per_bit / 2];
 
-    if (FFABS(s1 - s2) > s->max_start_diff || s1 > s->black || s2 > s->black || s3 < s->white)
+    if (FFABS(s1 - s2) > s->max_start_diff || s1 > s->black || s2 > s->black || s3 < s->white) {
+        av_log(ctx, AV_LOG_DEBUG, "msd: %d > %d\n", FFABS(s1 - s2), s->max_start_diff);
         return;
+    }
 
     for (ch = 0; ch < 2; ch++) {
         for (parity = 0, i = 0; i < 8; i++) {
@@ -238,6 +271,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, in);
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    ReadEIA608Context *s = ctx->priv;
+
+    av_freep(&s->temp);
+}
+
 static const AVFilterPad readeia608_inputs[] = {
     {
         .name         = "default",
@@ -264,5 +304,6 @@ AVFilter ff_vf_readeia608 = {
     .query_formats = query_formats,
     .inputs        = readeia608_inputs,
     .outputs       = readeia608_outputs,
+    .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
