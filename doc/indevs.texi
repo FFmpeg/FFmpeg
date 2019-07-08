@@ -178,6 +178,9 @@ Capture the mouse pointer. Default is 0.
 @item -capture_mouse_clicks
 Capture the screen mouse clicks. Default is 0.
 
+@item -capture_raw_data
+Capture the raw device data. Default is 0.
+Using this option may result in receiving the underlying data delivered to the AVFoundation framework. E.g. for muxed devices that sends raw DV data to the framework (like tape-based camcorders), setting this option to false results in extracted video frames captured in the designated pixel format only. Setting this option to true results in receiving the raw DV stream untouched.
 @end table
 
 @subsection Examples
@@ -207,6 +210,13 @@ Record video from the system default video device using the pixel format bgr0 an
 @example
 $ ffmpeg -f avfoundation -pixel_format bgr0 -i "default:none" out.avi
 @end example
+
+@item
+Record raw DV data from a suitable input device and write the output into out.dv:
+@example
+$ ffmpeg -f avfoundation -capture_raw_data true -i "zr100:none" out.dv
+@end example
+
 
 @end itemize
 
