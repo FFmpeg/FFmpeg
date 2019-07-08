@@ -1523,6 +1523,10 @@ kHz
 @item width, w
 Specify the band-width of a filter in width_type units.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -1542,6 +1546,10 @@ Syntax for the command is : "@var{width_type}"
 @item width, w
 Change allpass width.
 Syntax for the command is : "@var{width}"
+
+@item mix, m
+Change allpass mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section aloop
@@ -2460,6 +2468,10 @@ kHz
 @item width, w
 Specify the band-width of a filter in width_type units.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -2479,6 +2491,10 @@ Syntax for the command is : "@var{width_type}"
 @item width, w
 Change bandpass width.
 Syntax for the command is : "@var{width}"
+
+@item mix, m
+Change bandpass mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section bandreject
@@ -2511,6 +2527,10 @@ kHz
 @item width, w
 Specify the band-width of a filter in width_type units.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -2530,6 +2550,10 @@ Syntax for the command is : "@var{width_type}"
 @item width, w
 Change bandreject width.
 Syntax for the command is : "@var{width}"
+
+@item mix, m
+Change bandreject mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section bass, lowshelf
@@ -2569,6 +2593,10 @@ kHz
 @item width, w
 Determine how steep is the filter's shelf transition.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -2592,6 +2620,10 @@ Syntax for the command is : "@var{width}"
 @item gain, g
 Change bass gain.
 Syntax for the command is : "@var{gain}"
+
+@item mix, m
+Change bass mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section biquad
@@ -2614,6 +2646,10 @@ This filter supports the following commands:
 @item b2
 Change biquad parameter.
 Syntax for the command is : "@var{value}"
+
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
 @end table
 
 @section bs2b
@@ -3303,6 +3339,10 @@ Specify the band-width of a filter in width_type units.
 Set the required gain or attenuation in dB.
 Beware of clipping when using a positive gain.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -3341,6 +3381,10 @@ Syntax for the command is : "@var{width}"
 @item gain, g
 Change equalizer gain.
 Syntax for the command is : "@var{gain}"
+
+@item mix, m
+Change equalizer mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section extrastereo
@@ -3764,6 +3808,10 @@ Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -3783,6 +3831,10 @@ Syntax for the command is : "@var{width_type}"
 @item width, w
 Change highpass width.
 Syntax for the command is : "@var{width}"
+
+@item mix, m
+Change highpass mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section join
@@ -4072,6 +4124,10 @@ Specify the band-width of a filter in width_type units.
 Applies only to double-pole filter.
 The default is 0.707q and gives a Butterworth response.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -4100,6 +4156,10 @@ Syntax for the command is : "@var{width_type}"
 @item width, w
 Change lowpass width.
 Syntax for the command is : "@var{width}"
+
+@item mix, m
+Change lowpass mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section lv2
@@ -5140,6 +5200,10 @@ kHz
 @item width, w
 Determine how steep is the filter's shelf transition.
 
+@item mix, m
+How much to use filtered signal in output. Default is 1.
+Range is between 0 and 1.
+
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
 @end table
@@ -5163,6 +5227,10 @@ Syntax for the command is : "@var{width}"
 @item gain, g
 Change treble gain.
 Syntax for the command is : "@var{gain}"
+
+@item mix, m
+Change treble mix.
+Syntax for the command is : "@var{mix}"
 @end table
 
 @section tremolo
