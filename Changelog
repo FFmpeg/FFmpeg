@@ -2,6 +2,42 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 versiob 4.1.4:
+ avcodec/ilbcdec: Simplify use of unsigned and fix more undefined overflows
+ avcodec/golomb: Correct the doxy about get_ue_golomb() and errors
+ avformat/utils: Check timebase before use in estimate_timings()
+ avcodec/hq_hqa: Use ff_set_dimensions()
+ avcodec/rv10: Fix integer overflow in aspect ratio compare
+ avcodec/4xm: Fix signed integer overflows in idct()
+ avcodec/qdm2: Check checksum_size for 0
+ avcodec/qdm2: error out of qdm2_fft_decode_tones() before entering endless loop
+ avcodec/qdm2: Do not read out of array in fix_coding_method_array()
+ avcodec/svq3: Use ff_set_dimension()
+ avcodec/iff: Check ham vs bpp
+ avcodec/ffwavesynth: use uint32_t to compute difference, it is enough
+ avcodec/ffwavesynth: Simplify lcg_seek(), avoid negative case
+ avcodec/ffwavesynth: Fix backward lcg_seek()
+ avcodec/flicvideo: Fix off by 1 error in flic_decode_frame_24BPP()
+ avcodec/vc1_block: Check for vlc error in vc1_decode_ac_coeff()
+ avcodec/alac: Check lpc_quant
+ avcodec/dxv: Initialize tex_funct to NULL
+ avcodec/alsdec: Add FF_CODEC_CAP_INIT_CLEANUP
+ avcodec/alsdec: Fix integer overflow with buffer number
+ avcodec/alsdec: Fixes signed integer overflow in LSB addition
+ avcodec/alsdec: Check opt_order / sb_length in ra_block handling
+ avcodec/alsdec: Fix integer overflow with shifting samples
+ avcodec/alsdec: Fix undefined behavior in decode_rice()
+ avcodec/alsdec: Fixes invalid shifts in read_var_block_data() and INTERLEAVE_OUTPUT()
+ avcodec/hevc_ps: Change num_tile_rows/columns checks to sps->ctb_height/weight
+ avcodec/hevc_ps: Fix integer overflow with num_tile_rows and num_tile_columns
+ avcodec/apedec: Add k < 24 check to the only k++ case which lacks such a check
+ avformat/aviobuf: Delay buffer downsizing until asserts are met
+ avcodec/fitsdec: Check data_min/max
+ avcodec/m101: Fix off be 2 error
+ avcodec/qdm2: Move fft_order check up
+ avcodec/libvorbisdec: Check extradata size
+ avformat/vqf: Check header_size
+ avcodec/atrac9dec: Check q_unit_cnt in parse_band_ext()
+ avcodec/atrac9dec: Check that the reused block has succeeded initilization
  avcodec/utils: Check bits_per_coded_sample
  avcodec/videodsp_template: Fix overflow of addition
  avcodec/alsdec: Fix invalid shift in multiply()
