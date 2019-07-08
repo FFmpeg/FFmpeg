@@ -24,7 +24,6 @@
 #include "cbs_internal.h"
 #include "cbs_h264.h"
 #include "cbs_h265.h"
-#include "golomb.h"
 #include "h264.h"
 #include "h264_sei.h"
 #include "h2645_parse.h"

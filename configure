@@ -2586,8 +2586,8 @@ threads_if_any="$THREADS_LIST"
 
 # subsystems
 cbs_av1_select="cbs"
-cbs_h264_select="cbs golomb"
-cbs_h265_select="cbs golomb"
+cbs_h264_select="cbs"
+cbs_h265_select="cbs"
 cbs_jpeg_select="cbs"
 cbs_mpeg2_select="cbs"
 cbs_vp9_select="cbs"
