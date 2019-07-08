@@ -316,13 +316,13 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
     }
 
     if (!selected_format) {
-        av_log(s, AV_LOG_ERROR, "Selected video size (%dx%d) is not supported by the device\n",
+        av_log(s, AV_LOG_ERROR, "Selected video size (%dx%d) is not supported by the device.\n",
             ctx->width, ctx->height);
         goto unsupported_format;
     }
 
     if (!selected_range) {
-        av_log(s, AV_LOG_ERROR, "Selected framerate (%f) is not supported by the device\n",
+        av_log(s, AV_LOG_ERROR, "Selected framerate (%f) is not supported by the device.\n",
             framerate);
         goto unsupported_format;
     }
@@ -334,7 +334,7 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
         [video_device setValue:min_frame_duration forKey:@"activeVideoMinFrameDuration"];
         [video_device setValue:min_frame_duration forKey:@"activeVideoMaxFrameDuration"];
     } else {
-        av_log(s, AV_LOG_ERROR, "Could not lock device for configuration");
+        av_log(s, AV_LOG_ERROR, "Could not lock device for configuration.\n");
         return AVERROR(EINVAL);
     }
 
@@ -908,7 +908,7 @@ static int copy_cvpixelbuffer(AVFormatContext *s,
 
     status = CVPixelBufferLockBaseAddress(image_buffer, 0);
     if (status != kCVReturnSuccess) {
-        av_log(s, AV_LOG_ERROR, "Could not lock base address: %d\n", status);
+        av_log(s, AV_LOG_ERROR, "Could not lock base address: %d (%dx%d)\n", status, width, height);
         return AVERROR_EXTERNAL;
     }
 
