@@ -14689,6 +14689,9 @@ Set the black color threshold. Default is @code{0.15}. Allowed range is @code{[0
 @item chp
 Enable checking the parity bit. In the event of a parity error, the filter will output
 @code{0x00} for that character. Default is false.
+
+@item lp
+Lowpass lines prior further proccessing. Default is disabled.
 @end table
 
 @subsection Examples
