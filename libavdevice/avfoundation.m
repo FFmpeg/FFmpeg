@@ -97,6 +97,8 @@ typedef struct
 
     int             capture_cursor;
     int             capture_mouse_clicks;
+    int             capture_raw_data;
+    int             video_is_muxed;
 
     int             list_devices;
     int             video_device_index;
@@ -291,6 +293,10 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
     NSObject *selected_range = nil;
     NSObject *selected_format = nil;
 
+    // try to configure format by formats list
+    // might raise an exception if no format list is given
+    // (then fallback to default, no configuration)
+    @try {
     for (format in [video_device valueForKey:@"formats"]) {
         CMFormatDescriptionRef formatDescription;
         CMVideoDimensions dimensions;
@@ -324,18 +330,28 @@ static int configure_video_device(AVFormatContext *s, AVCaptureDevice *video_dev
     if (!selected_range) {
         av_log(s, AV_LOG_ERROR, "Selected framerate (%f) is not supported by the device.\n",
             framerate);
+        if (ctx->video_is_muxed) {
+            av_log(s, AV_LOG_ERROR, "Falling back to default.\n");
+        } else {
         goto unsupported_format;
+        }
     }
 
     if ([video_device lockForConfiguration:NULL] == YES) {
+        if (selected_format) {
+            [video_device setValue:selected_format forKey:@"activeFormat"];
+        }
+        if (selected_range) {
         NSValue *min_frame_duration = [selected_range valueForKey:@"minFrameDuration"];
-
-        [video_device setValue:selected_format forKey:@"activeFormat"];
         [video_device setValue:min_frame_duration forKey:@"activeVideoMinFrameDuration"];
         [video_device setValue:min_frame_duration forKey:@"activeVideoMaxFrameDuration"];
+        }
     } else {
         av_log(s, AV_LOG_ERROR, "Could not lock device for configuration.\n");
         return AVERROR(EINVAL);
+    }
+    } @catch(NSException *e) {
+        av_log(ctx, AV_LOG_WARNING, "Configuration of video device failed, falling back to default.\n");
     }
 
     return 0;
@@ -468,12 +484,18 @@ static int add_video_device(AVFormatContext *s, AVCaptureDevice *video_device)
         }
     }
 
+    // set videoSettings to an empty dict for receiving raw data of muxed devices
+    if (ctx->capture_raw_data) {
+    ctx->pixel_format          = pxl_fmt_spec.ff_id;
+    ctx->video_output.videoSettings = @{ };
+    } else {
     ctx->pixel_format          = pxl_fmt_spec.ff_id;
     pixel_format = [NSNumber numberWithUnsignedInt:pxl_fmt_spec.avf_id];
     capture_dict = [NSDictionary dictionaryWithObject:pixel_format
                                                forKey:(id)kCVPixelBufferPixelFormatTypeKey];
 
     [ctx->video_output setVideoSettings:capture_dict];
+    }
     [ctx->video_output setAlwaysDiscardsLateVideoFrames:YES];
 
     ctx->avf_delegate = [[AVFFrameReceiver alloc] initWithContext:ctx];
@@ -540,6 +562,7 @@ static int get_video_config(AVFormatContext *s)
 {
     AVFContext *ctx = (AVFContext*)s->priv_data;
     CVImageBufferRef image_buffer;
+    CMBlockBufferRef block_buffer;
     CGSize image_buffer_size;
     AVStream* stream = avformat_new_stream(s, NULL);
 
@@ -558,14 +581,22 @@ static int get_video_config(AVFormatContext *s)
 
     avpriv_set_pts_info(stream, 64, 1, avf_time_base);
 
-    image_buffer      = CMSampleBufferGetImageBuffer(ctx->current_frame);
-    image_buffer_size = CVImageBufferGetEncodedSize(image_buffer);
+    image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
+    block_buffer = CMSampleBufferGetDataBuffer(ctx->current_frame);
+
+    if (image_buffer) {
+        image_buffer_size = CVImageBufferGetEncodedSize(image_buffer);
 
     stream->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
     stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codecpar->width      = (int)image_buffer_size.width;
     stream->codecpar->height     = (int)image_buffer_size.height;
     stream->codecpar->format     = ctx->pixel_format;
+    } else {
+        stream->codecpar->codec_id   = AV_CODEC_ID_DVVIDEO;
+        stream->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
+        stream->codecpar->format     = ctx->pixel_format;
+    }
 
     CFRelease(ctx->current_frame);
     ctx->current_frame = nil;
@@ -670,8 +701,9 @@ static int avf_read_header(AVFormatContext *s)
     AVCaptureDevice *audio_device = nil;
     // Find capture device
     NSArray *devices = [AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo];
-    ctx->num_video_devices = [devices count];
+    NSArray *devices_muxed = [AVCaptureDevice devicesWithMediaType:AVMediaTypeMuxed];
 
+    ctx->num_video_devices = [devices count] + [devices_muxed count];
     ctx->first_pts          = av_gettime();
     ctx->first_audio_pts    = av_gettime();
 
@@ -691,12 +723,17 @@ static int avf_read_header(AVFormatContext *s)
             index            = [devices indexOfObject:device];
             av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
         }
+        for (AVCaptureDevice *device in devices_muxed) {
+            const char *name = [[device localizedName] UTF8String];
+            index            = [devices count] + [devices_muxed indexOfObject:device];
+            av_log(ctx, AV_LOG_INFO, "[%d] %s\n", index, name);
+        }
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
         if (num_screens > 0) {
             CGDirectDisplayID screens[num_screens];
             CGGetActiveDisplayList(num_screens, screens, &num_screens);
             for (int i = 0; i < num_screens; i++) {
-                av_log(ctx, AV_LOG_INFO, "[%d] Capture screen %d\n", index + i, i);
+                av_log(ctx, AV_LOG_INFO, "[%d] Capture screen %d\n", ctx->num_video_devices + i, i);
             }
         }
 #endif
@@ -724,7 +761,12 @@ static int avf_read_header(AVFormatContext *s)
 
     if (ctx->video_device_index >= 0) {
         if (ctx->video_device_index < ctx->num_video_devices) {
+            if (ctx->video_device_index < [devices count]) {
             video_device = [devices objectAtIndex:ctx->video_device_index];
+            } else {
+                video_device = [devices_muxed objectAtIndex:(ctx->video_device_index - [devices count])];
+                ctx->video_is_muxed = 1;
+            }
         } else if (ctx->video_device_index < ctx->num_video_devices + num_screens) {
 #if !TARGET_OS_IPHONE && __MAC_OS_X_VERSION_MIN_REQUIRED >= 1070
             CGDirectDisplayID screens[num_screens];
@@ -765,6 +807,14 @@ static int avf_read_header(AVFormatContext *s)
         for (AVCaptureDevice *device in devices) {
             if (!strncmp(ctx->video_filename, [[device localizedName] UTF8String], strlen(ctx->video_filename))) {
                 video_device = device;
+                break;
+            }
+        }
+        // looking for muxed inputs
+        for (AVCaptureDevice *device in devices_muxed) {
+            if (!strncmp(ctx->video_filename, [[device localizedName] UTF8String], strlen(ctx->video_filename))) {
+                video_device = device;
+                ctx->video_is_muxed = 1;
                 break;
             }
         }
@@ -941,13 +991,25 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     do {
         CVImageBufferRef image_buffer;
+        CMBlockBufferRef block_buffer;
         lock_frames(ctx);
-
-        image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
 
         if (ctx->current_frame != nil) {
             int status;
-            if (av_new_packet(pkt, (int)CVPixelBufferGetDataSize(image_buffer)) < 0) {
+            int length = 0;
+
+            image_buffer = CMSampleBufferGetImageBuffer(ctx->current_frame);
+            block_buffer = CMSampleBufferGetDataBuffer(ctx->current_frame);
+
+            if (image_buffer != nil) {
+                length = (int)CVPixelBufferGetDataSize(image_buffer);
+            } else if (block_buffer != nil) {
+                length = (int)CMBlockBufferGetDataLength(block_buffer);
+            } else  {
+                return AVERROR(EINVAL);
+            }
+
+            if (av_new_packet(pkt, length) < 0) {
                 return AVERROR(EIO);
             }
 
@@ -962,7 +1024,15 @@ static int avf_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->stream_index  = ctx->video_stream_index;
             pkt->flags        |= AV_PKT_FLAG_KEY;
 
+            if (image_buffer) {
             status = copy_cvpixelbuffer(s, image_buffer, pkt);
+            } else {
+                status = 0;
+                OSStatus ret = CMBlockBufferCopyDataBytes(block_buffer, 0, pkt->size, pkt->data);
+                if (ret != kCMBlockBufferNoErr) {
+                    status = AVERROR(EIO);
+                }
+             }
             CFRelease(ctx->current_frame);
             ctx->current_frame = nil;
 
@@ -1064,6 +1134,7 @@ static const AVOption options[] = {
     { "video_size", "set video size", offsetof(AVFContext, width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "capture_cursor", "capture the screen cursor", offsetof(AVFContext, capture_cursor), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { "capture_mouse_clicks", "capture the screen mouse clicks", offsetof(AVFContext, capture_mouse_clicks), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "capture_raw_data", "capture the raw data from device connection", offsetof(AVFContext, capture_raw_data), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
 
     { NULL },
 };
