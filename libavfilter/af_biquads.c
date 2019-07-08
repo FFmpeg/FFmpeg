@@ -538,7 +538,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
             return AVERROR(EINVAL);
         }
 
-        s->gain = gain;
+        s->gain = av_clipd(gain, -900, 900);
     } else if (!strcmp(cmd, "mix") || !strcmp(cmd, "m")) {
         double mix;
 
