@@ -33,7 +33,7 @@ typedef struct VP9MetadataContext {
     int color_space;
     int color_range;
 
-    int color_range_rgb_warned;
+    int color_warnings;
 } VP9MetadataContext;
 
 
@@ -56,20 +56,36 @@ static int vp9_metadata_filter(AVBSFContext *bsf, AVPacket *pkt)
     for (i = 0; i < frag->nb_units; i++) {
         VP9RawFrame *frame = frag->units[i].content;
         VP9RawFrameHeader *header = &frame->header;
+        int profile = (header->profile_high_bit << 1) + header->profile_low_bit;
 
-        if (ctx->color_space >= 0) {
-            header->color_space = ctx->color_space;
-        }
-        if (ctx->color_range >= 0) {
-            if (ctx->color_range == 0 &&
-                header->color_space == VP9_CS_RGB &&
-                !ctx->color_range_rgb_warned) {
-                av_log(bsf, AV_LOG_WARNING, "Warning: color_range cannot "
-                       "be set to limited in RGB streams.\n");
-                ctx->color_range_rgb_warned = 1;
-            } else {
-                header->color_range = ctx->color_range;
+        if (header->frame_type == VP9_KEY_FRAME ||
+            header->intra_only && profile > 0) {
+            if (ctx->color_space >= 0) {
+                if (!(profile & 1) && ctx->color_space == VP9_CS_RGB) {
+                    if (!(ctx->color_warnings & 2)) {
+                        av_log(bsf, AV_LOG_WARNING, "Warning: RGB "
+                               "incompatible with profiles 0 and 2.\n");
+                        ctx->color_warnings |= 2;
+                    }
+                } else
+                    header->color_space = ctx->color_space;
             }
+
+            if (ctx->color_range >= 0)
+                header->color_range = ctx->color_range;
+            if (header->color_space == VP9_CS_RGB) {
+                if (!(ctx->color_warnings & 1) && !header->color_range) {
+                    av_log(bsf, AV_LOG_WARNING, "Warning: Color space RGB "
+                           "implicitly sets color range to PC range.\n");
+                    ctx->color_warnings |= 1;
+                }
+                header->color_range = 1;
+            }
+        } else if (!(ctx->color_warnings & 4) && header->intra_only && !profile &&
+                   ctx->color_space >= 0 && ctx->color_space != VP9_CS_BT_601) {
+            av_log(bsf, AV_LOG_WARNING, "Warning: Intra-only frames in "
+                   "profile 0 are automatically BT.601.\n");
+            ctx->color_warnings |= 4;
         }
     }
 
