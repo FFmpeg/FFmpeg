@@ -441,6 +441,7 @@ Optimization options (experts only):
   --disable-mipsdsp        disable MIPS DSP ASE R1 optimizations
   --disable-mipsdspr2      disable MIPS DSP ASE R2 optimizations
   --disable-msa            disable MSA optimizations
+  --disable-msa2           disable MSA2 optimizations
   --disable-mipsfpu        disable floating point MIPS optimizations
   --disable-mmi            disable Loongson SIMD optimizations
   --disable-fast-unaligned consider unaligned accesses slow
@@ -1999,6 +2000,7 @@ ARCH_EXT_LIST_MIPS="
     mipsdsp
     mipsdspr2
     msa
+    msa2
 "
 
 ARCH_EXT_LIST_LOONGSON="
@@ -2527,6 +2529,7 @@ mipsdsp_deps="mips"
 mipsdspr2_deps="mips"
 mmi_deps="mips"
 msa_deps="mipsfpu"
+msa2_deps="msa"
 
 cpunop_deps="i686"
 x86_64_select="i686"
@@ -5753,6 +5756,7 @@ elif enabled mips; then
     enabled mipsfpu && enabled msa && check_inline_asm_flags msa '"addvi.b $w0, $w1, 1"' '-mmsa' && check_headers msa.h || disable msa
     enabled mipsdsp && check_inline_asm_flags mipsdsp '"addu.qb $t0, $t1, $t2"' '-mdsp'
     enabled mipsdspr2 && check_inline_asm_flags mipsdspr2 '"absq_s.qb $t0, $t1"' '-mdspr2'
+    enabled msa && enabled msa2 && check_inline_asm_flags msa2 '"nxbits.any.b $w0, $w0"' '-mmsa2' && check_headers msa2.h || disable msa2
 
     if enabled bigendian && enabled msa; then
         disable msa
@@ -7128,6 +7132,7 @@ if enabled mips; then
     echo "MIPS DSP R1 enabled       ${mipsdsp-no}"
     echo "MIPS DSP R2 enabled       ${mipsdspr2-no}"
     echo "MIPS MSA enabled          ${msa-no}"
+    echo "MIPS MSA2 enabled         ${msa2-no}"
     echo "LOONGSON MMI enabled      ${mmi-no}"
 fi
 if enabled ppc; then
