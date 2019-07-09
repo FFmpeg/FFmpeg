@@ -2130,7 +2130,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     return 0;
 }
 
-static AVStream *find_matching_stream(MpegTSContext *ts, int pid,
+static AVStream *find_matching_stream(MpegTSContext *ts, int pid, unsigned int programid,
                                       int stream_identifier, int pmt_stream_idx)
 {
     AVFormatContext *s = ts->stream;
@@ -2139,6 +2139,8 @@ static AVStream *find_matching_stream(MpegTSContext *ts, int pid,
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
+        if (st->program_num != programid)
+            continue;
         if (stream_identifier != -1) { /* match based on "stream identifier descriptor" if present */
             if (st->stream_identifier == stream_identifier+1) {
                 found = st;
@@ -2309,7 +2311,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
             pes = ts->pids[pid]->u.pes_filter.opaque;
             if (ts->merge_pmt_versions && !pes->st) {
-                st = find_matching_stream(ts, pid, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
@@ -2331,7 +2333,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 mpegts_close_filter(ts, ts->pids[pid]); // wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
             if (ts->merge_pmt_versions && pes && !pes->st) {
-                st = find_matching_stream(ts, pid, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
                 if (st) {
                     pes->st = st;
                     pes->stream_type = stream_type;
@@ -2353,7 +2355,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 st = ts->stream->streams[idx];
             }
             if (ts->merge_pmt_versions && !st) {
-                st = find_matching_stream(ts, pid, stream_identifier, i);
+                st = find_matching_stream(ts, pid, h->id, stream_identifier, i);
             }
             if (!st) {
                 st = avformat_new_stream(ts->stream, NULL);
