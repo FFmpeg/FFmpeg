@@ -178,7 +178,7 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
     brfd      = FFMIN(v->brfd, 3);
     scalesame = ff_vc1_b_field_mvpred_scales[0][brfd];
 
-    n = (n * scalesame >> 8) << hpel;
+    n = (n * scalesame >> 8) * (1 << hpel);
     return n;
 }
 
