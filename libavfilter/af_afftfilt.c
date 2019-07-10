@@ -33,6 +33,7 @@ typedef struct AFFTFiltContext {
     const AVClass *class;
     char *real_str;
     char *img_str;
+    int fft_size;
     int fft_bits;
 
     FFTContext *fft, *ifft;
@@ -61,21 +62,7 @@ enum                                   { VAR_SAMPLE_RATE, VAR_BIN, VAR_NBBINS, V
 static const AVOption afftfilt_options[] = {
     { "real", "set channels real expressions",       OFFSET(real_str), AV_OPT_TYPE_STRING, {.str = "re" }, 0, 0, A },
     { "imag", "set channels imaginary expressions",  OFFSET(img_str),  AV_OPT_TYPE_STRING, {.str = "im" }, 0, 0, A },
-    { "win_size", "set window size", OFFSET(fft_bits), AV_OPT_TYPE_INT, {.i64=12}, 4, 17, A, "fft" },
-        { "w16",    0, 0, AV_OPT_TYPE_CONST, {.i64=4},  0, 0, A, "fft" },
-        { "w32",    0, 0, AV_OPT_TYPE_CONST, {.i64=5},  0, 0, A, "fft" },
-        { "w64",    0, 0, AV_OPT_TYPE_CONST, {.i64=6},  0, 0, A, "fft" },
-        { "w128",   0, 0, AV_OPT_TYPE_CONST, {.i64=7},  0, 0, A, "fft" },
-        { "w256",   0, 0, AV_OPT_TYPE_CONST, {.i64=8},  0, 0, A, "fft" },
-        { "w512",   0, 0, AV_OPT_TYPE_CONST, {.i64=9},  0, 0, A, "fft" },
-        { "w1024",  0, 0, AV_OPT_TYPE_CONST, {.i64=10}, 0, 0, A, "fft" },
-        { "w2048",  0, 0, AV_OPT_TYPE_CONST, {.i64=11}, 0, 0, A, "fft" },
-        { "w4096",  0, 0, AV_OPT_TYPE_CONST, {.i64=12}, 0, 0, A, "fft" },
-        { "w8192",  0, 0, AV_OPT_TYPE_CONST, {.i64=13}, 0, 0, A, "fft" },
-        { "w16384", 0, 0, AV_OPT_TYPE_CONST, {.i64=14}, 0, 0, A, "fft" },
-        { "w32768", 0, 0, AV_OPT_TYPE_CONST, {.i64=15}, 0, 0, A, "fft" },
-        { "w65536", 0, 0, AV_OPT_TYPE_CONST, {.i64=16}, 0, 0, A, "fft" },
-        { "w131072",0, 0, AV_OPT_TYPE_CONST, {.i64=17}, 0, 0, A, "fft" },
+    { "win_size", "set window size", OFFSET(fft_size), AV_OPT_TYPE_INT, {.i64=4096}, 16, 131072, A },
     { "win_func", "set window function", OFFSET(win_func), AV_OPT_TYPE_INT, {.i64 = WFUNC_HANNING}, 0, NB_WFUNC-1, A, "win_func" },
         { "rect",     "Rectangular",      0, AV_OPT_TYPE_CONST, {.i64=WFUNC_RECT},     0, 0, A, "win_func" },
         { "bartlett", "Bartlett",         0, AV_OPT_TYPE_CONST, {.i64=WFUNC_BARTLETT}, 0, 0, A, "win_func" },
@@ -143,6 +130,7 @@ static int config_input(AVFilterLink *inlink)
     const char *last_expr = "1";
 
     s->pts  = AV_NOPTS_VALUE;
+    s->fft_bits = av_log2(s->fft_size);
     s->fft  = av_fft_init(s->fft_bits, 0);
     s->ifft = av_fft_init(s->fft_bits, 1);
     if (!s->fft || !s->ifft)

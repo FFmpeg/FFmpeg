@@ -1124,25 +1124,8 @@ Return the value of imaginary part of frequency bin at location (@var{bin},@var{
 @end table
 
 @item win_size
-Set window size.
-
-It accepts the following values:
-@table @samp
-@item w16
-@item w32
-@item w64
-@item w128
-@item w256
-@item w512
-@item w1024
-@item w2048
-@item w4096
-@item w8192
-@item w16384
-@item w32768
-@item w65536
-@end table
-Default is @code{w4096}
+Set window size. Allowed range is from 16 to 131072.
+Default is @code{4096}
 
 @item win_func
 Set window function. Default is @code{hann}.
