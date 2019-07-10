@@ -145,13 +145,7 @@ static int mpeg4_unpack_bframes_init(AVBSFContext *ctx)
     return 0;
 }
 
-static void mpeg4_unpack_bframes_flush(AVBSFContext *bsfc)
-{
-    UnpackBFramesBSFContext *ctx = bsfc->priv_data;
-    av_buffer_unref(&ctx->b_frame_ref);
-}
-
-static void mpeg4_unpack_bframes_close(AVBSFContext *bsfc)
+static void mpeg4_unpack_bframes_close_flush(AVBSFContext *bsfc)
 {
     UnpackBFramesBSFContext *ctx = bsfc->priv_data;
     av_buffer_unref(&ctx->b_frame_ref);
@@ -166,7 +160,7 @@ const AVBitStreamFilter ff_mpeg4_unpack_bframes_bsf = {
     .priv_data_size = sizeof(UnpackBFramesBSFContext),
     .init           = mpeg4_unpack_bframes_init,
     .filter         = mpeg4_unpack_bframes_filter,
-    .flush          = mpeg4_unpack_bframes_flush,
-    .close          = mpeg4_unpack_bframes_close,
+    .flush          = mpeg4_unpack_bframes_close_flush,
+    .close          = mpeg4_unpack_bframes_close_flush,
     .codec_ids      = codec_ids,
 };
