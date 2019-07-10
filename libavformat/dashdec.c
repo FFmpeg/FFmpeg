@@ -709,8 +709,8 @@ static int parse_manifest_segmenttimeline(AVFormatContext *s, struct representat
     return 0;
 }
 
-static int resolve_content_path(AVFormatContext *s, const char *url, int *max_url_size, xmlNodePtr *baseurl_nodes, int n_baseurl_nodes) {
-
+static int resolve_content_path(AVFormatContext *s, const char *url, int *max_url_size, xmlNodePtr *baseurl_nodes, int n_baseurl_nodes)
+{
     char *tmp_str = NULL;
     char *path = NULL;
     char *mpdName = NULL;
@@ -719,7 +719,6 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
     char *root_url = NULL;
     char *text = NULL;
     char *tmp = NULL;
-
     int isRootHttp = 0;
     char token ='/';
     int start =  0;
@@ -1490,10 +1489,8 @@ static void move_segments(struct representation *rep_src, struct representation 
 
 static int refresh_manifest(AVFormatContext *s)
 {
-
     int ret = 0, i;
     DASHContext *c = s->priv_data;
-
     // save current context
     int n_videos = c->n_videos;
     struct representation **videos = c->videos;
@@ -1944,7 +1941,6 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
                 pls->ctx->streams[i]->r_frame_rate = pls->framerate;
         }
 #endif
-
         ret = avformat_find_stream_info(pls->ctx, NULL);
         if (ret < 0)
             goto fail;
@@ -2155,8 +2151,8 @@ static void recheck_discard_flags(AVFormatContext *s, struct representation **p,
 
     for (i = 0; i < n; i++) {
         struct representation *pls = p[i];
-
         int needed = !pls->assoc_stream || pls->assoc_stream->discard < AVDISCARD_ALL;
+
         if (needed && !pls->ctx) {
             pls->cur_seg_offset = 0;
             pls->init_sec_buf_read_offset = 0;
@@ -2244,7 +2240,6 @@ static int dash_close(AVFormatContext *s)
     DASHContext *c = s->priv_data;
     free_audio_list(c);
     free_video_list(c);
-
     av_dict_free(&c->avio_opts);
     av_freep(&c->base_url);
     return 0;
