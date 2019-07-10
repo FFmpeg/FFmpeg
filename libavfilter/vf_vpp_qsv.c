@@ -36,12 +36,15 @@
 #include "libavformat/avformat.h"
 
 #include "qsvvpp.h"
+#include "transpose.h"
 
 #define OFFSET(x) offsetof(VPPContext, x)
 #define FLAGS (AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM)
 
 /* number of video enhancement filters */
-#define ENH_FILTERS_COUNT (5)
+#define ENH_FILTERS_COUNT (7)
+#define QSV_HAVE_ROTATION  QSV_VERSION_ATLEAST(1, 17)
+#define QSV_HAVE_MIRRORING QSV_VERSION_ATLEAST(1, 19)
 
 typedef struct VPPContext{
     const AVClass *class;
@@ -54,6 +57,8 @@ typedef struct VPPContext{
     mfxExtVPPDenoise denoise_conf;
     mfxExtVPPDetail detail_conf;
     mfxExtVPPProcAmp procamp_conf;
+    mfxExtVPPRotation rotation_conf;
+    mfxExtVPPMirroring mirroring_conf;
 
     int out_width;
     int out_height;
@@ -73,6 +78,10 @@ typedef struct VPPContext{
     int crop_h;
     int crop_x;
     int crop_y;
+
+    int transpose;
+    int rotate;                 /* rotate angle : [0, 90, 180, 270] */
+    int hflip;                  /* flip mode : 0 = off, 1 = HORIZONTAL flip */
 
     /* param for the procamp */
     int    procamp;            /* enable procamp */
@@ -99,6 +108,15 @@ static const AVOption options[] = {
     { "saturation",  "ProcAmp saturation",           OFFSET(saturation),  AV_OPT_TYPE_FLOAT,    { .dbl = 1.0 }, 0.0, 10.0, .flags = FLAGS},
     { "contrast",    "ProcAmp contrast",             OFFSET(contrast),    AV_OPT_TYPE_FLOAT,    { .dbl = 1.0 }, 0.0, 10.0, .flags = FLAGS},
     { "brightness",  "ProcAmp brightness",           OFFSET(brightness),  AV_OPT_TYPE_FLOAT,    { .dbl = 0.0 }, -100.0, 100.0, .flags = FLAGS},
+
+    { "transpose",  "set transpose direction",       OFFSET(transpose),   AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, 6, FLAGS, "transpose"},
+        { "cclock_hflip",  "rotate counter-clockwise with horizontal flip",  0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .flags=FLAGS, .unit = "transpose" },
+        { "clock",         "rotate clockwise",                               0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .flags=FLAGS, .unit = "transpose" },
+        { "cclock",        "rotate counter-clockwise",                       0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .flags=FLAGS, .unit = "transpose" },
+        { "clock_hflip",   "rotate clockwise with horizontal flip",          0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .flags=FLAGS, .unit = "transpose" },
+        { "reversal",      "rotate by half-turn",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_REVERSAL    }, .flags=FLAGS, .unit = "transpose" },
+        { "hflip",         "flip horizontally",                              0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_HFLIP       }, .flags=FLAGS, .unit = "transpose" },
+        { "vflip",         "flip vertically",                                0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_VFLIP       }, .flags=FLAGS, .unit = "transpose" },
 
     { "cw",   "set the width crop area expression",   OFFSET(cw), AV_OPT_TYPE_STRING, { .str = "iw" }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "ch",   "set the height crop area expression",  OFFSET(ch), AV_OPT_TYPE_STRING, { .str = "ih" }, CHAR_MIN, CHAR_MAX, FLAGS },
@@ -356,8 +374,87 @@ static int config_output(AVFilterLink *outlink)
         param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->procamp_conf;
     }
 
+    if (vpp->transpose >= 0) {
+#ifdef QSV_HAVE_ROTATION
+        switch (vpp->transpose) {
+        case TRANSPOSE_CCLOCK_FLIP:
+            vpp->rotate = MFX_ANGLE_270;
+            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+            break;
+        case TRANSPOSE_CLOCK:
+            vpp->rotate = MFX_ANGLE_90;
+            vpp->hflip  = MFX_MIRRORING_DISABLED;
+            break;
+        case TRANSPOSE_CCLOCK:
+            vpp->rotate = MFX_ANGLE_270;
+            vpp->hflip  = MFX_MIRRORING_DISABLED;
+            break;
+        case TRANSPOSE_CLOCK_FLIP:
+            vpp->rotate = MFX_ANGLE_90;
+            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+            break;
+        case TRANSPOSE_REVERSAL:
+            vpp->rotate = MFX_ANGLE_180;
+            vpp->hflip  = MFX_MIRRORING_DISABLED;
+            break;
+        case TRANSPOSE_HFLIP:
+            vpp->rotate = MFX_ANGLE_0;
+            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+            break;
+        case TRANSPOSE_VFLIP:
+            vpp->rotate = MFX_ANGLE_180;
+            vpp->hflip  = MFX_MIRRORING_HORIZONTAL;
+            break;
+        default:
+            av_log(ctx, AV_LOG_ERROR, "Failed to set transpose mode to %d.\n", vpp->transpose);
+            return AVERROR(EINVAL);
+        }
+#else
+        av_log(ctx, AV_LOG_WARNING, "The QSV VPP transpose option is "
+            "not supported with this MSDK version.\n");
+        vpp->transpose = 0;
+#endif
+    }
+
+    if (vpp->rotate) {
+#ifdef QSV_HAVE_ROTATION
+        memset(&vpp->rotation_conf, 0, sizeof(mfxExtVPPRotation));
+        vpp->rotation_conf.Header.BufferId  = MFX_EXTBUFF_VPP_ROTATION;
+        vpp->rotation_conf.Header.BufferSz  = sizeof(mfxExtVPPRotation);
+        vpp->rotation_conf.Angle = vpp->rotate;
+
+        if (MFX_ANGLE_90 == vpp->rotate || MFX_ANGLE_270 == vpp->rotate) {
+            FFSWAP(int, vpp->out_width, vpp->out_height);
+            FFSWAP(int, outlink->w, outlink->h);
+            av_log(ctx, AV_LOG_DEBUG, "Swap width and height for clock/cclock rotation.\n");
+        }
+
+        param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->rotation_conf;
+#else
+        av_log(ctx, AV_LOG_WARNING, "The QSV VPP rotate option is "
+            "not supported with this MSDK version.\n");
+        vpp->rotate = 0;
+#endif
+    }
+
+    if (vpp->hflip) {
+#ifdef QSV_HAVE_MIRRORING
+        memset(&vpp->mirroring_conf, 0, sizeof(mfxExtVPPMirroring));
+        vpp->mirroring_conf.Header.BufferId = MFX_EXTBUFF_VPP_MIRRORING;
+        vpp->mirroring_conf.Header.BufferSz = sizeof(mfxExtVPPMirroring);
+        vpp->mirroring_conf.Type = vpp->hflip;
+
+        param.ext_buf[param.num_ext_buf++] = (mfxExtBuffer*)&vpp->mirroring_conf;
+#else
+        av_log(ctx, AV_LOG_WARNING, "The QSV VPP hflip option is "
+            "not supported with this MSDK version.\n");
+        vpp->hflip = 0;
+#endif
+    }
+
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
-        vpp->detail || vpp->procamp || inlink->w != outlink->w || inlink->h != outlink->h)
+        vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
+        inlink->w != outlink->w || inlink->h != outlink->h)
         return ff_qsvvpp_create(ctx, &vpp->qsv, &param);
     else {
         av_log(ctx, AV_LOG_VERBOSE, "qsv vpp pass through mode.\n");
