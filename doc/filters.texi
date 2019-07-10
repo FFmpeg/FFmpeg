@@ -22346,25 +22346,9 @@ Reverse logarithmic scale.
 Default is @code{lin}.
 
 @item win_size
-Set window size.
+Set window size. Allowed range is from 16 to 65536.
 
-It accepts the following values:
-@table @samp
-@item w16
-@item w32
-@item w64
-@item w128
-@item w256
-@item w512
-@item w1024
-@item w2048
-@item w4096
-@item w8192
-@item w16384
-@item w32768
-@item w65536
-@end table
-Default is @code{w2048}
+Default is @code{2048}
 
 @item win_func
 Set windowing function.
