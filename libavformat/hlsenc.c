@@ -1431,6 +1431,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 {
     HLSContext *hls = s->priv_data;
     HLSSegment *en;
+    AVFormatContext *oc = vs->avf;
     int target_duration = 0;
     int ret = 0;
     char temp_filename[MAX_URL_SIZE];
@@ -1466,7 +1467,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_temp_file ? "%s.tmp" : "%s", vs->m3u8_name);
-    if ((ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options)) < 0) {
+    if ((ret = hlsenc_io_open(s, byterange_mode ? &hls->m3u8_out : &oc->pb, temp_filename, &options)) < 0) {
         if (hls->ignore_io_errors)
             ret = 0;
         goto fail;
@@ -1478,33 +1479,33 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     vs->discontinuity_set = 0;
-    ff_hls_write_playlist_header(hls->m3u8_out, hls->version, hls->allowcache,
+    ff_hls_write_playlist_header(byterange_mode ? hls->m3u8_out : oc->pb, hls->version, hls->allowcache,
                                  target_duration, sequence, hls->pl_type, hls->flags & HLS_I_FRAMES_ONLY);
 
     if((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0 ){
-        avio_printf(hls->m3u8_out, "#EXT-X-DISCONTINUITY\n");
+        avio_printf(byterange_mode ? hls->m3u8_out : oc->pb, "#EXT-X-DISCONTINUITY\n");
         vs->discontinuity_set = 1;
     }
     if (vs->has_video && (hls->flags & HLS_INDEPENDENT_SEGMENTS)) {
-        avio_printf(hls->m3u8_out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
+        avio_printf(byterange_mode ? hls->m3u8_out : oc->pb, "#EXT-X-INDEPENDENT-SEGMENTS\n");
     }
     for (en = vs->segments; en; en = en->next) {
         if ((hls->encrypt || hls->key_info_file) && (!key_uri || strcmp(en->key_uri, key_uri) ||
                                     av_strcasecmp(en->iv_string, iv_string))) {
-            avio_printf(hls->m3u8_out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
+            avio_printf(byterange_mode ? hls->m3u8_out : oc->pb, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
             if (*en->iv_string)
-                avio_printf(hls->m3u8_out, ",IV=0x%s", en->iv_string);
-            avio_printf(hls->m3u8_out, "\n");
+                avio_printf(byterange_mode ? hls->m3u8_out : oc->pb, ",IV=0x%s", en->iv_string);
+            avio_printf(byterange_mode ? hls->m3u8_out : oc->pb, "\n");
             key_uri = en->key_uri;
             iv_string = en->iv_string;
         }
 
         if ((hls->segment_type == SEGMENT_TYPE_FMP4) && (en == vs->segments)) {
-            ff_hls_write_init_file(hls->m3u8_out, (hls->flags & HLS_SINGLE_FILE) ? en->filename : vs->fmp4_init_filename,
+            ff_hls_write_init_file(byterange_mode ? hls->m3u8_out : oc->pb, (hls->flags & HLS_SINGLE_FILE) ? en->filename : vs->fmp4_init_filename,
                                    hls->flags & HLS_SINGLE_FILE, vs->init_range_length, 0);
         }
 
-        ret = ff_hls_write_file_entry(hls->m3u8_out, en->discont, byterange_mode,
+        ret = ff_hls_write_file_entry(byterange_mode ? hls->m3u8_out : oc->pb, en->discont, byterange_mode,
                                       en->duration, hls->flags & HLS_ROUND_DURATIONS,
                                       en->size, en->pos, vs->baseurl,
                                       en->filename, prog_date_time_p, en->keyframe_size, en->keyframe_pos, hls->flags & HLS_I_FRAMES_ONLY);
@@ -1514,7 +1515,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
-        ff_hls_write_end_list(hls->m3u8_out);
+        ff_hls_write_end_list(byterange_mode ? hls->m3u8_out : oc->pb);
 
     if (vs->vtt_m3u8_name) {
         snprintf(temp_vtt_filename, sizeof(temp_vtt_filename), use_temp_file ? "%s.tmp" : "%s", vs->vtt_m3u8_name);
@@ -1541,7 +1542,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
 fail:
     av_dict_free(&options);
-    hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
+    hlsenc_io_close(s, byterange_mode ? &hls->m3u8_out : &oc->pb, temp_filename);
     hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
     if (use_temp_file) {
         ff_rename(temp_filename, vs->m3u8_name, s);
@@ -2435,6 +2436,12 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         } else {
             vs->start_pos += vs->size;
         }
+        // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
+        if (hls->pl_type != PLAYLIST_TYPE_VOD) {
+            if ((ret = hls_window(s, 0, vs)) < 0) {
+                return ret;
+            }
+        }
 
         if (hls->flags & HLS_SINGLE_FILE) {
             vs->number++;
@@ -2459,12 +2466,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
         }
 
-        // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
-        if (hls->pl_type != PLAYLIST_TYPE_VOD) {
-            if ((ret = hls_window(s, 0, vs)) < 0) {
-                return ret;
-            }
-        }
     }
 
     vs->packets_written++;
@@ -2585,7 +2586,7 @@ failed:
         if (oc->pb) {
             if (hls->segment_type != SEGMENT_TYPE_FMP4) {
                 vs->size = avio_tell(vs->avf->pb) - vs->start_pos;
-                ff_format_io_close(s, &oc->pb);
+                hlsenc_io_close(s, &vs->avf->pb, vs->avf->url);
             }
 
             // rename that segment from .tmp to the real one
@@ -2612,10 +2613,10 @@ failed:
             ff_format_io_close(s, &vtt_oc->pb);
             avformat_free_context(vtt_oc);
         }
+        hls_window(s, 1, vs);
         avformat_free_context(oc);
 
         vs->avf = NULL;
-        hls_window(s, 1, vs);
         av_free(old_filename);
     }
 
