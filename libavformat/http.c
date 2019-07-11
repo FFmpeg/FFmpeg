@@ -1638,7 +1638,7 @@ static int http_shutdown(URLContext *h, int flags)
             read_ret = ffurl_read(s->hd, buf, sizeof(buf));
             s->hd->flags &= ~AVIO_FLAG_NONBLOCK;
             if (read_ret < 0 && read_ret != AVERROR(EAGAIN)) {
-                av_log(h, AV_LOG_ERROR, "URL read error:  %d\n", read_ret);
+                av_log(h, AV_LOG_ERROR, "URL read error: %s\n", av_err2str(read_ret));
                 ret = read_ret;
             }
         }
