@@ -592,6 +592,13 @@ static int magy_decode_frame(AVCodecContext *avctx, void *data,
         s->magy_decode_slice = magy_decode_slice10;
         s->bps = 10;
         break;
+    case 0x76:
+        avctx->pix_fmt = AV_PIX_FMT_YUV444P10;
+        s->max = 1024;
+        s->huff_build = huff_build10;
+        s->magy_decode_slice = magy_decode_slice10;
+        s->bps = 10;
+        break;
     case 0x6d:
         avctx->pix_fmt = AV_PIX_FMT_GBRP10;
         s->decorrelate = 1;
