@@ -1181,14 +1181,6 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     s->cur_decode_frame->format  = avctx->pix_fmt;
     s->prev_decode_frame->format = avctx->pix_fmt;
 
-    ret = ff_get_buffer(avctx, s->cur_decode_frame, 0);
-    if (ret < 0)
-        goto error;
-
-    ret = ff_get_buffer(avctx, s->prev_decode_frame, 0);
-    if (ret < 0)
-        goto error;
-
     return 0;
 error:
     av_frame_free(&s->last_frame);
