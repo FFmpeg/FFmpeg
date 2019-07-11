@@ -2400,8 +2400,6 @@ static int vtenc_populate_extradata(AVCodecContext   *avctx,
         goto pe_cleanup;
     }
 
-    unsigned pbuftype = CVPixelBufferGetPixelFormatType(pix_buf);
-
     time = CMTimeMake(0, avctx->time_base.den);
     status = VTCompressionSessionEncodeFrame(vtctx->session,
                                              pix_buf,
