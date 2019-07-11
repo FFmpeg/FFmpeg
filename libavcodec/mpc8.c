@@ -364,8 +364,9 @@ static int mpc8_decode_frame(AVCodecContext * avctx, void *data,
                 for(j = 0; j < SAMPLES_PER_BAND; j += SAMPLES_PER_BAND / 2){
                     cnt = get_vlc2(gb, q1_vlc.table, MPC8_Q1_BITS, 2);
                     t = mpc8_get_mask(gb, 18, cnt);
-                    for(k = 0; k < SAMPLES_PER_BAND / 2; k++, t <<= 1)
-                        c->Q[ch][off + j + k] = (t & 0x20000) ? (get_bits1(gb) << 1) - 1 : 0;
+                    for(k = 0; k < SAMPLES_PER_BAND / 2; k++)
+                        c->Q[ch][off + j + k] = t & (1 << (SAMPLES_PER_BAND / 2 - k - 1))
+                                                ? (get_bits1(gb) << 1) - 1 : 0;
                 }
                 break;
             case 2:
