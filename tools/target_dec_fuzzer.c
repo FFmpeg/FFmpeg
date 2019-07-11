@@ -281,9 +281,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     av_frame_free(&frame);
     avcodec_free_context(&ctx);
-    av_freep(&ctx);
     avcodec_free_context(&parser_avctx);
-    av_freep(&parser_avctx);
     av_parser_close(parser);
     FDBDesroy(&buffer);
     return 0;
