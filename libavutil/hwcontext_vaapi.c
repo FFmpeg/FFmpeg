@@ -1514,10 +1514,12 @@ static int vaapi_device_create(AVHWDeviceContext *ctx, const char *device,
                 break;
             }
         } else {
-            const AVDictionaryEntry *kernel_driver;
             char path[64];
             int n, max_devices = 8;
+#if CONFIG_LIBDRM
+            const AVDictionaryEntry *kernel_driver;
             kernel_driver = av_dict_get(opts, "kernel_driver", NULL, 0);
+#endif
             for (n = 0; n < max_devices; n++) {
                 snprintf(path, sizeof(path),
                          "/dev/dri/renderD%d", 128 + n);
