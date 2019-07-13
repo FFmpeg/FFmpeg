@@ -650,9 +650,6 @@ enum AVWriteUncodedFrameFlags {
  */
 int ff_copy_whiteblacklists(AVFormatContext *dst, const AVFormatContext *src);
 
-int ffio_open2_wrapper(struct AVFormatContext *s, AVIOContext **pb, const char *url, int flags,
-                       const AVIOInterruptCB *int_cb, AVDictionary **options);
-
 /**
  * Returned by demuxers to indicate that data was consumed but discarded
  * (ignored streams or junk data). The framework will re-call the demuxer.
