@@ -251,6 +251,9 @@ static uint8_t *read_sb_block(AVIOContext *src, unsigned *size,
         *key = tmpkey;
     }
 
+    if (n < 8)
+        return NULL;
+
     buf = av_malloc(n);
     if (!buf)
         return NULL;
