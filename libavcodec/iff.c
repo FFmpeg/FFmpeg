@@ -284,7 +284,7 @@ static int extract_header(AVCodecContext *const avctx,
             if (s->bpp > 8) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u\n", s->ham);
                 return AVERROR_INVALIDDATA;
-            } if (s->ham != (s->bpp > 6 ? 6 : 4)) {
+            } else if (s->ham != (s->bpp > 6 ? 6 : 4)) {
                 av_log(avctx, AV_LOG_ERROR, "Invalid number of hold bits for HAM: %u, BPP: %u\n", s->ham, s->bpp);
                 return AVERROR_INVALIDDATA;
             }
