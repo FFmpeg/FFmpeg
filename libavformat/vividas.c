@@ -386,7 +386,12 @@ static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t 
                 offset += av_xiphlacing(&p[offset], data_len[j]);
 
             for (j = 0; j < num_data; j++) {
-                avio_read(pb, &p[offset], data_len[j]);
+                int ret = avio_read(pb, &p[offset], data_len[j]);
+                if (ret < data_len[j]) {
+                    st->codecpar->extradata_size = 0;
+                    av_freep(&st->codecpar->extradata);
+                    break;
+                }
                 offset += data_len[j];
             }
 
