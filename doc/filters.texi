@@ -1397,7 +1397,7 @@ How much to use filtered signal in output. Default is 1.
 Range is between 0 and 1.
 
 @item response
-Show IR frequency response, magnitude and phase in additional video stream.
+Show IR frequency response, magnitude(magenta), phase(green) and group delay(yellow) in additional video stream.
 By default it is disabled.
 
 @item channel
