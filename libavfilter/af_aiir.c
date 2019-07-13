@@ -135,6 +135,7 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
     const int nb_b = s->iir[ch].nb_ab[1];                               \
     const double *a = s->iir[ch].ab[0];                                 \
     const double *b = s->iir[ch].ab[1];                                 \
+    const double g = s->iir[ch].g;                                      \
     int *clippings = &s->iir[ch].clippings;                             \
     type *dst = (type *)out->extended_data[ch];                         \
     int n;                                                              \
@@ -153,7 +154,7 @@ static int iir_ch_## name(AVFilterContext *ctx, void *arg, int ch, int nb_jobs) 
             sample -= a[x] * oc[x];                                     \
                                                                         \
         oc[0] = sample;                                                 \
-        sample *= og;                                                   \
+        sample *= og * g;                                               \
         sample = sample * mix + ic[0] * (1. - mix);                     \
         if (need_clipping && sample < min) {                            \
             (*clippings)++;                                             \
@@ -186,6 +187,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
     const type *src = (const type *)in->extended_data[ch];              \
     type *dst = (type *)out->extended_data[ch];                         \
     IIRChannel *iir = &s->iir[ch];                                      \
+    const double g = iir->g;                                            \
     int *clippings = &iir->clippings;                                   \
     int nb_biquads = (FFMAX(iir->nb_ab[0], iir->nb_ab[1]) + 1) / 2;     \
     int n, i;                                                           \
@@ -209,7 +211,7 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
             i1 = src[n];                                                \
             o2 = o1;                                                    \
             o1 = o0;                                                    \
-            o0 *= og;                                                   \
+            o0 *= og * g;                                               \
                                                                         \
             o0 = o0 * mix + (1. - mix) * sample;                        \
             if (need_clipping && o0 < min) {                            \
