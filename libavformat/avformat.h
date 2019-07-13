@@ -175,8 +175,8 @@
  * Otherwise, if AVPacket.buf is NULL, the packet data is backed by a
  * static storage somewhere inside the demuxer and the packet is only valid
  * until the next av_read_frame() call or closing the file. If the caller
- * requires a longer lifetime, av_dup_packet() will make an av_malloc()ed copy
- * of it.
+ * requires a longer lifetime, av_packet_make_refcounted() will ensure that
+ * the data is reference counted, copying the data if necessary.
  * In both cases, the packet must be freed with av_packet_unref() when it is no
  * longer needed.
  *
