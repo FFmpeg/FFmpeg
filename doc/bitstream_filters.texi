@@ -103,7 +103,9 @@ DTS-HD.
 
 @section dump_extra
 
-Add extradata to the beginning of the filtered packets.
+Add extradata to the beginning of the filtered packets except when
+said packets already exactly begin with the extradata that is intended
+to be added.
 
 @table @option
 @item freq
