@@ -122,7 +122,7 @@ static int process_frame(FFFrameSync *fs)
                             s->cchange, s->histogram_size);
         }
     }
-    out->pts = av_rescale_q(in0->pts, s->fs.time_base, outlink->time_base);
+    out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
     return ff_filter_frame(outlink, out);
 }
