@@ -215,7 +215,7 @@ static void wavesynth_seek(struct wavesynth_context *ws, int64_t ts)
     ws->next_inter = i;
     ws->next_ts = i < ws->nb_inter ? ws->inter[i].ts_start : INF_TS;
     *last = -1;
-    lcg_seek(&ws->dither_state, (uint32_t)ts - ws->cur_ts);
+    lcg_seek(&ws->dither_state, (uint32_t)ts - (uint32_t)ws->cur_ts);
     if (ws->pink_need) {
         int64_t pink_ts_cur  = (ws->cur_ts + PINK_UNIT - 1) & ~(PINK_UNIT - 1);
         int64_t pink_ts_next = ts & ~(PINK_UNIT - 1);
