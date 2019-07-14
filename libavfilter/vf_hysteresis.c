@@ -311,7 +311,6 @@ static int config_output(AVFilterLink *outlink)
 
     outlink->w = base->w;
     outlink->h = base->h;
-    outlink->time_base = base->time_base;
     outlink->sample_aspect_ratio = base->sample_aspect_ratio;
     outlink->frame_rate = base->frame_rate;
 
@@ -330,7 +329,10 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync_configure(&s->fs);
+    ret = ff_framesync_configure(&s->fs);
+    outlink->time_base = s->fs.time_base;
+
+    return ret;
 }
 
 static int activate(AVFilterContext *ctx)
