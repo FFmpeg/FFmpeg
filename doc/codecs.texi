@@ -963,6 +963,9 @@ Discard all bidirectional frames.
 @item nokey
 Discard all frames excepts keyframes.
 
+@item nointra
+Discard all frames except I frames.
+
 @item all
 Discard all frames.
 @end table
