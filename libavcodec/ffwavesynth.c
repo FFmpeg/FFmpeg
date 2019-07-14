@@ -270,7 +270,7 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
         dt = in->ts_end - in->ts_start;
         switch (in->type) {
             case WS_SINE:
-                if (edata_end - edata < 20)
+                if (edata_end - edata < 20 || avc->sample_rate <= 0)
                     return AVERROR(EINVAL);
                 f1  = AV_RL32(edata +  0);
                 f2  = AV_RL32(edata +  4);
