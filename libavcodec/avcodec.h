@@ -4418,7 +4418,7 @@ int av_grow_packet(AVPacket *pkt, int grow_by);
  * Initialize a reference-counted packet from av_malloc()ed data.
  *
  * @param pkt packet to be initialized. This function will set the data, size,
- *        buf and destruct fields, all others are left untouched.
+ *        and buf fields, all others are left untouched.
  * @param data Data allocated by av_malloc() to be used as packet data. If this
  *        function returns successfully, the data is owned by the underlying AVBuffer.
  *        The caller may not access the data through other means.
