@@ -2057,15 +2057,19 @@ typedef struct AVCodecContext {
 
     /**
      * custom intra quantization matrix
-     * - encoding: Set by user, can be NULL.
-     * - decoding: Set by libavcodec.
+     * Must be allocated with the av_malloc() family of functions, and will be freed in
+     * avcodec_free_context().
+     * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+     * - decoding: Set/allocated/freed by libavcodec.
      */
     uint16_t *intra_matrix;
 
     /**
      * custom inter quantization matrix
-     * - encoding: Set by user, can be NULL.
-     * - decoding: Set by libavcodec.
+     * Must be allocated with the av_malloc() family of functions, and will be freed in
+     * avcodec_free_context().
+     * - encoding: Set/allocated by user, freed by libavcodec. Can be NULL.
+     * - decoding: Set/allocated/freed by libavcodec.
      */
     uint16_t *inter_matrix;
 
