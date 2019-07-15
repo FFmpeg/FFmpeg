@@ -491,6 +491,11 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     ctx->avctx   = avctx;
     ctx->version = !avctx->extradata_size;
+    // early sanity check before allocations to avoid need for deallocation code.
+    if (!ctx->version && avctx->extradata_size < 1026) {
+        av_log(avctx, AV_LOG_ERROR, "Not enough extradata.\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     avctx->pix_fmt = ctx->version ? AV_PIX_FMT_RGB565 : AV_PIX_FMT_PAL8;
 
@@ -505,11 +510,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if (!ctx->version) {
         int i;
-
-        if (avctx->extradata_size < 1026) {
-            av_log(avctx, AV_LOG_ERROR, "Not enough extradata.\n");
-            return AVERROR_INVALIDDATA;
-        }
 
         ctx->subversion = AV_RL16(avctx->extradata);
         for (i = 0; i < PALETTE_SIZE; i++)
