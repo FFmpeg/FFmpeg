@@ -2120,7 +2120,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
                     }
                 }
                 av_packet_unref(&pls->pkt);
-                reset_packet(&pls->pkt);
             }
         }
         /* Check if this stream has the packet with the lowest dts */
@@ -2149,7 +2148,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         ret = update_streams_from_subdemuxer(s, pls);
         if (ret < 0) {
             av_packet_unref(&pls->pkt);
-            reset_packet(&pls->pkt);
             return ret;
         }
 
@@ -2174,7 +2172,6 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "stream index inconsistency: index %d, %d main streams, %d subdemuxer streams\n",
                    pls->pkt.stream_index, pls->n_main_streams, pls->ctx->nb_streams);
             av_packet_unref(&pls->pkt);
-            reset_packet(&pls->pkt);
             return AVERROR_BUG;
         }
 
@@ -2262,7 +2259,6 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
             ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
         av_packet_unref(&pls->pkt);
-        reset_packet(&pls->pkt);
         pls->pb.eof_reached = 0;
         /* Clear any buffered data */
         pls->pb.buf_end = pls->pb.buf_ptr = pls->pb.buffer;
