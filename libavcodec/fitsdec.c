@@ -195,6 +195,7 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
     uint8_t *dst8;
     uint16_t *dst16;
     uint64_t t;
+    double scale;
     FITSHeader header;
     FITSContext * fitsctx = avctx->priv_data;
 
@@ -203,6 +204,12 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
     ret = fits_read_header(avctx, &ptr8, &header, end, &p->metadata);
     if (ret < 0)
         return ret;
+
+    scale = header.data_max - header.data_min;
+    if (scale <= 0 || !isfinite(scale)) {
+        scale = 1;
+    }
+    scale = 1/scale;
 
     if (header.rgb) {
         if (header.bitpix == 8) {
@@ -272,7 +279,7 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
             for (j = 0; j < avctx->width; j++) { \
                 t = rd; \
                 if (!header.blank_found || t != header.blank) { \
-                    *dst++ = ((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) / (header.data_max - header.data_min); \
+                    *dst++ = ((t - header.data_min) * ((1 << (sizeof(type) * 8)) - 1)) * scale; \
                 } else { \
                     *dst++ = fitsctx->blank_val; \
                 } \
