@@ -865,7 +865,7 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
             if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
                 return 0;
             av_log(ctx, AV_LOG_ERROR,
-                    "Failed to send packet to filter %s for stream %d\n",
+                    "Failed to receive packet from filter %s for stream %d\n",
                     ctx->filter->name, pkt->stream_index);
             if (s->error_recognition & AV_EF_EXPLODE)
                 return ret;
