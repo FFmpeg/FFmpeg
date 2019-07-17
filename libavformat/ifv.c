@@ -68,6 +68,8 @@ static int read_index(AVFormatContext *s,
     }
 
     for (i = start_index; i < end_index; i++) {
+        if (avio_feof(s->pb))
+            return AVERROR_EOF;
         pos = avio_rl32(s->pb);
         size = avio_rl32(s->pb);
 
