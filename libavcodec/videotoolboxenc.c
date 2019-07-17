@@ -949,6 +949,7 @@ static int get_cv_transfer_function(AVCodecContext *avctx,
             break;
 
         default:
+            *transfer_fnc = NULL;
             av_log(avctx, AV_LOG_ERROR, "Transfer function %s is not supported.\n", av_color_transfer_name(trc));
             return -1;
     }
