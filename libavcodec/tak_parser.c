@@ -46,15 +46,16 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int needed   = buf_size ? TAK_MAX_FRAME_HEADER_BYTES : 8;
     int ret;
 
+    *poutbuf      = buf;
+    *poutbuf_size = buf_size;
+
     if (s->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         TAKStreamInfo ti;
         if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
-            return ret;
+            return buf_size;
         if (!ff_tak_decode_frame_header(avctx, &gb, &ti, 127))
             s->duration = t->ti.last_frame_samples ? t->ti.last_frame_samples
                                                    : t->ti.frame_samples;
-        *poutbuf      = buf;
-        *poutbuf_size = buf_size;
         return buf_size;
     }
 
@@ -65,7 +66,7 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             const uint8_t *tmp_buf = buf;
 
             if (ff_combine_frame(pc, END_NOT_FOUND, &tmp_buf, &tmp_buf_size) != -1)
-                return AVERROR(ENOMEM);
+                goto fail;
             consumed += tmp_buf_size;
             buf      += tmp_buf_size;
             buf_size -= tmp_buf_size;
@@ -78,7 +79,7 @@ static int tak_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
                 if ((ret = init_get_bits8(&gb, pc->buffer + t->index,
                                           pc->index - t->index)) < 0)
-                    return ret;
+                    goto fail;
                 if (!ff_tak_decode_frame_header(avctx, &gb,
                         pc->frame_start_found ? &ti : &t->ti, 127) &&
                     !ff_tak_check_crc(pc->buffer + t->index,
@@ -103,9 +104,7 @@ found:
 
     if (consumed && !buf_size && next == END_NOT_FOUND ||
         ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
-        *poutbuf      = NULL;
-        *poutbuf_size = 0;
-        return buf_size + consumed;
+        goto fail;
     }
 
     if (next != END_NOT_FOUND) {
@@ -116,6 +115,11 @@ found:
     *poutbuf      = buf;
     *poutbuf_size = buf_size;
     return next;
+
+fail:
+    *poutbuf      = NULL;
+    *poutbuf_size = 0;
+    return buf_size + consumed;
 }
 
 AVCodecParser ff_tak_parser = {
