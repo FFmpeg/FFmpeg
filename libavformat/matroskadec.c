@@ -389,12 +389,16 @@ typedef struct MatroskaDemuxContext {
 
 #define CHILD_OF(parent) { .def = { .n = parent } }
 
-static const EbmlSyntax ebml_syntax[], matroska_segment[], matroska_track_video_color[], matroska_track_video[],
-                        matroska_track[], matroska_track_encoding[], matroska_track_encodings[],
-                        matroska_track_combine_planes[], matroska_track_operation[], matroska_tracks[],
-                        matroska_attachments[], matroska_chapter_entry[], matroska_chapter[], matroska_chapters[],
-                        matroska_index_entry[], matroska_index[], matroska_tag[], matroska_tags[], matroska_seekhead[],
-                        matroska_blockadditions[], matroska_blockgroup[], matroska_cluster_parsing[];
+// The following forward declarations need their size because
+// a tentative definition with internal linkage must not be an
+// incomplete type (6.7.2 in C90, 6.9.2 in C99).
+// Removing the sizes breaks MSVC.
+static const EbmlSyntax ebml_syntax[3], matroska_segment[9], matroska_track_video_color[15], matroska_track_video[19],
+                        matroska_track[27], matroska_track_encoding[6], matroska_track_encodings[2],
+                        matroska_track_combine_planes[2], matroska_track_operation[2], matroska_tracks[2],
+                        matroska_attachments[2], matroska_chapter_entry[9], matroska_chapter[6], matroska_chapters[2],
+                        matroska_index_entry[3], matroska_index[2], matroska_tag[3], matroska_tags[2], matroska_seekhead[2],
+                        matroska_blockadditions[2], matroska_blockgroup[8], matroska_cluster_parsing[8];
 
 static const EbmlSyntax ebml_header[] = {
     { EBML_ID_EBMLREADVERSION,    EBML_UINT, 0, offsetof(Ebml, version),         { .u = EBML_VERSION } },
