@@ -86,10 +86,7 @@ static void h263_h_loop_filter_msa(uint8_t *src, int32_t stride, int32_t qscale)
     ILVR_B2_SH(in3, in0, in1, in2, temp0, temp1);
     in0 = (v16u8) __msa_ilvr_h(temp1, temp0);
     in3 = (v16u8) __msa_ilvl_h(temp1, temp0);
-    ST4x4_UB(in0, in0, 0, 1, 2, 3, src, stride);
-    src += 4 * stride;
-    ST4x4_UB(in3, in3, 0, 1, 2, 3, src, stride);
-    src += 4 * stride;
+    ST_W8(in0, in3, 0, 1, 2, 3, 0, 1, 2, 3, src, stride);
 }
 
 static void h263_v_loop_filter_msa(uint8_t *src, int32_t stride, int32_t qscale)

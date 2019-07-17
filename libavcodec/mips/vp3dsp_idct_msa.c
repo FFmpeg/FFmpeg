@@ -47,7 +47,6 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
     v4i32 cnst8w = {8, 8, 8, 8};
     v4i32 cnst2048w = {2048, 2048, 2048, 2048};
     v4i32 cnst128w = {128, 128, 128, 128};
-    int nstride = stride;
 
     /* Extended input data */
     LD_SH8(input, 8, r0, r1, r2, r3, r4, r5, r6, r7);
@@ -386,20 +385,14 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
     VSHF_B2_SB(r2_l, r6_l, r3_l, r7_l, mask, mask, d6, d7);
 
     /* Final sequence of operations over-write original dst */
-    ST8x1_UB(d0, dst);
-    ST8x1_UB(d1, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d2, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d3, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d4, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d5, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d6, dst + nstride);
-    nstride += stride;
-    ST8x1_UB(d7, dst + nstride);
+    ST_D1(d0, 0, dst);
+    ST_D1(d1, 0, dst + stride);
+    ST_D1(d2, 0, dst + 2 * stride);
+    ST_D1(d3, 0, dst + 3 * stride);
+    ST_D1(d4, 0, dst + 4 * stride);
+    ST_D1(d5, 0, dst + 5 * stride);
+    ST_D1(d6, 0, dst + 6 * stride);
+    ST_D1(d7, 0, dst + 7 * stride);
 }
 
 void ff_vp3_idct_put_msa(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
@@ -424,7 +417,6 @@ void ff_vp3_idct_dc_add_msa(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     v4i32 r0, r1, r2, r3, r4, r5, r6, r7;
     v16i8 mask = {0, 4, 8, 12, 16, 20, 24, 28, 0, 0, 0, 0, 0, 0, 0, 0};
     v16i8 zero = {0};
-    int nstride = line_size;
 
     LD_SB8(dest, line_size, d0, d1, d2, d3, d4, d5, d6, d7);
     ILVR_B4_SW(zero, d0, zero, d1, zero, d2, zero, d3,
@@ -480,20 +472,14 @@ void ff_vp3_idct_dc_add_msa(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     VSHF_B2_SB(e6, r6, e7, r7, mask, mask, d6, d7);
 
     /* Final sequence of operations over-write original dst */
-    ST8x1_UB(d0, dest);
-    ST8x1_UB(d1, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d2, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d3, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d4, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d5, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d6, dest + nstride);
-    nstride += line_size;
-    ST8x1_UB(d7, dest + nstride);
+    ST_D1(d0, 0, dest);
+    ST_D1(d1, 0, dest + line_size);
+    ST_D1(d2, 0, dest + 2 * line_size);
+    ST_D1(d3, 0, dest + 3 * line_size);
+    ST_D1(d4, 0, dest + 4 * line_size);
+    ST_D1(d5, 0, dest + 5 * line_size);
+    ST_D1(d6, 0, dest + 6 * line_size);
+    ST_D1(d7, 0, dest + 7 * line_size);
 
     block[0] = 0;
 }
@@ -537,8 +523,8 @@ void ff_vp3_v_loop_filter_msa(uint8_t *first_pixel, ptrdiff_t stride,
     VSHF_B2_SB(f0, f1, g0, g1, mask, mask, d1, d2);
 
     /* Final move to first_pixel */
-    ST8x1_UB(d1, first_pixel + nstride);
-    ST8x1_UB(d2, first_pixel);
+    ST_D1(d1, 0, first_pixel + nstride);
+    ST_D1(d2, 0, first_pixel);
 }
 
 void ff_vp3_h_loop_filter_msa(uint8_t *first_pixel, ptrdiff_t stride,
@@ -583,8 +569,8 @@ void ff_vp3_h_loop_filter_msa(uint8_t *first_pixel, ptrdiff_t stride,
     g1 = CLIP_SW_0_255(g1);
     VSHF_B2_SB(f0, g0, f1, g1, mask, mask, d1, d2);
     /* Final move to first_pixel */
-    ST2x4_UB(d1, 0, first_pixel - 1, stride);
-    ST2x4_UB(d2, 0, first_pixel - 1 + 4 * stride, stride);
+    ST_H4(d1, 0, 1, 2, 3, first_pixel - 1, stride);
+    ST_H4(d2, 0, 1, 2, 3, first_pixel - 1 + 4 * stride, stride);
 }
 
 void ff_put_no_rnd_pixels_l2_msa(uint8_t *dst, const uint8_t *src1,
@@ -641,10 +627,8 @@ void ff_put_no_rnd_pixels_l2_msa(uint8_t *dst, const uint8_t *src1,
         f2 = (v4i32) __msa_and_v((v16u8)a3, (v16u8)b3);
         t3 = t3 + (v4u32)f2;
 
-        ST4x4_UB(t0, t0, 0, 1, 2, 3, dst, stride);
-        ST4x4_UB(t1, t1, 0, 1, 2, 3, dst + 4 * stride, stride);
-        ST4x4_UB(t2, t2, 0, 1, 2, 3, dst + 4, stride);
-        ST4x4_UB(t3, t3, 0, 1, 2, 3, dst + 4 + 4 * stride, stride);
+        ST_W8(t0, t1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
+        ST_W8(t2, t3, 0, 1, 2, 3, 0, 1, 2, 3, dst + 4, stride);
     } else {
         int i;
 

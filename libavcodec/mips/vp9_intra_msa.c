@@ -378,7 +378,8 @@ void ff_tm_4x4_msa(uint8_t *dst, ptrdiff_t dst_stride,
     IPRED_SUBS_UH2_UH(src_top_left, src_top_left, vec2, vec3);
     SAT_UH4_UH(vec0, vec1, vec2, vec3, 7);
     PCKEV_B2_SB(vec1, vec0, vec3, vec2, tmp0, tmp1);
-    ST4x4_UB(tmp0, tmp1, 0, 2, 0, 2, dst, dst_stride);
+    ST_W2(tmp0, 0, 2, dst, dst_stride);
+    ST_W2(tmp1, 0, 2, dst + 2 * dst_stride, dst_stride);
 }
 
 void ff_tm_8x8_msa(uint8_t *dst, ptrdiff_t dst_stride,
@@ -409,7 +410,7 @@ void ff_tm_8x8_msa(uint8_t *dst, ptrdiff_t dst_stride,
         IPRED_SUBS_UH2_UH(src_top_left, src_top_left, vec2, vec3);
         SAT_UH4_UH(vec0, vec1, vec2, vec3, 7);
         PCKEV_B2_SB(vec1, vec0, vec3, vec2, tmp0, tmp1);
-        ST8x4_UB(tmp0, tmp1, dst, dst_stride);
+        ST_D4(tmp0, tmp1, 0, 1, 0, 1, dst, dst_stride);
         dst += (4 * dst_stride);
     }
 }

@@ -241,7 +241,7 @@ static const int32_t sinpi_4_9 = 15212;
          res0_m, res1_m, res2_m, res3_m);                         \
     CLIP_SH4_0_255(res0_m, res1_m, res2_m, res3_m);               \
     PCKEV_B2_SB(res1_m, res0_m, res3_m, res2_m, tmp0_m, tmp1_m);  \
-    ST8x4_UB(tmp0_m, tmp1_m, dst_m, dst_stride);                  \
+    ST_D4(tmp0_m, tmp1_m, 0, 1, 0, 1, dst_m, dst_stride);         \
 }
 
 #define VP9_IDCT4x4(in0, in1, in2, in3, out0, out1, out2, out3)       \
@@ -364,7 +364,10 @@ static void vp9_idct4x4_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
-    LD4x4_SH(input, in0, in1, in2, in3);
+    in0 = LD_SH(input);
+    in2 = LD_SH(input + 8);
+    in1 = (v8i16) __msa_ilvl_d((v2i64) in0, (v2i64) in0);
+    in3 = (v8i16) __msa_ilvl_d((v2i64) in2, (v2i64) in2);
     ST_SH2(zero, zero, input, 8);
     /* rows */
     VP9_IDCT4x4(in0, in1, in2, in3, in0, in1, in2, in3);
@@ -383,7 +386,10 @@ static void vp9_iadst4x4_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
-    LD4x4_SH(input, in0, in1, in2, in3);
+    in0 = LD_SH(input);
+    in2 = LD_SH(input + 8);
+    in1 = (v8i16) __msa_ilvl_d((v2i64) in0, (v2i64) in0);
+    in3 = (v8i16) __msa_ilvl_d((v2i64) in2, (v2i64) in2);
     ST_SH2(zero, zero, input, 8);
     /* rows */
     VP9_IADST4x4(in0, in1, in2, in3, in0, in1, in2, in3);
@@ -402,7 +408,10 @@ static void vp9_iadst_idct_4x4_add_msa(int16_t *input, uint8_t *dst,
     v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
-    LD4x4_SH(input, in0, in1, in2, in3);
+    in0 = LD_SH(input);
+    in2 = LD_SH(input + 8);
+    in1 = (v8i16) __msa_ilvl_d((v2i64) in0, (v2i64) in0);
+    in3 = (v8i16) __msa_ilvl_d((v2i64) in2, (v2i64) in2);
     ST_SH2(zero, zero, input, 8);
     /* cols */
     VP9_IADST4x4(in0, in1, in2, in3, in0, in1, in2, in3);
@@ -421,7 +430,10 @@ static void vp9_idct_iadst_4x4_add_msa(int16_t *input, uint8_t *dst,
     v8i16 zero = { 0 };
 
     /* load vector elements of 4x4 block */
-    LD4x4_SH(input, in0, in1, in2, in3);
+    in0 = LD_SH(input);
+    in2 = LD_SH(input + 8);
+    in1 = (v8i16) __msa_ilvl_d((v2i64) in0, (v2i64) in0);
+    in3 = (v8i16) __msa_ilvl_d((v2i64) in2, (v2i64) in2);
     ST_SH2(zero, zero, input, 8);
     /* cols */
     VP9_IDCT4x4(in0, in1, in2, in3, in0, in1, in2, in3);
@@ -753,13 +765,13 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     res0 += out0;
     res0 = CLIP_SH_0_255(res0);
     res0 = (v8i16) __msa_pckev_b((v16i8) res0, (v16i8) res0);
-    ST8x1_UB(res0, dst);
+    ST_D1(res0, 0, dst);
 
     res7 = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) dst7);
     res7 += out7;
     res7 = CLIP_SH_0_255(res7);
     res7 = (v8i16) __msa_pckev_b((v16i8) res7, (v16i8) res7);
-    ST8x1_UB(res7, dst + 7 * dst_stride);
+    ST_D1(res7, 0, dst + 7 * dst_stride);
 
     cnst1 = __msa_fill_h(cospi_24_64);
     cnst0 = __msa_fill_h(cospi_8_64);
@@ -782,8 +794,8 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res1, out1, res6, out6, res1, res6);
     CLIP_SH2_0_255(res1, res6);
     PCKEV_B2_SH(res1, res1, res6, res6, res1, res6);
-    ST8x1_UB(res1, dst + dst_stride);
-    ST8x1_UB(res6, dst + 6 * dst_stride);
+    ST_D1(res1, 0, dst + dst_stride);
+    ST_D1(res6, 0, dst + 6 * dst_stride);
 
     cnst0 = __msa_fill_h(cospi_16_64);
     cnst1 = -cnst0;
@@ -801,8 +813,8 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res3, out3, res4, out4, res3, res4);
     CLIP_SH2_0_255(res3, res4);
     PCKEV_B2_SH(res3, res3, res4, res4, res3, res4);
-    ST8x1_UB(res3, dst + 3 * dst_stride);
-    ST8x1_UB(res4, dst + 4 * dst_stride);
+    ST_D1(res3, 0, dst + 3 * dst_stride);
+    ST_D1(res4, 0, dst + 4 * dst_stride);
 
     out2 = VP9_DOT_SHIFT_RIGHT_PCK_H(temp2, temp3, cnst0);
     out5 = VP9_DOT_SHIFT_RIGHT_PCK_H(temp2, temp3, cnst1);
@@ -814,8 +826,8 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res2, out2, res5, out5, res2, res5);
     CLIP_SH2_0_255(res2, res5);
     PCKEV_B2_SH(res2, res2, res5, res5, res2, res5);
-    ST8x1_UB(res2, dst + 2 * dst_stride);
-    ST8x1_UB(res5, dst + 5 * dst_stride);
+    ST_D1(res2, 0, dst + 2 * dst_stride);
+    ST_D1(res5, 0, dst + 5 * dst_stride);
 }
 
 static void vp9_iadst_idct_8x8_add_msa(int16_t *input, uint8_t *dst,
@@ -1354,8 +1366,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res0, out0, res1, out1, res0, res1);
     CLIP_SH2_0_255(res0, res1);
     PCKEV_B2_SH(res0, res0, res1, res1, res0, res1);
-    ST8x1_UB(res0, dst);
-    ST8x1_UB(res1, dst + 15 * dst_stride);
+    ST_D1(res0, 0, dst);
+    ST_D1(res1, 0, dst + 15 * dst_stride);
 
     k0 = VP9_SET_COSPI_PAIR(cospi_12_64, cospi_20_64);
     k1 = VP9_SET_COSPI_PAIR(-cospi_20_64, cospi_12_64);
@@ -1371,8 +1383,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res8, out8, res9, out9, res8, res9);
     CLIP_SH2_0_255(res8, res9);
     PCKEV_B2_SH(res8, res8, res9, res9, res8, res9);
-    ST8x1_UB(res8, dst + dst_stride);
-    ST8x1_UB(res9, dst + 14 * dst_stride);
+    ST_D1(res8, 0, dst + dst_stride);
+    ST_D1(res9, 0, dst + 14 * dst_stride);
 
     k0 = VP9_SET_COSPI_PAIR(cospi_8_64, cospi_24_64);
     k1 = VP9_SET_COSPI_PAIR(cospi_24_64, -cospi_8_64);
@@ -1386,8 +1398,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res4, out4, res5, out5, res4, res5);
     CLIP_SH2_0_255(res4, res5);
     PCKEV_B2_SH(res4, res4, res5, res5, res4, res5);
-    ST8x1_UB(res4, dst + 3 * dst_stride);
-    ST8x1_UB(res5, dst + 12 * dst_stride);
+    ST_D1(res4, 0, dst + 3 * dst_stride);
+    ST_D1(res5, 0, dst + 12 * dst_stride);
 
     VP9_MADD_BF(h1, h3, h5, h7, k0, k1, k2, k0, out12, out14, out13, out15);
     out13 = -out13;
@@ -1398,8 +1410,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res12, out12, res13, out13, res12, res13);
     CLIP_SH2_0_255(res12, res13);
     PCKEV_B2_SH(res12, res12, res13, res13, res12, res13);
-    ST8x1_UB(res12, dst + 2 * dst_stride);
-    ST8x1_UB(res13, dst + 13 * dst_stride);
+    ST_D1(res12, 0, dst + 2 * dst_stride);
+    ST_D1(res13, 0, dst + 13 * dst_stride);
 
     k0 = VP9_SET_COSPI_PAIR(cospi_16_64, cospi_16_64);
     k3 = VP9_SET_COSPI_PAIR(-cospi_16_64, cospi_16_64);
@@ -1411,8 +1423,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res6, out6, res7, out7, res6, res7);
     CLIP_SH2_0_255(res6, res7);
     PCKEV_B2_SH(res6, res6, res7, res7, res6, res7);
-    ST8x1_UB(res6, dst + 4 * dst_stride);
-    ST8x1_UB(res7, dst + 11 * dst_stride);
+    ST_D1(res6, 0, dst + 4 * dst_stride);
+    ST_D1(res7, 0, dst + 11 * dst_stride);
 
     VP9_MADD_SHORT(out10, out11, k0, k3, out10, out11);
     SRARI_H2_SH(out10, out11, 6);
@@ -1422,8 +1434,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res10, out10, res11, out11, res10, res11);
     CLIP_SH2_0_255(res10, res11);
     PCKEV_B2_SH(res10, res10, res11, res11, res10, res11);
-    ST8x1_UB(res10, dst + 6 * dst_stride);
-    ST8x1_UB(res11, dst + 9 * dst_stride);
+    ST_D1(res10, 0, dst + 6 * dst_stride);
+    ST_D1(res11, 0, dst + 9 * dst_stride);
 
     k1 = VP9_SET_COSPI_PAIR(-cospi_16_64, -cospi_16_64);
     k2 = VP9_SET_COSPI_PAIR(cospi_16_64, -cospi_16_64);
@@ -1435,8 +1447,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res2, out2, res3, out3, res2, res3);
     CLIP_SH2_0_255(res2, res3);
     PCKEV_B2_SH(res2, res2, res3, res3, res2, res3);
-    ST8x1_UB(res2, dst + 7 * dst_stride);
-    ST8x1_UB(res3, dst + 8 * dst_stride);
+    ST_D1(res2, 0, dst + 7 * dst_stride);
+    ST_D1(res3, 0, dst + 8 * dst_stride);
 
     VP9_MADD_SHORT(out14, out15, k1, k2, out14, out15);
     SRARI_H2_SH(out14, out15, 6);
@@ -1446,8 +1458,8 @@ static void vp9_iadst16_1d_columns_addblk_msa(int16_t *input, uint8_t *dst,
     ADD2(res14, out14, res15, out15, res14, res15);
     CLIP_SH2_0_255(res14, res15);
     PCKEV_B2_SH(res14, res14, res15, res15, res14, res15);
-    ST8x1_UB(res14, dst + 5 * dst_stride);
-    ST8x1_UB(res15, dst + 10 * dst_stride);
+    ST_D1(res14, 0, dst + 5 * dst_stride);
+    ST_D1(res15, 0, dst + 10 * dst_stride);
 }
 
 static void vp9_iadst16x16_colcol_addblk_msa(int16_t *input, uint8_t *dst,

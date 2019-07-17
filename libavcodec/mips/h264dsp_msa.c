@@ -45,7 +45,7 @@ static void avc_wgt_4x2_msa(uint8_t *data, int32_t stride,
     tmp0 = __msa_srlr_h(tmp0, denom);
     tmp0 = (v8i16) __msa_sat_u_h((v8u16) tmp0, 7);
     src0 = (v16u8) __msa_pckev_b((v16i8) tmp0, (v16i8) tmp0);
-    ST4x2_UB(src0, data, stride);
+    ST_W2(src0, 0, 1, data, stride);
 }
 
 static void avc_wgt_4x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
@@ -71,7 +71,7 @@ static void avc_wgt_4x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
     tmp1 = __msa_srlr_h(tmp1, denom);
     SAT_UH2_SH(tmp0, tmp1, 7);
     src0 = (v16u8) __msa_pckev_b((v16i8) tmp1, (v16i8) tmp0);
-    ST4x4_UB(src0, src0, 0, 1, 2, 3, data, stride);
+    ST_W4(src0, 0, 1, 2, 3, data, stride);
 }
 
 static void avc_wgt_4x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
@@ -102,7 +102,7 @@ static void avc_wgt_4x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
     SRLR_H4_SH(tmp0, tmp1, tmp2, tmp3, denom);
     SAT_UH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, src0, src1);
-    ST4x8_UB(src0, src1, data, stride);
+    ST_W8(src0, src1, 0, 1, 2, 3, 0, 1, 2, 3, data, stride);
 }
 
 static void avc_wgt_8x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
@@ -133,7 +133,7 @@ static void avc_wgt_8x4_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
     SRLR_H4_SH(tmp0, tmp1, tmp2, tmp3, denom);
     SAT_UH4_SH(tmp0, tmp1, tmp2, tmp3, 7);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, src0, src1);
-    ST8x4_UB(src0, src1, data, stride);
+    ST_D4(src0, src1, 0, 1, 0, 1, data, stride);
 }
 
 static void avc_wgt_8x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
@@ -175,7 +175,7 @@ static void avc_wgt_8x8_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
     SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
     PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, src0, src1,
                 src2, src3);
-    ST8x8_UB(src0, src1, src2, src3, data, stride);
+    ST_D8(src0, src1, src2, src3, 0, 1, 0, 1, 0, 1, 0, 1, data, stride);
 }
 
 static void avc_wgt_8x16_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
@@ -218,7 +218,7 @@ static void avc_wgt_8x16_msa(uint8_t *data, int32_t stride, int32_t log2_denom,
         SAT_UH8_SH(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7, 7);
         PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, src0, src1,
                     src2, src3);
-        ST8x8_UB(src0, src1, src2, src3, data, stride);
+        ST_D8(src0, src1, src2, src3, 0, 1, 0, 1, 0, 1, 0, 1, data, stride);
         data += 8 * stride;
     }
 }
@@ -253,7 +253,7 @@ static void avc_biwgt_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     tmp0 = __msa_maxi_s_h(tmp0, 0);
     tmp0 = __msa_min_s_h(max255, tmp0);
     dst0 = (v16u8) __msa_pckev_b((v16i8) tmp0, (v16i8) tmp0);
-    ST4x2_UB(dst0, dst, stride);
+    ST_W2(dst0, 0, 1, dst, stride);
 }
 
 static void avc_biwgt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -287,7 +287,7 @@ static void avc_biwgt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     tmp1 >>= denom;
     CLIP_SH2_0_255(tmp0, tmp1);
     dst0 = (v16u8) __msa_pckev_b((v16i8) tmp1, (v16i8) tmp0);
-    ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, stride);
+    ST_W4(dst0, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_biwgt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -327,7 +327,7 @@ static void avc_biwgt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
     CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
-    ST4x8_UB(dst0, dst1, dst, stride);
+    ST_W8(dst0, dst1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_biwgt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -365,7 +365,7 @@ static void avc_biwgt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
     CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
-    ST8x4_UB(dst0, dst1, dst, stride);
+    ST_D4(dst0, dst1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_biwgt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -417,7 +417,7 @@ static void avc_biwgt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
     PCKEV_B2_UB(tmp5, tmp4, tmp7, tmp6, dst2, dst3);
-    ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
+    ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -479,7 +479,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
         CLIP_SH4_0_255(temp4, temp5, temp6, temp7);
         PCKEV_B4_UB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
                     dst0, dst1, dst2, dst3);
-        ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
+        ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
         dst += 8 * stride;
     }
 }
@@ -955,18 +955,18 @@ static void avc_loopfilter_luma_intra_edge_ver_msa(uint8_t *data,
         ILVRL_H2_SH(tp3, tp2, tmp6, tmp7);
 
         src = data - 3;
-        ST4x4_UB(tmp3, tmp3, 0, 1, 2, 3, src, img_width);
-        ST2x4_UB(tmp2, 0, src + 4, img_width);
+        ST_W4(tmp3, 0, 1, 2, 3, src, img_width);
+        ST_H4(tmp2, 0, 1, 2, 3, src + 4, img_width);
         src += 4 * img_width;
-        ST4x4_UB(tmp4, tmp4, 0, 1, 2, 3, src, img_width);
-        ST2x4_UB(tmp2, 4, src + 4, img_width);
+        ST_W4(tmp4, 0, 1, 2, 3, src, img_width);
+        ST_H4(tmp2, 4, 5, 6, 7, src + 4, img_width);
         src += 4 * img_width;
 
-        ST4x4_UB(tmp6, tmp6, 0, 1, 2, 3, src, img_width);
-        ST2x4_UB(tmp5, 0, src + 4, img_width);
+        ST_W4(tmp6, 0, 1, 2, 3, src, img_width);
+        ST_H4(tmp5, 0, 1, 2, 3, src + 4, img_width);
         src += 4 * img_width;
-        ST4x4_UB(tmp7, tmp7, 0, 1, 2, 3, src, img_width);
-        ST2x4_UB(tmp5, 4, src + 4, img_width);
+        ST_W4(tmp7, 0, 1, 2, 3, src, img_width);
+        ST_H4(tmp5, 4, 5, 6, 7, src + 4, img_width);
     }
     }
 }
@@ -1274,9 +1274,9 @@ static void avc_loopfilter_cb_or_cr_intra_edge_ver_msa(uint8_t *data_cb_or_cr,
         tmp1 = (v8i16) __msa_ilvr_b((v16i8) q0_or_p0_org, (v16i8) p0_or_q0_org);
 
         data_cb_or_cr -= 1;
-        ST2x4_UB(tmp1, 0, data_cb_or_cr, img_width);
+        ST_H4(tmp1, 0, 1, 2, 3, data_cb_or_cr, img_width);
         data_cb_or_cr += 4 * img_width;
-        ST2x4_UB(tmp1, 4, data_cb_or_cr, img_width);
+        ST_H4(tmp1, 4, 5, 6, 7, data_cb_or_cr, img_width);
     }
 }
 
@@ -2110,9 +2110,9 @@ static void avc_loopfilter_cb_or_cr_inter_edge_ver_msa(uint8_t *data,
             q0_org = __msa_bmnz_v(q0_org, q0, is_less_than);
             tmp1 = (v8i16) __msa_ilvr_b((v16i8) q0_org, (v16i8) p0_org);
             src = data - 1;
-            ST2x4_UB(tmp1, 0, src, img_width);
+            ST_H4(tmp1, 0, 1, 2, 3, src, img_width);
             src += 4 * img_width;
-            ST2x4_UB(tmp1, 4, src, img_width);
+            ST_H4(tmp1, 4, 5, 6, 7, src, img_width);
         }
     }
 }
@@ -2136,7 +2136,7 @@ static void avc_h_loop_filter_chroma422_msa(uint8_t *src, int32_t stride,
         }
 
         AVC_LPF_H_CHROMA_422(src, stride, tc_val, alpha, beta, res);
-        ST2x4_UB(res, 0, (src - 1), stride);
+        ST_H4(res, 0, 1, 2, 3, (src - 1), stride);
         src += (4 * stride);
     }
 }

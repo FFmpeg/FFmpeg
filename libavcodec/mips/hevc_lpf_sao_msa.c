@@ -199,11 +199,9 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             dst_val0 = __msa_copy_u_d((v2i64) dst2, 0);
             dst_val1 = __msa_copy_u_d((v2i64) dst2, 1);
 
-            ST8x4_UB(dst0, dst1, p2, stride);
-            p2 += (4 * stride);
-            SD(dst_val0, p2);
-            p2 += stride;
-            SD(dst_val1, p2);
+            ST_D4(dst0, dst1, 0, 1, 0, 1, p2, stride);
+            SD(dst_val0, p2 + 4 * stride);
+            SD(dst_val1, p2 + 5 * stride);
             /* strong filter ends */
         } else if (flag0 == flag1) { /* weak only */
             /* weak filter */
@@ -288,7 +286,7 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             dst1 = __msa_bmz_v(dst1, dst3, (v16u8) cmp3);
 
             p2 += stride;
-            ST8x4_UB(dst0, dst1, p2, stride);
+            ST_D4(dst0, dst1, 0, 1, 0, 1, p2, stride);
             /* weak filter ends */
         } else { /* strong + weak */
             /* strong filter */
@@ -442,11 +440,9 @@ static void hevc_loopfilter_luma_hor_msa(uint8_t *src, int32_t stride,
             dst_val0 = __msa_copy_u_d((v2i64) dst2, 0);
             dst_val1 = __msa_copy_u_d((v2i64) dst2, 1);
 
-            ST8x4_UB(dst0, dst1, p2, stride);
-            p2 += (4 * stride);
-            SD(dst_val0, p2);
-            p2 += stride;
-            SD(dst_val1, p2);
+            ST_D4(dst0, dst1, 0, 1, 0, 1, p2, stride);
+            SD(dst_val0, p2 + 4 * stride);
+            SD(dst_val1, p2 + 5 * stride);
         }
     }
 }
@@ -976,7 +972,7 @@ static void hevc_loopfilter_chroma_hor_msa(uint8_t *src, int32_t stride,
         temp1 = (v8i16) __msa_bmnz_v((v16u8) temp1, (v16u8) q0, (v16u8) tc_pos);
 
         temp0 = (v8i16) __msa_pckev_b((v16i8) temp1, (v16i8) temp0);
-        ST8x2_UB(temp0, p0_ptr, stride);
+        ST_D2(temp0, 0, 1, p0_ptr, stride);
     }
 }
 
@@ -1037,9 +1033,7 @@ static void hevc_loopfilter_chroma_ver_msa(uint8_t *src, int32_t stride,
         temp0 = (v8i16) __msa_ilvev_b((v16i8) temp1, (v16i8) temp0);
 
         src += 1;
-        ST2x4_UB(temp0, 0, src, stride);
-        src += (4 * stride);
-        ST2x4_UB(temp0, 4, src, stride);
+        ST_H8(temp0, 0, 1, 2, 3, 4, 5, 6, 7, src, stride);
     }
 }
 
@@ -1087,7 +1081,7 @@ static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
         LD_UB4(src, src_stride, src0, src1, src2, src3);
 
         /* store results */
-        ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, dst_stride);
+        ST_W4(dst0, 0, 1, 2, 3, dst, dst_stride);
         dst += (4 * dst_stride);
     }
 
@@ -1102,7 +1096,7 @@ static void hevc_sao_band_filter_4width_msa(uint8_t *dst, int32_t dst_stride,
     dst0 = (v16i8) __msa_xori_b((v16u8) dst0, 128);
 
     /* store results */
-    ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, dst_stride);
+    ST_W4(dst0, 0, 1, 2, 3, dst, dst_stride);
 }
 
 static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
@@ -1153,7 +1147,7 @@ static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
         XORI_B2_128_SB(dst0, dst1);
 
         /* store results */
-        ST8x4_UB(dst0, dst1, dst, dst_stride);
+        ST_D4(dst0, dst1, 0, 1, 0, 1, dst, dst_stride);
         dst += dst_stride << 2;
     }
 
@@ -1173,7 +1167,7 @@ static void hevc_sao_band_filter_8width_msa(uint8_t *dst, int32_t dst_stride,
     XORI_B2_128_SB(dst0, dst1);
 
     /* store results */
-    ST8x4_UB(dst0, dst1, dst, dst_stride);
+    ST_D4(dst0, dst1, 0, 1, 0, 1, dst, dst_stride);
 }
 
 static void hevc_sao_band_filter_16multiple_msa(uint8_t *dst,

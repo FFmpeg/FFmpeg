@@ -85,7 +85,7 @@ static void avc_chroma_hz_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     res_r = __msa_sat_u_h(res_r, 7);
     res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST2x4_UB(res, 0, dst, stride);
+    ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -121,7 +121,7 @@ static void avc_chroma_hz_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     res_r = __msa_sat_u_h(res_r, 7);
     res = (v4i32) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST4x2_UB(res, dst, stride);
+    ST_W2(res, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -144,7 +144,7 @@ static void avc_chroma_hz_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H2_UH(res0_r, res1_r, 6);
     SAT_UH2_UH(res0_r, res1_r, 7);
     out = (v16u8) __msa_pckev_b((v16i8) res1_r, (v16i8) res0_r);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
+    ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -168,7 +168,7 @@ static void avc_chroma_hz_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res0, res1, res2, res3, 6);
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-    ST4x8_UB(out0, out1, dst, stride);
+    ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -204,7 +204,7 @@ static void avc_chroma_hz_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res0, res1, res2, res3, 6);
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-    ST8x4_UB(out0, out1, dst, stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -237,7 +237,7 @@ static void avc_chroma_hz_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SAT_UH4_UH(res4, res5, res6, res7, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     PCKEV_B2_UB(res5, res4, res7, res6, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
@@ -266,7 +266,7 @@ static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
         SRARI_H4_UH(res0, res1, res2, res3, 6);
         SAT_UH4_UH(res0, res1, res2, res3, 7);
         PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-        ST8x4_UB(out0, out1, dst, stride);
+        ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
         dst += (4 * stride);
     }
 
@@ -283,7 +283,7 @@ static void avc_chroma_hz_nonmult_msa(uint8_t *src, uint8_t *dst,
             res0 = __msa_sat_u_h(res0, 7);
             res0 = (v8u16) __msa_pckev_b((v16i8) res0, (v16i8) res0);
 
-            ST8x1_UB(res0, dst);
+            ST_D1(res0, 0, dst);
             dst += stride;
         }
     }
@@ -359,7 +359,7 @@ static void avc_chroma_vt_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
 
     res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST2x4_UB(res, 0, dst, stride);
+    ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -394,7 +394,7 @@ static void avc_chroma_vt_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     res_r = __msa_sat_u_h(res_r, 7);
     res = (v4i32) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
 
-    ST4x2_UB(res, dst, stride);
+    ST_W2(res, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -418,7 +418,7 @@ static void avc_chroma_vt_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H2_UH(res0_r, res1_r, 6);
     SAT_UH2_UH(res0_r, res1_r, 7);
     out = (v16u8) __msa_pckev_b((v16i8) res1_r, (v16i8) res0_r);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
+    ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -446,7 +446,7 @@ static void avc_chroma_vt_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res0, res1, res2, res3, 6);
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-    ST4x8_UB(out0, out1, dst, stride);
+    ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -480,7 +480,7 @@ static void avc_chroma_vt_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res0, res1, res2, res3, 6);
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
-    ST8x4_UB(out0, out1, dst, stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -512,7 +512,7 @@ static void avc_chroma_vt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     PCKEV_B2_UB(res5, res4, res7, res6, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -592,7 +592,7 @@ static void avc_chroma_hv_2x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
 
     res = (v8i16) __msa_pckev_b((v16i8) res_vt0, (v16i8) res_vt0);
 
-    ST2x4_UB(res, 0, dst, stride);
+    ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hv_2w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -634,7 +634,7 @@ static void avc_chroma_hv_4x2_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     res_vt0 = __msa_sat_u_h(res_vt0, 7);
     res = (v4i32) __msa_pckev_b((v16i8) res_vt0, (v16i8) res_vt0);
 
-    ST4x2_UB(res, dst, stride);
+    ST_W2(res, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -666,7 +666,8 @@ static void avc_chroma_hv_4x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H2_UH(res_vt0, res_vt1, 6);
     SAT_UH2_UH(res_vt0, res_vt1, 7);
     PCKEV_B2_SW(res_vt0, res_vt0, res_vt1, res_vt1, res0, res1);
-    ST4x4_UB(res0, res1, 0, 1, 0, 1, dst, stride);
+    ST_W2(res0, 0, 1, dst, stride);
+    ST_W2(res1, 0, 1, dst + 2 * stride, stride);
 }
 
 static void avc_chroma_hv_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -706,7 +707,7 @@ static void avc_chroma_hv_4x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 6);
     SAT_UH4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 7);
     PCKEV_B2_UB(res_vt1, res_vt0, res_vt3, res_vt2, res0, res1);
-    ST4x8_UB(res0, res1, dst, stride);
+    ST_W8(res0, res1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hv_4w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -766,7 +767,7 @@ static void avc_chroma_hv_8x4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SRARI_H4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 6);
     SAT_UH4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 7);
     PCKEV_B2_UB(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
-    ST8x4_UB(out0, out1, dst, stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -822,7 +823,7 @@ static void avc_chroma_hv_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     SAT_UH4_UH(res_vt4, res_vt5, res_vt6, res_vt7, 7);
     PCKEV_B2_UB(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
     PCKEV_B2_UB(res_vt5, res_vt4, res_vt7, res_vt6, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_8w_msa(uint8_t *src, uint8_t *dst, int32_t stride,
@@ -918,7 +919,7 @@ static void avc_chroma_hz_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     dst0 = (v16u8) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
     dst0 = __msa_aver_u_b(dst0, dst_data);
 
-    ST2x4_UB(dst0, 0, dst, stride);
+    ST_H4(dst0, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
@@ -962,7 +963,7 @@ static void avc_chroma_hz_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     res = __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
     dst_data = __msa_aver_u_b((v16u8) res, dst_data);
 
-    ST4x2_UB(dst_data, dst, stride);
+    ST_W2(dst_data, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
@@ -991,7 +992,7 @@ static void avc_chroma_hz_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH2_UH(res0_r, res1_r, 7);
     out = (v16u8) __msa_pckev_b((v16i8) res1_r, (v16i8) res0_r);
     out = __msa_aver_u_b(out, dst_data);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
+    ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
@@ -1023,7 +1024,7 @@ static void avc_chroma_hz_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
-    ST4x8_UB(out0, out1, dst, stride);
+    ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
@@ -1066,7 +1067,7 @@ static void avc_chroma_hz_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     AVER_UB2_UB(out0, dst0, out1, dst1, dst0, dst1);
-    ST8x4_UB(dst0, dst1, dst, stride);
+    ST_D4(dst0, dst1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
@@ -1110,7 +1111,7 @@ static void avc_chroma_hz_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     PCKEV_B2_UB(res5, res4, res7, res6, out2, out3);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
     AVER_UB2_UB(out2, dst2, out3, dst3, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hz_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
@@ -1200,7 +1201,7 @@ static void avc_chroma_vt_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     res = (v8i16) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
     res = (v8i16) __msa_aver_u_b((v16u8) res, dst_data);
 
-    ST2x4_UB(res, 0, dst, stride);
+    ST_H4(res, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
@@ -1243,7 +1244,7 @@ static void avc_chroma_vt_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     res = (v16u8) __msa_pckev_b((v16i8) res_r, (v16i8) res_r);
     res = __msa_aver_u_b(res, dst_data);
 
-    ST4x2_UB(res, dst, stride);
+    ST_W2(res, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
@@ -1273,7 +1274,7 @@ static void avc_chroma_vt_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH2_UH(res0_r, res1_r, 7);
     out = (v16u8) __msa_pckev_b((v16i8) res1_r, (v16i8) res0_r);
     out = __msa_aver_u_b(out, dst0);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
+    ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
@@ -1309,7 +1310,7 @@ static void avc_chroma_vt_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
-    ST4x8_UB(out0, out1, dst, stride);
+    ST_W8(out0, out1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
@@ -1351,7 +1352,7 @@ static void avc_chroma_vt_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res0, res1, res2, res3, 7);
     PCKEV_B2_UB(res1, res0, res3, res2, out0, out1);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
-    ST8x4_UB(out0, out1, dst, stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
@@ -1394,7 +1395,7 @@ static void avc_chroma_vt_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     PCKEV_B2_UB(res5, res4, res7, res6, out2, out3);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
     AVER_UB2_UB(out2, dst2, out3, dst3, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_vt_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
@@ -1492,7 +1493,7 @@ static void avc_chroma_hv_and_aver_dst_2x4_msa(uint8_t *src, uint8_t *dst,
     res = __msa_pckev_b((v16i8) res_vt0, (v16i8) res_vt0);
     dst0 = __msa_aver_u_b((v16u8) res, dst0);
 
-    ST2x4_UB(dst0, 0, dst, stride);
+    ST_H4(dst0, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_2w_msa(uint8_t *src, uint8_t *dst,
@@ -1545,7 +1546,7 @@ static void avc_chroma_hv_and_aver_dst_4x2_msa(uint8_t *src, uint8_t *dst,
     dst0 = (v16u8) __msa_pckev_b((v16i8) res_vt0, (v16i8) res_vt0);
     dst0 = __msa_aver_u_b(dst0, dst_data);
 
-    ST4x2_UB(dst0, dst, stride);
+    ST_W2(dst0, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
@@ -1584,7 +1585,7 @@ static void avc_chroma_hv_and_aver_dst_4x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH2_UH(res_vt0, res_vt1, 7);
     out = (v16u8) __msa_pckev_b((v16i8) res_vt1, (v16i8) res_vt0);
     out = __msa_aver_u_b(out, dst_data);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, stride);
+    ST_W4(out, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
@@ -1633,7 +1634,7 @@ static void avc_chroma_hv_and_aver_dst_4x8_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 7);
     PCKEV_B2_UB(res_vt1, res_vt0, res_vt3, res_vt2, res0, res1);
     AVER_UB2_UB(res0, dst0, res1, dst1, res0, res1);
-    ST4x8_UB(res0, res1, dst, stride);
+    ST_W8(res0, res1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_4w_msa(uint8_t *src, uint8_t *dst,
@@ -1701,7 +1702,7 @@ static void avc_chroma_hv_and_aver_dst_8x4_msa(uint8_t *src, uint8_t *dst,
     SAT_UH4_UH(res_vt0, res_vt1, res_vt2, res_vt3, 7);
     PCKEV_B2_UB(res_vt1, res_vt0, res_vt3, res_vt2, out0, out1);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
-    ST8x4_UB(out0, out1, dst, stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
@@ -1770,7 +1771,7 @@ static void avc_chroma_hv_and_aver_dst_8x8_msa(uint8_t *src, uint8_t *dst,
     PCKEV_B2_UB(res_vt5, res_vt4, res_vt7, res_vt6, out2, out3);
     AVER_UB2_UB(out0, dst0, out1, dst1, out0, out1);
     AVER_UB2_UB(out2, dst2, out3, dst3, out2, out3);
-    ST8x8_UB(out0, out1, out2, out3, dst, stride);
+    ST_D8(out0, out1, out2, out3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
 }
 
 static void avc_chroma_hv_and_aver_dst_8w_msa(uint8_t *src, uint8_t *dst,
@@ -1848,21 +1849,21 @@ static void avg_width4_msa(uint8_t *src, uint8_t *dst, int32_t stride,
         LW4(dst + 4 * stride, stride, tp0, tp1, tp2, tp3);
         INSERT_W4_UB(tp0, tp1, tp2, tp3, dst1);
         AVER_UB2_UB(src0, dst0, src1, dst1, dst0, dst1);
-        ST4x8_UB(dst0, dst1, dst, stride);
+        ST_W8(dst0, dst1, 0, 1, 2, 3, 0, 1, 2, 3, dst, stride);
     } else if (4 == height) {
         LW4(src, stride, tp0, tp1, tp2, tp3);
         INSERT_W4_UB(tp0, tp1, tp2, tp3, src0);
         LW4(dst, stride, tp0, tp1, tp2, tp3);
         INSERT_W4_UB(tp0, tp1, tp2, tp3, dst0);
         dst0 = __msa_aver_u_b(src0, dst0);
-        ST4x4_UB(dst0, dst0, 0, 1, 2, 3, dst, stride);
+        ST_W4(dst0, 0, 1, 2, 3, dst, stride);
     } else if (2 == height) {
         LW2(src, stride, tp0, tp1);
         INSERT_W2_UB(tp0, tp1, src0);
         LW2(dst, stride, tp0, tp1);
         INSERT_W2_UB(tp0, tp1, dst0);
         dst0 = __msa_aver_u_b(src0, dst0);
-        ST4x2_UB(dst0, dst, stride);
+        ST_W2(dst0, 0, 1, dst, stride);
     }
 }
 
@@ -1889,7 +1890,7 @@ static void avg_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
         INSERT_D2_UB(tp6, tp7, dst3);
         AVER_UB4_UB(src0, dst0, src1, dst1, src2, dst2, src3, dst3, dst0, dst1,
                     dst2, dst3);
-        ST8x8_UB(dst0, dst1, dst2, dst3, dst, stride);
+        ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
     } else if (4 == height) {
         LD4(src, stride, tp0, tp1, tp2, tp3);
         INSERT_D2_UB(tp0, tp1, src0);
@@ -1898,7 +1899,7 @@ static void avg_width8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
         INSERT_D2_UB(tp0, tp1, dst0);
         INSERT_D2_UB(tp2, tp3, dst1);
         AVER_UB2_UB(src0, dst0, src1, dst1, dst0, dst1);
-        ST8x4_UB(dst0, dst1, dst, stride);
+        ST_D4(dst0, dst1, 0, 1, 0, 1, dst, stride);
     }
 }
 

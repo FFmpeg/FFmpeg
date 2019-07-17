@@ -349,19 +349,6 @@
 }
 #define LD_SH16(...) LD_V16(v8i16, __VA_ARGS__)
 
-/* Description : Load as 4x4 block of signed halfword elements from 1D source
-                 data into 4 vectors (Each vector with 4 signed halfwords)
-   Arguments   : Inputs  - psrc
-                 Outputs - out0, out1, out2, out3
-*/
-#define LD4x4_SH(psrc, out0, out1, out2, out3)                \
-{                                                             \
-    out0 = LD_SH(psrc);                                       \
-    out2 = LD_SH(psrc + 8);                                   \
-    out1 = (v8i16) __msa_ilvl_d((v2i64) out0, (v2i64) out0);  \
-    out3 = (v8i16) __msa_ilvl_d((v2i64) out2, (v2i64) out2);  \
-}
-
 /* Description : Store vectors with stride
    Arguments   : Inputs  - in0, in1, stride
                  Outputs - pdst    (destination pointer to store to)
@@ -405,198 +392,127 @@
 #define ST_SH8(...) ST_V8(v8i16, __VA_ARGS__)
 #define ST_SW8(...) ST_V8(v4i32, __VA_ARGS__)
 
-/* Description : Store as 2x4 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, stidx, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index stidx halfword element from 'in' vector is copied and
-                 stored on first line
-                 Index stidx+1 halfword element from 'in' vector is copied and
-                 stored on second line
-                 Index stidx+2 halfword element from 'in' vector is copied and
-                 stored on third line
-                 Index stidx+3 halfword element from 'in' vector is copied and
-                 stored on fourth line
-*/
-#define ST2x4_UB(in, stidx, pdst, stride)              \
-{                                                      \
-    uint16_t out0_m, out1_m, out2_m, out3_m;           \
-    uint8_t *pblk_2x4_m = (uint8_t *) (pdst);          \
-                                                       \
-    out0_m = __msa_copy_u_h((v8i16) in, (stidx));      \
-    out1_m = __msa_copy_u_h((v8i16) in, (stidx + 1));  \
-    out2_m = __msa_copy_u_h((v8i16) in, (stidx + 2));  \
-    out3_m = __msa_copy_u_h((v8i16) in, (stidx + 3));  \
-                                                       \
-    SH(out0_m, pblk_2x4_m);                            \
-    SH(out1_m, pblk_2x4_m + stride);                   \
-    SH(out2_m, pblk_2x4_m + 2 * stride);               \
-    SH(out3_m, pblk_2x4_m + 3 * stride);               \
+/* Description : Store half word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores half word 'idx0' from 'in' to (pdst)
+ *               Stores half word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_H1(in, idx, pdst)                             \
+{                                                        \
+    uint16_t out0_m;                                     \
+    out0_m = __msa_copy_u_h((v8i16) in, idx);            \
+    SH(out0_m, (pdst));                                  \
+}
+#define ST_H2(in, idx0, idx1, pdst, stride)              \
+{                                                        \
+    uint16_t out0_m, out1_m;                             \
+    out0_m = __msa_copy_u_h((v8i16) in, idx0);           \
+    out1_m = __msa_copy_u_h((v8i16) in, idx1);           \
+    SH(out0_m, (pdst));                                  \
+    SH(out1_m, (pdst) + stride);                         \
+}
+#define ST_H4(in, idx0, idx1, idx2, idx3, pdst, stride)  \
+{                                                        \
+    uint16_t out0_m, out1_m, out2_m, out3_m;             \
+    out0_m = __msa_copy_u_h((v8i16) in, idx0);           \
+    out1_m = __msa_copy_u_h((v8i16) in, idx1);           \
+    out2_m = __msa_copy_u_h((v8i16) in, idx2);           \
+    out3_m = __msa_copy_u_h((v8i16) in, idx3);           \
+    SH(out0_m, (pdst));                                  \
+    SH(out1_m, (pdst) + stride);                         \
+    SH(out2_m, (pdst) + 2 * stride);                     \
+    SH(out3_m, (pdst) + 3 * stride);                     \
+}
+#define ST_H8(in, idx0, idx1, idx2, idx3, idx4, idx5,            \
+              idx6, idx7, pdst, stride)                          \
+{                                                                \
+    ST_H4(in, idx0, idx1, idx2, idx3, pdst, stride)              \
+    ST_H4(in, idx4, idx5, idx6, idx7, (pdst) + 4*stride, stride) \
 }
 
-/* Description : Store as 4x2 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index 0 word element from input vector is copied and stored
-                 on first line
-                 Index 1 word element from input vector is copied and stored
-                 on second line
-*/
-#define ST4x2_UB(in, pdst, stride)             \
+/* Description : Store word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores word 'idx0' from 'in' to (pdst)
+ *               Stores word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_W1(in, idx, pdst)                             \
+{                                                        \
+    uint32_t out0_m;                                     \
+    out0_m = __msa_copy_u_w((v4i32) in, idx);            \
+    SW(out0_m, (pdst));                                  \
+}
+#define ST_W2(in, idx0, idx1, pdst, stride)              \
+{                                                        \
+    uint32_t out0_m, out1_m;                             \
+    out0_m = __msa_copy_u_w((v4i32) in, idx0);           \
+    out1_m = __msa_copy_u_w((v4i32) in, idx1);           \
+    SW(out0_m, (pdst));                                  \
+    SW(out1_m, (pdst) + stride);                         \
+}
+#define ST_W4(in, idx0, idx1, idx2, idx3, pdst, stride)  \
+{                                                        \
+    uint32_t out0_m, out1_m, out2_m, out3_m;             \
+    out0_m = __msa_copy_u_w((v4i32) in, idx0);           \
+    out1_m = __msa_copy_u_w((v4i32) in, idx1);           \
+    out2_m = __msa_copy_u_w((v4i32) in, idx2);           \
+    out3_m = __msa_copy_u_w((v4i32) in, idx3);           \
+    SW(out0_m, (pdst));                                  \
+    SW(out1_m, (pdst) + stride);                         \
+    SW(out2_m, (pdst) + 2*stride);                       \
+    SW(out3_m, (pdst) + 3*stride);                       \
+}
+#define ST_W8(in0, in1, idx0, idx1, idx2, idx3,                 \
+              idx4, idx5, idx6, idx7, pdst, stride)             \
+{                                                               \
+    ST_W4(in0, idx0, idx1, idx2, idx3, pdst, stride)            \
+    ST_W4(in1, idx4, idx5, idx6, idx7, pdst + 4*stride, stride) \
+}
+
+/* Description : Store double word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores double word 'idx0' from 'in' to (pdst)
+ *               Stores double word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_D1(in, idx, pdst)                   \
 {                                              \
-    uint32_t out0_m, out1_m;                   \
-    uint8_t *pblk_4x2_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_w((v4i32) in, 0);    \
-    out1_m = __msa_copy_u_w((v4i32) in, 1);    \
-                                               \
-    SW(out0_m, pblk_4x2_m);                    \
-    SW(out1_m, pblk_4x2_m + stride);           \
+    uint64_t out0_m;                           \
+    out0_m = __msa_copy_u_d((v2i64) in, idx);  \
+    SD(out0_m, (pdst));                        \
 }
-
-/* Description : Store as 4x4 byte block to destination memory from input vector
-   Arguments   : Inputs  - in0, in1, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Idx0 word element from input vector 'in0' is copied and stored
-                 on first line
-                 Idx1 word element from input vector 'in0' is copied and stored
-                 on second line
-                 Idx2 word element from input vector 'in1' is copied and stored
-                 on third line
-                 Idx3 word element from input vector 'in1' is copied and stored
-                 on fourth line
-*/
-#define ST4x4_UB(in0, in1, idx0, idx1, idx2, idx3, pdst, stride)  \
-{                                                                 \
-    uint32_t out0_m, out1_m, out2_m, out3_m;                      \
-    uint8_t *pblk_4x4_m = (uint8_t *) (pdst);                     \
-                                                                  \
-    out0_m = __msa_copy_u_w((v4i32) in0, idx0);                   \
-    out1_m = __msa_copy_u_w((v4i32) in0, idx1);                   \
-    out2_m = __msa_copy_u_w((v4i32) in1, idx2);                   \
-    out3_m = __msa_copy_u_w((v4i32) in1, idx3);                   \
-                                                                  \
-    SW4(out0_m, out1_m, out2_m, out3_m, pblk_4x4_m, stride);      \
-}
-#define ST4x8_UB(in0, in1, pdst, stride)                            \
-{                                                                   \
-    uint8_t *pblk_4x8 = (uint8_t *) (pdst);                         \
-                                                                    \
-    ST4x4_UB(in0, in0, 0, 1, 2, 3, pblk_4x8, stride);               \
-    ST4x4_UB(in1, in1, 0, 1, 2, 3, pblk_4x8 + 4 * stride, stride);  \
-}
-
-/* Description : Store as 6x4 byte block to destination memory from input
-                 vectors
-   Arguments   : Inputs  - in0, in1, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index 0 word element from input vector 'in0' is copied and
-                 stored on first line followed by index 2 halfword element
-                 Index 2 word element from input vector 'in0' is copied and
-                 stored on second line followed by index 2 halfword element
-                 Index 0 word element from input vector 'in1' is copied and
-                 stored on third line followed by index 2 halfword element
-                 Index 2 word element from input vector 'in1' is copied and
-                 stored on fourth line followed by index 2 halfword element
-*/
-#define ST6x4_UB(in0, in1, pdst, stride)       \
-{                                              \
-    uint32_t out0_m, out1_m, out2_m, out3_m;   \
-    uint16_t out4_m, out5_m, out6_m, out7_m;   \
-    uint8_t *pblk_6x4_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_w((v4i32) in0, 0);   \
-    out1_m = __msa_copy_u_w((v4i32) in0, 2);   \
-    out2_m = __msa_copy_u_w((v4i32) in1, 0);   \
-    out3_m = __msa_copy_u_w((v4i32) in1, 2);   \
-                                               \
-    out4_m = __msa_copy_u_h((v8i16) in0, 2);   \
-    out5_m = __msa_copy_u_h((v8i16) in0, 6);   \
-    out6_m = __msa_copy_u_h((v8i16) in1, 2);   \
-    out7_m = __msa_copy_u_h((v8i16) in1, 6);   \
-                                               \
-    SW(out0_m, pblk_6x4_m);                    \
-    SH(out4_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out1_m, pblk_6x4_m);                    \
-    SH(out5_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out2_m, pblk_6x4_m);                    \
-    SH(out6_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out3_m, pblk_6x4_m);                    \
-    SH(out7_m, (pblk_6x4_m + 4));              \
-}
-
-/* Description : Store as 8x1 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst
-   Details     : Index 0 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst)
-*/
-#define ST8x1_UB(in, pdst)                   \
-{                                            \
-    uint64_t out0_m;                         \
-    out0_m = __msa_copy_u_d((v2i64) in, 0);  \
-    SD(out0_m, pdst);                        \
-}
-
-/* Description : Store as 8x2 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst, stride
-   Details     : Index 0 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst)
-                 Index 1 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst + stride)
-*/
-#define ST8x2_UB(in, pdst, stride)             \
+#define ST_D2(in, idx0, idx1, pdst, stride)    \
 {                                              \
     uint64_t out0_m, out1_m;                   \
-    uint8_t *pblk_8x2_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_d((v2i64) in, 0);    \
-    out1_m = __msa_copy_u_d((v2i64) in, 1);    \
-                                               \
-    SD(out0_m, pblk_8x2_m);                    \
-    SD(out1_m, pblk_8x2_m + stride);           \
+    out0_m = __msa_copy_u_d((v2i64) in, idx0); \
+    out1_m = __msa_copy_u_d((v2i64) in, idx1); \
+    SD(out0_m, (pdst));                        \
+    SD(out1_m, (pdst) + stride);               \
 }
-
-/* Description : Store as 8x4 byte block to destination memory from input
-                 vectors
-   Arguments   : Inputs  - in0, in1, pdst, stride
-   Details     : Index 0 double word element from input vector 'in0' is copied
-                 and stored to destination memory at (pblk_8x4_m)
-                 Index 1 double word element from input vector 'in0' is copied
-                 and stored to destination memory at (pblk_8x4_m + stride)
-                 Index 0 double word element from input vector 'in1' is copied
-                 and stored to destination memory at (pblk_8x4_m + 2 * stride)
-                 Index 1 double word element from input vector 'in1' is copied
-                 and stored to destination memory at (pblk_8x4_m + 3 * stride)
-*/
-#define ST8x4_UB(in0, in1, pdst, stride)                      \
+#define ST_D4(in0, in1, idx0, idx1, idx2, idx3, pdst, stride) \
 {                                                             \
     uint64_t out0_m, out1_m, out2_m, out3_m;                  \
-    uint8_t *pblk_8x4_m = (uint8_t *) (pdst);                 \
-                                                              \
-    out0_m = __msa_copy_u_d((v2i64) in0, 0);                  \
-    out1_m = __msa_copy_u_d((v2i64) in0, 1);                  \
-    out2_m = __msa_copy_u_d((v2i64) in1, 0);                  \
-    out3_m = __msa_copy_u_d((v2i64) in1, 1);                  \
-                                                              \
-    SD4(out0_m, out1_m, out2_m, out3_m, pblk_8x4_m, stride);  \
+    out0_m = __msa_copy_u_d((v2i64) in0, idx0);               \
+    out1_m = __msa_copy_u_d((v2i64) in0, idx1);               \
+    out2_m = __msa_copy_u_d((v2i64) in1, idx2);               \
+    out3_m = __msa_copy_u_d((v2i64) in1, idx3);               \
+    SD(out0_m, (pdst));                                       \
+    SD(out1_m, (pdst) + stride);                              \
+    SD(out2_m, (pdst) + 2 * stride);                          \
+    SD(out3_m, (pdst) + 3 * stride);                          \
 }
-#define ST8x8_UB(in0, in1, in2, in3, pdst, stride)        \
-{                                                         \
-    uint8_t *pblk_8x8_m = (uint8_t *) (pdst);             \
-                                                          \
-    ST8x4_UB(in0, in1, pblk_8x8_m, stride);               \
-    ST8x4_UB(in2, in3, pblk_8x8_m + 4 * stride, stride);  \
-}
-#define ST12x4_UB(in0, in1, in2, pdst, stride)                \
-{                                                             \
-    uint8_t *pblk_12x4_m = (uint8_t *) (pdst);                \
-                                                              \
-    /* left 8x4 */                                            \
-    ST8x4_UB(in0, in1, pblk_12x4_m, stride);                  \
-    /* right 4x4 */                                           \
-    ST4x4_UB(in2, in2, 0, 1, 2, 3, pblk_12x4_m + 8, stride);  \
+#define ST_D8(in0, in1, in2, in3, idx0, idx1, idx2, idx3,              \
+              idx4, idx5, idx6, idx7, pdst, stride)                    \
+{                                                                      \
+    ST_D4(in0, in1, idx0, idx1, idx2, idx3, pdst, stride)              \
+    ST_D4(in2, in3, idx4, idx5, idx6, idx7, pdst + 4 * stride, stride) \
 }
 
 /* Description : Store as 12x8 byte block to destination memory from
@@ -2926,7 +2842,7 @@
     tmp0_m = PCKEV_XORI128_UB(in0, in1);                      \
     tmp1_m = PCKEV_XORI128_UB(in2, in3);                      \
     AVER_UB2_UB(tmp0_m, dst0, tmp1_m, dst1, tmp0_m, tmp1_m);  \
-    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                 \
+    ST_D4(tmp0_m, tmp1_m, 0, 1, 0, 1, pdst_m, stride);        \
 }
 
 /* Description : Pack even byte elements, extract 0 & 2 index words from pair
