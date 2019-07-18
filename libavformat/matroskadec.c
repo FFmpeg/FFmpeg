@@ -393,14 +393,14 @@ typedef struct MatroskaDemuxContext {
 // a tentative definition with internal linkage must not be an
 // incomplete type (6.7.2 in C90, 6.9.2 in C99).
 // Removing the sizes breaks MSVC.
-static const EbmlSyntax ebml_syntax[3], matroska_segment[9], matroska_track_video_color[15], matroska_track_video[19],
-                        matroska_track[27], matroska_track_encoding[6], matroska_track_encodings[2],
-                        matroska_track_combine_planes[2], matroska_track_operation[2], matroska_tracks[2],
-                        matroska_attachments[2], matroska_chapter_entry[9], matroska_chapter[6], matroska_chapters[2],
-                        matroska_index_entry[3], matroska_index[2], matroska_tag[3], matroska_tags[2], matroska_seekhead[2],
-                        matroska_blockadditions[2], matroska_blockgroup[8], matroska_cluster_parsing[8];
+static EbmlSyntax ebml_syntax[3], matroska_segment[9], matroska_track_video_color[15], matroska_track_video[19],
+                  matroska_track[27], matroska_track_encoding[6], matroska_track_encodings[2],
+                  matroska_track_combine_planes[2], matroska_track_operation[2], matroska_tracks[2],
+                  matroska_attachments[2], matroska_chapter_entry[9], matroska_chapter[6], matroska_chapters[2],
+                  matroska_index_entry[3], matroska_index[2], matroska_tag[3], matroska_tags[2], matroska_seekhead[2],
+                  matroska_blockadditions[2], matroska_blockgroup[8], matroska_cluster_parsing[8];
 
-static const EbmlSyntax ebml_header[] = {
+static EbmlSyntax ebml_header[] = {
     { EBML_ID_EBMLREADVERSION,    EBML_UINT, 0, offsetof(Ebml, version),         { .u = EBML_VERSION } },
     { EBML_ID_EBMLMAXSIZELENGTH,  EBML_UINT, 0, offsetof(Ebml, max_size),        { .u = 8 } },
     { EBML_ID_EBMLMAXIDLENGTH,    EBML_UINT, 0, offsetof(Ebml, id_length),       { .u = 4 } },
@@ -411,13 +411,13 @@ static const EbmlSyntax ebml_header[] = {
     CHILD_OF(ebml_syntax)
 };
 
-static const EbmlSyntax ebml_syntax[] = {
+static EbmlSyntax ebml_syntax[] = {
     { EBML_ID_HEADER,      EBML_NEST, 0, 0, { .n = ebml_header } },
     { MATROSKA_ID_SEGMENT, EBML_STOP },
     { 0 }
 };
 
-static const EbmlSyntax matroska_info[] = {
+static EbmlSyntax matroska_info[] = {
     { MATROSKA_ID_TIMECODESCALE, EBML_UINT,  0, offsetof(MatroskaDemuxContext, time_scale), { .u = 1000000 } },
     { MATROSKA_ID_DURATION,      EBML_FLOAT, 0, offsetof(MatroskaDemuxContext, duration) },
     { MATROSKA_ID_TITLE,         EBML_UTF8,  0, offsetof(MatroskaDemuxContext, title) },
@@ -428,7 +428,7 @@ static const EbmlSyntax matroska_info[] = {
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_mastering_meta[] = {
+static EbmlSyntax matroska_mastering_meta[] = {
     { MATROSKA_ID_VIDEOCOLOR_RX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, r_x), { .f=-1 } },
     { MATROSKA_ID_VIDEOCOLOR_RY, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, r_y), { .f=-1 } },
     { MATROSKA_ID_VIDEOCOLOR_GX, EBML_FLOAT, 0, offsetof(MatroskaMasteringMeta, g_x), { .f=-1 } },
@@ -442,7 +442,7 @@ static const EbmlSyntax matroska_mastering_meta[] = {
     CHILD_OF(matroska_track_video_color)
 };
 
-static const EbmlSyntax matroska_track_video_color[] = {
+static EbmlSyntax matroska_track_video_color[] = {
     { MATROSKA_ID_VIDEOCOLORMATRIXCOEFF,      EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, matrix_coefficients), { .u = AVCOL_SPC_UNSPECIFIED } },
     { MATROSKA_ID_VIDEOCOLORBITSPERCHANNEL,   EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, bits_per_channel), { .u=0 } },
     { MATROSKA_ID_VIDEOCOLORCHROMASUBHORZ,    EBML_UINT, 0, offsetof(MatroskaTrackVideoColor, chroma_sub_horz), { .u=0 } },
@@ -460,7 +460,7 @@ static const EbmlSyntax matroska_track_video_color[] = {
     CHILD_OF(matroska_track_video)
 };
 
-static const EbmlSyntax matroska_track_video_projection[] = {
+static EbmlSyntax matroska_track_video_projection[] = {
     { MATROSKA_ID_VIDEOPROJECTIONTYPE,        EBML_UINT,  0, offsetof(MatroskaTrackVideoProjection, type), { .u = MATROSKA_VIDEO_PROJECTION_TYPE_RECTANGULAR } },
     { MATROSKA_ID_VIDEOPROJECTIONPRIVATE,     EBML_BIN,   0, offsetof(MatroskaTrackVideoProjection, private) },
     { MATROSKA_ID_VIDEOPROJECTIONPOSEYAW,     EBML_FLOAT, 0, offsetof(MatroskaTrackVideoProjection, yaw), { .f=0.0 } },
@@ -469,7 +469,7 @@ static const EbmlSyntax matroska_track_video_projection[] = {
     CHILD_OF(matroska_track_video)
 };
 
-static const EbmlSyntax matroska_track_video[] = {
+static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOFRAMERATE,      EBML_FLOAT, 0, offsetof(MatroskaTrackVideo, frame_rate) },
     { MATROSKA_ID_VIDEODISPLAYWIDTH,   EBML_UINT,  0, offsetof(MatroskaTrackVideo, display_width), { .u=-1 } },
     { MATROSKA_ID_VIDEODISPLAYHEIGHT,  EBML_UINT,  0, offsetof(MatroskaTrackVideo, display_height), { .u=-1 } },
@@ -491,7 +491,7 @@ static const EbmlSyntax matroska_track_video[] = {
     CHILD_OF(matroska_track)
 };
 
-static const EbmlSyntax matroska_track_audio[] = {
+static EbmlSyntax matroska_track_audio[] = {
     { MATROSKA_ID_AUDIOSAMPLINGFREQ,    EBML_FLOAT, 0, offsetof(MatroskaTrackAudio, samplerate), { .f = 8000.0 } },
     { MATROSKA_ID_AUDIOOUTSAMPLINGFREQ, EBML_FLOAT, 0, offsetof(MatroskaTrackAudio, out_samplerate) },
     { MATROSKA_ID_AUDIOBITDEPTH,        EBML_UINT,  0, offsetof(MatroskaTrackAudio, bitdepth) },
@@ -499,13 +499,13 @@ static const EbmlSyntax matroska_track_audio[] = {
     CHILD_OF(matroska_track)
 };
 
-static const EbmlSyntax matroska_track_encoding_compression[] = {
+static EbmlSyntax matroska_track_encoding_compression[] = {
     { MATROSKA_ID_ENCODINGCOMPALGO,     EBML_UINT, 0, offsetof(MatroskaTrackCompression, algo), { .u = 0 } },
     { MATROSKA_ID_ENCODINGCOMPSETTINGS, EBML_BIN,  0, offsetof(MatroskaTrackCompression, settings) },
     CHILD_OF(matroska_track_encoding)
 };
 
-static const EbmlSyntax matroska_track_encoding_encryption[] = {
+static EbmlSyntax matroska_track_encoding_encryption[] = {
     { MATROSKA_ID_ENCODINGENCALGO,        EBML_UINT, 0, offsetof(MatroskaTrackEncryption,algo), {.u = 0} },
     { MATROSKA_ID_ENCODINGENCKEYID,       EBML_BIN, 0, offsetof(MatroskaTrackEncryption,key_id) },
     { MATROSKA_ID_ENCODINGENCAESSETTINGS, EBML_NONE },
@@ -515,7 +515,7 @@ static const EbmlSyntax matroska_track_encoding_encryption[] = {
     { MATROSKA_ID_ENCODINGSIGNATURE,      EBML_NONE },
     CHILD_OF(matroska_track_encoding)
 };
-static const EbmlSyntax matroska_track_encoding[] = {
+static EbmlSyntax matroska_track_encoding[] = {
     { MATROSKA_ID_ENCODINGSCOPE,       EBML_UINT, 0, offsetof(MatroskaTrackEncoding, scope),       { .u = 1 } },
     { MATROSKA_ID_ENCODINGTYPE,        EBML_UINT, 0, offsetof(MatroskaTrackEncoding, type),        { .u = 0 } },
     { MATROSKA_ID_ENCODINGCOMPRESSION, EBML_NEST, 0, offsetof(MatroskaTrackEncoding, compression), { .n = matroska_track_encoding_compression } },
@@ -524,28 +524,28 @@ static const EbmlSyntax matroska_track_encoding[] = {
     CHILD_OF(matroska_track_encodings)
 };
 
-static const EbmlSyntax matroska_track_encodings[] = {
+static EbmlSyntax matroska_track_encodings[] = {
     { MATROSKA_ID_TRACKCONTENTENCODING, EBML_NEST, sizeof(MatroskaTrackEncoding), offsetof(MatroskaTrack, encodings), { .n = matroska_track_encoding } },
     CHILD_OF(matroska_track)
 };
 
-static const EbmlSyntax matroska_track_plane[] = {
+static EbmlSyntax matroska_track_plane[] = {
     { MATROSKA_ID_TRACKPLANEUID,  EBML_UINT, 0, offsetof(MatroskaTrackPlane,uid) },
     { MATROSKA_ID_TRACKPLANETYPE, EBML_UINT, 0, offsetof(MatroskaTrackPlane,type) },
     CHILD_OF(matroska_track_combine_planes)
 };
 
-static const EbmlSyntax matroska_track_combine_planes[] = {
+static EbmlSyntax matroska_track_combine_planes[] = {
     { MATROSKA_ID_TRACKPLANE, EBML_NEST, sizeof(MatroskaTrackPlane), offsetof(MatroskaTrackOperation,combine_planes), {.n = matroska_track_plane} },
     CHILD_OF(matroska_track_operation)
 };
 
-static const EbmlSyntax matroska_track_operation[] = {
+static EbmlSyntax matroska_track_operation[] = {
     { MATROSKA_ID_TRACKCOMBINEPLANES, EBML_NEST, 0, 0, {.n = matroska_track_combine_planes} },
     CHILD_OF(matroska_track)
 };
 
-static const EbmlSyntax matroska_track[] = {
+static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKNUMBER,           EBML_UINT,  0, offsetof(MatroskaTrack, num) },
     { MATROSKA_ID_TRACKNAME,             EBML_UTF8,  0, offsetof(MatroskaTrack, name) },
     { MATROSKA_ID_TRACKUID,              EBML_UINT,  0, offsetof(MatroskaTrack, uid) },
@@ -575,12 +575,12 @@ static const EbmlSyntax matroska_track[] = {
     CHILD_OF(matroska_tracks)
 };
 
-static const EbmlSyntax matroska_tracks[] = {
+static EbmlSyntax matroska_tracks[] = {
     { MATROSKA_ID_TRACKENTRY, EBML_NEST, sizeof(MatroskaTrack), offsetof(MatroskaDemuxContext, tracks), { .n = matroska_track } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_attachment[] = {
+static EbmlSyntax matroska_attachment[] = {
     { MATROSKA_ID_FILEUID,      EBML_UINT, 0, offsetof(MatroskaAttachment, uid) },
     { MATROSKA_ID_FILENAME,     EBML_UTF8, 0, offsetof(MatroskaAttachment, filename) },
     { MATROSKA_ID_FILEMIMETYPE, EBML_STR,  0, offsetof(MatroskaAttachment, mime) },
@@ -589,19 +589,19 @@ static const EbmlSyntax matroska_attachment[] = {
     CHILD_OF(matroska_attachments)
 };
 
-static const EbmlSyntax matroska_attachments[] = {
+static EbmlSyntax matroska_attachments[] = {
     { MATROSKA_ID_ATTACHEDFILE, EBML_NEST, sizeof(MatroskaAttachment), offsetof(MatroskaDemuxContext, attachments), { .n = matroska_attachment } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_chapter_display[] = {
+static EbmlSyntax matroska_chapter_display[] = {
     { MATROSKA_ID_CHAPSTRING,  EBML_UTF8, 0, offsetof(MatroskaChapter, title) },
     { MATROSKA_ID_CHAPLANG,    EBML_NONE },
     { MATROSKA_ID_CHAPCOUNTRY, EBML_NONE },
     CHILD_OF(matroska_chapter_entry)
 };
 
-static const EbmlSyntax matroska_chapter_entry[] = {
+static EbmlSyntax matroska_chapter_entry[] = {
     { MATROSKA_ID_CHAPTERTIMESTART,   EBML_UINT, 0, offsetof(MatroskaChapter, start), { .u = AV_NOPTS_VALUE } },
     { MATROSKA_ID_CHAPTERTIMEEND,     EBML_UINT, 0, offsetof(MatroskaChapter, end),   { .u = AV_NOPTS_VALUE } },
     { MATROSKA_ID_CHAPTERUID,         EBML_UINT, 0, offsetof(MatroskaChapter, uid) },
@@ -613,7 +613,7 @@ static const EbmlSyntax matroska_chapter_entry[] = {
     CHILD_OF(matroska_chapter)
 };
 
-static const EbmlSyntax matroska_chapter[] = {
+static EbmlSyntax matroska_chapter[] = {
     { MATROSKA_ID_CHAPTERATOM,        EBML_NEST, sizeof(MatroskaChapter), offsetof(MatroskaDemuxContext, chapters), { .n = matroska_chapter_entry } },
     { MATROSKA_ID_EDITIONUID,         EBML_NONE },
     { MATROSKA_ID_EDITIONFLAGHIDDEN,  EBML_NONE },
@@ -622,12 +622,12 @@ static const EbmlSyntax matroska_chapter[] = {
     CHILD_OF(matroska_chapters)
 };
 
-static const EbmlSyntax matroska_chapters[] = {
+static EbmlSyntax matroska_chapters[] = {
     { MATROSKA_ID_EDITIONENTRY, EBML_NEST, 0, 0, { .n = matroska_chapter } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_index_pos[] = {
+static EbmlSyntax matroska_index_pos[] = {
     { MATROSKA_ID_CUETRACK,           EBML_UINT, 0, offsetof(MatroskaIndexPos, track) },
     { MATROSKA_ID_CUECLUSTERPOSITION, EBML_UINT, 0, offsetof(MatroskaIndexPos, pos) },
     { MATROSKA_ID_CUERELATIVEPOSITION,EBML_NONE },
@@ -636,18 +636,18 @@ static const EbmlSyntax matroska_index_pos[] = {
     CHILD_OF(matroska_index_entry)
 };
 
-static const EbmlSyntax matroska_index_entry[] = {
+static EbmlSyntax matroska_index_entry[] = {
     { MATROSKA_ID_CUETIME,          EBML_UINT, 0,                        offsetof(MatroskaIndex, time) },
     { MATROSKA_ID_CUETRACKPOSITION, EBML_NEST, sizeof(MatroskaIndexPos), offsetof(MatroskaIndex, pos), { .n = matroska_index_pos } },
     CHILD_OF(matroska_index)
 };
 
-static const EbmlSyntax matroska_index[] = {
+static EbmlSyntax matroska_index[] = {
     { MATROSKA_ID_POINTENTRY, EBML_NEST, sizeof(MatroskaIndex), offsetof(MatroskaDemuxContext, index), { .n = matroska_index_entry } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_simpletag[] = {
+static EbmlSyntax matroska_simpletag[] = {
     { MATROSKA_ID_TAGNAME,        EBML_UTF8, 0,                   offsetof(MatroskaTag, name) },
     { MATROSKA_ID_TAGSTRING,      EBML_UTF8, 0,                   offsetof(MatroskaTag, string) },
     { MATROSKA_ID_TAGLANG,        EBML_STR,  0,                   offsetof(MatroskaTag, lang), { .s = "und" } },
@@ -657,7 +657,7 @@ static const EbmlSyntax matroska_simpletag[] = {
     CHILD_OF(matroska_tag)
 };
 
-static const EbmlSyntax matroska_tagtargets[] = {
+static EbmlSyntax matroska_tagtargets[] = {
     { MATROSKA_ID_TAGTARGETS_TYPE,       EBML_STR,  0, offsetof(MatroskaTagTarget, type) },
     { MATROSKA_ID_TAGTARGETS_TYPEVALUE,  EBML_UINT, 0, offsetof(MatroskaTagTarget, typevalue), { .u = 50 } },
     { MATROSKA_ID_TAGTARGETS_TRACKUID,   EBML_UINT, 0, offsetof(MatroskaTagTarget, trackuid) },
@@ -666,29 +666,29 @@ static const EbmlSyntax matroska_tagtargets[] = {
     CHILD_OF(matroska_tag)
 };
 
-static const EbmlSyntax matroska_tag[] = {
+static EbmlSyntax matroska_tag[] = {
     { MATROSKA_ID_SIMPLETAG,  EBML_NEST, sizeof(MatroskaTag), offsetof(MatroskaTags, tag),    { .n = matroska_simpletag } },
     { MATROSKA_ID_TAGTARGETS, EBML_NEST, 0,                   offsetof(MatroskaTags, target), { .n = matroska_tagtargets } },
     CHILD_OF(matroska_tags)
 };
 
-static const EbmlSyntax matroska_tags[] = {
+static EbmlSyntax matroska_tags[] = {
     { MATROSKA_ID_TAG, EBML_NEST, sizeof(MatroskaTags), offsetof(MatroskaDemuxContext, tags), { .n = matroska_tag } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_seekhead_entry[] = {
+static EbmlSyntax matroska_seekhead_entry[] = {
     { MATROSKA_ID_SEEKID,       EBML_UINT, 0, offsetof(MatroskaSeekhead, id) },
     { MATROSKA_ID_SEEKPOSITION, EBML_UINT, 0, offsetof(MatroskaSeekhead, pos), { .u = -1 } },
     CHILD_OF(matroska_seekhead)
 };
 
-static const EbmlSyntax matroska_seekhead[] = {
+static EbmlSyntax matroska_seekhead[] = {
     { MATROSKA_ID_SEEKENTRY, EBML_NEST, sizeof(MatroskaSeekhead), offsetof(MatroskaDemuxContext, seekhead), { .n = matroska_seekhead_entry } },
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_segment[] = {
+static EbmlSyntax matroska_segment[] = {
     { MATROSKA_ID_CLUSTER,     EBML_STOP },
     { MATROSKA_ID_INFO,        EBML_LEVEL1, 0, 0, { .n = matroska_info } },
     { MATROSKA_ID_TRACKS,      EBML_LEVEL1, 0, 0, { .n = matroska_tracks } },
@@ -700,23 +700,23 @@ static const EbmlSyntax matroska_segment[] = {
     { 0 }   /* We don't want to go back to level 0, so don't add the parent. */
 };
 
-static const EbmlSyntax matroska_segments[] = {
+static EbmlSyntax matroska_segments[] = {
     { MATROSKA_ID_SEGMENT, EBML_NEST, 0, 0, { .n = matroska_segment } },
     { 0 }
 };
 
-static const EbmlSyntax matroska_blockmore[] = {
+static EbmlSyntax matroska_blockmore[] = {
     { MATROSKA_ID_BLOCKADDID,      EBML_UINT, 0, offsetof(MatroskaBlock,additional_id) },
     { MATROSKA_ID_BLOCKADDITIONAL, EBML_BIN,  0, offsetof(MatroskaBlock,additional) },
     CHILD_OF(matroska_blockadditions)
 };
 
-static const EbmlSyntax matroska_blockadditions[] = {
+static EbmlSyntax matroska_blockadditions[] = {
     { MATROSKA_ID_BLOCKMORE, EBML_NEST, 0, 0, {.n = matroska_blockmore} },
     CHILD_OF(matroska_blockgroup)
 };
 
-static const EbmlSyntax matroska_blockgroup[] = {
+static EbmlSyntax matroska_blockgroup[] = {
     { MATROSKA_ID_BLOCK,          EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_BLOCKADDITIONS, EBML_NEST, 0, 0, { .n = matroska_blockadditions} },
     { MATROSKA_ID_BLOCKDURATION,  EBML_UINT, 0, offsetof(MatroskaBlock, duration) },
@@ -729,7 +729,7 @@ static const EbmlSyntax matroska_blockgroup[] = {
 
 // The following array contains SimpleBlock and BlockGroup twice
 // in order to reuse the other values for matroska_cluster_enter.
-static const EbmlSyntax matroska_cluster_parsing[] = {
+static EbmlSyntax matroska_cluster_parsing[] = {
     { MATROSKA_ID_SIMPLEBLOCK,     EBML_BIN,  0, offsetof(MatroskaBlock, bin) },
     { MATROSKA_ID_BLOCKGROUP,      EBML_NEST, 0, 0, { .n = matroska_blockgroup } },
     { MATROSKA_ID_CLUSTERTIMECODE, EBML_UINT, 0, offsetof(MatroskaCluster, timecode) },
@@ -740,7 +740,7 @@ static const EbmlSyntax matroska_cluster_parsing[] = {
     CHILD_OF(matroska_segment)
 };
 
-static const EbmlSyntax matroska_cluster_enter[] = {
+static EbmlSyntax matroska_cluster_enter[] = {
     { MATROSKA_ID_CLUSTER,     EBML_NEST, 0, 0, { .n = &matroska_cluster_parsing[2] } },
     { 0 }
 };
