@@ -1944,8 +1944,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
         index_byte_count = 80;
 
     if (index_byte_count) {
-        // add encoded ber length
-        index_byte_count += 16 + klv_ber_length(index_byte_count);
+        index_byte_count += 16 + 4; // add encoded ber4 length
         index_byte_count += klv_fill_size(index_byte_count);
     }
 
