@@ -1578,8 +1578,9 @@ static int dvbsub_parse_display_definition_segment(AVCodecContext *avctx,
     display_def->width   = bytestream_get_be16(&buf) + 1;
     display_def->height  = bytestream_get_be16(&buf) + 1;
     if (!avctx->width || !avctx->height) {
-        avctx->width  = display_def->width;
-        avctx->height = display_def->height;
+        int ret = ff_set_dimensions(avctx, display_def->width, display_def->height);
+        if (ret < 0)
+            return ret;
     }
 
     if (info_byte & 1<<3) { // display_window_flag
