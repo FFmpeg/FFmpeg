@@ -255,6 +255,9 @@ int64_t avio_seek(AVIOContext *s, int64_t offset, int whence)
     if(!s)
         return AVERROR(EINVAL);
 
+    if ((whence & AVSEEK_SIZE))
+        return s->seek ? s->seek(s->opaque, offset, AVSEEK_SIZE) : AVERROR(ENOSYS);
+
     buffer_size = s->buf_end - s->buffer;
     // pos is the absolute position that the beginning of s->buffer corresponds to in the file
     pos = s->pos - (s->write_flag ? 0 : buffer_size);
