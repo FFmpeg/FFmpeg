@@ -275,6 +275,10 @@ of the adaptation sets and a,b,c,d and e are the indices of the mapped streams.
 To map all video (or audio) streams to an AdaptationSet, "v" (or "a") can be used as stream identifier instead of IDs.
 
 When no assignment is defined, this defaults to an AdaptationSet for each stream.
+
+Optional syntax is "id=x,descriptor=descriptor_string,streams=a,b,c id=y,streams=d,e" and so on, descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015.
+For example, -adaptation_sets "id=0,descriptor=<SupplementalProperty schemeIdUri=\"urn:mpeg:dash:srd:2014\" value=\"0,0,0,1,1,2,2\"/>,streams=v".
+Please note that descriptor string should be a self-closing xml tag.
 @item timeout @var{timeout}
 Set timeout for socket I/O operations. Applicable only for HTTP output.
 @item index_correction @var{index_correction}
