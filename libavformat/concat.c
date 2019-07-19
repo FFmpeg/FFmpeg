@@ -38,6 +38,7 @@ struct concat_data {
     struct concat_nodes *nodes;    ///< list of nodes to concat
     size_t               length;   ///< number of cat'ed nodes
     size_t               current;  ///< index of currently read node
+    uint64_t total_size;
 };
 
 static av_cold int concat_close(URLContext *h)
@@ -59,7 +60,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
 {
     char *node_uri = NULL;
     int err = 0;
-    int64_t size;
+    int64_t size, total_size = 0;
     size_t len, i;
     URLContext *uc;
     struct concat_data  *data = h->priv_data;
@@ -112,6 +113,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
         /* assembling */
         nodes[i].uc   = uc;
         nodes[i].size = size;
+        total_size += size;
     }
     av_free(node_uri);
     data->length = i;
@@ -123,6 +125,7 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
         err = AVERROR(ENOMEM);
     } else
         data->nodes = nodes;
+    data->total_size = total_size;
     return err;
 }
 
@@ -158,6 +161,8 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
     struct concat_nodes *nodes = data->nodes;
     size_t i;
 
+    if ((whence & AVSEEK_SIZE))
+        return data->total_size;
     switch (whence) {
     case SEEK_END:
         for (i = data->length - 1; i && pos < -nodes[i].size; i--)
