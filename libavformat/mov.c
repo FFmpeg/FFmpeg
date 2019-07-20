@@ -4781,8 +4781,8 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         entries = UINT_MAX / sizeof(AVIndexEntry) - st->nb_index_entries;
         av_log(c->fc, AV_LOG_ERROR, "Failed to add index entry\n");
     }
-    if (entries <= 0)
-        return -1;
+    if (entries == 0)
+        return 0;
 
     requested_size = (st->nb_index_entries + entries) * sizeof(AVIndexEntry);
     new_entries = av_fast_realloc(st->index_entries,
