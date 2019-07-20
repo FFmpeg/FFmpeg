@@ -80,10 +80,31 @@ static int adts_aac_probe(AVProbeData *p)
         return 0;
 }
 
+static int adts_aac_resync(AVFormatContext *s)
+{
+    uint16_t state;
+
+    // skip data until an ADTS frame is found
+    state = avio_r8(s->pb);
+    while (!avio_feof(s->pb) && avio_tell(s->pb) < s->probesize) {
+        state = (state << 8) | avio_r8(s->pb);
+        if ((state >> 4) != 0xFFF)
+            continue;
+        avio_seek(s->pb, -2, SEEK_CUR);
+        break;
+    }
+    if (s->pb->eof_reached)
+        return AVERROR_EOF;
+    if ((state >> 4) != 0xFFF)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
 static int adts_aac_read_header(AVFormatContext *s)
 {
     AVStream *st;
-    uint16_t state;
+    int ret;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -101,17 +122,9 @@ static int adts_aac_read_header(AVFormatContext *s)
         avio_seek(s->pb, cur, SEEK_SET);
     }
 
-    // skip data until the first ADTS frame is found
-    state = avio_r8(s->pb);
-    while (!avio_feof(s->pb) && avio_tell(s->pb) < s->probesize) {
-        state = (state << 8) | avio_r8(s->pb);
-        if ((state >> 4) != 0xFFF)
-            continue;
-        avio_seek(s->pb, -2, SEEK_CUR);
-        break;
-    }
-    if ((state >> 4) != 0xFFF)
-        return AVERROR_INVALIDDATA;
+    ret = adts_aac_resync(s);
+    if (ret < 0)
+        return ret;
 
     // LCM of all possible ADTS sample rates
     avpriv_set_pts_info(st, 64, 1, 28224000);
