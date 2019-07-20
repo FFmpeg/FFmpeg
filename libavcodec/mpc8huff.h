@@ -34,7 +34,7 @@ static const uint8_t mpc8_bands_codes[MPC8_BANDS_SIZE] = {
  0x08, 0x09, 0x06, 0x07, 0x05, 0x05, 0x03, 0x03,
  0x01,
 };
-static const int8_t mpc8_bands_bits[MPC8_BANDS_SIZE] = {
+static const uint8_t mpc8_bands_bits[MPC8_BANDS_SIZE] = {
   1,  3,  5,  6,  7,  8,  8,  9,
  10, 11, 12, 12, 12, 13, 12, 12,
  12, 12, 12, 13, 12, 12, 12, 11,
@@ -48,7 +48,7 @@ static const int8_t mpc8_bands_bits[MPC8_BANDS_SIZE] = {
 static const uint8_t mpc8_scfi0_codes[MPC8_SCFI0_SIZE] = {
  0x00, 0x01, 0x01, 0x01,
 };
-static const int8_t mpc8_scfi0_bits[MPC8_SCFI0_SIZE] = {
+static const uint8_t mpc8_scfi0_bits[MPC8_SCFI0_SIZE] = {
   3,  3,  1,  2,
 };
 
@@ -60,7 +60,7 @@ static const uint8_t mpc8_scfi1_codes[MPC8_SCFI1_SIZE] = {
  0x04, 0x06, 0x02, 0x02, 0x05, 0x07, 0x03, 0x03,
 
 };
-static const int8_t mpc8_scfi1_bits[MPC8_SCFI1_SIZE] = {
+static const uint8_t mpc8_scfi1_bits[MPC8_SCFI1_SIZE] = {
   6,  7,  6,  6,  7,  5,  5,  5,
   6,  5,  2,  3,  6,  5,  3,  2,
 
@@ -79,7 +79,7 @@ static const uint8_t mpc8_dscf0_codes[MPC8_DSCF0_SIZE] = {
  0x0C, 0x0D, 0x07, 0x08, 0x09, 0x06, 0x07, 0x03,
  0x04, 0x05, 0x00, 0x01, 0x02, 0x03, 0x04, 0x05,
 };
-static const int8_t mpc8_dscf0_bits[MPC8_DSCF0_SIZE] = {
+static const uint8_t mpc8_dscf0_bits[MPC8_DSCF0_SIZE] = {
  12, 12, 12, 11, 11, 11, 10, 10,
  10, 10, 10,  9,  9,  9,  9,  8,
   8,  8,  8,  7,  7,  7,  7,  6,
@@ -105,7 +105,7 @@ static const uint8_t mpc8_dscf1_codes[MPC8_DSCF1_SIZE] = {
  0x05, 0x06, 0x07, 0x01, 0x02, 0x03, 0x04, 0x05,
  0x0D,
 };
-static const int8_t mpc8_dscf1_bits[MPC8_DSCF1_SIZE] = {
+static const uint8_t mpc8_dscf1_bits[MPC8_DSCF1_SIZE] = {
  15, 14, 14, 13, 13, 13, 12, 12,
  12, 12, 11, 11, 11, 11, 10, 10,
  10, 10,  9,  9,  9,  8,  8,  7,
@@ -132,7 +132,7 @@ static const uint8_t mpc8_res_codes[2][MPC8_RES_SIZE] = {
     0x03,
   }
 };
-static const int8_t mpc8_res_bits[2][MPC8_RES_SIZE] = {
+static const uint8_t mpc8_res_bits[2][MPC8_RES_SIZE] = {
   {
      1,  2,  4,  5,  6,  7,  9, 10,
     11, 12, 13, 14, 15, 16, 16,  8,
@@ -153,7 +153,7 @@ static const uint8_t mpc8_q1_codes[MPC8_Q1_SIZE] = {
  0x03, 0x04, 0x05, 0x01, 0x01, 0x01, 0x01, 0x01,
  0x01, 0x00, 0x01,
 };
-static const int8_t mpc8_q1_bits[MPC8_Q1_SIZE] = {
+static const uint8_t mpc8_q1_bits[MPC8_Q1_SIZE] = {
   6,  4,  4,  3,  3,  3,  3,  3,
   4,  4,  4,  5,  7,  8,  9, 10,
  11, 12, 12,
@@ -196,7 +196,7 @@ static const uint8_t mpc8_q9up_codes[MPC8_Q9UP_SIZE] = {
  0x42, 0x43, 0x44, 0x45, 0x46, 0x47, 0x48, 0x49,
  0x4A, 0x4B, 0x06, 0x07, 0x08, 0x09, 0x00, 0x01,
 };
-static const int8_t mpc8_q9up_bits[MPC8_Q9UP_SIZE] = {
+static const uint8_t mpc8_q9up_bits[MPC8_Q9UP_SIZE] = {
  10, 10, 10, 10, 10,  9,  9,  9,
   9,  9,  9,  9,  9,  9,  9,  9,
   9,  9,  9,  8,  8,  9,  9,  9,
@@ -272,7 +272,7 @@ static const uint8_t mpc8_q2_codes[2][MPC8_Q2_SIZE] = {
  0x03, 0x1C, 0x17, 0x1D, 0x05,
 }
 };
-static const int8_t mpc8_q2_bits[2][MPC8_Q2_SIZE] = {
+static const uint8_t mpc8_q2_bits[2][MPC8_Q2_SIZE] = {
 {
  12, 11, 10, 11, 13, 11,  9,  8,
   9, 11, 11,  8,  7,  8, 11, 11,
@@ -324,7 +324,7 @@ static const uint8_t mpc8_q3_codes[MPC8_Q3_SIZE] = {
  0x06, 0x05, 0x04, 0x03, 0x02, 0x03, 0x02, 0x01,
  0x00,
 };
-static const int8_t mpc8_q3_bits[MPC8_Q3_SIZE] = {
+static const uint8_t mpc8_q3_bits[MPC8_Q3_SIZE] = {
   3,  4,  4,  4,  4,  4,  4,  5,
   5,  5,  5,  5,  5,  6,  6,  6,
   6,  6,  6,  6,  6,  6,  6,  6,
@@ -333,7 +333,7 @@ static const int8_t mpc8_q3_bits[MPC8_Q3_SIZE] = {
   8,  8,  8,  8,  8,  9,  9,  9,
   9,
 };
-static const int8_t mpc8_q3_syms[MPC8_Q3_SIZE] = {
+static const uint8_t mpc8_q3_syms[MPC8_Q3_SIZE] = {
    48,    65,    64,    49,    63,    32,    47,    80,
    79,    50,    62,    33,    16,    82,    81,    95,
    94,    66,    78,    34,    46,    17,    31,    30,
@@ -360,7 +360,7 @@ static const uint8_t mpc8_q4_codes[MPC8_Q4_SIZE] = {
  0x06, 0x05, 0x04, 0x03, 0x02, 0x03, 0x02, 0x01,
  0x00,
 };
-static const int8_t mpc8_q4_bits[MPC8_Q4_SIZE] = {
+static const uint8_t mpc8_q4_bits[MPC8_Q4_SIZE] = {
   4,  5,  5,  5,  5,  5,  5,  5,
   5,  5,  5,  5,  5,  6,  6,  6,
   6,  6,  6,  6,  6,  6,  6,  6,
@@ -373,7 +373,7 @@ static const int8_t mpc8_q4_bits[MPC8_Q4_SIZE] = {
   9,  9,  9,  9,  9, 10, 10, 10,
  10,
 };
-static const int8_t mpc8_q4_syms[MPC8_Q4_SIZE] = {
+static const uint8_t mpc8_q4_syms[MPC8_Q4_SIZE] = {
    64,    96,    81,    80,    95,    66,    65,    79,
    78,    49,    48,    63,    32,   113,   112,    98,
    97,   111,   110,    83,    82,    94,    93,    67,
@@ -401,7 +401,7 @@ static const uint8_t mpc8_q5_codes[2][MPC8_Q5_SIZE] = {
  0x06, 0x07, 0x04, 0x05, 0x03, 0x02, 0x03,
 }
 };
-static const int8_t mpc8_q5_bits[2][MPC8_Q5_SIZE] = {
+static const uint8_t mpc8_q5_bits[2][MPC8_Q5_SIZE] = {
 {
   7,  7,  6,  5,  4,  3,  3,  2,
   3,  3,  4,  5,  6,  7,  7,
@@ -430,7 +430,7 @@ static const uint8_t mpc8_q6_codes[2][MPC8_Q6_SIZE] = {
  0x06, 0x07, 0x05, 0x06, 0x07, 0x02, 0x03,
 }
 };
-static const int8_t mpc8_q6_bits[2][MPC8_Q6_SIZE] = {
+static const uint8_t mpc8_q6_bits[2][MPC8_Q6_SIZE] = {
 {
   9,  9,  9,  9,  8,  8,  7,  6,
   6,  6,  5,  5,  4,  4,  3,  2,
@@ -471,7 +471,7 @@ static const uint8_t mpc8_q7_codes[2][MPC8_Q7_SIZE] = {
  0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x02, 0x03,
 }
 };
-static const int8_t mpc8_q7_bits[2][MPC8_Q7_SIZE] = {
+static const uint8_t mpc8_q7_bits[2][MPC8_Q7_SIZE] = {
 {
  10, 10, 10,  9,  9, 10, 10, 10,
  10, 10,  9,  9,  9,  9,  8,  8,
@@ -536,7 +536,7 @@ static const uint8_t mpc8_q8_codes[2][MPC8_Q8_SIZE] = {
  0x27, 0x28, 0x29, 0x04, 0x05, 0x06, 0x07,
 }
 };
-static const int8_t mpc8_q8_bits[2][MPC8_Q8_SIZE] = {
+static const uint8_t mpc8_q8_bits[2][MPC8_Q8_SIZE] = {
 {
  11, 11, 10, 10, 10, 10, 10,  9,
  10,  9, 10, 12, 12, 11, 11, 11,
