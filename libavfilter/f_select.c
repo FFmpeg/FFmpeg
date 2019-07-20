@@ -26,8 +26,10 @@
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/fifo.h"
+#include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avfilter.h"
 #include "audio.h"
 #include "formats.h"
@@ -144,6 +146,10 @@ typedef struct SelectContext {
     char *expr_str;
     AVExpr *expr;
     double var_values[VAR_VARS_NB];
+    int bitdepth;
+    int nb_planes;
+    ptrdiff_t width[4];
+    ptrdiff_t height[4];
     int do_scene_detect;            ///< 1 if the expression requires scene detection variables, 0 otherwise
     ff_scene_sad_fn sad;            ///< Sum of the absolute difference function (scene detect only)
     double prev_mafd;               ///< previous MAFD                           (scene detect only)
@@ -202,6 +208,17 @@ static av_cold int init(AVFilterContext *ctx)
 static int config_input(AVFilterLink *inlink)
 {
     SelectContext *select = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+
+    select->bitdepth = desc->comp[0].depth;
+    select->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    for (int plane = 0; plane < select->nb_planes; plane++) {
+        ptrdiff_t line_size = av_image_get_linesize(inlink->format, inlink->w, plane);
+        int vsub = desc->log2_chroma_h;
+
+        select->width[plane] = line_size >> (select->bitdepth > 8);
+        select->height[plane] = plane == 1 || plane == 2 ?  AV_CEIL_RSHIFT(inlink->h, vsub) : inlink->h;
+    }
 
     select->var_values[VAR_N]          = 0.0;
     select->var_values[VAR_SELECTED_N] = 0.0;
@@ -242,7 +259,7 @@ static int config_input(AVFilterLink *inlink)
         inlink->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
     if (CONFIG_SELECT_FILTER && select->do_scene_detect) {
-        select->sad = ff_scene_sad_get_fn(8);
+        select->sad = ff_scene_sad_get_fn(select->bitdepth == 8 ? 8 : 16);
         if (!select->sad)
             return AVERROR(EINVAL);
     }
@@ -258,12 +275,21 @@ static double get_scene_score(AVFilterContext *ctx, AVFrame *frame)
     if (prev_picref &&
         frame->height == prev_picref->height &&
         frame->width  == prev_picref->width) {
-        uint64_t sad;
+        uint64_t sad = 0;
         double mafd, diff;
+        uint64_t count = 0;
 
-        select->sad(prev_picref->data[0], prev_picref->linesize[0], frame->data[0], frame->linesize[0], frame->width * 3, frame->height, &sad);
+        for (int plane = 0; plane < select->nb_planes; plane++) {
+            uint64_t plane_sad;
+            select->sad(prev_picref->data[plane], prev_picref->linesize[plane],
+                    frame->data[plane], frame->linesize[plane],
+                    select->width[plane], select->height[plane], &plane_sad);
+            sad += plane_sad;
+            count += select->width[plane] * select->height[plane];
+        }
+
         emms_c();
-        mafd = (double)sad / (frame->width * 3 * frame->height);
+        mafd = (double)sad / count / (1ULL << (select->bitdepth - 8));
         diff = fabs(mafd - select->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff) / 100., 0, 1);
         select->prev_mafd = mafd;
