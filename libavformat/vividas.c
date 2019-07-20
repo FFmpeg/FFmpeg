@@ -374,8 +374,11 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
             ffio_read_varlen(pb); // len_3
             num_data = avio_r8(pb);
             for (j = 0; j < num_data; j++) {
-                data_len[j] = ffio_read_varlen(pb);
-                xd_size += data_len[j];
+                uint64_t len = ffio_read_varlen(pb);
+                if (len > INT_MAX/2 - xd_size)
+                    return AVERROR_INVALIDDATA;
+                data_len[j] = len;
+                xd_size += len;
             }
 
             st->codecpar->extradata_size = 64 + xd_size + xd_size / 255;
