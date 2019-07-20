@@ -26,7 +26,7 @@
 
 /* these coefficients dequantize intraframe Y plane coefficients
  * (note: same as JPEG) */
-static const int8_t vp31_intra_y_dequant[64] = {
+static const uint8_t vp31_intra_y_dequant[64] = {
     16, 11, 10, 16,  24,  40,  51,  61,
     12, 12, 14, 19,  26,  58,  60,  55,
     14, 13, 16, 24,  40,  57,  69,  56,
@@ -39,7 +39,7 @@ static const int8_t vp31_intra_y_dequant[64] = {
 
 /* these coefficients dequantize intraframe C plane coefficients
  * (note: same as JPEG) */
-static const int8_t vp31_intra_c_dequant[64] = {
+static const uint8_t vp31_intra_c_dequant[64] = {
     17, 18, 24, 47, 99, 99, 99, 99,
     18, 21, 26, 66, 99, 99, 99, 99,
     24, 26, 56, 99, 99, 99, 99, 99,
@@ -51,7 +51,7 @@ static const int8_t vp31_intra_c_dequant[64] = {
 };
 
 /* these coefficients dequantize interframe coefficients (all planes) */
-static const int8_t vp31_inter_dequant[64] = {
+static const uint8_t vp31_inter_dequant[64] = {
     16, 16, 16, 20, 24, 28,  32,  40,
     16, 16, 20, 24, 28, 32,  40,  48,
     16, 20, 24, 28, 32, 40,  48,  64,
