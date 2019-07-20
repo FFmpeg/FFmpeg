@@ -273,7 +273,7 @@ static uint8_t *read_sb_block(AVIOContext *src, unsigned *size,
     return buf;
 }
 
-static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *buf, int size)
+static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *buf, int size)
 {
     int i,j;
     int64_t off;
@@ -283,7 +283,7 @@ static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t 
 
     pb = avio_alloc_context(buf, size, 0, NULL, NULL, NULL, NULL);
     if (!pb)
-        return;
+        return AVERROR(ENOMEM);
 
     ffio_read_varlen(pb); // track_header_len
     avio_r8(pb); // '1'
@@ -380,7 +380,7 @@ static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t 
 
             st->codecpar->extradata_size = 64 + xd_size + xd_size / 255;
             if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size))
-                return;
+                return AVERROR(ENOMEM);
 
             p = st->codecpar->extradata;
             p[0] = 2;
@@ -404,6 +404,7 @@ static void track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t 
     }
 
     av_free(pb);
+    return 0;
 }
 
 static void track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *buf, unsigned size)
@@ -506,6 +507,7 @@ static int viv_read_header(AVFormatContext *s)
     uint32_t b22_size = 0;
     uint32_t b22_key = 0;
     uint8_t *buf = 0;
+    int ret;
 
     avio_skip(pb, 9);
 
@@ -561,8 +563,10 @@ static int viv_read_header(AVFormatContext *s)
     buf = read_vblock(pb, &v, key, &k2, 0);
     if (!buf)
         return AVERROR(EIO);
-    track_header(viv, s, buf, v);
+    ret = track_header(viv, s, buf, v);
     av_free(buf);
+    if (ret < 0)
+        return ret;
 
     buf = read_vblock(pb, &v, key, &k2, v);
     if (!buf)
