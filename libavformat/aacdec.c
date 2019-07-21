@@ -190,9 +190,9 @@ retry:
         }
         if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
             av_packet_unref(pkt);
-            return AVERROR_INVALIDDATA;
-        }
-        ret = handle_id3(s, pkt);
+            ret = adts_aac_resync(s);
+        } else
+            ret = handle_id3(s, pkt);
         if (ret < 0)
             return ret;
 
