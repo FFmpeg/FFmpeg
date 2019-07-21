@@ -133,6 +133,7 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret, fsize;
 
+retry:
     ret = av_get_packet(s->pb, pkt, ADTS_HEADER_SIZE);
     if (ret < 0)
         return ret;
@@ -143,7 +144,10 @@ static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if ((AV_RB16(pkt->data) >> 4) != 0xfff) {
         av_packet_unref(pkt);
-        return AVERROR_INVALIDDATA;
+        ret = adts_aac_resync(s);
+        if (ret < 0)
+            return ret;
+        goto retry;
     }
 
     fsize = (AV_RB32(pkt->data + 3) >> 13) & 0x1FFF;
