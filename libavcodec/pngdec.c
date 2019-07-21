@@ -1547,7 +1547,7 @@ static int decode_frame_lscr(AVCodecContext *avctx,
         return ret;
 
     nb_blocks = bytestream2_get_le16(gb);
-    if (bytestream2_get_bytes_left(gb) < 2 + nb_blocks * 12)
+    if (bytestream2_get_bytes_left(gb) < 2 + nb_blocks * (12 + 8))
         return AVERROR_INVALIDDATA;
 
     if (s->last_picture.f->data[0]) {
