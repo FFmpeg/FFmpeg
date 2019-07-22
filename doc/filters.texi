@@ -6685,6 +6685,7 @@ Set color system.
 @item cie1931
 @item rec709, hdtv
 @item uhdtv, rec2020
+@item dcip3
 @end table
 
 @item cie
