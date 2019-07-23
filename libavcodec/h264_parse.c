@@ -287,6 +287,8 @@ int ff_h264_init_poc(int pic_field_poc[2], int *pic_poc,
 
     if (sps->poc_type == 0) {
         const int max_poc_lsb = 1 << sps->log2_max_poc_lsb;
+        if (pc->prev_poc_lsb < 0)
+            pc->prev_poc_lsb =  pc->poc_lsb;
 
         if (pc->poc_lsb < pc->prev_poc_lsb &&
             pc->prev_poc_lsb - pc->poc_lsb >= max_poc_lsb / 2)

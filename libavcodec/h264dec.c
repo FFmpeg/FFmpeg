@@ -474,7 +474,7 @@ static void idr(H264Context *h)
     h->poc.prev_frame_num        =
     h->poc.prev_frame_num_offset = 0;
     h->poc.prev_poc_msb          = 1<<16;
-    h->poc.prev_poc_lsb          = 0;
+    h->poc.prev_poc_lsb          = -1;
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
 }
