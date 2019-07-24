@@ -82,15 +82,24 @@ typedef struct DynamicAudioNormalizerContext {
 #define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption dynaudnorm_options[] = {
-    { "f", "set the frame length in msec",     OFFSET(frame_len_msec),    AV_OPT_TYPE_INT,    {.i64 = 500},   10,  8000, FLAGS },
-    { "g", "set the filter size",              OFFSET(filter_size),       AV_OPT_TYPE_INT,    {.i64 = 31},     3,   301, FLAGS },
-    { "p", "set the peak value",               OFFSET(peak_value),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.95}, 0.0,   1.0, FLAGS },
-    { "m", "set the max amplification",        OFFSET(max_amplification), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0}, 1.0, 100.0, FLAGS },
-    { "r", "set the target RMS",               OFFSET(target_rms),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
-    { "n", "set channel coupling",             OFFSET(channels_coupled),  AV_OPT_TYPE_BOOL,   {.i64 = 1},      0,     1, FLAGS },
-    { "c", "set DC correction",                OFFSET(dc_correction),     AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
-    { "b", "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
-    { "s", "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
+    { "framelen",    "set the frame length in msec",     OFFSET(frame_len_msec),    AV_OPT_TYPE_INT,    {.i64 = 500},   10,  8000, FLAGS },
+    { "f",           "set the frame length in msec",     OFFSET(frame_len_msec),    AV_OPT_TYPE_INT,    {.i64 = 500},   10,  8000, FLAGS },
+    { "gausssize",   "set the filter size",              OFFSET(filter_size),       AV_OPT_TYPE_INT,    {.i64 = 31},     3,   301, FLAGS },
+    { "g",           "set the filter size",              OFFSET(filter_size),       AV_OPT_TYPE_INT,    {.i64 = 31},     3,   301, FLAGS },
+    { "peak",        "set the peak value",               OFFSET(peak_value),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.95}, 0.0,   1.0, FLAGS },
+    { "p",           "set the peak value",               OFFSET(peak_value),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.95}, 0.0,   1.0, FLAGS },
+    { "maxgain",     "set the max amplification",        OFFSET(max_amplification), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0}, 1.0, 100.0, FLAGS },
+    { "m",           "set the max amplification",        OFFSET(max_amplification), AV_OPT_TYPE_DOUBLE, {.dbl = 10.0}, 1.0, 100.0, FLAGS },
+    { "targetrms",   "set the target RMS",               OFFSET(target_rms),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
+    { "r",           "set the target RMS",               OFFSET(target_rms),        AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,   1.0, FLAGS },
+    { "coupling",    "set channel coupling",             OFFSET(channels_coupled),  AV_OPT_TYPE_BOOL,   {.i64 = 1},      0,     1, FLAGS },
+    { "n",           "set channel coupling",             OFFSET(channels_coupled),  AV_OPT_TYPE_BOOL,   {.i64 = 1},      0,     1, FLAGS },
+    { "correctdc",   "set DC correction",                OFFSET(dc_correction),     AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "c",           "set DC correction",                OFFSET(dc_correction),     AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "altboundary", "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "b",           "set alternative boundary mode",    OFFSET(alt_boundary_mode), AV_OPT_TYPE_BOOL,   {.i64 = 0},      0,     1, FLAGS },
+    { "compress",    "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
+    { "s",           "set the compress factor",          OFFSET(compress_factor),   AV_OPT_TYPE_DOUBLE, {.dbl = 0.0},  0.0,  30.0, FLAGS },
     { NULL }
 };
 

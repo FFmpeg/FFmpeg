@@ -3135,7 +3135,7 @@ this goal *without* applying "dynamic range compressing". It will retain 100%
 of the dynamic range *within* each section of the audio file.
 
 @table @option
-@item f
+@item framelen, f
 Set the frame length in milliseconds. In range from 10 to 8000 milliseconds.
 Default is 500 milliseconds.
 The Dynamic Audio Normalizer processes the input audio in small chunks,
@@ -3150,7 +3150,7 @@ been found to give good results with most files.
 Note that the exact frame length, in number of samples, will be determined
 automatically, based on the sampling rate of the individual input audio file.
 
-@item g
+@item gausssize, g
 Set the Gaussian filter window size. In range from 3 to 301, must be odd
 number. Default is 31.
 Probably the most important parameter of the Dynamic Audio Normalizer is the
@@ -3167,7 +3167,7 @@ Normalizer will behave like a "traditional" normalization filter. On the
 contrary, the more you decrease this value, the more the Dynamic Audio
 Normalizer will behave like a dynamic range compressor.
 
-@item p
+@item peak, p
 Set the target peak value. This specifies the highest permissible magnitude
 level for the normalized audio input. This filter will try to approach the
 target peak magnitude as closely as possible, but at the same time it also
@@ -3176,7 +3176,7 @@ A frame's maximum local gain factor is imposed directly by the target peak
 magnitude. The default value is 0.95 and thus leaves a headroom of 5%*.
 It is not recommended to go above this value.
 
-@item m
+@item maxgain, m
 Set the maximum gain factor. In range from 1.0 to 100.0. Default is 10.0.
 The Dynamic Audio Normalizer determines the maximum possible (local) gain
 factor for each input frame, i.e. the maximum gain factor that does not
@@ -3194,7 +3194,7 @@ Instead, a "sigmoid" threshold function will be applied. This way, the
 gain factors will smoothly approach the threshold value, but never exceed that
 value.
 
-@item r
+@item targetrms, r
 Set the target RMS. In range from 0.0 to 1.0. Default is 0.0 - disabled.
 By default, the Dynamic Audio Normalizer performs "peak" normalization.
 This means that the maximum local gain factor for each frame is defined
@@ -3212,7 +3212,7 @@ factor is defined as the factor that would result in exactly that RMS value.
 Note, however, that the maximum local gain factor is still restricted by the
 frame's highest magnitude sample, in order to prevent clipping.
 
-@item n
+@item coupling, n
 Enable channels coupling. By default is enabled.
 By default, the Dynamic Audio Normalizer will amplify all channels by the same
 amount. This means the same gain factor will be applied to all channels, i.e.
@@ -3224,7 +3224,7 @@ the gain factor will be determined independently for each channel, depending
 only on the individual channel's highest magnitude sample. This allows for
 harmonizing the volume of the different channels.
 
-@item c
+@item correctdc, c
 Enable DC bias correction. By default is disabled.
 An audio signal (in the time domain) is a sequence of sample values.
 In the Dynamic Audio Normalizer these sample values are represented in the
@@ -3243,7 +3243,7 @@ are centered around 0.0 again. Also, in order to avoid "gaps" at the frame
 boundaries, the DC correction offset values will be interpolated smoothly
 between neighbouring frames.
 
-@item b
+@item altboundary, b
 Enable alternative boundary mode. By default is disabled.
 The Dynamic Audio Normalizer takes into account a certain neighbourhood
 around each frame. This includes the preceding frames as well as the
@@ -3258,7 +3258,7 @@ to deal with this situation. The default boundary mode assumes a gain factor
 of exactly 1.0 for the missing frames, resulting in a smooth "fade in" and
 "fade out" at the beginning and at the end of the input, respectively.
 
-@item s
+@item compress, s
 Set the compress factor. In range from 0.0 to 30.0. Default is 0.0.
 By default, the Dynamic Audio Normalizer does not apply "traditional"
 compression. This means that signal peaks will not be pruned and thus the
