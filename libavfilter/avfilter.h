@@ -296,7 +296,7 @@ typedef struct AVFilter {
      *
      * @param cmd    the command to process, for handling simplicity all commands must be alphanumeric only
      * @param arg    the argument for the command
-     * @param res    a buffer with size res_size where the filter(s) can return a response. This must not change when the command is not supported.
+     * @param res    a buffer with size res_len where the filter(s) can return a response. This must not change when the command is not supported.
      * @param flags  if AVFILTER_CMD_FLAG_FAST is set and the command would be
      *               time consuming then a filter should treat it like an unsupported command
      *
