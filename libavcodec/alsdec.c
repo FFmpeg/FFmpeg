@@ -1175,10 +1175,10 @@ static int decode_blocks(ALSDecContext *ctx, unsigned int ra_frame,
                 av_log(ctx->avctx, AV_LOG_WARNING, "Invalid channel pair.\n");
 
             for (s = 0; s < div_blocks[b]; s++)
-                bd[0].raw_samples[s] = bd[1].raw_samples[s] - bd[0].raw_samples[s];
+                bd[0].raw_samples[s] = bd[1].raw_samples[s] - (unsigned)bd[0].raw_samples[s];
         } else if (bd[1].js_blocks) {
             for (s = 0; s < div_blocks[b]; s++)
-                bd[1].raw_samples[s] = bd[1].raw_samples[s] + bd[0].raw_samples[s];
+                bd[1].raw_samples[s] = bd[1].raw_samples[s] + (unsigned)bd[0].raw_samples[s];
         }
 
         offset  += div_blocks[b];
