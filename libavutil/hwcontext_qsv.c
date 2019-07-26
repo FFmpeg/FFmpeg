@@ -1240,6 +1240,8 @@ static int qsv_device_create(AVHWDeviceContext *ctx, const char *device,
 
     ret = av_hwdevice_ctx_create(&priv->child_device_ctx, child_device_type,
                                  e ? e->value : NULL, child_device_opts, 0);
+
+    av_dict_free(&child_device_opts);
     if (ret < 0)
         return ret;
 
