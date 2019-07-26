@@ -2116,6 +2116,17 @@ atrim=end=5,areverse
 @end example
 @end itemize
 
+@section arnndn
+
+Reduce noise from speech using Recurrent Neural Networks.
+
+This filter accepts the following options:
+
+@table @option
+@item model, m
+Set train model file to load. This option is always required.
+@end table
+
 @section asetnsamples
 
 Set the number of samples per each output audio frame.
