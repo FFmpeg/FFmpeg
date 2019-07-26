@@ -1409,7 +1409,11 @@ static SoftFloat_IEEE754 multiply(SoftFloat_IEEE754 a, SoftFloat_IEEE754 b) {
         }
     }
 
-    mantissa = (unsigned int)(mantissa_temp >> cutoff_bit_count);
+    if (cutoff_bit_count >= 0) {
+        mantissa = (unsigned int)(mantissa_temp >> cutoff_bit_count);
+    } else {
+        mantissa = (unsigned int)(mantissa_temp <<-cutoff_bit_count);
+    }
 
     // Need one more shift?
     if (mantissa & 0x01000000ul) {
