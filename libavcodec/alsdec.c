@@ -657,7 +657,7 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
 
     // do not continue in case of a damaged stream since
     // block_length must be evenly divisible by sub_blocks
-    if (bd->block_length & (sub_blocks - 1)) {
+    if (bd->block_length & (sub_blocks - 1) || bd->block_length <= 0) {
         av_log(avctx, AV_LOG_WARNING,
                "Block length is not evenly divisible by the number of subblocks.\n");
         return AVERROR_INVALIDDATA;
