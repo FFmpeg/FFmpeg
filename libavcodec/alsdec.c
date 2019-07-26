@@ -923,7 +923,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             y = 1 << 6;
 
             for (base = begin; base < end; base++, tab++)
-                y += MUL64(bd->ltp_gain[tab], raw_samples[base]);
+                y += (uint64_t)MUL64(bd->ltp_gain[tab], raw_samples[base]);
 
             raw_samples[ltp_smp] += y >> 7;
         }
@@ -935,7 +935,7 @@ static int decode_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             y = 1 << 19;
 
             for (sb = 0; sb < smp; sb++)
-                y += MUL64(lpc_cof[sb], raw_samples[-(sb + 1)]);
+                y += (uint64_t)MUL64(lpc_cof[sb], raw_samples[-(sb + 1)]);
 
             *raw_samples++ -= y >> 20;
             parcor_to_lpc(smp, quant_cof, lpc_cof);
