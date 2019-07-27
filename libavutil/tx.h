@@ -28,6 +28,10 @@ typedef struct AVComplexFloat {
     float re, im;
 } AVComplexFloat;
 
+typedef struct AVComplexDouble {
+    double re, im;
+} AVComplexDouble;
+
 enum AVTXType {
     /**
      * Standard complex to complex FFT with sample data type AVComplexFloat.
@@ -39,6 +43,14 @@ enum AVTXType {
      * float. Length is the frame size, not the window size (which is 2x frame)
      */
     AV_TX_FLOAT_MDCT = 1,
+    /**
+     * Same as AV_TX_FLOAT_FFT with a data type of AVComplexDouble.
+     */
+    AV_TX_DOUBLE_FFT = 2,
+    /**
+     * Same as AV_TX_FLOAT_MDCT with data and scale type of double.
+     */
+    AV_TX_DOUBLE_MDCT = 3,
 };
 
 /**

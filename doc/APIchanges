@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-07-27 - xxxxxxxxxx - lavu 56.33.100 - tx.h
+  Add AV_TX_DOUBLE_FFT and AV_TX_DOUBLE_MDCT
+
 -------- 8< --------- FFmpeg 4.2 was cut here -------- 8< ---------
 
 2019-06-21 - a30e44098a - lavu 56.30.100 - frame.h
