@@ -150,6 +150,49 @@ static inline void process_alpha(int16_t *alpha, int width)
     }
 }
 
+static inline void process_bayer(AVFrame *frame)
+{
+    const int linesize = frame->linesize[0];
+    uint16_t *r = (uint16_t *)frame->data[0];
+    uint16_t *g1 = (uint16_t *)(frame->data[0] + 2);
+    uint16_t *g2 = (uint16_t *)(frame->data[0] + frame->linesize[0]);
+    uint16_t *b = (uint16_t *)(frame->data[0] + frame->linesize[0] + 2);
+    const int mid = 2048;
+
+    for (int y = 0; y < frame->height >> 1; y++) {
+        for (int x = 0; x < frame->width; x += 2) {
+            int R, G1, G2, B;
+            int g, rg, bg, gd;
+
+            g  = r[x];
+            rg = g1[x];
+            bg = g2[x];
+            gd = b[x];
+            gd -= mid;
+
+            R  = (rg - mid) * 2 + g;
+            G1 = g + gd;
+            G2 = g - gd;
+            B  = (bg - mid) * 2 + g;
+
+            R  = av_clip_uintp2(R  * 16, 16);
+            G1 = av_clip_uintp2(G1 * 16, 16);
+            G2 = av_clip_uintp2(G2 * 16, 16);
+            B  = av_clip_uintp2(B  * 16, 16);
+
+            r[x]  = R;
+            g1[x] = G1;
+            g2[x] = G2;
+            b[x]  = B;
+        }
+
+        r  += linesize;
+        g1 += linesize;
+        g2 += linesize;
+        b  += linesize;
+    }
+}
+
 static inline void filter(int16_t *output, ptrdiff_t out_stride,
                           int16_t *low, ptrdiff_t low_stride,
                           int16_t *high, ptrdiff_t high_stride,
@@ -217,6 +260,12 @@ static void horiz_filter_clip(int16_t *output, int16_t *low, int16_t *high,
     filter(output, 1, low, 1, high, 1, width, clip);
 }
 
+static void horiz_filter_clip_bayer(int16_t *output, int16_t *low, int16_t *high,
+                                    int width, int clip)
+{
+    filter(output, 2, low, 1, high, 1, width, clip);
+}
+
 static void vert_filter(int16_t *output, ptrdiff_t out_stride,
                         int16_t *low, ptrdiff_t low_stride,
                         int16_t *high, ptrdiff_t high_stride, int len)
@@ -249,6 +298,11 @@ static int alloc_buffers(AVCodecContext *avctx)
     int chroma_x_shift, chroma_y_shift;
     unsigned k;
 
+    if (s->coded_format == AV_PIX_FMT_BAYER_RGGB16) {
+        s->coded_width *= 2;
+        s->coded_height *= 2;
+    }
+
     if ((ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height)) < 0)
         return ret;
     avctx->pix_fmt = s->coded_format;
@@ -258,6 +312,11 @@ static int alloc_buffers(AVCodecContext *avctx)
                                                 &chroma_y_shift)) < 0)
         return ret;
     planes = av_pix_fmt_count_planes(s->coded_format);
+    if (s->coded_format == AV_PIX_FMT_BAYER_RGGB16) {
+        planes = 4;
+        chroma_x_shift = 1;
+        chroma_y_shift = 1;
+    }
 
     for (i = 0; i < planes; i++) {
         int w8, h8, w4, h4, w2, h2;
@@ -519,18 +578,20 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             s->bpc = data;
         } else if (tag == 84) {
             av_log(avctx, AV_LOG_DEBUG, "Sample format? %i\n", data);
-            if (data == 1)
+            if (data == 1) {
                 s->coded_format = AV_PIX_FMT_YUV422P10;
-            else if (data == 3)
+            } else if (data == 2) {
+                s->coded_format = AV_PIX_FMT_BAYER_RGGB16;
+            } else if (data == 3) {
                 s->coded_format = AV_PIX_FMT_GBRP12;
-            else if (data == 4)
+            } else if (data == 4) {
                 s->coded_format = AV_PIX_FMT_GBRAP12;
-            else {
+            } else {
                 avpriv_report_missing_feature(avctx, "Sample format of %"PRIu16, data);
                 ret = AVERROR_PATCHWELCOME;
                 break;
             }
-            planes = av_pix_fmt_count_planes(s->coded_format);
+            planes = data == 2 ? 4 : av_pix_fmt_count_planes(s->coded_format);
         } else if (tag == -85) {
             av_log(avctx, AV_LOG_DEBUG, "Cropped height %"PRIu16"\n", data);
             s->cropped_height = data;
@@ -565,7 +626,7 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             if (ret < 0)
                 return ret;
             if (s->cropped_height)
-                avctx->height = s->cropped_height;
+                avctx->height = s->cropped_height << (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16);
             frame.f->width =
             frame.f->height = 0;
 
@@ -735,13 +796,27 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
     planes = av_pix_fmt_count_planes(avctx->pix_fmt);
+    if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16) {
+        if (!s->progressive)
+            return AVERROR_INVALIDDATA;
+        planes = 4;
+    }
+
     for (plane = 0; plane < planes && !ret; plane++) {
         /* level 1 */
         int lowpass_height  = s->plane[plane].band[0][0].height;
         int lowpass_width   = s->plane[plane].band[0][0].width;
         int highpass_stride = s->plane[plane].band[0][1].stride;
         int act_plane = plane == 1 ? 2 : plane == 2 ? 1 : plane;
+        int dst_linesize;
         int16_t *low, *high, *output, *dst;
+
+        if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16) {
+            act_plane = 0;
+            dst_linesize = pic->linesize[act_plane];
+        } else {
+            dst_linesize = pic->linesize[act_plane] / 2;
+        }
 
         if (lowpass_height > s->plane[plane].band[0][0].a_height || lowpass_width > s->plane[plane].band[0][0].a_width ||
             !highpass_stride || s->plane[plane].band[0][1].width > s->plane[plane].band[0][1].a_width) {
@@ -880,15 +955,24 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             }
 
             dst = (int16_t *)pic->data[act_plane];
+            if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16) {
+                if (plane & 1)
+                    dst++;
+                if (plane > 1)
+                    dst += pic->linesize[act_plane] >> 1;
+            }
             low  = s->plane[plane].l_h[6];
             high = s->plane[plane].l_h[7];
             for (i = 0; i < lowpass_height * 2; i++) {
-                horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
+                if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16)
+                    horiz_filter_clip_bayer(dst, low, high, lowpass_width, s->bpc);
+                else
+                    horiz_filter_clip(dst, low, high, lowpass_width, s->bpc);
                 if (avctx->pix_fmt == AV_PIX_FMT_GBRAP12 && act_plane == 3)
                     process_alpha(dst, lowpass_width * 2);
                 low  += lowpass_width;
                 high += lowpass_width;
-                dst  += pic->linesize[act_plane] / 2;
+                dst  += dst_linesize;
             }
         } else {
             av_log(avctx, AV_LOG_DEBUG, "interlaced frame ? %d", pic->interlaced_frame);
@@ -926,6 +1010,8 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
     }
 
 
+    if (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16)
+        process_bayer(pic);
 end:
     if (ret < 0)
         return ret;
