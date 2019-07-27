@@ -8440,8 +8440,11 @@ Recurrent Squeeze-and-Excitation Context Aggregation Net (RESCAN).
 See @url{http://openaccess.thecvf.com/content_ECCV_2018/papers/Xia_Li_Recurrent_Squeeze-and-Excitation_Context_ECCV_2018_paper.pdf}.
 @end itemize
 
-Training scripts as well as scripts for model generation are provided in
+Training as well as model generation scripts are provided in
 the repository at @url{https://github.com/XueweiMeng/derain_filter.git}.
+
+Native model files (.model) can be generated from TensorFlow model
+files (.pb) by using tools/python/convert.py
 
 The filter accepts the following options:
 
@@ -8453,14 +8456,19 @@ the following values:
 @table @samp
 @item native
 Native implementation of DNN loading and execution.
+
+@item tensorflow
+TensorFlow backend. To enable this backend you
+need to install the TensorFlow for C library (see
+@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
+@code{--enable-libtensorflow}
 @end table
 Default value is @samp{native}.
 
 @item model
 Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow backend
-can load files for both formats, while native backend can load files for only
-its format.
+Note that different backends use different file formats. TensorFlow and native
+backend can load files for only its format.
 @end table
 
 @section deshake
