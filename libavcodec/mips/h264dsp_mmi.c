@@ -38,6 +38,9 @@ void ff_h264_add_pixels4_8_mmi(uint8_t *dst, int16_t *src, int stride)
         MMI_LDC1(%[ftmp2], %[src], 0x08)
         MMI_LDC1(%[ftmp3], %[src], 0x10)
         MMI_LDC1(%[ftmp4], %[src], 0x18)
+        /* memset(src, 0, 32); */
+        "gssqc1     %[ftmp0],   %[ftmp0],       0x00(%[src])            \n\t"
+        "gssqc1     %[ftmp0],   %[ftmp0],       0x10(%[src])            \n\t"
         MMI_ULWC1(%[ftmp5], %[dst0], 0x00)
         MMI_ULWC1(%[ftmp6], %[dst1], 0x00)
         MMI_ULWC1(%[ftmp7], %[dst2], 0x00)
@@ -58,11 +61,6 @@ void ff_h264_add_pixels4_8_mmi(uint8_t *dst, int16_t *src, int stride)
         MMI_SWC1(%[ftmp2], %[dst1], 0x00)
         MMI_SWC1(%[ftmp3], %[dst2], 0x00)
         MMI_SWC1(%[ftmp4], %[dst3], 0x00)
-
-        /* memset(src, 0, 32); */
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x00(%[src])            \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x10(%[src])            \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
@@ -85,15 +83,19 @@ void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
     DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
-        "dli        %[tmp0],    0x01                                    \n\t"
         MMI_LDC1(%[ftmp0], %[block], 0x00)
-        "mtc1       %[tmp0],    %[ftmp8]                                \n\t"
         MMI_LDC1(%[ftmp1], %[block], 0x08)
-        "dli        %[tmp0],    0x06                                    \n\t"
         MMI_LDC1(%[ftmp2], %[block], 0x10)
+        MMI_LDC1(%[ftmp3], %[block], 0x18)
+        /* memset(block, 0, 32) */
+        "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
+        "gssqc1     %[ftmp4],   %[ftmp4],       0x00(%[block])          \n\t"
+        "gssqc1     %[ftmp4],   %[ftmp4],       0x10(%[block])          \n\t"
+        "dli        %[tmp0],    0x01                                    \n\t"
+        "mtc1       %[tmp0],    %[ftmp8]                                \n\t"
+        "dli        %[tmp0],    0x06                                    \n\t"
         "mtc1       %[tmp0],    %[ftmp9]                                \n\t"
         "psrah      %[ftmp4],   %[ftmp1],       %[ftmp8]                \n\t"
-        MMI_LDC1(%[ftmp3], %[block], 0x18)
         "psrah      %[ftmp5],   %[ftmp3],       %[ftmp8]                \n\t"
         "psubh      %[ftmp4],   %[ftmp4],       %[ftmp3]                \n\t"
         "paddh      %[ftmp5],   %[ftmp5],       %[ftmp1]                \n\t"
@@ -121,15 +123,11 @@ void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
         "paddh      %[ftmp10],  %[ftmp3],       %[ftmp1]                \n\t"
         "psubh      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "paddh      %[ftmp11],  %[ftmp4],       %[ftmp5]                \n\t"
-        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
         "psubh      %[ftmp5],   %[ftmp5],       %[ftmp4]                \n\t"
-        MMI_SDC1(%[ftmp7], %[block], 0x00)
-        MMI_SDC1(%[ftmp7], %[block], 0x08)
-        MMI_SDC1(%[ftmp7], %[block], 0x10)
-        MMI_SDC1(%[ftmp7], %[block], 0x18)
         MMI_ULWC1(%[ftmp2], %[dst], 0x00)
-        "psrah      %[ftmp3],   %[ftmp10],      %[ftmp9]                \n\t"
         MMI_LWXC1(%[ftmp0], %[dst], %[stride], 0x00)
+        "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
+        "psrah      %[ftmp3],   %[ftmp10],      %[ftmp9]                \n\t"
         "psrah      %[ftmp4],   %[ftmp11],      %[ftmp9]                \n\t"
         "punpcklbh  %[ftmp2],   %[ftmp2],       %[ftmp7]                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp7]                \n\t"
@@ -153,11 +151,6 @@ void ff_h264_idct_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
         MMI_SWC1(%[ftmp2], %[dst], 0x00)
         "packushb   %[ftmp0],   %[ftmp0],       %[ftmp7]                \n\t"
         MMI_SWXC1(%[ftmp0], %[dst], %[stride], 0x00)
-
-        /* memset(block, 0, 32) */
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x00(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x10(%[block])          \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
@@ -620,17 +613,6 @@ void ff_h264_idct8_add_8_mmi(uint8_t *dst, int16_t *block, int stride)
         MMI_SWC1(%[ftmp6], %[addr0], 0x00)
         MMI_SWXC1(%[ftmp7], %[addr0], %[stride], 0x00)
         PTR_ADDIU  "$29,        $29,            0x20                    \n\t"
-
-        /* memset(block, 0, 128) */
-        "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x00(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x10(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x20(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x30(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x40(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x50(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x60(%[block])          \n\t"
-        "gssqc1     %[ftmp0],   %[ftmp0],       0x70(%[block])          \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
