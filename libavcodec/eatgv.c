@@ -300,6 +300,9 @@ static int tgv_decode_frame(AVCodecContext *avctx,
             s->palette[i] = 0xFFU << 24 | AV_RB24(buf);
             buf += 3;
         }
+        if (buf_end - buf < 5) {
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
