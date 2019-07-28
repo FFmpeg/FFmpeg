@@ -131,6 +131,9 @@ static int tqi_decode_frame(AVCodecContext *avctx,
     AVFrame *frame = data;
     int ret, w, h;
 
+    if (buf_size < 12)
+        return AVERROR_INVALIDDATA;
+
     t->avctx = avctx;
 
     w = AV_RL16(&buf[0]);
