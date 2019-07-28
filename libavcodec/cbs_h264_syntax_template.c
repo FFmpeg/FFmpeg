@@ -137,6 +137,10 @@ static int FUNC(vui_parameters)(CodedBitstreamContext *ctx, RWContext *rw,
             ub(8, colour_primaries);
             ub(8, transfer_characteristics);
             ub(8, matrix_coefficients);
+        } else {
+            infer(colour_primaries,         2);
+            infer(transfer_characteristics, 2);
+            infer(matrix_coefficients,      2);
         }
     } else {
         infer(video_format,             5);
