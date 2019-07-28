@@ -224,6 +224,10 @@ Insert or remove AUD NAL units in all access units of the stream.
 @item sample_aspect_ratio
 Set the sample aspect ratio of the stream in the VUI parameters.
 
+@item overscan_appropriate_flag
+Set whether the stream is suitable for display using overscan
+or not (see H.264 section E.2.1).
+
 @item video_format
 @item video_full_range_flag
 Set the video format in the stream (see H.264 section E.2.1 and

@@ -57,6 +57,8 @@ typedef struct H264MetadataContext {
 
     AVRational sample_aspect_ratio;
 
+    int overscan_appropriate_flag;
+
     int video_format;
     int video_full_range_flag;
     int colour_primaries;
@@ -128,6 +130,11 @@ static int h264_metadata_update_sps(AVBSFContext *bsf,
             need_vui = 1; \
         } \
     } while (0)
+
+    if (ctx->overscan_appropriate_flag >= 0) {
+        SET_VUI_FIELD(overscan_appropriate_flag);
+        sps->vui.overscan_info_present_flag = 1;
+    }
 
     if (ctx->video_format             >= 0 ||
         ctx->video_full_range_flag    >= 0 ||
@@ -629,6 +636,10 @@ static const AVOption h264_metadata_options[] = {
     { "sample_aspect_ratio", "Set sample aspect ratio (table E-1)",
         OFFSET(sample_aspect_ratio), AV_OPT_TYPE_RATIONAL,
         { .dbl = 0.0 }, 0, 65535, FLAGS },
+
+    { "overscan_appropriate_flag", "Set VUI overscan appropriate flag",
+        OFFSET(overscan_appropriate_flag), AV_OPT_TYPE_INT,
+        { .i64 = -1 }, -1, 1, FLAGS },
 
     { "video_format", "Set video format (table E-2)",
         OFFSET(video_format), AV_OPT_TYPE_INT,
