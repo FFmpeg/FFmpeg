@@ -83,13 +83,20 @@ static int mpsub_read_header(AVFormatContext *s)
 
             ff_subtitles_read_chunk(s->pb, &buf);
             if (buf.len) {
+                double ts = current_pts + start*multiplier;
                 sub = ff_subtitles_queue_insert(&mpsub->q, buf.str, buf.len, 0);
                 if (!sub) {
                     res = AVERROR(ENOMEM);
                     goto end;
                 }
-                sub->pts = (int64_t)(current_pts + start*multiplier);
-                sub->duration = (int)(duration * multiplier);
+                if (!isfinite(ts) || ts < INT64_MIN || ts > INT64_MAX) {
+                    avpriv_request_sample(s, "Invalid ts\n");
+                } else
+                    sub->pts = (int64_t)ts;
+                if (!isfinite(duration) || duration * multiplier > INT_MAX || duration < 0) {
+                    avpriv_request_sample(s, "Invalid duration\n");
+                } else
+                    sub->duration = (int)(duration * multiplier);
                 current_pts += (start + duration) * multiplier;
                 sub->pos = pos;
             }
