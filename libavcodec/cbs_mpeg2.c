@@ -167,41 +167,40 @@ static int cbs_mpeg2_split_fragment(CodedBitstreamContext *ctx,
                                     int header)
 {
     const uint8_t *start, *end;
-    uint8_t *unit_data;
-    uint32_t start_code = -1, next_start_code = -1;
+    CodedBitstreamUnitType unit_type;
+    uint32_t start_code = -1;
     size_t unit_size;
-    int err, i, unit_type;
+    int err, i;
 
     start = avpriv_find_start_code(frag->data, frag->data + frag->data_size,
                                    &start_code);
     for (i = 0;; i++) {
-        end = avpriv_find_start_code(start, frag->data + frag->data_size,
-                                     &next_start_code);
-
         unit_type = start_code & 0xff;
 
-        // The start and end pointers point at to the byte following the
-        // start_code_identifier in the start code that they found.
+        end = avpriv_find_start_code(start--, frag->data + frag->data_size,
+                                     &start_code);
+
+        // start points to the byte containing the start_code_identifier
+        // (or to the last byte of fragment->data); end points to the byte
+        // following the byte containing the start code identifier (or to
+        // the end of fragment->data).
         if (end == frag->data + frag->data_size) {
             // We didn't find a start code, so this is the final unit.
-            unit_size = end - (start - 1);
+            unit_size = end - start;
         } else {
             // Unit runs from start to the beginning of the start code
             // pointed to by end (including any padding zeroes).
-            unit_size = (end - 4) - (start - 1);
+            unit_size = (end - 4) - start;
         }
 
-        unit_data = (uint8_t *)start - 1;
-
-        err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type,
-                                      unit_data, unit_size, frag->data_ref);
+        err = ff_cbs_insert_unit_data(ctx, frag, i, unit_type, (uint8_t*)start,
+                                      unit_size, frag->data_ref);
         if (err < 0)
             return err;
 
         if (end == frag->data + frag->data_size)
             break;
 
-        start_code = next_start_code;
         start = end;
     }
 
