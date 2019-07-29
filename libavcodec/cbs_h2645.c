@@ -1588,21 +1588,21 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
                                 CodedBitstreamFragment *au,
                                 const H264RawSEIPayload *payload)
 {
-    H264RawSEI *sei;
-    CodedBitstreamUnit *nal = NULL;
+    H264RawSEI *sei = NULL;
     int err, i;
 
     // Find an existing SEI NAL unit to add to.
     for (i = 0; i < au->nb_units; i++) {
         if (au->units[i].type == H264_NAL_SEI) {
-            nal = &au->units[i];
-            break;
+            sei = au->units[i].content;
+            if (sei->payload_count < H264_MAX_SEI_PAYLOADS)
+                break;
+
+            sei = NULL;
         }
     }
-    if (nal) {
-        sei = nal->content;
 
-    } else {
+    if (!sei) {
         // Need to make a new SEI NAL unit.  Insert it before the first
         // slice data NAL unit; if no slice data, add at the end.
         AVBufferRef *sei_ref;
@@ -1632,12 +1632,6 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
         av_buffer_unref(&sei_ref);
         if (err < 0)
             return err;
-    }
-
-    if (sei->payload_count >= H264_MAX_SEI_PAYLOADS) {
-        av_log(ctx->log_ctx, AV_LOG_ERROR, "Too many payloads in "
-               "SEI NAL unit.\n");
-        return AVERROR(EINVAL);
     }
 
     memcpy(&sei->payload[sei->payload_count], payload, sizeof(*payload));
