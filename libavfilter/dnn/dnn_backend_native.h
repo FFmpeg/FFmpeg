@@ -30,7 +30,7 @@
 #include "../dnn_interface.h"
 #include "libavformat/avio.h"
 
-typedef enum {INPUT, CONV, DEPTH_TO_SPACE} DNNLayerType;
+typedef enum {INPUT, CONV, DEPTH_TO_SPACE, MIRROR_PAD} DNNLayerType;
 
 typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
 

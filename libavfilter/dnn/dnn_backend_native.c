@@ -25,6 +25,7 @@
 
 #include "dnn_backend_native.h"
 #include "libavutil/avassert.h"
+#include "dnn_backend_native_layer_pad.h"
 
 static DNNReturnType set_input_output_native(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
@@ -32,6 +33,7 @@ static DNNReturnType set_input_output_native(void *model, DNNInputData *input, c
     InputParams *input_params;
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
+    LayerPadParams *pad_params;
     int cur_width, cur_height, cur_channels;
     int32_t layer;
 
@@ -77,6 +79,12 @@ static DNNReturnType set_input_output_native(void *model, DNNInputData *input, c
             cur_height *= depth_to_space_params->block_size;
             cur_width *= depth_to_space_params->block_size;
             break;
+        case MIRROR_PAD:
+            pad_params = (LayerPadParams *)network->layers[layer].params;
+            cur_height = cur_height + pad_params->paddings[1][0] + pad_params->paddings[1][1];
+            cur_width = cur_width + pad_params->paddings[2][0] + pad_params->paddings[2][1];
+            cur_channels = cur_channels + pad_params->paddings[3][0] + pad_params->paddings[3][1];
+            break;
         default:
             return DNN_ERROR;
         }
@@ -110,6 +118,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     DNNLayerType layer_type;
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
+    LayerPadParams *pad_params;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -206,6 +215,23 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             dnn_size += 4;
             network->layers[layer].type = DEPTH_TO_SPACE;
             network->layers[layer].params = depth_to_space_params;
+            break;
+        case MIRROR_PAD:
+            pad_params = av_malloc(sizeof(LayerPadParams));
+            if (!pad_params){
+                avio_closep(&model_file_context);
+                ff_dnn_free_model_native(&model);
+                return NULL;
+            }
+            pad_params->mode = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 4;
+            for (i = 0; i < 4; ++i) {
+                pad_params->paddings[i][0] = avio_rl32(model_file_context);
+                pad_params->paddings[i][1] = avio_rl32(model_file_context);
+                dnn_size += 8;
+            }
+            network->layers[layer].type = MIRROR_PAD;
+            network->layers[layer].params = pad_params;
             break;
         default:
             avio_closep(&model_file_context);
@@ -314,6 +340,7 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
     InputParams *input_params;
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
+    LayerPadParams *pad_params;
 
     if (network->layers_num <= 0 || network->layers[0].type != INPUT || !network->layers[0].output){
         return DNN_ERROR;
@@ -347,6 +374,14 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
             cur_height *= depth_to_space_params->block_size;
             cur_width *= depth_to_space_params->block_size;
             cur_channels /= depth_to_space_params->block_size * depth_to_space_params->block_size;
+            break;
+        case MIRROR_PAD:
+            pad_params = (LayerPadParams *)network->layers[layer].params;
+            dnn_execute_layer_pad(network->layers[layer - 1].output, network->layers[layer].output,
+                                  pad_params, 1, cur_height, cur_width, cur_channels);
+            cur_height = cur_height + pad_params->paddings[1][0] + pad_params->paddings[1][1];
+            cur_width = cur_width + pad_params->paddings[2][0] + pad_params->paddings[2][1];
+            cur_channels = cur_channels + pad_params->paddings[3][0] + pad_params->paddings[3][1];
             break;
         case INPUT:
             return DNN_ERROR;

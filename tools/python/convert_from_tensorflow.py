@@ -23,9 +23,6 @@ import sys, struct
 
 __all__ = ['convert_from_tensorflow']
 
-# as the first step to be compatible with vf_sr, it is not general.
-# it will be refined step by step.
-
 class TFConverter:
     def __init__(self, graph_def, nodes, outfile):
         self.graph_def = graph_def
@@ -36,9 +33,10 @@ class TFConverter:
         self.name_node_dict = {}
         self.edges = {}
         self.conv_activations = {'Relu':0, 'Tanh':1, 'Sigmoid':2, 'LeakyRelu':4}
-        self.conv_paddings = {'VALID':2, 'SAME':1}
+        self.conv_paddings = {'VALID':0, 'SAME':1}
         self.converted_nodes = set()
-        self.op2code = {'Conv2D':1, 'DepthToSpace':2}
+        self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3}
+        self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
 
 
     def dump_for_tensorboard(self):
@@ -101,6 +99,19 @@ class TFConverter:
         self.converted_nodes.add(node.name)
 
 
+    def dump_mirrorpad_to_file(self, node, f):
+        assert(node.op == 'MirrorPad')
+        self.layer_number = self.layer_number + 1
+        mode = node.attr['mode'].s
+        mode = self.mirrorpad_mode[mode.decode("utf-8")]
+        np.array([self.op2code[node.op], mode], dtype=np.uint32).tofile(f)
+        pnode = self.name_node_dict[node.input[1]]
+        self.converted_nodes.add(pnode.name)
+        paddings = pnode.attr['value'].tensor.tensor_content
+        f.write(paddings)
+        self.converted_nodes.add(node.name)
+
+
     def generate_layer_number(self):
         # in current hard code implementation, the layer number is the first data written to the native model file
         # it is not easy to know it at the beginning time in the general converter, so first do a dry run for compatibility
@@ -118,6 +129,8 @@ class TFConverter:
                 self.dump_conv2d_to_file(node, f)
             elif node.op == 'DepthToSpace':
                 self.dump_depth2space_to_file(node, f)
+            elif node.op == 'MirrorPad':
+                self.dump_mirrorpad_to_file(node, f)
 
 
     def dump_to_file(self):
