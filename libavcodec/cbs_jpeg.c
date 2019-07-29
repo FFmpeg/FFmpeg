@@ -82,21 +82,21 @@
 #undef xu
 
 
-static void cbs_jpeg_free_application_data(void *unit, uint8_t *content)
+static void cbs_jpeg_free_application_data(void *opaque, uint8_t *content)
 {
     JPEGRawApplicationData *ad = (JPEGRawApplicationData*)content;
     av_buffer_unref(&ad->Ap_ref);
     av_freep(&content);
 }
 
-static void cbs_jpeg_free_comment(void *unit, uint8_t *content)
+static void cbs_jpeg_free_comment(void *opaque, uint8_t *content)
 {
     JPEGRawComment *comment = (JPEGRawComment*)content;
     av_buffer_unref(&comment->Cm_ref);
     av_freep(&content);
 }
 
-static void cbs_jpeg_free_scan(void *unit, uint8_t *content)
+static void cbs_jpeg_free_scan(void *opaque, uint8_t *content)
 {
     JPEGRawScan *scan = (JPEGRawScan*)content;
     av_buffer_unref(&scan->data_ref);

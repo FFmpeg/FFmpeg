@@ -443,7 +443,7 @@ static int cbs_h2645_read_more_rbsp_data(GetBitContext *gbc)
 #undef allocate
 
 
-static void cbs_h264_free_pps(void *unit, uint8_t *content)
+static void cbs_h264_free_pps(void *opaque, uint8_t *content)
 {
     H264RawPPS *pps = (H264RawPPS*)content;
     av_buffer_unref(&pps->slice_group_id_ref);
@@ -473,7 +473,7 @@ static void cbs_h264_free_sei_payload(H264RawSEIPayload *payload)
     }
 }
 
-static void cbs_h264_free_sei(void *unit, uint8_t *content)
+static void cbs_h264_free_sei(void *opaque, uint8_t *content)
 {
     H264RawSEI *sei = (H264RawSEI*)content;
     int i;
@@ -482,35 +482,35 @@ static void cbs_h264_free_sei(void *unit, uint8_t *content)
     av_freep(&content);
 }
 
-static void cbs_h264_free_slice(void *unit, uint8_t *content)
+static void cbs_h264_free_slice(void *opaque, uint8_t *content)
 {
     H264RawSlice *slice = (H264RawSlice*)content;
     av_buffer_unref(&slice->data_ref);
     av_freep(&content);
 }
 
-static void cbs_h265_free_vps(void *unit, uint8_t *content)
+static void cbs_h265_free_vps(void *opaque, uint8_t *content)
 {
     H265RawVPS *vps = (H265RawVPS*)content;
     av_buffer_unref(&vps->extension_data.data_ref);
     av_freep(&content);
 }
 
-static void cbs_h265_free_sps(void *unit, uint8_t *content)
+static void cbs_h265_free_sps(void *opaque, uint8_t *content)
 {
     H265RawSPS *sps = (H265RawSPS*)content;
     av_buffer_unref(&sps->extension_data.data_ref);
     av_freep(&content);
 }
 
-static void cbs_h265_free_pps(void *unit, uint8_t *content)
+static void cbs_h265_free_pps(void *opaque, uint8_t *content)
 {
     H265RawPPS *pps = (H265RawPPS*)content;
     av_buffer_unref(&pps->extension_data.data_ref);
     av_freep(&content);
 }
 
-static void cbs_h265_free_slice(void *unit, uint8_t *content)
+static void cbs_h265_free_slice(void *opaque, uint8_t *content)
 {
     H265RawSlice *slice = (H265RawSlice*)content;
     av_buffer_unref(&slice->data_ref);
@@ -545,7 +545,7 @@ static void cbs_h265_free_sei_payload(H265RawSEIPayload *payload)
     }
 }
 
-static void cbs_h265_free_sei(void *unit, uint8_t *content)
+static void cbs_h265_free_sei(void *opaque, uint8_t *content)
 {
     H265RawSEI *sei = (H265RawSEI*)content;
     int i;
@@ -1615,7 +1615,7 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
         sei->nal_unit_header.nal_ref_idc   = 0;
 
         sei_ref = av_buffer_create((uint8_t*)sei, sizeof(*sei),
-                                   &cbs_h264_free_sei, ctx, 0);
+                                   &cbs_h264_free_sei, NULL, 0);
         if (!sei_ref) {
             av_freep(&sei);
             return AVERROR(ENOMEM);

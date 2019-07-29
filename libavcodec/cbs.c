@@ -597,7 +597,7 @@ int ff_cbs_alloc_unit_content(CodedBitstreamContext *ctx,
         return AVERROR(ENOMEM);
 
     unit->content_ref = av_buffer_create(unit->content, size,
-                                         free, ctx, 0);
+                                         free, NULL, 0);
     if (!unit->content_ref) {
         av_freep(&unit->content);
         return AVERROR(ENOMEM);

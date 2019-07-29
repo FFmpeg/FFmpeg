@@ -474,7 +474,7 @@ static int cbs_vp9_split_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_vp9_free_frame(void *unit, uint8_t *content)
+static void cbs_vp9_free_frame(void *opaque, uint8_t *content)
 {
     VP9RawFrame *frame = (VP9RawFrame*)content;
     av_buffer_unref(&frame->data_ref);

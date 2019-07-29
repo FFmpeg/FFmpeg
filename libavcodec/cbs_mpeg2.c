@@ -140,21 +140,21 @@
 #undef infer
 
 
-static void cbs_mpeg2_free_picture_header(void *unit, uint8_t *content)
+static void cbs_mpeg2_free_picture_header(void *opaque, uint8_t *content)
 {
     MPEG2RawPictureHeader *picture = (MPEG2RawPictureHeader*)content;
     av_buffer_unref(&picture->extra_information_picture.extra_information_ref);
     av_freep(&content);
 }
 
-static void cbs_mpeg2_free_user_data(void *unit, uint8_t *content)
+static void cbs_mpeg2_free_user_data(void *opaque, uint8_t *content)
 {
     MPEG2RawUserData *user = (MPEG2RawUserData*)content;
     av_buffer_unref(&user->user_data_ref);
     av_freep(&content);
 }
 
-static void cbs_mpeg2_free_slice(void *unit, uint8_t *content)
+static void cbs_mpeg2_free_slice(void *opaque, uint8_t *content)
 {
     MPEG2RawSlice *slice = (MPEG2RawSlice*)content;
     av_buffer_unref(&slice->header.extra_information_slice.extra_information_ref);

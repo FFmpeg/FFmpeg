@@ -829,7 +829,7 @@ static void cbs_av1_free_metadata(AV1RawMetadata *md)
     }
 }
 
-static void cbs_av1_free_obu(void *unit, uint8_t *content)
+static void cbs_av1_free_obu(void *opaque, uint8_t *content)
 {
     AV1RawOBU *obu = (AV1RawOBU*)content;
 
