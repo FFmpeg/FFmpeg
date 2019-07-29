@@ -212,6 +212,10 @@ typedef struct MPEG2RawSlice {
     AVBufferRef *data_ref;
 } MPEG2RawSlice;
 
+typedef struct MPEG2RawSequenceEnd {
+    uint8_t sequence_end_code;
+} MPEG2RawSequenceEnd;
+
 
 typedef struct CodedBitstreamMPEG2Context {
     // Elements stored in headers which are required for other decoding.
