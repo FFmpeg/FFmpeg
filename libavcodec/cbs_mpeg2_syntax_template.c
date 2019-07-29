@@ -411,3 +411,15 @@ static int FUNC(slice_header)(CodedBitstreamContext *ctx, RWContext *rw,
 
     return 0;
 }
+
+static int FUNC(sequence_end)(CodedBitstreamContext *ctx, RWContext *rw,
+                              MPEG2RawSequenceEnd *current)
+{
+    int err;
+
+    HEADER("Sequence End");
+
+    ui(8, sequence_end_code);
+
+    return 0;
+}

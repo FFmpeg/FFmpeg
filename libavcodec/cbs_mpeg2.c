@@ -269,6 +269,8 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
                   extension_data,           NULL);
             START(MPEG2_START_GROUP,     MPEG2RawGroupOfPicturesHeader,
                   group_of_pictures_header, NULL);
+            START(MPEG2_START_SEQUENCE_END, MPEG2RawSequenceEnd,
+                  sequence_end,             NULL);
 #undef START
         default:
             return AVERROR(ENOSYS);
@@ -295,6 +297,7 @@ static int cbs_mpeg2_write_header(CodedBitstreamContext *ctx,
         START(MPEG2_START_EXTENSION,       MPEG2RawExtensionData,  extension_data);
         START(MPEG2_START_GROUP,           MPEG2RawGroupOfPicturesHeader,
                                                          group_of_pictures_header);
+        START(MPEG2_START_SEQUENCE_END,    MPEG2RawSequenceEnd,    sequence_end);
 #undef START
     default:
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Write unimplemented for start "
