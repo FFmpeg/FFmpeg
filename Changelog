@@ -8,6 +8,7 @@ version <next>:
 - support for TrueHD in mp4
 - Supoort AMD AMF encoder on Linux (via Vulkan)
 - IMM5 video decoder
+- ZeroMQ protocol
 
 
 version 4.2:

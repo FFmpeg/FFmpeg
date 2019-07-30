@@ -1728,4 +1728,51 @@ Timeout in ms.
 Create the Unix socket in listening mode.
 @end table
 
+@section zmq
+
+ZeroMQ asynchronous messaging using the libzmq library.
+
+This library supports unicast streaming to multiple clients without relying on
+an external server.
+
+The required syntax for streaming or connecting to a stream is:
+@example
+zmq:tcp://ip-address:port
+@end example
+
+Example:
+Create a localhost stream on port 5555:
+@example
+ffmpeg -re -i input -f mpegts zmq:tcp://127.0.0.1:5555
+@end example
+
+Multiple clients may connect to the stream using:
+@example
+ffplay zmq:tcp://127.0.0.1:5555
+@end example
+
+Streaming to multiple clients is implemented using a ZeroMQ Pub-Sub pattern.
+The server side binds to a port and publishes data. Clients connect to the
+server (via IP address/port) and subscribe to the stream. The order in which
+the server and client start generally does not matter.
+
+ffmpeg must be compiled with the --enable-libzmq option to support
+this protocol.
+
+Options can be set on the @command{ffmpeg}/@command{ffplay} command
+line. The following options are supported:
+
+@table @option
+
+@item pkt_size
+Forces the maximum packet size for sending/receiving data. The default value is
+32,768 bytes. On the server side, this sets the maximum size of sent packets
+via ZeroMQ. On the clients, it sets an internal buffer size for receiving
+packets. Note that pkt_size on the clients should be equal to or greater than
+pkt_size on the server. Otherwise the received message may be truncated causing
+decoding errors.
+
+@end table
+
+
 @c man end PROTOCOLS

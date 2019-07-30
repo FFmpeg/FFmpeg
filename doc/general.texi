@@ -1339,6 +1339,7 @@ performance on systems without hardware floating point support).
 @item TCP          @tab X
 @item TLS          @tab X
 @item UDP          @tab X
+@item ZMQ          @tab E
 @end multitable
 
 @code{X} means that the protocol is supported.

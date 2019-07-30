@@ -32,7 +32,7 @@
 // Major bumping may affect Ticket5467, 5421, 5451(compatibility with Chromium)
 // Also please add any ticket numbers that you believe might be affected here
 #define LIBAVFORMAT_VERSION_MAJOR  58
-#define LIBAVFORMAT_VERSION_MINOR  31
+#define LIBAVFORMAT_VERSION_MINOR  32
 #define LIBAVFORMAT_VERSION_MICRO 104
 
 #define LIBAVFORMAT_VERSION_INT AV_VERSION_INT(LIBAVFORMAT_VERSION_MAJOR, \
