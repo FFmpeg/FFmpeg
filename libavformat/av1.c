@@ -86,6 +86,11 @@ typedef struct AV1SequenceParameters {
     uint8_t chroma_subsampling_x;
     uint8_t chroma_subsampling_y;
     uint8_t chroma_sample_position;
+    uint8_t color_description_present_flag;
+    uint8_t color_primaries;
+    uint8_t transfer_characteristics;
+    uint8_t matrix_coefficients;
+    uint8_t color_range;
 } AV1SequenceParameters;
 
 static inline void uvlc(GetBitContext *gb)
@@ -106,8 +111,6 @@ static inline void uvlc(GetBitContext *gb)
 
 static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *gb)
 {
-    int color_primaries, transfer_characteristics, matrix_coefficients;
-
     seq_params->high_bitdepth = get_bits1(gb);
     if (seq_params->seq_profile == FF_PROFILE_AV1_PROFESSIONAL && seq_params->high_bitdepth)
         seq_params->twelve_bit = get_bits1(gb);
@@ -117,29 +120,30 @@ static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *
     else
         seq_params->monochrome = get_bits1(gb);
 
-    if (get_bits1(gb)) { // color_description_present_flag
-        color_primaries          = get_bits(gb, 8);
-        transfer_characteristics = get_bits(gb, 8);
-        matrix_coefficients      = get_bits(gb, 8);
+    seq_params->color_description_present_flag = get_bits1(gb);
+    if (seq_params->color_description_present_flag) {
+        seq_params->color_primaries          = get_bits(gb, 8);
+        seq_params->transfer_characteristics = get_bits(gb, 8);
+        seq_params->matrix_coefficients      = get_bits(gb, 8);
     } else {
-        color_primaries          = AVCOL_PRI_UNSPECIFIED;
-        transfer_characteristics = AVCOL_TRC_UNSPECIFIED;
-        matrix_coefficients      = AVCOL_SPC_UNSPECIFIED;
+        seq_params->color_primaries          = AVCOL_PRI_UNSPECIFIED;
+        seq_params->transfer_characteristics = AVCOL_TRC_UNSPECIFIED;
+        seq_params->matrix_coefficients      = AVCOL_SPC_UNSPECIFIED;
     }
 
     if (seq_params->monochrome) {
-        skip_bits1(gb); // color_range
+        seq_params->color_range = get_bits1(gb);
         seq_params->chroma_subsampling_x = 1;
         seq_params->chroma_subsampling_y = 1;
         seq_params->chroma_sample_position = 0;
         return 0;
-    } else if (color_primaries          == AVCOL_PRI_BT709 &&
-               transfer_characteristics == AVCOL_TRC_IEC61966_2_1 &&
-               matrix_coefficients      == AVCOL_SPC_RGB) {
+    } else if (seq_params->color_primaries          == AVCOL_PRI_BT709 &&
+               seq_params->transfer_characteristics == AVCOL_TRC_IEC61966_2_1 &&
+               seq_params->matrix_coefficients      == AVCOL_SPC_RGB) {
         seq_params->chroma_subsampling_x = 0;
         seq_params->chroma_subsampling_y = 0;
     } else {
-        skip_bits1(gb); // color_range
+        seq_params->color_range = get_bits1(gb);
 
         if (seq_params->seq_profile == FF_PROFILE_AV1_MAIN) {
             seq_params->chroma_subsampling_x = 1;
