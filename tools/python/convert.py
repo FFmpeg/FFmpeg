@@ -27,6 +27,7 @@ def get_arguments():
     parser.add_argument('--outdir', type=str, default='./', help='where to put generated files')
     parser.add_argument('--infmt', type=str, default='tensorflow', help='format of the deep learning model')
     parser.add_argument('infile', help='path to the deep learning model with weights')
+    parser.add_argument('--dump4tb', type=str, default='no', help='dump file for visualization in tensorboard')
 
     return parser.parse_args()
 
@@ -44,9 +45,12 @@ def main():
     basefile = os.path.split(args.infile)[1]
     basefile = os.path.splitext(basefile)[0]
     outfile = os.path.join(args.outdir, basefile) + '.model'
+    dump4tb = False
+    if args.dump4tb.lower() in ('yes', 'true', 't', 'y', '1'):
+        dump4tb = True
 
     if args.infmt == 'tensorflow':
-        convert_from_tensorflow(args.infile, outfile)
+        convert_from_tensorflow(args.infile, outfile, dump4tb)
 
 if __name__ == '__main__':
     main()

@@ -24,10 +24,11 @@ import sys, struct
 __all__ = ['convert_from_tensorflow']
 
 class TFConverter:
-    def __init__(self, graph_def, nodes, outfile):
+    def __init__(self, graph_def, nodes, outfile, dump4tb):
         self.graph_def = graph_def
         self.nodes = nodes
         self.outfile = outfile
+        self.dump4tb = dump4tb
         self.layer_number = 0
         self.output_names = []
         self.name_node_dict = {}
@@ -42,8 +43,8 @@ class TFConverter:
     def dump_for_tensorboard(self):
         graph = tf.get_default_graph()
         tf.import_graph_def(self.graph_def, name="")
-        # tensorboard --logdir=/tmp/graph
         tf.summary.FileWriter('/tmp/graph', graph)
+        print('graph saved, run "tensorboard --logdir=/tmp/graph" to see it')
 
 
     def get_conv2d_params(self, node):
@@ -197,18 +198,18 @@ class TFConverter:
         self.remove_identity()
         self.generate_edges()
 
-        #check the graph with tensorboard with human eyes
-        #self.dump_for_tensorboard()
+        if self.dump4tb:
+            self.dump_for_tensorboard()
 
         self.dump_to_file()
 
 
-def convert_from_tensorflow(infile, outfile):
+def convert_from_tensorflow(infile, outfile, dump4tb):
     with open(infile, 'rb') as f:
         # read the file in .proto format
         graph_def = tf.GraphDef()
         graph_def.ParseFromString(f.read())
         nodes = graph_def.node
 
-    converter = TFConverter(graph_def, nodes, outfile)
+    converter = TFConverter(graph_def, nodes, outfile, dump4tb)
     converter.run()
