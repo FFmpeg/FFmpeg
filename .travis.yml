@@ -1,5 +1,4 @@
 language: c
-sudo: false
 os:
   - linux
   - osx
