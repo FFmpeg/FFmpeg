@@ -1454,23 +1454,24 @@ static void find_index_range(AVFormatContext *s, const char *full_path,
 }
 
 static int update_stream_extradata(AVFormatContext *s, OutputStream *os,
-                                   AVCodecParameters *par,
-                                   AVRational *frame_rate)
+                                   AVPacket *pkt, AVRational *frame_rate)
 {
+    AVCodecParameters *par = os->ctx->streams[0]->codecpar;
     uint8_t *extradata;
+    int ret, extradata_size;
 
-    if (os->ctx->streams[0]->codecpar->extradata_size || !par->extradata_size)
+    if (par->extradata_size)
         return 0;
 
-    extradata = av_malloc(par->extradata_size);
+    extradata = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA, &extradata_size);
+    if (!extradata_size)
+        return 0;
 
-    if (!extradata)
-        return AVERROR(ENOMEM);
+    ret = ff_alloc_extradata(par, extradata_size);
+    if (ret < 0)
+        return ret;
 
-    memcpy(extradata, par->extradata, par->extradata_size);
-
-    os->ctx->streams[0]->codecpar->extradata = extradata;
-    os->ctx->streams[0]->codecpar->extradata_size = par->extradata_size;
+    memcpy(par->extradata, extradata, extradata_size);
 
     set_codec_str(s, par, frame_rate, os->codec_str, sizeof(os->codec_str));
 
@@ -1687,7 +1688,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     int64_t seg_end_duration, elapsed_duration;
     int ret;
 
-    ret = update_stream_extradata(s, os, st->codecpar, &st->avg_frame_rate);
+    ret = update_stream_extradata(s, os, pkt, &st->avg_frame_rate);
     if (ret < 0)
         return ret;
 
