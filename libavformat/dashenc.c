@@ -35,6 +35,7 @@
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
 
+#include "av1.h"
 #include "avc.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -386,6 +387,21 @@ static void set_codec_str(AVFormatContext *s, AVCodecParameters *par,
             av_strlcatf(str, size, ".%02x%02x%02x",
                         extradata[1], extradata[2], extradata[3]);
         av_free(tmpbuf);
+    } else if (!strcmp(str, "av01")) {
+        AV1SequenceParameters seq;
+        if (!par->extradata_size)
+            return;
+        if (ff_av1_parse_seq_header(&seq, par->extradata, par->extradata_size) < 0)
+            return;
+
+        av_strlcatf(str, size, ".%01u.%02u%s.%02u",
+                    seq.profile, seq.level, seq.tier ? "H" : "M", seq.bitdepth);
+        if (seq.color_description_present_flag)
+            av_strlcatf(str, size, ".%01u.%01u%01u%01u.%02u.%02u.%02u.%01u",
+                        seq.monochrome,
+                        seq.chroma_subsampling_x, seq.chroma_subsampling_y, seq.chroma_sample_position,
+                        seq.color_primaries, seq.transfer_characteristics, seq.matrix_coefficients,
+                        seq.color_range);
     }
 }
 
