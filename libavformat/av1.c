@@ -76,23 +76,6 @@ int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size)
     return ret;
 }
 
-typedef struct AV1SequenceParameters {
-    uint8_t seq_profile;
-    uint8_t seq_level_idx_0;
-    uint8_t seq_tier_0;
-    uint8_t high_bitdepth;
-    uint8_t twelve_bit;
-    uint8_t monochrome;
-    uint8_t chroma_subsampling_x;
-    uint8_t chroma_subsampling_y;
-    uint8_t chroma_sample_position;
-    uint8_t color_description_present_flag;
-    uint8_t color_primaries;
-    uint8_t transfer_characteristics;
-    uint8_t matrix_coefficients;
-    uint8_t color_range;
-} AV1SequenceParameters;
-
 static inline void uvlc(GetBitContext *gb)
 {
     int leading_zeros = 0;
@@ -299,6 +282,36 @@ static int parse_sequence_header(AV1SequenceParameters *seq_params, const uint8_
         return AVERROR_INVALIDDATA;
 
     return 0;
+}
+
+int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int size)
+{
+    int64_t obu_size;
+    int start_pos, type, temporal_id, spatial_id;
+
+    if (size <= 0)
+        return AVERROR_INVALIDDATA;
+
+    while (size > 0) {
+        int len = parse_obu_header(buf, size, &obu_size, &start_pos,
+                                   &type, &temporal_id, &spatial_id);
+        if (len < 0)
+            return len;
+
+        switch (type) {
+        case AV1_OBU_SEQUENCE_HEADER:
+            if (!obu_size)
+                return AVERROR_INVALIDDATA;
+
+            return parse_sequence_header(seq, buf + start_pos, obu_size);
+        default:
+            break;
+        }
+        size -= len;
+        buf  += len;
+    }
+
+    return AVERROR_INVALIDDATA;
 }
 
 int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)

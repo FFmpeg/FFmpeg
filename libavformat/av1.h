@@ -25,6 +25,23 @@
 
 #include "avio.h"
 
+typedef struct AV1SequenceParameters {
+    uint8_t seq_profile;
+    uint8_t seq_level_idx_0;
+    uint8_t seq_tier_0;
+    uint8_t high_bitdepth;
+    uint8_t twelve_bit;
+    uint8_t monochrome;
+    uint8_t chroma_subsampling_x;
+    uint8_t chroma_subsampling_y;
+    uint8_t chroma_sample_position;
+    uint8_t color_description_present_flag;
+    uint8_t color_primaries;
+    uint8_t transfer_characteristics;
+    uint8_t matrix_coefficients;
+    uint8_t color_range;
+} AV1SequenceParameters;
+
 /**
  * Filter out AV1 OBUs not meant to be present in ISOBMFF sample data and write
  * the resulting bitstream to the provided AVIOContext.
@@ -54,6 +71,18 @@ int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size);
  *         code in case of failure. On failure, out and size are unchanged
  */
 int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size);
+
+/**
+ * Parses a Sequence Header from the the provided buffer.
+ *
+ * @param seq pointer to the AV1SequenceParameters where the parsed values will
+ *            be written
+ * @param buf input data buffer
+ * @param size size in bytes of the input data buffer
+ *
+ * @return >= 0 in case of success, a negative AVERROR code in case of failure
+ */
+int ff_av1_parse_seq_header(AV1SequenceParameters *seq, const uint8_t *buf, int size);
 
 /**
  * Writes AV1 extradata (Sequence Header and Metadata OBUs) to the provided
