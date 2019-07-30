@@ -52,6 +52,17 @@ FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FIL
 fate-hls-segment-size: tests/data/hls_segment_size.m3u8
 fate-hls-segment-size: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_size.m3u8 -vf setpts=N*23
 
+tests/data/hls_segment_single.m3u8: TAG = GEN
+tests/data/hls_segment_single.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
+	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
+	-f lavfi -i "aevalsrc=cos(2*PI*t)*sin(2*PI*(440+4*t)*t):d=20" -f hls -hls_flags single_file -map 0 \
+	-hls_list_size 0 -codec:a mp2fixed -hls_segment_filename $(TARGET_PATH)/tests/data/hls_segment_single.ts \
+	$(TARGET_PATH)/tests/data/hls_segment_single.m3u8 2>/dev/null
+
+FATE_AFILTER-$(call ALLYES, HLS_DEMUXER MPEGTS_MUXER MPEGTS_DEMUXER AEVALSRC_FILTER LAVFI_INDEV MP2FIXED_ENCODER) += fate-hls-segment-single
+fate-hls-segment-single: tests/data/hls_segment_single.m3u8
+fate-hls-segment-single: CMD = framecrc -flags +bitexact -i $(TARGET_PATH)/tests/data/hls_segment_single.m3u8 -vf setpts=N*23
+
 tests/data/hls_init_time.m3u8: TAG = GEN
 tests/data/hls_init_time.m3u8: ffmpeg$(PROGSSUF)$(EXESUF) | tests/data
 	$(M)$(TARGET_EXEC) $(TARGET_PATH)/$< \
