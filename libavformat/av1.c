@@ -94,9 +94,12 @@ static inline void uvlc(GetBitContext *gb)
 
 static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *gb)
 {
-    seq_params->high_bitdepth = get_bits1(gb);
-    if (seq_params->profile == FF_PROFILE_AV1_PROFESSIONAL && seq_params->high_bitdepth)
-        seq_params->twelve_bit = get_bits1(gb);
+    int twelve_bit = 0;
+    int high_bitdepth = get_bits1(gb);
+    if (seq_params->profile == FF_PROFILE_AV1_PROFESSIONAL && high_bitdepth)
+        twelve_bit = get_bits1(gb);
+
+    seq_params->bitdepth = 8 + (high_bitdepth * 2) + (twelve_bit * 2);
 
     if (seq_params->profile == FF_PROFILE_AV1_HIGH)
         seq_params->monochrome = 0;
@@ -135,7 +138,7 @@ static int parse_color_config(AV1SequenceParameters *seq_params, GetBitContext *
             seq_params->chroma_subsampling_x = 0;
             seq_params->chroma_subsampling_y = 0;
         } else {
-            if (seq_params->twelve_bit) {
+            if (twelve_bit) {
                 seq_params->chroma_subsampling_x = get_bits1(gb);
                 if (seq_params->chroma_subsampling_x)
                     seq_params->chroma_subsampling_y = get_bits1(gb);
@@ -383,8 +386,8 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     put_bits(&pbc, 3, seq_params.profile);
     put_bits(&pbc, 5, seq_params.level);
     put_bits(&pbc, 1, seq_params.tier);
-    put_bits(&pbc, 1, seq_params.high_bitdepth);
-    put_bits(&pbc, 1, seq_params.twelve_bit);
+    put_bits(&pbc, 1, seq_params.bitdepth > 8);
+    put_bits(&pbc, 1, seq_params.bitdepth == 12);
     put_bits(&pbc, 1, seq_params.monochrome);
     put_bits(&pbc, 1, seq_params.chroma_subsampling_x);
     put_bits(&pbc, 1, seq_params.chroma_subsampling_y);

@@ -29,8 +29,7 @@ typedef struct AV1SequenceParameters {
     uint8_t profile;
     uint8_t level;
     uint8_t tier;
-    uint8_t high_bitdepth;
-    uint8_t twelve_bit;
+    uint8_t bitdepth;
     uint8_t monochrome;
     uint8_t chroma_subsampling_x;
     uint8_t chroma_subsampling_y;
