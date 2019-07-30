@@ -38,7 +38,6 @@ OBJCCFLAGS  = $(CPPFLAGS) $(CFLAGS) $(OBJCFLAGS)
 ASFLAGS    := $(CPPFLAGS) $(ASFLAGS)
 CXXFLAGS   := $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS)
 X86ASMFLAGS += $(IFLAGS:%=%/) -I$(<D)/ -Pconfig.asm
-NVCCFLAGS  += -ptx
 
 HOSTCCFLAGS = $(IFLAGS) $(HOSTCPPFLAGS) $(HOSTCFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=$(LD_PATH)lib%) $(LDFLAGS)
@@ -91,7 +90,7 @@ COMPILE_NVCC = $(call COMPILE,NVCC)
 %.h.c:
 	$(Q)echo '#include "$*.h"' >$@
 
-%.ptx: %.cu
+%.ptx: %.cu $(SRC_PATH)/compat/cuda/cuda_runtime.h
 	$(COMPILE_NVCC)
 
 %.ptx.c: %.ptx
