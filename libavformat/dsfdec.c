@@ -130,6 +130,7 @@ static int dsf_read_header(AVFormatContext *s)
     }
     st->codecpar->block_align *= st->codecpar->channels;
     st->codecpar->bit_rate = st->codecpar->channels * st->codecpar->sample_rate * 8LL;
+    avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
     avio_skip(pb, 4);
 
     /* data chunk */
@@ -150,11 +151,11 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     AVStream *st = s->streams[0];
     int64_t pos = avio_tell(pb);
+    int ret;
 
     if (pos >= dsf->data_end)
         return AVERROR_EOF;
 
-    pkt->stream_index = 0;
     if (dsf->data_size > dsf->audio_size) {
         int last_packet = pos == (dsf->data_end - st->codecpar->block_align);
 
@@ -180,10 +181,22 @@ static int dsf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 avio_skip(pb, skip_size / st->codecpar->channels);
             }
 
+            pkt->pos = pos;
+            pkt->stream_index = 0;
+            pkt->pts = (pos - s->internal->data_offset) / st->codecpar->channels;
+            pkt->duration = packet_size / st->codecpar->channels;
             return 0;
         }
     }
-    return av_get_packet(pb, pkt, FFMIN(dsf->data_end - pos, st->codecpar->block_align));
+    ret = av_get_packet(pb, pkt, FFMIN(dsf->data_end - pos, st->codecpar->block_align));
+    if (ret < 0)
+        return ret;
+
+    pkt->stream_index = 0;
+    pkt->pts = (pos - s->internal->data_offset) / st->codecpar->channels;
+    pkt->duration = st->codecpar->block_align / st->codecpar->channels;
+
+    return 0;
 }
 
 AVInputFormat ff_dsf_demuxer = {
