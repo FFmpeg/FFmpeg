@@ -36,6 +36,7 @@ version 4.2:
 - derain filter
 - deesser filter
 - mov muxer writes tracks with unspecified language instead of English by default
+- add support for using clang to compile CUDA kernels
 
 
 version 4.1:

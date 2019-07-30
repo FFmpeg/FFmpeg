@@ -322,6 +322,7 @@ External library support:
   --disable-amf            disable AMF video encoding code [autodetect]
   --disable-audiotoolbox   disable Apple AudioToolbox code [autodetect]
   --enable-cuda-nvcc       enable Nvidia CUDA compiler [no]
+  --disable-cuda-llvm      disable CUDA compilation using clang [autodetect]
   --disable-cuvid          disable Nvidia CUVID support [autodetect]
   --disable-d3d11va        disable Microsoft Direct3D 11 video acceleration code [autodetect]
   --disable-dxva2          disable Microsoft DirectX 9 video acceleration code [autodetect]
@@ -370,7 +371,7 @@ Toolchain options:
   --cxx=CXX                use C compiler CXX [$cxx_default]
   --objcc=OCC              use ObjC compiler OCC [$cc_default]
   --dep-cc=DEPCC           use dependency generator DEPCC [$cc_default]
-  --nvcc=NVCC              use Nvidia CUDA compiler NVCC [$nvcc_default]
+  --nvcc=NVCC              use Nvidia CUDA compiler NVCC or clang [$nvcc_default]
   --ld=LD                  use linker LD [$ld_default]
   --pkg-config=PKGCONFIG   use pkg-config tool PKGCONFIG [$pkg_config_default]
   --pkg-config-flags=FLAGS pass additional flags to pkgconf []
@@ -1038,12 +1039,16 @@ test_nvcc(){
     tmpcu_=$TMPCU
     tmpo_=$TMPO
     [ -x "$(command -v cygpath)" ] && tmpcu_=$(cygpath -m $tmpcu_) && tmpo_=$(cygpath -m $tmpo_)
-    test_cmd $nvcc -ptx $NVCCFLAGS "$@" $NVCC_C $(nvcc_o $tmpo_) $tmpcu_
+    test_cmd $nvcc $nvccflags "$@" $NVCC_C $(nvcc_o $tmpo_) $tmpcu_
 }
 
 check_nvcc() {
     log check_nvcc "$@"
-    test_nvcc <<EOF
+    name=$1
+    shift 1
+    disabled $name && return
+    disable $name
+    test_nvcc "$@" <<EOF && enable $name
 extern "C" {
     __global__ void hello(unsigned char *data) {}
 }
@@ -1814,6 +1819,7 @@ HWACCEL_AUTODETECT_LIBRARY_LIST="
     audiotoolbox
     crystalhd
     cuda
+    cuda_llvm
     cuvid
     d3d11va
     dxva2
@@ -2987,8 +2993,10 @@ v4l2_m2m_deps="linux_videodev2_h sem_timedwait"
 
 hwupload_cuda_filter_deps="ffnvcodec"
 scale_npp_filter_deps="ffnvcodec libnpp"
-scale_cuda_filter_deps="ffnvcodec cuda_nvcc"
-thumbnail_cuda_filter_deps="ffnvcodec cuda_nvcc"
+scale_cuda_filter_deps="ffnvcodec"
+scale_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
+thumbnail_cuda_filter_deps="ffnvcodec"
+thumbnail_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 transpose_npp_filter_deps="ffnvcodec libnpp"
 
 amf_deps_any="libdl LoadLibrary"
@@ -3547,7 +3555,8 @@ zscale_filter_deps="libzimg const_nan"
 scale_vaapi_filter_deps="vaapi"
 vpp_qsv_filter_deps="libmfx"
 vpp_qsv_filter_select="qsvvpp"
-yadif_cuda_filter_deps="ffnvcodec cuda_nvcc"
+yadif_cuda_filter_deps="ffnvcodec"
+yadif_cuda_filter_deps_any="cuda_nvcc cuda_llvm"
 
 # examples
 avio_dir_cmd_deps="avformat avutil"
@@ -3651,8 +3660,6 @@ version_script='--version-script'
 objformat="elf32"
 x86asmexe_default="nasm"
 windres_default="windres"
-nvcc_default="nvcc"
-nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
 striptype="direct"
 
 # OS
@@ -4219,6 +4226,20 @@ strip_default="${cross_prefix}${strip_default}"
 windres_default="${cross_prefix}${windres_default}"
 
 sysinclude_default="${sysroot}/usr/include"
+
+if enabled cuda_sdk; then
+    warn "Option --enable-cuda-sdk is deprecated. Use --enable-cuda-nvcc instead."
+    enable cuda_nvcc
+fi
+
+if enabled cuda_nvcc; then
+    nvcc_default="nvcc"
+    nvccflags_default="-gencode arch=compute_30,code=sm_30 -O2"
+else
+    nvcc_default="clang"
+    nvccflags_default="--cuda-gpu-arch=sm_30 -O2"
+    NVCC_C=""
+fi
 
 set_default arch cc cxx doxygen pkg_config ranlib strip sysinclude \
     target_exec x86asmexe nvcc
@@ -6060,9 +6081,21 @@ check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
 
-if enabled cuda_sdk; then
-    warn "Option --enable-cuda-sdk is deprecated. Use --enable-cuda-nvcc instead."
-    enable cuda_nvcc
+if [ -z "$nvccflags" ]; then
+    nvccflags=$nvccflags_default
+fi
+
+if enabled x86_64 || enabled ppc64 || enabled aarch64; then
+    nvccflags="$nvccflags -m64"
+else
+    nvccflags="$nvccflags -m32"
+fi
+
+if enabled cuda_nvcc; then
+    nvccflags="$nvccflags -ptx"
+else
+    nvccflags="$nvccflags -S -nocudalib -nocudainc --cuda-device-only -include${source_link}/compat/cuda/cuda_runtime.h"
+    check_nvcc cuda_llvm
 fi
 
 if ! disabled ffnvcodec; then
@@ -6140,7 +6173,7 @@ for func in $COMPLEX_FUNCS; do
 done
 
 # these are off by default, so fail if requested and not available
-enabled cuda_nvcc         && { check_nvcc || die "ERROR: failed checking for nvcc."; }
+enabled cuda_nvcc         && { check_nvcc cuda_nvcc || die "ERROR: failed checking for nvcc."; }
 enabled chromaprint       && require chromaprint chromaprint.h chromaprint_get_version -lchromaprint
 enabled decklink          && { require_headers DeckLinkAPI.h &&
                                { test_cpp_condition DeckLinkAPIVersion.h "BLACKMAGIC_DECKLINK_API_VERSION >= 0x0a090500" || die "ERROR: Decklink API version must be >= 10.9.5."; } }
@@ -6699,16 +6732,6 @@ if [ -z "$optflags" ]; then
     else
         optflags=$cflags_noopt
     fi
-fi
-
-if [ -z "$nvccflags" ]; then
-    nvccflags=$nvccflags_default
-fi
-
-if enabled x86_64 || enabled ppc64 || enabled aarch64; then
-    nvccflags="$nvccflags -m64"
-else
-    nvccflags="$nvccflags -m32"
 fi
 
 check_optflags(){
