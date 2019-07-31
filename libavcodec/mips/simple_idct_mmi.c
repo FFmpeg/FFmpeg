@@ -39,7 +39,7 @@
 #define COL_SHIFT 20
 #define DC_SHIFT 3
 
-DECLARE_ALIGNED(8, const int16_t, W_arr)[46] = {
+DECLARE_ALIGNED(16, const int16_t, W_arr)[46] = {
     W4,  W2,  W4,  W6,
     W1,  W3,  W5,  W7,
     W4,  W6, -W4, -W2,
