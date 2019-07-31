@@ -1276,7 +1276,9 @@ static int dirac_unpack_idwt_params(DiracContext *s)
         s->num_y        = get_interleaved_ue_golomb(gb);
         if (s->num_x * s->num_y == 0 || s->num_x * (uint64_t)s->num_y > INT_MAX ||
             s->num_x * (uint64_t)s->avctx->width  > INT_MAX ||
-            s->num_y * (uint64_t)s->avctx->height > INT_MAX
+            s->num_y * (uint64_t)s->avctx->height > INT_MAX ||
+            s->num_x > s->avctx->width ||
+            s->num_y > s->avctx->height
         ) {
             av_log(s->avctx,AV_LOG_ERROR,"Invalid numx/y\n");
             s->num_x = s->num_y = 0;
