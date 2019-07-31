@@ -60,56 +60,6 @@ static const uint64_t mlp_layout[32] = {
     0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 };
 
-static const uint8_t thd_chancount[13] = {
-//  LR    C   LFE  LRs LRvh  LRc LRrs  Cs   Ts  LRsd  LRw  Cvh  LFE2
-     2,   1,   1,   2,   2,   2,   2,   1,   1,   2,   2,   1,   1
-};
-
-static const uint64_t thd_layout[13] = {
-    AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT,                     // LR
-    AV_CH_FRONT_CENTER,                                     // C
-    AV_CH_LOW_FREQUENCY,                                    // LFE
-    AV_CH_SIDE_LEFT|AV_CH_SIDE_RIGHT,                       // LRs
-    AV_CH_TOP_FRONT_LEFT|AV_CH_TOP_FRONT_RIGHT,             // LRvh
-    AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER, // LRc
-    AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT,                       // LRrs
-    AV_CH_BACK_CENTER,                                      // Cs
-    AV_CH_TOP_CENTER,                                       // Ts
-    AV_CH_SURROUND_DIRECT_LEFT|AV_CH_SURROUND_DIRECT_RIGHT, // LRsd
-    AV_CH_WIDE_LEFT|AV_CH_WIDE_RIGHT,                       // LRw
-    AV_CH_TOP_FRONT_CENTER,                                 // Cvh
-    AV_CH_LOW_FREQUENCY_2,                                  // LFE2
-};
-
-static int mlp_samplerate(int in)
-{
-    if (in == 0xF)
-        return 0;
-
-    return (in & 8 ? 44100 : 48000) << (in & 7) ;
-}
-
-static int truehd_channels(int chanmap)
-{
-    int channels = 0, i;
-
-    for (i = 0; i < 13; i++)
-        channels += thd_chancount[i] * ((chanmap >> i) & 1);
-
-    return channels;
-}
-
-static uint64_t truehd_layout(int chanmap)
-{
-    int i;
-    uint64_t layout = 0;
-
-    for (i = 0; i < 13; i++)
-        layout |= thd_layout[i] * ((chanmap >> i) & 1);
-
-    return layout;
-}
-
 static int mlp_get_major_sync_size(const uint8_t * buf, int bufsize)
 {
     int has_extension, extensions = 0;
