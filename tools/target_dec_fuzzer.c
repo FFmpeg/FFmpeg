@@ -128,6 +128,8 @@ static void FDBPrepare(FuzzDataBuffer *FDB, AVPacket *dst, const uint8_t *data,
 
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
+const uint64_t maxpixels_per_frame = 4096 * 4096;
+uint64_t maxpixels;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
@@ -165,13 +167,24 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AVMEDIA_TYPE_VIDEO   : decode_handler = avcodec_decode_video2; break;
     case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
     }
+    maxpixels = maxpixels_per_frame * maxiteration;
+    switch (c->id) {
+        // Allows a small input to generate gigantic output
+    case AV_CODEC_ID_QTRLE:     maxpixels /= 16;
+    case AV_CODEC_ID_GIF:       maxpixels /= 16;
+        // Performs slow frame rescaling in C
+    case AV_CODEC_ID_GDV:       maxpixels /= 256;
+        // Postprocessing in C
+    case AV_CODEC_ID_HNM4_VIDEO:maxpixels /= 128;
+    }
+
 
     AVCodecContext* ctx = avcodec_alloc_context3(NULL);
     AVCodecContext* parser_avctx = avcodec_alloc_context3(NULL);
     if (!ctx || !parser_avctx)
         error("Failed memory allocation");
 
-    ctx->max_pixels = 4096 * 4096; //To reduce false positive OOM and hangs
+    ctx->max_pixels = maxpixels_per_frame; //To reduce false positive OOM and hangs
 
     if (size > 1024) {
         GetByteContext gbc;
@@ -260,6 +273,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             ec_pixels += ctx->width * ctx->height;
             if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
                 ctx->error_concealment = 0;
+            if (ec_pixels > maxpixels)
+                goto maximums_reached;
 
             if (ret <= 0 || ret > avpkt.size)
                break;
@@ -270,6 +285,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
           }
         }
     }
+maximums_reached:
 
     av_init_packet(&avpkt);
     avpkt.data = NULL;
