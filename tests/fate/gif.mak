@@ -16,7 +16,7 @@ fate-gif-deal: CMD = framecrc -i $(TARGET_SAMPLES)/gif/deal.gif -vsync cfr -pix_
 fate-gifenc%: fate-gif-color
 fate-gifenc%: PIXFMT = $(word 3, $(subst -, ,$(@)))
 fate-gifenc%: SRC = $(TARGET_SAMPLES)/gif/tc217.gif
-fate-gifenc%: CMD = framecrc -i $(SRC) -c:v gif -pix_fmt $(PIXFMT)
+fate-gifenc%: CMD = framecrc -i $(SRC) -c:v gif -pix_fmt $(PIXFMT) -sws_flags +accurate_rnd+bitexact
 
 FATE_GIF_ENC_PIXFMT = rgb8 bgr8 rgb4_byte bgr4_byte gray pal8
 FATE_GIF_ENC-$(call ENCDEC, GIF, GIF) = $(FATE_GIF_ENC_PIXFMT:%=fate-gifenc-%)
