@@ -79,10 +79,11 @@ static int ir2_decode_plane(Ir2Context *ctx, int width, int height, uint8_t *dst
 
     for (j = 1; j < height; j++) {
         out = 0;
-        if (get_bits_left(&ctx->gb) <= 0)
-            return AVERROR_INVALIDDATA;
         while (out < width) {
-            int c = ir2_get_code(&ctx->gb);
+            int c;
+            if (get_bits_left(&ctx->gb) <= 0)
+                return AVERROR_INVALIDDATA;
+            c = ir2_get_code(&ctx->gb);
             if (c >= 0x80) { /* we have a skip */
                 c -= 0x7F;
                 if (out + c*2 > width)
@@ -123,9 +124,9 @@ static int ir2_decode_plane_inter(Ir2Context *ctx, int width, int height, uint8_
 
     for (j = 0; j < height; j++) {
         out = 0;
-        if (get_bits_left(&ctx->gb) <= 0)
-            return AVERROR_INVALIDDATA;
         while (out < width) {
+            if (get_bits_left(&ctx->gb) <= 0)
+                return AVERROR_INVALIDDATA;
             c = ir2_get_code(&ctx->gb);
             if (c >= 0x80) { /* we have a skip */
                 c   -= 0x7F;
