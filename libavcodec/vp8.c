@@ -501,14 +501,9 @@ static void fade(uint8_t *dst, ptrdiff_t dst_linesize,
     }
 }
 
-static int vp7_fade_frame(VP8Context *s, VP56RangeCoder *c)
+static int vp7_fade_frame(VP8Context *s, int alpha, int beta)
 {
-    int alpha = (int8_t) vp8_rac_get_uint(c, 8);
-    int beta  = (int8_t) vp8_rac_get_uint(c, 8);
     int ret;
-
-    if (c->end <= c->buffer && c->bits >= 0)
-        return AVERROR_INVALIDDATA;
 
     if (!s->keyframe && (alpha || beta)) {
         int width  = s->mb_width * 16;
@@ -549,6 +544,8 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
     int part1_size, hscale, vscale, i, j, ret;
     int width  = s->avctx->width;
     int height = s->avctx->height;
+    int alpha = 0;
+    int beta  = 0;
 
     if (buf_size < 4) {
         return AVERROR_INVALIDDATA;
@@ -665,8 +662,8 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         return AVERROR_INVALIDDATA;
     /* E. Fading information for previous frame */
     if (s->fade_present && vp8_rac_get(c)) {
-        if ((ret = vp7_fade_frame(s ,c)) < 0)
-            return ret;
+        alpha = (int8_t) vp8_rac_get_uint(c, 8);
+        beta  = (int8_t) vp8_rac_get_uint(c, 8);
     }
 
     /* F. Loop filter type */
@@ -695,6 +692,12 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         s->prob->last   = vp8_rac_get_uint(c, 8);
         vp78_update_pred16x16_pred8x8_mvc_probabilities(s, VP7_MVC_SIZE);
     }
+
+    if (c->end <= c->buffer && c->bits >= 0)
+        return AVERROR_INVALIDDATA;
+
+    if ((ret = vp7_fade_frame(s, alpha, beta)) < 0)
+        return ret;
 
     return 0;
 }
