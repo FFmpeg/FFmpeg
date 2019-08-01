@@ -42,8 +42,6 @@ typedef struct MsrleContext {
     AVFrame *frame;
 
     GetByteContext gb;
-    const unsigned char *buf;
-    int size;
 
     uint32_t pal[256];
 } MsrleContext;
@@ -91,9 +89,6 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     MsrleContext *s = avctx->priv_data;
     int istride = FFALIGN(avctx->width*avctx->bits_per_coded_sample, 32) / 8;
     int ret;
-
-    s->buf = buf;
-    s->size = buf_size;
 
     if (buf_size < 2) //Minimally a end of picture code should be there
         return AVERROR_INVALIDDATA;
