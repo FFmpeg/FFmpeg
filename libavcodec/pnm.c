@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -68,9 +69,15 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
     int h, w, depth, maxval;
     int ret;
 
-    pnm_get(s, buf1, sizeof(buf1));
-    if(buf1[0] != 'P')
+    if (s->bytestream_end - s->bytestream < 3 ||
+        s->bytestream[0] != 'P' ||
+        s->bytestream[1] < '1'  ||
+        s->bytestream[1] > '7') {
+        s->bytestream += s->bytestream_end > s->bytestream;
+        s->bytestream += s->bytestream_end > s->bytestream;
         return AVERROR_INVALIDDATA;
+    }
+    pnm_get(s, buf1, sizeof(buf1));
     s->type= buf1[1]-'0';
 
     if (s->type==1 || s->type==4) {
@@ -152,7 +159,7 @@ int ff_pnm_decode_header(AVCodecContext *avctx, PNMContext * const s)
         }
         return 0;
     } else {
-        return AVERROR_INVALIDDATA;
+        av_assert0(0);
     }
     pnm_get(s, buf1, sizeof(buf1));
     w = atoi(buf1);
