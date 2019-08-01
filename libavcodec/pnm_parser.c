@@ -41,8 +41,11 @@ static int pnm_parse(AVCodecParserContext *s, AVCodecContext *avctx,
     int next = END_NOT_FOUND;
     int skip = 0;
 
-    for (; pc->overread > 0; pc->overread--) {
-        pc->buffer[pc->index++]= pc->buffer[pc->overread_index++];
+    if (pc->overread > 0) {
+        memmove(pc->buffer + pc->index, pc->buffer + pc->overread_index, pc->overread);
+        pc->index          += pc->overread;
+        pc->overread_index += pc->overread;
+        pc->overread = 0;
     }
 
     if (pnmpc->remaining_bytes) {
