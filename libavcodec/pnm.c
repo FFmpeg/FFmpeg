@@ -58,8 +58,6 @@ static void pnm_get(PNMContext *sc, char *str, int buf_size)
         c = *bs++;
     }
     *s = '\0';
-    while (bs < end && !pnm_space(c))
-        c = *bs++;
     sc->bytestream = bs;
 }
 
