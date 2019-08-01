@@ -49,6 +49,7 @@
 #include "libavcodec/ac3tab.h"
 #include "libavcodec/flac.h"
 #include "libavcodec/mpegaudiodecheader.h"
+#include "libavcodec/mlp_parse.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avio_internal.h"
@@ -6683,6 +6684,38 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_dmlp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    unsigned format_info;
+    int channel_assignment, channel_assignment1, channel_assignment2;
+    int ratebits;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    if (atom.size < 10)
+        return AVERROR_INVALIDDATA;
+
+    format_info = avio_rb32(pb);
+
+    ratebits            = (format_info >> 28) & 0xF;
+    channel_assignment1 = (format_info >> 15) & 0x1F;
+    channel_assignment2 = format_info & 0x1FFF;
+    if (channel_assignment2)
+        channel_assignment = channel_assignment2;
+    else
+        channel_assignment = channel_assignment1;
+
+    st->codecpar->frame_size = 40 << (ratebits & 0x7);
+    st->codecpar->sample_rate = mlp_samplerate(ratebits);
+    st->codecpar->channels = truehd_channels(channel_assignment);
+    st->codecpar->channel_layout = truehd_layout(channel_assignment);
+
+    return 0;
+}
+
 static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('A','C','L','R'), mov_read_aclr },
 { MKTAG('A','P','R','G'), mov_read_avid },
@@ -6771,6 +6804,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','t','3','d'), mov_read_st3d }, /* stereoscopic 3D video box */
 { MKTAG('s','v','3','d'), mov_read_sv3d }, /* spherical video box */
 { MKTAG('d','O','p','s'), mov_read_dops },
+{ MKTAG('d','m','l','p'), mov_read_dmlp },
 { MKTAG('S','m','D','m'), mov_read_smdm },
 { MKTAG('C','o','L','L'), mov_read_coll },
 { MKTAG('v','p','c','C'), mov_read_vpcc },
