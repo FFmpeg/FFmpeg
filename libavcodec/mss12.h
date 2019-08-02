@@ -47,6 +47,8 @@ typedef struct Model {
 
 typedef struct ArithCoder {
     int low, high, value;
+    int overread;
+#define MAX_OVERREAD 16
     union {
         GetBitContext *gb;
         GetByteContext *gB;
