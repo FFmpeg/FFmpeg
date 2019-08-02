@@ -614,7 +614,7 @@ retry:
     if ((ret = ff_mpv_frame_start(s, avctx)) < 0)
         return ret;
 
-    if (!s->divx_packed)
+    if (!s->divx_packed && !avctx->hwaccel)
         ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
