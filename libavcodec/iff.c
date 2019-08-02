@@ -102,23 +102,23 @@ static const uint64_t plane8_lut[8][256] = {
     LUT8(4), LUT8(5), LUT8(6), LUT8(7),
 };
 
-#define LUT32(plane) {                                \
-             0,          0,          0,          0,   \
-             0,          0,          0, 1 << plane,   \
-             0,          0, 1 << plane,          0,   \
-             0,          0, 1 << plane, 1 << plane,   \
-             0, 1 << plane,          0,          0,   \
-             0, 1 << plane,          0, 1 << plane,   \
-             0, 1 << plane, 1 << plane,          0,   \
-             0, 1 << plane, 1 << plane, 1 << plane,   \
-    1 << plane,          0,          0,          0,   \
-    1 << plane,          0,          0, 1 << plane,   \
-    1 << plane,          0, 1 << plane,          0,   \
-    1 << plane,          0, 1 << plane, 1 << plane,   \
-    1 << plane, 1 << plane,          0,          0,   \
-    1 << plane, 1 << plane,          0, 1 << plane,   \
-    1 << plane, 1 << plane, 1 << plane,          0,   \
-    1 << plane, 1 << plane, 1 << plane, 1 << plane,   \
+#define LUT32(plane) {                                    \
+              0,           0,           0,           0,   \
+              0,           0,           0, 1U << plane,   \
+              0,           0, 1U << plane,           0,   \
+              0,           0, 1U << plane, 1U << plane,   \
+              0, 1U << plane,           0,           0,   \
+              0, 1U << plane,           0, 1U << plane,   \
+              0, 1U << plane, 1U << plane,           0,   \
+              0, 1U << plane, 1U << plane, 1U << plane,   \
+    1U << plane,           0,           0,           0,   \
+    1U << plane,           0,           0, 1U << plane,   \
+    1U << plane,           0, 1U << plane,           0,   \
+    1U << plane,           0, 1U << plane, 1U << plane,   \
+    1U << plane, 1U << plane,           0,           0,   \
+    1U << plane, 1U << plane,           0, 1U << plane,   \
+    1U << plane, 1U << plane, 1U << plane,           0,   \
+    1U << plane, 1U << plane, 1U << plane, 1U << plane,   \
 }
 
 // 32 planes * 4-bit mask * 4 lookup tables each
