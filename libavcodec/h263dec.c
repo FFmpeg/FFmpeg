@@ -747,6 +747,9 @@ const AVCodecHWConfigInternal *ff_h263_hw_config_list[] = {
 #if CONFIG_H263_VAAPI_HWACCEL
     HWACCEL_VAAPI(h263),
 #endif
+#if CONFIG_MPEG4_NVDEC_HWACCEL
+    HWACCEL_NVDEC(mpeg4),
+#endif
 #if CONFIG_MPEG4_VDPAU_HWACCEL
     HWACCEL_VDPAU(mpeg4),
 #endif
