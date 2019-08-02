@@ -57,8 +57,6 @@ typedef struct MpegTSService {
     uint8_t name[256];
     uint8_t provider_name[256];
     int pcr_pid;
-    int pcr_packet_count;
-    int pcr_packet_period;
     AVProgram *program;
 } MpegTSService;
 
@@ -228,7 +226,6 @@ static int mpegts_write_section1(MpegTSSection *s, int tid, int id,
 #define PCR_RETRANS_TIME 20
 
 typedef struct MpegTSWriteStream {
-    struct MpegTSService *service;
     int pid; /* stream associated pid */
     int cc;
     int discontinuity;
@@ -241,6 +238,9 @@ typedef struct MpegTSWriteStream {
     uint8_t *payload;
     AVFormatContext *amux;
     AVRational user_tb;
+
+    int pcr_packet_count;
+    int pcr_packet_period;
 
     /* For Opus */
     int opus_queued_samples;
@@ -769,12 +769,73 @@ static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
     avio_write(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
+static void enable_pcr_generation_for_stream(AVFormatContext *s, AVStream *pcr_st)
+{
+    MpegTSWrite *ts = s->priv_data;
+    MpegTSWriteStream *ts_st = pcr_st->priv_data;
+
+    if (ts->mux_rate > 1) {
+        ts_st->pcr_packet_period   = (int64_t)ts->mux_rate * ts->pcr_period /
+                                     (TS_PACKET_SIZE * 8 * 1000);
+    } else {
+        if (pcr_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+            int frame_size = av_get_audio_frame_duration2(pcr_st->codecpar, 0);
+            if (!frame_size) {
+                av_log(s, AV_LOG_WARNING, "frame size not set\n");
+                ts_st->pcr_packet_period =
+                    pcr_st->codecpar->sample_rate / (10 * 512);
+            } else {
+                ts_st->pcr_packet_period =
+                    pcr_st->codecpar->sample_rate / (10 * frame_size);
+            }
+        } else {
+            // max delta PCR 0.1s
+            // TODO: should be avg_frame_rate
+            ts_st->pcr_packet_period =
+                ts_st->user_tb.den / (10 * ts_st->user_tb.num);
+        }
+        if (!ts_st->pcr_packet_period)
+            ts_st->pcr_packet_period = 1;
+    }
+
+    // output a PCR as soon as possible
+    ts_st->pcr_packet_count = ts_st->pcr_packet_period;
+}
+
+static void select_pcr_streams(AVFormatContext *s)
+{
+    MpegTSWrite *ts = s->priv_data;
+
+    for (int i = 0; i < ts->nb_services; i++) {
+        MpegTSService *service = ts->services[i];
+        AVStream *pcr_st = NULL;
+        AVProgram *program = service->program;
+        int nb_streams = program ? program->nb_stream_indexes : s->nb_streams;
+
+        for (int j = 0; j < nb_streams; j++) {
+            AVStream *st = s->streams[program ? program->stream_index[j] : j];
+            if (!pcr_st ||
+                pcr_st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
+            {
+                pcr_st = st;
+            }
+        }
+
+        if (pcr_st) {
+            MpegTSWriteStream *ts_st = pcr_st->priv_data;
+            service->pcr_pid = ts_st->pid;
+            enable_pcr_generation_for_stream(s, pcr_st);
+            av_log(s, AV_LOG_VERBOSE, "service %i using PCR in pid=%i\n", service->sid, service->pcr_pid);
+        }
+    }
+}
+
 static int mpegts_init(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
-    AVStream *st, *pcr_st = NULL;
+    AVStream *st;
     AVDictionaryEntry *title, *provider;
     int i, j;
     const char *service_name;
@@ -853,7 +914,6 @@ static int mpegts_init(AVFormatContext *s)
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
-        AVProgram *program;
         st = s->streams[i];
 
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
@@ -872,17 +932,6 @@ static int mpegts_init(AVFormatContext *s)
             goto fail;
         }
 
-        program = av_find_program_from_stream(s, NULL, i);
-        if (program) {
-            for (j = 0; j < ts->nb_services; j++) {
-                if (ts->services[j]->program == program) {
-                    service = ts->services[j];
-                    break;
-                }
-            }
-        }
-
-        ts_st->service = service;
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
          * this range are assigned a calculated pid. */
         if (st->id < 16) {
@@ -895,10 +944,12 @@ static int mpegts_init(AVFormatContext *s)
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        if (ts_st->pid == service->pmt.pid) {
-            av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
-            ret = AVERROR(EINVAL);
-            goto fail;
+        for (j = 0; j < ts->nb_services; j++) {
+            if (ts_st->pid == ts->services[j]->pmt.pid) {
+                av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
         }
         for (j = 0; j < i; j++) {
             if (pids[j] == ts_st->pid) {
@@ -913,12 +964,6 @@ static int mpegts_init(AVFormatContext *s)
         ts_st->first_pts_check = 1;
         ts_st->cc              = 15;
         ts_st->discontinuity   = ts->flags & MPEGTS_FLAG_DISCONT;
-        /* update PCR pid by using the first video stream */
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
-            service->pcr_pid == 0x1fff) {
-            service->pcr_pid = ts_st->pid;
-            pcr_st           = st;
-        }
         if (st->codecpar->codec_id == AV_CODEC_ID_AAC &&
             st->codecpar->extradata_size > 0) {
             AVStream *ast;
@@ -953,17 +998,7 @@ static int mpegts_init(AVFormatContext *s)
 
     av_freep(&pids);
 
-    /* if no video stream, use the first stream as PCR */
-    if (service->pcr_pid == 0x1fff && s->nb_streams > 0) {
-        pcr_st           = s->streams[0];
-        ts_st            = pcr_st->priv_data;
-        service->pcr_pid = ts_st->pid;
-    } else
-        ts_st = pcr_st->priv_data;
-
     if (ts->mux_rate > 1) {
-        service->pcr_packet_period = (int64_t)ts->mux_rate * ts->pcr_period /
-                                     (TS_PACKET_SIZE * 8 * 1000);
         ts->sdt_packet_period      = (int64_t)ts->mux_rate * SDT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
         ts->pat_packet_period      = (int64_t)ts->mux_rate * PAT_RETRANS_TIME /
@@ -975,25 +1010,9 @@ static int mpegts_init(AVFormatContext *s)
         /* Arbitrary values, PAT/PMT will also be written on video key frames */
         ts->sdt_packet_period = 200;
         ts->pat_packet_period = 40;
-        if (pcr_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            int frame_size = av_get_audio_frame_duration2(pcr_st->codecpar, 0);
-            if (!frame_size) {
-                av_log(s, AV_LOG_WARNING, "frame size not set\n");
-                service->pcr_packet_period =
-                    pcr_st->codecpar->sample_rate / (10 * 512);
-            } else {
-                service->pcr_packet_period =
-                    pcr_st->codecpar->sample_rate / (10 * frame_size);
-            }
-        } else {
-            // max delta PCR 0.1s
-            // TODO: should be avg_frame_rate
-            service->pcr_packet_period =
-                ts_st->user_tb.den / (10 * ts_st->user_tb.num);
-        }
-        if (!service->pcr_packet_period)
-            service->pcr_packet_period = 1;
     }
+
+    select_pcr_streams(s);
 
     ts->last_pat_ts = AV_NOPTS_VALUE;
     ts->last_sdt_ts = AV_NOPTS_VALUE;
@@ -1005,8 +1024,6 @@ static int mpegts_init(AVFormatContext *s)
         ts->sdt_packet_period = INT_MAX;
     }
 
-    // output a PCR as soon as possible
-    service->pcr_packet_count = service->pcr_packet_period;
     ts->pat_packet_count      = ts->pat_packet_period - 1;
     ts->sdt_packet_count      = ts->sdt_packet_period - 1;
 
@@ -1015,8 +1032,7 @@ static int mpegts_init(AVFormatContext *s)
     else
         av_log(s, AV_LOG_VERBOSE, "muxrate %d, ", ts->mux_rate);
     av_log(s, AV_LOG_VERBOSE,
-           "pcr every %d pkts, sdt every %d, pat/pmt every %d pkts\n",
-           service->pcr_packet_period,
+           "sdt every %d, pat/pmt every %d pkts\n",
            ts->sdt_packet_period, ts->pat_packet_period);
 
     if (ts->m2ts_mode == -1) {
@@ -1198,12 +1214,12 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         force_pat = 0;
 
         write_pcr = 0;
-        if (ts_st->pid == ts_st->service->pcr_pid) {
+        if (ts_st->pcr_packet_period) {
             if (ts->mux_rate > 1 || is_start) // VBR pcr period is based on frames
-                ts_st->service->pcr_packet_count++;
-            if (ts_st->service->pcr_packet_count >=
-                ts_st->service->pcr_packet_period) {
-                ts_st->service->pcr_packet_count = 0;
+                ts_st->pcr_packet_count++;
+            if (ts_st->pcr_packet_count >=
+                ts_st->pcr_packet_period) {
+                ts_st->pcr_packet_count = 0;
                 write_pcr = 1;
             }
         }
@@ -1236,7 +1252,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         }
         if (key && is_start && pts != AV_NOPTS_VALUE) {
             // set Random Access for key frames
-            if (ts_st->pid == ts_st->service->pcr_pid)
+            if (ts_st->pcr_packet_period)
                 write_pcr = 1;
             set_af_flag(buf, 0x40);
             q = get_ts_payload_start(buf);
