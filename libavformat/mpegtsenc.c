@@ -717,7 +717,30 @@ invalid:
     return 0;
 }
 
-static void section_write_packet(MpegTSSection *s, const uint8_t *packet);
+static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
+{
+    return av_rescale(avio_tell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
+           ts->first_pcr;
+}
+
+static void mpegts_prefix_m2ts_header(AVFormatContext *s)
+{
+    MpegTSWrite *ts = s->priv_data;
+    if (ts->m2ts_mode) {
+        int64_t pcr = get_pcr(s->priv_data, s->pb);
+        uint32_t tp_extra_header = pcr % 0x3fffffff;
+        tp_extra_header = AV_RB32(&tp_extra_header);
+        avio_write(s->pb, (unsigned char *) &tp_extra_header,
+                   sizeof(tp_extra_header));
+    }
+}
+
+static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
+{
+    AVFormatContext *ctx = s->opaque;
+    mpegts_prefix_m2ts_header(ctx);
+    avio_write(ctx->pb, packet, TS_PACKET_SIZE);
+}
 
 static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
                                          const AVDictionary *metadata,
@@ -760,31 +783,6 @@ static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
 fail:
     av_free(service);
     return NULL;
-}
-
-static int64_t get_pcr(const MpegTSWrite *ts, AVIOContext *pb)
-{
-    return av_rescale(avio_tell(pb) + 11, 8 * PCR_TIME_BASE, ts->mux_rate) +
-           ts->first_pcr;
-}
-
-static void mpegts_prefix_m2ts_header(AVFormatContext *s)
-{
-    MpegTSWrite *ts = s->priv_data;
-    if (ts->m2ts_mode) {
-        int64_t pcr = get_pcr(s->priv_data, s->pb);
-        uint32_t tp_extra_header = pcr % 0x3fffffff;
-        tp_extra_header = AV_RB32(&tp_extra_header);
-        avio_write(s->pb, (unsigned char *) &tp_extra_header,
-                   sizeof(tp_extra_header));
-    }
-}
-
-static void section_write_packet(MpegTSSection *s, const uint8_t *packet)
-{
-    AVFormatContext *ctx = s->opaque;
-    mpegts_prefix_m2ts_header(ctx);
-    avio_write(ctx->pb, packet, TS_PACKET_SIZE);
 }
 
 static void enable_pcr_generation_for_stream(AVFormatContext *s, AVStream *pcr_st)
