@@ -717,12 +717,24 @@ invalid:
     return 0;
 }
 
+static void section_write_packet(MpegTSSection *s, const uint8_t *packet);
+
 static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
-                                         const char *provider_name,
-                                         const char *name)
+                                         const AVDictionary *metadata,
+                                         AVProgram *program)
 {
     MpegTSWrite *ts = s->priv_data;
     MpegTSService *service;
+    AVDictionaryEntry *title, *provider;
+    const char *service_name;
+    const char *provider_name;
+
+    title = av_dict_get(metadata, "service_name", NULL, 0);
+    if (!title)
+        title = av_dict_get(metadata, "title", NULL, 0);
+    service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
+    provider      = av_dict_get(metadata, "service_provider", NULL, 0);
+    provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
 
     service = av_mallocz(sizeof(MpegTSService));
     if (!service)
@@ -731,12 +743,18 @@ static MpegTSService *mpegts_add_service(AVFormatContext *s, int sid,
     service->sid           = sid;
     service->pcr_pid       = 0x1fff;
     if (encode_str8(service->provider_name, provider_name) < 0 ||
-        encode_str8(service->name, name) < 0) {
+        encode_str8(service->name, service_name) < 0) {
         av_log(s, AV_LOG_ERROR, "Too long service or provider name\n");
         goto fail;
     }
     if (av_dynarray_add_nofree(&ts->services, &ts->nb_services, service) < 0)
         goto fail;
+
+    service->pmt.write_packet = section_write_packet;
+    service->pmt.opaque       = s;
+    service->pmt.cc           = 15;
+    service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
+    service->program          = program;
 
     return service;
 fail:
@@ -833,13 +851,7 @@ static void select_pcr_streams(AVFormatContext *s)
 static int mpegts_init(AVFormatContext *s)
 {
     MpegTSWrite *ts = s->priv_data;
-    MpegTSWriteStream *ts_st;
-    MpegTSService *service;
-    AVStream *st;
-    AVDictionaryEntry *title, *provider;
     int i, j;
-    const char *service_name;
-    const char *provider_name;
     int *pids;
     int ret;
 
@@ -853,42 +865,13 @@ static int mpegts_init(AVFormatContext *s)
     ts->onid = ts->original_network_id;
     if (!s->nb_programs) {
         /* allocate a single DVB service */
-        title = av_dict_get(s->metadata, "service_name", NULL, 0);
-        if (!title)
-            title = av_dict_get(s->metadata, "title", NULL, 0);
-        service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
-        provider      = av_dict_get(s->metadata, "service_provider", NULL, 0);
-        provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
-        service       = mpegts_add_service(s, ts->service_id,
-                                           provider_name, service_name);
-
-        if (!service)
+        if (!mpegts_add_service(s, ts->service_id, s->metadata, NULL))
             return AVERROR(ENOMEM);
-
-        service->pmt.write_packet = section_write_packet;
-        service->pmt.opaque       = s;
-        service->pmt.cc           = 15;
-        service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
     } else {
         for (i = 0; i < s->nb_programs; i++) {
             AVProgram *program = s->programs[i];
-            title = av_dict_get(program->metadata, "service_name", NULL, 0);
-            if (!title)
-                title = av_dict_get(program->metadata, "title", NULL, 0);
-            service_name  = title ? title->value : DEFAULT_SERVICE_NAME;
-            provider      = av_dict_get(program->metadata, "service_provider", NULL, 0);
-            provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
-            service       = mpegts_add_service(s, program->id,
-                                               provider_name, service_name);
-
-            if (!service)
+            if (!mpegts_add_service(s, program->id, program->metadata, program))
                 return AVERROR(ENOMEM);
-
-            service->pmt.write_packet = section_write_packet;
-            service->pmt.opaque       = s;
-            service->pmt.cc           = 15;
-            service->pmt.discontinuity= ts->flags & MPEGTS_FLAG_DISCONT;
-            service->program          = program;
         }
     }
 
@@ -914,7 +897,8 @@ static int mpegts_init(AVFormatContext *s)
 
     /* assign pids to each stream */
     for (i = 0; i < s->nb_streams; i++) {
-        st = s->streams[i];
+        AVStream *st = s->streams[i];
+        MpegTSWriteStream *ts_st;
 
         ts_st = av_mallocz(sizeof(MpegTSWriteStream));
         if (!ts_st) {
