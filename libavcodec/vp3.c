@@ -1403,6 +1403,8 @@ static int vp4_unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
     int eob_run;
 
     while (!eob_tracker[coeff_i]) {
+        if (get_bits_left(gb) < 1)
+            return AVERROR_INVALIDDATA;
 
         token = get_vlc2(gb, vlc_tables[coeff_i]->table, 11, 3);
 
