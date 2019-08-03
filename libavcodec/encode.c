@@ -174,8 +174,14 @@ int attribute_align_arg avcodec_encode_audio2(AVCodecContext *avctx,
                 goto end;
             }
         } else if (!(avctx->codec->capabilities & AV_CODEC_CAP_VARIABLE_FRAME_SIZE)) {
-            if (frame->nb_samples < avctx->frame_size &&
-                !avctx->internal->last_audio_frame) {
+            /* if we already got an undersized frame, that must have been the last */
+            if (avctx->internal->last_audio_frame) {
+                av_log(avctx, AV_LOG_ERROR, "frame_size (%d) was not respected for a non-last frame (avcodec_encode_audio2)\n", avctx->frame_size);
+                ret = AVERROR(EINVAL);
+                goto end;
+            }
+
+            if (frame->nb_samples < avctx->frame_size) {
                 ret = pad_last_frame(avctx, &padded_frame, frame);
                 if (ret < 0)
                     goto end;
