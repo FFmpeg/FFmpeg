@@ -241,16 +241,19 @@ static void merge(GetBitContext *gb, uint8_t *dst, uint8_t *src, int size)
  * @param gb   context for reading bits
  * @param tree pointer for storing tree data
  */
-static void read_tree(GetBitContext *gb, Tree *tree)
+static int read_tree(GetBitContext *gb, Tree *tree)
 {
     uint8_t tmp1[16] = { 0 }, tmp2[16], *in = tmp1, *out = tmp2;
     int i, t, len;
+
+    if (get_bits_left(gb) < 4)
+        return AVERROR_INVALIDDATA;
 
     tree->vlc_num = get_bits(gb, 4);
     if (!tree->vlc_num) {
         for (i = 0; i < 16; i++)
             tree->syms[i] = i;
-        return;
+        return 0;
     }
     if (get_bits1(gb)) {
         len = get_bits(gb, 3);
@@ -273,6 +276,7 @@ static void read_tree(GetBitContext *gb, Tree *tree)
         }
         memcpy(tree->syms, in, 16);
     }
+    return 0;
 }
 
 /**
@@ -282,19 +286,27 @@ static void read_tree(GetBitContext *gb, Tree *tree)
  * @param c           decoder context
  * @param bundle_num  number of the bundle to initialize
  */
-static void read_bundle(GetBitContext *gb, BinkContext *c, int bundle_num)
+static int read_bundle(GetBitContext *gb, BinkContext *c, int bundle_num)
 {
     int i;
 
     if (bundle_num == BINK_SRC_COLORS) {
-        for (i = 0; i < 16; i++)
-            read_tree(gb, &c->col_high[i]);
+        for (i = 0; i < 16; i++) {
+            int ret = read_tree(gb, &c->col_high[i]);
+            if (ret < 0)
+                return ret;
+        }
         c->col_lastval = 0;
     }
-    if (bundle_num != BINK_SRC_INTRA_DC && bundle_num != BINK_SRC_INTER_DC)
-        read_tree(gb, &c->bundle[bundle_num].tree);
+    if (bundle_num != BINK_SRC_INTRA_DC && bundle_num != BINK_SRC_INTER_DC) {
+        int ret = read_tree(gb, &c->bundle[bundle_num].tree);
+        if (ret < 0)
+            return ret;
+    }
     c->bundle[bundle_num].cur_dec =
     c->bundle[bundle_num].cur_ptr = c->bundle[bundle_num].data;
+
+    return 0;
 }
 
 /**
@@ -324,6 +336,8 @@ static int read_runs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
         av_log(avctx, AV_LOG_ERROR, "Run value went out of bounds\n");
         return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
     if (get_bits1(gb)) {
         v = get_bits(gb, 4);
         memset(b->cur_dec, v, t);
@@ -346,6 +360,8 @@ static int read_motion_values(AVCodecContext *avctx, GetBitContext *gb, Bundle *
         av_log(avctx, AV_LOG_ERROR, "Too many motion values\n");
         return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
     if (get_bits1(gb)) {
         v = get_bits(gb, 4);
         if (v) {
@@ -389,6 +405,8 @@ static int read_block_types(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
         av_log(avctx, AV_LOG_ERROR, "Too many block type values\n");
         return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
     if (get_bits1(gb)) {
         v = get_bits(gb, 4);
         memset(b->cur_dec, v, t);
@@ -424,6 +442,8 @@ static int read_patterns(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
         return AVERROR_INVALIDDATA;
     }
     while (b->cur_dec < dec_end) {
+        if (get_bits_left(gb) < 2)
+            return AVERROR_INVALIDDATA;
         v  = GET_HUFF(gb, b->tree);
         v |= GET_HUFF(gb, b->tree) << 4;
         *b->cur_dec++ = v;
@@ -443,6 +463,8 @@ static int read_colors(GetBitContext *gb, Bundle *b, BinkContext *c)
         av_log(c->avctx, AV_LOG_ERROR, "Too many color values\n");
         return AVERROR_INVALIDDATA;
     }
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
     if (get_bits1(gb)) {
         c->col_lastval = GET_HUFF(gb, c->col_high[c->col_lastval]);
         v = GET_HUFF(gb, b->tree);
@@ -456,6 +478,8 @@ static int read_colors(GetBitContext *gb, Bundle *b, BinkContext *c)
         b->cur_dec += t;
     } else {
         while (b->cur_dec < dec_end) {
+            if (get_bits_left(gb) < 2)
+                return AVERROR_INVALIDDATA;
             c->col_lastval = GET_HUFF(gb, c->col_high[c->col_lastval]);
             v = GET_HUFF(gb, b->tree);
             v = (c->col_lastval << 4) | v;
@@ -481,6 +505,8 @@ static int read_dcs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b,
     int16_t *dst_end = (int16_t*)b->data_end;
 
     CHECK_READ_VAL(gb, b, len);
+    if (get_bits_left(gb) < start_bits - has_sign)
+        return AVERROR_INVALIDDATA;
     v = get_bits(gb, start_bits - has_sign);
     if (v && has_sign) {
         sign = -get_bits1(gb);
@@ -619,6 +645,9 @@ static int read_dct_coeffs(BinkContext *c, GetBitContext *gb, int32_t block[64],
     int list_start = 64, list_end = 64, list_pos;
     int coef_count = 0;
     int quant_idx;
+
+    if (get_bits_left(gb) < 4)
+        return AVERROR_INVALIDDATA;
 
     coef_list[list_end] = 4;  mode_list[list_end++] = 0;
     coef_list[list_end] = 24; mode_list[list_end++] = 0;
@@ -1015,8 +1044,11 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
     }
 
     init_lengths(c, FFMAX(width, 8), bw);
-    for (i = 0; i < BINK_NB_SRC; i++)
-        read_bundle(gb, c, i);
+    for (i = 0; i < BINK_NB_SRC; i++) {
+        ret = read_bundle(gb, c, i);
+        if (ret < 0)
+            return ret;
+    }
 
     ref_start = c->last->data[plane_idx] ? c->last->data[plane_idx]
                                          : frame->data[plane_idx];
@@ -1066,6 +1098,8 @@ static int bink_decode_plane(BinkContext *c, AVFrame *frame, GetBitContext *gb,
                 blk = get_value(c, BINK_SRC_SUB_BLOCK_TYPES);
                 switch (blk) {
                 case RUN_BLOCK:
+                    if (get_bits_left(gb) < 4)
+                        return AVERROR_INVALIDDATA;
                     scan = bink_patterns[get_bits(gb, 4)];
                     i = 0;
                     do {
