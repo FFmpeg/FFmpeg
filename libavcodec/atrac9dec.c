@@ -121,7 +121,7 @@ static inline int parse_gradient(ATRAC9Context *s, ATRAC9BlockData *b,
     }
     b->grad_boundary = get_bits(gb, 4);
 
-    if (grad_range[0] >= grad_range[1] || grad_range[1] > 47)
+    if (grad_range[0] >= grad_range[1] || grad_range[1] > 31)
         return AVERROR_INVALIDDATA;
 
     if (b->grad_boundary > b->q_unit_cnt)
