@@ -419,16 +419,17 @@ static int FUNC(frame_size_with_refs)(CodedBitstreamContext *ctx, RWContext *rw,
     for (i = 0; i < AV1_REFS_PER_FRAME; i++) {
         flags(found_ref[i], 1, i);
         if (current->found_ref[i]) {
-            AV1ReferenceFrameState *ref =
-                &priv->ref[current->ref_frame_idx[i]];
+            AV1ReferenceFrameState *ref;
 
-            if (!ref->valid) {
+            if (current->ref_frame_idx[i] < 0 ||
+                !priv->ref[current->ref_frame_idx[i]].valid) {
                 av_log(ctx->log_ctx, AV_LOG_ERROR,
                        "Missing reference frame needed for frame size "
                        "(ref = %d, ref_frame_idx = %d).\n",
                        i, current->ref_frame_idx[i]);
                 return AVERROR_INVALIDDATA;
             }
+            ref = &priv->ref[current->ref_frame_idx[i]];
 
             priv->upscaled_width = ref->upscaled_width;
             priv->frame_width    = ref->frame_width;
