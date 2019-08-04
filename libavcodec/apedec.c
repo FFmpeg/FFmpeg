@@ -1451,7 +1451,8 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
         if (s->fileversion >= 3900) {
             if (offset > 3) {
                 av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
-                s->data = NULL;
+                av_freep(&s->data);
+                s->data_size = 0;
                 return AVERROR_INVALIDDATA;
             }
             if (s->data_end - s->ptr < offset) {
