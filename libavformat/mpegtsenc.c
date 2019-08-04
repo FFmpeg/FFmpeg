@@ -84,6 +84,7 @@ typedef struct MpegTSWrite {
     int onid;
     int tsid;
     int64_t first_pcr;
+    int64_t next_pcr;
     int mux_rate; ///< set to 1 when VBR
     int pes_payload_size;
 
@@ -237,10 +238,9 @@ typedef struct MpegTSWriteStream {
     int payload_flags;
     uint8_t *payload;
     AVFormatContext *amux;
-    AVRational user_tb;
 
-    int pcr_packet_count;
-    int pcr_packet_period;
+    int64_t pcr_period; /* PCR period in PCR time base */
+    int64_t last_pcr;
 
     /* For Opus */
     int opus_queued_samples;
@@ -793,31 +793,28 @@ static void enable_pcr_generation_for_stream(AVFormatContext *s, AVStream *pcr_s
     MpegTSWriteStream *ts_st = pcr_st->priv_data;
 
     if (ts->mux_rate > 1) {
-        ts_st->pcr_packet_period   = (int64_t)ts->mux_rate * ts->pcr_period /
-                                     (TS_PACKET_SIZE * 8 * 1000);
+        ts_st->pcr_period = av_rescale(ts->pcr_period, PCR_TIME_BASE, 1000);
     } else {
+        /* For VBR we select the highest multiple of frame duration which is less than 100 ms. */
+        int64_t frame_period = 0;
         if (pcr_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             int frame_size = av_get_audio_frame_duration2(pcr_st->codecpar, 0);
             if (!frame_size) {
-                av_log(s, AV_LOG_WARNING, "frame size not set\n");
-                ts_st->pcr_packet_period =
-                    pcr_st->codecpar->sample_rate / (10 * 512);
-            } else {
-                ts_st->pcr_packet_period =
-                    pcr_st->codecpar->sample_rate / (10 * frame_size);
+               av_log(s, AV_LOG_WARNING, "frame size not set\n");
+               frame_size = 512;
             }
-        } else {
-            // max delta PCR 0.1s
-            // TODO: should be avg_frame_rate
-            ts_st->pcr_packet_period =
-                ts_st->user_tb.den / (10 * ts_st->user_tb.num);
+            frame_period = av_rescale_rnd(frame_size, PCR_TIME_BASE, pcr_st->codecpar->sample_rate, AV_ROUND_UP);
+        } else if (pcr_st->avg_frame_rate.num) {
+            frame_period = av_rescale_rnd(pcr_st->avg_frame_rate.den, PCR_TIME_BASE, pcr_st->avg_frame_rate.num, AV_ROUND_UP);
         }
-        if (!ts_st->pcr_packet_period)
-            ts_st->pcr_packet_period = 1;
+        if (frame_period > 0 && frame_period <= PCR_TIME_BASE / 10)
+            ts_st->pcr_period = frame_period * (PCR_TIME_BASE / 10 / frame_period);
+        else
+            ts_st->pcr_period = 1;
     }
 
     // output a PCR as soon as possible
-    ts_st->pcr_packet_count = ts_st->pcr_packet_period;
+    ts_st->last_pcr   = ts->first_pcr - ts_st->pcr_period;
 }
 
 static void select_pcr_streams(AVFormatContext *s)
@@ -843,7 +840,8 @@ static void select_pcr_streams(AVFormatContext *s)
             MpegTSWriteStream *ts_st = pcr_st->priv_data;
             service->pcr_pid = ts_st->pid;
             enable_pcr_generation_for_stream(s, pcr_st);
-            av_log(s, AV_LOG_VERBOSE, "service %i using PCR in pid=%i\n", service->sid, service->pcr_pid);
+            av_log(s, AV_LOG_VERBOSE, "service %i using PCR in pid=%i, pcr_period=%"PRId64"ms\n",
+                service->sid, service->pcr_pid, av_rescale(ts_st->pcr_period, 1000, PCR_TIME_BASE));
         }
     }
 }
@@ -907,7 +905,6 @@ static int mpegts_init(AVFormatContext *s)
         }
         st->priv_data = ts_st;
 
-        ts_st->user_tb = st->time_base;
         avpriv_set_pts_info(st, 33, 1, 90000);
 
         ts_st->payload = av_mallocz(ts->pes_payload_size);
@@ -987,14 +984,14 @@ static int mpegts_init(AVFormatContext *s)
                                      (TS_PACKET_SIZE * 8 * 1000);
         ts->pat_packet_period      = (int64_t)ts->mux_rate * PAT_RETRANS_TIME /
                                      (TS_PACKET_SIZE * 8 * 1000);
-
-        if (ts->copyts < 1)
-            ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
     } else {
         /* Arbitrary values, PAT/PMT will also be written on video key frames */
         ts->sdt_packet_period = 200;
         ts->pat_packet_period = 40;
     }
+
+    if (ts->copyts < 1)
+        ts->first_pcr = av_rescale(s->max_delay, PCR_TIME_BASE, AV_TIME_BASE);
 
     select_pcr_streams(s);
 
@@ -1183,7 +1180,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
     uint8_t *q;
     int val, is_start, len, header_len, write_pcr, is_dvb_subtitle, is_dvb_teletext, flags;
     int afc_len, stuffing_len;
-    int64_t pcr = -1; /* avoid warning */
     int64_t delay = av_rescale(s->max_delay, 90000, AV_TIME_BASE);
     int force_pat = st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && key && !ts_st->prev_payload_key;
 
@@ -1194,16 +1190,42 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
 
     is_start = 1;
     while (payload_size > 0) {
+        int64_t pcr = -1; /* avoid warning */
+
         retransmit_si_info(s, force_pat, dts);
         force_pat = 0;
 
         write_pcr = 0;
-        if (ts_st->pcr_packet_period) {
-            if (ts->mux_rate > 1 || is_start) // VBR pcr period is based on frames
-                ts_st->pcr_packet_count++;
-            if (ts_st->pcr_packet_count >=
-                ts_st->pcr_packet_period) {
-                ts_st->pcr_packet_count = 0;
+        if (ts->mux_rate > 1) {
+            /* Send PCR packets for all PCR streams if needed */
+            pcr = get_pcr(ts, s->pb);
+            if (pcr >= ts->next_pcr) {
+                int64_t next_pcr = INT64_MAX;
+                for (int i = 0; i < s->nb_streams; i++) {
+                    /* Make the current stream the last, because for that we
+                     * can insert the pcr into the payload later */
+                    int st2_index = i < st->index ? i : (i + 1 == s->nb_streams ? st->index : i + 1);
+                    AVStream *st2 = s->streams[st2_index];
+                    MpegTSWriteStream *ts_st2 = st2->priv_data;
+                    if (ts_st2->pcr_period) {
+                        if (pcr - ts_st2->last_pcr >= ts_st2->pcr_period) {
+                            ts_st2->last_pcr = FFMAX(pcr - ts_st2->pcr_period, ts_st2->last_pcr + ts_st2->pcr_period);
+                            if (st2 != st) {
+                                mpegts_insert_pcr_only(s, st2);
+                                pcr = get_pcr(ts, s->pb);
+                            } else {
+                                write_pcr = 1;
+                            }
+                        }
+                        next_pcr = FFMIN(next_pcr, ts_st2->last_pcr + ts_st2->pcr_period);
+                    }
+                }
+                ts->next_pcr = next_pcr;
+            }
+        } else if (ts_st->pcr_period && dts != AV_NOPTS_VALUE) {
+            pcr = (dts - delay) * 300;
+            if (pcr - ts_st->last_pcr >= ts_st->pcr_period && is_start) {
+                ts_st->last_pcr = FFMAX(pcr - ts_st->pcr_period, ts_st->last_pcr + ts_st->pcr_period);
                 write_pcr = 1;
             }
         }
@@ -1236,7 +1258,7 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         }
         if (key && is_start && pts != AV_NOPTS_VALUE) {
             // set Random Access for key frames
-            if (ts_st->pcr_packet_period)
+            if (ts_st->pcr_period)
                 write_pcr = 1;
             set_af_flag(buf, 0x40);
             q = get_ts_payload_start(buf);
@@ -1245,10 +1267,6 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
             set_af_flag(buf, 0x10);
             q = get_ts_payload_start(buf);
             // add 11, pcr references the last byte of program clock reference base
-            if (ts->mux_rate > 1)
-                pcr = get_pcr(ts, s->pb);
-            else
-                pcr = (dts - delay) * 300;
             if (dts != AV_NOPTS_VALUE && dts < pcr / 300)
                 av_log(s, AV_LOG_WARNING, "dts < pcr, TS is invalid\n");
             extend_af(buf, write_pcr_bits(q, pcr));
