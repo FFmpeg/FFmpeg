@@ -323,7 +323,7 @@ static void apply_lpc(RALFContext *ctx, int ch, int length, int bits)
 
         acc = 0;
         for (j = 0; j < flen; j++)
-            acc += ctx->filter[j] * audio[i - j - 1];
+            acc += (unsigned)ctx->filter[j] * audio[i - j - 1];
         if (acc < 0) {
             acc = (acc + bias - 1) >> ctx->filter_bits;
             acc = FFMAX(acc, min_clip);
