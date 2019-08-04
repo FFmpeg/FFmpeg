@@ -1182,6 +1182,9 @@ static int vorbis_floor0_decode(vorbis_context *vc,
                     q *= q;
                 }
 
+                if (p + q == 0.0)
+                    return AVERROR_INVALIDDATA;
+
                 /* calculate linear floor value */
                 q = exp((((amplitude*vf->amplitude_offset) /
                           (((1ULL << vf->amplitude_bits) - 1) * sqrt(p + q)))
