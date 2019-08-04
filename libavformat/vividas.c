@@ -375,15 +375,19 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
             num_data = avio_r8(pb);
             for (j = 0; j < num_data; j++) {
                 uint64_t len = ffio_read_varlen(pb);
-                if (len > INT_MAX/2 - xd_size)
+                if (len > INT_MAX/2 - xd_size) {
+                    av_free(pb);
                     return AVERROR_INVALIDDATA;
+                }
                 data_len[j] = len;
                 xd_size += len;
             }
 
             st->codecpar->extradata_size = 64 + xd_size + xd_size / 255;
-            if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size))
+            if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size)) {
+                av_free(pb);
                 return AVERROR(ENOMEM);
+            }
 
             p = st->codecpar->extradata;
             p[0] = 2;
