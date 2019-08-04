@@ -589,7 +589,7 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
                               int32_t *out, APERice *rice, int blockstodecode)
 {
     int i;
-    int ksummax, ksummin;
+    unsigned ksummax, ksummin;
 
     rice->ksum = 0;
     for (i = 0; i < FFMIN(blockstodecode, 5); i++) {
@@ -836,7 +836,7 @@ static av_always_inline int filter_fast_3320(APEPredictor *p,
     else
         p->coeffsA[filter][0]--;
 
-    p->filterA[filter] += p->lastA[filter];
+    p->filterA[filter] += (unsigned)p->lastA[filter];
 
     return p->filterA[filter];
 }
