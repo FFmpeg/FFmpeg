@@ -286,7 +286,7 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
             add_bits--;
         range    = 10;
         range2   = 21;
-        code_vlc = set->long_codes + code_params - 15;
+        code_vlc = set->long_codes + (code_params - 15);
     } else {
         add_bits = 0;
         range    = 6;
