@@ -298,6 +298,10 @@ static void rac_normalise(RangeCoder *c)
             c->got_error = 1;
             c->low = 1;
         }
+        if (c->low > c->range) {
+            c->got_error = 1;
+            c->low = 1;
+        }
         if (c->range >= RAC_BOTTOM)
             return;
     }
