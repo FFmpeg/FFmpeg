@@ -1361,14 +1361,19 @@ static av_always_inline int setup_classifs(vorbis_context *vc,
                 return AVERROR_INVALIDDATA;
             }
 
-            av_assert0(vr->classifications > 1); //needed for inverse[]
-
+            if (vr->classifications == 1) {
+                for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
+                    if (i < ptns_to_read)
+                        vr->classifs[p + i] = 0;
+                }
+            } else {
             for (i = partition_count + c_p_c - 1; i >= partition_count; i--) {
                 temp2 = (((uint64_t)temp) * inverse_class) >> 32;
 
                 if (i < ptns_to_read)
                     vr->classifs[p + i] = temp - temp2 * vr->classifications;
                 temp = temp2;
+            }
             }
         }
         p += ptns_to_read;
