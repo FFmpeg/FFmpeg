@@ -87,6 +87,10 @@ static int realtext_read_header(AVFormatContext *s)
             /* save header to extradata */
             const char *p = ff_smil_get_attr_ptr(buf.str, "duration");
 
+            if (st->codecpar->extradata) {
+                res = AVERROR_INVALIDDATA;
+                goto end;
+            }
             if (p)
                 duration = read_ts(p);
             st->codecpar->extradata = av_strdup(buf.str);
