@@ -31,6 +31,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/rational.h"
 #include "libavutil/time.h"
 #include "libavutil/time_internal.h"
@@ -70,6 +71,7 @@ typedef struct Segment {
 typedef struct AdaptationSet {
     char id[10];
     char *descriptor;
+    int64_t seg_duration;
     enum AVMediaType media_type;
     AVDictionary *metadata;
     AVRational min_frame_rate, max_frame_rate;
@@ -85,6 +87,8 @@ typedef struct OutputStream {
     int64_t init_start_pos, pos;
     int init_range_length;
     int nb_segments, segments_size, segment_index;
+    int64_t seg_duration;
+    int64_t last_duration;
     Segment **segments;
     int64_t first_pts, start_pts, max_pts;
     int64_t last_dts, last_pts;
@@ -613,7 +617,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         int timescale = c->use_timeline ? os->ctx->streams[0]->time_base.den : AV_TIME_BASE;
         avio_printf(out, "\t\t\t\t<SegmentTemplate timescale=\"%d\" ", timescale);
         if (!c->use_timeline) {
-            avio_printf(out, "duration=\"%"PRId64"\" ", c->seg_duration);
+            avio_printf(out, "duration=\"%"PRId64"\" ", os->seg_duration);
             if (c->streaming && os->availability_time_offset)
                 avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
                             os->availability_time_offset);
@@ -646,7 +650,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         avio_printf(out, "\t\t\t\t</SegmentTemplate>\n");
     } else if (c->single_file) {
         avio_printf(out, "\t\t\t\t<BaseURL>%s</BaseURL>\n", os->initfile);
-        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
+        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, FFMIN(os->seg_duration, os->last_duration), start_number);
         avio_printf(out, "\t\t\t\t\t<Initialization range=\"%"PRId64"-%"PRId64"\" />\n", os->init_start_pos, os->init_start_pos + os->init_range_length - 1);
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
@@ -657,7 +661,7 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
         }
         avio_printf(out, "\t\t\t\t</SegmentList>\n");
     } else {
-        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, c->last_duration, start_number);
+        avio_printf(out, "\t\t\t\t<SegmentList timescale=\"%d\" duration=\"%"PRId64"\" startNumber=\"%d\">\n", AV_TIME_BASE, FFMIN(os->seg_duration, os->last_duration), start_number);
         avio_printf(out, "\t\t\t\t\t<Initialization sourceURL=\"%s\" />\n", os->initfile);
         for (i = start_index; i < os->nb_segments; i++) {
             Segment *seg = os->segments[i];
@@ -839,7 +843,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
     const char *p = c->adaptation_sets;
-    enum { new_set, parse_id, parsing_streams, parse_descriptor } state;
+    enum { new_set, parse_id, parsing_streams, parse_descriptor, parse_seg_duration } state;
     AdaptationSet *as;
     int i, n, ret;
 
@@ -857,8 +861,11 @@ static int parse_adaptation_sets(AVFormatContext *s)
 
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     // option id=0,descriptor=descriptor_str,streams=0,1,2 and so on
+    // option id=0,seg_duration=2.5,streams=0,1,2 and so on
     // descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015
     // descriptor_str should be a self-closing xml tag.
+    // seg_duration has the same syntax as the global seg_duration option, and has
+    // precedence over it if set.
     state = new_set;
     while (*p) {
         if (*p == ' ') {
@@ -876,7 +883,25 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (*p)
                 p++;
             state = parse_id;
-        } else if (state == parse_id && av_strstart(p, "descriptor=", &p)) {
+        } else if (state != new_set && av_strstart(p, "seg_duration=", &p)) {
+            char str[32];
+            int64_t usecs = 0;
+
+            n = strcspn(p, ",");
+            snprintf(str, sizeof(str), "%.*s", n, p);
+            p += n;
+            if (*p)
+                p++;
+
+            ret = av_parse_time(&usecs, str, 1);
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", str);
+                return ret;
+            }
+
+            as->seg_duration = usecs;
+            state = parse_seg_duration;
+        } else if (state != new_set && av_strstart(p, "descriptor=", &p)) {
             n = strcspn(p, ">") + 1; //followed by one comma, so plus 1
             if (n < strlen(p)) {
                 as->descriptor = av_strndup(p, n);
@@ -888,7 +913,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
             if (*p)
                 p++;
             state = parse_descriptor;
-        } else if ((state == parse_id || state == parse_descriptor) && av_strstart(p, "streams=", &p)) { //descriptor is optional
+        } else if ((state != new_set) && av_strstart(p, "streams=", &p)) { //descriptor and duration are optional
             state = parsing_streams;
         } else if (state == parsing_streams) {
             AdaptationSet *as = &c->as[c->nb_as - 1];
@@ -1303,6 +1328,7 @@ static int dash_init(AVFormatContext *s)
         os->init_start_pos = 0;
 
         av_dict_copy(&opts, c->format_options, 0);
+        os->seg_duration = as->seg_duration ? as->seg_duration : c->seg_duration;
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
             if (c->streaming)
@@ -1576,7 +1602,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                                             c->streams[stream].first_pts,
                                             s->streams[stream]->time_base,
                                             AV_TIME_BASE_Q);
-            next_exp_index = (pts_diff / c->seg_duration) + 1;
+            next_exp_index = (pts_diff / c->streams[stream].seg_duration) + 1;
         }
     }
 
@@ -1592,6 +1618,9 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
         // Flush all audio streams as well, in sync with video keyframes,
         // but not the other video streams.
         if (stream >= 0 && i != stream) {
+            if (s->streams[stream]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+                s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
+                continue;
             if (s->streams[i]->codecpar->codec_type != AVMEDIA_TYPE_AUDIO)
                 continue;
             // Make sure we don't flush audio streams multiple times, when
@@ -1623,6 +1652,10 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                     break;
             }
         }
+
+        os->last_duration = FFMAX(os->last_duration, av_rescale_q(os->max_pts - os->start_pts,
+                                                                  st->time_base,
+                                                                  AV_TIME_BASE_Q));
 
         if (!os->muxer_overhead)
             os->muxer_overhead = ((int64_t) (range_length - os->total_pkt_size) *
@@ -1734,24 +1767,22 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!os->availability_time_offset && pkt->duration) {
         int64_t frame_duration = av_rescale_q(pkt->duration, st->time_base,
                                               AV_TIME_BASE_Q);
-         os->availability_time_offset = ((double) c->seg_duration -
+         os->availability_time_offset = ((double) os->seg_duration -
                                          frame_duration) / AV_TIME_BASE;
     }
 
     if (c->use_template && !c->use_timeline) {
         elapsed_duration = pkt->pts - os->first_pts;
-        seg_end_duration = (int64_t) os->segment_index * c->seg_duration;
+        seg_end_duration = (int64_t) os->segment_index * os->seg_duration;
     } else {
         elapsed_duration = pkt->pts - os->start_pts;
-        seg_end_duration = c->seg_duration;
+        seg_end_duration = os->seg_duration;
     }
 
-    if ((!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) &&
-        pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
+    if (pkt->flags & AV_PKT_FLAG_KEY && os->packets_written &&
         av_compare_ts(elapsed_duration, st->time_base,
                       seg_end_duration, AV_TIME_BASE_Q) >= 0) {
-        int64_t prev_duration = c->last_duration;
-
+        if (!c->has_video || st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
         c->last_duration = av_rescale_q(pkt->pts - os->start_pts,
                                         st->time_base,
                                         AV_TIME_BASE_Q);
@@ -1759,13 +1790,14 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
                                          st->time_base,
                                          AV_TIME_BASE_Q);
 
-        if ((!c->use_timeline || !c->use_template) && prev_duration) {
-            if (c->last_duration < prev_duration*9/10 ||
-                c->last_duration > prev_duration*11/10) {
+        if ((!c->use_timeline || !c->use_template) && os->last_duration) {
+            if (c->last_duration < os->last_duration*9/10 ||
+                c->last_duration > os->last_duration*11/10) {
                 av_log(s, AV_LOG_WARNING,
                        "Segment durations differ too much, enable use_timeline "
                        "and use_template, or keep a stricter keyframe interval\n");
             }
+        }
         }
 
         if ((ret = dash_flush(s, 0, pkt->stream_index)) < 0)
