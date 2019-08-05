@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-08-xx - xxxxxxxxxx - lavf 58.31.100 - avio.h
+  Add avio_print_string_array and avio_print.
+
 2019-07-27 - xxxxxxxxxx - lavu 56.33.100 - tx.h
   Add AV_TX_DOUBLE_FFT and AV_TX_DOUBLE_MDCT
 
