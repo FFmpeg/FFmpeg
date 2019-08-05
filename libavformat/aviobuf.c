@@ -1249,14 +1249,20 @@ int avio_closep(AVIOContext **s)
 int avio_printf(AVIOContext *s, const char *fmt, ...)
 {
     va_list ap;
-    char buf[4096]; /* update doc entry in avio.h if changed */
-    int ret;
+    AVBPrint bp;
 
+    av_bprint_init(&bp, 0, INT_MAX);
     va_start(ap, fmt);
-    ret = vsnprintf(buf, sizeof(buf), fmt, ap);
+    av_vbprintf(&bp, fmt, ap);
     va_end(ap);
-    avio_write(s, buf, strlen(buf));
-    return ret;
+    if (!av_bprint_is_complete(&bp)) {
+        av_bprint_finalize(&bp, NULL);
+        s->error = AVERROR(ENOMEM);
+        return AVERROR(ENOMEM);
+    }
+    avio_write(s, bp.str, bp.len);
+    av_bprint_finalize(&bp, NULL);
+    return bp.len;
 }
 
 void avio_print_string_array(AVIOContext *s, const char *strings[])

@@ -571,7 +571,10 @@ int64_t avio_size(AVIOContext *s);
  */
 int avio_feof(AVIOContext *s);
 
-/** @warning Writes up to 4 KiB per call */
+/**
+ * Writes a formatted string to the context.
+ * @return number of bytes written, < 0 on error.
+ */
 int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
 
 /**
