@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AV_COMPAT_CUDA_DYNLINK_LOADER_H
-#define AV_COMPAT_CUDA_DYNLINK_LOADER_H
+#ifndef COMPAT_CUDA_DYNLINK_LOADER_H
+#define COMPAT_CUDA_DYNLINK_LOADER_H
 
 #include "libavutil/log.h"
 #include "compat/w32dlfcn.h"
@@ -30,4 +30,4 @@
 
 #include <ffnvcodec/dynlink_loader.h>
 
-#endif
+#endif /* COMPAT_CUDA_DYNLINK_LOADER_H */

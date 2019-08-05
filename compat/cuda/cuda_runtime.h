@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AV_COMPAT_CUDA_CUDA_RUNTIME_H
-#define AV_COMPAT_CUDA_CUDA_RUNTIME_H
+#ifndef COMPAT_CUDA_CUDA_RUNTIME_H
+#define COMPAT_CUDA_CUDA_RUNTIME_H
 
 // Common macros
 #define __global__ __attribute__((global))
@@ -128,4 +128,4 @@ static inline __device__ T tex2D(cudaTextureObject_t texObject, float x, float y
   return ret;
 }
 
-#endif
+#endif /* COMPAT_CUDA_CUDA_RUNTIME_H */
