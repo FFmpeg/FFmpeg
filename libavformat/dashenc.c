@@ -58,6 +58,13 @@ typedef enum {
     SEGMENT_TYPE_NB
 } SegmentType;
 
+enum {
+    FRAG_TYPE_NONE = 0,
+    FRAG_TYPE_EVERY_FRAME,
+    FRAG_TYPE_DURATION,
+    FRAG_TYPE_NB
+};
+
 typedef struct Segment {
     char file[1024];
     int64_t start_pos;
@@ -72,6 +79,8 @@ typedef struct AdaptationSet {
     char id[10];
     char *descriptor;
     int64_t seg_duration;
+    int64_t frag_duration;
+    int frag_type;
     enum AVMediaType media_type;
     AVDictionary *metadata;
     AVRational min_frame_rate, max_frame_rate;
@@ -88,6 +97,7 @@ typedef struct OutputStream {
     int init_range_length;
     int nb_segments, segments_size, segment_index;
     int64_t seg_duration;
+    int64_t frag_duration;
     int64_t last_duration;
     Segment **segments;
     int64_t first_pts, start_pts, max_pts;
@@ -108,6 +118,7 @@ typedef struct OutputStream {
     double availability_time_offset;
     int total_pkt_size;
     int muxer_overhead;
+    int frag_type;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -121,6 +132,7 @@ typedef struct DASHContext {
     int min_seg_duration;
 #endif
     int64_t seg_duration;
+    int64_t frag_duration;
     int remove_at_exit;
     int use_template;
     int use_timeline;
@@ -154,6 +166,7 @@ typedef struct DASHContext {
     int master_publish_rate;
     int nr_of_streams_to_flush;
     int nr_of_streams_flushed;
+    int frag_type;
 } DASHContext;
 
 static struct codec_string {
@@ -817,6 +830,7 @@ static int add_adaptation_set(AVFormatContext *s, AdaptationSet **as, enum AVMed
     *as = &c->as[c->nb_as - 1];
     memset(*as, 0, sizeof(**as));
     (*as)->media_type = type;
+    (*as)->frag_type = -1;
 
     return 0;
 }
@@ -843,7 +857,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
 {
     DASHContext *c = s->priv_data;
     const char *p = c->adaptation_sets;
-    enum { new_set, parse_id, parsing_streams, parse_descriptor, parse_seg_duration } state;
+    enum { new_set, parse_default, parsing_streams, parse_seg_duration, parse_frag_duration } state;
     AdaptationSet *as;
     int i, n, ret;
 
@@ -861,11 +875,11 @@ static int parse_adaptation_sets(AVFormatContext *s)
 
     // syntax id=0,streams=0,1,2 id=1,streams=3,4 and so on
     // option id=0,descriptor=descriptor_str,streams=0,1,2 and so on
-    // option id=0,seg_duration=2.5,streams=0,1,2 and so on
+    // option id=0,seg_duration=2.5,frag_duration=0.5,streams=0,1,2 and so on
     // descriptor is useful to the scheme defined by ISO/IEC 23009-1:2014/Amd.2:2015
     // descriptor_str should be a self-closing xml tag.
-    // seg_duration has the same syntax as the global seg_duration option, and has
-    // precedence over it if set.
+    // seg_duration and frag_duration have the same syntax as the global options of
+    // the same name, and the former have precedence over them if set.
     state = new_set;
     while (*p) {
         if (*p == ' ') {
@@ -882,8 +896,12 @@ static int parse_adaptation_sets(AVFormatContext *s)
             p += n;
             if (*p)
                 p++;
-            state = parse_id;
+            state = parse_default;
         } else if (state != new_set && av_strstart(p, "seg_duration=", &p)) {
+            state = parse_seg_duration;
+        } else if (state != new_set && av_strstart(p, "frag_duration=", &p)) {
+            state = parse_frag_duration;
+        } else if (state == parse_seg_duration || state == parse_frag_duration) {
             char str[32];
             int64_t usecs = 0;
 
@@ -899,8 +917,31 @@ static int parse_adaptation_sets(AVFormatContext *s)
                 return ret;
             }
 
-            as->seg_duration = usecs;
-            state = parse_seg_duration;
+            if (state == parse_seg_duration)
+                as->seg_duration = usecs;
+            else
+                as->frag_duration = usecs;
+            state = parse_default;
+        } else if (state != new_set && av_strstart(p, "frag_type=", &p)) {
+            char type_str[16];
+
+            n = strcspn(p, ",");
+            snprintf(type_str, sizeof(type_str), "%.*s", n, p);
+            p += n;
+            if (*p)
+                p++;
+
+            if (!strcmp(type_str, "duration"))
+                as->frag_type = FRAG_TYPE_DURATION;
+            else if (!strcmp(type_str, "every_frame"))
+                as->frag_type = FRAG_TYPE_EVERY_FRAME;
+            else if (!strcmp(type_str, "none"))
+                as->frag_type = FRAG_TYPE_NONE;
+            else {
+                av_log(s, AV_LOG_ERROR, "Unable to parse option value \"%s\" as fragment type\n", type_str);
+                return ret;
+            }
+            state = parse_default;
         } else if (state != new_set && av_strstart(p, "descriptor=", &p)) {
             n = strcspn(p, ">") + 1; //followed by one comma, so plus 1
             if (n < strlen(p)) {
@@ -912,8 +953,8 @@ static int parse_adaptation_sets(AVFormatContext *s)
             p += n;
             if (*p)
                 p++;
-            state = parse_descriptor;
-        } else if ((state != new_set) && av_strstart(p, "streams=", &p)) { //descriptor and duration are optional
+            state = parse_default;
+        } else if ((state != new_set) && av_strstart(p, "streams=", &p)) { //descriptor and durations are optional
             state = parsing_streams;
         } else if (state == parsing_streams) {
             AdaptationSet *as = &c->as[c->nb_as - 1];
@@ -1204,6 +1245,10 @@ static int dash_init(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "Global SIDX option will be ignored as streaming is enabled\n");
         c->global_sidx = 0;
     }
+    if (c->frag_type == FRAG_TYPE_NONE && c->streaming) {
+        av_log(s, AV_LOG_VERBOSE, "Changing frag_type from none to every_frame as streaming is enabled\n");
+        c->frag_type = FRAG_TYPE_EVERY_FRAME;
+    }
 
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
@@ -1328,20 +1373,42 @@ static int dash_init(AVFormatContext *s)
         os->init_start_pos = 0;
 
         av_dict_copy(&opts, c->format_options, 0);
-        os->seg_duration = as->seg_duration ? as->seg_duration : c->seg_duration;
+        if (!as->seg_duration)
+            as->seg_duration = c->seg_duration;
+        if (!as->frag_duration)
+            as->frag_duration = c->frag_duration;
+        if (as->frag_type < 0)
+            as->frag_type = c->frag_type;
+        os->seg_duration = as->seg_duration;
+        os->frag_duration = as->frag_duration;
+        os->frag_type = as->frag_type;
+
+        if (os->frag_type == FRAG_TYPE_DURATION && !os->frag_duration) {
+            av_log(s, AV_LOG_WARNING, "frag_type set to duration for stream %d but no frag_duration set\n", i);
+            os->frag_type = c->streaming ? FRAG_TYPE_EVERY_FRAME : FRAG_TYPE_NONE;
+        }
+        if (os->frag_type == FRAG_TYPE_DURATION && os->frag_duration > os->seg_duration) {
+            av_log(s, AV_LOG_ERROR, "Fragment duration %"PRId64" is longer than Segment duration %"PRId64"\n", os->frag_duration, os->seg_duration);
+            return AVERROR(EINVAL);
+        }
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
             if (c->streaming)
-                // frag_every_frame : Allows lower latency streaming
                 // skip_sidx : Reduce bitrate overhead
                 // skip_trailer : Avoids growing memory usage with time
-                av_dict_set(&opts, "movflags", "frag_every_frame+dash+delay_moov+skip_sidx+skip_trailer", 0);
+                av_dict_set(&opts, "movflags", "dash+delay_moov+skip_sidx+skip_trailer", 0);
             else {
                 if (c->global_sidx)
-                    av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov+global_sidx+skip_trailer", 0);
+                    av_dict_set(&opts, "movflags", "dash+delay_moov+global_sidx+skip_trailer", 0);
                 else
-                    av_dict_set(&opts, "movflags", "frag_custom+dash+delay_moov+skip_trailer", 0);
+                    av_dict_set(&opts, "movflags", "dash+delay_moov+skip_trailer", 0);
             }
+            if (os->frag_type == FRAG_TYPE_EVERY_FRAME)
+                av_dict_set(&opts, "movflags", "+frag_every_frame", AV_DICT_APPEND);
+            else
+                av_dict_set(&opts, "movflags", "+frag_custom", AV_DICT_APPEND);
+            if (os->frag_type == FRAG_TYPE_DURATION)
+                av_dict_set_int(&opts, "frag_duration", os->frag_duration, 0);
         } else {
             av_dict_set_int(&opts, "cluster_time_limit", c->seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
@@ -1764,9 +1831,20 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
                         sizeof(c->availability_start_time));
     }
 
-    if (!os->availability_time_offset && pkt->duration) {
-        int64_t frame_duration = av_rescale_q(pkt->duration, st->time_base,
-                                              AV_TIME_BASE_Q);
+    if (!os->availability_time_offset &&
+        ((os->frag_type == FRAG_TYPE_DURATION && os->seg_duration != os->frag_duration) ||
+         (os->frag_type == FRAG_TYPE_EVERY_FRAME && pkt->duration))) {
+        int64_t frame_duration = 0;
+
+        switch (os->frag_type) {
+        case FRAG_TYPE_DURATION:
+            frame_duration = os->frag_duration;
+            break;
+        case FRAG_TYPE_EVERY_FRAME:
+            frame_duration = av_rescale_q(pkt->duration, st->time_base, AV_TIME_BASE_Q);
+            break;
+        }
+
          os->availability_time_offset = ((double) os->seg_duration -
                                          frame_duration) / AV_TIME_BASE;
     }
@@ -1943,6 +2021,11 @@ static const AVOption options[] = {
     { "min_seg_duration", "minimum segment duration (in microseconds) (will be deprecated)", OFFSET(min_seg_duration), AV_OPT_TYPE_INT, { .i64 = 5000000 }, 0, INT_MAX, E },
 #endif
     { "seg_duration", "segment duration (in seconds, fractional value can be set)", OFFSET(seg_duration), AV_OPT_TYPE_DURATION, { .i64 = 5000000 }, 0, INT_MAX, E },
+    { "frag_duration", "fragment duration (in seconds, fractional value can be set)", OFFSET(frag_duration), AV_OPT_TYPE_DURATION, { .i64 = 0 }, 0, INT_MAX, E },
+    { "frag_type", "set type of interval for fragments", OFFSET(frag_type), AV_OPT_TYPE_INT, {.i64 = FRAG_TYPE_NONE }, 0, FRAG_TYPE_NB - 1, E, "frag_type"},
+    { "none", "one fragment per segment", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_NONE }, 0, UINT_MAX, E, "frag_type"},
+    { "every_frame", "fragment at every frame", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_EVERY_FRAME }, 0, UINT_MAX, E, "frag_type"},
+    { "duration", "fragment at specific time intervals", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_DURATION }, 0, UINT_MAX, E, "frag_type"},
     { "remove_at_exit", "remove all segments when finished", OFFSET(remove_at_exit), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "use_template", "Use SegmentTemplate instead of SegmentList", OFFSET(use_template), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
     { "use_timeline", "Use SegmentTimeline in SegmentTemplate", OFFSET(use_timeline), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
