@@ -120,6 +120,8 @@ typedef struct OutputStream {
     char full_path[1024];
     char temp_path[1024];
     double availability_time_offset;
+    int64_t producer_reference_time;
+    char producer_reference_time_str[100];
     int total_pkt_size;
     int64_t total_pkt_duration;
     int muxer_overhead;
@@ -148,6 +150,7 @@ typedef struct DASHContext {
     int64_t total_duration;
     char availability_start_time[100];
     time_t start_time_s;
+    int64_t presentation_time_offset;
     char dirname[1024];
     const char *single_file_name;  /* file names as specified in options */
     const char *init_seg_name;
@@ -172,6 +175,7 @@ typedef struct DASHContext {
     int nr_of_streams_to_flush;
     int nr_of_streams_flushed;
     int frag_type;
+    int write_prft;
 } DASHContext;
 
 static struct codec_string {
@@ -642,7 +646,10 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
                 avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
                             os->availability_time_offset);
         }
-        avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\">\n", os->init_seg_name, os->media_seg_name, c->use_timeline ? start_number : 1);
+        avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\"", os->init_seg_name, os->media_seg_name, c->use_timeline ? start_number : 1);
+        if (c->presentation_time_offset)
+            avio_printf(out, " presentationTimeOffset=\"%"PRId64"\"", c->presentation_time_offset);
+        avio_printf(out, ">\n");
         if (c->use_timeline) {
             int64_t cur_time = 0;
             avio_printf(out, "\t\t\t\t\t<SegmentTimeline>\n");
@@ -751,10 +758,9 @@ static void write_time(AVIOContext *out, int64_t time)
     avio_printf(out, "%d.%dS", seconds, fractions / (AV_TIME_BASE / 10));
 }
 
-static void format_date_now(char *buf, int size)
+static void format_date(char *buf, int size, int64_t time_us)
 {
     struct tm *ptm, tmbuf;
-    int64_t time_us = av_gettime();
     int64_t time_ms = time_us / 1000;
     const time_t time_s = time_ms / 1000;
     int millisec = time_ms - (time_s * 1000);
@@ -793,6 +799,7 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
     if (as->descriptor)
         avio_printf(out, "\t\t\t%s\n", as->descriptor);
     for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
         OutputStream *os = &c->streams[i];
         char bandwidth_str[64] = {'\0'};
 
@@ -804,7 +811,6 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
                      os->bit_rate);
 
         if (as->media_type == AVMEDIA_TYPE_VIDEO) {
-            AVStream *st = s->streams[i];
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/%s\" codecs=\"%s\"%s width=\"%d\" height=\"%d\"",
                 i, os->format_name, os->codec_str, bandwidth_str, s->streams[i]->codecpar->width, s->streams[i]->codecpar->height);
             if (st->avg_frame_rate.num)
@@ -815,6 +821,12 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
                 i, os->format_name, os->codec_str, bandwidth_str, s->streams[i]->codecpar->sample_rate);
             avio_printf(out, "\t\t\t\t<AudioChannelConfiguration schemeIdUri=\"urn:mpeg:dash:23003:3:audio_channel_configuration:2011\" value=\"%d\" />\n",
                 s->streams[i]->codecpar->channels);
+        }
+        if (!final && c->write_prft && os->producer_reference_time_str[0]) {
+            avio_printf(out, "\t\t\t\t<ProducerReferenceTime id=\"%d\" inband=\"true\" type=\"encoder\" wallclockTime=\"%s\" presentationTime=\"%"PRId64"\">\n",
+                        i, os->producer_reference_time_str, c->presentation_time_offset);
+            avio_printf(out, "\t\t\t\t\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
+            avio_printf(out, "\t\t\t\t</ProducerReferenceTime>\n");
         }
         output_segment_list(os, out, s, i, final);
         avio_printf(out, "\t\t\t</Representation>\n");
@@ -1067,7 +1079,7 @@ static int write_manifest(AVFormatContext *s, int final)
         avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
         if (c->availability_start_time[0])
             avio_printf(out, "\tavailabilityStartTime=\"%s\"\n", c->availability_start_time);
-        format_date_now(now_str, sizeof(now_str));
+        format_date(now_str, sizeof(now_str), av_gettime());
         if (now_str[0])
             avio_printf(out, "\tpublishTime=\"%s\"\n", now_str);
         if (c->window_size && c->use_template) {
@@ -1259,6 +1271,16 @@ static int dash_init(AVFormatContext *s)
         c->frag_type = FRAG_TYPE_EVERY_FRAME;
     }
 
+    if (c->write_prft && !c->utc_timing_url) {
+        av_log(s, AV_LOG_WARNING, "Producer Reference Time element option will be ignored as utc_timing_url is not set\n");
+        c->write_prft = 0;
+    }
+
+    if (c->write_prft && !c->streaming) {
+        av_log(s, AV_LOG_WARNING, "Producer Reference Time element option will be ignored as streaming is not enabled\n");
+        c->write_prft = 0;
+    }
+
     av_strlcpy(c->dirname, s->url, sizeof(c->dirname));
     ptr = strrchr(c->dirname, '/');
     if (ptr) {
@@ -1435,6 +1457,8 @@ static int dash_init(AVFormatContext *s)
                 av_dict_set(&opts, "movflags", "+frag_custom", AV_DICT_APPEND);
             if (os->frag_type == FRAG_TYPE_DURATION)
                 av_dict_set_int(&opts, "frag_duration", os->frag_duration, 0);
+            if (c->write_prft)
+                av_dict_set(&opts, "write_prft", "wallclock", 0);
         } else {
             av_dict_set_int(&opts, "cluster_time_limit", c->seg_duration / 1000, 0);
             av_dict_set_int(&opts, "cluster_size_limit", 5 * 1024 * 1024, 0); // set a large cluster size limit
@@ -1849,15 +1873,21 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->dts  = 0;
     }
 
-    if (os->first_pts == AV_NOPTS_VALUE)
+    if (os->first_pts == AV_NOPTS_VALUE) {
+        int side_data_size;
+        AVProducerReferenceTime *prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT,
+                                                                                           &side_data_size);
+        if (prft && side_data_size == sizeof(AVProducerReferenceTime) && !prft->flags)
+            os->producer_reference_time = prft->wallclock;
         os->first_pts = pkt->pts;
+    }
     os->last_pts = pkt->pts;
 
     if (!c->availability_start_time[0]) {
         int64_t start_time_us = av_gettime();
         c->start_time_s = start_time_us / 1000000;
-        format_date_now(c->availability_start_time,
-                        sizeof(c->availability_start_time));
+        format_date(c->availability_start_time,
+                    sizeof(c->availability_start_time), start_time_us);
     }
 
     if (!os->packets_written)
@@ -1909,6 +1939,11 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
         }
+
+        if (c->write_prft && os->producer_reference_time && !os->producer_reference_time_str[0])
+            format_date(os->producer_reference_time_str,
+                        sizeof(os->producer_reference_time_str),
+                        os->producer_reference_time);
 
         if ((ret = dash_flush(s, 0, pkt->stream_index)) < 0)
             return ret;
@@ -2115,6 +2150,7 @@ static const AVOption options[] = {
     { "ignore_io_errors", "Ignore IO errors during open and write. Useful for long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "lhls", "Enable Low-latency HLS(Experimental). Adds #EXT-X-PREFETCH tag with current segment's URI", OFFSET(lhls), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "master_m3u8_publish_rate", "Publish master playlist every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
+    { "write_prft", "Write producer reference time element", OFFSET(write_prft), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
     { NULL },
 };
 
