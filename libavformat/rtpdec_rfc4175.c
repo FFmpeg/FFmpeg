@@ -205,11 +205,8 @@ static int rfc4175_handle_packet(AVFormatContext *ctx, PayloadContext *data,
         if (length > payload_len)
             length = payload_len;
 
-        if (line < 1)
-            return AVERROR_INVALIDDATA;
-
         /* prevent ill-formed packets to write after buffer's end */
-        copy_offset = ((line - 1) * data->width + offset) * data->pgroup / data->xinc;
+        copy_offset = (line * data->width + offset) * data->pgroup / data->xinc;
         if (copy_offset + length > data->frame_size)
             return AVERROR_INVALIDDATA;
 
