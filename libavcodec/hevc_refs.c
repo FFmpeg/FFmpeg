@@ -394,7 +394,7 @@ static void mark_ref(HEVCFrame *frame, int flag)
 static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
 {
     HEVCFrame *frame;
-    int i, x, y;
+    int i, y;
 
     frame = alloc_frame(s);
     if (!frame)
@@ -407,11 +407,11 @@ static HEVCFrame *generate_missing_ref(HEVCContext *s, int poc)
                        frame->frame->buf[i]->size);
         } else {
             for (i = 0; frame->frame->data[i]; i++)
-                for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++)
-                    for (x = 0; x < (s->ps.sps->width >> s->ps.sps->hshift[i]); x++) {
-                        AV_WN16(frame->frame->data[i] + y * frame->frame->linesize[i] + 2 * x,
-                                1 << (s->ps.sps->bit_depth - 1));
-                    }
+                for (y = 0; y < (s->ps.sps->height >> s->ps.sps->vshift[i]); y++) {
+                    uint8_t *dst = frame->frame->data[i] + y * frame->frame->linesize[i];
+                    AV_WN16(dst, 1 << (s->ps.sps->bit_depth - 1));
+                    av_memcpy_backptr(dst + 2, 2, 2*(s->ps.sps->width >> s->ps.sps->hshift[i]) - 2);
+                }
         }
     }
 
