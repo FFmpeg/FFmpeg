@@ -87,8 +87,8 @@ static uint32_t sad_horiz_bilinear_filter_8width_msa(uint8_t *src,
 
         PCKEV_D2_UB(src1, src0, src3, src2, src0, src1);
         PCKEV_D2_UB(ref1, ref0, ref3, ref2, ref4, ref5);
-        SLDI_B2_UB(ref0, ref1, ref0, ref1, ref0, ref1, 1);
-        SLDI_B2_UB(ref2, ref3, ref2, ref3, ref2, ref3, 1);
+        SLDI_B4_UB(ref0, ref0, ref1, ref1, ref2, ref2, ref3, ref3, 1,
+                   ref0, ref1, ref2, ref3);
         PCKEV_D2_UB(ref1, ref0, ref3, ref2, ref0, ref1);
         AVER_UB2_UB(ref4, ref0, ref5, ref1, comp0, comp1);
         sad += SAD_UB2_UH(src0, src1, comp0, comp1);
@@ -100,8 +100,8 @@ static uint32_t sad_horiz_bilinear_filter_8width_msa(uint8_t *src,
 
         PCKEV_D2_UB(src1, src0, src3, src2, src0, src1);
         PCKEV_D2_UB(ref1, ref0, ref3, ref2, ref4, ref5);
-        SLDI_B2_UB(ref0, ref1, ref0, ref1, ref0, ref1, 1);
-        SLDI_B2_UB(ref2, ref3, ref2, ref3, ref2, ref3, 1);
+        SLDI_B4_UB(ref0, ref0, ref1, ref1, ref2, ref2, ref3, ref3, 1,
+                   ref0, ref1, ref2, ref3);
         PCKEV_D2_UB(ref1, ref0, ref3, ref2, ref0, ref1);
         AVER_UB2_UB(ref4, ref0, ref5, ref1, comp0, comp1);
         sad += SAD_UB2_UH(src0, src1, comp0, comp1);

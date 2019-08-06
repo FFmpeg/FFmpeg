@@ -618,7 +618,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
                                                              \
     out0 = (v16u8) __msa_ilvr_b((v16i8) in1, (v16i8) in0);   \
     out1 = (v16u8) __msa_sldi_b(zero_m, (v16i8) out0, 2);    \
-    SLDI_B2_0_UB(out1, out2, out2, out3, 2);                 \
+    SLDI_B2_UB(zero_m, out1, zero_m, out2, 2, out2, out3);   \
 }
 
 #define AVC_LPF_H_2BYTE_CHROMA_422(src, stride, tc_val, alpha, beta, res)  \
@@ -1023,7 +1023,8 @@ static void avc_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, int32_t stride,
 
     ILVR_W2_SB(tmp2, tmp0, tmp3, tmp1, src6, src3);
     ILVL_W2_SB(tmp2, tmp0, tmp3, tmp1, src1, src5);
-    SLDI_B4_0_SB(src6, src1, src3, src5, src0, src2, src4, src7, 8);
+    SLDI_B4_SB(zeros, src6, zeros, src1, zeros, src3, zeros, src5,
+               8, src0, src2, src4, src7);
 
     p0_asub_q0 = __msa_asub_u_b((v16u8) src2, (v16u8) src3);
     p1_asub_p0 = __msa_asub_u_b((v16u8) src1, (v16u8) src2);
@@ -1114,10 +1115,10 @@ static void avc_h_loop_filter_luma_mbaff_intra_msa(uint8_t *src, int32_t stride,
     ILVRL_H2_SH(zeros, dst2_x, tmp2, tmp3);
 
     ILVR_W2_UB(tmp2, tmp0, tmp3, tmp1, dst0, dst4);
-    SLDI_B2_0_UB(dst0, dst4, dst1, dst5, 8);
+    SLDI_B2_UB(zeros, dst0, zeros, dst4, 8, dst1, dst5);
     dst2_x = (v16u8) __msa_ilvl_w((v4i32) tmp2, (v4i32) tmp0);
     dst2_y = (v16u8) __msa_ilvl_w((v4i32) tmp3, (v4i32) tmp1);
-    SLDI_B2_0_UB(dst2_x, dst2_y, dst3_x, dst3_y, 8);
+    SLDI_B2_UB(zeros, dst2_x, zeros, dst2_y, 8, dst3_x, dst3_y);
 
     out0 = __msa_copy_u_w((v4i32) dst0, 0);
     out1 = __msa_copy_u_h((v8i16) dst0, 2);

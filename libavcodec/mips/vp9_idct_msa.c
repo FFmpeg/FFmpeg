@@ -249,6 +249,7 @@ static const int32_t sinpi_4_9 = 15212;
     v8i16 c0_m, c1_m, c2_m, c3_m;                                     \
     v8i16 step0_m, step1_m;                                           \
     v4i32 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                             \
+    v16i8 zeros = { 0 };                                              \
                                                                       \
     c0_m = VP9_SET_COSPI_PAIR(cospi_16_64, cospi_16_64);              \
     c1_m = VP9_SET_COSPI_PAIR(cospi_16_64, -cospi_16_64);             \
@@ -262,7 +263,7 @@ static const int32_t sinpi_4_9 = 15212;
     SRARI_W4_SW(tmp0_m, tmp1_m, tmp2_m, tmp3_m, VP9_DCT_CONST_BITS);  \
                                                                       \
     PCKEV_H2_SW(tmp1_m, tmp0_m, tmp3_m, tmp2_m, tmp0_m, tmp2_m);      \
-    SLDI_B2_0_SW(tmp0_m, tmp2_m, tmp1_m, tmp3_m, 8);                  \
+    SLDI_B2_SW(zeros, tmp0_m, zeros, tmp2_m, 8, tmp1_m, tmp3_m);      \
     BUTTERFLY_4((v8i16) tmp0_m, (v8i16) tmp1_m,                       \
                 (v8i16) tmp2_m, (v8i16) tmp3_m,                       \
                 out0, out1, out2, out3);                              \

@@ -602,66 +602,47 @@
 }
 #define AVER_UB4_UB(...) AVER_UB4(v16u8, __VA_ARGS__)
 
-/* Description : Immediate number of columns to slide with zero
-   Arguments   : Inputs  - in0, in1, slide_val
-                 Outputs - out0, out1
-                 Return Type - as per RTYPE
-   Details     : Byte elements from 'zero_m' vector are slide into 'in0' by
-                 number of elements specified by 'slide_val'
-*/
-#define SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val)                 \
-{                                                                         \
-    v16i8 zero_m = { 0 };                                                 \
-    out0 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in0, slide_val);  \
-    out1 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in1, slide_val);  \
-}
-#define SLDI_B2_0_UB(...) SLDI_B2_0(v16u8, __VA_ARGS__)
-#define SLDI_B2_0_SB(...) SLDI_B2_0(v16i8, __VA_ARGS__)
-#define SLDI_B2_0_SW(...) SLDI_B2_0(v4i32, __VA_ARGS__)
-
-#define SLDI_B3_0(RTYPE, in0, in1, in2, out0, out1, out2,  slide_val)     \
-{                                                                         \
-    v16i8 zero_m = { 0 };                                                 \
-    SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);                    \
-    out2 = (RTYPE) __msa_sldi_b((v16i8) zero_m, (v16i8) in2, slide_val);  \
-}
-#define SLDI_B3_0_UB(...) SLDI_B3_0(v16u8, __VA_ARGS__)
-#define SLDI_B3_0_SB(...) SLDI_B3_0(v16i8, __VA_ARGS__)
-
-#define SLDI_B4_0(RTYPE, in0, in1, in2, in3,            \
-                  out0, out1, out2, out3, slide_val)    \
-{                                                       \
-    SLDI_B2_0(RTYPE, in0, in1, out0, out1, slide_val);  \
-    SLDI_B2_0(RTYPE, in2, in3, out2, out3, slide_val);  \
-}
-#define SLDI_B4_0_UB(...) SLDI_B4_0(v16u8, __VA_ARGS__)
-#define SLDI_B4_0_SB(...) SLDI_B4_0(v16i8, __VA_ARGS__)
-#define SLDI_B4_0_SH(...) SLDI_B4_0(v8i16, __VA_ARGS__)
-
 /* Description : Immediate number of columns to slide
-   Arguments   : Inputs  - in0_0, in0_1, in1_0, in1_1, slide_val
-                 Outputs - out0, out1
+   Arguments   : Inputs  - s, d, slide_val
+                 Outputs - out
                  Return Type - as per RTYPE
-   Details     : Byte elements from 'in0_0' vector are slide into 'in1_0' by
+   Details     : Byte elements from 'd' vector are slide into 's' by
                  number of elements specified by 'slide_val'
 */
-#define SLDI_B2(RTYPE, in0_0, in0_1, in1_0, in1_1, out0, out1, slide_val)  \
-{                                                                          \
-    out0 = (RTYPE) __msa_sldi_b((v16i8) in0_0, (v16i8) in1_0, slide_val);  \
-    out1 = (RTYPE) __msa_sldi_b((v16i8) in0_1, (v16i8) in1_1, slide_val);  \
+#define SLDI_B(RTYPE, d, s, slide_val, out)                       \
+{                                                                 \
+    out = (RTYPE) __msa_sldi_b((v16i8) d, (v16i8) s, slide_val);  \
+}
+
+#define SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+{                                                              \
+    SLDI_B(RTYPE, d0, s0, slide_val, out0)                     \
+    SLDI_B(RTYPE, d1, s1, slide_val, out1)                     \
 }
 #define SLDI_B2_UB(...) SLDI_B2(v16u8, __VA_ARGS__)
 #define SLDI_B2_SB(...) SLDI_B2(v16i8, __VA_ARGS__)
 #define SLDI_B2_SH(...) SLDI_B2(v8i16, __VA_ARGS__)
+#define SLDI_B2_SW(...) SLDI_B2(v4i32, __VA_ARGS__)
 
-#define SLDI_B3(RTYPE, in0_0, in0_1, in0_2, in1_0, in1_1, in1_2,           \
-                out0, out1, out2, slide_val)                               \
-{                                                                          \
-    SLDI_B2(RTYPE, in0_0, in0_1, in1_0, in1_1, out0, out1, slide_val)      \
-    out2 = (RTYPE) __msa_sldi_b((v16i8) in0_2, (v16i8) in1_2, slide_val);  \
+#define SLDI_B3(RTYPE, d0, s0, d1, s1, d2, s2, slide_val,  \
+                out0, out1, out2)                          \
+{                                                          \
+    SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+    SLDI_B(RTYPE, d2, s2, slide_val, out2)                 \
 }
+#define SLDI_B3_UB(...) SLDI_B3(v16u8, __VA_ARGS__)
 #define SLDI_B3_SB(...) SLDI_B3(v16i8, __VA_ARGS__)
 #define SLDI_B3_UH(...) SLDI_B3(v8u16, __VA_ARGS__)
+
+#define SLDI_B4(RTYPE, d0, s0, d1, s1, d2, s2, d3, s3,     \
+                slide_val, out0, out1, out2, out3)         \
+{                                                          \
+    SLDI_B2(RTYPE, d0, s0, d1, s1, slide_val, out0, out1)  \
+    SLDI_B2(RTYPE, d2, s2, d3, s3, slide_val, out2, out3)  \
+}
+#define SLDI_B4_UB(...) SLDI_B4(v16u8, __VA_ARGS__)
+#define SLDI_B4_SB(...) SLDI_B4(v16i8, __VA_ARGS__)
+#define SLDI_B4_SH(...) SLDI_B4(v8i16, __VA_ARGS__)
 
 /* Description : Shuffle byte vector elements as per mask vector
    Arguments   : Inputs  - in0, in1, in2, in3, mask0, mask1
@@ -2412,6 +2393,7 @@
 {                                                                        \
     v16i8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                                \
     v16i8 tmp4_m, tmp5_m, tmp6_m, tmp7_m;                                \
+    v16i8 zeros = { 0 };                                                 \
                                                                          \
     ILVR_B4_SB(in2, in0, in3, in1, in6, in4, in7, in5,                   \
                tmp0_m, tmp1_m, tmp2_m, tmp3_m);                          \
@@ -2419,8 +2401,8 @@
     ILVRL_B2_SB(tmp3_m, tmp2_m, tmp6_m, tmp7_m);                         \
     ILVRL_W2(RTYPE, tmp6_m, tmp4_m, out0, out2);                         \
     ILVRL_W2(RTYPE, tmp7_m, tmp5_m, out4, out6);                         \
-    SLDI_B2_0(RTYPE, out0, out2, out1, out3, 8);                         \
-    SLDI_B2_0(RTYPE, out4, out6, out5, out7, 8);                         \
+    SLDI_B4(RTYPE, zeros, out0, zeros, out2, zeros, out4, zeros, out6,   \
+            8, out1, out3, out5, out7);                                  \
 }
 #define TRANSPOSE8x8_UB_UB(...) TRANSPOSE8x8_UB(v16u8, __VA_ARGS__)
 #define TRANSPOSE8x8_UB_UH(...) TRANSPOSE8x8_UB(v8u16, __VA_ARGS__)

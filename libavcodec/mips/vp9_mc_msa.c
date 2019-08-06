@@ -795,7 +795,7 @@ static void common_hv_8ht_8vt_4w_msa(const uint8_t *src, int32_t src_stride,
                               filt_hz1, filt_hz2, filt_hz3);
     hz_out5 = HORIZ_8TAP_FILT(src5, src6, mask0, mask1, mask2, mask3, filt_hz0,
                               filt_hz1, filt_hz2, filt_hz3);
-    SLDI_B2_SH(hz_out2, hz_out4, hz_out0, hz_out2, hz_out1, hz_out3, 8);
+    SLDI_B2_SH(hz_out2, hz_out0, hz_out4, hz_out2, 8, hz_out1, hz_out3);
 
     filt = LD_SH(filter_vert);
     SPLATI_H4_SH(filt, 0, 1, 2, 3, filt_vt0, filt_vt1, filt_vt2, filt_vt3);
@@ -1585,7 +1585,7 @@ static void common_hv_8ht_8vt_and_aver_dst_4w_msa(const uint8_t *src,
                               filt_hz1, filt_hz2, filt_hz3);
     hz_out5 = HORIZ_8TAP_FILT(src5, src6, mask0, mask1, mask2, mask3, filt_hz0,
                               filt_hz1, filt_hz2, filt_hz3);
-    SLDI_B2_SH(hz_out2, hz_out4, hz_out0, hz_out2, hz_out1, hz_out3, 8);
+    SLDI_B2_SH(hz_out2, hz_out0, hz_out4, hz_out2, 8, hz_out1, hz_out3);
 
     filt = LD_SH(filter_vert);
     SPLATI_H4_SH(filt, 0, 1, 2, 3, filt_vt0, filt_vt1, filt_vt2, filt_vt3);
@@ -2093,7 +2093,7 @@ void ff_put_bilin_64h_msa(uint8_t *dst, ptrdiff_t dst_stride,
         src4 = LD_SB(src + 32);
         src6 = LD_SB(src + 48);
         src7 = LD_SB(src + 56);
-        SLDI_B3_SB(src2, src4, src6, src0, src2, src4, src1, src3, src5, 8);
+        SLDI_B3_SB(src2, src0, src4, src2, src6, src4, 8, src1, src3, src5);
         src += src_stride;
 
         VSHF_B2_UB(src0, src0, src1, src1, mask, mask, vec0, vec1);
@@ -2544,8 +2544,8 @@ static void common_hv_2ht_2vt_4x8_msa(const uint8_t *src, int32_t src_stride,
     hz_out4 = HORIZ_2TAP_FILT_UH(src4, src5, mask, filt_hz, 7);
     hz_out6 = HORIZ_2TAP_FILT_UH(src6, src7, mask, filt_hz, 7);
     hz_out8 = HORIZ_2TAP_FILT_UH(src8, src8, mask, filt_hz, 7);
-    SLDI_B3_UH(hz_out2, hz_out4, hz_out6, hz_out0, hz_out2, hz_out4, hz_out1,
-               hz_out3, hz_out5, 8);
+    SLDI_B3_UH(hz_out2, hz_out0, hz_out4, hz_out2, hz_out6, hz_out4, 8, hz_out1,
+               hz_out3, hz_out5);
     hz_out7 = (v8u16) __msa_pckod_d((v2i64) hz_out8, (v2i64) hz_out6);
 
     ILVEV_B2_UB(hz_out0, hz_out1, hz_out2, hz_out3, vec0, vec1);
@@ -3146,7 +3146,7 @@ void ff_avg_bilin_64h_msa(uint8_t *dst, ptrdiff_t dst_stride,
     for (loop_cnt = height; loop_cnt--;) {
         LD_SB4(src, 16, src0, src2, src4, src6);
         src7 = LD_SB(src + 56);
-        SLDI_B3_SB(src2, src4, src6, src0, src2, src4, src1, src3, src5, 8);
+        SLDI_B3_SB(src2, src0, src4, src2, src6, src4, 8, src1, src3, src5);
         src += src_stride;
 
         VSHF_B2_UB(src0, src0, src1, src1, mask, mask, vec0, vec1);
@@ -3655,8 +3655,8 @@ static void common_hv_2ht_2vt_and_aver_dst_4x8_msa(const uint8_t *src,
     hz_out4 = HORIZ_2TAP_FILT_UH(src4, src5, mask, filt_hz, 7);
     hz_out6 = HORIZ_2TAP_FILT_UH(src6, src7, mask, filt_hz, 7);
     hz_out8 = HORIZ_2TAP_FILT_UH(src8, src8, mask, filt_hz, 7);
-    SLDI_B3_UH(hz_out2, hz_out4, hz_out6, hz_out0, hz_out2, hz_out4, hz_out1,
-               hz_out3, hz_out5, 8);
+    SLDI_B3_UH(hz_out2, hz_out0, hz_out4, hz_out2, hz_out6, hz_out4, 8, hz_out1,
+               hz_out3, hz_out5);
     hz_out7 = (v8u16) __msa_pckod_d((v2i64) hz_out8, (v2i64) hz_out6);
 
     LW4(dst, dst_stride, tp0, tp1, tp2, tp3);

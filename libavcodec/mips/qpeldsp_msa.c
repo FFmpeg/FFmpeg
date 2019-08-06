@@ -480,8 +480,8 @@ static void horiz_mc_qpel_aver_src1_8width_msa(const uint8_t *src,
         res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3,
                                              mask0, mask1, mask2, mask3,
                                              const20, const6, const3);
-        SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
-        SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+        SLDI_B4_UB(inp0, inp0, inp1, inp1, inp2, inp2, inp3, inp3, 1,
+                   inp0, inp1, inp2, inp3);
         inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
         inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
         AVER_UB2_UB(inp0, res0, inp2, res1, res0, res1);
@@ -710,8 +710,8 @@ static void horiz_mc_qpel_no_rnd_aver_src1_8width_msa(const uint8_t *src,
         res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                       mask2, mask3, const20,
                                                       const6, const3);
-        SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
-        SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+        SLDI_B4_UB(inp0, inp0, inp1, inp1, inp2, inp2, inp3, inp3, 1,
+                   inp0, inp1, inp2, inp3);
         inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
         inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
         res0 = __msa_ave_u_b(inp0, res0);
@@ -948,8 +948,8 @@ static void horiz_mc_qpel_avg_dst_aver_src1_8width_msa(const uint8_t *src,
                                              mask0, mask1, mask2, mask3,
                                              const20, const6, const3);
         LD_UB4(dst, dst_stride, dst0, dst1, dst2, dst3);
-        SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
-        SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+        SLDI_B4_UB(inp0, inp0, inp1, inp1, inp2, inp2, inp3, inp3, 1,
+                   inp0, inp1, inp2, inp3);
         inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
         inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
         dst0 = (v16u8) __msa_insve_d((v2i64) dst0, 1, (v2i64) dst1);
@@ -3094,7 +3094,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src10_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp0, inp1, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_ave_u_b(inp0, res0);
@@ -3104,7 +3104,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src10_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_ave_u_b(inp2, res1);
@@ -3114,7 +3114,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src10_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp0, inp1, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_ave_u_b(inp0, res0);
@@ -3134,7 +3134,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src10_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_ave_u_b(inp2, res1);
@@ -3389,7 +3389,7 @@ static void hv_mc_qpel_no_rnd_aver_h_src1_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp0, inp1, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_ave_u_b(inp0, res0);
@@ -3399,7 +3399,7 @@ static void hv_mc_qpel_no_rnd_aver_h_src1_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_ave_u_b(inp2, res1);
@@ -3409,7 +3409,7 @@ static void hv_mc_qpel_no_rnd_aver_h_src1_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp0, inp1, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_ave_u_b(inp0, res0);
@@ -3427,7 +3427,7 @@ static void hv_mc_qpel_no_rnd_aver_h_src1_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_ave_u_b(inp2, res1);
@@ -3691,7 +3691,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src11_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp0, inp1, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_ave_u_b(inp0, res0);
@@ -3701,7 +3701,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src11_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_ave_u_b(inp2, res1);
@@ -3712,7 +3712,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src11_8x8_msa(const uint8_t *src,
                                                   mask2, mask3, const20,
                                                   const6, const3);
 
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_ave_u_b(inp0, res0);
     horiz5 = (v16u8) __msa_splati_d((v2i64) horiz4, 1);
@@ -3731,7 +3731,7 @@ static void hv_mc_qpel_no_rnd_aver_hv_src11_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_NO_ROUND_FILTER_8BYTE(inp2, inp3, mask0, mask1,
                                                   mask2, mask3, const20,
                                                   const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_ave_u_b(inp2, res1);
@@ -4134,12 +4134,12 @@ static void hv_mc_qpel_aver_hv_src10_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_aver_u_b(inp0, res0);
     horiz1 = (v16u8) __msa_splati_d((v2i64) horiz0, 1);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_aver_u_b(inp2, res1);
@@ -4150,12 +4150,12 @@ static void hv_mc_qpel_aver_hv_src10_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_aver_u_b(inp0, res0);
     horiz5 = (v16u8) __msa_splati_d((v2i64) horiz4, 1);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_aver_u_b(inp2, res1);
@@ -4410,12 +4410,12 @@ static void hv_mc_qpel_aver_h_src1_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_aver_u_b(inp0, res0);
     horiz1 = (v16u8) __msa_splati_d((v2i64) horiz0, 1);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_aver_u_b(inp2, res1);
@@ -4426,12 +4426,12 @@ static void hv_mc_qpel_aver_h_src1_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_aver_u_b(inp0, res0);
     horiz5 = (v16u8) __msa_splati_d((v2i64) horiz4, 1);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_aver_u_b(inp2, res1);
@@ -4690,14 +4690,14 @@ static void hv_mc_qpel_aver_hv_src11_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp0, inp1,
                                          mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz0 = __msa_aver_u_b(inp0, res0);
     horiz1 = (v16u8) __msa_splati_d((v2i64) horiz0, 1);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz2 = __msa_aver_u_b(inp2, res1);
@@ -4706,7 +4706,7 @@ static void hv_mc_qpel_aver_hv_src11_8x8_msa(const uint8_t *src,
     src += (2 * src_stride);
     res0 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp0, inp1, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_insve_d((v2i64) inp0, 1, (v2i64) inp1);
     horiz4 = __msa_aver_u_b(inp0, res0);
@@ -4725,7 +4725,7 @@ static void hv_mc_qpel_aver_hv_src11_8x8_msa(const uint8_t *src,
 
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_insve_d((v2i64) inp2, 1, (v2i64) inp3);
     horiz6 = __msa_aver_u_b(inp2, res1);
@@ -5020,7 +5020,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src10_8x8_msa(const uint8_t *src,
 
     LD_UB2(src, src_stride, inp2, inp3);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz0 = __msa_aver_u_b(inp0, res0);
@@ -5029,7 +5029,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src10_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     LD_UB2(src, src_stride, inp0, inp1);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz2 = __msa_aver_u_b(inp2, res1);
@@ -5037,7 +5037,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src10_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp0, inp1, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
 
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz4 = __msa_aver_u_b(inp0, res0);
@@ -5060,7 +5060,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src10_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
 
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz6 = __msa_aver_u_b(inp2, res1);
@@ -5347,7 +5347,7 @@ static void hv_mc_qpel_avg_dst_aver_h_src1_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     LD_UB2(src, src_stride, inp2, inp3);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz0 = __msa_aver_u_b(inp0, res0);
@@ -5356,7 +5356,7 @@ static void hv_mc_qpel_avg_dst_aver_h_src1_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     LD_UB2(src, src_stride, inp0, inp1);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz2 = __msa_aver_u_b(inp2, res1);
@@ -5364,7 +5364,7 @@ static void hv_mc_qpel_avg_dst_aver_h_src1_8x8_msa(const uint8_t *src,
     res0 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp0, inp1, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
 
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz4 = __msa_aver_u_b(inp0, res0);
@@ -5385,7 +5385,7 @@ static void hv_mc_qpel_avg_dst_aver_h_src1_8x8_msa(const uint8_t *src,
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
 
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz6 = __msa_aver_u_b(inp2, res1);
@@ -5684,7 +5684,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src11_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     LD_UB2(src, src_stride, inp2, inp3);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz0 = __msa_aver_u_b(inp0, res0);
@@ -5693,14 +5693,14 @@ static void hv_mc_qpel_avg_dst_aver_hv_src11_8x8_msa(const uint8_t *src,
                                          const20, const6, const3);
     LD_UB2(src, src_stride, inp0, inp1);
     src += (2 * src_stride);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz2 = __msa_aver_u_b(inp2, res1);
     horiz3 = (v16u8) __msa_splati_d((v2i64) horiz2, 1);
     res0 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp0, inp1, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp0, inp1, inp0, inp1, inp0, inp1, 1);
+    SLDI_B2_UB(inp0, inp0, inp1, inp1, 1, inp0, inp1);
 
     inp0 = (v16u8) __msa_ilvr_d((v2i64) inp1, (v2i64) inp0);
     horiz4 = __msa_aver_u_b(inp0, res0);
@@ -5721,7 +5721,7 @@ static void hv_mc_qpel_avg_dst_aver_hv_src11_8x8_msa(const uint8_t *src,
     src += (2 * src_stride);
     res1 = APPLY_HORIZ_QPEL_FILTER_8BYTE(inp2, inp3, mask0, mask1, mask2, mask3,
                                          const20, const6, const3);
-    SLDI_B2_UB(inp2, inp3, inp2, inp3, inp2, inp3, 1);
+    SLDI_B2_UB(inp2, inp2, inp3, inp3, 1, inp2, inp3);
 
     inp2 = (v16u8) __msa_ilvr_d((v2i64) inp3, (v2i64) inp2);
     horiz6 = __msa_aver_u_b(inp2, res1);

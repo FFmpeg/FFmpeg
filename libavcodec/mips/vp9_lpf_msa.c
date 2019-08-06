@@ -1673,6 +1673,7 @@ static void vp9_transpose_16x8_to_8x16(uint8_t *input, int32_t in_pitch,
     v16u8 p7_org, p6_org, p5_org, p4_org, p3_org, p2_org, p1_org, p0_org;
     v16i8 tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     v16u8 p7, p6, p5, p4, p3, p2, p1, p0, q0, q1, q2, q3, q4, q5, q6, q7;
+    v16i8 zeros = { 0 };
 
     LD_UB8(input, in_pitch,
            p7_org, p6_org, p5_org, p4_org, p3_org, p2_org, p1_org, p0_org);
@@ -1686,7 +1687,7 @@ static void vp9_transpose_16x8_to_8x16(uint8_t *input, int32_t in_pitch,
     ILVL_B2_SB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp7);
     ILVR_W2_UB(tmp6, tmp4, tmp7, tmp5, q0, q4);
     ILVL_W2_UB(tmp6, tmp4, tmp7, tmp5, q2, q6);
-    SLDI_B4_0_UB(q0, q2, q4, q6, q1, q3, q5, q7, 8);
+    SLDI_B4_UB(zeros, q0, zeros, q2, zeros, q4, zeros, q6, 8, q1, q3, q5, q7);
 
     ST_UB8(p7, p6, p5, p4, p3, p2, p1, p0, output, out_pitch);
     output += (8 * out_pitch);
