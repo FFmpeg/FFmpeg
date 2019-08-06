@@ -548,7 +548,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     VP56Context *s = avctx->priv_data;
     AVFrame *const p = s->frames[VP56_FRAME_CURRENT];
     int remaining_buf_size = avpkt->size;
-    int av_uninit(alpha_offset);
+    int alpha_offset = remaining_buf_size;
     int i, res;
     int ret;
 
@@ -561,7 +561,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
     }
 
-    res = s->parse_header(s, buf, remaining_buf_size);
+    res = s->parse_header(s, buf, alpha_offset);
     if (res < 0)
         return res;
 
