@@ -62,6 +62,7 @@ enum {
     FRAG_TYPE_NONE = 0,
     FRAG_TYPE_EVERY_FRAME,
     FRAG_TYPE_DURATION,
+    FRAG_TYPE_PFRAMES,
     FRAG_TYPE_NB
 };
 
@@ -91,6 +92,8 @@ typedef struct OutputStream {
     AVFormatContext *ctx;
     int ctx_inited, as_idx;
     AVIOContext *out;
+    AVCodecParserContext *parser;
+    AVCodecContext *parser_avctx;
     int packets_written;
     char initfile[1024];
     int64_t init_start_pos, pos;
@@ -102,6 +105,7 @@ typedef struct OutputStream {
     Segment **segments;
     int64_t first_pts, start_pts, max_pts;
     int64_t last_dts, last_pts;
+    int last_flags;
     int bit_rate;
     SegmentType segment_type;  /* segment type selected for this particular stream */
     const char *format_name;
@@ -117,6 +121,7 @@ typedef struct OutputStream {
     char temp_path[1024];
     double availability_time_offset;
     int total_pkt_size;
+    int64_t total_pkt_duration;
     int muxer_overhead;
     int frag_type;
 } OutputStream;
@@ -606,6 +611,8 @@ static void dash_free(AVFormatContext *s)
         }
         ff_format_io_close(s, &os->out);
         avformat_free_context(os->ctx);
+        avcodec_free_context(&os->parser_avctx);
+        av_parser_close(os->parser);
         for (j = 0; j < os->nb_segments; j++)
             av_free(os->segments[j]);
         av_free(os->segments);
@@ -933,6 +940,8 @@ static int parse_adaptation_sets(AVFormatContext *s)
 
             if (!strcmp(type_str, "duration"))
                 as->frag_type = FRAG_TYPE_DURATION;
+            else if (!strcmp(type_str, "pframes"))
+                as->frag_type = FRAG_TYPE_PFRAMES;
             else if (!strcmp(type_str, "every_frame"))
                 as->frag_type = FRAG_TYPE_EVERY_FRAME;
             else if (!strcmp(type_str, "none"))
@@ -1349,6 +1358,18 @@ static int dash_init(AVFormatContext *s)
         ctx->avoid_negative_ts = s->avoid_negative_ts;
         ctx->flags = s->flags;
 
+        os->parser = av_parser_init(st->codecpar->codec_id);
+        if (os->parser) {
+            os->parser_avctx = avcodec_alloc_context3(NULL);
+            if (!os->parser_avctx)
+                return AVERROR(ENOMEM);
+            ret = avcodec_parameters_to_context(os->parser_avctx, st->codecpar);
+            if (ret < 0)
+                return ret;
+            // We only want to parse frame headers
+            os->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
+        }
+
         if (c->single_file) {
             if (os->single_file_name)
                 ff_dash_fill_tmpl_params(os->initfile, sizeof(os->initfile), os->single_file_name, i, 0, os->bit_rate, 0);
@@ -1390,6 +1411,11 @@ static int dash_init(AVFormatContext *s)
         if (os->frag_type == FRAG_TYPE_DURATION && os->frag_duration > os->seg_duration) {
             av_log(s, AV_LOG_ERROR, "Fragment duration %"PRId64" is longer than Segment duration %"PRId64"\n", os->frag_duration, os->seg_duration);
             return AVERROR(EINVAL);
+        }
+        if (os->frag_type == FRAG_TYPE_PFRAMES && (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO || !os->parser)) {
+            if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO && !os->parser)
+                av_log(s, AV_LOG_WARNING, "frag_type set to P-Frame reordering, but no parser found for stream %d\n", i);
+            os->frag_type = c->streaming ? FRAG_TYPE_EVERY_FRAME : FRAG_TYPE_NONE;
         }
 
         if (os->segment_type == SEGMENT_TYPE_MP4) {
@@ -1458,6 +1484,8 @@ static int dash_init(AVFormatContext *s)
         av_log(s, AV_LOG_WARNING, "no video stream and no seg duration set\n");
         return AVERROR(EINVAL);
     }
+    if (!c->has_video && c->frag_type == FRAG_TYPE_PFRAMES)
+        av_log(s, AV_LOG_WARNING, "no video stream and P-frame fragmentation set\n");
 
     c->nr_of_streams_flushed = 0;
 
@@ -1730,6 +1758,7 @@ static int dash_flush(AVFormatContext *s, int final, int stream)
                                  av_rescale_q(os->max_pts - os->start_pts,
                                               st->time_base, AV_TIME_BASE_Q);
         os->total_pkt_size = 0;
+        os->total_pkt_duration = 0;
 
         if (!os->bit_rate) {
             // calculate average bitrate of first segment
@@ -1831,6 +1860,9 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
                         sizeof(c->availability_start_time));
     }
 
+    if (!os->packets_written)
+        os->availability_time_offset = 0;
+
     if (!os->availability_time_offset &&
         ((os->frag_type == FRAG_TYPE_DURATION && os->seg_duration != os->frag_duration) ||
          (os->frag_type == FRAG_TYPE_EVERY_FRAME && pkt->duration))) {
@@ -1895,10 +1927,42 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
         os->max_pts = pkt->pts + pkt->duration;
     else
         os->max_pts = FFMAX(os->max_pts, pkt->pts + pkt->duration);
-    os->packets_written++;
-    os->total_pkt_size += pkt->size;
+
+    if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+        os->frag_type == FRAG_TYPE_PFRAMES &&
+        os->packets_written) {
+        uint8_t *data;
+        int size;
+
+        av_assert0(os->parser);
+        av_parser_parse2(os->parser, os->parser_avctx,
+                         &data, &size, pkt->data, pkt->size,
+                         pkt->pts, pkt->dts, pkt->pos);
+
+        if ((os->parser->pict_type == AV_PICTURE_TYPE_P &&
+             st->codecpar->video_delay &&
+             !(os->last_flags & AV_PKT_FLAG_KEY)) ||
+            pkt->flags & AV_PKT_FLAG_KEY) {
+            ret = av_write_frame(os->ctx, NULL);
+            if (ret < 0)
+                return ret;
+
+            if (!os->availability_time_offset) {
+                int64_t frag_duration = av_rescale_q(os->total_pkt_duration, st->time_base,
+                                                     AV_TIME_BASE_Q);
+                os->availability_time_offset = ((double) os->seg_duration -
+                                                 frag_duration) / AV_TIME_BASE;
+            }
+        }
+    }
+
     if ((ret = ff_write_chained(os->ctx, 0, pkt, s, 0)) < 0)
         return ret;
+
+    os->packets_written++;
+    os->total_pkt_size += pkt->size;
+    os->total_pkt_duration += pkt->duration;
+    os->last_flags = pkt->flags;
 
     if (!os->init_range_length)
         flush_init_segment(s, os);
@@ -2026,6 +2090,7 @@ static const AVOption options[] = {
     { "none", "one fragment per segment", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_NONE }, 0, UINT_MAX, E, "frag_type"},
     { "every_frame", "fragment at every frame", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_EVERY_FRAME }, 0, UINT_MAX, E, "frag_type"},
     { "duration", "fragment at specific time intervals", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_DURATION }, 0, UINT_MAX, E, "frag_type"},
+    { "pframes", "fragment at keyframes and following P-Frame reordering (Video only, experimental)", 0, AV_OPT_TYPE_CONST, {.i64 = FRAG_TYPE_PFRAMES }, 0, UINT_MAX, E, "frag_type"},
     { "remove_at_exit", "remove all segments when finished", OFFSET(remove_at_exit), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "use_template", "Use SegmentTemplate instead of SegmentList", OFFSET(use_template), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
     { "use_timeline", "Use SegmentTimeline in SegmentTemplate", OFFSET(use_timeline), AV_OPT_TYPE_BOOL, { .i64 = 1 }, 0, 1, E },
