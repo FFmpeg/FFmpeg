@@ -349,9 +349,10 @@ static int config_output(AVFilterLink *outlink)
     }
 
     if (nb_attacks > channels || nb_decays > channels) {
-        av_log(ctx, AV_LOG_ERROR,
-                "Number of attacks/decays bigger than number of channels.\n");
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_WARNING,
+                "Number of attacks/decays bigger than number of channels. Ignoring rest of entries.\n");
+        nb_attacks = FFMIN(nb_attacks, channels);
+        nb_decays  = FFMIN(nb_decays, channels);
     }
 
     uninit(ctx);
