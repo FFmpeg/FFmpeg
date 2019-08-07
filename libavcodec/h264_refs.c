@@ -732,7 +732,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h)
             for (j = 0; j < MAX_DELAYED_PIC_COUNT; j++)
                 h->last_pocs[j] = INT_MIN;
             break;
-        default: assert(0);
+        default: av_assert0(0);
         }
     }
 
@@ -868,6 +868,7 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                         av_log(logctx, AV_LOG_ERROR,
                                "illegal long ref in memory management control "
                                "operation %d\n", opcode);
+                        sl->nb_mmco = i;
                         return -1;
                     }
                     mmco[i].long_arg = long_arg;
@@ -877,6 +878,7 @@ int ff_h264_decode_ref_pic_marking(H264SliceContext *sl, GetBitContext *gb,
                     av_log(logctx, AV_LOG_ERROR,
                            "illegal memory management control operation %d\n",
                            opcode);
+                    sl->nb_mmco = i;
                     return -1;
                 }
                 if (opcode == MMCO_END)
