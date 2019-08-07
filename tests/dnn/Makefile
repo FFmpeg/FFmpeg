@@ -4,8 +4,8 @@ DNNTESTOBJS  := $(DNNTESTOBJS:%=$(DNNTESTSDIR)%) $(DNNTESTPROGS:%=$(DNNTESTSDIR)
 DNNTESTPROGS := $(DNNTESTPROGS:%=$(DNNTESTSDIR)/%-test$(EXESUF))
 -include $(wildcard $(DNNTESTOBJS:.o=.d))
 
-$(DNNTESTPROGS): %$(EXESUF): %.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_EXTRALIBS) $(ELIBS)
+$(DNNTESTPROGS): %$(EXESUF): %.o $(FF_STATIC_DEP_LIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_STATIC_DEP_LIBS) $(ELIBS)
 
 testclean::
 	$(RM) $(addprefix $(DNNTESTSDIR)/,$(CLEANSUFFIXES) *-test$(EXESUF))
