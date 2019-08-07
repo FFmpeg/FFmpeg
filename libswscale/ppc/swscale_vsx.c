@@ -154,8 +154,10 @@ static void yuv2plane1_nbps_u(const int16_t *src, uint16_t *dest, int dstW,
     }
 }
 
-static void yuv2plane1_nbps_vsx(const int16_t *src, uint16_t *dest, int dstW,
-                           int big_endian, int output_bits)
+static av_always_inline void yuv2plane1_nbps_vsx(const int16_t *src,
+                                                 uint16_t *dest, int dstW,
+                                                 const int big_endian,
+                                                 const int output_bits)
 {
     const int dst_u = -(uintptr_t)dest & 7;
     const int shift = 15 - output_bits;
@@ -273,8 +275,10 @@ static void yuv2plane1_16_u(const int32_t *src, uint16_t *dest, int dstW,
     }
 }
 
-static void yuv2plane1_16_vsx(const int32_t *src, uint16_t *dest, int dstW,
-                           int big_endian, int output_bits)
+static av_always_inline void yuv2plane1_16_vsx(const int32_t *src,
+                                               uint16_t *dest, int dstW,
+                                               const int big_endian,
+                                               int output_bits)
 {
     const int dst_u = -(uintptr_t)dest & 7;
     const int shift = 3;
