@@ -207,6 +207,7 @@ typedef struct HLSContext {
     int max_reload;
     int http_persistent;
     int http_multiple;
+    int http_seekable;
     AVIOContext *playlist_pb;
 } HLSContext;
 
@@ -1796,8 +1797,10 @@ static int hls_read_header(AVFormatContext *s)
     if ((ret = save_avio_options(s)) < 0)
         goto fail;
 
-    /* Some HLS servers don't like being sent the range header */
-    av_dict_set(&c->avio_opts, "seekable", "0", 0);
+    /* XXX: Some HLS servers don't like being sent the range header,
+       in this case, need to  setting http_seekable = 0 to disable
+       the range header */
+    av_dict_set_int(&c->avio_opts, "seekable", c->http_seekable, 0);
 
     if ((ret = parse_playlist(c, s->url, NULL, s->pb)) < 0)
         goto fail;
@@ -2311,6 +2314,8 @@ static const AVOption hls_options[] = {
         OFFSET(http_persistent), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, FLAGS },
     {"http_multiple", "Use multiple HTTP connections for fetching segments",
         OFFSET(http_multiple), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, FLAGS},
+    {"http_seekable", "Use HTTP partial requests, 0 = disable, 1 = enable, -1 = auto",
+        OFFSET(http_seekable), AV_OPT_TYPE_BOOL, { .i64 = -1}, -1, 1, FLAGS},
     {NULL}
 };
 

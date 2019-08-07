@@ -338,6 +338,10 @@ Enabled by default.
 @item http_multiple
 Use multiple HTTP connections for downloading HTTP segments.
 Enabled by default for HTTP/1.1 servers.
+
+@item http_seekable
+Use HTTP partial requests for downloading HTTP segments.
+0 = disable, 1 = enable, -1 = auto, Default is auto.
 @end table
 
 @section image2
