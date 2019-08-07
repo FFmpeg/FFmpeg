@@ -1057,7 +1057,7 @@ int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
         if (err < 0)
             goto fail;
 
-        if (ctx->input_order == 0)
+        if (ctx->input_order == 0 || frame->pict_type == AV_PICTURE_TYPE_I)
             pic->force_idr = 1;
 
         pic->input_surface = (VASurfaceID)(uintptr_t)frame->data[3];
