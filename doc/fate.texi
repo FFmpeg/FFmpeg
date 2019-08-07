@@ -149,6 +149,8 @@ the synchronisation of the samples directory.
 
 @chapter Uploading new samples to the fate suite
 
+If you need a sample uploaded send a mail to samples-request.
+
 This is for developers who have an account on the fate suite server.
 If you upload new samples, please make sure they are as small as possible,
 space on each client, network bandwidth and so on benefit from smaller test cases.
@@ -157,6 +159,8 @@ practice generally do not replace, remove or overwrite files as it likely would
 break older checkouts or releases.
 Also all needed samples for a commit should be uploaded, ideally 24
 hours, before the push.
+If you need an account for frequently uploading samples or you wish to help
+others by doing that send a mail to ffmpeg-devel.
 
 @example
 #First update your local samples copy:
