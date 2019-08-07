@@ -8172,10 +8172,6 @@ enabled threads || warn \
     "environment."
 
 case $target_os in
-haiku)
-    disable memalign
-    disable posix_memalign
-    ;;
 *-dos|freedos|opendos)
     if test_cpp_condition sys/version.h "defined(__DJGPP__) && __DJGPP__ == 2 && __DJGPP_MINOR__ == 5"; then
         disable memalign
