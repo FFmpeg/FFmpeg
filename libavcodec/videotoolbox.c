@@ -1143,7 +1143,7 @@ const AVHWAccel ff_hevc_videotoolbox_hwaccel = {
     .end_frame      = videotoolbox_hevc_end_frame,
     .frame_params   = videotoolbox_frame_params,
     .init           = videotoolbox_common_init,
-    .uninit         = ff_videotoolbox_uninit,
+    .uninit         = videotoolbox_uninit,
     .priv_data_size = sizeof(VTContext),
 };
 
