@@ -83,7 +83,7 @@ static void hevc_intra_pred_vert_4x4_msa(const uint8_t *src_top,
         vec2 -= vec0;
         vec2 >>= 1;
         vec2 += vec1;
-        vec2 = CLIP_SH_0_255(vec2);
+        CLIP_SH_0_255(vec2);
 
         for (col = 0; col < 4; col++) {
             dst[stride * col] = (uint8_t) vec2[col];
@@ -122,7 +122,7 @@ static void hevc_intra_pred_vert_8x8_msa(const uint8_t *src_top,
         vec2 -= vec0;
         vec2 >>= 1;
         vec2 += vec1;
-        vec2 = CLIP_SH_0_255(vec2);
+        CLIP_SH_0_255(vec2);
 
         val0 = vec2[0];
         val1 = vec2[1];
@@ -214,7 +214,7 @@ static void hevc_intra_pred_horiz_4x4_msa(const uint8_t *src_top,
         src0_r -= src_top_val;
         src0_r >>= 1;
         src0_r += src_left_val;
-        src0_r = CLIP_SH_0_255(src0_r);
+        CLIP_SH_0_255(src0_r);
         src0 = __msa_pckev_b((v16i8) src0_r, (v16i8) src0_r);
         val0 = __msa_copy_s_w((v4i32) src0, 0);
         SW(val0, dst);
@@ -254,7 +254,7 @@ static void hevc_intra_pred_horiz_8x8_msa(const uint8_t *src_top,
         src0_r -= src_top_val;
         src0_r >>= 1;
         src0_r += src_left_val;
-        src0_r = CLIP_SH_0_255(src0_r);
+        CLIP_SH_0_255(src0_r);
         src0 = __msa_pckev_b((v16i8) src0_r, (v16i8) src0_r);
         val0 = __msa_copy_s_d((v2i64) src0, 0);
         SD(val0, dst);

@@ -96,7 +96,7 @@
     DPADD_UB2_UH(sum2_r, sum1_r, coef2, coef1, sum0_r, sum3_r);         \
     res0_r = (v8i16) (sum0_r - sum3_r);                                 \
     res0_r = __msa_srari_h(res0_r, 5);                                  \
-    res0_r = CLIP_SH_0_255(res0_r);                                     \
+    CLIP_SH_0_255(res0_r);                                              \
     out = (v16u8) __msa_pckev_b((v16i8) res0_r, (v16i8) res0_r);        \
                                                                         \
     out;                                                                \
@@ -118,7 +118,7 @@
     res0_r = (v8i16) (sum0_r - sum3_r);                                   \
     res0_r += 15;                                                         \
     res0_r >>= 5;                                                         \
-    res0_r = CLIP_SH_0_255(res0_r);                                       \
+    CLIP_SH_0_255(res0_r);                                                \
     out = (v16u8) __msa_pckev_b((v16i8) res0_r, (v16i8) res0_r);          \
                                                                           \
     out;                                                                  \

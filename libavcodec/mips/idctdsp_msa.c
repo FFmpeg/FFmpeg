@@ -28,8 +28,7 @@ static void put_pixels_clamped_msa(const int16_t *block, uint8_t *pixels,
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
 
     LD_SH8(block, 8, in0, in1, in2, in3, in4, in5, in6, in7);
-    CLIP_SH4_0_255(in0, in1, in2, in3);
-    CLIP_SH4_0_255(in4, in5, in6, in7);
+    CLIP_SH8_0_255(in0, in1, in2, in3, in4, in5, in6, in7);
     PCKEV_B4_SH(in0, in0, in1, in1, in2, in2, in3, in3, in0, in1, in2, in3);
     PCKEV_B4_SH(in4, in4, in5, in5, in6, in6, in7, in7, in4, in5, in6, in7);
 
@@ -63,8 +62,7 @@ static void put_signed_pixels_clamped_msa(const int16_t *block, uint8_t *pixels,
     in6 += 128;
     in7 += 128;
 
-    CLIP_SH4_0_255(in0, in1, in2, in3);
-    CLIP_SH4_0_255(in4, in5, in6, in7);
+    CLIP_SH8_0_255(in0, in1, in2, in3, in4, in5, in6, in7);
     PCKEV_B4_SH(in0, in0, in1, in1, in2, in2, in3, in3, in0, in1, in2, in3);
     PCKEV_B4_SH(in4, in4, in5, in5, in6, in6, in7, in7, in4, in5, in6, in7);
 
@@ -109,8 +107,7 @@ static void add_pixels_clamped_msa(const int16_t *block, uint8_t *pixels,
     in6 += (v8i16) pix6;
     in7 += (v8i16) pix7;
 
-    CLIP_SH4_0_255(in0, in1, in2, in3);
-    CLIP_SH4_0_255(in4, in5, in6, in7);
+    CLIP_SH8_0_255(in0, in1, in2, in3, in4, in5, in6, in7);
     PCKEV_B4_SH(in0, in0, in1, in1, in2, in2, in3, in3, in0, in1, in2, in3);
     PCKEV_B4_SH(in4, in4, in5, in5, in6, in6, in7, in7, in4, in5, in6, in7);
 

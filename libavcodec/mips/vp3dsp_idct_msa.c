@@ -187,14 +187,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
         G += c5;
         H += c6;
     }
-    A = CLIP_SW_0_255(A);
-    B = CLIP_SW_0_255(B);
-    C = CLIP_SW_0_255(C);
-    D = CLIP_SW_0_255(D);
-    E = CLIP_SW_0_255(E);
-    F = CLIP_SW_0_255(F);
-    G = CLIP_SW_0_255(G);
-    H = CLIP_SW_0_255(H);
+    CLIP_SW8_0_255(A, B, C, D, E, F, G, H);
     sign_l = __msa_or_v((v16u8)r1_r, (v16u8)r2_r);
     sign_l = __msa_or_v(sign_l, (v16u8)r3_r);
     sign_l = __msa_or_v(sign_l, (v16u8)r0_l);
@@ -205,7 +198,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
     Add = ((r0_r * cnst46341w) + (8 << 16)) >> 20;
     if (type == 1) {
         Bdd = Add + cnst128w;
-        Bdd = CLIP_SW_0_255(Bdd);
+        CLIP_SW_0_255(Bdd);
         Ad = Bdd;
         Bd = Bdd;
         Cd = Bdd;
@@ -223,14 +216,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
         Fd = Add + c5;
         Gd = Add + c6;
         Hd = Add + c7;
-        Ad = CLIP_SW_0_255(Ad);
-        Bd = CLIP_SW_0_255(Bd);
-        Cd = CLIP_SW_0_255(Cd);
-        Dd = CLIP_SW_0_255(Dd);
-        Ed = CLIP_SW_0_255(Ed);
-        Fd = CLIP_SW_0_255(Fd);
-        Gd = CLIP_SW_0_255(Gd);
-        Hd = CLIP_SW_0_255(Hd);
+        CLIP_SW8_0_255(Ad, Bd, Cd, Dd, Ed, Fd, Gd, Hd);
     }
     Ad = (v4i32)__msa_and_v((v16u8)Ad, (v16u8)sign_t);
     Bd = (v4i32)__msa_and_v((v16u8)Bd, (v16u8)sign_t);
@@ -309,14 +295,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
         G += c5;
         H += c6;
     }
-    A = CLIP_SW_0_255(A);
-    B = CLIP_SW_0_255(B);
-    C = CLIP_SW_0_255(C);
-    D = CLIP_SW_0_255(D);
-    E = CLIP_SW_0_255(E);
-    F = CLIP_SW_0_255(F);
-    G = CLIP_SW_0_255(G);
-    H = CLIP_SW_0_255(H);
+    CLIP_SW8_0_255(A, B, C, D, E, F, G, H);
     sign_l = __msa_or_v((v16u8)r5_r, (v16u8)r6_r);
     sign_l = __msa_or_v(sign_l, (v16u8)r7_r);
     sign_l = __msa_or_v(sign_l, (v16u8)r4_l);
@@ -327,7 +306,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
     Add = ((r4_r * cnst46341w) + (8 << 16)) >> 20;
     if (type == 1) {
         Bdd = Add + cnst128w;
-        Bdd = CLIP_SW_0_255(Bdd);
+        CLIP_SW_0_255(Bdd);
         Ad = Bdd;
         Bd = Bdd;
         Cd = Bdd;
@@ -345,14 +324,7 @@ static void idct_msa(uint8_t *dst, int stride, int16_t *input, int type)
         Fd = Add + c5;
         Gd = Add + c6;
         Hd = Add + c7;
-        Ad = CLIP_SW_0_255(Ad);
-        Bd = CLIP_SW_0_255(Bd);
-        Cd = CLIP_SW_0_255(Cd);
-        Dd = CLIP_SW_0_255(Dd);
-        Ed = CLIP_SW_0_255(Ed);
-        Fd = CLIP_SW_0_255(Fd);
-        Gd = CLIP_SW_0_255(Gd);
-        Hd = CLIP_SW_0_255(Hd);
+        CLIP_SW8_0_255(Ad, Bd, Cd, Dd, Ed, Fd, Gd, Hd);
     }
     Ad = (v4i32)__msa_and_v((v16u8)Ad, (v16u8)sign_t);
     Bd = (v4i32)__msa_and_v((v16u8)Bd, (v16u8)sign_t);
@@ -436,14 +408,7 @@ void ff_vp3_idct_dc_add_msa(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     e5 += dc;
     e6 += dc;
     e7 += dc;
-    e0 = CLIP_SW_0_255(e0);
-    e1 = CLIP_SW_0_255(e1);
-    e2 = CLIP_SW_0_255(e2);
-    e3 = CLIP_SW_0_255(e3);
-    e4 = CLIP_SW_0_255(e4);
-    e5 = CLIP_SW_0_255(e5);
-    e6 = CLIP_SW_0_255(e6);
-    e7 = CLIP_SW_0_255(e7);
+    CLIP_SW8_0_255(e0, e1, e2, e3, e4, e5, e6, e7);
 
     /* Left part */
     ILVL_H4_SW(zero, c0, zero, c1, zero, c2, zero, c3,
@@ -458,14 +423,7 @@ void ff_vp3_idct_dc_add_msa(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
     r5 += dc;
     r6 += dc;
     r7 += dc;
-    r0 = CLIP_SW_0_255(r0);
-    r1 = CLIP_SW_0_255(r1);
-    r2 = CLIP_SW_0_255(r2);
-    r3 = CLIP_SW_0_255(r3);
-    r4 = CLIP_SW_0_255(r4);
-    r5 = CLIP_SW_0_255(r5);
-    r6 = CLIP_SW_0_255(r6);
-    r7 = CLIP_SW_0_255(r7);
+    CLIP_SW8_0_255(r0, r1, r2, r3, r4, r5, r6, r7);
     VSHF_B2_SB(e0, r0, e1, r1, mask, mask, d0, d1);
     VSHF_B2_SB(e2, r2, e3, r3, mask, mask, d2, d3);
     VSHF_B2_SB(e4, r4, e5, r5, mask, mask, d4, d5);
@@ -516,10 +474,7 @@ void ff_vp3_v_loop_filter_msa(uint8_t *first_pixel, ptrdiff_t stride,
     f1 += e1;
     g0 -= e0;
     g1 -= e1;
-    f0 = CLIP_SW_0_255(f0);
-    f1 = CLIP_SW_0_255(f1);
-    g0 = CLIP_SW_0_255(g0);
-    g1 = CLIP_SW_0_255(g1);
+    CLIP_SW4_0_255(f0, f1, g0, g1);
     VSHF_B2_SB(f0, f1, g0, g1, mask, mask, d1, d2);
 
     /* Final move to first_pixel */
@@ -563,10 +518,7 @@ void ff_vp3_h_loop_filter_msa(uint8_t *first_pixel, ptrdiff_t stride,
     f1 += e1;
     g0 -= e0;
     g1 -= e1;
-    f0 = CLIP_SW_0_255(f0);
-    f1 = CLIP_SW_0_255(f1);
-    g0 = CLIP_SW_0_255(g0);
-    g1 = CLIP_SW_0_255(g1);
+    CLIP_SW4_0_255(f0, f1, g0, g1);
     VSHF_B2_SB(f0, g0, f1, g1, mask, mask, d1, d2);
     /* Final move to first_pixel */
     ST_H4(d1, 0, 1, 2, 3, first_pixel - 1, stride);

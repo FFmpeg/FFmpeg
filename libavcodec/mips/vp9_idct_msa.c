@@ -763,13 +763,13 @@ static void vp9_iadst8x8_colcol_addblk_msa(int16_t *input, uint8_t *dst,
 
     res0 = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) dst0);
     res0 += out0;
-    res0 = CLIP_SH_0_255(res0);
+    CLIP_SH_0_255(res0);
     res0 = (v8i16) __msa_pckev_b((v16i8) res0, (v16i8) res0);
     ST_D1(res0, 0, dst);
 
     res7 = (v8i16) __msa_ilvr_b((v16i8) zero, (v16i8) dst7);
     res7 += out7;
-    res7 = CLIP_SH_0_255(res7);
+    CLIP_SH_0_255(res7);
     res7 = (v8i16) __msa_pckev_b((v16i8) res7, (v16i8) res7);
     ST_D1(res7, 0, dst + 7 * dst_stride);
 
@@ -1192,8 +1192,7 @@ static void vp9_idct16x16_1_add_msa(int16_t *input, uint8_t *dst,
              res3);
         ADD4(res4, vec, res5, vec, res6, vec, res7, vec, res4, res5, res6,
              res7);
-        CLIP_SH4_0_255(res0, res1, res2, res3);
-        CLIP_SH4_0_255(res4, res5, res6, res7);
+        CLIP_SH8_0_255(res0, res1, res2, res3, res4, res5, res6, res7);
         PCKEV_B4_UB(res4, res0, res5, res1, res6, res2, res7, res3,
                     tmp0, tmp1, tmp2, tmp3);
         ST_UB4(tmp0, tmp1, tmp2, tmp3, dst, dst_stride);
@@ -1981,8 +1980,7 @@ static void vp9_idct32x32_1_add_msa(int16_t *input, uint8_t *dst,
              res3);
         ADD4(res4, vec, res5, vec, res6, vec, res7, vec, res4, res5, res6,
              res7);
-        CLIP_SH4_0_255(res0, res1, res2, res3);
-        CLIP_SH4_0_255(res4, res5, res6, res7);
+        CLIP_SH8_0_255(res0, res1, res2, res3, res4, res5, res6, res7);
         PCKEV_B4_UB(res4, res0, res5, res1, res6, res2, res7, res3,
                     tmp0, tmp1, tmp2, tmp3);
 

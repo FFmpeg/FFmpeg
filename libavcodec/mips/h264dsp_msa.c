@@ -413,8 +413,7 @@ static void avc_biwgt_8x8_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     tmp7 = __msa_dpadd_s_h(offset, wgt, vec7);
     SRA_4V(tmp0, tmp1, tmp2, tmp3, denom);
     SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
-    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
-    CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
+    CLIP_SH8_0_255(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
     PCKEV_B2_UB(tmp1, tmp0, tmp3, tmp2, dst0, dst1);
     PCKEV_B2_UB(tmp5, tmp4, tmp7, tmp6, dst2, dst3);
     ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
@@ -475,8 +474,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
 
         SRA_4V(temp0, temp1, temp2, temp3, denom);
         SRA_4V(temp4, temp5, temp6, temp7, denom);
-        CLIP_SH4_0_255(temp0, temp1, temp2, temp3);
-        CLIP_SH4_0_255(temp4, temp5, temp6, temp7);
+        CLIP_SH8_0_255(temp0, temp1, temp2, temp3, temp4, temp5, temp6, temp7);
         PCKEV_B4_UB(temp1, temp0, temp3, temp2, temp5, temp4, temp7, temp6,
                     dst0, dst1, dst2, dst3);
         ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, stride);
@@ -531,7 +529,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     temp = p1_or_q1_org_in << 1;                              \
     clip3 = clip3 - temp;                                     \
     clip3 = __msa_ave_s_h(p2_or_q2_org_in, clip3);            \
-    clip3 = CLIP_SH(clip3, negate_tc_in, tc_in);              \
+    CLIP_SH(clip3, negate_tc_in, tc_in);                      \
     p1_or_q1_out = p1_or_q1_org_in + clip3;                   \
 }
 
@@ -549,7 +547,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     delta = q0_sub_p0 + p1_sub_q1;                              \
     delta >>= 3;                                                \
                                                                 \
-    delta = CLIP_SH(delta, negate_threshold_in, threshold_in);  \
+    CLIP_SH(delta, negate_threshold_in, threshold_in);          \
                                                                 \
     p0_or_q0_out = p0_or_q0_org_in + delta;                     \
     q0_or_p0_out = q0_or_p0_org_in - delta;                     \
@@ -598,7 +596,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     delta = q0_sub_p0 + p1_sub_q1;                                       \
     delta = __msa_srari_h(delta, 3);                                     \
                                                                          \
-    delta = CLIP_SH(delta, -tc, tc);                                     \
+    CLIP_SH(delta, -tc, tc);                                             \
                                                                          \
     ILVR_B2_SH(zeros, src1, zeros, src2, res0_r, res1_r);                \
                                                                          \
@@ -662,7 +660,7 @@ static void avc_biwgt_8x16_msa(uint8_t *src, uint8_t *dst, int32_t stride,
     q0_sub_p0 <<= 2;                                                       \
     delta = q0_sub_p0 + p1_sub_q1;                                         \
     delta = __msa_srari_h(delta, 3);                                       \
-    delta = CLIP_SH(delta, -tc, tc);                                       \
+    CLIP_SH(delta, -tc, tc);                                               \
                                                                            \
     ILVR_B2_SH(zeros, src1, zeros, src2, res0_r, res1_r);                  \
                                                                            \
@@ -1741,7 +1739,7 @@ static void avc_h_loop_filter_luma_mbaff_msa(uint8_t *in, int32_t stride,
     v8i16 tc, tc_orig_r, tc_plus1;
     v16u8 is_tc_orig1, is_tc_orig2, tc_orig = { 0 };
     v8i16 p0_ilvr_q0, p0_add_q0, q0_sub_p0, p1_sub_q1;
-    v8u16 src2_r, src3_r;
+    v8i16 src2_r, src3_r;
     v8i16 p2_r, p1_r, q2_r, q1_r;
     v16u8 p2, q2, p0, q0;
     v4i32 dst0, dst1;
@@ -1839,8 +1837,8 @@ static void avc_h_loop_filter_luma_mbaff_msa(uint8_t *in, int32_t stride,
     tc_orig_r = (v8i16) __msa_ilvr_b(zeros, (v16i8) tc_orig);
     tc = tc_orig_r;
 
-    p2_r = CLIP_SH(p2_r, -tc_orig_r, tc_orig_r);
-    q2_r = CLIP_SH(q2_r, -tc_orig_r, tc_orig_r);
+    CLIP_SH(p2_r, -tc_orig_r, tc_orig_r);
+    CLIP_SH(q2_r, -tc_orig_r, tc_orig_r);
 
     p2_r += p1_r;
     q2_r += q1_r;
@@ -1872,14 +1870,13 @@ static void avc_h_loop_filter_luma_mbaff_msa(uint8_t *in, int32_t stride,
                                               (v16i8) is_less_than_beta2);
     tc = (v8i16) __msa_bmnz_v((v16u8) tc, (v16u8) tc_plus1, is_less_than_beta2);
 
-    q0_sub_p0 = CLIP_SH(q0_sub_p0, -tc, tc);
+    CLIP_SH(q0_sub_p0, -tc, tc);
 
-    ILVR_B2_UH(zeros, src2, zeros, src3, src2_r, src3_r);
+    ILVR_B2_SH(zeros, src2, zeros, src3, src2_r, src3_r);
     src2_r += q0_sub_p0;
     src3_r -= q0_sub_p0;
 
-    src2_r = (v8u16) CLIP_SH_0_255(src2_r);
-    src3_r = (v8u16) CLIP_SH_0_255(src3_r);
+    CLIP_SH2_0_255(src2_r, src3_r);
 
     PCKEV_B2_UB(src2_r, src2_r, src3_r, src3_r, p0, q0);
 
@@ -2509,10 +2506,8 @@ void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
     SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
     SRA_4V(tmp8, tmp9, tmp10, tmp11, denom);
     SRA_4V(tmp12, tmp13, tmp14, tmp15, denom);
-    CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
-    CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
-    CLIP_SH4_0_255(tmp8, tmp9, tmp10, tmp11);
-    CLIP_SH4_0_255(tmp12, tmp13, tmp14, tmp15);
+    CLIP_SH8_0_255(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+    CLIP_SH8_0_255(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15);
     PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
                 dst2, dst3);
     PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,
@@ -2553,10 +2548,8 @@ void ff_biweight_h264_pixels16_8_msa(uint8_t *dst, uint8_t *src,
         SRA_4V(tmp4, tmp5, tmp6, tmp7, denom);
         SRA_4V(tmp8, tmp9, tmp10, tmp11, denom);
         SRA_4V(tmp12, tmp13, tmp14, tmp15, denom);
-        CLIP_SH4_0_255(tmp0, tmp1, tmp2, tmp3);
-        CLIP_SH4_0_255(tmp4, tmp5, tmp6, tmp7);
-        CLIP_SH4_0_255(tmp8, tmp9, tmp10, tmp11);
-        CLIP_SH4_0_255(tmp12, tmp13, tmp14, tmp15);
+        CLIP_SH8_0_255(tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7);
+        CLIP_SH8_0_255(tmp8, tmp9, tmp10, tmp11, tmp12, tmp13, tmp14, tmp15);
         PCKEV_B4_UB(tmp1, tmp0, tmp3, tmp2, tmp5, tmp4, tmp7, tmp6, dst0, dst1,
                     dst2, dst3);
         PCKEV_B4_UB(tmp9, tmp8, tmp11, tmp10, tmp13, tmp12, tmp15, tmp14, dst4,

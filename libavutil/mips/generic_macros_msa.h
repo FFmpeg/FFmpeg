@@ -933,99 +933,78 @@
 
 /* Description : Clips all halfword elements of input vector between min & max
                  out = ((in) < (min)) ? (min) : (((in) > (max)) ? (max) : (in))
-   Arguments   : Inputs  - in       (input vector)
-                         - min      (min threshold)
-                         - max      (max threshold)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                         - min   (min threshold)
+                         - max   (max threshold)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed halfword
 */
-#define CLIP_SH(in, min, max)                           \
-( {                                                     \
-    v8i16 out_m;                                        \
-                                                        \
-    out_m = __msa_max_s_h((v8i16) min, (v8i16) in);     \
-    out_m = __msa_min_s_h((v8i16) max, (v8i16) out_m);  \
-    out_m;                                              \
-} )
+#define CLIP_SH(in, min, max)                     \
+{                                                 \
+    in = __msa_max_s_h((v8i16) min, (v8i16) in);  \
+    in = __msa_min_s_h((v8i16) max, (v8i16) in);  \
+}
 
 /* Description : Clips all signed halfword elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
-                 Return Type - signed halfword
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
+                 Return Type - signed halfwords
 */
-#define CLIP_SH_0_255(in)                                 \
-( {                                                       \
-    v8i16 max_m = __msa_ldi_h(255);                       \
-    v8i16 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_h((v8i16) in, 0);                \
-    out_m = __msa_min_s_h((v8i16) max_m, (v8i16) out_m);  \
-    out_m;                                                \
-} )
+#define CLIP_SH_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_h((v8i16) in, 0);         \
+    in = (v8i16) __msa_sat_u_h((v8u16) in, 7);  \
+}
+
 #define CLIP_SH2_0_255(in0, in1)  \
 {                                 \
-    in0 = CLIP_SH_0_255(in0);     \
-    in1 = CLIP_SH_0_255(in1);     \
+    CLIP_SH_0_255(in0);           \
+    CLIP_SH_0_255(in1);           \
 }
+
 #define CLIP_SH4_0_255(in0, in1, in2, in3)  \
 {                                           \
     CLIP_SH2_0_255(in0, in1);               \
     CLIP_SH2_0_255(in2, in3);               \
 }
 
-#define CLIP_SH_0_255_MAX_SATU(in)                    \
-( {                                                   \
-    v8i16 out_m;                                      \
-                                                      \
-    out_m = __msa_maxi_s_h((v8i16) in, 0);            \
-    out_m = (v8i16) __msa_sat_u_h((v8u16) out_m, 7);  \
-    out_m;                                            \
-} )
-#define CLIP_SH2_0_255_MAX_SATU(in0, in1)  \
-{                                          \
-    in0 = CLIP_SH_0_255_MAX_SATU(in0);     \
-    in1 = CLIP_SH_0_255_MAX_SATU(in1);     \
-}
-#define CLIP_SH4_0_255_MAX_SATU(in0, in1, in2, in3)  \
-{                                                    \
-    CLIP_SH2_0_255_MAX_SATU(in0, in1);               \
-    CLIP_SH2_0_255_MAX_SATU(in2, in3);               \
+#define CLIP_SH8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SH4_0_255(in0, in1, in2, in3);     \
+    CLIP_SH4_0_255(in4, in5, in6, in7);     \
 }
 
 /* Description : Clips all signed word elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed word
 */
-#define CLIP_SW_0_255(in)                                 \
-( {                                                       \
-    v4i32 max_m = __msa_ldi_w(255);                       \
-    v4i32 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_w((v4i32) in, 0);                \
-    out_m = __msa_min_s_w((v4i32) max_m, (v4i32) out_m);  \
-    out_m;                                                \
-} )
-
-#define CLIP_SW_0_255_MAX_SATU(in)                    \
-( {                                                   \
-    v4i32 out_m;                                      \
-                                                      \
-    out_m = __msa_maxi_s_w((v4i32) in, 0);            \
-    out_m = (v4i32) __msa_sat_u_w((v4u32) out_m, 7);  \
-    out_m;                                            \
-} )
-#define CLIP_SW2_0_255_MAX_SATU(in0, in1)  \
-{                                          \
-    in0 = CLIP_SW_0_255_MAX_SATU(in0);     \
-    in1 = CLIP_SW_0_255_MAX_SATU(in1);     \
+#define CLIP_SW_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_w((v4i32) in, 0);         \
+    in = (v4i32) __msa_sat_u_w((v4u32) in, 7);  \
 }
-#define CLIP_SW4_0_255_MAX_SATU(in0, in1, in2, in3)  \
-{                                                    \
-    CLIP_SW2_0_255_MAX_SATU(in0, in1);               \
-    CLIP_SW2_0_255_MAX_SATU(in2, in3);               \
+
+#define CLIP_SW2_0_255(in0, in1)  \
+{                                 \
+    CLIP_SW_0_255(in0);           \
+    CLIP_SW_0_255(in1);           \
+}
+
+#define CLIP_SW4_0_255(in0, in1, in2, in3)  \
+{                                           \
+    CLIP_SW2_0_255(in0, in1);               \
+    CLIP_SW2_0_255(in2, in3);               \
+}
+
+#define CLIP_SW8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SW4_0_255(in0, in1, in2, in3);     \
+    CLIP_SW4_0_255(in4, in5, in6, in7);     \
 }
 
 /* Description : Addition of 4 signed word elements
