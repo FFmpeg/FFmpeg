@@ -97,7 +97,7 @@ typedef struct MpegTSWrite {
     int start_pid;
     int m2ts_mode;
 
-    int pcr_period;
+    int pcr_period_ms;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
 #define MPEGTS_FLAG_PAT_PMT_AT_FRAMES           0x04
@@ -791,7 +791,7 @@ static void enable_pcr_generation_for_stream(AVFormatContext *s, AVStream *pcr_s
     MpegTSWriteStream *ts_st = pcr_st->priv_data;
 
     if (ts->mux_rate > 1) {
-        ts_st->pcr_period = av_rescale(ts->pcr_period, PCR_TIME_BASE, 1000);
+        ts_st->pcr_period = av_rescale(ts->pcr_period_ms, PCR_TIME_BASE, 1000);
     } else {
         /* For VBR we select the highest multiple of frame duration which is less than 100 ms. */
         int64_t frame_period = 0;
@@ -1963,7 +1963,7 @@ static const AVOption options[] = {
       offsetof(MpegTSWrite, omit_video_pes_length), AV_OPT_TYPE_BOOL,
       { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "pcr_period", "PCR retransmission time in milliseconds",
-      offsetof(MpegTSWrite, pcr_period), AV_OPT_TYPE_INT,
+      offsetof(MpegTSWrite, pcr_period_ms), AV_OPT_TYPE_INT,
       { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",
       offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_DOUBLE,
