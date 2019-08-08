@@ -6,6 +6,7 @@ version <next>:
 - Intel QSV-accelerated MJPEG decoding
 - Intel QSV-accelerated VP9 decoding
 - support for TrueHD in mp4
+- Supoort AMD AMF encoder on Linux (via Vulkan)
 
 
 version 4.2:

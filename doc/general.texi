@@ -27,15 +27,25 @@ enable it.
 
 @section AMD AMF/VCE
 
-FFmpeg can use the AMD Advanced Media Framework library under Windows
-for accelerated H.264 and HEVC encoding on hardware with Video Coding Engine (VCE).
+FFmpeg can use the AMD Advanced Media Framework library
+for accelerated H.264 and HEVC(only windows) encoding on hardware with Video Coding Engine (VCE).
 
-To enable support you must obtain the AMF framework header files from
+To enable support you must obtain the AMF framework header files(version 1.4.9+) from
 @url{https://github.com/GPUOpen-LibrariesAndSDKs/AMF.git}.
 
 Create an @code{AMF/} directory in the system include path.
 Copy the contents of @code{AMF/amf/public/include/} into that directory.
 Then configure FFmpeg with @code{--enable-amf}.
+
+Initialization of amf encoder occurs in this order:
+1) trying to initialize through dx11(only windows)
+2) trying to initialize through dx9(only windows)
+3) trying to initialize through vulkan
+
+To use h.264(AMD VCE) encoder on linux amdgru-pro version 19.20+ and amf-amdgpu-pro
+package(amdgru-pro contains, but does not install automatically) are required.
+
+This driver can be installed using amdgpu-pro-install script in official amd driver archive.
 
 @section AviSynth
 
