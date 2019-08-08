@@ -155,7 +155,7 @@ int main(int argc, char **argv)
         ret = 1;
         goto end;
     }
-    memcpy(recv_buf, zmq_msg_data(&msg), recv_buf_size);
+    memcpy(recv_buf, zmq_msg_data(&msg), recv_buf_size - 1);
     recv_buf[recv_buf_size-1] = 0;
     printf("%s\n", recv_buf);
     zmq_msg_close(&msg);
