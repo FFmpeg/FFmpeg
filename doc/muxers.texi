@@ -1624,11 +1624,11 @@ Override the default PCR retransmission time in milliseconds. Default is
 20 ms is used for CBR streams, the highest multiple of the frame duration which
 is less than 100 ms is used for VBR streams.
 
-@item pat_period @var{double}
-Maximum time in seconds between PAT/PMT tables.
+@item pat_period @var{duration}
+Maximum time in seconds between PAT/PMT tables. Default is @code{0.1}.
 
-@item sdt_period @var{double}
-Maximum time in seconds between SDT tables.
+@item sdt_period @var{duration}
+Maximum time in seconds between SDT tables. Default is @code{0.5}.
 
 @item tables_version @var{integer}
 Set PAT, PMT and SDT version (default @code{0}, valid values are from 0 to 31, inclusively).
