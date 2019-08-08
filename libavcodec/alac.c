@@ -250,10 +250,12 @@ static int decode_element(AVCodecContext *avctx, AVFrame *frame, int ch_index,
 
     alac->extra_bits = get_bits(&alac->gb, 2) << 3;
     bps = alac->sample_size - alac->extra_bits + channels - 1;
-    if (bps > 32U) {
+    if (bps > 32) {
         avpriv_report_missing_feature(avctx, "bps %d", bps);
         return AVERROR_PATCHWELCOME;
     }
+    if (bps < 1)
+        return AVERROR_INVALIDDATA;
 
     /* whether the frame is compressed */
     is_compressed = !get_bits1(&alac->gb);
