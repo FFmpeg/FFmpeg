@@ -319,6 +319,7 @@ error:
 static int decode_header_trees(SmackVContext *smk) {
     GetBitContext gb;
     int mmap_size, mclr_size, full_size, type_size, ret;
+    int skip = 0;
 
     mmap_size = AV_RL32(smk->avctx->extradata);
     mclr_size = AV_RL32(smk->avctx->extradata + 4);
@@ -330,6 +331,7 @@ static int decode_header_trees(SmackVContext *smk) {
         return ret;
 
     if(!get_bits1(&gb)) {
+        skip ++;
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MMAP tree\n");
         smk->mmap_tbl = av_malloc(sizeof(int) * 2);
         if (!smk->mmap_tbl)
@@ -342,6 +344,7 @@ static int decode_header_trees(SmackVContext *smk) {
             return ret;
     }
     if(!get_bits1(&gb)) {
+        skip ++;
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MCLR tree\n");
         smk->mclr_tbl = av_malloc(sizeof(int) * 2);
         if (!smk->mclr_tbl)
@@ -354,6 +357,7 @@ static int decode_header_trees(SmackVContext *smk) {
             return ret;
     }
     if(!get_bits1(&gb)) {
+        skip ++;
         av_log(smk->avctx, AV_LOG_INFO, "Skipping FULL tree\n");
         smk->full_tbl = av_malloc(sizeof(int) * 2);
         if (!smk->full_tbl)
@@ -366,6 +370,7 @@ static int decode_header_trees(SmackVContext *smk) {
             return ret;
     }
     if(!get_bits1(&gb)) {
+        skip ++;
         av_log(smk->avctx, AV_LOG_INFO, "Skipping TYPE tree\n");
         smk->type_tbl = av_malloc(sizeof(int) * 2);
         if (!smk->type_tbl)
@@ -377,6 +382,8 @@ static int decode_header_trees(SmackVContext *smk) {
         if (ret < 0)
             return ret;
     }
+    if (skip == 4)
+        return AVERROR_INVALIDDATA;
 
     return 0;
 }
