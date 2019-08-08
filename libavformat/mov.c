@@ -6890,10 +6890,10 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         if (atom.size >= 8) {
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
-            if (a.type == MKTAG('f','r','e','e') &&
+            if (((a.type == MKTAG('f','r','e','e') && c->moov_retry) ||
+                  a.type == MKTAG('h','o','o','v')) &&
                 a.size >= 8 &&
-                c->fc->strict_std_compliance < FF_COMPLIANCE_STRICT &&
-                c->moov_retry) {
+                c->fc->strict_std_compliance < FF_COMPLIANCE_STRICT) {
                 uint8_t buf[8];
                 uint32_t *type = (uint32_t *)buf + 1;
                 if (avio_read(pb, buf, 8) != 8)
@@ -6901,7 +6901,7 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 avio_seek(pb, -8, SEEK_CUR);
                 if (*type == MKTAG('m','v','h','d') ||
                     *type == MKTAG('c','m','o','v')) {
-                    av_log(c->fc, AV_LOG_ERROR, "Detected moov in a free atom.\n");
+                    av_log(c->fc, AV_LOG_ERROR, "Detected moov in a free or hoov atom.\n");
                     a.type = MKTAG('m','o','o','v');
                 }
             }
