@@ -170,12 +170,12 @@ static inline int sign_only(int v)
     return v ? FFSIGN(v) : 0;
 }
 
-static void lpc_prediction(int32_t *error_buffer, int32_t *buffer_out,
+static void lpc_prediction(int32_t *error_buffer, uint32_t *buffer_out,
                            int nb_samples, int bps, int16_t *lpc_coefs,
                            int lpc_order, int lpc_quant)
 {
     int i;
-    int32_t *pred = buffer_out;
+    uint32_t *pred = buffer_out;
 
     /* first sample always copies */
     *buffer_out = *error_buffer;
@@ -207,7 +207,7 @@ static void lpc_prediction(int32_t *error_buffer, int32_t *buffer_out,
     for (; i < nb_samples; i++) {
         int j;
         int val = 0;
-        int error_val = error_buffer[i];
+        unsigned error_val = error_buffer[i];
         int error_sign;
         int d = *pred++;
 
@@ -221,7 +221,7 @@ static void lpc_prediction(int32_t *error_buffer, int32_t *buffer_out,
         /* adapt LPC coefficients */
         error_sign = sign_only(error_val);
         if (error_sign) {
-            for (j = 0; j < lpc_order && error_val * error_sign > 0; j++) {
+            for (j = 0; j < lpc_order && (int)error_val * error_sign > 0; j++) {
                 int sign;
                 val  = d - pred[j];
                 sign = sign_only(val) * error_sign;
