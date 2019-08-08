@@ -421,6 +421,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     const int chroma_width  = AV_CEIL_RSHIFT(link->w, desc->log2_chroma_w);
     const int chroma_height = AV_CEIL_RSHIFT(link->h, desc->log2_chroma_h);
     int aligned;
+    float transform_zoom;
 
     out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
     if (!out) {
@@ -505,10 +506,12 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     deshake->last.angle = t.angle;
     deshake->last.zoom = t.zoom;
 
+    transform_zoom = 1.0 + t.zoom / 100.0;
+
     // Generate a luma transformation matrix
-    avfilter_get_matrix(t.vec.x, t.vec.y, t.angle, 1.0 + t.zoom / 100.0, matrix_y);
+    ff_get_matrix(t.vec.x, t.vec.y, t.angle, transform_zoom, transform_zoom, matrix_y);
     // Generate a chroma transformation matrix
-    avfilter_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, 1.0 + t.zoom / 100.0, matrix_uv);
+    ff_get_matrix(t.vec.x / (link->w / chroma_width), t.vec.y / (link->h / chroma_height), t.angle, transform_zoom, transform_zoom, matrix_uv);
     // Transform the luma and chroma planes
     ret = deshake->transform(link->dst, link->w, link->h, chroma_width, chroma_height,
                              matrix_y, matrix_uv, INTERPOLATE_BILINEAR, deshake->edge, in, out);
