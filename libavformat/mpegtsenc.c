@@ -97,8 +97,6 @@ typedef struct MpegTSWrite {
     int start_pid;
     int m2ts_mode;
 
-    int reemit_pat_pmt; // backward compatibility
-
     int pcr_period;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
 #define MPEGTS_FLAG_AAC_LATM        0x02
@@ -1558,13 +1556,6 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
     if (side_data)
         stream_id = side_data[0];
 
-    if (ts->reemit_pat_pmt) {
-        av_log(s, AV_LOG_WARNING,
-               "resend_headers option is deprecated, use -mpegts_flags resend_headers\n");
-        ts->reemit_pat_pmt = 0;
-        ts->flags         |= MPEGTS_FLAG_REEMIT_PAT_PMT;
-    }
-
     if (ts->flags & MPEGTS_FLAG_REEMIT_PAT_PMT) {
         ts->pat_packet_count = ts->pat_packet_period - 1;
         ts->sdt_packet_count = ts->sdt_packet_period - 1;
@@ -1962,10 +1953,6 @@ static const AVOption options[] = {
     { "initial_discontinuity", "Mark initial packets as discontinuous",
       0, AV_OPT_TYPE_CONST, { .i64 = MPEGTS_FLAG_DISCONT }, 0, INT_MAX,
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_flags" },
-    // backward compatibility
-    { "resend_headers", "Reemit PAT/PMT before writing the next packet",
-      offsetof(MpegTSWrite, reemit_pat_pmt), AV_OPT_TYPE_INT,
-      { .i64 = 0 }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_copyts", "don't offset dts/pts",
       offsetof(MpegTSWrite, copyts), AV_OPT_TYPE_BOOL,
       { .i64 = -1 }, -1, 1, AV_OPT_FLAG_ENCODING_PARAM },

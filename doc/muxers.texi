@@ -1611,10 +1611,6 @@ Conform to System B (DVB) instead of System A (ATSC).
 Mark the initial packet of each stream as discontinuity.
 @end table
 
-@item resend_headers @var{integer}
-Reemit PAT/PMT before writing the next packet. This option is deprecated:
-use @option{mpegts_flags} instead.
-
 @item mpegts_copyts @var{boolean}
 Preserve original timestamps, if value is set to @code{1}. Default value
 is @code{-1}, which results in shifting timestamps so that they start from 0.
