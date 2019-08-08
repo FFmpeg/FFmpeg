@@ -19795,6 +19795,75 @@ Make every semi-green pixel in the input transparent with some slight blending:
 @end example
 @end itemize
 
+@section deshake_opencl
+Feature-point based video stabilization filter.
+
+The filter accepts the following options:
+
+@table @option
+@item tripod
+Simulates a tripod by preventing any camera movement whatsoever from the original frame. Defaults to @code{0}.
+
+@item debug
+Whether or not additional debug info should be displayed, both in the processed output and in the console.
+
+Note that in order to see console debug output you will also need to pass @code{-v verbose} to ffmpeg.
+
+Viewing point matches in the output video is only supported for RGB input.
+
+Defaults to @code{0}.
+
+@item adaptive_crop
+Whether or not to do a tiny bit of cropping at the borders to cut down on the amount of mirrored pixels.
+
+Defaults to @code{1}.
+
+@item refine_features
+Whether or not feature points should be refined at a sub-pixel level.
+
+This can be turned off for a slight performance gain at the cost of precision.
+
+Defaults to @code{1}.
+
+@item smooth_strength
+The strength of the smoothing applied to the camera path from @code{0.0} to @code{1.0}.
+
+@code{1.0} is the maximum smoothing strength while values less than that result in less smoothing.
+
+@code{0.0} causes the filter to adaptively choose a smoothing strength on a per-frame basis.
+
+Defaults to @code{0.0}.
+
+@item smooth_window_multiplier
+Controls the size of the smoothing window (the number of frames buffered to determine motion information from).
+
+The size of the smoothing window is determined by multiplying the framerate of the video by this number.
+
+Acceptable values range from @code{0.1} to @code{10.0}.
+
+Larger values increase the amount of motion data available for determining how to smooth the camera path,
+potentially improving smoothness, but also increase latency and memory usage.
+
+Defaults to @code{2.0}.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Stabilize a video with a fixed, medium smoothing strength:
+@example
+-i INPUT -vf "hwupload, deshake_opencl=smooth_strength=0.5, hwdownload" OUTPUT
+@end example
+
+@item
+Stabilize a video with debugging (both in console and in rendered video):
+@example
+-i INPUT -filter_complex "[0:v]format=rgba, hwupload, deshake_opencl=debug=1, hwdownload, format=rgba, format=yuv420p" -v verbose OUTPUT
+@end example
+@end itemize
+
 @section nlmeans_opencl
 
 Non-local Means denoise filter through OpenCL, this filter accepts same options as @ref{nlmeans}.
