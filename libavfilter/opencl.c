@@ -350,3 +350,13 @@ void ff_opencl_print_const_matrix_3x3(AVBPrint *buf, const char *name_str,
     }
     av_bprintf(buf, "};\n");
 }
+
+cl_ulong ff_opencl_get_event_time(cl_event event) {
+    cl_ulong time_start;
+    cl_ulong time_end;
+
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_START, sizeof(time_start), &time_start, NULL);
+    clGetEventProfilingInfo(event, CL_PROFILING_COMMAND_END, sizeof(time_end), &time_end, NULL);
+
+    return time_end - time_start;
+}
