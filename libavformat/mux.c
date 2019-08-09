@@ -550,12 +550,6 @@ fail:
 
 #define AV_PKT_FLAG_UNCODED_FRAME 0x2000
 
-/* Note: using sizeof(AVFrame) from outside lavu is unsafe in general, but
-   it is only being used internally to this file as a consistency check.
-   The value is chosen to be very unlikely to appear on its own and to cause
-   immediate failure if used anywhere as a real size. */
-#define UNCODED_FRAME_PACKET_SIZE (INT_MIN / 3 * 2 + (int)sizeof(AVFrame))
-
 
 #if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
@@ -650,7 +644,7 @@ static int compute_muxer_pkt_fields(AVFormatContext *s, AVStream *st, AVPacket *
     switch (st->codecpar->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         frame_size = (pkt->flags & AV_PKT_FLAG_UNCODED_FRAME) ?
-                     ((AVFrame *)pkt->data)->nb_samples :
+                     (*(AVFrame **)pkt->data)->nb_samples :
                      av_get_audio_frame_duration(st->codec, pkt->size);
 
         /* HACK/FIXME, we skip the initial 0 size packets as they are most
@@ -746,10 +740,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
-        AVFrame *frame = (AVFrame *)pkt->data;
-        av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
-        ret = s->oformat->write_uncoded_frame(s, pkt->stream_index, &frame, 0);
-        av_frame_free(&frame);
+        AVFrame **frame = (AVFrame **)pkt->data;
+        av_assert0(pkt->size == sizeof(*frame));
+        ret = s->oformat->write_uncoded_frame(s, pkt->stream_index, frame, 0);
+        av_packet_unref(pkt);
     } else {
         ret = s->oformat->write_packet(s, pkt);
     }
@@ -926,14 +920,9 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     this_pktl    = av_malloc(sizeof(AVPacketList));
     if (!this_pktl)
         return AVERROR(ENOMEM);
-    if (pkt->flags & AV_PKT_FLAG_UNCODED_FRAME) {
-        av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
-        av_assert0(((AVFrame *)pkt->data)->buf);
-    } else {
-        if ((ret = av_packet_make_refcounted(pkt)) < 0) {
-            av_free(this_pktl);
-            return ret;
-        }
+    if ((ret = av_packet_make_refcounted(pkt)) < 0) {
+        av_free(this_pktl);
+        return ret;
     }
 
     av_packet_move_ref(&this_pktl->pkt, pkt);
@@ -1319,22 +1308,45 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     return ret;
 }
 
+static void uncoded_frame_free(void *unused, uint8_t *data)
+{
+    av_frame_free((AVFrame **)data);
+    av_free(data);
+}
+
 static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
     AVPacket pkt, *pktp;
 
     av_assert0(s->oformat);
-    if (!s->oformat->write_uncoded_frame)
+    if (!s->oformat->write_uncoded_frame) {
+        av_frame_free(&frame);
         return AVERROR(ENOSYS);
+    }
 
     if (!frame) {
         pktp = NULL;
     } else {
+        size_t   bufsize = sizeof(frame) + AV_INPUT_BUFFER_PADDING_SIZE;
+        AVFrame **framep = av_mallocz(bufsize);
+
+        if (!framep)
+            goto fail;
         pktp = &pkt;
         av_init_packet(&pkt);
-        pkt.data = (void *)frame;
-        pkt.size         = UNCODED_FRAME_PACKET_SIZE;
+        pkt.buf = av_buffer_create((void *)framep, bufsize,
+                                   uncoded_frame_free, NULL, 0);
+        if (!pkt.buf) {
+            av_free(framep);
+    fail:
+            av_frame_free(&frame);
+            return AVERROR(ENOMEM);
+        }
+        *framep = frame;
+
+        pkt.data         = (void *)framep;
+        pkt.size         = sizeof(frame);
         pkt.pts          =
         pkt.dts          = frame->pts;
         pkt.duration     = frame->pkt_duration;
