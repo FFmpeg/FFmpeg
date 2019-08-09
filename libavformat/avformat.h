@@ -551,7 +551,8 @@ typedef struct AVOutputFormat {
     int (*write_packet)(struct AVFormatContext *, AVPacket *pkt);
     int (*write_trailer)(struct AVFormatContext *);
     /**
-     * Currently only used to set pixel format if not YUV420P.
+     * A format-specific function for interleavement.
+     * If unset, packets will be interleaved by dts.
      */
     int (*interleave_packet)(struct AVFormatContext *, AVPacket *out,
                              AVPacket *in, int flush);
@@ -2453,8 +2454,6 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp,
  * @return >=0 on success, error code otherwise
  *
  * @note This is part of the new seek API which is still under construction.
- *       Thus do not use this yet. It may change at any time, do not expect
- *       ABI compatibility yet!
  */
 int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int64_t ts, int64_t max_ts, int flags);
 
@@ -2641,9 +2640,9 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt);
  * Write an uncoded frame to an output media file.
  *
  * The frame must be correctly interleaved according to the container
- * specification; if not, then av_interleaved_write_frame() must be used.
+ * specification; if not, av_interleaved_write_uncoded_frame() must be used.
  *
- * See av_interleaved_write_frame() for details.
+ * See av_interleaved_write_uncoded_frame() for details.
  */
 int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
                            AVFrame *frame);
