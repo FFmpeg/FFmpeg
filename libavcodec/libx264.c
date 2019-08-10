@@ -594,6 +594,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
     PARSE_X264_OPT("weightp", wpredp);
 
     if (avctx->bit_rate) {
+        if (avctx->bit_rate / 1000 > INT_MAX || avctx->rc_max_rate / 1000 > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "bit_rate and rc_max_rate > %d000 not supported by libx264\n", INT_MAX);
+            return AVERROR(EINVAL);
+        }
         x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
         x4->params.rc.i_rc_method = X264_RC_ABR;
     }
