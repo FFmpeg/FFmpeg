@@ -1215,6 +1215,7 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     int input_size, ret;
     const uint8_t *buf_end;
     const uint8_t *buf_ptr;
+    int frame_start = 0;
 
     if (buf_size == 0) {
         if (!h->low_delay && h->DPB[0].f->data[0]) {
@@ -1248,6 +1249,9 @@ static int cavs_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
                 h->got_keyframe = 1;
             }
         case PIC_PB_START_CODE:
+            if (frame_start > 1)
+                return AVERROR_INVALIDDATA;
+            frame_start ++;
             if (*got_frame)
                 av_frame_unref(data);
             *got_frame = 0;
