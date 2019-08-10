@@ -210,7 +210,7 @@ static void dump_paramchange(void *ctx, AVPacketSideData *sd)
 
     return;
 fail:
-    av_log(ctx, AV_LOG_INFO, "unknown param");
+    av_log(ctx, AV_LOG_ERROR, "unknown param");
 }
 
 /* replaygain side data*/
@@ -239,7 +239,7 @@ static void dump_replaygain(void *ctx, AVPacketSideData *sd)
     AVReplayGain *rg;
 
     if (sd->size < sizeof(*rg)) {
-        av_log(ctx, AV_LOG_INFO, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data");
         return;
     }
     rg = (AVReplayGain*)sd->data;
@@ -255,7 +255,7 @@ static void dump_stereo3d(void *ctx, AVPacketSideData *sd)
     AVStereo3D *stereo;
 
     if (sd->size < sizeof(*stereo)) {
-        av_log(ctx, AV_LOG_INFO, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data");
         return;
     }
 
@@ -272,7 +272,7 @@ static void dump_audioservicetype(void *ctx, AVPacketSideData *sd)
     enum AVAudioServiceType *ast = (enum AVAudioServiceType *)sd->data;
 
     if (sd->size < sizeof(*ast)) {
-        av_log(ctx, AV_LOG_INFO, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data");
         return;
     }
 
@@ -315,7 +315,7 @@ static void dump_cpb(void *ctx, AVPacketSideData *sd)
     AVCPBProperties *cpb = (AVCPBProperties *)sd->data;
 
     if (sd->size < sizeof(*cpb)) {
-        av_log(ctx, AV_LOG_INFO, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data");
         return;
     }
 
@@ -361,7 +361,7 @@ static void dump_spherical(void *ctx, AVCodecParameters *par, AVPacketSideData *
     double yaw, pitch, roll;
 
     if (sd->size < sizeof(*spherical)) {
-        av_log(ctx, AV_LOG_INFO, "invalid data");
+        av_log(ctx, AV_LOG_ERROR, "invalid data");
         return;
     }
 
