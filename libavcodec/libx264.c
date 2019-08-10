@@ -939,8 +939,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (!cpb_props)
         return AVERROR(ENOMEM);
     cpb_props->buffer_size = x4->params.rc.i_vbv_buffer_size * 1000;
-    cpb_props->max_bitrate = x4->params.rc.i_vbv_max_bitrate * 1000;
-    cpb_props->avg_bitrate = x4->params.rc.i_bitrate         * 1000;
+    cpb_props->max_bitrate = x4->params.rc.i_vbv_max_bitrate * 1000LL;
+    cpb_props->avg_bitrate = x4->params.rc.i_bitrate         * 1000LL;
 
     // Overestimate the reordered opaque buffer size, in case a runtime
     // reconfigure would increase the delay (which it shouldn't).
