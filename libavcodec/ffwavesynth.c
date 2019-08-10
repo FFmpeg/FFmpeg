@@ -301,8 +301,8 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
             default:
                 return AVERROR(EINVAL);
         }
-        in->amp0 = (int64_t)a1 << 32;
-        in->damp = (((int64_t)a2 << 32) - ((int64_t)a1 << 32)) / dt;
+        in->amp0 = (uint64_t)a1 << 32;
+        in->damp = (int64_t)(((uint64_t)a2 << 32) - ((uint64_t)a1 << 32)) / dt;
     }
     if (edata != edata_end)
         return AVERROR(EINVAL);
