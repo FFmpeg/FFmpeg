@@ -546,6 +546,9 @@ static int viv_read_header(AVFormatContext *s)
             break;
 
         block_len = ffio_read_varlen(pb);
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
+
         block_type = avio_r8(pb);
 
         if (block_type == 22) {
