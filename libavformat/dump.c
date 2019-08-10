@@ -320,7 +320,7 @@ static void dump_cpb(void *ctx, AVPacketSideData *sd)
     }
 
     av_log(ctx, AV_LOG_INFO,
-           "bitrate max/min/avg: %d/%d/%d buffer size: %d vbv_delay: %"PRId64,
+           "bitrate max/min/avg: %d/%d/%d buffer size: %d vbv_delay: %"PRIu64,
            cpb->max_bitrate, cpb->min_bitrate, cpb->avg_bitrate,
            cpb->buffer_size,
            cpb->vbv_delay);
