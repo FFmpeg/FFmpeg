@@ -902,7 +902,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->max_b_frames < 0)
         avctx->max_b_frames = 0;
 
-    avctx->bit_rate = x4->params.rc.i_bitrate*1000;
+    avctx->bit_rate = x4->params.rc.i_bitrate*1000LL;
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
