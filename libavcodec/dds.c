@@ -613,6 +613,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int mipmap;
     int ret;
+    int width, height;
 
     ff_texturedsp_init(&ctx->texdsp);
     bytestream2_init(gbc, avpkt->data, avpkt->size);
@@ -631,9 +632,9 @@ static int dds_decode(AVCodecContext *avctx, void *data,
 
     bytestream2_skip(gbc, 4); // flags
 
-    avctx->height = bytestream2_get_le32(gbc);
-    avctx->width  = bytestream2_get_le32(gbc);
-    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
+    height = bytestream2_get_le32(gbc);
+    width  = bytestream2_get_le32(gbc);
+    ret = ff_set_dimensions(avctx, width, height);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid image size %dx%d.\n",
                avctx->width, avctx->height);
