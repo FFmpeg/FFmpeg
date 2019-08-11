@@ -39,7 +39,7 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_histeq.c`
     - `vf_hqdn3d.c`
     - `vf_kerndeint.c`
-    - `vf_lensfun.c`
+    - `vf_lensfun.c` (GPL version 3 or later)
     - `vf_mcdeint.c`
     - `vf_mpdecimate.c`
     - `vf_nnedi.c`
