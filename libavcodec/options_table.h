@@ -366,6 +366,7 @@ static const AVOption avcodec_options[] = {
 {"smpte431",    "SMPTE 431-2",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE431 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
 {"smpte432",    "SMPTE 422-1",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_SMPTE432 },     INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
 {"jedec-p22",   "JEDEC P22",      0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_JEDEC_P22 },    INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
+{"ebu3213",     "EBU 3213-E",     0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_EBU3213 },      INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
 {"unspecified", "Unspecified",    0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_PRI_UNSPECIFIED },  INT_MIN, INT_MAX, V|E|D, "color_primaries_type"},
 {"color_trc", "color transfer characteristics", OFFSET(color_trc), AV_OPT_TYPE_INT, {.i64 = AVCOL_TRC_UNSPECIFIED }, 1, INT_MAX, V|E|D, "color_trc_type"},
 {"bt709",        "BT.709",           0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_TRC_BT709 },        INT_MIN, INT_MAX, V|E|D, "color_trc_type"},
