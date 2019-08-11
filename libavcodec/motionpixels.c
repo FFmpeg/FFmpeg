@@ -171,7 +171,7 @@ static int mp_read_codes_table(MotionPixelsContext *mp, GetBitContext *gb)
    return 0;
 }
 
-static int mp_gradient(MotionPixelsContext *mp, int component, int v)
+static av_always_inline int mp_gradient(MotionPixelsContext *mp, int component, int v)
 {
     int delta;
 
@@ -196,7 +196,7 @@ static void mp_set_rgb_from_yuv(MotionPixelsContext *mp, int x, int y, const Yuv
     *(uint16_t *)&mp->frame->data[0][y * mp->frame->linesize[0] + x * 2] = color;
 }
 
-static int mp_get_vlc(MotionPixelsContext *mp, GetBitContext *gb)
+static av_always_inline int mp_get_vlc(MotionPixelsContext *mp, GetBitContext *gb)
 {
     int i;
 
