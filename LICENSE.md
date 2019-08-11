@@ -84,14 +84,17 @@ affect the licensing of binaries resulting from the combination.
 
 ### Compatible libraries
 
-The following libraries are under GPL:
+The following libraries are under GPL version 2:
+- avisynth
 - frei0r
 - libcdio
+- libdavs2
 - librubberband
 - libvidstab
 - libx264
 - libx265
 - libxavs
+- libxavs2
 - libxvid
 
 When combining them with FFmpeg, FFmpeg needs to be licensed as GPL as well by
