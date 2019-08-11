@@ -25,6 +25,7 @@ Specifically, the GPL parts of FFmpeg are:
     - `tests/checkasm/*`
     - `tests/tiny_ssim.c`
 - the following filters in libavfilter:
+    - `signature_lookup.c`
     - `vf_blackframe.c`
     - `vf_boxblur.c`
     - `vf_colormatrix.c`
@@ -38,8 +39,10 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_histeq.c`
     - `vf_hqdn3d.c`
     - `vf_kerndeint.c`
+    - `vf_lensfun.c`
     - `vf_mcdeint.c`
     - `vf_mpdecimate.c`
+    - `vf_nnedi.c`
     - `vf_owdenoise.c`
     - `vf_perspective.c`
     - `vf_phase.c`
@@ -48,12 +51,14 @@ Specifically, the GPL parts of FFmpeg are:
     - `vf_pullup.c`
     - `vf_repeatfields.c`
     - `vf_sab.c`
+    - `vf_signature.c`
     - `vf_smartblur.c`
     - `vf_spp.c`
     - `vf_stereo3d.c`
     - `vf_super2xsai.c`
     - `vf_tinterlace.c`
     - `vf_uspp.c`
+    - `vf_vaguedenoiser.c`
     - `vsrc_mptestsrc.c`
 
 Should you, for whatever reason, prefer to use version 3 of the (L)GPL, then
