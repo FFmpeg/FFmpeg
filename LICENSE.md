@@ -21,7 +21,7 @@ Specifically, the GPL parts of FFmpeg are:
     - `compat/solaris/make_sunver.pl`
     - `doc/t2h.pm`
     - `doc/texi2pod.pl`
-    - `libswresample/swresample-test.c`
+    - `libswresample/tests/swresample.c`
     - `tests/checkasm/*`
     - `tests/tiny_ssim.c`
 - the following filters in libavfilter:
