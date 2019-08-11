@@ -227,7 +227,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     GetBitContext gb;
     int i, ret;
     int cur_chan = 0, framelen = s->frame_length;
-    int32_t *p;
+    uint32_t *p;
 
     if (avctx->err_recognition & AV_EF_CRCCHECK) {
         if (buf_size < 4 ||
@@ -261,7 +261,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     i = 0;
-    for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
+    for (p = s->decode_buffer; (int32_t*)p < s->decode_buffer + (framelen * s->channels); p++) {
         int32_t *predictor = &s->ch_ctx[cur_chan].predictor;
         TTAFilter *filter = &s->ch_ctx[cur_chan].filter;
         TTARice *rice = &s->ch_ctx[cur_chan].rice;
@@ -334,7 +334,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             // decorrelate in case of multiple channels
             if (s->channels > 1) {
                 int32_t *r = p - 1;
-                for (*p += *r / 2; r > p - s->channels; r--)
+                for (*p += *r / 2; r > (int32_t*)p - s->channels; r--)
                     *r = *(r + 1) - *r;
             }
             cur_chan = 0;
@@ -358,13 +358,13 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
     switch (s->bps) {
     case 1: {
         uint8_t *samples = (uint8_t *)frame->data[0];
-        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+        for (p = s->decode_buffer; (int32_t*)p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p + 0x80;
         break;
         }
     case 2: {
         int16_t *samples = (int16_t *)frame->data[0];
-        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+        for (p = s->decode_buffer; (int32_t*)p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p;
         break;
         }
