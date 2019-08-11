@@ -789,6 +789,7 @@ static const AVOption zscale_options[] = {
     {     "smpte431",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_ST431_2},     0, 0, FLAGS, "primaries" },
     {     "smpte432",         0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_ST432_1},     0, 0, FLAGS, "primaries" },
     {     "jedec-p22",        0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_EBU3213_E},   0, 0, FLAGS, "primaries" },
+    {     "ebu3213",          0,       0,                 AV_OPT_TYPE_CONST, {.i64 = ZIMG_PRIMARIES_EBU3213_E},   0, 0, FLAGS, "primaries" },
     { "transfer", "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, FLAGS, "transfer" },
     { "t",        "set transfer characteristic", OFFSET(trc), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, FLAGS, "transfer" },
     {     "input",            0,       0,                 AV_OPT_TYPE_CONST, {.i64 = -1},                         0, 0, FLAGS, "transfer" },

@@ -969,6 +969,7 @@ static const AVOption colorspace_options[] = {
     ENUM("smpte432",     AVCOL_PRI_SMPTE432,   "prm"),
     ENUM("bt2020",       AVCOL_PRI_BT2020,     "prm"),
     ENUM("jedec-p22",    AVCOL_PRI_JEDEC_P22,  "prm"),
+    ENUM("ebu3213",      AVCOL_PRI_EBU3213,    "prm"),
 
     { "trc",        "Output transfer characteristics",
       OFFSET(user_trc),   AV_OPT_TYPE_INT, { .i64 = AVCOL_TRC_UNSPECIFIED },
