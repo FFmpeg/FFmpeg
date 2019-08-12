@@ -15369,6 +15369,18 @@ Please note that this is a different thing than specifying -1 for @option{w}
 or @option{h}, you still need to specify the output resolution for this option
 to work.
 
+@item force_divisible_by Ensures that the output resolution is divisible by the
+given integer when used together with @option{force_original_aspect_ratio}. This
+works similar to using -n in the @option{w} and @option{h} options.
+
+This option respects the value set for @option{force_original_aspect_ratio},
+increasing or decreasing the resolution accordingly. This may slightly modify
+the video's aspect ration.
+
+This can be handy, for example, if you want to have a video fit within a defined
+resolution using the @option{force_original_aspect_ratio} option but have
+encoder restrictions when it comes to width or height.
+
 @end table
 
 The values of the @option{w} and @option{h} options are expressions
