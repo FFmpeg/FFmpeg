@@ -1619,8 +1619,10 @@ is @code{-1}, which results in shifting timestamps so that they start from 0.
 Omit the PES packet length for video packets. Default is @code{1} (true).
 
 @item pcr_period @var{integer}
-Override the default PCR retransmission time in milliseconds. Ignored if
-variable muxrate is selected. Default is @code{20}.
+Override the default PCR retransmission time in milliseconds. Default is
+@code{-1} which means that the PCR interval will be determined automatically:
+20 ms is used for CBR streams, the highest multiple of the frame duration which
+is less than 100 ms is used for VBR streams.
 
 @item pat_period @var{double}
 Maximum time in seconds between PAT/PMT tables.

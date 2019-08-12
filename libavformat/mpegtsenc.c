@@ -790,10 +790,11 @@ static void enable_pcr_generation_for_stream(AVFormatContext *s, AVStream *pcr_s
     MpegTSWrite *ts = s->priv_data;
     MpegTSWriteStream *ts_st = pcr_st->priv_data;
 
-    if (ts->mux_rate > 1) {
-        ts_st->pcr_period = av_rescale(ts->pcr_period_ms, PCR_TIME_BASE, 1000);
+    if (ts->mux_rate > 1 || ts->pcr_period_ms >= 0) {
+        int pcr_period_ms = ts->pcr_period_ms == -1 ? PCR_RETRANS_TIME : ts->pcr_period_ms;
+        ts_st->pcr_period = av_rescale(pcr_period_ms, PCR_TIME_BASE, 1000);
     } else {
-        /* For VBR we select the highest multiple of frame duration which is less than 100 ms. */
+        /* By default, for VBR we select the highest multiple of frame duration which is less than 100 ms. */
         int64_t frame_period = 0;
         if (pcr_st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
             int frame_size = av_get_audio_frame_duration2(pcr_st->codecpar, 0);
@@ -1964,7 +1965,7 @@ static const AVOption options[] = {
       { .i64 = 1 }, 0, 1, AV_OPT_FLAG_ENCODING_PARAM },
     { "pcr_period", "PCR retransmission time in milliseconds",
       offsetof(MpegTSWrite, pcr_period_ms), AV_OPT_TYPE_INT,
-      { .i64 = PCR_RETRANS_TIME }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = -1 }, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "pat_period", "PAT/PMT retransmission time limit in seconds",
       offsetof(MpegTSWrite, pat_period), AV_OPT_TYPE_DOUBLE,
       { .dbl = INT_MAX }, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
