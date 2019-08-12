@@ -232,6 +232,9 @@ fate-mimic: CMD = framecrc -idct simple -i $(TARGET_SAMPLES)/mimic/mimic2-womanl
 FATE_VIDEO-$(call DEMDEC, MOV, MJPEGB) += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/mjpegb/mjpegb_part.mov -an
 
+FATE_VIDEO-$(call DEMDEC, AVI, MJPEG) += fate-mjpeg-ticket3229
+fate-mjpeg-ticket3229: CMD = framecrc -idct simple -fflags +bitexact -i $(TARGET_SAMPLES)/mjpeg/mjpeg_field_order.avi -an
+
 FATE_VIDEO-$(call DEMDEC, MVI, MOTIONPIXELS) += fate-motionpixels
 fate-motionpixels: CMD = framecrc -i $(TARGET_SAMPLES)/motion-pixels/INTRO-partial.MVI -an -pix_fmt rgb24 -frames:v 111
 
