@@ -351,6 +351,8 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
     index = size2index[log2h][log2w];
     av_assert0(index >= 0);
 
+    if (get_bits_left(&f->gb) < 1)
+        return AVERROR_INVALIDDATA;
     h     = 1 << log2h;
     code  = get_vlc2(&f->gb, block_type_vlc[1 - (f->version > 1)][index].table,
                      BLOCK_TYPE_VLC_BITS, 1);
