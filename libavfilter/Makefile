@@ -452,6 +452,7 @@ OBJS-$(CONFIG_OPENCLSRC_FILTER)              += vf_program_opencl.o opencl.o
 OBJS-$(CONFIG_PAL75BARS_FILTER)              += vsrc_testsrc.o
 OBJS-$(CONFIG_PAL100BARS_FILTER)             += vsrc_testsrc.o
 OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
+OBJS-$(CONFIG_SMPTEBARS_FILTER)              += vsrc_sierpinski.o
 OBJS-$(CONFIG_SMPTEBARS_FILTER)              += vsrc_testsrc.o
 OBJS-$(CONFIG_SMPTEHDBARS_FILTER)            += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o

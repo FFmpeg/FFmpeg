@@ -430,6 +430,7 @@ extern AVFilter ff_vsrc_openclsrc;
 extern AVFilter ff_vsrc_pal75bars;
 extern AVFilter ff_vsrc_pal100bars;
 extern AVFilter ff_vsrc_rgbtestsrc;
+extern AVFilter ff_vsrc_sierpinski;
 extern AVFilter ff_vsrc_smptebars;
 extern AVFilter ff_vsrc_smptehdbars;
 extern AVFilter ff_vsrc_testsrc;

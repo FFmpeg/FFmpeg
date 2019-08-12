@@ -11,6 +11,7 @@ version <next>:
 - ZeroMQ protocol
 - support Sipro ACELP.KELVIN decoding
 - streamhash muxer
+- sierpinski video source
 
 
 version 4.2:

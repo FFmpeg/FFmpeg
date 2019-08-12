@@ -21008,6 +21008,28 @@ __kernel void sierpinski_carpet(__write_only image2d_t dst,
 
 @end itemize
 
+@section sierpinski
+
+Generate a Sierpinksi carpet fractal, and randomly pan around.
+
+This source accepts the following options:
+
+@table @option
+@item size, s
+Set frame size. For the syntax of this option, check the @ref{video size syntax,,"Video
+size" section in the ffmpeg-utils manual,ffmpeg-utils}. Default value is "640x480".
+
+@item rate, r
+Set frame rate, expressed as number of frames per second. Default
+value is "25".
+
+@item seed
+Set seed which is used for random panning.
+
+@item jump
+Set max jump for single pan destination. Allowed range is from 1 to 10000.
+@end table
+
 @c man end VIDEO SOURCES
 
 @chapter Video Sinks
