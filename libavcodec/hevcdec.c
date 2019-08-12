@@ -182,6 +182,8 @@ static int pred_weight_table(HEVCContext *s, GetBitContext *gb)
     for (i = 0; i < s->sh.nb_refs[L0]; i++) {
         if (luma_weight_l0_flag[i]) {
             int delta_luma_weight_l0 = get_se_golomb(gb);
+            if ((int8_t)delta_luma_weight_l0 != delta_luma_weight_l0)
+                return AVERROR_INVALIDDATA;
             s->sh.luma_weight_l0[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l0;
             s->sh.luma_offset_l0[i] = get_se_golomb(gb);
         }
@@ -224,6 +226,8 @@ static int pred_weight_table(HEVCContext *s, GetBitContext *gb)
         for (i = 0; i < s->sh.nb_refs[L1]; i++) {
             if (luma_weight_l1_flag[i]) {
                 int delta_luma_weight_l1 = get_se_golomb(gb);
+                if ((int8_t)delta_luma_weight_l1 != delta_luma_weight_l1)
+                    return AVERROR_INVALIDDATA;
                 s->sh.luma_weight_l1[i] = (1 << s->sh.luma_log2_weight_denom) + delta_luma_weight_l1;
                 s->sh.luma_offset_l1[i] = get_se_golomb(gb);
             }
