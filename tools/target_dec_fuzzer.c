@@ -170,6 +170,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     maxpixels = maxpixels_per_frame * maxiteration;
     switch (c->id) {
         // Allows a small input to generate gigantic output
+    case AV_CODEC_ID_MSRLE:     maxpixels /= 16;  break;
     case AV_CODEC_ID_QTRLE:     maxpixels /= 16;  break;
     case AV_CODEC_ID_GIF:       maxpixels /= 16;  break;
         // Performs slow frame rescaling in C
