@@ -588,8 +588,9 @@ static int config_input(AVFilterLink *inlink)
                     s->filter[p] = filter16_7x7;
             }
         }
-        if (ARCH_X86_64)
-            ff_convolution_init_x86(s);
+#if CONFIG_CONVOLUTION_FILTER && ARCH_X86_64
+        ff_convolution_init_x86(s);
+#endif
     } else if (!strcmp(ctx->filter->name, "prewitt")) {
         if (s->depth > 8)
             for (p = 0; p < s->nb_planes; p++)
