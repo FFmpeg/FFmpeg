@@ -134,7 +134,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AV_CODEC_ID_SANM:      maxpixels /= 16;  break;
     case AV_CODEC_ID_GIF:       maxpixels /= 16;  break;
         // Performs slow frame rescaling in C
-    case AV_CODEC_ID_GDV:       maxpixels /= 256; break;
+    case AV_CODEC_ID_GDV:       maxpixels /= 512; break;
         // Postprocessing in C
     case AV_CODEC_ID_HNM4_VIDEO:maxpixels /= 128; break;
     }
