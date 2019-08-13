@@ -937,16 +937,15 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
         av_assert0(pkt->size == UNCODED_FRAME_PACKET_SIZE);
         av_assert0(((AVFrame *)pkt->data)->buf);
-        this_pktl->pkt = *pkt;
-        pkt->buf = NULL;
-        pkt->side_data = NULL;
-        pkt->side_data_elems = 0;
     } else {
-        if ((ret = av_packet_ref(&this_pktl->pkt, pkt)) < 0) {
+        if ((ret = av_packet_make_refcounted(pkt)) < 0) {
             av_free(this_pktl);
             return ret;
         }
     }
+
+    av_packet_move_ref(&this_pktl->pkt, pkt);
+    pkt = &this_pktl->pkt;
 
     if (s->streams[pkt->stream_index]->last_in_packet_buffer) {
         next_point = &(st->last_in_packet_buffer->next);
@@ -995,8 +994,6 @@ next_non_null:
 
     s->streams[pkt->stream_index]->last_in_packet_buffer =
         *next_point                                      = this_pktl;
-
-    av_packet_unref(pkt);
 
     return 0;
 }
