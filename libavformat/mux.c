@@ -1336,8 +1336,8 @@ int ff_write_chained(AVFormatContext *dst, int dst_stream, AVPacket *pkt,
     return ret;
 }
 
-static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
-                                           AVFrame *frame, int interleaved)
+static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
+                                        AVFrame *frame, int interleaved)
 {
     AVPacket pkt, *pktp;
 
@@ -1366,13 +1366,13 @@ static int av_write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
 int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
                            AVFrame *frame)
 {
-    return av_write_uncoded_frame_internal(s, stream_index, frame, 0);
+    return write_uncoded_frame_internal(s, stream_index, frame, 0);
 }
 
 int av_interleaved_write_uncoded_frame(AVFormatContext *s, int stream_index,
                                        AVFrame *frame)
 {
-    return av_write_uncoded_frame_internal(s, stream_index, frame, 1);
+    return write_uncoded_frame_internal(s, stream_index, frame, 1);
 }
 
 int av_write_uncoded_frame_query(AVFormatContext *s, int stream_index)
