@@ -92,6 +92,8 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id);
 int ff_qsv_profile_to_mfx(enum AVCodecID codec_id, int profile);
 int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level);
 
+enum AVPixelFormat ff_qsv_map_fourcc(uint32_t fourcc);
+
 int ff_qsv_map_pixfmt(enum AVPixelFormat format, uint32_t *fourcc);
 enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type);
 
