@@ -209,9 +209,13 @@ static int config_input(AVFilterLink *inlink)
 {
     SelectContext *select = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) &&
+                 (desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
+                 desc->nb_components >= 3;
 
     select->bitdepth = desc->comp[0].depth;
-    select->nb_planes = av_pix_fmt_count_planes(inlink->format);
+    select->nb_planes = is_yuv ? 1 : av_pix_fmt_count_planes(inlink->format);
+
     for (int plane = 0; plane < select->nb_planes; plane++) {
         ptrdiff_t line_size = av_image_get_linesize(inlink->format, inlink->w, plane);
         int vsub = desc->log2_chroma_h;
