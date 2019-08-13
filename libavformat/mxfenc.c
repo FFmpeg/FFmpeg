@@ -3148,7 +3148,8 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
     }
 }
 
-static int mxf_compare_timestamps(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+static int mxf_compare_timestamps(AVFormatContext *s, const AVPacket *next,
+                                                      const AVPacket *pkt)
 {
     MXFStreamContext *sc  = s->streams[pkt ->stream_index]->priv_data;
     MXFStreamContext *sc2 = s->streams[next->stream_index]->priv_data;

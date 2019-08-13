@@ -917,7 +917,7 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
 #define CHUNK_START 0x1000
 
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
-                             int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
+                             int (*compare)(AVFormatContext *, const AVPacket *, const AVPacket *))
 {
     int ret;
     AVPacketList **next_point, *this_pktl;
@@ -994,8 +994,8 @@ next_non_null:
     return 0;
 }
 
-static int interleave_compare_dts(AVFormatContext *s, AVPacket *next,
-                                  AVPacket *pkt)
+static int interleave_compare_dts(AVFormatContext *s, const AVPacket *next,
+                                                      const AVPacket *pkt)
 {
     AVStream *st  = s->streams[pkt->stream_index];
     AVStream *st2 = s->streams[next->stream_index];

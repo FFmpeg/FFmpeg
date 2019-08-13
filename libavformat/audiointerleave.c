@@ -108,7 +108,7 @@ static int interleave_new_audio_packet(AVFormatContext *s, AVPacket *pkt,
 
 int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
-                        int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *))
+                        int (*compare_ts)(AVFormatContext *, const AVPacket *, const AVPacket *))
 {
     int i, ret;
 

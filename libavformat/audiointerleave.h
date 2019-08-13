@@ -50,6 +50,6 @@ void ff_audio_interleave_close(AVFormatContext *s);
  */
 int ff_audio_rechunk_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush,
                         int (*get_packet)(AVFormatContext *, AVPacket *, AVPacket *, int),
-                        int (*compare_ts)(AVFormatContext *, AVPacket *, AVPacket *));
+                        int (*compare_ts)(AVFormatContext *, const AVPacket *, const AVPacket *));
 
 #endif /* AVFORMAT_AUDIOINTERLEAVE_H */
