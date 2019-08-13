@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - Intel QSV-accelerated MJPEG decoding
+- Intel QSV-accelerated VP9 decoding
 
 version 4.2:
 - tpad filter

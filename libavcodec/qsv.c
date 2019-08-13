@@ -60,6 +60,11 @@ int ff_qsv_codec_id_to_mfx(enum AVCodecID codec_id)
 #endif
     case AV_CODEC_ID_MJPEG:
         return MFX_CODEC_JPEG;
+#if QSV_VERSION_ATLEAST(1, 19)
+    case AV_CODEC_ID_VP9:
+        return MFX_CODEC_VP9;
+#endif
+
     default:
         break;
     }
