@@ -529,9 +529,6 @@ int ff_qsv_decode_close(QSVContext *q)
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
 
-    av_parser_close(q->parser);
-    avcodec_free_context(&q->avctx_internal);
-
     if (q->internal_session)
         MFXClose(q->internal_session);
 
@@ -544,35 +541,12 @@ int ff_qsv_decode_close(QSVContext *q)
 int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                         AVFrame *frame, int *got_frame, AVPacket *pkt)
 {
-    uint8_t *dummy_data;
-    int dummy_size;
     int ret;
     mfxVideoParam param = { 0 };
     enum AVPixelFormat pix_fmt = AV_PIX_FMT_NV12;
 
-    if (!q->avctx_internal) {
-        q->avctx_internal = avcodec_alloc_context3(NULL);
-        if (!q->avctx_internal)
-            return AVERROR(ENOMEM);
-
-        q->avctx_internal->codec_id = avctx->codec_id;
-
-        q->parser = av_parser_init(avctx->codec_id);
-        if (!q->parser)
-            return AVERROR(ENOMEM);
-
-        q->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-    }
-
     if (!pkt->size)
         return qsv_decode(avctx, q, frame, got_frame, pkt);
-
-    /* we assume the packets are already split properly and want
-     * just the codec parameters here */
-    av_parser_parse2(q->parser, q->avctx_internal,
-                     &dummy_data, &dummy_size,
-                     pkt->data, pkt->size, pkt->pts, pkt->dts,
-                     pkt->pos);
 
     /* TODO: flush delayed frames on reinit */
 
@@ -622,7 +596,7 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
     return qsv_decode(avctx, q, frame, got_frame, pkt);
 
 reinit_fail:
-    q->orig_pix_fmt = q->parser->format = avctx->pix_fmt = AV_PIX_FMT_NONE;
+    q->orig_pix_fmt = avctx->pix_fmt = AV_PIX_FMT_NONE;
     return ret;
 }
 
