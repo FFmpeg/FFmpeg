@@ -114,14 +114,15 @@ fail:
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ChromaprintMuxContext *cpr = s->priv_data;
-    return chromaprint_feed(cpr->ctx, pkt->data, pkt->size / 2) ? 0 : AVERROR(EINVAL);
+    return chromaprint_feed(cpr->ctx, (const int16_t *)pkt->data, pkt->size / 2) ? 0 : AVERROR(EINVAL);
 }
 
 static int write_trailer(AVFormatContext *s)
 {
     ChromaprintMuxContext *cpr = s->priv_data;
     AVIOContext *pb = s->pb;
-    void *fp = NULL, *enc_fp = NULL;
+    void *fp = NULL;
+    char *enc_fp = NULL;
     int size, enc_size, ret = AVERROR(EINVAL);
 
     if (!chromaprint_finish(cpr->ctx)) {
@@ -129,7 +130,7 @@ static int write_trailer(AVFormatContext *s)
         goto fail;
     }
 
-    if (!chromaprint_get_raw_fingerprint(cpr->ctx, &fp, &size)) {
+    if (!chromaprint_get_raw_fingerprint(cpr->ctx, (uint32_t **)&fp, &size)) {
         av_log(s, AV_LOG_ERROR, "Failed to retrieve fingerprint\n");
         goto fail;
     }
