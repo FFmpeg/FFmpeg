@@ -873,11 +873,12 @@ static int do_packet_auto_bsf(AVFormatContext *s, AVPacket *pkt) {
     return 1;
 }
 
-int av_write_frame(AVFormatContext *s, AVPacket *pkt)
+int av_write_frame(AVFormatContext *s, AVPacket *in)
 {
+    AVPacket local_pkt, *pkt = &local_pkt;
     int ret;
 
-    if (!pkt) {
+    if (!in) {
         if (s->oformat->flags & AVFMT_ALLOW_FLUSH) {
             ret = s->oformat->write_packet(s, NULL);
             flush_if_needed(s);
@@ -888,22 +889,49 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
         return 1;
     }
 
+    if (in->flags & AV_PKT_FLAG_UNCODED_FRAME) {
+        pkt = in;
+    } else {
+        /* We don't own in, so we have to make sure not to modify it.
+         * The following avoids copying in's data unnecessarily.
+         * Copying side data is unavoidable as a bitstream filter
+         * may change it, e.g. free it on errors. */
+        pkt->buf  = NULL;
+        pkt->data = in->data;
+        pkt->size = in->size;
+        ret = av_packet_copy_props(pkt, in);
+        if (ret < 0)
+            return ret;
+        if (in->buf) {
+            pkt->buf = av_buffer_ref(in->buf);
+            if (!pkt->buf) {
+                ret = AVERROR(ENOMEM);
+                goto fail;
+            }
+        }
+    }
+
     ret = prepare_input_packet(s, pkt);
     if (ret < 0)
-        return ret;
+        goto fail;
 
     ret = do_packet_auto_bsf(s, pkt);
     if (ret <= 0)
-        return ret;
+        goto fail;
 
 #if FF_API_COMPUTE_PKT_FIELDS2 && FF_API_LAVF_AVCTX
     ret = compute_muxer_pkt_fields(s, s->streams[pkt->stream_index], pkt);
 
     if (ret < 0 && !(s->oformat->flags & AVFMT_NOTIMESTAMPS))
-        return ret;
+        goto fail;
 #endif
 
-    return write_packet(s, pkt);
+    ret = write_packet(s, pkt);
+
+fail:
+    // Uncoded frames using the noninterleaved codepath are also freed here
+    av_packet_unref(pkt);
+    return ret;
 }
 
 #define CHUNK_START 0x1000
@@ -1317,7 +1345,6 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
                                         AVFrame *frame, int interleaved)
 {
     AVPacket pkt, *pktp;
-    int ret;
 
     av_assert0(s->oformat);
     if (!s->oformat->write_uncoded_frame) {
@@ -1354,11 +1381,8 @@ static int write_uncoded_frame_internal(AVFormatContext *s, int stream_index,
         pkt.flags |= AV_PKT_FLAG_UNCODED_FRAME;
     }
 
-    ret = interleaved ? av_interleaved_write_frame(s, pktp) :
-                        av_write_frame(s, pktp);
-    if (pktp)
-        av_packet_unref(pktp);
-    return ret;
+    return interleaved ? av_interleaved_write_frame(s, pktp) :
+                         av_write_frame(s, pktp);
 }
 
 int av_write_uncoded_frame(AVFormatContext *s, int stream_index,
