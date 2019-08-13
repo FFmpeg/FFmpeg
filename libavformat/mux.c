@@ -931,7 +931,7 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     AVStream *st   = s->streams[pkt->stream_index];
     int chunked    = s->max_chunk_size || s->max_chunk_duration;
 
-    this_pktl      = av_mallocz(sizeof(AVPacketList));
+    this_pktl      = av_malloc(sizeof(AVPacketList));
     if (!this_pktl)
         return AVERROR(ENOMEM);
     if ((pkt->flags & AV_PKT_FLAG_UNCODED_FRAME)) {
