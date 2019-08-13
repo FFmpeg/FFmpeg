@@ -664,8 +664,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
 /**
- * Make timestamps non negative, move side data from payload to internal struct, call muxer, and restore
- * sidedata.
+ * Shift timestamps and call muxer; the original pts/dts are not kept.
  *
  * FIXME: this function should NEVER get undefined pts/dts beside when the
  * AVFMT_NOTIMESTAMPS is set.
@@ -675,10 +674,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
-    int64_t pts_backup, dts_backup;
-
-    pts_backup = pkt->pts;
-    dts_backup = pkt->dts;
 
     // If the timestamp offsetting below is adjusted, adjust
     // ff_interleaved_peek similarly.
@@ -753,10 +748,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             ret = s->pb->error;
     }
 
-    if (ret < 0) {
-        pkt->pts = pts_backup;
-        pkt->dts = dts_backup;
-    } else
+    if (ret >= 0)
         s->streams[pkt->stream_index]->nb_frames++;
 
     return ret;
