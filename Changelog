@@ -1,6 +1,9 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version <next>:
+- Intel QSV-accelerated MJPEG decoding
+
 version 4.2:
 - tpad filter
 - AV1 decoding support through libdav1d
