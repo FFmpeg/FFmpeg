@@ -147,19 +147,21 @@ static int check_dec_param(AVCodecContext *avctx, QSVContext *q, mfxVideoParam *
     return 1;
 }
 
-static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
+static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixelFormat pix_fmt, mfxVideoParam *param)
 {
-    const AVPixFmtDescriptor *desc;
     mfxSession session = NULL;
     int iopattern = 0;
-    mfxVideoParam param = { 0 };
-    int frame_width  = avctx->coded_width;
-    int frame_height = avctx->coded_height;
     int ret;
+    enum AVPixelFormat pix_fmts[3] = {
+        AV_PIX_FMT_QSV, /* opaque format in case of video memory output */
+        pix_fmt,        /* system memory format obtained from bitstream parser */
+        AV_PIX_FMT_NONE };
 
-    desc = av_pix_fmt_desc_get(avctx->sw_pix_fmt);
-    if (!desc)
-        return AVERROR_BUG;
+    ret = ff_get_format(avctx, pix_fmts);
+    if (ret < 0) {
+        q->orig_pix_fmt = avctx->pix_fmt = AV_PIX_FMT_NONE;
+        return ret;
+    }
 
     if (!q->async_fifo) {
         q->async_fifo = av_fifo_alloc(q->async_depth * qsv_fifo_item_size());
@@ -197,54 +199,72 @@ static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q)
         return ret;
     }
 
-    ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
-    if (ret < 0)
-        return ret;
+    param->IOPattern   = q->iopattern;
+    param->AsyncDepth  = q->async_depth;
+    param->ExtParam    = q->ext_buffers;
+    param->NumExtParam = q->nb_ext_buffers;
 
-    param.mfx.CodecId      = ret;
-    param.mfx.CodecProfile = ff_qsv_profile_to_mfx(avctx->codec_id, avctx->profile);
-    param.mfx.CodecLevel   = ff_qsv_level_to_mfx(avctx->codec_id, avctx->level);
+    return 0;
+ }
 
-    param.mfx.FrameInfo.BitDepthLuma   = desc->comp[0].depth;
-    param.mfx.FrameInfo.BitDepthChroma = desc->comp[0].depth;
-    param.mfx.FrameInfo.Shift          = desc->comp[0].depth > 8;
-    param.mfx.FrameInfo.FourCC         = q->fourcc;
-    param.mfx.FrameInfo.Width          = frame_width;
-    param.mfx.FrameInfo.Height         = frame_height;
-    param.mfx.FrameInfo.ChromaFormat   = MFX_CHROMAFORMAT_YUV420;
+static int qsv_decode_init(AVCodecContext *avctx, QSVContext *q, mfxVideoParam *param)
+{
+    int ret;
 
-    switch (avctx->field_order) {
-    case AV_FIELD_PROGRESSIVE:
-        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_PROGRESSIVE;
-        break;
-    case AV_FIELD_TT:
-        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_TFF;
-        break;
-    case AV_FIELD_BB:
-        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_FIELD_BFF;
-        break;
-    default:
-        param.mfx.FrameInfo.PicStruct = MFX_PICSTRUCT_UNKNOWN;
-        break;
-    }
+    avctx->width        = param->mfx.FrameInfo.CropW;
+    avctx->height       = param->mfx.FrameInfo.CropH;
+    avctx->coded_width  = param->mfx.FrameInfo.Width;
+    avctx->coded_height = param->mfx.FrameInfo.Height;
+    avctx->level        = param->mfx.CodecLevel;
+    avctx->profile      = param->mfx.CodecProfile;
+    avctx->field_order  = ff_qsv_map_picstruct(param->mfx.FrameInfo.PicStruct);
+    avctx->pix_fmt      = ff_qsv_map_fourcc(param->mfx.FrameInfo.FourCC);
 
-    param.IOPattern   = q->iopattern;
-    param.AsyncDepth  = q->async_depth;
-    param.ExtParam    = q->ext_buffers;
-    param.NumExtParam = q->nb_ext_buffers;
-
-    if (!check_dec_param(avctx, q, &param)) {
-        //Just give a warning instead of an error since it is still decodable possibly.
-        av_log(avctx, AV_LOG_WARNING,
-               "Current input bitstream is not supported by QSV decoder.\n");
-    }
-
-    ret = MFXVideoDECODE_Init(q->session, &param);
+    ret = MFXVideoDECODE_Init(q->session, param);
     if (ret < 0)
         return ff_qsv_print_error(avctx, ret,
                                   "Error initializing the MFX video decoder");
 
-    q->frame_info = param.mfx.FrameInfo;
+    q->frame_info = param->mfx.FrameInfo;
+
+    return 0;
+}
+
+static int qsv_decode_header(AVCodecContext *avctx, QSVContext *q, AVPacket *avpkt, enum AVPixelFormat pix_fmt, mfxVideoParam *param)
+{
+    int ret;
+
+    mfxBitstream bs = { 0 };
+
+    if (avpkt->size) {
+        bs.Data       = avpkt->data;
+        bs.DataLength = avpkt->size;
+        bs.MaxLength  = bs.DataLength;
+        bs.TimeStamp  = avpkt->pts;
+        if (avctx->field_order == AV_FIELD_PROGRESSIVE)
+            bs.DataFlag   |= MFX_BITSTREAM_COMPLETE_FRAME;
+    } else
+        return AVERROR_INVALIDDATA;
+
+
+    if(!q->session) {
+        ret = qsv_decode_preinit(avctx, q, pix_fmt, param);
+        if (ret < 0)
+            return ret;
+    }
+
+    ret = ff_qsv_codec_id_to_mfx(avctx->codec_id);
+    if (ret < 0)
+        return ret;
+
+    param->mfx.CodecId = ret;
+    ret = MFXVideoDECODE_DecodeHeader(q->session, &bs, param);
+    if (MFX_ERR_MORE_DATA == ret) {
+       return AVERROR(EAGAIN);
+    }
+    if (ret < 0)
+        return ff_qsv_print_error(avctx, ret,
+                "Error decoding stream header");
 
     return 0;
 }
@@ -527,7 +547,8 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
     uint8_t *dummy_data;
     int dummy_size;
     int ret;
-    const AVPixFmtDescriptor *desc;
+    mfxVideoParam param = { 0 };
+    enum AVPixelFormat pix_fmt = AV_PIX_FMT_NV12;
 
     if (!q->avctx_internal) {
         q->avctx_internal = avcodec_alloc_context3(NULL);
@@ -541,7 +562,6 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
             return AVERROR(ENOMEM);
 
         q->parser->flags |= PARSER_FLAG_COMPLETE_FRAMES;
-        q->orig_pix_fmt   = AV_PIX_FMT_NONE;
     }
 
     if (!pkt->size)
@@ -554,15 +574,23 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
                      pkt->data, pkt->size, pkt->pts, pkt->dts,
                      pkt->pos);
 
-    avctx->field_order  = q->parser->field_order;
     /* TODO: flush delayed frames on reinit */
-    if (q->parser->format       != q->orig_pix_fmt    ||
-        FFALIGN(q->parser->coded_width, 16)  != FFALIGN(avctx->coded_width, 16) ||
-        FFALIGN(q->parser->coded_height, 16) != FFALIGN(avctx->coded_height, 16)) {
-        enum AVPixelFormat pix_fmts[3] = { AV_PIX_FMT_QSV,
-                                           AV_PIX_FMT_NONE,
-                                           AV_PIX_FMT_NONE };
-        enum AVPixelFormat qsv_format;
+
+    // sw_pix_fmt, coded_width/height should be set for ff_get_format(),
+    // assume sw_pix_fmt is NV12 and coded_width/height to be 1280x720,
+    // the assumption may be not corret but will be updated after header decoded if not true.
+    if (q->orig_pix_fmt != AV_PIX_FMT_NONE)
+        pix_fmt = q->orig_pix_fmt;
+    if (!avctx->coded_width)
+        avctx->coded_width = 1280;
+    if (!avctx->coded_height)
+        avctx->coded_height = 720;
+
+    ret = qsv_decode_header(avctx, q, pkt, pix_fmt, &param);
+
+    if (ret >= 0 && (q->orig_pix_fmt != ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC) ||
+        avctx->coded_width  != param.mfx.FrameInfo.Width ||
+        avctx->coded_height != param.mfx.FrameInfo.Height)) {
         AVPacket zero_pkt = {0};
 
         if (q->buffered_count) {
@@ -571,45 +599,24 @@ int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
             q->buffered_count--;
             return qsv_decode(avctx, q, frame, got_frame, &zero_pkt);
         }
-
         q->reinit_flag = 0;
 
-        qsv_format = ff_qsv_map_pixfmt(q->parser->format, &q->fourcc);
-        if (qsv_format < 0) {
-            av_log(avctx, AV_LOG_ERROR,
-                   "Decoding pixel format '%s' is not supported\n",
-                   av_get_pix_fmt_name(q->parser->format));
-            ret = AVERROR(ENOSYS);
-            goto reinit_fail;
-        }
+        q->orig_pix_fmt = avctx->pix_fmt = pix_fmt = ff_qsv_map_fourcc(param.mfx.FrameInfo.FourCC);
 
-        q->orig_pix_fmt     = q->parser->format;
-        avctx->pix_fmt      = pix_fmts[1] = qsv_format;
-        avctx->width        = q->parser->width;
-        avctx->height       = q->parser->height;
-        avctx->coded_width  = FFALIGN(q->parser->coded_width, 16);
-        avctx->coded_height = FFALIGN(q->parser->coded_height, 16);
-        avctx->level        = q->avctx_internal->level;
-        avctx->profile      = q->avctx_internal->profile;
+        avctx->coded_width  = param.mfx.FrameInfo.Width;
+        avctx->coded_height = param.mfx.FrameInfo.Height;
 
-        ret = ff_get_format(avctx, pix_fmts);
+        ret = qsv_decode_preinit(avctx, q, pix_fmt, &param);
         if (ret < 0)
             goto reinit_fail;
+        q->initialized = 0;
+    }
 
-        avctx->pix_fmt = ret;
-
-        desc = av_pix_fmt_desc_get(avctx->pix_fmt);
-        if (!desc)
-            goto reinit_fail;
-
-         if (desc->comp[0].depth > 8) {
-            avctx->coded_width =  FFALIGN(q->parser->coded_width, 32);
-            avctx->coded_height = FFALIGN(q->parser->coded_height, 32);
-        }
-
-        ret = qsv_decode_init(avctx, q);
+    if (!q->initialized) {
+        ret = qsv_decode_init(avctx, q, &param);
         if (ret < 0)
             goto reinit_fail;
+        q->initialized = 1;
     }
 
     return qsv_decode(avctx, q, frame, got_frame, pkt);
@@ -622,4 +629,5 @@ reinit_fail:
 void ff_qsv_decode_flush(AVCodecContext *avctx, QSVContext *q)
 {
     q->orig_pix_fmt = AV_PIX_FMT_NONE;
+    q->initialized = 0;
 }

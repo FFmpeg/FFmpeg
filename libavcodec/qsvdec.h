@@ -63,6 +63,8 @@ typedef struct QSVContext {
     uint32_t fourcc;
     mfxFrameInfo frame_info;
 
+    int initialized;
+
     // options set by the caller
     int async_depth;
     int iopattern;

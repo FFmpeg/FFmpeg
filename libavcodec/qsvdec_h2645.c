@@ -103,6 +103,7 @@ static av_cold int qsv_decode_init(AVCodecContext *avctx)
         }
     }
 
+    s->qsv.orig_pix_fmt = AV_PIX_FMT_NV12;
     s->packet_fifo = av_fifo_alloc(sizeof(AVPacket));
     if (!s->packet_fifo) {
         ret = AVERROR(ENOMEM);
