@@ -220,7 +220,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass caca_class = {
-    .class_name = "caca_outdev",
+    .class_name = "caca outdev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
