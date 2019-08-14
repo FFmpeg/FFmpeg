@@ -2415,6 +2415,20 @@ during configuration. You need to explicitly configure the build with
 @subsection Options
 
 @table @option
+@item b
+Sets target video bitrate.
+
+@item bf
+
+@item g
+Set the GOP size.
+
+@item keyint_min
+Minimum GOP size.
+
+@item refs
+Number of reference frames each P-frame can use. The range is from @var{1-16}.
+
 @item preset
 Set the x265 preset.
 

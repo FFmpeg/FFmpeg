@@ -82,10 +82,26 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold int libx265_param_parse_int(AVCodecContext *avctx,
+                                           const char *key, int value)
+{
+    libx265Context *ctx = avctx->priv_data;
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "%d", value);
+    if (ctx->api->param_parse(ctx->params, key, buf) == X265_PARAM_BAD_VALUE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid value %d for param \"%s\".\n", value, key);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
 static av_cold int libx265_encode_init(AVCodecContext *avctx)
 {
     libx265Context *ctx = avctx->priv_data;
     AVCPBProperties *cpb_props = NULL;
+    int ret;
 
     ctx->api = x265_api_get(av_pix_fmt_desc_get(avctx->pix_fmt)->comp[0].depth);
     if (!ctx->api)
@@ -240,6 +256,27 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
 
     if (!(avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER))
         ctx->params->bRepeatHeaders = 1;
+
+    if (avctx->gop_size >= 0) {
+        ret = libx265_param_parse_int(avctx, "keyint", avctx->gop_size);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->keyint_min > 0) {
+        ret = libx265_param_parse_int(avctx, "min-keyint", avctx->keyint_min);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->max_b_frames >= 0) {
+        ret = libx265_param_parse_int(avctx, "bframes", avctx->max_b_frames);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->refs >= 0) {
+        ret = libx265_param_parse_int(avctx, "ref", avctx->refs);
+        if (ret < 0)
+            return ret;
+    }
 
     if (ctx->x265_opts) {
         AVDictionary *dict    = NULL;
@@ -556,6 +593,10 @@ static const AVClass class = {
 
 static const AVCodecDefault x265_defaults[] = {
     { "b", "0" },
+    { "bf", "-1" },
+    { "g", "-1" },
+    { "keyint_min", "-1" },
+    { "refs", "-1" },
     { NULL },
 };
 
