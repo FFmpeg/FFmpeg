@@ -1221,23 +1221,21 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
                 }
                 ts->next_pcr = next_pcr;
             }
+            if (dts != AV_NOPTS_VALUE && (dts - pcr / 300) > delay) {
+                /* pcr insert gets priority over null packet insert */
+                if (write_pcr)
+                    mpegts_insert_pcr_only(s, st);
+                else
+                    mpegts_insert_null_packet(s);
+                /* recalculate write_pcr and possibly retransmit si_info */
+                continue;
+            }
         } else if (ts_st->pcr_period && dts != AV_NOPTS_VALUE) {
             pcr = (dts - delay) * 300;
             if (pcr - ts_st->last_pcr >= ts_st->pcr_period && is_start) {
                 ts_st->last_pcr = FFMAX(pcr - ts_st->pcr_period, ts_st->last_pcr + ts_st->pcr_period);
                 write_pcr = 1;
             }
-        }
-
-        if (ts->mux_rate > 1 && dts != AV_NOPTS_VALUE &&
-            (dts - get_pcr(ts, s->pb) / 300) > delay) {
-            /* pcr insert gets priority over null packet insert */
-            if (write_pcr)
-                mpegts_insert_pcr_only(s, st);
-            else
-                mpegts_insert_null_packet(s);
-            /* recalculate write_pcr and possibly retransmit si_info */
-            continue;
         }
 
         /* prepare packet header */
