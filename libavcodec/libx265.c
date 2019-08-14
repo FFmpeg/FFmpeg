@@ -42,6 +42,7 @@ typedef struct libx265Context {
     const x265_api *api;
 
     float crf;
+    int   cqp;
     int   forced_idr;
     char *preset;
     char *tune;
@@ -78,6 +79,21 @@ static av_cold int libx265_encode_close(AVCodecContext *avctx)
 
     if (ctx->encoder)
         ctx->api->encoder_close(ctx->encoder);
+
+    return 0;
+}
+
+static av_cold int libx265_param_parse_float(AVCodecContext *avctx,
+                                           const char *key, float value)
+{
+    libx265Context *ctx = avctx->priv_data;
+    char buf[256];
+
+    snprintf(buf, sizeof(buf), "%2.2f", value);
+    if (ctx->api->param_parse(ctx->params, key, buf) == X265_PARAM_BAD_VALUE) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid value %2.2f for param \"%s\".\n", value, key);
+        return AVERROR(EINVAL);
+    }
 
     return 0;
 }
@@ -242,6 +258,48 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
     } else if (avctx->bit_rate > 0) {
         ctx->params->rc.bitrate         = avctx->bit_rate / 1000;
         ctx->params->rc.rateControlMode = X265_RC_ABR;
+    } else if (ctx->cqp >= 0) {
+        ret = libx265_param_parse_int(avctx, "qp", ctx->cqp);
+        if (ret < 0)
+            return ret;
+    }
+
+#if X265_BUILD >= 89
+    if (avctx->qmin >= 0) {
+        ret = libx265_param_parse_int(avctx, "qpmin", avctx->qmin);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->qmax >= 0) {
+        ret = libx265_param_parse_int(avctx, "qpmax", avctx->qmax);
+        if (ret < 0)
+            return ret;
+    }
+#endif
+    if (avctx->max_qdiff >= 0) {
+        ret = libx265_param_parse_int(avctx, "qpstep", avctx->max_qdiff);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->qblur >= 0) {
+        ret = libx265_param_parse_float(avctx, "qblur", avctx->qblur);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->qcompress >= 0) {
+        ret = libx265_param_parse_float(avctx, "qcomp", avctx->qcompress);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->i_quant_factor >= 0) {
+        ret = libx265_param_parse_float(avctx, "ipratio", avctx->i_quant_factor);
+        if (ret < 0)
+            return ret;
+    }
+    if (avctx->b_quant_factor >= 0) {
+        ret = libx265_param_parse_float(avctx, "pbratio", avctx->b_quant_factor);
+        if (ret < 0)
+            return ret;
     }
 
     ctx->params->rc.vbvBufferSize = avctx->rc_buffer_size / 1000;
@@ -576,6 +634,7 @@ static av_cold void libx265_encode_init_csp(AVCodec *codec)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "crf",         "set the x265 crf",                                                            OFFSET(crf),       AV_OPT_TYPE_FLOAT,  { .dbl = -1 }, -1, FLT_MAX, VE },
+    { "qp",          "set the x265 qp",                                                             OFFSET(cqp),       AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, INT_MAX, VE },
     { "forced-idr",  "if forcing keyframes, force them as IDR frames",                              OFFSET(forced_idr),AV_OPT_TYPE_BOOL,   { .i64 =  0 },  0,       1, VE },
     { "preset",      "set the x265 preset",                                                         OFFSET(preset),    AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
     { "tune",        "set the x265 tune parameter",                                                 OFFSET(tune),      AV_OPT_TYPE_STRING, { 0 }, 0, 0, VE },
@@ -597,6 +656,13 @@ static const AVCodecDefault x265_defaults[] = {
     { "g", "-1" },
     { "keyint_min", "-1" },
     { "refs", "-1" },
+    { "qmin", "-1" },
+    { "qmax", "-1" },
+    { "qdiff", "-1" },
+    { "qblur", "-1" },
+    { "qcomp", "-1" },
+    { "i_qfactor", "-1" },
+    { "b_qfactor", "-1" },
     { NULL },
 };
 

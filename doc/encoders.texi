@@ -2441,6 +2441,28 @@ Set profile restrictions.
 @item crf
 Set the quality for constant quality mode.
 
+@item qp
+Set constant quantization rate control method parameter.
+
+@item qmin
+Minimum quantizer scale.
+
+@item qmax
+Maximum quantizer scale.
+
+@item qdiff
+Maximum difference between quantizer scales.
+
+@item qblur
+Quantizer curve blur
+
+@item qcomp
+Quantizer curve compression factor
+
+@item i_qfactor
+
+@item b_qfactor
+
 @item forced-idr
 Normally, when forcing a I-frame type, the encoder can select any type
 of I-frame. This option forces it to choose an IDR-frame.
