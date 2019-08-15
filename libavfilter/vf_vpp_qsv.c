@@ -312,7 +312,9 @@ static int config_output(AVFilterLink *outlink)
     } else
         in_format = inlink->format;
 
-    param.out_sw_format  = (vpp->out_format == AV_PIX_FMT_NONE) ? in_format : vpp->out_format;
+    if (vpp->out_format == AV_PIX_FMT_NONE)
+        vpp->out_format = in_format;
+    param.out_sw_format  = vpp->out_format;
 
     if (vpp->use_crop) {
         crop.in_idx = 0;
@@ -454,7 +456,7 @@ static int config_output(AVFilterLink *outlink)
 
     if (vpp->use_frc || vpp->use_crop || vpp->deinterlace || vpp->denoise ||
         vpp->detail || vpp->procamp || vpp->rotate || vpp->hflip ||
-        inlink->w != outlink->w || inlink->h != outlink->h)
+        inlink->w != outlink->w || inlink->h != outlink->h || in_format != vpp->out_format)
         return ff_qsvvpp_create(ctx, &vpp->qsv, &param);
     else {
         av_log(ctx, AV_LOG_VERBOSE, "qsv vpp pass through mode.\n");
