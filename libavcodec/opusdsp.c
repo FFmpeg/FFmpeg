@@ -43,15 +43,10 @@ static void postfilter_c(float *data, int period, float *gains, int len)
 
 static float deemphasis_c(float *y, float *x, float coeff, int len)
 {
-    float state = coeff;
+    for (int i = 0; i < len; i++)
+        coeff = y[i] = x[i] + coeff*CELT_EMPH_COEFF;
 
-    for (int i = 0; i < len; i++) {
-        const float tmp = x[i] + state;
-        state = tmp * CELT_EMPH_COEFF;
-        y[i] = tmp;
-    }
-
-    return state;
+    return coeff;
 }
 
 av_cold void ff_opus_dsp_init(OpusDSP *ctx)
