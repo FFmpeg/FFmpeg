@@ -130,6 +130,7 @@ static av_cold int libdav1d_init(AVCodecContext *c)
     s.allocator.cookie = dav1d;
     s.allocator.alloc_picture_callback = libdav1d_picture_allocator;
     s.allocator.release_picture_callback = libdav1d_picture_release;
+    s.frame_size_limit = c->max_pixels;
     s.apply_grain = dav1d->apply_grain;
 
     s.n_tile_threads = dav1d->tile_threads
