@@ -1385,6 +1385,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                     pat = vc1_decode_p_block(v, v->block[v->cur_blk_idx][block_map[i]], i, mquant, ttmb, first_block,
                                              s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize,
                                              CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
+                    if (pat < 0)
+                        return pat;
                     block_cbp |= pat << (i << 2);
                     if (!v->ttmbf && ttmb < 8)
                         ttmb = -1;
@@ -1488,6 +1490,8 @@ static int vc1_decode_p_mb(VC1Context *v)
                                              (i & 4) ? s->uvlinesize : s->linesize,
                                              CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY),
                                              &block_tt);
+                    if (pat < 0)
+                        return pat;
                     block_cbp |= pat << (i << 2);
                     if (!v->ttmbf && ttmb < 8)
                         ttmb = -1;
@@ -1698,6 +1702,8 @@ static int vc1_decode_p_mb_intfr(VC1Context *v)
                                              first_block, s->dest[dst_idx] + off,
                                              (i & 4) ? s->uvlinesize : (s->linesize << fieldtx),
                                              CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
+                    if (pat < 0)
+                        return pat;
                     block_cbp |= pat << (i << 2);
                     if (!v->ttmbf && ttmb < 8)
                         ttmb = -1;
@@ -1834,6 +1840,8 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                                          (i & 4) ? s->uvlinesize : s->linesize,
                                          CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY),
                                          &block_tt);
+                if (pat < 0)
+                    return pat;
                 block_cbp |= pat << (i << 2);
                 if (!v->ttmbf && ttmb < 8)
                     ttmb = -1;
@@ -1853,7 +1861,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
 
 /** Decode one B-frame MB (in Main profile)
  */
-static void vc1_decode_b_mb(VC1Context *v)
+static int vc1_decode_b_mb(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &s->gb;
@@ -1919,7 +1927,7 @@ static void vc1_decode_b_mb(VC1Context *v)
             bmvtype = BMV_TYPE_INTERPOLATED;
         ff_vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
         vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
-        return;
+        return 0;
     }
     if (direct) {
         cbp = get_vlc2(&v->s.gb, v->cbpcy_vlc->table, VC1_CBPCY_P_VLC_BITS, 2);
@@ -1936,7 +1944,7 @@ static void vc1_decode_b_mb(VC1Context *v)
             /* no coded blocks - effectively skipped */
             ff_vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
             vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
-            return;
+            return 0;
         }
         if (s->mb_intra && !mb_has_coeffs) {
             GET_MQUANT();
@@ -1951,7 +1959,7 @@ static void vc1_decode_b_mb(VC1Context *v)
                     /* interpolated skipped block */
                     ff_vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
                     vc1_b_mc(v, dmv_x, dmv_y, direct, bmvtype);
-                    return;
+                    return 0;
                 }
             }
             ff_vc1_pred_b_mv(v, dmv_x, dmv_y, direct, bmvtype);
@@ -1995,20 +2003,23 @@ static void vc1_decode_b_mb(VC1Context *v)
                                               i & 4 ? s->uvlinesize
                                                     : s->linesize);
         } else if (val) {
-            vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
-                               first_block, s->dest[dst_idx] + off,
-                               (i & 4) ? s->uvlinesize : s->linesize,
-                               CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), NULL);
+            int pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
+                                         first_block, s->dest[dst_idx] + off,
+                                         (i & 4) ? s->uvlinesize : s->linesize,
+                                         CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), NULL);
+            if (pat < 0)
+                return pat;
             if (!v->ttmbf && ttmb < 8)
                 ttmb = -1;
             first_block = 0;
         }
     }
+    return 0;
 }
 
 /** Decode one B-frame MB (in interlaced field B picture)
  */
-static void vc1_decode_b_mb_intfi(VC1Context *v)
+static int vc1_decode_b_mb_intfi(VC1Context *v)
 {
     MpegEncContext *s = &v->s;
     GetBitContext *gb = &s->gb;
@@ -2113,7 +2124,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                 dmv_x[1] = dmv_y[1] = pred_flag[0] = 0;
                 if (!s->next_picture_ptr->field_picture) {
                     av_log(s->avctx, AV_LOG_ERROR, "Mixed field/frame direct mode not supported\n");
-                    return;
+                    return AVERROR_INVALIDDATA;
                 }
             }
             ff_vc1_pred_b_mv_intfi(v, 0, dmv_x, dmv_y, 1, pred_flag);
@@ -2158,6 +2169,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                                          first_block, s->dest[dst_idx] + off,
                                          (i & 4) ? s->uvlinesize : s->linesize,
                                          CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
+                if (pat < 0)
+                    return pat;
                 block_cbp |= pat << (i << 2);
                 if (!v->ttmbf && ttmb < 8)
                     ttmb = -1;
@@ -2167,6 +2180,8 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
     }
     v->cbp[s->mb_x]      = block_cbp;
     v->ttblk[s->mb_x]    = block_tt;
+
+    return 0;
 }
 
 /** Decode one B-frame MB (in interlaced frame B picture)
@@ -2453,6 +2468,8 @@ static int vc1_decode_b_mb_intfr(VC1Context *v)
                                              first_block, s->dest[dst_idx] + off,
                                              (i & 4) ? s->uvlinesize : (s->linesize << fieldtx),
                                              CONFIG_GRAY && (i & 4) && (s->avctx->flags & AV_CODEC_FLAG_GRAY), &block_tt);
+                    if (pat < 0)
+                        return pat;
                     block_cbp |= pat << (i << 2);
                     if (!v->ttmbf && ttmb < 8)
                         ttmb = -1;
