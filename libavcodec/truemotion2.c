@@ -610,7 +610,7 @@ static inline void tm2_null_res_block(TM2Context *ctx, AVFrame *pic, int bx, int
     ct = ctx->D[0] + ctx->D[1] + ctx->D[2] + ctx->D[3];
 
     if (bx > 0)
-        left = last[-1] - ct;
+        left = last[-1] - (unsigned)ct;
     else
         left = 0;
 
@@ -621,7 +621,7 @@ static inline void tm2_null_res_block(TM2Context *ctx, AVFrame *pic, int bx, int
     last[2] = right - (diff >> 2);
     last[3] = right;
     {
-        int tp = left;
+        unsigned tp = left;
 
         ctx->D[0] = (tp + (ct >> 2)) - left;
         left     += ctx->D[0];
