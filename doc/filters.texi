@@ -17891,6 +17891,143 @@ Force a constant quantization parameter. If not set, the filter will use the QP
 from the video stream (if available).
 @end table
 
+@section v360
+
+Convert 360 videos between various formats.
+
+The filter accepts the following options:
+
+@table @option
+
+@item input
+@item output
+Set format of the input/output video.
+
+Available formats:
+
+@table @samp
+
+@item e
+Equirectangular projection.
+
+@item c3x2
+@item c6x1
+Cubemap with 3x2/6x1 layout.
+
+Format specific options:
+
+@table @option
+@item in_forder
+@item out_forder
+Set order of faces for the input/output cubemap. Choose one direction for each position.
+
+Designation of directions:
+@table @samp
+@item r
+right
+@item l
+left
+@item u
+up
+@item d
+down
+@item f
+forward
+@item b
+back
+@end table
+
+Default value is @b{@samp{rludfb}}.
+
+@item in_frot
+@item out_frot
+Set rotation of faces for the input/output cubemap. Choose one angle for each position.
+
+Designation of angles:
+@table @samp
+@item 0
+0 degrees clockwise
+@item 1
+90 degrees clockwise
+@item 2
+180 degrees clockwise
+@item 4
+270 degrees clockwise
+@end table
+
+Default value is @b{@samp{000000}}.
+@end table
+
+@item eac
+Equi-Angular Cubemap.
+
+@item flat
+Regular video. @i{(output only)}
+
+Format specific options:
+@table @option
+@item h_fov
+@item v_fov
+Set horizontal/vertical field of view. Values in degrees.
+@end table
+@end table
+
+@item interp
+Set interpolation method.@*
+@i{Note: more complex interpolation methods require much more memory to run.}
+
+Available methods:
+
+@table @samp
+@item near
+@item nearest
+Nearest neighbour.
+@item line
+@item linear
+Bilinear interpolation.
+@item cube
+@item cubic
+Bicubic interpolation.
+@item lanc
+@item lanczos
+Lanczos interpolation.
+@end table
+
+Default value is @b{@samp{line}}.
+
+@item w
+@item h
+Set the output video resolution.
+
+Default resolution depends on formats.
+
+@item yaw
+@item pitch
+@item roll
+Set rotation for the output video. Values in degrees.
+
+@item hflip
+@item vflip
+@item dflip
+Flip the output video horizontally/vertically/in-depth. Boolean values.
+
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Convert equirectangular video to cubemap with 3x2 layout using bicubic interpolation:
+@example
+ffmpeg -i input.mkv -vf v360=e:c3x2:cubic output.mkv
+@end example
+@item
+Extract back view of Equi-Angular Cubemap:
+@example
+ffmpeg -i input.mkv -vf v360=eac:flat:yaw=180 output.mkv
+@end example
+@end itemize
+
 @section vaguedenoiser
 
 Apply a wavelet based denoiser.
