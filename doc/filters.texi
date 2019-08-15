@@ -17917,6 +17917,20 @@ Cubemap with 3x2/6x1 layout.
 Format specific options:
 
 @table @option
+@item in_pad
+@item out_pad
+Set padding proprtion for the input/output cubemap. Values in decimals.
+
+Example values:
+@table @samp
+@item 0
+No padding.
+@item 0.01
+1% of face is padding. For example, with 1920x1280 resolution face size would be 640x640 and padding would be 3 pixels from each side. (640 * 0.01 = 6 pixels)
+@end table
+
+Default value is @b{@samp{0}}.
+
 @item in_forder
 @item out_forder
 Set order of faces for the input/output cubemap. Choose one direction for each position.
@@ -18017,9 +18031,9 @@ Flip the output video horizontally/vertically/in-depth. Boolean values.
 
 @itemize
 @item
-Convert equirectangular video to cubemap with 3x2 layout using bicubic interpolation:
+Convert equirectangular video to cubemap with 3x2 layout and 1% padding using bicubic interpolation:
 @example
-ffmpeg -i input.mkv -vf v360=e:c3x2:cubic output.mkv
+ffmpeg -i input.mkv -vf v360=e:c3x2:cubic:out_pad=0.01 output.mkv
 @end example
 @item
 Extract back view of Equi-Angular Cubemap:
