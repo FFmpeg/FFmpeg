@@ -17984,6 +17984,26 @@ Format specific options:
 @item v_fov
 Set horizontal/vertical field of view. Values in degrees.
 @end table
+
+@item dfisheye
+Dual fisheye. @i{(input only)}
+
+Format specific options:
+@table @option
+@item in_pad
+Set padding proprtion. Values in decimals.
+
+Example values:
+@table @samp
+@item 0
+No padding.
+@item 0.01
+1% padding.
+@end table
+
+Default value is @b{@samp{0}}.
+@end table
+
 @end table
 
 @item interp

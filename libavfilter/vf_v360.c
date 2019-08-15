@@ -48,6 +48,7 @@ enum Projections {
     CUBEMAP_6_1,
     EQUIANGULAR,
     FLAT,
+    DUAL_FISHEYE,
     NB_PROJECTIONS,
 };
 
@@ -136,6 +137,7 @@ static const AVOption v360_options[] = {
     {      "c3x2", "cubemap3x2",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_3_2},     0,                   0, FLAGS, "in" },
     {      "c6x1", "cubemap6x1",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "in" },
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "in" },
+    {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {      "c3x2", "cubemap3x2",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_3_2},     0,                   0, FLAGS, "out" },
@@ -1594,6 +1596,58 @@ static void flat_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate frame position in dual fisheye format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_dfisheye(const V360Context *s,
+                            const float *vec, int width, int height,
+                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float scale = 1.f - s->in_pad;
+
+    const float ew = width / 2.f;
+    const float eh = height;
+
+    const float phi   = atan2f(-vec[1], -vec[0]);
+    const float theta = acosf(fabsf(vec[2])) / M_PI;
+
+    float uf = (theta * cosf(phi) * scale + 0.5f) * ew;
+    float vf = (theta * sinf(phi) * scale + 0.5f) * eh;
+
+    int ui, vi;
+    int u_shift;
+    int i, j;
+
+    if (vec[2] >= 0) {
+        u_shift = 0;
+    } else {
+        u_shift = ceilf(ew);
+        uf = ew - uf;
+    }
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (i = -1; i < 3; i++) {
+        for (j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = av_clip(u_shift + ui + j, 0, width  - 1);
+            vs[i + 1][j + 1] = av_clip(          vi + i, 0, height - 1);
+        }
+    }
+}
+
+/**
  * Calculate rotation matrix for yaw/pitch/roll angles.
  */
 static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
@@ -1730,6 +1784,12 @@ static int config_output(AVFilterLink *outlink)
     case FLAT:
         av_log(ctx, AV_LOG_ERROR, "Flat format is not accepted as input.\n");
         return AVERROR(EINVAL);
+    case DUAL_FISHEYE:
+        in_transform = xyz_to_dfisheye;
+        err = 0;
+        wf = inlink->w;
+        hf = inlink->h;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -1770,6 +1830,9 @@ static int config_output(AVFilterLink *outlink)
         w = roundf(wf * s->flat_range[0] / s->flat_range[1] / 2.f);
         h = roundf(hf);
         break;
+    case DUAL_FISHEYE:
+        av_log(ctx, AV_LOG_ERROR, "Dual fisheye format is not accepted as output.\n");
+        return AVERROR(EINVAL);
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
         return AVERROR_BUG;
