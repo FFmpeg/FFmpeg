@@ -95,16 +95,16 @@ function ff_opus_postfilter_neon, export=1
         fmla v3.4s, v7.4s, v2.4s
         fadd v6.4s, v6.4s, v4.4s
 
-        ld1 {v8.4s}, [x0]
-        fmla v8.4s, v5.4s, v0.4s
+        ld1 {v4.4s}, [x0]
+        fmla v4.4s, v5.4s, v0.4s
 
         fmul v6.4s, v6.4s, v1.4s
         fadd v6.4s, v6.4s, v3.4s
 
-        fadd v8.4s, v8.4s, v6.4s
+        fadd v4.4s, v4.4s, v6.4s
         fmul v3.4s, v7.4s, v2.4s
 
-        st1  {v8.4s}, [x0], #16
+        st1  {v4.4s}, [x0], #16
 
         subs w3, w3, #4
         b.gt 1b
