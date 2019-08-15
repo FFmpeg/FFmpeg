@@ -450,6 +450,11 @@ static av_cold int vc1_decode_init(AVCodecContext *avctx)
         if ((ret = ff_vc1_decode_sequence_header(avctx, v, &gb)) < 0)
           return ret;
 
+        if (avctx->codec_id == AV_CODEC_ID_WMV3IMAGE && !v->res_sprite) {
+            avpriv_request_sample(avctx, "Non sprite WMV3IMAGE");
+            return AVERROR_PATCHWELCOME;
+        }
+
         count = avctx->extradata_size*8 - get_bits_count(&gb);
         if (count > 0) {
             av_log(avctx, AV_LOG_INFO, "Extra data: %i bits left, value: %X\n",
