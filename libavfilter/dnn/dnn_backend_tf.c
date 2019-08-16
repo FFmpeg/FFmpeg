@@ -27,6 +27,7 @@
 #include "dnn_backend_native.h"
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
+#include "dnn_backend_native_layer_pad.h"
 
 #include <tensorflow/c/c_api.h>
 
@@ -347,23 +348,8 @@ static DNNReturnType add_depth_to_space_layer(TFModel *tf_model, TF_Operation **
     return DNN_SUCCESS;
 }
 
-static int calculate_pad(const ConvolutionalNetwork *conv_network)
-{
-    ConvolutionalParams *params;
-    int32_t layer;
-    int pad = 0;
-
-    for (layer = 0; layer < conv_network->layers_num; ++layer){
-        if (conv_network->layers[layer].type == CONV){
-            params = (ConvolutionalParams *)conv_network->layers[layer].params;
-            pad += params->kernel_size >> 1;
-        }
-    }
-
-    return pad;
-}
-
-static DNNReturnType add_pad_op(TFModel *tf_model, TF_Operation **cur_op, const int32_t pad)
+static DNNReturnType add_pad_layer(TFModel *tf_model, TF_Operation **cur_op,
+                                              LayerPadParams *params, const int layer)
 {
     TF_Operation *op;
     TF_Tensor *tensor;
@@ -372,16 +358,21 @@ static DNNReturnType add_pad_op(TFModel *tf_model, TF_Operation **cur_op, const 
     int32_t *pads;
     int64_t pads_shape[] = {4, 2};
 
-    input.index = 0;
+    char name_buffer[NAME_BUFFER_SIZE];
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "pad%d", layer);
 
-    op_desc = TF_NewOperation(tf_model->graph, "Const", "pads");
+    op_desc = TF_NewOperation(tf_model->graph, "Const", name_buffer);
     TF_SetAttrType(op_desc, "dtype", TF_INT32);
     tensor = TF_AllocateTensor(TF_INT32, pads_shape, 2, 4 * 2 * sizeof(int32_t));
     pads = (int32_t *)TF_TensorData(tensor);
-    pads[0] = 0;   pads[1] = 0;
-    pads[2] = pad; pads[3] = pad;
-    pads[4] = pad; pads[5] = pad;
-    pads[6] = 0;   pads[7] = 0;
+    pads[0] = params->paddings[0][0];
+    pads[1] = params->paddings[0][1];
+    pads[2] = params->paddings[1][0];
+    pads[3] = params->paddings[1][1];
+    pads[4] = params->paddings[2][0];
+    pads[5] = params->paddings[2][1];
+    pads[6] = params->paddings[3][0];
+    pads[7] = params->paddings[3][1];
     TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
         return DNN_ERROR;
@@ -393,6 +384,7 @@ static DNNReturnType add_pad_op(TFModel *tf_model, TF_Operation **cur_op, const 
 
     op_desc = TF_NewOperation(tf_model->graph, "MirrorPad", "mirror_pad");
     input.oper = *cur_op;
+    input.index = 0;
     TF_AddInput(op_desc, input);
     input.oper = op;
     TF_AddInput(op_desc, input);
@@ -418,7 +410,6 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     int32_t *transpose_perm;
     int64_t transpose_perm_shape[] = {4};
     int64_t input_shape[] = {1, -1, -1, -1};
-    int32_t pad;
     DNNReturnType layer_add_res;
     DNNModel *native_model = NULL;
     ConvolutionalNetwork *conv_network;
@@ -429,7 +420,6 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     }
 
     conv_network = (ConvolutionalNetwork *)native_model->model;
-    pad = calculate_pad(conv_network);
     tf_model->graph = TF_NewGraph();
     tf_model->status = TF_NewStatus();
 
@@ -445,10 +435,6 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
     TF_SetAttrShape(op_desc, "shape", input_shape, 4);
     op = TF_FinishOperation(op_desc, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
-        CLEANUP_ON_ERROR(tf_model);
-    }
-
-    if (add_pad_op(tf_model, &op, pad) != DNN_SUCCESS){
         CLEANUP_ON_ERROR(tf_model);
     }
 
@@ -478,6 +464,10 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
         case DEPTH_TO_SPACE:
             layer_add_res = add_depth_to_space_layer(tf_model, &op,
                                                      (DepthToSpaceParams *)conv_network->layers[layer].params, layer);
+            break;
+        case MIRROR_PAD:
+            layer_add_res = add_pad_layer(tf_model, &op,
+                                          (LayerPadParams *)conv_network->layers[layer].params, layer);
             break;
         default:
             CLEANUP_ON_ERROR(tf_model);
