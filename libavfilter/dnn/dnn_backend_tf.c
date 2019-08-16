@@ -490,6 +490,7 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
 
     op_desc = TF_NewOperation(tf_model->graph, "Identity", "y");
     input.oper = op;
+    input.index = 0;
     TF_AddInput(op_desc, input);
     TF_FinishOperation(op_desc, tf_model->status);
     if (TF_GetCode(tf_model->status) != TF_OK){
