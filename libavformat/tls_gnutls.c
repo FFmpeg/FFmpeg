@@ -183,6 +183,11 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_ptr(p->session, c->tcp);
     gnutls_priority_set_direct(p->session, "NORMAL", NULL);
     do {
+        if (ff_check_interrupt(&h->interrupt_callback)) {
+            ret = AVERROR_EXIT;
+            goto fail;
+        }
+
         ret = gnutls_handshake(p->session);
         if (gnutls_error_is_fatal(ret)) {
             ret = print_tls_error(h, ret);
