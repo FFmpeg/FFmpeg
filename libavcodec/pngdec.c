@@ -320,6 +320,15 @@ static void deloco_ ## NAME(TYPE *dst, int size, int alpha) \
 YUV2RGB(rgb8, uint8_t)
 YUV2RGB(rgb16, uint16_t)
 
+static int percent_missing(PNGDecContext *s)
+{
+    if (s->interlace_type) {
+        return 100 - 100 * s->pass / (NB_PASSES - 1);
+    } else {
+        return 100 - 100 * s->y / s->cur_h;
+    }
+}
+
 /* process exactly one decompressed row */
 static void png_handle_row(PNGDecContext *s)
 {
@@ -1353,6 +1362,9 @@ exit_loop:
         avctx->skip_frame == AVDISCARD_ALL) {
         return 0;
     }
+
+    if (percent_missing(s) > avctx->discard_damaged_percentage)
+        return AVERROR_INVALIDDATA;
 
     if (s->bits_per_pixel <= 4)
         handle_small_bpp(s, p);
