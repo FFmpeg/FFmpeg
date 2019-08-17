@@ -220,7 +220,7 @@ static inline int extend_code(GetBitContext *gb, int val, int range, int bits)
         val -= range;
     }
     if (bits)
-        val = (val << bits) | get_bits(gb, bits);
+        val = ((unsigned)val << bits) | get_bits(gb, bits);
     return val;
 }
 
