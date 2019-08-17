@@ -757,7 +757,7 @@ static int matroska_reset_status(MatroskaDemuxContext *matroska,
                                  uint32_t id, int64_t position)
 {
     if (position >= 0) {
-        int err = avio_seek(matroska->ctx->pb, position, SEEK_SET);
+        int64_t err = avio_seek(matroska->ctx->pb, position, SEEK_SET);
         if (err < 0)
             return err;
     }
