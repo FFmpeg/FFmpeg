@@ -300,7 +300,6 @@ static int bsfs_poll(AVCodecContext *avctx, AVPacket *pkt)
         ret = av_bsf_receive_packet(s->bsfs[idx], pkt);
         if (ret == AVERROR(EAGAIN)) {
             /* no packets available, try the next filter up the chain */
-            ret = 0;
             idx--;
             continue;
         } else if (ret < 0 && ret != AVERROR_EOF) {
