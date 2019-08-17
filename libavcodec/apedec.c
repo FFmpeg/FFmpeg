@@ -842,7 +842,7 @@ static av_always_inline int filter_fast_3320(APEPredictor *p,
 }
 
 static av_always_inline int filter_3800(APEPredictor *p,
-                                        const int decoded, const int filter,
+                                        const unsigned decoded, const int filter,
                                         const int delayA,  const int delayB,
                                         const int start,   const int shift)
 {
