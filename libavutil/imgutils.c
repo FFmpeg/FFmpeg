@@ -519,7 +519,6 @@ static void memset_bytes(uint8_t *dst, size_t dst_size, uint8_t *clear,
 
     if (clear_size == 1) {
         memset(dst, clear[0], dst_size);
-        dst_size = 0;
     } else {
         if (clear_size > dst_size)
             clear_size = dst_size;
