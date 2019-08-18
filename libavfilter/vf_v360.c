@@ -48,6 +48,7 @@ enum Projections {
     EQUIANGULAR,
     FLAT,
     DUAL_FISHEYE,
+    FACEBOOK,
     NB_PROJECTIONS,
 };
 
@@ -137,12 +138,14 @@ static const AVOption v360_options[] = {
     {      "c6x1", "cubemap6x1",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "in" },
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "in" },
     {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "in" },
+    {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {      "c3x2", "cubemap3x2",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_3_2},     0,                   0, FLAGS, "out" },
     {      "c6x1", "cubemap6x1",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "out" },
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "out" },
     {      "flat", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
+    {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1647,6 +1650,153 @@ static void xyz_to_dfisheye(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in facebook's format.
+ *
+ * @param s filter context
+ * @param i horizontal position on frame [0, height)
+ * @param j vertical position on frame [0, width)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void fb_to_xyz(const V360Context *s,
+                              int i, int j, int width, int height,
+                              float *vec)
+{
+    const float scale = 0.99f;
+    float l_x, l_y, l_z;
+
+    if (i < 4 * width / 5) {
+        const float theta_range = M_PI / 4.f;
+
+        const int ew = 4 * width / 5;
+        const int eh = height;
+
+        const float phi   = ((2.f * i) / ew - 1.f) * M_PI        / scale;
+        const float theta = ((2.f * j) / eh - 1.f) * theta_range / scale;
+
+        const float sin_phi   = sinf(phi);
+        const float cos_phi   = cosf(phi);
+        const float sin_theta = sinf(theta);
+        const float cos_theta = cosf(theta);
+
+        l_x =  cos_theta * sin_phi;
+        l_y = -sin_theta;
+        l_z = -cos_theta * cos_phi;
+    } else {
+        const int ew = width  / 5;
+        const int eh = height / 2;
+
+        float uf, vf;
+        float norm;
+
+        if (j < eh) {   // UP
+            uf = 2.f * (i - 4 * ew) / ew  - 1.f;
+            vf = 2.f * (j         ) / eh - 1.f;
+
+            uf /= scale;
+            vf /= scale;
+
+            l_x =  uf;
+            l_y =  1.f;
+            l_z = -vf;
+        } else {            // DOWN
+            uf = 2.f * (i - 4 * ew) / ew - 1.f;
+            vf = 2.f * (j -     eh) / eh - 1.f;
+
+            uf /= scale;
+            vf /= scale;
+
+            l_x =  uf;
+            l_y = -1.f;
+            l_z =  vf;
+        }
+
+        norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
+
+        l_x /= norm;
+        l_y /= norm;
+        l_z /= norm;
+    }
+
+    vec[0] = l_x;
+    vec[1] = l_y;
+    vec[2] = l_z;
+}
+
+/**
+ * Calculate frame position in facebook's format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_fb(const V360Context *s,
+                              const float *vec, int width, int height,
+                              uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float scale = 0.99f;
+
+    const float phi   = atan2f(vec[0], -vec[2]);
+    const float theta = asinf(-vec[1]);
+    const float theta_range = M_PI / 4.f;
+
+    int ew, eh;
+    int u_shift, v_shift;
+    float uf, vf;
+    int ui, vi;
+    int i, j;
+
+    if (theta > -theta_range && theta < theta_range) {
+        ew = 4 * width / 5;
+        eh = height;
+
+        u_shift = 0;
+        v_shift = 0;
+
+        uf = (phi   / M_PI        * scale + 1.f) * ew / 2.f;
+        vf = (theta / theta_range * scale + 1.f) * eh / 2.f;
+    } else {
+        ew = width  / 5;
+        eh = height / 2;
+
+        u_shift = 4 * ew;
+
+        if (theta < 0.f) {  // UP
+            uf =  vec[0] / vec[1];
+            vf = -vec[2] / vec[1];
+            v_shift = 0;
+        } else {            // DOWN
+            uf = -vec[0] / vec[1];
+            vf = -vec[2] / vec[1];
+            v_shift = eh;
+        }
+
+        uf = 0.5f * ew * (uf * scale + 1.f);
+        vf = 0.5f * eh * (vf * scale + 1.f);
+    }
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (i = -1; i < 3; i++) {
+        for (j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = u_shift + av_clip(ui + j, 0, ew - 1);
+            vs[i + 1][j + 1] = v_shift + av_clip(vi + i, 0, eh - 1);
+        }
+    }
+
+}
+
+/**
  * Calculate rotation matrix for yaw/pitch/roll angles.
  */
 static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
@@ -1789,6 +1939,12 @@ static int config_output(AVFilterLink *outlink)
         wf = inlink->w;
         hf = inlink->h;
         break;
+    case FACEBOOK:
+        in_transform = xyz_to_fb;
+        err = 0;
+        wf = inlink->w / 5.f * 4.f;
+        hf = inlink->h;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -1832,6 +1988,12 @@ static int config_output(AVFilterLink *outlink)
     case DUAL_FISHEYE:
         av_log(ctx, AV_LOG_ERROR, "Dual fisheye format is not accepted as output.\n");
         return AVERROR(EINVAL);
+    case FACEBOOK:
+        out_transform = fb_to_xyz;
+        err = 0;
+        w = roundf(wf / 4.f * 5.f);
+        h = roundf(hf);
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
         return AVERROR_BUG;
