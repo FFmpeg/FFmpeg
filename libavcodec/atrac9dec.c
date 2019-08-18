@@ -839,6 +839,11 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
 
     av_lfg_init(&s->lfg, 0xFBADF00D);
 
+    if (avctx->block_align <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid block align\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (avctx->extradata_size != 12) {
         av_log(avctx, AV_LOG_ERROR, "Invalid extradata length!\n");
         return AVERROR_INVALIDDATA;
