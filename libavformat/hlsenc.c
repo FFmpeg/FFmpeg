@@ -2428,6 +2428,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
         if (hls->pl_type != PLAYLIST_TYPE_VOD) {
             if ((ret = hls_window(s, 0, vs)) < 0) {
+                av_free(old_filename);
                 return ret;
             }
         }
