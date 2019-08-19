@@ -185,6 +185,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             if (dnn_size > file_size || conv_params->input_num <= 0 ||
                 conv_params->output_num <= 0 || conv_params->kernel_size <= 0){
                 avio_closep(&model_file_context);
+                av_freep(&conv_params);
                 ff_dnn_free_model_native(&model);
                 return NULL;
             }
@@ -192,6 +193,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             conv_params->biases = av_malloc(conv_params->output_num * sizeof(float));
             if (!conv_params->kernel || !conv_params->biases){
                 avio_closep(&model_file_context);
+                av_freep(&conv_params->kernel);
+                av_freep(&conv_params->biases);
+                av_freep(&conv_params);
                 ff_dnn_free_model_native(&model);
                 return NULL;
             }
