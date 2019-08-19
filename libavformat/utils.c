@@ -837,15 +837,14 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         AVPacketList *pktl = s->internal->raw_packet_buffer;
 
         if (pktl) {
-            *pkt = pktl->pkt;
-            st   = s->streams[pkt->stream_index];
+            st = s->streams[pktl->pkt.stream_index];
             if (s->internal->raw_packet_buffer_remaining_size <= 0)
                 if ((err = probe_codec(s, st, NULL)) < 0)
                     return err;
             if (st->request_probe <= 0) {
-                s->internal->raw_packet_buffer                 = pktl->next;
+                ff_packet_list_get(&s->internal->raw_packet_buffer,
+                                   &s->internal->raw_packet_buffer_end, pkt);
                 s->internal->raw_packet_buffer_remaining_size += pkt->size;
-                av_free(pktl);
                 return 0;
             }
         }
