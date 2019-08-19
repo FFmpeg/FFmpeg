@@ -1571,7 +1571,7 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
     AVDictionary *options = NULL;
     const char *proto = NULL;
     int use_temp_file = 0;
-    char *filename, iv_string[KEYSIZE*2 + 1];
+    char iv_string[KEYSIZE*2 + 1];
     int err = 0;
 
     if (c->flags & HLS_SINGLE_FILE) {
