@@ -592,7 +592,7 @@ static int filter_frame(AVFilterLink *inlink)
 
     ret = ff_filter_frame(outlink, out);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     if (s->samples_left > 0) {
         s->samples_left -= s->hop_size;
