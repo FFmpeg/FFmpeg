@@ -773,13 +773,16 @@ int ff_packet_list_put(AVPacketList **head, AVPacketList **tail,
 
 /**
  * Remove the oldest AVPacket in the list and return it.
+ * The behaviour is undefined if the packet list is empty.
  *
  * @note The pkt will be overwritten completely. The caller owns the
  *       packet and must unref it by itself.
  *
  * @param head List head element
  * @param tail List tail element
- * @param pkt  Pointer to an initialized AVPacket struct
+ * @param pkt  Pointer to an AVPacket struct
+ * @return 0 on success. Success is guaranteed
+ *         if the packet list is not empty.
  */
 int ff_packet_list_get(AVPacketList **head, AVPacketList **tail,
                        AVPacket *pkt);
