@@ -2347,7 +2347,6 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 vs->packets_written = 0;
                 vs->start_pos = range_length;
                 if (!byterange_mode) {
-//                    ff_format_io_close(s, &vs->out);
                     hlsenc_io_close(s, &vs->out, vs->base_output_dirname);
                 }
             }
