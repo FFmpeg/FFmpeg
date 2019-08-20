@@ -348,6 +348,11 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     if (als_id != MKBETAG('A','L','S','\0'))
         return AVERROR_INVALIDDATA;
 
+    if (avctx->channels > FF_SANE_NB_CHANNELS) {
+        avpriv_request_sample(avctx, "Huge number of channels\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     ctx->cur_frame_length = sconf->frame_length;
 
     // read channel config
