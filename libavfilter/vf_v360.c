@@ -23,14 +23,14 @@
  * 360 video conversion filter.
  * Principle of operation:
  *
- * (for each pixel in output frame)\n
- * 1) Calculate OpenGL-like coordinates (x, y, z) for pixel position (i, j)\n
- * 2) Apply 360 operations (rotation, mirror) to (x, y, z)\n
- * 3) Calculate pixel position (u, v) in input frame\n
+ * (for each pixel in output frame)
+ * 1) Calculate OpenGL-like coordinates (x, y, z) for pixel position (i, j)
+ * 2) Apply 360 operations (rotation, mirror) to (x, y, z)
+ * 3) Calculate pixel position (u, v) in input frame
  * 4) Calculate interpolation window and weight for each pixel
  *
- * (for each frame)\n
- * 5) Remap input frame to output frame using precalculated data\n
+ * (for each frame)
+ * 5) Remap input frame to output frame using precalculated data
  */
 
 #include "libavutil/eval.h"
