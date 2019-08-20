@@ -658,7 +658,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
             s->fade_present = vp8_rac_get(c);
     }
 
-    if (c->end <= c->buffer && c->bits >= 0)
+    if (vpX_rac_is_end(c))
         return AVERROR_INVALIDDATA;
     /* E. Fading information for previous frame */
     if (s->fade_present && vp8_rac_get(c)) {
@@ -693,7 +693,7 @@ static int vp7_decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_si
         vp78_update_pred16x16_pred8x8_mvc_probabilities(s, VP7_MVC_SIZE);
     }
 
-    if (c->end <= c->buffer && c->bits >= 0)
+    if (vpX_rac_is_end(c))
         return AVERROR_INVALIDDATA;
 
     if ((ret = vp7_fade_frame(s, alpha, beta)) < 0)
@@ -2375,7 +2375,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
         curframe->tf.f->data[2] +  8 * mb_y * s->uvlinesize
     };
 
-    if (c->end <= c->buffer && c->bits >= 0)
+    if (vpX_rac_is_end(c))
          return AVERROR_INVALIDDATA;
 
     if (mb_y == 0)
@@ -2406,7 +2406,7 @@ static av_always_inline int decode_mb_row_no_filter(AVCodecContext *avctx, void 
     td->mv_bounds.mv_max.x = ((s->mb_width - 1) << 6) + MARGIN;
 
     for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
-        if (c->end <= c->buffer && c->bits >= 0)
+        if (vpX_rac_is_end(c))
             return AVERROR_INVALIDDATA;
         // Wait for previous thread to read mb_x+2, and reach mb_y-1.
         if (prev_td != td) {
