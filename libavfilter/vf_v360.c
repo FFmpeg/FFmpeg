@@ -33,7 +33,6 @@
  * 5) Remap input frame to output frame using precalculated data
  */
 
-#include "libavutil/eval.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
