@@ -85,47 +85,6 @@ static int subtitle_handler(AVCodecContext *avctx, void *frame,
     return ret;
 }
 
-// Class to handle buffer allocation and resize for each frame
-typedef struct FuzzDataBuffer {
-    size_t size_;
-    uint8_t *data_;
-} FuzzDataBuffer;
-
-static void FDBCreate(FuzzDataBuffer *FDB) {
-    FDB->size_ = 0x1000;
-    FDB->data_ = av_malloc(FDB->size_);
-    if (!FDB->data_)
-        error("Failed memory allocation");
-}
-
-static void FDBDesroy(FuzzDataBuffer *FDB) { av_free(FDB->data_); }
-
-static void FDBRealloc(FuzzDataBuffer *FDB, size_t size) {
-    size_t needed = size + AV_INPUT_BUFFER_PADDING_SIZE;
-    av_assert0(needed > size);
-    if (needed > FDB->size_) {
-        av_free(FDB->data_);
-        FDB->size_ = needed;
-        FDB->data_ = av_malloc(FDB->size_);
-        if (!FDB->data_)
-            error("Failed memory allocation");
-    }
-}
-
-static void FDBPrepare(FuzzDataBuffer *FDB, AVPacket *dst, const uint8_t *data,
-                size_t size)
-{
-    FDBRealloc(FDB, size);
-    memcpy(FDB->data_, data, size);
-    size_t padd = FDB->size_ - size;
-    if (padd > AV_INPUT_BUFFER_PADDING_SIZE)
-        padd = AV_INPUT_BUFFER_PADDING_SIZE;
-    memset(FDB->data_ + size, 0, padd);
-    av_init_packet(dst);
-    dst->data = FDB->data_;
-    dst->size = size;
-}
-
 // Ensure we don't loop forever
 const uint32_t maxiteration = 8096;
 const uint64_t maxpixels_per_frame = 4096 * 4096;
@@ -135,7 +94,6 @@ static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint64_t fuzz_tag = FUZZ_TAG;
-    FuzzDataBuffer buffer;
     const uint8_t *last = data;
     const uint8_t *end = data + size;
     uint32_t it = 0;
@@ -187,6 +145,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     if (ctx->max_pixels == 0 || ctx->max_pixels > maxpixels_per_frame)
         ctx->max_pixels = maxpixels_per_frame; //To reduce false positive OOM and hangs
+    ctx->refcounted_frames = 1; //To reduce false positive timeouts and focus testing on the refcounted API
 
     if (size > 1024) {
         GetByteContext gbc;
@@ -223,7 +182,6 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     parser_avctx->codec_id = ctx->codec_id;
 
-    FDBCreate(&buffer);
     int got_frame;
     AVFrame *frame = av_frame_alloc();
     if (!frame)
@@ -231,6 +189,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
 
     // Read very simple container
     AVPacket avpkt, parsepkt;
+    av_init_packet(&avpkt);
     while (data < end && it < maxiteration) {
         // Search for the TAG
         while (data + sizeof(fuzz_tag) < end) {
@@ -241,7 +200,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         if (data + sizeof(fuzz_tag) > end)
             data = end;
 
-        FDBPrepare(&buffer, &parsepkt, last, data - last);
+        res = av_new_packet(&parsepkt, data - last);
+        if (res < 0)
+            error("Failed memory allocation");
+        memcpy(parsepkt.data, last, data - last);
         data += sizeof(fuzz_tag);
         last = data;
 
@@ -252,6 +214,15 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                 int ret = av_parser_parse2(parser, parser_avctx, &avpkt.data, &avpkt.size,
                                            parsepkt.data, parsepkt.size,
                                            parsepkt.pts, parsepkt.dts, parsepkt.pos);
+                if (avpkt.data == parsepkt.data) {
+                    avpkt.buf = av_buffer_ref(parsepkt.buf);
+                    if (!avpkt.buf)
+                        error("Failed memory allocation");
+                } else {
+                    ret = av_packet_make_refcounted(&avpkt);
+                    if (ret < 0)
+                        error("Failed memory allocation");
+                }
                 parsepkt.data += ret;
                 parsepkt.size -= ret;
                 parsepkt.pos  += ret;
@@ -263,8 +234,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                     avpkt.flags |= AV_PKT_FLAG_KEY;
                 avpkt.flags |= parsepkt.flags & AV_PKT_FLAG_DISCARD;
             } else {
-                avpkt = parsepkt;
-                parsepkt.size = 0;
+                av_packet_move_ref(&avpkt, &parsepkt);
             }
 
           // Iterate through all data
@@ -285,16 +255,17 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             avpkt.data += ret;
             avpkt.size -= ret;
           }
+          av_packet_unref(&avpkt);
         }
+        av_packet_unref(&parsepkt);
     }
 maximums_reached:
 
-    av_init_packet(&avpkt);
-    avpkt.data = NULL;
-    avpkt.size = 0;
+    av_packet_unref(&avpkt);
 
     do {
         got_frame = 0;
+        av_frame_unref(frame);
         decode_handler(ctx, frame, &got_frame, &avpkt);
     } while (got_frame == 1 && it++ < maxiteration);
 
@@ -304,6 +275,6 @@ maximums_reached:
     avcodec_free_context(&ctx);
     avcodec_free_context(&parser_avctx);
     av_parser_close(parser);
-    FDBDesroy(&buffer);
+    av_packet_unref(&parsepkt);
     return 0;
 }
