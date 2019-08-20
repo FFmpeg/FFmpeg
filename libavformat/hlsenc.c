@@ -2875,17 +2875,10 @@ static int hls_init(AVFormatContext *s)
             }
         }
 
-        if (!hls->use_localtime) {
-            ret = sls_flag_check_duration_size_index(hls);
-            if (ret < 0) {
-                goto fail;
-            }
-        } else {
-            ret = sls_flag_check_duration_size(hls, vs);
-            if (ret < 0) {
-                goto fail;
-            }
-        }
+        ret = hls->use_localtime ? sls_flag_check_duration_size(hls, vs) : sls_flag_check_duration_size_index(hls);
+        if (ret < 0)
+            goto fail;
+
         if (vs->has_subtitle) {
 
             if (hls->flags & HLS_SINGLE_FILE)
