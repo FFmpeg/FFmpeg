@@ -505,18 +505,13 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     }
 
     if (segment && !hls->use_localtime_mkdir) {
-        if (hls->segment_filename) {
-            dirname = av_strdup(hls->segment_filename);
-        } else {
-            dirname = av_strdup(vs->avf->url);
-        }
+        dirname = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
         if (!dirname) {
             ret = AVERROR(ENOMEM);
             goto fail;
         }
         p = (char *)av_basename(dirname);
         *p = '\0';
-
     }
 
     /* if %v is present in the file's directory
