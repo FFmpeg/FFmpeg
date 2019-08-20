@@ -17919,7 +17919,7 @@ Format specific options:
 @table @option
 @item in_pad
 @item out_pad
-Set padding proprtion for the input/output cubemap. Values in decimals.
+Set padding proportion for the input/output cubemap. Values in decimals.
 
 Example values:
 @table @samp
@@ -17991,7 +17991,7 @@ Dual fisheye. @i{(input only)}
 Format specific options:
 @table @option
 @item in_pad
-Set padding proprtion. Values in decimals.
+Set padding proportion. Values in decimals.
 
 Example values:
 @table @samp
