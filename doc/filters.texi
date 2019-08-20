@@ -18040,9 +18040,9 @@ Default resolution depends on formats.
 @item roll
 Set rotation for the output video. Values in degrees.
 
-@item hflip
-@item vflip
-@item dflip
+@item h_flip
+@item v_flip
+@item d_flip
 Flip the output video horizontally/vertically/in-depth. Boolean values.
 
 @end table
