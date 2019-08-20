@@ -2131,14 +2131,18 @@ static int update_variant_stream_info(AVFormatContext *s) {
         hls->var_streams[0].nb_streams = s->nb_streams;
         hls->var_streams[0].streams = av_mallocz(sizeof(AVStream *) *
                                             hls->var_streams[0].nb_streams);
-        if (!hls->var_streams[0].streams)
+        if (!hls->var_streams[0].streams) {
+            av_free(hls->var_streams);
             return AVERROR(ENOMEM);
+        }
 
         //by default, the first available ccgroup is mapped to the variant stream
         if (hls->nb_ccstreams) {
             hls->var_streams[0].ccgroup = av_strdup(hls->cc_streams[0].ccgroup);
-            if (!hls->var_streams[0].ccgroup)
+            if (!hls->var_streams[0].ccgroup) {
+                av_free(hls->var_streams);
                 return AVERROR(ENOMEM);
+            }
         }
 
         for (i = 0; i < s->nb_streams; i++)
