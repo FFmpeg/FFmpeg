@@ -23,6 +23,37 @@ import sys, struct
 
 __all__ = ['convert_from_tensorflow']
 
+class Operand(object):
+    IOTYPE_INPUT = 1
+    IOTYPE_OUTPUT = 2
+    IOTYPE_INTERMEDIATE = IOTYPE_INPUT | IOTYPE_OUTPUT
+    DTYPE_FLOAT = 1
+    DTYPE_UINT8 = 4
+    index = 0
+    def __init__(self, name, dtype, dims):
+        self.name = name
+        self.dtype = dtype
+        self.dims = dims
+        self.iotype = 0
+        self.used_count = 0
+        self.index = Operand.index
+        Operand.index = Operand.index + 1
+        self.iotype2str = {Operand.IOTYPE_INPUT: 'in', Operand.IOTYPE_OUTPUT: 'out', Operand.IOTYPE_INTERMEDIATE: 'inout'}
+        self.dtype2str = {Operand.DTYPE_FLOAT: 'DT_FLOAT', Operand.DTYPE_UINT8: 'DT_UINT8'}
+
+    def add_iotype(self, iotype):
+        self.iotype = self.iotype | iotype
+        if iotype == Operand.IOTYPE_INPUT:
+            self.used_count = self.used_count + 1
+
+    def __str__(self):
+        return "{}: (name: {}, iotype: {}, dtype: {}, dims: ({},{},{},{}) used_count: {})".format(self.index,
+                            self.name, self.iotype2str[self.iotype], self.dtype2str[self.dtype],
+                            self.dims[0], self.dims[1], self.dims[2], self.dims[3], self.used_count)
+
+    def __lt__(self, other):
+        return self.index < other.index
+
 class TFConverter:
     def __init__(self, graph_def, nodes, outfile, dump4tb):
         self.graph_def = graph_def
@@ -37,8 +68,28 @@ class TFConverter:
         self.conv_paddings = {'VALID':0, 'SAME':1}
         self.converted_nodes = set()
         self.conv2d_scope_names = set()
+        self.conv2d_scopename_inputname_dict = {}
         self.op2code = {'Conv2D':1, 'DepthToSpace':2, 'MirrorPad':3}
         self.mirrorpad_mode = {'CONSTANT':0, 'REFLECT':1, 'SYMMETRIC':2}
+        self.name_operand_dict = {}
+
+
+    def add_operand(self, name, type):
+        node = self.name_node_dict[name]
+        if name not in self.name_operand_dict:
+            dtype = node.attr['dtype'].type
+            if dtype == 0:
+                dtype = node.attr['T'].type
+            dims = [-1,-1,-1,-1]
+            if 'shape' in node.attr:
+                dims[0] = node.attr['shape'].shape.dim[0].size
+                dims[1] = node.attr['shape'].shape.dim[1].size
+                dims[2] = node.attr['shape'].shape.dim[2].size
+                dims[3] = node.attr['shape'].shape.dim[3].size
+            operand = Operand(name, dtype, dims)
+            self.name_operand_dict[name] = operand;
+        self.name_operand_dict[name].add_iotype(type)
+        return self.name_operand_dict[name].index
 
 
     def dump_for_tensorboard(self):
@@ -60,11 +111,10 @@ class TFConverter:
         # the BiasAdd name is possible be changed into the output name,
         # if activation is None, and BiasAdd.next is the last op which is Identity
         if conv2d_scope_name + '/BiasAdd' in self.edges:
-            activation = self.edges[conv2d_scope_name + '/BiasAdd'][0]
-            activation = activation.op
+            anode = self.edges[conv2d_scope_name + '/BiasAdd'][0]
         else:
-            activation = 'None'
-        return knode, bnode, dnode, activation
+            anode = None
+        return knode, bnode, dnode, anode
 
 
     def dump_conv2d_to_file(self, node, f):
@@ -73,16 +123,21 @@ class TFConverter:
         self.converted_nodes.add(node.name)
 
         scope_name = TFConverter.get_scope_name(node.name)
-        #knode for kernel, bnode for bias, dnode for dilation
-        knode, bnode, dnode, activation = self.get_conv2d_params(scope_name)
+        #knode for kernel, bnode for bias, dnode for dilation, anode for activation
+        knode, bnode, dnode, anode = self.get_conv2d_params(scope_name)
 
         if dnode is not None:
             dilation = struct.unpack('i', dnode.attr['value'].tensor.tensor_content[0:4])[0]
         else:
             dilation = 1
 
+        if anode is not None:
+            activation = anode.op
+        else:
+            activation = 'None'
+
         padding = node.attr['padding'].s.decode("utf-8")
-        # conv2d with dilation > 1 generates tens of nodes, not easy to parse them, so use tricky.
+        # conv2d with dilation > 1 generates tens of nodes, not easy to parse them, so use this tricky method.
         if dilation > 1 and scope_name + '/stack' in self.name_node_dict:
             if self.name_node_dict[scope_name + '/stack'].op == "Const":
                 padding = 'SAME'
@@ -107,6 +162,15 @@ class TFConverter:
             bias = btensor.tensor_content
         f.write(bias)
 
+        input_name = self.conv2d_scopename_inputname_dict[scope_name]
+        input_operand_index = self.add_operand(input_name, Operand.IOTYPE_INPUT)
+
+        if anode is not None:
+            output_operand_index = self.add_operand(anode.name, Operand.IOTYPE_OUTPUT)
+        else:
+            output_operand_index = self.add_operand(self.edges[bnode.name][0].name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
+
 
     def dump_depth2space_to_file(self, node, f):
         assert(node.op == 'DepthToSpace')
@@ -114,6 +178,9 @@ class TFConverter:
         block_size = node.attr['block_size'].i
         np.array([self.op2code[node.op], block_size], dtype=np.uint32).tofile(f)
         self.converted_nodes.add(node.name)
+        input_operand_index = self.add_operand(node.input[0], Operand.IOTYPE_INPUT)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
 
 
     def dump_mirrorpad_to_file(self, node, f):
@@ -127,6 +194,9 @@ class TFConverter:
         paddings = pnode.attr['value'].tensor.tensor_content
         f.write(paddings)
         self.converted_nodes.add(node.name)
+        input_operand_index = self.add_operand(node.input[0], Operand.IOTYPE_INPUT)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
 
 
     def dump_layers_to_file(self, f):
@@ -147,10 +217,21 @@ class TFConverter:
                 self.dump_mirrorpad_to_file(node, f)
 
 
+    def dump_operands_to_file(self, f):
+            operands = sorted(self.name_operand_dict.values())
+            for operand in operands:
+                #print('{}'.format(operand))
+                np.array([operand.index, len(operand.name)], dtype=np.uint32).tofile(f)
+                f.write(operand.name.encode('utf-8'))
+                np.array([operand.iotype, operand.dtype], dtype=np.uint32).tofile(f)
+                np.array([operand.dims[0], operand.dims[1], operand.dims[2], operand.dims[3]], dtype=np.uint32).tofile(f)
+
+
     def dump_to_file(self):
         with open(self.outfile, 'wb') as f:
             self.dump_layers_to_file(f)
-            np.array([self.layer_number], dtype=np.uint32).tofile(f)
+            self.dump_operands_to_file(f)
+            np.array([self.layer_number, len(self.name_operand_dict)], dtype=np.uint32).tofile(f)
 
 
     def generate_name_node_dict(self):
@@ -212,11 +293,21 @@ class TFConverter:
         return name[0:index]
 
 
-    def generate_conv2d_scope_names(self):
+    def generate_conv2d_scope_info(self):
+        # conv2d is a sub block in graph, get the scope name
         for node in self.nodes:
             if node.op == 'Conv2D':
                 scope = TFConverter.get_scope_name(node.name)
                 self.conv2d_scope_names.add(scope)
+
+        # get the input name to the conv2d sub block
+        for node in self.nodes:
+            scope = TFConverter.get_scope_name(node.name)
+            if scope in self.conv2d_scope_names:
+                if node.op == 'Conv2D' or node.op == 'Shape':
+                    for inp in node.input:
+                        if TFConverter.get_scope_name(inp) != scope:
+                            self.conv2d_scopename_inputname_dict[scope] = inp
 
 
     def run(self):
@@ -224,7 +315,7 @@ class TFConverter:
         self.generate_output_names()
         self.remove_identity()
         self.generate_edges()
-        self.generate_conv2d_scope_names()
+        self.generate_conv2d_scope_info()
 
         if self.dump4tb:
             self.dump_for_tensorboard()

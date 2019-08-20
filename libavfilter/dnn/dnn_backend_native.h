@@ -36,7 +36,7 @@ typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
 
 typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNConvPaddingParam;
 
-typedef enum {DOT_INPUT, DOT_INTERMEDIATE, DOT_OUTPUT} DNNOperandType;
+typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_INPUT} DNNOperandType;
 
 typedef struct Layer{
     DNNLayerType type;

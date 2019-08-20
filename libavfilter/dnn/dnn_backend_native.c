@@ -72,7 +72,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
     LayerPadParams *pad_params;
-    int32_t operand_index = 0;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -93,9 +92,10 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     }
     model->model = (void *)network;
 
-    avio_seek(model_file_context, file_size - 4, SEEK_SET);
+    avio_seek(model_file_context, file_size - 8, SEEK_SET);
     network->layers_num = (int32_t)avio_rl32(model_file_context);
-    dnn_size = 4;
+    network->operands_num = (int32_t)avio_rl32(model_file_context);
+    dnn_size = 8;
     avio_seek(model_file_context, 0, SEEK_SET);
 
     network->layers = av_mallocz(network->layers_num * sizeof(Layer));
@@ -105,11 +105,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
         return NULL;
     }
 
-    /**
-     * Operands should be read from model file, the whole change will be huge.
-     * to make things step by step, we first mock the operands, instead of reading from model file.
-     */
-    network->operands_num = network->layers_num + 1;
     network->operands = av_mallocz(network->operands_num * sizeof(DnnOperand));
     if (!network->operands){
         avio_closep(&model_file_context);
@@ -120,8 +115,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     for (layer = 0; layer < network->layers_num; ++layer){
         layer_type = (int32_t)avio_rl32(model_file_context);
         dnn_size += 4;
-        network->layers[layer].input_operand_indexes[0] = operand_index++;
-        network->layers[layer].output_operand_index = operand_index;
         switch (layer_type){
         case CONV:
             conv_params = av_malloc(sizeof(ConvolutionalParams));
@@ -162,6 +155,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             for (i = 0; i < conv_params->output_num; ++i){
                 conv_params->biases[i] = av_int2float(avio_rl32(model_file_context));
             }
+            network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+            network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 8;
             network->layers[layer].type = CONV;
             network->layers[layer].params = conv_params;
             break;
@@ -174,6 +170,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             }
             depth_to_space_params->block_size = (int32_t)avio_rl32(model_file_context);
             dnn_size += 4;
+            network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+            network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 8;
             network->layers[layer].type = DEPTH_TO_SPACE;
             network->layers[layer].params = depth_to_space_params;
             break;
@@ -191,6 +190,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
                 pad_params->paddings[i][1] = avio_rl32(model_file_context);
                 dnn_size += 8;
             }
+            network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+            network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 8;
             network->layers[layer].type = MIRROR_PAD;
             network->layers[layer].params = pad_params;
             break;
@@ -199,6 +201,33 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             ff_dnn_free_model_native(&model);
             return NULL;
         }
+    }
+
+    for (int32_t i = 0; i < network->operands_num; ++i){
+        DnnOperand *oprd;
+        int32_t name_len;
+        int32_t operand_index = (int32_t)avio_rl32(model_file_context);
+        dnn_size += 4;
+
+        oprd = &network->operands[operand_index];
+        name_len = (int32_t)avio_rl32(model_file_context);
+        dnn_size += 4;
+
+        avio_get_str(model_file_context, name_len, oprd->name, sizeof(oprd->name));
+        dnn_size += name_len;
+
+        oprd->type = (int32_t)avio_rl32(model_file_context);
+        dnn_size += 4;
+
+        oprd->data_type = (int32_t)avio_rl32(model_file_context);
+        dnn_size += 4;
+
+        for (int32_t dim = 0; dim < 4; ++dim) {
+            oprd->dims[dim] = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 4;
+        }
+
+        oprd->isNHWC = 1;
     }
 
     avio_closep(&model_file_context);
