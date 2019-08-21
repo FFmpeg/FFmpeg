@@ -2579,9 +2579,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
         vs->size = range_length;
         hlsenc_io_close(s, &vs->out, filename);
-        av_free(filename);
-
 failed:
+        av_free(filename);
         av_write_trailer(oc);
         if (oc->url[0]) {
             proto = avio_find_protocol_name(oc->url);
