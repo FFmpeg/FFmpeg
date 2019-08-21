@@ -1050,6 +1050,7 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
 
     /* List available devices. */
     if (ctx->list_devices) {
+        av_log(avctx, AV_LOG_WARNING, "The -list_devices option is deprecated and will be removed. Please use ffmpeg -sources decklink instead.\n");
         ff_decklink_list_devices_legacy(avctx, 1, 0);
         return AVERROR_EXIT;
     }

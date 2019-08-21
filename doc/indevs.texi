@@ -277,8 +277,8 @@ audio track.
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}. Alternatively you can use the @code{-sources}
-option of ffmpeg to list the available input devices.
+Defaults to @option{false}. This option is deprecated, please use the
+@code{-sources} option of ffmpeg to list the available input devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
@@ -407,7 +407,7 @@ Defaults to @option{false}.
 @item
 List input devices:
 @example
-ffmpeg -f decklink -list_devices 1 -i dummy
+ffmpeg -sources decklink
 @end example
 
 @item
