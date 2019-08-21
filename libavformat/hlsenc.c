@@ -2785,7 +2785,6 @@ static int hls_init(AVFormatContext *s)
             ret = format_name(hls->segment_filename, &vs->basename, i, vs->varname);
             if (ret < 0)
                 goto fail;
-            basename_size = strlen(vs->basename) + 1;
         } else {
             if (hls->flags & HLS_SINGLE_FILE) {
                 if (hls->segment_type == SEGMENT_TYPE_FMP4) {
