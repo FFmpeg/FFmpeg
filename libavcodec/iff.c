@@ -180,6 +180,10 @@ static int cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
             pal[i] = 0xFF000000 | gray2rgb((i * 255) >> avctx->bits_per_coded_sample);
     }
     if (s->masking == MASK_HAS_MASK) {
+        if ((1 << avctx->bits_per_coded_sample) < count) {
+            avpriv_request_sample(avctx, "overlapping mask");
+            return AVERROR_PATCHWELCOME;
+        }
         memcpy(pal + (1 << avctx->bits_per_coded_sample), pal, count * 4);
         for (i = 0; i < count; i++)
             pal[i] &= 0xFFFFFF;
