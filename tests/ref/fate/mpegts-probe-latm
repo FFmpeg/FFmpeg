@@ -12,3 +12,6 @@ codec_name=hevc
 [STREAM]
 codec_name=aac_latm
 [/STREAM]
+[STREAM]
+codec_name=epg
+[/STREAM]
