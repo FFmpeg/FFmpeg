@@ -292,11 +292,6 @@ as @option{pal} (3 letters).
 Default behavior is autodetection of the input video format, if the hardware
 supports it.
 
-@item bm_v210
-This is a deprecated option, you can use @option{raw_format} instead.
-If set to @samp{1}, video is captured in 10 bit v210 instead
-of uyvy422. Not all Blackmagic devices support this option.
-
 @item raw_format
 Set the pixel format of the captured video.
 Available values are:
@@ -430,7 +425,7 @@ ffmpeg -format_code Hi50 -f decklink -i 'Intensity Pro' -c:a copy -c:v copy outp
 @item
 Capture video clip at 1080i50 10 bit:
 @example
-ffmpeg -bm_v210 1 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
+ffmpeg -raw_format yuv422p10 -format_code Hi50 -f decklink -i 'UltraStudio Mini Recorder' -c:a copy -c:v copy output.avi
 @end example
 
 @item

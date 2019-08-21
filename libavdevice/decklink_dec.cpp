@@ -1054,11 +1054,6 @@ av_cold int ff_decklink_read_header(AVFormatContext *avctx)
         return AVERROR_EXIT;
     }
 
-    if (cctx->v210) {
-        av_log(avctx, AV_LOG_WARNING, "The bm_v210 option is deprecated and will be removed. Please use the -raw_format yuv422p10.\n");
-        cctx->raw_format = MKBETAG('v','2','1','0');
-    }
-
     ret = ff_decklink_init_device(avctx, avctx->url);
     if (ret < 0)
         return ret;
