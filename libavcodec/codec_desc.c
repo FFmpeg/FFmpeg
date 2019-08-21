@@ -3198,6 +3198,12 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("SCTE 35 Message Queue"),
     },
     {
+        .id        = AV_CODEC_ID_EPG,
+        .type      = AVMEDIA_TYPE_DATA,
+        .name      = "epg",
+        .long_name = NULL_IF_CONFIG_SMALL("Electronic Program Guide"),
+    },
+    {
         .id        = AV_CODEC_ID_BINTEXT,
         .type      = AVMEDIA_TYPE_VIDEO,
         .name      = "bintext",
