@@ -802,6 +802,26 @@ static int omx_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         // Convert the timestamps to microseconds; some encoders can ignore
         // the framerate and do VFR bit allocation based on timestamps.
         buffer->nTimeStamp = to_omx_ticks(av_rescale_q(frame->pts, avctx->time_base, AV_TIME_BASE_Q));
+        if (frame->pict_type == AV_PICTURE_TYPE_I) {
+#if CONFIG_OMX_RPI
+            OMX_CONFIG_BOOLEANTYPE config = {0, };
+            INIT_STRUCT(config);
+            config.bEnabled = OMX_TRUE;
+            err = OMX_SetConfig(s->handle, OMX_IndexConfigBrcmVideoRequestIFrame, &config);
+            if (err != OMX_ErrorNone) {
+                av_log(avctx, AV_LOG_ERROR, "OMX_SetConfig(RequestIFrame) failed: %x\n", err);
+            }
+#else
+            OMX_CONFIG_INTRAREFRESHVOPTYPE config = {0, };
+            INIT_STRUCT(config);
+            config.nPortIndex = s->out_port;
+            config.IntraRefreshVOP = OMX_TRUE;
+            err = OMX_SetConfig(s->handle, OMX_IndexConfigVideoIntraVOPRefresh, &config);
+            if (err != OMX_ErrorNone) {
+                av_log(avctx, AV_LOG_ERROR, "OMX_SetConfig(IntraVOPRefresh) failed: %x\n", err);
+            }
+#endif
+        }
         err = OMX_EmptyThisBuffer(s->handle, buffer);
         if (err != OMX_ErrorNone) {
             append_buffer(&s->input_mutex, &s->input_cond, &s->num_free_in_buffers, s->free_in_buffers, buffer);
