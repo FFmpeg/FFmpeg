@@ -282,11 +282,11 @@ static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, i
 
 /******************************************************************************
  *
- *              V4L2uffer interface
+ *              V4L2Buffer interface
  *
  ******************************************************************************/
 
-int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer* out)
+int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 {
     int i, ret;
 
