@@ -76,7 +76,9 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s)
     if (ret < 0)
         return ret;
 
-    av_log(s->avctx, AV_LOG_INFO, "driver '%s' on card '%s'\n", cap.driver, cap.card);
+    av_log(s->avctx, AV_LOG_INFO, "driver '%s' on card '%s' in %s mode\n", cap.driver, cap.card,
+                                   v4l2_mplane_video(&cap) ? "mplane" :
+                                   v4l2_splane_video(&cap) ? "splane" : "unknown");
 
     if (v4l2_mplane_video(&cap)) {
         s->capture.type = V4L2_BUF_TYPE_VIDEO_CAPTURE_MPLANE;
