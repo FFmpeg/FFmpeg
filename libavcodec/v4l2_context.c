@@ -678,8 +678,10 @@ int ff_v4l2_context_init(V4L2Context* ctx)
     req.memory = V4L2_MEMORY_MMAP;
     req.type = ctx->type;
     ret = ioctl(s->fd, VIDIOC_REQBUFS, &req);
-    if (ret < 0)
+    if (ret < 0) {
+        av_log(logger(ctx), AV_LOG_ERROR, "%s VIDIOC_REQBUFS failed: %s\n", ctx->name, strerror(errno));
         return AVERROR(errno);
+    }
 
     ctx->num_buffers = req.count;
     ctx->buffers = av_mallocz(ctx->num_buffers * sizeof(V4L2Buffer));
