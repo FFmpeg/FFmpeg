@@ -2304,8 +2304,8 @@ static int mov_parse_stsd_data(MOVContext *c, AVIOContext *pb,
             int val;
             val = AV_RB32(st->codecpar->extradata + 4);
             tmcd_ctx->tmcd_flags = val;
-            st->avg_frame_rate.num = st->codecpar->extradata[16]; /* number of frame */
-            st->avg_frame_rate.den = 1;
+            st->avg_frame_rate.num = AV_RB32(st->codecpar->extradata + 8); /* timescale */
+            st->avg_frame_rate.den = AV_RB32(st->codecpar->extradata + 12); /* frameDuration */
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
             st->codec->time_base = av_inv_q(st->avg_frame_rate);
