@@ -8449,6 +8449,18 @@ files (.pb) by using tools/python/convert.py
 The filter accepts the following options:
 
 @table @option
+@item filter_type
+Specify which filter to use. This option accepts the following values:
+
+@table @samp
+@item derain
+Derain filter. To conduct derain filter, you need to use a derain model.
+
+@item dehaze
+Dehaze filter. To conduct dehaze filter, you need to use a dehaze model.
+@end table
+Default value is @samp{derain}.
+
 @item dnn_backend
 Specify which DNN backend to use for model loading and execution. This option accepts
 the following values:

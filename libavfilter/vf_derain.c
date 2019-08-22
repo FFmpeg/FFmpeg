@@ -34,6 +34,7 @@
 typedef struct DRContext {
     const AVClass *class;
 
+    int                filter_type;
     char              *model_filename;
     DNNBackendType     backend_type;
     DNNModule         *dnn_module;
@@ -46,6 +47,9 @@ typedef struct DRContext {
 #define OFFSET(x) offsetof(DRContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption derain_options[] = {
+    { "filter_type", "filter type(derain/dehaze)",  OFFSET(filter_type),    AV_OPT_TYPE_INT,    { .i64 = 0 },    0, 1, FLAGS, "type" },
+    { "derain",      "derain filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "type" },
+    { "dehaze",      "dehaze filter flag",          0,                      AV_OPT_TYPE_CONST,  { .i64 = 1 },    0, 0, FLAGS, "type" },
     { "dnn_backend", "DNN backend",             OFFSET(backend_type),   AV_OPT_TYPE_INT,    { .i64 = 0 },    0, 1, FLAGS, "backend" },
     { "native",      "native backend flag",     0,                      AV_OPT_TYPE_CONST,  { .i64 = 0 },    0, 0, FLAGS, "backend" },
 #if (CONFIG_LIBTENSORFLOW == 1)
