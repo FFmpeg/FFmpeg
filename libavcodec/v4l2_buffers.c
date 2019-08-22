@@ -29,6 +29,7 @@
 #include <poll.h>
 #include "libavcodec/avcodec.h"
 #include "libavcodec/internal.h"
+#include "libavutil/pixdesc.h"
 #include "v4l2_context.h"
 #include "v4l2_buffers.h"
 #include "v4l2_m2m.h"
@@ -257,17 +258,17 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
     return 0;
 }
 
-static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, AVBufferRef* bref)
+static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, int offset, AVBufferRef* bref)
 {
     unsigned int bytesused, length;
 
     if (plane >= out->num_planes)
         return AVERROR(EINVAL);
 
-    bytesused = FFMIN(size, out->plane_info[plane].length);
     length = out->plane_info[plane].length;
+    bytesused = FFMIN(size+offset, length);
 
-    memcpy(out->plane_info[plane].mm_addr, data, FFMIN(size, out->plane_info[plane].length));
+    memcpy((uint8_t*)out->plane_info[plane].mm_addr+offset, data, FFMIN(size, length-offset));
 
     if (V4L2_TYPE_IS_MULTIPLANAR(out->buf.type)) {
         out->planes[plane].bytesused = bytesused;
@@ -289,14 +290,58 @@ static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, i
 int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 {
     int i, ret;
+    struct v4l2_format fmt = out->context->format;
+    int pixel_format = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
+                       fmt.fmt.pix_mp.pixelformat : fmt.fmt.pix.pixelformat;
+    int height       = V4L2_TYPE_IS_MULTIPLANAR(fmt.type) ?
+                       fmt.fmt.pix_mp.height : fmt.fmt.pix.height;
+    int is_planar_format = 0;
 
-    for(i = 0; i < out->num_planes; i++) {
-        ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, frame->buf[i]);
-        if (ret)
-            return ret;
+    switch (pixel_format) {
+    case V4L2_PIX_FMT_YUV420M:
+    case V4L2_PIX_FMT_YVU420M:
+    case V4L2_PIX_FMT_YUV422M:
+    case V4L2_PIX_FMT_YVU422M:
+    case V4L2_PIX_FMT_YUV444M:
+    case V4L2_PIX_FMT_YVU444M:
+    case V4L2_PIX_FMT_NV12M:
+    case V4L2_PIX_FMT_NV21M:
+    case V4L2_PIX_FMT_NV12MT_16X16:
+    case V4L2_PIX_FMT_NV12MT:
+    case V4L2_PIX_FMT_NV16M:
+    case V4L2_PIX_FMT_NV61M:
+        is_planar_format = 1;
     }
 
     v4l2_set_pts(out, frame->pts);
+
+    if (!is_planar_format) {
+        const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
+        int planes_nb = 0;
+        int offset = 0;
+
+        for (i = 0; i < desc->nb_components; i++)
+            planes_nb = FFMAX(planes_nb, desc->comp[i].plane + 1);
+
+        for (i = 0; i < planes_nb; i++) {
+            int size, h = height;
+            if (i == 1 || i == 2) {
+                h = AV_CEIL_RSHIFT(h, desc->log2_chroma_h);
+            }
+            size = frame->linesize[i] * h;
+            ret = v4l2_bufref_to_buf(out, 0, frame->data[i], size, offset, frame->buf[i]);
+            if (ret)
+                return ret;
+            offset += size;
+        }
+        return 0;
+    }
+
+    for (i = 0; i < out->num_planes; i++) {
+        ret = v4l2_bufref_to_buf(out, i, frame->buf[i]->data, frame->buf[i]->size, 0, frame->buf[i]);
+        if (ret)
+            return ret;
+    }
 
     return 0;
 }
@@ -390,7 +435,7 @@ int ff_v4l2_buffer_avpkt_to_buf(const AVPacket *pkt, V4L2Buffer *out)
 {
     int ret;
 
-    ret = v4l2_bufref_to_buf(out, 0, pkt->data, pkt->size, pkt->buf);
+    ret = v4l2_bufref_to_buf(out, 0, pkt->data, pkt->size, 0, pkt->buf);
     if (ret)
         return ret;
 
