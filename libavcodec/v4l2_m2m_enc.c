@@ -58,10 +58,10 @@ static inline void v4l2_set_ext_ctrl(V4L2m2mContext *s, unsigned int id, signed 
 
     /* set ctrl*/
     ctrl.value = value;
-    ctrl.id = id ;
+    ctrl.id = id;
 
     if (ioctl(s->fd, VIDIOC_S_EXT_CTRLS, &ctrls) < 0)
-        av_log(s->avctx, AV_LOG_WARNING, "Failed to set %s\n", name);
+        av_log(s->avctx, AV_LOG_WARNING, "Failed to set %s: %s\n", name, strerror(errno));
     else
         av_log(s->avctx, AV_LOG_DEBUG, "Encoder: %s = %d\n", name, value);
 }
