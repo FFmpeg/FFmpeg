@@ -374,11 +374,22 @@ static int decode_extradata_ps(const uint8_t *data, int size, H264ParamSets *ps,
     for (i = 0; i < pkt.nb_nals; i++) {
         H2645NAL *nal = &pkt.nals[i];
         switch (nal->type) {
-        case H264_NAL_SPS:
-            ret = ff_h264_decode_seq_parameter_set(&nal->gb, logctx, ps, 0);
+        case H264_NAL_SPS: {
+            GetBitContext tmp_gb = nal->gb;
+            ret = ff_h264_decode_seq_parameter_set(&tmp_gb, logctx, ps, 0);
+            if (ret >= 0)
+                break;
+            av_log(logctx, AV_LOG_DEBUG,
+                   "SPS decoding failure, trying again with the complete NAL\n");
+            init_get_bits8(&tmp_gb, nal->raw_data + 1, nal->raw_size - 1);
+            ret = ff_h264_decode_seq_parameter_set(&tmp_gb, logctx, ps, 0);
+            if (ret >= 0)
+                break;
+            ret = ff_h264_decode_seq_parameter_set(&nal->gb, logctx, ps, 1);
             if (ret < 0)
                 goto fail;
             break;
+        }
         case H264_NAL_PPS:
             ret = ff_h264_decode_picture_parameter_set(&nal->gb, logctx, ps,
                                                        nal->size_bits);
