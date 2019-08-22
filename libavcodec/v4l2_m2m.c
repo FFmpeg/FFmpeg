@@ -67,7 +67,7 @@ static int v4l2_prepare_contexts(V4L2m2mContext* s)
 
     s->capture.done = s->output.done = 0;
     s->capture.name = "capture";
-    s->output.name = "output ";
+    s->output.name = "output";
     atomic_init(&s->refcount, 0);
     sem_init(&s->refsync, 0, 0);
 
