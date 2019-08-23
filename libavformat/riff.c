@@ -492,6 +492,11 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { AV_CODEC_ID_NONE,         0 }
 };
 
+const AVCodecTag ff_codec_bmp_tags_unofficial[] = {
+    { AV_CODEC_ID_HEVC,         MKTAG('H', 'E', 'V', 'C') },
+    { AV_CODEC_ID_NONE,         0 }
+};
+
 const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_PCM_S16LE,       0x0001 },
     /* must come after s16le in this list */
