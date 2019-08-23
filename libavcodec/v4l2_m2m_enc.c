@@ -261,7 +261,7 @@ static int v4l2_receive_packet(AVCodecContext *avctx, AVPacket *avpkt)
     if (!output->streamon) {
         ret = ff_v4l2_context_set_status(output, VIDIOC_STREAMON);
         if (ret) {
-            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMOFF failed on output context\n");
+            av_log(avctx, AV_LOG_ERROR, "VIDIOC_STREAMON failed on output context\n");
             return ret;
         }
     }
