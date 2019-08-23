@@ -1303,15 +1303,17 @@ skip:
                                             st = pst;
                                     }
                                 }
-                                if (f->last_pcr != -1 && st && st->discard != AVDISCARD_ALL) {
+                                if (f->last_pcr != -1 && !f->discard) {
                                     // teletext packets do not always have correct timestamps,
                                     // the standard says they should be handled after 40.6 ms at most,
                                     // and the pcr error to this packet should be no more than 100 ms.
                                     // TODO: we should interpolate the PCR, not just use the last one
                                     int64_t pcr = f->last_pcr / 300;
                                     pcr_found = 1;
-                                    pes->st->pts_wrap_reference = st->pts_wrap_reference;
-                                    pes->st->pts_wrap_behavior = st->pts_wrap_behavior;
+                                    if (st) {
+                                        pes->st->pts_wrap_reference = st->pts_wrap_reference;
+                                        pes->st->pts_wrap_behavior = st->pts_wrap_behavior;
+                                    }
                                     if (pes->dts == AV_NOPTS_VALUE || pes->dts < pcr) {
                                         pes->pts = pes->dts = pcr;
                                     } else if (pes->st->codecpar->codec_id == AV_CODEC_ID_DVB_TELETEXT &&
