@@ -254,13 +254,13 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
 
     ret = ff_v4l2_context_set_status(&s->output, VIDIOC_STREAMOFF);
     if (ret) {
-        av_log(s->avctx, AV_LOG_ERROR, "output VIDIOC_STREAMOFF\n");
+        av_log(log_ctx, AV_LOG_ERROR, "output VIDIOC_STREAMOFF\n");
         goto error;
     }
 
     ret = ff_v4l2_context_set_status(&s->capture, VIDIOC_STREAMOFF);
     if (ret) {
-            av_log(s->avctx, AV_LOG_ERROR, "capture VIDIOC_STREAMOFF\n");
+            av_log(log_ctx, AV_LOG_ERROR, "capture VIDIOC_STREAMOFF\n");
             goto error;
     }
 
