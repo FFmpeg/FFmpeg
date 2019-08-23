@@ -48,9 +48,9 @@ static inline V4L2m2mContext *ctx_to_m2mctx(V4L2Context *ctx)
         container_of(ctx, V4L2m2mContext, capture);
 }
 
-static inline AVCodecContext *logger(V4L2Context *ctx)
+static inline AVClass *logger(V4L2Context *ctx)
 {
-    return ctx_to_m2mctx(ctx)->avctx;
+    return ctx_to_m2mctx(ctx)->priv;
 }
 
 static inline unsigned int v4l2_get_width(struct v4l2_format *fmt)
@@ -96,7 +96,7 @@ static inline int v4l2_get_framesize_compressed(V4L2Context* ctx, int width, int
     const int SZ_4K = 0x1000;
     int size;
 
-    if (av_codec_is_decoder(s->avctx->codec))
+    if (s->avctx && av_codec_is_decoder(s->avctx->codec))
         return ((width * height * 3 / 2) / 2) + 128;
 
     /* encoder */
@@ -193,7 +193,8 @@ static int v4l2_handle_event(V4L2Context *ctx)
     }
 
     if (reinit) {
-        ret = ff_set_dimensions(s->avctx, s->capture.width, s->capture.height);
+        if (s->avctx)
+            ret = ff_set_dimensions(s->avctx, s->capture.width, s->capture.height);
         if (ret < 0)
             av_log(logger(ctx), AV_LOG_WARNING, "update avcodec height and width\n");
 

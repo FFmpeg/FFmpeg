@@ -285,9 +285,10 @@ static av_cold int v4l2_encode_init(AVCodecContext *avctx)
 {
     V4L2Context *capture, *output;
     V4L2m2mContext *s;
+    V4L2m2mPriv *priv = avctx->priv_data;
     int ret;
 
-    ret = ff_v4l2_m2m_create_context(avctx, &s);
+    ret = ff_v4l2_m2m_create_context(priv, &s);
     if (ret < 0)
         return ret;
 
@@ -306,13 +307,19 @@ static av_cold int v4l2_encode_init(AVCodecContext *avctx)
     capture->av_codec_id = avctx->codec_id;
     capture->av_pix_fmt = AV_PIX_FMT_NONE;
 
-    ret = ff_v4l2_m2m_codec_init(avctx);
+    ret = ff_v4l2_m2m_codec_init(priv);
     if (ret) {
         av_log(avctx, AV_LOG_ERROR, "can't configure encoder\n");
         return ret;
     }
+    s->avctx = avctx;
 
     return v4l2_prepare_encoder(s);
+}
+
+static av_cold int v4l2_encode_close(AVCodecContext *avctx)
+{
+    return ff_v4l2_m2m_codec_end(avctx->priv_data);
 }
 
 #define OFFSET(x) offsetof(V4L2m2mPriv, x)
@@ -343,7 +350,7 @@ AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
     .init           = v4l2_encode_init,\
     .send_frame     = v4l2_send_frame,\
     .receive_packet = v4l2_receive_packet,\
-    .close          = ff_v4l2_m2m_codec_end,\
+    .close          = v4l2_encode_close,\
     .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
     .wrapper_name   = "v4l2m2m", \
 };

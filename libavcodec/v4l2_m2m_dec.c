@@ -169,9 +169,10 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 {
     V4L2Context *capture, *output;
     V4L2m2mContext *s;
+    V4L2m2mPriv *priv = avctx->priv_data;
     int ret;
 
-    ret = ff_v4l2_m2m_create_context(avctx, &s);
+    ret = ff_v4l2_m2m_create_context(priv, &s);
     if (ret < 0)
         return ret;
 
@@ -191,17 +192,22 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
     capture->av_codec_id = AV_CODEC_ID_RAWVIDEO;
     capture->av_pix_fmt = avctx->pix_fmt;
 
-    ret = ff_v4l2_m2m_codec_init(avctx);
+    ret = ff_v4l2_m2m_codec_init(priv);
     if (ret) {
-        V4L2m2mPriv *priv = avctx->priv_data;
         av_log(avctx, AV_LOG_ERROR, "can't configure decoder\n");
         s->self_ref = NULL;
         av_buffer_unref(&priv->context_ref);
 
         return ret;
     }
+    s->avctx = avctx;
 
     return v4l2_prepare_decoder(s);
+}
+
+static av_cold int v4l2_decode_close(AVCodecContext *avctx)
+{
+    return ff_v4l2_m2m_codec_end(avctx->priv_data);
 }
 
 #define OFFSET(x) offsetof(V4L2m2mPriv, x)
@@ -231,7 +237,7 @@ AVCodec ff_ ## NAME ## _v4l2m2m_decoder = { \
     .priv_class     = &v4l2_m2m_ ## NAME ## _dec_class,\
     .init           = v4l2_decode_init,\
     .receive_frame  = v4l2_receive_frame,\
-    .close          = ff_v4l2_m2m_codec_end,\
+    .close          = v4l2_decode_close,\
     .bsfs           = bsf_name, \
     .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | \
                       AV_CODEC_CAP_AVOID_PROBING, \
