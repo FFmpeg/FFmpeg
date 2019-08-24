@@ -39,6 +39,7 @@ typedef struct DHAVContext {
     int audio_channels;
     int audio_codec;
     int sample_rate;
+    int64_t last_good_pos;
 
     int video_stream_index;
     int audio_stream_index;
@@ -80,6 +81,7 @@ static int dhav_read_header(AVFormatContext *s)
     s->ctx_flags |= AVFMTCTX_NOHEADER;
     dhav->video_stream_index = -1;
     dhav->audio_stream_index = -1;
+    dhav->last_good_pos = avio_tell(s->pb);
 
     return 0;
 }
@@ -129,26 +131,26 @@ static const uint32_t sample_rates[] = {
 static int parse_ext(AVFormatContext *s, int length)
 {
     DHAVContext *dhav = s->priv_data;
-    int index;
+    int index, ret;
 
     while (length > 0) {
         int type = avio_r8(s->pb);
 
         switch (type) {
         case 0x80:
-            avio_skip(s->pb, 1);
+            ret = avio_skip(s->pb, 1);
             dhav->width  = 8 * avio_r8(s->pb);
             dhav->height = 8 * avio_r8(s->pb);
             length -= 4;
             break;
         case 0x81:
-            avio_skip(s->pb, 1);
+            ret = avio_skip(s->pb, 1);
             dhav->video_codec = avio_r8(s->pb);
             dhav->frame_rate = avio_r8(s->pb);
             length -= 4;
             break;
         case 0x82:
-            avio_skip(s->pb, 3);
+            ret = avio_skip(s->pb, 3);
             dhav->width  = avio_rl16(s->pb);
             dhav->height = avio_rl16(s->pb);
             length -= 8;
@@ -165,11 +167,11 @@ static int parse_ext(AVFormatContext *s, int length)
             length -= 4;
             break;
         case 0x88:
-            avio_skip(s->pb, 7);
+            ret = avio_skip(s->pb, 7);
             length -= 8;
             break;
         case 0x8c:
-            avio_skip(s->pb, 1);
+            ret = avio_skip(s->pb, 1);
             dhav->audio_channels = avio_r8(s->pb);
             dhav->audio_codec = avio_r8(s->pb);
             index = avio_r8(s->pb);
@@ -178,7 +180,7 @@ static int parse_ext(AVFormatContext *s, int length)
             } else {
                 dhav->sample_rate = 8000;
             }
-            avio_skip(s->pb, 3);
+            ret = avio_skip(s->pb, 3);
             length -= 8;
             break;
         case 0x91:
@@ -188,7 +190,7 @@ static int parse_ext(AVFormatContext *s, int length)
         case 0x9a:
         case 0x9b: // sample aspect ratio
         case 0xb3:
-            avio_skip(s->pb, 7);
+            ret = avio_skip(s->pb, 7);
             length -= 8;
             break;
         case 0x84:
@@ -199,14 +201,17 @@ static int parse_ext(AVFormatContext *s, int length)
         case 0xa0:
         case 0xb2:
         case 0xb4:
-            avio_skip(s->pb, 3);
+            ret = avio_skip(s->pb, 3);
             length -= 4;
             break;
         default:
             av_log(s, AV_LOG_INFO, "Unknown type: %X, skipping rest of header.\n", type);
-            avio_skip(s->pb, length - 1);
+            ret = avio_skip(s->pb, length - 1);
             length = 0;
         }
+
+        if (ret < 0)
+            return ret;
     }
 
     return 0;
@@ -215,18 +220,29 @@ static int parse_ext(AVFormatContext *s, int length)
 static int read_chunk(AVFormatContext *s)
 {
     DHAVContext *dhav = s->priv_data;
-    unsigned frame_length, ext_length;
+    int frame_length, ext_length;
     int64_t start, end;
     int ret;
-
-    start = avio_tell(s->pb);
 
     if (avio_feof(s->pb))
         return AVERROR_EOF;
 
-    if (avio_rl32(s->pb) != MKTAG('D','H','A','V'))
-        return AVERROR_INVALIDDATA;
+    if (avio_rl32(s->pb) != MKTAG('D','H','A','V')) {
+        dhav->last_good_pos += 0x8000;
+        avio_seek(s->pb, dhav->last_good_pos, SEEK_SET);
 
+        while (avio_rl32(s->pb) != MKTAG('D','H','A','V')) {
+            if (avio_feof(s->pb))
+                return AVERROR_EOF;
+            dhav->last_good_pos += 0x8000;
+            ret = avio_skip(s->pb, 0x8000 - 4);
+            if (ret < 0)
+                return ret;
+        }
+    }
+
+    start = avio_tell(s->pb) - 4;
+    dhav->last_good_pos = start;
     dhav->type = avio_r8(s->pb);
     dhav->subtype = avio_r8(s->pb);
     dhav->channel = avio_r8(s->pb);
@@ -237,8 +253,8 @@ static int read_chunk(AVFormatContext *s)
     if (frame_length < 24)
         return AVERROR_INVALIDDATA;
     if (dhav->type == 0xf1) {
-        avio_skip(s->pb, frame_length - 16);
-        return 0;
+        ret = avio_skip(s->pb, frame_length - 16);
+        return ret < 0 ? ret : 0;
     }
 
     dhav->date = avio_rl32(s->pb);
@@ -258,10 +274,7 @@ static int read_chunk(AVFormatContext *s)
 static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DHAVContext *dhav = s->priv_data;
-    int64_t start;
     int ret;
-
-    start = avio_tell(s->pb);
 
     while ((ret = read_chunk(s)) == 0)
         ;
@@ -338,10 +351,9 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
     if (pkt->stream_index >= 0)
         pkt->pts = get_pts(s, s->streams[pkt->stream_index]->priv_data);
     pkt->duration = 1;
-    pkt->pos = start;
-    if (avio_rl32(s->pb) != MKTAG('d','h','a','v'))
-        return AVERROR_INVALIDDATA;
-    avio_skip(s->pb, 4);
+    pkt->pos = dhav->last_good_pos;
+    if (avio_rl32(s->pb) == MKTAG('d','h','a','v'))
+        avio_skip(s->pb, 4);
 
     return ret;
 }
@@ -349,6 +361,7 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
 static int dhav_read_seek(AVFormatContext *s, int stream_index,
                           int64_t timestamp, int flags)
 {
+    DHAVContext *dhav = s->priv_data;
     AVStream *st = s->streams[stream_index];
     int index = av_index_search_timestamp(st, timestamp, flags);
     int64_t pts;
@@ -367,6 +380,7 @@ static int dhav_read_seek(AVFormatContext *s, int stream_index,
         dst->pts = pts;
         dst->last_timestamp = AV_NOPTS_VALUE;
     }
+    dhav->last_good_pos = avio_tell(s->pb);
 
     return 0;
 }
