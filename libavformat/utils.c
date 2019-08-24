@@ -1762,6 +1762,11 @@ FF_ENABLE_DEPRECATION_WARNINGS
                av_ts2str(pkt->dts),
                pkt->size, pkt->duration, pkt->flags);
 
+    /* A demuxer might have returned EOF because of an IO error, let's
+     * propagate this back to the user. */
+    if (ret == AVERROR_EOF && s->pb && s->pb->error < 0 && s->pb->error != AVERROR(EAGAIN))
+        ret = s->pb->error;
+
     return ret;
 }
 
