@@ -162,7 +162,7 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
 dequeue:
     av_packet_unref(&avpkt);
-    return ff_v4l2_context_dequeue_frame(capture, frame);
+    return ff_v4l2_context_dequeue_frame(capture, frame, -1);
 }
 
 static av_cold int v4l2_decode_init(AVCodecContext *avctx)

@@ -582,16 +582,16 @@ int ff_v4l2_context_enqueue_packet(V4L2Context* ctx, const AVPacket* pkt)
     return ff_v4l2_buffer_enqueue(avbuf);
 }
 
-int ff_v4l2_context_dequeue_frame(V4L2Context* ctx, AVFrame* frame)
+int ff_v4l2_context_dequeue_frame(V4L2Context* ctx, AVFrame* frame, int timeout)
 {
     V4L2Buffer* avbuf = NULL;
 
     /*
-     * blocks until:
+     * timeout=-1 blocks until:
      *  1. decoded frame available
      *  2. an input buffer is ready to be dequeued
      */
-    avbuf = v4l2_dequeue_v4l2buf(ctx, -1);
+    avbuf = v4l2_dequeue_v4l2buf(ctx, timeout);
     if (!avbuf) {
         if (ctx->done)
             return AVERROR_EOF;
