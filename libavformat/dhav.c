@@ -73,15 +73,30 @@ static int dhav_read_header(AVFormatContext *s)
 
     ffio_ensure_seekback(s->pb, 5);
     avio_read(s->pb, signature, sizeof(signature));
-    if (!memcmp(signature, "DAHUA", 5))
+    if (!memcmp(signature, "DAHUA", 5)) {
         avio_skip(s->pb, 0x400 - 5);
-    else
-        avio_seek(s->pb, -5, SEEK_CUR);
+        dhav->last_good_pos = avio_tell(s->pb);
+    } else {
+        if (!memcmp(signature, "DHAV", 4)) {
+            avio_seek(s->pb, -5, SEEK_CUR);
+            dhav->last_good_pos = avio_tell(s->pb);
+        } else if (s->pb->seekable) {
+            avio_seek(s->pb, avio_size(s->pb) - 8, SEEK_SET);
+            while (avio_rl32(s->pb) == MKTAG('d','h','a','v')) {
+                int seek_back;
+
+                seek_back = avio_rl32(s->pb) + 8;
+                dhav->last_good_pos = avio_tell(s->pb);
+                if (dhav->last_good_pos < seek_back)
+                    break;
+                avio_seek(s->pb, -seek_back, SEEK_CUR);
+            }
+        }
+    }
 
     s->ctx_flags |= AVFMTCTX_NOHEADER;
     dhav->video_stream_index = -1;
     dhav->audio_stream_index = -1;
-    dhav->last_good_pos = avio_tell(s->pb);
 
     return 0;
 }
