@@ -833,6 +833,9 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
             k    [sb] = s[sb] > b ? s[sb] - b : 0;
             delta[sb] = 5 - s[sb] + k[sb];
 
+            if (k[sb] >= 32)
+                return AVERROR_INVALIDDATA;
+
             ff_bgmc_decode(gb, sb_len, current_res,
                         delta[sb], sx[sb], &high, &low, &value, ctx->bgmc_lut, ctx->bgmc_lut_status);
 
