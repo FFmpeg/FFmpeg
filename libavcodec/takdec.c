@@ -653,7 +653,7 @@ static int decorrelate(TAKDecContext *s, int c1, int c2, int length)
                          s->residues[i    ] * s->filter[0];
                 }
 
-                v = av_clip_intp2(v >> 10, 13) * (1 << dshift) - *p1;
+                v = av_clip_intp2(v >> 10, 13) * (1U << dshift) - *p1;
                 *p1++ = v;
             }
 
