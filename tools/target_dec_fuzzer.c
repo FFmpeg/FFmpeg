@@ -219,8 +219,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                     if (!avpkt.buf)
                         error("Failed memory allocation");
                 } else {
-                    ret = av_packet_make_refcounted(&avpkt);
-                    if (ret < 0)
+                    if (av_packet_make_refcounted(&avpkt) < 0)
                         error("Failed memory allocation");
                 }
                 parsepkt.data += ret;
