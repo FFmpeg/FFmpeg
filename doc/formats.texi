@@ -139,7 +139,7 @@ Consider things that a sane encoder should not do as an error.
 
 @item max_interleave_delta @var{integer} (@emph{output})
 Set maximum buffering duration for interleaving. The duration is
-expressed in microseconds, and defaults to 1000000 (1 second).
+expressed in microseconds, and defaults to 10000000 (10 seconds).
 
 To ensure all the streams are interleaved correctly, libavformat will
 wait until it has at least one packet for each stream before actually
