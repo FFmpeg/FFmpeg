@@ -1195,6 +1195,7 @@ AVCodec ff_libx264rgb_encoder = {
     .priv_class     = &rgbclass,
     .defaults       = x264_defaults,
     .pix_fmts       = pix_fmts_8bit_rgb,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .wrapper_name   = "libx264",
 };
 #endif
