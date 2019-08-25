@@ -140,6 +140,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         // Cliping in C, generally slow even with small input
     case AV_CODEC_ID_INDEO4:    maxpixels /= 128; break;
     case AV_CODEC_ID_LSCR:        maxpixels /= 16; break;
+    case AV_CODEC_ID_MOTIONPIXELS:maxpixels /= 256; break;
     case AV_CODEC_ID_TRUEMOTION2: maxpixels /= 1024; break;
     }
 
