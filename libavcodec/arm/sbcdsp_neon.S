@@ -38,49 +38,49 @@ function ff_sbc_analyze_4_neon, export=1
         /* TODO: merge even and odd cases (or even merge all four calls to this
          * function) in order to have only aligned reads from 'in' array
          * and reduce number of load instructions */
-        vld1.16         {d4, d5}, [r0, :64]!
-        vld1.16         {d8, d9}, [r2, :128]!
+        vld1.16         {d16, d17}, [r0, :64]!
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmull.s16       q0, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmull.s16       q1, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
+        vmull.s16       q0, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmull.s16       q1, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
 
-        vmlal.s16       q0, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmlal.s16       q1, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmlal.s16       q0, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmlal.s16       q1, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q0, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmlal.s16       q1, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
+        vmlal.s16       q0, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmlal.s16       q1, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
 
-        vmlal.s16       q0, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmlal.s16       q1, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmlal.s16       q0, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmlal.s16       q1, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q0, d4, d8
-        vmlal.s16       q1, d5, d9
+        vmlal.s16       q0, d16, d20
+        vmlal.s16       q1, d17, d21
 
         vpadd.s32       d0, d0, d1
         vpadd.s32       d1, d2, d3
 
         vrshrn.s32      d0, q0, SBC_PROTO_FIXED_SCALE
 
-        vld1.16         {d2, d3, d4, d5}, [r2, :128]!
+        vld1.16         {d16, d17, d18, d19}, [r2, :128]!
 
         vdup.i32        d1, d0[1]  /* TODO: can be eliminated */
         vdup.i32        d0, d0[0]  /* TODO: can be eliminated */
 
-        vmull.s16       q3, d2, d0
-        vmull.s16       q4, d3, d0
-        vmlal.s16       q3, d4, d1
-        vmlal.s16       q4, d5, d1
+        vmull.s16       q10, d16, d0
+        vmull.s16       q11, d17, d0
+        vmlal.s16       q10, d18, d1
+        vmlal.s16       q11, d19, d1
 
-        vpadd.s32       d0, d6, d7 /* TODO: can be eliminated */
-        vpadd.s32       d1, d8, d9 /* TODO: can be eliminated */
+        vpadd.s32       d0, d20, d21 /* TODO: can be eliminated */
+        vpadd.s32       d1, d22, d23 /* TODO: can be eliminated */
 
         vst1.32         {d0, d1}, [r1, :128]
 
@@ -91,57 +91,57 @@ function ff_sbc_analyze_8_neon, export=1
         /* TODO: merge even and odd cases (or even merge all four calls to this
          * function) in order to have only aligned reads from 'in' array
          * and reduce number of load instructions */
-        vld1.16         {d4, d5}, [r0, :64]!
-        vld1.16         {d8, d9}, [r2, :128]!
+        vld1.16         {d16, d17}, [r0, :64]!
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmull.s16       q6, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmull.s16       q7, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
-        vmull.s16       q8, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmull.s16       q9, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmull.s16       q12, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmull.s16       q13, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
+        vmull.s16       q14, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmull.s16       q15, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q6, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmlal.s16       q7, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
-        vmlal.s16       q8, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmlal.s16       q9, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmlal.s16       q12, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmlal.s16       q13, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
+        vmlal.s16       q14, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmlal.s16       q15, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q6, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmlal.s16       q7, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
-        vmlal.s16       q8, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmlal.s16       q9, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmlal.s16       q12, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmlal.s16       q13, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
+        vmlal.s16       q14, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmlal.s16       q15, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q6, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmlal.s16       q7, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
-        vmlal.s16       q8, d6, d10
-        vld1.16         {d4, d5}, [r0, :64]!
-        vmlal.s16       q9, d7, d11
-        vld1.16         {d8, d9}, [r2, :128]!
+        vmlal.s16       q12, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmlal.s16       q13, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
+        vmlal.s16       q14, d18, d22
+        vld1.16         {d16, d17}, [r0, :64]!
+        vmlal.s16       q15, d19, d23
+        vld1.16         {d20, d21}, [r2, :128]!
 
-        vmlal.s16       q6, d4, d8
-        vld1.16         {d6,  d7}, [r0, :64]!
-        vmlal.s16       q7, d5, d9
-        vld1.16         {d10, d11}, [r2, :128]!
+        vmlal.s16       q12, d16, d20
+        vld1.16         {d18, d19}, [r0, :64]!
+        vmlal.s16       q13, d17, d21
+        vld1.16         {d22, d23}, [r2, :128]!
 
-        vmlal.s16       q8, d6, d10
-        vmlal.s16       q9, d7, d11
+        vmlal.s16       q14, d18, d22
+        vmlal.s16       q15, d19, d23
 
-        vpadd.s32       d0, d12, d13
-        vpadd.s32       d1, d14, d15
-        vpadd.s32       d2, d16, d17
-        vpadd.s32       d3, d18, d19
+        vpadd.s32       d0, d24, d25
+        vpadd.s32       d1, d26, d27
+        vpadd.s32       d2, d28, d29
+        vpadd.s32       d3, d30, d31
 
         vrshr.s32       q0, q0, SBC_PROTO_FIXED_SCALE
         vrshr.s32       q1, q1, SBC_PROTO_FIXED_SCALE
@@ -153,38 +153,38 @@ function ff_sbc_analyze_8_neon, export=1
         vdup.i32        d1, d0[1]  /* TODO: can be eliminated */
         vdup.i32        d0, d0[0]  /* TODO: can be eliminated */
 
-        vld1.16         {d4, d5}, [r2, :128]!
-        vmull.s16       q6, d4, d0
-        vld1.16         {d6, d7}, [r2, :128]!
-        vmull.s16       q7, d5, d0
-        vmull.s16       q8, d6, d0
-        vmull.s16       q9, d7, d0
+        vld1.16         {d16, d17}, [r2, :128]!
+        vmull.s16       q12, d16, d0
+        vld1.16         {d18, d19}, [r2, :128]!
+        vmull.s16       q13, d17, d0
+        vmull.s16       q14, d18, d0
+        vmull.s16       q15, d19, d0
 
-        vld1.16         {d4, d5}, [r2, :128]!
-        vmlal.s16       q6, d4, d1
-        vld1.16         {d6, d7}, [r2, :128]!
-        vmlal.s16       q7, d5, d1
-        vmlal.s16       q8, d6, d1
-        vmlal.s16       q9, d7, d1
+        vld1.16         {d16, d17}, [r2, :128]!
+        vmlal.s16       q12, d16, d1
+        vld1.16         {d18, d19}, [r2, :128]!
+        vmlal.s16       q13, d17, d1
+        vmlal.s16       q14, d18, d1
+        vmlal.s16       q15, d19, d1
 
-        vld1.16         {d4, d5}, [r2, :128]!
-        vmlal.s16       q6, d4, d2
-        vld1.16         {d6, d7}, [r2, :128]!
-        vmlal.s16       q7, d5, d2
-        vmlal.s16       q8, d6, d2
-        vmlal.s16       q9, d7, d2
+        vld1.16         {d16, d17}, [r2, :128]!
+        vmlal.s16       q12, d16, d2
+        vld1.16         {d18, d19}, [r2, :128]!
+        vmlal.s16       q13, d17, d2
+        vmlal.s16       q14, d18, d2
+        vmlal.s16       q15, d19, d2
 
-        vld1.16         {d4, d5}, [r2, :128]!
-        vmlal.s16       q6, d4, d3
-        vld1.16         {d6, d7}, [r2, :128]!
-        vmlal.s16       q7, d5, d3
-        vmlal.s16       q8, d6, d3
-        vmlal.s16       q9, d7, d3
+        vld1.16         {d16, d17}, [r2, :128]!
+        vmlal.s16       q12, d16, d3
+        vld1.16         {d18, d19}, [r2, :128]!
+        vmlal.s16       q13, d17, d3
+        vmlal.s16       q14, d18, d3
+        vmlal.s16       q15, d19, d3
 
-        vpadd.s32       d0, d12, d13 /* TODO: can be eliminated */
-        vpadd.s32       d1, d14, d15 /* TODO: can be eliminated */
-        vpadd.s32       d2, d16, d17 /* TODO: can be eliminated */
-        vpadd.s32       d3, d18, d19 /* TODO: can be eliminated */
+        vpadd.s32       d0, d24, d25 /* TODO: can be eliminated */
+        vpadd.s32       d1, d26, d27 /* TODO: can be eliminated */
+        vpadd.s32       d2, d28, d29 /* TODO: can be eliminated */
+        vpadd.s32       d3, d30, d31 /* TODO: can be eliminated */
 
         vst1.32         {d0, d1, d2, d3}, [r1, :128]
 
