@@ -554,6 +554,14 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
     return avpkt->size;
 }
 
+static void qtrle_decode_flush(AVCodecContext *avctx)
+{
+    QtrleContext *s = avctx->priv_data;
+
+    memset(s->pal, 0, sizeof(s->pal));
+    av_frame_unref(s->frame);
+}
+
 static av_cold int qtrle_decode_end(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
@@ -572,5 +580,6 @@ AVCodec ff_qtrle_decoder = {
     .init           = qtrle_decode_init,
     .close          = qtrle_decode_end,
     .decode         = qtrle_decode_frame,
+    .flush          = qtrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
