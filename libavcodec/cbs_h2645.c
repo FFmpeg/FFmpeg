@@ -1457,7 +1457,7 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
         max_size += 3 + frag->units[i].data_size * 3 / 2;
     }
 
-    data = av_malloc(max_size + AV_INPUT_BUFFER_PADDING_SIZE);
+    data = av_realloc(NULL, max_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!data)
         return AVERROR(ENOMEM);
 
