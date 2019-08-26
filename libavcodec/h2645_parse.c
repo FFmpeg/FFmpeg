@@ -345,13 +345,18 @@ static int find_next_start_code(const uint8_t *buf, const uint8_t *next_avc)
 
 static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
 {
+    int min_size = size;
+
     if (size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         goto fail;
     size += AV_INPUT_BUFFER_PADDING_SIZE;
 
     if (rbsp->rbsp_buffer_alloc_size >= size &&
-        (!rbsp->rbsp_buffer_ref || av_buffer_is_writable(rbsp->rbsp_buffer_ref)))
+        (!rbsp->rbsp_buffer_ref || av_buffer_is_writable(rbsp->rbsp_buffer_ref))) {
+        av_assert0(rbsp->rbsp_buffer);
+        memset(rbsp->rbsp_buffer + min_size, 0, AV_INPUT_BUFFER_PADDING_SIZE);
         return;
+    }
 
     size = FFMIN(size + size / 16 + 32, INT_MAX);
 
@@ -360,7 +365,7 @@ static void alloc_rbsp_buffer(H2645RBSP *rbsp, unsigned int size, int use_ref)
     else
         av_free(rbsp->rbsp_buffer);
 
-    rbsp->rbsp_buffer = av_malloc(size);
+    rbsp->rbsp_buffer = av_mallocz(size);
     if (!rbsp->rbsp_buffer)
         goto fail;
     rbsp->rbsp_buffer_alloc_size = size;
