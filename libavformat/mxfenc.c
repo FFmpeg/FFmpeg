@@ -1190,7 +1190,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
-    int stored_width  = (st->codecpar->width +15)/16*16;
+    int stored_width = 0;
     int stored_height = (st->codecpar->height+15)/16*16;
     int display_height;
     int f1, f2;
@@ -1198,6 +1198,15 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     int64_t pos = mxf_write_generic_desc(s, st, key);
 
     get_trc(transfer_ul, st->codecpar->color_trc);
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_DVVIDEO) {
+        if (st->codecpar->height == 1080)
+            stored_width = 1920;
+        else if (st->codecpar->height == 720)
+            stored_width = 1280;
+    }
+    if (!stored_width)
+        stored_width = (st->codecpar->width+15)/16*16;
 
     mxf_write_local_tag(pb, 4, 0x3203);
     avio_wb32(pb, stored_width);
@@ -1221,7 +1230,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
 
     //Sampled width
     mxf_write_local_tag(pb, 4, 0x3205);
-    avio_wb32(pb, st->codecpar->width);
+    avio_wb32(pb, stored_width);
 
     //Samples height
     mxf_write_local_tag(pb, 4, 0x3204);
@@ -1236,7 +1245,7 @@ static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID
     avio_wb32(pb, 0);
 
     mxf_write_local_tag(pb, 4, 0x3209);
-    avio_wb32(pb, st->codecpar->width);
+    avio_wb32(pb, stored_width);
 
     if (st->codecpar->height == 608) // PAL + VBI
         display_height = 576;
