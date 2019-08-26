@@ -86,6 +86,85 @@
 #define OUTPUT_DEQUEUE_BLOCK_TIMEOUT_US 1000000
 
 enum {
+    COLOR_RANGE_FULL    = 0x1,
+    COLOR_RANGE_LIMITED = 0x2,
+};
+
+static enum AVColorRange mcdec_get_color_range(int color_range)
+{
+    switch (color_range) {
+    case COLOR_RANGE_FULL:
+        return AVCOL_RANGE_JPEG;
+    case COLOR_RANGE_LIMITED:
+        return AVCOL_RANGE_MPEG;
+    default:
+        return AVCOL_RANGE_UNSPECIFIED;
+    }
+}
+
+enum {
+    COLOR_STANDARD_BT709      = 0x1,
+    COLOR_STANDARD_BT601_PAL  = 0x2,
+    COLOR_STANDARD_BT601_NTSC = 0x4,
+    COLOR_STANDARD_BT2020     = 0x6,
+};
+
+static enum AVColorSpace mcdec_get_color_space(int color_standard)
+{
+    switch (color_standard) {
+    case COLOR_STANDARD_BT709:
+        return AVCOL_SPC_BT709;
+    case COLOR_STANDARD_BT601_PAL:
+        return AVCOL_SPC_BT470BG;
+    case COLOR_STANDARD_BT601_NTSC:
+        return AVCOL_SPC_SMPTE170M;
+    case COLOR_STANDARD_BT2020:
+        return AVCOL_SPC_BT2020_NCL;
+    default:
+        return AVCOL_SPC_UNSPECIFIED;
+    }
+}
+
+static enum AVColorPrimaries mcdec_get_color_pri(int color_standard)
+{
+    switch (color_standard) {
+    case COLOR_STANDARD_BT709:
+        return AVCOL_PRI_BT709;
+    case COLOR_STANDARD_BT601_PAL:
+        return AVCOL_PRI_BT470BG;
+    case COLOR_STANDARD_BT601_NTSC:
+        return AVCOL_PRI_SMPTE170M;
+    case COLOR_STANDARD_BT2020:
+        return AVCOL_PRI_BT2020;
+    default:
+        return AVCOL_PRI_UNSPECIFIED;
+    }
+}
+
+enum {
+    COLOR_TRANSFER_LINEAR    = 0x1,
+    COLOR_TRANSFER_SDR_VIDEO = 0x3,
+    COLOR_TRANSFER_ST2084    = 0x6,
+    COLOR_TRANSFER_HLG       = 0x7,
+};
+
+static enum AVColorTransferCharacteristic mcdec_get_color_trc(int color_transfer)
+{
+    switch (color_transfer) {
+    case COLOR_TRANSFER_LINEAR:
+        return AVCOL_TRC_LINEAR;
+    case COLOR_TRANSFER_SDR_VIDEO:
+        return AVCOL_TRC_SMPTE170M;
+    case COLOR_TRANSFER_ST2084:
+        return AVCOL_TRC_SMPTEST2084;
+    case COLOR_TRANSFER_HLG:
+        return AVCOL_TRC_ARIB_STD_B67;
+    default:
+        return AVCOL_TRC_UNSPECIFIED;
+    }
+}
+
+enum {
     COLOR_FormatYUV420Planar                              = 0x13,
     COLOR_FormatYUV420SemiPlanar                          = 0x15,
     COLOR_FormatYCbYCr                                    = 0x19,
@@ -220,6 +299,10 @@ FF_DISABLE_DEPRECATION_WARNINGS
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
     frame->pkt_dts = AV_NOPTS_VALUE;
+    frame->color_range = avctx->color_range;
+    frame->color_primaries = avctx->color_primaries;
+    frame->color_trc = avctx->color_trc;
+    frame->colorspace = avctx->colorspace;
 
     buffer = av_mallocz(sizeof(AVMediaCodecBuffer));
     if (!buffer) {
@@ -368,6 +451,9 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
     int ret = 0;
     int width = 0;
     int height = 0;
+    int color_range = 0;
+    int color_standard = 0;
+    int color_transfer = 0;
     char *format = NULL;
 
     if (!s->format) {
@@ -425,6 +511,20 @@ static int mediacodec_dec_parse_format(AVCodecContext *avctx, MediaCodecDecConte
             (AVRational){ width, height });
         ff_set_sar(avctx, sar);
     }
+
+    AMEDIAFORMAT_GET_INT32(color_range, "color-range", 0);
+    if (color_range)
+        avctx->color_range = mcdec_get_color_range(color_range);
+
+    AMEDIAFORMAT_GET_INT32(color_standard, "color-standard", 0);
+    if (color_standard) {
+        avctx->colorspace = mcdec_get_color_space(color_standard);
+        avctx->color_primaries = mcdec_get_color_pri(color_standard);
+    }
+
+    AMEDIAFORMAT_GET_INT32(color_transfer, "color-transfer", 0);
+    if (color_transfer)
+        avctx->color_trc = mcdec_get_color_trc(color_transfer);
 
     av_log(avctx, AV_LOG_INFO,
         "Output crop parameters top=%d bottom=%d left=%d right=%d, "
