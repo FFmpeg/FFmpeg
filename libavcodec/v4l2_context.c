@@ -226,6 +226,8 @@ static int v4l2_stop_decode(V4L2Context *ctx)
         /* DECODER_CMD is optional */
         if (errno == ENOTTY)
             return ff_v4l2_context_set_status(ctx, VIDIOC_STREAMOFF);
+        else
+            return AVERROR(errno);
     }
 
     return 0;
@@ -244,6 +246,8 @@ static int v4l2_stop_encode(V4L2Context *ctx)
         /* ENCODER_CMD is optional */
         if (errno == ENOTTY)
             return ff_v4l2_context_set_status(ctx, VIDIOC_STREAMOFF);
+        else
+            return AVERROR(errno);
     }
 
     return 0;
