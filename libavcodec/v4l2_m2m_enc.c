@@ -332,28 +332,30 @@ static const AVOption options[] = {
     { NULL },
 };
 
+#define M2MENC_CLASS(NAME) \
+    static const AVClass v4l2_m2m_ ## NAME ## _enc_class = { \
+        .class_name = #NAME "_v4l2m2m_encoder", \
+        .item_name  = av_default_item_name, \
+        .option     = options, \
+        .version    = LIBAVUTIL_VERSION_INT, \
+    };
+
 #define M2MENC(NAME, LONGNAME, CODEC) \
-static const AVClass v4l2_m2m_ ## NAME ## _enc_class = {\
-    .class_name = #NAME "_v4l2_m2m_encoder",\
-    .item_name  = av_default_item_name,\
-    .option     = options,\
-    .version    = LIBAVUTIL_VERSION_INT,\
-};\
-\
-AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
-    .name           = #NAME "_v4l2m2m" ,\
-    .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"),\
-    .type           = AVMEDIA_TYPE_VIDEO,\
-    .id             = CODEC ,\
-    .priv_data_size = sizeof(V4L2m2mPriv),\
-    .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class,\
-    .init           = v4l2_encode_init,\
-    .send_frame     = v4l2_send_frame,\
-    .receive_packet = v4l2_receive_packet,\
-    .close          = v4l2_encode_close,\
-    .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
-    .wrapper_name   = "v4l2m2m", \
-};
+    M2MENC_CLASS(NAME) \
+    AVCodec ff_ ## NAME ## _v4l2m2m_encoder = { \
+        .name           = #NAME "_v4l2m2m" , \
+        .long_name      = NULL_IF_CONFIG_SMALL("V4L2 mem2mem " LONGNAME " encoder wrapper"), \
+        .type           = AVMEDIA_TYPE_VIDEO, \
+        .id             = CODEC , \
+        .priv_data_size = sizeof(V4L2m2mPriv), \
+        .priv_class     = &v4l2_m2m_ ## NAME ##_enc_class, \
+        .init           = v4l2_encode_init, \
+        .send_frame     = v4l2_send_frame, \
+        .receive_packet = v4l2_receive_packet, \
+        .close          = v4l2_encode_close, \
+        .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY, \
+        .wrapper_name   = "v4l2m2m", \
+    };
 
 M2MENC(mpeg4,"MPEG4", AV_CODEC_ID_MPEG4);
 M2MENC(h263, "H.263", AV_CODEC_ID_H263);
