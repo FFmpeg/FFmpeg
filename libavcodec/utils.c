@@ -1029,6 +1029,9 @@ free_and_end:
          (avctx->codec->caps_internal & FF_CODEC_CAP_INIT_CLEANUP)))
         avctx->codec->close(avctx);
 
+    if (HAVE_THREADS && avctx->internal->thread_ctx)
+        ff_thread_free(avctx);
+
     if (codec->priv_class && codec->priv_data_size)
         av_opt_free(avctx->priv_data);
     av_opt_free(avctx);
