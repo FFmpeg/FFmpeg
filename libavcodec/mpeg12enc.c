@@ -1193,6 +1193,7 @@ AVCodec ff_mpeg1video_encoder = {
     .pix_fmts             = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class           = &mpeg1_class,
 };
 
@@ -1210,5 +1211,6 @@ AVCodec ff_mpeg2video_encoder = {
                                                            AV_PIX_FMT_YUV422P,
                                                            AV_PIX_FMT_NONE },
     .capabilities         = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_SLICE_THREADS,
+    .caps_internal        = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_class           = &mpeg2_class,
 };
