@@ -1254,6 +1254,8 @@ static int64_t get_frag_time(MOVFragmentIndex *frag_index,
 
     if (track_id >= 0) {
         frag_stream_info = get_frag_stream_info(frag_index, index, track_id);
+        if (!frag_stream_info)
+            return AV_NOPTS_VALUE;
         return frag_stream_info->sidx_pts;
     }
 
@@ -7274,6 +7276,8 @@ int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index){
     if (index >= mov->frag_index.nb_items)
         index = mov->frag_index.nb_items - 1;
     int64_t timestamp = get_frag_time(&mov->frag_index, index, st->id);
+    if (timestamp == AV_NOPTS_VALUE)
+        return timestamp;
     return av_rescale_q(timestamp, st->time_base, AV_TIME_BASE_Q);
 }
 
