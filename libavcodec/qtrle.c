@@ -576,7 +576,6 @@ static void qtrle_decode_flush(AVCodecContext *avctx)
 {
     QtrleContext *s = avctx->priv_data;
 
-    memset(s->pal, 0, sizeof(s->pal));
     av_frame_unref(s->frame);
 }
 
