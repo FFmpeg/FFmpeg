@@ -6195,7 +6195,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
     
     if (ic->iformat->read_header2) {
         // no need to do find stream info
-        av_log(NULL, AV_LOG_ERROR, "%s: skip\n", __func__);
+        av_log(NULL, AV_LOG_INFO, "%s: skip\n", __func__);
         ret = 0;
         goto fail;
     }
@@ -6203,7 +6203,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
     // use missing streams for probe
     int *missing_streams = av_opt_ptr(ic->iformat->priv_class, ic->priv_data, "missing_streams");
     if (missing_streams) {
-        av_log(NULL, AV_LOG_ERROR, "%s: use missing_streams = %d\n", __func__, *missing_streams);
+        av_log(NULL, AV_LOG_INFO, "%s: use missing_streams = %d\n", __func__, *missing_streams);
         int64_t now = av_gettime();
         int64_t start_time = now;
         while ((*missing_streams)) {
