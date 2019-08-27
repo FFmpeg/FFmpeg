@@ -281,6 +281,47 @@ static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, i
     return 0;
 }
 
+static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
+{
+    int i, ret;
+
+    frame->format = avbuf->context->av_pix_fmt;
+
+    for (i = 0; i < avbuf->num_planes; i++) {
+        ret = v4l2_buf_to_bufref(avbuf, i, &frame->buf[i]);
+        if (ret)
+            return ret;
+
+        frame->linesize[i] = avbuf->plane_info[i].bytesperline;
+        frame->data[i] = frame->buf[i]->data;
+    }
+
+    /* fixup special cases */
+    switch (avbuf->context->av_pix_fmt) {
+    case AV_PIX_FMT_NV12:
+    case AV_PIX_FMT_NV21:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        break;
+
+    case AV_PIX_FMT_YUV420P:
+        if (avbuf->num_planes > 1)
+            break;
+        frame->linesize[1] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
+        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
+        frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 2);
+        break;
+
+    default:
+        break;
+    }
+
+    return 0;
+}
+
 /******************************************************************************
  *
  *              V4L2Buffer interface
@@ -349,44 +390,17 @@ int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
 {
     V4L2m2mContext *s = buf_to_m2mctx(avbuf);
-    int i, ret;
+    int ret;
 
     av_frame_unref(frame);
 
     /* 1. get references to the actual data */
-    for (i = 0; i < avbuf->num_planes; i++) {
-        ret = v4l2_buf_to_bufref(avbuf, i, &frame->buf[i]);
-        if (ret)
-            return ret;
-
-        frame->linesize[i] = avbuf->plane_info[i].bytesperline;
-        frame->data[i] = frame->buf[i]->data;
-    }
-
-    /* 1.1 fixup special cases */
-    switch (avbuf->context->av_pix_fmt) {
-    case AV_PIX_FMT_NV12:
-    case AV_PIX_FMT_NV21:
-        if (avbuf->num_planes > 1)
-            break;
-        frame->linesize[1] = avbuf->plane_info[0].bytesperline;
-        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
-        break;
-    case AV_PIX_FMT_YUV420P:
-        if (avbuf->num_planes > 1)
-            break;
-        frame->linesize[1] = avbuf->plane_info[0].bytesperline >> 1;
-        frame->linesize[2] = avbuf->plane_info[0].bytesperline >> 1;
-        frame->data[1] = frame->buf[0]->data + avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height;
-        frame->data[2] = frame->data[1] + ((avbuf->plane_info[0].bytesperline * avbuf->context->format.fmt.pix_mp.height) >> 2);
-        break;
-    default:
-        break;
-    }
+    ret = v4l2_buffer_buf_to_swframe(frame, avbuf);
+    if (ret)
+        return ret;
 
     /* 2. get frame information */
     frame->key_frame = !!(avbuf->buf.flags & V4L2_BUF_FLAG_KEYFRAME);
-    frame->format = avbuf->context->av_pix_fmt;
     frame->color_primaries = v4l2_get_color_primaries(avbuf);
     frame->colorspace = v4l2_get_color_space(avbuf);
     frame->color_range = v4l2_get_color_range(avbuf);
