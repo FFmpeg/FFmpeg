@@ -322,13 +322,7 @@ static int v4l2_buffer_buf_to_swframe(AVFrame *frame, V4L2Buffer *avbuf)
     return 0;
 }
 
-/******************************************************************************
- *
- *              V4L2Buffer interface
- *
- ******************************************************************************/
-
-int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
+static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
 {
     int i, ret;
     struct v4l2_format fmt = out->context->format;
@@ -353,8 +347,6 @@ int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     case V4L2_PIX_FMT_NV61M:
         is_planar_format = 1;
     }
-
-    v4l2_set_pts(out, frame->pts);
 
     if (!is_planar_format) {
         const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
@@ -385,6 +377,19 @@ int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     }
 
     return 0;
+}
+
+/******************************************************************************
+ *
+ *              V4L2Buffer interface
+ *
+ ******************************************************************************/
+
+int ff_v4l2_buffer_avframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
+{
+    v4l2_set_pts(out, frame->pts);
+
+    return v4l2_buffer_swframe_to_buf(frame, out);
 }
 
 int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
