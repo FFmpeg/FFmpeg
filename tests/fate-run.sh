@@ -296,7 +296,7 @@ lavf_container(){
     outdir="tests/data/lavf"
     file=${outdir}/lavf.$t
     do_avconv $file $DEC_OPTS -f image2 -c:v pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le $1 -i $pcm_src "$ENC_OPTS -metadata title=lavftest" -b:a 64k -t 1 -qscale:v 10 $2
-    test $3 = "disable_crc" ||
+    test "$3" = "disable_crc" ||
         do_avconv_crc $file $DEC_OPTS -i $target_path/$file $3
 }
 
