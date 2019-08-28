@@ -115,6 +115,9 @@ int main(int argc, char **argv)
     size_t   data_size;
     AVPacket *pkt;
     AVFrame *decoded_frame = NULL;
+    enum AVSampleFormat sfmt;
+    int n_channels = 0;
+    const char *fmt;
 
     if (argc <= 2) {
         fprintf(stderr, "Usage: %s <input file> <output file>\n", argv[0]);
@@ -202,9 +205,7 @@ int main(int argc, char **argv)
     decode(c, pkt, decoded_frame, outfile);
 
     /* print output pcm infomations, because there have no metadata of pcm */
-    enum AVSampleFormat sfmt = c->sample_fmt;
-    int n_channels = 0;
-    const char *fmt;
+    sfmt = c->sample_fmt;
 
     if (av_sample_fmt_is_planar(sfmt)) {
         const char *packed = av_get_sample_fmt_name(sfmt);
