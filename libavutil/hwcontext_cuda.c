@@ -21,6 +21,9 @@
 #include "hwcontext.h"
 #include "hwcontext_internal.h"
 #include "hwcontext_cuda_internal.h"
+#if CONFIG_VULKAN
+#include "hwcontext_vulkan.h"
+#endif
 #include "cuda_check.h"
 #include "mem.h"
 #include "pixdesc.h"
@@ -42,6 +45,9 @@ static const enum AVPixelFormat supported_formats[] = {
     AV_PIX_FMT_YUV444P16,
     AV_PIX_FMT_0RGB32,
     AV_PIX_FMT_0BGR32,
+#if CONFIG_VULKAN
+    AV_PIX_FMT_VULKAN,
+#endif
 };
 
 #define CHECK_CU(x) FF_CUDA_CHECK_DL(device_ctx, cu, x)
@@ -205,6 +211,10 @@ static int cuda_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
     CUcontext dummy;
     int i, ret;
 
+    /* We don't support transfers to HW devices. */
+    if (dst->hw_frames_ctx)
+        return AVERROR(ENOSYS);
+
     ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
     if (ret < 0)
         return ret;
@@ -246,6 +256,10 @@ static int cuda_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     CUcontext dummy;
     int i, ret;
+
+    /* We don't support transfers from HW devices. */
+    if (src->hw_frames_ctx)
+        return AVERROR(ENOSYS);
 
     ret = CHECK_CU(cu->cuCtxPushCurrent(hwctx->cuda_ctx));
     if (ret < 0)
@@ -389,6 +403,123 @@ error:
     return AVERROR_UNKNOWN;
 }
 
+static int cuda_device_derive(AVHWDeviceContext *device_ctx,
+                              AVHWDeviceContext *src_ctx,
+                              int flags) {
+    AVCUDADeviceContext *hwctx = device_ctx->hwctx;
+    CudaFunctions *cu;
+    const char *src_uuid = NULL;
+    CUcontext dummy;
+    int ret, i, device_count, dev_active = 0;
+    unsigned int dev_flags = 0;
+
+    const unsigned int desired_flags = CU_CTX_SCHED_BLOCKING_SYNC;
+
+#if CONFIG_VULKAN
+    VkPhysicalDeviceIDProperties vk_idp = {
+        .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ID_PROPERTIES,
+    };
+#endif
+
+    switch (src_ctx->type) {
+#if CONFIG_VULKAN
+    case AV_HWDEVICE_TYPE_VULKAN: {
+        AVVulkanDeviceContext *vkctx = src_ctx->hwctx;
+        VkPhysicalDeviceProperties2 vk_dev_props = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,
+            .pNext = &vk_idp,
+        };
+        vkGetPhysicalDeviceProperties2(vkctx->phys_dev, &vk_dev_props);
+        src_uuid = vk_idp.deviceUUID;
+        break;
+    }
+#endif
+    default:
+        return AVERROR(ENOSYS);
+    }
+
+    if (!src_uuid) {
+        av_log(device_ctx, AV_LOG_ERROR,
+               "Failed to get UUID of source device.\n");
+        goto error;
+    }
+
+    if (cuda_device_init(device_ctx) < 0)
+        goto error;
+
+    cu = hwctx->internal->cuda_dl;
+
+    ret = CHECK_CU(cu->cuInit(0));
+    if (ret < 0)
+        goto error;
+
+    ret = CHECK_CU(cu->cuDeviceGetCount(&device_count));
+    if (ret < 0)
+        goto error;
+
+    hwctx->internal->cuda_device = -1;
+    for (i = 0; i < device_count; i++) {
+        CUdevice dev;
+        CUuuid uuid;
+
+        ret = CHECK_CU(cu->cuDeviceGet(&dev, i));
+        if (ret < 0)
+            goto error;
+
+        ret = CHECK_CU(cu->cuDeviceGetUuid(&uuid, dev));
+        if (ret < 0)
+            goto error;
+
+        if (memcmp(src_uuid, uuid.bytes, sizeof (uuid.bytes)) == 0) {
+            hwctx->internal->cuda_device = dev;
+            break;
+        }
+    }
+
+    if (hwctx->internal->cuda_device == -1) {
+        av_log(device_ctx, AV_LOG_ERROR, "Could not derive CUDA device.\n");
+        goto error;
+    }
+
+    hwctx->internal->flags = flags;
+
+    if (flags & AV_CUDA_USE_PRIMARY_CONTEXT) {
+        ret = CHECK_CU(cu->cuDevicePrimaryCtxGetState(hwctx->internal->cuda_device, &dev_flags, &dev_active));
+        if (ret < 0)
+            goto error;
+
+        if (dev_active && dev_flags != desired_flags) {
+            av_log(device_ctx, AV_LOG_ERROR, "Primary context already active with incompatible flags.\n");
+            goto error;
+        } else if (dev_flags != desired_flags) {
+            ret = CHECK_CU(cu->cuDevicePrimaryCtxSetFlags(hwctx->internal->cuda_device, desired_flags));
+            if (ret < 0)
+                goto error;
+        }
+
+        ret = CHECK_CU(cu->cuDevicePrimaryCtxRetain(&hwctx->cuda_ctx, hwctx->internal->cuda_device));
+        if (ret < 0)
+            goto error;
+    } else {
+        ret = CHECK_CU(cu->cuCtxCreate(&hwctx->cuda_ctx, desired_flags, hwctx->internal->cuda_device));
+        if (ret < 0)
+            goto error;
+
+        CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+    }
+
+    hwctx->internal->is_allocated = 1;
+
+    // Setting stream to NULL will make functions automatically use the default CUstream
+    hwctx->stream = NULL;
+
+    return 0;
+
+error:
+    cuda_device_uninit(device_ctx);
+    return AVERROR_UNKNOWN;
+}
+
 const HWContextType ff_hwcontext_type_cuda = {
     .type                 = AV_HWDEVICE_TYPE_CUDA,
     .name                 = "CUDA",
@@ -397,6 +528,7 @@ const HWContextType ff_hwcontext_type_cuda = {
     .frames_priv_size     = sizeof(CUDAFramesContext),
 
     .device_create        = cuda_device_create,
+    .device_derive        = cuda_device_derive,
     .device_init          = cuda_device_init,
     .device_uninit        = cuda_device_uninit,
     .frames_get_constraints = cuda_frames_get_constraints,
