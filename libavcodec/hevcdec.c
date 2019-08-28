@@ -478,7 +478,7 @@ static int hls_slice_header(HEVCContext *s)
     sh->first_slice_in_pic_flag = get_bits1(gb);
     if (s->ref && sh->first_slice_in_pic_flag) {
         av_log(s->avctx, AV_LOG_ERROR, "Two slices reporting being the first in the same frame.\n");
-        return 1; // This slice will be skiped later, do not corrupt state
+        return 1; // This slice will be skipped later, do not corrupt state
     }
 
     if ((IS_IDR(s) || IS_BLA(s)) && sh->first_slice_in_pic_flag) {
