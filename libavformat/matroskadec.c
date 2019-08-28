@@ -798,7 +798,7 @@ static int matroska_resync(MatroskaDemuxContext *matroska, int64_t last_pos)
             id == MATROSKA_ID_CLUSTER  || id == MATROSKA_ID_CHAPTERS) {
             /* Prepare the context for parsing of a level 1 element. */
             matroska_reset_status(matroska, id, -1);
-            /* Given that we are here means that an error has occured,
+            /* Given that we are here means that an error has occurred,
              * so treat the segment as unknown length in order not to
              * discard valid data that happens to be beyond the designated
              * end of the segment. */
@@ -1331,7 +1331,7 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
             // current element (i.e. how much would be skipped); if there were
             // more than a few skipped elements in a row and skipping the current
             // element would lead us more than SKIP_THRESHOLD away from the last
-            // known good position, then it is inferred that an error occured.
+            // known good position, then it is inferred that an error occurred.
             // The dependency on the number of unknown elements in a row exists
             // because the distance to the last known good position is
             // automatically big if the last parsed element was big.
