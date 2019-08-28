@@ -228,9 +228,29 @@ static void v4l2_free_buffer(void *opaque, uint8_t *unused)
     }
 }
 
-static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
+static int v4l2_buf_increase_ref(V4L2Buffer *in)
 {
     V4L2m2mContext *s = buf_to_m2mctx(in);
+
+    if (in->context_ref)
+        atomic_fetch_add(&in->context_refcount, 1);
+    else {
+        in->context_ref = av_buffer_ref(s->self_ref);
+        if (!in->context_ref)
+            return AVERROR(ENOMEM);
+
+        in->context_refcount = 1;
+    }
+
+    in->status = V4L2BUF_RET_USER;
+    atomic_fetch_add_explicit(&s->refcount, 1, memory_order_relaxed);
+
+    return 0;
+}
+
+static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
+{
+    int ret;
 
     if (plane >= in->num_planes)
         return AVERROR(EINVAL);
@@ -241,21 +261,11 @@ static int v4l2_buf_to_bufref(V4L2Buffer *in, int plane, AVBufferRef **buf)
     if (!*buf)
         return AVERROR(ENOMEM);
 
-    if (in->context_ref)
-        atomic_fetch_add(&in->context_refcount, 1);
-    else {
-        in->context_ref = av_buffer_ref(s->self_ref);
-        if (!in->context_ref) {
-            av_buffer_unref(buf);
-            return AVERROR(ENOMEM);
-        }
-        in->context_refcount = 1;
-    }
+    ret = v4l2_buf_increase_ref(in);
+    if (ret)
+        av_buffer_unref(buf);
 
-    in->status = V4L2BUF_RET_USER;
-    atomic_fetch_add_explicit(&s->refcount, 1, memory_order_relaxed);
-
-    return 0;
+    return ret;
 }
 
 static int v4l2_bufref_to_buf(V4L2Buffer *out, int plane, const uint8_t* data, int size, int offset, AVBufferRef* bref)
