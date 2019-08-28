@@ -480,7 +480,7 @@ static int vaapi_encode_issue(AVCodecContext *avctx,
                     .width  = roi->right  - roi->left,
                     .height = roi->bottom - roi->top,
                 },
-                .roi_value = av_clip_c(v, INT8_MIN, INT8_MAX),
+                .roi_value = av_clip_int8(v),
             };
         }
 
