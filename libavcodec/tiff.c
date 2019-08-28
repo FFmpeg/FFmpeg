@@ -958,6 +958,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
     switch (tag) {
     case TIFF_SUBFILE:
         s->is_thumbnail = (value != 0);
+        break;
     case TIFF_WIDTH:
         s->width = value;
         break;
