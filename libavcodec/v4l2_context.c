@@ -572,7 +572,7 @@ int ff_v4l2_context_enqueue_packet(V4L2Context* ctx, const AVPacket* pkt)
 
     avbuf = v4l2_getfree_v4l2buf(ctx);
     if (!avbuf)
-        return AVERROR(ENOMEM);
+        return AVERROR(EAGAIN);
 
     ret = ff_v4l2_buffer_avpkt_to_buf(pkt, avbuf);
     if (ret)

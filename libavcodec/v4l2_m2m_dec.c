@@ -142,7 +142,7 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
 
     ret = ff_v4l2_context_enqueue_packet(output, &avpkt);
     if (ret < 0) {
-        if (ret != AVERROR(ENOMEM))
+        if (ret != AVERROR(EAGAIN))
            return ret;
         /* no input buffers available, continue dequeing */
     }
