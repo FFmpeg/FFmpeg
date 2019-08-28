@@ -621,7 +621,7 @@ int ff_v4l2_context_dequeue_packet(V4L2Context* ctx, AVPacket* pkt)
     return ff_v4l2_buffer_buf_to_avpkt(pkt, avbuf);
 }
 
-int ff_v4l2_context_get_format(V4L2Context* ctx)
+int ff_v4l2_context_get_format(V4L2Context* ctx, int probe)
 {
     struct v4l2_format_update fmt = { 0 };
     int ret;
@@ -631,7 +631,7 @@ int ff_v4l2_context_get_format(V4L2Context* ctx)
         if (ret)
             return ret;
 
-        fmt.update_avfmt = 1;
+        fmt.update_avfmt = !probe;
         v4l2_save_to_context(ctx, &fmt);
 
         /* format has been tried already */

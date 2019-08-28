@@ -108,13 +108,13 @@ static int v4l2_probe_driver(V4L2m2mContext* s)
     if (ret < 0)
         goto done;
 
-    ret = ff_v4l2_context_get_format(&s->output);
+    ret = ff_v4l2_context_get_format(&s->output, 1);
     if (ret) {
         av_log(s->avctx, AV_LOG_DEBUG, "v4l2 output format not supported\n");
         goto done;
     }
 
-    ret = ff_v4l2_context_get_format(&s->capture);
+    ret = ff_v4l2_context_get_format(&s->capture, 1);
     if (ret) {
         av_log(s->avctx, AV_LOG_DEBUG, "v4l2 capture format not supported\n");
         goto done;
@@ -222,7 +222,7 @@ int ff_v4l2_m2m_codec_reinit(V4L2m2mContext* s)
     ff_v4l2_context_release(&s->capture);
 
     /* 3. get the new capture format */
-    ret = ff_v4l2_context_get_format(&s->capture);
+    ret = ff_v4l2_context_get_format(&s->capture, 0);
     if (ret) {
         av_log(s->avctx, AV_LOG_ERROR, "query the new capture format\n");
         return ret;
@@ -273,13 +273,13 @@ int ff_v4l2_m2m_codec_full_reinit(V4L2m2mContext *s)
     s->draining = 0;
     s->reinit = 0;
 
-    ret = ff_v4l2_context_get_format(&s->output);
+    ret = ff_v4l2_context_get_format(&s->output, 0);
     if (ret) {
         av_log(log_ctx, AV_LOG_DEBUG, "v4l2 output format not supported\n");
         goto error;
     }
 
-    ret = ff_v4l2_context_get_format(&s->capture);
+    ret = ff_v4l2_context_get_format(&s->capture, 0);
     if (ret) {
         av_log(log_ctx, AV_LOG_DEBUG, "v4l2 capture format not supported\n");
         goto error;
