@@ -839,6 +839,13 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
     jpkt.data = (uint8_t*)s->gb.buffer;
     jpkt.size = tile_byte_count;
 
+    if (s->is_bayer) {
+        MJpegDecodeContext *mjpegdecctx = s->avctx_mjpeg->priv_data;
+        /* We have to set this information here, there is no way to know if a given JPEG is a DNG-embedded
+           image or not from its own data (and we need that information when decoding it). */
+        mjpegdecctx->bayer = 1;
+    }
+
     ret = avcodec_send_packet(s->avctx_mjpeg, &jpkt);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error submitting a packet for decoding\n");

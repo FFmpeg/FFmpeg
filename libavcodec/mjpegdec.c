@@ -412,13 +412,17 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
-    /* Lossless JPEGs encoded in DNGs are commonly bayer-encoded. They contain 2
-       interleaved components and the width stored in their SOF3 markers is the
-       width of each one.  We only output a single component, therefore we need
-       to adjust the output image width. */
-    if (s->lossless == 1 && nb_components == 2) {
-        s->bayer = 1;
-        width *= 2;
+    if (s->bayer) {
+        if (nb_components == 2) {
+            /* Bayer images embedded in DNGs can contain 2 interleaved components and the
+               width stored in their SOF3 markers is the width of each one.  We only output
+               a single component, therefore we need to adjust the output image width.  We
+               handle the deinterleaving (but not the debayering) in this file. */
+            width *= 2;
+        }
+        /* They can also contain 1 component, which is double the width and half the height
+            of the final image (rows are interleaved).  We don't handle the decoding in this
+            file, but leave that to the TIFF/DNG decoder. */
     }
 
     /* if different size, realloc/alloc picture */
@@ -1184,10 +1188,16 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 ptr[3*mb_x + 0] = buffer[mb_x][1] + ptr[3*mb_x + 1];
                 ptr[3*mb_x + 2] = buffer[mb_x][2] + ptr[3*mb_x + 1];
             }
-        } else if (s->bayer && nb_components == 2) {
-            for (mb_x = 0; mb_x < width; mb_x++) {
-                ((uint16_t*)ptr)[2*mb_x + 0] = buffer[mb_x][0];
-                ((uint16_t*)ptr)[2*mb_x + 1] = buffer[mb_x][1];
+        } else if (s->bayer) {
+            if (nb_components == 1) {
+                /* Leave decoding to the TIFF/DNG decoder (see comment in ff_mjpeg_decode_sof) */
+                for (mb_x = 0; mb_x < width; mb_x++)
+                    ((uint16_t*)ptr)[mb_x] = buffer[mb_x][0];
+            } else if (nb_components == 2) {
+                for (mb_x = 0; mb_x < width; mb_x++) {
+                    ((uint16_t*)ptr)[2*mb_x + 0] = buffer[mb_x][0];
+                    ((uint16_t*)ptr)[2*mb_x + 1] = buffer[mb_x][1];
+                }
             }
         } else {
             for(i=0; i<nb_components; i++) {
