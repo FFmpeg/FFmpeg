@@ -556,6 +556,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     int is_yuv = !(desc->flags & AV_PIX_FMT_FLAG_RGB) &&
                  (desc->flags & AV_PIX_FMT_FLAG_PLANAR) &&
                  desc->nb_components >= 3;
+    int is_dng;
 
     if (s->planar)
         width /= s->bppcount;
@@ -657,6 +658,8 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     bytestream2_init(&s->gb, src, size);
     bytestream2_init_writer(&pb, dst, is_yuv ? s->yuv_line_size : (stride * lines));
 
+    is_dng = (s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG);
+
     for (line = 0; line < lines; line++) {
         if (src - ssrc > size) {
             av_log(s->avctx, AV_LOG_ERROR, "Source data overread\n");
@@ -679,6 +682,25 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
                 for (i = 0; i < width; i++)
                     dst[i] = ff_reverse[src[i]];
             }
+
+            /* Color processing for DNG images with uncompressed strips (non-tiled) */
+            if (is_dng) {
+                int is_u16, pixel_size_bytes, pixel_size_bits;
+
+                is_u16 = (s->bpp > 8);
+                pixel_size_bits = (is_u16 ? 16 : 8);
+                pixel_size_bytes = (is_u16 ? sizeof(uint16_t) : sizeof(uint8_t));
+
+                dng_blit(s,
+                         dst,
+                         0, // no stride, only 1 line
+                         dst,
+                         0, // no stride, only 1 line
+                         width / pixel_size_bytes * pixel_size_bits / s->bpp * s->bppcount, // need to account for [1, 16] bpp
+                         1,
+                         is_u16);
+            }
+
             src += width;
             break;
         case TIFF_PACKBITS:
@@ -1955,7 +1977,8 @@ again:
         FFSWAP(int,      p->linesize[0], p->linesize[1]);
     }
 
-    if (s->is_bayer && s->white_level && s->bpp == 16) {
+    if (s->is_bayer && s->white_level && s->bpp == 16 &&
+        !(s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG)) {
         uint16_t *dst = (uint16_t *)p->data[0];
         for (i = 0; i < s->height; i++) {
             for (j = 0; j < s->width; j++)
