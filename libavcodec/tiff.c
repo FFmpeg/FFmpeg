@@ -731,14 +731,23 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     return 0;
 }
 
+static float av_always_inline linear_to_srgb(float value) {
+    if (value <= 0.0031308f)
+        return value * 12.92f;
+    else
+        return powf(value * 1.055f, 1.0f / 2.4f) - 0.055f;
+}
+
 /**
- * Map stored raw sensor values into linear reference values.
- * See: DNG Specification - Chapter 5
+ * Map stored raw sensor values into linear reference values (see: DNG Specification - Chapter 5)
+ * Then convert to sRGB color space.
  */
-static uint16_t av_always_inline dng_raw_to_linear16(uint16_t value,
-                                                    const uint16_t *lut,
-                                                    uint16_t black_level,
-                                                    float scale_factor) {
+static uint16_t av_always_inline dng_process_color16(uint16_t value,
+                                                     const uint16_t *lut,
+                                                     uint16_t black_level,
+                                                     float scale_factor) {
+    float value_norm;
+
     // Lookup table lookup
     if (lut)
         value = lut[value];
@@ -747,16 +756,19 @@ static uint16_t av_always_inline dng_raw_to_linear16(uint16_t value,
     value = av_clip_uint16_c((unsigned)value - black_level);
 
     // Color scaling
-    value = av_clip_uint16_c((unsigned)(((float)value * scale_factor) * 0xFFFF));
+    value_norm = (float)value * scale_factor;
+
+    // Color space conversion (sRGB)
+    value = av_clip_uint16_c((uint16_t)(linear_to_srgb(value_norm) * 0xFFFF));
 
     return value;
 }
 
-static uint16_t av_always_inline dng_raw_to_linear8(uint16_t value,
+static uint16_t av_always_inline dng_process_color8(uint16_t value,
                                                     const uint16_t *lut,
                                                     uint16_t black_level,
                                                     float scale_factor) {
-    return dng_raw_to_linear16(value, lut, black_level, scale_factor) >> 8;
+    return dng_process_color16(value, lut, black_level, scale_factor) >> 8;
 }
 
 static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
@@ -774,7 +786,7 @@ static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
             uint16_t *src_u16 = (uint16_t *)src;
 
             for (col = 0; col < width; col++)
-                *dst_u16++ = dng_raw_to_linear16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
 
             dst += dst_stride * sizeof(uint16_t);
             src += src_stride * sizeof(uint16_t);
@@ -782,7 +794,7 @@ static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
     } else {
         for (line = 0; line < height; line++) {
             for (col = 0; col < width; col++)
-                *dst++ = dng_raw_to_linear8(*src++, s->dng_lut, s->black_level, scale_factor);
+                *dst++ = dng_process_color8(*src++, s->dng_lut, s->black_level, scale_factor);
 
             dst += dst_stride;
             src += src_stride;
