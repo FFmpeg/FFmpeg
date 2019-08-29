@@ -5,7 +5,7 @@ DNNTESTPROGS := $(DNNTESTPROGS:%=$(DNNTESTSDIR)/%-test$(EXESUF))
 -include $(wildcard $(DNNTESTOBJS:.o=.d))
 
 $(DNNTESTPROGS): %$(EXESUF): %.o $(FF_STATIC_DEP_LIBS)
-	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_STATIC_DEP_LIBS) $(ELIBS)
+	$(LD) $(LDFLAGS) $(LDEXEFLAGS) $(LD_O) $(filter %.o,$^) $(FF_STATIC_DEP_LIBS) $(EXTRALIBS-avcodec) $(EXTRALIBS-avfilter) $(EXTRALIBS-avformat) $(EXTRALIBS-avutil) $(EXTRALIBS-swresample) $(EXTRALIBS)
 
 testclean::
 	$(RM) $(addprefix $(DNNTESTSDIR)/,$(CLEANSUFFIXES) *-test$(EXESUF))

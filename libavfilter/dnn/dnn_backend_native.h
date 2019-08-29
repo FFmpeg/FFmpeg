@@ -36,11 +36,59 @@ typedef enum {RELU, TANH, SIGMOID, NONE, LEAKY_RELU} DNNActivationFunc;
 
 typedef enum {VALID, SAME, SAME_CLAMP_TO_EDGE} DNNConvPaddingParam;
 
+typedef enum {DOT_INPUT, DOT_INTERMEDIATE, DOT_OUTPUT} DNNOperandType;
+
 typedef struct Layer{
     DNNLayerType type;
-    float *output;
+    /**
+     * a layer can have multiple inputs and one output.
+     * 4 is just a big enough number for input operands (increase it if necessary),
+     * do not use 'int32_t *input_operand_indexes', so we don't worry about mem leaks.
+     */
+    int32_t input_operand_indexes[4];
+    int32_t output_operand_index;
     void *params;
 } Layer;
+
+typedef struct DnnOperand{
+    /**
+     * there are two memory layouts, NHWC or NCHW, so we use dims,
+     * dims[0] is Number.
+     */
+    int32_t dims[4];
+
+    /**
+     * input/output/intermediate operand of the network
+     */
+    DNNOperandType type;
+
+    /**
+     * support different kinds of data type such as float, half float, int8 etc,
+     * first support float now.
+     */
+    DNNDataType data_type;
+
+    /**
+     * NHWC if 1, otherwise NCHW.
+     * let's first support NHWC only, this flag is for extensive usage.
+     */
+    int8_t isNHWC;
+
+    /**
+     * to avoid possible memory leak, do not use char *name
+     */
+    char name[128];
+
+    /**
+     * data pointer with data length in bytes.
+     * usedNumbersLeft is only valid for intermediate operand,
+     * it means how many layers still depend on this operand,
+     * todo: the memory can be reused when usedNumbersLeft is zero.
+     */
+    void *data;
+    int32_t length;
+    int32_t usedNumbersLeft;
+}DnnOperand;
 
 typedef struct ConvolutionalParams{
     int32_t input_num, output_num, kernel_size;
@@ -63,6 +111,8 @@ typedef struct DepthToSpaceParams{
 typedef struct ConvolutionalNetwork{
     Layer *layers;
     int32_t layers_num;
+    DnnOperand *operands;
+    int32_t operands_num;
 } ConvolutionalNetwork;
 
 DNNModel *ff_dnn_load_model_native(const char *model_filename);
@@ -70,5 +120,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename);
 DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *outputs, uint32_t nb_output);
 
 void ff_dnn_free_model_native(DNNModel **model);
+
+int32_t calculate_operand_data_length(DnnOperand *operand);
 
 #endif

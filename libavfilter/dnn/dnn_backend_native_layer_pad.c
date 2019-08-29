@@ -48,12 +48,21 @@ static int after_get_buddy(int given, int border, LayerPadModeParam mode)
     }
 }
 
-void dnn_execute_layer_pad(const float *input, float *output, const LayerPadParams *params, int number, int height, int width, int channel)
+int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index,
+                           const LayerPadParams *params)
 {
     int32_t before_paddings;
     int32_t after_paddings;
+    float* output;
 
     // suppose format is <N, H, W, C>
+    int32_t input_operand_index = input_operand_indexes[0];
+    int number = operands[input_operand_index].dims[0];
+    int height = operands[input_operand_index].dims[1];
+    int width = operands[input_operand_index].dims[2];
+    int channel = operands[input_operand_index].dims[3];
+    const float *input = operands[input_operand_index].data;
+
     int new_number = number + params->paddings[0][0] + params->paddings[0][1];
     int new_height = height + params->paddings[1][0] + params->paddings[1][1];
     int new_width = width + params->paddings[2][0] + params->paddings[2][1];
@@ -66,6 +75,17 @@ void dnn_execute_layer_pad(const float *input, float *output, const LayerPadPara
     int new_c_stride = new_channel;
     int new_wc_stride = new_c_stride * new_width;
     int new_hwc_stride = new_wc_stride * new_height;
+
+    DnnOperand *output_operand = &operands[output_operand_index];
+    output_operand->dims[0] = new_number;
+    output_operand->dims[1] = new_height;
+    output_operand->dims[2] = new_width;
+    output_operand->dims[3] = new_channel;
+    output_operand->length = calculate_operand_data_length(output_operand);
+    output_operand->data = av_realloc(output_operand->data, output_operand->length);
+    if (!output_operand->data)
+        return -1;
+    output = output_operand->data;
 
     // copy the original data
     for (int n = 0; n < number; n++) {
@@ -208,4 +228,6 @@ void dnn_execute_layer_pad(const float *input, float *output, const LayerPadPara
             }
         }
     }
+
+    return 0;
 }

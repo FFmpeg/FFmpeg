@@ -26,6 +26,7 @@
 #define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_PAD_H
 
 #include <stdint.h>
+#include "dnn_backend_native.h"
 
 typedef enum {LPMP_CONSTANT, LPMP_REFLECT, LPMP_SYMMETRIC} LayerPadModeParam;
 
@@ -35,6 +36,7 @@ typedef struct LayerPadParams{
     float constant_values;
 } LayerPadParams;
 
-void dnn_execute_layer_pad(const float *input, float *output, const LayerPadParams *params, int number, int height, int width, int channel);
+int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index,
+                           const LayerPadParams *params);
 
 #endif
