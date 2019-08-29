@@ -274,7 +274,8 @@ static int add_metadata(int count, int type,
 }
 
 static void av_always_inline dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
-                                      const uint8_t *src, int src_stride, int width, int height, int is_u16);
+                                      const uint8_t *src, int src_stride, int width, int height,
+                                      int is_single_comp, int is_u16);
 
 static void av_always_inline horizontal_fill(TiffContext *s,
                                              unsigned int bpp, uint8_t* dst,
@@ -698,6 +699,7 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
                          0, // no stride, only 1 line
                          width / pixel_size_bytes * pixel_size_bits / s->bpp * s->bppcount, // need to account for [1, 16] bpp
                          1,
+                         0, // single-component variation is only preset in JPEG-encoded DNGs
                          is_u16);
             }
 
@@ -795,18 +797,32 @@ static uint16_t av_always_inline dng_process_color8(uint16_t value,
 
 static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
                      const uint8_t *src, int src_stride,
-                     int width, int height, int is_u16)
+                     int width, int height, int is_single_comp, int is_u16)
 {
     int line, col;
     float scale_factor;
 
     scale_factor = 1.0f / (s->white_level - s->black_level);
 
-    if (is_u16) {
-        for (line = 0; line < height; line++) {
+    if (is_single_comp) {
+        if (!is_u16)
+            return; /* <= 8bpp unsupported */
+
+        /* Image is double the width and half the height we need, each row comprises 2 rows of the output
+           (split vertically in the middle). */
+        for (line = 0; line < height / 2; line++) {
             uint16_t *dst_u16 = (uint16_t *)dst;
             uint16_t *src_u16 = (uint16_t *)src;
 
+            /* Blit first half of input row row to initial row of output */
+            for (col = 0; col < width; col++)
+                *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+
+            /* Advance the destination pointer by a row (source pointer remains in the same place) */
+            dst += dst_stride * sizeof(uint16_t);
+            dst_u16 = (uint16_t *)dst;
+
+            /* Blit second half of input row row to next row of output */
             for (col = 0; col < width; col++)
                 *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
 
@@ -814,12 +830,27 @@ static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
             src += src_stride * sizeof(uint16_t);
         }
     } else {
-        for (line = 0; line < height; line++) {
-            for (col = 0; col < width; col++)
-                *dst++ = dng_process_color8(*src++, s->dng_lut, s->black_level, scale_factor);
+        /* Input and output image are the same size and the MJpeg decoder has done per-component
+           deinterleaving, so blitting here is straightforward. */
+        if (is_u16) {
+            for (line = 0; line < height; line++) {
+                uint16_t *dst_u16 = (uint16_t *)dst;
+                uint16_t *src_u16 = (uint16_t *)src;
 
-            dst += dst_stride;
-            src += src_stride;
+                for (col = 0; col < width; col++)
+                    *dst_u16++ = dng_process_color16(*src_u16++, s->dng_lut, s->black_level, scale_factor);
+
+                dst += dst_stride * sizeof(uint16_t);
+                src += src_stride * sizeof(uint16_t);
+            }
+        } else {
+            for (line = 0; line < height; line++) {
+                for (col = 0; col < width; col++)
+                    *dst++ = dng_process_color8(*src++, s->dng_lut, s->black_level, scale_factor);
+
+                dst += dst_stride;
+                src += src_stride;
+            }
         }
     }
 }
@@ -831,7 +862,7 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
     AVPacket jpkt;
     uint8_t *dst_data, *src_data;
     uint32_t dst_offset; /* offset from dst buffer in pixels */
-    int is_u16, pixel_size;
+    int is_single_comp, is_u16, pixel_size;
     int ret;
 
     /* Prepare a packet and send to the MJPEG decoder */
@@ -865,8 +896,17 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
 
     /* Copy the outputted tile's pixels from 'jpgframe' to 'frame' (final buffer) */
 
+    /* See dng_blit for explanation */
+    is_single_comp = (s->avctx_mjpeg->width == w * 2 && s->avctx_mjpeg->height == h / 2);
+
     is_u16 = (s->bpp > 8);
     pixel_size = (is_u16 ? sizeof(uint16_t) : sizeof(uint8_t));
+
+    if (is_single_comp && !is_u16) {
+        av_log(s->avctx, AV_LOG_ERROR, "DNGs with bpp <= 8 and 1 component are unsupported\n");
+        av_frame_unref(s->jpgframe);
+        return AVERROR_PATCHWELCOME;
+    }
 
     dst_offset = x + frame->linesize[0] * y / pixel_size;
     dst_data = frame->data[0] + dst_offset * pixel_size;
@@ -879,6 +919,7 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
              s->jpgframe->linesize[0] / pixel_size,
              w,
              h,
+             is_single_comp,
              is_u16);
 
     av_frame_unref(s->jpgframe);
