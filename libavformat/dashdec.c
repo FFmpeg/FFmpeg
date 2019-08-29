@@ -794,12 +794,22 @@ static int resolve_content_path(AVFormatContext *s, const char *url, int *max_ur
             continue;
         }
         text = xmlNodeGetContent(baseurl_nodes[i]);
-        if (text) {
+        if (text && !av_strstart(text, "/", NULL)) {
             memset(tmp_str, 0, strlen(tmp_str));
             if (!ishttp(text) && isRootHttp) {
                 av_strlcpy(tmp_str, root_url, size + 1);
             }
             start = (text[0] == token);
+            if (start && av_stristr(tmp_str, text)) {
+                char *p = tmp_str;
+                if (!av_strncasecmp(tmp_str, "http://", 7)) {
+                    p += 7;
+                } else if (!av_strncasecmp(tmp_str, "https://", 8)) {
+                    p += 8;
+                }
+                p = strchr(p, '/');
+                memset(p + 1, 0, strlen(p));
+            }
             av_strlcat(tmp_str, text + start, tmp_max_url_size);
             xmlNodeSetContent(baseurl_nodes[i], tmp_str);
             updated = 1;
