@@ -93,8 +93,10 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     }
     model->model = (void *)network;
 
+    avio_seek(model_file_context, file_size - 4, SEEK_SET);
     network->layers_num = (int32_t)avio_rl32(model_file_context);
     dnn_size = 4;
+    avio_seek(model_file_context, 0, SEEK_SET);
 
     network->layers = av_mallocz(network->layers_num * sizeof(Layer));
     if (!network->layers){

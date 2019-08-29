@@ -129,15 +129,6 @@ class TFConverter:
         self.converted_nodes.add(node.name)
 
 
-    def generate_layer_number(self):
-        # in current hard code implementation, the layer number is the first data written to the native model file
-        # it is not easy to know it at the beginning time in the general converter, so first do a dry run for compatibility
-        # will be refined later.
-        with open('/tmp/tmp.model', 'wb') as f:
-            self.dump_layers_to_file(f)
-        self.converted_nodes.clear()
-
-
     def dump_layers_to_file(self, f):
         for node in self.nodes:
             if node.name in self.converted_nodes:
@@ -157,10 +148,9 @@ class TFConverter:
 
 
     def dump_to_file(self):
-        self.generate_layer_number()
         with open(self.outfile, 'wb') as f:
-            np.array([self.layer_number], dtype=np.uint32).tofile(f)
             self.dump_layers_to_file(f)
+            np.array([self.layer_number], dtype=np.uint32).tofile(f)
 
 
     def generate_name_node_dict(self):
