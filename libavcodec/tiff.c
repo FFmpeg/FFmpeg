@@ -1496,6 +1496,7 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_PHOTOMETRIC_SEPARATED:
         case TIFF_PHOTOMETRIC_YCBCR:
         case TIFF_PHOTOMETRIC_CFA:
+        case TIFF_PHOTOMETRIC_LINEAR_RAW: // Used by DNG images
             s->photometric = value;
             break;
         case TIFF_PHOTOMETRIC_ALPHA_MASK:
@@ -1504,7 +1505,6 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_PHOTOMETRIC_ITU_LAB:
         case TIFF_PHOTOMETRIC_LOG_L:
         case TIFF_PHOTOMETRIC_LOG_LUV:
-        case TIFF_PHOTOMETRIC_LINEAR_RAW:
             avpriv_report_missing_feature(s->avctx,
                                           "PhotometricInterpretation 0x%04X",
                                           value);
