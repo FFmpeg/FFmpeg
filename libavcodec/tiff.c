@@ -1790,7 +1790,7 @@ again:
         }
     }
 
-    if (!s->strippos && !s->stripoff) {
+    if (!s->is_tiled && !s->strippos && !s->stripoff) {
         av_log(avctx, AV_LOG_ERROR, "Image data is missing\n");
         return AVERROR_INVALIDDATA;
     }
@@ -1798,27 +1798,29 @@ again:
     if ((ret = init_image(s, &frame)) < 0)
         return ret;
 
-    if (s->strips == 1 && !s->stripsize) {
-        av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
-        s->stripsize = avpkt->size - s->stripoff;
-    }
+    if (!s->is_tiled) {
+        if (s->strips == 1 && !s->stripsize) {
+            av_log(avctx, AV_LOG_WARNING, "Image data size missing\n");
+            s->stripsize = avpkt->size - s->stripoff;
+        }
 
-    if (s->stripsizesoff) {
-        if (s->stripsizesoff >= (unsigned)avpkt->size)
-            return AVERROR_INVALIDDATA;
-        bytestream2_init(&stripsizes, avpkt->data + s->stripsizesoff,
-                         avpkt->size - s->stripsizesoff);
-    }
-    if (s->strippos) {
-        if (s->strippos >= (unsigned)avpkt->size)
-            return AVERROR_INVALIDDATA;
-        bytestream2_init(&stripdata, avpkt->data + s->strippos,
-                         avpkt->size - s->strippos);
-    }
+        if (s->stripsizesoff) {
+            if (s->stripsizesoff >= (unsigned)avpkt->size)
+                return AVERROR_INVALIDDATA;
+            bytestream2_init(&stripsizes, avpkt->data + s->stripsizesoff,
+                            avpkt->size - s->stripsizesoff);
+        }
+        if (s->strippos) {
+            if (s->strippos >= (unsigned)avpkt->size)
+                return AVERROR_INVALIDDATA;
+            bytestream2_init(&stripdata, avpkt->data + s->strippos,
+                            avpkt->size - s->strippos);
+        }
 
-    if (s->rps <= 0 || s->rps % s->subsampling[1]) {
-        av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
-        return AVERROR_INVALIDDATA;
+        if (s->rps <= 0 || s->rps % s->subsampling[1]) {
+            av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     /* Handle DNG images with JPEG-compressed tiles */
