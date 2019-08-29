@@ -148,6 +148,13 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static void msrle_decode_flush(AVCodecContext *avctx)
+{
+    MsrleContext *s = avctx->priv_data;
+
+    av_frame_unref(s->frame);
+}
+
 static av_cold int msrle_decode_end(AVCodecContext *avctx)
 {
     MsrleContext *s = avctx->priv_data;
@@ -167,5 +174,6 @@ AVCodec ff_msrle_decoder = {
     .init           = msrle_decode_init,
     .close          = msrle_decode_end,
     .decode         = msrle_decode_frame,
+    .flush          = msrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
 };
