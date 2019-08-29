@@ -625,8 +625,12 @@ static int cfhd_decode(AVCodecContext *avctx, void *data, int *got_frame,
             ret = ff_set_dimensions(avctx, s->coded_width, s->coded_height);
             if (ret < 0)
                 return ret;
-            if (s->cropped_height)
-                avctx->height = s->cropped_height << (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16);
+            if (s->cropped_height) {
+                unsigned height = s->cropped_height << (avctx->pix_fmt == AV_PIX_FMT_BAYER_RGGB16);
+                if (avctx->height < height)
+                    return AVERROR_INVALIDDATA;
+                avctx->height = height;
+            }
             frame.f->width =
             frame.f->height = 0;
 
