@@ -1038,6 +1038,18 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
                    AV_RL32(s->pattern));
             return AVERROR_PATCHWELCOME;
         }
+        /* Force endianness as mentioned in 'DNG Specification: Chapter 3: BitsPerSample'
+           NOTE: The spec actually specifies big-endian, not sure why we need little-endian, but
+                 such images don't work otherwise. Examples are images produced by Zenmuse X7. */
+        if ((s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG)
+            && (s->bpp != 8 && s->bpp != 16 && s->bpp != 32)) {
+            switch (s->avctx->pix_fmt) {
+            case AV_PIX_FMT_BAYER_RGGB16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_RGGB16LE; break;
+            case AV_PIX_FMT_BAYER_BGGR16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_BGGR16LE; break;
+            case AV_PIX_FMT_BAYER_GBRG16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GBRG16LE; break;
+            case AV_PIX_FMT_BAYER_GRBG16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GRBG16LE; break;
+            }
+        }
         break;
     case 10161:
         switch (AV_RL32(s->pattern)) {
