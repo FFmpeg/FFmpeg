@@ -887,9 +887,13 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
     int tile_byte_count_offset, tile_byte_count;
     int tile_count_x, tile_count_y;
     int tile_width, tile_length;
+    int has_width_leftover, has_height_leftover;
     int tile_x = 0, tile_y = 0;
     int pos_x = 0, pos_y = 0;
     int ret;
+
+    has_width_leftover = (s->width % s->tile_width != 0);
+    has_height_leftover = (s->height % s->tile_length != 0);
 
     /* Calculate tile counts (round up) */
     tile_count_x = (s->width + s->tile_width - 1) / s->tile_width;
@@ -900,12 +904,12 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
         tile_x = tile_idx % tile_count_x;
         tile_y = tile_idx / tile_count_x;
 
-        if (tile_x == tile_count_x - 1) // If on the right edge
+        if (has_width_leftover && tile_x == tile_count_x - 1) // If on the right-most tile
             tile_width = s->width % s->tile_width;
         else
             tile_width = s->tile_width;
 
-        if (tile_y == tile_count_y - 1) // If on the bottom edge
+        if (has_height_leftover && tile_y == tile_count_y - 1) // If on the bottom-most tile
             tile_length = s->height % s->tile_length;
         else
             tile_length = s->tile_length;
