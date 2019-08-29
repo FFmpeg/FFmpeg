@@ -309,14 +309,19 @@ static void av_always_inline horizontal_fill(TiffContext *s,
             dst[(width+offset)*2+0] = (usePtr ? src[width] : c) >> 4;
         }
         break;
-    case 12: {
-                 uint16_t *dst16 = (uint16_t *)dst;
-                 GetBitContext gb;
-                 init_get_bits8(&gb, src, width);
-                 for (int i = 0; i < s->width; i++) {
-                     dst16[i] = get_bits(&gb, 12) << 4;
-                 }
-             }
+    case 10:
+    case 12:
+    case 14: {
+            uint16_t *dst16 = (uint16_t *)dst;
+            int is_dng = (s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG);
+            uint8_t shift = is_dng ? 0 : 16 - bpp;
+            GetBitContext gb;
+
+            init_get_bits8(&gb, src, width);
+            for (int i = 0; i < s->width; i++) {
+                dst16[i] = get_bits(&gb, bpp) << shift;
+            }
+        }
         break;
     default:
         if (usePtr) {
@@ -1067,7 +1072,9 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
             return AVERROR_PATCHWELCOME;
         }
         break;
+    case 10101:
     case 10121:
+    case 10141:
         switch (AV_RL32(s->pattern)) {
         case 0x02010100:
             s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_RGGB16LE : AV_PIX_FMT_BAYER_RGGB16BE;
