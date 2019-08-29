@@ -1727,6 +1727,11 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
 
+    if (s->frame_size * 4 >> s->sub_sampling > MPA_FRAME_SIZE) {
+        avpriv_request_sample(avctx, "large frames");
+        return AVERROR_PATCHWELCOME;
+    }
+
     switch ((s->sub_sampling * 2 + s->channels - 1)) {
         case 0: tmp = 40; break;
         case 1: tmp = 48; break;
