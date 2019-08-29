@@ -118,6 +118,7 @@ typedef struct VariantStream {
     AVIOContext *out;
     int packets_written;
     int init_range_length;
+    uint8_t *temp_buffer;
 
     AVFormatContext *avf;
     AVFormatContext *vtt_avf;
@@ -262,11 +263,12 @@ static int hlsenc_io_open(AVFormatContext *s, AVIOContext **pb, char *filename,
     return err;
 }
 
-static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
+static int hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename) {
     HLSContext *hls = s->priv_data;
     int http_base_proto = filename ? ff_is_http_proto(filename) : 0;
+    int ret = 0;
     if (!*pb)
-        return;
+        return ret;
     if (!http_base_proto || !hls->http_persistent || hls->key_info_file || hls->encrypt) {
         ff_format_io_close(s, pb);
 #if CONFIG_HTTP_PROTOCOL
@@ -275,8 +277,10 @@ static void hlsenc_io_close(AVFormatContext *s, AVIOContext **pb, char *filename
         av_assert0(http_url_context);
         avio_flush(*pb);
         ffurl_shutdown(http_url_context, AVIO_FLAG_WRITE);
+        ret = ff_http_get_shutdown_status(http_url_context);
 #endif
     }
+    return ret;
 }
 
 static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSContext *c)
@@ -447,7 +451,6 @@ static void write_styp(AVIOContext *pb)
 static int flush_dynbuf(VariantStream *vs, int *range_length)
 {
     AVFormatContext *ctx = vs->avf;
-    uint8_t *buffer;
 
     if (!ctx->pb) {
         return AVERROR(EINVAL);
@@ -458,13 +461,18 @@ static int flush_dynbuf(VariantStream *vs, int *range_length)
     avio_flush(ctx->pb);
 
     // write out to file
-    *range_length = avio_close_dyn_buf(ctx->pb, &buffer);
+    *range_length = avio_close_dyn_buf(ctx->pb, &vs->temp_buffer);
     ctx->pb = NULL;
-    avio_write(vs->out, buffer, *range_length);
-    av_free(buffer);
+    avio_write(vs->out, vs->temp_buffer, *range_length);
 
     // re-open buffer
     return avio_open_dyn_buf(&ctx->pb);
+}
+
+static void reflush_dynbuf(VariantStream *vs, int *range_length)
+{
+    // re-open buffer
+    avio_write(vs->out, vs->temp_buffer, *range_length);;
 }
 
 static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
@@ -1524,7 +1532,10 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
 fail:
     av_dict_free(&options);
-    hlsenc_io_close(s, (byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? &hls->m3u8_out : &vs->out, temp_filename);
+    ret = hlsenc_io_close(s, (byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? &hls->m3u8_out : &vs->out, temp_filename);
+    if (ret < 0) {
+        return ret;
+    }
     hlsenc_io_close(s, &hls->sub_m3u8_out, vs->vtt_m3u8_name);
     if (use_temp_file) {
         ff_rename(temp_filename, vs->m3u8_name, s);
@@ -2379,7 +2390,16 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
                 if (ret < 0) {
                     return ret;
                 }
-                hlsenc_io_close(s, &vs->out, filename);
+                ret = hlsenc_io_close(s, &vs->out, filename);
+                if (ret < 0) {
+                    av_log(s, AV_LOG_WARNING, "upload segment failed,"
+                           " will retry with a new http session.\n");
+                    ff_format_io_close(s, &vs->out);
+                    ret = hlsenc_io_open(s, &vs->out, filename, &options);
+                    reflush_dynbuf(vs, &range_length);
+                    ret = hlsenc_io_close(s, &vs->out, filename);
+                }
+                av_free(vs->temp_buffer);
                 av_free(filename);
             }
         }
@@ -2406,8 +2426,13 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
         // if we're building a VOD playlist, skip writing the manifest multiple times, and just wait until the end
         if (hls->pl_type != PLAYLIST_TYPE_VOD) {
             if ((ret = hls_window(s, 0, vs)) < 0) {
-                av_free(old_filename);
-                return ret;
+                av_log(s, AV_LOG_WARNING, "upload playlist failed, will retry with a new http session.\n");
+                ff_format_io_close(s, &vs->out);
+                vs->out = NULL;
+                if ((ret = hls_window(s, 0, vs)) < 0) {
+                    av_free(old_filename);
+                    return ret;
+                }
             }
         }
 
@@ -2559,6 +2584,20 @@ static int hls_write_trailer(struct AVFormatContext *s)
 
         vs->size = range_length;
         hlsenc_io_close(s, &vs->out, filename);
+        ret = hlsenc_io_close(s, &vs->out, filename);
+        if (ret < 0) {
+            av_log(s, AV_LOG_WARNING, "upload segment failed, will retry with a new http session.\n");
+            ff_format_io_close(s, &vs->out);
+            ret = hlsenc_io_open(s, &vs->out, filename, &options);
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n", vs->avf->url);
+                goto failed;
+            }
+            reflush_dynbuf(vs, &range_length);
+            ret = hlsenc_io_close(s, &vs->out, filename);
+        }
+        av_free(vs->temp_buffer);
+
 failed:
         av_free(filename);
         av_write_trailer(oc);
@@ -2590,7 +2629,12 @@ failed:
             ff_format_io_close(s, &vtt_oc->pb);
             avformat_free_context(vtt_oc);
         }
-        hls_window(s, 1, vs);
+        ret = hls_window(s, 1, vs);
+        if (ret < 0) {
+            av_log(s, AV_LOG_WARNING, "upload playlist failed, will retry with a new http session.\n");
+            ff_format_io_close(s, &vs->out);
+            hls_window(s, 1, vs);
+        }
         avformat_free_context(oc);
 
         vs->avf = NULL;
