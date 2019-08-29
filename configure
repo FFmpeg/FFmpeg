@@ -6358,10 +6358,10 @@ enabled opengl            && { check_lib opengl GL/glx.h glXGetProcAddress "-lGL
                                check_lib opengl ES2/gl.h glGetError "-isysroot=${sysroot} -Wl,-framework,OpenGLES" ||
                                die "ERROR: opengl not found."
                              }
-enabled omx               && require_headers OMX_Core.h
 enabled omx_rpi           && { check_headers OMX_Core.h ||
                                { ! enabled cross_compile && add_cflags -isystem/opt/vc/include/IL && check_headers OMX_Core.h ; } ||
                                die "ERROR: OpenMAX IL headers not found"; } && enable omx
+enabled omx               && require_headers OMX_Core.h
 enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                check_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
