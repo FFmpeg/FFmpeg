@@ -412,6 +412,14 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    /* Lossless JPEGs encoded in DNGs are commonly bayer-encoded. They contain 2
+       interleaved components and the width stored in their SOF3 markers is the
+       width of each one.  We only output a single component, therefore we need
+       to adjust the output image width. */
+    if (s->lossless == 1 && nb_components == 2) {
+        s->bayer = 1;
+        width *= 2;
+    }
 
     /* if different size, realloc/alloc picture */
     if (width != s->width || height != s->height || bits != s->bits ||
@@ -488,6 +496,9 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         }
 
         switch (pix_fmt_id) {
+        case 0x11110000: /* for bayer-encoded huffman lossless JPEGs embedded in DNGs */
+            s->avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
+            break;
         case 0x11111100:
             if (s->rgb)
                 s->avctx->pix_fmt = s->bits <= 9 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_BGR48;
@@ -1041,17 +1052,20 @@ static int handle_rstn(MJpegDecodeContext *s, int nb_components)
     return reset;
 }
 
+/* Handles 1 to 4 components */
 static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int predictor, int point_transform)
 {
     int i, mb_x, mb_y;
+    unsigned width;
     uint16_t (*buffer)[4];
     int left[4], top[4], topleft[4];
     const int linesize = s->linesize[0];
     const int mask     = ((1 << s->bits) - 1) << point_transform;
     int resync_mb_y = 0;
     int resync_mb_x = 0;
+    int vpred[6];
 
-    if (s->nb_components != 3 && s->nb_components != 4)
+    if (s->nb_components <= 0 || s->nb_components > 4)
         return AVERROR_INVALIDDATA;
     if (s->v_max != 1 || s->h_max != 1 || !s->lossless)
         return AVERROR_INVALIDDATA;
@@ -1059,8 +1073,15 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
 
     s->restart_count = s->restart_interval;
 
-    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size,
-                   (unsigned)s->mb_width * 4 * sizeof(s->ljpeg_buffer[0][0]));
+    if (s->restart_interval == 0)
+        s->restart_interval = INT_MAX;
+
+    if (s->bayer)
+        width = s->mb_width / nb_components; /* Interleaved, width stored is the total so need to divide */
+    else
+        width = s->mb_width;
+
+    av_fast_malloc(&s->ljpeg_buffer, &s->ljpeg_buffer_size, width * 4 * sizeof(s->ljpeg_buffer[0][0]));
     if (!s->ljpeg_buffer)
         return AVERROR(ENOMEM);
 
@@ -1078,7 +1099,12 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
         for (i = 0; i < 4; i++)
             top[i] = left[i] = topleft[i] = buffer[0][i];
 
-        for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
+        if ((mb_y * s->width) % s->restart_interval == 0) {
+            for (i = 0; i < 6; i++)
+                vpred[i] = 1 << (s->bits-1);
+        }
+
+        for (mb_x = 0; mb_x < width; mb_x++) {
             int modified_predictor = predictor;
 
             if (get_bits_left(&s->gb) < 1) {
@@ -1102,11 +1128,18 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 topleft[i] = top[i];
                 top[i]     = buffer[mb_x][i];
 
-                PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
-
                 dc = mjpeg_decode_dc(s, s->dc_index[i]);
                 if(dc == 0xFFFFF)
                     return -1;
+
+                if (!s->bayer || mb_x) {
+                    pred = left[i];
+                } else { /* This path runs only for the first line in bayer images */
+                    vpred[i] += dc;
+                    pred = vpred[i] - dc;
+                }
+
+                PREDICT(pred, topleft[i], top[i], pred, modified_predictor);
 
                 left[i] = buffer[mb_x][i] =
                     mask & (pred + (unsigned)(dc * (1 << point_transform)));
@@ -1150,6 +1183,11 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
                 ptr[3*mb_x + 1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2]) >> 2);
                 ptr[3*mb_x + 0] = buffer[mb_x][1] + ptr[3*mb_x + 1];
                 ptr[3*mb_x + 2] = buffer[mb_x][2] + ptr[3*mb_x + 1];
+            }
+        } else if (s->bayer && nb_components == 2) {
+            for (mb_x = 0; mb_x < width; mb_x++) {
+                ((uint16_t*)ptr)[2*mb_x + 0] = buffer[mb_x][0];
+                ((uint16_t*)ptr)[2*mb_x + 1] = buffer[mb_x][1];
             }
         } else {
             for(i=0; i<nb_components; i++) {
@@ -1695,7 +1733,7 @@ next_field:
                                                 point_transform, ilv)) < 0)
                 return ret;
         } else {
-            if (s->rgb) {
+            if (s->rgb || s->bayer) {
                 if ((ret = ljpeg_decode_rgb_scan(s, nb_components, predictor, point_transform)) < 0)
                     return ret;
             } else {
