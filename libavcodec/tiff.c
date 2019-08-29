@@ -551,6 +551,8 @@ static int tiff_unpack_fax(TiffContext *s, uint8_t *dst, int stride,
     return ret;
 }
 
+static int dng_decode_strip(AVCodecContext *avctx, AVFrame *frame);
+
 static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int stride,
                              const uint8_t *src, int size, int strip_start, int lines)
 {
@@ -665,6 +667,17 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     bytestream2_init_writer(&pb, dst, is_yuv ? s->yuv_line_size : (stride * lines));
 
     is_dng = (s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG);
+
+    /* Decode JPEG-encoded DNGs with strips */
+    if (s->compr == TIFF_NEWJPEG && is_dng) {
+        if (s->strips > 1) {
+            av_log(s->avctx, AV_LOG_ERROR, "More than one DNG JPEG strips unsupported\n");
+            return AVERROR_PATCHWELCOME;
+        }
+        if ((ret = dng_decode_strip(s->avctx, p)) < 0)
+            return ret;
+        return 0;
+    }
 
     for (line = 0; line < lines; line++) {
         if (src - ssrc > size) {
@@ -860,8 +873,8 @@ static void dng_blit(TiffContext *s, uint8_t *dst, int dst_stride,
     }
 }
 
-static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
-                                int tile_byte_count, int x, int y, int w, int h)
+static int dng_decode_jpeg(AVCodecContext *avctx, AVFrame *frame,
+                           int tile_byte_count, int dst_x, int dst_y, int w, int h)
 {
     TiffContext *s = avctx->priv_data;
     AVPacket jpkt;
@@ -913,7 +926,7 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
         return AVERROR_PATCHWELCOME;
     }
 
-    dst_offset = x + frame->linesize[0] * y / pixel_size;
+    dst_offset = dst_x + frame->linesize[0] * dst_y / pixel_size;
     dst_data = frame->data[0] + dst_offset * pixel_size;
     src_data = s->jpgframe->data[0];
 
@@ -932,7 +945,7 @@ static int dng_decode_jpeg_tile(AVCodecContext *avctx, AVFrame *frame,
     return 0;
 }
 
-static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
+static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame, AVPacket *avpkt)
 {
     TiffContext *s = avctx->priv_data;
     int tile_idx;
@@ -944,6 +957,12 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
     int tile_x = 0, tile_y = 0;
     int pos_x = 0, pos_y = 0;
     int ret;
+
+    s->jpgframe->width  = s->tile_width;
+    s->jpgframe->height = s->tile_length;
+
+    s->avctx_mjpeg->width = s->tile_width;
+    s->avctx_mjpeg->height = s->tile_length;
 
     has_width_leftover = (s->width % s->tile_width != 0);
     has_height_leftover = (s->height % s->tile_length != 0);
@@ -981,7 +1000,7 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
         bytestream2_seek(&s->gb, tile_offset, SEEK_SET);
 
         /* Decode JPEG tile and copy it in the reference frame */
-        ret = dng_decode_jpeg_tile(avctx, frame, tile_byte_count, pos_x, pos_y, tile_width, tile_length);
+        ret = dng_decode_jpeg(avctx, frame, tile_byte_count, pos_x, pos_y, tile_width, tile_length);
 
         if (ret < 0)
             return ret;
@@ -994,30 +1013,24 @@ static int dng_decode_tiles(AVCodecContext *avctx, AVFrame *frame)
         }
     }
 
-    return 0;
-}
-
-static int dng_decode(AVCodecContext *avctx, AVFrame *frame, AVPacket *avpkt) {
-    int ret;
-
-    TiffContext *s = avctx->priv_data;
-
-    s->jpgframe->width  = s->tile_width;
-    s->jpgframe->height = s->tile_length;
-
-    s->avctx_mjpeg->width = s->tile_width;
-    s->avctx_mjpeg->height = s->tile_length;
-
-    /* Decode all tiles in a frame */
-    ret = dng_decode_tiles(avctx, frame);
-    if (ret < 0)
-        return ret;
-
     /* Frame is ready to be output */
     frame->pict_type = AV_PICTURE_TYPE_I;
     frame->key_frame = 1;
 
     return avpkt->size;
+}
+
+static int dng_decode_strip(AVCodecContext *avctx, AVFrame *frame)
+{
+    TiffContext *s = avctx->priv_data;
+
+    s->jpgframe->width  = s->width;
+    s->jpgframe->height = s->height;
+
+    s->avctx_mjpeg->width = s->width;
+    s->avctx_mjpeg->height = s->height;
+
+    return dng_decode_jpeg(avctx, frame, s->stripsize, 0, 0, s->width, s->height);
 }
 
 static int init_image(TiffContext *s, ThreadFrame *frame)
@@ -1900,7 +1913,7 @@ again:
             avpriv_report_missing_feature(avctx, "DNG JPG-compressed tiled non-bayer-encoded images");
             return AVERROR_PATCHWELCOME;
         } else {
-            if ((ret = dng_decode(avctx, (AVFrame*)data, avpkt)) > 0)
+            if ((ret = dng_decode_tiles(avctx, (AVFrame*)data, avpkt)) > 0)
                 *got_frame = 1;
             return ret;
         }
