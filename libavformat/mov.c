@@ -4984,7 +4984,7 @@ static int mov_read_sidx(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         pts += duration;
     }
 
-    st->duration = sc->track_end = pts;
+    st->duration = sc->track_end = sc->last_pts = pts;
 
     sc->has_sidx = 1;
 
@@ -7256,6 +7256,7 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 extern int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp);
 extern int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index);
+extern int64_t mov_frag_get_last_pts(AVFormatContext *s);
 
 int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp){
     if (!s->streams) {
@@ -7269,6 +7270,9 @@ int mov_frag_get_frag_index_with_timestamp(AVFormatContext *s, int64_t timestamp
 }
 
 int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index){
+    if (!s->streams) {
+        av_log(NULL, AV_LOG_ERROR, "mov_frag_get_timestamp_with_index s->streams is NULL\n");
+    }
     AVStream *st    = s->streams[0];
     MOVContext *mov = s->priv_data;
     if (index < 0)
@@ -7276,6 +7280,18 @@ int64_t mov_frag_get_timestamp_with_index(AVFormatContext *s, int index){
     if (index >= mov->frag_index.nb_items)
         index = mov->frag_index.nb_items - 1;
     int64_t timestamp = get_frag_time(&mov->frag_index, index, st->id);
+    if (timestamp == AV_NOPTS_VALUE)
+        return timestamp;
+    return av_rescale_q(timestamp, st->time_base, AV_TIME_BASE_Q);
+}
+
+int64_t mov_frag_get_last_pts(AVFormatContext *s) {
+    if (!s->streams) {
+        av_log(NULL, AV_LOG_ERROR, "mov_frag_get_last_pts s->streams is NULL\n");
+    }
+    AVStream *st    = s->streams[0];
+    MOVStreamContext *sc = st->priv_data;
+    int64_t timestamp = sc->last_pts;
     if (timestamp == AV_NOPTS_VALUE)
         return timestamp;
     return av_rescale_q(timestamp, st->time_base, AV_TIME_BASE_Q);

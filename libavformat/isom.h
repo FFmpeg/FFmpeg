@@ -225,6 +225,8 @@ typedef struct MOVStreamContext {
         int64_t auxiliary_info_index;
         struct AVAESCTR* aes_ctr;
     } cenc;
+
+    int last_pts;
 } MOVStreamContext;
 
 typedef struct MOVContext {
