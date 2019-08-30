@@ -36,7 +36,7 @@ void ff_hls_write_playlist_version(AVIOContext *out, int version) {
 }
 
 void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup,
-                                  char *filename, char *language, int name_id, int is_default) {
+                                  const char *filename, char *language, int name_id, int is_default) {
     if (!out || !agroup || !filename)
         return;
 
@@ -49,7 +49,7 @@ void ff_hls_write_audio_rendition(AVIOContext *out, char *agroup,
 }
 
 void ff_hls_write_stream_info(AVStream *st, AVIOContext *out,
-                              int bandwidth, char *filename, char *agroup,
+                              int bandwidth, const char *filename, char *agroup,
                               char *codecs, char *ccgroup) {
 
     if (!out || !filename)

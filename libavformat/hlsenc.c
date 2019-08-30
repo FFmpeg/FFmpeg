@@ -1224,22 +1224,22 @@ static int hls_rename_temp_file(AVFormatContext *s, AVFormatContext *oc)
     return ret;
 }
 
-static int get_relative_url(const char *master_url, const char *media_url,
-                            char *rel_url, int rel_url_buf_size)
+static const char* get_relative_url(const char *master_url, const char *media_url)
 {
-    char *p = NULL;
-    int base_len = -1;
-    p = strrchr(master_url, '/') ? strrchr(master_url, '/') :\
-            strrchr(master_url, '\\');
+    const char *p = strrchr(master_url, '/');
+    size_t base_len = 0;
+
+    if (!p) p = strrchr(master_url, '\\');
+
     if (p) {
-        base_len = FFABS(p - master_url);
+        base_len = p + 1 - master_url;
         if (av_strncasecmp(master_url, media_url, base_len)) {
             av_log(NULL, AV_LOG_WARNING, "Unable to find relative url\n");
-            return AVERROR(EINVAL);
+            return NULL;
         }
     }
-    av_strlcpy(rel_url, &(media_url[base_len + 1]), rel_url_buf_size);
-    return 0;
+
+    return media_url + base_len;
 }
 
 static int64_t get_stream_bit_rate(AVStream *stream) {
@@ -1265,8 +1265,9 @@ static int create_master_playlist(AVFormatContext *s,
     AVStream *vid_st, *aud_st;
     AVDictionary *options = NULL;
     unsigned int i, j;
-    int m3u8_name_size, ret, bandwidth;
-    char *m3u8_rel_name = NULL, *ccgroup;
+    int ret, bandwidth;
+    const char *m3u8_rel_name = NULL;
+    char *ccgroup;
     ClosedCaptionsStream *ccs;
     const char *proto = avio_find_protocol_name(hls->master_m3u8_url);
     int is_file_proto = proto && !strcmp(proto, "file");
@@ -1315,39 +1316,21 @@ static int create_master_playlist(AVFormatContext *s,
         if (vs->has_video || vs->has_subtitle || !vs->agroup)
             continue;
 
-        m3u8_name_size = strlen(vs->m3u8_name) + 1;
-        m3u8_rel_name = av_malloc(m3u8_name_size);
+        m3u8_rel_name = get_relative_url(hls->master_m3u8_url, vs->m3u8_name);
         if (!m3u8_rel_name) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        av_strlcpy(m3u8_rel_name, vs->m3u8_name, m3u8_name_size);
-        ret = get_relative_url(hls->master_m3u8_url, vs->m3u8_name,
-                               m3u8_rel_name, m3u8_name_size);
-        if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Unable to find relative URL\n");
             goto fail;
         }
 
         ff_hls_write_audio_rendition(hls->m3u8_out, vs->agroup, m3u8_rel_name, vs->language, i, hls->has_default_key ? vs->is_default : 1);
-
-        av_freep(&m3u8_rel_name);
     }
 
     /* For variant streams with video add #EXT-X-STREAM-INF tag with attributes*/
     for (i = 0; i < hls->nb_varstreams; i++) {
         vs = &(hls->var_streams[i]);
 
-        m3u8_name_size = strlen(vs->m3u8_name) + 1;
-        m3u8_rel_name = av_malloc(m3u8_name_size);
+        m3u8_rel_name = get_relative_url(hls->master_m3u8_url, vs->m3u8_name);
         if (!m3u8_rel_name) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        av_strlcpy(m3u8_rel_name, vs->m3u8_name, m3u8_name_size);
-        ret = get_relative_url(hls->master_m3u8_url, vs->m3u8_name,
-                               m3u8_rel_name, m3u8_name_size);
-        if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Unable to find relative URL\n");
             goto fail;
         }
@@ -1416,13 +1399,10 @@ static int create_master_playlist(AVFormatContext *s,
                                          aud_st ? vs->agroup : NULL, vs->codec_attr, ccgroup);
             }
         }
-
-        av_freep(&m3u8_rel_name);
     }
 fail:
     if(ret >=0)
         hls->master_m3u8_created = 1;
-    av_freep(&m3u8_rel_name);
     hlsenc_io_close(s, &hls->m3u8_out, temp_filename);
     if (use_temp_file)
         ff_rename(temp_filename, hls->master_m3u8_url, s);
