@@ -242,6 +242,7 @@ static const AVOption options[] = {
         .close          = v4l2_decode_close, \
         .bsfs           = bsf_name, \
         .capabilities   = AV_CODEC_CAP_HARDWARE | AV_CODEC_CAP_DELAY | AV_CODEC_CAP_AVOID_PROBING, \
+        .caps_internal  = FF_CODEC_CAP_SETS_PKT_DTS, \
         .wrapper_name   = "v4l2m2m", \
     };
 

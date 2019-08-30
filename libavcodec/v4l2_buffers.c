@@ -420,6 +420,7 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
     frame->color_range = v4l2_get_color_range(avbuf);
     frame->color_trc = v4l2_get_color_trc(avbuf);
     frame->pts = v4l2_get_pts(avbuf);
+    frame->pkt_dts = AV_NOPTS_VALUE;
 
     /* these two values are updated also during re-init in v4l2_process_driver_event */
     frame->height = avbuf->context->height;
