@@ -1856,8 +1856,12 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
         MatroskaSeekhead *seekheads = seekhead_list->elem;
         uint32_t id = seekheads[i].id;
         int64_t pos = seekheads[i].pos + matroska->segment_start;
+        MatroskaLevel1Element *elem;
 
-        MatroskaLevel1Element *elem = matroska_find_level1_elem(matroska, id);
+        if (id != seekheads[i].id || pos < matroska->segment_start)
+            continue;
+
+        elem = matroska_find_level1_elem(matroska, id);
         if (!elem || elem->parsed)
             continue;
 
