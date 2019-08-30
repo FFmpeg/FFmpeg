@@ -1,0 +1,8 @@
+testsrc=r=5:n=1:d=2  [v1];
+sine=440:b=2:d=1     [a1];
+testsrc=r=15:n=1:d=1 [v2];
+sine=622:b=2:d=2     [a2];
+testsrc=r=8:n=1:d=1  [v3];
+sine=880:b=2:d=1     [a3];
+
+[v1][a1][v2][a2][v3][a3] concat=v=1:a=1:n=3
