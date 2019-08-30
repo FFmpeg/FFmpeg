@@ -428,9 +428,10 @@ int ff_v4l2_buffer_buf_to_avframe(AVFrame *frame, V4L2Buffer *avbuf)
     frame->pts = v4l2_get_pts(avbuf);
     frame->pkt_dts = AV_NOPTS_VALUE;
 
-    /* these two values are updated also during re-init in v4l2_process_driver_event */
+    /* these values are updated also during re-init in v4l2_process_driver_event */
     frame->height = avbuf->context->height;
     frame->width = avbuf->context->width;
+    frame->sample_aspect_ratio = avbuf->context->sample_aspect_ratio;
 
     /* 3. report errors upstream */
     if (avbuf->buf.flags & V4L2_BUF_FLAG_ERROR) {

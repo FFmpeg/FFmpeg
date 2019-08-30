@@ -63,6 +63,24 @@ static inline unsigned int v4l2_get_height(struct v4l2_format *fmt)
     return V4L2_TYPE_IS_MULTIPLANAR(fmt->type) ? fmt->fmt.pix_mp.height : fmt->fmt.pix.height;
 }
 
+static AVRational v4l2_get_sar(V4L2Context *ctx)
+{
+    struct AVRational sar = { 0, 1 };
+    struct v4l2_cropcap cropcap;
+    int ret;
+
+    memset(&cropcap, 0, sizeof(cropcap));
+    cropcap.type = ctx->type;
+
+    ret = ioctl(ctx_to_m2mctx(ctx)->fd, VIDIOC_CROPCAP, &cropcap);
+    if (ret)
+        return sar;
+
+    sar.num = cropcap.pixelaspect.numerator;
+    sar.den = cropcap.pixelaspect.denominator;
+    return sar;
+}
+
 static inline unsigned int v4l2_resolution_changed(V4L2Context *ctx, struct v4l2_format *fmt2)
 {
     struct v4l2_format *fmt1 = &ctx->format;
@@ -172,12 +190,14 @@ static int v4l2_handle_event(V4L2Context *ctx)
     if (full_reinit) {
         s->output.height = v4l2_get_height(&out_fmt);
         s->output.width = v4l2_get_width(&out_fmt);
+        s->output.sample_aspect_ratio = v4l2_get_sar(&s->output);
     }
 
     reinit = v4l2_resolution_changed(&s->capture, &cap_fmt);
     if (reinit) {
         s->capture.height = v4l2_get_height(&cap_fmt);
         s->capture.width = v4l2_get_width(&cap_fmt);
+        s->capture.sample_aspect_ratio = v4l2_get_sar(&s->capture);
     }
 
     if (full_reinit || reinit)

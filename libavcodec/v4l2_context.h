@@ -69,6 +69,7 @@ typedef struct V4L2Context {
      * or accepts (in case of an output context, e.g. when encoding).
      */
     int width, height;
+    AVRational sample_aspect_ratio;
 
     /**
      * Indexed array of V4L2Buffers
