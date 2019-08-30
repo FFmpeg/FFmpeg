@@ -131,7 +131,8 @@ static int cdxl_read_packet(AVFormatContext *s, AVPacket *pkt)
     height       = AV_RB16(&cdxl->header[16]);
     palette_size = AV_RB16(&cdxl->header[20]);
     audio_size   = AV_RB16(&cdxl->header[22]);
-    if (FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
+    if (cdxl->header[19] == 0 ||
+        FFALIGN(width, 16) * (uint64_t)height * cdxl->header[19] > INT_MAX)
         return AVERROR_INVALIDDATA;
     if (format == 0x20)
         image_size = width * height * cdxl->header[19] / 8;
