@@ -133,9 +133,14 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     AVPacket avpkt = {0};
     int ret;
 
-    ret = ff_decode_get_packet(avctx, &avpkt);
-    if (ret < 0 && ret != AVERROR_EOF)
-        return ret;
+    if (s->buf_pkt.size) {
+        avpkt = s->buf_pkt;
+        memset(&s->buf_pkt, 0, sizeof(AVPacket));
+    } else {
+        ret = ff_decode_get_packet(avctx, &avpkt);
+        if (ret < 0 && ret != AVERROR_EOF)
+            return ret;
+    }
 
     if (s->draining)
         goto dequeue;
@@ -144,6 +149,8 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     if (ret < 0) {
         if (ret != AVERROR(EAGAIN))
            return ret;
+
+        s->buf_pkt = avpkt;
         /* no input buffers available, continue dequeing */
     }
 
@@ -161,7 +168,8 @@ static int v4l2_receive_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 
 dequeue:
-    av_packet_unref(&avpkt);
+    if (!s->buf_pkt.size)
+        av_packet_unref(&avpkt);
     return ff_v4l2_context_dequeue_frame(capture, frame, -1);
 }
 
@@ -207,7 +215,10 @@ static av_cold int v4l2_decode_init(AVCodecContext *avctx)
 
 static av_cold int v4l2_decode_close(AVCodecContext *avctx)
 {
-    return ff_v4l2_m2m_codec_end(avctx->priv_data);
+    V4L2m2mPriv *priv = avctx->priv_data;
+    V4L2m2mContext* s = priv->context;
+    av_packet_unref(&s->buf_pkt);
+    return ff_v4l2_m2m_codec_end(priv);
 }
 
 #define OFFSET(x) offsetof(V4L2m2mPriv, x)
