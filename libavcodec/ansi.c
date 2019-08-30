@@ -362,7 +362,7 @@ static int decode_frame(AVCodecContext *avctx,
     const uint8_t *buf_end   = buf+buf_size;
     int ret, i, count;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
     if (!avctx->frame_number) {
         for (i=0; i<avctx->height; i++)

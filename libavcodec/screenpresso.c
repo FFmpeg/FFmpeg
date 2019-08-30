@@ -145,7 +145,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_UNKNOWN;
     }
 
-    ret = ff_reget_buffer(avctx, ctx->current);
+    ret = ff_reget_buffer(avctx, ctx->current, 0);
     if (ret < 0)
         return ret;
 

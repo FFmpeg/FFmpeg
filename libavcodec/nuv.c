@@ -268,7 +268,7 @@ retry:
         init_frame = 1;
     }
 
-    if ((result = ff_reget_buffer(avctx, c->pic)) < 0)
+    if ((result = ff_reget_buffer(avctx, c->pic, 0)) < 0)
         return result;
     if (init_frame) {
         memset(c->pic->data[0], 0,    avctx->height * c->pic->linesize[0]);

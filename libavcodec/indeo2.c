@@ -161,7 +161,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
     int start, ret;
     int ltab, ctab;
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0)
+    if ((ret = ff_reget_buffer(avctx, p, 0)) < 0)
         return ret;
 
     start = 48; /* hardcoded for now */

@@ -310,7 +310,7 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* Allocate when needed */
-    ret = ff_reget_buffer(avctx, ctx->reference);
+    ret = ff_reget_buffer(avctx, ctx->reference, 0);
     if (ret < 0)
         goto end;
 

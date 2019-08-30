@@ -915,7 +915,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(ENOMEM);
     }
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0)
+    if ((ret = ff_reget_buffer(avctx, p, 0)) < 0)
         return ret;
 
     l->bdsp.bswap_buf((uint32_t *) l->buffer, (const uint32_t *) buf,

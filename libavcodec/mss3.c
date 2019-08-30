@@ -737,7 +737,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return buf_size;
     c->got_error = 0;
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0)
         return ret;
     c->pic->key_frame = keyframe;
     c->pic->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;

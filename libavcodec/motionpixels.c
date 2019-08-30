@@ -292,7 +292,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, count1, count2, sz, ret;
 
-    if ((ret = ff_reget_buffer(avctx, mp->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, mp->frame, 0)) < 0)
         return ret;
 
     /* le32 bitstream msb first */

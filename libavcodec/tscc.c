@@ -103,7 +103,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return AVERROR_UNKNOWN;
     }
 
-    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, frame, 0)) < 0)
         return ret;
 
     if (ret != Z_DATA_ERROR) {

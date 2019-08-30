@@ -240,7 +240,7 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         return buf_size;
     }
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0) {
+    if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0) {
         return ret;
     }
 

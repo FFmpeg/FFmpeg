@@ -504,7 +504,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return ret;
     }
 
-    if ((ret = ff_reget_buffer(avctx, s->current_frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->current_frame, 0)) < 0)
         return ret;
 
     bytestream2_init(gb, avpkt->data, avpkt->size);

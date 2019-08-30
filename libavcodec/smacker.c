@@ -428,7 +428,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (avpkt->size <= 769)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_reget_buffer(avctx, smk->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, smk->pic, 0)) < 0)
         return ret;
 
     /* make the palette available on the way out */

@@ -168,7 +168,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             GetBitContext gb;
             init_get_bits(&gb, buf, 8 * video_size);
 
-            if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+            if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
                 return ret;
 
             if (avctx->height/8 * (avctx->width/8) > 4 * video_size) {

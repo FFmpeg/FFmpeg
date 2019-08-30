@@ -410,7 +410,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     int ftype;
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->pic, 0)) < 0)
         return ret;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);

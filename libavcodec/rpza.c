@@ -108,7 +108,7 @@ static int rpza_decode_stream(RpzaContext *s)
     if (total_blocks / 32 > bytestream2_get_bytes_left(&s->gb))
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_reget_buffer(s->avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(s->avctx, s->frame, 0)) < 0)
         return ret;
     pixels = (uint16_t *)s->frame->data[0];
     stride = s->frame->linesize[0] / 2;

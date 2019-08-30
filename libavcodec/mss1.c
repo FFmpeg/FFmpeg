@@ -154,7 +154,7 @@ static int mss1_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     arith_init(&acoder, &gb);
 
-    if ((ret = ff_reget_buffer(avctx, ctx->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, ctx->pic, 0)) < 0)
         return ret;
 
     c->pal_pic    =  ctx->pic->data[0] + ctx->pic->linesize[0] * (avctx->height - 1);

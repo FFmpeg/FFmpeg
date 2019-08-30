@@ -368,7 +368,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             s->image_width, s->image_height, s->block_width, s->block_height,
             h_blocks, v_blocks, h_part, v_part);
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     /* loop over all block columns */

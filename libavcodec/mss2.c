@@ -618,7 +618,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if ((ret = ff_reget_buffer(avctx, ctx->last_pic)) < 0)
+        if ((ret = ff_reget_buffer(avctx, ctx->last_pic, 0)) < 0)
             return ret;
         if ((ret = av_frame_ref(frame, ctx->last_pic)) < 0)
             return ret;

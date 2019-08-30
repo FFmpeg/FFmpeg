@@ -1970,7 +1970,7 @@ int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
     return ret;
 }
 
-static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
+static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
     AVFrame *tmp;
     int ret;
@@ -1986,7 +1986,7 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
     if (!frame->data[0])
         return ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF);
 
-    if (av_frame_is_writable(frame))
+    if ((flags & FF_REGET_BUFFER_FLAG_READONLY) || av_frame_is_writable(frame))
         return ff_decode_frame_props(avctx, frame);
 
     tmp = av_frame_alloc();
@@ -2007,9 +2007,9 @@ static int reget_buffer_internal(AVCodecContext *avctx, AVFrame *frame)
     return 0;
 }
 
-int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame)
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags)
 {
-    int ret = reget_buffer_internal(avctx, frame);
+    int ret = reget_buffer_internal(avctx, frame, flags);
     if (ret < 0)
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
     return ret;

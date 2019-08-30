@@ -513,7 +513,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             return AVERROR_INVALIDDATA;
         }
 
-        if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+        if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
             return ret;
 
         s->frame->pict_type = AV_PICTURE_TYPE_P;
