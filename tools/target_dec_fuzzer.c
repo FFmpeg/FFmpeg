@@ -194,6 +194,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     // Read very simple container
     AVPacket avpkt, parsepkt;
     av_init_packet(&avpkt);
+    av_init_packet(&parsepkt);
     while (data < end && it < maxiteration) {
         // Search for the TAG
         while (data + sizeof(fuzz_tag) < end) {
