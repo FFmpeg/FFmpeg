@@ -197,9 +197,10 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         return n;
     }
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
-        refdist = FFMIN(v->refdist, 3);
+        refdist = v->refdist;
     else
         refdist = dir ? v->brfd : v->frfd;
+    refdist = FFMIN(refdist, 3);
     scaleopp = ff_vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
     n = (n * scaleopp >> 8) * (1 << hpel);
