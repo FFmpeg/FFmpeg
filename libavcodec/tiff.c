@@ -773,16 +773,8 @@ static int tiff_unpack_strip(TiffContext *s, AVFrame *p, uint8_t *dst, int strid
     return 0;
 }
 
-static float av_always_inline linear_to_srgb(float value) {
-    if (value <= 0.0031308f)
-        return value * 12.92f;
-    else
-        return powf(value * 1.055f, 1.0f / 2.4f) - 0.055f;
-}
-
 /**
  * Map stored raw sensor values into linear reference values (see: DNG Specification - Chapter 5)
- * Then convert to sRGB color space.
  */
 static uint16_t av_always_inline dng_process_color16(uint16_t value,
                                                      const uint16_t *lut,
@@ -800,8 +792,7 @@ static uint16_t av_always_inline dng_process_color16(uint16_t value,
     // Color scaling
     value_norm = (float)value * scale_factor;
 
-    // Color space conversion (sRGB)
-    value = av_clip_uint16_c((uint16_t)(linear_to_srgb(value_norm) * 0xFFFF));
+    value = av_clip_uint16_c(value_norm * 65535);
 
     return value;
 }
@@ -1918,6 +1909,13 @@ again:
             av_log(avctx, AV_LOG_ERROR, "rps %d invalid\n", s->rps);
             return AVERROR_INVALIDDATA;
         }
+    }
+
+    if (s->photometric == TIFF_PHOTOMETRIC_LINEAR_RAW ||
+        s->photometric == TIFF_PHOTOMETRIC_CFA) {
+        p->color_trc = AVCOL_TRC_LINEAR;
+    } else if (s->photometric == TIFF_PHOTOMETRIC_BLACK_IS_ZERO) {
+        p->color_trc = AVCOL_TRC_GAMMA22;
     }
 
     /* Handle DNG images with JPEG-compressed tiles */
