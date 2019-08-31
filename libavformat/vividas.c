@@ -218,7 +218,7 @@ static uint8_t *read_vblock(AVIOContext *src, uint32_t *size,
     memcpy(buf, tmp, 4);
 
     if (avio_read(src, buf + 4, n) == n) {
-        decode_block(buf + 4, buf + 4, n, key, k2, align + 4);
+        decode_block(buf + 4, buf + 4, n, key, k2, align);
     } else {
         av_free(buf);
         buf = NULL;
