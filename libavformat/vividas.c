@@ -164,8 +164,6 @@ static void decode_block(uint8_t *src, uint8_t *dest, unsigned size,
     }
 
     if (s >= 4) {
-        if (!align)
-            align = 4;
         xor_block(src + a2, dest + a2, s & ~3,
                   key, key_ptr);
         s &= 3;
