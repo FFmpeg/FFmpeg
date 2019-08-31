@@ -49,6 +49,7 @@ enum Projections {
     FLAT,
     DUAL_FISHEYE,
     FACEBOOK,
+    CUBEMAP_1_6,
     NB_PROJECTIONS,
 };
 
@@ -139,6 +140,7 @@ static const AVOption v360_options[] = {
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "in" },
     {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "in" },
     {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "in" },
+    {      "c1x6", "cubemap1x6",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {      "c3x2", "cubemap3x2",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_3_2},     0,                   0, FLAGS, "out" },
@@ -146,6 +148,7 @@ static const AVOption v360_options[] = {
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "out" },
     {      "flat", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
     {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "out" },
+    {      "c1x6", "cubemap1x6",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1165,6 +1168,34 @@ static void xyz_to_cube3x2(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in cubemap1x6 format.
+ *
+ * @param s filter context
+ * @param i horizontal position on frame [0, height)
+ * @param j vertical position on frame [0, width)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void cube1x6_to_xyz(const V360Context *s,
+                           int i, int j, int width, int height,
+                           float *vec)
+{
+    const float ew = width;
+    const float eh = height / 6.f;
+
+    const int face = floorf(j / eh);
+
+    const int v_shift = ceilf(eh * face);
+    const int ehi = ceilf(eh * (face + 1)) - v_shift;
+
+    const float uf = 2.f *  i            / ew  - 1.f;
+    const float vf = 2.f * (j - v_shift) / ehi - 1.f;
+
+    cube_to_xyz(s, uf, vf, face, vec);
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in cubemap6x1 format.
  *
  * @param s filter context
@@ -1190,6 +1221,84 @@ static void cube6x1_to_xyz(const V360Context *s,
     const float vf = 2.f *  j            / eh  - 1.f;
 
     cube_to_xyz(s, uf, vf, face, vec);
+}
+
+/**
+ * Calculate frame position in cubemap1x6 format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_cube1x6(const V360Context *s,
+                           const float *vec, int width, int height,
+                           uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float eh = height / 6.f;
+    const int ewi = width;
+    float uf, vf;
+    int ui, vi;
+    int ehi;
+    int i, j;
+    int direction, face;
+
+    xyz_to_cube(s, vec, &uf, &vf, &direction);
+
+    uf *= (1.f - s->in_pad);
+    vf *= (1.f - s->in_pad);
+
+    face = s->in_cubemap_face_order[direction];
+    ehi = ceilf(eh * (face + 1)) - ceilf(eh * face);
+
+    uf = 0.5f * ewi * (uf + 1.f);
+    vf = 0.5f * ehi * (vf + 1.f);
+
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (i = -1; i < 3; i++) {
+        for (j = -1; j < 3; j++) {
+            int new_ui = ui + j;
+            int new_vi = vi + i;
+            int v_shift;
+            int new_ehi;
+
+            if (new_ui >= 0 && new_ui < ewi && new_vi >= 0 && new_vi < ehi) {
+                face = s->in_cubemap_face_order[direction];
+
+                v_shift = ceilf(eh * face);
+            } else {
+                uf = 2.f * new_ui / ewi - 1.f;
+                vf = 2.f * new_vi / ehi - 1.f;
+
+                uf /= (1.f - s->in_pad);
+                vf /= (1.f - s->in_pad);
+
+                process_cube_coordinates(s, uf, vf, direction, &uf, &vf, &face);
+
+                uf *= (1.f - s->in_pad);
+                vf *= (1.f - s->in_pad);
+
+                v_shift = ceilf(eh * face);
+                new_ehi = ceilf(eh * (face + 1)) - v_shift;
+
+                new_ui = av_clip(roundf(0.5f *     ewi * (uf + 1.f)), 0,     ewi - 1);
+                new_vi = av_clip(roundf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
+            }
+
+
+            us[i + 1][j + 1] =           new_ui;
+            vs[i + 1][j + 1] = v_shift + new_vi;
+        }
+    }
 }
 
 /**
@@ -1918,6 +2027,12 @@ static int config_output(AVFilterLink *outlink)
         wf = inlink->w / 3.f * 4.f;
         hf = inlink->h;
         break;
+    case CUBEMAP_1_6:
+        in_transform = xyz_to_cube1x6;
+        err = prepare_cube_in(ctx);
+        wf = inlink->w * 4.f;
+        hf = inlink->h / 3.f;
+        break;
     case CUBEMAP_6_1:
         in_transform = xyz_to_cube6x1;
         err = prepare_cube_in(ctx);
@@ -1966,6 +2081,12 @@ static int config_output(AVFilterLink *outlink)
         err = prepare_cube_out(ctx);
         w = roundf(wf / 4.f * 3.f);
         h = roundf(hf);
+        break;
+    case CUBEMAP_1_6:
+        out_transform = cube1x6_to_xyz;
+        err = prepare_cube_out(ctx);
+        w = roundf(wf / 4.f);
+        h = roundf(hf * 3.f);
         break;
     case CUBEMAP_6_1:
         out_transform = cube6x1_to_xyz;

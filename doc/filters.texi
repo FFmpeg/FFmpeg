@@ -17932,7 +17932,8 @@ Equirectangular projection.
 
 @item c3x2
 @item c6x1
-Cubemap with 3x2/6x1 layout.
+@item c1x6
+Cubemap with 3x2/6x1/1x6 layout.
 
 Format specific options:
 
