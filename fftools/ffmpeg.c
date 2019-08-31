@@ -4195,7 +4195,7 @@ static int seek_to_start(InputFile *ifile, AVFormatContext *is)
     int i, ret, has_audio = 0;
     int64_t duration = 0;
 
-    ret = av_seek_frame(is, -1, is->start_time, 0);
+    ret = avformat_seek_file(is, -1, INT64_MIN, is->start_time, is->start_time, 0);
     if (ret < 0)
         return ret;
 
