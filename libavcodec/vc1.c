@@ -933,7 +933,9 @@ int ff_vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         else if ((v->s.pict_type != AV_PICTURE_TYPE_B) && (v->s.pict_type != AV_PICTURE_TYPE_BI)) {
             v->refdist = get_bits(gb, 2);
             if (v->refdist == 3)
-                v->refdist += get_unary(gb, 0, 16);
+                v->refdist += get_unary(gb, 0, 14);
+            if (v->refdist > 16)
+                return AVERROR_INVALIDDATA;
         }
         if ((v->s.pict_type == AV_PICTURE_TYPE_B) || (v->s.pict_type == AV_PICTURE_TYPE_BI)) {
             if (read_bfraction(v, gb) < 0)
