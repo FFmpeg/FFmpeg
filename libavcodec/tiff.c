@@ -84,7 +84,7 @@ typedef struct TiffContext {
     uint8_t pattern[4];
     unsigned black_level;
     unsigned white_level;
-    const uint16_t *dng_lut; // Pointer to DNG linearization table
+    uint16_t dng_lut[65536];
 
     uint32_t sub_ifd;
     uint16_t cur_page;
@@ -1079,50 +1079,19 @@ static int init_image(TiffContext *s, ThreadFrame *frame)
     case 10101:
     case 10121:
     case 10141:
-        switch (AV_RL32(s->pattern)) {
-        case 0x02010100:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_RGGB16LE : AV_PIX_FMT_BAYER_RGGB16BE;
-            break;
-        case 0x00010102:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_BGGR16LE : AV_PIX_FMT_BAYER_BGGR16BE;
-            break;
-        case 0x01000201:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_GBRG16LE : AV_PIX_FMT_BAYER_GBRG16BE;
-            break;
-        case 0x01020001:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_GRBG16LE : AV_PIX_FMT_BAYER_GRBG16BE;
-            break;
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "Unsupported Bayer pattern: 0x%X\n",
-                   AV_RL32(s->pattern));
-            return AVERROR_PATCHWELCOME;
-        }
-        /* Force endianness as mentioned in 'DNG Specification: Chapter 3: BitsPerSample'
-           NOTE: The spec actually specifies big-endian, not sure why we need little-endian, but
-                 such images don't work otherwise. Examples are images produced by Zenmuse X7. */
-        if ((s->tiff_type == TIFF_TYPE_DNG || s->tiff_type == TIFF_TYPE_CINEMADNG)
-            && (s->bpp != 8 && s->bpp != 16 && s->bpp != 32)) {
-            switch (s->avctx->pix_fmt) {
-            case AV_PIX_FMT_BAYER_RGGB16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_RGGB16LE; break;
-            case AV_PIX_FMT_BAYER_BGGR16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_BGGR16LE; break;
-            case AV_PIX_FMT_BAYER_GBRG16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GBRG16LE; break;
-            case AV_PIX_FMT_BAYER_GRBG16BE: s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GRBG16LE; break;
-            }
-        }
-        break;
     case 10161:
         switch (AV_RL32(s->pattern)) {
         case 0x02010100:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_RGGB16LE : AV_PIX_FMT_BAYER_RGGB16BE;
+            s->avctx->pix_fmt = AV_PIX_FMT_BAYER_RGGB16;
             break;
         case 0x00010102:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_BGGR16LE : AV_PIX_FMT_BAYER_BGGR16BE;
+            s->avctx->pix_fmt = AV_PIX_FMT_BAYER_BGGR16;
             break;
         case 0x01000201:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_GBRG16LE : AV_PIX_FMT_BAYER_GBRG16BE;
+            s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GBRG16;
             break;
         case 0x01020001:
-            s->avctx->pix_fmt = s->le ? AV_PIX_FMT_BAYER_GRBG16LE : AV_PIX_FMT_BAYER_GRBG16BE;
+            s->avctx->pix_fmt = AV_PIX_FMT_BAYER_GRBG16;
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "Unsupported Bayer pattern: 0x%X\n",
@@ -1435,18 +1404,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         else if (count > 1)
             s->sub_ifd = ff_tget(&s->gb, TIFF_LONG, s->le); /** Only get the first SubIFD */
         break;
-    case DNG_LINEARIZATION_TABLE: {
-        uint32_t lut_offset = value;
-        uint32_t lut_size = count;
-        uint32_t lut_wanted_size = 1 << s->bpp;
-        if (lut_wanted_size != lut_size)
-            av_log(s->avctx, AV_LOG_WARNING, "DNG contains LUT with invalid size (%"PRIu32"), disabling LUT\n", lut_size);
-        else if (lut_offset >= bytestream2_size(&s->gb))
-            av_log(s->avctx, AV_LOG_WARNING, "DNG contains LUT with invalid offset (%"PRIu32"), disabling LUT\n", lut_offset);
-        else
-            s->dng_lut = (uint16_t*)(s->gb.buffer + lut_offset);
+    case DNG_LINEARIZATION_TABLE:
+        for (int i = 0; i < FFMIN(count, 1 << s->bpp); i++)
+            s->dng_lut[i] = ff_tget(&s->gb, type, s->le);
         break;
-    }
     case DNG_BLACK_LEVEL:
         if (count > 1) {    /* Use the first value in the pattern (assume they're all the same) */
             if (type == TIFF_RATIONAL) {
@@ -1794,7 +1755,10 @@ again:
     s->is_tiled    = 0;
     s->is_jpeg     = 0;
     s->cur_page    = 0;
-    s->dng_lut     = NULL;
+
+    for (i = 0; i < 65536; i++)
+        s->dng_lut[i] = i;
+
     free_geotags(s);
 
     // Reset these offsets so we can tell if they were set this frame
