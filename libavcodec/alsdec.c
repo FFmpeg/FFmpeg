@@ -821,7 +821,9 @@ static int read_var_block_data(ALSDecContext *ctx, ALSBlockData *bd)
         unsigned int low;
         unsigned int value;
 
-        ff_bgmc_decode_init(gb, &high, &low, &value);
+        int ret = ff_bgmc_decode_init(gb, &high, &low, &value);
+        if (ret < 0)
+            return ret;
 
         current_res = bd->raw_samples + start;
 
