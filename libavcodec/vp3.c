@@ -710,6 +710,8 @@ static int vp4_unpack_macroblocks(Vp3DecodeContext *s, GetBitContext *gb)
     has_partial = 0;
     bit         = get_bits1(gb);
     for (i = 0; i < s->yuv_macroblock_count; i += current_run) {
+        if (get_bits_left(gb) <= 0)
+            return AVERROR_INVALIDDATA;
         current_run = vp4_get_mb_count(s, gb);
         if (current_run > s->yuv_macroblock_count - i)
             return -1;
@@ -719,6 +721,8 @@ static int vp4_unpack_macroblocks(Vp3DecodeContext *s, GetBitContext *gb)
     }
 
     if (has_partial) {
+        if (get_bits_left(gb) <= 0)
+            return AVERROR_INVALIDDATA;
         bit  = get_bits1(gb);
         current_run = vp4_get_mb_count(s, gb);
         for (i = 0; i < s->yuv_macroblock_count; i++) {
