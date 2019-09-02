@@ -318,6 +318,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int direct = 0;
     int plane;
     AVRational sar;
+    int ret;
 
     s->var_values[VAR_N] = inlink->frame_count_out;
     s->var_values[VAR_T] = TS2T(in->pts, inlink->time_base);
@@ -325,6 +326,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->y = av_expr_eval(s->y_pexpr, s->var_values, s);
     s->w = av_expr_eval(s->w_pexpr, s->var_values, s);
     s->h = av_expr_eval(s->h_pexpr, s->var_values, s);
+
+    ret = config_input(inlink);
+    if (ret < 0) {
+        av_frame_free(&in);
+        return ret;
+    }
+
+    s->w += s->band*2;
+    s->h += s->band*2;
+    s->x -= s->band;
+    s->y -= s->band;
 
     if (av_frame_is_writable(in)) {
         direct = 1;
