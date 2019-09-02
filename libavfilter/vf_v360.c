@@ -48,7 +48,7 @@ enum Projections {
     EQUIANGULAR,
     FLAT,
     DUAL_FISHEYE,
-    FACEBOOK,
+    BARREL,
     CUBEMAP_1_6,
     NB_PROJECTIONS,
 };
@@ -139,7 +139,8 @@ static const AVOption v360_options[] = {
     {      "c6x1", "cubemap6x1",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "in" },
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "in" },
     {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "in" },
-    {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "in" },
+    {    "barrel", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
+    {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {      "c1x6", "cubemap1x6",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -147,7 +148,8 @@ static const AVOption v360_options[] = {
     {      "c6x1", "cubemap6x1",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "out" },
     {       "eac", "equi-angular",                               0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "out" },
     {      "flat", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
-    {        "fb", "facebook's 360 format",                      0, AV_OPT_TYPE_CONST,  {.i64=FACEBOOK},        0,                   0, FLAGS, "out" },
+    {    "barrel", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "out" },
+    {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "out" },
     {      "c1x6", "cubemap1x6",                                 0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1759,7 +1761,7 @@ static void xyz_to_dfisheye(const V360Context *s,
 }
 
 /**
- * Calculate 3D coordinates on sphere for corresponding frame position in facebook's format.
+ * Calculate 3D coordinates on sphere for corresponding frame position in barrel facebook's format.
  *
  * @param s filter context
  * @param i horizontal position on frame [0, height)
@@ -1768,9 +1770,9 @@ static void xyz_to_dfisheye(const V360Context *s,
  * @param height frame height
  * @param vec coordinates on sphere
  */
-static void fb_to_xyz(const V360Context *s,
-                              int i, int j, int width, int height,
-                              float *vec)
+static void barrel_to_xyz(const V360Context *s,
+                          int i, int j, int width, int height,
+                          float *vec)
 {
     const float scale = 0.99f;
     float l_x, l_y, l_z;
@@ -1834,7 +1836,7 @@ static void fb_to_xyz(const V360Context *s,
 }
 
 /**
- * Calculate frame position in facebook's format for corresponding 3D coordinates on sphere.
+ * Calculate frame position in barrel facebook's format for corresponding 3D coordinates on sphere.
  *
  * @param s filter context
  * @param vec coordinates on sphere
@@ -1845,9 +1847,9 @@ static void fb_to_xyz(const V360Context *s,
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
  */
-static void xyz_to_fb(const V360Context *s,
-                              const float *vec, int width, int height,
-                              uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+static void xyz_to_barrel(const V360Context *s,
+                          const float *vec, int width, int height,
+                          uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
     const float scale = 0.99f;
 
@@ -2054,8 +2056,8 @@ static int config_output(AVFilterLink *outlink)
         wf = inlink->w;
         hf = inlink->h;
         break;
-    case FACEBOOK:
-        in_transform = xyz_to_fb;
+    case BARREL:
+        in_transform = xyz_to_barrel;
         err = 0;
         wf = inlink->w / 5.f * 4.f;
         hf = inlink->h;
@@ -2109,8 +2111,8 @@ static int config_output(AVFilterLink *outlink)
     case DUAL_FISHEYE:
         av_log(ctx, AV_LOG_ERROR, "Dual fisheye format is not accepted as output.\n");
         return AVERROR(EINVAL);
-    case FACEBOOK:
-        out_transform = fb_to_xyz;
+    case BARREL:
+        out_transform = barrel_to_xyz;
         err = 0;
         w = roundf(wf / 4.f * 5.f);
         h = roundf(hf);
