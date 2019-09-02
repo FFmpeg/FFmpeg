@@ -401,6 +401,7 @@ int ff_v4l2_m2m_create_context(AVCodecContext *avctx, V4L2m2mContext **s)
     priv->context->capture.num_buffers = priv->num_capture_buffers;
     priv->context->output.num_buffers  = priv->num_output_buffers;
     priv->context->self_ref = priv->context_ref;
+    priv->context->fd = -1;
 
     return 0;
 }
