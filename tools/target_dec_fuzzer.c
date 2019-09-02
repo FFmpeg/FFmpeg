@@ -93,6 +93,8 @@ const uint32_t maxiteration = 8096;
 const uint64_t maxpixels_per_frame = 4096 * 4096;
 uint64_t maxpixels;
 
+const uint64_t maxsamples_per_frame = 256*1024*32;
+
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
@@ -159,6 +161,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (ctx->max_pixels == 0 || ctx->max_pixels > maxpixels_per_frame)
         ctx->max_pixels = maxpixels_per_frame; //To reduce false positive OOM and hangs
     ctx->refcounted_frames = 1; //To reduce false positive timeouts and focus testing on the refcounted API
+
+    ctx->max_samples = maxsamples_per_frame;
 
     if (size > 1024) {
         GetByteContext gbc;
