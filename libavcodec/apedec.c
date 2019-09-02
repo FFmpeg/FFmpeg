@@ -1497,17 +1497,20 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     /* reallocate decoded sample buffer if needed */
     decoded_buffer_size = 2LL * FFALIGN(blockstodecode, 8) * sizeof(*s->decoded_buffer);
     av_assert0(decoded_buffer_size <= INT_MAX);
+
+    /* get output buffer */
+    frame->nb_samples = blockstodecode;
+    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0) {
+        s->samples=0;
+        return ret;
+    }
+
     av_fast_malloc(&s->decoded_buffer, &s->decoded_size, decoded_buffer_size);
     if (!s->decoded_buffer)
         return AVERROR(ENOMEM);
     memset(s->decoded_buffer, 0, s->decoded_size);
     s->decoded[0] = s->decoded_buffer;
     s->decoded[1] = s->decoded_buffer + FFALIGN(blockstodecode, 8);
-
-    /* get output buffer */
-    frame->nb_samples = blockstodecode;
-    if ((ret = ff_get_buffer(avctx, frame, 0)) < 0)
-        return ret;
 
     s->error=0;
 
