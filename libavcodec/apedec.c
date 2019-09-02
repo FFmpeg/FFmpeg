@@ -1121,7 +1121,7 @@ static av_always_inline int predictor_update_filter(APEPredictor *p,
 
     p->buf[delayA]     = p->lastA[filter];
     p->buf[adaptA]     = APESIGN(p->buf[delayA]);
-    p->buf[delayA - 1] = p->buf[delayA] - p->buf[delayA - 1];
+    p->buf[delayA - 1] = p->buf[delayA] - (unsigned)p->buf[delayA - 1];
     p->buf[adaptA - 1] = APESIGN(p->buf[delayA - 1]);
 
     predictionA = p->buf[delayA    ] * p->coeffsA[filter][0] +
@@ -1132,7 +1132,7 @@ static av_always_inline int predictor_update_filter(APEPredictor *p,
     /*  Apply a scaled first-order filter compression */
     p->buf[delayB]     = p->filterA[filter ^ 1] - ((int)(p->filterB[filter] * 31U) >> 5);
     p->buf[adaptB]     = APESIGN(p->buf[delayB]);
-    p->buf[delayB - 1] = p->buf[delayB] - p->buf[delayB - 1];
+    p->buf[delayB - 1] = p->buf[delayB] - (unsigned)p->buf[delayB - 1];
     p->buf[adaptB - 1] = APESIGN(p->buf[delayB - 1]);
     p->filterB[filter] = p->filterA[filter ^ 1];
 
@@ -1282,7 +1282,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
             /* Version 3.98 and later files */
 
             /* Update the adaption coefficients */
-            absres = FFABS(res);
+            absres = res < 0 ? -(unsigned)res : res;
             if (absres)
                 *f->adaptcoeffs = APESIGN(res) *
                                   (8 << ((absres > f->avg * 3) + (absres > f->avg * 4 / 3)));
