@@ -20,6 +20,7 @@
 import tensorflow as tf
 import numpy as np
 import sys, struct
+import convert_header as header
 
 __all__ = ['convert_from_tensorflow']
 
@@ -229,6 +230,8 @@ class TFConverter:
 
     def dump_to_file(self):
         with open(self.outfile, 'wb') as f:
+            f.write(header.str.encode('utf-8'))
+            np.array([header.major, header.minor], dtype=np.uint32).tofile(f)
             self.dump_layers_to_file(f)
             self.dump_operands_to_file(f)
             np.array([self.layer_number, len(self.name_operand_dict)], dtype=np.uint32).tofile(f)
