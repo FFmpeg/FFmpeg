@@ -875,8 +875,8 @@ static void xyz_to_cube(const V360Context *s,
  * @param face face position on cubemap
  */
 static void process_cube_coordinates(const V360Context *s,
-                                float uf, float vf, int direction,
-                                float *new_uf, float *new_vf, int *face)
+                                     float uf, float vf, int direction,
+                                     float *new_uf, float *new_vf, int *face)
 {
     /*
      *  Cubemap orientation
@@ -1963,8 +1963,7 @@ static inline void set_mirror_modifier(int h_flip, int v_flip, int d_flip,
     modifier[2] = d_flip ? -1.f : 1.f;
 }
 
-static inline void mirror(const float *modifier,
-                          float *vec)
+static inline void mirror(const float *modifier, float *vec)
 {
     vec[0] *= modifier[0];
     vec[1] *= modifier[1];
