@@ -123,10 +123,8 @@ typedef struct V360Context {
 } V360Context;
 
 typedef struct ThreadData {
-    V360Context *s;
     AVFrame *in;
     AVFrame *out;
-    int nb_planes;
 } ThreadData;
 
 #define OFFSET(x) offsetof(V360Context, x)
@@ -266,13 +264,13 @@ typedef struct XYRemap1 {
 static int remap1_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
 {                                                                                            \
     ThreadData *td = (ThreadData*)arg;                                                       \
-    const V360Context *s = td->s;                                                            \
+    const V360Context *s = ctx->priv;                                                        \
     const AVFrame *in = td->in;                                                              \
     AVFrame *out = td->out;                                                                  \
                                                                                              \
     int plane, x, y;                                                                         \
                                                                                              \
-    for (plane = 0; plane < td->nb_planes; plane++) {                                        \
+    for (plane = 0; plane < s->nb_planes; plane++) {                                         \
         const int in_linesize  = in->linesize[plane]  / div;                                 \
         const int out_linesize = out->linesize[plane] / div;                                 \
         const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                 \
@@ -323,13 +321,13 @@ typedef struct XYRemap4 {
 static int remap##window_size##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
 {                                                                                                          \
     ThreadData *td = (ThreadData*)arg;                                                                     \
-    const V360Context *s = td->s;                                                                          \
+    const V360Context *s = ctx->priv;                                                                      \
     const AVFrame *in = td->in;                                                                            \
     AVFrame *out = td->out;                                                                                \
                                                                                                            \
     int plane, x, y, i, j;                                                                                 \
                                                                                                            \
-    for (plane = 0; plane < td->nb_planes; plane++) {                                                      \
+    for (plane = 0; plane < s->nb_planes; plane++) {                                                       \
         const int in_linesize  = in->linesize[plane]  / div;                                               \
         const int out_linesize = out->linesize[plane] / div;                                               \
         const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                               \
@@ -2206,10 +2204,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    td.s = s;
     td.in = in;
     td.out = out;
-    td.nb_planes = s->nb_planes;
 
     ctx->internal->execute(ctx, s->remap_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
