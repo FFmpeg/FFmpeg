@@ -136,6 +136,7 @@ stream=0, decode=0
     pixel_format=yuvj422p
     video_size=400x225
     max_pixels=2147483647
+    max_samples=2147483647
     hwaccel_flags=0x00000001
     extra_hw_frames=-1
     discard_damaged_percentage=95
@@ -277,6 +278,7 @@ stream=0, decode=1
     pixel_format=yuvj422p
     video_size=400x225
     max_pixels=2147483647
+    max_samples=2147483647
     hwaccel_flags=0x00000001
     extra_hw_frames=-1
     discard_damaged_percentage=95

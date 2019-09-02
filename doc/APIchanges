@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-09-25 - xxxxxxxxxx - lavc 58.59.100 - avcodec.h
+  Add max_samples
+
 2019-09-04 - 2a9d461abc - lavu 56.35.100 - hwcontext_videotoolbox.h
   Add av_map_videotoolbox_format_from_pixfmt2() for full range pixfmt
 

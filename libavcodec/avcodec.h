@@ -3373,6 +3373,14 @@ typedef struct AVCodecContext {
      * - encoding: unused
      */
     int discard_damaged_percentage;
+
+    /**
+     * The number of samples per frame to maximally accept.
+     *
+     * - decoding: set by user
+     * - encoding: set by user
+     */
+    int64_t max_samples;
 } AVCodecContext;
 
 #if FF_API_CODEC_GET_SET
