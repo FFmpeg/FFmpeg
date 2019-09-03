@@ -118,7 +118,7 @@ typedef struct V360Context {
     int nb_planes;
 
     uint16_t *u[4], *v[4];
-    float *ker[4];
+    int16_t *ker[4];
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } V360Context;
@@ -330,12 +330,12 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
             uint##bits##_t *d = dst + y * out_linesize;                                                    \
             const uint16_t *u = s->u[plane] + y * width * ws * ws;                                         \
             const uint16_t *v = s->v[plane] + y * width * ws * ws;                                         \
-            const float *ker = s->ker[plane] + y * width * ws * ws;                                        \
+            const int16_t *ker = s->ker[plane] + y * width * ws * ws;                                      \
             for (x = 0; x < width; x++) {                                                                  \
                 const uint16_t *uu = u + x * ws * ws;                                                      \
                 const uint16_t *vv = v + x * ws * ws;                                                      \
-                const float *kker = ker + x * ws * ws;                                                     \
-                float tmp = 0.f;                                                                           \
+                const int16_t *kker = ker + x * ws * ws;                                                   \
+                int tmp = 0;                                                                               \
                                                                                                            \
                 for (i = 0; i < ws; i++) {                                                                 \
                     for (j = 0; j < ws; j++) {                                                             \
@@ -343,7 +343,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
                     }                                                                                      \
                 }                                                                                          \
                                                                                                            \
-                *d++ = av_clip_uint##bits(roundf(tmp));                                                    \
+                *d++ = av_clip_uint##bits(tmp >> (15 - ws));                                               \
             }                                                                                              \
         }                                                                                                  \
     }                                                                                                      \
@@ -367,7 +367,7 @@ DEFINE_REMAP(4, 16, 2)
  * @param ker ker remap data
  */
 static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
-                           uint16_t *u, uint16_t *v, float *ker)
+                           uint16_t *u, uint16_t *v, int16_t *ker)
 {
     const int i = roundf(dv) + 1;
     const int j = roundf(du) + 1;
@@ -387,7 +387,7 @@ static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
  * @param ker ker remap data
  */
 static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
-                            uint16_t *u, uint16_t *v, float *ker)
+                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
     int i, j;
 
@@ -398,10 +398,10 @@ static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
         }
     }
 
-    ker[0] = (1.f - du) * (1.f - dv);
-    ker[1] =        du  * (1.f - dv);
-    ker[2] = (1.f - du) *        dv;
-    ker[3] =        du  *        dv;
+    ker[0] = (1.f - du) * (1.f - dv) * 8192;
+    ker[1] =        du  * (1.f - dv) * 8192;
+    ker[2] = (1.f - du) *        dv  * 8192;
+    ker[3] =        du  *        dv  * 8192;
 }
 
 /**
@@ -432,7 +432,7 @@ static inline void calculate_bicubic_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
-                           uint16_t *u, uint16_t *v, float *ker)
+                           uint16_t *u, uint16_t *v, int16_t *ker)
 {
     int i, j;
     float du_coeffs[4];
@@ -445,7 +445,7 @@ static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
         for (j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i];
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 2048;
         }
     }
 }
@@ -487,7 +487,7 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
  * @param ker ker remap data
  */
 static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
-                           uint16_t *u, uint16_t *v, float *ker)
+                           uint16_t *u, uint16_t *v, int16_t *ker)
 {
     int i, j;
     float du_coeffs[4];
@@ -500,7 +500,7 @@ static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
         for (j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i];
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 2048;
         }
     }
 }
@@ -1985,7 +1985,7 @@ static int config_output(AVFilterLink *outlink)
                           int i, int j, int width, int height,
                           float *vec);
     void (*calculate_kernel)(float du, float dv, const XYRemap *r_tmp,
-                             uint16_t *u, uint16_t *v, float *ker);
+                             uint16_t *u, uint16_t *v, int16_t *ker);
     float rot_mat[3][3];
 
     switch (s->interp) {
@@ -2001,21 +2001,21 @@ static int config_output(AVFilterLink *outlink)
         s->remap_slice = depth <= 8 ? remap2_8bit_slice : remap2_16bit_slice;
         elements = 2 * 2;
         sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(float) * elements;
+        sizeof_ker = sizeof(uint16_t) * elements;
         break;
     case BICUBIC:
         calculate_kernel = bicubic_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         elements = 4 * 4;
         sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(float) * elements;
+        sizeof_ker = sizeof(uint16_t) * elements;
         break;
     case LANCZOS:
         calculate_kernel = lanczos_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
         elements = 4 * 4;
         sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(float) * elements;
+        sizeof_ker = sizeof(uint16_t) * elements;
         break;
     }
 
@@ -2182,7 +2182,7 @@ static int config_output(AVFilterLink *outlink)
             for (j = 0; j < height; j++) {
                 uint16_t *u = s->u[p] + (j * width + i) * elements;
                 uint16_t *v = s->v[p] + (j * width + i) * elements;
-                float *ker = s->ker[p] + (j * width + i) * elements;
+                int16_t *ker = s->ker[p] + (j * width + i) * elements;
 
                 out_transform(s, i, j, width, height, vec);
                 rotate(rot_mat, vec);
