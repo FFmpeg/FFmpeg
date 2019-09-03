@@ -116,6 +116,7 @@ struct playlist {
     int n_segments;
     struct segment **segments;
     int needed;
+    int broken;
     int cur_seq_no;
     int64_t cur_seg_offset;
     int64_t last_load_time;
@@ -1815,15 +1816,21 @@ static int hls_read_header(AVFormatContext *s)
     if (c->n_playlists > 1 || c->playlists[0]->n_segments == 0) {
         for (i = 0; i < c->n_playlists; i++) {
             struct playlist *pls = c->playlists[i];
-            if ((ret = parse_playlist(c, pls->url, pls, NULL)) < 0)
+            if ((ret = parse_playlist(c, pls->url, pls, NULL)) < 0) {
+                av_log(s, AV_LOG_WARNING, "parse_playlist error %s [%s]\n", av_err2str(ret), pls->url);
+                pls->broken = 1;
+                if (c->n_playlists > 1)
+                    continue;
                 goto fail;
+            }
         }
     }
 
-    if (c->variants[0]->playlists[0]->n_segments == 0) {
-        av_log(s, AV_LOG_WARNING, "Empty segment\n");
-        ret = AVERROR_EOF;
-        goto fail;
+    for (i = 0; i < c->n_variants; i++) {
+        if (c->variants[i]->playlists[0]->n_segments == 0) {
+            av_log(s, AV_LOG_WARNING, "Empty segment [%s]\n", c->variants[i]->playlists[0]->url);
+            c->variants[i]->playlists[0]->broken = 1;
+        }
     }
 
     /* If this isn't a live stream, calculate the total duration of the
@@ -1994,6 +2001,9 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
 
         cur_needed = playlist_needed(c->playlists[i]);
 
+        if (pls->broken) {
+            continue;
+        }
         if (cur_needed && !pls->needed) {
             pls->needed = 1;
             changed = 1;
