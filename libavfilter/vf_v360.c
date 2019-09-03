@@ -33,6 +33,7 @@
  * 5) Remap input frame to output frame using precalculated data
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/opt.h"
@@ -696,6 +697,8 @@ static inline void rotate_cube_face(float *uf, float *vf, int rotation)
         *uf =  *vf;
         *vf =  tmp;
         break;
+    default:
+        av_assert0(0);
     }
 }
 
@@ -720,6 +723,8 @@ static inline void rotate_cube_face_inverse(float *uf, float *vf, int rotation)
         *uf = -*vf;
         *vf =  tmp;
         break;
+    default:
+        av_assert0(0);
     }
 }
 
@@ -850,6 +855,8 @@ static void xyz_to_cube(const V360Context *s,
         *uf = -vec[0] / vec[2];
         *vf = -vec[1] / vec[2];
         break;
+    default:
+        av_assert0(0);
     }
 
     face = s->in_cubemap_face_order[*direction];
@@ -929,6 +936,8 @@ static void process_cube_coordinates(const V360Context *s,
             *new_uf =  uf;
             *new_vf =  vf;
             break;
+        default:
+            av_assert0(0);
         }
     } else if (uf >= 1.f) {
         uf -= 2.f;
@@ -963,6 +972,8 @@ static void process_cube_coordinates(const V360Context *s,
             *new_uf =  uf;
             *new_vf =  vf;
             break;
+        default:
+            av_assert0(0);
         }
     } else if (vf < -1.f) {
         vf += 2.f;
@@ -997,6 +1008,8 @@ static void process_cube_coordinates(const V360Context *s,
             *new_uf = -uf;
             *new_vf = -vf;
             break;
+        default:
+            av_assert0(0);
         }
     } else if (vf >= 1.f) {
         vf -= 2.f;
@@ -1031,6 +1044,8 @@ static void process_cube_coordinates(const V360Context *s,
             *new_uf = -uf;
             *new_vf = -vf;
             break;
+        default:
+            av_assert0(0);
         }
     } else {
         // Inside cube face
@@ -1587,6 +1602,8 @@ static void eac_to_xyz(const V360Context *s,
         l_y =  1.f;
         l_z = -uf;
         break;
+    default:
+        av_assert0(0);
     }
 
     norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
@@ -2017,6 +2034,8 @@ static int config_output(AVFilterLink *outlink)
         sizeof_uv = sizeof(uint16_t) * elements;
         sizeof_ker = sizeof(uint16_t) * elements;
         break;
+    default:
+        av_assert0(0);
     }
 
     switch (s->in) {
