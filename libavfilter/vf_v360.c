@@ -117,7 +117,8 @@ typedef struct V360Context {
     int inplanewidth[4], inplaneheight[4];
     int nb_planes;
 
-    void *remap[4];
+    uint16_t *u[4], *v[4];
+    float *ker[4];
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 } V360Context;
@@ -249,11 +250,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-typedef struct XYRemap1 {
-    uint16_t u;
-    uint16_t v;
-} XYRemap1;
-
 /**
  * Generate no-interpolation remapping function with a given pixel depth.
  *
@@ -275,7 +271,6 @@ static int remap1_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, 
         const int out_linesize = out->linesize[plane] / div;                                 \
         const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                 \
         uint##bits##_t *dst = (uint##bits##_t *)out->data[plane];                            \
-        const XYRemap1 *remap = s->remap[plane];                                             \
         const int width = s->planewidth[plane];                                              \
         const int height = s->planeheight[plane];                                            \
                                                                                              \
@@ -283,12 +278,11 @@ static int remap1_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, 
         const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                            \
                                                                                              \
         for (y = slice_start; y < slice_end; y++) {                                          \
+            const uint16_t *u = s->u[plane] + y * width;                                     \
+            const uint16_t *v = s->v[plane] + y * width;                                     \
             uint##bits##_t *d = dst + y * out_linesize;                                      \
-            for (x = 0; x < width; x++) {                                                    \
-                const XYRemap1 *r = &remap[y * width + x];                                   \
-                                                                                             \
-                *d++ = src[r->v * in_linesize + r->u];                                       \
-            }                                                                                \
+            for (x = 0; x < width; x++)                                                      \
+                *d++ = src[v[x] * in_linesize + u[x]];                                       \
         }                                                                                    \
     }                                                                                        \
                                                                                              \
@@ -298,27 +292,21 @@ static int remap1_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, 
 DEFINE_REMAP1( 8, 1)
 DEFINE_REMAP1(16, 2)
 
-typedef struct XYRemap2 {
-    uint16_t u[2][2];
-    uint16_t v[2][2];
-    float ker[2][2];
-} XYRemap2;
-
-typedef struct XYRemap4 {
+typedef struct XYRemap {
     uint16_t u[4][4];
     uint16_t v[4][4];
     float ker[4][4];
-} XYRemap4;
+} XYRemap;
 
 /**
  * Generate remapping function with a given window size and pixel depth.
  *
- * @param window_size size of interpolation window
+ * @param ws size of interpolation window
  * @param bits number of bits per pixel
  * @param div number of bytes per pixel
  */
-#define DEFINE_REMAP(window_size, bits, div)                                                               \
-static int remap##window_size##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
+#define DEFINE_REMAP(ws, bits, div)                                                                        \
+static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)          \
 {                                                                                                          \
     ThreadData *td = (ThreadData*)arg;                                                                     \
     const V360Context *s = ctx->priv;                                                                      \
@@ -332,7 +320,6 @@ static int remap##window_size##_##bits##bit_slice(AVFilterContext *ctx, void *ar
         const int out_linesize = out->linesize[plane] / div;                                               \
         const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                               \
         uint##bits##_t *dst = (uint##bits##_t *)out->data[plane];                                          \
-        const XYRemap##window_size *remap = s->remap[plane];                                               \
         const int width = s->planewidth[plane];                                                            \
         const int height = s->planeheight[plane];                                                          \
                                                                                                            \
@@ -341,13 +328,18 @@ static int remap##window_size##_##bits##bit_slice(AVFilterContext *ctx, void *ar
                                                                                                            \
         for (y = slice_start; y < slice_end; y++) {                                                        \
             uint##bits##_t *d = dst + y * out_linesize;                                                    \
+            const uint16_t *u = s->u[plane] + y * width * ws * ws;                                         \
+            const uint16_t *v = s->v[plane] + y * width * ws * ws;                                         \
+            const float *ker = s->ker[plane] + y * width * ws * ws;                                        \
             for (x = 0; x < width; x++) {                                                                  \
-                const XYRemap##window_size *r = &remap[y * width + x];                                     \
+                const uint16_t *uu = u + x * ws * ws;                                                      \
+                const uint16_t *vv = v + x * ws * ws;                                                      \
+                const float *kker = ker + x * ws * ws;                                                     \
                 float tmp = 0.f;                                                                           \
                                                                                                            \
-                for (i = 0; i < window_size; i++) {                                                        \
-                    for (j = 0; j < window_size; j++) {                                                    \
-                        tmp += r->ker[i][j] * src[r->v[i][j] * in_linesize + r->u[i][j]];                  \
+                for (i = 0; i < ws; i++) {                                                                 \
+                    for (j = 0; j < ws; j++) {                                                             \
+                        tmp += kker[i * ws + j] * src[vv[i * ws + j] * in_linesize + uu[i * ws + j]];      \
                     }                                                                                      \
                 }                                                                                          \
                                                                                                            \
@@ -369,18 +361,19 @@ DEFINE_REMAP(4, 16, 2)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param shift shift for remap array
  * @param r_tmp calculated 4x4 window
- * @param r_void remap data
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
  */
-static void nearest_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp, void *r_void)
+static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
+                           uint16_t *u, uint16_t *v, float *ker)
 {
-    XYRemap1 *r = (XYRemap1*)r_void + shift;
     const int i = roundf(dv) + 1;
     const int j = roundf(du) + 1;
 
-    r->u = r_tmp->u[i][j];
-    r->v = r_tmp->v[i][j];
+    u[0] = r_tmp->u[i][j];
+    v[0] = r_tmp->v[i][j];
 }
 
 /**
@@ -388,26 +381,27 @@ static void nearest_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp,
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param shift shift for remap array
  * @param r_tmp calculated 4x4 window
- * @param r_void remap data
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
  */
-static void bilinear_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp, void *r_void)
+static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
+                            uint16_t *u, uint16_t *v, float *ker)
 {
-    XYRemap2 *r = (XYRemap2*)r_void + shift;
     int i, j;
 
     for (i = 0; i < 2; i++) {
         for (j = 0; j < 2; j++) {
-            r->u[i][j] = r_tmp->u[i + 1][j + 1];
-            r->v[i][j] = r_tmp->v[i + 1][j + 1];
+            u[i * 2 + j] = r_tmp->u[i + 1][j + 1];
+            v[i * 2 + j] = r_tmp->v[i + 1][j + 1];
         }
     }
 
-    r->ker[0][0] = (1.f - du) * (1.f - dv);
-    r->ker[0][1] =        du  * (1.f - dv);
-    r->ker[1][0] = (1.f - du) *        dv;
-    r->ker[1][1] =        du  *        dv;
+    ker[0] = (1.f - du) * (1.f - dv);
+    ker[1] =        du  * (1.f - dv);
+    ker[2] = (1.f - du) *        dv;
+    ker[3] =        du  *        dv;
 }
 
 /**
@@ -432,13 +426,14 @@ static inline void calculate_bicubic_coeffs(float t, float *coeffs)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param shift shift for remap array
  * @param r_tmp calculated 4x4 window
- * @param r_void remap data
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
  */
-static void bicubic_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp, void *r_void)
+static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
+                           uint16_t *u, uint16_t *v, float *ker)
 {
-    XYRemap4 *r = (XYRemap4*)r_void + shift;
     int i, j;
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -448,9 +443,9 @@ static void bicubic_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp,
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
-            r->u[i][j] = r_tmp->u[i][j];
-            r->v[i][j] = r_tmp->v[i][j];
-            r->ker[i][j] = du_coeffs[j] * dv_coeffs[i];
+            u[i * 4 + j] = r_tmp->u[i][j];
+            v[i * 4 + j] = r_tmp->v[i][j];
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i];
         }
     }
 }
@@ -486,13 +481,14 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param shift shift for remap array
  * @param r_tmp calculated 4x4 window
- * @param r_void remap data
+ * @param u u remap data
+ * @param v v remap data
+ * @param ker ker remap data
  */
-static void lanczos_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp, void *r_void)
+static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
+                           uint16_t *u, uint16_t *v, float *ker)
 {
-    XYRemap4 *r = (XYRemap4*)r_void + shift;
     int i, j;
     float du_coeffs[4];
     float dv_coeffs[4];
@@ -502,9 +498,9 @@ static void lanczos_kernel(float du, float dv, int shift, const XYRemap4 *r_tmp,
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 4; j++) {
-            r->u[i][j] = r_tmp->u[i][j];
-            r->v[i][j] = r_tmp->v[i][j];
-            r->ker[i][j] = du_coeffs[j] * dv_coeffs[i];
+            u[i * 4 + j] = r_tmp->u[i][j];
+            v[i * 4 + j] = r_tmp->v[i][j];
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i];
         }
     }
 }
@@ -1975,8 +1971,9 @@ static int config_output(AVFilterLink *outlink)
     V360Context *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const int depth = desc->comp[0].depth;
-    float remap_data_size = 0.f;
-    int sizeof_remap;
+    int sizeof_uv;
+    int sizeof_ker;
+    int elements;
     int err;
     int p, h, w;
     float hf, wf;
@@ -1987,29 +1984,38 @@ static int config_output(AVFilterLink *outlink)
     void (*out_transform)(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec);
-    void (*calculate_kernel)(float du, float dv, int shift, const XYRemap4 *r_tmp, void *r);
+    void (*calculate_kernel)(float du, float dv, const XYRemap *r_tmp,
+                             uint16_t *u, uint16_t *v, float *ker);
     float rot_mat[3][3];
 
     switch (s->interp) {
     case NEAREST:
         calculate_kernel = nearest_kernel;
         s->remap_slice = depth <= 8 ? remap1_8bit_slice : remap1_16bit_slice;
-        sizeof_remap = sizeof(XYRemap1);
+        elements = 1;
+        sizeof_uv = sizeof(uint16_t) * elements;
+        sizeof_ker = 0;
         break;
     case BILINEAR:
         calculate_kernel = bilinear_kernel;
         s->remap_slice = depth <= 8 ? remap2_8bit_slice : remap2_16bit_slice;
-        sizeof_remap = sizeof(XYRemap2);
+        elements = 2 * 2;
+        sizeof_uv = sizeof(uint16_t) * elements;
+        sizeof_ker = sizeof(float) * elements;
         break;
     case BICUBIC:
         calculate_kernel = bicubic_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
-        sizeof_remap = sizeof(XYRemap4);
+        elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * elements;
+        sizeof_ker = sizeof(float) * elements;
         break;
     case LANCZOS:
         calculate_kernel = lanczos_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
-        sizeof_remap = sizeof(XYRemap4);
+        elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * elements;
+        sizeof_ker = sizeof(float) * elements;
         break;
     }
 
@@ -2147,16 +2153,14 @@ static int config_output(AVFilterLink *outlink)
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     for (p = 0; p < s->nb_planes; p++) {
-        remap_data_size += (float)s->planewidth[p] * s->planeheight[p] * sizeof_remap;
-    }
-
-    for (p = 0; p < s->nb_planes; p++) {
-        s->remap[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_remap);
-        if (!s->remap[p]) {
-            av_log(ctx, AV_LOG_ERROR,
-                   "Not enough memory to allocate remap data. Need at least %.3f GiB.\n",
-                   remap_data_size / (1024 * 1024 * 1024));
+        s->u[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
+        s->v[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
+        if (!s->u[p] || !s->v[p])
             return AVERROR(ENOMEM);
+        if (sizeof_ker) {
+            s->ker[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_ker);
+            if (!s->ker[p])
+                return AVERROR(ENOMEM);
         }
     }
 
@@ -2169,19 +2173,22 @@ static int config_output(AVFilterLink *outlink)
         const int height = s->planeheight[p];
         const int in_width = s->inplanewidth[p];
         const int in_height = s->inplaneheight[p];
-        void *r = s->remap[p];
         float du, dv;
         float vec[3];
-        XYRemap4 r_tmp;
+        XYRemap r_tmp;
         int i, j;
 
         for (i = 0; i < width; i++) {
             for (j = 0; j < height; j++) {
+                uint16_t *u = s->u[p] + (j * width + i) * elements;
+                uint16_t *v = s->v[p] + (j * width + i) * elements;
+                float *ker = s->ker[p] + (j * width + i) * elements;
+
                 out_transform(s, i, j, width, height, vec);
                 rotate(rot_mat, vec);
                 mirror(mirror_modifier, vec);
                 in_transform(s, vec, in_width, in_height, r_tmp.u, r_tmp.v, &du, &dv);
-                calculate_kernel(du, dv, j * width + i, &r_tmp, r);
+                calculate_kernel(du, dv, &r_tmp, u, v, ker);
             }
         }
     }
@@ -2218,8 +2225,11 @@ static av_cold void uninit(AVFilterContext *ctx)
     V360Context *s = ctx->priv;
     int p;
 
-    for (p = 0; p < s->nb_planes; p++)
-        av_freep(&s->remap[p]);
+    for (p = 0; p < s->nb_planes; p++) {
+        av_freep(&s->u[p]);
+        av_freep(&s->v[p]);
+        av_freep(&s->ker[p]);
+    }
 }
 
 static const AVFilterPad inputs[] = {
