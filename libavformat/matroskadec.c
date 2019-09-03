@@ -110,6 +110,7 @@ typedef const struct EbmlSyntax {
 
 typedef struct EbmlList {
     int nb_elem;
+    unsigned int alloc_elem_size;
     void *elem;
 } EbmlList;
 
@@ -1236,8 +1237,13 @@ static int ebml_parse(MatroskaDemuxContext *matroska,
         data = (char *) data + syntax->data_offset;
         if (syntax->list_elem_size) {
             EbmlList *list = data;
-            void *newelem = av_realloc_array(list->elem, list->nb_elem + 1,
-                                                   syntax->list_elem_size);
+            void *newelem;
+
+            if ((unsigned)list->nb_elem + 1 >= UINT_MAX / syntax->list_elem_size)
+                return AVERROR(ENOMEM);
+            newelem = av_fast_realloc(list->elem,
+                                      &list->alloc_elem_size,
+                                      (list->nb_elem + 1) * syntax->list_elem_size);
             if (!newelem)
                 return AVERROR(ENOMEM);
             list->elem = newelem;
@@ -1490,6 +1496,7 @@ static void ebml_free(EbmlSyntax *syntax, void *data)
                     ebml_free(syntax[i].def.n, ptr);
                 av_freep(&list->elem);
                 list->nb_elem = 0;
+                list->alloc_elem_size = 0;
             } else
                 ebml_free(syntax[i].def.n, data_off);
         default:
