@@ -1725,6 +1725,13 @@ static void scte_data_cb(MpegTSFilter *filter, const uint8_t *section,
     if (idx < 0)
         return;
 
+    /**
+     * In case we receive an SCTE-35 packet before mpegts context is fully
+     * initialized.
+     */
+    if (!ts->pkt)
+        return;
+
     new_data_packet(section, section_len, ts->pkt);
     ts->pkt->stream_index = idx;
     prg = av_find_program_from_stream(ts->stream, NULL, idx);
