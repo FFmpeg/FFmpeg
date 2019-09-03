@@ -31,6 +31,7 @@ OBJS-$(CONFIG_TBLEND_FILTER)                 += x86/vf_blend_init.o
 OBJS-$(CONFIG_THRESHOLD_FILTER)              += x86/vf_threshold_init.o
 OBJS-$(CONFIG_TINTERLACE_FILTER)             += x86/vf_tinterlace_init.o
 OBJS-$(CONFIG_VOLUME_FILTER)                 += x86/af_volume_init.o
+OBJS-$(CONFIG_V360_FILTER)                   += x86/vf_v360_init.o
 OBJS-$(CONFIG_W3FDIF_FILTER)                 += x86/vf_w3fdif_init.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += x86/vf_yadif_init.o
 
@@ -66,5 +67,6 @@ X86ASM-OBJS-$(CONFIG_TBLEND_FILTER)          += x86/vf_blend.o
 X86ASM-OBJS-$(CONFIG_THRESHOLD_FILTER)       += x86/vf_threshold.o
 X86ASM-OBJS-$(CONFIG_TINTERLACE_FILTER)      += x86/vf_interlace.o
 X86ASM-OBJS-$(CONFIG_VOLUME_FILTER)          += x86/af_volume.o
+X86ASM-OBJS-$(CONFIG_V360_FILTER)            += x86/vf_v360.o
 X86ASM-OBJS-$(CONFIG_W3FDIF_FILTER)          += x86/vf_w3fdif.o
 X86ASM-OBJS-$(CONFIG_YADIF_FILTER)           += x86/vf_yadif.o x86/yadif-16.o x86/yadif-10.o

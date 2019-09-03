@@ -41,88 +41,7 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
-
-enum Projections {
-    EQUIRECTANGULAR,
-    CUBEMAP_3_2,
-    CUBEMAP_6_1,
-    EQUIANGULAR,
-    FLAT,
-    DUAL_FISHEYE,
-    BARREL,
-    CUBEMAP_1_6,
-    NB_PROJECTIONS,
-};
-
-enum InterpMethod {
-    NEAREST,
-    BILINEAR,
-    BICUBIC,
-    LANCZOS,
-    NB_INTERP_METHODS,
-};
-
-enum Faces {
-    TOP_LEFT,
-    TOP_MIDDLE,
-    TOP_RIGHT,
-    BOTTOM_LEFT,
-    BOTTOM_MIDDLE,
-    BOTTOM_RIGHT,
-    NB_FACES,
-};
-
-enum Direction {
-    RIGHT,  ///< Axis +X
-    LEFT,   ///< Axis -X
-    UP,     ///< Axis +Y
-    DOWN,   ///< Axis -Y
-    FRONT,  ///< Axis -Z
-    BACK,   ///< Axis +Z
-    NB_DIRECTIONS,
-};
-
-enum Rotation {
-    ROT_0,
-    ROT_90,
-    ROT_180,
-    ROT_270,
-    NB_ROTATIONS,
-};
-
-typedef struct V360Context {
-    const AVClass *class;
-    int in, out;
-    int interp;
-    int width, height;
-    char* in_forder;
-    char* out_forder;
-    char* in_frot;
-    char* out_frot;
-
-    int in_cubemap_face_order[6];
-    int out_cubemap_direction_order[6];
-    int in_cubemap_face_rotation[6];
-    int out_cubemap_face_rotation[6];
-
-    float in_pad, out_pad;
-
-    float yaw, pitch, roll;
-
-    int h_flip, v_flip, d_flip;
-
-    float h_fov, v_fov;
-    float flat_range[3];
-
-    int planewidth[4], planeheight[4];
-    int inplanewidth[4], inplaneheight[4];
-    int nb_planes;
-
-    uint16_t *u[4], *v[4];
-    int16_t *ker[4];
-
-    int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-} V360Context;
+#include "v360.h"
 
 typedef struct ThreadData {
     AVFrame *in;
@@ -251,47 +170,22 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-/**
- * Generate no-interpolation remapping function with a given pixel depth.
- *
- * @param bits number of bits per pixel
- * @param div number of bytes per pixel
- */
-#define DEFINE_REMAP1(bits, div)                                                             \
-static int remap1_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs) \
-{                                                                                            \
-    ThreadData *td = (ThreadData*)arg;                                                       \
-    const V360Context *s = ctx->priv;                                                        \
-    const AVFrame *in = td->in;                                                              \
-    AVFrame *out = td->out;                                                                  \
-                                                                                             \
-    int plane, x, y;                                                                         \
-                                                                                             \
-    for (plane = 0; plane < s->nb_planes; plane++) {                                         \
-        const int in_linesize  = in->linesize[plane]  / div;                                 \
-        const int out_linesize = out->linesize[plane] / div;                                 \
-        const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                 \
-        uint##bits##_t *dst = (uint##bits##_t *)out->data[plane];                            \
-        const int width = s->planewidth[plane];                                              \
-        const int height = s->planeheight[plane];                                            \
-                                                                                             \
-        const int slice_start = (height *  jobnr     ) / nb_jobs;                            \
-        const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                            \
-                                                                                             \
-        for (y = slice_start; y < slice_end; y++) {                                          \
-            const uint16_t *u = s->u[plane] + y * width;                                     \
-            const uint16_t *v = s->v[plane] + y * width;                                     \
-            uint##bits##_t *d = dst + y * out_linesize;                                      \
-            for (x = 0; x < width; x++)                                                      \
-                *d++ = src[v[x] * in_linesize + u[x]];                                       \
-        }                                                                                    \
-    }                                                                                        \
-                                                                                             \
-    return 0;                                                                                \
+#define DEFINE_REMAP1_LINE(bits, div)                                                           \
+static void remap1_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *src,              \
+                                      ptrdiff_t in_linesize,                                    \
+                                      const uint16_t *u, const uint16_t *v, const int16_t *ker) \
+{                                                                                               \
+    const uint##bits##_t *s = (const uint##bits##_t *)src;                                      \
+    uint##bits##_t *d = (uint##bits##_t *)dst;                                                  \
+                                                                                                \
+    in_linesize /= div;                                                                         \
+                                                                                                \
+    for (int x = 0; x < width; x++)                                                             \
+        d[x] = s[v[x] * in_linesize + u[x]];                                                    \
 }
 
-DEFINE_REMAP1( 8, 1)
-DEFINE_REMAP1(16, 2)
+DEFINE_REMAP1_LINE( 8, 1)
+DEFINE_REMAP1_LINE(16, 2)
 
 typedef struct XYRemap {
     uint16_t u[4][4];
@@ -304,9 +198,8 @@ typedef struct XYRemap {
  *
  * @param ws size of interpolation window
  * @param bits number of bits per pixel
- * @param div number of bytes per pixel
  */
-#define DEFINE_REMAP(ws, bits, div)                                                                        \
+#define DEFINE_REMAP(ws, bits)                                                                             \
 static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)          \
 {                                                                                                          \
     ThreadData *td = (ThreadData*)arg;                                                                     \
@@ -314,48 +207,85 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
     const AVFrame *in = td->in;                                                                            \
     AVFrame *out = td->out;                                                                                \
                                                                                                            \
-    int plane, x, y, i, j;                                                                                 \
-                                                                                                           \
-    for (plane = 0; plane < s->nb_planes; plane++) {                                                       \
-        const int in_linesize  = in->linesize[plane]  / div;                                               \
-        const int out_linesize = out->linesize[plane] / div;                                               \
-        const uint##bits##_t *src = (const uint##bits##_t *)in->data[plane];                               \
-        uint##bits##_t *dst = (uint##bits##_t *)out->data[plane];                                          \
+    for (int plane = 0; plane < s->nb_planes; plane++) {                                                   \
+        const int in_linesize  = in->linesize[plane];                                                      \
+        const int out_linesize = out->linesize[plane];                                                     \
+        const uint8_t *src = in->data[plane];                                                              \
+        uint8_t *dst = out->data[plane];                                                                   \
         const int width = s->planewidth[plane];                                                            \
         const int height = s->planeheight[plane];                                                          \
                                                                                                            \
         const int slice_start = (height *  jobnr     ) / nb_jobs;                                          \
         const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                          \
                                                                                                            \
-        for (y = slice_start; y < slice_end; y++) {                                                        \
-            uint##bits##_t *d = dst + y * out_linesize;                                                    \
+        for (int y = slice_start; y < slice_end; y++) {                                                    \
             const uint16_t *u = s->u[plane] + y * width * ws * ws;                                         \
             const uint16_t *v = s->v[plane] + y * width * ws * ws;                                         \
             const int16_t *ker = s->ker[plane] + y * width * ws * ws;                                      \
-            for (x = 0; x < width; x++) {                                                                  \
-                const uint16_t *uu = u + x * ws * ws;                                                      \
-                const uint16_t *vv = v + x * ws * ws;                                                      \
-                const int16_t *kker = ker + x * ws * ws;                                                   \
-                int tmp = 0;                                                                               \
                                                                                                            \
-                for (i = 0; i < ws; i++) {                                                                 \
-                    for (j = 0; j < ws; j++) {                                                             \
-                        tmp += kker[i * ws + j] * src[vv[i * ws + j] * in_linesize + uu[i * ws + j]];      \
-                    }                                                                                      \
-                }                                                                                          \
-                                                                                                           \
-                *d++ = av_clip_uint##bits(tmp >> (15 - ws));                                               \
-            }                                                                                              \
+            s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                     \
         }                                                                                                  \
     }                                                                                                      \
                                                                                                            \
     return 0;                                                                                              \
 }
 
-DEFINE_REMAP(2,  8, 1)
-DEFINE_REMAP(4,  8, 1)
-DEFINE_REMAP(2, 16, 2)
-DEFINE_REMAP(4, 16, 2)
+DEFINE_REMAP(1,  8)
+DEFINE_REMAP(2,  8)
+DEFINE_REMAP(4,  8)
+DEFINE_REMAP(1, 16)
+DEFINE_REMAP(2, 16)
+DEFINE_REMAP(4, 16)
+
+#define DEFINE_REMAP_LINE(ws, bits, div)                                                                   \
+static void remap##ws##_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *src,                    \
+                                           ptrdiff_t in_linesize,                                          \
+                                           const uint16_t *u, const uint16_t *v, const int16_t *ker)       \
+{                                                                                                          \
+    const uint##bits##_t *s = (const uint##bits##_t *)src;                                                 \
+    uint##bits##_t *d = (uint##bits##_t *)dst;                                                             \
+                                                                                                           \
+    in_linesize /= div;                                                                                    \
+                                                                                                           \
+    for (int x = 0; x < width; x++) {                                                                      \
+        const uint16_t *uu = u + x * ws * ws;                                                              \
+        const uint16_t *vv = v + x * ws * ws;                                                              \
+        const int16_t *kker = ker + x * ws * ws;                                                           \
+        int tmp = 0;                                                                                       \
+                                                                                                           \
+        for (int i = 0; i < ws; i++) {                                                                     \
+            for (int j = 0; j < ws; j++) {                                                                 \
+                tmp += kker[i * ws + j] * s[vv[i * ws + j] * in_linesize + uu[i * ws + j]];                \
+            }                                                                                              \
+        }                                                                                                  \
+                                                                                                           \
+        d[x] = av_clip_uint##bits(tmp >> 14);                                                              \
+    }                                                                                                      \
+}
+
+DEFINE_REMAP_LINE(2,  8, 1)
+DEFINE_REMAP_LINE(4,  8, 1)
+DEFINE_REMAP_LINE(2, 16, 2)
+DEFINE_REMAP_LINE(4, 16, 2)
+
+void ff_v360_init(V360Context *s, int depth)
+{
+    switch (s->interp) {
+    case NEAREST:
+        s->remap_line = depth <= 8 ? remap1_8bit_line_c : remap1_16bit_line_c;
+        break;
+    case BILINEAR:
+        s->remap_line = depth <= 8 ? remap2_8bit_line_c : remap2_16bit_line_c;
+        break;
+    case BICUBIC:
+    case LANCZOS:
+        s->remap_line = depth <= 8 ? remap4_8bit_line_c : remap4_16bit_line_c;
+        break;
+    }
+
+    if (ARCH_X86_64)
+        ff_v360_init_x86(s, depth);
+}
 
 /**
  * Save nearest pixel coordinates for remapping.
@@ -399,10 +329,10 @@ static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
         }
     }
 
-    ker[0] = (1.f - du) * (1.f - dv) * 8192;
-    ker[1] =        du  * (1.f - dv) * 8192;
-    ker[2] = (1.f - du) *        dv  * 8192;
-    ker[3] =        du  *        dv  * 8192;
+    ker[0] = (1.f - du) * (1.f - dv) * 16384;
+    ker[1] =        du  * (1.f - dv) * 16384;
+    ker[2] = (1.f - du) *        dv  * 16384;
+    ker[3] =        du  *        dv  * 16384;
 }
 
 /**
@@ -446,7 +376,7 @@ static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
         for (j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 2048;
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
         }
     }
 }
@@ -501,7 +431,7 @@ static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
         for (j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 2048;
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
         }
     }
 }
@@ -2037,6 +1967,8 @@ static int config_output(AVFilterLink *outlink)
     default:
         av_assert0(0);
     }
+
+    ff_v360_init(s, depth);
 
     switch (s->in) {
     case EQUIRECTANGULAR:
