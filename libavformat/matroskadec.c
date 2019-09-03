@@ -97,8 +97,8 @@ typedef enum {
 typedef const struct EbmlSyntax {
     uint32_t id;
     EbmlType type;
-    int list_elem_size;
-    int data_offset;
+    size_t list_elem_size;
+    size_t data_offset;
     union {
         int64_t     i;
         uint64_t    u;
