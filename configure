@@ -6486,8 +6486,8 @@ else
 EOF
 fi
 
-enabled alsa && check_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
-    check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound
+enabled alsa && { check_pkg_config alsa alsa "alsa/asoundlib.h" snd_pcm_htimestamp ||
+                  check_lib alsa alsa/asoundlib.h snd_pcm_htimestamp -lasound; }
 
 enabled libjack &&
     require_pkg_config libjack jack jack/jack.h jack_port_get_latency_range
