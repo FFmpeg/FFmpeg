@@ -259,7 +259,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             av_frame_unref(frame);
             int ret = decode_handler(ctx, frame, &got_frame, &avpkt);
 
-            ec_pixels += ctx->width * ctx->height;
+            ec_pixels += (ctx->width + 32LL) * (ctx->height + 32LL);
             if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
                 ctx->error_concealment = 0;
             if (ec_pixels > maxpixels)
