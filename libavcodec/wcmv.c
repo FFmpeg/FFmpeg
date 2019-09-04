@@ -45,7 +45,7 @@ static int decode_frame(AVCodecContext *avctx,
 {
     WCMVContext *s = avctx->priv_data;
     AVFrame *frame = data;
-    int skip, blocks, zret, ret, intra = 0, bpp = s->bpp;
+    int skip, blocks, zret, ret, intra = 0, flags = 0, bpp = s->bpp;
     GetByteContext gb;
     uint8_t *dst;
 
@@ -56,11 +56,13 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
+    blocks = bytestream2_get_le16(&gb);
+    if (!blocks)
+        flags |= FF_REGET_BUFFER_FLAG_READONLY;
 
-    if ((ret = ff_reget_buffer(avctx, s->prev_frame, 0)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->prev_frame, flags)) < 0)
         return ret;
 
-    blocks = bytestream2_get_le16(&gb);
     if (blocks > 5) {
         GetByteContext bgb;
         int x = 0, size;
