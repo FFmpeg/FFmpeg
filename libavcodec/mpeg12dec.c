@@ -1596,6 +1596,11 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
     Mpeg1Context *s1      = (Mpeg1Context *) s;
     int ret;
 
+    if (!(avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
+        if (s->mb_width * s->mb_height * 11LL / (33 * 2 * 8) > buf_size)
+            return AVERROR_INVALIDDATA;
+    }
+
     /* start frame decoding */
     if (s->first_field || s->picture_structure == PICT_FRAME) {
         AVFrameSideData *pan_scan;
