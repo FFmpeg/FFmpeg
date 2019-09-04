@@ -327,6 +327,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     s->w = av_expr_eval(s->w_pexpr, s->var_values, s);
     s->h = av_expr_eval(s->h_pexpr, s->var_values, s);
 
+    if (s->x + (s->band - 1) <= 0 || s->x + s->w - (s->band*2 - 2) > inlink->w ||
+        s->y + (s->band - 1) <= 0 || s->y + s->h - (s->band*2 - 2) > inlink->h) {
+        av_log(s, AV_LOG_WARNING, "Logo area is outside of the frame,"
+               " auto set the area inside of the frame\n");
+    }
+
+    if (s->x + (s->band - 1) <= 0)
+        s->x = 1 + s->band;
+    if (s->y + (s->band - 1) <= 0)
+        s->y = 1 + s->band;
+    if (s->x + s->w - (s->band*2 - 2) > inlink->w)
+        s->w = inlink->w - s->x - (s->band*2 - 2);
+    if (s->y + s->h - (s->band*2 - 2) > inlink->h)
+        s->h = inlink->h - s->y - (s->band*2 - 2);
+
     ret = config_input(inlink);
     if (ret < 0) {
         av_frame_free(&in);
