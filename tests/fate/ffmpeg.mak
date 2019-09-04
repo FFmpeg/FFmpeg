@@ -108,6 +108,10 @@ fate-copy-psp: $(TARGET_SAMPLES)/h264/wwwq_cut.mp4
 fate-copy-psp: CMD = transcode "mov" $(TARGET_SAMPLES)/h264/wwwq_cut.mp4\
                       psp "-c copy" "-codec copy"
 
+FATE_STREAMCOPY-$(CONFIG_FLV_DEMUXER) += fate-ffmpeg-streamloop
+fate-ffmpeg-streamloop: $(TARGET_SAMPLES)/flv/streamloop.flv
+fate-ffmpeg-streamloop: CMD = framemd5 -stream_loop 2 -i $(TARGET_SAMPLES)/flv/streamloop.flv -c copy
+
 fate-streamcopy: $(FATE_STREAMCOPY-yes)
 
 FATE_SAMPLES_FFMPEG-$(call ALLYES, MOV_DEMUXER MATROSKA_MUXER) += fate-rgb24-mkv
