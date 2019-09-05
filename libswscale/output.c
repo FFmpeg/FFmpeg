@@ -630,28 +630,28 @@ yuv2mono_2_c_template(SwsContext *c, const int16_t *buf[2],
         }
         c->dither_error[0][i] = err;
     } else {
-    for (i = 0; i < dstW; i += 8) {
-        int Y, acc = 0;
+        for (i = 0; i < dstW; i += 8) {
+            int Y, acc = 0;
 
-        Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[0]);
-        Y = (buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[1]);
-        Y = (buf0[i + 2] * yalpha1 + buf1[i + 2] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[2]);
-        Y = (buf0[i + 3] * yalpha1 + buf1[i + 3] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[3]);
-        Y = (buf0[i + 4] * yalpha1 + buf1[i + 4] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[4]);
-        Y = (buf0[i + 5] * yalpha1 + buf1[i + 5] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[5]);
-        Y = (buf0[i + 6] * yalpha1 + buf1[i + 6] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[6]);
-        Y = (buf0[i + 7] * yalpha1 + buf1[i + 7] * yalpha) >> 19;
-        accumulate_bit(acc, Y + d128[7]);
+            Y = (buf0[i + 0] * yalpha1 + buf1[i + 0] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[0]);
+            Y = (buf0[i + 1] * yalpha1 + buf1[i + 1] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[1]);
+            Y = (buf0[i + 2] * yalpha1 + buf1[i + 2] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[2]);
+            Y = (buf0[i + 3] * yalpha1 + buf1[i + 3] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[3]);
+            Y = (buf0[i + 4] * yalpha1 + buf1[i + 4] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[4]);
+            Y = (buf0[i + 5] * yalpha1 + buf1[i + 5] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[5]);
+            Y = (buf0[i + 6] * yalpha1 + buf1[i + 6] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[6]);
+            Y = (buf0[i + 7] * yalpha1 + buf1[i + 7] * yalpha) >> 19;
+            accumulate_bit(acc, Y + d128[7]);
 
-        output_pixel(*dest++, acc);
-    }
+            output_pixel(*dest++, acc);
+        }
     }
 }
 
@@ -687,19 +687,19 @@ yuv2mono_1_c_template(SwsContext *c, const int16_t *buf0,
         }
         c->dither_error[0][i] = err;
     } else {
-    for (i = 0; i < dstW; i += 8) {
-        int acc = 0;
-        accumulate_bit(acc, ((buf0[i + 0] + 64) >> 7) + d128[0]);
-        accumulate_bit(acc, ((buf0[i + 1] + 64) >> 7) + d128[1]);
-        accumulate_bit(acc, ((buf0[i + 2] + 64) >> 7) + d128[2]);
-        accumulate_bit(acc, ((buf0[i + 3] + 64) >> 7) + d128[3]);
-        accumulate_bit(acc, ((buf0[i + 4] + 64) >> 7) + d128[4]);
-        accumulate_bit(acc, ((buf0[i + 5] + 64) >> 7) + d128[5]);
-        accumulate_bit(acc, ((buf0[i + 6] + 64) >> 7) + d128[6]);
-        accumulate_bit(acc, ((buf0[i + 7] + 64) >> 7) + d128[7]);
+        for (i = 0; i < dstW; i += 8) {
+            int acc = 0;
+            accumulate_bit(acc, ((buf0[i + 0] + 64) >> 7) + d128[0]);
+            accumulate_bit(acc, ((buf0[i + 1] + 64) >> 7) + d128[1]);
+            accumulate_bit(acc, ((buf0[i + 2] + 64) >> 7) + d128[2]);
+            accumulate_bit(acc, ((buf0[i + 3] + 64) >> 7) + d128[3]);
+            accumulate_bit(acc, ((buf0[i + 4] + 64) >> 7) + d128[4]);
+            accumulate_bit(acc, ((buf0[i + 5] + 64) >> 7) + d128[5]);
+            accumulate_bit(acc, ((buf0[i + 6] + 64) >> 7) + d128[6]);
+            accumulate_bit(acc, ((buf0[i + 7] + 64) >> 7) + d128[7]);
 
-        output_pixel(*dest++, acc);
-    }
+            output_pixel(*dest++, acc);
+        }
     }
 }
 
