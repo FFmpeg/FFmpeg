@@ -632,7 +632,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
             }
 
             av_log(avctx, AV_LOG_TRACE,
-                   "Queued input buffer %zd size=%zd ts=%"PRIi64"\n", index, size, pts);
+                   "Queued empty EOS input buffer %zd with flags=%d\n", index, flags);
 
             s->draining = 1;
             return 0;
