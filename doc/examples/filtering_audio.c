@@ -32,7 +32,6 @@
 
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
-#include <libavfilter/avfiltergraph.h>
 #include <libavfilter/buffersink.h>
 #include <libavfilter/buffersrc.h>
 #include <libavutil/opt.h>
@@ -69,8 +68,12 @@ static int open_input_file(const char *filename)
         return ret;
     }
     audio_stream_index = ret;
-    dec_ctx = fmt_ctx->streams[audio_stream_index]->codec;
-    av_opt_set_int(dec_ctx, "refcounted_frames", 1, 0);
+
+    /* create decoding context */
+    dec_ctx = avcodec_alloc_context3(dec);
+    if (!dec_ctx)
+        return AVERROR(ENOMEM);
+    avcodec_parameters_to_context(dec_ctx, fmt_ctx->streams[audio_stream_index]->codecpar);
 
     /* init the audio decoder */
     if ((ret = avcodec_open2(dec_ctx, dec, NULL)) < 0) {
@@ -85,8 +88,8 @@ static int init_filters(const char *filters_descr)
 {
     char args[512];
     int ret = 0;
-    AVFilter *abuffersrc  = avfilter_get_by_name("abuffer");
-    AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
+    const AVFilter *abuffersrc  = avfilter_get_by_name("abuffer");
+    const AVFilter *abuffersink = avfilter_get_by_name("abuffersink");
     AVFilterInOut *outputs = avfilter_inout_alloc();
     AVFilterInOut *inputs  = avfilter_inout_alloc();
     static const enum AVSampleFormat out_sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
@@ -196,7 +199,7 @@ end:
 
 static void print_frame(const AVFrame *frame)
 {
-    const int n = frame->nb_samples * av_get_channel_layout_nb_channels(av_frame_get_channel_layout(frame));
+    const int n = frame->nb_samples * av_get_channel_layout_nb_channels(frame->channel_layout);
     const uint16_t *p     = (uint16_t*)frame->data[0];
     const uint16_t *p_end = p + n;
 
@@ -211,10 +214,9 @@ static void print_frame(const AVFrame *frame)
 int main(int argc, char **argv)
 {
     int ret;
-    AVPacket packet0, packet;
+    AVPacket packet;
     AVFrame *frame = av_frame_alloc();
     AVFrame *filt_frame = av_frame_alloc();
-    int got_frame;
 
     if (!frame || !filt_frame) {
         perror("Could not allocate frame");
@@ -225,63 +227,58 @@ int main(int argc, char **argv)
         exit(1);
     }
 
-    av_register_all();
-    avfilter_register_all();
-
     if ((ret = open_input_file(argv[1])) < 0)
         goto end;
     if ((ret = init_filters(filter_descr)) < 0)
         goto end;
 
     /* read all packets */
-    packet0.data = NULL;
-    packet.data = NULL;
     while (1) {
-        if (!packet0.data) {
-            if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
-                break;
-            packet0 = packet;
-        }
+        if ((ret = av_read_frame(fmt_ctx, &packet)) < 0)
+            break;
 
         if (packet.stream_index == audio_stream_index) {
-            got_frame = 0;
-            ret = avcodec_decode_audio4(dec_ctx, frame, &got_frame, &packet);
+            ret = avcodec_send_packet(dec_ctx, &packet);
             if (ret < 0) {
-                av_log(NULL, AV_LOG_ERROR, "Error decoding audio\n");
-                continue;
+                av_log(NULL, AV_LOG_ERROR, "Error while sending a packet to the decoder\n");
+                break;
             }
-            packet.size -= ret;
-            packet.data += ret;
 
-            if (got_frame) {
-                /* push the audio data from decoded frame into the filtergraph */
-                if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, 0) < 0) {
-                    av_log(NULL, AV_LOG_ERROR, "Error while feeding the audio filtergraph\n");
+            while (ret >= 0) {
+                ret = avcodec_receive_frame(dec_ctx, frame);
+                if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
                     break;
+                } else if (ret < 0) {
+                    av_log(NULL, AV_LOG_ERROR, "Error while receiving a frame from the decoder\n");
+                    goto end;
                 }
 
-                /* pull filtered audio from the filtergraph */
-                while (1) {
-                    ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
-                    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                if (ret >= 0) {
+                    /* push the audio data from decoded frame into the filtergraph */
+                    if (av_buffersrc_add_frame_flags(buffersrc_ctx, frame, AV_BUFFERSRC_FLAG_KEEP_REF) < 0) {
+                        av_log(NULL, AV_LOG_ERROR, "Error while feeding the audio filtergraph\n");
                         break;
-                    if (ret < 0)
-                        goto end;
-                    print_frame(filt_frame);
-                    av_frame_unref(filt_frame);
+                    }
+
+                    /* pull filtered audio from the filtergraph */
+                    while (1) {
+                        ret = av_buffersink_get_frame(buffersink_ctx, filt_frame);
+                        if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF)
+                            break;
+                        if (ret < 0)
+                            goto end;
+                        print_frame(filt_frame);
+                        av_frame_unref(filt_frame);
+                    }
+                    av_frame_unref(frame);
                 }
             }
-
-            if (packet.size <= 0)
-                av_packet_unref(&packet0);
-        } else {
-            /* discard non-wanted packets */
-            av_packet_unref(&packet0);
         }
+        av_packet_unref(&packet);
     }
 end:
     avfilter_graph_free(&filter_graph);
-    avcodec_close(dec_ctx);
+    avcodec_free_context(&dec_ctx);
     avformat_close_input(&fmt_ctx);
     av_frame_free(&frame);
     av_frame_free(&filt_frame);

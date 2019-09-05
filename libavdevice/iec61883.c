@@ -23,7 +23,7 @@
  * libiec61883 interface
  */
 
-#include <sys/poll.h>
+#include <poll.h>
 #include <libraw1394/raw1394.h>
 #include <libavc1394/avc1394.h>
 #include <libavc1394/rom1394.h>
@@ -118,14 +118,16 @@ static int iec61883_callback(unsigned char *data, int length,
         goto exit;
     }
 
-    packet->buf = av_malloc(length);
+    packet->buf = av_malloc(length + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!packet->buf) {
+        av_free(packet);
         ret = -1;
         goto exit;
     }
     packet->len = length;
 
     memcpy(packet->buf, data, length);
+    memset(packet->buf + length, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (dv->queue_first) {
         dv->queue_last->next = packet;
@@ -199,13 +201,21 @@ static int iec61883_parse_queue_dv(struct iec61883_data *dv, AVPacket *pkt)
     size = avpriv_dv_produce_packet(dv->dv_demux, pkt,
                                     packet->buf, packet->len, -1);
     dv->queue_first = packet->next;
+    if (size < 0)
+        av_free(packet->buf);
     av_free(packet);
     dv->packets--;
 
-    if (size > 0)
-        return size;
+    if (size < 0)
+        return -1;
 
-    return -1;
+    if (av_packet_from_data(pkt, pkt->data, pkt->size) < 0) {
+        av_freep(&pkt->data);
+        av_packet_unref(pkt);
+        return -1;
+    }
+
+    return size;
 }
 
 static int iec61883_parse_queue_hdv(struct iec61883_data *dv, AVPacket *pkt)
@@ -258,14 +268,14 @@ static int iec61883_read_header(AVFormatContext *context)
         goto fail;
     }
 
-    inport = strtol(context->filename, &endptr, 10);
-    if (endptr != context->filename && *endptr == '\0') {
+    inport = strtol(context->url, &endptr, 10);
+    if (endptr != context->url && *endptr == '\0') {
         av_log(context, AV_LOG_INFO, "Selecting IEEE1394 port: %d\n", inport);
         j = inport;
         nb_ports = inport + 1;
-    } else if (strcmp(context->filename, "auto")) {
+    } else if (strcmp(context->url, "auto")) {
         av_log(context, AV_LOG_ERROR, "Invalid input \"%s\", you should specify "
-               "\"auto\" for auto-detection, or the port number.\n", context->filename);
+               "\"auto\" for auto-detection, or the port number.\n", context->url);
         goto fail;
     }
 
@@ -453,6 +463,7 @@ static int iec61883_close(AVFormatContext *context)
     } else {
         iec61883_dv_fb_stop(dv->iec61883_dv);
         iec61883_dv_fb_close(dv->iec61883_dv);
+        av_freep(&dv->dv_demux);
     }
     while (dv->queue_first) {
         DVPacket *packet = dv->queue_first;

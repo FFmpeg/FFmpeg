@@ -71,12 +71,10 @@ void ff_vp8_idct_add_msa(uint8_t *dst, int16_t input[16], ptrdiff_t stride)
     ILVR_H4_SW(zero, res0, zero, res1, zero, res2, zero, res3,
                res0, res1, res2, res3);
     ADD4(res0, vt0, res1, vt1, res2, vt2, res3, vt3, res0, res1, res2, res3);
-    res0 = CLIP_SW_0_255(res0);
-    res1 = CLIP_SW_0_255(res1);
-    res2 = CLIP_SW_0_255(res2);
-    res3 = CLIP_SW_0_255(res3);
+    CLIP_SW4_0_255(res0, res1, res2, res3);
     VSHF_B2_SB(res0, res1, res2, res3, mask, mask, dest0, dest1);
-    ST4x4_UB(dest0, dest1, 0, 1, 0, 1, dst, stride);
+    ST_W2(dest0, 0, 1, dst, stride);
+    ST_W2(dest1, 0, 1, dst + 2 * stride, stride);
 
     memset(input, 0, 4 * 4 * sizeof(*input));
 }
@@ -97,7 +95,8 @@ void ff_vp8_idct_dc_add_msa(uint8_t *dst, int16_t in_dc[16], ptrdiff_t stride)
     ADD4(res0, vec, res1, vec, res2, vec, res3, vec, res0, res1, res2, res3);
     CLIP_SH4_0_255(res0, res1, res2, res3);
     VSHF_B2_SB(res0, res1, res2, res3, mask, mask, dest0, dest1);
-    ST4x4_UB(dest0, dest1, 0, 1, 0, 1, dst, stride);
+    ST_W2(dest0, 0, 1, dst, stride);
+    ST_W2(dest1, 0, 1, dst + 2 * stride, stride);
 
     in_dc[0] = 0;
 }

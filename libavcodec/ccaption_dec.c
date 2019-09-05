@@ -212,10 +212,10 @@ static const unsigned char pac2_attribs[32][3] = // Color, font, ident
 
 struct Screen {
     /* +1 is used to compensate null character of string */
-    uint8_t characters[SCREEN_ROWS][SCREEN_COLUMNS+1];
-    uint8_t charsets[SCREEN_ROWS][SCREEN_COLUMNS+1];
-    uint8_t colors[SCREEN_ROWS][SCREEN_COLUMNS+1];
-    uint8_t fonts[SCREEN_ROWS][SCREEN_COLUMNS+1];
+    uint8_t characters[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t charsets[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t colors[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
+    uint8_t fonts[SCREEN_ROWS+1][SCREEN_COLUMNS+1];
     /*
      * Bitmask of used rows; if a bit is not set, the
      * corresponding row is not used.
@@ -247,7 +247,8 @@ typedef struct CCaptionSubContext {
     int64_t last_real_time;
     char prev_cmd[2];
     /* buffer to store pkt data */
-    AVBufferRef *pktbuf;
+    uint8_t *pktbuf;
+    int pktbuf_size;
     int readorder;
 } CCaptionSubContext;
 
@@ -261,6 +262,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     /* taking by default roll up to 2 */
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
+    ctx->cursor_row = 10;
     ret = ff_ass_subtitle_header(avctx, "Monospace",
                                  ASS_DEFAULT_FONT_SIZE,
                                  ASS_DEFAULT_COLOR,
@@ -273,11 +275,7 @@ static av_cold int init_decoder(AVCodecContext *avctx)
     if (ret < 0) {
         return ret;
     }
-    /* allocate pkt buffer */
-    ctx->pktbuf = av_buffer_alloc(128);
-    if (!ctx->pktbuf) {
-        ret = AVERROR(ENOMEM);
-    }
+
     return ret;
 }
 
@@ -285,7 +283,8 @@ static av_cold int close_decoder(AVCodecContext *avctx)
 {
     CCaptionSubContext *ctx = avctx->priv_data;
     av_bprint_finalize(&ctx->buffer, NULL);
-    av_buffer_unref(&ctx->pktbuf);
+    av_freep(&ctx->pktbuf);
+    ctx->pktbuf_size = 0;
     return 0;
 }
 
@@ -298,7 +297,7 @@ static void flush_decoder(AVCodecContext *avctx)
     ctx->prev_cmd[1] = 0;
     ctx->mode = CCMODE_ROLLUP;
     ctx->rollup = 2;
-    ctx->cursor_row = 0;
+    ctx->cursor_row = 10;
     ctx->cursor_column = 0;
     ctx->cursor_font = 0;
     ctx->cursor_color = 0;
@@ -315,7 +314,7 @@ static void flush_decoder(AVCodecContext *avctx)
 /**
  * @param ctx closed caption context just to print log
  */
-static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
+static void write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
 {
     uint8_t col = ctx->cursor_column;
     char *row = screen->characters[ctx->cursor_row];
@@ -328,16 +327,16 @@ static int write_char(CCaptionSubContext *ctx, struct Screen *screen, char ch)
         charset[col] = ctx->cursor_charset;
         ctx->cursor_charset = CCSET_BASIC_AMERICAN;
         if (ch) ctx->cursor_column++;
-        return 0;
+        return;
     }
     /* We have extra space at end only for null character */
     else if (col == SCREEN_COLUMNS && ch == 0) {
         row[col] = ch;
-        return 0;
+        return;
     }
     else {
         av_log(ctx, AV_LOG_WARNING, "Data Ignored since exceeding screen width\n");
-        return AVERROR_INVALIDDATA;
+        return;
     }
 }
 
@@ -435,7 +434,7 @@ static void roll_up(CCaptionSubContext *ctx)
 
 static int capture_screen(CCaptionSubContext *ctx)
 {
-    int i;
+    int i, j, tab = 0;
     struct Screen *screen = ctx->screen + ctx->active_screen;
     enum cc_font prev_font = CCFONT_REGULAR;
     av_bprint_clear(&ctx->buffer);
@@ -444,14 +443,32 @@ static int capture_screen(CCaptionSubContext *ctx)
     {
         if (CHECK_FLAG(screen->row_used, i)) {
             const char *row = screen->characters[i];
+            const char *charset = screen->charsets[i];
+            j = 0;
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+                j++;
+            if (!tab || j < tab)
+                tab = j;
+        }
+    }
+
+    for (i = 0; screen->row_used && i < SCREEN_ROWS; i++)
+    {
+        if (CHECK_FLAG(screen->row_used, i)) {
+            const char *row = screen->characters[i];
             const char *font = screen->fonts[i];
             const char *charset = screen->charsets[i];
             const char *override;
-            int j = 0;
+            int x, y, seen_char = 0;
+            j = 0;
 
             /* skip leading space */
-            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN)
+            while (row[j] == ' ' && charset[j] == CCSET_BASIC_AMERICAN && j < tab)
                 j++;
+
+            x = ASS_DEFAULT_PLAYRESX * (0.1 + 0.0250 * j);
+            y = ASS_DEFAULT_PLAYRESY * (0.1 + 0.0533 * i);
+            av_bprintf(&ctx->buffer, "{\\an7}{\\pos(%d,%d)}", x, y);
 
             for (; j < SCREEN_COLUMNS; j++) {
                 const char *e_tag = "", *s_tag = "";
@@ -487,9 +504,14 @@ static int capture_screen(CCaptionSubContext *ctx)
                 override = charset_overrides[(int)charset[j]][(int)row[j]];
                 if (override) {
                     av_bprintf(&ctx->buffer, "%s%s%s", e_tag, s_tag, override);
+                    seen_char = 1;
+                } else if (row[j] == ' ' && !seen_char) {
+                    av_bprintf(&ctx->buffer, "%s%s\\h", e_tag, s_tag);
                 } else {
                     av_bprintf(&ctx->buffer, "%s%s%c", e_tag, s_tag, row[j]);
+                    seen_char = 1;
                 }
+
             }
             av_bprintf(&ctx->buffer, "\\N");
         }
@@ -713,6 +735,12 @@ static void process_cc608(CCaptionSubContext *ctx, int64_t pts, uint8_t hi, uint
         /* Standard characters (always in pairs) */
         handle_char(ctx, hi, lo, pts);
         ctx->prev_cmd[0] = ctx->prev_cmd[1] = 0;
+    } else if (hi == 0x17 && lo >= 0x21 && lo <= 0x23) {
+        int i;
+        /* Tab offsets (spacing) */
+        for (i = 0; i < lo - 0x20; i++) {
+            handle_char(ctx, ' ', 0, pts);
+        }
     } else {
         /* Ignoring all other non data code */
         ff_dlog(ctx, "Unknown command 0x%hhx 0x%hhx\n", hi, lo);
@@ -729,16 +757,13 @@ static int decode(AVCodecContext *avctx, void *data, int *got_sub, AVPacket *avp
     int ret = 0;
     int i;
 
-    if (ctx->pktbuf->size < len) {
-        ret = av_buffer_realloc(&ctx->pktbuf, len);
-         if (ret < 0) {
-            av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n", len, ctx->pktbuf->size);
-            len = ctx->pktbuf->size;
-            ret = 0;
-        }
+    av_fast_padded_malloc(&ctx->pktbuf, &ctx->pktbuf_size, len);
+    if (!ctx->pktbuf) {
+        av_log(ctx, AV_LOG_WARNING, "Insufficient Memory of %d truncated to %d\n", len, ctx->pktbuf_size);
+        return AVERROR(ENOMEM);
     }
-    memcpy(ctx->pktbuf->data, avpkt->data, len);
-    bptr = ctx->pktbuf->data;
+    memcpy(ctx->pktbuf, avpkt->data, len);
+    bptr = ctx->pktbuf;
 
     for (i  = 0; i < len; i += 3) {
         uint8_t cc_type = *(bptr + i) & 3;
@@ -806,7 +831,7 @@ static const AVClass ccaption_dec_class = {
 
 AVCodec ff_ccaption_decoder = {
     .name           = "cc_dec",
-    .long_name      = NULL_IF_CONFIG_SMALL("Closed Caption (EIA-608 / CEA-708) Decoder"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Closed Caption (EIA-608 / CEA-708)"),
     .type           = AVMEDIA_TYPE_SUBTITLE,
     .id             = AV_CODEC_ID_EIA_608,
     .priv_data_size = sizeof(CCaptionSubContext),

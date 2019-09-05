@@ -28,10 +28,9 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
 #include "libavutil/ppc/cpu.h"
-#include "libavutil/ppc/types_altivec.h"
 #include "libavutil/ppc/util_altivec.h"
 
-#include "libavcodec/h264.h"
+#include "libavcodec/h264dec.h"
 #include "libavcodec/h264dsp.h"
 
 #if HAVE_ALTIVEC
@@ -626,7 +625,7 @@ static inline vec_u8 h264_deblock_q1(register vec_u8 p0,
     q1 = newq1;                                                                              \
 }
 
-static void h264_v_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0) {
+static void h264_v_loop_filter_luma_altivec(uint8_t *pix, ptrdiff_t stride, int alpha, int beta, int8_t *tc0) {
 
     if ((tc0[0] & tc0[1] & tc0[2] & tc0[3]) >= 0) {
         register vec_u8 p2 = vec_ld(-3*stride, pix);
@@ -643,7 +642,7 @@ static void h264_v_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha,
     }
 }
 
-static void h264_h_loop_filter_luma_altivec(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0) {
+static void h264_h_loop_filter_luma_altivec(uint8_t *pix, ptrdiff_t stride, int alpha, int beta, int8_t *tc0) {
 
     register vec_u8 line0, line1, line2, line3, line4, line5;
     if ((tc0[0] & tc0[1] & tc0[2] & tc0[3]) < 0)
@@ -772,12 +771,12 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
 }
 
 #define H264_WEIGHT(W) \
-static void weight_h264_pixels ## W ## _altivec(uint8_t *block, int stride, int height, \
+static void weight_h264_pixels ## W ## _altivec(uint8_t *block, ptrdiff_t stride, int height, \
                                                 int log2_denom, int weight, int offset) \
 { \
     weight_h264_W_altivec(block, stride, height, log2_denom, weight, offset, W); \
 }\
-static void biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src, int stride, int height, \
+static void biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src, ptrdiff_t stride, int height, \
                                                   int log2_denom, int weightd, int weights, int offset) \
 { \
     biweight_h264_W_altivec(dst, src, stride, height, log2_denom, weightd, weights, offset, W); \

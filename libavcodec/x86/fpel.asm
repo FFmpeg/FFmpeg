@@ -48,7 +48,6 @@ SECTION .text
 %define LEN  %2
 %endif
 cglobal %1_pixels%2, 4,5,4
-    movsxdifnidn r2, r2d
     lea          r4, [r2*3]
 %ifidn %1, avg
 %if notcpuflag(mmxext)

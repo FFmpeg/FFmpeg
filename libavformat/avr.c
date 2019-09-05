@@ -24,7 +24,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int avr_probe(AVProbeData *p)
+static int avr_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('2', 'B', 'I', 'T'))
         return 0;

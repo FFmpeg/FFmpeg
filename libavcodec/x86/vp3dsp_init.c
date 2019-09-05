@@ -26,18 +26,17 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/vp3dsp.h"
 
-void ff_vp3_idct_put_mmx(uint8_t *dest, int line_size, int16_t *block);
-void ff_vp3_idct_add_mmx(uint8_t *dest, int line_size, int16_t *block);
+void ff_vp3_idct_put_mmx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vp3_idct_add_mmx(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vp3_idct_put_sse2(uint8_t *dest, int line_size, int16_t *block);
-void ff_vp3_idct_add_sse2(uint8_t *dest, int line_size, int16_t *block);
+void ff_vp3_idct_put_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+void ff_vp3_idct_add_sse2(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, int line_size,
-                               int16_t *block);
+void ff_vp3_idct_dc_add_mmxext(uint8_t *dest, ptrdiff_t stride, int16_t *block);
 
-void ff_vp3_v_loop_filter_mmxext(uint8_t *src, int stride,
+void ff_vp3_v_loop_filter_mmxext(uint8_t *src, ptrdiff_t stride,
                                  int *bounding_values);
-void ff_vp3_h_loop_filter_mmxext(uint8_t *src, int stride,
+void ff_vp3_h_loop_filter_mmxext(uint8_t *src, ptrdiff_t stride,
                                  int *bounding_values);
 
 void ff_put_vp_no_rnd_pixels8_l2_mmx(uint8_t *dst, const uint8_t *a,

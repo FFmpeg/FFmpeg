@@ -233,6 +233,9 @@ static inline void ls_decode_line(JLSState *state, MJpegDecodeContext *s,
     while (x < w) {
         int err, pred;
 
+        if (get_bits_left(&s->gb) <= 0)
+            return;
+
         /* compute gradients */
         Ra = x ? R(dst, x - stride) : R(last, x);
         Rb = R(last, x);
@@ -375,6 +378,11 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     else
         shift = point_transform + (16 - s->bits);
 
+    if (shift >= 16) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
+    }
+
     if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
         av_log(s->avctx, AV_LOG_DEBUG,
                "JPEG-LS params: %ix%i NEAR=%i MV=%i T(%i,%i,%i) "
@@ -384,6 +392,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 state->reset, state->limit, state->qbpp, state->range);
         av_log(s->avctx, AV_LOG_DEBUG, "JPEG params: ILV=%i Pt=%i BPP=%i, scan = %i\n",
                 ilv, point_transform, s->bits, s->cur_scan);
+    }
+    if (get_bits_left(&s->gb) < s->height) {
+        ret = AVERROR_INVALIDDATA;
+        goto end;
     }
     if (ilv == 0) { /* separate planes */
         if (s->cur_scan > s->nb_components) {
@@ -432,6 +444,10 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         }
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
+        ret = AVERROR_PATCHWELCOME;
+        goto end;
+    } else { /* unknown interleaving */
+        avpriv_report_missing_feature(s->avctx, "Unknown interleaved images");
         ret = AVERROR_PATCHWELCOME;
         goto end;
     }

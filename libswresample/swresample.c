@@ -84,9 +84,6 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     if (av_opt_set_int(s, "isr", in_sample_rate,  0) < 0)
         goto fail;
 
-    if (av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_NONE,   0) < 0)
-        goto fail;
-
     if (av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> user_in_ch_layout), 0) < 0)
         goto fail;
 
@@ -167,6 +164,14 @@ av_cold int swr_init(struct SwrContext *s){
         return AVERROR(EINVAL);
     }
 
+    if(s-> in_sample_rate <= 0){
+        av_log(s, AV_LOG_ERROR, "Requested input sample rate %d is invalid\n", s->in_sample_rate);
+        return AVERROR(EINVAL);
+    }
+    if(s->out_sample_rate <= 0){
+        av_log(s, AV_LOG_ERROR, "Requested output sample rate %d is invalid\n", s->out_sample_rate);
+        return AVERROR(EINVAL);
+    }
     s->out.ch_count  = s-> user_out_ch_count;
     s-> in.ch_count  = s->  user_in_ch_count;
     s->used_ch_count = s->user_used_ch_count;
@@ -175,6 +180,8 @@ av_cold int swr_init(struct SwrContext *s){
     s->out_ch_layout = s->user_out_ch_layout;
 
     s->int_sample_fmt= s->user_int_sample_fmt;
+
+    s->dither.method = s->user_dither_method;
 
     if(av_get_channel_layout_nb_channels(s-> in_ch_layout) > SWR_CH_MAX) {
         av_log(s, AV_LOG_WARNING, "Input channel layout 0x%"PRIx64" is invalid or unsupported.\n", s-> in_ch_layout);
@@ -224,6 +231,8 @@ av_cold int swr_init(struct SwrContext *s){
         }else if(   av_get_planar_sample_fmt(s-> in_sample_fmt) == AV_SAMPLE_FMT_S32P
                  && av_get_planar_sample_fmt(s->out_sample_fmt) == AV_SAMPLE_FMT_S32P
                  && !s->rematrix
+                 && s->out_sample_rate == s->in_sample_rate
+                 && !(s->flags & SWR_FLAG_RESAMPLE)
                  && s->engine != SWR_ENGINE_SOXR){
             s->int_sample_fmt= AV_SAMPLE_FMT_S32P;
         }else if(av_get_bytes_per_sample(s->in_sample_fmt) <= 4){
@@ -236,9 +245,10 @@ av_cold int swr_init(struct SwrContext *s){
 
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_S32P
+        &&s->int_sample_fmt != AV_SAMPLE_FMT_S64P
         &&s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         &&s->int_sample_fmt != AV_SAMPLE_FMT_DBLP){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, S16/S32/FLT/DBL is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, s16p/s32p/s64p/fltp/dblp are supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
         return AVERROR(EINVAL);
     }
 
@@ -262,7 +272,7 @@ av_cold int swr_init(struct SwrContext *s){
     }
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
-        s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby);
+        s->resample = s->resampler->init(s->resample, s->out_sample_rate, s->in_sample_rate, s->filter_size, s->phase_shift, s->linear_interp, s->cutoff, s->int_sample_fmt, s->filter_type, s->kaiser_beta, s->precision, s->cheby, s->exact_rational);
         if (!s->resample) {
             av_log(s, AV_LOG_ERROR, "Failed to initialize resampler\n");
             return AVERROR(ENOMEM);
@@ -274,7 +284,7 @@ av_cold int swr_init(struct SwrContext *s){
         && s->int_sample_fmt != AV_SAMPLE_FMT_FLTP
         && s->int_sample_fmt != AV_SAMPLE_FMT_DBLP
         && s->resample){
-        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16/s32/flt/dbl\n");
+        av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16p/s32p/fltp/dblp\n");
         ret = AVERROR(EINVAL);
         goto fail;
     }
@@ -316,11 +326,14 @@ av_cold int swr_init(struct SwrContext *s){
 
 av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
-    s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
+    s->resample_first= RSC*s->out.ch_count/s->used_ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
     s->in_buffer= s->in;
     s->silence  = s->in;
     s->drop_temp= s->out;
+
+    if ((ret = swri_dither_init(s, s->out_sample_fmt, s->int_sample_fmt)) < 0)
+        goto fail;
 
     if(!s->resample && !s->rematrix && !s->channel_map && !s->dither.method){
         s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
@@ -362,8 +375,14 @@ av_assert0(s->out.ch_count);
         set_audiodata_fmt(&s->in_buffer, s->int_sample_fmt);
     }
 
-    if ((ret = swri_dither_init(s, s->out_sample_fmt, s->int_sample_fmt)) < 0)
-        goto fail;
+    av_assert0(!s->preout.count);
+    s->dither.noise = s->preout;
+    s->dither.temp  = s->preout;
+    if (s->dither.method > SWR_DITHER_NS) {
+        s->dither.noise.bps = 4;
+        s->dither.noise.fmt = AV_SAMPLE_FMT_FLTP;
+        s->dither.noise_scale = 1;
+    }
 
     if(s->rematrix || s->dither.method) {
         ret = swri_rematrix_init(s);
@@ -401,9 +420,9 @@ int swri_realloc_audio(AudioData *a, int count){
         return AVERROR(ENOMEM);
     for(i=0; i<a->ch_count; i++){
         a->ch[i]= a->data + i*(a->planar ? countb : a->bps);
-        if(a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
+        if(a->count && a->planar) memcpy(a->ch[i], old.ch[i], a->count*a->bps);
     }
-    if(!a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
+    if(a->count && !a->planar) memcpy(a->ch[0], old.ch[0], a->count*a->ch_count*a->bps);
     av_freep(&old.data);
     a->count= count;
 
@@ -667,7 +686,7 @@ static int swr_convert_internal(struct SwrContext *s, AudioData *out, int out_co
                             s->mix_2_1_simd(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_simd_one, 0, 0, len1);
                     if(out_count != len1)
                         for(ch=0; ch<preout->ch_count; ch++)
-                            s->mix_2_1_f(conv_src->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off + len1, s->native_one, 0, 0, out_count - len1);
+                            s->mix_2_1_f(conv_src->ch[ch] + off, preout->ch[ch] + off, s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos + off, s->native_one, 0, 0, out_count - len1);
                 } else {
                     for(ch=0; ch<preout->ch_count; ch++)
                         s->mix_2_1_f(conv_src->ch[ch], preout->ch[ch], s->dither.noise.ch[ch] + s->dither.noise.bps * s->dither.noise_pos, s->native_one, 0, 0, out_count);

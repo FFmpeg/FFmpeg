@@ -63,7 +63,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     uint8_t *y, *u, *v, *y_end, *u_end, *v_end;
 
     // Check header
-    if ( avpkt->size < FRAME_HEADER_SIZE
+    if ( avpkt->size < FRAME_HEADER_SIZE + avctx->height * 3
       || header[0] != MAGIC_0 || header[1] != MAGIC_1
       || (header[17] != SUBSAMPLE_420 && header[17] != SUBSAMPLE_422)
       || (header[18] != YUVORDER_YUYV && header[18] != YUVORDER_UYVY)
@@ -100,7 +100,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
     }
 
     // Get buffer filled with previous frame
-    if ((ret = ff_reget_buffer(avctx, frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, frame, 0)) < 0)
         return ret;
 
 
@@ -113,12 +113,12 @@ static int cpia_decode_frame(AVCodecContext *avctx,
         src += 2;
 
         if (src_size < linelength) {
-            av_frame_set_decode_error_flags(frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+            frame->decode_error_flags = FF_DECODE_ERROR_INVALID_BITSTREAM;
             av_log(avctx, AV_LOG_WARNING, "Frame ended unexpectedly!\n");
             break;
         }
         if (src[linelength - 1] != EOL) {
-            av_frame_set_decode_error_flags(frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+            frame->decode_error_flags = FF_DECODE_ERROR_INVALID_BITSTREAM;
             av_log(avctx, AV_LOG_WARNING, "Wrong line length %d or line not terminated properly (found 0x%02x)!\n", linelength, src[linelength - 1]);
             break;
         }
@@ -139,7 +139,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
              */
             for (j = 0; j < linelength - 1; j++) {
                 if (y > y_end) {
-                    av_frame_set_decode_error_flags(frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+                    frame->decode_error_flags = FF_DECODE_ERROR_INVALID_BITSTREAM;
                     av_log(avctx, AV_LOG_WARNING, "Decoded data exceeded linesize!\n");
                     break;
                 }
@@ -159,7 +159,7 @@ static int cpia_decode_frame(AVCodecContext *avctx,
              */
             for (j = 0; j < linelength - 4; ) {
                 if (y + 1 > y_end || u > u_end || v > v_end) {
-                    av_frame_set_decode_error_flags(frame, FF_DECODE_ERROR_INVALID_BITSTREAM);
+                    frame->decode_error_flags = FF_DECODE_ERROR_INVALID_BITSTREAM;
                     av_log(avctx, AV_LOG_WARNING, "Decoded data exceeded linesize!\n");
                     break;
                 }

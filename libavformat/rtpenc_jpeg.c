@@ -59,7 +59,7 @@ void ff_rtp_send_jpeg(AVFormatContext *s1, const uint8_t *buf, int size)
         return;
     }
 
-    /* preparse the header for getting some infos */
+    /* preparse the header for getting some info */
     for (i = 0; i < size; i++) {
         if (buf[i] != 0xff)
             continue;

@@ -1,6 +1,6 @@
 /*
  * Sony Playstation (PSX) STR File Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -68,7 +68,7 @@ typedef struct StrDemuxContext {
 
 static const uint8_t sync_header[12] = {0x00,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0xff,0x00};
 
-static int str_probe(AVProbeData *p)
+static int str_probe(const AVProbeData *p)
 {
     const uint8_t *sector= p->buf;
     const uint8_t *end= sector + p->buf_size;
@@ -211,7 +211,7 @@ static int str_read_packet(AVFormatContext *s,
 
                 if(pkt->size != sector_count*VIDEO_DATA_CHUNK_SIZE){
                     if(pkt->data)
-                        av_log(s, AV_LOG_ERROR, "missmatching sector_count\n");
+                        av_log(s, AV_LOG_ERROR, "mismatching sector_count\n");
                     av_packet_unref(pkt);
                     if (av_new_packet(pkt, sector_count*VIDEO_DATA_CHUNK_SIZE))
                         return AVERROR(EIO);

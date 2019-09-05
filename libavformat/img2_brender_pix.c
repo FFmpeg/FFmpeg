@@ -22,7 +22,7 @@
 #include "img2.h"
 #include "libavutil/intreadwrite.h"
 
-static int brender_read_probe(AVProbeData *p)
+static int brender_read_probe(const AVProbeData *p)
 {
     static const uint8_t brender_magic[16] = {
         0,0,0,0x12,0,0,0,8,0,0,0,2,0,0,0,2

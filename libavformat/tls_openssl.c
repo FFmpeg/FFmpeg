@@ -43,6 +43,9 @@ typedef struct TLSContext {
     TLSShared tls_shared;
     SSL_CTX *ctx;
     SSL *ssl;
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    BIO_METHOD* url_bio_method;
+#endif
 } TLSContext;
 
 #if HAVE_THREADS
@@ -65,7 +68,7 @@ static unsigned long openssl_thread_id(void)
 
 int ff_openssl_init(void)
 {
-    avpriv_lock_avformat();
+    ff_lock_avformat();
     if (!openssl_init) {
         SSL_library_init();
         SSL_load_error_strings();
@@ -74,7 +77,7 @@ int ff_openssl_init(void)
             int i;
             openssl_mutexes = av_malloc_array(sizeof(pthread_mutex_t), CRYPTO_num_locks());
             if (!openssl_mutexes) {
-                avpriv_unlock_avformat();
+                ff_unlock_avformat();
                 return AVERROR(ENOMEM);
             }
 
@@ -88,14 +91,14 @@ int ff_openssl_init(void)
 #endif
     }
     openssl_init++;
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
 
     return 0;
 }
 
 void ff_openssl_deinit(void)
 {
-    avpriv_lock_avformat();
+    ff_lock_avformat();
     openssl_init--;
     if (!openssl_init) {
 #if HAVE_THREADS
@@ -108,11 +111,17 @@ void ff_openssl_deinit(void)
         }
 #endif
     }
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
 }
 
 static int print_tls_error(URLContext *h, int ret)
 {
+    TLSContext *c = h->priv_data;
+    if (h->flags & AVIO_FLAG_NONBLOCK) {
+        int err = SSL_get_error(c->ssl, ret);
+        if (err == SSL_ERROR_WANT_READ || err == SSL_ERROR_WANT_WRITE)
+            return AVERROR(EAGAIN);
+    }
     av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
     return AVERROR(EIO);
 }
@@ -128,15 +137,25 @@ static int tls_close(URLContext *h)
         SSL_CTX_free(c->ctx);
     if (c->tls_shared.tcp)
         ffurl_close(c->tls_shared.tcp);
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    if (c->url_bio_method)
+        BIO_meth_free(c->url_bio_method);
+#endif
     ff_openssl_deinit();
     return 0;
 }
 
 static int url_bio_create(BIO *b)
 {
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    BIO_set_init(b, 1);
+    BIO_set_data(b, NULL);
+    BIO_set_flags(b, 0);
+#else
     b->init = 1;
     b->ptr = NULL;
     b->flags = 0;
+#endif
     return 1;
 }
 
@@ -145,13 +164,21 @@ static int url_bio_destroy(BIO *b)
     return 1;
 }
 
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+#define GET_BIO_DATA(x) BIO_get_data(x)
+#else
+#define GET_BIO_DATA(x) (x)->ptr
+#endif
+
 static int url_bio_bread(BIO *b, char *buf, int len)
 {
-    URLContext *h = b->ptr;
+    URLContext *h = GET_BIO_DATA(b);
     int ret = ffurl_read(h, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_read(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -159,11 +186,13 @@ static int url_bio_bread(BIO *b, char *buf, int len)
 
 static int url_bio_bwrite(BIO *b, const char *buf, int len)
 {
-    URLContext *h = b->ptr;
+    URLContext *h = GET_BIO_DATA(b);
     int ret = ffurl_write(h, buf, len);
     if (ret >= 0)
         return ret;
     BIO_clear_retry_flags(b);
+    if (ret == AVERROR(EAGAIN))
+        BIO_set_retry_write(b);
     if (ret == AVERROR_EXIT)
         return 0;
     return -1;
@@ -183,6 +212,7 @@ static int url_bio_bputs(BIO *b, const char *str)
     return url_bio_bwrite(b, str, strlen(str));
 }
 
+#if OPENSSL_VERSION_NUMBER < 0x1010000fL
 static BIO_METHOD url_bio_method = {
     .type = BIO_TYPE_SOURCE_SINK,
     .name = "urlprotocol bio",
@@ -194,6 +224,7 @@ static BIO_METHOD url_bio_method = {
     .create = url_bio_create,
     .destroy = url_bio_destroy,
 };
+#endif
 
 static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **options)
 {
@@ -208,12 +239,17 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     if ((ret = ff_tls_open_underlying(c, h, uri, options)) < 0)
         goto fail;
 
-    p->ctx = SSL_CTX_new(c->listen ? TLSv1_server_method() : TLSv1_client_method());
+    // We want to support all versions of TLS >= 1.0, but not the deprecated
+    // and insecure SSLv2 and SSLv3.  Despite the name, SSLv23_*_method()
+    // enables support for all versions of SSL and TLS, and we then disable
+    // support for the old protocols immediately after creating the context.
+    p->ctx = SSL_CTX_new(c->listen ? SSLv23_server_method() : SSLv23_client_method());
     if (!p->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
         goto fail;
     }
+    SSL_CTX_set_options(p->ctx, SSL_OP_NO_SSLv2 | SSL_OP_NO_SSLv3);
     if (c->ca_file) {
         if (!SSL_CTX_load_verify_locations(p->ctx, c->ca_file, NULL))
             av_log(h, AV_LOG_ERROR, "SSL_CTX_load_verify_locations %s\n", ERR_error_string(ERR_get_error(), NULL));
@@ -240,8 +276,20 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
         ret = AVERROR(EIO);
         goto fail;
     }
+#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
+    p->url_bio_method = BIO_meth_new(BIO_TYPE_SOURCE_SINK, "urlprotocol bio");
+    BIO_meth_set_write(p->url_bio_method, url_bio_bwrite);
+    BIO_meth_set_read(p->url_bio_method, url_bio_bread);
+    BIO_meth_set_puts(p->url_bio_method, url_bio_bputs);
+    BIO_meth_set_ctrl(p->url_bio_method, url_bio_ctrl);
+    BIO_meth_set_create(p->url_bio_method, url_bio_create);
+    BIO_meth_set_destroy(p->url_bio_method, url_bio_destroy);
+    bio = BIO_new(p->url_bio_method);
+    BIO_set_data(bio, c->tcp);
+#else
     bio = BIO_new(&url_bio_method);
     bio->ptr = c->tcp;
+#endif
     SSL_set_bio(p->ssl, bio, bio);
     if (!c->listen && !c->numerichost)
         SSL_set_tlsext_host_name(p->ssl, c->host);
@@ -264,7 +312,11 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_read(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_read(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
@@ -275,12 +327,22 @@ static int tls_read(URLContext *h, uint8_t *buf, int size)
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    int ret = SSL_write(c->ssl, buf, size);
+    int ret;
+    // Set or clear the AVIO_FLAG_NONBLOCK on c->tls_shared.tcp
+    c->tls_shared.tcp->flags &= ~AVIO_FLAG_NONBLOCK;
+    c->tls_shared.tcp->flags |= h->flags & AVIO_FLAG_NONBLOCK;
+    ret = SSL_write(c->ssl, buf, size);
     if (ret > 0)
         return ret;
     if (ret == 0)
         return AVERROR_EOF;
     return print_tls_error(h, ret);
+}
+
+static int tls_get_file_handle(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    return ffurl_get_file_handle(c->tls_shared.tcp);
 }
 
 static const AVOption options[] = {
@@ -295,12 +357,13 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_openssl_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
+    .url_get_file_handle = tls_get_file_handle,
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,

@@ -265,7 +265,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
     ff_dlog(s->avctx, "pict_type=%d pb_frame=%d\n", s->pict_type, pb_frame);
 
     if (pb_frame) {
-        avpriv_request_sample(s->avctx, "pb frame");
+        avpriv_request_sample(s->avctx, "PB-frame");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -388,9 +388,9 @@ static int rv20_decode_picture_header(RVDecContext *rv)
             // attempt to keep aspect during typical resolution switches
             if (!old_aspect.num)
                 old_aspect = (AVRational){1, 1};
-            if (2 * new_w * s->height == new_h * s->width)
+            if (2 * (int64_t)new_w * s->height == (int64_t)new_h * s->width)
                 s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){2, 1});
-            if (new_w * s->height == 2 * new_h * s->width)
+            if ((int64_t)new_w * s->height == 2 * (int64_t)new_h * s->width)
                 s->avctx->sample_aspect_ratio = av_mul_q(old_aspect, (AVRational){1, 2});
 
             ret = ff_set_dimensions(s->avctx, new_w, new_h);
@@ -431,7 +431,7 @@ static int rv20_decode_picture_header(RVDecContext *rv)
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         if (s->pp_time <=s->pb_time || s->pp_time <= s->pp_time - s->pb_time || s->pp_time<=0) {
             av_log(s->avctx, AV_LOG_DEBUG,
-                   "messed up order, possible from seeking? skipping current b frame\n");
+                   "messed up order, possible from seeking? skipping current B-frame\n");
 #define ERROR_SKIP_FRAME -123
             return ERROR_SKIP_FRAME;
         }
@@ -646,7 +646,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
 
         // Repeat the slice end check from ff_h263_decode_mb with our active
         // bitstream size
-        if (ret != SLICE_ERROR) {
+        if (ret != SLICE_ERROR && active_bits_size >= get_bits_count(&s->gb)) {
             int v = show_bits(&s->gb, 16);
 
             if (get_bits_count(&s->gb) + 16 > active_bits_size)
@@ -670,7 +670,7 @@ static int rv10_decode_packet(AVCodecContext *avctx, const uint8_t *buf,
         }
         if (s->pict_type != AV_PICTURE_TYPE_B)
             ff_h263_update_motion_val(s);
-        ff_mpv_decode_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, s->block);
         if (s->loop_filter)
             ff_h263_loop_filter(s);
 

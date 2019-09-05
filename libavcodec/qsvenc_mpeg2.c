@@ -87,7 +87,7 @@ static const AVCodecDefault qsv_enc_defaults[] = {
     // same as the x264 default
     { "g",         "250"   },
     { "bf",        "3"     },
-
+    { "trellis",   "-1"    },
     { "flags",     "+cgop" },
 #if FF_API_PRIVATE_OPT
     { "b_strategy", "-1"   },
@@ -104,11 +104,12 @@ AVCodec ff_mpeg2_qsv_encoder = {
     .init           = qsv_enc_init,
     .encode2        = qsv_enc_frame,
     .close          = qsv_enc_close,
-    .capabilities   = AV_CODEC_CAP_DELAY,
+    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_HYBRID,
     .pix_fmts       = (const enum AVPixelFormat[]){ AV_PIX_FMT_NV12,
                                                     AV_PIX_FMT_QSV,
                                                     AV_PIX_FMT_NONE },
     .priv_class     = &class,
     .defaults       = qsv_enc_defaults,
     .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
+    .wrapper_name   = "qsv",
 };

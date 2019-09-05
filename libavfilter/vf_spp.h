@@ -28,7 +28,7 @@
 
 #define MAX_LEVEL 6 /* quality levels */
 
-typedef struct {
+typedef struct SPPContext {
     const AVClass *av_class;
 
     int log2_count;

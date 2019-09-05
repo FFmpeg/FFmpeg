@@ -19,8 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "adts_header.h"
+#include "adts_parser.h"
 #include "avcodec.h"
-#include "aacadtsdec.h"
 #include "bsf.h"
 #include "put_bits.h"
 #include "get_bits.h"
@@ -35,29 +36,28 @@ typedef struct AACBSFContext {
  * This filter creates an MPEG-4 AudioSpecificConfig from an MPEG-2/4
  * ADTS header and removes the ADTS header.
  */
-static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
+static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *pkt)
 {
     AACBSFContext *ctx = bsfc->priv_data;
 
     GetBitContext gb;
     PutBitContext pb;
     AACADTSHeaderInfo hdr;
-    AVPacket *in;
     int ret;
 
-    ret = ff_bsf_get_packet(bsfc, &in);
+    ret = ff_bsf_get_packet_ref(bsfc, pkt);
     if (ret < 0)
         return ret;
 
-    if (in->size < AAC_ADTS_HEADER_SIZE)
+    if (bsfc->par_in->extradata && pkt->size >= 2 && (AV_RB16(pkt->data) >> 4) != 0xfff)
+        return 0;
+
+    if (pkt->size < AV_AAC_ADTS_HEADER_SIZE)
         goto packet_too_small;
 
-    init_get_bits(&gb, in->data, AAC_ADTS_HEADER_SIZE * 8);
+    init_get_bits(&gb, pkt->data, AV_AAC_ADTS_HEADER_SIZE * 8);
 
-    if (bsfc->par_in->extradata && show_bits(&gb, 12) != 0xfff)
-        goto finish;
-
-    if (avpriv_aac_parse_header(&gb, &hdr) < 0) {
+    if (ff_adts_header_parse(&gb, &hdr) < 0) {
         av_log(bsfc, AV_LOG_ERROR, "Error parsing ADTS frame header!\n");
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -70,10 +70,10 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
         goto fail;
     }
 
-    in->size -= AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
-    if (in->size <= 0)
+    pkt->size -= AV_AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
+    if (pkt->size <= 0)
         goto packet_too_small;
-    in->data += AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
+    pkt->data += AV_AAC_ADTS_HEADER_SIZE + 2 * !hdr.crc_absent;
 
     if (!ctx->first_frame_done) {
         int            pce_size = 0;
@@ -81,7 +81,7 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
         uint8_t       *extradata;
 
         if (!hdr.chan_config) {
-            init_get_bits(&gb, in->data, in->size * 8);
+            init_get_bits(&gb, pkt->data, pkt->size * 8);
             if (get_bits(&gb, 3) != 5) {
                 avpriv_report_missing_feature(bsfc,
                                               "PCE-based channel configuration "
@@ -91,13 +91,14 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
                 goto fail;
             }
             init_put_bits(&pb, pce_data, MAX_PCE_SIZE);
-            pce_size = avpriv_copy_pce_data(&pb, &gb)/8;
+            pce_size = ff_copy_pce_data(&pb, &gb) / 8;
             flush_put_bits(&pb);
-            in->size -= get_bits_count(&gb)/8;
-            in->data += get_bits_count(&gb)/8;
+            pkt->size -= get_bits_count(&gb)/8;
+            pkt->data += get_bits_count(&gb)/8;
         }
 
-        extradata = av_mallocz(2 + pce_size + AV_INPUT_BUFFER_PADDING_SIZE);
+        extradata = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                            2 + pce_size);
         if (!extradata) {
             ret = AVERROR(ENOMEM);
             goto fail;
@@ -115,14 +116,8 @@ static int aac_adtstoasc_filter(AVBSFContext *bsfc, AVPacket *out)
             memcpy(extradata + 2, pce_data, pce_size);
         }
 
-        bsfc->par_out->extradata = extradata;
-        bsfc->par_out->extradata_size = 2 + pce_size;
         ctx->first_frame_done = 1;
     }
-
-finish:
-    av_packet_move_ref(out, in);
-    av_packet_free(&in);
 
     return 0;
 
@@ -130,14 +125,22 @@ packet_too_small:
     av_log(bsfc, AV_LOG_ERROR, "Input packet too small\n");
     ret = AVERROR_INVALIDDATA;
 fail:
-    av_packet_free(&in);
+    av_packet_unref(pkt);
     return ret;
 }
 
 static int aac_adtstoasc_init(AVBSFContext *ctx)
 {
-    av_freep(&ctx->par_out->extradata);
-    ctx->par_out->extradata_size = 0;
+    /* Validate the extradata if the stream is already MPEG-4 AudioSpecificConfig */
+    if (ctx->par_in->extradata) {
+        MPEG4AudioConfig mp4ac;
+        int ret = avpriv_mpeg4audio_get_config(&mp4ac, ctx->par_in->extradata,
+                                               ctx->par_in->extradata_size * 8, 1);
+        if (ret < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Error parsing AudioSpecificConfig extradata!\n");
+            return ret;
+        }
+    }
 
     return 0;
 }

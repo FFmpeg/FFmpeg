@@ -31,7 +31,7 @@ void ff_flv_encode_picture_header(MpegEncContext *s, int picture_number)
     avpriv_align_put_bits(&s->pb);
 
     put_bits(&s->pb, 17, 1);
-    /* 0: h263 escape codes 1: 11-bit escape codes */
+    /* 0: H.263 escape codes 1: 11-bit escape codes */
     put_bits(&s->pb, 5, (s->h263_flv - 1));
     put_bits(&s->pb, 8,
              (((int64_t) s->picture_number * 30 * s->avctx->time_base.num) /   // FIXME use timestamp

@@ -547,13 +547,13 @@ static void decode_fixed_sparse(AMRFixed *fixed_sparse, const uint16_t *pulses,
  * @param p the context
  * @param subframe unpacked amr subframe
  * @param mode mode of the current frame
- * @param fixed_sparse sparse respresentation of the fixed vector
+ * @param fixed_sparse sparse representation of the fixed vector
  */
 static void pitch_sharpening(AMRContext *p, int subframe, enum Mode mode,
                              AMRFixed *fixed_sparse)
 {
     // The spec suggests the current pitch gain is always used, but in other
-    // modes the pitch and codebook gains are joinly quantized (sec 5.8.2)
+    // modes the pitch and codebook gains are jointly quantized (sec 5.8.2)
     // so the codebook gain cannot depend on the quantized pitch gain.
     if (mode == MODE_12k2)
         p->beta = FFMIN(p->pitch_gain[4], 1.0);

@@ -55,7 +55,7 @@ typedef struct Rl2DemuxContext {
  * @param p probe buffer
  * @return 0 when the probe buffer does not contain rl2 data, > 0 otherwise
  */
-static int rl2_probe(AVProbeData *p)
+static int rl2_probe(const AVProbeData *p)
 {
 
     if(AV_RB32(&p->buf[0]) != FORM_TAG)
@@ -104,7 +104,7 @@ static av_cold int rl2_read_header(AVFormatContext *s)
     if(back_size > INT_MAX/2  || frame_count > INT_MAX / sizeof(uint32_t))
         return AVERROR_INVALIDDATA;
 
-    avio_skip(pb, 2);         /* encoding mentod */
+    avio_skip(pb, 2);         /* encoding method */
     sound_rate = avio_rl16(pb);
     rate = avio_rl16(pb);
     channels = avio_rl16(pb);
@@ -170,12 +170,21 @@ static av_cold int rl2_read_header(AVFormatContext *s)
     }
 
     /** read offset and size tables */
-    for(i=0; i < frame_count;i++)
+    for(i=0; i < frame_count;i++) {
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
         chunk_size[i] = avio_rl32(pb);
-    for(i=0; i < frame_count;i++)
+    }
+    for(i=0; i < frame_count;i++) {
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
         chunk_offset[i] = avio_rl32(pb);
-    for(i=0; i < frame_count;i++)
+    }
+    for(i=0; i < frame_count;i++) {
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
         audio_size[i] = avio_rl32(pb) & 0xFFFF;
+    }
 
     /** build the sample index */
     for(i=0;i<frame_count;i++){

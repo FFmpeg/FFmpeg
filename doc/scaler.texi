@@ -5,7 +5,8 @@
 The video scaler supports the following named options.
 
 Options may be set by specifying -@var{option} @var{value} in the
-FFmpeg tools. For programmatic use, they can be set explicitly in the
+FFmpeg tools, with a few API-only exceptions noted below.
+For programmatic use, they can be set explicitly in the
 @code{SwsContext} options or through the @file{libavutil/opt.h} API.
 
 @table @option
@@ -13,7 +14,8 @@ FFmpeg tools. For programmatic use, they can be set explicitly in the
 @anchor{sws_flags}
 @item sws_flags
 Set the scaler flags. This is also used to set the scaling
-algorithm. Only a single algorithm should be selected.
+algorithm. Only a single algorithm should be selected. Default
+value is @samp{bicubic}.
 
 It accepts the following values:
 @table @samp
@@ -46,7 +48,8 @@ Select Gaussian rescaling algorithm.
 Select sinc rescaling algorithm.
 
 @item lanczos
-Select Lanczos rescaling algorithm.
+Select Lanczos rescaling algorithm. The default width (alpha) is 3 and can be
+changed by setting @code{param0}.
 
 @item spline
 Select natural bicubic spline rescaling algorithm.
@@ -67,29 +70,31 @@ Select full chroma input.
 Enable bitexact output.
 @end table
 
-@item srcw
+@item srcw @var{(API only)}
 Set source width.
 
-@item srch
+@item srch @var{(API only)}
 Set source height.
 
-@item dstw
+@item dstw @var{(API only)}
 Set destination width.
 
-@item dsth
+@item dsth @var{(API only)}
 Set destination height.
 
-@item src_format
+@item src_format @var{(API only)}
 Set source pixel format (must be expressed as an integer).
 
-@item dst_format
+@item dst_format @var{(API only)}
 Set destination pixel format (must be expressed as an integer).
 
-@item src_range
-Select source range.
+@item src_range @var{(boolean)}
+If value is set to @code{1}, indicates source is full range. Default value is
+@code{0}, which indicates source is limited range.
 
-@item dst_range
-Select destination range.
+@item dst_range @var{(boolean)}
+If value is set to @code{1}, enable full range for destination. Default value
+is @code{0}, which enables limited range.
 
 @anchor{sws_params}
 @item param0, param1

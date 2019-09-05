@@ -74,6 +74,7 @@ static int read_number(const AVOption *o, const void *dst, double *num, int *den
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_UINT64:
         *intnum = *(int64_t *)dst;
         return 0;
     case AV_OPT_TYPE_FLOAT:
@@ -96,8 +97,8 @@ static int read_number(const AVOption *o, const void *dst, double *num, int *den
 static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
 {
     if (o->type != AV_OPT_TYPE_FLAGS &&
-        (o->max * den < num * intnum || o->min * den > num * intnum)) {
-        num = den ? num * intnum / den : (num * intnum ? INFINITY : NAN);
+        (!den || o->max * den < num * intnum || o->min * den > num * intnum)) {
+        num = den ? num * intnum / den : (num && intnum ? INFINITY : NAN);
         av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
                num, o->name, o->min, o->max);
         return AVERROR(ERANGE);
@@ -126,9 +127,27 @@ static int write_number(void *obj, const AVOption *o, void *dst, double num, int
         break;
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
-    case AV_OPT_TYPE_INT64:
-        *(int64_t *)dst = llrint(num / den) * intnum;
-        break;
+    case AV_OPT_TYPE_INT64:{
+        double d = num / den;
+        if (intnum == 1 && d == (double)INT64_MAX) {
+            *(int64_t *)dst = INT64_MAX;
+        } else
+            *(int64_t *)dst = llrint(d) * intnum;
+        break;}
+    case AV_OPT_TYPE_UINT64:{
+        double d = num / den;
+        // We must special case uint64_t here as llrint() does not support values
+        // outside the int64_t range and there is no portable function which does
+        // "INT64_MAX + 1ULL" is used as it is representable exactly as IEEE double
+        // while INT64_MAX is not
+        if (intnum == 1 && d == (double)UINT64_MAX) {
+            *(uint64_t *)dst = UINT64_MAX;
+        } else if (d > INT64_MAX + 1ULL) {
+            *(uint64_t *)dst = (llrint(d - (INT64_MAX + 1ULL)) + (INT64_MAX + 1ULL))*intnum;
+        } else {
+            *(uint64_t *)dst = llrint(d) * intnum;
+        }
+        break;}
     case AV_OPT_TYPE_FLOAT:
         *(float *)dst = num * intnum / den;
         break;
@@ -200,6 +219,7 @@ static int set_string(void *obj, const AVOption *o, const char *val, uint8_t **d
 }
 
 #define DEFAULT_NUMVAL(opt) ((opt->type == AV_OPT_TYPE_INT64 || \
+                              opt->type == AV_OPT_TYPE_UINT64 || \
                               opt->type == AV_OPT_TYPE_CONST || \
                               opt->type == AV_OPT_TYPE_FLAGS || \
                               opt->type == AV_OPT_TYPE_INT)     \
@@ -291,8 +311,6 @@ static int set_string_number(void *obj, void *target_obj, const AVOption *o, con
         if (!i || !*val)
             return 0;
     }
-
-    return 0;
 }
 
 static int set_string_image_size(void *obj, const AVOption *o, const char *val, int *dst)
@@ -445,6 +463,9 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     if (o->flags & AV_OPT_FLAG_READONLY)
         return AVERROR(EINVAL);
 
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
+
     dst = ((uint8_t *)target_obj) + o->offset;
     switch (o->type) {
     case AV_OPT_TYPE_BOOL:
@@ -456,28 +477,41 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     case AV_OPT_TYPE_FLAGS:
     case AV_OPT_TYPE_INT:
     case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_UINT64:
     case AV_OPT_TYPE_FLOAT:
     case AV_OPT_TYPE_DOUBLE:
     case AV_OPT_TYPE_RATIONAL:
         return set_string_number(obj, target_obj, o, val, dst);
     case AV_OPT_TYPE_IMAGE_SIZE:
         return set_string_image_size(obj, o, val, dst);
-    case AV_OPT_TYPE_VIDEO_RATE:
-        return set_string_video_rate(obj, o, val, dst);
+    case AV_OPT_TYPE_VIDEO_RATE: {
+        AVRational tmp;
+        ret = set_string_video_rate(obj, o, val, &tmp);
+        if (ret < 0)
+            return ret;
+        return write_number(obj, o, dst, 1, tmp.den, tmp.num);
+    }
     case AV_OPT_TYPE_PIXEL_FMT:
         return set_string_pixel_fmt(obj, o, val, dst);
     case AV_OPT_TYPE_SAMPLE_FMT:
         return set_string_sample_fmt(obj, o, val, dst);
     case AV_OPT_TYPE_DURATION:
-        if (!val) {
-            *(int64_t *)dst = 0;
+        {
+            int64_t usecs = 0;
+            if (val) {
+                if ((ret = av_parse_time(&usecs, val, 1)) < 0) {
+                    av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
+                    return ret;
+                }
+            }
+            if (usecs < o->min || usecs > o->max) {
+                av_log(obj, AV_LOG_ERROR, "Value %f for parameter '%s' out of range [%g - %g]\n",
+                       usecs / 1000000.0, o->name, o->min / 1000000.0, o->max / 1000000.0);
+                return AVERROR(ERANGE);
+            }
+            *(int64_t *)dst = usecs;
             return 0;
-        } else {
-            if ((ret = av_parse_time(dst, val, 1)) < 0)
-                av_log(obj, AV_LOG_ERROR, "Unable to parse option value \"%s\" as duration\n", val);
-            return ret;
         }
-        break;
     case AV_OPT_TYPE_COLOR:
         return set_string_color(obj, o, val, dst);
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
@@ -735,6 +769,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
     if (!o || !target_obj || (o->offset<=0 && o->type != AV_OPT_TYPE_CONST))
         return AVERROR_OPTION_NOT_FOUND;
 
+    if (o->flags & AV_OPT_FLAG_DEPRECATED)
+        av_log(obj, AV_LOG_WARNING, "The \"%s\" option is deprecated: %s\n", name, o->help);
+
     dst = (uint8_t *)target_obj + o->offset;
 
     buf[0] = 0;
@@ -750,6 +787,9 @@ int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
         break;
     case AV_OPT_TYPE_INT64:
         ret = snprintf(buf, sizeof(buf), "%"PRId64, *(int64_t *)dst);
+        break;
+    case AV_OPT_TYPE_UINT64:
+        ret = snprintf(buf, sizeof(buf), "%"PRIu64, *(uint64_t *)dst);
         break;
     case AV_OPT_TYPE_FLOAT:
         ret = snprintf(buf, sizeof(buf), "%f", *(float *)dst);
@@ -1099,6 +1139,9 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             case AV_OPT_TYPE_INT64:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<int64>");
                 break;
+            case AV_OPT_TYPE_UINT64:
+                av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<uint64>");
+                break;
             case AV_OPT_TYPE_DOUBLE:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<double>");
                 break;
@@ -1151,6 +1194,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_SUBTITLE_PARAM) ? 'S' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_EXPORT)         ? 'X' : '.');
         av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_READONLY)       ? 'R' : '.');
+        av_log(av_log_obj, AV_LOG_INFO, "%c", (opt->flags & AV_OPT_FLAG_BSF_PARAM)      ? 'B' : '.');
 
         if (opt->help)
             av_log(av_log_obj, AV_LOG_INFO, " %s", opt->help);
@@ -1159,6 +1203,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
             switch (opt->type) {
             case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64:
+            case AV_OPT_TYPE_UINT64:
             case AV_OPT_TYPE_DOUBLE:
             case AV_OPT_TYPE_FLOAT:
             case AV_OPT_TYPE_RATIONAL:
@@ -1203,6 +1248,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 break;
             }
             case AV_OPT_TYPE_INT:
+            case AV_OPT_TYPE_UINT64:
             case AV_OPT_TYPE_INT64: {
                 const char *def_const = get_opt_const_name(obj, opt->unit, opt->default_val.i64);
                 if (def_const)
@@ -1281,6 +1327,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case AV_OPT_TYPE_FLAGS:
             case AV_OPT_TYPE_INT:
             case AV_OPT_TYPE_INT64:
+            case AV_OPT_TYPE_UINT64:
             case AV_OPT_TYPE_DURATION:
             case AV_OPT_TYPE_CHANNEL_LAYOUT:
             case AV_OPT_TYPE_PIXEL_FMT:
@@ -1641,6 +1688,7 @@ static int opt_size(enum AVOptionType type)
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
     case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_UINT64:
         return sizeof(int64_t);
     case AV_OPT_TYPE_DOUBLE:
         return sizeof(double);
@@ -1770,6 +1818,7 @@ int av_opt_query_ranges_default(AVOptionRanges **ranges_arg, void *obj, const ch
     case AV_OPT_TYPE_BOOL:
     case AV_OPT_TYPE_INT:
     case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_UINT64:
     case AV_OPT_TYPE_PIXEL_FMT:
     case AV_OPT_TYPE_SAMPLE_FMT:
     case AV_OPT_TYPE_FLOAT:
@@ -1859,6 +1908,7 @@ int av_opt_is_set_to_default(void *obj, const AVOption *o)
     case AV_OPT_TYPE_CHANNEL_LAYOUT:
     case AV_OPT_TYPE_DURATION:
     case AV_OPT_TYPE_INT64:
+    case AV_OPT_TYPE_UINT64:
         read_number(o, dst, NULL, NULL, &i64);
         return o->default_val.i64 == i64;
     case AV_OPT_TYPE_STRING:

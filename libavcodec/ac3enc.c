@@ -652,7 +652,7 @@ void ff_ac3_process_exponents(AC3EncodeContext *s)
  */
 static void count_frame_bits_fixed(AC3EncodeContext *s)
 {
-    static const int frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
+    static const uint8_t frame_bits_inc[8] = { 0, 0, 2, 2, 2, 4, 2, 4 };
     int blk;
     int frame_bits;
 
@@ -1800,7 +1800,7 @@ static int validate_float_option(float v, const float *v_list, int v_list_size)
             break;
     }
     if (i == v_list_size)
-        return -1;
+        return AVERROR(EINVAL);
 
     return i;
 }

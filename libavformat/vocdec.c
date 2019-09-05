@@ -23,7 +23,7 @@
 #include "voc.h"
 #include "internal.h"
 
-static int voc_probe(AVProbeData *p)
+static int voc_probe(const AVProbeData *p)
 {
     int version, check;
 

@@ -52,7 +52,7 @@ typedef struct {
     uint64_t pts;
 } MlvContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('M','L','V','I') &&
         AV_RL32(p->buf + 4) >= 52 &&
@@ -77,7 +77,7 @@ static int check_file_header(AVIOContext *pb, uint64_t guid)
     return 0;
 }
 
-static void read_string(AVFormatContext *avctx, AVIOContext *pb, const char *tag, int size)
+static void read_string(AVFormatContext *avctx, AVIOContext *pb, const char *tag, unsigned size)
 {
     char * value = av_malloc(size + 1);
     if (!value) {
@@ -242,7 +242,8 @@ static int scan_file(AVFormatContext *avctx, AVStream *vst, AVStream *ast, int f
         } else if (type == MKTAG('N','U','L','L')) {
         } else if (type == MKTAG('M','L','V','I')) { /* occurs when MLV and Mnn files are concatenated */
         } else {
-            av_log(avctx, AV_LOG_INFO, "unsupported tag %c%c%c%c, size %u\n", type&0xFF, (type>>8)&0xFF, (type>>16)&0xFF, (type>>24)&0xFF, size);
+            av_log(avctx, AV_LOG_INFO, "unsupported tag %s, size %u\n",
+                   av_fourcc2str(type), size);
         }
         avio_skip(pb, size);
     }
@@ -341,9 +342,9 @@ static int read_header(AVFormatContext *avctx)
         return ret;
 
     /* scan secondary files */
-    if (strlen(avctx->filename) > 2) {
+    if (strlen(avctx->url) > 2) {
         int i;
-        char *filename = av_strdup(avctx->filename);
+        char *filename = av_strdup(avctx->url);
 
         if (!filename)
             return AVERROR(ENOMEM);
@@ -449,7 +450,7 @@ static int read_seek(AVFormatContext *avctx, int stream_index, int64_t timestamp
     if ((flags & AVSEEK_FLAG_FRAME) || (flags & AVSEEK_FLAG_BYTE))
         return AVERROR(ENOSYS);
 
-    if (!avctx->pb->seekable)
+    if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     mlv->pts = timestamp;

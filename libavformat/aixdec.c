@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int aix_probe(AVProbeData *p)
+static int aix_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('A','I','X','F') ||
         AV_RB32(p->buf +  8) != 0x01000014 ||

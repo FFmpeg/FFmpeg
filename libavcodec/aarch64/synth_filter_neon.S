@@ -50,7 +50,7 @@ function ff_synth_filter_float_neon, export=1
         add             x1,  x1,  x7,  lsl #2   // synth_buf
         sub             w8,  w7,  #32
         stp             x5,  x1,  [sp, #16]
-        bic             x7,  x7,  #63
+        and             x7,  x7,  #~63
         and             w8,  w8,  #511
         stp             x7,  x30, [sp, #32]
         str             w8,  [x2]

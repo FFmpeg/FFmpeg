@@ -73,7 +73,7 @@ static inline int64_t bs_get_v(const uint8_t **bs)
     return v - br;
 }
 
-static int mpc8_probe(AVProbeData *p)
+static int mpc8_probe(const AVProbeData *p)
 {
     const uint8_t *bs = p->buf + 4;
     const uint8_t *bs_end = bs + p->buf_size;
@@ -239,7 +239,7 @@ static int mpc8_read_header(AVFormatContext *s)
     avio_skip(pb, 4); //CRC
     c->ver = avio_r8(pb);
     if(c->ver != 8){
-        av_log(s, AV_LOG_ERROR, "Unknown stream version %d\n", c->ver);
+        avpriv_report_missing_feature(s, "Stream version %d", c->ver);
         return AVERROR_PATCHWELCOME;
     }
     c->samples = ffio_read_varlen(pb);
@@ -264,7 +264,7 @@ static int mpc8_read_header(AVFormatContext *s)
     if (size > 0)
         avio_skip(pb, size);
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t pos = avio_tell(s->pb);
         c->apetag_start = ff_ape_parse_tag(s);
         avio_seek(s->pb, pos, SEEK_SET);
@@ -297,7 +297,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
             return 0;
         }
         if(tag == TAG_STREAMEND)
-            return AVERROR(EIO);
+            return AVERROR_EOF;
         mpc8_handle_chunk(s, tag, pos, size);
     }
     return AVERROR_EOF;

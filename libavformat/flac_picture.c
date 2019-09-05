@@ -20,6 +20,8 @@
  */
 
 #include "libavutil/avassert.h"
+#include "libavutil/intreadwrite.h"
+#include "libavcodec/png.h"
 #include "avformat.h"
 #include "flac_picture.h"
 #include "id3v2.h"
@@ -119,6 +121,9 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         goto fail;
     }
 
+    if (AV_RB64(data->data) == PNGSIG)
+        id = AV_CODEC_ID_PNG;
+
     st = avformat_new_stream(s, NULL);
     if (!st) {
         RETURN_ERROR(AVERROR(ENOMEM));
@@ -140,14 +145,14 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     if (desc)
         av_dict_set(&st->metadata, "title", desc, AV_DICT_DONT_STRDUP_VAL);
 
-    av_freep(&pb);
+    avio_context_free(&pb);
 
     return 0;
 
 fail:
     av_buffer_unref(&data);
     av_freep(&desc);
-    av_freep(&pb);
+    avio_context_free(&pb);
 
     return ret;
 }

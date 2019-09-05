@@ -32,7 +32,7 @@ typedef struct {
     int packet_sizes_alloc;
 } PMPContext;
 
-static int pmp_probe(AVProbeData *p) {
+static int pmp_probe(const AVProbeData *p) {
     if (AV_RN32(p->buf) == AV_RN32("pmpm") &&
         AV_RL32(p->buf + 4) == 1)
         return AVPROBE_SCORE_MAX;

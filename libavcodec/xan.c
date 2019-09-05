@@ -1,6 +1,6 @@
 /*
  * Wing Commander/Xan Video Decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -34,9 +34,10 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
-#define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "internal.h"
 
@@ -130,7 +131,10 @@ static int xan_huffman_decode(uint8_t *dest, int dest_len,
         return ret;
 
     while (val != 0x16) {
-        unsigned idx = val - 0x17 + get_bits1(&gb) * byte;
+        unsigned idx;
+        if (get_bits_left(&gb) < 1)
+            return AVERROR_INVALIDDATA;
+        idx = val - 0x17 + get_bits1(&gb) * byte;
         if (idx >= 2 * byte)
             return AVERROR_INVALIDDATA;
         val = src[idx];
@@ -262,7 +266,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s, AVFrame *frame,
     prevframe_index = (y + motion_y) * stride + x + motion_x;
     prevframe_x = x + motion_x;
 
-    if (prev_palette_plane == palette_plane && FFABS(curframe_index - prevframe_index) < pixel_count) {
+    if (prev_palette_plane == palette_plane && FFABS(motion_x + width*motion_y) < pixel_count) {
          avpriv_request_sample(s->avctx, "Overlapping copy");
          return ;
     }

@@ -1,6 +1,6 @@
 /*
  * Westwood Studios VQA Format Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -62,7 +62,7 @@ typedef struct WsVqaDemuxContext {
     int video_stream_index;
 } WsVqaDemuxContext;
 
-static int wsvqa_probe(AVProbeData *p)
+static int wsvqa_probe(const AVProbeData *p)
 {
     /* need 12 bytes to qualify */
     if (p->buf_size < 12)
@@ -131,7 +131,7 @@ static int wsvqa_read_header(AVFormatContext *s)
         chunk_tag = AV_RB32(&scratch[0]);
         chunk_size = AV_RB32(&scratch[4]);
 
-        /* catch any unknown header tags, for curiousity */
+        /* catch any unknown header tags, for curiosity */
         switch (chunk_tag) {
         case CINF_TAG:
         case CINH_TAG:
@@ -144,9 +144,8 @@ static int wsvqa_read_header(AVFormatContext *s)
             break;
 
         default:
-            av_log (s, AV_LOG_ERROR, " note: unknown chunk seen (%c%c%c%c)\n",
-                scratch[0], scratch[1],
-                scratch[2], scratch[3]);
+            av_log(s, AV_LOG_ERROR, " note: unknown chunk seen (%s)\n",
+                   av_fourcc2str(chunk_tag));
             break;
         }
 
@@ -251,7 +250,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
             case CMDS_TAG:
                 break;
             default:
-                av_log(s, AV_LOG_INFO, "Skipping unknown chunk 0x%08X\n", chunk_type);
+                av_log(s, AV_LOG_INFO, "Skipping unknown chunk %s\n",
+                       av_fourcc2str(av_bswap32(chunk_type)));
             }
             avio_skip(pb, chunk_size + skip_byte);
         }

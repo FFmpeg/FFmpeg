@@ -27,6 +27,7 @@
 #include "libavutil/cpu.h"
 #include "libavutil/mem.h"
 #include "libavutil/thread.h"
+#include "libavutil/slicethread.h"
 
 #include "avfilter.h"
 #include "internal.h"
@@ -34,169 +35,55 @@
 
 typedef struct ThreadContext {
     AVFilterGraph *graph;
-
-    int nb_threads;
-    pthread_t *workers;
+    AVSliceThread *thread;
     avfilter_action_func *func;
 
     /* per-execute parameters */
     AVFilterContext *ctx;
     void *arg;
     int   *rets;
-    int nb_rets;
-    int nb_jobs;
-
-    pthread_cond_t last_job_cond;
-    pthread_cond_t current_job_cond;
-    pthread_mutex_t current_job_lock;
-    int current_job;
-    unsigned int current_execute;
-    int done;
 } ThreadContext;
 
-static void* attribute_align_arg worker(void *v)
+static void worker_func(void *priv, int jobnr, int threadnr, int nb_jobs, int nb_threads)
 {
-    ThreadContext *c = v;
-    int our_job      = c->nb_jobs;
-    int nb_threads   = c->nb_threads;
-    unsigned int last_execute = 0;
-    int self_id;
-
-    pthread_mutex_lock(&c->current_job_lock);
-    self_id = c->current_job++;
-    for (;;) {
-        while (our_job >= c->nb_jobs) {
-            if (c->current_job == nb_threads + c->nb_jobs)
-                pthread_cond_signal(&c->last_job_cond);
-
-            while (last_execute == c->current_execute && !c->done)
-                pthread_cond_wait(&c->current_job_cond, &c->current_job_lock);
-            last_execute = c->current_execute;
-            our_job = self_id;
-
-            if (c->done) {
-                pthread_mutex_unlock(&c->current_job_lock);
-                return NULL;
-            }
-        }
-        pthread_mutex_unlock(&c->current_job_lock);
-
-        c->rets[our_job % c->nb_rets] = c->func(c->ctx, c->arg, our_job, c->nb_jobs);
-
-        pthread_mutex_lock(&c->current_job_lock);
-        our_job = c->current_job++;
-    }
+    ThreadContext *c = priv;
+    int ret = c->func(c->ctx, c->arg, jobnr, nb_jobs);
+    if (c->rets)
+        c->rets[jobnr] = ret;
 }
 
 static void slice_thread_uninit(ThreadContext *c)
 {
-    int i;
-
-    pthread_mutex_lock(&c->current_job_lock);
-    c->done = 1;
-    pthread_cond_broadcast(&c->current_job_cond);
-    pthread_mutex_unlock(&c->current_job_lock);
-
-    for (i = 0; i < c->nb_threads; i++)
-         pthread_join(c->workers[i], NULL);
-
-    pthread_mutex_destroy(&c->current_job_lock);
-    pthread_cond_destroy(&c->current_job_cond);
-    pthread_cond_destroy(&c->last_job_cond);
-    av_freep(&c->workers);
-}
-
-static void slice_thread_park_workers(ThreadContext *c)
-{
-    while (c->current_job != c->nb_threads + c->nb_jobs)
-        pthread_cond_wait(&c->last_job_cond, &c->current_job_lock);
-    pthread_mutex_unlock(&c->current_job_lock);
+    avpriv_slicethread_free(&c->thread);
 }
 
 static int thread_execute(AVFilterContext *ctx, avfilter_action_func *func,
                           void *arg, int *ret, int nb_jobs)
 {
     ThreadContext *c = ctx->graph->internal->thread;
-    int dummy_ret;
 
     if (nb_jobs <= 0)
         return 0;
-
-    pthread_mutex_lock(&c->current_job_lock);
-
-    c->current_job = c->nb_threads;
-    c->nb_jobs     = nb_jobs;
     c->ctx         = ctx;
     c->arg         = arg;
     c->func        = func;
-    if (ret) {
-        c->rets    = ret;
-        c->nb_rets = nb_jobs;
-    } else {
-        c->rets    = &dummy_ret;
-        c->nb_rets = 1;
-    }
-    c->current_execute++;
+    c->rets        = ret;
 
-    pthread_cond_broadcast(&c->current_job_cond);
-
-    slice_thread_park_workers(c);
-
+    avpriv_slicethread_execute(c->thread, nb_jobs, 0);
     return 0;
 }
 
 static int thread_init_internal(ThreadContext *c, int nb_threads)
 {
-    int i, ret;
-
-    if (!nb_threads) {
-        int nb_cpus = av_cpu_count();
-        // use number of cores + 1 as thread count if there is more than one
-        if (nb_cpus > 1)
-            nb_threads = nb_cpus + 1;
-        else
-            nb_threads = 1;
-    }
-
+    nb_threads = avpriv_slicethread_create(&c->thread, c, worker_func, NULL, nb_threads);
     if (nb_threads <= 1)
-        return 1;
-
-    c->nb_threads = nb_threads;
-    c->workers = av_mallocz_array(sizeof(*c->workers), nb_threads);
-    if (!c->workers)
-        return AVERROR(ENOMEM);
-
-    c->current_job = 0;
-    c->nb_jobs     = 0;
-    c->done        = 0;
-
-    pthread_cond_init(&c->current_job_cond, NULL);
-    pthread_cond_init(&c->last_job_cond,    NULL);
-
-    pthread_mutex_init(&c->current_job_lock, NULL);
-    pthread_mutex_lock(&c->current_job_lock);
-    for (i = 0; i < nb_threads; i++) {
-        ret = pthread_create(&c->workers[i], NULL, worker, c);
-        if (ret) {
-           pthread_mutex_unlock(&c->current_job_lock);
-           c->nb_threads = i;
-           slice_thread_uninit(c);
-           return AVERROR(ret);
-        }
-    }
-
-    slice_thread_park_workers(c);
-
-    return c->nb_threads;
+        avpriv_slicethread_free(&c->thread);
+    return FFMAX(nb_threads, 1);
 }
 
 int ff_graph_thread_init(AVFilterGraph *graph)
 {
     int ret;
-
-#if HAVE_W32THREADS
-    w32thread_init();
-#endif
 
     if (graph->nb_threads == 1) {
         graph->thread_type = 0;

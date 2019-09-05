@@ -34,6 +34,7 @@ enum HapTextureFormat {
     HAP_FMT_RGBDXT1   = 0x0B,
     HAP_FMT_RGBADXT5  = 0x0E,
     HAP_FMT_YCOCGDXT5 = 0x0F,
+    HAP_FMT_RGTC1     = 0x01,
 };
 
 enum HapCompressor {
@@ -65,12 +66,14 @@ typedef struct HapContext {
 
     enum HapTextureFormat opt_tex_fmt; /* Texture type (encoder only) */
     int opt_chunk_count; /* User-requested chunk count (encoder only) */
+    int opt_compressor; /* User-requested compressor (encoder only) */
 
     int chunk_count;
     HapChunk *chunks;
     int *chunk_results;      /* Results from threaded operations */
 
     int tex_rat;             /* Compression ratio */
+    int tex_rat2;             /* Compression ratio of the second texture */
     const uint8_t *tex_data; /* Compressed texture */
     uint8_t *tex_buf;        /* Buffer for compressed texture */
     size_t tex_size;         /* Size of the compressed texture */
@@ -79,8 +82,13 @@ typedef struct HapContext {
 
     int slice_count;         /* Number of slices for threaded operations */
 
+    int texture_count;      /* 2 for HAQA, 1 for other version */
+    int texture_section_size; /* size of the part of the texture section (for HAPQA) */
+    int uncompress_pix_size; /* nb of byte / pixel for the target picture */
+
     /* Pointer to the selected compress or decompress function */
     int (*tex_fun)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
+    int (*tex_fun2)(uint8_t *dst, ptrdiff_t stride, const uint8_t *block);
 } HapContext;
 
 /*
@@ -94,5 +102,11 @@ int ff_hap_set_chunk_count(HapContext *ctx, int count, int first_in_frame);
  * Free resources associated with the context
  */
 av_cold void ff_hap_free_context(HapContext *ctx);
+
+/* The first three bytes are the size of the section past the header, or zero
+ * if the length is stored in the next long word. The fourth byte in the first
+ * long word indicates the type of the current section. */
+int ff_hap_parse_section_header(GetByteContext *gbc, int *section_size,
+                                enum HapSectionType *section_type);
 
 #endif /* AVCODEC_HAP_H */

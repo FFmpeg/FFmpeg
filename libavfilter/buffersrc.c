@@ -33,6 +33,7 @@
 #include "libavutil/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/timestamp.h"
 #include "audio.h"
 #include "avfilter.h"
 #include "buffersrc.h"
@@ -67,15 +68,20 @@ typedef struct BufferSourceContext {
     int eof;
 } BufferSourceContext;
 
-#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format)\
+#define CHECK_VIDEO_PARAM_CHANGE(s, c, width, height, format, pts)\
     if (c->w != width || c->h != height || c->pix_fmt != format) {\
-        av_log(s, AV_LOG_INFO, "Changing frame properties on the fly is not supported by all filters.\n");\
+        av_log(s, AV_LOG_INFO, "filter context - w: %d h: %d fmt: %d, incoming frame - w: %d h: %d fmt: %d pts_time: %s\n",\
+               c->w, c->h, c->pix_fmt, width, height, format, av_ts2timestr(pts, &s->outputs[0]->time_base));\
+        av_log(s, AV_LOG_WARNING, "Changing video frame properties on the fly is not supported by all filters.\n");\
     }
 
-#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format)\
+#define CHECK_AUDIO_PARAM_CHANGE(s, c, srate, ch_layout, ch_count, format, pts)\
     if (c->sample_fmt != format || c->sample_rate != srate ||\
         c->channel_layout != ch_layout || c->channels != ch_count) {\
-        av_log(s, AV_LOG_ERROR, "Changing frame properties on the fly is not supported.\n");\
+        av_log(s, AV_LOG_INFO, "filter context - fmt: %s r: %d layout: %"PRIX64" ch: %d, incoming frame - fmt: %s r: %d layout: %"PRIX64" ch: %d pts_time: %s\n",\
+               av_get_sample_fmt_name(c->sample_fmt), c->sample_rate, c->channel_layout, c->channels,\
+               av_get_sample_fmt_name(format), srate, ch_layout, ch_count, av_ts2timestr(pts, &s->outputs[0]->time_base));\
+        av_log(s, AV_LOG_ERROR, "Changing audio frame properties on the fly is not supported.\n");\
         return AVERROR(EINVAL);\
     }
 
@@ -155,7 +161,7 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     int ret = 0;
 
     if (frame && frame->channel_layout &&
-        av_get_channel_layout_nb_channels(frame->channel_layout) != av_frame_get_channels(frame)) {
+        av_get_channel_layout_nb_channels(frame->channel_layout) != frame->channels) {
         av_log(ctx, AV_LOG_ERROR, "Layout indicates a different number of channels than actually present\n");
         return AVERROR(EINVAL);
     }
@@ -173,6 +179,20 @@ int attribute_align_arg av_buffersrc_add_frame_flags(AVFilterContext *ctx, AVFra
     return ret;
 }
 
+static int push_frame(AVFilterGraph *graph)
+{
+    int ret;
+
+    while (1) {
+        ret = ff_filter_graph_run_once(graph);
+        if (ret == AVERROR(EAGAIN))
+            break;
+        if (ret < 0)
+            return ret;
+    }
+    return 0;
+}
+
 static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
                                            AVFrame *frame, int flags)
 {
@@ -182,31 +202,30 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     s->nb_failed_requests = 0;
 
-    if (!frame) {
-        s->eof = 1;
-        return 0;
-    } else if (s->eof)
+    if (!frame)
+        return av_buffersrc_close(ctx, AV_NOPTS_VALUE, flags);
+    if (s->eof)
         return AVERROR(EINVAL);
 
     refcounted = !!frame->buf[0];
 
     if (!(flags & AV_BUFFERSRC_FLAG_NO_CHECK_FORMAT)) {
 
-    switch (ctx->outputs[0]->type) {
-    case AVMEDIA_TYPE_VIDEO:
-        CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
-                                 frame->format);
-        break;
-    case AVMEDIA_TYPE_AUDIO:
-        /* For layouts unknown on input but known on link after negotiation. */
-        if (!frame->channel_layout)
-            frame->channel_layout = s->channel_layout;
-        CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
-                                 av_frame_get_channels(frame), frame->format);
-        break;
-    default:
-        return AVERROR(EINVAL);
-    }
+        switch (ctx->outputs[0]->type) {
+        case AVMEDIA_TYPE_VIDEO:
+            CHECK_VIDEO_PARAM_CHANGE(ctx, s, frame->width, frame->height,
+                                     frame->format, frame->pts);
+            break;
+        case AVMEDIA_TYPE_AUDIO:
+            /* For layouts unknown on input but known on link after negotiation. */
+            if (!frame->channel_layout)
+                frame->channel_layout = s->channel_layout;
+            CHECK_AUDIO_PARAM_CHANGE(ctx, s, frame->sample_rate, frame->channel_layout,
+                                     frame->channels, frame->format, frame->pts);
+            break;
+        default:
+            return AVERROR(EINVAL);
+        }
 
     }
 
@@ -235,11 +254,25 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         return ret;
     }
 
-    if ((flags & AV_BUFFERSRC_FLAG_PUSH))
-        if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
+    if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
+        return ret;
+
+    if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
+        ret = push_frame(ctx->graph);
+        if (ret < 0)
             return ret;
+    }
 
     return 0;
+}
+
+int av_buffersrc_close(AVFilterContext *ctx, int64_t pts, unsigned flags)
+{
+    BufferSourceContext *s = ctx->priv;
+
+    s->eof = 1;
+    ff_avfilter_link_set_in_status(ctx->outputs[0], AVERROR_EOF, pts);
+    return (flags & AV_BUFFERSRC_FLAG_PUSH) ? push_frame(ctx->graph) : 0;
 }
 
 static av_cold int init_video(AVFilterContext *ctx)
@@ -277,14 +310,6 @@ static const AVOption buffer_options[] = {
     { "video_size",    NULL,                     OFFSET(w),                AV_OPT_TYPE_IMAGE_SIZE,                .flags = V },
     { "height",        NULL,                     OFFSET(h),                AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
     { "pix_fmt",       NULL,                     OFFSET(pix_fmt),          AV_OPT_TYPE_PIXEL_FMT, { .i64 = AV_PIX_FMT_NONE }, .min = AV_PIX_FMT_NONE, .max = INT_MAX, .flags = V },
-#if FF_API_OLD_FILTER_OPTS
-    /* those 4 are for compatibility with the old option passing system where each filter
-     * did its own parsing */
-    { "time_base_num", "deprecated, do not use", OFFSET(time_base.num),    AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
-    { "time_base_den", "deprecated, do not use", OFFSET(time_base.den),    AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
-    { "sar_num",       "deprecated, do not use", OFFSET(pixel_aspect.num), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
-    { "sar_den",       "deprecated, do not use", OFFSET(pixel_aspect.den), AV_OPT_TYPE_INT,      { .i64 = 0 }, 0, INT_MAX, V },
-#endif
     { "sar",           "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "pixel_aspect",  "sample aspect ratio",    OFFSET(pixel_aspect),     AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
     { "time_base",     NULL,                     OFFSET(time_base),        AV_OPT_TYPE_RATIONAL, { .dbl = 0 }, 0, DBL_MAX, V },
@@ -316,14 +341,16 @@ static av_cold int init_audio(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (s->channel_layout_str) {
+    if (s->channel_layout_str || s->channel_layout) {
         int n;
 
-        s->channel_layout = av_get_channel_layout(s->channel_layout_str);
         if (!s->channel_layout) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
-                   s->channel_layout_str);
-            return AVERROR(EINVAL);
+            s->channel_layout = av_get_channel_layout(s->channel_layout_str);
+            if (!s->channel_layout) {
+                av_log(ctx, AV_LOG_ERROR, "Invalid channel layout %s.\n",
+                       s->channel_layout_str);
+                return AVERROR(EINVAL);
+            }
         }
         n = av_get_channel_layout_nb_channels(s->channel_layout);
         if (s->channels) {

@@ -1,6 +1,6 @@
 /*
  * Matroska constants
- * Copyright (c) 2003-2004 The FFmpeg Project
+ * Copyright (c) 2003-2004 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -153,6 +153,13 @@
 #define MATROSKA_ID_VIDEOCOLOR_LUMINANCEMAX 0x55D9
 #define MATROSKA_ID_VIDEOCOLOR_LUMINANCEMIN 0x55DA
 
+#define MATROSKA_ID_VIDEOPROJECTION 0x7670
+#define MATROSKA_ID_VIDEOPROJECTIONTYPE 0x7671
+#define MATROSKA_ID_VIDEOPROJECTIONPRIVATE 0x7672
+#define MATROSKA_ID_VIDEOPROJECTIONPOSEYAW 0x7673
+#define MATROSKA_ID_VIDEOPROJECTIONPOSEPITCH 0x7674
+#define MATROSKA_ID_VIDEOPROJECTIONPOSEROLL 0x7675
+
 /* IDs in the trackaudio master */
 #define MATROSKA_ID_AUDIOSAMPLINGFREQ 0xB5
 #define MATROSKA_ID_AUDIOOUTSAMPLINGFREQ 0x78B5
@@ -286,8 +293,8 @@ typedef enum {
     MATROSKA_VIDEO_FIELDORDER_UNDETERMINED = 2,
     MATROSKA_VIDEO_FIELDORDER_TT           = 1,
     MATROSKA_VIDEO_FIELDORDER_BB           = 6,
-    MATROSKA_VIDEO_FIELDORDER_BT           = 9,
-    MATROSKA_VIDEO_FIELDORDER_TB           = 14,
+    MATROSKA_VIDEO_FIELDORDER_TB           = 9,
+    MATROSKA_VIDEO_FIELDORDER_BT           = 14,
 } MatroskaVideoFieldOrder;
 
 typedef enum {
@@ -309,6 +316,35 @@ typedef enum {
   MATROSKA_VIDEO_STEREOMODE_TYPE_NB,
 } MatroskaVideoStereoModeType;
 
+typedef enum {
+  MATROSKA_VIDEO_DISPLAYUNIT_PIXELS      = 0,
+  MATROSKA_VIDEO_DISPLAYUNIT_CENTIMETERS = 1,
+  MATROSKA_VIDEO_DISPLAYUNIT_INCHES      = 2,
+  MATROSKA_VIDEO_DISPLAYUNIT_DAR         = 3,
+  MATROSKA_VIDEO_DISPLAYUNIT_UNKNOWN     = 4,
+} MatroskaVideoDisplayUnit;
+
+typedef enum {
+  MATROSKA_COLOUR_CHROMASITINGHORZ_UNDETERMINED     = 0,
+  MATROSKA_COLOUR_CHROMASITINGHORZ_LEFT             = 1,
+  MATROSKA_COLOUR_CHROMASITINGHORZ_HALF             = 2,
+  MATROSKA_COLOUR_CHROMASITINGHORZ_NB
+} MatroskaColourChromaSitingHorz;
+
+typedef enum {
+  MATROSKA_COLOUR_CHROMASITINGVERT_UNDETERMINED     = 0,
+  MATROSKA_COLOUR_CHROMASITINGVERT_TOP              = 1,
+  MATROSKA_COLOUR_CHROMASITINGVERT_HALF             = 2,
+  MATROSKA_COLOUR_CHROMASITINGVERT_NB
+} MatroskaColourChromaSitingVert;
+
+typedef enum {
+  MATROSKA_VIDEO_PROJECTION_TYPE_RECTANGULAR        = 0,
+  MATROSKA_VIDEO_PROJECTION_TYPE_EQUIRECTANGULAR    = 1,
+  MATROSKA_VIDEO_PROJECTION_TYPE_CUBEMAP            = 2,
+  MATROSKA_VIDEO_PROJECTION_TYPE_MESH               = 3,
+} MatroskaVideoProjectionType;
+
 /*
  * Matroska Codec IDs, strings
  */
@@ -324,6 +360,7 @@ typedef struct CodecTags{
 #define MATROSKA_VIDEO_STEREO_PLANE_COUNT  3
 
 extern const CodecTags ff_mkv_codec_tags[];
+extern const CodecTags ff_webm_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 extern const CodecMime ff_mkv_image_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];

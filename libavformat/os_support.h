@@ -40,7 +40,7 @@
 #endif
 #endif
 
-#if defined(_WIN32) && !defined(__MINGW32CE__)
+#ifdef _WIN32
 #  include <fcntl.h>
 #  ifdef lseek
 #   undef lseek
@@ -54,7 +54,7 @@
 #   undef fstat
 #  endif
 #  define fstat(f,s) _fstati64((f), (s))
-#endif /* defined(_WIN32) && !defined(__MINGW32CE__) */
+#endif /* defined(_WIN32) */
 
 
 #ifdef __ANDROID__
@@ -76,17 +76,7 @@ static inline int is_dos_path(const char *path)
     return 0;
 }
 
-#if defined(__OS2__) || defined(__Plan9__)
-#define SHUT_RD 0
-#define SHUT_WR 1
-#define SHUT_RDWR 2
-#endif
-
 #if defined(_WIN32)
-#define SHUT_RD SD_RECEIVE
-#define SHUT_WR SD_SEND
-#define SHUT_RDWR SD_BOTH
-
 #ifndef S_IRUSR
 #define S_IRUSR S_IREAD
 #endif
@@ -96,6 +86,19 @@ static inline int is_dos_path(const char *path)
 #endif
 
 #if CONFIG_NETWORK
+#if defined(_WIN32)
+#define SHUT_RD SD_RECEIVE
+#define SHUT_WR SD_SEND
+#define SHUT_RDWR SD_BOTH
+#else
+#include <sys/socket.h>
+#if !defined(SHUT_RD) /* OS/2, DJGPP */
+#define SHUT_RD 0
+#define SHUT_WR 1
+#define SHUT_RDWR 2
+#endif
+#endif
+
 #if !HAVE_SOCKLEN_T
 typedef int socklen_t;
 #endif
@@ -139,24 +142,10 @@ int ff_poll(struct pollfd *fds, nfds_t numfds, int timeout);
 #endif /* HAVE_POLL_H */
 #endif /* CONFIG_NETWORK */
 
-#if defined(__MINGW32CE__)
-#define mkdir(a, b) _mkdir(a)
-#elif defined(_WIN32)
+#ifdef _WIN32
 #include <stdio.h>
 #include <windows.h>
 #include "libavutil/wchar_filename.h"
-
-#ifdef WINAPI_FAMILY
-#include <winapifamily.h>
-// If a WINAPI_FAMILY is defined, check that the desktop API subset
-// is enabled
-#if WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#define USE_MOVEFILEEXA
-#endif
-#else
-// If no WINAPI_FAMILY is defined, assume the full API subset
-#define USE_MOVEFILEEXA
-#endif
 
 #define DEF_FS_FUNCTION(name, wfunc, afunc)               \
 static inline int win32_##name(const char *filename_utf8) \
@@ -181,6 +170,29 @@ fallback:                                                 \
 DEF_FS_FUNCTION(unlink, _wunlink, _unlink)
 DEF_FS_FUNCTION(mkdir,  _wmkdir,  _mkdir)
 DEF_FS_FUNCTION(rmdir,  _wrmdir , _rmdir)
+
+#define DEF_FS_FUNCTION2(name, wfunc, afunc, partype)     \
+static inline int win32_##name(const char *filename_utf8, partype par) \
+{                                                         \
+    wchar_t *filename_w;                                  \
+    int ret;                                              \
+                                                          \
+    if (utf8towchar(filename_utf8, &filename_w))          \
+        return -1;                                        \
+    if (!filename_w)                                      \
+        goto fallback;                                    \
+                                                          \
+    ret = wfunc(filename_w, par);                         \
+    av_free(filename_w);                                  \
+    return ret;                                           \
+                                                          \
+fallback:                                                 \
+    /* filename may be be in CP_ACP */                    \
+    return afunc(filename_utf8, par);                     \
+}
+
+DEF_FS_FUNCTION2(access, _waccess, _access, int)
+DEF_FS_FUNCTION2(stat, _wstati64, _stati64, struct stat*)
 
 static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
 {
@@ -209,7 +221,7 @@ static inline int win32_rename(const char *src_utf8, const char *dest_utf8)
 
 fallback:
     /* filename may be be in CP_ACP */
-#ifdef USE_MOVEFILEEXA
+#if !HAVE_UWP
     ret = MoveFileExA(src_utf8, dest_utf8, MOVEFILE_REPLACE_EXISTING);
     if (ret)
         errno = EPERM;
@@ -231,6 +243,7 @@ fallback:
 #define rename      win32_rename
 #define rmdir       win32_rmdir
 #define unlink      win32_unlink
+#define access      win32_access
 
 #endif
 

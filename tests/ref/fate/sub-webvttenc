@@ -39,14 +39,14 @@ should be underline</u>
 >
 It would be a good thing to
 hide invalid html tags that are closed and show the text in them
-<invalid_tag_unclosed>but show un-closed invalid html tags
-Show not opened tags</invalid_tag_not_opened>
+but show un-closed invalid html tags
+Show not opened tags
 <
 
 00:17.501 --> 00:20.500
 and also
 hide invalid html tags with parameters that are closed and show the text in them
-<invalid_tag_uc par=5>but show un-closed invalid html tags
+but show un-closed invalid html tags
 <u>This text should be showed underlined without problems also: 2<3,5>1,4<6</u>
 This shouldn't be underlined
 
@@ -164,14 +164,14 @@ should be hidden.
 
 01:02.501 --> 01:04.500
 It shouldn't be strikethrough,
-not opened tag showed as text.</s>
-Not opened tag showed as text.</xxxxx>
+not opened tag showed as text.
+Not opened tag showed as text.
 
 01:04.501 --> 01:06.500
 Three lines should be strikethrough,
 yes.
-<yyyy>Not closed tags showed as text
+Not closed tags showed as text
 
 01:06.501 --> 01:08.500
 Both line should be strikethrough but
-the wrong closing tag should be showed</b>
+the wrong closing tag should be showed

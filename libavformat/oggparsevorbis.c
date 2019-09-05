@@ -28,9 +28,10 @@
 #include "libavutil/base64.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
+
 #include "libavcodec/bytestream.h"
-#include "libavcodec/get_bits.h"
 #include "libavcodec/vorbis_parser.h"
+
 #include "avformat.h"
 #include "flac_picture.h"
 #include "internal.h"
@@ -43,7 +44,7 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
     int i, cnum, h, m, s, ms, keylen = strlen(key);
     AVChapter *chapter = NULL;
 
-    if (keylen < 9 || sscanf(key, "CHAPTER%03d", &cnum) != 1)
+    if (keylen < 9 || av_strncasecmp(key, "CHAPTER", 7) || sscanf(key+7, "%03d", &cnum) != 1)
         return 0;
 
     if (keylen <= 10) {
@@ -54,7 +55,7 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
                            ms + 1000 * (s + 60 * (m + 60 * h)),
                            AV_NOPTS_VALUE, NULL);
         av_free(val);
-    } else if (!strcmp(key + keylen - 4, "NAME")) {
+    } else if (!av_strcasecmp(key + keylen - 4, "NAME")) {
         for (i = 0; i < as->nb_chapters; i++)
             if (as->chapters[i]->id == cnum) {
                 chapter = as->chapters[i];
@@ -90,7 +91,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
     const uint8_t *p   = buf;
     const uint8_t *end = buf + size;
     int updates        = 0;
-    unsigned n, j;
+    unsigned n;
     int s;
 
     /* must have vendor_length and user_comment_list_length */
@@ -138,8 +139,7 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                 return AVERROR(ENOMEM);
             }
 
-            for (j = 0; j < tl; j++)
-                tt[j] = av_toupper(t[j]);
+            memcpy(tt, t, tl);
             tt[tl] = 0;
 
             memcpy(ct, v, vl);
@@ -152,8 +152,8 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
              * recommended way of embedding cover art within VorbisComments."
              */
             if (!strcmp(tt, "METADATA_BLOCK_PICTURE") && parse_picture) {
-                int ret;
-                char *pict = av_malloc(vl);
+                int ret, len = AV_BASE64_DECODE_SIZE(vl);
+                char *pict = av_malloc(len);
 
                 if (!pict) {
                     av_log(as, AV_LOG_WARNING, "out-of-memory error. Skipping cover art block.\n");
@@ -161,10 +161,11 @@ int ff_vorbis_comment(AVFormatContext *as, AVDictionary **m,
                     av_freep(&ct);
                     continue;
                 }
-                if ((ret = av_base64_decode(pict, ct, vl)) > 0)
-                    ret = ff_flac_parse_picture(as, pict, ret);
+                ret = av_base64_decode(pict, ct, len);
                 av_freep(&tt);
                 av_freep(&ct);
+                if (ret > 0)
+                    ret = ff_flac_parse_picture(as, pict, ret);
                 av_freep(&pict);
                 if (ret < 0) {
                     av_log(as, AV_LOG_WARNING, "Failed to parse cover art block.\n");
@@ -228,6 +229,10 @@ static int fixup_vorbis_headers(AVFormatContext *as,
 
     len = priv->len[0] + priv->len[1] + priv->len[2];
     buf_len = len + len / 255 + 64;
+
+    if (*buf)
+        return AVERROR_INVALIDDATA;
+
     ptr = *buf = av_realloc(NULL, buf_len);
     if (!ptr)
         return AVERROR(ENOMEM);
@@ -315,7 +320,7 @@ static int vorbis_header(AVFormatContext *s, int idx)
     if (priv->packet[pkt_type >> 1])
         return AVERROR_INVALIDDATA;
     if (pkt_type > 1 && !priv->packet[0] || pkt_type > 3 && !priv->packet[1])
-        return AVERROR_INVALIDDATA;
+        return priv->vp ? 0 : AVERROR_INVALIDDATA;
 
     priv->len[pkt_type >> 1]    = os->psize;
     priv->packet[pkt_type >> 1] = av_mallocz(os->psize);

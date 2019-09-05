@@ -29,7 +29,6 @@
 #define AVIF_COPYRIGHTED        0x00020000
 
 #define AVI_MAX_RIFF_SIZE       0x40000000LL
-#define AVI_MASTER_INDEX_SIZE   256
 #define AVI_MAX_STREAM_COUNT    100
 
 /* stream header flags */

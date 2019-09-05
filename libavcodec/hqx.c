@@ -27,6 +27,7 @@
 #include "canopus.h"
 #include "get_bits.h"
 #include "internal.h"
+#include "thread.h"
 
 #include "hqx.h"
 #include "hqxdsp.h"
@@ -405,6 +406,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_picture_ptr, AVPacket *avpkt)
 {
     HQXContext *ctx = avctx->priv_data;
+    ThreadFrame frame = { .f = data };
     uint8_t *src = avpkt->data;
     uint32_t info_tag;
     int data_start;
@@ -417,7 +419,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
 
     info_tag    = AV_RL32(src);
     if (info_tag == MKTAG('I', 'N', 'F', 'O')) {
-        unsigned info_offset = AV_RL32(src + 4);
+        uint32_t info_offset = AV_RL32(src + 4);
         if (info_offset > INT_MAX || info_offset + 8 > avpkt->size) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid INFO header offset: 0x%08"PRIX32" is too large.\n",
@@ -491,7 +493,7 @@ static int hqx_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    ret = ff_get_buffer(avctx, ctx->pic, 0);
+    ret = ff_thread_get_buffer(avctx, &frame, 0);
     if (ret < 0)
         return ret;
 
@@ -509,6 +511,9 @@ static av_cold int hqx_decode_close(AVCodecContext *avctx)
 {
     int i;
     HQXContext *ctx = avctx->priv_data;
+
+    if (avctx->internal->is_copy)
+        return 0;
 
     ff_free_vlc(&ctx->cbp_vlc);
     for (i = 0; i < 3; i++) {
@@ -536,7 +541,8 @@ AVCodec ff_hqx_decoder = {
     .init           = hqx_decode_init,
     .decode         = hqx_decode_frame,
     .close          = hqx_decode_close,
-    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS,
+    .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_SLICE_THREADS |
+                      AV_CODEC_CAP_FRAME_THREADS,
     .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
                       FF_CODEC_CAP_INIT_CLEANUP,
 };

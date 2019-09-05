@@ -24,35 +24,33 @@
 
 #include "h264pred_mips.h"
 #include "libavcodec/bit_depth_template.c"
-#include "libavutil/mips/asmdefs.h"
+#include "libavutil/mips/mmiutils.h"
 #include "constants.h"
 
 void ff_pred16x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     double ftmp[2];
     uint64_t tmp[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
         "dli        %[tmp0],    0x08                                    \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[srcA])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x0f(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp1],   0x08(%[srcA])                           \n\t"
+        MMI_LDC1(%[ftmp0], %[srcA], 0x00)
+        MMI_LDC1(%[ftmp1], %[srcA], 0x08)
+
         "1:                                                             \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdlc1    %[ftmp1],   0x0f(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x08(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDC1(%[ftmp1], %[src], 0x08)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdlc1    %[ftmp1],   0x0f(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x08(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDC1(%[ftmp1], %[src], 0x08)
+
         "daddi      %[tmp0],    %[tmp0],        -0x01                   \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         "bnez       %[tmp0],    1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [src]"+&r"(src)
         : [stride]"r"((mips_reg)stride),    [srcA]"r"((mips_reg)(src-stride))
         : "memory"
@@ -160,15 +158,14 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft,
     uint32_t dc;
     double ftmp[11];
     mips_reg tmp[3];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gsldlc1    %[ftmp10],  0x07(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp10],  0x00(%[srcA])                           \n\t"
-        "gsldlc1    %[ftmp9],   0x07(%[src0])                           \n\t"
-        "gsldrc1    %[ftmp9],   0x00(%[src0])                           \n\t"
-        "gsldlc1    %[ftmp8],   0x07(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp8],   0x00(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp10], %[srcA], 0x00)
+        MMI_ULDC1(%[ftmp9], %[src0], 0x00)
+        MMI_ULDC1(%[ftmp8], %[src1], 0x00)
 
         "punpcklbh  %[ftmp7],   %[ftmp10],      %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp6],   %[ftmp10],      %[ftmp0]                \n\t"
@@ -209,6 +206,7 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft,
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),
           [tmp0]"=&r"(tmp[0]),              [tmp1]"=&r"(tmp[1]),
+          RESTRICT_ASM_ALL64
           [dc]"=r"(dc)
         : [srcA]"r"((mips_reg)(src-stride-1)),
           [src0]"r"((mips_reg)(src-stride)),
@@ -221,20 +219,22 @@ void ff_pred8x8l_top_dc_8_mmi(uint8_t *src, int has_topleft,
     __asm__ volatile (
         "dli        %[tmp0],    0x02                                    \n\t"
         "punpcklwd  %[ftmp0],   %[dc],          %[dc]                   \n\t"
+
         "1:                                                             \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdxc1    %[ftmp0],   0x00(%[src],    %[stride])              \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDXC1(%[ftmp0], %[src], %[stride], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdxc1    %[ftmp0],   0x00(%[src],    %[stride])              \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDXC1(%[ftmp0], %[src], %[stride], 0x00)
+
         "daddi      %[tmp0],    %[tmp0],        -0x01                   \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         "bnez       %[tmp0],    1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [src]"+&r"(src)
         : [dc]"f"(dc),                      [stride]"r"((mips_reg)stride)
         : "memory"
@@ -257,13 +257,13 @@ void ff_pred8x8l_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
     const int l6 = (src[-1+5*stride] + 2*src[-1+6*stride] + src[-1+7*stride] + 2) >> 2;
     const int l7 = (src[-1+6*stride] + 2*src[-1+7*stride] + src[-1+7*stride] + 2) >> 2;
 
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
+
     __asm__ volatile (
-        "gsldlc1    %[ftmp4],   0x07(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp4],   0x00(%[srcA])                           \n\t"
-        "gsldlc1    %[ftmp5],   0x07(%[src0])                           \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[src0])                           \n\t"
-        "gsldlc1    %[ftmp6],   0x07(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp6],   0x00(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp4], %[srcA], 0x00)
+        MMI_ULDC1(%[ftmp5], %[src0], 0x00)
+        MMI_ULDC1(%[ftmp6], %[src1], 0x00)
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "dli        %[tmp0],    0x03                                    \n\t"
         "punpcklbh  %[ftmp7],   %[ftmp4],       %[ftmp0]                \n\t"
@@ -309,7 +309,9 @@ void ff_pred8x8l_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),          [ftmp11]"=&f"(ftmp[11]),
           [ftmp12]"=&f"(ftmp[12]),          [ftmp13]"=&f"(ftmp[13]),
-          [tmp0]"=&r"(tmp[0]),              [dc2]"=r"(dc2)
+          [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          [dc2]"=r"(dc2)
         : [srcA]"r"((mips_reg)(src-stride-1)),
           [src0]"r"((mips_reg)(src-stride)),
           [src1]"r"((mips_reg)(src-stride+1)),
@@ -323,20 +325,22 @@ void ff_pred8x8l_dc_8_mmi(uint8_t *src, int has_topleft, int has_topright,
     __asm__ volatile (
         "dli        %[tmp0],    0x02                                    \n\t"
         "punpcklwd  %[ftmp0],   %[dc],          %[dc]                   \n\t"
+
         "1:                                                             \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdxc1    %[ftmp0],   0x00(%[src],    %[stride])              \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDXC1(%[ftmp0], %[src], %[stride], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
-        "gssdxc1    %[ftmp0],   0x00(%[src],    %[stride])              \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+        MMI_SDXC1(%[ftmp0], %[src], %[stride], 0x00)
+
         "daddi      %[tmp0],    %[tmp0],        -0x01                   \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         "bnez       %[tmp0],    1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [src]"+&r"(src)
         : [dc]"f"(dc),                      [stride]"r"((mips_reg)stride)
         : "memory"
@@ -348,15 +352,13 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
 {
     double ftmp[12];
     mips_reg tmp[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[srcA])                           \n\t"
-        "gsldlc1    %[ftmp4],   0x07(%[src0])                           \n\t"
-        "gsldrc1    %[ftmp4],   0x00(%[src0])                           \n\t"
-        "gsldlc1    %[ftmp5],   0x07(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[src1])                           \n\t"
+        MMI_LDC1(%[ftmp3], %[srcA], 0x00)
+        MMI_LDC1(%[ftmp4], %[src0], 0x00)
+        MMI_LDC1(%[ftmp5], %[src1], 0x00)
         "punpcklbh  %[ftmp6],   %[ftmp3],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp7],   %[ftmp3],       %[ftmp0]                \n\t"
         "punpcklbh  %[ftmp8],   %[ftmp4],       %[ftmp0]                \n\t"
@@ -385,7 +387,7 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
         "psrah      %[ftmp6],   %[ftmp6],       %[ftmp1]                \n\t"
         "psrah      %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
         "packushb   %[ftmp4],   %[ftmp6],       %[ftmp7]                \n\t"
-        "sdc1       %[ftmp4],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp4], %[src], 0x00)
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
@@ -393,6 +395,7 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [ftmp10]"=&f"(ftmp[10]),          [ftmp11]"=&f"(ftmp[11]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [src]"=r"(src)
         : [srcA]"r"((mips_reg)(src-stride-1)),
           [src0]"r"((mips_reg)(src-stride)),
@@ -403,22 +406,21 @@ void ff_pred8x8l_vertical_8_mmi(uint8_t *src, int has_topleft,
 
     __asm__ volatile (
         "dli        %[tmp0],    0x02                                    \n\t"
+
         "1:                                                             \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+
         "daddi      %[tmp0],    %[tmp0],        -0x01                   \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         "bnez       %[tmp0],    1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [src]"+&r"(src)
         : [stride]"r"((mips_reg)stride)
         : "memory"
@@ -433,19 +435,21 @@ void ff_pred4x4_dc_8_mmi(uint8_t *src, const uint8_t *topright,
                  + src[-1+2*stride] + src[-1+3*stride] + 4) >>3;
     uint64_t tmp[2];
     mips_reg addr[1];
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         PTR_ADDU   "%[tmp0],    %[dc],          $0                      \n\t"
         "dmul       %[tmp1],    %[tmp0],        %[ff_pb_1]              \n\t"
         "xor        %[addr0],   %[addr0],       %[addr0]                \n\t"
-        "gsswx      %[tmp1],    0x00(%[src],    %[addr0])               \n\t"
+        MMI_SWX(%[tmp1], %[src], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "gsswx      %[tmp1],    0x00(%[src],    %[addr0])               \n\t"
+        MMI_SWX(%[tmp1], %[src], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "gsswx      %[tmp1],    0x00(%[src],    %[addr0])               \n\t"
+        MMI_SWX(%[tmp1], %[src], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "gsswx      %[tmp1],    0x00(%[src],    %[addr0])               \n\t"
+        MMI_SWX(%[tmp1], %[src], %[addr0], 0x00)
         : [tmp0]"=&r"(tmp[0]),              [tmp1]"=&r"(tmp[1]),
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0])
         : [src]"r"((mips_reg)src),          [stride]"r"((mips_reg)stride),
           [dc]"r"(dc),                      [ff_pb_1]"r"(ff_pb_1)
@@ -518,13 +522,13 @@ void ff_pred8x8_top_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
     double ftmp[4];
     uint64_t tmp[1];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
         "dli        %[tmp0],    0x02                                    \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         PTR_SUBU   "%[addr0],   %[src],         %[stride]               \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
+        MMI_LDC1(%[ftmp1], %[addr0], 0x00)
         "punpcklbh  %[ftmp2],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpckhbh  %[ftmp3],   %[ftmp1],       %[ftmp0]                \n\t"
         "biadd      %[ftmp2],   %[ftmp2]                                \n\t"
@@ -539,32 +543,25 @@ void ff_pred8x8_top_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
         "psrlh      %[ftmp2],   %[ftmp2],       %[ftmp1]                \n\t"
         "psrlh      %[ftmp3],   %[ftmp3],       %[ftmp1]                \n\t"
         "packushb   %[ftmp1],   %[ftmp2],       %[ftmp3]                \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp1], %[src], 0x00)
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [addr0]"=&r"(addr[0]),
           [src]"+&r"(src)
         : [stride]"r"((mips_reg)stride)
@@ -651,21 +648,21 @@ void ff_pred8x8_dc_8_mmi(uint8_t *src, ptrdiff_t stride)
         "packushb   %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
         "packushb   %[ftmp2],   %[ftmp3],       %[ftmp4]                \n\t"
         PTR_ADDU   "%[addr0],   $0,             %[src]                  \n\t"
-        "sdc1       %[ftmp1],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp1],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp1],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp1],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp2],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp2], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp2],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp2], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp2],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp2], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "sdc1       %[ftmp2],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp2], %[addr0], 0x00)
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),
@@ -682,28 +679,27 @@ void ff_pred8x16_vertical_8_mmi(uint8_t *src, ptrdiff_t stride)
 {
     double ftmp[1];
     uint64_t tmp[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        "gsldlc1    %[ftmp0],   0x07(%[srcA])                           \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[srcA])                           \n\t"
+        MMI_LDC1(%[ftmp0], %[srcA], 0x00)
         "dli        %[tmp0],    0x04                                    \n\t"
+
         "1:                                                             \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[src])                            \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[src])                            \n\t"
+        MMI_SDC1(%[ftmp0], %[src], 0x00)
+
         "daddi      %[tmp0],    %[tmp0],        -0x01                   \n\t"
         PTR_ADDU   "%[src],     %[src],         %[stride]               \n\t"
         "bnez       %[tmp0],    1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
           [src]"+&r"(src)
         : [stride]"r"((mips_reg)stride),    [srcA]"r"((mips_reg)(src-stride))
         : "memory"
@@ -747,17 +743,16 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         const int svq3, const int rv40)
 {
     double ftmp[11];
-    uint64_t tmp[7];
+    uint64_t tmp[6];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile(
         PTR_SUBU   "%[addr0],   %[src],         %[stride]               \n\t"
-        "dli        %[tmp2],    0x20                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp4]                                \n\t"
-        "gsldlc1    %[ftmp0],   0x06(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp0],   -0x01(%[addr0])                         \n\t"
-        "gsldrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        "dli        %[tmp0],    0x20                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
+        MMI_ULDC1(%[ftmp0], %[addr0], -0x01)
+        MMI_ULDC1(%[ftmp2], %[addr0],  0x08)
         "dsrl       %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
         "dsrl       %[ftmp3],   %[ftmp2],       %[ftmp4]                \n\t"
         "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
@@ -772,29 +767,29 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "paddsh     %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp1]                \n\t"
-        "dli        %[tmp2],    0x0e                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp4]                                \n\t"
+        "dli        %[tmp0],    0x0e                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
         "pshufh     %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp1]                \n\t"
-        "dli        %[tmp2],    0x01                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp4]                                \n\t"
+        "dli        %[tmp0],    0x01                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
         "pshufh     %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
         "paddsh     %[ftmp5],   %[ftmp0],       %[ftmp1]                \n\t"
 
         PTR_ADDIU  "%[addr0],   %[src],         -0x01                   \n\t"
         PTR_SUBU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp2],    0x00(%[addr0])                          \n\t"
-        "lbu        %[tmp6],    0x10(%[addr0])                          \n\t"
+        "lbu        %[tmp5],    0x10(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp3],    0x00(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp4],    0x00(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "lbu        %[tmp5],    0x00(%[addr0])                          \n\t"
+        "lbu        %[tmp0],    0x00(%[addr0])                          \n\t"
         "dsll       %[tmp3],    %[tmp3],        0x10                    \n\t"
         "dsll       %[tmp4],    %[tmp4],        0x20                    \n\t"
-        "dsll       %[tmp5],    %[tmp5],        0x30                    \n\t"
-        "or         %[tmp4],    %[tmp4],        %[tmp5]                 \n\t"
+        "dsll       %[tmp0],    %[tmp0],        0x30                    \n\t"
+        "or         %[tmp4],    %[tmp4],        %[tmp0]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp3]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp4]                 \n\t"
         "dmtc1      %[tmp2],    %[ftmp0]                                \n\t"
@@ -806,11 +801,11 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp4],    0x00(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "lbu        %[tmp5],    0x00(%[addr0])                          \n\t"
+        "lbu        %[tmp0],    0x00(%[addr0])                          \n\t"
         "dsll       %[tmp3],    %[tmp3],        0x10                    \n\t"
         "dsll       %[tmp4],    %[tmp4],        0x20                    \n\t"
-        "dsll       %[tmp5],    %[tmp5],        0x30                    \n\t"
-        "or         %[tmp4],    %[tmp4],        %[tmp5]                 \n\t"
+        "dsll       %[tmp0],    %[tmp0],        0x30                    \n\t"
+        "or         %[tmp4],    %[tmp4],        %[tmp0]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp3]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp4]                 \n\t"
         "dmtc1      %[tmp2],    %[ftmp1]                                \n\t"
@@ -823,11 +818,11 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp4],    0x00(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "lbu        %[tmp5],    0x00(%[addr0])                          \n\t"
+        "lbu        %[tmp0],    0x00(%[addr0])                          \n\t"
         "dsll       %[tmp3],    %[tmp3],        0x10                    \n\t"
         "dsll       %[tmp4],    %[tmp4],        0x20                    \n\t"
-        "dsll       %[tmp5],    %[tmp5],        0x30                    \n\t"
-        "or         %[tmp4],    %[tmp4],        %[tmp5]                 \n\t"
+        "dsll       %[tmp0],    %[tmp0],        0x30                    \n\t"
+        "or         %[tmp4],    %[tmp4],        %[tmp0]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp3]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp4]                 \n\t"
         "dmtc1      %[tmp2],    %[ftmp2]                                \n\t"
@@ -839,15 +834,15 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
         "lbu        %[tmp4],    0x00(%[addr0])                          \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
-        "lbu        %[tmp5],    0x00(%[addr0])                          \n\t"
-        "daddu      %[tmp6],    %[tmp6],        %[tmp5]                 \n\t"
-        "daddiu     %[tmp6],    %[tmp6],        0x01                    \n\t"
-        "dsll       %[tmp6],    %[tmp6],        0x04                    \n\t"
+        "lbu        %[tmp0],    0x00(%[addr0])                          \n\t"
+        "daddu      %[tmp5],    %[tmp5],        %[tmp0]                 \n\t"
+        "daddiu     %[tmp5],    %[tmp5],        0x01                    \n\t"
+        "dsll       %[tmp5],    %[tmp5],        0x04                    \n\t"
 
         "dsll       %[tmp3],    %[tmp3],        0x10                    \n\t"
         "dsll       %[tmp4],    %[tmp4],        0x20                    \n\t"
-        "dsll       %[tmp5],    %[tmp5],        0x30                    \n\t"
-        "or         %[tmp4],    %[tmp4],        %[tmp5]                 \n\t"
+        "dsll       %[tmp0],    %[tmp0],        0x30                    \n\t"
+        "or         %[tmp4],    %[tmp4],        %[tmp0]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp3]                 \n\t"
         "or         %[tmp2],    %[tmp2],        %[tmp4]                 \n\t"
         "dmtc1      %[tmp2],    %[ftmp3]                                \n\t"
@@ -859,13 +854,13 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "paddsh     %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp1]                \n\t"
-        "dli        %[tmp2],    0x0e                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp4]                                \n\t"
+        "dli        %[tmp0],    0x0e                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
         "pshufh     %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
         "paddsh     %[ftmp0],   %[ftmp0],       %[ftmp1]                \n\t"
 
-        "dli        %[tmp2],    0x01                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp4]                                \n\t"
+        "dli        %[tmp0],    0x01                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp4]                                \n\t"
         "pshufh     %[ftmp1],   %[ftmp0],       %[ftmp4]                \n\t"
         "paddsh     %[ftmp6],   %[ftmp0],       %[ftmp1]                \n\t"
 
@@ -914,17 +909,17 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "daddu      %[tmp3],    %[tmp0],        %[tmp1]                 \n\t"
         "dli        %[tmp2],    0x07                                    \n\t"
         "dmul       %[tmp3],    %[tmp3],        %[tmp2]                 \n\t"
-        "dsubu      %[tmp6],    %[tmp6],        %[tmp3]                 \n\t"
+        "dsubu      %[tmp5],    %[tmp5],        %[tmp3]                 \n\t"
 
         "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "dmtc1      %[tmp0],    %[ftmp0]                                \n\t"
         "pshufh     %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "dmtc1      %[tmp1],    %[ftmp5]                                \n\t"
         "pshufh     %[ftmp5],   %[ftmp5],       %[ftmp4]                \n\t"
-        "dmtc1      %[tmp6],    %[ftmp6]                                \n\t"
+        "dmtc1      %[tmp5],    %[ftmp6]                                \n\t"
         "pshufh     %[ftmp6],   %[ftmp6],       %[ftmp4]                \n\t"
-        "dli        %[tmp2],    0x05                                    \n\t"
-        "dmtc1      %[tmp2],    %[ftmp7]                                \n\t"
+        "dli        %[tmp0],    0x05                                    \n\t"
+        "dmtc1      %[tmp0],    %[ftmp7]                                \n\t"
         "pmullh     %[ftmp1],   %[ff_pw_0to3],  %[ftmp0]                \n\t"
         "dmtc1      %[ff_pw_4to7],              %[ftmp2]                \n\t"
         "pmullh     %[ftmp2],   %[ftmp2],       %[ftmp0]                \n\t"
@@ -941,16 +936,14 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
         "paddsh     %[ftmp9],   %[ftmp2],       %[ftmp6]                \n\t"
         "psrah      %[ftmp9],   %[ftmp9],       %[ftmp7]                \n\t"
         "packushb   %[ftmp0],   %[ftmp8],       %[ftmp9]                \n\t"
-        "gssdlc1    %[ftmp0],   0x07(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp0],   0x00(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp0], %[addr0], 0x00)
 
         "paddsh     %[ftmp8],   %[ftmp3],       %[ftmp6]                \n\t"
         "psrah      %[ftmp8],   %[ftmp8],       %[ftmp7]                \n\t"
         "paddsh     %[ftmp9],   %[ftmp4],       %[ftmp6]                \n\t"
         "psrah      %[ftmp9],   %[ftmp9],       %[ftmp7]                \n\t"
         "packushb   %[ftmp0],   %[ftmp8],       %[ftmp9]                \n\t"
-        "gssdlc1    %[ftmp0],   0x0f(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp0],   0x08(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp0], %[addr0], 0x08)
 
         "paddsh     %[ftmp6],   %[ftmp6],       %[ftmp5]                \n\t"
         PTR_ADDU   "%[addr0],   %[addr0],       %[stride]               \n\t"
@@ -964,7 +957,7 @@ static inline void pred16x16_plane_compat_mmi(uint8_t *src, int stride,
           [tmp0]"=&r"(tmp[0]),              [tmp1]"=&r"(tmp[1]),
           [tmp2]"=&r"(tmp[2]),              [tmp3]"=&r"(tmp[3]),
           [tmp4]"=&r"(tmp[4]),              [tmp5]"=&r"(tmp[5]),
-          [tmp6]"=&r"(tmp[6]),
+          RESTRICT_ASM_ALL64
           [addr0]"=&r"(addr[0])
         : [src]"r"(src),                    [stride]"r"((mips_reg)stride),
           [svq3]"r"(svq3),                  [rv40]"r"(rv40),

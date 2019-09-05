@@ -55,6 +55,22 @@ typedef struct AVFloatDSPContext {
                                int len);
 
     /**
+     * Multiply a vector of doubles by a scalar double and add to
+     * destination vector.  Source and destination vectors must
+     * overlap exactly or not at all.
+     *
+     * @param dst result vector
+     *            constraints: 32-byte aligned
+     * @param src input vector
+     *            constraints: 32-byte aligned
+     * @param mul scalar value
+     * @param len length of vector
+     *            constraints: multiple of 16
+     */
+    void (*vector_dmac_scalar)(double *dst, const double *src, double mul,
+                               int len);
+
+    /**
      * Multiply a vector of floats by a scalar float.  Source and
      * destination vectors must overlap exactly or not at all.
      *
@@ -157,6 +173,22 @@ typedef struct AVFloatDSPContext {
      * @return sum of elementwise products
      */
     float (*scalarproduct_float)(const float *v1, const float *v2, int len);
+
+    /**
+     * Calculate the entry wise product of two vectors of doubles and store the result in
+     * a vector of doubles.
+     *
+     * @param dst  output vector
+     *             constraints: 32-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 16
+     */
+    void (*vector_dmul)(double *dst, const double *src0, const double *src1,
+                        int len);
 } AVFloatDSPContext;
 
 /**

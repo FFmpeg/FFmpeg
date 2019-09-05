@@ -39,7 +39,7 @@
 
 #define DDPF_FOURCC    (1 <<  2)
 #define DDPF_PALETTE   (1 <<  5)
-#define DDPF_NORMALMAP (1 << 31)
+#define DDPF_NORMALMAP (1U << 31)
 
 enum DDSPostProc {
     DDS_NONE = 0,
@@ -102,6 +102,7 @@ typedef struct DDSContext {
 
     int compressed;
     int paletted;
+    int bpp;
     enum DDSPostProc postproc;
 
     const uint8_t *tex_data; // Compressed texture
@@ -116,7 +117,6 @@ static int parse_pixel_format(AVCodecContext *avctx)
 {
     DDSContext *ctx = avctx->priv_data;
     GetByteContext *gbc = &ctx->gbc;
-    char buf[32];
     uint32_t flags, fourcc, gimp_tag;
     enum DDSDXGIFormat dxgi;
     int size, bpp, r, g, b, a;
@@ -148,7 +148,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
         ctx->paletted = 0;
     }
 
-    bpp = bytestream2_get_le32(gbc); // rgbbitcount
+    bpp = ctx->bpp = bytestream2_get_le32(gbc); // rgbbitcount
     r   = bytestream2_get_le32(gbc); // rbitmask
     g   = bytestream2_get_le32(gbc); // gbitmask
     b   = bytestream2_get_le32(gbc); // bbitmask
@@ -160,13 +160,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
     bytestream2_skip(gbc, 4); // caps4
     bytestream2_skip(gbc, 4); // reserved2
 
-    av_get_codec_tag_string(buf, sizeof(buf), fourcc);
     av_log(avctx, AV_LOG_VERBOSE, "fourcc %s bpp %d "
-           "r 0x%x g 0x%x b 0x%x a 0x%x\n", buf, bpp, r, g, b, a);
-    if (gimp_tag) {
-        av_get_codec_tag_string(buf, sizeof(buf), gimp_tag);
-        av_log(avctx, AV_LOG_VERBOSE, "and GIMP-DDS tag %s\n", buf);
-    }
+           "r 0x%x g 0x%x b 0x%x a 0x%x\n", av_fourcc2str(fourcc), bpp, r, g, b, a);
+    if (gimp_tag)
+        av_log(avctx, AV_LOG_VERBOSE, "and GIMP-DDS tag %s\n", av_fourcc2str(gimp_tag));
 
     if (ctx->compressed)
         avctx->pix_fmt = AV_PIX_FMT_RGBA;
@@ -241,6 +238,10 @@ static int parse_pixel_format(AVCodecContext *avctx)
             ctx->compressed = 0;
             ctx->paletted   = 1;
             avctx->pix_fmt  = AV_PIX_FMT_PAL8;
+            break;
+        case MKTAG('G', '1', ' ', ' '):
+            ctx->compressed = 0;
+            avctx->pix_fmt  = AV_PIX_FMT_MONOBLACK;
             break;
         case MKTAG('D', 'X', '1', '0'):
             /* DirectX 10 extra header */
@@ -339,7 +340,7 @@ static int parse_pixel_format(AVCodecContext *avctx)
             }
             break;
         default:
-            av_log(avctx, AV_LOG_ERROR, "Unsupported %s fourcc.\n", buf);
+            av_log(avctx, AV_LOG_ERROR, "Unsupported %s fourcc.\n", av_fourcc2str(fourcc));
             return AVERROR_INVALIDDATA;
         }
     } else if (ctx->paletted) {
@@ -350,8 +351,11 @@ static int parse_pixel_format(AVCodecContext *avctx)
             return AVERROR_INVALIDDATA;
         }
     } else {
+        /*  4 bpp */
+        if (bpp == 4 && r == 0 && g == 0 && b == 0 && a == 0)
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
         /*  8 bpp */
-        if (bpp == 8 && r == 0xff && g == 0 && b == 0 && a == 0)
+        else if (bpp == 8 && r == 0xff && g == 0 && b == 0 && a == 0)
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
         else if (bpp == 8 && r == 0 && g == 0 && b == 0 && a == 0xff)
             avctx->pix_fmt = AV_PIX_FMT_GRAY8;
@@ -609,6 +613,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int mipmap;
     int ret;
+    int width, height;
 
     ff_texturedsp_init(&ctx->texdsp);
     bytestream2_init(gbc, avpkt->data, avpkt->size);
@@ -627,9 +632,9 @@ static int dds_decode(AVCodecContext *avctx, void *data,
 
     bytestream2_skip(gbc, 4); // flags
 
-    avctx->height = bytestream2_get_le32(gbc);
-    avctx->width  = bytestream2_get_le32(gbc);
-    ret = av_image_check_size(avctx->width, avctx->height, 0, avctx);
+    height = bytestream2_get_le32(gbc);
+    width  = bytestream2_get_le32(gbc);
+    ret = ff_set_dimensions(avctx, width, height);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid image size %dx%d.\n",
                avctx->width, avctx->height);
@@ -672,6 +677,36 @@ static int dds_decode(AVCodecContext *avctx, void *data,
         /* Use the decompress function on the texture, one block per thread. */
         ctx->tex_data = gbc->buffer;
         avctx->execute2(avctx, decompress_texture_thread, frame, NULL, ctx->slice_count);
+    } else if (!ctx->paletted && ctx->bpp == 4 && avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        uint8_t *dst = frame->data[0];
+        int x, y, i;
+
+        /* Use the first 64 bytes as palette, then copy the rest. */
+        bytestream2_get_buffer(gbc, frame->data[1], 16 * 4);
+        for (i = 0; i < 16; i++) {
+            AV_WN32(frame->data[1] + i*4,
+                    (frame->data[1][2+i*4]<<0)+
+                    (frame->data[1][1+i*4]<<8)+
+                    (frame->data[1][0+i*4]<<16)+
+                    ((unsigned)frame->data[1][3+i*4]<<24)
+            );
+        }
+        frame->palette_has_changed = 1;
+
+        if (bytestream2_get_bytes_left(gbc) < frame->height * frame->width / 2) {
+            av_log(avctx, AV_LOG_ERROR, "Buffer is too small (%d < %d).\n",
+                   bytestream2_get_bytes_left(gbc), frame->height * frame->width / 2);
+            return AVERROR_INVALIDDATA;
+        }
+
+        for (y = 0; y < frame->height; y++) {
+            for (x = 0; x < frame->width; x += 2) {
+                uint8_t val = bytestream2_get_byte(gbc);
+                dst[x    ] = val & 0xF;
+                dst[x + 1] = val >> 4;
+            }
+            dst += frame->linesize[0];
+        }
     } else {
         int linesize = av_image_get_linesize(avctx->pix_fmt, frame->width, 0);
 
@@ -684,7 +719,7 @@ static int dds_decode(AVCodecContext *avctx, void *data,
                         (frame->data[1][2+i*4]<<0)+
                         (frame->data[1][1+i*4]<<8)+
                         (frame->data[1][0+i*4]<<16)+
-                        (frame->data[1][3+i*4]<<24)
+                        ((unsigned)frame->data[1][3+i*4]<<24)
                 );
 
             frame->palette_has_changed = 1;

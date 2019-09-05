@@ -26,8 +26,6 @@
 
 #if HAVE_PTHREADS || HAVE_W32THREADS || HAVE_OS2THREADS
 
-#define USE_ATOMICS 0
-
 #if HAVE_PTHREADS
 #include <pthread.h>
 
@@ -38,8 +36,11 @@
 #define ASSERT_PTHREAD_NORET(func, ...) do {                            \
     int ret = func(__VA_ARGS__);                                        \
     if (ret) {                                                          \
+        char errbuf[AV_ERROR_MAX_STRING_SIZE] = "";                     \
         av_log(NULL, AV_LOG_FATAL, AV_STRINGIFY(func)                   \
-               " failed with error: %s\n", av_err2str(AVERROR(ret)));   \
+               " failed with error: %s\n",                              \
+               av_make_error_string(errbuf, AV_ERROR_MAX_STRING_SIZE,   \
+                                    AVERROR(ret)));                     \
         abort();                                                        \
     }                                                                   \
 } while (0)
@@ -133,6 +134,7 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 #endif
 
 #define AVMutex pthread_mutex_t
+#define AV_MUTEX_INITIALIZER PTHREAD_MUTEX_INITIALIZER
 
 #define ff_mutex_init    pthread_mutex_init
 #define ff_mutex_lock    pthread_mutex_lock
@@ -146,14 +148,13 @@ static inline int strict_pthread_once(pthread_once_t *once_control, void (*init_
 
 #else
 
-#define USE_ATOMICS 1
-
 #define AVMutex char
+#define AV_MUTEX_INITIALIZER 0
 
-#define ff_mutex_init(mutex, attr) (0)
-#define ff_mutex_lock(mutex) (0)
-#define ff_mutex_unlock(mutex) (0)
-#define ff_mutex_destroy(mutex) (0)
+static inline int ff_mutex_init(AVMutex *mutex, const void *attr){ return 0; }
+static inline int ff_mutex_lock(AVMutex *mutex){ return 0; }
+static inline int ff_mutex_unlock(AVMutex *mutex){ return 0; }
+static inline int ff_mutex_destroy(AVMutex *mutex){ return 0; }
 
 #define AVOnce char
 #define AV_ONCE_INIT 0

@@ -16,6 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "config.h"
+
 #include <stdint.h>
 #include <string.h>
 
@@ -71,17 +73,20 @@ static const VDPAUPixFmtMap pix_fmts_422[] = {
 };
 
 static const VDPAUPixFmtMap pix_fmts_444[] = {
-    { VDP_YCBCR_FORMAT_YV12, AV_PIX_FMT_YUV444P },
-    { 0,                     AV_PIX_FMT_NONE,   },
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+    { VDP_YCBCR_FORMAT_Y_U_V_444, AV_PIX_FMT_YUV444P },
+#endif
+    { 0,                          AV_PIX_FMT_NONE,   },
 };
 
 static const struct {
     VdpChromaType chroma_type;
+    enum AVPixelFormat frames_sw_format;
     const VDPAUPixFmtMap *map;
 } vdpau_pix_fmts[] = {
-    { VDP_CHROMA_TYPE_420, pix_fmts_420 },
-    { VDP_CHROMA_TYPE_422, pix_fmts_422 },
-    { VDP_CHROMA_TYPE_444, pix_fmts_444 },
+    { VDP_CHROMA_TYPE_420, AV_PIX_FMT_YUV420P, pix_fmts_420 },
+    { VDP_CHROMA_TYPE_422, AV_PIX_FMT_YUV422P, pix_fmts_422 },
+    { VDP_CHROMA_TYPE_444, AV_PIX_FMT_YUV444P, pix_fmts_444 },
 };
 
 static int count_pixfmts(const VDPAUPixFmtMap *map)
@@ -125,13 +130,6 @@ static int vdpau_init_pixmfts(AVHWDeviceContext *ctx)
     return 0;
 }
 
-static int vdpau_device_init(AVHWDeviceContext *ctx)
-{
-    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
-    VDPAUDeviceContext   *priv  = ctx->internal->priv;
-    VdpStatus             err;
-    int                   ret;
-
 #define GET_CALLBACK(id, result)                                                \
 do {                                                                            \
     void *tmp;                                                                  \
@@ -140,15 +138,22 @@ do {                                                                            
         av_log(ctx, AV_LOG_ERROR, "Error getting the " #id " callback.\n");     \
         return AVERROR_UNKNOWN;                                                 \
     }                                                                           \
-    priv->result = tmp;                                                         \
+    result = tmp;                                                               \
 } while (0)
 
+static int vdpau_device_init(AVHWDeviceContext *ctx)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+    VDPAUDeviceContext   *priv  = ctx->internal->priv;
+    VdpStatus             err;
+    int                   ret;
+
     GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_QUERY_GET_PUT_BITS_Y_CB_CR_CAPABILITIES,
-                 get_transfer_caps);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, get_data);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_PUT_BITS_Y_CB_CR, put_data);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           surf_create);
-    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          surf_destroy);
+                 priv->get_transfer_caps);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_GET_BITS_Y_CB_CR, priv->get_data);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_PUT_BITS_Y_CB_CR, priv->put_data);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_CREATE,           priv->surf_create);
+    GET_CALLBACK(VDP_FUNC_ID_VIDEO_SURFACE_DESTROY,          priv->surf_destroy);
 
     ret = vdpau_init_pixmfts(ctx);
     if (ret < 0) {
@@ -166,6 +171,35 @@ static void vdpau_device_uninit(AVHWDeviceContext *ctx)
 
     for (i = 0; i < FF_ARRAY_ELEMS(priv->pix_fmts); i++)
         av_freep(&priv->pix_fmts[i]);
+}
+
+static int vdpau_frames_get_constraints(AVHWDeviceContext *ctx,
+                                        const void *hwconfig,
+                                        AVHWFramesConstraints *constraints)
+{
+    VDPAUDeviceContext   *priv  = ctx->internal->priv;
+    int nb_sw_formats = 0;
+    int i;
+
+    constraints->valid_sw_formats = av_malloc_array(FF_ARRAY_ELEMS(vdpau_pix_fmts) + 1,
+                                                    sizeof(*constraints->valid_sw_formats));
+    if (!constraints->valid_sw_formats)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < FF_ARRAY_ELEMS(vdpau_pix_fmts); i++) {
+        if (priv->nb_pix_fmts[i] > 1)
+            constraints->valid_sw_formats[nb_sw_formats++] = vdpau_pix_fmts[i].frames_sw_format;
+    }
+    constraints->valid_sw_formats[nb_sw_formats] = AV_PIX_FMT_NONE;
+
+    constraints->valid_hw_formats = av_malloc_array(2, sizeof(*constraints->valid_hw_formats));
+    if (!constraints->valid_hw_formats)
+        return AVERROR(ENOMEM);
+
+    constraints->valid_hw_formats[0] = AV_PIX_FMT_VDPAU;
+    constraints->valid_hw_formats[1] = AV_PIX_FMT_NONE;
+
+    return 0;
 }
 
 static void vdpau_buffer_free(void *opaque, uint8_t *data)
@@ -212,26 +246,18 @@ static int vdpau_frames_init(AVHWFramesContext *ctx)
 
     int i;
 
-    switch (ctx->sw_format) {
-    case AV_PIX_FMT_YUV420P: priv->chroma_type = VDP_CHROMA_TYPE_420; break;
-    case AV_PIX_FMT_YUV422P: priv->chroma_type = VDP_CHROMA_TYPE_422; break;
-    case AV_PIX_FMT_YUV444P: priv->chroma_type = VDP_CHROMA_TYPE_444; break;
-    default:
-        av_log(ctx, AV_LOG_ERROR, "Unsupported data layout: %s\n",
-               av_get_pix_fmt_name(ctx->sw_format));
-        return AVERROR(ENOSYS);
-    }
-
     for (i = 0; i < FF_ARRAY_ELEMS(vdpau_pix_fmts); i++) {
-        if (vdpau_pix_fmts[i].chroma_type == priv->chroma_type) {
+        if (vdpau_pix_fmts[i].frames_sw_format == ctx->sw_format) {
+            priv->chroma_type = vdpau_pix_fmts[i].chroma_type;
             priv->chroma_idx  = i;
             priv->pix_fmts    = device_priv->pix_fmts[i];
             priv->nb_pix_fmts = device_priv->nb_pix_fmts[i];
             break;
         }
     }
-    if (!priv->pix_fmts) {
-        av_log(ctx, AV_LOG_ERROR, "Unsupported chroma type: %d\n", priv->chroma_type);
+    if (priv->nb_pix_fmts < 2) {
+        av_log(ctx, AV_LOG_ERROR, "Unsupported sw format: %s\n",
+               av_get_pix_fmt_name(ctx->sw_format));
         return AVERROR(ENOSYS);
     }
 
@@ -302,7 +328,7 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
 
     for (i = 0; i< FF_ARRAY_ELEMS(data) && dst->data[i]; i++) {
         data[i] = dst->data[i];
-        if (dst->linesize[i] < 0 || (uint64_t)dst->linesize > UINT32_MAX) {
+        if (dst->linesize[i] < 0 || dst->linesize[i] > UINT32_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "The linesize %d cannot be represented as uint32\n",
                    dst->linesize[i]);
@@ -325,7 +351,11 @@ static int vdpau_transfer_data_from(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(EINVAL);
     }
 
-    if (vdpau_format == VDP_YCBCR_FORMAT_YV12)
+    if ((vdpau_format == VDP_YCBCR_FORMAT_YV12)
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+            || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444)
+#endif
+            )
         FFSWAP(void*, data[1], data[2]);
 
     err = priv->get_data(surf, vdpau_format, data, linesize);
@@ -353,7 +383,7 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
 
     for (i = 0; i< FF_ARRAY_ELEMS(data) && src->data[i]; i++) {
         data[i] = src->data[i];
-        if (src->linesize[i] < 0 || (uint64_t)src->linesize > UINT32_MAX) {
+        if (src->linesize[i] < 0 || src->linesize[i] > UINT32_MAX) {
             av_log(ctx, AV_LOG_ERROR,
                    "The linesize %d cannot be represented as uint32\n",
                    src->linesize[i]);
@@ -376,7 +406,11 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
         return AVERROR(EINVAL);
     }
 
-    if (vdpau_format == VDP_YCBCR_FORMAT_YV12)
+    if ((vdpau_format == VDP_YCBCR_FORMAT_YV12)
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+            || (vdpau_format == VDP_YCBCR_FORMAT_Y_U_V_444)
+#endif
+            )
         FFSWAP(const void*, data[1], data[2]);
 
     err = priv->put_data(surf, vdpau_format, data, linesize);
@@ -388,6 +422,71 @@ static int vdpau_transfer_data_to(AVHWFramesContext *ctx, AVFrame *dst,
     return 0;
 }
 
+#if HAVE_VDPAU_X11
+#include <vdpau/vdpau_x11.h>
+#include <X11/Xlib.h>
+
+typedef struct VDPAUDevicePriv {
+    VdpDeviceDestroy *device_destroy;
+    Display *dpy;
+} VDPAUDevicePriv;
+
+static void vdpau_device_free(AVHWDeviceContext *ctx)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+    VDPAUDevicePriv       *priv = ctx->user_opaque;
+
+    if (priv->device_destroy)
+        priv->device_destroy(hwctx->device);
+    if (priv->dpy)
+        XCloseDisplay(priv->dpy);
+    av_freep(&priv);
+}
+
+static int vdpau_device_create(AVHWDeviceContext *ctx, const char *device,
+                               AVDictionary *opts, int flags)
+{
+    AVVDPAUDeviceContext *hwctx = ctx->hwctx;
+
+    VDPAUDevicePriv *priv;
+    VdpStatus err;
+    VdpGetInformationString *get_information_string;
+    const char *display, *vendor;
+
+    priv = av_mallocz(sizeof(*priv));
+    if (!priv)
+        return AVERROR(ENOMEM);
+
+    ctx->user_opaque = priv;
+    ctx->free        = vdpau_device_free;
+
+    priv->dpy = XOpenDisplay(device);
+    if (!priv->dpy) {
+        av_log(ctx, AV_LOG_ERROR, "Cannot open the X11 display %s.\n",
+               XDisplayName(device));
+        return AVERROR_UNKNOWN;
+    }
+    display = XDisplayString(priv->dpy);
+
+    err = vdp_device_create_x11(priv->dpy, XDefaultScreen(priv->dpy),
+                                &hwctx->device, &hwctx->get_proc_address);
+    if (err != VDP_STATUS_OK) {
+        av_log(ctx, AV_LOG_ERROR, "VDPAU device creation on X11 display %s failed.\n",
+               display);
+        return AVERROR_UNKNOWN;
+    }
+
+    GET_CALLBACK(VDP_FUNC_ID_GET_INFORMATION_STRING, get_information_string);
+    GET_CALLBACK(VDP_FUNC_ID_DEVICE_DESTROY,         priv->device_destroy);
+
+    get_information_string(&vendor);
+    av_log(ctx, AV_LOG_VERBOSE, "Successfully created a VDPAU device (%s) on "
+           "X11 display %s\n", vendor, display);
+
+    return 0;
+}
+#endif
+
 const HWContextType ff_hwcontext_type_vdpau = {
     .type                 = AV_HWDEVICE_TYPE_VDPAU,
     .name                 = "VDPAU",
@@ -396,8 +495,12 @@ const HWContextType ff_hwcontext_type_vdpau = {
     .device_priv_size     = sizeof(VDPAUDeviceContext),
     .frames_priv_size     = sizeof(VDPAUFramesContext),
 
+#if HAVE_VDPAU_X11
+    .device_create        = vdpau_device_create,
+#endif
     .device_init          = vdpau_device_init,
     .device_uninit        = vdpau_device_uninit,
+    .frames_get_constraints = vdpau_frames_get_constraints,
     .frames_init          = vdpau_frames_init,
     .frames_get_buffer    = vdpau_get_buffer,
     .transfer_get_formats = vdpau_transfer_get_formats,

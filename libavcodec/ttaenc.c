@@ -20,6 +20,7 @@
 
 #define BITSTREAM_WRITER_LE
 #include "ttadata.h"
+#include "ttaencdsp.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "internal.h"
@@ -29,6 +30,7 @@ typedef struct TTAEncContext {
     const AVCRC *crc_table;
     int bps;
     TTAChannel *ch_ctx;
+    TTAEncDSPContext dsp;
 } TTAEncContext;
 
 static av_cold int tta_encode_init(AVCodecContext *avctx)
@@ -57,38 +59,9 @@ static av_cold int tta_encode_init(AVCodecContext *avctx)
     if (!s->ch_ctx)
         return AVERROR(ENOMEM);
 
+    ff_ttaencdsp_init(&s->dsp);
+
     return 0;
-}
-
-static inline void ttafilter_process(TTAFilter *c, int32_t *in)
-{
-    register int32_t *dl = c->dl, *qm = c->qm, *dx = c->dx, sum = c->round;
-
-    if (c->error < 0) {
-        qm[0] -= dx[0]; qm[1] -= dx[1]; qm[2] -= dx[2]; qm[3] -= dx[3];
-        qm[4] -= dx[4]; qm[5] -= dx[5]; qm[6] -= dx[6]; qm[7] -= dx[7];
-    } else if (c->error > 0) {
-        qm[0] += dx[0]; qm[1] += dx[1]; qm[2] += dx[2]; qm[3] += dx[3];
-        qm[4] += dx[4]; qm[5] += dx[5]; qm[6] += dx[6]; qm[7] += dx[7];
-    }
-
-    sum += dl[0] * qm[0] + dl[1] * qm[1] + dl[2] * qm[2] + dl[3] * qm[3] +
-           dl[4] * qm[4] + dl[5] * qm[5] + dl[6] * qm[6] + dl[7] * qm[7];
-
-    dx[0] = dx[1]; dx[1] = dx[2]; dx[2] = dx[3]; dx[3] = dx[4];
-    dl[0] = dl[1]; dl[1] = dl[2]; dl[2] = dl[3]; dl[3] = dl[4];
-
-    dx[4] = ((dl[4] >> 30) | 1);
-    dx[5] = ((dl[5] >> 30) | 2) & ~1;
-    dx[6] = ((dl[6] >> 30) | 2) & ~1;
-    dx[7] = ((dl[7] >> 30) | 4) & ~3;
-
-    dl[4] = -dl[5]; dl[5] = -dl[6];
-    dl[6] = *in - dl[7]; dl[7] = *in;
-    dl[5] += dl[6]; dl[4] += dl[5];
-
-    *in -= (sum >> c->shift);
-    c->error = *in;
 }
 
 static int32_t get_sample(const AVFrame *frame, int sample,
@@ -155,7 +128,8 @@ pkt_alloc:
         }
         c->predictor = temp;
 
-        ttafilter_process(filter, &value);
+        s->dsp.filter_process(filter->qm, filter->dx, filter->dl, &filter->error, &value,
+                              filter->shift, filter->round);
         outval = (value > 0) ? (value << 1) - 1: -value << 1;
 
         k = rice->k0;

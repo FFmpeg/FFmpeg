@@ -20,7 +20,7 @@ fi
 case "$1" in
     need)
         case $2 in
-            ffmpeg|ffplay|ffprobe|ffserver)
+            ffmpeg|ffplay|ffprobe)
                 echo $2.c >> tools/bisect.need
             ;;
         esac

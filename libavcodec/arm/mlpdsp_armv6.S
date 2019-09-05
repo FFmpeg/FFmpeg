@@ -240,7 +240,7 @@ DAT3    .req    v4
 DAT4    .req    v5
 DAT5    .req    v6
 DAT6    .req    sl // use these rather than the otherwise unused
-DAT7    .req    fp // ip and lr so that we can load them usinf LDRD
+DAT7    .req    fp // ip and lr so that we can load them using LDRD
 
  .macro output4words  tail, head, r0, r1, r2, r3, r4, r5, r6, r7, pointer_dead=0
   .if \head

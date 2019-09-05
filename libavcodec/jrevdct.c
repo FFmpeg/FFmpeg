@@ -63,6 +63,7 @@
  */
 
 #include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
 
 #include "dct.h"
 #include "idctdsp.h"
@@ -234,7 +235,7 @@ void ff_j_rev_dct(DCTBLOCK data)
      * row DCT calculations can be simplified this way.
      */
 
-    register int *idataptr = (int*)dataptr;
+    register uint8_t *idataptr = (uint8_t*)dataptr;
 
     /* WARNING: we do the same permutation as MMX idct to simplify the
        video core */
@@ -254,10 +255,10 @@ void ff_j_rev_dct(DCTBLOCK data)
           int16_t dcval = (int16_t) (d0 * (1 << PASS1_BITS));
           register int v = (dcval & 0xffff) | ((dcval * (1 << 16)) & 0xffff0000);
 
-          idataptr[0] = v;
-          idataptr[1] = v;
-          idataptr[2] = v;
-          idataptr[3] = v;
+          AV_WN32A(&idataptr[ 0], v);
+          AV_WN32A(&idataptr[ 4], v);
+          AV_WN32A(&idataptr[ 8], v);
+          AV_WN32A(&idataptr[12], v);
       }
 
       dataptr += DCTSIZE;       /* advance pointer to next row */
@@ -974,7 +975,7 @@ void ff_j_rev_dct4(DCTBLOCK data)
      * row DCT calculations can be simplified this way.
      */
 
-    register int *idataptr = (int*)dataptr;
+    register uint8_t *idataptr = (uint8_t*)dataptr;
 
     d0 = dataptr[0];
     d2 = dataptr[1];
@@ -988,8 +989,8 @@ void ff_j_rev_dct4(DCTBLOCK data)
           int16_t dcval = (int16_t) (d0 << PASS1_BITS);
           register int v = (dcval & 0xffff) | ((dcval << 16) & 0xffff0000);
 
-          idataptr[0] = v;
-          idataptr[1] = v;
+          AV_WN32A(&idataptr[0], v);
+          AV_WN32A(&idataptr[4], v);
       }
 
       dataptr += DCTSTRIDE;     /* advance pointer to next row */
@@ -1156,14 +1157,14 @@ void ff_j_rev_dct1(DCTBLOCK data){
 #undef FIX
 #undef CONST_BITS
 
-void ff_jref_idct_put(uint8_t *dest, int line_size, int16_t *block)
+void ff_jref_idct_put(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct(block);
-    ff_put_pixels_clamped(block, dest, line_size);
+    ff_put_pixels_clamped_c(block, dest, line_size);
 }
 
-void ff_jref_idct_add(uint8_t *dest, int line_size, int16_t *block)
+void ff_jref_idct_add(uint8_t *dest, ptrdiff_t line_size, int16_t *block)
 {
     ff_j_rev_dct(block);
-    ff_add_pixels_clamped(block, dest, line_size);
+    ff_add_pixels_clamped_c(block, dest, line_size);
 }

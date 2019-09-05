@@ -1,8 +1,9 @@
 /*
  * AviSynth/AvxSynth support
- * Copyright (c) 2012 AvxSynth Team.
+ * Copyright (c) 2012 AvxSynth Team
  *
  * This file is part of FFmpeg
+ *
  * FFmpeg is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
@@ -18,8 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/attributes.h"
 #include "libavutil/internal.h"
+
 #include "libavcodec/internal.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "config.h"
@@ -29,7 +33,7 @@
 
 /* Platform-specific directives for AviSynth vs AvxSynth. */
 #ifdef _WIN32
-  #include <windows.h>
+  #include "compat/w32dlfcn.h"
   #undef EXTERN_C
   #include "compat/avisynth/avisynth_c.h"
   #define AVISYNTH_LIB "avisynth"
@@ -39,10 +43,6 @@
   #include "compat/avisynth/avxsynth_c.h"
   #define AVISYNTH_NAME "libavxsynth"
   #define AVISYNTH_LIB AVISYNTH_NAME SLIBSUF
-
-  #define LoadLibrary(x) dlopen(x, RTLD_NOW | RTLD_LOCAL)
-  #define GetProcAddress dlsym
-  #define FreeLibrary dlclose
 #endif
 
 typedef struct AviSynthLibrary {
@@ -68,10 +68,8 @@ typedef struct AviSynthLibrary {
     AVSC_DECLARE_FUNC(avs_get_pitch_p);
     AVSC_DECLARE_FUNC(avs_get_read_ptr_p);
     AVSC_DECLARE_FUNC(avs_get_row_size_p);
-    AVSC_DECLARE_FUNC(avs_is_yv24);
-    AVSC_DECLARE_FUNC(avs_is_yv16);
-    AVSC_DECLARE_FUNC(avs_is_yv411);
-    AVSC_DECLARE_FUNC(avs_is_y8);
+    AVSC_DECLARE_FUNC(avs_is_planar_rgb);
+    AVSC_DECLARE_FUNC(avs_is_planar_rgba);
 #endif
 #undef AVSC_DECLARE_FUNC
 } AviSynthLibrary;
@@ -99,6 +97,14 @@ static const int avs_planes_packed[1] = { 0 };
 static const int avs_planes_grey[1]   = { AVS_PLANAR_Y };
 static const int avs_planes_yuv[3]    = { AVS_PLANAR_Y, AVS_PLANAR_U,
                                           AVS_PLANAR_V };
+#ifdef USING_AVISYNTH
+static const int avs_planes_rgb[3]    = { AVS_PLANAR_G, AVS_PLANAR_B,
+                                          AVS_PLANAR_R };
+static const int avs_planes_yuva[4]   = { AVS_PLANAR_Y, AVS_PLANAR_U,
+                                          AVS_PLANAR_V, AVS_PLANAR_A };
+static const int avs_planes_rgba[4]   = { AVS_PLANAR_G, AVS_PLANAR_B,
+                                          AVS_PLANAR_R, AVS_PLANAR_A };
+#endif
 
 /* A conflict between C++ global objects, atexit, and dynamic loading requires
  * us to register our own atexit handler to prevent double freeing. */
@@ -112,13 +118,13 @@ static av_cold void avisynth_atexit_handler(void);
 
 static av_cold int avisynth_load_library(void)
 {
-    avs_library.library = LoadLibrary(AVISYNTH_LIB);
+    avs_library.library = dlopen(AVISYNTH_LIB, RTLD_NOW | RTLD_LOCAL);
     if (!avs_library.library)
         return AVERROR_UNKNOWN;
 
 #define LOAD_AVS_FUNC(name, continue_on_fail)                          \
-        avs_library.name =                                             \
-            (void *)GetProcAddress(avs_library.library, #name);        \
+        avs_library.name = (name ## _func)                             \
+                           dlsym(avs_library.library, #name);          \
         if (!continue_on_fail && !avs_library.name)                    \
             goto fail;
 
@@ -142,10 +148,8 @@ static av_cold int avisynth_load_library(void)
     LOAD_AVS_FUNC(avs_get_pitch_p, 1);
     LOAD_AVS_FUNC(avs_get_read_ptr_p, 1);
     LOAD_AVS_FUNC(avs_get_row_size_p, 1);
-    LOAD_AVS_FUNC(avs_is_yv24, 1);
-    LOAD_AVS_FUNC(avs_is_yv16, 1);
-    LOAD_AVS_FUNC(avs_is_yv411, 1);
-    LOAD_AVS_FUNC(avs_is_y8, 1);
+    LOAD_AVS_FUNC(avs_is_planar_rgb, 1);
+    LOAD_AVS_FUNC(avs_is_planar_rgba, 1);
 #endif
 #undef LOAD_AVS_FUNC
 
@@ -153,7 +157,7 @@ static av_cold int avisynth_load_library(void)
     return 0;
 
 fail:
-    FreeLibrary(avs_library.library);
+    dlclose(avs_library.library);
     return AVERROR_UNKNOWN;
 }
 
@@ -221,7 +225,7 @@ static av_cold void avisynth_atexit_handler(void)
         avisynth_context_destroy(avs);
         avs = next;
     }
-    FreeLibrary(avs_library.library);
+    dlclose(avs_library.library);
 
     avs_atexit_called = 1;
 }
@@ -230,7 +234,7 @@ static av_cold void avisynth_atexit_handler(void)
 static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 {
     AviSynthContext *avs = s->priv_data;
-    int planar = 0; // 0: packed, 1: YUV, 2: Y8
+    int planar = 0; // 0: packed, 1: YUV, 2: Y8, 3: Planar RGB, 4: YUVA, 5: Planar RGBA
 
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id   = AV_CODEC_ID_RAWVIDEO;
@@ -246,6 +250,167 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
 
     switch (avs->vi->pixel_type) {
 #ifdef USING_AVISYNTH
+    /* 10~16-bit YUV pix_fmts (AviSynth+) */
+    case AVS_CS_YUV444P10:
+        st->codecpar->format = AV_PIX_FMT_YUV444P10;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV422P10:
+        st->codecpar->format = AV_PIX_FMT_YUV422P10;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV420P10:
+        st->codecpar->format = AV_PIX_FMT_YUV420P10;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV444P12:
+        st->codecpar->format = AV_PIX_FMT_YUV444P12;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV422P12:
+        st->codecpar->format = AV_PIX_FMT_YUV422P12;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV420P12:
+        st->codecpar->format = AV_PIX_FMT_YUV420P12;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV444P14:
+        st->codecpar->format = AV_PIX_FMT_YUV444P14;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV422P14:
+        st->codecpar->format = AV_PIX_FMT_YUV422P14;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV420P14:
+        st->codecpar->format = AV_PIX_FMT_YUV420P14;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV444P16:
+        st->codecpar->format = AV_PIX_FMT_YUV444P16;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV422P16:
+        st->codecpar->format = AV_PIX_FMT_YUV422P16;
+        planar               = 1;
+        break;
+    case AVS_CS_YUV420P16:
+        st->codecpar->format = AV_PIX_FMT_YUV420P16;
+        planar               = 1;
+        break;
+    /* 8~16-bit YUV pix_fmts with Alpha (AviSynth+) */
+    case AVS_CS_YUVA444:
+        st->codecpar->format = AV_PIX_FMT_YUVA444P;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA422:
+        st->codecpar->format = AV_PIX_FMT_YUVA422P;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA420:
+        st->codecpar->format = AV_PIX_FMT_YUVA420P;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA444P10:
+        st->codecpar->format = AV_PIX_FMT_YUVA444P10;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA422P10:
+        st->codecpar->format = AV_PIX_FMT_YUVA422P10;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA420P10:
+        st->codecpar->format = AV_PIX_FMT_YUVA420P10;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA422P12:
+        st->codecpar->format = AV_PIX_FMT_YUVA422P12;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA444P16:
+        st->codecpar->format = AV_PIX_FMT_YUVA444P16;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA422P16:
+        st->codecpar->format = AV_PIX_FMT_YUVA422P16;
+        planar               = 4;
+        break;
+    case AVS_CS_YUVA420P16:
+        st->codecpar->format = AV_PIX_FMT_YUVA420P16;
+        planar               = 4;
+        break;
+    /* Planar RGB pix_fmts (AviSynth+) */
+    case AVS_CS_RGBP:
+        st->codecpar->format = AV_PIX_FMT_GBRP;
+        planar               = 3;
+        break;
+    case AVS_CS_RGBP10:
+        st->codecpar->format = AV_PIX_FMT_GBRP10;
+        planar               = 3;
+        break;
+    case AVS_CS_RGBP12:
+        st->codecpar->format = AV_PIX_FMT_GBRP12;
+        planar               = 3;
+        break;
+    case AVS_CS_RGBP14:
+        st->codecpar->format = AV_PIX_FMT_GBRP14;
+        planar               = 3;
+        break;
+    case AVS_CS_RGBP16:
+        st->codecpar->format = AV_PIX_FMT_GBRP16;
+        planar               = 3;
+        break;
+    /* Single precision floating point Planar RGB (AviSynth+) */
+    case AVS_CS_RGBPS:
+        st->codecpar->format = AV_PIX_FMT_GBRPF32;
+        planar               = 3;
+        break;
+    /* Planar RGB pix_fmts with Alpha (AviSynth+) */
+    case AVS_CS_RGBAP:
+        st->codecpar->format = AV_PIX_FMT_GBRAP;
+        planar               = 5;
+        break;
+    case AVS_CS_RGBAP10:
+        st->codecpar->format = AV_PIX_FMT_GBRAP10;
+        planar               = 5;
+        break;
+    case AVS_CS_RGBAP12:
+        st->codecpar->format = AV_PIX_FMT_GBRAP12;
+        planar               = 5;
+        break;
+    case AVS_CS_RGBAP16:
+        st->codecpar->format = AV_PIX_FMT_GBRAP16;
+        planar               = 5;
+        break;
+    /* Single precision floating point Planar RGB with Alpha (AviSynth+) */
+    case AVS_CS_RGBAPS:
+        st->codecpar->format = AV_PIX_FMT_GBRAPF32;
+        planar               = 5;
+        break;
+    /* 10~16-bit gray pix_fmts (AviSynth+) */
+    case AVS_CS_Y10:
+        st->codecpar->format = AV_PIX_FMT_GRAY10;
+        planar               = 2;
+        break;
+    case AVS_CS_Y12:
+        st->codecpar->format = AV_PIX_FMT_GRAY12;
+        planar               = 2;
+        break;
+    case AVS_CS_Y14:
+        st->codecpar->format = AV_PIX_FMT_GRAY14;
+        planar               = 2;
+        break;
+    case AVS_CS_Y16:
+        st->codecpar->format = AV_PIX_FMT_GRAY16;
+        planar               = 2;
+        break;
+    /* Single precision floating point gray (AviSynth+) */
+    case AVS_CS_Y32:
+        st->codecpar->format = AV_PIX_FMT_GRAYF32;
+        planar               = 2;
+        break;
+    /* pix_fmts added in AviSynth 2.6 */
     case AVS_CS_YV24:
         st->codecpar->format = AV_PIX_FMT_YUV444P;
         planar               = 1;
@@ -262,7 +427,15 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
         st->codecpar->format = AV_PIX_FMT_GRAY8;
         planar               = 2;
         break;
+    /* 16-bit packed RGB pix_fmts (AviSynth+) */
+    case AVS_CS_BGR48:
+        st->codecpar->format = AV_PIX_FMT_BGR48;
+        break;
+    case AVS_CS_BGR64:
+        st->codecpar->format = AV_PIX_FMT_BGRA64;
+        break;
 #endif
+    /* AviSynth 2.5 and AvxSynth pix_fmts */
     case AVS_CS_BGR24:
         st->codecpar->format = AV_PIX_FMT_BGR24;
         break;
@@ -288,6 +461,20 @@ static int avisynth_create_stream_video(AVFormatContext *s, AVStream *st)
     }
 
     switch (planar) {
+#ifdef USING_AVISYNTH
+    case 5: // Planar RGB + Alpha
+        avs->n_planes = 4;
+        avs->planes   = avs_planes_rgba;
+        break;
+    case 4: // YUV + Alpha
+        avs->n_planes = 4;
+        avs->planes   = avs_planes_yuva;
+        break;
+    case 3: // Planar RGB
+        avs->n_planes = 3;
+        avs->planes   = avs_planes_rgb;
+        break;
+#endif
     case 2: // Y8
         avs->n_planes = 1;
         avs->planes   = avs_planes_grey;
@@ -455,6 +642,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     const unsigned char *src_p;
     int n, i, plane, rowsize, planeheight, pitch, bits;
     const char *error;
+    int avsplus av_unused;
 
     if (avs->curr_frame >= avs->vi->num_frames)
         return AVERROR_EOF;
@@ -465,20 +653,18 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
         return 0;
 
 #ifdef USING_AVISYNTH
-    /* Define the bpp values for the new AviSynth 2.6 colorspaces.
-     * Since AvxSynth doesn't have these functions, special-case
-     * it in order to avoid implicit declaration errors. */
-
-    if (avs_library.avs_is_yv24(avs->vi))
-        bits = 24;
-    else if (avs_library.avs_is_yv16(avs->vi))
-        bits = 16;
-    else if (avs_library.avs_is_yv411(avs->vi))
-        bits = 12;
-    else if (avs_library.avs_is_y8(avs->vi))
-        bits = 8;
+    /* Detect whether we're using AviSynth 2.6 or AviSynth+ by
+     * looking for whether avs_is_planar_rgb exists. */
+    if (GetProcAddress(avs_library.library, "avs_is_planar_rgb") == NULL)
+        avsplus = 0;
     else
-        bits = avs_library.avs_bits_per_pixel(avs->vi);
+        avsplus = 1;
+
+    /* avs_bits_per_pixel changed to AVSC_API with AviSynth 2.6, which
+     * requires going through avs_library, while AvxSynth has it under
+     * the older AVSC_INLINE type, so special-case this. */
+
+    bits = avs_library.avs_bits_per_pixel(avs->vi);
 #else
     bits = avs_bits_per_pixel(avs->vi);
 #endif
@@ -529,6 +715,15 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
             src_p = src_p + (planeheight - 1) * pitch;
             pitch = -pitch;
         }
+
+#ifdef USING_AVISYNTH
+        /* Flip Planar RGB video */
+        if (avsplus && (avs_library.avs_is_planar_rgb(avs->vi) ||
+                        avs_library.avs_is_planar_rgba(avs->vi))) {
+            src_p = src_p + (planeheight - 1) * pitch;
+            pitch = -pitch;
+        }
+#endif
 
         avs_library.avs_bit_blt(avs->env, dst_p, rowsize, src_p, pitch,
                                  rowsize, planeheight);
@@ -611,15 +806,15 @@ static av_cold int avisynth_read_header(AVFormatContext *s)
     int ret;
 
     // Calling library must implement a lock for thread-safe opens.
-    if (ret = avpriv_lock_avformat())
+    if (ret = ff_lock_avformat())
         return ret;
 
     if (ret = avisynth_open_file(s)) {
-        avpriv_unlock_avformat();
+        ff_unlock_avformat();
         return ret;
     }
 
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
     return 0;
 }
 
@@ -655,11 +850,11 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
 static av_cold int avisynth_read_close(AVFormatContext *s)
 {
-    if (avpriv_lock_avformat())
+    if (ff_lock_avformat())
         return AVERROR_UNKNOWN;
 
     avisynth_context_destroy(s->priv_data);
-    avpriv_unlock_avformat();
+    ff_unlock_avformat();
     return 0;
 }
 

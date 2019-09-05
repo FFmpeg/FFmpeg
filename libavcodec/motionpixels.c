@@ -201,6 +201,8 @@ static int mp_get_vlc(MotionPixelsContext *mp, GetBitContext *gb)
     int i;
 
     i = (mp->codes_count == 1) ? 0 : get_vlc2(gb, mp->vlc.table, mp->max_codes_bits, 1);
+    if (i < 0)
+        return i;
     return mp->codes[i].delta;
 }
 
@@ -290,7 +292,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, count1, count2, sz, ret;
 
-    if ((ret = ff_reget_buffer(avctx, mp->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, mp->frame, 0)) < 0)
         return ret;
 
     /* le32 bitstream msb first */

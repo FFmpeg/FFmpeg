@@ -57,35 +57,57 @@ static void picmemset_8bpp(PicContext *s, AVFrame *frame, int value, int run,
     }
 }
 
-static void picmemset(PicContext *s, AVFrame *frame, int value, int run,
+static void picmemset(PicContext *s, AVFrame *frame, unsigned value, int run,
                       int *x, int *y, int *plane, int bits_per_plane)
 {
     uint8_t *d;
     int shift = *plane * bits_per_plane;
-    int mask  = ((1 << bits_per_plane) - 1) << shift;
+    unsigned mask  = ((1U << bits_per_plane) - 1) << shift;
+    int xl = *x;
+    int yl = *y;
+    int planel = *plane;
+    int pixels_per_value = 8/bits_per_plane;
     value   <<= shift;
 
+    d = frame->data[0] + yl * frame->linesize[0];
     while (run > 0) {
         int j;
         for (j = 8-bits_per_plane; j >= 0; j -= bits_per_plane) {
-            d = frame->data[0] + *y * frame->linesize[0];
-            d[*x] |= (value >> j) & mask;
-            *x += 1;
-            if (*x == s->width) {
-                *y -= 1;
-                *x = 0;
-                if (*y < 0) {
-                   *y = s->height - 1;
-                   *plane += 1;
+            d[xl] |= (value >> j) & mask;
+            xl += 1;
+            while (xl == s->width) {
+                yl -= 1;
+                xl = 0;
+                if (yl < 0) {
+                   yl = s->height - 1;
+                   planel += 1;
+                   if (planel >= s->nb_planes)
+                       goto end;
                    value <<= bits_per_plane;
                    mask  <<= bits_per_plane;
-                   if (*plane >= s->nb_planes)
-                       break;
+                }
+                d = frame->data[0] + yl * frame->linesize[0];
+                if (s->nb_planes == 1 &&
+                    run*pixels_per_value >= s->width &&
+                    pixels_per_value < s->width &&
+                    s->width % pixels_per_value == 0
+                    ) {
+                    for (; xl < pixels_per_value; xl ++) {
+                        j = (j < bits_per_plane ? 8 : j) - bits_per_plane;
+                        d[xl] |= (value >> j) & mask;
+                    }
+                    av_memcpy_backptr(d+xl, pixels_per_value, s->width - xl);
+                    run -= s->width / pixels_per_value;
+                    xl = s->width;
                 }
             }
         }
         run--;
     }
+end:
+    *x = xl;
+    *y = yl;
+    *plane = planel;
 }
 
 static const uint8_t cga_mode45_index[6][4] = {
@@ -142,7 +164,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
         return -1;
-    if (s->width != avctx->width && s->height != avctx->height) {
+    if (s->width != avctx->width || s->height != avctx->height) {
         ret = ff_set_dimensions(avctx, s->width, s->height);
         if (ret < 0)
             return ret;
@@ -236,7 +258,10 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
 
-        if (x < avctx->width) {
+        if (s->nb_planes - plane > 1)
+            return AVERROR_INVALIDDATA;
+
+        if (plane < s->nb_planes && x < avctx->width) {
             int run = (y + 1) * avctx->width - x;
             if (bits_per_plane == 8)
                 picmemset_8bpp(s, frame, val, run, &x, &y);

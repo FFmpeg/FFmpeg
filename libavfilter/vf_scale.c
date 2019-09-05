@@ -29,9 +29,9 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
+#include "scale.h"
 #include "video.h"
 #include "libavutil/avstring.h"
-#include "libavutil/eval.h"
 #include "libavutil/internal.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -41,42 +41,11 @@
 #include "libavutil/avassert.h"
 #include "libswscale/swscale.h"
 
-static const char *const var_names[] = {
-    "in_w",   "iw",
-    "in_h",   "ih",
-    "out_w",  "ow",
-    "out_h",  "oh",
-    "a",
-    "sar",
-    "dar",
-    "hsub",
-    "vsub",
-    "ohsub",
-    "ovsub",
-    NULL
-};
-
-enum var_name {
-    VAR_IN_W,   VAR_IW,
-    VAR_IN_H,   VAR_IH,
-    VAR_OUT_W,  VAR_OW,
-    VAR_OUT_H,  VAR_OH,
-    VAR_A,
-    VAR_SAR,
-    VAR_DAR,
-    VAR_HSUB,
-    VAR_VSUB,
-    VAR_OHSUB,
-    VAR_OVSUB,
-    VARS_NB
-};
-
 enum EvalMode {
     EVAL_MODE_INIT,
     EVAL_MODE_FRAME,
     EVAL_MODE_NB
 };
-
 
 typedef struct ScaleContext {
     const AVClass *class;
@@ -117,6 +86,7 @@ typedef struct ScaleContext {
     int in_v_chr_pos;
 
     int force_original_aspect_ratio;
+    int force_divisible_by;
 
     int nb_slices;
 
@@ -256,77 +226,20 @@ static int config_props(AVFilterLink *outlink)
                             outlink->src->inputs[1] :
                             outlink->src->inputs[0];
     enum AVPixelFormat outfmt = outlink->format;
-    ScaleContext *scale = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
-    int64_t w, h;
-    double var_values[VARS_NB], res;
-    char *expr;
+    ScaleContext *scale = ctx->priv;
+    int w, h;
     int ret;
-    int factor_w, factor_h;
 
-    var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
-    var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
-    var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
-    var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_A]     = (double) inlink->w / inlink->h;
-    var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
-        (double) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
-    var_values[VAR_DAR]   = var_values[VAR_A] * var_values[VAR_SAR];
-    var_values[VAR_HSUB]  = 1 << desc->log2_chroma_w;
-    var_values[VAR_VSUB]  = 1 << desc->log2_chroma_h;
-    var_values[VAR_OHSUB] = 1 << out_desc->log2_chroma_w;
-    var_values[VAR_OVSUB] = 1 << out_desc->log2_chroma_h;
-
-    /* evaluate width and height */
-    av_expr_parse_and_eval(&res, (expr = scale->w_expr),
-                           var_names, var_values,
-                           NULL, NULL, NULL, NULL, NULL, 0, ctx);
-    scale->w = var_values[VAR_OUT_W] = var_values[VAR_OW] = res;
-    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->h_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+    if ((ret = ff_scale_eval_dimensions(ctx,
+                                        scale->w_expr, scale->h_expr,
+                                        inlink, outlink,
+                                        &w, &h)) < 0)
         goto fail;
-    scale->h = var_values[VAR_OUT_H] = var_values[VAR_OH] = res;
-    /* evaluate again the width, as it may depend on the output height */
-    if ((ret = av_expr_parse_and_eval(&res, (expr = scale->w_expr),
-                                      var_names, var_values,
-                                      NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
-        goto fail;
-    scale->w = res;
-
-    w = scale->w;
-    h = scale->h;
-
-    /* Check if it is requested that the result has to be divisible by a some
-     * factor (w or h = -n with n being the factor). */
-    factor_w = 1;
-    factor_h = 1;
-    if (w < -1) {
-        factor_w = -w;
-    }
-    if (h < -1) {
-        factor_h = -h;
-    }
-
-    if (w < 0 && h < 0)
-        scale->w = scale->h = 0;
-
-    if (!(w = scale->w))
-        w = inlink->w;
-    if (!(h = scale->h))
-        h = inlink->h;
-
-    /* Make sure that the result is divisible by the factor we determined
-     * earlier. If no factor was set, it is nothing will happen as the default
-     * factor is 1 */
-    if (w < 0)
-        w = av_rescale(h, inlink->w, inlink->h * factor_w) * factor_w;
-    if (h < 0)
-        h = av_rescale(w, inlink->h, inlink->w * factor_h) * factor_h;
 
     /* Note that force_original_aspect_ratio may overwrite the previous set
-     * dimensions so that it is not divisible by the set factors anymore. */
+     * dimensions so that it is not divisible by the set factors anymore
+     * unless force_divisible_by is defined as well */
     if (scale->force_original_aspect_ratio) {
         int tmp_w = av_rescale(h, inlink->w, inlink->h);
         int tmp_h = av_rescale(w, inlink->h, inlink->w);
@@ -334,9 +247,19 @@ static int config_props(AVFilterLink *outlink)
         if (scale->force_original_aspect_ratio == 1) {
              w = FFMIN(tmp_w, w);
              h = FFMIN(tmp_h, h);
+             if (scale->force_divisible_by > 1) {
+                 // round down
+                 w = w / scale->force_divisible_by * scale->force_divisible_by;
+                 h = h / scale->force_divisible_by * scale->force_divisible_by;
+             }
         } else {
              w = FFMAX(tmp_w, w);
              h = FFMAX(tmp_h, h);
+             if (scale->force_divisible_by > 1) {
+                 // round up
+                 w = (w + scale->force_divisible_by - 1) / scale->force_divisible_by * scale->force_divisible_by;
+                 h = (h + scale->force_divisible_by - 1) / scale->force_divisible_by * scale->force_divisible_by;
+             }
         }
     }
 
@@ -350,11 +273,10 @@ static int config_props(AVFilterLink *outlink)
 
     /* TODO: make algorithm configurable */
 
-    scale->input_is_pal = desc->flags & AV_PIX_FMT_FLAG_PAL ||
-                          desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL;
+    scale->input_is_pal = desc->flags & AV_PIX_FMT_FLAG_PAL;
     if (outfmt == AV_PIX_FMT_PAL8) outfmt = AV_PIX_FMT_BGR8;
     scale->output_is_pal = av_pix_fmt_desc_get(outfmt)->flags & AV_PIX_FMT_FLAG_PAL ||
-                           av_pix_fmt_desc_get(outfmt)->flags & AV_PIX_FMT_FLAG_PSEUDOPAL;
+                           av_pix_fmt_desc_get(outfmt)->flags & FF_PSEUDOPAL;
 
     if (scale->sws)
         sws_freeContext(scale->sws);
@@ -374,6 +296,7 @@ static int config_props(AVFilterLink *outlink)
         int i;
 
         for (i = 0; i < 3; i++) {
+            int in_v_chr_pos = scale->in_v_chr_pos, out_v_chr_pos = scale->out_v_chr_pos;
             struct SwsContext **s = swscs[i];
             *s = sws_alloc_context();
             if (!*s)
@@ -406,17 +329,17 @@ static int config_props(AVFilterLink *outlink)
              * MPEG-2 chroma positions are used by convention
              * XXX: support other 4:2:0 pixel formats */
             if (inlink0->format == AV_PIX_FMT_YUV420P && scale->in_v_chr_pos == -513) {
-                scale->in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+                in_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
             if (outlink->format == AV_PIX_FMT_YUV420P && scale->out_v_chr_pos == -513) {
-                scale->out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
+                out_v_chr_pos = (i == 0) ? 128 : (i == 1) ? 64 : 192;
             }
 
             av_opt_set_int(*s, "src_h_chr_pos", scale->in_h_chr_pos, 0);
-            av_opt_set_int(*s, "src_v_chr_pos", scale->in_v_chr_pos, 0);
+            av_opt_set_int(*s, "src_v_chr_pos", in_v_chr_pos, 0);
             av_opt_set_int(*s, "dst_h_chr_pos", scale->out_h_chr_pos, 0);
-            av_opt_set_int(*s, "dst_v_chr_pos", scale->out_v_chr_pos, 0);
+            av_opt_set_int(*s, "dst_v_chr_pos", out_v_chr_pos, 0);
 
             if ((ret = sws_init_context(*s, NULL, NULL)) < 0)
                 return ret;
@@ -425,10 +348,10 @@ static int config_props(AVFilterLink *outlink)
         }
     }
 
-    if (inlink->sample_aspect_ratio.num){
-        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
+    if (inlink0->sample_aspect_ratio.num){
+        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink0->w, outlink->w * inlink0->h}, inlink0->sample_aspect_ratio);
     } else
-        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+        outlink->sample_aspect_ratio = inlink0->sample_aspect_ratio;
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d fmt:%s sar:%d/%d -> w:%d h:%d fmt:%s sar:%d/%d flags:0x%0x\n",
            inlink ->w, inlink ->h, av_get_pix_fmt_name( inlink->format),
@@ -439,10 +362,6 @@ static int config_props(AVFilterLink *outlink)
     return 0;
 
 fail:
-    av_log(NULL, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'.\n"
-           "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
-           expr, scale->w_expr, scale->h_expr);
     return ret;
 }
 
@@ -454,6 +373,7 @@ static int config_props_ref(AVFilterLink *outlink)
     outlink->h = inlink->h;
     outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
     outlink->time_base = inlink->time_base;
+    outlink->frame_rate = inlink->frame_rate;
 
     return 0;
 }
@@ -501,7 +421,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     char buf[32];
     int in_range;
 
-    if (av_frame_get_colorspace(in) == AVCOL_SPC_YCGCO)
+    if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
 
     if(   in->width  != link->w
@@ -548,7 +468,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     if(scale->output_is_pal)
         avpriv_set_systematic_pal2((uint32_t*)out->data[1], outlink->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : outlink->format);
 
-    in_range = av_frame_get_color_range(in);
+    in_range = in->color_range;
 
     if (   scale->in_color_matrix
         || scale->out_color_matrix
@@ -563,7 +483,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                  &brightness, &contrast, &saturation);
 
         if (scale->in_color_matrix)
-            inv_table = parse_yuv_type(scale->in_color_matrix, av_frame_get_colorspace(in));
+            inv_table = parse_yuv_type(scale->in_color_matrix, in->colorspace);
         if (scale->out_color_matrix)
             table     = parse_yuv_type(scale->out_color_matrix, AVCOL_SPC_UNSPECIFIED);
         else if (scale->in_color_matrix)
@@ -588,7 +508,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
                                      table, out_full,
                                      brightness, contrast, saturation);
 
-        av_frame_set_color_range(out, out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG);
+        out->color_range = out_full ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
     }
 
     av_reduce(&out->sample_aspect_ratio.num, &out->sample_aspect_ratio.den,
@@ -664,12 +584,22 @@ static const AVOption scale_options[] = {
     { "interl", "set interlacing", OFFSET(interlaced), AV_OPT_TYPE_BOOL, {.i64 = 0 }, -1, 1, FLAGS },
     { "size",   "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
     { "s",      "set video size",          OFFSET(size_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, FLAGS },
-    {  "in_color_matrix", "set input YCbCr type",   OFFSET(in_color_matrix),  AV_OPT_TYPE_STRING, { .str = "auto" }, .flags = FLAGS },
-    { "out_color_matrix", "set output YCbCr type",  OFFSET(out_color_matrix), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS },
+    {  "in_color_matrix", "set input YCbCr type",   OFFSET(in_color_matrix),  AV_OPT_TYPE_STRING, { .str = "auto" }, .flags = FLAGS, "color" },
+    { "out_color_matrix", "set output YCbCr type",  OFFSET(out_color_matrix), AV_OPT_TYPE_STRING, { .str = NULL }, .flags = FLAGS,  "color"},
+        { "auto",        NULL, 0, AV_OPT_TYPE_CONST, { .str = "auto" },      0, 0, FLAGS, "color" },
+        { "bt601",       NULL, 0, AV_OPT_TYPE_CONST, { .str = "bt601" },     0, 0, FLAGS, "color" },
+        { "bt470",       NULL, 0, AV_OPT_TYPE_CONST, { .str = "bt470" },     0, 0, FLAGS, "color" },
+        { "smpte170m",   NULL, 0, AV_OPT_TYPE_CONST, { .str = "smpte170m" }, 0, 0, FLAGS, "color" },
+        { "bt709",       NULL, 0, AV_OPT_TYPE_CONST, { .str = "bt709" },     0, 0, FLAGS, "color" },
+        { "fcc",         NULL, 0, AV_OPT_TYPE_CONST, { .str = "fcc" },       0, 0, FLAGS, "color" },
+        { "smpte240m",   NULL, 0, AV_OPT_TYPE_CONST, { .str = "smpte240m" }, 0, 0, FLAGS, "color" },
+        { "bt2020",      NULL, 0, AV_OPT_TYPE_CONST, { .str = "bt2020" },    0, 0, FLAGS, "color" },
     {  "in_range", "set input color range",  OFFSET( in_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 2, FLAGS, "range" },
     { "out_range", "set output color range", OFFSET(out_range), AV_OPT_TYPE_INT, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 2, FLAGS, "range" },
     { "auto",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 0, FLAGS, "range" },
+    { "unknown", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_UNSPECIFIED }, 0, 0, FLAGS, "range" },
     { "full",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
+    { "limited",NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
     { "jpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_JPEG}, 0, 0, FLAGS, "range" },
     { "mpeg",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
     { "tv",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = AVCOL_RANGE_MPEG}, 0, 0, FLAGS, "range" },
@@ -682,6 +612,7 @@ static const AVOption scale_options[] = {
     { "disable",  NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 0 }, 0, 0, FLAGS, "force_oar" },
     { "decrease", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 1 }, 0, 0, FLAGS, "force_oar" },
     { "increase", NULL, 0, AV_OPT_TYPE_CONST, {.i64 = 2 }, 0, 0, FLAGS, "force_oar" },
+    { "force_divisible_by", "enforce that the output resolution is divisible by a defined integer when force_original_aspect_ratio is used", OFFSET(force_divisible_by), AV_OPT_TYPE_INT, { .i64 = 1}, 1, 256, FLAGS },
     { "param0", "Scaler param 0",             OFFSET(param[0]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { "param1", "Scaler param 1",             OFFSET(param[1]),  AV_OPT_TYPE_DOUBLE, { .dbl = SWS_PARAM_DEFAULT  }, INT_MIN, INT_MAX, FLAGS },
     { "nb_slices", "set the number of slices (debug purpose only)", OFFSET(nb_slices), AV_OPT_TYPE_INT, { .i64 = 0 }, 0, INT_MAX, FLAGS },

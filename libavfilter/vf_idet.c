@@ -120,7 +120,7 @@ static void filter(AVFilterContext *ctx)
     Type type, best_type;
     RepeatedField repeat;
     int match = 0;
-    AVDictionary **metadata = avpriv_frame_get_metadatap(idet->cur);
+    AVDictionary **metadata = &idet->cur->metadata;
 
     for (i = 0; i < idet->csp->nb_components; i++) {
         int w = idet->cur->width;
@@ -392,6 +392,8 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUV422P16,
         AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_YUVA422P,
+        AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list = ff_make_format_list(pix_fmts);

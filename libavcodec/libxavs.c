@@ -283,32 +283,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     if (x4->cplxblur >= 0)
         x4->params.rc.f_complexity_blur = x4->cplxblur;
 
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-    if (x4->motion_est < 0) {
-        switch (avctx->me_method) {
-        case  ME_EPZS:
-            x4->params.analyse.i_me_method = XAVS_ME_DIA;
-            break;
-        case  ME_HEX:
-            x4->params.analyse.i_me_method = XAVS_ME_HEX;
-            break;
-        case  ME_UMH:
-            x4->params.analyse.i_me_method = XAVS_ME_UMH;
-            break;
-        case  ME_FULL:
-            x4->params.analyse.i_me_method = XAVS_ME_ESA;
-            break;
-        case  ME_TESA:
-            x4->params.analyse.i_me_method = XAVS_ME_TESA;
-            break;
-        default:
-            x4->params.analyse.i_me_method = XAVS_ME_HEX;
-        }
-    }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
-
     x4->params.i_bframe          = avctx->max_b_frames;
     /* cabac is not included in AVS JiZhun Profile */
     x4->params.b_cabac           = 0;
@@ -465,7 +439,7 @@ static const AVOption options[] = {
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        AV_OPT_TYPE_BOOL,    {.i64 = -1 }, -1, 1, VE},
     { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), AV_OPT_TYPE_BOOL, {.i64 = -1}, -1, 1, VE },
     { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    AV_OPT_TYPE_BOOL,    {.i64 = -1 }, -1, 1, VE},
-    { "motion-est",   "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = -1 }, -1, XAVS_ME_TESA, VE, "motion-est"},
+    { "motion-est",   "Set motion estimation method",                     OFFSET(motion_est),    AV_OPT_TYPE_INT,    { .i64 = XAVS_ME_DIA }, -1, XAVS_ME_TESA, VE, "motion-est"},
     { "dia",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_DIA },               INT_MIN, INT_MAX, VE, "motion-est" },
     { "hex",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_HEX },               INT_MIN, INT_MAX, VE, "motion-est" },
     { "umh",           NULL,      0,    AV_OPT_TYPE_CONST, { .i64 = XAVS_ME_UMH },               INT_MIN, INT_MAX, VE, "motion-est" },
@@ -504,4 +478,5 @@ AVCodec ff_libxavs_encoder = {
     .pix_fmts       = (const enum AVPixelFormat[]) { AV_PIX_FMT_YUV420P, AV_PIX_FMT_NONE },
     .priv_class     = &xavs_class,
     .defaults       = xavs_defaults,
+    .wrapper_name   = "libxavs",
 };

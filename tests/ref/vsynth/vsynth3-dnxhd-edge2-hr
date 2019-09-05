@@ -1,0 +1,4 @@
+a115494fe55740743b4a1a75e8f940ec *tests/data/fate/vsynth3-dnxhd-edge2-hr.dnxhd
+81920 tests/data/fate/vsynth3-dnxhd-edge2-hr.dnxhd
+3bdf0df4e807f5c10362618ba572978c *tests/data/fate/vsynth3-dnxhd-edge2-hr.out.rawvideo
+stddev:    7.08 PSNR: 31.13 MAXDIFF:   52 bytes:    86700/     8670

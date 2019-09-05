@@ -33,6 +33,7 @@
 #include "dca_exss.h"
 #include "dcadsp.h"
 #include "dcadct.h"
+#include "dcamath.h"
 #include "dcahuff.h"
 #include "fft.h"
 #include "synth_filter.h"
@@ -43,7 +44,6 @@
 #define DCA_SUBFRAMES           16
 #define DCA_SUBBAND_SAMPLES     8
 #define DCA_PCMBLOCK_SAMPLES    32
-#define DCA_ADPCM_COEFFS        4
 #define DCA_LFE_HISTORY         8
 #define DCA_ABITS_MAX           26
 
@@ -55,6 +55,34 @@
 
 #define DCA_FILTER_MODE_X96     0x01
 #define DCA_FILTER_MODE_FIXED   0x02
+
+enum DCACoreAudioMode {
+    DCA_AMODE_MONO,             // Mode 0: A (mono)
+    DCA_AMODE_MONO_DUAL,        // Mode 1: A + B (dual mono)
+    DCA_AMODE_STEREO,           // Mode 2: L + R (stereo)
+    DCA_AMODE_STEREO_SUMDIFF,   // Mode 3: (L+R) + (L-R) (sum-diff)
+    DCA_AMODE_STEREO_TOTAL,     // Mode 4: LT + RT (left and right total)
+    DCA_AMODE_3F,               // Mode 5: C + L + R
+    DCA_AMODE_2F1R,             // Mode 6: L + R + S
+    DCA_AMODE_3F1R,             // Mode 7: C + L + R + S
+    DCA_AMODE_2F2R,             // Mode 8: L + R + SL + SR
+    DCA_AMODE_3F2R,             // Mode 9: C + L + R + SL + SR
+
+    DCA_AMODE_COUNT
+};
+
+enum DCACoreExtAudioType {
+    DCA_EXT_AUDIO_XCH   = 0,
+    DCA_EXT_AUDIO_X96   = 2,
+    DCA_EXT_AUDIO_XXCH  = 6
+};
+
+enum DCACoreLFEFlag {
+    DCA_LFE_FLAG_NONE,
+    DCA_LFE_FLAG_128,
+    DCA_LFE_FLAG_64,
+    DCA_LFE_FLAG_INVALID
+};
 
 typedef struct DCADSPData {
     union {
@@ -73,6 +101,7 @@ typedef struct DCADSPData {
 typedef struct DCACoreDecoder {
     AVCodecContext  *avctx;
     GetBitContext   gb;
+    GetBitContext   gb_in;
 
     // Bit stream header
     int     crc_present;        ///< CRC present flag
@@ -193,6 +222,29 @@ static inline int ff_dca_core_map_spkr(DCACoreDecoder *core, int spkr)
     if (spkr == DCA_SPEAKER_Rss && (core->ch_mask & DCA_SPEAKER_MASK_Rs))
         return DCA_SPEAKER_Rs;
     return -1;
+}
+
+static inline void ff_dca_core_dequantize(int32_t *output, const int32_t *input,
+                                          int32_t step_size, int32_t scale, int residual, int len)
+{
+    // Account for quantizer step size
+    int64_t step_scale = (int64_t)step_size * scale;
+    int n, shift = 0;
+
+    // Limit scale factor resolution to 22 bits
+    if (step_scale > (1 << 23)) {
+        shift = av_log2(step_scale >> 23) + 1;
+        step_scale >>= shift;
+    }
+
+    // Scale the samples
+    if (residual) {
+        for (n = 0; n < len; n++)
+            output[n] += clip23(norm__(input[n] * step_scale, 22 - shift));
+    } else {
+        for (n = 0; n < len; n++)
+            output[n]  = clip23(norm__(input[n] * step_scale, 22 - shift));
+    }
 }
 
 int ff_dca_core_parse(DCACoreDecoder *s, uint8_t *data, int size);

@@ -10,12 +10,12 @@ Current (simplified) Architecture:
                /                       \
        special converter     [Input to YUV converter]
               |                         |
-              |          (8bit YUV 4:4:4 / 4:2:2 / 4:2:0 / 4:0:0 )
+              |         (8-bit YUV 4:4:4 / 4:2:2 / 4:2:0 / 4:0:0 )
               |                         |
               |                         v
               |                  Horizontal scaler
               |                         |
-              |      (15bit YUV 4:4:4 / 4:2:2 / 4:2:0 / 4:1:1 / 4:0:0 )
+              |     (15-bit YUV 4:4:4 / 4:2:2 / 4:2:0 / 4:1:1 / 4:0:0 )
               |                         |
               |                         v
               |          Vertical scaler and output converter

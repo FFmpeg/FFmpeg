@@ -49,7 +49,7 @@
     PCKEV_B2_UB(in2, in1, in4, in3, tmp0_m, tmp1_m);                    \
     PCKEV_D2_UB(dst1, dst0, dst3, dst2, tmp2_m, tmp3_m);                \
     AVER_UB2_UB(tmp0_m, tmp2_m, tmp1_m, tmp3_m, tmp0_m, tmp1_m);        \
-    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                           \
+    ST_D4(tmp0_m, tmp1_m, 0, 1, 0, 1, pdst_m, stride);                  \
 }
 
 static void common_hz_bil_4w_msa(const uint8_t *src, int32_t src_stride,
@@ -584,7 +584,7 @@ static void common_hv_bil_8w_msa(const uint8_t *src, int32_t src_stride,
              sum0, sum1, sum2, sum3);
         SRARI_H4_UH(sum0, sum1, sum2, sum3, 2);
         PCKEV_B2_SB(sum1, sum0, sum3, sum2, src0, src1);
-        ST8x4_UB(src0, src1, dst, dst_stride);
+        ST_D4(src0, src1, 0, 1, 0, 1, dst, dst_stride);
         dst += (4 * dst_stride);
         src0 = src4;
     }
@@ -689,9 +689,9 @@ static void common_hv_bil_no_rnd_8x8_msa(const uint8_t *src, int32_t src_stride,
     SRA_4V(sum0, sum1, sum2, sum3, 2);
     SRA_4V(sum4, sum5, sum6, sum7, 2);
     PCKEV_B2_SB(sum1, sum0, sum3, sum2, out0, out1);
-    ST8x4_UB(out0, out1, dst, dst_stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, dst_stride);
     PCKEV_B2_SB(sum5, sum4, sum7, sum6, out0, out1);
-    ST8x4_UB(out0, out1, dst + 4 * dst_stride, dst_stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst + 4 * dst_stride, dst_stride);
 }
 
 static void common_hv_bil_no_rnd_4x8_msa(const uint8_t *src, int32_t src_stride,
@@ -723,7 +723,7 @@ static void common_hv_bil_no_rnd_4x8_msa(const uint8_t *src, int32_t src_stride,
 
     SRA_4V(sum0, sum1, sum2, sum3, 2);
     PCKEV_B2_SB(sum1, sum0, sum3, sum2, out0, out1);
-    ST8x4_UB(out0, out1, dst, dst_stride);
+    ST_D4(out0, out1, 0, 1, 0, 1, dst, dst_stride);
 }
 
 static void common_hv_bil_no_rnd_16x16_msa(const uint8_t *src,

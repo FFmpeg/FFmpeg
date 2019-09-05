@@ -272,7 +272,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     }
 
     td.in = inpicref; td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(n->height[0], ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(n->height[0], ff_filter_get_nb_threads(ctx)));
     emms_c();
 
     if (inpicref != out)

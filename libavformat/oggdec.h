@@ -162,6 +162,11 @@ ogg_gptopts (AVFormatContext * s, int i, uint64_t gp, int64_t *dts)
         if (dts)
             *dts = pts;
     }
+    if (pts > INT64_MAX && pts != AV_NOPTS_VALUE) {
+        // The return type is unsigned, we thus cannot return negative pts
+        av_log(s, AV_LOG_ERROR, "invalid pts %"PRId64"\n", pts);
+        pts = AV_NOPTS_VALUE;
+    }
 
     return pts;
 }

@@ -20,16 +20,27 @@
 
 #include "framepool.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avutil.h"
 #include "libavutil/buffer.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mem.h"
 #include "libavutil/pixfmt.h"
 
-struct FFVideoFramePool {
+struct FFFramePool {
 
+    enum AVMediaType type;
+
+    /* video */
     int width;
     int height;
+
+    /* audio */
+    int planes;
+    int channels;
+    int nb_samples;
+
+    /* common */
     int format;
     int align;
     int linesize[4];
@@ -37,29 +48,30 @@ struct FFVideoFramePool {
 
 };
 
-FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
-                                           int width,
-                                           int height,
-                                           enum AVPixelFormat format,
-                                           int align)
+FFFramePool *ff_frame_pool_video_init(AVBufferRef* (*alloc)(int size),
+                                      int width,
+                                      int height,
+                                      enum AVPixelFormat format,
+                                      int align)
 {
     int i, ret;
-    FFVideoFramePool *pool;
+    FFFramePool *pool;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(format);
 
     if (!desc)
         return NULL;
 
-    pool = av_mallocz(sizeof(FFVideoFramePool));
+    pool = av_mallocz(sizeof(FFFramePool));
     if (!pool)
         return NULL;
 
+    pool->type = AVMEDIA_TYPE_VIDEO;
     pool->width = width;
     pool->height = height;
     pool->format = format;
     pool->align = align;
 
-    if ((ret = av_image_check_size(width, height, 0, NULL)) < 0) {
+    if ((ret = av_image_check_size2(width, height, INT64_MAX, format, 0, NULL)) < 0) {
         goto fail;
     }
 
@@ -91,7 +103,7 @@ FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
     }
 
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
+        desc->flags & FF_PSEUDOPAL) {
         pool->pools[1] = av_buffer_pool_init(AVPALETTE_SIZE, alloc);
         if (!pool->pools[1])
             goto fail;
@@ -100,11 +112,49 @@ FFVideoFramePool *ff_video_frame_pool_init(AVBufferRef* (*alloc)(int size),
     return pool;
 
 fail:
-    ff_video_frame_pool_uninit(&pool);
+    ff_frame_pool_uninit(&pool);
     return NULL;
 }
 
-int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
+FFFramePool *ff_frame_pool_audio_init(AVBufferRef* (*alloc)(int size),
+                                      int channels,
+                                      int nb_samples,
+                                      enum AVSampleFormat format,
+                                      int align)
+{
+    int ret, planar;
+    FFFramePool *pool;
+
+    pool = av_mallocz(sizeof(FFFramePool));
+    if (!pool)
+        return NULL;
+
+    planar = av_sample_fmt_is_planar(format);
+
+    pool->type = AVMEDIA_TYPE_AUDIO;
+    pool->planes = planar ? channels : 1;
+    pool->channels = channels;
+    pool->nb_samples = nb_samples;
+    pool->format = format;
+    pool->align = align;
+
+    ret = av_samples_get_buffer_size(&pool->linesize[0], channels,
+                                     nb_samples, format, 0);
+    if (ret < 0)
+        goto fail;
+
+    pool->pools[0] = av_buffer_pool_init(pool->linesize[0], NULL);
+    if (!pool->pools[0])
+        goto fail;
+
+    return pool;
+
+fail:
+    ff_frame_pool_uninit(&pool);
+    return NULL;
+}
+
+int ff_frame_pool_get_video_config(FFFramePool *pool,
                                    int *width,
                                    int *height,
                                    enum AVPixelFormat *format,
@@ -112,6 +162,8 @@ int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
 {
     if (!pool)
         return AVERROR(EINVAL);
+
+    av_assert0(pool->type == AVMEDIA_TYPE_VIDEO);
 
     *width = pool->width;
     *height = pool->height;
@@ -121,8 +173,26 @@ int ff_video_frame_pool_get_config(FFVideoFramePool *pool,
     return 0;
 }
 
+int ff_frame_pool_get_audio_config(FFFramePool *pool,
+                                   int *channels,
+                                   int *nb_samples,
+                                   enum AVSampleFormat *format,
+                                   int *align)
+{
+    if (!pool)
+        return AVERROR(EINVAL);
 
-AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool)
+    av_assert0(pool->type == AVMEDIA_TYPE_AUDIO);
+
+    *channels = pool->channels;
+    *nb_samples = pool->nb_samples;
+    *format = pool->format;
+    *align = pool->align;
+
+    return 0;
+}
+
+AVFrame *ff_frame_pool_get(FFFramePool *pool)
 {
     int i;
     AVFrame *frame;
@@ -133,40 +203,77 @@ AVFrame *ff_video_frame_pool_get(FFVideoFramePool *pool)
         return NULL;
     }
 
-    desc = av_pix_fmt_desc_get(pool->format);
-    if (!desc) {
-        goto fail;
-    }
-
-    frame->width = pool->width;
-    frame->height = pool->height;
-    frame->format = pool->format;
-
-    for (i = 0; i < 4; i++) {
-        frame->linesize[i] = pool->linesize[i];
-        if (!pool->pools[i])
-            break;
-
-        frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
-        if (!frame->buf[i]) {
+    switch(pool->type) {
+    case AVMEDIA_TYPE_VIDEO:
+        desc = av_pix_fmt_desc_get(pool->format);
+        if (!desc) {
             goto fail;
         }
 
-        frame->data[i] = frame->buf[i]->data;
-    }
+        frame->width = pool->width;
+        frame->height = pool->height;
+        frame->format = pool->format;
 
-    if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL) {
-        enum AVPixelFormat format =
-            pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+        for (i = 0; i < 4; i++) {
+            frame->linesize[i] = pool->linesize[i];
+            if (!pool->pools[i])
+                break;
 
-        av_assert0(frame->data[1] != NULL);
-        if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0) {
-            goto fail;
+            frame->buf[i] = av_buffer_pool_get(pool->pools[i]);
+            if (!frame->buf[i])
+                goto fail;
+
+            frame->data[i] = frame->buf[i]->data;
         }
-    }
 
-    frame->extended_data = frame->data;
+        if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
+            desc->flags & FF_PSEUDOPAL) {
+            enum AVPixelFormat format =
+                pool->format == AV_PIX_FMT_PAL8 ? AV_PIX_FMT_BGR8 : pool->format;
+
+            av_assert0(frame->data[1] != NULL);
+            if (avpriv_set_systematic_pal2((uint32_t *)frame->data[1], format) < 0)
+                goto fail;
+        }
+
+        frame->extended_data = frame->data;
+        break;
+    case AVMEDIA_TYPE_AUDIO:
+        frame->nb_samples = pool->nb_samples;
+        frame->channels = pool->channels;
+        frame->format = pool->format;
+        frame->linesize[0] = pool->linesize[0];
+
+        if (pool->planes > AV_NUM_DATA_POINTERS) {
+            frame->extended_data = av_mallocz_array(pool->planes,
+                                                    sizeof(*frame->extended_data));
+            frame->nb_extended_buf = pool->planes - AV_NUM_DATA_POINTERS;
+            frame->extended_buf = av_mallocz_array(frame->nb_extended_buf,
+                                                   sizeof(*frame->extended_buf));
+            if (!frame->extended_data || !frame->extended_buf)
+                goto fail;
+        } else {
+            frame->extended_data = frame->data;
+            av_assert0(frame->nb_extended_buf == 0);
+        }
+
+        for (i = 0; i < FFMIN(pool->planes, AV_NUM_DATA_POINTERS); i++) {
+            frame->buf[i] = av_buffer_pool_get(pool->pools[0]);
+            if (!frame->buf[i])
+                goto fail;
+            frame->extended_data[i] = frame->data[i] = frame->buf[i]->data;
+        }
+        for (i = 0; i < frame->nb_extended_buf; i++) {
+            frame->extended_buf[i] = av_buffer_pool_get(pool->pools[0]);
+            if (!frame->extended_buf[i])
+                goto fail;
+            frame->extended_data[i + AV_NUM_DATA_POINTERS] = frame->extended_buf[i]->data;
+        }
+
+        break;
+    default:
+        av_assert0(0);
+    }
 
     return frame;
 fail:
@@ -174,7 +281,7 @@ fail:
     return NULL;
 }
 
-void ff_video_frame_pool_uninit(FFVideoFramePool **pool)
+void ff_frame_pool_uninit(FFFramePool **pool)
 {
     int i;
 

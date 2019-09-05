@@ -270,7 +270,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
             continue;
 
         /* Normal coefficients */
-        abs_pow34_v(O34, &sce->coeffs[start_coef], num_coeffs);
+        s->abs_pow34(O34, &sce->coeffs[start_coef], num_coeffs);
         dist1 = quantize_and_encode_band_cost(s, NULL, &sce->coeffs[start_coef], NULL,
                                               O34, num_coeffs, sce->sf_idx[sfb],
                                               cb_n, s->lambda / band->threshold, INFINITY, &cost1, NULL, 0);
@@ -279,7 +279,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
         /* Encoded coefficients - needed for #bits, band type and quant. error */
         for (i = 0; i < num_coeffs; i++)
             SENT[i] = sce->coeffs[start_coef + i] - sce->prcoeffs[start_coef + i];
-        abs_pow34_v(S34, SENT, num_coeffs);
+        s->abs_pow34(S34, SENT, num_coeffs);
         if (cb_n < RESERVED_BT)
             cb_p = av_clip(find_min_book(find_max_val(1, num_coeffs, S34), sce->sf_idx[sfb]), cb_min, cb_max);
         else
@@ -291,7 +291,7 @@ void ff_aac_search_for_pred(AACEncContext *s, SingleChannelElement *sce)
         /* Reconstructed coefficients - needed for distortion measurements */
         for (i = 0; i < num_coeffs; i++)
             sce->prcoeffs[start_coef + i] += QERR[i] != 0.0f ? (sce->prcoeffs[start_coef + i] - QERR[i]) : 0.0f;
-        abs_pow34_v(P34, &sce->prcoeffs[start_coef], num_coeffs);
+        s->abs_pow34(P34, &sce->prcoeffs[start_coef], num_coeffs);
         if (cb_n < RESERVED_BT)
             cb_p = av_clip(find_min_book(find_max_val(1, num_coeffs, P34), sce->sf_idx[sfb]), cb_min, cb_max);
         else

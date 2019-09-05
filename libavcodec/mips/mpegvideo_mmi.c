@@ -23,7 +23,7 @@
  */
 
 #include "mpegvideo_mips.h"
-#include "libavutil/mips/asmdefs.h"
+#include "libavutil/mips/mmiutils.h"
 
 void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         int n, int qscale)
@@ -31,6 +31,7 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
     int64_t level, qmul, qadd, nCoeffs;
     double ftmp[6];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     qmul = qscale << 1;
     av_assert2(s->block_last_index[n]>=0 || s->h263_aic);
@@ -60,12 +61,11 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         "psubh      %[ftmp0],   %[ftmp0],       %[qadd]                 \n\t"
         "xor        %[ftmp5],   %[ftmp5],       %[ftmp5]                \n\t"
         ".p2align   4                                                   \n\t"
+
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr0],   %[block],       %[nCoeffs]              \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        MMI_LDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_LDC1(%[ftmp2], %[addr0], 0x08)
         "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
         "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
         "pmullh     %[ftmp1],   %[ftmp1],       %[qmul]                 \n\t"
@@ -83,14 +83,13 @@ void ff_dct_unquantize_h263_intra_mmi(MpegEncContext *s, int16_t *block,
         "pandn      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "pandn      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
         PTR_ADDIU  "%[nCoeffs], %[nCoeffs],     0x10                    \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gssdlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_SDC1(%[ftmp2], %[addr0], 0x08)
         "blez       %[nCoeffs], 1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          RESTRICT_ASM_ALL64
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
@@ -107,6 +106,7 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
     int64_t qmul, qadd, nCoeffs;
     double ftmp[6];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     qmul = qscale << 1;
     qadd = (qscale - 1) | 1;
@@ -124,10 +124,8 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
         ".p2align   4                                                   \n\t"
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr0],   %[block],       %[nCoeffs]              \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        MMI_LDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_LDC1(%[ftmp2], %[addr0], 0x08)
         "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
         "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
         "pmullh     %[ftmp1],   %[ftmp1],       %[qmul]                 \n\t"
@@ -145,14 +143,13 @@ void ff_dct_unquantize_h263_inter_mmi(MpegEncContext *s, int16_t *block,
         "pandn      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "pandn      %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
         PTR_ADDIU  "%[nCoeffs], %[nCoeffs],     0x10                    \n\t"
-        "gssdlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gssdlc1    %[ftmp2],   0x0f(%[addr0])                          \n\t"
-        "gssdrc1    %[ftmp2],   0x08(%[addr0])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_SDC1(%[ftmp2], %[addr0], 0x08)
         "blez       %[nCoeffs], 1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          RESTRICT_ASM_ALL64
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [nCoeffs]"r"((mips_reg)(2*(-nCoeffs))),
@@ -170,6 +167,8 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
     double ftmp[10];
     uint64_t tmp[1];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     av_assert2(s->block_last_index[n]>=0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
@@ -192,13 +191,14 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
         "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
         "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
         ".p2align   4                                                   \n\t"
+
         "1:                                                             \n\t"
-        "gsldxc1    %[ftmp2],   0x00(%[addr0],  %[block])               \n\t"
-        "gsldxc1    %[ftmp3],   0x08(%[addr0],  %[block])               \n\t"
+        MMI_LDXC1(%[ftmp2], %[addr0], %[block], 0x00)
+        MMI_LDXC1(%[ftmp3], %[addr0], %[block], 0x08)
         "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
         "mov.d      %[ftmp5],   %[ftmp3]                                \n\t"
-        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
-        "gsldxc1    %[ftmp7],   0x08(%[addr0],  %[quant])               \n\t"
+        MMI_LDXC1(%[ftmp6], %[addr0], %[quant], 0x00)
+        MMI_LDXC1(%[ftmp7], %[addr0], %[quant], 0x08)
         "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp1]                \n\t"
         "pmullh     %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
         "xor        %[ftmp8],   %[ftmp8],       %[ftmp8]                \n\t"
@@ -229,8 +229,8 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
         "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
         "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
         "pandn      %[ftmp7],   %[ftmp7],       %[ftmp3]                \n\t"
-        "gssdxc1    %[ftmp6],   0x00(%[addr0],  %[block])               \n\t"
-        "gssdxc1    %[ftmp7],   0x08(%[addr0],  %[block])               \n\t"
+        MMI_SDXC1(%[ftmp6], %[addr0], %[block], 0x00)
+        MMI_SDXC1(%[ftmp7], %[addr0], %[block], 0x08)
         PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
         "bltz       %[addr0],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
@@ -239,6 +239,8 @@ void ff_dct_unquantize_mpeg1_intra_mmi(MpegEncContext *s, int16_t *block,
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
@@ -258,6 +260,8 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
     double ftmp[10];
     uint64_t tmp[1];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     av_assert2(s->block_last_index[n] >= 0);
     nCoeffs = s->intra_scantable.raster_end[s->block_last_index[n]] + 1;
@@ -273,13 +277,14 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
         "packsswh   %[ftmp1],   %[ftmp1],       %[ftmp1]                \n\t"
         "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
         ".p2align   4                                                   \n\t"
+
         "1:                                                             \n\t"
-        "gsldxc1    %[ftmp2],   0x00(%[addr0],  %[block])               \n\t"
-        "gsldxc1    %[ftmp3],   0x08(%[addr0],  %[block])               \n\t"
+        MMI_LDXC1(%[ftmp2], %[addr0], %[block], 0x00)
+        MMI_LDXC1(%[ftmp3], %[addr0], %[block], 0x08)
         "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
         "mov.d      %[ftmp5],   %[ftmp3]                                \n\t"
-        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
-        "gsldxc1    %[ftmp7],   0x08(%[addr0],  %[quant])               \n\t"
+        MMI_LDXC1(%[ftmp6], %[addr0], %[quant], 0x00)
+        MMI_LDXC1(%[ftmp7], %[addr0], %[quant], 0x08)
         "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp1]                \n\t"
         "pmullh     %[ftmp7],   %[ftmp7],       %[ftmp1]                \n\t"
         "xor        %[ftmp8],   %[ftmp8],       %[ftmp8]                \n\t"
@@ -314,8 +319,8 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
         "psubh      %[ftmp3],   %[ftmp3],       %[ftmp9]                \n\t"
         "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
         "pandn      %[ftmp7],   %[ftmp7],       %[ftmp3]                \n\t"
-        "gssdxc1    %[ftmp6],   0x00(%[addr0],  %[block])               \n\t"
-        "gssdxc1    %[ftmp7],   0x08(%[addr0],  %[block])               \n\t"
+        MMI_SDXC1(%[ftmp6], %[addr0], %[block], 0x00)
+        MMI_SDXC1(%[ftmp7], %[addr0], %[block], 0x08)
         PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
         "bltz       %[addr0],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
@@ -324,6 +329,8 @@ void ff_dct_unquantize_mpeg1_inter_mmi(MpegEncContext *s, int16_t *block,
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
@@ -342,6 +349,8 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
     double ftmp[10];
     uint64_t tmp[1];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     assert(s->block_last_index[n]>=0);
 
@@ -367,13 +376,14 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
         "packsswh   %[ftmp9],   %[ftmp9],       %[ftmp9]                \n\t"
         "or         %[addr0],   %[nCoeffs],     $0                      \n\t"
         ".p2align   4                                                   \n\t"
+
         "1:                                                             \n\t"
-        "gsldxc1    %[ftmp1],   0x00(%[addr0],  %[block])               \n\t"
-        "gsldxc1    %[ftmp2],   0x08(%[addr0],  %[block])               \n\t"
+        MMI_LDXC1(%[ftmp1], %[addr0], %[block], 0x00)
+        MMI_LDXC1(%[ftmp2], %[addr0], %[block], 0x08)
         "mov.d      %[ftmp3],   %[ftmp1]                                \n\t"
         "mov.d      %[ftmp4],   %[ftmp2]                                \n\t"
-        "gsldxc1    %[ftmp5],   0x00(%[addr0],  %[quant])               \n\t"
-        "gsldxc1    %[ftmp6],   0x00(%[addr0],  %[quant])               \n\t"
+        MMI_LDXC1(%[ftmp5], %[addr0], %[quant], 0x00)
+        MMI_LDXC1(%[ftmp6], %[addr0], %[quant], 0x08)
         "pmullh     %[ftmp5],   %[ftmp5],       %[ftmp9]                \n\t"
         "pmullh     %[ftmp6],   %[ftmp6],       %[ftmp9]                \n\t"
         "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
@@ -400,9 +410,9 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
         "psubh      %[ftmp2],   %[ftmp2],       %[ftmp8]                \n\t"
         "pandn      %[ftmp5],   %[ftmp5],       %[ftmp1]                \n\t"
         "pandn      %[ftmp6],   %[ftmp6],       %[ftmp2]                \n\t"
+        MMI_SDXC1(%[ftmp5], %[addr0], %[block], 0x00)
+        MMI_SDXC1(%[ftmp6], %[addr0], %[block], 0x08)
         PTR_ADDIU  "%[addr0],   %[addr0],       0x10                    \n\t"
-        "gssdxc1    %[ftmp5],   0x00(%[addr0],  %[block])               \n\t"
-        "gssdxc1    %[ftmp6],   0x08(%[addr0],  %[block])               \n\t"
         "blez       %[addr0],   1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
@@ -410,6 +420,8 @@ void ff_dct_unquantize_mpeg2_intra_mmi(MpegEncContext *s, int16_t *block,
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
           [tmp0]"=&r"(tmp[0]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0])
         : [block]"r"((mips_reg)(block+nCoeffs)),
           [quant]"r"((mips_reg)(quant_matrix+nCoeffs)),
@@ -428,15 +440,16 @@ void ff_denoise_dct_mmi(MpegEncContext *s, int16_t *block)
     uint16_t *offset = s->dct_offset[intra];
     double ftmp[8];
     mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     s->dct_count[intra]++;
 
     __asm__ volatile(
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp0]                \n\t"
         "1:                                                             \n\t"
-        "ldc1       %[ftmp1],   0x00(%[block])                          \n\t"
+        MMI_LDC1(%[ftmp1], %[block], 0x00)
         "xor        %[ftmp2],   %[ftmp2],       %[ftmp2]                \n\t"
-        "ldc1       %[ftmp3],   0x08(%[block])                          \n\t"
+        MMI_LDC1(%[ftmp3], %[block], 0x08)
         "xor        %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         "pcmpgth    %[ftmp2],   %[ftmp2],       %[ftmp1]                \n\t"
         "pcmpgth    %[ftmp4],   %[ftmp4],       %[ftmp3]                \n\t"
@@ -444,36 +457,36 @@ void ff_denoise_dct_mmi(MpegEncContext *s, int16_t *block)
         "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
         "psubh      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
         "psubh      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
-        "ldc1       %[ftmp6],   0x00(%[offset])                         \n\t"
+        MMI_LDC1(%[ftmp6], %[offset], 0x00)
         "mov.d      %[ftmp5],   %[ftmp1]                                \n\t"
         "psubush    %[ftmp1],   %[ftmp1],       %[ftmp6]                \n\t"
-        "ldc1       %[ftmp6],   0x08(%[offset])                         \n\t"
+        MMI_LDC1(%[ftmp6], %[offset], 0x08)
         "mov.d      %[ftmp7],   %[ftmp3]                                \n\t"
         "psubush    %[ftmp3],   %[ftmp3],       %[ftmp6]                \n\t"
         "xor        %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
         "xor        %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
         "psubh      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
         "psubh      %[ftmp3],   %[ftmp3],       %[ftmp4]                \n\t"
-        "sdc1       %[ftmp1],   0x00(%[block])                          \n\t"
-        "sdc1       %[ftmp3],   0x08(%[block])                          \n\t"
+        MMI_SDC1(%[ftmp1], %[block], 0x00)
+        MMI_SDC1(%[ftmp3], %[block], 0x08)
         "mov.d      %[ftmp1],   %[ftmp5]                                \n\t"
         "mov.d      %[ftmp3],   %[ftmp7]                                \n\t"
         "punpcklhw  %[ftmp5],   %[ftmp5],       %[ftmp0]                \n\t"
         "punpckhhw  %[ftmp1],   %[ftmp1],       %[ftmp0]                \n\t"
         "punpcklhw  %[ftmp7],   %[ftmp7],       %[ftmp0]                \n\t"
         "punpckhhw  %[ftmp3],   %[ftmp3],       %[ftmp0]                \n\t"
-        "ldc1       %[ftmp2],   0x00(%[sum])                            \n\t"
+        MMI_LDC1(%[ftmp2], %[sum], 0x00)
         "paddw      %[ftmp5],   %[ftmp5],       %[ftmp2]                \n\t"
-        "ldc1       %[ftmp2],   0x08(%[sum])                            \n\t"
+        MMI_LDC1(%[ftmp2], %[sum], 0x08)
         "paddw      %[ftmp1],   %[ftmp1],       %[ftmp2]                \n\t"
-        "ldc1       %[ftmp2],   0x10(%[sum])                            \n\t"
+        MMI_LDC1(%[ftmp2], %[sum], 0x10)
         "paddw      %[ftmp7],   %[ftmp7],       %[ftmp2]                \n\t"
-        "ldc1       %[ftmp2],   0x18(%[sum])                            \n\t"
+        MMI_LDC1(%[ftmp2], %[sum], 0x18)
         "paddw      %[ftmp3],   %[ftmp3],       %[ftmp2]                \n\t"
-        "sdc1       %[ftmp5],   0x00(%[sum])                            \n\t"
-        "sdc1       %[ftmp1],   0x08(%[sum])                            \n\t"
-        "sdc1       %[ftmp7],   0x10(%[sum])                            \n\t"
-        "sdc1       %[ftmp3],   0x18(%[sum])                            \n\t"
+        MMI_SDC1(%[ftmp5], %[sum], 0x00)
+        MMI_SDC1(%[ftmp1], %[sum], 0x08)
+        MMI_SDC1(%[ftmp7], %[sum], 0x10)
+        MMI_SDC1(%[ftmp3], %[sum], 0x18)
         PTR_ADDIU  "%[block],   %[block],       0x10                    \n\t"
         PTR_ADDIU  "%[sum],     %[sum],         0x20                    \n\t"
         PTR_SUBU   "%[addr0],   %[block1],      %[block]                \n\t"
@@ -483,6 +496,7 @@ void ff_denoise_dct_mmi(MpegEncContext *s, int16_t *block)
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          RESTRICT_ASM_ALL64
           [addr0]"=&r"(addr[0]),
           [block]"+&r"(block),              [sum]"+&r"(sum),
           [offset]"+&r"(offset)

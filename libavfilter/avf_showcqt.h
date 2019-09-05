@@ -25,16 +25,16 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct Coeffs {
     FFTSample *val;
     int start, len;
 } Coeffs;
 
-typedef struct {
+typedef struct RGBFloat {
     float r, g, b;
 } RGBFloat;
 
-typedef struct {
+typedef struct YUVFloat {
     float y, u, v;
 } YUVFloat;
 
@@ -43,7 +43,7 @@ typedef union {
     YUVFloat yuv;
 } ColorFloat;
 
-typedef struct {
+typedef struct ShowCQTContext {
     const AVClass       *class;
     AVFilterContext     *ctx;
     AVFrame             *axis_frame;
@@ -55,6 +55,7 @@ typedef struct {
     AVRational          step_frac;
     int                 remaining_frac;
     int                 remaining_fill;
+    int                 remaining_fill_max;
     int64_t             next_pts;
     double              *freq;
     FFTContext          *fft_ctx;
@@ -62,6 +63,7 @@ typedef struct {
     FFTComplex          *fft_data;
     FFTComplex          *fft_result;
     FFTComplex          *cqt_result;
+    float               *attack_data;
     int                 fft_bits;
     int                 fft_len;
     int                 cqt_len;
@@ -71,11 +73,14 @@ typedef struct {
     float               *rcp_h_buf;
     float               *sono_v_buf;
     float               *bar_v_buf;
+    float               cmatrix[3][3];
+    float               cscheme_v[6];
     /* callback */
     void                (*cqt_calc)(FFTComplex *dst, const FFTComplex *src, const Coeffs *coeffs,
                                     int len, int fft_len);
+    void                (*permute_coeffs)(float *v, int len);
     void                (*draw_bar)(AVFrame *out, const float *h, const float *rcp_h,
-                                    const ColorFloat *c, int bar_h);
+                                    const ColorFloat *c, int bar_h, float bar_t);
     void                (*draw_axis)(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off);
     void                (*draw_sono)(AVFrame *out, AVFrame *sono, int off, int idx);
     void                (*update_sono)(AVFrame *sono, const ColorFloat *c, int idx);
@@ -99,7 +104,9 @@ typedef struct {
     char                *bar_v;
     float               sono_g;
     float               bar_g;
+    float               bar_t;
     double              timeclamp;
+    double              attack;
     double              basefreq;
     double              endfreq;
     float               coeffclamp; /* deprecated - ignored */
@@ -107,9 +114,14 @@ typedef struct {
     int                 count;
     int                 fcount;
     char                *fontfile;
+    char                *font;
     char                *fontcolor;
     char                *axisfile;
     int                 axis;
+    int                 csp;
+    char                *cscheme;
 } ShowCQTContext;
+
+void ff_showcqt_init_x86(ShowCQTContext *s);
 
 #endif

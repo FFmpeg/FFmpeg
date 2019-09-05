@@ -1,6 +1,6 @@
 /*
  * Discworld II BMV demuxer
- * Copyright (c) 2011 Konstantin Shishkov.
+ * Copyright (c) 2011 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
  *

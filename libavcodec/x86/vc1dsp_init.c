@@ -51,7 +51,7 @@ static void vc1_h_loop_filter16_ ## EXT(uint8_t *src, int stride, int pq) \
     ff_vc1_h_loop_filter8_ ## EXT(src+8*stride, stride, pq); \
 }
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 LOOP_FILTER(mmxext)
 LOOP_FILTER(sse2)
 LOOP_FILTER(ssse3)
@@ -80,25 +80,25 @@ DECLARE_FUNCTION(avg_, 16, _mmxext)
 DECLARE_FUNCTION(put_, 16, _sse2)
 DECLARE_FUNCTION(avg_, 16, _sse2)
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 void ff_put_vc1_chroma_mc8_nornd_mmx  (uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_mmxext(uint8_t *dst, uint8_t *src,
-                                        int stride, int h, int x, int y);
+                                        ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_3dnow(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_put_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
+                                       ptrdiff_t stride, int h, int x, int y);
 void ff_avg_vc1_chroma_mc8_nornd_ssse3(uint8_t *dst, uint8_t *src,
-                                       int stride, int h, int x, int y);
-void ff_vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, int linesize,
+                                       ptrdiff_t stride, int h, int x, int y);
+void ff_vc1_inv_trans_4x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_4x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_8x4_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
-void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, int linesize,
+void ff_vc1_inv_trans_8x8_dc_mmxext(uint8_t *dest, ptrdiff_t linesize,
                                     int16_t *block);
 
 
@@ -106,10 +106,12 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_6REGS && INLINE_MMX(cpu_flags) && EXTERNAL_MMX(cpu_flags))
+    if (HAVE_6REGS && INLINE_MMX(cpu_flags))
+        if (EXTERNAL_MMX(cpu_flags))
         ff_vc1dsp_init_mmx(dsp);
 
-    if (HAVE_6REGS && INLINE_MMXEXT(cpu_flags) && EXTERNAL_MMXEXT(cpu_flags))
+    if (HAVE_6REGS && INLINE_MMXEXT(cpu_flags))
+        if (EXTERNAL_MMXEXT(cpu_flags))
         ff_vc1dsp_init_mmxext(dsp);
 
 #define ASSIGN_LF(EXT) \
@@ -120,7 +122,7 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_v_loop_filter16 = vc1_v_loop_filter16_ ## EXT; \
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_ ## EXT
 
-#if HAVE_YASM
+#if HAVE_X86ASM
     if (EXTERNAL_MMX(cpu_flags)) {
         dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = ff_put_vc1_chroma_mc8_nornd_mmx;
 
@@ -162,5 +164,5 @@ av_cold void ff_vc1dsp_init_x86(VC1DSPContext *dsp)
         dsp->vc1_h_loop_filter8  = ff_vc1_h_loop_filter8_sse4;
         dsp->vc1_h_loop_filter16 = vc1_h_loop_filter16_sse4;
     }
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

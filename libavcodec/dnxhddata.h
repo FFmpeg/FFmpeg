@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include "avcodec.h"
 #include "libavutil/internal.h"
+#include "libavutil/intreadwrite.h"
 
 /** Additional profile info flags */
 #define DNXHD_INTERLACED   (1<<0)
@@ -34,8 +35,6 @@
 /** Frame headers, extra 0x00 added to end for parser */
 #define DNXHD_HEADER_INITIAL 0x000002800100
 #define DNXHD_HEADER_444     0x000002800200
-#define DNXHD_HEADER_HR1     0x000002800300
-#define DNXHD_HEADER_HR2     0x0000038C0300
 
 /** Indicate that a CIDEntry value must be read in the bitstream */
 #define DNXHD_VARIABLE 0
@@ -56,7 +55,7 @@ typedef struct CIDEntry {
     const uint16_t *run_codes;
     const uint8_t *run_bits, *run;
     int bit_rates[5]; ///< Helper to choose variants, rounded to nearest 5Mb/s
-    AVRational frame_rates[5];
+    AVRational packet_scale;
 } CIDEntry;
 
 extern const CIDEntry ff_dnxhd_cid_table[];
@@ -65,17 +64,34 @@ int ff_dnxhd_get_cid_table(int cid);
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth);
 void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel);
 
-static av_always_inline uint64_t ff_dnxhd_check_header_prefix(uint64_t prefix)
+static av_always_inline uint64_t ff_dnxhd_check_header_prefix_hr(uint64_t prefix)
 {
-    if (prefix == DNXHD_HEADER_INITIAL ||
-        prefix == DNXHD_HEADER_444     ||
-        prefix == DNXHD_HEADER_HR1     ||
-        prefix == DNXHD_HEADER_HR2)
+    uint64_t data_offset = prefix >> 16;
+    if ((prefix & 0xFFFF0000FFFFLL) == 0x0300 &&
+         data_offset >= 0x0280 && data_offset <= 0x2170 &&
+         (data_offset & 3) == 0)
         return prefix;
     return 0;
 }
 
+static av_always_inline uint64_t ff_dnxhd_check_header_prefix(uint64_t prefix)
+{
+    if (prefix == DNXHD_HEADER_INITIAL ||
+        prefix == DNXHD_HEADER_444     ||
+        ff_dnxhd_check_header_prefix_hr(prefix))
+        return prefix;
+    return 0;
+}
+
+static av_always_inline uint64_t ff_dnxhd_parse_header_prefix(const uint8_t *buf)
+{
+    uint64_t prefix = AV_RB32(buf);
+    prefix = (prefix << 16) | buf[4] << 8;
+    return ff_dnxhd_check_header_prefix(prefix);
+}
+
 int avpriv_dnxhd_get_frame_size(int cid);
+int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h);
 int avpriv_dnxhd_get_interlaced(int cid);
-uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf);
+
 #endif /* AVCODEC_DNXHDDATA_H */

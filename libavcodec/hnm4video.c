@@ -117,14 +117,17 @@ static void unpack_intraframe(AVCodecContext *avctx, uint8_t *src,
 static void postprocess_current_frame(AVCodecContext *avctx)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
-    uint32_t x, y, src_x, src_y;
+    uint32_t x, y, src_y;
+    int width = hnm->width;
 
     for (y = 0; y < hnm->height; y++) {
+        uint8_t *dst = hnm->processed + y * width;
+        const uint8_t *src = hnm->current;
         src_y = y - (y % 2);
-        src_x = src_y * hnm->width + (y % 2);
-        for (x = 0; x < hnm->width; x++) {
-            hnm->processed[(y * hnm->width) + x] = hnm->current[src_x];
-            src_x += 2;
+        src += src_y * width + (y % 2);
+        for (x = 0; x < width; x++) {
+            dst[x] = *src;
+            src += 2;
         }
     }
 }
@@ -143,7 +146,7 @@ static void copy_processed_frame(AVCodecContext *avctx, AVFrame *frame)
     }
 }
 
-static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t size)
+static int decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t size)
 {
     Hnm4VideoContext *hnm = avctx->priv_data;
     GetByteContext gb;
@@ -162,7 +165,7 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
             if (tag == 0) {
                 if (writeoffset + 2 > hnm->width * hnm->height) {
                     av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
-                    break;
+                    return AVERROR_INVALIDDATA;
                 }
                 hnm->current[writeoffset++] = bytestream2_get_byte(&gb);
                 hnm->current[writeoffset++] = bytestream2_get_byte(&gb);
@@ -176,7 +179,7 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
                 count = bytestream2_get_byte(&gb) * 2;
                 if (writeoffset + count > hnm->width * hnm->height) {
                     av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
-                    break;
+                    return AVERROR_INVALIDDATA;
                 }
                 while (count > 0) {
                     hnm->current[writeoffset++] = bytestream2_peek_byte(&gb);
@@ -188,7 +191,7 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
             }
             if (writeoffset > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "writeoffset out of bounds\n");
-                break;
+                return AVERROR_INVALIDDATA;
             }
         } else {
             previous = bytestream2_peek_byte(&gb) & 0x20;
@@ -204,24 +207,25 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
 
             if (!backward && offset + 2*count > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
-                break;
+                return AVERROR_INVALIDDATA;
             } else if (backward && offset + 1 >= hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
-                break;
+                return AVERROR_INVALIDDATA;
             } else if (writeoffset + 2*count > hnm->width * hnm->height) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Attempting to write out of bounds\n");
-                break;
+                return AVERROR_INVALIDDATA;
+
             }
             if(backward) {
                 if (offset < (!!backline)*(2 * hnm->width - 1) + 2*(left-1)) {
                     av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
-                    break;
+                    return AVERROR_INVALIDDATA;
                 }
             } else {
                 if (offset < (!!backline)*(2 * hnm->width - 1)) {
                     av_log(avctx, AV_LOG_ERROR, "Attempting to read out of bounds\n");
-                    break;
+                    return AVERROR_INVALIDDATA;
                 }
             }
 
@@ -268,6 +272,7 @@ static void decode_interframe_v4(AVCodecContext *avctx, uint8_t *src, uint32_t s
             }
         }
     }
+    return 0;
 }
 
 static void decode_interframe_v4a(AVCodecContext *avctx, uint8_t *src,
@@ -375,6 +380,7 @@ static void hnm_update_palette(AVCodecContext *avctx, uint8_t *src,
             hnm->palette[writeoffset] = bytestream2_get_be24(&gb);
             if (!eight_bit_colors)
                 hnm->palette[writeoffset] <<= 2;
+            hnm->palette[writeoffset] |= (0xFFU << 24);
             count--;
             writeoffset++;
         }
@@ -434,7 +440,9 @@ static int hnm_decode_frame(AVCodecContext *avctx, void *data,
             decode_interframe_v4a(avctx, avpkt->data + 8, avpkt->size - 8);
             memcpy(hnm->processed, hnm->current, hnm->width * hnm->height);
         } else {
-            decode_interframe_v4(avctx, avpkt->data + 8, avpkt->size - 8);
+            int ret = decode_interframe_v4(avctx, avpkt->data + 8, avpkt->size - 8);
+            if (ret < 0)
+                return ret;
             postprocess_current_frame(avctx);
         }
         copy_processed_frame(avctx, frame);

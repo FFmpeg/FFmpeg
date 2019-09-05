@@ -47,6 +47,8 @@ typedef struct Model {
 
 typedef struct ArithCoder {
     int low, high, value;
+    int overread;
+#define MAX_OVERREAD 16
     union {
         GetBitContext *gb;
         GetByteContext *gB;
@@ -77,12 +79,12 @@ typedef struct MSS12Context {
     uint32_t       pal[256];
     uint8_t        *pal_pic;
     uint8_t        *last_pal_pic;
-    int            pal_stride;
+    ptrdiff_t      pal_stride;
     uint8_t        *mask;
-    int            mask_stride;
+    ptrdiff_t      mask_stride;
     uint8_t        *rgb_pic;
     uint8_t        *last_rgb_pic;
-    int            rgb_stride;
+    ptrdiff_t      rgb_stride;
     int            free_colours;
     int            keyframe;
     int            mvX, mvY;

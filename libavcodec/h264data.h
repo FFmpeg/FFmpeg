@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include "h264.h"
+#include "h264dec.h"
 
 extern const uint8_t ff_h264_golomb_to_pict_type[5];
 extern const uint8_t ff_h264_golomb_to_intra4x4_cbp[48];

@@ -39,11 +39,9 @@
 #include "common.h"
 #include "internal.h"
 #include "log.h"
+#include "thread.h"
 
-#if HAVE_PTHREADS
-#include <pthread.h>
-static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-#endif
+static AVMutex mutex = AV_MUTEX_INITIALIZER;
 
 #define LINE_SZ 1024
 
@@ -57,7 +55,7 @@ static int av_log_level = AV_LOG_INFO;
 static int flags;
 
 #define NB_LEVELS 8
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
 #include <windows.h>
 static const uint8_t color[16 + AV_CLASS_CATEGORY_NB] = {
     [AV_LOG_PANIC  /8] = 12,
@@ -124,7 +122,7 @@ static int use_color = -1;
 
 static void check_color_terminal(void)
 {
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
     CONSOLE_SCREEN_BUFFER_INFO con_info;
     con = GetStdHandle(STD_ERROR_HANDLE);
     use_color = (con != INVALID_HANDLE_VALUE) && !getenv("NO_COLOR") &&
@@ -159,7 +157,7 @@ static void colored_fputs(int level, int tint, const char *str)
     if (level == AV_LOG_INFO/8) local_use_color = 0;
     else                        local_use_color = use_color;
 
-#if defined(_WIN32) && !defined(__MINGW32CE__) && HAVE_SETCONSOLETEXTATTRIBUTE
+#if defined(_WIN32) && HAVE_SETCONSOLETEXTATTRIBUTE
     if (local_use_color)
         SetConsoleTextAttribute(con, background | color[level]);
     fputs(str, stderr);
@@ -168,19 +166,19 @@ static void colored_fputs(int level, int tint, const char *str)
 #else
     if (local_use_color == 1) {
         fprintf(stderr,
-                "\033[%d;3%dm%s\033[0m",
+                "\033[%"PRIu32";3%"PRIu32"m%s\033[0m",
                 (color[level] >> 4) & 15,
                 color[level] & 15,
                 str);
     } else if (tint && use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                "\033[48;5;%"PRIu32"m\033[38;5;%dm%s\033[0m",
                 (color[level] >> 16) & 0xff,
                 tint,
                 str);
     } else if (local_use_color == 256) {
         fprintf(stderr,
-                "\033[48;5;%dm\033[38;5;%dm%s\033[0m",
+                "\033[48;5;%"PRIu32"m\033[38;5;%"PRIu32"m%s\033[0m",
                 (color[level] >> 16) & 0xff,
                 (color[level] >> 8) & 0xff,
                 str);
@@ -249,9 +247,9 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
                         AVBPrint part[4], int *print_prefix, int type[2])
 {
     AVClass* avc = avcl ? *(AVClass **) avcl : NULL;
-    av_bprint_init(part+0, 0, 1);
-    av_bprint_init(part+1, 0, 1);
-    av_bprint_init(part+2, 0, 1);
+    av_bprint_init(part+0, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(part+1, 0, AV_BPRINT_SIZE_AUTOMATIC);
+    av_bprint_init(part+2, 0, AV_BPRINT_SIZE_AUTOMATIC);
     av_bprint_init(part+3, 0, 65536);
 
     if(type) type[0] = type[1] = AV_CLASS_CATEGORY_NA + 16;
@@ -268,10 +266,10 @@ static void format_line(void *avcl, int level, const char *fmt, va_list vl,
         av_bprintf(part+1, "[%s @ %p] ",
                  avc->item_name(avcl), avcl);
         if(type) type[1] = get_category(avcl);
-
-        if (flags & AV_LOG_PRINT_LEVEL)
-            av_bprintf(part+2, "[%s] ", get_level_str(level));
     }
+
+    if (*print_prefix && (level > AV_LOG_QUIET) && (flags & AV_LOG_PRINT_LEVEL))
+        av_bprintf(part+2, "[%s] ", get_level_str(level));
 
     av_vbprintf(part+3, fmt, vl);
 
@@ -317,9 +315,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 
     if (level > av_log_level)
         return;
-#if HAVE_PTHREADS
-    pthread_mutex_lock(&mutex);
-#endif
+    ff_mutex_lock(&mutex);
 
     format_line(ptr, level, fmt, vl, part, &print_prefix, type);
     snprintf(line, sizeof(line), "%s%s%s%s", part[0].str, part[1].str, part[2].str, part[3].str);
@@ -356,9 +352,7 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 #endif
 end:
     av_bprint_finalize(part+3, NULL);
-#if HAVE_PTHREADS
-    pthread_mutex_unlock(&mutex);
-#endif
+    ff_mutex_unlock(&mutex);
 }
 
 static void (*av_log_callback)(void*, int, const char*, va_list) =

@@ -343,7 +343,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     av_log(avctx, AV_LOG_DEBUG, "Selected palette:");
     for (i = 0; i < 4; i++)
-        av_log(avctx, AV_LOG_DEBUG, " 0x%06x@@%02x (0x%x,0x%x)",
+        av_log(avctx, AV_LOG_DEBUG, " 0x%06"PRIx32"@@%02x (0x%x,0x%x)",
                dvdc->global_palette[out_palette[i]], out_alpha[i],
                out_palette[i], out_alpha[i] >> 4);
     av_log(avctx, AV_LOG_DEBUG, "\n");
@@ -438,7 +438,7 @@ static int dvdsub_init(AVCodecContext *avctx)
     av_assert0(sizeof(dvdc->global_palette) == sizeof(default_palette));
     memcpy(dvdc->global_palette, default_palette, sizeof(dvdc->global_palette));
 
-    av_bprint_init(&extradata, 0, 1);
+    av_bprint_init(&extradata, 0, AV_BPRINT_SIZE_AUTOMATIC);
     if (avctx->width && avctx->height)
         av_bprintf(&extradata, "size: %dx%d\n", avctx->width, avctx->height);
     av_bprintf(&extradata, "palette:");

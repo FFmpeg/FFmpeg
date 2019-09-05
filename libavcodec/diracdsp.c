@@ -159,10 +159,10 @@ static void put_signed_rect_clamped_ ## PX ## bit_c(uint8_t *_dst, int dst_strid
     int32_t *src = (int32_t *)_src;                                                                     \
     for (y = 0; y < height; y++) {                                                                      \
         for (x = 0; x < width; x+=4) {                                                                  \
-            dst[x  ] = av_clip_uintp2(src[x  ] + (1 << (PX - 1)), PX);                                  \
-            dst[x+1] = av_clip_uintp2(src[x+1] + (1 << (PX - 1)), PX);                                  \
-            dst[x+2] = av_clip_uintp2(src[x+2] + (1 << (PX - 1)), PX);                                  \
-            dst[x+3] = av_clip_uintp2(src[x+3] + (1 << (PX - 1)), PX);                                  \
+            dst[x  ] = av_clip_uintp2(src[x  ] + (1U << (PX - 1)), PX);                                  \
+            dst[x+1] = av_clip_uintp2(src[x+1] + (1U << (PX - 1)), PX);                                  \
+            dst[x+2] = av_clip_uintp2(src[x+2] + (1U << (PX - 1)), PX);                                  \
+            dst[x+3] = av_clip_uintp2(src[x+3] + (1U << (PX - 1)), PX);                                  \
         }                                                                                               \
         dst += dst_stride >> 1;                                                                         \
         src += src_stride >> 2;                                                                         \
@@ -189,6 +189,27 @@ static void add_rect_clamped_c(uint8_t *dst, const uint16_t *src, int stride,
     }
 }
 
+#define DEQUANT_SUBBAND(PX)                                                                \
+static void dequant_subband_ ## PX ## _c(uint8_t *src, uint8_t *dst, ptrdiff_t stride,     \
+                                         const int qf, const int qs, int tot_v, int tot_h) \
+{                                                                                          \
+    int i, y;                                                                              \
+    for (y = 0; y < tot_v; y++) {                                                          \
+        PX c, sign, *src_r = (PX *)src, *dst_r = (PX *)dst;                                \
+        for (i = 0; i < tot_h; i++) {                                                      \
+            c = *src_r++;                                                                  \
+            sign = FFSIGN(c)*(!!c);                                                        \
+            c = (FFABS(c)*(unsigned)qf + qs) >> 2;                                                   \
+            *dst_r++ = c*sign;                                                             \
+        }                                                                                  \
+        src += tot_h << (sizeof(PX) >> 1);                                                 \
+        dst += stride;                                                                     \
+    }                                                                                      \
+}
+
+DEQUANT_SUBBAND(int16_t)
+DEQUANT_SUBBAND(int32_t)
+
 #define PIXFUNC(PFX, WIDTH)                                             \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][0] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _c; \
     c->PFX ## _dirac_pixels_tab[WIDTH>>4][1] = ff_ ## PFX ## _dirac_pixels ## WIDTH ## _l2_c; \
@@ -213,6 +234,9 @@ av_cold void ff_diracdsp_init(DiracDSPContext *c)
     c->biweight_dirac_pixels_tab[0] = biweight_dirac_pixels8_c;
     c->biweight_dirac_pixels_tab[1] = biweight_dirac_pixels16_c;
     c->biweight_dirac_pixels_tab[2] = biweight_dirac_pixels32_c;
+
+    c->dequant_subband[0] = c->dequant_subband[2] = dequant_subband_int16_t_c;
+    c->dequant_subband[1] = c->dequant_subband[3] = dequant_subband_int32_t_c;
 
     PIXFUNC(put, 8);
     PIXFUNC(put, 16);

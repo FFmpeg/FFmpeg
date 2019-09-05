@@ -22,6 +22,7 @@
  */
 
 #include "hevc.h"
+#include "hevcdec.h"
 
 static const uint8_t l0_l1_cand_idx[12][2] = {
     { 0, 1, },
@@ -81,7 +82,7 @@ static av_always_inline int z_scan_block_avail(HEVCContext *s, int xCurr, int yC
     }
 }
 
-//check if the two luma locations belong to the same mostion estimation region
+//check if the two luma locations belong to the same motion estimation region
 static av_always_inline int is_diff_mer(HEVCContext *s, int xN, int yN, int xP, int yP)
 {
     uint8_t plevel = s->ps.pps->log2_parallel_merge_level;
@@ -315,7 +316,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     const int xB2    = x0 - 1;
     const int yB2    = y0 - 1;
 
-    const int nb_refs = (s->sh.slice_type == P_SLICE) ?
+    const int nb_refs = (s->sh.slice_type == HEVC_SLICE_P) ?
                         s->sh.nb_refs[0] : FFMIN(s->sh.nb_refs[0], s->sh.nb_refs[1]);
 
     int zero_idx = 0;
@@ -411,7 +412,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
         Mv mv_l0_col = { 0 }, mv_l1_col = { 0 };
         int available_l0 = temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH,
                                                        0, &mv_l0_col, 0);
-        int available_l1 = (s->sh.slice_type == B_SLICE) ?
+        int available_l1 = (s->sh.slice_type == HEVC_SLICE_B) ?
                            temporal_luma_motion_vector(s, x0, y0, nPbW, nPbH,
                                                        0, &mv_l1_col, 1) : 0;
 
@@ -430,7 +431,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
     nb_orig_merge_cand = nb_merge_cand;
 
     // combined bi-predictive merge candidates  (applies for B slices)
-    if (s->sh.slice_type == B_SLICE && nb_orig_merge_cand > 1 &&
+    if (s->sh.slice_type == HEVC_SLICE_B && nb_orig_merge_cand > 1 &&
         nb_orig_merge_cand < s->sh.max_num_merge_cand) {
         int comb_idx = 0;
 
@@ -459,7 +460,7 @@ static void derive_spatial_merge_candidates(HEVCContext *s, int x0, int y0,
 
     // append Zero motion vector candidates
     while (nb_merge_cand < s->sh.max_num_merge_cand) {
-        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == B_SLICE) << 1);
+        mergecandlist[nb_merge_cand].pred_flag    = PF_L0 + ((s->sh.slice_type == HEVC_SLICE_B) << 1);
         AV_ZERO32(mergecandlist[nb_merge_cand].mv + 0);
         AV_ZERO32(mergecandlist[nb_merge_cand].mv + 1);
         mergecandlist[nb_merge_cand].ref_idx[0]   = zero_idx < nb_refs ? zero_idx : 0;
@@ -481,7 +482,7 @@ void ff_hevc_luma_mv_merge_mode(HEVCContext *s, int x0, int y0, int nPbW,
 {
     int singleMCLFlag = 0;
     int nCS = 1 << log2_cb_size;
-    LOCAL_ALIGNED(4, MvField, mergecand_list, [MRG_MAX_NUM_CANDS]);
+    MvField mergecand_list[MRG_MAX_NUM_CANDS];
     int nPbW2 = nPbW;
     int nPbH2 = nPbH;
     HEVCLocalContext *lc = s->HEVClc;

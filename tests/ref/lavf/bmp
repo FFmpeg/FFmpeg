@@ -1,3 +1,3 @@
-71f4d64a6b3c71f43a4eff526f84841c *./tests/data/images/bmp/02.bmp
-./tests/data/images/bmp/%02d.bmp CRC=0xe6c71946
-304182 ./tests/data/images/bmp/02.bmp
+71f4d64a6b3c71f43a4eff526f84841c *tests/data/images/bmp/02.bmp
+tests/data/images/bmp/%02d.bmp CRC=0xe6c71946
+304182 tests/data/images/bmp/02.bmp

@@ -38,7 +38,7 @@ struct thumb_frame {
     int histogram[HIST_SIZE];   ///< RGB color distribution histogram of the frame
 };
 
-typedef struct {
+typedef struct ThumbContext {
     const AVClass *class;
     int n;                      ///< current frame
     int n_frames;               ///< number of frames for analysis

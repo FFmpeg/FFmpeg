@@ -30,10 +30,11 @@
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
-#include "ivi.h"
-#include "ivi_dsp.h"
+#include "libavutil/imgutils.h"
 #include "indeo4data.h"
 #include "internal.h"
+#include "ivi.h"
+#include "ivi_dsp.h"
 
 #define IVI4_PIC_SIZE_ESC   7
 
@@ -178,6 +179,13 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     pic_conf.chroma_bands = 0;
     if (pic_conf.luma_bands)
         pic_conf.chroma_bands = decode_plane_subdivision(&ctx->gb);
+
+    if (av_image_check_size2(pic_conf.pic_width, pic_conf.pic_height, avctx->max_pixels, AV_PIX_FMT_YUV410P, 0, avctx) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "picture dimensions %d %d cannot be decoded\n",
+               pic_conf.pic_width, pic_conf.pic_height);
+        return AVERROR_INVALIDDATA;
+    }
+
     ctx->is_scalable = pic_conf.luma_bands != 1 || pic_conf.chroma_bands != 1;
     if (ctx->is_scalable && (pic_conf.luma_bands != 4 || pic_conf.chroma_bands != 1)) {
         av_log(avctx, AV_LOG_ERROR, "Scalability: unsupported subdivision! Luma bands: %d, chroma bands: %d\n",
@@ -187,7 +195,7 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
 
     /* check if picture layout was changed and reallocate buffers */
     if (ivi_pic_config_cmp(&pic_conf, &ctx->pic_conf)) {
-        if (ff_ivi_init_planes(ctx->planes, &pic_conf, 1)) {
+        if (ff_ivi_init_planes(avctx, ctx->planes, &pic_conf, 1)) {
             av_log(avctx, AV_LOG_ERROR, "Couldn't reallocate color planes!\n");
             ctx->pic_conf.luma_bands = 0;
             return AVERROR(ENOMEM);
@@ -237,6 +245,8 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
     /* skip picture header extension if any */
     while (get_bits1(&ctx->gb)) {
         ff_dlog(avctx, "Pic hdr extension encountered!\n");
+        if (get_bits_left(&ctx->gb) < 10)
+            return AVERROR_INVALIDDATA;
         skip_bits(&ctx->gb, 8);
     }
 
@@ -258,12 +268,14 @@ static int decode_pic_hdr(IVI45DecContext *ctx, AVCodecContext *avctx)
  *  @param[in]     avctx     pointer to the AVCodecContext
  *  @return        result code: 0 = OK, negative number = error
  */
-static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
+static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *arg_band,
                            AVCodecContext *avctx)
 {
     int plane, band_num, indx, transform_id, scan_indx;
     int i;
     int quant_mat;
+    IVIBandDesc temp_band, *band = &temp_band;
+    memcpy(&temp_band, arg_band, sizeof(temp_band));
 
     plane    = get_bits(&ctx->gb, 2);
     band_num = get_bits(&ctx->gb, 4);
@@ -393,10 +405,10 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
 
         /* decode block huffman codebook */
         if (!get_bits1(&ctx->gb))
-            band->blk_vlc.tab = ctx->blk_vlc.tab;
+            arg_band->blk_vlc.tab = ctx->blk_vlc.tab;
         else
             if (ff_ivi_dec_huff_desc(&ctx->gb, 1, IVI_BLK_HUFF,
-                                     &band->blk_vlc, avctx))
+                                     &arg_band->blk_vlc, avctx))
                 return AVERROR_INVALIDDATA;
 
         /* select appropriate rvmap table for this band */
@@ -436,6 +448,9 @@ static int decode_band_hdr(IVI45DecContext *ctx, IVIBandDesc *band,
         av_log(avctx, AV_LOG_ERROR, "band->scan not set\n");
         return AVERROR_INVALIDDATA;
     }
+
+    band->blk_vlc = arg_band->blk_vlc;
+    memcpy(arg_band, band, sizeof(*arg_band));
 
     return 0;
 }
@@ -484,6 +499,11 @@ static int decode_mb_info(IVI45DecContext *ctx, IVIBandDesc *band,
             mb->buf_offs = mb_offset;
             mb->b_mv_x   =
             mb->b_mv_y   = 0;
+
+            if (get_bits_left(&ctx->gb) < 1) {
+                av_log(avctx, AV_LOG_ERROR, "Insufficient input for mb info\n");
+                return AVERROR_INVALIDDATA;
+            }
 
             if (get_bits1(&ctx->gb)) {
                 if (ctx->frame_type == IVI4_FRAMETYPE_INTRA) {

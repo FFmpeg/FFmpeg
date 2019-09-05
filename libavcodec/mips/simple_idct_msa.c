@@ -336,35 +336,26 @@ static void simple_idct_put_msa(uint8_t *dst, int32_t dst_stride,
     SRA_4V(temp2_r, temp2_l, temp3_r, temp3_l, 20);
     SRA_4V(a3_r, a3_l, a2_r, a2_l, 20);
     SRA_4V(a1_r, a1_l, a0_r, a0_l, 20);
-    PCKEV_H4_SW(temp0_l, temp0_r, temp1_l, temp1_r, temp2_l, temp2_r,
-                temp3_l, temp3_r, temp0_r, temp1_r, temp2_r, temp3_r);
-    PCKEV_H4_SW(a0_l, a0_r, a1_l, a1_r, a2_l, a2_r, a3_l, a3_r,
-                a0_r, a1_r, a2_r, a3_r);
-    temp0_r = (v4i32) CLIP_SH_0_255(temp0_r);
-    temp1_r = (v4i32) CLIP_SH_0_255(temp1_r);
-    temp2_r = (v4i32) CLIP_SH_0_255(temp2_r);
-    temp3_r = (v4i32) CLIP_SH_0_255(temp3_r);
-    PCKEV_B4_SW(temp0_r, temp0_r, temp1_r, temp1_r,
-                temp2_r, temp2_r, temp3_r, temp3_r,
-                temp0_r, temp1_r, temp2_r, temp3_r);
-    tmp0 = __msa_copy_u_d((v2i64) temp0_r, 1);
-    tmp1 = __msa_copy_u_d((v2i64) temp1_r, 1);
-    tmp2 = __msa_copy_u_d((v2i64) temp2_r, 1);
-    tmp3 = __msa_copy_u_d((v2i64) temp3_r, 1);
+    PCKEV_H4_SH(temp0_l, temp0_r, temp1_l, temp1_r, temp2_l, temp2_r,
+                temp3_l, temp3_r, in0, in1, in2, in3);
+    PCKEV_H4_SH(a0_l, a0_r, a1_l, a1_r, a2_l, a2_r, a3_l, a3_r,
+                in4, in5, in6, in7);
+    CLIP_SH4_0_255(in0, in1, in2, in3);
+    PCKEV_B4_SH(in0, in0, in1, in1, in2, in2, in3, in3,
+                in0, in1, in2, in3);
+    tmp0 = __msa_copy_u_d((v2i64) in0, 1);
+    tmp1 = __msa_copy_u_d((v2i64) in1, 1);
+    tmp2 = __msa_copy_u_d((v2i64) in2, 1);
+    tmp3 = __msa_copy_u_d((v2i64) in3, 1);
     SD4(tmp0, tmp1, tmp2, tmp3, dst, dst_stride);
-    dst += 4 * dst_stride;
-    a0_r = (v4i32) CLIP_SH_0_255(a0_r);
-    a1_r = (v4i32) CLIP_SH_0_255(a1_r);
-    a2_r = (v4i32) CLIP_SH_0_255(a2_r);
-    a3_r = (v4i32) CLIP_SH_0_255(a3_r);
-    PCKEV_B4_SW(a0_r, a0_r, a1_r, a1_r,
-                a2_r, a2_r, a3_r, a3_r, a0_r, a1_r, a2_r, a3_r);
-    tmp3 = __msa_copy_u_d((v2i64) a0_r, 1);
-    tmp2 = __msa_copy_u_d((v2i64) a1_r, 1);
-    tmp1 = __msa_copy_u_d((v2i64) a2_r, 1);
-    tmp0 = __msa_copy_u_d((v2i64) a3_r, 1);
-    SD4(tmp0, tmp1, tmp2, tmp3, dst, dst_stride);
-    dst += 4 * dst_stride;
+    CLIP_SH4_0_255(in4, in5, in6, in7);
+    PCKEV_B4_SH(in4, in4, in5, in5, in6, in6, in7, in7,
+                in4, in5, in6, in7);
+    tmp3 = __msa_copy_u_d((v2i64) in4, 1);
+    tmp2 = __msa_copy_u_d((v2i64) in5, 1);
+    tmp1 = __msa_copy_u_d((v2i64) in6, 1);
+    tmp0 = __msa_copy_u_d((v2i64) in7, 1);
+    SD4(tmp0, tmp1, tmp2, tmp3, dst + 4 * dst_stride, dst_stride);
 }
 
 static void simple_idct_add_msa(uint8_t *dst, int32_t dst_stride,
@@ -516,21 +507,17 @@ static void simple_idct_add_msa(uint8_t *dst, int32_t dst_stride,
                 temp3_l, temp3_r, temp0_r, temp1_r, temp2_r, temp3_r);
     ILVR_B4_SW(zero, in0, zero, in1, zero, in2, zero, in3,
                temp0_l, temp1_l, temp2_l, temp3_l);
-    temp0_r = (v4i32) ((v8i16) (temp0_r) + (v8i16) (temp0_l));
-    temp1_r = (v4i32) ((v8i16) (temp1_r) + (v8i16) (temp1_l));
-    temp2_r = (v4i32) ((v8i16) (temp2_r) + (v8i16) (temp2_l));
-    temp3_r = (v4i32) ((v8i16) (temp3_r) + (v8i16) (temp3_l));
-    temp0_r = (v4i32) CLIP_SH_0_255(temp0_r);
-    temp1_r = (v4i32) CLIP_SH_0_255(temp1_r);
-    temp2_r = (v4i32) CLIP_SH_0_255(temp2_r);
-    temp3_r = (v4i32) CLIP_SH_0_255(temp3_r);
-    PCKEV_B4_SW(temp0_r, temp0_r, temp1_r, temp1_r,
-                temp2_r, temp2_r, temp3_r, temp3_r,
-                temp0_r, temp1_r, temp2_r, temp3_r);
-    tmp0 = __msa_copy_u_d((v2i64) temp0_r, 1);
-    tmp1 = __msa_copy_u_d((v2i64) temp1_r, 1);
-    tmp2 = __msa_copy_u_d((v2i64) temp2_r, 1);
-    tmp3 = __msa_copy_u_d((v2i64) temp3_r, 1);
+    in0 = (v8i16) (temp0_r) + (v8i16) (temp0_l);
+    in1 = (v8i16) (temp1_r) + (v8i16) (temp1_l);
+    in2 = (v8i16) (temp2_r) + (v8i16) (temp2_l);
+    in3 = (v8i16) (temp3_r) + (v8i16) (temp3_l);
+    CLIP_SH4_0_255(in0, in1, in2, in3);
+    PCKEV_B4_SH(in0, in0, in1, in1, in2, in2, in3, in3,
+                in0, in1, in2, in3);
+    tmp0 = __msa_copy_u_d((v2i64) in0, 1);
+    tmp1 = __msa_copy_u_d((v2i64) in1, 1);
+    tmp2 = __msa_copy_u_d((v2i64) in2, 1);
+    tmp3 = __msa_copy_u_d((v2i64) in3, 1);
     SD4(tmp0, tmp1, tmp2, tmp3, dst, dst_stride);
 
     SRA_4V(a3_r, a3_l, a2_r, a2_l, 20);
@@ -540,20 +527,17 @@ static void simple_idct_add_msa(uint8_t *dst, int32_t dst_stride,
                 a0_r, a1_r, a2_r, a3_r);
     ILVR_B4_SW(zero, in4, zero, in5, zero, in6, zero, in7,
                a3_l, a2_l, a1_l, a0_l);
-    a3_r = (v4i32) ((v8i16) (a3_r) + (v8i16) (a3_l));
-    a2_r = (v4i32) ((v8i16) (a2_r) + (v8i16) (a2_l));
-    a1_r = (v4i32) ((v8i16) (a1_r) + (v8i16) (a1_l));
-    a0_r = (v4i32) ((v8i16) (a0_r) + (v8i16) (a0_l));
-    a3_r = (v4i32) CLIP_SH_0_255(a3_r);
-    a2_r = (v4i32) CLIP_SH_0_255(a2_r);
-    a1_r = (v4i32) CLIP_SH_0_255(a1_r);
-    a0_r = (v4i32) CLIP_SH_0_255(a0_r);
-    PCKEV_B4_SW(a0_r, a0_r, a1_r, a1_r,
-                a2_r, a2_r, a3_r, a3_r, a0_r, a1_r, a2_r, a3_r);
-    tmp0 = __msa_copy_u_d((v2i64) a3_r, 1);
-    tmp1 = __msa_copy_u_d((v2i64) a2_r, 1);
-    tmp2 = __msa_copy_u_d((v2i64) a1_r, 1);
-    tmp3 = __msa_copy_u_d((v2i64) a0_r, 1);
+    in4 = (v8i16) (a3_r) + (v8i16) (a3_l);
+    in5 = (v8i16) (a2_r) + (v8i16) (a2_l);
+    in6 = (v8i16) (a1_r) + (v8i16) (a1_l);
+    in7 = (v8i16) (a0_r) + (v8i16) (a0_l);
+    CLIP_SH4_0_255(in4, in5, in6, in7);
+    PCKEV_B4_SH(in4, in4, in5, in5, in6, in6, in7, in7,
+                in4, in5, in6, in7);
+    tmp0 = __msa_copy_u_d((v2i64) in4, 1);
+    tmp1 = __msa_copy_u_d((v2i64) in5, 1);
+    tmp2 = __msa_copy_u_d((v2i64) in6, 1);
+    tmp3 = __msa_copy_u_d((v2i64) in7, 1);
     SD4(tmp0, tmp1, tmp2, tmp3, dst + 4 * dst_stride, dst_stride);
 }
 
@@ -562,12 +546,12 @@ void ff_simple_idct_msa(int16_t *block)
     simple_idct_msa(block);
 }
 
-void ff_simple_idct_put_msa(uint8_t *dst, int32_t dst_stride, int16_t *block)
+void ff_simple_idct_put_msa(uint8_t *dst, ptrdiff_t dst_stride, int16_t *block)
 {
     simple_idct_put_msa(dst, dst_stride, block);
 }
 
-void ff_simple_idct_add_msa(uint8_t *dst, int32_t dst_stride, int16_t *block)
+void ff_simple_idct_add_msa(uint8_t *dst, ptrdiff_t dst_stride, int16_t *block)
 {
     simple_idct_add_msa(dst, dst_stride, block);
 }

@@ -55,9 +55,9 @@ av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "jmp                         9f                 \n\t"
         // Begin
         "0:                                             \n\t"
-        "movq    (%%"REG_d", %%"REG_a"), %%mm3          \n\t"
-        "movd    (%%"REG_c", %%"REG_S"), %%mm0          \n\t"
-        "movd   1(%%"REG_c", %%"REG_S"), %%mm1          \n\t"
+        "movq    (%%"FF_REG_d", %%"FF_REG_a"), %%mm3    \n\t"
+        "movd    (%%"FF_REG_c", %%"FF_REG_S"), %%mm0    \n\t"
+        "movd   1(%%"FF_REG_c", %%"FF_REG_S"), %%mm1    \n\t"
         "punpcklbw                %%mm7, %%mm1          \n\t"
         "punpcklbw                %%mm7, %%mm0          \n\t"
         "pshufw                   $0xFF, %%mm1, %%mm1   \n\t"
@@ -65,14 +65,14 @@ av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "pshufw                   $0xFF, %%mm0, %%mm0   \n\t"
         "2:                                             \n\t"
         "psubw                    %%mm1, %%mm0          \n\t"
-        "movl   8(%%"REG_b", %%"REG_a"), %%esi          \n\t"
+        "movl   8(%%"FF_REG_b", %%"FF_REG_a"), %%esi    \n\t"
         "pmullw                   %%mm3, %%mm0          \n\t"
         "psllw                       $7, %%mm1          \n\t"
         "paddw                    %%mm1, %%mm0          \n\t"
 
-        "movq                     %%mm0, (%%"REG_D", %%"REG_a") \n\t"
+        "movq                     %%mm0, (%%"FF_REG_D", %%"FF_REG_a") \n\t"
 
-        "add                         $8, %%"REG_a"      \n\t"
+        "add                         $8, %%"FF_REG_a"   \n\t"
         // End
         "9:                                             \n\t"
         "lea       " LOCAL_MANGLE(0b) ", %0             \n\t"
@@ -94,22 +94,22 @@ av_cold int ff_init_hscaler_mmxext(int dstW, int xInc, uint8_t *filterCode,
         "jmp                         9f                 \n\t"
         // Begin
         "0:                                             \n\t"
-        "movq    (%%"REG_d", %%"REG_a"), %%mm3          \n\t"
-        "movd    (%%"REG_c", %%"REG_S"), %%mm0          \n\t"
+        "movq    (%%"FF_REG_d", %%"FF_REG_a"), %%mm3    \n\t"
+        "movd    (%%"FF_REG_c", %%"FF_REG_S"), %%mm0    \n\t"
         "punpcklbw                %%mm7, %%mm0          \n\t"
         "pshufw                   $0xFF, %%mm0, %%mm1   \n\t"
         "1:                                             \n\t"
         "pshufw                   $0xFF, %%mm0, %%mm0   \n\t"
         "2:                                             \n\t"
         "psubw                    %%mm1, %%mm0          \n\t"
-        "movl   8(%%"REG_b", %%"REG_a"), %%esi          \n\t"
+        "movl   8(%%"FF_REG_b", %%"FF_REG_a"), %%esi    \n\t"
         "pmullw                   %%mm3, %%mm0          \n\t"
         "psllw                       $7, %%mm1          \n\t"
         "paddw                    %%mm1, %%mm0          \n\t"
 
-        "movq                     %%mm0, (%%"REG_D", %%"REG_a") \n\t"
+        "movq                     %%mm0, (%%"FF_REG_D", %%"FF_REG_a") \n\t"
 
-        "add                         $8, %%"REG_a"      \n\t"
+        "add                         $8, %%"FF_REG_a"   \n\t"
         // End
         "9:                                             \n\t"
         "lea       " LOCAL_MANGLE(0b) ", %0             \n\t"
@@ -199,46 +199,46 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
 #if ARCH_X86_64
     uint64_t retsave;
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
     uint64_t ebxsave;
 #endif
 #endif
 
     __asm__ volatile(
 #if ARCH_X86_64
-        "mov               -8(%%rsp), %%"REG_a" \n\t"
-        "mov               %%"REG_a", %5        \n\t"  // retsave
+        "mov               -8(%%rsp), %%"FF_REG_a"    \n\t"
+        "mov            %%"FF_REG_a", %5              \n\t"  // retsave
 #else
-#if defined(PIC)
-        "mov               %%"REG_b", %5        \n\t"  // ebxsave
+#if !HAVE_EBX_AVAILABLE
+        "mov            %%"FF_REG_b", %5              \n\t"  // ebxsave
 #endif
 #endif
-        "pxor                  %%mm7, %%mm7     \n\t"
-        "mov                      %0, %%"REG_c" \n\t"
-        "mov                      %1, %%"REG_D" \n\t"
-        "mov                      %2, %%"REG_d" \n\t"
-        "mov                      %3, %%"REG_b" \n\t"
-        "xor               %%"REG_a", %%"REG_a" \n\t" // i
-        PREFETCH"        (%%"REG_c")            \n\t"
-        PREFETCH"      32(%%"REG_c")            \n\t"
-        PREFETCH"      64(%%"REG_c")            \n\t"
+        "pxor                  %%mm7, %%mm7           \n\t"
+        "mov                      %0, %%"FF_REG_c"    \n\t"
+        "mov                      %1, %%"FF_REG_D"    \n\t"
+        "mov                      %2, %%"FF_REG_d"    \n\t"
+        "mov                      %3, %%"FF_REG_b"    \n\t"
+        "xor            %%"FF_REG_a", %%"FF_REG_a"    \n\t" // i
+        PREFETCH"      (%%"FF_REG_c")                 \n\t"
+        PREFETCH"    32(%%"FF_REG_c")                 \n\t"
+        PREFETCH"    64(%%"FF_REG_c")                 \n\t"
 
 #if ARCH_X86_64
 #define CALL_MMXEXT_FILTER_CODE \
-        "movl            (%%"REG_b"), %%esi     \n\t"\
-        "call                    *%4            \n\t"\
-        "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
-        "add               %%"REG_S", %%"REG_c" \n\t"\
-        "add               %%"REG_a", %%"REG_D" \n\t"\
-        "xor               %%"REG_a", %%"REG_a" \n\t"\
+        "movl               (%%"FF_REG_b"), %%esi        \n\t"\
+        "call                          *%4               \n\t"\
+        "movl (%%"FF_REG_b", %%"FF_REG_a"), %%esi        \n\t"\
+        "add                  %%"FF_REG_S", %%"FF_REG_c" \n\t"\
+        "add                  %%"FF_REG_a", %%"FF_REG_D" \n\t"\
+        "xor                  %%"FF_REG_a", %%"FF_REG_a" \n\t"\
 
 #else
 #define CALL_MMXEXT_FILTER_CODE \
-        "movl (%%"REG_b"), %%esi        \n\t"\
-        "call         *%4                       \n\t"\
-        "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-        "add               %%"REG_a", %%"REG_D" \n\t"\
-        "xor               %%"REG_a", %%"REG_a" \n\t"\
+        "movl               (%%"FF_REG_b"), %%esi        \n\t"\
+        "call                          *%4               \n\t"\
+        "addl (%%"FF_REG_b", %%"FF_REG_a"), %%"FF_REG_c" \n\t"\
+        "add                  %%"FF_REG_a", %%"FF_REG_D" \n\t"\
+        "xor                  %%"FF_REG_a", %%"FF_REG_a" \n\t"\
 
 #endif /* ARCH_X86_64 */
 
@@ -252,11 +252,11 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
         CALL_MMXEXT_FILTER_CODE
 
 #if ARCH_X86_64
-        "mov                      %5, %%"REG_a" \n\t"
-        "mov               %%"REG_a", -8(%%rsp) \n\t"
+        "mov                      %5, %%"FF_REG_a" \n\t"
+        "mov            %%"FF_REG_a", -8(%%rsp)    \n\t"
 #else
-#if defined(PIC)
-        "mov                      %5, %%"REG_b" \n\t"
+#if !HAVE_EBX_AVAILABLE
+        "mov                      %5, %%"FF_REG_b" \n\t"
 #endif
 #endif
         :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
@@ -264,13 +264,13 @@ void ff_hyscale_fast_mmxext(SwsContext *c, int16_t *dst,
 #if ARCH_X86_64
           ,"m"(retsave)
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
           ,"m" (ebxsave)
 #endif
 #endif
-        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if ARCH_X86_64 || !defined(PIC)
-         ,"%"REG_b
+        : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_D
+#if ARCH_X86_64 || HAVE_EBX_AVAILABLE
+         ,"%"FF_REG_b
 #endif
     );
 
@@ -289,39 +289,39 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if ARCH_X86_64
     DECLARE_ALIGNED(8, uint64_t, retsave);
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
 #endif
     __asm__ volatile(
 #if ARCH_X86_64
-        "mov          -8(%%rsp), %%"REG_a"  \n\t"
-        "mov          %%"REG_a", %7         \n\t"  // retsave
+        "mov          -8(%%rsp), %%"FF_REG_a"    \n\t"
+        "mov       %%"FF_REG_a", %7              \n\t"  // retsave
 #else
-#if defined(PIC)
-        "mov          %%"REG_b", %7         \n\t"  // ebxsave
+#if !HAVE_EBX_AVAILABLE
+        "mov       %%"FF_REG_b", %7              \n\t"  // ebxsave
 #endif
 #endif
-        "pxor             %%mm7, %%mm7      \n\t"
-        "mov                 %0, %%"REG_c"  \n\t"
-        "mov                 %1, %%"REG_D"  \n\t"
-        "mov                 %2, %%"REG_d"  \n\t"
-        "mov                 %3, %%"REG_b"  \n\t"
-        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-        PREFETCH"   (%%"REG_c")             \n\t"
-        PREFETCH" 32(%%"REG_c")             \n\t"
-        PREFETCH" 64(%%"REG_c")             \n\t"
+        "pxor             %%mm7, %%mm7           \n\t"
+        "mov                 %0, %%"FF_REG_c"    \n\t"
+        "mov                 %1, %%"FF_REG_D"    \n\t"
+        "mov                 %2, %%"FF_REG_d"    \n\t"
+        "mov                 %3, %%"FF_REG_b"    \n\t"
+        "xor          %%"FF_REG_a", %%"FF_REG_a" \n\t" // i
+        PREFETCH"   (%%"FF_REG_c")               \n\t"
+        PREFETCH" 32(%%"FF_REG_c")               \n\t"
+        PREFETCH" 64(%%"FF_REG_c")               \n\t"
 
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
-        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-        "mov                 %5, %%"REG_c"  \n\t" // src2
-        "mov                 %6, %%"REG_D"  \n\t" // dst2
-        PREFETCH"   (%%"REG_c")             \n\t"
-        PREFETCH" 32(%%"REG_c")             \n\t"
-        PREFETCH" 64(%%"REG_c")             \n\t"
+        "xor          %%"FF_REG_a", %%"FF_REG_a" \n\t" // i
+        "mov                    %5, %%"FF_REG_c" \n\t" // src2
+        "mov                    %6, %%"FF_REG_D" \n\t" // dst2
+        PREFETCH"   (%%"FF_REG_c")               \n\t"
+        PREFETCH" 32(%%"FF_REG_c")               \n\t"
+        PREFETCH" 64(%%"FF_REG_c")               \n\t"
 
         CALL_MMXEXT_FILTER_CODE
         CALL_MMXEXT_FILTER_CODE
@@ -329,11 +329,11 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
         CALL_MMXEXT_FILTER_CODE
 
 #if ARCH_X86_64
-        "mov                 %7, %%"REG_a"  \n\t"
-        "mov          %%"REG_a", -8(%%rsp)  \n\t"
+        "mov                    %7, %%"FF_REG_a" \n\t"
+        "mov          %%"FF_REG_a", -8(%%rsp)    \n\t"
 #else
-#if defined(PIC)
-        "mov %7, %%"REG_b"    \n\t"
+#if !HAVE_EBX_AVAILABLE
+        "mov %7, %%"FF_REG_b"    \n\t"
 #endif
 #endif
         :: "m" (src1), "m" (dst1), "m" (filter), "m" (filterPos),
@@ -341,13 +341,13 @@ void ff_hcscale_fast_mmxext(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if ARCH_X86_64
           ,"m"(retsave)
 #else
-#if defined(PIC)
+#if !HAVE_EBX_AVAILABLE
           ,"m" (ebxsave)
 #endif
 #endif
-        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
-#if ARCH_X86_64 || !defined(PIC)
-         ,"%"REG_b
+        : "%"FF_REG_a, "%"FF_REG_c, "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_D
+#if ARCH_X86_64 || HAVE_EBX_AVAILABLE
+         ,"%"FF_REG_b
 #endif
     );
 

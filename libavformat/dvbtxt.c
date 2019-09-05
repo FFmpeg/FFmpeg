@@ -24,7 +24,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int dvbtxt_probe(AVProbeData *p)
+static int dvbtxt_probe(const AVProbeData *p)
 {
     const uint8_t *end = p->buf + p->buf_size;
     const uint8_t *buf;

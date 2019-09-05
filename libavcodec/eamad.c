@@ -41,8 +41,8 @@
 #include "mpeg12vlc.h"
 
 #define EA_PREAMBLE_SIZE    8
-#define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD i-frame */
-#define MADm_TAG MKTAG('M', 'A', 'D', 'm')    /* MAD p-frame */
+#define MADk_TAG MKTAG('M', 'A', 'D', 'k')    /* MAD I-frame */
+#define MADm_TAG MKTAG('M', 'A', 'D', 'm')    /* MAD P-frame */
 #define MADe_TAG MKTAG('M', 'A', 'D', 'e')    /* MAD lqp-frame */
 
 typedef struct MadContext {
@@ -54,7 +54,7 @@ typedef struct MadContext {
     GetBitContext gb;
     void *bitstream_buf;
     unsigned int bitstream_buf_size;
-    DECLARE_ALIGNED(16, int16_t, block)[64];
+    DECLARE_ALIGNED(32, int16_t, block)[64];
     ScanTable scantable;
     uint16_t quant_matrix[64];
     int mb_x;
@@ -80,8 +80,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static inline void comp(unsigned char *dst, int dst_stride,
-                        unsigned char *src, int src_stride, int add)
+static inline void comp(unsigned char *dst, ptrdiff_t dst_stride,
+                        unsigned char *src, ptrdiff_t src_stride, int add)
 {
     int j, i;
     for (j=0; j<8; j++)
@@ -284,7 +284,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if (avctx->width != width || avctx->height != height) {
         av_frame_unref(s->last_frame);
-        if((width * height)/2048*7 > bytestream2_get_bytes_left(&gb))
+        if((width * (int64_t)height)/2048*7 > bytestream2_get_bytes_left(&gb))
             return AVERROR_INVALIDDATA;
         if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
             return ret;

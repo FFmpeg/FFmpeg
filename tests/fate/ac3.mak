@@ -36,6 +36,14 @@ FATE_AC3 += fate-ac3-fixed-4.0-downmix-mono
 fate-ac3-fixed-4.0-downmix-mono: CMD = pcm -c ac3_fixed -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/millers_crossing_4.0.ac3
 fate-ac3-fixed-4.0-downmix-mono: REF = $(SAMPLES)/ac3/millers_crossing_4.0_mono_v2.pcm
 
+FATE_AC3 += fate-ac3-fixed-5.1-downmix-mono
+fate-ac3-fixed-5.1-downmix-mono: CMD = pcm -c ac3_fixed -request_channel_layout 4 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
+fate-ac3-fixed-5.1-downmix-mono: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_mono_v2.pcm
+
+FATE_AC3 += fate-ac3-fixed-5.1-downmix-stereo
+fate-ac3-fixed-5.1-downmix-stereo: CMD = pcm -c ac3_fixed -request_channel_layout 3 -i $(TARGET_SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
+fate-ac3-fixed-5.1-downmix-stereo: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small_stereo_v2.pcm
+
 FATE_EAC3 += fate-eac3-1
 fate-eac3-1: CMD = pcm -i $(TARGET_SAMPLES)/eac3/csi_miami_5.1_256_spx_small.eac3
 fate-eac3-1: REF = $(SAMPLES)/eac3/csi_miami_5.1_256_spx_small_v2.pcm
@@ -51,6 +59,10 @@ fate-eac3-3: REF = $(SAMPLES)/eac3/matrix2_commentary1_stereo_192_small_v2.pcm
 FATE_EAC3 += fate-eac3-4
 fate-eac3-4: CMD = pcm -i $(TARGET_SAMPLES)/eac3/serenity_english_5.1_1536_small.eac3
 fate-eac3-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small_v2.pcm
+
+FATE_EAC3 += fate-eac3-5
+fate-eac3-5: CMD = pcm -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3
+fate-eac3-5: REF = $(SAMPLES)/eac3/the_great_wall_7.1.pcm
 
 $(FATE_AC3) $(FATE_EAC3): CMP = oneoff
 
@@ -79,6 +91,11 @@ fate-ac3-fixed-encode: SRC = $(TARGET_PATH)/tests/data/asynth-44100-2.wav
 fate-ac3-fixed-encode: CMD = md5 -i $(SRC) -c ac3_fixed -ab 128k -f ac3 -flags +bitexact
 fate-ac3-fixed-encode: CMP = oneline
 fate-ac3-fixed-encode: REF = a1d1fc116463b771abf5aef7ed37d7b1
+
+FATE_EAC3-$(call ALLYES, EAC3_DEMUXER EAC3_MUXER EAC3_CORE_BSF) += fate-eac3-core-bsf
+fate-eac3-core-bsf: CMD = md5pipe -i $(TARGET_SAMPLES)/eac3/the_great_wall_7.1.eac3 -c:a copy -bsf:a eac3_core -fflags +bitexact -f eac3
+fate-eac3-core-bsf: CMP = oneline
+fate-eac3-core-bsf: REF = b704bf851e99b7442e9bed368b60e6ca
 
 FATE_SAMPLES_AVCONV += $(FATE_AC3-yes) $(FATE_EAC3-yes)
 

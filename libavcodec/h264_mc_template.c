@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "h264.h"
+#include "h264dec.h"
 
 #undef MCFUNC
 
@@ -64,9 +64,9 @@ static void mc_part(const H264Context *h, H264SliceContext *sl,
 static void MCFUNC(hl_motion)(const H264Context *h, H264SliceContext *sl,
                               uint8_t *dest_y,
                               uint8_t *dest_cb, uint8_t *dest_cr,
-                              qpel_mc_func(*qpix_put)[16],
+                              const qpel_mc_func(*qpix_put)[16],
                               const h264_chroma_mc_func(*chroma_put),
-                              qpel_mc_func(*qpix_avg)[16],
+                              const qpel_mc_func(*qpix_avg)[16],
                               const h264_chroma_mc_func(*chroma_avg),
                               const h264_weight_func *weight_op,
                               const h264_biweight_func *weight_avg)
@@ -78,7 +78,8 @@ static void MCFUNC(hl_motion)(const H264Context *h, H264SliceContext *sl,
 
     if (HAVE_THREADS && (h->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h, sl);
-    prefetch_motion(h, sl, 0, PIXEL_SHIFT, CHROMA_IDC);
+    if (USES_LIST(mb_type, 0))
+        prefetch_motion(h, sl, 0, PIXEL_SHIFT, CHROMA_IDC);
 
     if (IS_16X16(mb_type)) {
         mc_part(h, sl, 0, 1, 16, 0, dest_y, dest_cb, dest_cr, 0, 0,

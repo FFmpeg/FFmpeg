@@ -113,7 +113,7 @@ int av_fifo_grow(AVFifoBuffer *f, unsigned int size)
     size += av_fifo_size(f);
 
     if (old_size < size)
-        return av_fifo_realloc2(f, FFMAX(size, 2*size));
+        return av_fifo_realloc2(f, FFMAX(size, 2*old_size));
     return 0;
 }
 

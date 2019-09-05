@@ -1,5 +1,5 @@
 /*
- * RTP H264 Protocol (RFC3984)
+ * RTP H.264 Protocol (RFC3984)
  * Copyright (c) 2006 Ryan Martell
  *
  * This file is part of FFmpeg.
@@ -166,7 +166,7 @@ static int sdp_parse_fmtp_config_h264(AVFormatContext *s,
             parse_profile_level_id(s, h264_data, value);
     } else if (!strcmp(attr, "sprop-parameter-sets")) {
         int ret;
-        if (value[strlen(value) - 1] == ',') {
+        if (*value == 0 || value[strlen(value) - 1] == ',') {
             av_log(s, AV_LOG_WARNING, "Missing PPS in sprop-parameter-sets, ignoring\n");
             return 0;
         }
@@ -289,7 +289,7 @@ static int h264_handle_packet_fu_a(AVFormatContext *ctx, PayloadContext *data, A
     uint8_t fu_indicator, fu_header, start_bit, nal_type, nal;
 
     if (len < 3) {
-        av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H264 RTP packet\n");
+        av_log(ctx, AV_LOG_ERROR, "Too short data for FU-A H.264 RTP packet\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -319,14 +319,14 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     int result = 0;
 
     if (!len) {
-        av_log(ctx, AV_LOG_ERROR, "Empty H264 RTP packet\n");
+        av_log(ctx, AV_LOG_ERROR, "Empty H.264 RTP packet\n");
         return AVERROR_INVALIDDATA;
     }
     nal  = buf[0];
     type = nal & 0x1f;
 
-    /* Simplify the case (these are all the nal types used internally by
-     * the h264 codec). */
+    /* Simplify the case (these are all the NAL types used internally by
+     * the H.264 codec). */
     if (type >= 1 && type <= 23)
         type = 1;
     switch (type) {
@@ -351,10 +351,8 @@ static int h264_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     case 26:                   // MTAP-16
     case 27:                   // MTAP-24
     case 29:                   // FU-B
-        av_log(ctx, AV_LOG_ERROR,
-               "Unhandled type (%d) (See RFC for implementation details)\n",
-               type);
-        result = AVERROR(ENOSYS);
+        avpriv_report_missing_feature(ctx, "RTP H.264 NAL unit type %d", type);
+        result = AVERROR_PATCHWELCOME;
         break;
 
     case 28:                   // FU-A (fragmented nal)
@@ -410,7 +408,7 @@ static int parse_h264_sdp_line(AVFormatContext *s, int st_index,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_h264_dynamic_handler = {
     .enc_name         = "H264",
     .codec_type       = AVMEDIA_TYPE_VIDEO,
     .codec_id         = AV_CODEC_ID_H264,

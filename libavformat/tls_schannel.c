@@ -148,7 +148,7 @@ static int tls_client_handshake_loop(URLContext *h, int initial)
     TLSContext *c = h->priv_data;
     TLSShared *s = &c->tls_shared;
     SECURITY_STATUS sspi_ret;
-    SecBuffer outbuf[3];
+    SecBuffer outbuf[3] = { 0 };
     SecBufferDesc outbuf_desc;
     SecBuffer inbuf[2];
     SecBufferDesc inbuf_desc;
@@ -413,11 +413,13 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
 
         ret = ffurl_read(s->tcp, c->enc_buf + c->enc_buf_offset,
                          c->enc_buf_size - c->enc_buf_offset);
-        if (ret < 0) {
+        if (ret == AVERROR_EOF) {
+            c->connection_closed = 1;
+            ret = 0;
+        } else if (ret < 0) {
             av_log(h, AV_LOG_ERROR, "Unable to read from socket\n");
             return ret;
-        } else if (ret == 0)
-            c->connection_closed = 1;
+        }
 
         c->enc_buf_offset += ret;
     }
@@ -494,7 +496,7 @@ static int tls_read(URLContext *h, uint8_t *buf, int len)
             ret = AVERROR(EAGAIN);
             goto cleanup;
         } else {
-            av_log(h, AV_LOG_ERROR, "Unable to decrypt message\n");
+            av_log(h, AV_LOG_ERROR, "Unable to decrypt message (error 0x%x)\n", (unsigned)sspi_ret);
             ret = AVERROR(EIO);
             goto cleanup;
         }
@@ -515,7 +517,7 @@ cleanup:
     if (ret == 0 && !c->connection_closed)
         ret = AVERROR(EAGAIN);
 
-    return ret < 0 ? ret : 0;
+    return ret < 0 ? ret : AVERROR_EOF;
 }
 
 static int tls_write(URLContext *h, const uint8_t *buf, int len)
@@ -577,6 +579,12 @@ done:
     return ret < 0 ? ret : outbuf[1].cbBuffer;
 }
 
+static int tls_get_file_handle(URLContext *h)
+{
+    TLSContext *c = h->priv_data;
+    return ffurl_get_file_handle(c->tls_shared.tcp);
+}
+
 static const AVOption options[] = {
     TLS_COMMON_OPTIONS(TLSContext, tls_shared),
     { NULL }
@@ -589,12 +597,13 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-const URLProtocol ff_tls_schannel_protocol = {
+const URLProtocol ff_tls_protocol = {
     .name           = "tls",
     .url_open2      = tls_open,
     .url_read       = tls_read,
     .url_write      = tls_write,
     .url_close      = tls_close,
+    .url_get_file_handle = tls_get_file_handle,
     .priv_data_size = sizeof(TLSContext),
     .flags          = URL_PROTOCOL_FLAG_NETWORK,
     .priv_data_class = &tls_class,

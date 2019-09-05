@@ -26,6 +26,8 @@
 #include <stdint.h>
 #include <sys/types.h>
 
+#include "avcodec.h"
+
 /**
  * The following API around MediaCodec and MediaFormat is based on the
  * NDK one provided by Google since Android 5.0.
@@ -44,7 +46,7 @@
  * implementation.
  *
  * The API around MediaCodecList is not part of the NDK (and is lacking as
- * we still need to retreive the codec name to work around faulty decoders
+ * we still need to retrieve the codec name to work around faulty decoders
  * and encoders).
  *
  * For documentation, please refers to NdkMediaCodec.h NdkMediaFormat.h and
@@ -52,7 +54,9 @@
  *
  */
 
-char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int width, int height, void *log_ctx);
+int ff_AMediaCodecProfile_getProfileFromAVCodecContext(AVCodecContext *avctx);
+
+char *ff_AMediaCodecList_getCodecNameByType(const char *mime, int profile, int encoder, void *log_ctx);
 
 struct FFAMediaFormat;
 typedef struct FFAMediaFormat FFAMediaFormat;
@@ -121,5 +125,7 @@ int ff_AMediaCodec_getBufferFlagKeyFrame(FFAMediaCodec *codec);
 int ff_AMediaCodec_getConfigureFlagEncode(FFAMediaCodec *codec);
 
 int ff_AMediaCodec_cleanOutputBuffers(FFAMediaCodec *codec);
+
+int ff_Build_SDK_INT(AVCodecContext *avctx);
 
 #endif /* AVCODEC_MEDIACODEC_WRAPPER_H */

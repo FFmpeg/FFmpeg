@@ -68,7 +68,7 @@ static int framecrc_write_packet(struct AVFormatContext *s, AVPacket *pkt)
                                                   pkt->side_data[i].data,
                                                   pkt->side_data[i].size);
             }
-            av_strlcatf(buf, sizeof(buf), ", %8d, 0x%08x", pkt->side_data[i].size, side_data_crc);
+            av_strlcatf(buf, sizeof(buf), ", %8d, 0x%08"PRIx32, pkt->side_data[i].size, side_data_crc);
         }
     }
     av_strlcatf(buf, sizeof(buf), "\n");

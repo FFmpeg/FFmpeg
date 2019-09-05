@@ -72,8 +72,8 @@ static void cmv_decode_intra(CmvContext * s, AVFrame *frame,
     }
 }
 
-static void cmv_motcomp(unsigned char *dst, int dst_stride,
-                        const unsigned char *src, int src_stride,
+static void cmv_motcomp(unsigned char *dst, ptrdiff_t dst_stride,
+                        const unsigned char *src, ptrdiff_t src_stride,
                         int x, int y,
                         int xoffset, int yoffset,
                         int width, int height){
@@ -191,12 +191,12 @@ static int cmv_decode_frame(AVCodecContext *avctx,
         if (ret < 0)
             return ret;
         if (size > buf_end - buf - EA_PREAMBLE_SIZE)
-            return -1;
+            return AVERROR_INVALIDDATA;
         buf += size;
     }
 
-    if (av_image_check_size(s->width, s->height, 0, s->avctx))
-        return -1;
+    if ((ret = av_image_check_size(s->width, s->height, 0, s->avctx)) < 0)
+        return ret;
 
     if ((ret = ff_get_buffer(avctx, frame, AV_GET_BUFFER_FLAG_REF)) < 0)
         return ret;

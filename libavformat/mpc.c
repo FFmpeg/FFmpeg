@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/channel_layout.h"
-#include "libavcodec/get_bits.h"
+
 #include "avformat.h"
 #include "internal.h"
 #include "apetag.h"
@@ -45,7 +45,7 @@ typedef struct MPCContext {
     int frames_noted;
 } MPCContext;
 
-static int mpc_probe(AVProbeData *p)
+static int mpc_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
     if (d[0] == 'M' && d[1] == 'P' && d[2] == '+' && (d[3] == 0x17 || d[3] == 0x7))
@@ -88,7 +88,7 @@ static int mpc_read_header(AVFormatContext *s)
 
     st = avformat_new_stream(s, NULL);
     if (!st)
-        return AVERROR(ENOMEM);
+        goto mem_error;
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id = AV_CODEC_ID_MUSEPACK7;
     st->codecpar->channels = 2;
@@ -96,7 +96,7 @@ static int mpc_read_header(AVFormatContext *s)
     st->codecpar->bits_per_coded_sample = 16;
 
     if (ff_get_extradata(s, st->codecpar, s->pb, 16) < 0)
-        return AVERROR(ENOMEM);
+        goto mem_error;
     st->codecpar->sample_rate = mpc_rate[st->codecpar->extradata[2] & 3];
     avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codecpar->sample_rate);
     /* scan for seekpoints */
@@ -104,7 +104,7 @@ static int mpc_read_header(AVFormatContext *s)
     st->duration = c->fcount;
 
     /* try to read APE tags */
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t pos = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
@@ -113,6 +113,9 @@ static int mpc_read_header(AVFormatContext *s)
     }
 
     return 0;
+mem_error:
+    av_freep(&c->frames);
+    return AVERROR(ENOMEM);
 }
 
 static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)

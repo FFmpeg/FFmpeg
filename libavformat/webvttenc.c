@@ -38,7 +38,7 @@ static void webvtt_write_time(AVIOContext *pb, int64_t millisec)
     min -= 60 * hour;
 
     if (hour > 0)
-        avio_printf(pb, "%"PRId64":", hour);
+        avio_printf(pb, "%02"PRId64":", hour);
 
     avio_printf(pb, "%02"PRId64":%02"PRId64".%03"PRId64"", min, sec, millisec);
 }

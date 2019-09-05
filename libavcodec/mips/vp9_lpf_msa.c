@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Shivraj Patil (Shivraj.Patil@imgtec.com)
+ * Copyright (c) 2015 - 2017 Shivraj Patil (Shivraj.Patil@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -22,63 +22,12 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "vp9dsp_mips.h"
 
-#define VP9_LPF_FILTER4_8W(p1_in, p0_in, q0_in, q1_in, mask_in, hev_in,  \
-                           p1_out, p0_out, q0_out, q1_out)               \
-{                                                                        \
-    v16i8 p1_m, p0_m, q0_m, q1_m, q0_sub_p0, filt_sign;                  \
-    v16i8 filt, filt1, filt2, cnst4b, cnst3b;                            \
-    v8i16 q0_sub_p0_r, filt_r, cnst3h;                                   \
-                                                                         \
-    p1_m = (v16i8) __msa_xori_b(p1_in, 0x80);                            \
-    p0_m = (v16i8) __msa_xori_b(p0_in, 0x80);                            \
-    q0_m = (v16i8) __msa_xori_b(q0_in, 0x80);                            \
-    q1_m = (v16i8) __msa_xori_b(q1_in, 0x80);                            \
-                                                                         \
-    filt = __msa_subs_s_b(p1_m, q1_m);                                   \
-    filt = filt & (v16i8) hev_in;                                        \
-    q0_sub_p0 = q0_m - p0_m;                                             \
-    filt_sign = __msa_clti_s_b(filt, 0);                                 \
-                                                                         \
-    cnst3h = __msa_ldi_h(3);                                             \
-    q0_sub_p0_r = (v8i16) __msa_ilvr_b(q0_sub_p0, q0_sub_p0);            \
-    q0_sub_p0_r = __msa_dotp_s_h((v16i8) q0_sub_p0_r, (v16i8) cnst3h);   \
-    filt_r = (v8i16) __msa_ilvr_b(filt_sign, filt);                      \
-    filt_r += q0_sub_p0_r;                                               \
-    filt_r = __msa_sat_s_h(filt_r, 7);                                   \
-                                                                         \
-    /* combine left and right part */                                    \
-    filt = __msa_pckev_b((v16i8) filt_r, (v16i8) filt_r);                \
-                                                                         \
-    filt = filt & (v16i8) mask_in;                                       \
-    cnst4b = __msa_ldi_b(4);                                             \
-    filt1 = __msa_adds_s_b(filt, cnst4b);                                \
-    filt1 >>= 3;                                                         \
-                                                                         \
-    cnst3b = __msa_ldi_b(3);                                             \
-    filt2 = __msa_adds_s_b(filt, cnst3b);                                \
-    filt2 >>= 3;                                                         \
-                                                                         \
-    q0_m = __msa_subs_s_b(q0_m, filt1);                                  \
-    q0_out = __msa_xori_b((v16u8) q0_m, 0x80);                           \
-    p0_m = __msa_adds_s_b(p0_m, filt2);                                  \
-    p0_out = __msa_xori_b((v16u8) p0_m, 0x80);                           \
-                                                                         \
-    filt = __msa_srari_b(filt1, 1);                                      \
-    hev_in = __msa_xori_b((v16u8) hev_in, 0xff);                         \
-    filt = filt & (v16i8) hev_in;                                        \
-                                                                         \
-    q1_m = __msa_subs_s_b(q1_m, filt);                                   \
-    q1_out = __msa_xori_b((v16u8) q1_m, 0x80);                           \
-    p1_m = __msa_adds_s_b(p1_m, filt);                                   \
-    p1_out = __msa_xori_b((v16u8) p1_m, 0x80);                           \
-}
-
 #define VP9_LPF_FILTER4_4W(p1_in, p0_in, q0_in, q1_in, mask_in, hev_in,  \
                            p1_out, p0_out, q0_out, q1_out)               \
 {                                                                        \
-    v16i8 p1_m, p0_m, q0_m, q1_m, q0_sub_p0, filt_sign;                  \
-    v16i8 filt, filt1, filt2, cnst4b, cnst3b;                            \
-    v8i16 q0_sub_p0_r, q0_sub_p0_l, filt_l, filt_r, cnst3h;              \
+    v16i8 p1_m, p0_m, q0_m, q1_m, q0_sub_p0, filt, filt1, filt2;         \
+    const v16i8 cnst4b = __msa_ldi_b(4);                                 \
+    const v16i8 cnst3b = __msa_ldi_b(3);                                 \
                                                                          \
     p1_m = (v16i8) __msa_xori_b(p1_in, 0x80);                            \
     p0_m = (v16i8) __msa_xori_b(p0_in, 0x80);                            \
@@ -89,30 +38,15 @@
                                                                          \
     filt = filt & (v16i8) hev_in;                                        \
                                                                          \
-    q0_sub_p0 = q0_m - p0_m;                                             \
-    filt_sign = __msa_clti_s_b(filt, 0);                                 \
-                                                                         \
-    cnst3h = __msa_ldi_h(3);                                             \
-    q0_sub_p0_r = (v8i16) __msa_ilvr_b(q0_sub_p0, q0_sub_p0);            \
-    q0_sub_p0_r = __msa_dotp_s_h((v16i8) q0_sub_p0_r, (v16i8) cnst3h);   \
-    filt_r = (v8i16) __msa_ilvr_b(filt_sign, filt);                      \
-    filt_r += q0_sub_p0_r;                                               \
-    filt_r = __msa_sat_s_h(filt_r, 7);                                   \
-                                                                         \
-    q0_sub_p0_l = (v8i16) __msa_ilvl_b(q0_sub_p0, q0_sub_p0);            \
-    q0_sub_p0_l = __msa_dotp_s_h((v16i8) q0_sub_p0_l, (v16i8) cnst3h);   \
-    filt_l = (v8i16) __msa_ilvl_b(filt_sign, filt);                      \
-    filt_l += q0_sub_p0_l;                                               \
-    filt_l = __msa_sat_s_h(filt_l, 7);                                   \
-                                                                         \
-    filt = __msa_pckev_b((v16i8) filt_l, (v16i8) filt_r);                \
+    q0_sub_p0 = __msa_subs_s_b(q0_m, p0_m);                              \
+    filt = __msa_adds_s_b(filt, q0_sub_p0);                              \
+    filt = __msa_adds_s_b(filt, q0_sub_p0);                              \
+    filt = __msa_adds_s_b(filt, q0_sub_p0);                              \
     filt = filt & (v16i8) mask_in;                                       \
                                                                          \
-    cnst4b = __msa_ldi_b(4);                                             \
     filt1 = __msa_adds_s_b(filt, cnst4b);                                \
     filt1 >>= 3;                                                         \
                                                                          \
-    cnst3b = __msa_ldi_b(3);                                             \
     filt2 = __msa_adds_s_b(filt, cnst3b);                                \
     filt2 >>= 3;                                                         \
                                                                          \
@@ -277,7 +211,7 @@ void ff_loop_filter_v_4_8_msa(uint8_t *src, ptrdiff_t pitch,
 
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh,
                  hev, mask, flat);
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
                        q1_out);
 
     p1_d = __msa_copy_u_d((v2i64) p1_out, 0);
@@ -342,7 +276,7 @@ void ff_loop_filter_v_8_8_msa(uint8_t *src, ptrdiff_t pitch,
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh,
                  hev, mask, flat);
     VP9_FLAT4(p3, p2, p0, q0, q2, q3, flat);
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
                        q1_out);
 
     flat = (v16u8) __msa_ilvr_d((v2i64) zero, (v2i64) flat);
@@ -1065,7 +999,7 @@ void ff_loop_filter_v_16_8_msa(uint8_t *src, ptrdiff_t pitch,
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh,
                  hev, mask, flat);
     VP9_FLAT4(p3, p2, p0, q0, q2, q3, flat);
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
                        q1_out);
 
     flat = (v16u8) __msa_ilvr_d((v2i64) zero, (v2i64) flat);
@@ -1280,14 +1214,12 @@ void ff_loop_filter_h_4_8_msa(uint8_t *src, ptrdiff_t pitch,
                        p3, p2, p1, p0, q0, q1, q2, q3);
     LPF_MASK_HEV(p3, p2, p1, p0, q0, q1, q2, q3, limit, b_limit, thresh,
                  hev, mask, flat);
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1, p0, q0, q1);
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1, p0, q0, q1);
     ILVR_B2_SH(p0, p1, q1, q0, vec0, vec1);
     ILVRL_H2_SH(vec1, vec0, vec2, vec3);
 
     src -= 2;
-    ST4x4_UB(vec2, vec2, 0, 1, 2, 3, src, pitch);
-    src += 4 * pitch;
-    ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
+    ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
 }
 
 void ff_loop_filter_h_44_16_msa(uint8_t *src, ptrdiff_t pitch,
@@ -1332,9 +1264,8 @@ void ff_loop_filter_h_44_16_msa(uint8_t *src, ptrdiff_t pitch,
 
     src -= 2;
 
-    ST4x8_UB(tmp2, tmp3, src, pitch);
-    src += (8 * pitch);
-    ST4x8_UB(tmp4, tmp5, src, pitch);
+    ST_W8(tmp2, tmp3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
+    ST_W8(tmp4, tmp5, 0, 1, 2, 3, 0, 1, 2, 3, src + 8 * pitch, pitch);
 }
 
 void ff_loop_filter_h_8_8_msa(uint8_t *src, ptrdiff_t pitch,
@@ -1367,7 +1298,7 @@ void ff_loop_filter_h_8_8_msa(uint8_t *src, ptrdiff_t pitch,
     /* flat4 */
     VP9_FLAT4(p3, p2, p0, q0, q2, q3, flat);
     /* filter4 */
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
                        q1_out);
 
     flat = (v16u8) __msa_ilvr_d((v2i64) zero, (v2i64) flat);
@@ -1379,9 +1310,7 @@ void ff_loop_filter_h_8_8_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_H2_SH(vec1, vec0, vec2, vec3);
 
         src -= 2;
-        ST4x4_UB(vec2, vec2, 0, 1, 2, 3, src, pitch);
-        src += 4 * pitch;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
     } else {
         ILVR_B8_UH(zero, p3, zero, p2, zero, p1, zero, p0, zero, q0, zero, q1,
                    zero, q2, zero, q3, p3_r, p2_r, p1_r, p0_r, q0_r, q1_r, q2_r,
@@ -1409,11 +1338,11 @@ void ff_loop_filter_h_8_8_msa(uint8_t *src, ptrdiff_t pitch,
         vec4 = (v8i16) __msa_ilvr_b((v16i8) q2, (v16i8) q1);
 
         src -= 3;
-        ST4x4_UB(vec2, vec2, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec4, 0, src + 4, pitch);
+        ST_W4(vec2, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec4, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec4, 4, src + 4, pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec4, 4, 5, 6, 7, src + 4, pitch);
     }
 }
 
@@ -1476,9 +1405,8 @@ void ff_loop_filter_h_88_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_H2_SH(vec1, vec0, vec4, vec5);
 
         src -= 2;
-        ST4x8_UB(vec2, vec3, src, pitch);
-        src += 8 * pitch;
-        ST4x8_UB(vec4, vec5, src, pitch);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
+        ST_W8(vec4, vec5, 0, 1, 2, 3, 0, 1, 2, 3, src + 8 * pitch, pitch);
     } else {
         ILVR_B8_UH(zero, p3, zero, p2, zero, p1, zero, p0, zero, q0, zero, q1,
                    zero, q2, zero, q3, p3_r, p2_r, p1_r, p0_r, q0_r, q1_r, q2_r,
@@ -1517,17 +1445,17 @@ void ff_loop_filter_h_88_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_B2_SH(q2, q1, vec2, vec5);
 
         src -= 3;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 0, src + 4, pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec4, vec4, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 4, src + 4, pitch);
+        ST_W4(vec4, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 4, 5, 6, 7, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec6, vec6, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 0, src + 4, pitch);
+        ST_W4(vec6, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec7, vec7, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 4, src + 4, pitch);
+        ST_W4(vec7, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 4, 5, 6, 7, src + 4, pitch);
     }
 }
 
@@ -1589,9 +1517,8 @@ void ff_loop_filter_h_84_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_H2_SH(vec1, vec0, vec4, vec5);
 
         src -= 2;
-        ST4x8_UB(vec2, vec3, src, pitch);
-        src += 8 * pitch;
-        ST4x8_UB(vec4, vec5, src, pitch);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
+        ST_W8(vec4, vec5, 0, 1, 2, 3, 0, 1, 2, 3, src + 8 * pitch, pitch);
     } else {
         ILVR_B8_UH(zero, p3, zero, p2, zero, p1, zero, p0, zero, q0, zero, q1,
                    zero, q2, zero, q3, p3_r, p2_r, p1_r, p0_r, q0_r, q1_r, q2_r,
@@ -1621,17 +1548,17 @@ void ff_loop_filter_h_84_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_B2_SH(q2, q1, vec2, vec5);
 
         src -= 3;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 0, src + 4, pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec4, vec4, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 4, src + 4, pitch);
+        ST_W4(vec4, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 4, 5, 6, 7, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec6, vec6, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 0, src + 4, pitch);
+        ST_W4(vec6, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec7, vec7, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 4, src + 4, pitch);
+        ST_W4(vec7, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 4, 5, 6, 7, src + 4, pitch);
     }
 }
 
@@ -1693,9 +1620,8 @@ void ff_loop_filter_h_48_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_H2_SH(vec1, vec0, vec4, vec5);
 
         src -= 2;
-        ST4x8_UB(vec2, vec3, src, pitch);
-        src += 8 * pitch;
-        ST4x8_UB(vec4, vec5, src, pitch);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch);
+        ST_W8(vec4, vec5, 0, 1, 2, 3, 0, 1, 2, 3, src + 8 * pitch, pitch);
     } else {
         ILVL_B4_UH(zero, p3, zero, p2, zero, p1, zero, p0, p3_l, p2_l, p1_l,
                    p0_l);
@@ -1727,17 +1653,17 @@ void ff_loop_filter_h_48_16_msa(uint8_t *src, ptrdiff_t pitch,
         ILVRL_B2_SH(q2, q1, vec2, vec5);
 
         src -= 3;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 0, src + 4, pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec4, vec4, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec2, 4, src + 4, pitch);
+        ST_W4(vec4, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec2, 4, 5, 6, 7, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec6, vec6, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 0, src + 4, pitch);
+        ST_W4(vec6, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 0, 1, 2, 3, src + 4, pitch);
         src += (4 * pitch);
-        ST4x4_UB(vec7, vec7, 0, 1, 2, 3, src, pitch);
-        ST2x4_UB(vec5, 4, src + 4, pitch);
+        ST_W4(vec7, 0, 1, 2, 3, src, pitch);
+        ST_H4(vec5, 4, 5, 6, 7, src + 4, pitch);
     }
 }
 
@@ -1868,7 +1794,7 @@ static int32_t vp9_vt_lpf_t4_and_t8_8w(uint8_t *src, uint8_t *filter48,
     /* flat4 */
     VP9_FLAT4(p3, p2, p0, q0, q2, q3, flat);
     /* filter4 */
-    VP9_LPF_FILTER4_8W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
+    VP9_LPF_FILTER4_4W(p1, p0, q0, q1, mask, hev, p1_out, p0_out, q0_out,
                        q1_out);
 
     flat = (v16u8) __msa_ilvr_d((v2i64) zero, (v2i64) flat);
@@ -1877,7 +1803,7 @@ static int32_t vp9_vt_lpf_t4_and_t8_8w(uint8_t *src, uint8_t *filter48,
     if (__msa_test_bz_v(flat)) {
         ILVR_B2_SH(p0_out, p1_out, q1_out, q0_out, vec0, vec1);
         ILVRL_H2_SH(vec1, vec0, vec2, vec3);
-        ST4x8_UB(vec2, vec3, (src_org - 2), pitch_org);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, (src_org - 2), pitch_org);
         return 1;
     } else {
         ILVR_B8_UH(zero, p3, zero, p2, zero, p1, zero, p0, zero, q0, zero, q1,
@@ -1944,11 +1870,11 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         vec2 = (v8i16) __msa_ilvr_b((v16i8) q2, (v16i8) q1);
 
         src_org -= 3;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec2, 0, (src_org + 4), pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec2, 0, 1, 2, 3, (src_org + 4), pitch);
         src_org += (4 * pitch);
-        ST4x4_UB(vec4, vec4, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec2, 4, (src_org + 4), pitch);
+        ST_W4(vec4, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec2, 4, 5, 6, 7, (src_org + 4), pitch);
 
         return 1;
     } else {
@@ -1974,7 +1900,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         p6 = __msa_bmnz_v(p6, (v16u8) r_out, flat2);
-        ST8x1_UB(p6, src);
+        ST_D1(p6, 0, src);
         src += 16;
 
         /* p5 */
@@ -1986,7 +1912,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         p5 = __msa_bmnz_v(p5, (v16u8) r_out, flat2);
-        ST8x1_UB(p5, src);
+        ST_D1(p5, 0, src);
         src += 16;
 
         /* p4 */
@@ -1998,7 +1924,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         p4 = __msa_bmnz_v(p4, (v16u8) r_out, flat2);
-        ST8x1_UB(p4, src);
+        ST_D1(p4, 0, src);
         src += 16;
 
         /* p3 */
@@ -2010,7 +1936,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         p3 = __msa_bmnz_v(p3, (v16u8) r_out, flat2);
-        ST8x1_UB(p3, src);
+        ST_D1(p3, 0, src);
         src += 16;
 
         /* p2 */
@@ -2023,7 +1949,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* p1 */
@@ -2036,7 +1962,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* p0 */
@@ -2049,7 +1975,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* q0 */
@@ -2062,7 +1988,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* q1 */
@@ -2074,7 +2000,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* q2 */
@@ -2086,7 +2012,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         filter8 = __msa_bmnz_v(filter8, (v16u8) r_out, flat2);
-        ST8x1_UB(filter8, src);
+        ST_D1(filter8, 0, src);
         src += 16;
 
         /* q3 */
@@ -2097,7 +2023,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         q3 = __msa_bmnz_v(q3, (v16u8) r_out, flat2);
-        ST8x1_UB(q3, src);
+        ST_D1(q3, 0, src);
         src += 16;
 
         /* q4 */
@@ -2108,7 +2034,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         q4 = __msa_bmnz_v(q4, (v16u8) r_out, flat2);
-        ST8x1_UB(q4, src);
+        ST_D1(q4, 0, src);
         src += 16;
 
         /* q5 */
@@ -2119,7 +2045,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         q5 = __msa_bmnz_v(q5, (v16u8) r_out, flat2);
-        ST8x1_UB(q5, src);
+        ST_D1(q5, 0, src);
         src += 16;
 
         /* q6 */
@@ -2130,7 +2056,7 @@ static int32_t vp9_vt_lpf_t16_8w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitch
         r_out = __msa_srari_h((v8i16) tmp1_r, 4);
         r_out = (v8i16) __msa_pckev_b((v16i8) r_out, (v16i8) r_out);
         q6 = __msa_bmnz_v(q6, (v16u8) r_out, flat2);
-        ST8x1_UB(q6, src);
+        ST_D1(q6, 0, src);
 
         return 0;
     }
@@ -2203,9 +2129,8 @@ static int32_t vp9_vt_lpf_t4_and_t8_16w(uint8_t *src, uint8_t *filter48,
         ILVRL_H2_SH(vec1, vec0, vec4, vec5);
 
         src_org -= 2;
-        ST4x8_UB(vec2, vec3, src_org, pitch);
-        src_org += 8 * pitch;
-        ST4x8_UB(vec4, vec5, src_org, pitch);
+        ST_W8(vec2, vec3, 0, 1, 2, 3, 0, 1, 2, 3, src_org, pitch);
+        ST_W8(vec4, vec5, 0, 1, 2, 3, 0, 1, 2, 3, src_org + 8 * pitch, pitch);
 
         return 1;
     } else {
@@ -2284,17 +2209,17 @@ static int32_t vp9_vt_lpf_t16_16w(uint8_t *src, uint8_t *src_org, ptrdiff_t pitc
         ILVRL_B2_SH(q2, q1, vec2, vec5);
 
         src_org -= 3;
-        ST4x4_UB(vec3, vec3, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec2, 0, (src_org + 4), pitch);
+        ST_W4(vec3, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec2, 0, 1, 2, 3, (src_org + 4), pitch);
         src_org += (4 * pitch);
-        ST4x4_UB(vec4, vec4, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec2, 4, (src_org + 4), pitch);
+        ST_W4(vec4, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec2, 4, 5, 6, 7, (src_org + 4), pitch);
         src_org += (4 * pitch);
-        ST4x4_UB(vec6, vec6, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec5, 0, (src_org + 4), pitch);
+        ST_W4(vec6, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec5, 0, 1, 2, 3, (src_org + 4), pitch);
         src_org += (4 * pitch);
-        ST4x4_UB(vec7, vec7, 0, 1, 2, 3, src_org, pitch);
-        ST2x4_UB(vec5, 4, (src_org + 4), pitch);
+        ST_W4(vec7, 0, 1, 2, 3, src_org, pitch);
+        ST_H4(vec5, 4, 5, 6, 7, (src_org + 4), pitch);
 
         return 1;
     } else {

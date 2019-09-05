@@ -1,5 +1,5 @@
 /* Electronic Arts Multimedia File Demuxer
- * Copyright (c) 2004 The FFmpeg Project
+ * Copyright (c) 2004  The FFmpeg project
  * Copyright (c) 2006-2008 Peter Ross
  *
  * This file is part of FFmpeg.
@@ -458,7 +458,7 @@ static int process_ea_header(AVFormatContext *s)
     return 1;
 }
 
-static int ea_probe(AVProbeData *p)
+static int ea_probe(const AVProbeData *p)
 {
     unsigned big_endian, size;
 
@@ -539,7 +539,7 @@ static int ea_read_header(AVFormatContext *s)
             ea->audio_codec = 0;
             return 1;
         }
-        if (ea->bytes <= 0) {
+        if (ea->bytes <= 0 || ea->bytes > 2) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid number of bytes per sample: %d\n", ea->bytes);
             ea->audio_codec = AV_CODEC_ID_NONE;
@@ -557,7 +557,7 @@ static int ea_read_header(AVFormatContext *s)
         st->codecpar->channels              = ea->num_channels;
         st->codecpar->sample_rate           = ea->sample_rate;
         st->codecpar->bits_per_coded_sample = ea->bytes * 8;
-        st->codecpar->bit_rate              = st->codecpar->channels *
+        st->codecpar->bit_rate              = (int64_t)st->codecpar->channels *
                                               st->codecpar->sample_rate *
                                               st->codecpar->bits_per_coded_sample / 4;
         st->codecpar->block_align           = st->codecpar->channels *

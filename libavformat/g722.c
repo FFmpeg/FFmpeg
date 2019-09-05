@@ -46,6 +46,7 @@ static int g722_read_header(AVFormatContext *s)
     return 0;
 }
 
+FF_RAW_DEMUXER_CLASS(g722)
 AVInputFormat ff_g722_demuxer = {
     .name           = "g722",
     .long_name      = NULL_IF_CONFIG_SMALL("raw G.722"),
@@ -54,4 +55,5 @@ AVInputFormat ff_g722_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "g722,722",
     .raw_codec_id   = AV_CODEC_ID_ADPCM_G722,
-};
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &g722_demuxer_class,};

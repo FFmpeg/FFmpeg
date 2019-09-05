@@ -95,7 +95,7 @@ int ff_lpc_calc_coefs(LPCContext *s,
                       int max_order, int precision,
                       int32_t coefs[][MAX_LPC_ORDER], int *shift,
                       enum FFLPCType lpc_type, int lpc_passes,
-                      int omethod, int max_shift, int zero_shift);
+                      int omethod, int min_shift, int max_shift, int zero_shift);
 
 int ff_lpc_calc_ref_coefs(LPCContext *s,
                           const int32_t *samples, int order, double *ref);
@@ -117,11 +117,14 @@ void ff_lpc_end(LPCContext *s);
 
 #if USE_FIXED
 typedef int LPC_TYPE;
+typedef unsigned LPC_TYPE_U;
 #else
 #ifdef LPC_USE_DOUBLE
 typedef double LPC_TYPE;
+typedef double LPC_TYPE_U;
 #else
 typedef float LPC_TYPE;
+typedef float LPC_TYPE_U;
 #endif
 #endif // USE_FIXED
 
@@ -192,8 +195,8 @@ static inline int AAC_RENAME(compute_lpc_coefs)(const LPC_TYPE *autoc, int max_o
         for(j=0; j < (i+1)>>1; j++) {
             LPC_TYPE f = lpc_last[    j];
             LPC_TYPE b = lpc_last[i-1-j];
-            lpc[    j] = f + AAC_MUL26(r, b);
-            lpc[i-1-j] = b + AAC_MUL26(r, f);
+            lpc[    j] = f + (LPC_TYPE_U)AAC_MUL26(r, b);
+            lpc[i-1-j] = b + (LPC_TYPE_U)AAC_MUL26(r, f);
         }
 
         if (fail && err < 0)

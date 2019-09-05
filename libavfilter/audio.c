@@ -22,11 +22,13 @@
 #include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavcodec/avcodec.h"
 
 #include "audio.h"
 #include "avfilter.h"
 #include "internal.h"
+
+#define BUFFER_ALIGN 0
+
 
 AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
@@ -35,29 +37,48 @@ AVFrame *ff_null_get_audio_buffer(AVFilterLink *link, int nb_samples)
 
 AVFrame *ff_default_get_audio_buffer(AVFilterLink *link, int nb_samples)
 {
-    AVFrame *frame = av_frame_alloc();
+    AVFrame *frame = NULL;
     int channels = link->channels;
-    int ret;
 
     av_assert0(channels == av_get_channel_layout_nb_channels(link->channel_layout) || !av_get_channel_layout_nb_channels(link->channel_layout));
 
+    if (!link->frame_pool) {
+        link->frame_pool = ff_frame_pool_audio_init(av_buffer_allocz, channels,
+                                                    nb_samples, link->format, BUFFER_ALIGN);
+        if (!link->frame_pool)
+            return NULL;
+    } else {
+        int pool_channels = 0;
+        int pool_nb_samples = 0;
+        int pool_align = 0;
+        enum AVSampleFormat pool_format = AV_SAMPLE_FMT_NONE;
+
+        if (ff_frame_pool_get_audio_config(link->frame_pool,
+                                           &pool_channels, &pool_nb_samples,
+                                           &pool_format, &pool_align) < 0) {
+            return NULL;
+        }
+
+        if (pool_channels != channels || pool_nb_samples < nb_samples ||
+            pool_format != link->format || pool_align != BUFFER_ALIGN) {
+
+            ff_frame_pool_uninit((FFFramePool **)&link->frame_pool);
+            link->frame_pool = ff_frame_pool_audio_init(av_buffer_allocz, channels,
+                                                        nb_samples, link->format, BUFFER_ALIGN);
+            if (!link->frame_pool)
+                return NULL;
+        }
+    }
+
+    frame = ff_frame_pool_get(link->frame_pool);
     if (!frame)
         return NULL;
 
-    frame->nb_samples     = nb_samples;
-    frame->format         = link->format;
-    av_frame_set_channels(frame, link->channels);
+    frame->nb_samples = nb_samples;
     frame->channel_layout = link->channel_layout;
-    frame->sample_rate    = link->sample_rate;
-    ret = av_frame_get_buffer(frame, 0);
-    if (ret < 0) {
-        av_frame_free(&frame);
-        return NULL;
-    }
+    frame->sample_rate = link->sample_rate;
 
-    av_samples_set_silence(frame->extended_data, 0, nb_samples, channels,
-                           link->format);
-
+    av_samples_set_silence(frame->extended_data, 0, nb_samples, channels, link->format);
 
     return frame;
 }

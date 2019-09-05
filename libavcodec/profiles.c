@@ -30,7 +30,6 @@ const AVProfile ff_aac_profiles[] = {
     { FF_PROFILE_AAC_LD,    "LD"       },
     { FF_PROFILE_AAC_ELD,   "ELD"      },
     { FF_PROFILE_AAC_MAIN,  "Main" },
-    { FF_PROFILE_AAC_LOW,   "LC"   },
     { FF_PROFILE_AAC_SSR,   "SSR"  },
     { FF_PROFILE_AAC_LTP,   "LTP"  },
     { FF_PROFILE_UNKNOWN },
@@ -44,6 +43,16 @@ const AVProfile ff_dca_profiles[] = {
     { FF_PROFILE_DTS_HD_MA,   "DTS-HD MA"   },
     { FF_PROFILE_DTS_EXPRESS, "DTS Express" },
     { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_dnxhd_profiles[] = {
+  { FF_PROFILE_DNXHD,      "DNXHD"},
+  { FF_PROFILE_DNXHR_LB,   "DNXHR LB"},
+  { FF_PROFILE_DNXHR_SQ,   "DNXHR SQ"},
+  { FF_PROFILE_DNXHR_HQ,   "DNXHR HQ" },
+  { FF_PROFILE_DNXHR_HQX,  "DNXHR HQX"},
+  { FF_PROFILE_DNXHR_444,  "DNXHR 444"},
+  { FF_PROFILE_UNKNOWN },
 };
 
 const AVProfile ff_h264_profiles[] = {
@@ -60,6 +69,8 @@ const AVProfile ff_h264_profiles[] = {
     { FF_PROFILE_H264_HIGH_444_PREDICTIVE,  "High 4:4:4 Predictive" },
     { FF_PROFILE_H264_HIGH_444_INTRA,       "High 4:4:4 Intra"      },
     { FF_PROFILE_H264_CAVLC_444,            "CAVLC 4:4:4"           },
+    { FF_PROFILE_H264_MULTIVIEW_HIGH,       "Multiview High"        },
+    { FF_PROFILE_H264_STEREO_HIGH,          "Stereo High"           },
     { FF_PROFILE_UNKNOWN },
 };
 
@@ -126,6 +137,43 @@ const AVProfile ff_vp9_profiles[] = {
     { FF_PROFILE_VP9_2, "Profile 2" },
     { FF_PROFILE_VP9_3, "Profile 3" },
     { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_av1_profiles[] = {
+    { FF_PROFILE_AV1_MAIN,         "Main" },
+    { FF_PROFILE_AV1_HIGH,         "High" },
+    { FF_PROFILE_AV1_PROFESSIONAL, "Professional" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_sbc_profiles[] = {
+    { FF_PROFILE_SBC_MSBC, "mSBC" },
+    { FF_PROFILE_UNKNOWN },
+};
+
+const AVProfile ff_prores_profiles[] = {
+    { FF_PROFILE_PRORES_PROXY,    "Proxy"    },
+    { FF_PROFILE_PRORES_LT,       "LT"       },
+    { FF_PROFILE_PRORES_STANDARD, "Standard" },
+    { FF_PROFILE_PRORES_HQ,       "HQ"       },
+    { FF_PROFILE_PRORES_4444,     "4444"     },
+    { FF_PROFILE_PRORES_XQ,       "XQ"       },
+    { FF_PROFILE_UNKNOWN }
+};
+
+const AVProfile ff_mjpeg_profiles[] = {
+    { FF_PROFILE_MJPEG_HUFFMAN_BASELINE_DCT,            "Baseline"    },
+    { FF_PROFILE_MJPEG_HUFFMAN_EXTENDED_SEQUENTIAL_DCT, "Sequential"  },
+    { FF_PROFILE_MJPEG_HUFFMAN_PROGRESSIVE_DCT,         "Progressive" },
+    { FF_PROFILE_MJPEG_HUFFMAN_LOSSLESS,                "Lossless"    },
+    { FF_PROFILE_MJPEG_JPEG_LS,                         "JPEG LS"     },
+    { FF_PROFILE_UNKNOWN }
+};
+
+const AVProfile ff_arib_caption_profiles[] = {
+    { FF_PROFILE_ARIB_PROFILE_A, "Profile A" },
+    { FF_PROFILE_ARIB_PROFILE_C, "Profile C" },
+    { FF_PROFILE_UNKNOWN }
 };
 
 #endif /* !CONFIG_SMALL */

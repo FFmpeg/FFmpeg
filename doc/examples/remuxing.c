@@ -50,6 +50,9 @@ int main(int argc, char **argv)
     AVPacket pkt;
     const char *in_filename, *out_filename;
     int ret, i;
+    int stream_index = 0;
+    int *stream_mapping = NULL;
+    int stream_mapping_size = 0;
 
     if (argc < 3) {
         printf("usage: %s input output\n"
@@ -61,8 +64,6 @@ int main(int argc, char **argv)
 
     in_filename  = argv[1];
     out_filename = argv[2];
-
-    av_register_all();
 
     if ((ret = avformat_open_input(&ifmt_ctx, in_filename, 0, 0)) < 0) {
         fprintf(stderr, "Could not open input file '%s'", in_filename);
@@ -83,25 +84,42 @@ int main(int argc, char **argv)
         goto end;
     }
 
+    stream_mapping_size = ifmt_ctx->nb_streams;
+    stream_mapping = av_mallocz_array(stream_mapping_size, sizeof(*stream_mapping));
+    if (!stream_mapping) {
+        ret = AVERROR(ENOMEM);
+        goto end;
+    }
+
     ofmt = ofmt_ctx->oformat;
 
     for (i = 0; i < ifmt_ctx->nb_streams; i++) {
+        AVStream *out_stream;
         AVStream *in_stream = ifmt_ctx->streams[i];
-        AVStream *out_stream = avformat_new_stream(ofmt_ctx, in_stream->codec->codec);
+        AVCodecParameters *in_codecpar = in_stream->codecpar;
+
+        if (in_codecpar->codec_type != AVMEDIA_TYPE_AUDIO &&
+            in_codecpar->codec_type != AVMEDIA_TYPE_VIDEO &&
+            in_codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE) {
+            stream_mapping[i] = -1;
+            continue;
+        }
+
+        stream_mapping[i] = stream_index++;
+
+        out_stream = avformat_new_stream(ofmt_ctx, NULL);
         if (!out_stream) {
             fprintf(stderr, "Failed allocating output stream\n");
             ret = AVERROR_UNKNOWN;
             goto end;
         }
 
-        ret = avcodec_copy_context(out_stream->codec, in_stream->codec);
+        ret = avcodec_parameters_copy(out_stream->codecpar, in_codecpar);
         if (ret < 0) {
-            fprintf(stderr, "Failed to copy context from input to output stream codec context\n");
+            fprintf(stderr, "Failed to copy codec parameters\n");
             goto end;
         }
-        out_stream->codec->codec_tag = 0;
-        if (ofmt_ctx->oformat->flags & AVFMT_GLOBALHEADER)
-            out_stream->codec->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
+        out_stream->codecpar->codec_tag = 0;
     }
     av_dump_format(ofmt_ctx, 0, out_filename, 1);
 
@@ -127,8 +145,14 @@ int main(int argc, char **argv)
             break;
 
         in_stream  = ifmt_ctx->streams[pkt.stream_index];
-        out_stream = ofmt_ctx->streams[pkt.stream_index];
+        if (pkt.stream_index >= stream_mapping_size ||
+            stream_mapping[pkt.stream_index] < 0) {
+            av_packet_unref(&pkt);
+            continue;
+        }
 
+        pkt.stream_index = stream_mapping[pkt.stream_index];
+        out_stream = ofmt_ctx->streams[pkt.stream_index];
         log_packet(ifmt_ctx, &pkt, "in");
 
         /* copy packet */
@@ -155,6 +179,8 @@ end:
     if (ofmt_ctx && !(ofmt->flags & AVFMT_NOFILE))
         avio_closep(&ofmt_ctx->pb);
     avformat_free_context(ofmt_ctx);
+
+    av_freep(&stream_mapping);
 
     if (ret < 0 && ret != AVERROR_EOF) {
         fprintf(stderr, "Error occurred: %s\n", av_err2str(ret));

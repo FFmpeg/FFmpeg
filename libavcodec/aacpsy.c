@@ -303,7 +303,7 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     float bark;
     int i, j, g, start;
     float prev, minscale, minath, minsnr, pe_min;
-    int chan_bitrate = ctx->avctx->bit_rate / ((ctx->avctx->flags & CODEC_FLAG_QSCALE) ? 2.0f : ctx->avctx->channels);
+    int chan_bitrate = ctx->avctx->bit_rate / ((ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) ? 2.0f : ctx->avctx->channels);
 
     const int bandwidth    = ctx->cutoff ? ctx->cutoff : AAC_CUTOFF(ctx->avctx);
     const float num_bark   = calc_bark((float)bandwidth);
@@ -311,10 +311,10 @@ static av_cold int psy_3gpp_init(FFPsyContext *ctx) {
     ctx->model_priv_data = av_mallocz(sizeof(AacPsyContext));
     if (!ctx->model_priv_data)
         return AVERROR(ENOMEM);
-    pctx = (AacPsyContext*) ctx->model_priv_data;
+    pctx = ctx->model_priv_data;
     pctx->global_quality = (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120) * 0.01f;
 
-    if (ctx->avctx->flags & CODEC_FLAG_QSCALE) {
+    if (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /* Use the target average bitrate to compute spread parameters */
         chan_bitrate = (int)(chan_bitrate / 120.0 * (ctx->avctx->global_quality ? ctx->avctx->global_quality : 120));
     }
@@ -704,7 +704,7 @@ static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
 
     /* 5.6.1.3.2 "Calculation of the desired perceptual entropy" */
     ctx->ch[channel].entropy = pe;
-    if (ctx->avctx->flags & CODEC_FLAG_QSCALE) {
+    if (ctx->avctx->flags & AV_CODEC_FLAG_QSCALE) {
         /* (2.5 * 120) achieves almost transparent rate, and we want to give
          * ample room downwards, so we make that equivalent to QSCALE=2.4
          */
@@ -885,7 +885,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
     int grouping     = 0;
     int uselongblock = 1;
     int attacks[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
-    float clippings[AAC_NUM_BLOCKS_SHORT];
     int i;
     FFPsyWindowInfo wi = { { 0 } };
 
@@ -977,7 +976,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
 
     wi.window_type[1] = prev_type;
     if (wi.window_type[0] != EIGHT_SHORT_SEQUENCE) {
-        float clipping = 0.0f;
 
         wi.num_windows  = 1;
         wi.grouping[0]  = 1;
@@ -986,9 +984,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         else
             wi.window_shape = 1;
 
-        for (i = 0; i < 8; i++)
-            clipping = FFMAX(clipping, clippings[i]);
-        wi.clipping[0] = clipping;
     } else {
         int lastgrp = 0;
 
@@ -998,15 +993,6 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
             if (!((pch->next_grouping >> i) & 1))
                 lastgrp = i;
             wi.grouping[lastgrp]++;
-        }
-
-        for (i = 0; i < 8; i += wi.grouping[i]) {
-            int w;
-            float clipping = 0.0f;
-            for (w = 0; w < wi.grouping[i]; w++)
-                clipping = FFMAX(clipping, clippings[i+w]);
-            for (w = 0; w < wi.grouping[i]; w++)
-                wi.clipping[i+w] = clipping;
         }
     }
 

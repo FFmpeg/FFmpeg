@@ -37,7 +37,7 @@ int32_t ff_scalarproduct_and_madd_int32_sse4(int16_t *v1, const int32_t *v2,
 
 av_cold void ff_llauddsp_init_x86(LLAudDSPContext *c)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMXEXT(cpu_flags))

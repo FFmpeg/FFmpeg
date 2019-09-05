@@ -44,7 +44,7 @@ struct RDTDemuxContext {
      * in the AVFormatContext, and this variable points to the offset in
      * that array such that the first is the first stream of this set. */
     AVStream **streams;
-    int n_streams; /**< streams with identifical content in this set */
+    int n_streams; /**< streams with identical content in this set */
     void *dynamic_protocol_context;
     DynamicPayloadPacketHandlerProc parse_packet;
     uint32_t prev_timestamp;
@@ -53,7 +53,7 @@ struct RDTDemuxContext {
 
 RDTDemuxContext *
 ff_rdt_parse_open(AVFormatContext *ic, int first_stream_of_set_idx,
-                  void *priv_data, RTPDynamicProtocolHandler *handler)
+                  void *priv_data, const RTPDynamicProtocolHandler *handler)
 {
     RDTDemuxContext *s = av_mallocz(sizeof(RDTDemuxContext));
     if (!s)
@@ -323,7 +323,7 @@ get_cache:
                                   st, rdt->rmst[st->index], pkt);
         if (rdt->audio_pkt_cnt == 0 &&
             st->codecpar->codec_id == AV_CODEC_ID_AAC)
-            av_freep(&rdt->rmctx->pb);
+            avio_context_free(&rdt->rmctx->pb);
     }
     pkt->stream_index = st->index;
     pkt->pts = *timestamp;
@@ -554,7 +554,7 @@ rdt_close_context (PayloadContext *rdt)
 }
 
 #define RDT_HANDLER(n, s, t) \
-static RTPDynamicProtocolHandler rdt_ ## n ## _handler = { \
+RTPDynamicProtocolHandler ff_rdt_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \
@@ -570,10 +570,3 @@ RDT_HANDLER(live_audio, "x-pn-multirate-realaudio-live", AVMEDIA_TYPE_AUDIO);
 RDT_HANDLER(video,      "x-pn-realvideo",                AVMEDIA_TYPE_VIDEO);
 RDT_HANDLER(audio,      "x-pn-realaudio",                AVMEDIA_TYPE_AUDIO);
 
-void ff_register_rdt_dynamic_payload_handlers(void)
-{
-    ff_register_dynamic_payload_handler(&rdt_video_handler);
-    ff_register_dynamic_payload_handler(&rdt_audio_handler);
-    ff_register_dynamic_payload_handler(&rdt_live_video_handler);
-    ff_register_dynamic_payload_handler(&rdt_live_audio_handler);
-}

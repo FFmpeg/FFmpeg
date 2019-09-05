@@ -288,11 +288,12 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         shift = a00.exp;
         if (shift >= 3)
             alpha0[k][0] = 0x7fffffff;
+        else if (shift <= -30)
+            alpha0[k][0] = 0;
         else {
-            a00.mant <<= 1;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha0[k][0] = a00.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha0[k][0] = a00.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha0[k][0] = (a00.mant + round) >> shift;
@@ -302,11 +303,12 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         shift = a01.exp;
         if (shift >= 3)
             alpha0[k][1] = 0x7fffffff;
+        else if (shift <= -30)
+            alpha0[k][1] = 0;
         else {
-            a01.mant <<= 1;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha0[k][1] = a01.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha0[k][1] = a01.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha0[k][1] = (a01.mant + round) >> shift;
@@ -315,11 +317,12 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         shift = a10.exp;
         if (shift >= 3)
             alpha1[k][0] = 0x7fffffff;
+        else if (shift <= -30)
+            alpha1[k][0] = 0;
         else {
-            a10.mant <<= 1;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha1[k][0] = a10.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha1[k][0] = a10.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha1[k][0] = (a10.mant + round) >> shift;
@@ -329,11 +332,12 @@ static void sbr_hf_inverse_filter(SBRDSPContext *dsp,
         shift = a11.exp;
         if (shift >= 3)
             alpha1[k][1] = 0x7fffffff;
+        else if (shift <= -30)
+            alpha1[k][1] = 0;
         else {
-            a11.mant <<= 1;
-            shift = 2-shift;
-            if (shift == 0)
-                alpha1[k][1] = a11.mant;
+            shift = 1-shift;
+            if (shift <= 0)
+                alpha1[k][1] = a11.mant * (1<<-shift);
             else {
                 round = 1 << (shift-1);
                 alpha1[k][1] = (a11.mant + round) >> shift;
@@ -429,6 +433,7 @@ static void sbr_gain_calc(AACContext *ac, SpectralBandReplication *sbr,
                                                 av_add_sf(FLOAT_1, sbr->e_curr[e][m]),
                                                 av_add_sf(FLOAT_1, sbr->q_mapped[e][m]))));
                 }
+                sbr->gain[e][m] = av_add_sf(sbr->gain[e][m], FLOAT_MIN);
             }
             for (m = sbr->f_tablelim[k] - sbr->kx[1]; m < sbr->f_tablelim[k + 1] - sbr->kx[1]; m++) {
                 sum[0] = av_add_sf(sum[0], sbr->e_origmapped[e][m]);
@@ -562,25 +567,39 @@ static void sbr_hf_assemble(int Y1[38][64][2],
                 int idx = indexsine&1;
                 int A = (1-((indexsine+(kx & 1))&2));
                 int B = (A^(-idx)) + idx;
-                int *out = &Y1[i][kx][idx];
-                int shift, round;
+                unsigned *out = &Y1[i][kx][idx];
+                int shift;
+                unsigned round;
 
                 SoftFloat *in  = sbr->s_m[e];
                 for (m = 0; m+1 < m_max; m+=2) {
-                  shift = 22 - in[m  ].exp;
-                  round = 1 << (shift-1);
-                  out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    int shift2;
+                    shift = 22 - in[m  ].exp;
+                    shift2= 22 - in[m+1].exp;
+                    if (shift < 1 || shift2 < 1) {
+                        av_log(NULL, AV_LOG_ERROR, "Overflow in sbr_hf_assemble, shift=%d,%d\n", shift, shift2);
+                        return;
+                    }
+                    if (shift < 32) {
+                        round = 1 << (shift-1);
+                        out[2*m  ] += (int)(in[m  ].mant * A + round) >> shift;
+                    }
 
-                  shift = 22 - in[m+1].exp;
-                  round = 1 << (shift-1);
-                  out[2*m+2] += (in[m+1].mant * B + round) >> shift;
+                    if (shift2 < 32) {
+                        round = 1 << (shift2-1);
+                        out[2*m+2] += (int)(in[m+1].mant * B + round) >> shift2;
+                    }
                 }
                 if(m_max&1)
                 {
-                  shift = 22 - in[m  ].exp;
-                  round = 1 << (shift-1);
-
-                  out[2*m  ] += (in[m  ].mant * A + round) >> shift;
+                    shift = 22 - in[m  ].exp;
+                    if (shift < 1) {
+                        av_log(NULL, AV_LOG_ERROR, "Overflow in sbr_hf_assemble, shift=%d\n", shift);
+                        return;
+                    } else if (shift < 32) {
+                        round = 1 << (shift-1);
+                        out[2*m  ] += (int)(in[m  ].mant * A + round) >> shift;
+                    }
                 }
             }
             indexnoise = (indexnoise + m_max) & 0x1ff;

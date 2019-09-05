@@ -140,6 +140,11 @@ static const VideoRateAbbr video_rate_abbrs[]= {
     { "ntsc-film", { 24000, 1001 } },
 };
 
+static const char *months[12] = {
+    "january", "february", "march", "april", "may", "june", "july", "august",
+    "september", "october", "november", "december"
+};
+
 int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
@@ -466,6 +471,21 @@ static int date_get_num(const char **pp,
     return val;
 }
 
+static int date_get_month(const char **pp) {
+    int i = 0;
+    for (; i < 12; i++) {
+        if (!av_strncasecmp(*pp, months[i], 3)) {
+            const char *mo_full = months[i] + 3;
+            int len = strlen(mo_full);
+            *pp += 3;
+            if (len > 0 && !av_strncasecmp(*pp, mo_full, len))
+                *pp += len;
+            return i;
+        }
+    }
+    return -1;
+}
+
 char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
@@ -484,7 +504,7 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
         switch(c) {
         case 'H':
         case 'J':
-            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, 2);
+            val = date_get_num(&p, 0, c == 'H' ? 23 : INT_MAX, c == 'H' ? 2 : 4);
 
             if (val == -1)
                 return NULL;
@@ -525,6 +545,14 @@ char *av_small_strptime(const char *p, const char *fmt, struct tm *dt)
             if (!p)
                 return NULL;
             break;
+        case 'b':
+        case 'B':
+        case 'h':
+            val = date_get_month(&p);
+            if (val == -1)
+                return NULL;
+            dt->tm_mon = val;
+            break;
         case '%':
             if (*p++ != '%')
                 return NULL;
@@ -562,7 +590,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     int64_t t, now64;
     time_t now;
     struct tm dt = { 0 }, tmbuf;
-    int today = 0, negative = 0, microseconds = 0;
+    int today = 0, negative = 0, microseconds = 0, suffix = 1000000;
     int i;
     static const char * const date_fmt[] = {
         "%Y - %m - %d",
@@ -633,12 +661,15 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         if (!q) {
             char *o;
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, &o, 10);
+            errno = 0;
+            t = strtoll(p, &o, 10);
             if (o == p) /* the parsing didn't succeed */
                 return AVERROR(EINVAL);
-            dt.tm_min = 0;
-            dt.tm_hour = 0;
+            if (errno == ERANGE)
+                return AVERROR(ERANGE);
             q = o;
+        } else {
+            t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
         }
     }
 
@@ -660,7 +691,16 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     }
 
     if (duration) {
-        t = dt.tm_hour * 3600 + dt.tm_min * 60 + dt.tm_sec;
+        if (q[0] == 'm' && q[1] == 's') {
+            suffix = 1000;
+            microseconds /= 1000;
+            q += 2;
+        } else if (q[0] == 'u' && q[1] == 's') {
+            suffix = 1;
+            microseconds = 0;
+            q += 2;
+        } else if (*q == 's')
+            q++;
     } else {
         int is_utc = *q == 'Z' || *q == 'z';
         int tzoffset = 0;
@@ -687,6 +727,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
             dt2.tm_sec  = dt.tm_sec;
             dt = dt2;
         }
+        dt.tm_isdst = is_utc ? 0 : -1;
         t = is_utc ? av_timegm(&dt) : mktime(&dt);
         t += tzoffset;
     }
@@ -695,7 +736,11 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     if (*q)
         return AVERROR(EINVAL);
 
-    t *= 1000000;
+    if (INT64_MAX / suffix < t)
+        return AVERROR(ERANGE);
+    t *= suffix;
+    if (INT64_MAX - microseconds < t)
+        return AVERROR(ERANGE);
     t += microseconds;
     *timeval = negative ? -t : t;
     return 0;

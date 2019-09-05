@@ -31,7 +31,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
 {
     AVFormatContext *rtpctx = NULL;
     int ret;
-    AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
+    ff_const59 AVOutputFormat *rtp_format = av_guess_format("rtp", NULL, NULL);
     uint8_t *rtpflags;
     AVDictionary *opts = NULL;
 
@@ -58,7 +58,8 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     rtpctx->max_delay = s->max_delay;
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
-    rtpctx->flags |= s->flags & (AVFMT_FLAG_MP4A_LATM | AVFMT_FLAG_BITEXACT);
+    rtpctx->flags |= s->flags & AVFMT_FLAG_BITEXACT;
+    rtpctx->strict_std_compliance = s->strict_std_compliance;
 
     /* Get the payload type from the codec */
     if (st->id < RTP_PT_PRIVATE)
@@ -101,7 +102,7 @@ int ff_rtp_chain_mux_open(AVFormatContext **out, AVFormatContext *s,
     return 0;
 
 fail:
-    av_free(rtpctx);
+    avformat_free_context(rtpctx);
     if (handle)
         ffurl_close(handle);
     return ret;

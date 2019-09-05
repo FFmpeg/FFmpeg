@@ -20,7 +20,7 @@
 
 #include <stdint.h>
 
-#include "hevc.h"
+#include "hevc_data.h"
 
 const uint8_t ff_hevc_diag_scan4x4_x[16] = {
     0, 0, 1, 0,

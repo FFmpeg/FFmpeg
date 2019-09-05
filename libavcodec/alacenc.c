@@ -38,6 +38,7 @@
 #define DEFAULT_MAX_PRED_ORDER    6
 #define DEFAULT_MIN_PRED_ORDER    4
 #define ALAC_MAX_LPC_PRECISION    9
+#define ALAC_MIN_LPC_SHIFT        0
 #define ALAC_MAX_LPC_SHIFT        9
 
 #define ALAC_CHMODE_LEFT_RIGHT    0
@@ -171,7 +172,8 @@ static void calc_predictor_params(AlacEncodeContext *s, int ch)
                                       s->max_prediction_order,
                                       ALAC_MAX_LPC_PRECISION, coefs, shift,
                                       FF_LPC_TYPE_LEVINSON, 0,
-                                      ORDER_METHOD_EST, ALAC_MAX_LPC_SHIFT, 1);
+                                      ORDER_METHOD_EST, ALAC_MIN_LPC_SHIFT,
+                                      ALAC_MAX_LPC_SHIFT, 1);
 
         s->lpc[ch].lpc_order = opt_order;
         s->lpc[ch].lpc_quant = shift[opt_order-1];
@@ -623,7 +625,7 @@ static int alac_encode_frame(AVCodecContext *avctx, AVPacket *avpkt,
     else
         max_frame_size = s->max_coded_frame_size;
 
-    if ((ret = ff_alloc_packet2(avctx, avpkt, 2 * max_frame_size, 0)) < 0)
+    if ((ret = ff_alloc_packet2(avctx, avpkt, 4 * max_frame_size, 0)) < 0)
         return ret;
 
     /* use verbatim mode for compression_level 0 */

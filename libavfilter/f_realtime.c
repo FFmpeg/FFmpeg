@@ -22,11 +22,13 @@
 #include "libavutil/time.h"
 #include "avfilter.h"
 #include "internal.h"
+#include <float.h>
 
 typedef struct RealtimeContext {
     const AVClass *class;
     int64_t delta;
     int64_t limit;
+    double speed;
     unsigned inited;
 } RealtimeContext;
 
@@ -36,7 +38,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     RealtimeContext *s = ctx->priv;
 
     if (frame->pts != AV_NOPTS_VALUE) {
-        int64_t pts = av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q);
+        int64_t pts = av_rescale_q(frame->pts, inlink->time_base, AV_TIME_BASE_Q) / s->speed;
         int64_t now = av_gettime_relative();
         int64_t sleep = pts - now + s->delta;
         if (!s->inited) {
@@ -44,7 +46,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             sleep = 0;
             s->delta = now - pts;
         }
-        if (sleep > s->limit || sleep < -s->limit) {
+        if (FFABS(sleep) > s->limit / s->speed) {
             av_log(ctx, AV_LOG_WARNING,
                    "time discontinuity detected: %"PRIi64" us, resetting\n",
                    sleep);
@@ -65,6 +67,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption options[] = {
     { "limit", "sleep time limit", OFFSET(limit), AV_OPT_TYPE_DURATION, { .i64 = 2000000 }, 0, INT64_MAX, FLAGS },
+    { "speed", "speed factor", OFFSET(speed), AV_OPT_TYPE_DOUBLE, { .dbl = 1.0 }, DBL_MIN, DBL_MAX, FLAGS },
     { NULL }
 };
 

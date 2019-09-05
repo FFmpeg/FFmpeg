@@ -45,9 +45,10 @@ enum MXFMetadataSetType {
     SubDescriptor,
     IndexTableSegment,
     EssenceContainerData,
-    TypeBottom,// add metadata type before this
     EssenceGroup,
     TaggedValue,
+    TapeDescriptor,
+    AVCSubDescriptor,
 };
 
 enum MXFFrameLayout {
@@ -62,12 +63,23 @@ typedef struct KLVPacket {
     UID key;
     int64_t offset;
     uint64_t length;
+    int64_t next_klv;
 } KLVPacket;
+
+typedef enum {
+    NormalWrap = 0,
+    D10D11Wrap,
+    RawAWrap,
+    RawVWrap
+} MXFWrappingIndicatorType;
 
 typedef struct MXFCodecUL {
     UID uid;
     unsigned matching_len;
     int id;
+    const char *desc;
+    unsigned wrapping_indicator_pos;
+    MXFWrappingIndicatorType wrapping_indicator_type;
 } MXFCodecUL;
 
 typedef struct {
@@ -82,6 +94,8 @@ extern const MXFCodecUL ff_mxf_codec_tag_uls[];
 
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum AVPixelFormat *pix_fmt);
 const MXFSamplesPerFrame *ff_mxf_get_samples_per_frame(AVFormatContext *s, AVRational time_base);
+int ff_mxf_get_content_package_rate(AVRational time_base);
+
 
 #define PRIxUID                             \
     "%02x.%02x.%02x.%02x."                  \

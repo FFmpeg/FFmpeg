@@ -148,6 +148,9 @@ static av_cold int pulse_read_header(AVFormatContext *s)
                                 pd->channels };
 
     pa_buffer_attr attr = { -1 };
+    pa_channel_map cmap;
+
+    pa_channel_map_init_extend(&cmap, pd->channels, PA_CHANNEL_MAP_WAVEEX);
 
     st = avformat_new_stream(s, NULL);
 
@@ -158,8 +161,8 @@ static av_cold int pulse_read_header(AVFormatContext *s)
 
     attr.fragsize = pd->fragment_size;
 
-    if (s->filename[0] != '\0' && strcmp(s->filename, "default"))
-        device = s->filename;
+    if (s->url[0] != '\0' && strcmp(s->url, "default"))
+        device = s->url;
 
     if (!(pd->mainloop = pa_threaded_mainloop_new())) {
         pulse_close(s);
@@ -202,7 +205,7 @@ static av_cold int pulse_read_header(AVFormatContext *s)
         pa_threaded_mainloop_wait(pd->mainloop);
     }
 
-    if (!(pd->stream = pa_stream_new(pd->context, pd->stream_name, &ss, NULL))) {
+    if (!(pd->stream = pa_stream_new(pd->context, pd->stream_name, &ss, &cmap))) {
         ret = AVERROR(pa_context_errno(pd->context));
         goto unlock_and_fail;
     }
@@ -356,7 +359,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass pulse_demuxer_class = {
-    .class_name     = "Pulse demuxer",
+    .class_name     = "Pulse indev",
     .item_name      = av_default_item_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,

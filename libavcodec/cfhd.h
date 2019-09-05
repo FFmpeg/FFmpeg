@@ -26,11 +26,12 @@
 #include "libavutil/avassert.h"
 
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
+#include "vlc.h"
 
-#define VLC_BITS 9
-#define NB_VLC_TABLE_9 (71+3)
-#define NB_VLC_TABLE_18 (263+1)
+#define VLC_BITS       9
+#define SUBBAND_COUNT 10
 
 typedef struct CFHD_RL_VLC_ELEM {
     int16_t level;
@@ -43,7 +44,7 @@ typedef struct CFHD_RL_VLC_ELEM {
 typedef struct SubBand {
     int level;
     int orientation;
-    int stride;
+    ptrdiff_t stride;
     int a_width;
     int width;
     int a_height;
@@ -62,11 +63,17 @@ typedef struct Plane {
     int16_t *idwt_tmp;
 
     /* TODO: merge this into SubBand structure */
-    int16_t *subband[10];
+    int16_t *subband[SUBBAND_COUNT];
     int16_t *l_h[8];
 
     SubBand band[DWT_LEVELS][4];
 } Plane;
+
+typedef struct Peak {
+    int level;
+    int offset;
+    GetByteContext base;
+} Peak;
 
 typedef struct CFHDContext {
     AVCodecContext *avctx;
@@ -79,18 +86,17 @@ typedef struct CFHDContext {
 
     GetBitContext gb;
 
-    int chroma_x_shift;
-    int chroma_y_shift;
-
     int coded_width;
     int coded_height;
-    int coded_format;
+    int cropped_height;
+    enum AVPixelFormat coded_format;
+    int progressive;
 
     int a_width;
     int a_height;
     int a_format;
 
-    int bpc;
+    int bpc; // bits per channel/component
     int channel_cnt;
     int subband_cnt;
     int channel_num;
@@ -100,13 +106,14 @@ typedef struct CFHDContext {
     int pshift;
 
     int codebook;
+    int difference_coding;
     int subband_num;
     int level;
     int subband_num_actual;
 
     uint8_t prescale_shift[3];
     Plane plane[4];
-
+    Peak peak;
 } CFHDContext;
 
 int ff_cfhd_init_vlcs(CFHDContext *s);

@@ -25,13 +25,6 @@ enabled decoders.
 A description of some of the currently available video decoders
 follows.
 
-@section hevc
-
-HEVC / H.265 decoder.
-
-Note: the @option{skip_loop_filter} option has effect only at level
-@code{all}.
-
 @section rawvideo
 
 Raw video decoder.
@@ -53,6 +46,38 @@ top-field-first is assumed
 @end table
 
 @end table
+
+@section libdav1d
+
+dav1d AV1 decoder.
+
+libdav1d allows libavcodec to decode the AOMedia Video 1 (AV1) codec.
+Requires the presence of the libdav1d headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libdav1d}.
+
+@subsection Options
+
+The following option is supported by the libdav1d wrapper.
+
+@table @option
+
+@item framethreads
+Set amount of frame threads to use during decoding. The default value is 0 (autodetect).
+
+@item tilethreads
+Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
+
+@item filmgrain
+Apply film grain to the decoded video if present in the bitstream. The default value
+is true.
+
+@end table
+
+@section libdavs2
+
+AVS2-P2/IEEE1857.4 video decoder wrapper.
+
+This decoder allows libavcodec to decode AVS2 streams with davs2 library.
 
 @c man end VIDEO DECODERS
 
@@ -109,7 +134,7 @@ correctly by using lavc's old buggy lpc logic for decoding.
 
 @section ffwavesynth
 
-Internal wave synthetizer.
+Internal wave synthesizer.
 
 This decoder generates wave patterns according to predefined sequences. Its
 use is purely internal and the format of the data it accepts is not publicly
@@ -195,6 +220,31 @@ without this library.
 @chapter Subtitles Decoders
 @c man begin SUBTILES DECODERS
 
+@section libaribb24
+
+ARIB STD-B24 caption decoder.
+
+Implements profiles A and C of the ARIB STD-B24 standard.
+
+@subsection libaribb24 Decoder Options
+
+@table @option
+
+@item -aribb24-base-path @var{path}
+Sets the base path for the libaribb24 library. This is utilized for reading of
+configuration files (for custom unicode conversions), and for dumping of
+non-text symbols as images under that location.
+
+Unset by default.
+
+@item -aribb24-skip-ruby-text @var{boolean}
+Tells the decoder wrapper to skip text blocks that contain half-height ruby
+text.
+
+Enabled by default.
+
+@end table
+
 @section dvbsub
 
 @subsection Options
@@ -255,18 +305,25 @@ configuration. You need to explicitly configure the build with
 
 @table @option
 @item txt_page
-List of teletext page numbers to decode. You may use the special * string to
-match all pages. Pages that do not match the specified list are dropped.
+List of teletext page numbers to decode. Pages that do not match the specified
+list are dropped. You may use the special @code{*} string to match all pages,
+or @code{subtitle} to match all subtitle pages.
 Default value is *.
 @item txt_chop_top
 Discards the top teletext line. Default value is 1.
 @item txt_format
-Specifies the format of the decoded subtitles. The teletext decoder is capable
-of decoding the teletext pages to bitmaps or to simple text, you should use
-"bitmap" for teletext pages, because certain graphics and colors cannot be
-expressed in simple text. You might use "text" for teletext based subtitles if
-your application can handle simple text based subtitles. Default value is
-bitmap.
+Specifies the format of the decoded subtitles.
+@table @option
+@item bitmap
+The default format, you should use this for teletext pages, because certain
+graphics and colors cannot be expressed in simple text or even ASS.
+@item text
+Simple text based output without formatting.
+@item ass
+Formatted ASS output, subtitle pages and teletext pages are returned in
+different styles, subtitle pages are stripped down to text, but an effort is
+made to keep the text alignment and the formatting.
+@end table
 @item txt_left
 X offset of generated bitmaps, default is 0.
 @item txt_top
@@ -275,11 +332,12 @@ Y offset of generated bitmaps, default is 0.
 Chops leading and trailing spaces and removes empty lines from the generated
 text. This option is useful for teletext based subtitles where empty spaces may
 be present at the start or at the end of the lines or empty lines may be
-present between the subtitle lines because of double-sized teletext charactes.
+present between the subtitle lines because of double-sized teletext characters.
 Default value is 1.
 @item txt_duration
 Sets the display duration of the decoded teletext pages or subtitles in
-miliseconds. Default value is 30000 which is 30 seconds.
+milliseconds. Default value is -1 which means infinity or until the next
+subtitle event comes.
 @item txt_transparent
 Force transparent background of the generated teletext bitmaps. Default value
 is 0 which means an opaque background.

@@ -410,13 +410,13 @@ function ff_vc1_inv_trans_8x8_neon, export=1
         @   src[48] q14
         @   src[56] q15
 
-        vc1_inv_trans_8x8_helper add=4 add1beforeshift=0 rshift=3
+        vc1_inv_trans_8x8_helper add=4, add1beforeshift=0, rshift=3
 
         @ Transpose result matrix of 8x8
         swap4           d17, d19, d21, d23, d24, d26, d28, d30
         transpose16_4x4 q8,  q9,  q10, q11, q12, q13, q14, q15
 
-        vc1_inv_trans_8x8_helper add=64 add1beforeshift=1 rshift=7
+        vc1_inv_trans_8x8_helper add=64, add1beforeshift=1, rshift=7
 
         vst1.64         {q8-q9},   [r0,:128]!
         vst1.64         {q10-q11}, [r0,:128]!
@@ -426,12 +426,12 @@ function ff_vc1_inv_trans_8x8_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_8x4_neon, export=1
         vld1.64         {q0-q1}, [r2,:128]!     @ load 8 * 4 * 2 = 64 bytes / 16 bytes per quad = 4 quad registers
         vld1.64         {q2-q3}, [r2,:128]
 
-        transpose16     q0 q1 q2 q3             @ transpose rows to columns
+        transpose16     q0, q1, q2, q3          @ transpose rows to columns
 
         @ At this point:
         @   src[0]   d0
@@ -443,7 +443,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   src[6]   d5
         @   src[7]   d7
 
-        vc1_inv_trans_8x4_helper    add=4 add1beforeshift=0 rshift=3
+        vc1_inv_trans_8x4_helper    add=4, add1beforeshift=0, rshift=3
 
         @ Move output to more standardized registers
         vmov        d0, d16
@@ -465,7 +465,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   dst[6]   d5
         @   dst[7]   d7
 
-        transpose16     q0 q1 q2 q3   @ turn columns into rows
+        transpose16     q0, q1, q2, q3   @ turn columns into rows
 
         @ At this point:
         @   row[0] q0
@@ -473,7 +473,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         @   row[2] q2
         @   row[3] q3
 
-        vc1_inv_trans_4x8_helper    add=64 rshift=7
+        vc1_inv_trans_4x8_helper    add=64, rshift=7
 
         @ At this point:
         @   line[0].l   d0
@@ -511,7 +511,7 @@ function ff_vc1_inv_trans_8x4_neon, export=1
         bx              lr
 endfunc
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x8_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d2[],  d4[],  d6[]},  [r2,:64], r12     @ read each column into a q register
@@ -523,7 +523,7 @@ function ff_vc1_inv_trans_4x8_neon, export=1
         vld4.16         {d1[2], d3[2], d5[2], d7[2]}, [r2,:64], r12
         vld4.16         {d1[3], d3[3], d5[3], d7[3]}, [r2,:64]
 
-        vc1_inv_trans_4x8_helper    add=4 rshift=3
+        vc1_inv_trans_4x8_helper    add=4, rshift=3
 
         @ At this point:
         @   dst[0] = q0
@@ -531,9 +531,9 @@ function ff_vc1_inv_trans_4x8_neon, export=1
         @   dst[2] = q2
         @   dst[3] = q3
 
-        transpose16     q0 q1 q2 q3     @ Transpose rows (registers) into columns
+        transpose16     q0, q1, q2, q3  @ Transpose rows (registers) into columns
 
-        vc1_inv_trans_8x4_helper    add=64 add1beforeshift=1 rshift=7
+        vc1_inv_trans_8x4_helper    add=64, add1beforeshift=1, rshift=7
 
         vld1.32         {d28[]},  [r0,:32], r1  @ read dest
         vld1.32         {d28[1]}, [r0,:32], r1
@@ -593,7 +593,7 @@ endfunc
         vshr.s16        q1,  q1,  #\rshift      @ dst[3,1] >>= rshift
 .endm
 
-@ (uint8_t *dest [r0], int linesize [r1], int16_t *block [r2])
+@ (uint8_t *dest [r0], ptrdiff_t stride [r1], int16_t *block [r2])
 function ff_vc1_inv_trans_4x4_neon, export=1
         mov             r12, #(8 * 2)  @ 8 elements per line, each element 2 bytes
         vld4.16         {d0[],  d1[],  d2[],  d3[]},  [r2,:64], r12     @ read each column into a register
@@ -611,7 +611,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         @   src[2] = d1
         @   src[3] = d3
 
-        vc1_inv_trans_4x4_helper add=4 rshift=3      @ compute t1, t2, t3, t4 and combine them into dst[0-3]
+        vc1_inv_trans_4x4_helper add=4, rshift=3     @ compute t1, t2, t3, t4 and combine them into dst[0-3]
 
         @ At this point:
         @   dst[0] = d0
@@ -619,7 +619,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         @   dst[2] = d1
         @   dst[3] = d2
 
-        transpose16     d0 d3 d1 d2     @ Transpose rows (registers) into columns
+        transpose16     d0, d3, d1, d2  @ Transpose rows (registers) into columns
 
         @ At this point:
         @   src[0]  = d0
@@ -635,7 +635,7 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         @   src[16] = d1
         @   src[24] = d3
 
-        vc1_inv_trans_4x4_helper add=64 rshift=7              @ compute t1, t2, t3, t4 and combine them into dst[0-3]
+        vc1_inv_trans_4x4_helper add=64, rshift=7             @ compute t1, t2, t3, t4 and combine them into dst[0-3]
 
         @ At this point:
         @   line[0] = d0
@@ -663,48 +663,43 @@ function ff_vc1_inv_trans_4x4_neon, export=1
         bx              lr
 endfunc
 
-#if HAVE_AS_DN_DIRECTIVE
 @ The absolute value of multiplication constants from vc1_mspel_filter and vc1_mspel_{ver,hor}_filter_16bits.
 @ The sign is embedded in the code below that carries out the multiplication (mspel_filter{,.16}).
-#define MSPEL_MODE_1_MUL_CONSTANTS  4 53 18 3
-#define MSPEL_MODE_2_MUL_CONSTANTS  1 9  9  1
-#define MSPEL_MODE_3_MUL_CONSTANTS  3 18 53 4
+#define MSPEL_MODE_1_MUL_CONSTANTS  4, 53, 18, 3
+#define MSPEL_MODE_2_MUL_CONSTANTS  1, 9,  9,  1
+#define MSPEL_MODE_3_MUL_CONSTANTS  3, 18, 53, 4
 
 @ These constants are from reading the source code of vc1_mspel_mc and determining the value that
 @ is added to `rnd` to result in the variable `r`, and the value of the variable `shift`.
-#define MSPEL_MODES_11_ADDSHIFT_CONSTANTS   15 5
-#define MSPEL_MODES_12_ADDSHIFT_CONSTANTS   3  3
-#define MSPEL_MODES_13_ADDSHIFT_CONSTANTS   15 5
+#define MSPEL_MODES_11_ADDSHIFT_CONSTANTS   15, 5
+#define MSPEL_MODES_12_ADDSHIFT_CONSTANTS   3,  3
+#define MSPEL_MODES_13_ADDSHIFT_CONSTANTS   15, 5
 #define MSPEL_MODES_21_ADDSHIFT_CONSTANTS   MSPEL_MODES_12_ADDSHIFT_CONSTANTS
-#define MSPEL_MODES_22_ADDSHIFT_CONSTANTS   0  1
-#define MSPEL_MODES_23_ADDSHIFT_CONSTANTS   3  3
+#define MSPEL_MODES_22_ADDSHIFT_CONSTANTS   0,  1
+#define MSPEL_MODES_23_ADDSHIFT_CONSTANTS   3,  3
 #define MSPEL_MODES_31_ADDSHIFT_CONSTANTS   MSPEL_MODES_13_ADDSHIFT_CONSTANTS
 #define MSPEL_MODES_32_ADDSHIFT_CONSTANTS   MSPEL_MODES_23_ADDSHIFT_CONSTANTS
-#define MSPEL_MODES_33_ADDSHIFT_CONSTANTS   15 5
+#define MSPEL_MODES_33_ADDSHIFT_CONSTANTS   15, 5
 
 @ The addition and shift constants from vc1_mspel_filter.
-#define MSPEL_MODE_1_ADDSHIFT_CONSTANTS     32 6
-#define MSPEL_MODE_2_ADDSHIFT_CONSTANTS     8  4
-#define MSPEL_MODE_3_ADDSHIFT_CONSTANTS     32 6
+#define MSPEL_MODE_1_ADDSHIFT_CONSTANTS     32, 6
+#define MSPEL_MODE_2_ADDSHIFT_CONSTANTS     8,  4
+#define MSPEL_MODE_3_ADDSHIFT_CONSTANTS     32, 6
 
 @ Setup constants in registers for a subsequent use of mspel_filter{,.16}.
 .macro mspel_constants typesize reg_a reg_b reg_c reg_d filter_a filter_b filter_c filter_d reg_add filter_add_register
-  @ Define double-word register aliases. Typesize should be i8 or i16.
-  ra .dn \reg_a\().\typesize
-  rb .dn \reg_b\().\typesize
-  rc .dn \reg_c\().\typesize
-  rd .dn \reg_d\().\typesize
+  @ Typesize should be i8 or i16.
 
   @ Only set the register if the value is not 1 and unique
   .if \filter_a != 1
-        vmov            ra,  #\filter_a              @ ra = filter_a
+        vmov.\typesize  \reg_a,  #\filter_a          @ reg_a = filter_a
   .endif
-        vmov            rb,  #\filter_b              @ rb = filter_b
+        vmov.\typesize  \reg_b,  #\filter_b          @ reg_b = filter_b
   .if \filter_b != \filter_c
-        vmov            rc,  #\filter_c              @ rc = filter_c
+        vmov.\typesize  \reg_c,  #\filter_c          @ reg_c = filter_c
   .endif
   .if \filter_d != 1
-        vmov            rd,  #\filter_d              @ rd = filter_d
+        vmov.\typesize  \reg_d,  #\filter_d          @ reg_d = filter_d
   .endif
   @ vdup to double the size of typesize
   .ifc \typesize,i8
@@ -712,11 +707,6 @@ endfunc
   .else
         vdup.32         \reg_add,  \filter_add_register     @ reg_add = filter_add_register
   .endif
-
-  .unreq ra
-  .unreq rb
-  .unreq rc
-  .unreq rd
 .endm
 
 @ After mspel_constants has been used, do the filtering.
@@ -828,7 +818,7 @@ T       mov             sp,  r4
         sub             r1,  r1,  r2            @ r1 = &src[-stride]      @ slide back
 
         @ Do vertical filtering from src into tmp
-        mspel_constants i8 d28 d29 d30 d31 \filter_v_a \filter_v_b \filter_v_c \filter_v_d q13 r3
+        mspel_constants i8, d28, d29, d30, d31, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, q13, r3
 
         vld1.64         {d0,d1}, [r1], r2
         vld1.64         {d2,d3}, [r1], r2
@@ -838,23 +828,23 @@ T       mov             sp,  r4
         subs            r12,  r12,  #4
 
         vld1.64         {d6,d7}, [r1], r2
-        mspel_filter    q11 q11 d0 d2 d4 d6 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
-        mspel_filter    q12 q12 d1 d3 d5 d7 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
+        mspel_filter    q11, q11, d0, d2, d4, d6, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
+        mspel_filter    q12, q12, d1, d3, d5, d7, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
         vst1.64         {q11,q12}, [r4,:128]!   @ store and increment
 
         vld1.64         {d0,d1}, [r1], r2
-        mspel_filter    q11 q11 d2 d4 d6 d0 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
-        mspel_filter    q12 q12 d3 d5 d7 d1 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
+        mspel_filter    q11, q11, d2, d4, d6, d0, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
+        mspel_filter    q12, q12, d3, d5, d7, d1, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
         vst1.64         {q11,q12}, [r4,:128]!   @ store and increment
 
         vld1.64         {d2,d3}, [r1], r2
-        mspel_filter    q11 q11 d4 d6 d0 d2 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
-        mspel_filter    q12 q12 d5 d7 d1 d3 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
+        mspel_filter    q11, q11, d4, d6, d0, d2, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
+        mspel_filter    q12, q12, d5, d7, d1, d3, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
         vst1.64         {q11,q12}, [r4,:128]!   @ store and increment
 
         vld1.64         {d4,d5}, [r1], r2
-        mspel_filter    q11 q11 d6 d0 d2 d4 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
-        mspel_filter    q12 q12 d7 d1 d3 d5 \filter_v_a \filter_v_b \filter_v_c \filter_v_d d28 d29 d30 d31 q13 \filter_shift narrow=0
+        mspel_filter    q11, q11, d6, d0, d2, d4, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
+        mspel_filter    q12, q12, d7, d1, d3, d5, \filter_v_a, \filter_v_b, \filter_v_c, \filter_v_d, d28, d29, d30, d31, q13, \filter_shift, narrow=0
         vst1.64         {q11,q12}, [r4,:128]!   @ store and increment
 
         bne             1b
@@ -864,7 +854,7 @@ T       mov             sp,  r4
         mov             r4,   sp                @ r4 = tmp
 
         @ Do horizontal filtering from temp to dst
-        mspel_constants i16 d28 d29 d30 d31 \filter_h_a \filter_h_b \filter_h_c \filter_h_d q13 r3
+        mspel_constants i16, d28, d29, d30, d31, \filter_h_a, \filter_h_b, \filter_h_c, \filter_h_d, q13, r3
 
 2:
         subs            r12,  r12,  #1
@@ -874,7 +864,7 @@ T       mov             sp,  r4
         vext.16         q3,   q0,   q1,  #3
         vext.16         q1,   q0,   q1,  #1     @ do last because it writes to q1 which is read by the other vext instructions
 
-        mspel_filter.16 q11 q12 d22 d23 d21 d0 d1 d2 d3 d4 d5 d6 d7 \filter_h_a \filter_h_b \filter_h_c \filter_h_d d28 d29 d30 d31 q13 7
+        mspel_filter.16 q11, q12, d22, d23, d21, d0, d1, d2, d3, d4, d5, d6, d7, \filter_h_a, \filter_h_b, \filter_h_c, \filter_h_d, d28, d29, d30, d31, q13, 7
 
         vst1.64         {d21}, [r0,:64], r2     @ store and increment dst
 
@@ -887,9 +877,9 @@ endfunc
 
 @ Use C preprocessor and assembler macros to expand to functions for horizontal and vertical filtering.
 #define PUT_VC1_MSPEL_MC_HV(hmode, vmode)   \
-    put_vc1_mspel_mc_hv hmode vmode \
-        MSPEL_MODE_ ## hmode ## _MUL_CONSTANTS \
-        MSPEL_MODE_ ## vmode ## _MUL_CONSTANTS \
+    put_vc1_mspel_mc_hv hmode, vmode, \
+        MSPEL_MODE_ ## hmode ## _MUL_CONSTANTS, \
+        MSPEL_MODE_ ## vmode ## _MUL_CONSTANTS, \
         MSPEL_MODES_ ## hmode ## vmode ## _ADDSHIFT_CONSTANTS
 
 PUT_VC1_MSPEL_MC_HV(1, 1)
@@ -910,7 +900,7 @@ function ff_put_vc1_mspel_mc\hmode\()0_neon, export=1
         mov             r12,  #8                        @ loop counter
         sub             r1,   r1,   #1                  @ slide back, using immediate
 
-        mspel_constants i8 d28 d29 d30 d31 \filter_a \filter_b \filter_c \filter_d q13 r3
+        mspel_constants i8, d28, d29, d30, d31, \filter_a, \filter_b, \filter_c, \filter_d, q13, r3
 
 1:
         subs            r12,  r12,  #1
@@ -920,7 +910,7 @@ function ff_put_vc1_mspel_mc\hmode\()0_neon, export=1
         vext.8          d3,   d0,   d1,  #3
         vext.8          d1,   d0,   d1,  #1             @ do last because it writes to d1 which is read by the other vext instructions
 
-        mspel_filter    q11 d21 d0 d1 d2 d3 \filter_a \filter_b \filter_c \filter_d d28 d29 d30 d31 q13 \filter_shift
+        mspel_filter    q11, d21, d0, d1, d2, d3, \filter_a, \filter_b, \filter_c, \filter_d, d28, d29, d30, d31, q13, \filter_shift
 
         vst1.64         {d21}, [r0,:64], r2             @ store and increment dst
 
@@ -932,7 +922,7 @@ endfunc
 
 @ Use C preprocessor and assembler macros to expand to functions for horizontal only filtering.
 #define PUT_VC1_MSPEL_MC_H_ONLY(hmode) \
-        put_vc1_mspel_mc_h_only hmode MSPEL_MODE_ ## hmode ## _MUL_CONSTANTS MSPEL_MODE_ ## hmode ## _ADDSHIFT_CONSTANTS
+        put_vc1_mspel_mc_h_only hmode, MSPEL_MODE_ ## hmode ## _MUL_CONSTANTS, MSPEL_MODE_ ## hmode ## _ADDSHIFT_CONSTANTS
 
 PUT_VC1_MSPEL_MC_H_ONLY(1)
 PUT_VC1_MSPEL_MC_H_ONLY(2)
@@ -947,7 +937,7 @@ function ff_put_vc1_mspel_mc0\vmode\()_neon, export=1
         mov             r12,  #8                        @ loop counter
         sub             r1,   r1,   r2                  @ r1 = &src[-stride]      @ slide back
 
-        mspel_constants i8 d28 d29 d30 d31 \filter_a \filter_b \filter_c \filter_d q13 r3
+        mspel_constants i8, d28, d29, d30, d31, \filter_a, \filter_b, \filter_c, \filter_d, q13, r3
 
         vld1.64         {d0},  [r1], r2                 @ d0 = src[-stride]
         vld1.64         {d1},  [r1], r2                 @ d1 = src[0]
@@ -957,19 +947,19 @@ function ff_put_vc1_mspel_mc0\vmode\()_neon, export=1
         subs            r12,  r12,  #4
 
         vld1.64         {d3},  [r1], r2                 @ d3 = src[stride * 2]
-        mspel_filter    q11 d21 d0 d1 d2 d3 \filter_a \filter_b \filter_c \filter_d d28 d29 d30 d31 q13 \filter_shift
+        mspel_filter    q11, d21, d0, d1, d2, d3, \filter_a, \filter_b, \filter_c, \filter_d, d28, d29, d30, d31, q13, \filter_shift
         vst1.64         {d21}, [r0,:64], r2             @ store and increment dst
 
         vld1.64         {d0},  [r1], r2                 @ d0 = next line
-        mspel_filter    q11 d21 d1 d2 d3 d0 \filter_a \filter_b \filter_c \filter_d d28 d29 d30 d31 q13 \filter_shift
+        mspel_filter    q11, d21, d1, d2, d3, d0, \filter_a, \filter_b, \filter_c, \filter_d, d28, d29, d30, d31, q13, \filter_shift
         vst1.64         {d21}, [r0,:64], r2             @ store and increment dst
 
         vld1.64         {d1},  [r1], r2                 @ d1 = next line
-        mspel_filter    q11 d21 d2 d3 d0 d1 \filter_a \filter_b \filter_c \filter_d d28 d29 d30 d31 q13 \filter_shift
+        mspel_filter    q11, d21, d2, d3, d0, d1, \filter_a, \filter_b, \filter_c, \filter_d, d28, d29, d30, d31, q13, \filter_shift
         vst1.64         {d21}, [r0,:64], r2             @ store and increment dst
 
         vld1.64         {d2},  [r1], r2                 @ d2 = next line
-        mspel_filter    q11 d21 d3 d0 d1 d2 \filter_a \filter_b \filter_c \filter_d d28 d29 d30 d31 q13 \filter_shift
+        mspel_filter    q11, d21, d3, d0, d1, d2, \filter_a, \filter_b, \filter_c, \filter_d, d28, d29, d30, d31, q13, \filter_shift
         vst1.64         {d21}, [r0,:64], r2             @ store and increment dst
 
         bne             1b
@@ -980,14 +970,13 @@ endfunc
 
 @ Use C preprocessor and assembler macros to expand to functions for vertical only filtering.
 #define PUT_VC1_MSPEL_MC_V_ONLY(vmode) \
-        put_vc1_mspel_mc_v_only vmode MSPEL_MODE_ ## vmode ## _MUL_CONSTANTS MSPEL_MODE_ ## vmode ## _ADDSHIFT_CONSTANTS
+        put_vc1_mspel_mc_v_only vmode, MSPEL_MODE_ ## vmode ## _MUL_CONSTANTS, MSPEL_MODE_ ## vmode ## _ADDSHIFT_CONSTANTS
 
 PUT_VC1_MSPEL_MC_V_ONLY(1)
 PUT_VC1_MSPEL_MC_V_ONLY(2)
 PUT_VC1_MSPEL_MC_V_ONLY(3)
 
 #undef PUT_VC1_MSPEL_MC_V_ONLY
-#endif
 
 function ff_put_pixels8x8_neon, export=1
         vld1.64         {d0}, [r1], r2

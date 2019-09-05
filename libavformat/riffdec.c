@@ -58,18 +58,21 @@ enum AVCodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
  * an openended structure.
  */
 
-static void parse_waveformatex(AVIOContext *pb, AVCodecParameters *par)
+static void parse_waveformatex(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *par)
 {
     ff_asf_guid subformat;
-    int bps = avio_rl16(pb);
+    int bps;
+
+    bps = avio_rl16(pb);
     if (bps)
         par->bits_per_coded_sample = bps;
-
     par->channel_layout        = avio_rl32(pb); /* dwChannelMask */
 
     ff_get_guid(pb, &subformat);
     if (!memcmp(subformat + 4,
                 (const uint8_t[]){ FF_AMBISONIC_BASE_GUID }, 12) ||
+        !memcmp(subformat + 4,
+                (const uint8_t[]){ FF_BROKEN_BASE_GUID }, 12) ||
         !memcmp(subformat + 4,
                 (const uint8_t[]){ FF_MEDIASUBTYPE_BASE_GUID }, 12)) {
         par->codec_tag = AV_RL32(subformat);
@@ -78,7 +81,7 @@ static void parse_waveformatex(AVIOContext *pb, AVCodecParameters *par)
     } else {
         par->codec_id = ff_codec_guid_get_id(ff_codec_wav_guids, subformat);
         if (!par->codec_id)
-            av_log(pb, AV_LOG_WARNING,
+            av_log(s, AV_LOG_WARNING,
                    "unknown subformat:"FF_PRI_GUID"\n",
                    FF_ARG_GUID(subformat));
     }
@@ -137,7 +140,7 @@ int ff_get_wav_header(AVFormatContext *s, AVIOContext *pb,
         size  -= 18;
         cbSize = FFMIN(size, cbSize);
         if (cbSize >= 22 && id == 0xfffe) { /* WAVEFORMATEXTENSIBLE */
-            parse_waveformatex(pb, par);
+            parse_waveformatex(s, pb, par);
             cbSize -= 22;
             size   -= 22;
         }
@@ -205,11 +208,12 @@ enum AVCodecID ff_wav_codec_get_id(unsigned int tag, int bps)
     return id;
 }
 
-int ff_get_bmp_header(AVIOContext *pb, AVStream *st, unsigned *esize)
+int ff_get_bmp_header(AVIOContext *pb, AVStream *st, uint32_t *size)
 {
     int tag1;
-    if(esize) *esize  = avio_rl32(pb);
-    else                avio_rl32(pb);
+    uint32_t size_ = avio_rl32(pb);
+    if (size)
+        *size = size_;
     st->codecpar->width  = avio_rl32(pb);
     st->codecpar->height = (int32_t)avio_rl32(pb);
     avio_rl16(pb); /* planes */

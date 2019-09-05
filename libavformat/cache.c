@@ -54,6 +54,7 @@ typedef struct CacheEntry {
 typedef struct Context {
     AVClass *class;
     int fd;
+    char *filename;
     struct AVTreeNode *root;
     int64_t logical_pos;
     int64_t cache_pos;
@@ -72,6 +73,7 @@ static int cmp(const void *key, const void *node)
 
 static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **options)
 {
+    int ret;
     char *buffername;
     Context *c= h->priv_data;
 
@@ -83,8 +85,12 @@ static int cache_open(URLContext *h, const char *arg, int flags, AVDictionary **
         return c->fd;
     }
 
-    unlink(buffername);
-    av_freep(&buffername);
+    ret = unlink(buffername);
+
+    if (ret >= 0)
+        av_freep(&buffername);
+    else
+        c->filename = buffername;
 
     return ffurl_open_whitelist(&c->inner, arg, flags, &h->interrupt_callback,
                                 options, h->protocol_whitelist, h->protocol_blacklist, h);
@@ -201,7 +207,7 @@ static int cache_read(URLContext *h, unsigned char *buf, int size)
     }
 
     r = ffurl_read(c->inner, buf, size);
-    if (r == 0 && size>0) {
+    if (r == AVERROR_EOF && size>0) {
         c->is_true_eof = 1;
         av_assert0(c->end >= c->logical_pos);
     }
@@ -263,7 +269,7 @@ resolve_eof:
                 if (whence == SEEK_SET)
                     size = FFMIN(sizeof(tmp), pos - c->logical_pos);
                 ret = cache_read(h, tmp, size);
-                if (ret == 0 && whence == SEEK_END) {
+                if (ret == AVERROR_EOF && whence == SEEK_END) {
                     av_assert0(c->is_true_eof);
                     goto resolve_eof;
                 }
@@ -292,11 +298,18 @@ static int enu_free(void *opaque, void *elem)
 static int cache_close(URLContext *h)
 {
     Context *c= h->priv_data;
+    int ret;
 
     av_log(h, AV_LOG_INFO, "Statistics, cache hits:%"PRId64" cache misses:%"PRId64"\n",
            c->cache_hit, c->cache_miss);
 
     close(c->fd);
+    if (c->filename) {
+        ret = unlink(c->filename);
+        if (ret < 0)
+            av_log(h, AV_LOG_ERROR, "Could not delete %s.\n", c->filename);
+        av_freep(&c->filename);
+    }
     ffurl_close(c->inner);
     av_tree_enumerate(c->root, NULL, NULL, enu_free);
     av_tree_destroy(c->root);

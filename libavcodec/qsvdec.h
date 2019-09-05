@@ -33,6 +33,7 @@
 #include "libavutil/pixfmt.h"
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "qsv_internal.h"
 
 typedef struct QSVContext {
@@ -41,7 +42,9 @@ typedef struct QSVContext {
 
     // the session we allocated internally, in case the caller did not provide
     // one
-    QSVSession internal_qs;
+    mfxSession internal_session;
+
+    QSVFramesContext frames_ctx;
 
     /**
      * a linked list of frames currently being used by QSV
@@ -49,22 +52,15 @@ typedef struct QSVContext {
     QSVFrame *work_frames;
 
     AVFifoBuffer *async_fifo;
-    AVFifoBuffer *input_fifo;
+    int zero_consume_run;
+    int buffered_count;
+    int reinit_flag;
 
-    // we should to buffer input packets at some cases
-    // else it is not possible to handle dynamic stream changes correctly
-    // this fifo uses for input packets buffering
-    AVFifoBuffer *pkt_fifo;
+    enum AVPixelFormat orig_pix_fmt;
+    uint32_t fourcc;
+    mfxFrameInfo frame_info;
 
-    // this flag indicates that header parsed,
-    // decoder instance created and ready to general decoding
-    int engine_ready;
-
-    // we can not just re-init decoder if different sequence header arrived
-    // we should to deliver all buffered frames but we can not decode new packets
-    // this time. So when reinit_pending is non-zero we flushing decoder and
-    // accumulate new arrived packets into pkt_fifo
-    int reinit_pending;
+    int initialized;
 
     // options set by the caller
     int async_depth;
@@ -76,13 +72,12 @@ typedef struct QSVContext {
     int         nb_ext_buffers;
 } QSVContext;
 
-int ff_qsv_map_pixfmt(enum AVPixelFormat format);
+extern const AVCodecHWConfigInternal *ff_qsv_hw_configs[];
 
-int ff_qsv_decode(AVCodecContext *s, QSVContext *q,
-                  AVFrame *frame, int *got_frame,
-                  AVPacket *avpkt);
+int ff_qsv_process_data(AVCodecContext *avctx, QSVContext *q,
+                        AVFrame *frame, int *got_frame, AVPacket *pkt);
 
-void ff_qsv_decode_reset(AVCodecContext *avctx, QSVContext *q);
+void ff_qsv_decode_flush(AVCodecContext *avctx, QSVContext *q);
 
 int ff_qsv_decode_close(QSVContext *q);
 

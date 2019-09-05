@@ -1,0 +1,30 @@
+frame:0    pts:0       pts_time:0
+lavfi.ssim.R=0.72
+lavfi.ssim.G=0.76
+lavfi.ssim.B=0.89
+lavfi.ssim.All=0.79
+lavfi.ssim.dB=6.74
+frame:1    pts:1       pts_time:1
+lavfi.ssim.R=0.70
+lavfi.ssim.G=0.74
+lavfi.ssim.B=0.85
+lavfi.ssim.All=0.77
+lavfi.ssim.dB=6.31
+frame:2    pts:2       pts_time:2
+lavfi.ssim.R=0.71
+lavfi.ssim.G=0.75
+lavfi.ssim.B=0.84
+lavfi.ssim.All=0.76
+lavfi.ssim.dB=6.29
+frame:3    pts:3       pts_time:3
+lavfi.ssim.R=0.70
+lavfi.ssim.G=0.73
+lavfi.ssim.B=0.83
+lavfi.ssim.All=0.76
+lavfi.ssim.dB=6.11
+frame:4    pts:4       pts_time:4
+lavfi.ssim.R=0.71
+lavfi.ssim.G=0.74
+lavfi.ssim.B=0.80
+lavfi.ssim.All=0.75
+lavfi.ssim.dB=6.05

@@ -47,18 +47,62 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ411P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
         AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV420P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV444P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9,
         AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
-        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP16,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GBRAP16,
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY9, AV_PIX_FMT_GRAY10, AV_PIX_FMT_GRAY12, AV_PIX_FMT_GRAY14, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
+}
+
+typedef struct ThreadData {
+    AVFrame *base, *overlay, *mask;
+    AVFrame *out;
+} ThreadData;
+
+static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
+{
+    MaskedMergeContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *base = td->base;
+    AVFrame *overlay = td->overlay;
+    AVFrame *mask = td->mask;
+    AVFrame *out = td->out;
+    int p;
+
+    for (p = 0; p < s->nb_planes; p++) {
+        const int h = s->height[p];
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane(out->data[p] + slice_start * out->linesize[p],
+                                out->linesize[p],
+                                base->data[p] + slice_start * base->linesize[p],
+                                base->linesize[p],
+                                s->linesize[p], slice_end - slice_start);
+            continue;
+        }
+
+        s->maskedmerge(base->data[p] + slice_start * base->linesize[p],
+                       overlay->data[p] + slice_start * overlay->linesize[p],
+                       mask->data[p] + slice_start * mask->linesize[p],
+                       out->data[p] + slice_start * out->linesize[p],
+                       base->linesize[p], overlay->linesize[p],
+                       mask->linesize[p], out->linesize[p],
+                       s->width[p], slice_end - slice_start,
+                       s->half, s->depth);
+    }
+
+    return 0;
 }
 
 static int process_frame(FFFrameSync *fs)
@@ -67,6 +111,7 @@ static int process_frame(FFFrameSync *fs)
     MaskedMergeContext *s = fs->opaque;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out, *base, *overlay, *mask;
+    ThreadData td;
     int ret;
 
     if ((ret = ff_framesync_get_frame(&s->fs, 0, &base,    0)) < 0 ||
@@ -79,29 +124,19 @@ static int process_frame(FFFrameSync *fs)
         if (!out)
             return AVERROR(ENOMEM);
     } else {
-        int p;
-
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
         av_frame_copy_props(out, base);
 
-        for (p = 0; p < s->nb_planes; p++) {
-            if (!((1 << p) & s->planes)) {
-                av_image_copy_plane(out->data[p], out->linesize[p], base->data[p], base->linesize[p],
-                                    s->width[p], s->height[p]);
-                continue;
-            }
-
-            s->maskedmerge(base->data[p], overlay->data[p],
-                           mask->data[p], out->data[p],
-                           base->linesize[p], overlay->linesize[p],
-                           mask->linesize[p], out->linesize[p],
-                           s->width[p], s->height[p],
-                           s->half, s->depth);
-        }
+        td.out = out;
+        td.base = base;
+        td.overlay = overlay;
+        td.mask = mask;
+        ctx->internal->execute(ctx, filter_slice, &td, NULL,
+                               FFMIN(s->height[2], ff_filter_get_nb_threads(ctx)));
     }
-    out->pts = av_rescale_q(base->pts, s->fs.time_base, outlink->time_base);
+    out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, outlink->time_base);
 
     return ff_filter_frame(outlink, out);
 }
@@ -197,35 +232,25 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
         return AVERROR(EINVAL);
     }
-    if (base->w                       != overlay->w ||
-        base->h                       != overlay->h ||
-        base->sample_aspect_ratio.num != overlay->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != overlay->sample_aspect_ratio.den ||
-        base->w                       != mask->w ||
-        base->h                       != mask->h ||
-        base->sample_aspect_ratio.num != mask->sample_aspect_ratio.num ||
-        base->sample_aspect_ratio.den != mask->sample_aspect_ratio.den) {
+    if (base->w != overlay->w || base->h != overlay->h ||
+        base->w != mask->w    || base->h != mask->h) {
         av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-               "(size %dx%d, SAR %d:%d) do not match the corresponding "
-               "second input link %s parameters (%dx%d, SAR %d:%d) "
-               "and/or third input link %s parameters (%dx%d, SAR %d:%d)\n",
+               "(size %dx%d) do not match the corresponding "
+               "second input link %s parameters (size %dx%d) "
+               "and/or third input link %s parameters (size %dx%d)\n",
                ctx->input_pads[0].name, base->w, base->h,
-               base->sample_aspect_ratio.num,
-               base->sample_aspect_ratio.den,
                ctx->input_pads[1].name, overlay->w, overlay->h,
-               overlay->sample_aspect_ratio.num,
-               overlay->sample_aspect_ratio.den,
-               ctx->input_pads[2].name, mask->w, mask->h,
-               mask->sample_aspect_ratio.num,
-               mask->sample_aspect_ratio.den);
+               ctx->input_pads[2].name, mask->w, mask->h);
         return AVERROR(EINVAL);
     }
 
     outlink->w = base->w;
     outlink->h = base->h;
-    outlink->time_base = base->time_base;
     outlink->sample_aspect_ratio = base->sample_aspect_ratio;
     outlink->frame_rate = base->frame_rate;
+
+    if ((ret = av_image_fill_linesizes(s->linesize, outlink->format, outlink->w)) < 0)
+        return ret;
 
     if ((ret = ff_framesync_init(&s->fs, ctx, 3)) < 0)
         return ret;
@@ -246,19 +271,16 @@ static int config_output(AVFilterLink *outlink)
     s->fs.opaque   = s;
     s->fs.on_event = process_frame;
 
-    return ff_framesync_configure(&s->fs);
+    ret = ff_framesync_configure(&s->fs);
+    outlink->time_base = s->fs.time_base;
+
+    return ret;
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    MaskedMergeContext *s = inlink->dst->priv;
-    return ff_framesync_filter_frame(&s->fs, inlink, buf);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    MaskedMergeContext *s = outlink->src->priv;
-    return ff_framesync_request_frame(&s->fs, outlink);
+    MaskedMergeContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -272,18 +294,15 @@ static const AVFilterPad maskedmerge_inputs[] = {
     {
         .name         = "base",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
         .config_props = config_input,
     },
     {
         .name         = "overlay",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     {
         .name         = "mask",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
@@ -293,7 +312,6 @@ static const AVFilterPad maskedmerge_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -304,8 +322,9 @@ AVFilter ff_vf_maskedmerge = {
     .priv_size     = sizeof(MaskedMergeContext),
     .uninit        = uninit,
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = maskedmerge_inputs,
     .outputs       = maskedmerge_outputs,
     .priv_class    = &maskedmerge_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

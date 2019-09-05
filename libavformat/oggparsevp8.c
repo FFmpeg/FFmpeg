@@ -82,7 +82,11 @@ static uint64_t vp8_gptopts(AVFormatContext *s, int idx,
     struct ogg *ogg = s->priv_data;
     struct ogg_stream *os = ogg->streams + idx;
 
-    uint64_t pts  = (granule >> 32);
+    int invcnt    = !((granule >> 30) & 3);
+    // If page granule is that of an invisible vp8 frame, its pts will be
+    // that of the end of the next visible frame. We subtract 1 for those
+    // to prevent messing up pts calculations.
+    uint64_t pts  = (granule >> 32) - invcnt;
     uint32_t dist = (granule >>  3) & 0x07ffffff;
 
     if (!dist)
@@ -121,7 +125,7 @@ static int vp8_packet(AVFormatContext *s, int idx)
         os->lastdts = vp8_gptopts(s, idx, os->granule, NULL) - duration;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
-            if (s->streams[idx]->duration)
+            if (s->streams[idx]->duration && s->streams[idx]->duration != AV_NOPTS_VALUE)
                 s->streams[idx]->duration -= s->streams[idx]->start_time;
         }
     }

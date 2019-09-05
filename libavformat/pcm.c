@@ -28,13 +28,20 @@
 
 int ff_pcm_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    AVCodecParameters *par = s->streams[0]->codecpar;
     int ret, size;
 
-    size= RAW_SAMPLES*s->streams[0]->codecpar->block_align;
-    if (size <= 0)
+    if (par->block_align <= 0)
         return AVERROR(EINVAL);
 
-    ret= av_get_packet(s->pb, pkt, size);
+    /*
+     * Compute read size to complete a read every 62ms.
+     * Clamp to RAW_SAMPLES if larger.
+     */
+    size = FFMAX(par->sample_rate/25, 1);
+    size = FFMIN(size, RAW_SAMPLES) * par->block_align;
+
+    ret = av_get_packet(s->pb, pkt, size);
 
     pkt->flags &= ~AV_PKT_FLAG_CORRUPT;
     pkt->stream_index = 0;

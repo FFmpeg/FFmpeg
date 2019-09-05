@@ -27,9 +27,7 @@
 #include "bytestream.h"
 #include "fft.h"
 #include "get_bits.h"
-#include "golomb.h"
 #include "internal.h"
-#include "unary.h"
 
 #include "on2avcdata.h"
 
@@ -687,11 +685,11 @@ static void wtf_44(On2AVCContext *c, float *out, float *src, int size)
     }
 }
 
-static int on2avc_reconstruct_stereo(On2AVCContext *c, AVFrame *dst, int offset)
+static int on2avc_reconstruct_channel_ext(On2AVCContext *c, AVFrame *dst, int offset)
 {
     int ch, i;
 
-    for (ch = 0; ch < 2; ch++) {
+    for (ch = 0; ch < c->avctx->channels; ch++) {
         float *out   = (float*)dst->extended_data[ch] + offset;
         float *in    = c->coeffs[ch];
         float *saved = c->delay[ch];
@@ -812,10 +810,6 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
     }
     c->prev_window_type = c->window_type;
     c->window_type      = get_bits(&gb, 3);
-    if (c->window_type >= WINDOW_TYPE_EXT4 && c->avctx->channels == 1) {
-        av_log(c->avctx, AV_LOG_ERROR, "stereo mode window for mono audio\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     c->band_start  = c->modes[c->window_type].band_start;
     c->num_windows = c->modes[c->window_type].num_windows;
@@ -836,7 +830,7 @@ static int on2avc_decode_subframe(On2AVCContext *c, const uint8_t *buf,
         for (i = 0; i < c->avctx->channels; i++)
             on2avc_reconstruct_channel(c, i, dst, offset);
     } else {
-        on2avc_reconstruct_stereo(c, dst, offset);
+        on2avc_reconstruct_channel_ext(c, dst, offset);
     }
 
     return 0;
@@ -925,10 +919,6 @@ static av_cold int on2avc_decode_init(AVCodecContext *avctx)
                                                    : AV_CH_LAYOUT_MONO;
 
     c->is_av500 = (avctx->codec_tag == 0x500);
-    if (c->is_av500 && avctx->channels == 2) {
-        av_log(avctx, AV_LOG_ERROR, "0x500 version should be mono\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     if (avctx->channels == 2)
         av_log(avctx, AV_LOG_WARNING,
@@ -1028,6 +1018,7 @@ AVCodec ff_on2avc_decoder = {
     .decode         = on2avc_decode_frame,
     .close          = on2avc_decode_close,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLTP,
                                                       AV_SAMPLE_FMT_NONE },
 };

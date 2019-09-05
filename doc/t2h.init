@@ -22,7 +22,7 @@ EOT
 my $TEMPLATE_HEADER2 = $ENV{"FFMPEG_HEADER2"} || <<EOT;
   </head>
   <body>
-    <div style="width: 95%; margin: auto">
+    <div class="container">
 EOT
 
 my $TEMPLATE_FOOTER = $ENV{"FFMPEG_FOOTER"} || <<EOT;

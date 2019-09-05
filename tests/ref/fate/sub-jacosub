@@ -10,14 +10,14 @@ Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:00.12,0:00:04.36,Default,,0,0,0,,{\an5}JACOsub\N\NThis script demonstrates some of the capabilities of JACOsub.
-Dialogue: 0,0:00:04.12,0:00:14.86,Default,,0,0,0,,{\an8}Text may be positioned at the top,
-Dialogue: 0,0:00:05.12,0:00:17.46,Default,,0,0,0,,{\an5}middle,
-Dialogue: 0,0:00:06.12,0:00:20.06,Default,,0,0,0,,{\an2}or bottom of the screen.
-Dialogue: 0,0:00:08.12,0:00:27.36,Default,,0,0,0,,{\an5}{this is a comment} (And, you just saw, {another comment} timing ranges for different lines of text.
-Dialogue: 0,0:00:11.12,0:00:35.86,Default,,0,0,0,,{\an1}Within margin constraints\Nthat you set, text may be\Nleft justified,
-Dialogue: 0,0:00:13.62,0:00:42.11,Default,,0,0,0,,{\an2}{the JC is redundant - it's the default}center\Njustified,
-Dialogue: 0,0:00:14.87,0:00:45.86,Default,,0,0,0,,{\an3}and also\Nright justified.
-Dialogue: 0,0:00:22.42,0:01:12.76,Default,,0,0,0,,Text may appear in different styles\N(Normal, {\b1}Bold{\r}, {\i1}Italic{\r})
-Dialogue: 0,0:01:16.12,0:03:53.36,Default,,0,0,0,,{\an5}\N\NAt that time, you may press any key to return to the Editor.
-Dialogue: 0,0:01:16.12,0:03:53.36,Default,,0,0,0,,OK, this script will be finished when the screen goes blank.
+Dialogue: 0,0:00:00.12,0:00:04.12,Default,,0,0,0,,{\an5}JACOsub\N\NThis script demonstrates some of the capabilities of JACOsub.
+Dialogue: 0,0:00:04.12,0:00:06.62,Default,,0,0,0,,{\an8}Text may be positioned at the top,
+Dialogue: 0,0:00:05.12,0:00:07.22,Default,,0,0,0,,{\an5}middle,
+Dialogue: 0,0:00:06.12,0:00:07.82,Default,,0,0,0,,{\an2}or bottom of the screen.
+Dialogue: 0,0:00:08.12,0:00:11.12,Default,,0,0,0,,{\an5}{this is a comment} (And, you just saw, {another comment} timing ranges for different lines of text.
+Dialogue: 0,0:00:11.12,0:00:13.62,Default,,0,0,0,,{\an1}Within margin constraints\Nthat you set, text may be\Nleft justified,
+Dialogue: 0,0:00:13.62,0:00:14.87,Default,,0,0,0,,{\an2}{the JC is redundant - it's the default}center\Njustified,
+Dialogue: 0,0:00:14.87,0:00:16.12,Default,,0,0,0,,{\an3}and also\Nright justified.
+Dialogue: 0,0:00:22.42,0:00:27.92,Default,,0,0,0,,Text may appear in different styles\N(Normal, {\b1}Bold{\r}, {\i1}Italic{\r})
+Dialogue: 0,0:01:16.12,0:01:21.12,Default,,0,0,0,,{\an5}\N\NAt that time, you may press any key to return to the Editor.
+Dialogue: 0,0:01:16.12,0:01:21.12,Default,,0,0,0,,OK, this script will be finished when the screen goes blank.

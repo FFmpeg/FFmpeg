@@ -69,6 +69,7 @@ typedef struct CDGraphicsContext {
     int hscroll;
     int vscroll;
     int transparency;
+    int cleared;
 } CDGraphicsContext;
 
 static av_cold int cdg_decode_init(AVCodecContext *avctx)
@@ -80,11 +81,8 @@ static av_cold int cdg_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     cc->transparency = -1;
 
-    avctx->width   = CDG_FULL_WIDTH;
-    avctx->height  = CDG_FULL_HEIGHT;
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
-
-    return 0;
+    return ff_set_dimensions(avctx, CDG_FULL_WIDTH, CDG_FULL_HEIGHT);
 }
 
 static void cdg_border_preset(CDGraphicsContext *cc, uint8_t *data)
@@ -285,11 +283,12 @@ static int cdg_decode_frame(AVCodecContext *avctx,
 
     bytestream2_init(&gb, avpkt->data, avpkt->size);
 
-    if ((ret = ff_reget_buffer(avctx, cc->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, cc->frame, 0)) < 0)
         return ret;
-    if (!avctx->frame_number) {
+    if (!cc->cleared) {
         memset(cc->frame->data[0], 0, cc->frame->linesize[0] * avctx->height);
         memset(cc->frame->data[1], 0, AVPALETTE_SIZE);
+        cc->cleared = 1;
     }
 
     command = bytestream2_get_byte(&gb);

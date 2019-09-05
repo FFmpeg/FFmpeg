@@ -28,28 +28,6 @@
  * (Inverse) Real Discrete Fourier Transforms.
  */
 
-/* sin(2*pi*x/n) for 0<=x<n/4, followed by n/2<=x<3n/4 */
-#if !CONFIG_HARDCODED_TABLES
-SINTABLE(16);
-SINTABLE(32);
-SINTABLE(64);
-SINTABLE(128);
-SINTABLE(256);
-SINTABLE(512);
-SINTABLE(1024);
-SINTABLE(2048);
-SINTABLE(4096);
-SINTABLE(8192);
-SINTABLE(16384);
-SINTABLE(32768);
-SINTABLE(65536);
-#endif
-static SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
-    NULL, NULL, NULL, NULL,
-    ff_sin_16, ff_sin_32, ff_sin_64, ff_sin_128, ff_sin_256, ff_sin_512, ff_sin_1024,
-    ff_sin_2048, ff_sin_4096, ff_sin_8192, ff_sin_16384, ff_sin_32768, ff_sin_65536,
-};
-
 /** Map one real FFT into two parallel real even and odd FFTs. Then interleave
  * the two real FFTs into one complex FFT. Unmangle the results.
  * ref: http://www.engineeringproductivitytools.com/stuff/T0001/PT10.HTM
@@ -57,7 +35,7 @@ static SINTABLE_CONST FFTSample * const ff_sin_tabs[] = {
 static void rdft_calc_c(RDFTContext *s, FFTSample *data)
 {
     int i, i1, i2;
-    FFTComplex ev, od;
+    FFTComplex ev, od, odsum;
     const int n = 1 << s->nbits;
     const float k1 = 0.5;
     const float k2 = 0.5 - s->inverse;
@@ -73,20 +51,31 @@ static void rdft_calc_c(RDFTContext *s, FFTSample *data)
     ev.re = data[0];
     data[0] = ev.re+data[1];
     data[1] = ev.re-data[1];
-    for (i = 1; i < (n>>2); i++) {
-        i1 = 2*i;
-        i2 = n-i1;
-        /* Separate even and odd FFTs */
-        ev.re =  k1*(data[i1  ]+data[i2  ]);
-        od.im = -k2*(data[i1  ]-data[i2  ]);
-        ev.im =  k1*(data[i1+1]-data[i2+1]);
-        od.re =  k2*(data[i1+1]+data[i2+1]);
-        /* Apply twiddle factors to the odd FFT and add to the even FFT */
-        data[i1  ] =  ev.re + od.re*tcos[i] - od.im*tsin[i];
-        data[i1+1] =  ev.im + od.im*tcos[i] + od.re*tsin[i];
-        data[i2  ] =  ev.re - od.re*tcos[i] + od.im*tsin[i];
-        data[i2+1] = -ev.im + od.im*tcos[i] + od.re*tsin[i];
+
+#define RDFT_UNMANGLE(sign0, sign1)                                         \
+    for (i = 1; i < (n>>2); i++) {                                          \
+        i1 = 2*i;                                                           \
+        i2 = n-i1;                                                          \
+        /* Separate even and odd FFTs */                                    \
+        ev.re =  k1*(data[i1  ]+data[i2  ]);                                \
+        od.im =  k2*(data[i2  ]-data[i1  ]);                                \
+        ev.im =  k1*(data[i1+1]-data[i2+1]);                                \
+        od.re =  k2*(data[i1+1]+data[i2+1]);                                \
+        /* Apply twiddle factors to the odd FFT and add to the even FFT */  \
+        odsum.re = od.re*tcos[i] sign0 od.im*tsin[i];                       \
+        odsum.im = od.im*tcos[i] sign1 od.re*tsin[i];                       \
+        data[i1  ] =  ev.re + odsum.re;                                     \
+        data[i1+1] =  ev.im + odsum.im;                                     \
+        data[i2  ] =  ev.re - odsum.re;                                     \
+        data[i2+1] =  odsum.im - ev.im;                                     \
     }
+
+    if (s->negative_sin) {
+        RDFT_UNMANGLE(+,-)
+    } else {
+        RDFT_UNMANGLE(-,+)
+    }
+
     data[2*i+1]=s->sign_convention*data[2*i+1];
     if (s->inverse) {
         data[0] *= k1;
@@ -104,6 +93,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
     s->nbits           = nbits;
     s->inverse         = trans == IDFT_C2R || trans == DFT_C2R;
     s->sign_convention = trans == IDFT_R2C || trans == DFT_C2R ? 1 : -1;
+    s->negative_sin    = trans == DFT_C2R || trans == DFT_R2C;
 
     if (nbits < 4 || nbits > 16)
         return AVERROR(EINVAL);
@@ -113,15 +103,7 @@ av_cold int ff_rdft_init(RDFTContext *s, int nbits, enum RDFTransformType trans)
 
     ff_init_ff_cos_tabs(nbits);
     s->tcos = ff_cos_tabs[nbits];
-    s->tsin = ff_sin_tabs[nbits]+(trans == DFT_R2C || trans == DFT_C2R)*(n>>2);
-#if !CONFIG_HARDCODED_TABLES
-    {
-        int i;
-        const double theta = (trans == DFT_R2C || trans == DFT_C2R ? -1 : 1) * 2 * M_PI / n;
-        for (i = 0; i < (n >> 2); i++)
-            s->tsin[i] = sin(i * theta);
-    }
-#endif
+    s->tsin = ff_cos_tabs[nbits] + (n >> 2);
     s->rdft_calc   = rdft_calc_c;
 
     if (ARCH_ARM) ff_rdft_init_arm(s);

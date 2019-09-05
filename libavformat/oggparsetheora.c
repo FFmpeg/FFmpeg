@@ -181,6 +181,7 @@ static int theora_packet(AVFormatContext *s, int idx)
 
     if ((!os->lastpts || os->lastpts == AV_NOPTS_VALUE) && !(os->flags & OGG_FLAG_EOS)) {
         int seg;
+        int64_t pts;
 
         duration = 1;
         for (seg = os->segp; seg < os->nsegs; seg++) {
@@ -188,7 +189,10 @@ static int theora_packet(AVFormatContext *s, int idx)
                 duration ++;
         }
 
-        os->lastpts = os->lastdts   = theora_gptopts(s, idx, os->granule, NULL) - duration;
+        pts = theora_gptopts(s, idx, os->granule, NULL);
+        if (pts != AV_NOPTS_VALUE)
+            pts -= duration;
+        os->lastpts = os->lastdts = pts;
         if(s->streams[idx]->start_time == AV_NOPTS_VALUE) {
             s->streams[idx]->start_time = os->lastpts;
             if (s->streams[idx]->duration > 0)

@@ -26,7 +26,7 @@
 
 #define NC_VIDEO_FLAG 0x1A5
 
-static int nc_probe(AVProbeData *probe_packet)
+static int nc_probe(const AVProbeData *probe_packet)
 {
     int size;
 

@@ -161,7 +161,7 @@ static void dump_bih(AVFormatContext *s, BITMAPINFOHEADER *bih)
 static int shall_we_drop(AVFormatContext *s)
 {
     struct vfw_ctx *ctx = s->priv_data;
-    static const uint8_t dropscore[] = {62, 75, 87, 100};
+    static const uint8_t dropscore[4] = { 62, 75, 87, 100 };
     const int ndropscores = FF_ARRAY_ELEMS(dropscore);
     unsigned int buffer_fullness = (ctx->curbufsize*100)/s->max_picture_buffer;
 
@@ -256,7 +256,7 @@ static int vfw_read_header(AVFormatContext *s)
     int ret;
     AVRational framerate_q;
 
-    if (!strcmp(s->filename, "list")) {
+    if (!strcmp(s->url, "list")) {
         for (devnum = 0; devnum <= 9; devnum++) {
             char driver_name[256];
             char driver_ver[256];
@@ -279,7 +279,7 @@ static int vfw_read_header(AVFormatContext *s)
     }
 
     /* If atoi fails, devnum==0 and the default device is used */
-    devnum = atoi(s->filename);
+    devnum = atoi(s->url);
 
     ret = SendMessage(ctx->hwnd, WM_CAP_DRIVER_CONNECT, devnum, 0);
     if(!ret) {
@@ -328,11 +328,14 @@ static int vfw_read_header(AVFormatContext *s)
     }
 
     if (ctx->video_size) {
-        ret = av_parse_video_size(&bi->bmiHeader.biWidth, &bi->bmiHeader.biHeight, ctx->video_size);
+        int w, h;
+        ret = av_parse_video_size(&w, &h, ctx->video_size);
         if (ret < 0) {
             av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
             goto fail;
         }
+        bi->bmiHeader.biWidth  = w;
+        bi->bmiHeader.biHeight = h;
     }
 
     if (0) {
@@ -387,8 +390,7 @@ static int vfw_read_header(AVFormatContext *s)
     if (par->format == AV_PIX_FMT_NONE) {
         par->codec_id = vfw_codecid(biCompression);
         if (par->codec_id == AV_CODEC_ID_NONE) {
-            av_log(s, AV_LOG_ERROR, "Unknown compression type. "
-                             "Please report verbose (-v 9) debug information.\n");
+            avpriv_report_missing_feature(s, "This compression type");
             vfw_read_close(s);
             return AVERROR_PATCHWELCOME;
         }

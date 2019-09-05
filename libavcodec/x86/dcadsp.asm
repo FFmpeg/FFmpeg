@@ -24,7 +24,7 @@
 SECTION .text
 
 %define sizeof_float 4
-%define FMA3_OFFSET (8 * cpuflag(fma3) * ARCH_X86_64)
+%define FMA3_OFFSET (8 * cpuflag(fma3))
 
 %macro LFE_FIR0_FLOAT 0
 cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks, cnt1, cnt2
@@ -101,11 +101,19 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
 %endif
 %else ; ARCH_X86_32
 %if cpuflag(fma3)
-    mulps     m0, m7, [coeffq+cnt1q*8   ]
-    movaps        m1, [coeffq+cnt1q*8+16]
-    mulps     m2, m7, [coeffq+cnt1q*8+32]
-    fmaddps   m0, m6, m1, m0
-    fmaddps   m2, m6, [coeffq+cnt1q*8+48], m2
+    mulps     m0, m7, [coeffq+cnt1q*8    ]
+    mulps     m1, m7, [coeffq+cnt1q*8+32 ]
+    mulps     m2, m7, [coeffq+cnt1q*8+64 ]
+    mulps     m3, m7, [coeffq+cnt1q*8+96 ]
+    fmaddps   m0, m6, [coeffq+cnt1q*8+16 ], m0
+    fmaddps   m1, m6, [coeffq+cnt1q*8+48 ], m1
+    fmaddps   m2, m6, [coeffq+cnt1q*8+80 ], m2
+    fmaddps   m3, m6, [coeffq+cnt1q*8+112], m3
+
+    haddps    m0, m1
+    haddps    m2, m3
+    haddps    m0, m2
+    movaps [samplesq+cnt1q], m0
 %else
     mulps     m0, m7, [coeffq+cnt1q*8   ]
     mulps     m1, m6, [coeffq+cnt1q*8+16]
@@ -113,13 +121,14 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
     mulps     m3, m6, [coeffq+cnt1q*8+48]
     addps     m0, m1
     addps     m2, m3
-%endif
+
     unpckhps  m3, m0, m2
     unpcklps  m0, m2
     addps     m3, m0
     movhlps   m2, m3
     addps     m2, m3
     movlps [samplesq+cnt1q], m2
+%endif
 %endif; ARCH
 
 %if ARCH_X86_64
@@ -154,10 +163,19 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
 %endif
 %else ; ARCH_X86_32
 %if cpuflag(fma3)
-    mulps     m0, m5, [coeffq+cnt1q*8   ]
-    mulps     m2, m5, [coeffq+cnt1q*8+32]
-    fmaddps   m0, m4, m1, m0
-    fmaddps   m2, m4, [coeffq+cnt1q*8+48], m2
+    mulps     m0, m5, [coeffq+cnt1q*8    ]
+    mulps     m1, m5, [coeffq+cnt1q*8+32 ]
+    mulps     m2, m5, [coeffq+cnt1q*8+64 ]
+    mulps     m3, m5, [coeffq+cnt1q*8+96 ]
+    fmaddps   m0, m4, [coeffq+cnt1q*8+16 ], m0
+    fmaddps   m1, m4, [coeffq+cnt1q*8+48 ], m1
+    fmaddps   m2, m4, [coeffq+cnt1q*8+80 ], m2
+    fmaddps   m3, m4, [coeffq+cnt1q*8+112], m3
+
+    haddps    m1, m0
+    haddps    m3, m2
+    haddps    m3, m1
+    movaps [samplesq+cnt2q], m3
 %else
     mulps     m0, m5, [coeffq+cnt1q*8   ]
     mulps     m1, m4, [coeffq+cnt1q*8+16]
@@ -165,13 +183,14 @@ cglobal lfe_fir0_float, 4, 6, 12 + cpuflag(fma3)*4, samples, lfe, coeff, nblocks
     mulps     m3, m4, [coeffq+cnt1q*8+48]
     addps     m0, m1
     addps     m2, m3
-%endif
+
     unpckhps  m3, m2, m0
     unpcklps  m2, m0
     addps     m3, m2
     movhlps   m0, m3
     addps     m0, m3
     movlps [samplesq+cnt2q], m0
+%endif
 %endif; ARCH
 
     sub    cnt2d, 8 + FMA3_OFFSET

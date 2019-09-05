@@ -37,7 +37,7 @@
 #include "pcm.h"
 #include "sox.h"
 
-static int sox_probe(AVProbeData *p)
+static int sox_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == SOX_TAG || AV_RB32(p->buf) == SOX_TAG)
         return AVPROBE_SCORE_MAX;
@@ -113,7 +113,7 @@ static int sox_read_header(AVFormatContext *s)
 
     st->codecpar->sample_rate           = sample_rate;
     st->codecpar->bits_per_coded_sample = 32;
-    st->codecpar->bit_rate              = st->codecpar->sample_rate *
+    st->codecpar->bit_rate              = (int64_t)st->codecpar->sample_rate *
                                           st->codecpar->bits_per_coded_sample *
                                           st->codecpar->channels;
     st->codecpar->block_align           = st->codecpar->bits_per_coded_sample *

@@ -28,6 +28,7 @@
 #include <inttypes.h>
 #include <zlib.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/intreadwrite.h"
 
 #include "avcodec.h"
@@ -122,7 +123,7 @@ typedef struct JPGContext {
 
     VLC        dc_vlc[2], ac_vlc[2];
     int        prev_dc[3];
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
 
     uint8_t    *buf;
 } JPGContext;
@@ -555,8 +556,8 @@ static uint32_t epic_decode_pixel_pred(ePICContext *dc, int x, int y,
         B     = ((pred >> B_shift) & 0xFF) - TOSIGNED(delta);
     }
 
-    if (R<0 || G<0 || B<0) {
-        av_log(NULL, AV_LOG_ERROR, "RGB %d %d %d is out of range\n", R, G, B);
+    if (R<0 || G<0 || B<0 || R > 255 || G > 255 || B > 255) {
+        avpriv_request_sample(NULL, "RGB %d %d %d is out of range\n", R, G, B);
         return 0;
     }
 
@@ -926,6 +927,7 @@ static int epic_jb_decode_tile(G2MContext *c, int tile_x, int tile_y,
         if (c->ec.els_ctx.err != 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "ePIC: couldn't decode transparency pixel!\n");
+            ff_els_decoder_uninit(&c->ec.unsigned_rung);
             return AVERROR_INVALIDDATA;
         }
 
@@ -1354,14 +1356,16 @@ static void g2m_paint_cursor(G2MContext *c, uint8_t *dst, int stride)
     } else {
         dst    +=  x * 3;
     }
-    if (y < 0) {
+
+    if (y < 0)
         h      +=  y;
+    if (w < 0 || h < 0)
+        return;
+    if (y < 0) {
         cursor += -y * c->cursor_stride;
     } else {
         dst    +=  y * stride;
     }
-    if (w < 0 || h < 0)
-        return;
 
     for (j = 0; j < h; j++) {
         for (i = 0; i < w; i++) {
@@ -1442,9 +1446,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             }
             c->compression = bytestream2_get_be32(&bc);
             if (c->compression != 2 && c->compression != 3) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Unknown compression method %d\n",
-                       c->compression);
+                avpriv_report_missing_feature(avctx, "Compression method %d",
+                                              c->compression);
                 ret = AVERROR_PATCHWELCOME;
                 goto header_fail;
             }
@@ -1452,7 +1455,8 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
             c->tile_height = bytestream2_get_be32(&bc);
             if (c->tile_width <= 0 || c->tile_height <= 0 ||
                 ((c->tile_width | c->tile_height) & 0xF) ||
-                c->tile_width * (uint64_t)c->tile_height >= INT_MAX / 4
+                c->tile_width * (uint64_t)c->tile_height >= INT_MAX / 4 ||
+                av_image_check_size2(c->tile_width, c->tile_height, avctx->max_pixels, avctx->pix_fmt, 0, avctx) < 0
             ) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Invalid tile dimensions %dx%d\n",
@@ -1475,9 +1479,9 @@ static int g2m_decode_frame(AVCodecContext *avctx, void *data,
                 g_mask = bytestream2_get_be32(&bc);
                 b_mask = bytestream2_get_be32(&bc);
                 if (r_mask != 0xFF0000 || g_mask != 0xFF00 || b_mask != 0xFF) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "Invalid or unsupported bitmasks: R=%"PRIX32", G=%"PRIX32", B=%"PRIX32"\n",
-                           r_mask, g_mask, b_mask);
+                    avpriv_report_missing_feature(avctx,
+                                                  "Bitmasks: R=%"PRIX32", G=%"PRIX32", B=%"PRIX32,
+                                                  r_mask, g_mask, b_mask);
                     ret = AVERROR_PATCHWELCOME;
                     goto header_fail;
                 }

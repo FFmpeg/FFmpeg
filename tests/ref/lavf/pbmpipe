@@ -1,3 +1,3 @@
-8b974da7f48f9e6d5ae327b4444a71fb *./tests/data/lavf/pbmpipe.pbm
-317075 ./tests/data/lavf/pbmpipe.pbm
-./tests/data/lavf/pbmpipe.pbm CRC=0xfc010c66
+8b974da7f48f9e6d5ae327b4444a71fb *tests/data/lavf/pbmpipe.pbm
+317075 tests/data/lavf/pbmpipe.pbm
+tests/data/lavf/pbmpipe.pbm CRC=0xfc010c66

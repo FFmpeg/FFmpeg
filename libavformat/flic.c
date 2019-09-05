@@ -1,6 +1,6 @@
 /*
  * FLI/FLC Animation File Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -57,7 +57,7 @@ typedef struct FlicDemuxContext {
     int frame_number;
 } FlicDemuxContext;
 
-static int flic_probe(AVProbeData *p)
+static int flic_probe(const AVProbeData *p)
 {
     int magic_number;
 
@@ -204,7 +204,7 @@ static int flic_read_packet(AVFormatContext *s,
     int ret = 0;
     unsigned char preamble[FLIC_PREAMBLE_SIZE];
 
-    while (!packet_read) {
+    while (!packet_read && !avio_feof(pb)) {
 
         if ((ret = avio_read(pb, preamble, FLIC_PREAMBLE_SIZE)) !=
             FLIC_PREAMBLE_SIZE) {
@@ -256,7 +256,7 @@ static int flic_read_packet(AVFormatContext *s,
         }
     }
 
-    return ret;
+    return avio_feof(pb) ? AVERROR_EOF : ret;
 }
 
 AVInputFormat ff_flic_demuxer = {

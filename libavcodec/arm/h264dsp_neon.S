@@ -237,6 +237,7 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         h264_loop_filter_start
 
         sub             r0,  r0,  #2
+h_loop_filter_chroma420:
         vld1.32         {d18[0]}, [r0], r1
         vld1.32         {d16[0]}, [r0], r1
         vld1.32         {d0[0]},  [r0], r1
@@ -269,6 +270,24 @@ function ff_h264_h_loop_filter_chroma_neon, export=1
         vst1.32         {d2[1]},  [r0], r1
 
         bx              lr
+endfunc
+
+function ff_h264_h_loop_filter_chroma422_neon, export=1
+        h264_loop_filter_start
+        push            {r4, lr}
+        add             r4,  r0,  r1
+        add             r1,  r1,  r1
+        sub             r0,  r0,  #2
+
+        bl              h_loop_filter_chroma420
+
+        ldr             r12, [sp, #8]
+        ldr             r12, [r12]
+        vmov.32         d24[0], r12
+        sub             r0,  r4,  #2
+
+        bl              h_loop_filter_chroma420
+        pop             {r4, pc}
 endfunc
 
 @ Biweighted prediction

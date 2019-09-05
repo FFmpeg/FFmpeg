@@ -17,8 +17,10 @@
  */
 
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/attributes.h"
+#include "libavutil/avassert.h"
 #include "libavutil/mem.h"
 
 #include "rl.h"

@@ -22,6 +22,11 @@ display_picture_number=0
 interlaced_frame=0
 top_field_first=0
 repeat_pict=0
+color_range=pc
+color_space=bt470bg
+color_primaries=unknown
+color_transfer=unknown
+chroma_location=center
 TAG:ImageDescription=
 TAG:Make=Canon
 TAG:Model=Canon PowerShot SX200 IS
@@ -224,4 +229,10 @@ TAG:ExposureMode=    0
 TAG:WhiteBalance=    0
 TAG:DigitalZoomRatio=   4000:4000
 TAG:SceneCaptureType=    0
+[SIDE_DATA]
+side_data_type=QP table data
+[/SIDE_DATA]
+[SIDE_DATA]
+side_data_type=QP table properties
+[/SIDE_DATA]
 [/FRAME]

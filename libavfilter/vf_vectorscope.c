@@ -154,7 +154,7 @@ static const enum AVPixelFormat out_rgb9_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat out_rgb10_pix_fmts[] = {
-    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_NONE
 };
 
@@ -169,7 +169,7 @@ static const enum AVPixelFormat in1_pix_fmts[] = {
     AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_YUV444P12,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
-    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_NONE
 };
@@ -181,7 +181,7 @@ static const enum AVPixelFormat in2_pix_fmts[] = {
     AV_PIX_FMT_YUV411P,  AV_PIX_FMT_YUVJ411P,
     AV_PIX_FMT_YUV440P,  AV_PIX_FMT_YUV410P,
     AV_PIX_FMT_GBRAP, AV_PIX_FMT_GBRP,
-    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
     AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
@@ -1212,7 +1212,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (s->colorspace) {
         s->cs = (s->depth - 8) * 2 + s->colorspace - 1;
     } else {
-        switch (av_frame_get_colorspace(in)) {
+        switch (in->colorspace) {
         case AVCOL_SPC_SMPTE170M:
         case AVCOL_SPC_BT470BG:
             s->cs = (s->depth - 8) * 2 + 0;

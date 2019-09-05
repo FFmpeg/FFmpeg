@@ -6,18 +6,22 @@ os:
 addons:
   apt:
     packages:
-      - yasm
+      - nasm
       - diffutils
 compiler:
   - clang
   - gcc
+matrix:
+    exclude:
+        - os: osx
+          compiler: gcc
 cache:
   directories:
     - ffmpeg-samples
 before_install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update --all; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew update; fi
 install:
-  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install yasm; fi
+  - if [ "$TRAVIS_OS_NAME" == "osx" ]; then brew install nasm; fi
 script:
   - mkdir -p ffmpeg-samples
   - ./configure --samples=ffmpeg-samples --cc=$CC

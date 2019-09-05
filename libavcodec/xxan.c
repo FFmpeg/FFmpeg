@@ -20,12 +20,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mem.h"
+
+#include "avcodec.h"
 #include "bytestream.h"
-#define BITSTREAM_READER_LE
-#include "get_bits.h"
 #include "internal.h"
 
 typedef struct XanContext {
@@ -411,7 +410,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
     int ftype;
     int ret;
 
-    if ((ret = ff_reget_buffer(avctx, s->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->pic, 0)) < 0)
         return ret;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);

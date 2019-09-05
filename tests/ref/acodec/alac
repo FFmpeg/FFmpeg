@@ -1,4 +1,4 @@
-8d9fb9f5433962e7880b666e6e2e428e *tests/data/fate/acodec-alac.mov
+61b22c509780e86dfb2fd1be816d8c68 *tests/data/fate/acodec-alac.mov
 389018 tests/data/fate/acodec-alac.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *tests/data/fate/acodec-alac.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

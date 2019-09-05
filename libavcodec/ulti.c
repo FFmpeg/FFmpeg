@@ -50,6 +50,8 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     s->width = avctx->width;
     s->height = avctx->height;
     s->blocks = (s->width / 8) * (s->height / 8);
+    if (s->blocks == 0)
+        return AVERROR_INVALIDDATA;
     avctx->pix_fmt = AV_PIX_FMT_YUV410P;
     s->ulti_codebook = ulti_codebook;
 
@@ -60,7 +62,8 @@ static av_cold int ulti_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static av_cold int ulti_decode_end(AVCodecContext *avctx){
+static av_cold int ulti_decode_end(AVCodecContext *avctx)
+{
     UltimotionDecodeContext *s = avctx->priv_data;
 
     av_frame_free(&s->frame);
@@ -227,7 +230,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
     int skip;
     int tmp;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     bytestream2_init(&s->gb, buf, buf_size);

@@ -74,8 +74,8 @@ void ff_aac_ltp_insert_new_frame(AACEncContext *s)
 
 static void get_lag(float *buf, const float *new, LongTermPrediction *ltp)
 {
-    int i, j, lag, max_corr = 0;
-    float max_ratio;
+    int i, j, lag = 0, max_corr = 0;
+    float max_ratio = 0.0f;
     for (i = 0; i < 2048; i++) {
         float corr, s0 = 0.0f, s1 = 0.0f;
         const int start = FFMAX(0, i - 1024);
@@ -144,7 +144,7 @@ void ff_aac_adjust_common_ltp(AACEncContext *s, ChannelElement *cpe)
         int sum = sce0->ics.ltp.used[sfb] + sce1->ics.ltp.used[sfb];
         if (sum != 2) {
             sce0->ics.ltp.used[sfb] = 0;
-        } else if (sum == 2) {
+        } else {
             count++;
         }
     }
@@ -190,8 +190,8 @@ void ff_aac_search_for_ltp(AACEncContext *s, SingleChannelElement *sce,
                 FFPsyBand *band = &s->psy.ch[s->cur_channel].psy_bands[(w+w2)*16+g];
                 for (i = 0; i < sce->ics.swb_sizes[g]; i++)
                     PCD[i] = sce->coeffs[start+(w+w2)*128+i] - sce->lcoeffs[start+(w+w2)*128+i];
-                abs_pow34_v(C34,  &sce->coeffs[start+(w+w2)*128],  sce->ics.swb_sizes[g]);
-                abs_pow34_v(PCD34, PCD, sce->ics.swb_sizes[g]);
+                s->abs_pow34(C34,  &sce->coeffs[start+(w+w2)*128],  sce->ics.swb_sizes[g]);
+                s->abs_pow34(PCD34, PCD, sce->ics.swb_sizes[g]);
                 dist1 += quantize_band_cost(s, &sce->coeffs[start+(w+w2)*128], C34, sce->ics.swb_sizes[g],
                                             sce->sf_idx[(w+w2)*16+g], sce->band_type[(w+w2)*16+g],
                                             s->lambda/band->threshold, INFINITY, &bits_tmp1, NULL, 0);

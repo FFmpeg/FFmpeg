@@ -94,7 +94,7 @@ DEF(unsigned int, be24, 3, AV_RB24, AV_WB24)
 DEF(unsigned int, be16, 2, AV_RB16, AV_WB16)
 DEF(unsigned int, byte, 1, AV_RB8 , AV_WB8)
 
-#if HAVE_BIGENDIAN
+#if AV_HAVE_BIGENDIAN
 #   define bytestream2_get_ne16  bytestream2_get_be16
 #   define bytestream2_get_ne24  bytestream2_get_be24
 #   define bytestream2_get_ne32  bytestream2_get_be32

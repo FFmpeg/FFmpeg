@@ -41,7 +41,7 @@
 
 
 static const enum AVPixelFormat pixfmt_rgb24[] = {
-    AV_PIX_FMT_BGR24, AV_PIX_FMT_RGB32, AV_PIX_FMT_NONE };
+    AV_PIX_FMT_BGR24, AV_PIX_FMT_0RGB32, AV_PIX_FMT_NONE };
 
 typedef struct EightBpsContext {
     AVCodecContext *avctx;
@@ -65,6 +65,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     unsigned int dlen, p, row;
     const unsigned char *lp, *dp, *ep;
     unsigned char count;
+    unsigned int px_inc;
     unsigned int planes     = c->planes;
     unsigned char *planemap = c->planemap;
     int ret;
@@ -76,6 +77,8 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     /* Set data pointer after line lengths */
     dp = encoded + planes * (height << 1);
+
+    px_inc = planes + (avctx->pix_fmt == AV_PIX_FMT_0RGB32);
 
     for (p = 0; p < planes; p++) {
         /* Lines length pointer for this plane */
@@ -95,21 +98,21 @@ static int decode_frame(AVCodecContext *avctx, void *data,
                 if ((count = *dp++) <= 127) {
                     count++;
                     dlen -= count + 1;
-                    if (pixptr_end - pixptr < count * planes)
+                    if (pixptr_end - pixptr < count * px_inc)
                         break;
                     if (ep - dp < count)
                         return AVERROR_INVALIDDATA;
                     while (count--) {
                         *pixptr = *dp++;
-                        pixptr += planes;
+                        pixptr += px_inc;
                     }
                 } else {
                     count = 257 - count;
-                    if (pixptr_end - pixptr < count * planes)
+                    if (pixptr_end - pixptr < count * px_inc)
                         break;
                     while (count--) {
                         *pixptr = *dp;
-                        pixptr += planes;
+                        pixptr += px_inc;
                     }
                     dp++;
                     dlen -= 2;
@@ -119,12 +122,15 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     }
 
     if (avctx->bits_per_coded_sample <= 8) {
+        int size;
         const uint8_t *pal = av_packet_get_side_data(avpkt,
                                                      AV_PKT_DATA_PALETTE,
-                                                     NULL);
-        if (pal) {
+                                                     &size);
+        if (pal && size == AVPALETTE_SIZE) {
             frame->palette_has_changed = 1;
             memcpy(c->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
 
         memcpy (frame->data[1], c->pal, AVPALETTE_SIZE);

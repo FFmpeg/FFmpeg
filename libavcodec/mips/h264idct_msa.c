@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
+ * Copyright (c) 2015 - 2017 Manojkumar Bhosale (Manojkumar.Bhosale@imgtec.com)
  *
  * This file is part of FFmpeg.
  *
@@ -36,63 +36,24 @@
     BUTTERFLY_4(tmp0_m, tmp1_m, tmp2_m, tmp3_m, out0, out1, out2, out3);  \
 }
 
-static void avc_idct4x4_addblk_msa(uint8_t *dst, int16_t *src,
-                                   int32_t dst_stride)
-{
-    v8i16 src0, src1, src2, src3;
-    v8i16 hres0, hres1, hres2, hres3;
-    v8i16 vres0, vres1, vres2, vres3;
-    v8i16 zeros = { 0 };
-
-    LD4x4_SH(src, src0, src1, src2, src3);
-    AVC_ITRANS_H(src0, src1, src2, src3, hres0, hres1, hres2, hres3);
-    TRANSPOSE4x4_SH_SH(hres0, hres1, hres2, hres3, hres0, hres1, hres2, hres3);
-    AVC_ITRANS_H(hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3);
-    SRARI_H4_SH(vres0, vres1, vres2, vres3, 6);
-    ADDBLK_ST4x4_UB(vres0, vres1, vres2, vres3, dst, dst_stride);
-    ST_SH2(zeros, zeros, src, 8);
-}
-
-static void avc_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
-                                      int32_t dst_stride)
-{
-    int16_t dc;
-    uint32_t src0, src1, src2, src3;
-    v16u8 pred = { 0 };
-    v16i8 out;
-    v8i16 input_dc, pred_r, pred_l;
-
-    dc = (src[0] + 32) >> 6;
-    input_dc = __msa_fill_h(dc);
-    src[0] = 0;
-
-    LW4(dst, dst_stride, src0, src1, src2, src3);
-    INSERT_W4_UB(src0, src1, src2, src3, pred);
-    UNPCK_UB_SH(pred, pred_r, pred_l);
-
-    pred_r += input_dc;
-    pred_l += input_dc;
-
-    CLIP_SH2_0_255(pred_r, pred_l);
-    out = __msa_pckev_b((v16i8) pred_l, (v16i8) pred_r);
-    ST4x4_UB(out, out, 0, 1, 2, 3, dst, dst_stride);
-}
-
 static void avc_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
                                      int32_t de_q_val)
 {
 #define DC_DEST_STRIDE 16
-    int16_t out0, out1, out2, out3;
-    v8i16 src0, src1, src2, src3;
+    int16_t out0, out1, out2, out3, out4, out5, out6, out7;
+    v8i16 src1, src3;
     v8i16 vec0, vec1, vec2, vec3;
+    v8i16 tmp0, tmp1, tmp2, tmp3;
     v8i16 hres0, hres1, hres2, hres3;
     v8i16 vres0, vres1, vres2, vres3;
     v4i32 vres0_r, vres1_r, vres2_r, vres3_r;
-    v4i32 de_q_vec = __msa_fill_w(de_q_val);
+    const v4i32 de_q_vec = __msa_fill_w(de_q_val);
+    const v8i16 src0 = LD_SH(src);
+    const v8i16 src2 = LD_SH(src + 8);
 
-    LD4x4_SH(src, src0, src1, src2, src3);
-    TRANSPOSE4x4_SH_SH(src0, src1, src2, src3, src0, src1, src2, src3);
-    BUTTERFLY_4(src0, src2, src3, src1, vec0, vec3, vec2, vec1);
+    ILVL_D2_SH(src0, src0, src2, src2, src1, src3);
+    TRANSPOSE4x4_SH_SH(src0, src1, src2, src3, tmp0, tmp1, tmp2, tmp3);
+    BUTTERFLY_4(tmp0, tmp2, tmp3, tmp1, vec0, vec3, vec2, vec1);
     BUTTERFLY_4(vec0, vec1, vec2, vec3, hres0, hres3, hres2, hres1);
     TRANSPOSE4x4_SH_SH(hres0, hres1, hres2, hres3, hres0, hres1, hres2, hres3);
     BUTTERFLY_4(hres0, hres1, hres3, hres2, vec0, vec3, vec2, vec1);
@@ -114,40 +75,35 @@ static void avc_deq_idct_luma_dc_msa(int16_t *dst, int16_t *src,
     out1 = __msa_copy_s_h(vec0, 1);
     out2 = __msa_copy_s_h(vec0, 2);
     out3 = __msa_copy_s_h(vec0, 3);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
+    out4 = __msa_copy_s_h(vec0, 4);
+    out5 = __msa_copy_s_h(vec0, 5);
+    out6 = __msa_copy_s_h(vec0, 6);
+    out7 = __msa_copy_s_h(vec0, 7);
+    SH(out0, (dst + 0  * DC_DEST_STRIDE));
+    SH(out1, (dst + 2  * DC_DEST_STRIDE));
+    SH(out2, (dst + 8  * DC_DEST_STRIDE));
     SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += DC_DEST_STRIDE;
-
-    out0 = __msa_copy_s_h(vec0, 4);
-    out1 = __msa_copy_s_h(vec0, 5);
-    out2 = __msa_copy_s_h(vec0, 6);
-    out3 = __msa_copy_s_h(vec0, 7);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += (3 * DC_DEST_STRIDE);
+    SH(out4, (dst + 1  * DC_DEST_STRIDE));
+    SH(out5, (dst + 3  * DC_DEST_STRIDE));
+    SH(out6, (dst + 9  * DC_DEST_STRIDE));
+    SH(out7, (dst + 11 * DC_DEST_STRIDE));
 
     out0 = __msa_copy_s_h(vec1, 0);
     out1 = __msa_copy_s_h(vec1, 1);
     out2 = __msa_copy_s_h(vec1, 2);
     out3 = __msa_copy_s_h(vec1, 3);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
-    dst += DC_DEST_STRIDE;
-
-    out0 = __msa_copy_s_h(vec1, 4);
-    out1 = __msa_copy_s_h(vec1, 5);
-    out2 = __msa_copy_s_h(vec1, 6);
-    out3 = __msa_copy_s_h(vec1, 7);
-    SH(out0, dst);
-    SH(out1, (dst + 2 * DC_DEST_STRIDE));
-    SH(out2, (dst + 8 * DC_DEST_STRIDE));
-    SH(out3, (dst + 10 * DC_DEST_STRIDE));
+    out4 = __msa_copy_s_h(vec1, 4);
+    out5 = __msa_copy_s_h(vec1, 5);
+    out6 = __msa_copy_s_h(vec1, 6);
+    out7 = __msa_copy_s_h(vec1, 7);
+    SH(out0, (dst + 4  * DC_DEST_STRIDE));
+    SH(out1, (dst + 6  * DC_DEST_STRIDE));
+    SH(out2, (dst + 12 * DC_DEST_STRIDE));
+    SH(out3, (dst + 14 * DC_DEST_STRIDE));
+    SH(out4, (dst + 5  * DC_DEST_STRIDE));
+    SH(out5, (dst + 7  * DC_DEST_STRIDE));
+    SH(out6, (dst + 13 * DC_DEST_STRIDE));
+    SH(out7, (dst + 15 * DC_DEST_STRIDE));
 
 #undef DC_DEST_STRIDE
 }
@@ -164,11 +120,12 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
     v4i32 res0_r, res1_r, res2_r, res3_r, res4_r, res5_r, res6_r, res7_r;
     v4i32 res0_l, res1_l, res2_l, res3_l, res4_l, res5_l, res6_l, res7_l;
     v16i8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
-    v16i8 zeros = { 0 };
+    v8i16 zeros = { 0 };
 
     src[0] += 32;
 
     LD_SH8(src, 8, src0, src1, src2, src3, src4, src5, src6, src7);
+    ST_SH8(zeros, zeros, zeros, zeros, zeros, zeros, zeros, zeros, src, 8);
 
     vec0 = src0 + src4;
     vec1 = src0 - src4;
@@ -276,13 +233,10 @@ static void avc_idct8_addblk_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
          res0, res1, res2, res3);
     ADD4(res4, tmp4, res5, tmp5, res6, tmp6, res7, tmp7,
          res4, res5, res6, res7);
-    CLIP_SH4_0_255(res0, res1, res2, res3);
-    CLIP_SH4_0_255(res4, res5, res6, res7);
+    CLIP_SH8_0_255(res0, res1, res2, res3, res4, res5, res6, res7);
     PCKEV_B4_SB(res1, res0, res3, res2, res5, res4, res7, res6,
                 dst0, dst1, dst2, dst3);
-    ST8x4_UB(dst0, dst1, dst, dst_stride);
-    dst += (4 * dst_stride);
-    ST8x4_UB(dst2, dst3, dst, dst_stride);
+    ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
 }
 
 static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
@@ -308,33 +262,80 @@ static void avc_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,
          dst0_r, dst1_r, dst2_r, dst3_r);
     ADD4(dst4_r, dc, dst5_r, dc, dst6_r, dc, dst7_r, dc,
          dst4_r, dst5_r, dst6_r, dst7_r);
-    CLIP_SH4_0_255(dst0_r, dst1_r, dst2_r, dst3_r);
-    CLIP_SH4_0_255(dst4_r, dst5_r, dst6_r, dst7_r);
+    CLIP_SH8_0_255(dst0_r, dst1_r, dst2_r, dst3_r,
+                   dst4_r, dst5_r, dst6_r, dst7_r);
     PCKEV_B4_SB(dst1_r, dst0_r, dst3_r, dst2_r, dst5_r, dst4_r, dst7_r, dst6_r,
                 dst0, dst1, dst2, dst3);
-    ST8x4_UB(dst0, dst1, dst, dst_stride);
-    dst += (4 * dst_stride);
-    ST8x4_UB(dst2, dst3, dst, dst_stride);
+    ST_D8(dst0, dst1, dst2, dst3, 0, 1, 0, 1, 0, 1, 0, 1, dst, dst_stride)
 }
 
-void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src,
-                          int32_t dst_stride)
+void ff_h264_idct_add_msa(uint8_t *dst, int16_t *src, int32_t dst_stride)
 {
-    avc_idct4x4_addblk_msa(dst, src, dst_stride);
-    memset(src, 0, 16 * sizeof(dctcoef));
+    uint32_t src0_m, src1_m, src2_m, src3_m, out0_m, out1_m, out2_m, out3_m;
+    v16i8 dst0_m = { 0 };
+    v16i8 dst1_m = { 0 };
+    v8i16 hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3;
+    v8i16 inp0_m, inp1_m, res0_m, res1_m, src1, src3;
+    const v8i16 src0 = LD_SH(src);
+    const v8i16 src2 = LD_SH(src + 8);
+    const v8i16 zero = { 0 };
+    const uint8_t *dst1 = dst + dst_stride;
+    const uint8_t *dst2 = dst + 2 * dst_stride;
+    const uint8_t *dst3 = dst + 3 * dst_stride;
+
+    ILVL_D2_SH(src0, src0, src2, src2, src1, src3);
+    ST_SH2(zero, zero, src, 8);
+    AVC_ITRANS_H(src0, src1, src2, src3, hres0, hres1, hres2, hres3);
+    TRANSPOSE4x4_SH_SH(hres0, hres1, hres2, hres3, hres0, hres1, hres2, hres3);
+    AVC_ITRANS_H(hres0, hres1, hres2, hres3, vres0, vres1, vres2, vres3);
+    src0_m = LW(dst);
+    src1_m = LW(dst1);
+    SRARI_H4_SH(vres0, vres1, vres2, vres3, 6);
+    src2_m = LW(dst2);
+    src3_m = LW(dst3);
+    ILVR_D2_SH(vres1, vres0, vres3, vres2, inp0_m, inp1_m);
+    INSERT_W2_SB(src0_m, src1_m, dst0_m);
+    INSERT_W2_SB(src2_m, src3_m, dst1_m);
+    ILVR_B2_SH(zero, dst0_m, zero, dst1_m, res0_m, res1_m);
+    ADD2(res0_m, inp0_m, res1_m, inp1_m, res0_m, res1_m);
+    CLIP_SH2_0_255(res0_m, res1_m);
+    PCKEV_B2_SB(res0_m, res0_m, res1_m, res1_m, dst0_m, dst1_m);
+    out0_m = __msa_copy_u_w((v4i32) dst0_m, 0);
+    out1_m = __msa_copy_u_w((v4i32) dst0_m, 1);
+    out2_m = __msa_copy_u_w((v4i32) dst1_m, 0);
+    out3_m = __msa_copy_u_w((v4i32) dst1_m, 1);
+    SW(out0_m, dst);
+    SW(out1_m, dst1);
+    SW(out2_m, dst2);
+    SW(out3_m, dst3);
 }
 
 void ff_h264_idct8_addblk_msa(uint8_t *dst, int16_t *src,
                               int32_t dst_stride)
 {
     avc_idct8_addblk_msa(dst, src, dst_stride);
-    memset(src, 0, 64 * sizeof(dctcoef));
 }
 
 void ff_h264_idct4x4_addblk_dc_msa(uint8_t *dst, int16_t *src,
                                    int32_t dst_stride)
 {
-    avc_idct4x4_addblk_dc_msa(dst, src, dst_stride);
+    v16u8 pred = { 0 };
+    v16i8 out;
+    v8i16 pred_r, pred_l;
+    const uint32_t src0 = LW(dst);
+    const uint32_t src1 = LW(dst + dst_stride);
+    const uint32_t src2 = LW(dst + 2 * dst_stride);
+    const uint32_t src3 = LW(dst + 3 * dst_stride);
+    const int16_t dc = (src[0] + 32) >> 6;
+    const v8i16 input_dc = __msa_fill_h(dc);
+
+    src[0] = 0;
+    INSERT_W4_UB(src0, src1, src2, src3, pred);
+    UNPCK_UB_SH(pred, pred_r, pred_l);
+    ADD2(pred_r, input_dc, pred_l, input_dc, pred_r, pred_l);
+    CLIP_SH2_0_255(pred_r, pred_l);
+    out = __msa_pckev_b((v16i8) pred_l, (v16i8) pred_r);
+    ST_W4(out, 0, 1, 2, 3, dst, dst_stride);
 }
 
 void ff_h264_idct8_dc_addblk_msa(uint8_t *dst, int16_t *src,

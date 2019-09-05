@@ -34,7 +34,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } STLContext;
 
-static int stl_probe(AVProbeData *p)
+static int stl_probe(const AVProbeData *p)
 {
     char c;
     const unsigned char *ptr = p->buf;

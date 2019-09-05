@@ -50,7 +50,7 @@ static int try_decode_video_frame(AVCodecContext *codec_ctx, AVPacket *pkt, int 
         goto end;
     }
 
-    if (!decode && codec_ctx->codec->caps_internal & FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM) {
+    if (!decode && avpriv_codec_get_cap_skip_frame_fill_param(codec_ctx->codec)) {
         codec_ctx->skip_frame = AVDISCARD_ALL;
     }
 
@@ -230,8 +230,6 @@ int main(int argc, char* argv[])
     int ret = 0;
     AVFormatContext *fmt_ctx = NULL;
     AVFormatContext *fmt_ctx_no_decode = NULL;
-
-    av_register_all();
 
     if (argc < 2) {
         av_log(NULL, AV_LOG_ERROR, "Usage: %s <input>\n", argv[0]);

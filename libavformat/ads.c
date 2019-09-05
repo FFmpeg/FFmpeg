@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int ads_probe(AVProbeData *p)
+static int ads_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "SShd", 4) ||
         memcmp(p->buf+32, "SSbd", 4))

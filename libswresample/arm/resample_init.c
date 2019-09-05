@@ -42,17 +42,21 @@ static int ff_resample_common_##TYPE##_neon(ResampleContext *c, void *dest, cons
     DELEM *dst = dest;                                                                            \
     const DELEM *src = source;                                                                    \
     int dst_index;                                                                                \
-    int index= c->index;                                                                          \
-    int frac= c->frac;                                                                            \
-    int sample_index = index >> c->phase_shift;                                                   \
+    int index = c->index;                                                                         \
+    int frac = c->frac;                                                                           \
+    int sample_index = 0;                                                                         \
     int x4_aligned_filter_length = c->filter_length & ~3;                                         \
     int x8_aligned_filter_length = c->filter_length & ~7;                                         \
                                                                                                   \
-    index &= c->phase_mask;                                                                       \
+    while (index >= c->phase_count) {                                                             \
+        sample_index++;                                                                           \
+        index -= c->phase_count;                                                                  \
+    }                                                                                             \
+                                                                                                  \
     for (dst_index = 0; dst_index < n; dst_index++) {                                             \
         FELEM *filter = ((FELEM *) c->filter_bank) + c->filter_alloc * index;                     \
                                                                                                   \
-        FELEM2 val=0;                                                                             \
+        FELEM2 val = 0;                                                                             \
         int i = 0;                                                                                \
         if (x8_aligned_filter_length >= 8) {                                                      \
             ff_resample_common_apply_filter_x8_##TYPE##_neon(&val, &src[sample_index],            \
@@ -75,13 +79,16 @@ static int ff_resample_common_##TYPE##_neon(ResampleContext *c, void *dest, cons
             frac -= c->src_incr;                                                                  \
             index++;                                                                              \
         }                                                                                         \
-        sample_index += index >> c->phase_shift;                                                  \
-        index &= c->phase_mask;                                                                   \
+                                                                                                  \
+        while (index >= c->phase_count) {                                                         \
+            sample_index++;                                                                       \
+            index -= c->phase_count;                                                              \
+        }                                                                                         \
     }                                                                                             \
                                                                                                   \
-    if(update_ctx){                                                                               \
-        c->frac= frac;                                                                            \
-        c->index= index;                                                                          \
+    if (update_ctx) {                                                                             \
+        c->frac = frac;                                                                           \
+        c->index = index;                                                                         \
     }                                                                                             \
                                                                                                   \
     return sample_index;                                                                          \
@@ -104,12 +111,10 @@ av_cold void swri_resample_dsp_arm_init(ResampleContext *c)
 
     switch(c->format) {
     case AV_SAMPLE_FMT_FLTP:
-        if (!c->linear)
-            c->dsp.resample = ff_resample_common_float_neon;
+        c->dsp.resample_common = ff_resample_common_float_neon;
         break;
     case AV_SAMPLE_FMT_S16P:
-        if (!c->linear)
-            c->dsp.resample = ff_resample_common_s16_neon;
+        c->dsp.resample_common = ff_resample_common_s16_neon;
         break;
     }
 }

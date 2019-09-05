@@ -24,15 +24,15 @@
 #ifndef AVCODEC_VDPAU_INTERNAL_H
 #define AVCODEC_VDPAU_INTERNAL_H
 
-#include "config.h"
 #include <stdint.h>
-#if CONFIG_VDPAU
 #include <vdpau/vdpau.h>
-#endif
 
 #include "libavutil/frame.h"
+#include "libavutil/hwcontext.h"
+#include "libavutil/hwcontext_vdpau.h"
 
 #include "avcodec.h"
+#include "vdpau.h"
 
 /** Extract VdpVideoSurface from an AVFrame */
 static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
@@ -40,8 +40,6 @@ static inline uintptr_t ff_vdpau_get_surface_id(AVFrame *pic)
     return (uintptr_t)pic->data[3];
 }
 
-struct vdpau_picture_context;
-#if CONFIG_VDPAU
 union VDPAUPictureInfo {
     VdpPictureInfoH264        h264;
     VdpPictureInfoMPEG1Or2    mpeg;
@@ -53,9 +51,10 @@ union VDPAUPictureInfo {
 #ifdef VDP_DECODER_PROFILE_HEVC_MAIN
     VdpPictureInfoHEVC        hevc;
 #endif
+#ifdef VDP_YCBCR_FORMAT_Y_U_V_444
+    VdpPictureInfoHEVC444     hevc_444;
+#endif
 };
-
-#include "vdpau.h"
 
 typedef struct VDPAUHWContext {
     AVVDPAUContext context;
@@ -114,8 +113,6 @@ struct vdpau_picture_context {
 
 int ff_vdpau_common_init(AVCodecContext *avctx, VdpDecoderProfile profile,
                          int level);
-#endif //CONFIG_VDPAU
-
 int ff_vdpau_common_uninit(AVCodecContext *avctx);
 
 int ff_vdpau_common_start_frame(struct vdpau_picture_context *pic,
@@ -125,5 +122,7 @@ int ff_vdpau_common_end_frame(AVCodecContext *avctx, AVFrame *frame,
 int ff_vdpau_mpeg_end_frame(AVCodecContext *avctx);
 int ff_vdpau_add_buffer(struct vdpau_picture_context *pic, const uint8_t *buf,
                         uint32_t buf_size);
+int ff_vdpau_common_frame_params(AVCodecContext *avctx,
+                                 AVBufferRef *hw_frames_ctx);
 
 #endif /* AVCODEC_VDPAU_INTERNAL_H */

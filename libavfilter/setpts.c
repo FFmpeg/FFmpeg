@@ -57,6 +57,7 @@ static const char *const var_names[] = {
     "RTCSTART",    ///< wallclock (RTC) time at the start of the movie in micro seconds
     "S",           //   Number of samples in the current frame
     "SR",          //   Audio sample rate
+    "FR",          ///< defined only for constant frame-rate video
     NULL
 };
 
@@ -81,6 +82,7 @@ enum var_name {
     VAR_RTCSTART,
     VAR_S,
     VAR_SR,
+    VAR_FR,
     VAR_VARS_NB
 };
 
@@ -127,7 +129,8 @@ static int config_input(AVFilterLink *inlink)
     setpts->var_values[VAR_SAMPLE_RATE] =
         setpts->type == AVMEDIA_TYPE_AUDIO ? inlink->sample_rate : NAN;
 
-    setpts->var_values[VAR_FRAME_RATE] = inlink->frame_rate.num &&
+    setpts->var_values[VAR_FRAME_RATE] =
+    setpts->var_values[VAR_FR] =         inlink->frame_rate.num &&
                                          inlink->frame_rate.den ?
                                             av_q2d(inlink->frame_rate) : NAN;
 
@@ -165,7 +168,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     }
     setpts->var_values[VAR_PTS       ] = TS2D(frame->pts);
     setpts->var_values[VAR_T         ] = TS2T(frame->pts, inlink->time_base);
-    setpts->var_values[VAR_POS       ] = av_frame_get_pkt_pos(frame) == -1 ? NAN : av_frame_get_pkt_pos(frame);
+    setpts->var_values[VAR_POS       ] = frame->pkt_pos == -1 ? NAN : frame->pkt_pos;
     setpts->var_values[VAR_RTCTIME   ] = av_gettime();
 
     if (inlink->type == AVMEDIA_TYPE_VIDEO) {

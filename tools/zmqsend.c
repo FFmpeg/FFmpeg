@@ -52,8 +52,9 @@ static void usage(void)
 int main(int argc, char **argv)
 {
     AVBPrint src;
-    char c, *src_buf, *recv_buf;
-    int recv_buf_size, ret;
+    char *src_buf, *recv_buf;
+    int c;
+    int recv_buf_size, ret = 0;
     void *zmq_ctx, *socket;
     const char *bind_address = "tcp://localhost:5555";
     const char *infilename = NULL;
@@ -154,7 +155,7 @@ int main(int argc, char **argv)
         ret = 1;
         goto end;
     }
-    memcpy(recv_buf, zmq_msg_data(&msg), recv_buf_size);
+    memcpy(recv_buf, zmq_msg_data(&msg), recv_buf_size - 1);
     recv_buf[recv_buf_size-1] = 0;
     printf("%s\n", recv_buf);
     zmq_msg_close(&msg);

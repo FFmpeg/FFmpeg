@@ -23,7 +23,6 @@
 
 SECTION_RODATA
 
-align 16
 ps_mask:  dd 0, ~0, ~0, ~0
 ps_mask2: dd 0, ~0,  0, ~0
 ps_mask3: dd 0,  0,  0, ~0
@@ -145,9 +144,9 @@ SECTION .text
 %macro STORE 4
 %if cpuflag(sse4)
     movss     [%3       ], %1
-    extractps [%3 +   %4], %1, 1
-    extractps [%3 + 2*%4], %1, 2
-    extractps [%3 + 3*%4], %1, 3
+    extractps dword [%3 +   %4], %1, 1
+    extractps dword [%3 + 2*%4], %1, 2
+    extractps dword [%3 + 3*%4], %1, 3
 %else
     movhlps %2, %1
     movss   [%3       ], %1

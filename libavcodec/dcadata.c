@@ -42,18 +42,22 @@ const uint8_t ff_dca_channels[16] = {
     1, 2, 2, 2, 2, 3, 3, 4, 4, 5, 6, 6, 6, 7, 8, 8
 };
 
-const uint8_t ff_dca_bits_per_sample[8] = {
-    16, 16, 20, 20, 0, 24, 24, 0
-};
-
 const uint8_t ff_dca_dmix_primary_nch[8] = {
     1, 2, 2, 3, 3, 4, 4, 0
 };
 
+const uint8_t ff_dca_quant_index_sel_nbits[DCA_CODE_BOOKS] = {
+    1, 2, 2, 2, 2, 3, 3, 3, 3, 3
+};
+
+const uint8_t ff_dca_quant_index_group_size[DCA_CODE_BOOKS] = {
+    1, 3, 3, 3, 3, 7, 7, 7, 7, 7
+};
+
 /* ADPCM data */
 
-/* 16bits signed fractional Q13 binary codes */
-const int16_t ff_dca_adpcm_vb[4096][4] = {
+/* 16 bits signed fractional Q13 binary codes */
+const int16_t ff_dca_adpcm_vb[DCA_ADPCM_VQCODEBOOK_SZ][DCA_ADPCM_COEFFS] = {
     {   9928,  -2618,  -1093, -1263 },
     {  11077,  -2876,  -1747,  -308 },
     {  10503,  -1082,  -1426, -1167 },
@@ -4215,7 +4219,7 @@ const uint32_t ff_dca_quant_levels[32] = {
     2097152, 4194304, 8388608,     0,      0,      0,      0,       0
 };
 
-/* 20bits unsigned fractional binary codes */
+/* 20 bits unsigned fractional binary codes */
 const uint32_t ff_dca_lossy_quant[32] = {
          0, 6710886, 4194304, 3355443, 2474639, 2097152, 1761608, 1426063,
     796918,  461373,  251658,  146801,   79692,   46137,   27263,   16777,
@@ -4223,7 +4227,7 @@ const uint32_t ff_dca_lossy_quant[32] = {
         84,      42,      21,       0,       0,       0,       0,       0
 };
 
-/* 20bits unsigned fractional binary codes */
+/* 20 bits unsigned fractional binary codes */
 const uint32_t ff_dca_lossless_quant[32] = {
          0, 4194304, 2097152, 1384120, 1048576, 696254, 524288, 348127,
     262144,  131072,   65431,   33026,   16450,   8208,   4100,   2049,
@@ -8723,15 +8727,6 @@ const int32_t ff_dca_xll_band_coeff[20] = {
     -1696305,  2825313, -4430736,  6791313,
        41153,  -245210,   785564, -1788164,
      3259333, -5074941,  6928550, -8204883
-};
-
-const uint32_t ff_dca_sampling_freqs[16] = {
-      8000,  16000, 32000, 64000, 128000, 22050,  44100,  88200,
-    176400, 352800, 12000, 24000,  48000, 96000, 192000, 384000,
-};
-
-const uint8_t ff_dca_freq_ranges[16] = {
-    0, 1, 2, 3, 4, 1, 2, 3, 4, 4, 0, 1, 2, 3, 4, 4
 };
 
 const uint16_t ff_dca_avg_g3_freqs[3] = { 16000, 18000, 24000 };

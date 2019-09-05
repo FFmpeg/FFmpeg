@@ -33,14 +33,14 @@ cextern pw_1
 cextern pw_4
 cextern pw_1019
 ; Below are defined in simple_idct10.asm built from selecting idctdsp
-cextern w4_plus_w2
-cextern w4_min_w2
-cextern w4_plus_w6
-cextern w4_min_w6
-cextern w1_plus_w3
-cextern w3_min_w1
-cextern w7_plus_w3
-cextern w3_min_w7
+cextern w4_plus_w2_hi
+cextern w4_min_w2_hi
+cextern w4_plus_w6_hi
+cextern w4_min_w6_hi
+cextern w1_plus_w3_hi
+cextern w3_min_w1_hi
+cextern w7_plus_w3_hi
+cextern w3_min_w7_hi
 cextern w1_plus_w5
 cextern w5_min_w1
 cextern w5_plus_w7
@@ -50,9 +50,11 @@ cextern w7_min_w5
 
 SECTION .text
 
+define_constants _hi
+
 %macro idct_fn 0
-cglobal prores_idct_put_10, 4, 4, 15
-    IDCT_FN    pw_1, 15, pw_88, 18, pw_4, pw_1019, r3
+cglobal prores_idct_put_10, 4, 4, 15, pixels, lsize, block, qmat
+    IDCT_FN    pw_1, 15, pw_88, 18, "put", pw_4, pw_1019, r3
     RET
 %endmacro
 

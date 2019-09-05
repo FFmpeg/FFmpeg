@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016 Neil Birkbeck <neil.birkbeck@gmail.com>
  *
  * This file is part of FFmpeg.
@@ -85,5 +85,44 @@ AVMasteringDisplayMetadata *av_mastering_display_metadata_alloc(void);
  * @return The AVMasteringDisplayMetadata structure to be filled by caller.
  */
 AVMasteringDisplayMetadata *av_mastering_display_metadata_create_side_data(AVFrame *frame);
+
+/**
+ * Content light level needed by to transmit HDR over HDMI (CTA-861.3).
+ *
+ * To be used as payload of a AVFrameSideData or AVPacketSideData with the
+ * appropriate type.
+ *
+ * @note The struct should be allocated with av_content_light_metadata_alloc()
+ *       and its size is not a part of the public ABI.
+ */
+typedef struct AVContentLightMetadata {
+    /**
+     * Max content light level (cd/m^2).
+     */
+    unsigned MaxCLL;
+
+    /**
+     * Max average light level per frame (cd/m^2).
+     */
+    unsigned MaxFALL;
+} AVContentLightMetadata;
+
+/**
+ * Allocate an AVContentLightMetadata structure and set its fields to
+ * default values. The resulting struct can be freed using av_freep().
+ *
+ * @return An AVContentLightMetadata filled with default values or NULL
+ *         on failure.
+ */
+AVContentLightMetadata *av_content_light_metadata_alloc(size_t *size);
+
+/**
+ * Allocate a complete AVContentLightMetadata and add it to the frame.
+ *
+ * @param frame The frame which side data is added to.
+ *
+ * @return The AVContentLightMetadata structure to be filled by caller.
+ */
+AVContentLightMetadata *av_content_light_metadata_create_side_data(AVFrame *frame);
 
 #endif /* AVUTIL_MASTERING_DISPLAY_METADATA_H */

@@ -28,7 +28,7 @@
 #include "avfilter.h"
 #include "internal.h"
 
-typedef struct {
+typedef struct SineContext {
     const AVClass *class;
     double frequency;
     double beep_factor;
@@ -219,7 +219,7 @@ static int request_frame(AVFilterLink *outlink)
     SineContext *sine = outlink->src->priv;
     AVFrame *frame;
     double values[VAR_VARS_NB] = {
-        [VAR_N]   = outlink->frame_count,
+        [VAR_N]   = outlink->frame_count_in,
         [VAR_PTS] = sine->pts,
         [VAR_T]   = sine->pts * av_q2d(outlink->time_base),
         [VAR_TB]  = av_q2d(outlink->time_base),

@@ -27,6 +27,7 @@
 
 #include <stdio.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
 #include "libavutil/intreadwrite.h"
@@ -37,27 +38,26 @@
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
+#include "transpose.h"
 
-typedef enum {
-    TRANSPOSE_PT_TYPE_NONE,
-    TRANSPOSE_PT_TYPE_LANDSCAPE,
-    TRANSPOSE_PT_TYPE_PORTRAIT,
-} PassthroughType;
-
-enum TransposeDir {
-    TRANSPOSE_CCLOCK_FLIP,
-    TRANSPOSE_CLOCK,
-    TRANSPOSE_CCLOCK,
-    TRANSPOSE_CLOCK_FLIP,
-};
+typedef struct TransVtable {
+    void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,
+                          uint8_t *dst, ptrdiff_t dst_linesize);
+    void (*transpose_block)(uint8_t *src, ptrdiff_t src_linesize,
+                            uint8_t *dst, ptrdiff_t dst_linesize,
+                            int w, int h);
+} TransVtable;
 
 typedef struct TransContext {
     const AVClass *class;
     int hsub, vsub;
+    int planes;
     int pixsteps[4];
 
     int passthrough;    ///< PassthroughType, landscape passthrough mode enabled
     int dir;            ///< TransposeDir
+
+    TransVtable vtables[4];
 } TransContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -77,6 +77,109 @@ static int query_formats(AVFilterContext *ctx)
 
 
     return ff_set_common_formats(ctx, pix_fmts);
+}
+
+static inline void transpose_block_8_c(uint8_t *src, ptrdiff_t src_linesize,
+                                       uint8_t *dst, ptrdiff_t dst_linesize,
+                                       int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src++)
+        for (x = 0; x < w; x++)
+            dst[x] = src[x*src_linesize];
+}
+
+static void transpose_8x8_8_c(uint8_t *src, ptrdiff_t src_linesize,
+                              uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_8_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_16_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 2)
+        for (x = 0; x < w; x++)
+            *((uint16_t *)(dst + 2*x)) = *((uint16_t *)(src + x*src_linesize));
+}
+
+static void transpose_8x8_16_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_16_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_24_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize) {
+        for (x = 0; x < w; x++) {
+            int32_t v = AV_RB24(src + x*src_linesize + y*3);
+            AV_WB24(dst + 3*x, v);
+        }
+    }
+}
+
+static void transpose_8x8_24_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_24_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_32_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 4) {
+        for (x = 0; x < w; x++)
+            *((uint32_t *)(dst + 4*x)) = *((uint32_t *)(src + x*src_linesize));
+    }
+}
+
+static void transpose_8x8_32_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_32_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_48_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 6) {
+        for (x = 0; x < w; x++) {
+            int64_t v = AV_RB48(src + x*src_linesize);
+            AV_WB48(dst + 6*x, v);
+        }
+    }
+}
+
+static void transpose_8x8_48_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_48_c(src, src_linesize, dst, dst_linesize, 8, 8);
+}
+
+static inline void transpose_block_64_c(uint8_t *src, ptrdiff_t src_linesize,
+                                        uint8_t *dst, ptrdiff_t dst_linesize,
+                                        int w, int h)
+{
+    int x, y;
+    for (y = 0; y < h; y++, dst += dst_linesize, src += 8)
+        for (x = 0; x < w; x++)
+            *((uint64_t *)(dst + 8*x)) = *((uint64_t *)(src + x*src_linesize));
+}
+
+static void transpose_8x8_64_c(uint8_t *src, ptrdiff_t src_linesize,
+                               uint8_t *dst, ptrdiff_t dst_linesize)
+{
+    transpose_block_64_c(src, src_linesize, dst, dst_linesize, 8, 8);
 }
 
 static int config_props_output(AVFilterLink *outlink)
@@ -106,6 +209,10 @@ static int config_props_output(AVFilterLink *outlink)
 
     s->hsub = desc_in->log2_chroma_w;
     s->vsub = desc_in->log2_chroma_h;
+    s->planes = av_pix_fmt_count_planes(outlink->format);
+
+    av_assert0(desc_in->nb_components == desc_out->nb_components);
+
 
     av_image_fill_max_pixsteps(s->pixsteps, NULL, desc_out);
 
@@ -117,6 +224,24 @@ static int config_props_output(AVFilterLink *outlink)
                                                 inlink->sample_aspect_ratio);
     else
         outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+
+    for (int i = 0; i < 4; i++) {
+        TransVtable *v = &s->vtables[i];
+        switch (s->pixsteps[i]) {
+        case 1: v->transpose_block = transpose_block_8_c;
+                v->transpose_8x8   = transpose_8x8_8_c;  break;
+        case 2: v->transpose_block = transpose_block_16_c;
+                v->transpose_8x8   = transpose_8x8_16_c; break;
+        case 3: v->transpose_block = transpose_block_24_c;
+                v->transpose_8x8   = transpose_8x8_24_c; break;
+        case 4: v->transpose_block = transpose_block_32_c;
+                v->transpose_8x8   = transpose_8x8_32_c; break;
+        case 6: v->transpose_block = transpose_block_48_c;
+                v->transpose_8x8   = transpose_8x8_48_c; break;
+        case 8: v->transpose_block = transpose_block_64_c;
+                v->transpose_8x8   = transpose_8x8_64_c; break;
+        }
+    }
 
     av_log(ctx, AV_LOG_VERBOSE,
            "w:%d h:%d dir:%d -> w:%d h:%d rotation:%s vflip:%d\n",
@@ -148,7 +273,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
     AVFrame *in = td->in;
     int plane;
 
-    for (plane = 0; out->data[plane]; plane++) {
+    for (plane = 0; plane < s->planes; plane++) {
         int hsub    = plane == 1 || plane == 2 ? s->hsub : 0;
         int vsub    = plane == 1 || plane == 2 ? s->vsub : 0;
         int pixstep = s->pixsteps[plane];
@@ -160,6 +285,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
         uint8_t *dst, *src;
         int dstlinesize, srclinesize;
         int x, y;
+        TransVtable *v = &s->vtables[plane];
 
         dstlinesize = out->linesize[plane];
         dst         = out->data[plane] + start * dstlinesize;
@@ -176,49 +302,25 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr,
             dstlinesize *= -1;
         }
 
-        switch (pixstep) {
-        case 1:
-            for (y = start; y < end; y++, dst += dstlinesize)
-                for (x = 0; x < outw; x++)
-                    dst[x] = src[x * srclinesize + y];
-            break;
-        case 2:
-            for (y = start; y < end; y++, dst += dstlinesize) {
-                for (x = 0; x < outw; x++)
-                    *((uint16_t *)(dst + 2 * x)) =
-                        *((uint16_t *)(src + x * srclinesize + y * 2));
+        for (y = start; y < end - 7; y += 8) {
+            for (x = 0; x < outw - 7; x += 8) {
+                v->transpose_8x8(src + x * srclinesize + y * pixstep,
+                                 srclinesize,
+                                 dst + (y - start) * dstlinesize + x * pixstep,
+                                 dstlinesize);
             }
-            break;
-        case 3:
-            for (y = start; y < end; y++, dst += dstlinesize) {
-                for (x = 0; x < outw; x++) {
-                    int32_t v = AV_RB24(src + x * srclinesize + y * 3);
-                    AV_WB24(dst + 3 * x, v);
-                }
-            }
-            break;
-        case 4:
-            for (y = start; y < end; y++, dst += dstlinesize) {
-                for (x = 0; x < outw; x++)
-                    *((uint32_t *)(dst + 4 * x)) =
-                        *((uint32_t *)(src + x * srclinesize + y * 4));
-            }
-            break;
-        case 6:
-            for (y = start; y < end; y++, dst += dstlinesize) {
-                for (x = 0; x < outw; x++) {
-                    int64_t v = AV_RB48(src + x * srclinesize + y*6);
-                    AV_WB48(dst + 6*x, v);
-                }
-            }
-            break;
-        case 8:
-            for (y = start; y < end; y++, dst += dstlinesize) {
-                for (x = 0; x < outw; x++)
-                    *((uint64_t *)(dst + 8*x)) = *((uint64_t *)(src + x * srclinesize + y*8));
-            }
-            break;
+            if (outw - x > 0 && end - y > 0)
+                v->transpose_block(src + x * srclinesize + y * pixstep,
+                                   srclinesize,
+                                   dst + (y - start) * dstlinesize + x * pixstep,
+                                   dstlinesize, outw - x, end - y);
         }
+
+        if (end - y > 0)
+            v->transpose_block(src + 0 * srclinesize + y * pixstep,
+                               srclinesize,
+                               dst + (y - start) * dstlinesize + 0 * pixstep,
+                               dstlinesize, outw, end - y);
     }
 
     return 0;
@@ -250,7 +352,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
 
     td.in = in, td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
@@ -260,10 +362,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 static const AVOption transpose_options[] = {
     { "dir", "set transpose direction", OFFSET(dir), AV_OPT_TYPE_INT, { .i64 = TRANSPOSE_CCLOCK_FLIP }, 0, 7, FLAGS, "dir" },
-        { "cclock_flip", "rotate counter-clockwise with vertical flip", 0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .unit = "dir" },
-        { "clock",       "rotate clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .unit = "dir" },
-        { "cclock",      "rotate counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .unit = "dir" },
-        { "clock_flip",  "rotate clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .unit = "dir" },
+        { "cclock_flip", "rotate counter-clockwise with vertical flip", 0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK_FLIP }, .flags=FLAGS, .unit = "dir" },
+        { "clock",       "rotate clockwise",                            0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK       }, .flags=FLAGS, .unit = "dir" },
+        { "cclock",      "rotate counter-clockwise",                    0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CCLOCK      }, .flags=FLAGS, .unit = "dir" },
+        { "clock_flip",  "rotate clockwise with vertical flip",         0, AV_OPT_TYPE_CONST, { .i64 = TRANSPOSE_CLOCK_FLIP  }, .flags=FLAGS, .unit = "dir" },
 
     { "passthrough", "do not apply transposition if the input matches the specified geometry",
       OFFSET(passthrough), AV_OPT_TYPE_INT, {.i64=TRANSPOSE_PT_TYPE_NONE},  0, INT_MAX, FLAGS, "passthrough" },

@@ -28,13 +28,13 @@
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TGQ
  */
 
-#include "avcodec.h"
 #define BITSTREAM_READER_LE
-#include "get_bits.h"
-#include "bytestream.h"
-#include "idctdsp.h"
 #include "aandcttab.h"
+#include "avcodec.h"
+#include "bytestream.h"
 #include "eaidct.h"
+#include "get_bits.h"
+#include "idctdsp.h"
 #include "internal.h"
 
 typedef struct TgqContext {
@@ -107,7 +107,7 @@ static void tgq_decode_block(TgqContext *s, int16_t block[64], GetBitContext *gb
 static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], AVFrame *frame,
                             int mb_x, int mb_y)
 {
-    int linesize = frame->linesize[0];
+    ptrdiff_t linesize = frame->linesize[0];
     uint8_t *dest_y  = frame->data[0] + (mb_y * 16 * linesize)           + mb_x * 16;
     uint8_t *dest_cb = frame->data[1] + (mb_y * 8  * frame->linesize[1]) + mb_x * 8;
     uint8_t *dest_cr = frame->data[2] + (mb_y * 8  * frame->linesize[2]) + mb_x * 8;
@@ -123,7 +123,7 @@ static void tgq_idct_put_mb(TgqContext *s, int16_t (*block)[64], AVFrame *frame,
 }
 
 static inline void tgq_dconly(TgqContext *s, unsigned char *dst,
-                              int dst_stride, int dc)
+                              ptrdiff_t dst_stride, int dc)
 {
     int level = av_clip_uint8((dc*s->qtable[0] + 2056) >> 4);
     int j;
@@ -134,7 +134,7 @@ static inline void tgq_dconly(TgqContext *s, unsigned char *dst,
 static void tgq_idct_put_mb_dconly(TgqContext *s, AVFrame *frame,
                                    int mb_x, int mb_y, const int8_t *dc)
 {
-    int linesize = frame->linesize[0];
+    ptrdiff_t linesize = frame->linesize[0];
     uint8_t *dest_y  = frame->data[0] + (mb_y * 16 * linesize)             + mb_x * 16;
     uint8_t *dest_cb = frame->data[1] + (mb_y * 8  * frame->linesize[1]) + mb_x * 8;
     uint8_t *dest_cr = frame->data[2] + (mb_y * 8  * frame->linesize[2]) + mb_x * 8;

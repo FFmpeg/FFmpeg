@@ -45,10 +45,11 @@ typedef struct AudioDSPContext {
      */
     void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
                               int32_t max, unsigned int len);
-    /* assume len is a multiple of 8, and arrays are 16-byte aligned */
+    /* assume len is a multiple of 16, and arrays are 16-byte aligned */
     void (*vector_clipf)(float *dst /* align 16 */,
                          const float *src /* align 16 */,
-                         float min, float max, int len /* align 16 */);
+                         int len /* align 16 */,
+                         float min, float max);
 } AudioDSPContext;
 
 void ff_audiodsp_init(AudioDSPContext *c);

@@ -30,7 +30,7 @@
  * rebuilt frame (not the reference), and since there is no coordinate system
  * they contain exactly as many pixel as the keyframe.
  *
- * Supports: BGRA, BGR24, RGB555
+ * Supports: BGR0, BGR24, RGB555
  */
 
 #include <stdint.h>
@@ -47,7 +47,7 @@
 typedef struct ScreenpressoContext {
     AVFrame *current;
 
-    /* zlib interation */
+    /* zlib interaction */
     uint8_t *inflated_buf;
     uLongf inflated_size;
 } ScreenpressoContext;
@@ -129,7 +129,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
         avctx->pix_fmt = AV_PIX_FMT_BGR24;
         break;
     case 4:
-        avctx->pix_fmt = AV_PIX_FMT_BGRA;
+        avctx->pix_fmt = AV_PIX_FMT_BGR0;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid bits per pixel value (%d)\n",
@@ -145,7 +145,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_UNKNOWN;
     }
 
-    ret = ff_reget_buffer(avctx, ctx->current);
+    ret = ff_reget_buffer(avctx, ctx->current, 0);
     if (ret < 0)
         return ret;
 
@@ -179,7 +179,7 @@ static int screenpresso_decode_frame(AVCodecContext *avctx, void *data,
     }
     *got_frame = 1;
 
-    return 0;
+    return avpkt->size;
 }
 
 AVCodec ff_screenpresso_decoder = {

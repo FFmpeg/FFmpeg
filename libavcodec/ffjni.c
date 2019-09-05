@@ -31,25 +31,42 @@
 #include "jni.h"
 #include "ffjni.h"
 
-static JavaVM *java_vm = NULL;
+static JavaVM *java_vm;
+static pthread_key_t current_env;
+static pthread_once_t once = PTHREAD_ONCE_INIT;
 static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
-JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx)
+static void jni_detach_env(void *data)
+{
+    if (java_vm) {
+        (*java_vm)->DetachCurrentThread(java_vm);
+    }
+}
+
+static void jni_create_pthread_key(void)
+{
+    pthread_key_create(&current_env, jni_detach_env);
+}
+
+JNIEnv *ff_jni_get_env(void *log_ctx)
 {
     int ret = 0;
     JNIEnv *env = NULL;
-
-    *attached = 0;
 
     pthread_mutex_lock(&lock);
     if (java_vm == NULL) {
         java_vm = av_jni_get_java_vm(log_ctx);
     }
-    pthread_mutex_unlock(&lock);
 
     if (!java_vm) {
         av_log(log_ctx, AV_LOG_ERROR, "No Java virtual machine has been registered\n");
-        return NULL;
+        goto done;
+    }
+
+    pthread_once(&once, jni_create_pthread_key);
+
+    if ((env = pthread_getspecific(current_env)) != NULL) {
+        goto done;
     }
 
     ret = (*java_vm)->GetEnv(java_vm, (void **)&env, JNI_VERSION_1_6);
@@ -59,7 +76,7 @@ JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx)
             av_log(log_ctx, AV_LOG_ERROR, "Failed to attach the JNI environment to the current thread\n");
             env = NULL;
         } else {
-            *attached = 1;
+            pthread_setspecific(current_env, env);
         }
         break;
     case JNI_OK:
@@ -68,21 +85,13 @@ JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx)
         av_log(log_ctx, AV_LOG_ERROR, "The specified JNI version is not supported\n");
         break;
     default:
-        av_log(log_ctx, AV_LOG_ERROR, "Failed to get the JNI environment attached to this thread");
+        av_log(log_ctx, AV_LOG_ERROR, "Failed to get the JNI environment attached to this thread\n");
         break;
     }
 
+done:
+    pthread_mutex_unlock(&lock);
     return env;
-}
-
-int ff_jni_detach_env(void *log_ctx)
-{
-    if (java_vm == NULL) {
-        av_log(log_ctx, AV_LOG_ERROR, "No Java virtual machine has been registered\n");
-        return AVERROR(EINVAL);
-    }
-
-    return (*java_vm)->DetachCurrentThread(java_vm);
 }
 
 char *ff_jni_jstring_to_utf_chars(JNIEnv *env, jstring string, void *log_ctx)
@@ -215,7 +224,7 @@ int ff_jni_exception_get_summary(JNIEnv *env, jthrowable exception, char **error
     } else if (!name && message) {
         av_bprintf(&bp, "Exception: %s", message);
     } else {
-        av_log(log_ctx, AV_LOG_WARNING, "Could not retreive exception name and message\n");
+        av_log(log_ctx, AV_LOG_WARNING, "Could not retrieve exception name and message\n");
         av_bprintf(&bp, "Exception occurred");
     }
 
@@ -294,6 +303,11 @@ int ff_jni_init_jfields(JNIEnv *env, void *jfields, const struct FFJniField *jfi
 
             last_clazz = *(jclass*)((uint8_t*)jfields + jfields_mapping[i].offset) =
                     global ? (*env)->NewGlobalRef(env, clazz) : clazz;
+
+            if (global) {
+                (*env)->DeleteLocalRef(env, clazz);
+            }
+
         } else {
 
             if (!last_clazz) {
@@ -343,6 +357,8 @@ int ff_jni_init_jfields(JNIEnv *env, void *jfields, const struct FFJniField *jfi
                 ret = AVERROR(EINVAL);
                 goto done;
             }
+
+            ret = 0;
         }
     }
 

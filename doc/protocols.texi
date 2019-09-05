@@ -5,6 +5,11 @@ The libavformat library provides some generic global options, which
 can be set on all the protocols. In addition each protocol may support
 so-called private options, which are specific for that component.
 
+Options may be set by specifying -@var{option} @var{value} in the
+FFmpeg tools, or by setting the value explicitly in the
+@code{AVFormatContext} options or using the @file{libavutil/opt.h} API
+for programmatic use.
+
 The list of supported options follows:
 
 @table @option
@@ -188,6 +193,20 @@ Set I/O operation maximum block size, in bytes. Default value is
 @code{INT_MAX}, which results in not limiting the requested block size.
 Setting this value reasonably low improves user termination request reaction
 time, which is valuable for files on slow medium.
+
+@item follow
+If set to 1, the protocol will retry reading at the end of the file, allowing
+reading files that still are being written. In order for this to terminate,
+you either need to use the rw_timeout option, or use the interrupt callback
+(for API users).
+
+@item seekable
+Controls if seekability is advertised on the file. 0 means non-seekable, -1
+means auto (seekable for normal files, non-seekable for named pipes).
+
+Many demuxers handle seekable and non-seekable resources differently,
+overriding this might speed up opening certain files at the cost of losing some
+features (e.g. accurate seeking).
 @end table
 
 @section ftp
@@ -223,17 +242,6 @@ NOTE: Protocol can be used as output, but it is recommended to not do
 it, unless special care is taken (tests, customized server configuration
 etc.). Different FTP servers behave in different way during seek
 operation. ff* tools may produce incomplete content due to server limitations.
-
-This protocol accepts the following options:
-
-@table @option
-@item follow
-If set to 1, the protocol will retry reading at the end of the file, allowing
-reading files that still are being written. In order for this to terminate,
-you either need to use the rw_timeout option, or use the interrupt callback
-(for API users).
-
-@end table
 
 @section gopher
 
@@ -276,7 +284,7 @@ value is -1.
 If set to 1 use chunked Transfer-Encoding for posts, default is 1.
 
 @item content_type
-Set a specific content type for the POST messages.
+Set a specific content type for the POST messages or for listen mode.
 
 @item http_proxy
 set HTTP proxy to tunnel through e.g. http://example.com:1234
@@ -291,10 +299,15 @@ Use persistent connections if set to 1, default is 0.
 @item post_data
 Set custom HTTP post data.
 
-@item user-agent
+@item referer
+Set the Referer header. Include 'Referer: URL' header in HTTP request.
+
 @item user_agent
 Override the User-Agent header. If not specified the protocol will use a
 string describing the libavformat build. ("Lavf/<version>")
+
+@item user-agent
+This is a deprecated option, you can use user_agent instead it.
 
 @item timeout
 Set timeout in microseconds of socket I/O operations used by the underlying low level
@@ -313,6 +326,9 @@ Sets the maximum delay in seconds after which to give up reconnecting
 
 @item mime_type
 Export the MIME type.
+
+@item http_version
+Exports the HTTP response version number. Usually "1.0" or "1.1".
 
 @item icy
 If set to 1 request ICY (SHOUTcast) metadata from the server. If the server
@@ -355,8 +371,8 @@ autodetection in the future.
 If set to 1 enables experimental HTTP server. This can be used to send data when
 used as an output option, or read data from a client with HTTP POST when used as
 an input option.
-If set to 2 enables experimental mutli-client HTTP server. This is not yet implemented
-in ffmpeg.c or ffserver.c and thus must not be used as a command line option.
+If set to 2 enables experimental multi-client HTTP server. This is not yet implemented
+in ffmpeg.c and thus must not be used as a command line option.
 @example
 # Server side (sending):
 ffmpeg -i somefile.ogg -c copy -listen 1 -f ogg http://@var{server}:@var{port}
@@ -376,6 +392,11 @@ ffmpeg -i somefile.ogg -chunked_post 0 -c copy -f ogg http://@var{server}:@var{p
 # Client can also be done with wget:
 wget --post-file=somefile.ogg http://@var{server}:@var{port}
 @end example
+
+@item send_expect_100
+Send an Expect: 100-continue header for POST. If set to 1 it will send, if set
+to 0 it won't, if set to -1 it will try to send if it is applicable. Default
+value is -1.
 
 @end table
 
@@ -512,6 +533,41 @@ time, which is valuable if data transmission is slow.
 
 Note that some formats (typically MOV), require the output protocol to
 be seekable, so they will fail with the pipe output protocol.
+
+@section prompeg
+
+Pro-MPEG Code of Practice #3 Release 2 FEC protocol.
+
+The Pro-MPEG CoP#3 FEC is a 2D parity-check forward error correction mechanism
+for MPEG-2 Transport Streams sent over RTP.
+
+This protocol must be used in conjunction with the @code{rtp_mpegts} muxer and
+the @code{rtp} protocol.
+
+The required syntax is:
+@example
+-f rtp_mpegts -fec prompeg=@var{option}=@var{val}... rtp://@var{hostname}:@var{port}
+@end example
+
+The destination UDP ports are @code{port + 2} for the column FEC stream
+and @code{port + 4} for the row FEC stream.
+
+This protocol accepts the following options:
+@table @option
+
+@item l=@var{n}
+The number of columns (4-20, LxD <= 100)
+
+@item d=@var{n}
+The number of rows (4-20, LxD <= 100)
+
+@end table
+
+Example usage:
+
+@example
+-f rtp_mpegts -fec prompeg=l=8:d=4 rtp://@var{hostname}:@var{port}
+@end example
 
 @section rtmp
 
@@ -695,7 +751,7 @@ This protocol accepts the following options.
 
 @table @option
 @item timeout
-Set timeout in miliseconds of socket I/O operations used by the underlying
+Set timeout in milliseconds of socket I/O operations used by the underlying
 low level operation. By default it is set to -1, which means that the timeout
 is not specified.
 
@@ -1107,6 +1163,265 @@ If set to any value, listen for an incoming connection. Outgoing connection is d
 Set the maximum number of streams. By default no limit is set.
 @end table
 
+@section srt
+
+Haivision Secure Reliable Transport Protocol via libsrt.
+
+The supported syntax for a SRT URL is:
+@example
+srt://@var{hostname}:@var{port}[?@var{options}]
+@end example
+
+@var{options} contains a list of &-separated options of the form
+@var{key}=@var{val}.
+
+or
+
+@example
+@var{options} srt://@var{hostname}:@var{port}
+@end example
+
+@var{options} contains a list of '-@var{key} @var{val}'
+options.
+
+This protocol accepts the following options.
+
+@table @option
+@item connect_timeout
+Connection timeout; SRT cannot connect for RTT > 1500 msec
+(2 handshake exchanges) with the default connect timeout of
+3 seconds. This option applies to the caller and rendezvous
+connection modes. The connect timeout is 10 times the value
+set for the rendezvous mode (which can be used as a
+workaround for this connection problem with earlier versions).
+
+@item ffs=@var{bytes}
+Flight Flag Size (Window Size), in bytes. FFS is actually an
+internal parameter and you should set it to not less than
+@option{recv_buffer_size} and @option{mss}. The default value
+is relatively large, therefore unless you set a very large receiver buffer,
+you do not need to change this option. Default value is 25600.
+
+@item inputbw=@var{bytes/seconds}
+Sender nominal input rate, in bytes per seconds. Used along with
+@option{oheadbw}, when @option{maxbw} is set to relative (0), to
+calculate maximum sending rate when recovery packets are sent
+along with the main media stream:
+@option{inputbw} * (100 + @option{oheadbw}) / 100
+if @option{inputbw} is not set while @option{maxbw} is set to
+relative (0), the actual input rate is evaluated inside
+the library. Default value is 0.
+
+@item iptos=@var{tos}
+IP Type of Service. Applies to sender only. Default value is 0xB8.
+
+@item ipttl=@var{ttl}
+IP Time To Live. Applies to sender only. Default value is 64.
+
+@item latency
+Timestamp-based Packet Delivery Delay.
+Used to absorb bursts of missed packet retransmissions.
+This flag sets both @option{rcvlatency} and @option{peerlatency}
+to the same value. Note that prior to version 1.3.0
+this is the only flag to set the latency, however
+this is effectively equivalent to setting @option{peerlatency},
+when side is sender and @option{rcvlatency}
+when side is receiver, and the bidirectional stream
+sending is not supported.
+
+@item listen_timeout
+Set socket listen timeout.
+
+@item maxbw=@var{bytes/seconds}
+Maximum sending bandwidth, in bytes per seconds.
+-1 infinite (CSRTCC limit is 30mbps)
+0 relative to input rate (see @option{inputbw})
+>0 absolute limit value
+Default value is 0 (relative)
+
+@item mode=@var{caller|listener|rendezvous}
+Connection mode.
+@option{caller} opens client connection.
+@option{listener} starts server to listen for incoming connections.
+@option{rendezvous} use Rendez-Vous connection mode.
+Default value is caller.
+
+@item mss=@var{bytes}
+Maximum Segment Size, in bytes. Used for buffer allocation
+and rate calculation using a packet counter assuming fully
+filled packets. The smallest MSS between the peers is
+used. This is 1500 by default in the overall internet.
+This is the maximum size of the UDP packet and can be
+only decreased, unless you have some unusual dedicated
+network settings. Default value is 1500.
+
+@item nakreport=@var{1|0}
+If set to 1, Receiver will send `UMSG_LOSSREPORT` messages
+periodically until a lost packet is retransmitted or
+intentionally dropped. Default value is 1.
+
+@item oheadbw=@var{percents}
+Recovery bandwidth overhead above input rate, in percents.
+See @option{inputbw}. Default value is 25%.
+
+@item passphrase=@var{string}
+HaiCrypt Encryption/Decryption Passphrase string, length
+from 10 to 79 characters. The passphrase is the shared
+secret between the sender and the receiver. It is used
+to generate the Key Encrypting Key using PBKDF2
+(Password-Based Key Derivation Function). It is used
+only if @option{pbkeylen} is non-zero. It is used on
+the receiver only if the received data is encrypted.
+The configured passphrase cannot be recovered (write-only).
+
+@item payload_size=@var{bytes}
+Sets the maximum declared size of a packet transferred
+during the single call to the sending function in Live
+mode. Use 0 if this value isn't used (which is default in
+file mode).
+Default is -1 (automatic), which typically means MPEG-TS;
+if you are going to use SRT
+to send any different kind of payload, such as, for example,
+wrapping a live stream in very small frames, then you can
+use a bigger maximum frame size, though not greater than
+1456 bytes.
+
+@item pkt_size=@var{bytes}
+Alias for @samp{payload_size}.
+
+@item peerlatency
+The latency value (as described in @option{rcvlatency}) that is
+set by the sender side as a minimum value for the receiver.
+
+@item pbkeylen=@var{bytes}
+Sender encryption key length, in bytes.
+Only can be set to 0, 16, 24 and 32.
+Enable sender encryption if not 0.
+Not required on receiver (set to 0),
+key size obtained from sender in HaiCrypt handshake.
+Default value is 0.
+
+@item rcvlatency
+The time that should elapse since the moment when the
+packet was sent and the moment when it's delivered to
+the receiver application in the receiving function.
+This time should be a buffer time large enough to cover
+the time spent for sending, unexpectedly extended RTT
+time, and the time needed to retransmit the lost UDP
+packet. The effective latency value will be the maximum
+of this options' value and the value of @option{peerlatency}
+set by the peer side. Before version 1.3.0 this option
+is only available as @option{latency}.
+
+@item recv_buffer_size=@var{bytes}
+Set UDP receive buffer size, expressed in bytes.
+
+@item send_buffer_size=@var{bytes}
+Set UDP send buffer size, expressed in bytes.
+
+@item rw_timeout
+Set raise error timeout for read/write optations.
+
+This option is only relevant in read mode:
+if no data arrived in more than this time
+interval, raise error.
+
+@item tlpktdrop=@var{1|0}
+Too-late Packet Drop. When enabled on receiver, it skips
+missing packets that have not been delivered in time and
+delivers the following packets to the application when
+their time-to-play has come. It also sends a fake ACK to
+the sender. When enabled on sender and enabled on the
+receiving peer, the sender drops the older packets that
+have no chance of being delivered in time. It was
+automatically enabled in the sender if the receiver
+supports it.
+
+@item sndbuf=@var{bytes}
+Set send buffer size, expressed in bytes.
+
+@item rcvbuf=@var{bytes}
+Set receive buffer size, expressed in bytes.
+
+Receive buffer must not be greater than @option{ffs}.
+
+@item lossmaxttl=@var{packets}
+The value up to which the Reorder Tolerance may grow. When
+Reorder Tolerance is > 0, then packet loss report is delayed
+until that number of packets come in. Reorder Tolerance
+increases every time a "belated" packet has come, but it
+wasn't due to retransmission (that is, when UDP packets tend
+to come out of order), with the difference between the latest
+sequence and this packet's sequence, and not more than the
+value of this option. By default it's 0, which means that this
+mechanism is turned off, and the loss report is always sent
+immediately upon experiencing a "gap" in sequences.
+
+@item minversion
+The minimum SRT version that is required from the peer. A connection
+to a peer that does not satisfy the minimum version requirement
+will be rejected.
+
+The version format in hex is 0xXXYYZZ for x.y.z in human readable
+form.
+
+@item streamid=@var{string}
+A string limited to 512 characters that can be set on the socket prior
+to connecting. This stream ID will be able to be retrieved by the
+listener side from the socket that is returned from srt_accept and
+was connected by a socket with that set stream ID. SRT does not enforce
+any special interpretation of the contents of this string.
+This option doesn’t make sense in Rendezvous connection; the result
+might be that simply one side will override the value from the other
+side and it’s the matter of luck which one would win
+
+@item smoother=@var{live|file}
+The type of Smoother used for the transmission for that socket, which
+is responsible for the transmission and congestion control. The Smoother
+type must be exactly the same on both connecting parties, otherwise
+the connection is rejected.
+
+@item messageapi=@var{1|0}
+When set, this socket uses the Message API, otherwise it uses Buffer
+API. Note that in live mode (see @option{transtype}) there’s only
+message API available. In File mode you can chose to use one of two modes:
+
+Stream API (default, when this option is false). In this mode you may
+send as many data as you wish with one sending instruction, or even use
+dedicated functions that read directly from a file. The internal facility
+will take care of any speed and congestion control. When receiving, you
+can also receive as many data as desired, the data not extracted will be
+waiting for the next call. There is no boundary between data portions in
+the Stream mode.
+
+Message API. In this mode your single sending instruction passes exactly
+one piece of data that has boundaries (a message). Contrary to Live mode,
+this message may span across multiple UDP packets and the only size
+limitation is that it shall fit as a whole in the sending buffer. The
+receiver shall use as large buffer as necessary to receive the message,
+otherwise the message will not be given up. When the message is not
+complete (not all packets received or there was a packet loss) it will
+not be given up.
+
+@item transtype=@var{live|file}
+Sets the transmission type for the socket, in particular, setting this
+option sets multiple other parameters to their default values as required
+for a particular transmission type.
+
+live: Set options as for live transmission. In this mode, you should
+send by one sending instruction only so many data that fit in one UDP packet,
+and limited to the value defined first in @option{payload_size} (1316 is
+default in this mode). There is no speed control in this mode, only the
+bandwidth control, if configured, in order to not exceed the bandwidth with
+the overhead transmission (retransmitted and control packets).
+
+file: Set options as for non-live transmission. See @option{messageapi}
+for further explanations
+
+@end table
+
+For more information see: @url{https://github.com/Haivision/srt}.
+
 @section srtp
 
 Secure Real-time Transport Protocol.
@@ -1144,6 +1459,7 @@ Accepted options:
 Start offset of the extracted segment, in bytes.
 @item end
 End offset of the extracted segment, in bytes.
+If set to 0, extract till end of file.
 @end table
 
 Examples:
@@ -1157,6 +1473,20 @@ subfile,,start,153391104,end,268142592,,:/media/dvd/VIDEO_TS/VTS_08_1.VOB
 Play an AVI file directly from a TAR archive:
 @example
 subfile,,start,183241728,end,366490624,,:archive.tar
+@end example
+
+Play a MPEG-TS file from start offset till end:
+@example
+subfile,,start,32815239,end,0,,:video.ts
+@end example
+
+@section tee
+
+Writes the output to multiple protocols. The individual outputs are separated
+by |
+
+@example
+tee:file://path/to/local/this.avi|file://path/to/local/that.avi
 @end example
 
 @section tcp
@@ -1191,6 +1521,12 @@ Set receive buffer size, expressed bytes.
 
 @item send_buffer_size=@var{bytes}
 Set send buffer size, expressed bytes.
+
+@item tcp_nodelay=@var{1|0}
+Set TCP_NODELAY to disable Nagle's algorithm. Default value is 0.
+
+@item tcp_mss=@var{bytes}
+Set maximum segment size for outgoing TCP packets, expressed in bytes.
 @end table
 
 The following example shows how to setup a listening TCP connection
@@ -1226,7 +1562,7 @@ If enabled, try to verify the peer that we are communicating with.
 Note, if using OpenSSL, this currently only makes sure that the
 peer certificate is signed by one of the root certificates in the CA
 database, but it does not validate that the certificate actually
-matches the host name we are trying to connect to. (With GnuTLS,
+matches the host name we are trying to connect to. (With other backends,
 the host name is validated as well.)
 
 This is disabled by default since it requires a CA database to be
@@ -1285,13 +1621,20 @@ Set the UDP maximum socket buffer size in bytes. This is used to set either
 the receive or send buffer size, depending on what the socket is used for.
 Default is 64KB.  See also @var{fifo_size}.
 
+@item bitrate=@var{bitrate}
+If set to nonzero, the output will have the specified constant bitrate if the
+input has enough packets to sustain it.
+
+@item burst_bits=@var{bits}
+When using @var{bitrate} this specifies the maximum number of bits in
+packet bursts.
+
 @item localport=@var{port}
 Override the local UDP port to bind with.
 
 @item localaddr=@var{addr}
-Choose the local IP address. This is useful e.g. if sending multicast
-and the host has multiple interfaces, where the user can choose
-which interface to send on by specifying the IP address of that interface.
+Local IP address of a network interface used for sending packets or joining
+multicast groups.
 
 @item pkt_size=@var{size}
 Set the size in bytes of UDP packets.
@@ -1314,12 +1657,12 @@ For receiving, this gives the benefit of only receiving packets from
 the specified peer address/port.
 
 @item sources=@var{address}[,@var{address}]
-Only receive packets sent to the multicast group from one of the
-specified sender IP addresses.
+Only receive packets sent from the specified addresses. In case of multicast,
+also subscribe to multicast traffic coming from these addresses only.
 
 @item block=@var{address}[,@var{address}]
-Ignore packets sent to the multicast group from the specified
-sender IP addresses.
+Ignore packets sent from the specified addresses. In case of multicast, also
+exclude the source addresses in the multicast subscription.
 
 @item fifo_size=@var{units}
 Set the UDP receiving circular buffer size, expressed as a number of
@@ -1384,5 +1727,52 @@ Timeout in ms.
 @item listen
 Create the Unix socket in listening mode.
 @end table
+
+@section zmq
+
+ZeroMQ asynchronous messaging using the libzmq library.
+
+This library supports unicast streaming to multiple clients without relying on
+an external server.
+
+The required syntax for streaming or connecting to a stream is:
+@example
+zmq:tcp://ip-address:port
+@end example
+
+Example:
+Create a localhost stream on port 5555:
+@example
+ffmpeg -re -i input -f mpegts zmq:tcp://127.0.0.1:5555
+@end example
+
+Multiple clients may connect to the stream using:
+@example
+ffplay zmq:tcp://127.0.0.1:5555
+@end example
+
+Streaming to multiple clients is implemented using a ZeroMQ Pub-Sub pattern.
+The server side binds to a port and publishes data. Clients connect to the
+server (via IP address/port) and subscribe to the stream. The order in which
+the server and client start generally does not matter.
+
+ffmpeg must be compiled with the --enable-libzmq option to support
+this protocol.
+
+Options can be set on the @command{ffmpeg}/@command{ffplay} command
+line. The following options are supported:
+
+@table @option
+
+@item pkt_size
+Forces the maximum packet size for sending/receiving data. The default value is
+32,768 bytes. On the server side, this sets the maximum size of sent packets
+via ZeroMQ. On the clients, it sets an internal buffer size for receiving
+packets. Note that pkt_size on the clients should be equal to or greater than
+pkt_size on the server. Otherwise the received message may be truncated causing
+decoding errors.
+
+@end table
+
 
 @c man end PROTOCOLS

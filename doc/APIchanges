@@ -2,71 +2,614 @@ Never assume the API of libav* to be stable unless at least 1 month has passed
 since the last major version increase or the API was added.
 
 The last version increases were:
-libavcodec:    2015-08-28
-libavdevice:   2015-08-28
-libavfilter:   2015-08-28
-libavformat:   2015-08-28
-libavresample: 2015-08-28
-libpostproc:   2015-08-28
-libswresample: 2015-08-28
-libswscale:    2015-08-28
-libavutil:     2015-08-28
+libavcodec:    2017-10-21
+libavdevice:   2017-10-21
+libavfilter:   2017-10-21
+libavformat:   2017-10-21
+libavresample: 2017-10-21
+libpostproc:   2017-10-21
+libswresample: 2017-10-21
+libswscale:    2017-10-21
+libavutil:     2017-10-21
 
 
 API changes, most recent first:
 
-2016-04-27 - xxxxxxx - lavu 55.23.100 - log.h
+2019-09-04 - 2a9d461abc - lavu 56.35.100 - hwcontext_videotoolbox.h
+  Add av_map_videotoolbox_format_from_pixfmt2() for full range pixfmt
+
+2019-09-01 - xxxxxxxxxx - lavu 56.34.100 - pixfmt.h
+  Add EBU Tech. 3213-E AVColorPrimaries value
+
+2019-08-xx - xxxxxxxxxx - lavf 58.31.101 - avio.h
+  4K limit removed from avio_printf.
+
+2019-08-xx - xxxxxxxxxx - lavf 58.31.100 - avio.h
+  Add avio_print_string_array and avio_print.
+
+2019-07-27 - xxxxxxxxxx - lavu 56.33.100 - tx.h
+  Add AV_TX_DOUBLE_FFT and AV_TX_DOUBLE_MDCT
+
+-------- 8< --------- FFmpeg 4.2 was cut here -------- 8< ---------
+
+2019-06-21 - a30e44098a - lavu 56.30.100 - frame.h
+  Add FF_DECODE_ERROR_DECODE_SLICES
+
+2019-06-14 - edfced8c04 - lavu 56.29.100 - frame.h
+  Add FF_DECODE_ERROR_CONCEALMENT_ACTIVE
+
+2019-05-15 - b79b29ddb1 - lavu 56.28.100 - tx.h
+  Add av_tx_init(), av_tx_uninit() and related definitions.
+
+2019-04-20 - 3153a6502a - lavc 58.52.100 - avcodec.h
+  Add AV_CODEC_FLAG_DROPCHANGED to allow avcodec_receive_frame to drop
+  frames whose parameters differ from first decoded frame in stream.
+
+2019-04-12 - abfeba9724 - lavf 58.27.102
+  Rename hls,applehttp demuxer to hls
+
+2019-01-27 - 5bcefceec8 - lavc 58.46.100 - avcodec.h
+  Add discard_damaged_percentage
+
+2019-01-08 - 1ef4828276 - lavu 56.26.100 - frame.h
+  Add AV_FRAME_DATA_REGIONS_OF_INTEREST
+
+2018-12-21 - 2744d6b364 - lavu 56.25.100 - hdr_dynamic_metadata.h
+  Add AV_FRAME_DATA_DYNAMIC_HDR_PLUS enum value, av_dynamic_hdr_plus_alloc(),
+  av_dynamic_hdr_plus_create_side_data() functions, and related structs.
+
+-------- 8< --------- FFmpeg 4.1 was cut here -------- 8< ---------
+
+2018-10-27 - 718044dc19 - lavu 56.21.100 - pixdesc.h
+  Add av_read_image_line2(), av_write_image_line2()
+
+2018-10-24 - f9d4126f28 - lavu 56.20.100 - frame.h
+  Add AV_FRAME_DATA_S12M_TIMECODE
+
+2018-10-11 - f6d48b618a - lavc 58.33.100 - mediacodec.h
+  Add av_mediacodec_render_buffer_at_time().
+
+2018-09-09 - 35498c124a - lavc 58.29.100 - avcodec.h
+  Add AV_PKT_DATA_AFD
+
+2018-08-16 - b33f5299a5 - lavc 58.23.100 - avcodec.h
+  Add av_bsf_flush().
+
+2018-05-18 - 2b2f2f65f3 - lavf 58.15.100 - avformat.h
+  Add pmt_version field to AVProgram
+
+2018-05-17 - 5dfeb7f081 - lavf 58.14.100 - avformat.h
+  Add AV_DISPOSITION_STILL_IMAGE
+
+2018-05-10 - c855683427 - lavu 56.18.101 - hwcontext_cuda.h
+  Add AVCUDADeviceContext.stream.
+
+2018-04-30 - 56b081da57 - lavu 56.18.100 - pixdesc.h
+  Add AV_PIX_FMT_FLAG_ALPHA to AV_PIX_FMT_PAL8.
+
+2018-04-26 - 5be0410cb3 - lavu 56.17.100 - opt.h
+  Add AV_OPT_FLAG_DEPRECATED.
+
+2018-04-26 - 71fa82bed6 - lavu 56.16.100 - threadmessage.h
+  Add av_thread_message_queue_nb_elems().
+
+-------- 8< --------- FFmpeg 4.0 was cut here -------- 8< ---------
+
+2018-04-03 - d6fc031caf - lavu 56.13.100 - pixdesc.h
+  Deprecate AV_PIX_FMT_FLAG_PSEUDOPAL and make allocating a pseudo palette
+  optional for API users (see AV_PIX_FMT_FLAG_PSEUDOPAL doxygen for details).
+
+2018-04-01 - 860086ee16 - lavc 58.17.100 - avcodec.h
+  Add av_packet_make_refcounted().
+
+2018-04-01 - f1805d160d - lavfi 7.14.100 - avfilter.h
+  Deprecate use of avfilter_register(), avfilter_register_all(),
+  avfilter_next(). Add av_filter_iterate().
+
+2018-03-25 - b7d0d912ef - lavc 58.16.100 - avcodec.h
+  Add FF_SUB_CHARENC_MODE_IGNORE.
+
+2018-03-23 - db2a7c947e - lavu 56.12.100 - encryption_info.h
+  Add AVEncryptionInitInfo and AVEncryptionInfo structures to hold new side-data
+  for encryption info.
+
+2018-03-21 - f14ca60001 - lavc 58.15.100 - avcodec.h
+  Add av_packet_make_writable().
+
+2018-03-18 - 4b86ac27a0 - lavu 56.11.100 - frame.h
+  Add AV_FRAME_DATA_QP_TABLE_PROPERTIES and AV_FRAME_DATA_QP_TABLE_DATA.
+
+2018-03-15 - e0e72539cf - lavu 56.10.100 - opt.h
+  Add AV_OPT_FLAG_BSF_PARAM
+
+2018-03-07 - 950170bd3b - lavu 56.9.100 - crc.h
+  Add AV_CRC_8_EBU crc variant.
+
+2018-03-07 - 2a0eb86857 - lavc 58.14.100 - mediacodec.h
+  Change the default behavior of avcodec_flush() on mediacodec
+  video decoders. To restore the previous behavior, use the new
+  delay_flush=1 option.
+
+2018-03-01 - 6731f60598 - lavu 56.8.100 - frame.h
+  Add av_frame_new_side_data_from_buf().
+
+2018-02-15 - 8a8d0b319a
+  Change av_ripemd_update(), av_murmur3_update() and av_hash_update() length
+  parameter type to size_t at next major bump.
+
+2018-02-12 - bcab11a1a2 - lavfi 7.12.100 - avfilter.h
+  Add AVFilterContext.extra_hw_frames.
+
+2018-02-12 - d23fff0d8a - lavc 58.11.100 - avcodec.h
+  Add AVCodecContext.extra_hw_frames.
+
+2018-02-06 - 0694d87024 - lavf 58.9.100 - avformat.h
+  Deprecate use of av_register_input_format(), av_register_output_format(),
+  av_register_all(), av_iformat_next(), av_oformat_next().
+  Add av_demuxer_iterate(), and av_muxer_iterate().
+
+2018-02-06 - 36c85d6e77 - lavc 58.10.100 - avcodec.h
+  Deprecate use of avcodec_register(), avcodec_register_all(),
+  av_codec_next(), av_register_codec_parser(), and av_parser_next().
+  Add av_codec_iterate() and av_parser_iterate().
+
+2018-02-04 - ff46124b0d - lavf 58.8.100 - avformat.h
+  Deprecate the current names of the RTSP "timeout", "stimeout", "user-agent"
+  options. Introduce "listen_timeout" as replacement for the current "timeout"
+  option, and "user_agent" as replacement for "user-agent". Once the deprecation
+  is over, the old "timeout" option will be removed, and "stimeout" will be
+  renamed to "stimeout" (the "timeout" option will essentially change semantics).
+
+2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+  Deprecate AVFormatContext filename field which had limited length, use the
+  new dynamically allocated url field instead.
+
+2018-01-28 - ea3672b7d6 - lavf 58.7.100 - avformat.h
+  Add url field to AVFormatContext and add ff_format_set_url helper function.
+
+2018-01-27 - 6194d7e564 - lavf 58.6.100 - avformat.h
+  Add AVFMTCTX_UNSEEKABLE (for HLS demuxer).
+
+2018-01-23 - 9f07cf7c00 - lavu 56.9.100 - aes_ctr.h
+  Add method to set the 16-byte IV.
+
+2018-01-16 - 631c56a8e4 - lavf 58.5.100 - avformat.h
+  Explicitly make avformat_network_init() and avformat_network_deinit() optional.
+  If these are not called, network initialization and deinitialization is
+  automatic, and unlike in older versions, fully supported, unless libavformat
+  is linked to ancient GnuTLS and OpenSSL.
+
+2018-01-16 - 6512ff72f9 - lavf 58.4.100 - avformat.h
+  Deprecate AVStream.recommended_encoder_configuration. It was useful only for
+  FFserver, which has been removed.
+
+2018-01-05 - 798dcf2432 - lavfi 7.11.101 - avfilter.h
+  Deprecate avfilter_link_get_channels(). Use av_buffersink_get_channels().
+
+2017-01-04 - c29038f304 - lavr 4.0.0 - avresample.h
+  Deprecate the entire library. Merged years ago to provide compatibility
+  with Libav, it remained unmaintained by the FFmpeg project and duplicated
+  functionality provided by libswresample.
+
+  In order to improve consistency and reduce attack surface, it has been deprecated.
+  Users of this library are asked to migrate to libswresample, which, as well as
+  providing more functionality, is faster and has higher accuracy.
+
+2017-12-26 - a04c2c707d - lavc 58.9.100 - avcodec.h
+  Deprecate av_lockmgr_register(). You need to build FFmpeg with threading
+  support enabled to get basic thread-safety (which is the default build
+  configuration).
+
+2017-12-24 - 8b81eabe57 - lavu 56.7.100 - cpu.h
+  AVX-512 flags added.
+
+2017-12-16 - 8bf4e6d3ce - lavc 58.8.100 - avcodec.h
+  The MediaCodec decoders now support AVCodecContext.hw_device_ctx.
+
+2017-12-16 - e4d9f05ca7 - lavu 56.6.100 - hwcontext.h hwcontext_mediacodec.h
+  Add AV_HWDEVICE_TYPE_MEDIACODEC and a new installed header with
+  MediaCodec-specific hwcontext definitions.
+
+2017-12-14 - b945fed629 - lavc 58.7.100 - avcodec.h
+  Add AV_CODEC_CAP_HARDWARE, AV_CODEC_CAP_HYBRID, and AVCodec.wrapper_name,
+  and mark all AVCodecs accordingly.
+
+2017-11-29 - d268094f88 - lavu 56.4.100 / 56.7.0 - stereo3d.h
+  Add view field to AVStereo3D structure and AVStereo3DView enum.
+
+2017-11-26 - 3a71bcc213 - lavc 58.6.100 - avcodec.h
+  Add const to AVCodecContext.hwaccel.
+
+2017-11-26 - 3536a3efb9 - lavc 58.5.100 - avcodec.h
+  Deprecate user visibility of the AVHWAccel structure and the functions
+  av_register_hwaccel() and av_hwaccel_next().
+
+2017-11-26 - 24cc0a53e9 - lavc 58.4.100 - avcodec.h
+  Add AVCodecHWConfig and avcodec_get_hw_config().
+
+2017-11-22 - 3650cb2dfa - lavu 56.3.100 - opencl.h
+  Remove experimental OpenCL API (av_opencl_*).
+
+2017-11-22 - b25d8ef0a7 - lavu 56.2.100 - hwcontext.h hwcontext_opencl.h
+  Add AV_HWDEVICE_TYPE_OPENCL and a new installed header with
+  OpenCL-specific hwcontext definitions.
+
+2017-11-22 - a050f56c09 - lavu 56.1.100 - pixfmt.h
+  Add AV_PIX_FMT_OPENCL.
+
+2017-11-11 - 48e4eda11d - lavc 58.3.100 - avcodec.h
+  Add avcodec_get_hw_frames_parameters().
+
+-------- 8< --------- FFmpeg 3.4 was cut here -------- 8< ---------
+
+2017-09-28 - b6cf66ae1c - lavc 57.106.104 - avcodec.h
+  Add AV_PKT_DATA_A53_CC packet side data, to export closed captions
+
+2017-09-27 - 7aa6b8a68f - lavu 55.77.101 / lavu 55.31.1 - frame.h
+  Allow passing the value of 0 (meaning "automatic") as the required alignment
+  to av_frame_get_buffer().
+
+2017-09-27 - 522f877086 - lavu 55.77.100 / lavu 55.31.0 - cpu.h
+  Add av_cpu_max_align() for querying maximum required data alignment.
+
+2017-09-26 - b1cf151c4d - lavc 57.106.102 - avcodec.h
+  Deprecate AVCodecContext.refcounted_frames. This was useful for deprecated
+  API only (avcodec_decode_video2/avcodec_decode_audio4). The new decode APIs
+  (avcodec_send_packet/avcodec_receive_frame) always work with reference
+  counted frames.
+
+2017-09-21 - 6f15f1cdc8 - lavu 55.76.100 / 56.6.0 - pixdesc.h
+  Add av_color_range_from_name(), av_color_primaries_from_name(),
+  av_color_transfer_from_name(), av_color_space_from_name(), and
+  av_chroma_location_from_name().
+
+2017-09-13 - 82342cead1 - lavc 57.106.100 - avcodec.h
+  Add AV_PKT_FLAG_TRUSTED.
+
+2017-09-13 - 9cb23cd9fe - lavu 55.75.100 - hwcontext.h hwcontext_drm.h
+  Add AV_HWDEVICE_TYPE_DRM and implementation.
+
+2017-09-08 - 5ba2aef6ec - lavfi 6.103.100 - buffersrc.h
+  Add av_buffersrc_close().
+
+2017-09-04 - 6cadbb16e9 - lavc 57.105.100 - avcodec.h
+  Add AV_HWACCEL_CODEC_CAP_EXPERIMENTAL, replacing the deprecated
+  HWACCEL_CODEC_CAP_EXPERIMENTAL flag.
+
+2017-09-01 - 5d76674756 - lavf 57.81.100 - avio.h
+  Add avio_read_partial().
+
+2017-09-01 - xxxxxxx - lavf 57.80.100 / 57.11.0 - avio.h
+  Add avio_context_free(). From now on it must be used for freeing AVIOContext.
+
+2017-08-08 - 1460408703 - lavu 55.74.100 - pixdesc.h
+  Add AV_PIX_FMT_FLAG_FLOAT pixel format flag.
+
+2017-08-08 - 463b81de2b - lavu 55.72.100 - imgutils.h
+  Add av_image_fill_black().
+
+2017-08-08 - caa12027ba - lavu 55.71.100 - frame.h
+  Add av_frame_apply_cropping().
+
+2017-07-25 - 24de4fddca - lavu 55.69.100 - frame.h
+  Add AV_FRAME_DATA_ICC_PROFILE side data type.
+
+2017-06-27 - 70143a3954 - lavc 57.100.100 - avcodec.h
+  DXVA2 and D3D11 hardware accelerated decoding now supports the new hwaccel API,
+  which can create the decoder context and allocate hardware frame automatically.
+  See AVCodecContext.hw_device_ctx and AVCodecContext.hw_frames_ctx. For D3D11,
+  the new AV_PIX_FMT_D3D11 pixfmt must be used with the new API.
+
+2017-06-27 - 3303511f33 - lavu 56.67.100 - hwcontext.h
+  Add AV_HWDEVICE_TYPE_D3D11VA and AV_PIX_FMT_D3D11.
+
+2017-06-24 - 09891c5391 - lavf 57.75.100 - avio.h
+  Add AVIO_DATA_MARKER_FLUSH_POINT to signal preferred flush points to aviobuf.
+
+2017-06-14 - d59c6a3aeb - lavu 55.66.100 - hwcontext.h
+  av_hwframe_ctx_create_derived() now takes some AV_HWFRAME_MAP_* combination
+  as its flags argument (which was previously unused).
+
+2017-06-14 - 49ae8a5e87 - lavc 57.99.100 - avcodec.h
+  Add AV_HWACCEL_FLAG_ALLOW_PROFILE_MISMATCH.
+
+2017-06-14 - 0b1794a43e - lavu 55.65.100 - hwcontext.h
+  Add AV_HWDEVICE_TYPE_NONE, av_hwdevice_find_type_by_name(),
+  av_hwdevice_get_type_name() and av_hwdevice_iterate_types().
+
+2017-06-14 - b22172f6f3 - lavu 55.64.100 - hwcontext.h
+  Add av_hwdevice_ctx_create_derived().
+
+2017-05-15 - 532b23f079 - lavc 57.96.100 - avcodec.h
+  VideoToolbox hardware-accelerated decoding now supports the new hwaccel API,
+  which can create the decoder context and allocate hardware frames automatically.
+  See AVCodecContext.hw_device_ctx and AVCodecContext.hw_frames_ctx.
+
+2017-05-15 - 532b23f079 - lavu 57.63.100 - hwcontext.h
+  Add AV_HWDEVICE_TYPE_VIDEOTOOLBOX and implementation.
+
+2017-05-08 - f089e02fa2 - lavc 57.95.100 / 57.31.0 - avcodec.h
+  Add AVCodecContext.apply_cropping to control whether cropping
+  is handled by libavcodec or the caller.
+
+2017-05-08 - a47bd5d77e - lavu 55.62.100 / 55.30.0 - frame.h
+  Add AVFrame.crop_left/right/top/bottom fields for attaching cropping
+  information to video frames.
+
+2017-xx-xx - xxxxxxxxxx
+  Change av_sha_update(), av_sha512_update() and av_md5_sum()/av_md5_update() length
+  parameter type to size_t at next major bump.
+
+2017-05-05 - c0f17a905f - lavc 57.94.100 - avcodec.h
+  The cuvid decoders now support AVCodecContext.hw_device_ctx, which removes
+  the requirement to set an incomplete AVCodecContext.hw_frames_ctx only to
+  set the Cuda device handle.
+
+2017-04-11 - 8378466507 - lavu 55.61.100 - avstring.h
+  Add av_strireplace().
+
+2016-04-06 - 157e57a181 - lavc 57.92.100 - avcodec.h
+  Add AV_PKT_DATA_CONTENT_LIGHT_LEVEL packet side data.
+
+2016-04-06 - b378f5bd64 - lavu 55.60.100 - mastering_display_metadata.h
+  Add AV_FRAME_DATA_CONTENT_LIGHT_LEVEL value, av_content_light_metadata_alloc()
+  and av_content_light_metadata_create_side_data() API, and AVContentLightMetadata
+  type to export content light level video properties.
+
+2017-03-31 - 9033e8723c - lavu 55.57.100 - spherical.h
+  Add av_spherical_projection_name().
+  Add av_spherical_from_name().
+
+2017-03-30 - 4cda23f1f1 - lavu 55.53.100 / 55.27.0 - hwcontext.h
+  Add av_hwframe_map() and associated AV_HWFRAME_MAP_* flags.
+  Add av_hwframe_ctx_create_derived().
+
+2017-03-29 - bfdcdd6d82 - lavu 55.52.100 - avutil.h
+  add av_fourcc_make_string() function and av_fourcc2str() macro to replace
+  av_get_codec_tag_string() from lavc.
+
+2017-03-27 - ddef3d902f - lavf 57.68.100 - avformat.h
+  Deprecate that demuxers export the stream rotation angle in AVStream.metadata
+  (via an entry named "rotate"). Use av_stream_get_side_data() with
+  AV_PKT_DATA_DISPLAYMATRIX instead, and read the rotation angle with
+  av_display_rotation_get(). The same is done for muxing. Instead of adding a
+  "rotate" entry to AVStream.metadata, AV_PKT_DATA_DISPLAYMATRIX side data has
+  to be added to the AVStream.
+
+2017-03-23 - 7e4ba776a2 - lavc 57.85.101 - avcodec.h
+  vdpau hardware accelerated decoding now supports the new hwaccel API, which
+  can create the decoder context and allocate hardware frame automatically.
+  See AVCodecContext.hw_device_ctx and AVCodecContext.hw_frames_ctx.
+
+2017-03-23 - 156bd8278f - lavc 57.85.100 - avcodec.h
+  Add AVCodecContext.hwaccel_flags field. This will control some hwaccels at
+  a later point.
+
+2017-03-21 - fc9f14c7de - lavf 57.67.100 / 57.08.0 - avio.h
+  Add AVIO_SEEKABLE_TIME flag.
+
+2017-03-21 - d682ae70b4 - lavf 57.66.105, lavc 57.83.101 - avformat.h, avcodec.h
+  Deprecate AVFMT_FLAG_KEEP_SIDE_DATA. It will be ignored after the next major
+  bump, and libavformat will behave as if it were always set.
+  Deprecate av_packet_merge_side_data() and av_packet_split_side_data().
+
+2016-03-20 - 8200b16a9c - lavu 55.50.100 / 55.21.0 - imgutils.h
+  Add av_image_copy_uc_from(), a version of av_image_copy() for copying
+  from GPU mapped memory.
+
+2017-03-20 - 9c2436e - lavu 55.49.100 - pixdesc.h
+  Add AV_PIX_FMT_FLAG_BAYER pixel format flag.
+
+2017-03-18 - 3796fb2692 - lavfi 6.77.100 - avfilter.h
+  Deprecate AVFilterGraph.resample_lavr_opts
+  It's never been used by avfilter nor passed to anything.
+
+2017-02-10 - 1b7ffddb3a - lavu 55.48.100 / 55.33.0 - spherical.h
+  Add AV_SPHERICAL_EQUIRECTANGULAR_TILE, av_spherical_tile_bounds(),
+  and projection-specific properties (bound_left, bound_top, bound_right,
+  bound_bottom, padding) to AVSphericalMapping.
+
+2017-03-02 - ade7c1a232 - lavc 57.81.104 - videotoolbox.h
+  AVVideotoolboxContext.cv_pix_fmt_type can now be set to 0 to output the
+  native decoder format. (The default value is not changed.)
+
+2017-03-02 - 554bc4eea8 - lavu 55.47.101, lavc 57.81.102, lavf 57.66.103
+  Remove requirement to use AVOption or accessors to access certain fields
+  in AVFrame, AVCodecContext, and AVFormatContext that were previously
+  documented as "no direct access" allowed.
+
+2017-02-13 - c1a5fca06f - lavc 57.80.100 - avcodec.h
+  Add AVCodecContext.hw_device_ctx.
+
+2017-02-11 - e3af49b14b - lavu 55.47.100 - frame.h
+  Add AVFrame.opaque_ref.
+
+2017-01-31 - 2eab48177d - lavu 55.46.100 / 55.20.0 - cpu.h
+  Add AV_CPU_FLAG_SSSE3SLOW.
+
+2017-01-24 - c4618f842a - lavu 55.45.100 - channel_layout.h
+  Add av_get_extended_channel_layout()
+
+2017-01-22 - 76c5a69e26 - lavu 55.44.100 - lfg.h
+  Add av_lfg_init_from_data().
+
+2017-01-17 - 2a4a8653b6 - lavc 57.74.100 - vaapi.h
+  Deprecate struct vaapi_context and the vaapi.h installed header.
+  Callers should set AVCodecContext.hw_frames_ctx instead.
+
+2017-01-12 - dbe9dbed31 - lavfi 6.69.100 - buffersink.h
+  Add av_buffersink_get_*() functions.
+
+2017-01-06 - 9488032e10 - lavf 57.62.100 - avio.h
+  Add avio_get_dyn_buf()
+
+2016-12-10 - f542b152aa - lavu 55.43.100 - imgutils.h
+  Add av_image_check_size2()
+
+2016-12-07 - e7a6f8c972 - lavc 57.67.100 / 57.29.0 - avcodec.h
+  Add AV_PKT_DATA_SPHERICAL packet side data to export AVSphericalMapping
+  information from containers.
+
+2016-12-07 - 8f58ecc344 - lavu 55.42.100 / 55.30.0 - spherical.h
+  Add AV_FRAME_DATA_SPHERICAL value, av_spherical_alloc() API and
+  AVSphericalMapping type to export and describe spherical video properties.
+
+2016-11-18 - 2ab50647ff - lavf 57.58.100 - avformat.h
+  Add av_stream_add_side_data().
+
+2016-11-13 - 775a8477b7 - lavu 55.39.100 - hwcontext_vaapi.h
+  Add AV_VAAPI_DRIVER_QUIRK_ATTRIB_MEMTYPE.
+
+2016-11-13 - a8d51bb424 - lavu 55.38.100 - hwcontext_vaapi.h
+  Add driver quirks field to VAAPI-specific hwdevice and enum with
+  members AV_VAAPI_DRIVER_QUIRK_* to represent its values.
+
+2016-11-10 - 638b216d4f - lavu 55.36.100 - pixfmt.h
+  Add AV_PIX_FMT_GRAY12(LE/BE).
+
+-------- 8< --------- FFmpeg 3.2 was cut here -------- 8< ---------
+
+2016-10-24 - 73ead47 - lavf 57.55.100 - avformat.h
+  Add AV_DISPOSITION_TIMED_THUMBNAILS
+
+2016-10-24 - a246fef - lavf 57.54.100 - avformat.h
+  Add avformat_init_output() and AVSTREAM_INIT_IN_ macros
+
+2016-10-22 - f5495c9 - lavu 55.33.100 - avassert.h
+  Add av_assert0_fpu() / av_assert2_fpu()
+
+2016-10-07 - 3f9137c / 32c8359 - lavc 57.61.100 / 57.24.0 - avcodec.h
+  Decoders now export the frame timestamp as AVFrame.pts. It was
+  previously exported as AVFrame.pkt_pts, which is now deprecated.
+
+  Note: When decoding, AVFrame.pts uses the stream/packet timebase,
+  and not the codec timebase.
+
+2016-09-28 - eba0414 - lavu 55.32.100 / 55.16.0 - hwcontext.h hwcontext_qsv.h
+  Add AV_HWDEVICE_TYPE_QSV and a new installed header with QSV-specific
+  hwcontext definitions.
+
+2016-09-26 - 32c25f0 - lavc 57.59.100 / 57.23.0 - avcodec.h
+  AVCodecContext.hw_frames_ctx now may be used by decoders.
+
+2016-09-27 - f0b6f72 - lavf 57.51.100 - avformat.h
+  Add av_stream_get_codec_timebase()
+
+2016-09-27 - 23c0779 - lswr 2.2.100 - swresample.h
+  Add swr_build_matrix().
+
+2016-09-23 - 30d3e36 - lavc 57.58.100 - avcodec.h
+  Add AV_CODEC_CAP_AVOID_PROBING codec capability flag.
+
+2016-09-14 - ae1dd0c - lavf 57.49.100 - avformat.h
+  Add avformat_transfer_internal_stream_timing_info helper to help with stream
+  copy.
+
+2016-08-29 - 4493390 - lavfi 6.58.100 - avfilter.h
+  Add AVFilterContext.nb_threads.
+
+2016-08-15 - c3c4c72 - lavc 57.53.100 - avcodec.h
+  Add trailing_padding to AVCodecContext to match the corresponding
+  field in AVCodecParameters.
+
+2016-08-15 - b746ed7 - lavc 57.52.100 - avcodec.h
+  Add a new API for chained BSF filters and passthrough (null) BSF --
+  av_bsf_list_alloc(), av_bsf_list_free(), av_bsf_list_append(),
+  av_bsf_list_append2(), av_bsf_list_finalize(), av_bsf_list_parse_str()
+  and av_bsf_get_null_filter().
+
+2016-08-04 - 82a33c8 - lavf 57.46.100 - avformat.h
+  Add av_get_frame_filename2()
+
+2016-07-09 - 775389f / 90f469a - lavc 57.50.100 / 57.20.0 - avcodec.h
+  Add FF_PROFILE_H264_MULTIVIEW_HIGH and FF_PROFILE_H264_STEREO_HIGH.
+
+2016-06-30 - c1c7e0ab - lavf 57.41.100 - avformat.h
+  Moved codecpar field from AVStream to the end of the struct, so that
+  the following private fields are in the same location as in FFmpeg 3.0 (lavf 57.25.100).
+
+2016-06-30 - 042fb69d - lavu 55.28.100 - frame.h
+  Moved hw_frames_ctx field from AVFrame to the end of the struct, so that
+  the following private fields are in the same location as in FFmpeg 3.0 (lavu 55.17.103).
+
+2016-06-29 - 1a751455 - lavfi 6.47.100 - avfilter.h
+  Fix accidental ABI breakage in AVFilterContext.
+  ABI was broken in 8688d3a, lavfi 6.42.100 and released as ffmpeg 3.1.
+
+  Because of this, ffmpeg and ffplay built against lavfi>=6.42.100 will not be
+  compatible with lavfi>=6.47.100. Potentially also affects other users of
+  libavfilter if they are using one of the affected fields.
+
+-------- 8< --------- FFmpeg 3.1 was cut here -------- 8< ---------
+
+2016-06-26 - 481f320 / 1c9e861 - lavu 55.27.100 / 55.13.0 - hwcontext.h
+  Add av_hwdevice_ctx_create().
+
+2016-06-26 - b95534b / e47b8bb - lavc 57.48.101 / 57.19.1 - avcodec.h
+  Adjust values for JPEG 2000 profiles.
+
+2016-06-23 - 5d75e46 / db7968b - lavf 57.40.100 / 57.7.0 - avio.h
+  Add AVIODataMarkerType, write_data_type, ignore_boundary_point and
+  avio_write_marker.
+
+2016-06-23 - abb3cc4 / 0c4468d - lavu 55.26.100 / 55.12.0 - opt.h
+  Add av_stereo3d_type_name() and av_stereo3d_from_name().
+
+2016-06-22 - 3689efe / c46db38 - lavu 55.25.100 / 55.11.0 - hwcontext_dxva2.h
+  Add new installed header with DXVA2-specific hwcontext definitions.
+
+2016-04-27 - fb91871 - lavu 55.23.100 - log.h
   Add a new function av_log_format_line2() which returns number of bytes
   written to the target buffer.
 
-2016-xx-xx - xxxxxxx - lavc 57.37.100 - avcodec.h
+2016-04-21 - 7fc329e - lavc 57.37.100 - avcodec.h
   Add a new audio/video encoding and decoding API with decoupled input
   and output -- avcodec_send_packet(), avcodec_receive_frame(),
   avcodec_send_frame() and avcodec_receive_packet().
 
-2016-xx-xx - xxxxxxx - lavc 57.15.0 - avcodec.h
+2016-04-17 - af9cac1 / 33d1898 - lavc 57.35.100 / 57.15.0 - avcodec.h
   Add a new bitstream filtering API working with AVPackets.
   Deprecate the old bitstream filtering API.
 
-2016-xx-xx - xxxxxxx - lavfi 6.42.0 - avfilter.h
+2016-04-14 - 8688d3a / 07a844f - lavfi 6.42.100 / 6.3.0 - avfilter.h
   Add AVFilterContext.hw_device_ctx.
 
-2016-xx-xx - xxxxxxx - lavu 55.22.0 - hwcontext_vaapi.h
+2016-04-14 - 28abb21 / 551c677 - lavu 55.22.100 / 55.9.0 - hwcontext_vaapi.h
   Add new installed header with VAAPI-specific hwcontext definitions.
 
-2016-xx-xx - xxxxxxx - lavu 55.21.0 - hwcontext.h
+2016-04-14 - afccfaf / b1f01e8 - lavu 55.21.100 / 55.7.0 - hwcontext.h
   Add AVHWFramesConstraints and associated API.
 
-2016-04-11 - xxxxxxx - lavf 57.33.0 - avformat.h
+2016-04-11 - 6f69f7a / 9200514 - lavf 57.33.100 / 57.5.0 - avformat.h
   Add AVStream.codecpar, deprecate AVStream.codec.
 
-2016-04-02 - xxxxxxx - lavu 55.20.100 - base64.h
+2016-04-02 - e8a9b64 - lavu 55.20.100 - base64.h
   Add AV_BASE64_DECODE_SIZE(x) macro.
 
-2016-xx-xx - lavc 57.33.0 - avcodec.h
-  xxxxxxx - Add AVCodecParameters and its related API.
-  xxxxxxx - Add av_get_audio_frame_duration2().
+2016-xx-xx - lavc 57.33.100 / 57.14.0 - avcodec.h
+  f9b1cf1 / 998e1b8 - Add AVCodecParameters and its related API.
+  e6053b3 / a806834 - Add av_get_audio_frame_duration2().
 
-2016-03-11 - xxxxxxx - lavf/lavc 57.28.101
+2016-03-11 - 6d8ab35 - lavf/lavc 57.28.101
   Add requirement to bitstream filtering API that returned packets with
   size == 0 and side_data_elems == 0 are to be skipped by the caller.
 
-2016-XX-XX - xxxxxxx - lavf 57.28.100
+2016-03-04 - 9362973 - lavf 57.28.100
   Add protocol blacklisting API
 
-2016-02-28 - xxxxxxx - lavc 57.27.101
+2016-02-28 - 4dd4d53 - lavc 57.27.101
   Validate AVFrame returned by get_buffer2 to have required
   planes not NULL and unused planes set to NULL as crashes
   and buffer overflow are possible with certain streams if
   that is not the case.
 
-2016-xx-xx - xxxxxxx - lavc 57.27.100 - avcodec.h
+2016-02-26 - 30e7685 - lavc 57.27.100 - avcodec.h
   "flags2" decoding option now allows the flag "ass_ro_flush_noop" preventing
   the reset of the ASS ReadOrder field on flush. This affects the content of
   AVSubtitles.rects[N]->ass when "sub_text_format" is set to "ass" (see
   previous entry).
 
-2016-xx-xx - xxxxxxx - lavc 57.26.100 - avcodec.h
+2016-02-26 - 2941282 - lavc 57.26.100 - avcodec.h
   Add a "sub_text_format" subtitles decoding option allowing the values "ass"
   (recommended) and "ass_with_timings" (not recommended, deprecated, default).
   The default value for this option will change to "ass" at the next major
@@ -83,28 +626,28 @@ API changes, most recent first:
   known as "the Matroska form". The timing information (start time, duration)
   can be found in the AVSubtitles fields.
 
-2016-xx-xx - lavc 57.25.0 - avcodec.h
+2016-02-24 - 7e49cdd / 7b3214d0 - lavc 57.25.100 / 57.13.0 - avcodec.h
   Add AVCodecContext.hw_frames_ctx.
 
-2016-xx-xx - lavfi 6.36.0 - avfilter.h
-  xxxxxxx avfilter.h - Add AVFilterLink.hw_frames_ctx.
-  xxxxxxx buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
+2016-02-24 - 1042402 / b3dd30d - lavfi 6.36.100 / 6.2.0 - avfilter.h
+  avfilter.h - Add AVFilterLink.hw_frames_ctx.
+  buffersrc.h - Add AVBufferSrcParameters and functions for handling it.
 
-2016-02-xx - xxxxxxx - lavc 57.25.100
+2016-02-23 - 14f7a3d - lavc 57.25.100
   Add AV_PKT_DATA_MPEGTS_STREAM_ID for exporting the MPEGTS stream ID.
 
-2016-xx-xx - lavu 55.18.100
-  xxxxxxx audio_fifo.h - Add av_audio_fifo_peek_at().
+2016-02-18 - 08acab8 - lavu 55.18.100 - audio_fifo.h
+  Add av_audio_fifo_peek_at().
 
-2016-xx-xx - lavu 55.18.0
-  xxxxxxx buffer.h - Add av_buffer_pool_init2().
-  xxxxxxx hwcontext.h - Add a new installed header hwcontext.h with a new API
+2016-xx-xx - lavu 55.18.100 / 55.6.0
+  26abd51 / 721a4ef buffer.h - Add av_buffer_pool_init2().
+  1a70878 / 89923e4 hwcontext.h - Add a new installed header hwcontext.h with a new API
                         for handling hwaccel frames.
-  xxxxxxx hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
+  6992276 / ad884d1 hwcontext_cuda.h - Add a new installed header hwcontext_cuda.h with
                              CUDA-specific hwcontext definitions.
-  xxxxxxx hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
+  d779d8d / a001ce3 hwcontext_vdpau.h - Add a new installed header hwcontext_vdpau.h with
                               VDPAU-specific hwcontext definitions.
-  xxxxxxx pixfmt.h - Add AV_PIX_FMT_CUDA.
+  63c3e35 / 7bc780c pixfmt.h - Add AV_PIX_FMT_CUDA.
 
 -------- 8< --------- FFmpeg 3.0 was cut here -------- 8< ---------
 
@@ -424,7 +967,7 @@ API changes, most recent first:
   Add av_opt_get_dict_val/set_dict_val with AV_OPT_TYPE_DICT to support
   dictionary types being set as options.
 
-2014-08-13 - afbd4b8 - lavf 56.01.0 - avformat.h
+2014-08-13 - afbd4b7e09 - lavf 56.01.0 - avformat.h
   Add AVFormatContext.event_flags and AVStream.event_flags for signaling to
   the user when events happen in the file/stream.
 
@@ -441,7 +984,7 @@ API changes, most recent first:
 2014-08-08 - 5c3c671 - lavf 55.53.100 - avio.h
   Add avio_feof() and deprecate url_feof().
 
-2014-08-07 - bb78903 - lsws 2.1.3 - swscale.h
+2014-08-07 - bb789016d4 - lsws 2.1.3 - swscale.h
   sws_getContext is not going to be removed in the future.
 
 2014-08-07 - a561662 / ad1ee5f - lavc 55.73.101 / 55.57.3 - avcodec.h
@@ -1175,7 +1718,7 @@ lavd 54.4.100 / 54.0.0, lavfi 3.5.0
                 * base -- is now stored in AVBufferRef
                 * reference, type, buffer_hints -- are unnecessary in the new API
                 * hwaccel_picture_private, owner, thread_opaque -- should not
-                  have been acessed from outside of lavc
+                  have been accessed from outside of lavc
                 * qscale_table, qstride, qscale_type, mbskip_table, motion_val,
                   mb_type, dct_coeff, ref_index -- mpegvideo-specific tables,
                   which are not exported anymore.

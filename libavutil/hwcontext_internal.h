@@ -64,6 +64,11 @@ typedef struct HWContextType {
      */
     size_t             frames_priv_size;
 
+    int              (*device_create)(AVHWDeviceContext *ctx, const char *device,
+                                      AVDictionary *opts, int flags);
+    int              (*device_derive)(AVHWDeviceContext *dst_ctx,
+                                      AVHWDeviceContext *src_ctx, int flags);
+
     int              (*device_init)(AVHWDeviceContext *ctx);
     void             (*device_uninit)(AVHWDeviceContext *ctx);
 
@@ -82,11 +87,27 @@ typedef struct HWContextType {
                                          const AVFrame *src);
     int              (*transfer_data_from)(AVHWFramesContext *ctx, AVFrame *dst,
                                            const AVFrame *src);
+
+    int              (*map_to)(AVHWFramesContext *ctx, AVFrame *dst,
+                               const AVFrame *src, int flags);
+    int              (*map_from)(AVHWFramesContext *ctx, AVFrame *dst,
+                                 const AVFrame *src, int flags);
+
+    int              (*frames_derive_to)(AVHWFramesContext *dst_ctx,
+                                         AVHWFramesContext *src_ctx, int flags);
+    int              (*frames_derive_from)(AVHWFramesContext *dst_ctx,
+                                           AVHWFramesContext *src_ctx, int flags);
 } HWContextType;
 
 struct AVHWDeviceInternal {
     const HWContextType *hw_type;
     void                *priv;
+
+    /**
+     * For a derived device, a reference to the original device
+     * context it was derived from.
+     */
+    AVBufferRef *source_device;
 };
 
 struct AVHWFramesInternal {
@@ -94,10 +115,62 @@ struct AVHWFramesInternal {
     void                *priv;
 
     AVBufferPool *pool_internal;
+
+    /**
+     * For a derived context, a reference to the original frames
+     * context it was derived from.
+     */
+    AVBufferRef *source_frames;
+    /**
+     * Flags to apply to the mapping from the source to the derived
+     * frame context when trying to allocate in the derived context.
+     */
+    int source_allocation_map_flags;
 };
 
+typedef struct HWMapDescriptor {
+    /**
+     * A reference to the original source of the mapping.
+     */
+    AVFrame *source;
+    /**
+     * A reference to the hardware frames context in which this
+     * mapping was made.  May be the same as source->hw_frames_ctx,
+     * but need not be.
+     */
+    AVBufferRef *hw_frames_ctx;
+    /**
+     * Unmap function.
+     */
+    void (*unmap)(AVHWFramesContext *ctx,
+                  struct HWMapDescriptor *hwmap);
+    /**
+     * Hardware-specific private data associated with the mapping.
+     */
+    void          *priv;
+} HWMapDescriptor;
+
+int ff_hwframe_map_create(AVBufferRef *hwframe_ref,
+                          AVFrame *dst, const AVFrame *src,
+                          void (*unmap)(AVHWFramesContext *ctx,
+                                        HWMapDescriptor *hwmap),
+                          void *priv);
+
+/**
+ * Replace the current hwmap of dst with the one from src, used for indirect
+ * mappings like VAAPI->(DRM)->OpenCL/Vulkan where a direct interop is missing
+ */
+int ff_hwframe_map_replace(AVFrame *dst, const AVFrame *src);
+
 extern const HWContextType ff_hwcontext_type_cuda;
+extern const HWContextType ff_hwcontext_type_d3d11va;
+extern const HWContextType ff_hwcontext_type_drm;
+extern const HWContextType ff_hwcontext_type_dxva2;
+extern const HWContextType ff_hwcontext_type_opencl;
+extern const HWContextType ff_hwcontext_type_qsv;
 extern const HWContextType ff_hwcontext_type_vaapi;
 extern const HWContextType ff_hwcontext_type_vdpau;
+extern const HWContextType ff_hwcontext_type_videotoolbox;
+extern const HWContextType ff_hwcontext_type_mediacodec;
 
 #endif /* AVUTIL_HWCONTEXT_INTERNAL_H */

@@ -6,6 +6,7 @@
 #codec_id 0: pcm_s24le
 #sample_rate 0: 96000
 #channel_layout 0: 63f
+#channel_layout_name 0: 7.1
 #stream#, dts,        pts, duration,     size, hash
 0,          0,          0,     1024,    24576, 0b24a527d66f2b0cab97f37e4cd79987
 0,       1024,       1024,     1024,    24576, 91ff0dac5df86e798bfef5e573536b08

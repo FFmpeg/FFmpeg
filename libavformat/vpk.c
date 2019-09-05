@@ -29,7 +29,7 @@ typedef struct VPKDemuxContext {
     unsigned last_block_size;
 } VPKDemuxContext;
 
-static int vpk_probe(AVProbeData *p)
+static int vpk_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKBETAG('V','P','K',' '))
         return 0;
@@ -56,16 +56,19 @@ static int vpk_read_header(AVFormatContext *s)
     st->codecpar->codec_id    = AV_CODEC_ID_ADPCM_PSX;
     st->codecpar->block_align = avio_rl32(s->pb);
     st->codecpar->sample_rate = avio_rl32(s->pb);
-    if (st->codecpar->sample_rate <= 0)
+    if (st->codecpar->sample_rate <= 0 || st->codecpar->block_align <= 0)
         return AVERROR_INVALIDDATA;
     st->codecpar->channels    = avio_rl32(s->pb);
     if (st->codecpar->channels <= 0)
         return AVERROR_INVALIDDATA;
-    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28) / 16;
+    samples_per_block      = ((st->codecpar->block_align / st->codecpar->channels) * 28LL) / 16;
     if (samples_per_block <= 0)
         return AVERROR_INVALIDDATA;
     vpk->block_count       = (st->duration + (samples_per_block - 1)) / samples_per_block;
     vpk->last_block_size   = (st->duration % samples_per_block) * 16 * st->codecpar->channels / 28;
+
+    if (offset < avio_tell(s->pb))
+        return AVERROR_INVALIDDATA;
     avio_skip(s->pb, offset - avio_tell(s->pb));
     avpriv_set_pts_info(st, 64, 1, st->codecpar->sample_rate);
 

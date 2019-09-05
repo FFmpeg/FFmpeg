@@ -28,13 +28,6 @@
 #include "gsm.h"
 #include "gsmdec_data.h"
 
-static const int requant_tab[4][8] = {
-    { 0 },
-    { 0, 7 },
-    { 0, 2, 5, 7 },
-    { 0, 1, 2, 3, 4, 5, 6, 7 }
-};
-
 static void apcm_dequant_add(GetBitContext *gb, int16_t *dst, const int *frame_bits)
 {
     int i, val;
@@ -42,13 +35,13 @@ static void apcm_dequant_add(GetBitContext *gb, int16_t *dst, const int *frame_b
     const int16_t *tab = ff_gsm_dequant_tab[maxidx];
     for (i = 0; i < 13; i++) {
         val = get_bits(gb, frame_bits[i]);
-        dst[3*i] += tab[requant_tab[frame_bits[i]][val]];
+        dst[3 * i] += tab[ff_gsm_requant_tab[frame_bits[i]][val]];
     }
 }
 
 static inline int gsm_mult(int a, int b)
 {
-    return (a * b + (1 << 14)) >> 15;
+    return (int)(a * (SUINT)b + (1 << 14)) >> 15;
 }
 
 static void long_term_synth(int16_t *dst, int lag, int gain_idx)

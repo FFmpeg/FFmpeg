@@ -83,6 +83,7 @@
     <xsd:complexType name="frameType">
       <xsd:sequence>
             <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+            <xsd:element name="logs" type="ffprobe:logsType" minOccurs="0" maxOccurs="1"/>
             <xsd:element name="side_data_list" type="ffprobe:frameSideDataListType"   minOccurs="0" maxOccurs="1" />
       </xsd:sequence>
 
@@ -119,6 +120,25 @@
       <xsd:attribute name="interlaced_frame"       type="xsd:int"   />
       <xsd:attribute name="top_field_first"        type="xsd:int"   />
       <xsd:attribute name="repeat_pict"            type="xsd:int"   />
+      <xsd:attribute name="color_range"            type="xsd:string"/>
+      <xsd:attribute name="color_space"            type="xsd:string"/>
+      <xsd:attribute name="color_primaries"        type="xsd:string"/>
+      <xsd:attribute name="color_transfer"         type="xsd:string"/>
+      <xsd:attribute name="chroma_location"        type="xsd:string"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="logsType">
+        <xsd:sequence>
+            <xsd:element name="log" type="ffprobe:logType" minOccurs="1" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+    <xsd:complexType name="logType">
+        <xsd:attribute name="context"                     type="xsd:string"/>
+        <xsd:attribute name="level"                       type="xsd:int"   />
+        <xsd:attribute name="category"                    type="xsd:int"   />
+        <xsd:attribute name="parent_context"              type="xsd:string"/>
+        <xsd:attribute name="parent_category"             type="xsd:int"   />
+        <xsd:attribute name="message"                     type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="frameSideDataListType">
@@ -127,8 +147,23 @@
         </xsd:sequence>
     </xsd:complexType>
     <xsd:complexType name="frameSideDataType">
+        <xsd:sequence>
+            <xsd:element name="timecodes" type="ffprobe:frameSideDataTimecodeList" minOccurs="0" maxOccurs="1"/>
+        </xsd:sequence>
+
         <xsd:attribute name="side_data_type"              type="xsd:string"/>
         <xsd:attribute name="side_data_size"              type="xsd:int"   />
+        <xsd:attribute name="timecode"                    type="xsd:string"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="frameSideDataTimecodeList">
+        <xsd:sequence>
+            <xsd:element name="timecode" type="ffprobe:frameSideDataTimecodeType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="frameSideDataTimecodeType">
+        <xsd:attribute name="value"              type="xsd:string"/>
     </xsd:complexType>
 
     <xsd:complexType name="subtitleType">
@@ -165,6 +200,7 @@
       <xsd:attribute name="visual_impaired"  type="xsd:int" use="required" />
       <xsd:attribute name="clean_effects"    type="xsd:int" use="required" />
       <xsd:attribute name="attached_pic"     type="xsd:int" use="required" />
+      <xsd:attribute name="timed_thumbnails" type="xsd:int" use="required" />
     </xsd:complexType>
 
     <xsd:complexType name="streamType">
@@ -200,6 +236,7 @@
       <xsd:attribute name="color_transfer"       type="xsd:string"/>
       <xsd:attribute name="color_primaries"      type="xsd:string"/>
       <xsd:attribute name="chroma_location"      type="xsd:string"/>
+      <xsd:attribute name="field_order"          type="xsd:string"/>
       <xsd:attribute name="timecode"             type="xsd:string"/>
       <xsd:attribute name="refs"                 type="xsd:int"/>
 

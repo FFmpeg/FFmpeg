@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 prediction functions.
+ * H.264 / AVC / MPEG-4 part10 prediction functions.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
@@ -556,7 +556,7 @@ av_cold void ff_h264_pred_init(H264PredContext *h, int codec_id,
     h->pred16x16[TOP_DC_PRED8x8 ]= FUNCC(pred16x16_top_dc                 , depth);\
     h->pred16x16[DC_128_PRED8x8 ]= FUNCC(pred16x16_128_dc                 , depth);\
 \
-    /* special lossless h/v prediction for h264 */ \
+    /* special lossless h/v prediction for H.264 */ \
     h->pred4x4_add  [VERT_PRED   ]= FUNCC(pred4x4_vertical_add            , depth);\
     h->pred4x4_add  [ HOR_PRED   ]= FUNCC(pred4x4_horizontal_add          , depth);\
     h->pred8x8l_add [VERT_PRED   ]= FUNCC(pred8x8l_vertical_add           , depth);\

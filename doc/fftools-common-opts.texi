@@ -34,18 +34,25 @@ Possible forms of stream specifiers are:
 @table @option
 @item @var{stream_index}
 Matches the stream with this index. E.g. @code{-threads:1 4} would set the
-thread count for the second stream to 4.
-@item @var{stream_type}[:@var{stream_index}]
+thread count for the second stream to 4. If @var{stream_index} is used as an
+additional stream specifier (see below), then it selects stream number
+@var{stream_index} from the matching streams. Stream numbering is based on the
+order of the streams as detected by libavformat except when a program ID is
+also specified. In this case it is based on the ordering of the streams in the
+program.
+@item @var{stream_type}[:@var{additional_stream_specifier}]
 @var{stream_type} is one of following: 'v' or 'V' for video, 'a' for audio, 's'
 for subtitle, 'd' for data, and 't' for attachments. 'v' matches all video
 streams, 'V' only matches video streams which are not attached pictures, video
-thumbnails or cover arts.  If @var{stream_index} is given, then it matches
-stream number @var{stream_index} of this type. Otherwise, it matches all
-streams of this type.
-@item p:@var{program_id}[:@var{stream_index}]
-If @var{stream_index} is given, then it matches the stream with number @var{stream_index}
-in the program with the id @var{program_id}. Otherwise, it matches all streams in the
-program.
+thumbnails or cover arts. If @var{additional_stream_specifier} is used, then
+it matches streams which both have this type and match the
+@var{additional_stream_specifier}. Otherwise, it matches all streams of the
+specified type.
+@item p:@var{program_id}[:@var{additional_stream_specifier}]
+Matches streams which are in the program with the id @var{program_id}. If
+@var{additional_stream_specifier} is used, then it matches streams which both
+are part of the program and match the @var{additional_stream_specifier}.
+
 @item #@var{stream_id} or i:@var{stream_id}
 Match the stream by stream id (e.g. PID in MPEG-TS container).
 @item m:@var{key}[:@var{value}]
@@ -102,6 +109,10 @@ Print detailed information about the muxer named @var{muxer_name}. Use the
 @item filter=@var{filter_name}
 Print detailed information about the filter name @var{filter_name}. Use the
 @option{-filters} option to get a list of all filters.
+
+@item bsf=@var{bitstream_filter_name}
+Print detailed information about the bitstream filter name @var{bitstream_filter_name}.
+Use the @option{-bsfs} option to get a list of all bitstream filters.
 @end table
 
 @item -version
@@ -109,6 +120,12 @@ Show version.
 
 @item -formats
 Show available formats (including devices).
+
+@item -demuxers
+Show available demuxers.
+
+@item -muxers
+Show available muxers.
 
 @item -devices
 Show available devices.
@@ -147,7 +164,7 @@ Show channel names and standard channel layouts.
 Show recognized color names.
 
 @item -sources @var{device}[,@var{opt1}=@var{val1}[,@var{opt2}=@var{val2}]...]
-Show autodetected sources of the intput device.
+Show autodetected sources of the input device.
 Some devices may provide system-dependent source names that cannot be autodetected.
 The returned list cannot be assumed to be always complete.
 @example
@@ -162,24 +179,34 @@ The returned list cannot be assumed to be always complete.
 ffmpeg -sinks pulse,server=192.168.0.4
 @end example
 
-@item -loglevel [repeat+]@var{loglevel} | -v [repeat+]@var{loglevel}
-Set the logging level used by the library.
-Adding "repeat+" indicates that repeated log output should not be compressed
-to the first line and the "Last message repeated n times" line will be
-omitted. "repeat" can also be used alone.
-If "repeat" is used alone, and with no prior loglevel set, the default
-loglevel will be used. If multiple loglevel parameters are given, using
-'repeat' will not change the loglevel.
+@item -loglevel [@var{flags}+]@var{loglevel} | -v [@var{flags}+]@var{loglevel}
+Set logging level and flags used by the library.
+
+The optional @var{flags} prefix can consist of the following values:
+@table @samp
+@item repeat
+Indicates that repeated log output should not be compressed to the first line
+and the "Last message repeated n times" line will be omitted.
+@item level
+Indicates that log output should add a @code{[level]} prefix to each message
+line. This can be used as an alternative to log coloring, e.g. when dumping the
+log to file.
+@end table
+Flags can also be used alone by adding a '+'/'-' prefix to set/reset a single
+flag without affecting other @var{flags} or changing @var{loglevel}. When
+setting both @var{flags} and @var{loglevel}, a '+' separator is expected
+between the last @var{flags} value and before @var{loglevel}.
+
 @var{loglevel} is a string or a number containing one of the following values:
 @table @samp
 @item quiet, -8
 Show nothing at all; be silent.
 @item panic, 0
 Only show fatal errors which could lead the process to crash, such as
-and assert failure. This is not currently used for anything.
+an assertion failure. This is not currently used for anything.
 @item fatal, 8
 Only show fatal errors. These are errors after which the process absolutely
-cannot continue after.
+cannot continue.
 @item error, 16
 Show all errors, including ones which can be recovered from.
 @item warning, 24
@@ -195,20 +222,31 @@ Show everything, including debugging information.
 @item trace, 56
 @end table
 
-By default the program logs to stderr, if coloring is supported by the
+For example to enable repeated log output, add the @code{level} prefix, and set
+@var{loglevel} to @code{verbose}:
+@example
+ffmpeg -loglevel repeat+level+verbose -i input output
+@end example
+Another example that enables repeated log output without affecting current
+state of @code{level} prefix flag or @var{loglevel}:
+@example
+ffmpeg [...] -loglevel +repeat
+@end example
+
+By default the program logs to stderr. If coloring is supported by the
 terminal, colors are used to mark errors and warnings. Log coloring
 can be disabled setting the environment variable
 @env{AV_LOG_FORCE_NOCOLOR} or @env{NO_COLOR}, or can be forced setting
 the environment variable @env{AV_LOG_FORCE_COLOR}.
 The use of the environment variable @env{NO_COLOR} is deprecated and
-will be dropped in a following FFmpeg version.
+will be dropped in a future FFmpeg version.
 
 @item -report
 Dump full command line and console output to a file named
 @code{@var{program}-@var{YYYYMMDD}-@var{HHMMSS}.log} in the current
 directory.
 This file can be useful for bug reports.
-It also implies @code{-loglevel verbose}.
+It also implies @code{-loglevel debug}.
 
 Setting the environment variable @env{FFREPORT} to any value has the
 same effect. If the value is a ':'-separated key=value sequence, these
@@ -309,51 +347,6 @@ Possible flags for this option are:
 @item k8
 @end table
 @end table
-
-@item -opencl_bench
-This option is used to benchmark all available OpenCL devices and print the
-results. This option is only available when FFmpeg has been compiled with
-@code{--enable-opencl}.
-
-When FFmpeg is configured with @code{--enable-opencl}, the options for the
-global OpenCL context are set via @option{-opencl_options}. See the
-"OpenCL Options" section in the ffmpeg-utils manual for the complete list of
-supported options. Amongst others, these options include the ability to select
-a specific platform and device to run the OpenCL code on. By default, FFmpeg
-will run on the first device of the first platform. While the options for the
-global OpenCL context provide flexibility to the user in selecting the OpenCL
-device of their choice, most users would probably want to select the fastest
-OpenCL device for their system.
-
-This option assists the selection of the most efficient configuration by
-identifying the appropriate device for the user's system. The built-in
-benchmark is run on all the OpenCL devices and the performance is measured for
-each device. The devices in the results list are sorted based on their
-performance with the fastest device listed first. The user can subsequently
-invoke @command{ffmpeg} using the device deemed most appropriate via
-@option{-opencl_options} to obtain the best performance for the OpenCL
-accelerated code.
-
-Typical usage to use the fastest OpenCL device involve the following steps.
-
-Run the command:
-@example
-ffmpeg -opencl_bench
-@end example
-Note down the platform ID (@var{pidx}) and device ID (@var{didx}) of the first
-i.e. fastest device in the list.
-Select the platform and device using the command:
-@example
-ffmpeg -opencl_options platform_idx=@var{pidx}:device_idx=@var{didx} ...
-@end example
-
-@item -opencl_options options (@emph{global})
-Set OpenCL environment options. This option is only available when
-FFmpeg has been compiled with @code{--enable-opencl}.
-
-@var{options} must be a list of @var{key}=@var{value} option pairs
-separated by ':'. See the ``OpenCL Options'' section in the
-ffmpeg-utils manual for the list of supported options.
 @end table
 
 @section AVOptions
@@ -379,7 +372,15 @@ ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
 All codec AVOptions are per-stream, and thus a stream specifier
-should be attached to them.
+should be attached to them:
+@example
+ffmpeg -i multichannel.mxf -map 0:v:0 -map 0:a:0 -map 0:a:0 -c:a:0 ac3 -b:a:0 640k -ac:a:1 2 -c:a:1 aac -b:2 128k out.mp4
+@end example
+
+In the above example, a multichannel audio stream is mapped twice for output.
+The first instance is encoded with codec ac3 and bitrate 640k.
+The second instance is downmixed to 2 channels and encoded with codec aac. A bitrate of 128k is specified for it using
+absolute index of the output stream.
 
 Note: the @option{-nooption} syntax cannot be used for boolean
 AVOptions, use @option{-option 0}/@option{-option 1}.

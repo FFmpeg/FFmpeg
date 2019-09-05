@@ -43,7 +43,7 @@ typedef struct C93DemuxContext {
     AVStream *audio;
 } C93DemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     int i;
     int index = 1;

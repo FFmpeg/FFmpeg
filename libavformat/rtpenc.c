@@ -66,6 +66,7 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_PCM_S8:
     case AV_CODEC_ID_PCM_S16BE:
     case AV_CODEC_ID_PCM_S16LE:
+    case AV_CODEC_ID_PCM_S24BE:
     case AV_CODEC_ID_PCM_U16BE:
     case AV_CODEC_ID_PCM_U16LE:
     case AV_CODEC_ID_PCM_U8:
@@ -75,8 +76,10 @@ static int is_supported(enum AVCodecID id)
     case AV_CODEC_ID_VORBIS:
     case AV_CODEC_ID_THEORA:
     case AV_CODEC_ID_VP8:
+    case AV_CODEC_ID_VP9:
     case AV_CODEC_ID_ADPCM_G722:
     case AV_CODEC_ID_ADPCM_G726:
+    case AV_CODEC_ID_ADPCM_G726LE:
     case AV_CODEC_ID_ILBC:
     case AV_CODEC_ID_MJPEG:
     case AV_CODEC_ID_SPEEX:
@@ -144,7 +147,7 @@ static int rtp_write_header(AVFormatContext *s1)
     } else
         s1->packet_size = s1->pb->max_packet_size;
     if (s1->packet_size <= 12) {
-        av_log(s1, AV_LOG_ERROR, "Max packet size %d too low\n", s1->packet_size);
+        av_log(s1, AV_LOG_ERROR, "Max packet size %u too low\n", s1->packet_size);
         return AVERROR(EIO);
     }
     s->buf = av_malloc(s1->packet_size);
@@ -188,7 +191,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case AV_CODEC_ID_H261:
         if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
             av_log(s, AV_LOG_ERROR,
-                   "Packetizing H261 is experimental and produces incorrect "
+                   "Packetizing H.261 is experimental and produces incorrect "
                    "packetization for cases where GOBs don't fit into packets "
                    "(even though most receivers may handle it just fine). "
                    "Please set -f_strict experimental in order to enable it.\n");
@@ -204,11 +207,21 @@ static int rtp_write_header(AVFormatContext *s1)
         break;
     case AV_CODEC_ID_HEVC:
         /* Only check for the standardized hvcC version of extradata, keeping
-         * things simple and similar to the avcC/H264 case above, instead
+         * things simple and similar to the avcC/H.264 case above, instead
          * of trying to handle the pre-standardization versions (as in
          * libavcodec/hevc.c). */
         if (st->codecpar->extradata_size > 21 && st->codecpar->extradata[0] == 1) {
             s->nal_length_size = (st->codecpar->extradata[21] & 0x03) + 1;
+        }
+        break;
+    case AV_CODEC_ID_VP9:
+        if (s1->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+            av_log(s, AV_LOG_ERROR,
+                   "Packetizing VP9 is experimental and its specification is "
+                   "still in draft state. "
+                   "Please set -strict experimental in order to enable it.\n");
+            ret = AVERROR_EXPERIMENTAL;
+            goto fail;
         }
         break;
     case AV_CODEC_ID_VORBIS:
@@ -274,7 +287,7 @@ static void rtcp_send_sr(AVFormatContext *s1, int64_t ntp_time, int bye)
     RTPMuxContext *s = s1->priv_data;
     uint32_t rtp_ts;
 
-    av_log(s1, AV_LOG_TRACE, "RTCP: %02x %"PRIx64" %x\n", s->payload_type, ntp_time, s->timestamp);
+    av_log(s1, AV_LOG_TRACE, "RTCP: %02x %"PRIx64" %"PRIx32"\n", s->payload_type, ntp_time, s->timestamp);
 
     s->last_rtcp_ntp_time = ntp_time;
     rtp_ts = av_rescale_q(ntp_time - s->first_rtcp_ntp_time, (AVRational){1, 1000000},
@@ -532,6 +545,8 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case AV_CODEC_ID_PCM_S16BE:
     case AV_CODEC_ID_PCM_S16LE:
         return rtp_send_samples(s1, pkt->data, size, 16 * st->codecpar->channels);
+    case AV_CODEC_ID_PCM_S24BE:
+        return rtp_send_samples(s1, pkt->data, size, 24 * st->codecpar->channels);
     case AV_CODEC_ID_ADPCM_G722:
         /* The actual sample size is half a byte per sample, but since the
          * stream clock rate is 8000 Hz while the sample rate is 16000 Hz,
@@ -539,6 +554,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
          * clock. */
         return rtp_send_samples(s1, pkt->data, size, 8 * st->codecpar->channels);
     case AV_CODEC_ID_ADPCM_G726:
+    case AV_CODEC_ID_ADPCM_G726LE:
         return rtp_send_samples(s1, pkt->data, size,
                                 st->codecpar->bits_per_coded_sample * st->codecpar->channels);
     case AV_CODEC_ID_MP2:
@@ -593,6 +609,9 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         break;
     case AV_CODEC_ID_VP8:
         ff_rtp_send_vp8(s1, pkt->data, size);
+        break;
+    case AV_CODEC_ID_VP9:
+        ff_rtp_send_vp9(s1, pkt->data, size);
         break;
     case AV_CODEC_ID_ILBC:
         rtp_send_ilbc(s1, pkt->data, size);

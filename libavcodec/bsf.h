@@ -22,11 +22,22 @@
 #include "avcodec.h"
 
 /**
- * Called by the biststream filters to get the next packet for filtering.
+ * Called by the bitstream filters to get the next packet for filtering.
  * The filter is responsible for either freeing the packet or passing it to the
  * caller.
  */
 int ff_bsf_get_packet(AVBSFContext *ctx, AVPacket **pkt);
+
+/**
+ * Called by bitstream filters to get packet for filtering.
+ * The reference to packet is moved to provided packet structure.
+ *
+ * @param ctx pointer to AVBSFContext of filter
+ * @param pkt pointer to packet to move reference to
+ *
+ * @return 0>= on success, negative AVERROR in case of failure
+ */
+int ff_bsf_get_packet_ref(AVBSFContext *ctx, AVPacket *pkt);
 
 const AVClass *ff_bsf_child_class_next(const AVClass *prev);
 

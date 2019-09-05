@@ -103,7 +103,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
     long ioctl_frequency;
     char *arg;
     int c;
-    struct sigaction act = { {0} }, old;
+    struct sigaction act, old;
     int ret;
     char errbuf[128];
 
@@ -134,6 +134,7 @@ static av_cold int bktr_init(const char *video_device, int width, int height,
             frequency = 0.0;
     }
 
+    memset(&act, 0, sizeof(act));
     sigemptyset(&act.sa_mask);
     act.sa_handler = catchsignal;
     sigaction(SIGUSR1, &act, &old);
@@ -293,7 +294,7 @@ static int grab_read_header(AVFormatContext *s1)
     st->codecpar->height = s->height;
     st->avg_frame_rate = framerate;
 
-    if (bktr_init(s1->filename, s->width, s->height, s->standard,
+    if (bktr_init(s1->url, s->width, s->height, s->standard,
                   &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {
         ret = AVERROR(EIO);
         goto out;
@@ -340,7 +341,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass bktr_class = {
-    .class_name = "BKTR grab interface",
+    .class_name = "BKTR grab indev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

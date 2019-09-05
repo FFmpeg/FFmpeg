@@ -1,6 +1,6 @@
 /*
  * Westwood Studios AUD Format Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -42,7 +42,7 @@
 #define AUD_CHUNK_PREAMBLE_SIZE 8
 #define AUD_CHUNK_SIGNATURE 0x0000DEAF
 
-static int wsaud_probe(AVProbeData *p)
+static int wsaud_probe(const AVProbeData *p)
 {
     int field;
 
@@ -163,6 +163,12 @@ static int wsaud_read_packet(AVFormatContext *s,
         ret = av_get_packet(pb, pkt, chunk_size);
         if (ret != chunk_size)
             return AVERROR(EIO);
+
+        if (st->codecpar->channels <= 0) {
+            av_log(s, AV_LOG_ERROR, "invalid number of channels %d\n",
+                   st->codecpar->channels);
+            return AVERROR_INVALIDDATA;
+        }
 
         /* 2 samples/byte, 1 or 2 samples per frame depending on stereo */
         pkt->duration = (chunk_size * 2) / st->codecpar->channels;

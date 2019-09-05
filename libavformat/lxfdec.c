@@ -52,7 +52,7 @@ typedef struct LXFDemuxContext {
     uint32_t video_format, packet_type, extended_size;
 } LXFDemuxContext;
 
-static int lxf_probe(AVProbeData *p)
+static int lxf_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, LXF_IDENT, LXF_IDENT_LENGTH))
         return AVPROBE_SCORE_MAX;
@@ -181,7 +181,7 @@ static int get_packet_header(AVFormatContext *s)
         st->codecpar->bits_per_coded_sample = (audio_format >> 6) & 0x3F;
 
         if (st->codecpar->bits_per_coded_sample != (audio_format & 0x3F)) {
-            av_log(s, AV_LOG_WARNING, "only tightly packed PCM currently supported\n");
+            avpriv_report_missing_feature(s, "Not tightly packed PCM");
             return AVERROR_PATCHWELCOME;
         }
 
@@ -191,8 +191,7 @@ static int get_packet_header(AVFormatContext *s)
         case 24: st->codecpar->codec_id = AV_CODEC_ID_PCM_S24LE_PLANAR; break;
         case 32: st->codecpar->codec_id = AV_CODEC_ID_PCM_S32LE_PLANAR; break;
         default:
-            av_log(s, AV_LOG_WARNING,
-                   "only 16-, 20-, 24- and 32-bit PCM currently supported\n");
+            avpriv_report_missing_feature(s, "PCM not 16-, 20-, 24- or 32-bits");
             return AVERROR_PATCHWELCOME;
         }
 

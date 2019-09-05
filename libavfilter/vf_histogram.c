@@ -35,14 +35,17 @@ typedef struct HistogramContext {
     int            histogram_size;
     int            mult;
     int            ncomp;
-    const uint8_t  *bg_color;
-    const uint8_t  *fg_color;
+    int            dncomp;
+    uint8_t        bg_color[4];
+    uint8_t        fg_color[4];
     int            level_height;
     int            scale_height;
     int            display_mode;
     int            levels_mode;
     const AVPixFmtDescriptor *desc, *odesc;
     int            components;
+    float          fgopacity;
+    float          bgopacity;
     int            planewidth[4];
     int            planeheight[4];
 } HistogramContext;
@@ -53,13 +56,21 @@ typedef struct HistogramContext {
 static const AVOption histogram_options[] = {
     { "level_height", "set level height", OFFSET(level_height), AV_OPT_TYPE_INT, {.i64=200}, 50, 2048, FLAGS},
     { "scale_height", "set scale height", OFFSET(scale_height), AV_OPT_TYPE_INT, {.i64=12}, 0, 40, FLAGS},
-    { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=1}, 0, 1, FLAGS, "display_mode"},
-    { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display_mode" },
-    { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display_mode" },
+    { "display_mode", "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, "display_mode"},
+    { "d",            "set display mode", OFFSET(display_mode), AV_OPT_TYPE_INT, {.i64=2}, 0, 2, FLAGS, "display_mode"},
+        { "overlay", NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "display_mode" },
+        { "parade",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "display_mode" },
+        { "stack",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "display_mode" },
     { "levels_mode", "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"},
-    { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" },
-    { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" },
+    { "m",           "set levels mode", OFFSET(levels_mode), AV_OPT_TYPE_INT, {.i64=0}, 0, 1, FLAGS, "levels_mode"},
+        { "linear",      NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "levels_mode" },
+        { "logarithmic", NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "levels_mode" },
     { "components", "set color components to display", OFFSET(components), AV_OPT_TYPE_INT, {.i64=7}, 1, 15, FLAGS},
+    { "c",          "set color components to display", OFFSET(components), AV_OPT_TYPE_INT, {.i64=7}, 1, 15, FLAGS},
+    { "fgopacity", "set foreground opacity", OFFSET(fgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.7}, 0, 1, FLAGS},
+    { "f",         "set foreground opacity", OFFSET(fgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.7}, 0, 1, FLAGS},
+    { "bgopacity", "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
+    { "b",         "set background opacity", OFFSET(bgopacity), AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1, FLAGS},
     { NULL }
 };
 
@@ -77,7 +88,7 @@ static const enum AVPixelFormat levels_in_pix_fmts[] = {
     AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
     AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
     AV_PIX_FMT_GBRAP,    AV_PIX_FMT_GBRP,
-    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP9,    AV_PIX_FMT_GBRP10,  AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_GBRP12,   AV_PIX_FMT_GBRAP12,
     AV_PIX_FMT_GRAY8,
     AV_PIX_FMT_NONE
@@ -114,7 +125,7 @@ static const enum AVPixelFormat levels_out_rgb9_pix_fmts[] = {
 };
 
 static const enum AVPixelFormat levels_out_rgb10_pix_fmts[] = {
-    AV_PIX_FMT_GBRP10,
+    AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10,
     AV_PIX_FMT_NONE
 };
 
@@ -189,18 +200,23 @@ static int config_input(AVFilterLink *inlink)
     h->mult = h->histogram_size / 256;
 
     switch (inlink->format) {
+    case AV_PIX_FMT_GBRAP12:
     case AV_PIX_FMT_GBRP12:
+    case AV_PIX_FMT_GBRAP10:
     case AV_PIX_FMT_GBRP10:
     case AV_PIX_FMT_GBRP9:
     case AV_PIX_FMT_GBRAP:
     case AV_PIX_FMT_GBRP:
-        h->bg_color = black_gbrp_color;
-        h->fg_color = white_gbrp_color;
+        memcpy(h->bg_color, black_gbrp_color, 4);
+        memcpy(h->fg_color, white_gbrp_color, 4);
         break;
     default:
-        h->bg_color = black_yuva_color;
-        h->fg_color = white_yuva_color;
+        memcpy(h->bg_color, black_yuva_color, 4);
+        memcpy(h->fg_color, white_yuva_color, 4);
     }
+
+    h->fg_color[3] = h->fgopacity * 255;
+    h->bg_color[3] = h->bgopacity * 255;
 
     h->planeheight[1] = h->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, h->desc->log2_chroma_h);
     h->planeheight[0] = h->planeheight[3] = inlink->h;
@@ -220,10 +236,11 @@ static int config_output(AVFilterLink *outlink)
         if ((1 << i) & h->components)
             ncomp++;
     }
-    outlink->w = h->histogram_size;
-    outlink->h = (h->level_height + h->scale_height) * FFMAX(ncomp * h->display_mode, 1);
+    outlink->w = h->histogram_size * FFMAX(ncomp * (h->display_mode == 1), 1);
+    outlink->h = (h->level_height + h->scale_height) * FFMAX(ncomp * (h->display_mode == 2), 1);
 
     h->odesc = av_pix_fmt_desc_get(outlink->format);
+    h->dncomp = h->odesc->nb_components;
     outlink->sample_aspect_ratio = (AVRational){1,1};
 
     return 0;
@@ -272,11 +289,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         const int width = h->planewidth[p];
         double max_hval_log;
         unsigned max_hval = 0;
-        int start;
+        int start, startx;
 
         if (!((1 << k) & h->components))
             continue;
-        start = m++ * (h->level_height + h->scale_height) * h->display_mode;
+        startx = m * h->histogram_size * (h->display_mode == 1);
+        start = m++ * (h->level_height + h->scale_height) * (h->display_mode == 2);
 
         if (h->histogram_size <= 256) {
             for (i = 0; i < height; i++) {
@@ -296,7 +314,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             max_hval = FFMAX(max_hval, h->histogram[i]);
         max_hval_log = log2(max_hval + 1);
 
-        for (i = 0; i < outlink->w; i++) {
+        for (i = 0; i < h->histogram_size; i++) {
             int col_height;
 
             if (h->levels_mode)
@@ -307,27 +325,27 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             if (h->histogram_size <= 256) {
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
-                        for (l = 0; l < h->ncomp; l++)
-                            out->data[l][(j + start) * out->linesize[l] + i] = h->fg_color[l];
+                        for (l = 0; l < h->dncomp; l++)
+                            out->data[l][(j + start) * out->linesize[l] + startx + i] = h->fg_color[l];
                     } else {
-                        out->data[p][(j + start) * out->linesize[p] + i] = 255;
+                        out->data[p][(j + start) * out->linesize[p] + startx + i] = 255;
                     }
                 }
                 for (j = h->level_height + h->scale_height - 1; j >= h->level_height; j--)
-                    out->data[p][(j + start) * out->linesize[p] + i] = i;
+                    out->data[p][(j + start) * out->linesize[p] + startx + i] = i;
             } else {
                 const int mult = h->mult;
 
                 for (j = h->level_height - 1; j >= col_height; j--) {
                     if (h->display_mode) {
-                        for (l = 0; l < h->ncomp; l++)
-                            AV_WN16(out->data[l] + (j + start) * out->linesize[l] + i * 2, h->fg_color[l] * mult);
+                        for (l = 0; l < h->dncomp; l++)
+                            AV_WN16(out->data[l] + (j + start) * out->linesize[l] + startx * 2 + i * 2, h->fg_color[l] * mult);
                     } else {
-                        AV_WN16(out->data[p] + (j + start) * out->linesize[p] + i * 2, 255 * mult);
+                        AV_WN16(out->data[p] + (j + start) * out->linesize[p] + startx * 2 + i * 2, 255 * mult);
                     }
                 }
                 for (j = h->level_height + h->scale_height - 1; j >= h->level_height; j--)
-                    AV_WN16(out->data[p] + (j + start) * out->linesize[p] + i * 2, i);
+                    AV_WN16(out->data[p] + (j + start) * out->linesize[p] + startx * 2 + i * 2, i);
             }
         }
 

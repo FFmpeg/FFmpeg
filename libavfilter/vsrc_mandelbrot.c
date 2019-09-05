@@ -57,7 +57,7 @@ typedef struct Point {
     uint32_t val;
 } Point;
 
-typedef struct {
+typedef struct MBContext {
     const AVClass *class;
     int w, h;
     AVRational frame_rate;

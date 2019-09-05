@@ -36,6 +36,10 @@
 #include FT_FREETYPE_H
 #endif
 
+#if CONFIG_LIBFONTCONFIG
+#include <fontconfig/fontconfig.h>
+#endif
+
 #include "avf_showcqt.h"
 
 #define BASEFREQ        20.01523126408007475
@@ -46,6 +50,7 @@
 #define FONTCOLOR       "st(0, (midi(f)-59.5)/12);" \
     "st(1, if(between(ld(0),0,1), 0.5-0.5*cos(2*PI*ld(0)), 0));" \
     "r(1-ld(1)) + b(ld(1))"
+#define CSCHEME         "1|0.5|0|0|0.5|1"
 #define PTS_STEP 10
 #define PTS_TOLERANCE 1
 
@@ -55,9 +60,9 @@
 static const AVOption showcqt_options[] = {
     { "size",         "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
     { "s",            "set video size", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, { .str = "1920x1080" },      0, 0,        FLAGS },
-    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
-    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             0, 0,        FLAGS },
+    { "fps",          "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "rate",         "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
+    { "r",            "set video rate", OFFSET(rate),  AV_OPT_TYPE_VIDEO_RATE, { .str = "25" },             1, 1000,     FLAGS },
     { "bar_h",   "set bargraph height", OFFSET(bar_h),        AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "axis_h",      "set axis height", OFFSET(axis_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
     { "sono_h",  "set sonogram height", OFFSET(sono_h),       AV_OPT_TYPE_INT, { .i64 = -1 },              -1, INT_MAX,  FLAGS },
@@ -70,19 +75,31 @@ static const AVOption showcqt_options[] = {
     { "gamma",    "set sonogram gamma", OFFSET(sono_g),     AV_OPT_TYPE_FLOAT, { .dbl = 3.0 },            1.0, 7.0,      FLAGS },
     { "bar_g",    "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
     { "gamma2",   "set bargraph gamma", OFFSET(bar_g),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            1.0, 7.0,      FLAGS },
-    { "timeclamp",     "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
-    { "tc",            "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },           0.1, 1.0,      FLAGS },
+    { "bar_t",  "set bar transparency", OFFSET(bar_t),      AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            0.0, 1.0,      FLAGS },
+    { "timeclamp",     "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },         0.002, 1.0,      FLAGS },
+    { "tc",            "set timeclamp", OFFSET(timeclamp), AV_OPT_TYPE_DOUBLE, { .dbl = 0.17 },         0.002, 1.0,      FLAGS },
+    { "attack",      "set attack time", OFFSET(attack),    AV_OPT_TYPE_DOUBLE, { .dbl = 0 },              0.0, 1.0,      FLAGS },
     { "basefreq", "set base frequency", OFFSET(basefreq),  AV_OPT_TYPE_DOUBLE, { .dbl = BASEFREQ },      10.0, 100000.0, FLAGS },
     { "endfreq",   "set end frequency", OFFSET(endfreq),   AV_OPT_TYPE_DOUBLE, { .dbl = ENDFREQ },       10.0, 100000.0, FLAGS },
     { "coeffclamp",   "set coeffclamp", OFFSET(coeffclamp), AV_OPT_TYPE_FLOAT, { .dbl = 1.0 },            0.1, 10.0,     FLAGS },
     { "tlength",         "set tlength", OFFSET(tlength),   AV_OPT_TYPE_STRING, { .str = TLENGTH },   CHAR_MIN, CHAR_MAX, FLAGS },
     { "count",   "set transform count", OFFSET(count),        AV_OPT_TYPE_INT, { .i64 = 6 },                1, 30,       FLAGS },
     { "fcount",  "set frequency count", OFFSET(fcount),       AV_OPT_TYPE_INT, { .i64 = 0 },                0, 10,       FLAGS },
-    { "fontfile",      "set axis font", OFFSET(fontfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
+    { "fontfile", "set axis font file", OFFSET(fontfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
+    { "font",          "set axis font", OFFSET(font),      AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
     { "fontcolor",    "set font color", OFFSET(fontcolor), AV_OPT_TYPE_STRING, { .str = FONTCOLOR }, CHAR_MIN, CHAR_MAX, FLAGS },
     { "axisfile",     "set axis image", OFFSET(axisfile),  AV_OPT_TYPE_STRING, { .str = NULL },      CHAR_MIN, CHAR_MAX, FLAGS },
     { "axis",              "draw axis", OFFSET(axis),        AV_OPT_TYPE_BOOL, { .i64 = 1 },                0, 1,        FLAGS },
     { "text",              "draw axis", OFFSET(axis),        AV_OPT_TYPE_BOOL, { .i64 = 1 },                0, 1,        FLAGS },
+    { "csp",         "set color space", OFFSET(csp),          AV_OPT_TYPE_INT, { .i64 = AVCOL_SPC_UNSPECIFIED }, 0, INT_MAX, FLAGS, "csp" },
+        { "unspecified", "unspecified", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_UNSPECIFIED }, 0, 0, FLAGS, "csp" },
+        { "bt709",             "bt709", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT709 },       0, 0, FLAGS, "csp" },
+        { "fcc",                 "fcc", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_FCC },         0, 0, FLAGS, "csp" },
+        { "bt470bg",         "bt470bg", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT470BG },     0, 0, FLAGS, "csp" },
+        { "smpte170m",     "smpte170m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE170M },   0, 0, FLAGS, "csp" },
+        { "smpte240m",     "smpte240m", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_SMPTE240M },   0, 0, FLAGS, "csp" },
+        { "bt2020ncl",     "bt2020ncl", 0,                  AV_OPT_TYPE_CONST, { .i64 = AVCOL_SPC_BT2020_NCL },  0, 0, FLAGS, "csp" },
+    { "cscheme",    "set color scheme", OFFSET(cscheme),   AV_OPT_TYPE_STRING, { .str = CSCHEME },   CHAR_MIN, CHAR_MAX, FLAGS },
     { NULL }
 };
 
@@ -136,6 +153,7 @@ static void common_uninit(ShowCQTContext *s)
     av_freep(&s->fft_data);
     av_freep(&s->fft_result);
     av_freep(&s->cqt_result);
+    av_freep(&s->attack_data);
     av_freep(&s->c_buf);
     av_freep(&s->h_buf);
     av_freep(&s->rcp_h_buf);
@@ -320,6 +338,9 @@ static int init_cqt(ShowCQTContext *s)
             w *= sign * (1.0 / s->fft_len);
             s->coeffs[m].val[x - s->coeffs[m].start] = w;
         }
+
+        if (s->permute_coeffs)
+            s->permute_coeffs(s->coeffs[m].val, s->coeffs[m].len);
     }
 
     av_expr_free(expr);
@@ -365,9 +386,9 @@ static enum AVPixelFormat convert_axis_pixel_format(enum AVPixelFormat format)
 {
     switch (format) {
         case AV_PIX_FMT_RGB24:   format = AV_PIX_FMT_RGBA; break;
-        case AV_PIX_FMT_YUV444P: format = AV_PIX_FMT_YUVA444P; break;
-        case AV_PIX_FMT_YUV422P: format = AV_PIX_FMT_YUVA422P; break;
-        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA420P; break;
+        case AV_PIX_FMT_YUV444P:
+        case AV_PIX_FMT_YUV422P:
+        case AV_PIX_FMT_YUV420P: format = AV_PIX_FMT_YUVA444P; break;
     }
     return format;
 }
@@ -434,14 +455,16 @@ static double b_func(void *p, double x)
     return lrint(x*255.0);
 }
 
-static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
+static int init_axis_color(ShowCQTContext *s, AVFrame *tmp, int half)
 {
     const char *var_names[] = { "timeclamp", "tc", "frequency", "freq", "f", NULL };
     const char *func_names[] = { "midi", "r", "g", "b", NULL };
     double (*funcs[])(void *, double) = { midi, r_func, g_func, b_func };
     AVExpr *expr = NULL;
     double *freq = NULL;
-    int x, y, ret;
+    int x, xs, y, ret;
+    int width = half ? 1920/2 : 1920, height = half ? 16 : 32;
+    int step = half ? 2 : 1;
 
     if (s->basefreq != (double) BASEFREQ || s->endfreq != (double) ENDFREQ) {
         av_log(s->ctx, AV_LOG_WARNING, "font axis rendering is not implemented in non-default frequency range,"
@@ -460,17 +483,16 @@ static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
         return ret;
     }
 
-    for (x = 0; x < 1920; x++) {
-        double vars[] = { s->timeclamp, s->timeclamp, freq[x], freq[x], freq[x] };
+    for (x = 0, xs = 0; x < width; x++, xs += step) {
+        double vars[] = { s->timeclamp, s->timeclamp, freq[xs], freq[xs], freq[xs] };
         int color = (int) av_expr_eval(expr, vars, NULL);
         uint8_t r = (color >> 16) & 0xFF, g = (color >> 8) & 0xFF, b = color & 0xFF;
         uint8_t *data = tmp->data[0];
         int linesize = tmp->linesize[0];
-        for (y = 0; y < 32; y++) {
+        for (y = 0; y < height; y++) {
             data[linesize * y + 4 * x] = r;
             data[linesize * y + 4 * x + 1] = g;
             data[linesize * y + 4 * x + 2] = b;
-            data[linesize * y + 4 * x + 3] = 0;
         }
     }
 
@@ -480,7 +502,7 @@ static int init_axis_color(ShowCQTContext *s, AVFrame *tmp)
     return 0;
 }
 
-static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
+static int render_freetype(ShowCQTContext *s, AVFrame *tmp, char *fontfile)
 {
 #if CONFIG_LIBFREETYPE
     const char *str = "EF G A BC D ";
@@ -494,13 +516,13 @@ static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
     int non_monospace_warning = 0;
     int x;
 
-    if (!s->fontfile)
+    if (!fontfile)
         return AVERROR(EINVAL);
 
     if (FT_Init_FreeType(&lib))
         goto fail;
 
-    if (FT_New_Face(lib, s->fontfile, 0, &face))
+    if (FT_New_Face(lib, fontfile, 0, &face))
         goto fail;
 
     if (FT_Set_Char_Size(face, 16*64, 0, 0, 0))
@@ -553,13 +575,77 @@ static int render_freetype(ShowCQTContext *s, AVFrame *tmp)
     return 0;
 
 fail:
-    av_log(s->ctx, AV_LOG_WARNING, "error while loading freetype font, using default font instead.\n");
+    av_log(s->ctx, AV_LOG_WARNING, "error while loading freetype font.\n");
     FT_Done_Face(face);
     FT_Done_FreeType(lib);
     return AVERROR(EINVAL);
 #else
-    if (s->fontfile)
+    if (fontfile)
         av_log(s->ctx, AV_LOG_WARNING, "freetype is not available, ignoring fontfile option.\n");
+    return AVERROR(EINVAL);
+#endif
+}
+
+static int render_fontconfig(ShowCQTContext *s, AVFrame *tmp, char* font)
+{
+#if CONFIG_LIBFONTCONFIG
+    FcConfig *fontconfig;
+    FcPattern *pat, *best;
+    FcResult result = FcResultMatch;
+    char *filename;
+    int i, ret;
+
+    if (!font)
+        return AVERROR(EINVAL);
+
+    for (i = 0; font[i]; i++) {
+        if (font[i] == '|')
+            font[i] = ':';
+    }
+
+    if (!(fontconfig = FcInitLoadConfigAndFonts())) {
+        av_log(s->ctx, AV_LOG_ERROR, "impossible to init fontconfig.\n");
+        return AVERROR_UNKNOWN;
+    }
+
+    if (!(pat = FcNameParse((uint8_t *)font))) {
+        av_log(s->ctx, AV_LOG_ERROR, "could not parse fontconfig pat.\n");
+        FcConfigDestroy(fontconfig);
+        return AVERROR(EINVAL);
+    }
+
+    FcDefaultSubstitute(pat);
+
+    if (!FcConfigSubstitute(fontconfig, pat, FcMatchPattern)) {
+        av_log(s->ctx, AV_LOG_ERROR, "could not substitue fontconfig options.\n");
+        FcPatternDestroy(pat);
+        FcConfigDestroy(fontconfig);
+        return AVERROR(ENOMEM);
+    }
+
+    best = FcFontMatch(fontconfig, pat, &result);
+    FcPatternDestroy(pat);
+
+    ret = AVERROR(EINVAL);
+    if (!best || result != FcResultMatch) {
+        av_log(s->ctx, AV_LOG_ERROR, "cannot find a valid font for %s.\n", font);
+        goto fail;
+    }
+
+    if (FcPatternGetString(best, FC_FILE, 0, (FcChar8 **)&filename) != FcResultMatch) {
+        av_log(s->ctx, AV_LOG_ERROR, "no file path for %s\n", font);
+        goto fail;
+    }
+
+    ret = render_freetype(s, tmp, filename);
+
+fail:
+    FcPatternDestroy(best);
+    FcConfigDestroy(fontconfig);
+    return ret;
+#else
+    if (font)
+        av_log(s->ctx, AV_LOG_WARNING, "fontconfig is not available, ignoring font option.\n");
     return AVERROR(EINVAL);
 #endif
 }
@@ -570,19 +656,18 @@ static int render_default_font(AVFrame *tmp)
     int x, u, v, mask;
     uint8_t *data = tmp->data[0];
     int linesize = tmp->linesize[0];
+    int width = 1920/2, height = 16;
 
-    for (x = 0; x < 1920; x += 192) {
+    for (x = 0; x < width; x += width/10) {
         uint8_t *startptr = data + 4 * x;
         for (u = 0; u < 12; u++) {
-            for (v = 0; v < 16; v++) {
-                uint8_t *p = startptr + 2 * v * linesize + 16 * 4 * u;
-                for (mask = 0x80; mask; mask >>= 1, p += 8) {
-                    if (mask & avpriv_vga16_font[str[u] * 16 + v]) {
+            for (v = 0; v < height; v++) {
+                uint8_t *p = startptr + v * linesize + height/2 * 4 * u;
+                for (mask = 0x80; mask; mask >>= 1, p += 4) {
+                    if (mask & avpriv_vga16_font[str[u] * 16 + v])
                         p[3] = 255;
-                        p[7] = 255;
-                        p[linesize+3] = 255;
-                        p[linesize+7] = 255;
-                    }
+                    else
+                        p[3] = 0;
                 }
             }
         }
@@ -595,22 +680,29 @@ static int init_axis_from_font(ShowCQTContext *s)
 {
     AVFrame *tmp = NULL;
     int ret = AVERROR(ENOMEM);
+    int width = 1920, height = 32;
+    int default_font = 0;
 
-    if (!(tmp = alloc_frame_empty(AV_PIX_FMT_RGBA, 1920, 32)))
+    if (!(tmp = alloc_frame_empty(AV_PIX_FMT_RGBA, width, height)))
         goto fail;
 
     if (!(s->axis_frame = av_frame_alloc()))
         goto fail;
 
-    if ((ret = init_axis_color(s, tmp)) < 0)
+    if (render_freetype(s, tmp, s->fontfile) < 0 &&
+        render_fontconfig(s, tmp, s->font) < 0 &&
+        (default_font = 1, ret = render_default_font(tmp)) < 0)
         goto fail;
 
-    if (render_freetype(s, tmp) < 0 && (ret = render_default_font(tmp)) < 0)
+    if (default_font)
+        width /= 2, height /= 2;
+
+    if ((ret = init_axis_color(s, tmp, default_font)) < 0)
         goto fail;
 
     if ((ret = ff_scale_image(s->axis_frame->data, s->axis_frame->linesize, s->width, s->axis_h,
                               convert_axis_pixel_format(s->format), tmp->data, tmp->linesize,
-                              1920, 32, AV_PIX_FMT_RGBA, s->ctx)) < 0)
+                              width, height, AV_PIX_FMT_RGBA, s->ctx)) < 0)
         goto fail;
 
     av_frame_free(&tmp);
@@ -638,35 +730,35 @@ static float calculate_gamma(float v, float g)
     return expf(logf(v) / g);
 }
 
-static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len)
+static void rgb_from_cqt(ColorFloat *c, const FFTComplex *v, float g, int len, float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
-        c[x].rgb.r = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].re), g);
-        c[x].rgb.g = 255.0f * calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), g);
-        c[x].rgb.b = 255.0f * calculate_gamma(FFMIN(1.0f, v[x].im), g);
+        c[x].rgb.r = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[0] * v[x].re + cscheme[3] * v[x].im), g);
+        c[x].rgb.g = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[1] * v[x].re + cscheme[4] * v[x].im), g);
+        c[x].rgb.b = 255.0f * calculate_gamma(FFMIN(1.0f, cscheme[2] * v[x].re + cscheme[5] * v[x].im), g);
     }
 }
 
-static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len)
+static void yuv_from_cqt(ColorFloat *c, const FFTComplex *v, float gamma, int len, float cm[3][3], float cscheme[6])
 {
     int x;
     for (x = 0; x < len; x++) {
         float r, g, b;
-        r = calculate_gamma(FFMIN(1.0f, v[x].re), gamma);
-        g = calculate_gamma(FFMIN(1.0f, 0.5f * (v[x].re + v[x].im)), gamma);
-        b = calculate_gamma(FFMIN(1.0f, v[x].im), gamma);
-        c[x].yuv.y = 65.481f * r + 128.553f * g + 24.966f * b;
-        c[x].yuv.u = -37.797f * r - 74.203f * g + 112.0f * b;
-        c[x].yuv.v = 112.0f * r - 93.786f * g - 18.214 * b;
+        r = calculate_gamma(FFMIN(1.0f, cscheme[0] * v[x].re + cscheme[3] * v[x].im), gamma);
+        g = calculate_gamma(FFMIN(1.0f, cscheme[1] * v[x].re + cscheme[4] * v[x].im), gamma);
+        b = calculate_gamma(FFMIN(1.0f, cscheme[2] * v[x].re + cscheme[5] * v[x].im), gamma);
+        c[x].yuv.y = cm[0][0] * r + cm[0][1] * g + cm[0][2] * b;
+        c[x].yuv.u = cm[1][0] * r + cm[1][1] * g + cm[1][2] * b;
+        c[x].yuv.v = cm[2][0] * r + cm[2][1] * g + cm[2][2] * b;
     }
 }
 
 static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
-                         const ColorFloat *c, int bar_h)
+                         const ColorFloat *c, int bar_h, float bar_t)
 {
     int x, y, w = out->width;
-    float mul, ht, rcp_bar_h = 1.0f / bar_h;
+    float mul, ht, rcp_bar_h = 1.0f / bar_h, rcp_bar_t = 1.0f / bar_t;
     uint8_t *v = out->data[0], *lp;
     int ls = out->linesize[0];
 
@@ -680,6 +772,7 @@ static void draw_bar_rgb(AVFrame *out, const float *h, const float *rcp_h,
                 *lp++ = 0;
             } else {
                 mul = (h[x] - ht) * rcp_h[x];
+                mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f;
                 *lp++ = lrintf(mul * c[x].rgb.r);
                 *lp++ = lrintf(mul * c[x].rgb.g);
                 *lp++ = lrintf(mul * c[x].rgb.b);
@@ -696,6 +789,7 @@ do { \
         *lpv++ = 128; \
     } else { \
         mul = (h[x] - ht) * rcp_h[x]; \
+        mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f; \
         *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
         *lpu++ = lrintf(mul * c[x].yuv.u + 128.0f); \
         *lpv++ = lrintf(mul * c[x].yuv.v + 128.0f); \
@@ -708,15 +802,16 @@ do { \
         *lpy++ = 16; \
     } else { \
         mul = (h[x] - ht) * rcp_h[x]; \
+        mul = (mul < bar_t) ? (mul * rcp_bar_t) : 1.0f; \
         *lpy++ = lrintf(mul * c[x].yuv.y + 16.0f); \
     } \
 } while (0)
 
 static void draw_bar_yuv(AVFrame *out, const float *h, const float *rcp_h,
-                         const ColorFloat *c, int bar_h)
+                         const ColorFloat *c, int bar_h, float bar_t)
 {
     int x, y, yh, w = out->width;
-    float mul, ht, rcp_bar_h = 1.0f / bar_h;
+    float mul, ht, rcp_bar_h = 1.0f / bar_h, rcp_bar_t = 1.0f / bar_t;
     uint8_t *vy = out->data[0], *vu = out->data[1], *vv = out->data[2];
     uint8_t *lpy, *lpu, *lpv;
     int lsy = out->linesize[0], lsu = out->linesize[1], lsv = out->linesize[2];
@@ -812,7 +907,7 @@ do { \
     lpay++; lpau++; lpav++; lpaa++; \
 } while (0)
 
-#define BLEND_WITHOUT_CHROMA(c) \
+#define BLEND_WITHOUT_CHROMA(c, alpha_inc) \
 do { \
     if (!*lpaa) { \
         *lpy = lrintf(c.yuv.y + 16.0f); \
@@ -823,7 +918,46 @@ do { \
         *lpy = lrintf(a * (*lpay) + (1.0f - a) * (c.yuv.y + 16.0f)); \
     } \
     lpy++; \
-    lpay++; lpaa++; \
+    lpay++; lpaa += alpha_inc; \
+} while (0)
+
+#define BLEND_CHROMA2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.5f/255.0f) * lpaa[0]; \
+        float a1 = (0.5f/255.0f) * lpaa[1]; \
+        float b = 1.0f - a0 - a1; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
+} while (0)
+
+#define BLEND_CHROMA2x2(c) \
+do { \
+    if (!lpaa[0] && !lpaa[1] && !lpaa[lsaa] && !lpaa[lsaa+1]) { \
+        *lpu = lrintf(c.yuv.u + 128.0f); \
+        *lpv = lrintf(c.yuv.v + 128.0f); \
+    } else if (255 == lpaa[0] && 255 == lpaa[1] && \
+               255 == lpaa[lsaa] && 255 == lpaa[lsaa+1]) { \
+        *lpu = *lpau; *lpv = *lpav; \
+    } else { \
+        float a0 = (0.25f/255.0f) * lpaa[0]; \
+        float a1 = (0.25f/255.0f) * lpaa[1]; \
+        float a2 = (0.25f/255.0f) * lpaa[lsaa]; \
+        float a3 = (0.25f/255.0f) * lpaa[lsaa+1]; \
+        float b = 1.0f - a0 - a1 - a2 - a3; \
+        *lpu = lrintf(a0 * lpau[0] + a1 * lpau[1] + a2 * lpau[lsau] + a3 * lpau[lsau+1] \
+                    + b * (c.yuv.u + 128.0f)); \
+        *lpv = lrintf(a0 * lpav[0] + a1 * lpav[1] + a2 * lpav[lsav] + a3 * lpav[lsav+1] \
+                    + b * (c.yuv.v + 128.0f)); \
+    } \
+    lpau += 2; lpav += 2; lpaa++; lpu++; lpv++; \
 } while (0)
 
 static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int off)
@@ -842,18 +976,25 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
         lpu = vu + (offh + yh) * lsu;
         lpv = vv + (offh + yh) * lsv;
         lpay = vay + y * lsay;
-        lpau = vau + yh * lsau;
-        lpav = vav + yh * lsav;
+        lpau = vau + y * lsau;
+        lpav = vav + y * lsav;
         lpaa = vaa + y * lsaa;
         if (fmt == AV_PIX_FMT_YUV444P) {
             for (x = 0; x < w; x += 2) {
                 BLEND_WITH_CHROMA(c[x]);
                 BLEND_WITH_CHROMA(c[x+1]);
             }
+        } else if (fmt == AV_PIX_FMT_YUV422P) {
+            for (x = 0; x < w; x += 2) {
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
+            }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2x2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
 
@@ -871,13 +1012,14 @@ static void draw_axis_yuv(AVFrame *out, AVFrame *axis, const ColorFloat *c, int 
             }
         } else if (fmt == AV_PIX_FMT_YUV422P) {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITH_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 0);
+                BLEND_CHROMA2(c[x]);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         } else {
             for (x = 0; x < w; x += 2) {
-                BLEND_WITHOUT_CHROMA(c[x]);
-                BLEND_WITHOUT_CHROMA(c[x+1]);
+                BLEND_WITHOUT_CHROMA(c[x], 1);
+                BLEND_WITHOUT_CHROMA(c[x+1], 1);
             }
         }
     }
@@ -979,9 +1121,9 @@ static void process_cqt(ShowCQTContext *s)
     }
 
     if (s->format == AV_PIX_FMT_RGB24)
-        rgb_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
+        rgb_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cscheme_v);
     else
-        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width);
+        yuv_from_cqt(s->c_buf, s->cqt_result, s->sono_g, s->width, s->cmatrix, s->cscheme_v);
 }
 
 static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
@@ -998,6 +1140,14 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     last_time = av_gettime();
 
     memcpy(s->fft_result, s->fft_data, s->fft_len * sizeof(*s->fft_data));
+    if (s->attack_data) {
+        int k;
+        for (k = 0; k < s->remaining_fill_max; k++) {
+            s->fft_result[s->fft_len/2+k].re *= s->attack_data[k];
+            s->fft_result[s->fft_len/2+k].im *= s->attack_data[k];
+        }
+    }
+
     av_fft_permute(s->fft_ctx, s->fft_result);
     av_fft_calc(s->fft_ctx, s->fft_result);
     s->fft_result[s->fft_len] = s->fft_result[0];
@@ -1018,10 +1168,13 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
         AVFrame *out = *frameout = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         if (!out)
             return AVERROR(ENOMEM);
+        out->sample_aspect_ratio = av_make_q(1, 1);
+        out->color_range = AVCOL_RANGE_MPEG;
+        out->colorspace = s->csp;
         UPDATE_TIME(s->alloc_time);
 
         if (s->bar_h) {
-            s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h);
+            s->draw_bar(out, s->h_buf, s->rcp_h_buf, s->c_buf, s->bar_h, s->bar_t);
             UPDATE_TIME(s->bar_time);
         }
 
@@ -1041,6 +1194,62 @@ static int plot_cqt(AVFilterContext *ctx, AVFrame **frameout)
     if (s->sono_h)
         s->sono_idx = (s->sono_idx + s->sono_h - 1) % s->sono_h;
     return 0;
+}
+
+static void init_colormatrix(ShowCQTContext *s)
+{
+    double kr, kg, kb;
+
+    /* from vf_colorspace.c */
+    switch (s->csp) {
+    default:
+        av_log(s->ctx, AV_LOG_WARNING, "unsupported colorspace, setting it to unspecified.\n");
+        s->csp = AVCOL_SPC_UNSPECIFIED;
+    case AVCOL_SPC_UNSPECIFIED:
+    case AVCOL_SPC_BT470BG:
+    case AVCOL_SPC_SMPTE170M:
+        kr = 0.299; kb = 0.114; break;
+    case AVCOL_SPC_BT709:
+        kr = 0.2126; kb = 0.0722; break;
+    case AVCOL_SPC_FCC:
+        kr = 0.30; kb = 0.11; break;
+    case AVCOL_SPC_SMPTE240M:
+        kr = 0.212; kb = 0.087; break;
+    case AVCOL_SPC_BT2020_NCL:
+        kr = 0.2627; kb = 0.0593; break;
+    }
+
+    kg = 1.0 - kr - kb;
+    s->cmatrix[0][0] = 219.0 * kr;
+    s->cmatrix[0][1] = 219.0 * kg;
+    s->cmatrix[0][2] = 219.0 * kb;
+    s->cmatrix[1][0] = -112.0 * kr / (1.0 - kb);
+    s->cmatrix[1][1] = -112.0 * kg / (1.0 - kb);
+    s->cmatrix[1][2] = 112.0;
+    s->cmatrix[2][0] = 112.0;
+    s->cmatrix[2][1] = -112.0 * kg / (1.0 - kr);
+    s->cmatrix[2][2] = -112.0 * kb / (1.0 - kr);
+}
+
+static int init_cscheme(ShowCQTContext *s)
+{
+    char tail[2];
+    int k;
+
+    if (sscanf(s->cscheme, " %f | %f | %f | %f | %f | %f %1s", &s->cscheme_v[0],
+        &s->cscheme_v[1], &s->cscheme_v[2], &s->cscheme_v[3], &s->cscheme_v[4],
+        &s->cscheme_v[5], tail) != 6)
+        goto fail;
+
+    for (k = 0; k < 6; k++)
+        if (isnan(s->cscheme_v[k]) || s->cscheme_v[k] < 0.0f || s->cscheme_v[k] > 1.0f)
+            goto fail;
+
+    return 0;
+
+fail:
+    av_log(s->ctx, AV_LOG_ERROR, "invalid cscheme.\n");
+    return AVERROR(EINVAL);
 }
 
 /* main filter control */
@@ -1096,7 +1305,9 @@ static av_cold int init(AVFilterContext *ctx)
         } while(s->fcount * s->width < 1920 && s->fcount < 10);
     }
 
-    return 0;
+    init_colormatrix(s);
+
+    return init_cscheme(s);
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
@@ -1165,7 +1376,7 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = init_volume(s)) < 0)
         return ret;
 
-    s->fft_bits = ceil(log2(inlink->sample_rate * s->timeclamp));
+    s->fft_bits = FFMAX(ceil(log2(inlink->sample_rate * s->timeclamp)), 4);
     s->fft_len = 1 << s->fft_bits;
     av_log(ctx, AV_LOG_INFO, "fft_len = %d, cqt_len = %d.\n", s->fft_len, s->cqt_len);
 
@@ -1176,8 +1387,24 @@ static int config_output(AVFilterLink *outlink)
     if (!s->fft_ctx || !s->fft_data || !s->fft_result || !s->cqt_result)
         return AVERROR(ENOMEM);
 
+    s->remaining_fill_max = s->fft_len / 2;
+    if (s->attack > 0.0) {
+        int k;
+
+        s->remaining_fill_max = FFMIN(s->remaining_fill_max, ceil(inlink->sample_rate * s->attack));
+        s->attack_data = av_malloc_array(s->remaining_fill_max, sizeof(*s->attack_data));
+        if (!s->attack_data)
+            return AVERROR(ENOMEM);
+
+        for (k = 0; k < s->remaining_fill_max; k++) {
+            double y = M_PI * k / (inlink->sample_rate * s->attack);
+            s->attack_data[k] = 0.355768 + 0.487396 * cos(y) + 0.144232 * cos(2*y) + 0.012604 * cos(3*y);
+        }
+    }
+
     s->cqt_align = 1;
     s->cqt_calc = cqt_calc;
+    s->permute_coeffs = NULL;
     s->draw_sono = draw_sono;
     if (s->format == AV_PIX_FMT_RGB24) {
         s->draw_bar = draw_bar_rgb;
@@ -1188,6 +1415,9 @@ static int config_output(AVFilterLink *outlink)
         s->draw_axis = draw_axis_yuv;
         s->update_sono = update_sono_yuv;
     }
+
+    if (ARCH_X86)
+        ff_showcqt_init_x86(s);
 
     if ((ret = init_cqt(s)) < 0)
         return ret;
@@ -1230,7 +1460,7 @@ static int config_output(AVFilterLink *outlink)
     s->sono_count = 0;
     s->next_pts = 0;
     s->sono_idx = 0;
-    s->remaining_fill = s->fft_len / 2;
+    s->remaining_fill = s->remaining_fill_max;
     s->remaining_frac = 0;
     s->step_frac = av_div_q(av_make_q(inlink->sample_rate, s->count) , s->rate);
     s->step = (int)(s->step_frac.num / s->step_frac.den);
@@ -1258,15 +1488,15 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
     AVFrame *out = NULL;
 
     if (!insamples) {
-        while (s->remaining_fill < s->fft_len / 2) {
-            memset(&s->fft_data[s->fft_len - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
+        while (s->remaining_fill < s->remaining_fill_max) {
+            memset(&s->fft_data[s->fft_len/2 + s->remaining_fill_max - s->remaining_fill], 0, sizeof(*s->fft_data) * s->remaining_fill);
             ret = plot_cqt(ctx, &out);
             if (ret < 0)
                 return ret;
 
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
-            for (x = 0; x < (s->fft_len-step); x++)
+            for (x = 0; x < (s->fft_len/2 + s->remaining_fill_max - step); x++)
                 s->fft_data[x] = s->fft_data[x+step];
             s->remaining_fill += step;
 
@@ -1281,7 +1511,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
 
     while (remaining) {
         i = insamples->nb_samples - remaining;
-        j = s->fft_len - s->remaining_fill;
+        j = s->fft_len/2 + s->remaining_fill_max - s->remaining_fill;
         if (remaining >= s->remaining_fill) {
             for (m = 0; m < s->remaining_fill; m++) {
                 s->fft_data[j+m].re = audio_data[2*(i+m)];
@@ -1295,7 +1525,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             remaining -= s->remaining_fill;
             if (out) {
                 int64_t pts = av_rescale_q(insamples->pts, inlink->time_base, av_make_q(1, inlink->sample_rate));
-                pts += insamples->nb_samples - remaining - s->fft_len/2;
+                pts += insamples->nb_samples - remaining - s->remaining_fill_max;
                 pts = av_rescale_q(pts, av_make_q(1, inlink->sample_rate), outlink->time_base);
                 if (FFABS(pts - out->pts) > PTS_TOLERANCE) {
                     av_log(ctx, AV_LOG_DEBUG, "changing pts from %"PRId64" (%.3f) to %"PRId64" (%.3f).\n",
@@ -1313,7 +1543,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *insamples)
             }
             step = s->step + (s->step_frac.num + s->remaining_frac) / s->step_frac.den;
             s->remaining_frac = (s->step_frac.num + s->remaining_frac) % s->step_frac.den;
-            for (m = 0; m < s->fft_len-step; m++)
+            for (m = 0; m < s->fft_len/2 + s->remaining_fill_max - step; m++)
                 s->fft_data[m] = s->fft_data[m+step];
             s->remaining_fill = step;
         } else {

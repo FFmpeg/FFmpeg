@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 #include "hermite.h"
 
@@ -46,11 +47,13 @@ typedef struct AudioGateContext {
     double range;
     int link;
     int detection;
+    int mode;
 
     double thres;
     double knee_start;
-    double lin_knee_stop;
     double knee_stop;
+    double lin_knee_start;
+    double lin_knee_stop;
     double lin_slope;
     double attack_coeff;
     double release_coeff;
@@ -64,6 +67,9 @@ typedef struct AudioGateContext {
 
 static const AVOption options[] = {
     { "level_in",  "set input level",        OFFSET(level_in),  AV_OPT_TYPE_DOUBLE, {.dbl=1},           0.015625,   64, A },
+    { "mode",      "set mode",               OFFSET(mode),      AV_OPT_TYPE_INT,    {.i64=0},           0, 1, A, "mode" },
+    {   "downward",0,                        0,                 AV_OPT_TYPE_CONST,  {.i64=0},           0, 0, A, "mode" },
+    {   "upward",  0,                        0,                 AV_OPT_TYPE_CONST,  {.i64=1},           0, 0, A, "mode" },
     { "range",     "set max gain reduction", OFFSET(range),     AV_OPT_TYPE_DOUBLE, {.dbl=0.06125},     0, 1, A },
     { "threshold", "set threshold",          OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=0.125},       0, 1, A },
     { "ratio",     "set ratio",              OFFSET(ratio),     AV_OPT_TYPE_DOUBLE, {.dbl=2},           1,  9000, A },
@@ -87,7 +93,6 @@ static int agate_config_input(AVFilterLink *inlink)
     AudioGateContext *s = ctx->priv;
     double lin_threshold = s->threshold;
     double lin_knee_sqrt = sqrt(s->knee);
-    double lin_knee_start;
 
     if (s->detection)
         lin_threshold *= lin_threshold;
@@ -95,9 +100,9 @@ static int agate_config_input(AVFilterLink *inlink)
     s->attack_coeff  = FFMIN(1., 1. / (s->attack * inlink->sample_rate / 4000.));
     s->release_coeff = FFMIN(1., 1. / (s->release * inlink->sample_rate / 4000.));
     s->lin_knee_stop = lin_threshold * lin_knee_sqrt;
-    lin_knee_start = lin_threshold / lin_knee_sqrt;
+    s->lin_knee_start = lin_threshold / lin_knee_sqrt;
     s->thres = log(lin_threshold);
-    s->knee_start = log(lin_knee_start);
+    s->knee_start = log(s->lin_knee_start);
     s->knee_stop = log(s->lin_knee_stop);
 
     return 0;
@@ -111,26 +116,26 @@ static int agate_config_input(AVFilterLink *inlink)
 
 static double output_gain(double lin_slope, double ratio, double thres,
                           double knee, double knee_start, double knee_stop,
-                          double lin_knee_stop, double range)
+                          double range, int mode)
 {
-    if (lin_slope < lin_knee_stop) {
-        double slope = log(lin_slope);
-        double tratio = ratio;
-        double gain = 0.;
-        double delta = 0.;
+    double slope = log(lin_slope);
+    double tratio = ratio;
+    double gain = 0.;
+    double delta = 0.;
 
-        if (IS_FAKE_INFINITY(ratio))
-            tratio = 1000.;
-        gain = (slope - thres) * tratio + thres;
-        delta = tratio;
+    if (IS_FAKE_INFINITY(ratio))
+        tratio = 1000.;
+    gain = (slope - thres) * tratio + thres;
+    delta = tratio;
 
-        if (knee > 1. && slope > knee_start) {
+    if (mode) {
+        if (knee > 1. && slope < knee_stop)
+            gain = hermite_interpolation(slope, knee_stop, knee_start, ((knee_stop - thres) * tratio  + thres), knee_start, delta, 1.);
+    } else {
+        if (knee > 1. && slope > knee_start)
             gain = hermite_interpolation(slope, knee_start, knee_stop, ((knee_start - thres) * tratio  + thres), knee_stop, delta, 1.);
-        }
-        return FFMAX(range, exp(gain - slope));
     }
-
-    return 1.;
+    return FFMAX(range, exp(gain - slope));
 }
 
 static void gate(AudioGateContext *s,
@@ -145,6 +150,7 @@ static void gate(AudioGateContext *s,
 
     for (n = 0; n < nb_samples; n++, src += inlink->channels, dst += inlink->channels, scsrc += sclink->channels) {
         double abs_sample = fabs(scsrc[0] * level_sc), gain = 1.0;
+        int detected;
 
         if (s->link == 1) {
             for (c = 1; c < sclink->channels; c++)
@@ -160,10 +166,16 @@ static void gate(AudioGateContext *s,
             abs_sample *= abs_sample;
 
         s->lin_slope += (abs_sample - s->lin_slope) * (abs_sample > s->lin_slope ? attack_coeff : release_coeff);
-        if (s->lin_slope > 0.0)
+
+        if (s->mode)
+            detected = s->lin_slope > s->lin_knee_start;
+        else
+            detected = s->lin_slope < s->lin_knee_stop;
+
+        if (s->lin_slope > 0.0 && detected)
             gain = output_gain(s->lin_slope, s->ratio, s->thres,
                                s->knee, s->knee_start, s->knee_stop,
-                               s->lin_knee_stop, s->range);
+                               s->range, s->mode);
 
         for (c = 0; c < inlink->channels; c++)
             dst[c] = src[c] * level_in * gain * makeup;
@@ -213,7 +225,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     if (av_frame_is_writable(in)) {
         out = in;
     } else {
-        out = ff_get_audio_buffer(inlink, in->nb_samples);
+        out = ff_get_audio_buffer(outlink, in->nb_samples);
         if (!out) {
             av_frame_free(&in);
             return AVERROR(ENOMEM);
@@ -265,70 +277,69 @@ AVFilter ff_af_agate = {
 #define sidechaingate_options options
 AVFILTER_DEFINE_CLASS(sidechaingate);
 
-static int scfilter_frame(AVFilterLink *link, AVFrame *frame)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = link->dst;
     AudioGateContext *s = ctx->priv;
-    AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *in[2] = { NULL };
+    AVFrame *out = NULL, *in[2] = { NULL };
+    int ret, i, nb_samples;
     double *dst;
-    int nb_samples;
-    int i;
 
-    for (i = 0; i < 2; i++)
-        if (link == ctx->inputs[i])
-            break;
-    av_assert0(i < 2);
-    av_audio_fifo_write(s->fifo[i], (void **)frame->extended_data,
-                        frame->nb_samples);
-    av_frame_free(&frame);
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
+    if ((ret = ff_inlink_consume_frame(ctx->inputs[0], &in[0])) > 0) {
+        av_audio_fifo_write(s->fifo[0], (void **)in[0]->extended_data,
+                            in[0]->nb_samples);
+        av_frame_free(&in[0]);
+    }
+    if (ret < 0)
+        return ret;
+    if ((ret = ff_inlink_consume_frame(ctx->inputs[1], &in[1])) > 0) {
+        av_audio_fifo_write(s->fifo[1], (void **)in[1]->extended_data,
+                            in[1]->nb_samples);
+        av_frame_free(&in[1]);
+    }
+    if (ret < 0)
+        return ret;
 
     nb_samples = FFMIN(av_audio_fifo_size(s->fifo[0]), av_audio_fifo_size(s->fifo[1]));
-    if (!nb_samples)
-        return 0;
-
-    out = ff_get_audio_buffer(outlink, nb_samples);
-    if (!out)
-        return AVERROR(ENOMEM);
-    for (i = 0; i < 2; i++) {
-        in[i] = ff_get_audio_buffer(ctx->inputs[i], nb_samples);
-        if (!in[i]) {
-            av_frame_free(&in[0]);
-            av_frame_free(&in[1]);
-            av_frame_free(&out);
+    if (nb_samples) {
+        out = ff_get_audio_buffer(ctx->outputs[0], nb_samples);
+        if (!out)
             return AVERROR(ENOMEM);
+        for (i = 0; i < 2; i++) {
+            in[i] = ff_get_audio_buffer(ctx->inputs[i], nb_samples);
+            if (!in[i]) {
+                av_frame_free(&in[0]);
+                av_frame_free(&in[1]);
+                av_frame_free(&out);
+                return AVERROR(ENOMEM);
+            }
+            av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);
         }
-        av_audio_fifo_read(s->fifo[i], (void **)in[i]->data, nb_samples);
+
+        dst = (double *)out->data[0];
+        out->pts = s->pts;
+        s->pts += nb_samples;
+
+        gate(s, (double *)in[0]->data[0], dst,
+             (double *)in[1]->data[0], nb_samples,
+             s->level_in, s->level_sc,
+             ctx->inputs[0], ctx->inputs[1]);
+
+        av_frame_free(&in[0]);
+        av_frame_free(&in[1]);
+
+        ret = ff_filter_frame(ctx->outputs[0], out);
+        if (ret < 0)
+            return ret;
     }
-
-    dst = (double *)out->data[0];
-    out->pts = s->pts;
-    s->pts += nb_samples;
-
-    gate(s, (double *)in[0]->data[0], dst,
-         (double *)in[1]->data[0], nb_samples,
-         s->level_in, s->level_sc,
-         ctx->inputs[0], ctx->inputs[1]);
-
-    av_frame_free(&in[0]);
-    av_frame_free(&in[1]);
-
-    return ff_filter_frame(outlink, out);
-}
-
-static int screquest_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    AudioGateContext *s = ctx->priv;
-    int i;
-
-    /* get a frame on each input */
-    for (i = 0; i < 2; i++) {
-        AVFilterLink *inlink = ctx->inputs[i];
-        if (!av_audio_fifo_size(s->fifo[i]))
-            return ff_request_frame(inlink);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[0], ctx->outputs[0]);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[1], ctx->outputs[0]);
+    if (ff_outlink_frame_wanted(ctx->outputs[0])) {
+        if (!av_audio_fifo_size(s->fifo[0]))
+            ff_inlink_request_frame(ctx->inputs[0]);
+        if (!av_audio_fifo_size(s->fifo[1]))
+            ff_inlink_request_frame(ctx->inputs[1]);
     }
-
     return 0;
 }
 
@@ -408,11 +419,9 @@ static const AVFilterPad sidechaingate_inputs[] = {
     {
         .name           = "main",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = scfilter_frame,
     },{
         .name           = "sidechain",
         .type           = AVMEDIA_TYPE_AUDIO,
-        .filter_frame   = scfilter_frame,
     },
     { NULL }
 };
@@ -422,7 +431,6 @@ static const AVFilterPad sidechaingate_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .config_props  = scconfig_output,
-        .request_frame = screquest_frame,
     },
     { NULL }
 };
@@ -433,6 +441,7 @@ AVFilter ff_af_sidechaingate = {
     .priv_size      = sizeof(AudioGateContext),
     .priv_class     = &sidechaingate_class,
     .query_formats  = scquery_formats,
+    .activate       = activate,
     .uninit         = uninit,
     .inputs         = sidechaingate_inputs,
     .outputs        = sidechaingate_outputs,

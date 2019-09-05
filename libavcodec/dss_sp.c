@@ -33,7 +33,7 @@
 
 #define DSS_SP_FRAME_SIZE        42
 #define DSS_SP_SAMPLE_COUNT     (66 * SUBFRAMES)
-#define DSS_SP_FORMULA(a, b, c) (((((a) << 15) + (b) * (c)) + 0x4000) >> 15)
+#define DSS_SP_FORMULA(a, b, c) ((int)((((a) * (1 << 15)) + (b) * (unsigned)(c)) + 0x4000) >> 15)
 
 typedef struct DssSpSubframe {
     int16_t gain;
@@ -499,7 +499,7 @@ static void dss_sp_scale_vector(int32_t *vec, int bits, int size)
             vec[i] = vec[i] >> -bits;
     else
         for (i = 0; i < size; i++)
-            vec[i] = vec[i] << bits;
+            vec[i] = vec[i] * (1 << bits);
 }
 
 static void dss_sp_update_buf(int32_t *hist, int32_t *vector)
@@ -524,12 +524,12 @@ static void dss_sp_shift_sq_sub(const int32_t *filter_buf,
         tmp = dst[a] * filter_buf[0];
 
         for (i = 14; i > 0; i--)
-            tmp -= error_buf[i] * filter_buf[i];
+            tmp -= error_buf[i] * (unsigned)filter_buf[i];
 
         for (i = 14; i > 0; i--)
             error_buf[i] = error_buf[i - 1];
 
-        tmp = (tmp + 4096) >> 13;
+        tmp = (int)(tmp + 4096U) >> 13;
 
         error_buf[1] = tmp;
 

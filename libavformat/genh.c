@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -28,7 +29,7 @@ typedef struct GENHDemuxContext {
     unsigned interleave_size;
 } GENHDemuxContext;
 
-static int genh_probe(AVProbeData *p)
+static int genh_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('G','E','N','H'))
         return 0;
@@ -54,7 +55,7 @@ static int genh_read_header(AVFormatContext *s)
 
     st->codecpar->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codecpar->channels    = avio_rl32(s->pb);
-    if (st->codecpar->channels <= 0)
+    if (st->codecpar->channels <= 0 || st->codecpar->channels > FF_SANE_NB_CHANNELS)
         return AVERROR_INVALIDDATA;
     if (st->codecpar->channels == 1)
         st->codecpar->channel_layout = AV_CH_LAYOUT_MONO;

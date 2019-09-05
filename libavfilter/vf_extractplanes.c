@@ -22,8 +22,10 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+
 #include "avfilter.h"
 #include "drawutils.h"
+#include "filters.h"
 #include "internal.h"
 
 #define PLANE_R 0x01
@@ -34,7 +36,7 @@
 #define PLANE_U 0x20
 #define PLANE_V 0x40
 
-typedef struct {
+typedef struct ExtractPlanesContext {
     const AVClass *class;
     int requested_planes;
     int map[4];
@@ -60,61 +62,80 @@ static const AVOption extractplanes_options[] = {
 
 AVFILTER_DEFINE_CLASS(extractplanes);
 
+#define EIGHTBIT_FORMATS                           \
+        AV_PIX_FMT_YUV410P,                        \
+        AV_PIX_FMT_YUV411P,                        \
+        AV_PIX_FMT_YUV440P,                        \
+        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,   \
+        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,   \
+        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,  \
+        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,  \
+        AV_PIX_FMT_YUVJ411P,                       \
+        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,   \
+        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,       \
+        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,        \
+        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,          \
+        AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,          \
+        AV_PIX_FMT_RGB0, AV_PIX_FMT_BGR0,          \
+        AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,          \
+        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP
+
+#define HIGHDEPTH_FORMATS(suf)                                 \
+        AV_PIX_FMT_YA16##suf, AV_PIX_FMT_GRAY16##suf,          \
+        AV_PIX_FMT_YUV420P16##suf, AV_PIX_FMT_YUVA420P16##suf, \
+        AV_PIX_FMT_YUV422P16##suf, AV_PIX_FMT_YUVA422P16##suf, \
+        AV_PIX_FMT_YUV444P16##suf, AV_PIX_FMT_YUVA444P16##suf, \
+        AV_PIX_FMT_RGB48##suf, AV_PIX_FMT_BGR48##suf,          \
+        AV_PIX_FMT_RGBA64##suf, AV_PIX_FMT_BGRA64##suf,        \
+        AV_PIX_FMT_GBRP16##suf, AV_PIX_FMT_GBRAP16##suf,       \
+        AV_PIX_FMT_YUV420P10##suf,                             \
+        AV_PIX_FMT_YUV422P10##suf,                             \
+        AV_PIX_FMT_YUV444P10##suf,                             \
+        AV_PIX_FMT_YUV440P10##suf,                             \
+        AV_PIX_FMT_YUVA420P10##suf,                            \
+        AV_PIX_FMT_YUVA422P10##suf,                            \
+        AV_PIX_FMT_YUVA444P10##suf,                            \
+        AV_PIX_FMT_YUV420P12##suf,                             \
+        AV_PIX_FMT_YUV422P12##suf,                             \
+        AV_PIX_FMT_YUV444P12##suf,                             \
+        AV_PIX_FMT_YUV440P12##suf,                             \
+        AV_PIX_FMT_YUVA422P12##suf,                            \
+        AV_PIX_FMT_YUVA444P12##suf,                            \
+        AV_PIX_FMT_GBRP10##suf, AV_PIX_FMT_GBRAP10##suf,       \
+        AV_PIX_FMT_GBRP12##suf, AV_PIX_FMT_GBRAP12##suf,       \
+        AV_PIX_FMT_YUV420P9##suf,                              \
+        AV_PIX_FMT_YUV422P9##suf,                              \
+        AV_PIX_FMT_YUV444P9##suf,                              \
+        AV_PIX_FMT_YUVA420P9##suf,                             \
+        AV_PIX_FMT_YUVA422P9##suf,                             \
+        AV_PIX_FMT_YUVA444P9##suf,                             \
+        AV_PIX_FMT_GBRP9##suf,                                 \
+        AV_PIX_FMT_GBRP14##suf,                                \
+        AV_PIX_FMT_YUV420P14##suf,                             \
+        AV_PIX_FMT_YUV422P14##suf,                             \
+        AV_PIX_FMT_YUV444P14##suf
+
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat in_pixfmts_le[] = {
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
-        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_YUV420P16LE, AV_PIX_FMT_YUVA420P16LE,
-        AV_PIX_FMT_YUV422P16LE, AV_PIX_FMT_YUVA422P16LE,
-        AV_PIX_FMT_YUV444P16LE, AV_PIX_FMT_YUVA444P16LE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_YA16LE, AV_PIX_FMT_GRAY16LE,
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_RGB0, AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGB48LE, AV_PIX_FMT_BGR48LE,
-        AV_PIX_FMT_RGBA64LE, AV_PIX_FMT_BGRA64LE,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_GBRP16LE, AV_PIX_FMT_GBRAP16LE,
+        EIGHTBIT_FORMATS,
+        HIGHDEPTH_FORMATS(LE),
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat in_pixfmts_be[] = {
-        AV_PIX_FMT_YUV410P,
-        AV_PIX_FMT_YUV411P,
-        AV_PIX_FMT_YUV440P,
-        AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUVA420P,
-        AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUVA422P,
-        AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ422P,
-        AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ444P,
-        AV_PIX_FMT_YUVJ411P,
-        AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUVA444P,
-        AV_PIX_FMT_YUV420P16BE, AV_PIX_FMT_YUVA420P16BE,
-        AV_PIX_FMT_YUV422P16BE, AV_PIX_FMT_YUVA422P16BE,
-        AV_PIX_FMT_YUV444P16BE, AV_PIX_FMT_YUVA444P16BE,
-        AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY8A,
-        AV_PIX_FMT_YA16BE, AV_PIX_FMT_GRAY16BE,
-        AV_PIX_FMT_RGB24, AV_PIX_FMT_BGR24,
-        AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA,
-        AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
-        AV_PIX_FMT_RGB0, AV_PIX_FMT_BGR0,
-        AV_PIX_FMT_0RGB, AV_PIX_FMT_0BGR,
-        AV_PIX_FMT_RGB48BE, AV_PIX_FMT_BGR48BE,
-        AV_PIX_FMT_RGBA64BE, AV_PIX_FMT_BGRA64BE,
-        AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP,
-        AV_PIX_FMT_GBRP16BE, AV_PIX_FMT_GBRAP16BE,
+        EIGHTBIT_FORMATS,
+        HIGHDEPTH_FORMATS(BE),
         AV_PIX_FMT_NONE,
     };
     static const enum AVPixelFormat out8_pixfmts[] = { AV_PIX_FMT_GRAY8, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out9le_pixfmts[] = { AV_PIX_FMT_GRAY9LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out9be_pixfmts[] = { AV_PIX_FMT_GRAY9BE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out10le_pixfmts[] = { AV_PIX_FMT_GRAY10LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out10be_pixfmts[] = { AV_PIX_FMT_GRAY10BE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out12le_pixfmts[] = { AV_PIX_FMT_GRAY12LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out12be_pixfmts[] = { AV_PIX_FMT_GRAY12BE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out14le_pixfmts[] = { AV_PIX_FMT_GRAY14LE, AV_PIX_FMT_NONE };
+    static const enum AVPixelFormat out14be_pixfmts[] = { AV_PIX_FMT_GRAY14BE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16le_pixfmts[] = { AV_PIX_FMT_GRAY16LE, AV_PIX_FMT_NONE };
     static const enum AVPixelFormat out16be_pixfmts[] = { AV_PIX_FMT_GRAY16BE, AV_PIX_FMT_NONE };
     const enum AVPixelFormat *out_pixfmts, *in_pixfmts;
@@ -150,6 +171,22 @@ static int query_formats(AVFilterContext *ctx)
 
     if (depth == 8)
         out_pixfmts = out8_pixfmts;
+    else if (!be && depth == 9)
+        out_pixfmts = out9le_pixfmts;
+    else if (be && depth == 9)
+        out_pixfmts = out9be_pixfmts;
+    else if (!be && depth == 10)
+        out_pixfmts = out10le_pixfmts;
+    else if (be && depth == 10)
+        out_pixfmts = out10be_pixfmts;
+    else if (!be && depth == 12)
+        out_pixfmts = out12le_pixfmts;
+    else if (be && depth == 12)
+        out_pixfmts = out12be_pixfmts;
+    else if (!be && depth == 14)
+        out_pixfmts = out14le_pixfmts;
+    else if (be && depth == 14)
+        out_pixfmts = out14be_pixfmts;
     else if (be)
         out_pixfmts = out16be_pixfmts;
     else
@@ -245,7 +282,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         const int idx = s->map[i];
         AVFrame *out;
 
-        if (outlink->status)
+        if (ff_outlink_get_status(outlink))
             continue;
 
         out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
@@ -286,7 +323,7 @@ static av_cold int init(AVFilterContext *ctx)
 {
     ExtractPlanesContext *s = ctx->priv;
     int planes = (s->requested_planes & 0xf) | (s->requested_planes >> 4);
-    int i;
+    int i, ret;
 
     for (i = 0; i < 4; i++) {
         char *name;
@@ -303,7 +340,10 @@ static av_cold int init(AVFilterContext *ctx)
         pad.type = AVMEDIA_TYPE_VIDEO;
         pad.config_props = config_output;
 
-        ff_insert_outpad(ctx, ctx->nb_outputs, &pad);
+        if ((ret = ff_insert_outpad(ctx, ctx->nb_outputs, &pad)) < 0) {
+            av_freep(&pad.name);
+            return ret;
+        }
     }
 
     return 0;

@@ -1,5 +1,5 @@
 /*
- * MPEG4 Video frame extraction
+ * MPEG-4 video frame extraction
  * Copyright (c) 2003 Fabrice Bellard
  * Copyright (c) 2003 Michael Niedermayer
  *
@@ -46,7 +46,7 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
     if (!vop_found) {
         for (i = 0; i < buf_size; i++) {
             state = (state << 8) | buf[i];
-            if (state == 0x1B6) {
+            if (state == VOP_STARTCODE) {
                 i++;
                 vop_found = 1;
                 break;
@@ -61,6 +61,8 @@ int ff_mpeg4_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size)
         for (; i < buf_size; i++) {
             state = (state << 8) | buf[i];
             if ((state & 0xFFFFFF00) == 0x100) {
+                if (state == SLICE_STARTCODE || state == EXT_STARTCODE)
+                    continue;
                 pc->frame_start_found = 0;
                 pc->state             = -1;
                 return i - 3;
@@ -87,13 +89,13 @@ static int mpeg4_decode_header(AVCodecParserContext *s1, AVCodecContext *avctx,
 
     if (avctx->extradata_size && pc->first_picture) {
         init_get_bits(gb, avctx->extradata, avctx->extradata_size * 8);
-        ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
-        if (ret < -1)
+        ret = ff_mpeg4_decode_picture_header(dec_ctx, gb, 1);
+        if (ret < 0)
             av_log(avctx, AV_LOG_WARNING, "Failed to parse extradata\n");
     }
 
     init_get_bits(gb, buf, 8 * buf_size);
-    ret = ff_mpeg4_decode_picture_header(dec_ctx, gb);
+    ret = ff_mpeg4_decode_picture_header(dec_ctx, gb, 0);
     if (s->width && (!avctx->width || !avctx->height ||
                      !avctx->coded_width || !avctx->coded_height)) {
         ret = ff_set_dimensions(avctx, s->width, s->height);

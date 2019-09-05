@@ -25,7 +25,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int apc_probe(AVProbeData *p)
+static int apc_probe(const AVProbeData *p)
 {
     if (!strncmp(p->buf, "CRYO_APC", 8))
         return AVPROBE_SCORE_MAX;
@@ -65,7 +65,7 @@ static int apc_read_header(AVFormatContext *s)
     }
 
     st->codecpar->bits_per_coded_sample = 4;
-    st->codecpar->bit_rate = st->codecpar->bits_per_coded_sample * st->codecpar->channels
+    st->codecpar->bit_rate = (int64_t)st->codecpar->bits_per_coded_sample * st->codecpar->channels
                           * st->codecpar->sample_rate;
     st->codecpar->block_align = 1;
 

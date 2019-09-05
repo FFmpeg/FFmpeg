@@ -1,4 +1,7 @@
-LIBAVFILTER_$MAJOR {
-        global: avfilter_*; av_*;
-        local: *;
+LIBAVFILTER_MAJOR {
+    global:
+        avfilter_*;
+        av_*;
+    local:
+        *;
 };

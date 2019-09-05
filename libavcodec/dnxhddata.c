@@ -22,7 +22,6 @@
 #include "avcodec.h"
 #include "dnxhddata.h"
 #include "libavutil/common.h"
-#include "libavutil/intreadwrite.h"
 
 /* The quantization tables below are in zigzag order! */
 
@@ -234,6 +233,7 @@ static const uint8_t dnxhd_1252_chroma_weight[] = {
     114, 128, 125, 129, 134, 125, 116, 116,
 };
 
+/* Used in CID 1244, 1260 */
 static const uint8_t dnxhd_1260_luma_weight[] = {
      0, 32, 33, 34, 36, 37, 37, 36,
     34, 33, 34, 35, 37, 38, 40, 41,
@@ -245,6 +245,7 @@ static const uint8_t dnxhd_1260_luma_weight[] = {
     52, 53, 53, 50, 50, 54, 54, 54,
 };
 
+/* Used in CID 1244, 1260 */
 static const uint8_t dnxhd_1260_chroma_weight[] = {
      0, 32, 34, 38, 42, 40, 38, 36,
     35, 35, 38, 42, 43, 43, 42, 40,
@@ -938,88 +939,84 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 175, 185, 365, 440 },
-      { { 24000, 1001 }, { 25, 1 }, { 50, 1 }, { 60000, 1001 } } },
+      { 175, 185, 365, 440 } },
     { 1237, 1920, 1080, 606208, 606208,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 115, 120, 145, 240, 290 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 115, 120, 145, 240, 290 } },
     { 1238, 1920, 1080, 917504, 917504,
       0, 4, 8, 4,
       dnxhd_1238_luma_weight, dnxhd_1238_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1238_run,
-      { 175, 185, 220, 365, 440 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 175, 185, 220, 365, 440 } },
     { 1241, 1920, 1080, 917504, 458752,
       DNXHD_INTERLACED, 6, 10, 4,
       dnxhd_1241_luma_weight, dnxhd_1241_chroma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 185, 220 },
-      { { 25, 1 }, { 30000, 1001 } } },
+      { 185, 220 } },
     { 1242, 1920, 1080, 606208, 303104,
       DNXHD_INTERLACED, 4, 8, 3,
       dnxhd_1242_luma_weight, dnxhd_1242_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 120, 145 },
-      { { 25, 1 }, { 30000, 1001 } } },
+      { 120, 145 } },
     { 1243, 1920, 1080, 917504, 458752,
       DNXHD_INTERLACED, 4, 8, 4,
       dnxhd_1243_luma_weight, dnxhd_1243_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1238_run,
-      { 185, 220 },
-      { { 25, 1 }, { 30000, 1001 } } },
+      { 185, 220 } },
+    { 1244, 1440, 1080, 606208, 303104,
+      DNXHD_INTERLACED, 4, 8, 3,
+      dnxhd_1260_luma_weight, dnxhd_1260_chroma_weight,
+      dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
+      dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
+      dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
+      { 120, 145 } },
     { 1250, 1280,  720, 458752, 458752,
       0, 6, 10, 4,
       dnxhd_1250_luma_weight, dnxhd_1250_chroma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1250_ac_codes, dnxhd_1250_ac_bits, dnxhd_1250_ac_info,
       dnxhd_1250_run_codes, dnxhd_1250_run_bits, dnxhd_1250_run,
-      { 90, 90, 180, 220 },
-      { { 24000, 1001 }, { 25, 1 }, { 50, 1 }, { 60000, 1001 } } },
+      { 90, 180, 220 } },
     { 1251, 1280,  720, 458752, 458752,
       0, 4, 8, 4,
       dnxhd_1251_luma_weight, dnxhd_1251_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1251_ac_codes, dnxhd_1251_ac_bits, dnxhd_1251_ac_info,
       dnxhd_1250_run_codes, dnxhd_1250_run_bits, dnxhd_1250_run,
-      { 90, 90, 110, 180, 220 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 90, 110, 180, 220 } },
     { 1252, 1280,  720, 303104, 303104,
       0, 4, 8, 5,
       dnxhd_1252_luma_weight, dnxhd_1252_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1252_ac_codes, dnxhd_1252_ac_bits, dnxhd_1252_ac_info,
       dnxhd_1250_run_codes, dnxhd_1250_run_bits, dnxhd_1250_run,
-      { 60, 60, 75, 120, 145 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 60, 75, 120, 145 } },
     { 1253, 1920, 1080, 188416, 188416,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 36, 36, 45, 75, 90 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 36, 45, 75, 90 } },
     { 1256, 1920, 1080, 1835008, 1835008,
       DNXHD_444, 6, 10, 4,
       dnxhd_1235_luma_weight, dnxhd_1235_luma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 350, 390, 440, 730, 880 },
-      { { 24000, 1001 }, { 25, 1 }, { 30000, 1001 }, { 50, 1 }, { 60000, 1001 } } },
+      { 350, 390, 440, 730, 880 } },
     { 1258, 960, 720, 212992, 212992,
       0, 4, 8, 5,
       dnxhd_1252_luma_weight, dnxhd_1252_chroma_weight,
@@ -1047,35 +1044,35 @@ const CIDEntry ff_dnxhd_cid_table[] = {
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 0 } },
+      { 0 }, { 57344, 255} },
     { 1271, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 6, DNXHD_VARIABLE, 4,
       dnxhd_1241_luma_weight, dnxhd_1241_chroma_weight,
       dnxhd_1235_dc_codes, dnxhd_1235_dc_bits,
       dnxhd_1235_ac_codes, dnxhd_1235_ac_bits, dnxhd_1235_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1235_run,
-      { 0 } },
+      { 0 }, { 28672, 255} },
     { 1272, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 4,
       dnxhd_1238_luma_weight, dnxhd_1238_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1238_ac_codes, dnxhd_1238_ac_bits, dnxhd_1238_ac_info,
       dnxhd_1235_run_codes, dnxhd_1235_run_bits, dnxhd_1238_run,
-      { 0 } },
+      { 0 }, { 28672, 255} },
     { 1273, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 0 } },
+      { 0 }, { 18944, 255} },
     { 1274, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE, DNXHD_VARIABLE,
       0, 4, 8, 3,
       dnxhd_1237_luma_weight, dnxhd_1237_chroma_weight,
       dnxhd_1237_dc_codes, dnxhd_1237_dc_bits,
       dnxhd_1237_ac_codes, dnxhd_1237_ac_bits, dnxhd_1237_ac_info,
       dnxhd_1237_run_codes, dnxhd_1237_run_bits, dnxhd_1237_run,
-      { 0 } },
+      { 0 }, { 5888, 255} },
 };
 
 int ff_dnxhd_get_cid_table(int cid)
@@ -1095,6 +1092,19 @@ int avpriv_dnxhd_get_frame_size(int cid)
     return ff_dnxhd_cid_table[i].frame_size;
 }
 
+int avpriv_dnxhd_get_hr_frame_size(int cid, int w, int h)
+{
+    int result, i = ff_dnxhd_get_cid_table(cid);
+
+    if (i < 0)
+        return i;
+
+    result = ((h + 15) / 16) * ((w + 15) / 16) * (int64_t)ff_dnxhd_cid_table[i].packet_scale.num / ff_dnxhd_cid_table[i].packet_scale.den;
+    result = (result + 2048) / 4096 * 4096;
+
+    return FFMAX(result, 8192);
+}
+
 int avpriv_dnxhd_get_interlaced(int cid)
 {
     int i = ff_dnxhd_get_cid_table(cid);
@@ -1103,17 +1113,31 @@ int avpriv_dnxhd_get_interlaced(int cid)
     return ff_dnxhd_cid_table[i].flags & DNXHD_INTERLACED ? 1 : 0;
 }
 
-uint64_t avpriv_dnxhd_parse_header_prefix(const uint8_t *buf)
+static int dnxhd_find_hr_cid(AVCodecContext *avctx)
 {
-    uint64_t prefix = AV_RB32(buf);
-    prefix = (prefix << 16) | buf[4] << 8;
-    return ff_dnxhd_check_header_prefix(prefix);
+    switch (avctx->profile) {
+    case FF_PROFILE_DNXHR_444:
+        return 1270;
+    case FF_PROFILE_DNXHR_HQX:
+        return 1271;
+    case FF_PROFILE_DNXHR_HQ:
+        return 1272;
+    case FF_PROFILE_DNXHR_SQ:
+        return 1273;
+    case FF_PROFILE_DNXHR_LB:
+        return 1274;
+    }
+    return 0;
 }
 
 int ff_dnxhd_find_cid(AVCodecContext *avctx, int bit_depth)
 {
     int i, j;
     int mbs = avctx->bit_rate / 1000000;
+
+    if (avctx->profile != FF_PROFILE_DNXHD)
+        return dnxhd_find_hr_cid(avctx);
+
     if (!mbs)
         return 0;
     for (i = 0; i < FF_ARRAY_ELEMS(ff_dnxhd_cid_table); i++) {
@@ -1145,9 +1169,9 @@ void ff_dnxhd_print_profiles(AVCodecContext *avctx, int loglevel)
             if (!cid->bit_rates[j])
                 break;
 
-            av_log(avctx, loglevel, "Frame size: %dx%d%c; bitrate: %dMbps; pixel format: %s; framerate: %d/%d\n",
+            av_log(avctx, loglevel, "Frame size: %dx%d%c; bitrate: %dMbps; pixel format: %s\n",
                    cid->width, cid->height, cid->flags & DNXHD_INTERLACED ? 'i' : 'p', cid->bit_rates[j],
-                   cid->bit_depth == 10 ? "yuv422p10" : "yuv422p", cid->frame_rates[j].num, cid->frame_rates[j].den);
+                   cid->flags & DNXHD_444 ? "yuv444p10, gbrp10" : cid->bit_depth == 10 ? "yuv422p10" : "yuv422p");
         }
     }
 }

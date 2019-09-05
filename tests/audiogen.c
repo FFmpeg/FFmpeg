@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#define MAX_CHANNELS 8
+#define MAX_CHANNELS 12
 
 static unsigned int myrnd(unsigned int *seed_ptr, int n)
 {

@@ -8,6 +8,7 @@
 #codec_id 1: pcm_s32be
 #sample_rate 1: 48000
 #channel_layout 1: 4
+#channel_layout_name 1: mono
 0,          0,          0,    10010,  1626280, 0x5768c7d6
 1,          0,          0,    18140,    14816, 0xd185e8c7
 0,      10010,      10010,    10010,  1626092, 0x070bd882

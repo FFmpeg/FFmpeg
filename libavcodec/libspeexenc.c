@@ -125,10 +125,10 @@ static av_cold void print_enc_params(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_DEBUG, "  quality: %f\n", s->vbr_quality);
     } else if (s->abr) {
         av_log(avctx, AV_LOG_DEBUG, "rate control: ABR\n");
-        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", (int64_t)avctx->bit_rate);
+        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", avctx->bit_rate);
     } else {
         av_log(avctx, AV_LOG_DEBUG, "rate control: CBR\n");
-        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", (int64_t)avctx->bit_rate);
+        av_log(avctx, AV_LOG_DEBUG, "  bitrate: %"PRId64" bps\n", avctx->bit_rate);
     }
     av_log(avctx, AV_LOG_DEBUG, "complexity: %d\n",
            avctx->compression_level);
@@ -159,9 +159,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     /* sample rate and encoding mode */
     switch (avctx->sample_rate) {
-    case  8000: mode = &speex_nb_mode;  break;
-    case 16000: mode = &speex_wb_mode;  break;
-    case 32000: mode = &speex_uwb_mode; break;
+    case  8000: mode = speex_lib_get_mode(SPEEX_MODEID_NB);  break;
+    case 16000: mode = speex_lib_get_mode(SPEEX_MODEID_WB);  break;
+    case 32000: mode = speex_lib_get_mode(SPEEX_MODEID_UWB); break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Sample rate of %d Hz is not supported. "
                "Resample to 8, 16, or 32 kHz.\n", avctx->sample_rate);
@@ -216,7 +216,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (s->vad)
         speex_encoder_ctl(s->enc_state, SPEEX_SET_VAD, &s->vad);
 
-    /* Activiting Discontinuous Transmission */
+    /* Activating Discontinuous Transmission */
     if (s->dtx) {
         speex_encoder_ctl(s->enc_state, SPEEX_SET_DTX, &s->dtx);
         if (!(s->abr || s->vad || s->header.vbr))
@@ -365,4 +365,5 @@ AVCodec ff_libspeex_encoder = {
     .supported_samplerates = (const int[]){ 8000, 16000, 32000, 0 },
     .priv_class     = &speex_class,
     .defaults       = defaults,
+    .wrapper_name   = "libspeex",
 };

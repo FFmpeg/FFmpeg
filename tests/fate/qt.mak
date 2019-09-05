@@ -49,8 +49,18 @@ fate-svq1: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/marymary-shackles.mov -an -t
 FATE_QT-$(call DEMDEC, MOV, SVQ1) += fate-svq1-headerswap
 fate-svq1-headerswap: CMD = framecrc -i $(TARGET_SAMPLES)/svq1/ct_ending_cut.mov -frames 4
 
-FATE_QT-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += fate-svq3
-fate-svq3: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
+FATE_SVQ3 += fate-svq3-1
+fate-svq3-1: CMD = framecrc -i $(TARGET_SAMPLES)/svq3/Vertical400kbit.sorenson3.mov -t 6 -an
+
+#FATE_SVQ3 += fate-svq3-2
+#FIXME: first frame changes depending on --enable-memory-poisoning being used to configure or not
+fate-svq3-2: CMD = framecrc -flags +bitexact -ignore_editlist 1 -i $(TARGET_SAMPLES)/svq3/svq3_decoding_regression.mov -an
+
+FATE_SVQ3 += fate-svq3-watermark
+fate-svq3-watermark: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/svq3/svq3_watermark.mov
+
+FATE_QT-$(call ALLYES, MOV_DEMUXER SVQ3_DECODER ZLIB) += $(FATE_SVQ3)
+fate-svq3: $(FATE_SVQ3)
 
 FATE_QT += $(FATE_QT-yes)
 

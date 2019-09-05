@@ -1,5 +1,5 @@
 /*
- * H261 decoder
+ * H.261 decoder
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  * Copyright (c) 2004 Maarten Daniels
  *
@@ -223,7 +223,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2)
             s->current_picture.motion_val[0][b_xy][1] = s->mv[0][0][1];
         }
 
-        ff_mpv_decode_mb(s, s->block);
+        ff_mpv_reconstruct_mb(s, s->block);
     }
 
     return 0;
@@ -466,7 +466,7 @@ intra:
             s->block_last_index[i] = -1;
     }
 
-    ff_mpv_decode_mb(s, s->block);
+    ff_mpv_reconstruct_mb(s, s->block);
 
     return SLICE_OK;
 }
@@ -601,7 +601,7 @@ retry:
     init_get_bits(&s->gb, buf, buf_size * 8);
 
     if (!s->context_initialized)
-        // we need the IDCT permutaton for reading a custom matrix
+        // we need the IDCT permutation for reading a custom matrix
         ff_mpv_idct_init(s);
 
     ret = h261_decode_picture_header(h);

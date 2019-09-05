@@ -27,7 +27,7 @@
 #include "avassert.h"
 #include "softfloat_tables.h"
 
-#define MIN_EXP -126
+#define MIN_EXP -149
 #define MAX_EXP  126
 #define ONE_BITS 29
 
@@ -36,18 +36,22 @@ typedef struct SoftFloat{
     int32_t  exp;
 }SoftFloat;
 
-static const SoftFloat FLOAT_0          = {          0,   MIN_EXP};
-static const SoftFloat FLOAT_05         = { 0x20000000,   0};
-static const SoftFloat FLOAT_1          = { 0x20000000,   1};
-static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};
-static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};
-static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};
-static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};
+static const SoftFloat FLOAT_0          = {          0,   MIN_EXP};             ///< 0.0
+static const SoftFloat FLOAT_05         = { 0x20000000,   0};                   ///< 0.5
+static const SoftFloat FLOAT_1          = { 0x20000000,   1};                   ///< 1.0
+static const SoftFloat FLOAT_EPSILON    = { 0x29F16B12, -16};                   ///< A small value
+static const SoftFloat FLOAT_1584893192 = { 0x32B771ED,   1};                   ///< 1.584893192 (10^.2)
+static const SoftFloat FLOAT_100000     = { 0x30D40000,  17};                   ///< 100000
+static const SoftFloat FLOAT_0999999    = { 0x3FFFFBCE,   0};                   ///< 0.999999
+static const SoftFloat FLOAT_MIN        = { 0x20000000,   MIN_EXP};
 
+
+/**
+ * Convert a SoftFloat to a double precision float.
+ */
 static inline av_const double av_sf2double(SoftFloat v) {
     v.exp -= ONE_BITS +1;
-    if(v.exp > 0) return (double)v.mant * (double)(1 << v.exp);
-    else          return (double)v.mant / (double)(1 << (-v.exp));
+    return ldexp(v.mant, v.exp);
 }
 
 static av_const SoftFloat av_normalize_sf(SoftFloat a){
@@ -110,14 +114,27 @@ static inline av_const SoftFloat av_mul_sf(SoftFloat a, SoftFloat b){
  * @return Will not be more denormalized than a.
  */
 static inline av_const SoftFloat av_div_sf(SoftFloat a, SoftFloat b){
+    int64_t temp = (int64_t)a.mant * (1<<(ONE_BITS+1));
+    temp /= b.mant;
     a.exp -= b.exp;
-    a.mant = ((int64_t)a.mant<<(ONE_BITS+1)) / b.mant;
+    a.mant = temp;
+    while (a.mant != temp) {
+        temp /= 2;
+        a.exp--;
+        a.mant = temp;
+    }
     a = av_normalize1_sf(a);
     if (!a.mant || a.exp < MIN_EXP)
         return FLOAT_0;
     return a;
 }
 
+/**
+ * Compares two SoftFloats.
+ * @returns < 0 if the first is less
+ *          > 0 if the first is greater
+ *            0 if they are equal
+ */
 static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if      (t <-31) return                  -  b.mant      ;
@@ -126,6 +143,10 @@ static inline av_const int av_cmp_sf(SoftFloat a, SoftFloat b){
     else             return  a.mant                         ;
 }
 
+/**
+ * Compares two SoftFloats.
+ * @returns 1 if a is greater than b, 0 otherwise
+ */
 static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
 {
     int t= a.exp - b.exp;
@@ -135,6 +156,9 @@ static inline av_const int av_gt_sf(SoftFloat a, SoftFloat b)
     else             return  a.mant          >  0           ;
 }
 
+/**
+ * @returns the sum of 2 SoftFloats.
+ */
 static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     int t= a.exp - b.exp;
     if      (t <-31) return b;
@@ -143,6 +167,9 @@ static inline av_const SoftFloat av_add_sf(SoftFloat a, SoftFloat b){
     else             return a;
 }
 
+/**
+ * @returns the difference of 2 SoftFloats.
+ */
 static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
     return av_add_sf(a, (SoftFloat){ -b.mant, b.exp});
 }
@@ -150,12 +177,14 @@ static inline av_const SoftFloat av_sub_sf(SoftFloat a, SoftFloat b){
 //FIXME log, exp, pow
 
 /**
- * Converts a mantisse and exponent to a SoftFloat
- * @returns a SoftFloat with value v * 2^frac_bits
+ * Converts a mantisse and exponent to a SoftFloat.
+ * This converts a fixed point value v with frac_bits fractional bits to a
+ * SoftFloat.
+ * @returns a SoftFloat with value v * 2^-frac_bits
  */
 static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
     int exp_offset = 0;
-    if(v == INT_MIN){
+    if(v <= INT_MIN + 1){
         exp_offset = 1;
         v>>=1;
     }
@@ -163,6 +192,7 @@ static inline av_const SoftFloat av_int2sf(int v, int frac_bits){
 }
 
 /**
+ * Converts a SoftFloat to an integer.
  * Rounding is to -inf.
  */
 static inline av_const int av_sf2int(SoftFloat v, int frac_bits){
@@ -214,12 +244,12 @@ static av_unused void av_sincos_sf(int a, int *s, int *c)
     int st, ct;
 
     idx = a >> 26;
-    sign = (idx << 27) >> 31;
+    sign = (int32_t)((unsigned)idx << 27) >> 31;
     cv = av_costbl_1_sf[idx & 0xf];
     cv = (cv ^ sign) - sign;
 
     idx -= 8;
-    sign = (idx << 27) >> 31;
+    sign = (int32_t)((unsigned)idx << 27) >> 31;
     sv = av_costbl_1_sf[idx & 0xf];
     sv = (sv ^ sign) - sign;
 

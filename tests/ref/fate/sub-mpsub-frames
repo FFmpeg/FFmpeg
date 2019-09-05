@@ -10,5 +10,5 @@ Style: Default,Arial,16,&Hffffff,&Hffffff,&H0,&H0,0,0,0,0,100,100,0,0,1,1,0,2,10
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
-Dialogue: 0,0:00:01.00,0:00:02.48,Default,,0,0,0,,Start at 1sec,\Nlast 1.5 seconds
-Dialogue: 0,0:00:02.52,0:00:11.52,Default,,0,0,0,,One frame later,\Nduring 9 seconds
+Dialogue: 0,0:00:01.00,0:00:02.50,Default,,0,0,0,,Start at 1sec,\Nlast 1.5 seconds
+Dialogue: 0,0:00:02.54,0:00:11.54,Default,,0,0,0,,One frame later,\Nduring 9 seconds

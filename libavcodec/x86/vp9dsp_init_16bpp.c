@@ -27,7 +27,7 @@
 #include "libavcodec/vp9dsp.h"
 #include "libavcodec/x86/vp9dsp_init.h"
 
-#if HAVE_YASM
+#if HAVE_X86ASM
 
 decl_fpel_func(put,   8,    , mmx);
 decl_fpel_func(avg,   8, _16, mmxext);
@@ -51,6 +51,10 @@ decl_ipred_fns(h,       16, mmxext, sse2);
 decl_ipred_fns(dc,      16, mmxext, sse2);
 decl_ipred_fns(dc_top,  16, mmxext, sse2);
 decl_ipred_fns(dc_left, 16, mmxext, sse2);
+decl_ipred_fn(dl,       16,     16, avx2);
+decl_ipred_fn(dl,       32,     16, avx2);
+decl_ipred_fn(dr,       16,     16, avx2);
+decl_ipred_fn(dr,       32,     16, avx2);
 
 #define decl_ipred_dir_funcs(type) \
 decl_ipred_fns(type, 16, sse2,  sse2); \
@@ -63,11 +67,11 @@ decl_ipred_dir_funcs(vl);
 decl_ipred_dir_funcs(vr);
 decl_ipred_dir_funcs(hu);
 decl_ipred_dir_funcs(hd);
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 
 av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
 {
-#if HAVE_YASM
+#if HAVE_X86ASM
     int cpu_flags = av_get_cpu_flags();
 
     if (EXTERNAL_MMX(cpu_flags)) {
@@ -133,7 +137,13 @@ av_cold void ff_vp9dsp_init_16bpp_x86(VP9DSPContext *dsp)
         init_fpel_func(2, 1,  32, avg, _16, avx2);
         init_fpel_func(1, 1,  64, avg, _16, avx2);
         init_fpel_func(0, 1, 128, avg, _16, avx2);
+        init_ipred_func(dl, DIAG_DOWN_LEFT, 16, 16, avx2);
+        init_ipred_func(dl, DIAG_DOWN_LEFT, 32, 16, avx2);
+        init_ipred_func(dr, DIAG_DOWN_RIGHT, 16, 16, avx2);
+#if ARCH_X86_64
+        init_ipred_func(dr, DIAG_DOWN_RIGHT, 32, 16, avx2);
+#endif
     }
 
-#endif /* HAVE_YASM */
+#endif /* HAVE_X86ASM */
 }

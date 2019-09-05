@@ -21,18 +21,18 @@
 #include "libavutil/mips/generic_macros_msa.h"
 #include "libavcodec/mips/hevcdsp_mips.h"
 
-static const int16_t gt8x8_cnst[16] = {
+static const int16_t gt8x8_cnst[16] __attribute__ ((aligned (64))) = {
     64, 64, 83, 36, 89, 50, 18, 75, 64, -64, 36, -83, 75, -89, -50, -18
 };
 
-static const int16_t gt16x16_cnst[64] = {
+static const int16_t gt16x16_cnst[64] __attribute__ ((aligned (64))) = {
     64, 83, 64, 36, 89, 75, 50, 18, 90, 80, 57, 25, 70, 87, 9, 43,
     64, 36, -64, -83, 75, -18, -89, -50, 87, 9, -80, -70, -43, 57, -25, -90,
     64, -36, -64, 83, 50, -89, 18, 75, 80, -70, -25, 90, -87, 9, 43, 57,
     64, -83, 64, -36, 18, -50, 75, -89, 70, -87, 90, -80, 9, -43, -57, 25
 };
 
-static const int16_t gt32x32_cnst0[256] = {
+static const int16_t gt32x32_cnst0[256] __attribute__ ((aligned (64))) = {
     90, 90, 88, 85, 82, 78, 73, 67, 61, 54, 46, 38, 31, 22, 13, 4,
     90, 82, 67, 46, 22, -4, -31, -54, -73, -85, -90, -88, -78, -61, -38, -13,
     88, 67, 31, -13, -54, -82, -90, -78, -46, -4, 38, 73, 90, 85, 61, 22,
@@ -51,19 +51,15 @@ static const int16_t gt32x32_cnst0[256] = {
     4, -13, 22, -31, 38, -46, 54, -61, 67, -73, 78, -82, 85, -88, 90, -90
 };
 
-static const int16_t gt32x32_cnst1[64] = {
+static const int16_t gt32x32_cnst1[64] __attribute__ ((aligned (64))) = {
     90, 87, 80, 70, 57, 43, 25, 9, 87, 57, 9, -43, -80, -90, -70, -25,
     80, 9, -70, -87, -25, 57, 90, 43, 70, -43, -87, 9, 90, 25, -80, -57,
     57, -80, -25, 90, -9, -87, 43, 70, 43, -90, 57, 25, -87, 70, 9, -80,
     25, -70, 90, -80, 43, 9, -57, 87, 9, -25, 43, -57, 70, -80, 87, -90
 };
 
-static const int16_t gt32x32_cnst2[16] = {
+static const int16_t gt32x32_cnst2[16] __attribute__ ((aligned (64))) = {
     89, 75, 50, 18, 75, -18, -89, -50, 50, -89, 18, 75, 18, -50, 75, -89
-};
-
-static const int16_t gt32x32_cnst3[16] = {
-    64, 64, 64, 64, 83, 36, -36, -83, 64, -64, -64, 64, 36, -83, 83, -36
 };
 
 #define HEVC_IDCT4x4_COL(in_r0, in_l0, in_r1, in_l1,          \
@@ -323,14 +319,18 @@ static void hevc_idct_4x4_msa(int16_t *coeffs)
     HEVC_IDCT4x4_COL(in_r0, in_l0, in_r1, in_l1, sum0, sum1, sum2, sum3, 7);
     TRANSPOSE4x4_SW_SW(sum0, sum1, sum2, sum3, in_r0, in_l0, in_r1, in_l1);
     HEVC_IDCT4x4_COL(in_r0, in_l0, in_r1, in_l1, sum0, sum1, sum2, sum3, 12);
-    TRANSPOSE4x4_SW_SW(sum0, sum1, sum2, sum3, sum0, sum1, sum2, sum3);
-    PCKEV_H2_SH(sum1, sum0, sum3, sum2, in0, in1);
+
+    /* Pack and transpose */
+    PCKEV_H2_SH(sum2, sum0, sum3, sum1, in0, in1);
+    ILVRL_H2_SW(in1, in0, sum0, sum1);
+    ILVRL_W2_SH(sum1, sum0, in0, in1);
+
     ST_SH2(in0, in1, coeffs, 8);
 }
 
 static void hevc_idct_8x8_msa(int16_t *coeffs)
 {
-    int16_t *filter = &gt8x8_cnst[0];
+    const int16_t *filter = &gt8x8_cnst[0];
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
 
     LD_SH8(coeffs, 8, in0, in1, in2, in3, in4, in5, in6, in7);
@@ -349,7 +349,7 @@ static void hevc_idct_16x16_msa(int16_t *coeffs)
     int16_t buf[256];
     int16_t *buf_ptr = &buf[0];
     int16_t *src = coeffs;
-    int16_t *filter = &gt16x16_cnst[0];
+    const int16_t *filter = &gt16x16_cnst[0];
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v8i16 in8, in9, in10, in11, in12, in13, in14, in15;
     v8i16 vec0, vec1, vec2, vec3, vec4, vec5, vec6, vec7;
@@ -429,30 +429,38 @@ static void hevc_idct_8x32_column_msa(int16_t *coeffs, uint8_t buf_pitch,
                                       uint8_t round)
 {
     uint8_t i;
-    int16_t *filter_ptr0 = &gt32x32_cnst0[0];
-    int16_t *filter_ptr1 = &gt32x32_cnst1[0];
-    int16_t *filter_ptr2 = &gt32x32_cnst2[0];
-    int16_t *filter_ptr3 = &gt32x32_cnst3[0];
+    const int16_t *filter_ptr0 = &gt32x32_cnst0[0];
+    const int16_t *filter_ptr1 = &gt32x32_cnst1[0];
+    const int16_t *filter_ptr2 = &gt32x32_cnst2[0];
+    const int16_t *filter_ptr3 = &gt8x8_cnst[0];
     int16_t *src0 = (coeffs + buf_pitch);
     int16_t *src1 = (coeffs + 2 * buf_pitch);
     int16_t *src2 = (coeffs + 4 * buf_pitch);
     int16_t *src3 = (coeffs);
     int32_t cnst0, cnst1;
-    int32_t tmp_buf[8 * 32];
-    int32_t *tmp_buf_ptr = &tmp_buf[0];
+    int32_t tmp_buf[8 * 32 + 15];
+    int32_t *tmp_buf_ptr = tmp_buf + 15;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
     v8i16 src0_r, src1_r, src2_r, src3_r, src4_r, src5_r, src6_r, src7_r;
     v8i16 src0_l, src1_l, src2_l, src3_l, src4_l, src5_l, src6_l, src7_l;
     v8i16 filt0, filter0, filter1, filter2, filter3;
     v4i32 sum0_r, sum0_l, sum1_r, sum1_l, tmp0_r, tmp0_l, tmp1_r, tmp1_l;
 
+    /* Align pointer to 64 byte boundary */
+    tmp_buf_ptr = (int32_t *)(((uintptr_t) tmp_buf_ptr) & ~(uintptr_t) 63);
+
     /* process coeff 4, 12, 20, 28 */
     LD_SH4(src2, 8 * buf_pitch, in0, in1, in2, in3);
     ILVR_H2_SH(in1, in0, in3, in2, src0_r, src1_r);
     ILVL_H2_SH(in1, in0, in3, in2, src0_l, src1_l);
 
+    LD_SH2(src3, 16 * buf_pitch, in4, in6);
+    LD_SH2((src3 + 8 * buf_pitch), 16 * buf_pitch, in5, in7);
+    ILVR_H2_SH(in6, in4, in7, in5, src2_r, src3_r);
+    ILVL_H2_SH(in6, in4, in7, in5, src2_l, src3_l);
+
     /* loop for all columns of constants */
-    for (i = 0; i < 4; i++) {
+    for (i = 0; i < 2; i++) {
         /* processing single column of constants */
         cnst0 = LW(filter_ptr2);
         cnst1 = LW(filter_ptr2 + 2);
@@ -462,37 +470,39 @@ static void hevc_idct_8x32_column_msa(int16_t *coeffs, uint8_t buf_pitch,
 
         DOTP_SH2_SW(src0_r, src0_l, filter0, filter0, sum0_r, sum0_l);
         DPADD_SH2_SW(src1_r, src1_l, filter1, filter1, sum0_r, sum0_l);
-        ST_SW2(sum0_r, sum0_l, (tmp_buf_ptr + i * 8), 4);
+        ST_SW2(sum0_r, sum0_l, (tmp_buf_ptr + 2 * i * 8), 4);
 
-        filter_ptr2 += 4;
-    }
-
-    /* process coeff 0, 8, 16, 24 */
-    LD_SH2(src3, 16 * buf_pitch, in0, in2);
-    LD_SH2((src3 + 8 * buf_pitch), 16 * buf_pitch, in1, in3);
-
-    ILVR_H2_SH(in2, in0, in3, in1, src0_r, src1_r);
-    ILVL_H2_SH(in2, in0, in3, in1, src0_l, src1_l);
-
-    /* loop for all columns of constants */
-    for (i = 0; i < 2; i++) {
-        /* processing first column of filter constants */
-        cnst0 = LW(filter_ptr3);
-        cnst1 = LW(filter_ptr3 + 4);
+        /* processing single column of constants */
+        cnst0 = LW(filter_ptr2 + 4);
+        cnst1 = LW(filter_ptr2 + 6);
 
         filter0 = (v8i16) __msa_fill_w(cnst0);
         filter1 = (v8i16) __msa_fill_w(cnst1);
 
-        DOTP_SH4_SW(src0_r, src0_l, src1_r, src1_l, filter0, filter0, filter1,
+        DOTP_SH2_SW(src0_r, src0_l, filter0, filter0, sum0_r, sum0_l);
+        DPADD_SH2_SW(src1_r, src1_l, filter1, filter1, sum0_r, sum0_l);
+        ST_SW2(sum0_r, sum0_l, (tmp_buf_ptr + (2 * i + 1) * 8), 4);
+
+        filter_ptr2 += 8;
+    }
+
+    /* process coeff 0, 8, 16, 24 */
+    /* loop for all columns of constants */
+    for (i = 0; i < 2; i++) {
+        /* processing first column of filter constants */
+        cnst0 = LW(filter_ptr3);
+        cnst1 = LW(filter_ptr3 + 2);
+
+        filter0 = (v8i16) __msa_fill_w(cnst0);
+        filter1 = (v8i16) __msa_fill_w(cnst1);
+
+        DOTP_SH4_SW(src2_r, src2_l, src3_r, src3_l, filter0, filter0, filter1,
                     filter1, sum0_r, sum0_l, tmp1_r, tmp1_l);
 
-        sum1_r = sum0_r;
-        sum1_l = sum0_l;
-        sum0_r += tmp1_r;
-        sum0_l += tmp1_l;
-
-        sum1_r -= tmp1_r;
-        sum1_l -= tmp1_l;
+        sum1_r = sum0_r - tmp1_r;
+        sum1_l = sum0_l - tmp1_l;
+        sum0_r = sum0_r + tmp1_r;
+        sum0_l = sum0_l + tmp1_l;
 
         HEVC_EVEN16_CALC(tmp_buf_ptr, sum0_r, sum0_l, i, (7 - i));
         HEVC_EVEN16_CALC(tmp_buf_ptr, sum1_r, sum1_l, (3 - i), (4 + i));
@@ -618,10 +628,13 @@ static void hevc_idct_32x32_msa(int16_t *coeffs)
 {
     uint8_t row_cnt, col_cnt;
     int16_t *src = coeffs;
-    int16_t tmp_buf[8 * 32];
-    int16_t *tmp_buf_ptr = &tmp_buf[0];
+    int16_t tmp_buf[8 * 32 + 31];
+    int16_t *tmp_buf_ptr = tmp_buf + 31;
     uint8_t round;
     uint8_t buf_pitch;
+
+    /* Align pointer to 64 byte boundary */
+    tmp_buf_ptr = (int16_t *)(((uintptr_t) tmp_buf_ptr) & ~(uintptr_t) 63);
 
     /* column transform */
     round = 7;
@@ -714,7 +727,7 @@ static void hevc_addblk_4x4_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
     ADD2(dst_r0, in0, dst_l0, in1, dst_r0, dst_l0);
     CLIP_SH2_0_255(dst_r0, dst_l0);
     dst_vec = (v4i32) __msa_pckev_b((v16i8) dst_l0, (v16i8) dst_r0);
-    ST4x4_UB(dst_vec, dst_vec, 0, 1, 2, 3, dst, stride);
+    ST_W4(dst_vec, 0, 1, 2, 3, dst, stride);
 }
 
 static void hevc_addblk_8x8_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
@@ -739,8 +752,7 @@ static void hevc_addblk_8x8_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
          dst_r0, dst_l0, dst_r1, dst_l1);
     CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
     PCKEV_B2_SH(dst_l0, dst_r0, dst_l1, dst_r1, dst_r0, dst_r1);
-    ST8x4_UB(dst_r0, dst_r1, dst, stride);
-    dst += (4 * stride);
+    ST_D4(dst_r0, dst_r1, 0, 1, 0, 1, dst, stride);
 
     LD4(temp_dst, stride, dst0, dst1, dst2, dst3);
     INSERT_D2_SD(dst0, dst1, dst_vec0);
@@ -751,28 +763,29 @@ static void hevc_addblk_8x8_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
          dst_r0, dst_l0, dst_r1, dst_l1);
     CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
     PCKEV_B2_SH(dst_l0, dst_r0, dst_l1, dst_r1, dst_r0, dst_r1);
-    ST8x4_UB(dst_r0, dst_r1, dst, stride);
+    ST_D4(dst_r0, dst_r1, 0, 1, 0, 1, dst + 4 * stride, stride);
 }
 
 static void hevc_addblk_16x16_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
 {
     uint8_t loop_cnt;
     uint8_t *temp_dst = dst;
-    v16u8 dst0, dst1, dst2, dst3;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
     v8i16 dst_r0, dst_l0, dst_r1, dst_l1, dst_r2, dst_l2, dst_r3, dst_l3;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
 
-    for (loop_cnt = 4; loop_cnt--;) {
-        LD_SH4(coeffs, 16, in0, in2, in4, in6);
-        LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
-        coeffs += 64;
-        LD_UB4(temp_dst, stride, dst0, dst1, dst2, dst3);
-        temp_dst += (4 * stride);
+    /* Pre-load for next iteration */
+    LD_UB4(temp_dst, stride, dst4, dst5, dst6, dst7);
+    temp_dst += (4 * stride);
+    LD_SH4(coeffs, 16, in0, in2, in4, in6);
+    LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
+    coeffs += 64;
 
-        UNPCK_UB_SH(dst0, dst_r0, dst_l0);
-        UNPCK_UB_SH(dst1, dst_r1, dst_l1);
-        UNPCK_UB_SH(dst2, dst_r2, dst_l2);
-        UNPCK_UB_SH(dst3, dst_r3, dst_l3);
+    for (loop_cnt = 3; loop_cnt--;) {
+        UNPCK_UB_SH(dst4, dst_r0, dst_l0);
+        UNPCK_UB_SH(dst5, dst_r1, dst_l1);
+        UNPCK_UB_SH(dst6, dst_r2, dst_l2);
+        UNPCK_UB_SH(dst7, dst_r3, dst_l3);
 
         dst_r0 += in0;
         dst_l0 += in1;
@@ -783,58 +796,65 @@ static void hevc_addblk_16x16_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
         dst_r3 += in6;
         dst_l3 += in7;
 
-        CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-        CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+        /* Pre-load for next iteration */
+        LD_UB4(temp_dst, stride, dst4, dst5, dst6, dst7);
+        temp_dst += (4 * stride);
+        LD_SH4(coeffs, 16, in0, in2, in4, in6);
+        LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
+        coeffs += 64;
+
+        CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                       dst_r2, dst_l2, dst_r3, dst_l3);
+
         PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                     dst_r3, dst0, dst1, dst2, dst3);
         ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
         dst += (4 * stride);
     }
+
+    UNPCK_UB_SH(dst4, dst_r0, dst_l0);
+    UNPCK_UB_SH(dst5, dst_r1, dst_l1);
+    UNPCK_UB_SH(dst6, dst_r2, dst_l2);
+    UNPCK_UB_SH(dst7, dst_r3, dst_l3);
+
+    dst_r0 += in0;
+    dst_l0 += in1;
+    dst_r1 += in2;
+    dst_l1 += in3;
+    dst_r2 += in4;
+    dst_l2 += in5;
+    dst_r3 += in6;
+    dst_l3 += in7;
+
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
+    PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
+                dst_r3, dst0, dst1, dst2, dst3);
+    ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
 }
 
 static void hevc_addblk_32x32_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
 {
     uint8_t loop_cnt;
     uint8_t *temp_dst = dst;
-    v16u8 dst0, dst1, dst2, dst3;
+    v16u8 dst0, dst1, dst2, dst3, dst4, dst5, dst6, dst7;
     v8i16 dst_r0, dst_l0, dst_r1, dst_l1, dst_r2, dst_l2, dst_r3, dst_l3;
     v8i16 in0, in1, in2, in3, in4, in5, in6, in7;
 
-    for (loop_cnt = 8; loop_cnt--;) {
-        LD_SH4(coeffs, 32, in0, in2, in4, in6);
-        LD_SH4((coeffs + 8), 32, in1, in3, in5, in7);
-        LD_UB4(temp_dst, stride, dst0, dst1, dst2, dst3);
+    /* Pre-load for next iteration */
+    LD_UB2(temp_dst, 16, dst4, dst5);
+    temp_dst += stride;
+    LD_UB2(temp_dst, 16, dst6, dst7);
+    temp_dst += stride;
+    LD_SH4(coeffs, 16, in0, in2, in4, in6);
+    LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
+    coeffs += 64;
 
-        UNPCK_UB_SH(dst0, dst_r0, dst_l0);
-        UNPCK_UB_SH(dst1, dst_r1, dst_l1);
-        UNPCK_UB_SH(dst2, dst_r2, dst_l2);
-        UNPCK_UB_SH(dst3, dst_r3, dst_l3);
-
-        dst_r0 += in0;
-        dst_l0 += in1;
-        dst_r1 += in2;
-        dst_l1 += in3;
-        dst_r2 += in4;
-        dst_l2 += in5;
-        dst_r3 += in6;
-        dst_l3 += in7;
-
-        CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-        CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
-        PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
-                    dst_r3, dst0, dst1, dst2, dst3);
-        ST_UB4(dst0, dst1, dst2, dst3, dst, stride);
-
-        LD_SH4((coeffs + 16), 32, in0, in2, in4, in6);
-        LD_SH4((coeffs + 24), 32, in1, in3, in5, in7);
-        coeffs += 128;
-        LD_UB4((temp_dst + 16), stride, dst0, dst1, dst2, dst3);
-        temp_dst += (4 * stride);
-
-        UNPCK_UB_SH(dst0, dst_r0, dst_l0);
-        UNPCK_UB_SH(dst1, dst_r1, dst_l1);
-        UNPCK_UB_SH(dst2, dst_r2, dst_l2);
-        UNPCK_UB_SH(dst3, dst_r3, dst_l3);
+    for (loop_cnt = 14; loop_cnt--;) {
+        UNPCK_UB_SH(dst4, dst_r0, dst_l0);
+        UNPCK_UB_SH(dst5, dst_r1, dst_l1);
+        UNPCK_UB_SH(dst6, dst_r2, dst_l2);
+        UNPCK_UB_SH(dst7, dst_r3, dst_l3);
 
         dst_r0 += in0;
         dst_l0 += in1;
@@ -845,14 +865,77 @@ static void hevc_addblk_32x32_msa(int16_t *coeffs, uint8_t *dst, int32_t stride)
         dst_r3 += in6;
         dst_l3 += in7;
 
-        CLIP_SH4_0_255(dst_r0, dst_l0, dst_r1, dst_l1);
-        CLIP_SH4_0_255(dst_r2, dst_l2, dst_r3, dst_l3);
+        /* Pre-load for next iteration */
+        LD_UB2(temp_dst, 16, dst4, dst5);
+        temp_dst += stride;
+        LD_UB2(temp_dst, 16, dst6, dst7);
+        temp_dst += stride;
+        LD_SH4(coeffs, 16, in0, in2, in4, in6);
+        LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
+        coeffs += 64;
+
+        CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                       dst_r2, dst_l2, dst_r3, dst_l3);
         PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
                     dst_r3, dst0, dst1, dst2, dst3);
-
-        ST_UB4(dst0, dst1, dst2, dst3, (dst + 16), stride);
-        dst += (4 * stride);
+        ST_UB2(dst0, dst1, dst, 16);
+        dst += stride;
+        ST_UB2(dst2, dst3, dst, 16);
+        dst += stride;
     }
+
+    UNPCK_UB_SH(dst4, dst_r0, dst_l0);
+    UNPCK_UB_SH(dst5, dst_r1, dst_l1);
+    UNPCK_UB_SH(dst6, dst_r2, dst_l2);
+    UNPCK_UB_SH(dst7, dst_r3, dst_l3);
+
+    dst_r0 += in0;
+    dst_l0 += in1;
+    dst_r1 += in2;
+    dst_l1 += in3;
+    dst_r2 += in4;
+    dst_l2 += in5;
+    dst_r3 += in6;
+    dst_l3 += in7;
+
+    /* Pre-load for next iteration */
+    LD_UB2(temp_dst, 16, dst4, dst5);
+    temp_dst += stride;
+    LD_UB2(temp_dst, 16, dst6, dst7);
+    temp_dst += stride;
+    LD_SH4(coeffs, 16, in0, in2, in4, in6);
+    LD_SH4((coeffs + 8), 16, in1, in3, in5, in7);
+
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
+    PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
+                dst_r3, dst0, dst1, dst2, dst3);
+    ST_UB2(dst0, dst1, dst, 16);
+    dst += stride;
+    ST_UB2(dst2, dst3, dst, 16);
+    dst += stride;
+
+    UNPCK_UB_SH(dst4, dst_r0, dst_l0);
+    UNPCK_UB_SH(dst5, dst_r1, dst_l1);
+    UNPCK_UB_SH(dst6, dst_r2, dst_l2);
+    UNPCK_UB_SH(dst7, dst_r3, dst_l3);
+
+    dst_r0 += in0;
+    dst_l0 += in1;
+    dst_r1 += in2;
+    dst_l1 += in3;
+    dst_r2 += in4;
+    dst_l2 += in5;
+    dst_r3 += in6;
+    dst_l3 += in7;
+
+    CLIP_SH8_0_255(dst_r0, dst_l0, dst_r1, dst_l1,
+                   dst_r2, dst_l2, dst_r3, dst_l3);
+    PCKEV_B4_UB(dst_l0, dst_r0, dst_l1, dst_r1, dst_l2, dst_r2, dst_l3,
+                dst_r3, dst0, dst1, dst2, dst3);
+    ST_UB2(dst0, dst1, dst, 16);
+    dst += stride;
+    ST_UB2(dst2, dst3, dst, 16);
 }
 
 static void hevc_idct_luma_4x4_msa(int16_t *coeffs)
@@ -868,8 +951,12 @@ static void hevc_idct_luma_4x4_msa(int16_t *coeffs)
     TRANSPOSE4x4_SW_SW(res0, res1, res2, res3, in_r0, in_l0, in_r1, in_l1);
     HEVC_IDCT_LUMA4x4_COL(in_r0, in_l0, in_r1, in_l1, res0, res1, res2, res3,
                           12);
-    TRANSPOSE4x4_SW_SW(res0, res1, res2, res3, res0, res1, res2, res3);
-    PCKEV_H2_SH(res1, res0, res3, res2, dst0, dst1);
+
+    /* Pack and transpose */
+    PCKEV_H2_SH(res2, res0, res3, res1, dst0, dst1);
+    ILVRL_H2_SW(dst1, dst0, res0, res1);
+    ILVRL_W2_SH(res1, res0, dst0, dst1);
+
     ST_SH2(dst0, dst1, coeffs, 8);
 }
 

@@ -93,6 +93,7 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
         double d;
         f0r_param_color_t col;
         f0r_param_position_t pos;
+        f0r_param_string str;
     } val;
     char *tail;
     uint8_t rgba[4];
@@ -123,6 +124,10 @@ static int set_param(AVFilterContext *ctx, f0r_param_info_t info, int index, cha
     case F0R_PARAM_POSITION:
         if (sscanf(param, "%lf/%lf", &val.pos.x, &val.pos.y) != 2)
             goto fail;
+        break;
+
+    case F0R_PARAM_STRING:
+        val.str = param;
         break;
     }
 
@@ -160,54 +165,6 @@ static int set_params(AVFilterContext *ctx, const char *params)
             if (ret < 0)
                 return ret;
         }
-
-        av_log(ctx, AV_LOG_VERBOSE,
-               "idx:%d name:'%s' type:%s explanation:'%s' ",
-               i, info.name,
-               info.type == F0R_PARAM_BOOL     ? "bool"     :
-               info.type == F0R_PARAM_DOUBLE   ? "double"   :
-               info.type == F0R_PARAM_COLOR    ? "color"    :
-               info.type == F0R_PARAM_POSITION ? "position" :
-               info.type == F0R_PARAM_STRING   ? "string"   : "unknown",
-               info.explanation);
-
-#ifdef DEBUG
-        av_log(ctx, AV_LOG_DEBUG, "value:");
-        switch (info.type) {
-            void *v;
-            double d;
-            char str[128];
-            f0r_param_color_t col;
-            f0r_param_position_t pos;
-
-        case F0R_PARAM_BOOL:
-            v = &d;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%s", d >= 0.5 && d <= 1.0 ? "y" : "n");
-            break;
-        case F0R_PARAM_DOUBLE:
-            v = &d;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f", d);
-            break;
-        case F0R_PARAM_COLOR:
-            v = &col;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f/%f/%f", col.r, col.g, col.b);
-            break;
-        case F0R_PARAM_POSITION:
-            v = &pos;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "%f/%f", pos.x, pos.y);
-            break;
-        default: /* F0R_PARAM_STRING */
-            v = str;
-            s->get_param_value(s->instance, v, i);
-            av_log(ctx, AV_LOG_DEBUG, "'%s'", str);
-            break;
-        }
-#endif
-        av_log(ctx, AV_LOG_VERBOSE, ".\n");
     }
 
     return 0;
@@ -510,7 +467,7 @@ static int source_request_frame(AVFilterLink *outlink)
 
 static const AVOption frei0r_src_options[] = {
     { "size",          "Dimensions of the generated video.", OFFSET(w),         AV_OPT_TYPE_IMAGE_SIZE, { .str = "320x240" }, .flags = FLAGS },
-    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, .flags = FLAGS },
+    { "framerate",     NULL,                                 OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, { .str = "25" }, 0, INT_MAX, .flags = FLAGS },
     { "filter_name",   NULL,                                 OFFSET(dl_name),   AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { "filter_params", NULL,                                 OFFSET(params),    AV_OPT_TYPE_STRING,                  .flags = FLAGS },
     { NULL },

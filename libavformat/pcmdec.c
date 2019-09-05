@@ -36,6 +36,7 @@ static int pcm_read_header(AVFormatContext *s)
 {
     PCMAudioDemuxerContext *s1 = s->priv_data;
     AVStream *st;
+    uint8_t *mime_type = NULL;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -46,6 +47,44 @@ static int pcm_read_header(AVFormatContext *s)
     st->codecpar->codec_id    = s->iformat->raw_codec_id;
     st->codecpar->sample_rate = s1->sample_rate;
     st->codecpar->channels    = s1->channels;
+
+    av_opt_get(s->pb, "mime_type", AV_OPT_SEARCH_CHILDREN, &mime_type);
+    if (mime_type && s->iformat->mime_type) {
+        int rate = 0, channels = 0, little_endian = 0;
+        size_t len = strlen(s->iformat->mime_type);
+        if (!av_strncasecmp(s->iformat->mime_type, mime_type, len)) { /* audio/L16 */
+            uint8_t *options = mime_type + len;
+            len = strlen(mime_type);
+            while (options < mime_type + len) {
+                options = strstr(options, ";");
+                if (!options++)
+                    break;
+                if (!rate)
+                    sscanf(options, " rate=%d",     &rate);
+                if (!channels)
+                    sscanf(options, " channels=%d", &channels);
+                if (!little_endian) {
+                     char val[14]; /* sizeof("little-endian") == 14 */
+                     if (sscanf(options, " endianness=%13s", val) == 1) {
+                         little_endian = strcmp(val, "little-endian") == 0;
+                     }
+                }
+            }
+            if (rate <= 0) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid sample_rate found in mime_type \"%s\"\n",
+                       mime_type);
+                av_freep(&mime_type);
+                return AVERROR_INVALIDDATA;
+            }
+            st->codecpar->sample_rate = rate;
+            if (channels > 0)
+                st->codecpar->channels = channels;
+            if (little_endian)
+                st->codecpar->codec_id = AV_CODEC_ID_PCM_S16LE;
+        }
+    }
+    av_freep(&mime_type);
 
     st->codecpar->bits_per_coded_sample =
         av_get_bits_per_sample(st->codecpar->codec_id);
@@ -65,7 +104,7 @@ static const AVOption pcm_options[] = {
     { NULL },
 };
 
-#define PCMDEF(name_, long_name_, ext, codec)               \
+#define PCMDEF(name_, long_name_, ext, codec, ...)          \
 static const AVClass name_ ## _demuxer_class = {            \
     .class_name = #name_ " demuxer",                        \
     .item_name  = av_default_item_name,                     \
@@ -83,6 +122,7 @@ AVInputFormat ff_pcm_ ## name_ ## _demuxer = {              \
     .extensions     = ext,                                  \
     .raw_codec_id   = codec,                                \
     .priv_class     = &name_ ## _demuxer_class,             \
+    __VA_ARGS__                                             \
 };
 
 PCMDEF(f64be, "PCM 64-bit floating-point big-endian",
@@ -110,7 +150,7 @@ PCMDEF(s24le, "PCM signed 24-bit little-endian",
        NULL, AV_CODEC_ID_PCM_S24LE)
 
 PCMDEF(s16be, "PCM signed 16-bit big-endian",
-       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE)
+       AV_NE("sw", NULL), AV_CODEC_ID_PCM_S16BE, .mime_type = "audio/L16")
 
 PCMDEF(s16le, "PCM signed 16-bit little-endian",
        AV_NE(NULL, "sw"), AV_CODEC_ID_PCM_S16LE)
@@ -144,6 +184,9 @@ PCMDEF(alaw, "PCM A-law",
 
 PCMDEF(mulaw, "PCM mu-law",
        "ul", AV_CODEC_ID_PCM_MULAW)
+
+PCMDEF(vidc, "PCM Archimedes VIDC",
+       NULL, AV_CODEC_ID_PCM_VIDC)
 
 static const AVOption sln_options[] = {
     { "sample_rate", "", offsetof(PCMAudioDemuxerContext, sample_rate), AV_OPT_TYPE_INT, {.i64 = 8000}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },

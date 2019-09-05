@@ -135,8 +135,8 @@ static int calc_persp_luts(AVFilterContext *ctx, AVFilterLink *inlink)
     double (*ref)[2]      = s->ref;
 
     double values[VAR_VARS_NB] = { [VAR_W] = inlink->w, [VAR_H] = inlink->h,
-                                   [VAR_IN] = inlink->frame_count  + 1,
-                                   [VAR_ON] = outlink->frame_count + 1 };
+                                   [VAR_IN] = inlink->frame_count_out + 1,
+                                   [VAR_ON] = outlink->frame_count_in + 1 };
     const int h = values[VAR_H];
     const int w = values[VAR_W];
     double x0, x1, x2, x3, x4, x5, x6, x7, x8, q;
@@ -463,6 +463,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
     if (s->eval_mode == EVAL_MODE_FRAME) {
         if ((ret = calc_persp_luts(ctx, inlink)) < 0) {
+            av_frame_free(&out);
             return ret;
         }
     }
@@ -478,7 +479,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
                          .h = s->height[plane],
                          .hsub = hsub,
                          .vsub = vsub };
-        ctx->internal->execute(ctx, s->perspective, &td, NULL, FFMIN(td.h, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, s->perspective, &td, NULL, FFMIN(td.h, ff_filter_get_nb_threads(ctx)));
     }
 
     av_frame_free(&frame);

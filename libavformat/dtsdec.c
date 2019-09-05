@@ -29,19 +29,19 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int dts_probe(AVProbeData *p)
+static int dts_probe(const AVProbeData *p)
 {
     const uint8_t *buf, *bufp;
     uint32_t state = -1;
     int markers[4*16] = {0};
     int exss_markers = 0, exss_nextpos = 0;
-    int sum, max, pos, i;
+    int sum, max, pos, ret, i;
     int64_t diff = 0;
-    uint8_t hdr[12 + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
+    uint8_t hdr[DCA_CORE_FRAME_HEADER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE] = { 0 };
 
     for (pos = FFMIN(4096, p->buf_size); pos < p->buf_size - 2; pos += 2) {
-        int marker, sample_blocks, sample_rate, sr_code, framesize;
-        int lfe, wide_hdr, hdr_size;
+        int marker, wide_hdr, hdr_size, framesize;
+        DCACoreFrameHeader h;
         GetBitContext gb;
 
         bufp = buf = p->buf + pos;
@@ -98,36 +98,13 @@ static int dts_probe(AVProbeData *p)
         else
             continue;
 
-        if (avpriv_dca_convert_bitstream(buf-2, 12, hdr, 12) < 0)
+        if ((ret = avpriv_dca_convert_bitstream(buf - 2, DCA_CORE_FRAME_HEADER_SIZE,
+                                                hdr,     DCA_CORE_FRAME_HEADER_SIZE)) < 0)
+            continue;
+        if (avpriv_dca_parse_core_frame_header(&h, hdr, ret) < 0)
             continue;
 
-        init_get_bits(&gb, hdr, 96);
-        skip_bits_long(&gb, 39);
-
-        sample_blocks = get_bits(&gb, 7) + 1;
-        if (sample_blocks < 8)
-            continue;
-
-        framesize = get_bits(&gb, 14) + 1;
-        if (framesize < 95)
-            continue;
-
-        skip_bits(&gb, 6);
-        sr_code = get_bits(&gb, 4);
-        sample_rate = avpriv_dca_sample_rates[sr_code];
-        if (sample_rate == 0)
-            continue;
-
-        get_bits(&gb, 5);
-        if (get_bits(&gb, 1))
-            continue;
-
-        skip_bits_long(&gb, 9);
-        lfe = get_bits(&gb, 2);
-        if (lfe > 2)
-            continue;
-
-        marker += 4* sr_code;
+        marker += 4 * h.sr_code;
 
         markers[marker] ++;
     }
@@ -150,6 +127,7 @@ static int dts_probe(AVProbeData *p)
     return 0;
 }
 
+FF_RAW_DEMUXER_CLASS(dts)
 AVInputFormat ff_dts_demuxer = {
     .name           = "dts",
     .long_name      = NULL_IF_CONFIG_SMALL("raw DTS"),
@@ -159,4 +137,5 @@ AVInputFormat ff_dts_demuxer = {
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "dts",
     .raw_codec_id   = AV_CODEC_ID_DTS,
-};
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &dts_demuxer_class,};

@@ -33,6 +33,7 @@
  */
 const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_AAC,             MKTAG('a','a','c',' ') },
+    { AV_CODEC_ID_AAC,             MKTAG('a','a','c','l') },
     { AV_CODEC_ID_AC3,             MKTAG('a','c','-','3') },
     { AV_CODEC_ID_ADPCM_IMA_QT,    MKTAG('i','m','a','4') },
     { AV_CODEC_ID_ADPCM_IMA_WAV,   MKTAG('m','s', 0, 17 ) },
@@ -51,11 +52,12 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { AV_CODEC_ID_MP2,             MKTAG('.','m','p','2') },
     { AV_CODEC_ID_MP3,             MKTAG('.','m','p','3') },
     { AV_CODEC_ID_MP3,             MKTAG('m','s', 0 ,'U') },
+    { AV_CODEC_ID_OPUS,            MKTAG('o','p','u','s') },
     { AV_CODEC_ID_PCM_ALAW,        MKTAG('a','l','a','w') },
     { AV_CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
     { AV_CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
     { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','2') },
-    { AV_CODEC_ID_QDM2,            MKTAG('Q','D','M','C') },
+    { AV_CODEC_ID_QDMC,            MKTAG('Q','D','M','C') },
   /* currently unsupported codecs */
   /*{ AC-3 over S/PDIF          MKTAG('c','a','c','3') },*/
   /*{ MPEG4CELP                 MKTAG('c','e','l','p') },*/

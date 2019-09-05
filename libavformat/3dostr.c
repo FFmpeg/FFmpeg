@@ -22,7 +22,7 @@
 #include "avformat.h"
 #include "internal.h"
 
-static int threedostr_probe(AVProbeData *p)
+static int threedostr_probe(const AVProbeData *p)
 {
     if (memcmp(p->buf, "CTRL", 4) &&
         memcmp(p->buf, "SHDR", 4) &&

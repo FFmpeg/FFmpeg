@@ -12,7 +12,7 @@
 
 @chapter Synopsis
 
-ffprobe [@var{options}] [@file{input_file}]
+ffprobe [@var{options}] [@file{input_url}]
 
 @chapter Description
 @c man begin DESCRIPTION
@@ -24,8 +24,8 @@ For example it can be used to check the format of the container used
 by a multimedia stream and the format and type of each media stream
 contained in it.
 
-If a filename is specified in input, ffprobe will try to open and
-probe the file content. If the file cannot be opened or recognized as
+If a url is specified in input, ffprobe will try to open and
+probe the url content. If the url cannot be opened or recognized as
 a multimedia file, a positive exit code is returned.
 
 ffprobe may be employed both as a standalone application or in
@@ -208,6 +208,13 @@ multimedia stream.
 The information for each single frame is printed within a dedicated
 section with name "FRAME" or "SUBTITLE".
 
+@item -show_log @var{loglevel}
+Show logging information from the decoder about each frame according to
+the value set in @var{loglevel}, (see @code{-loglevel}). This option requires @code{-show_frames}.
+
+The information for each log message is printed within a dedicated
+section with name "LOG".
+
 @item -show_streams
 Show information about each media stream contained in the input
 multimedia stream.
@@ -245,7 +252,7 @@ continue reading from that.
 Each interval is specified by two optional parts, separated by "%".
 
 The first part specifies the interval start position. It is
-interpreted as an abolute position, or as a relative offset from the
+interpreted as an absolute position, or as a relative offset from the
 current position if it is preceded by the "+" character. If this first
 part is not specified, no seeking will be performed when reading this
 interval.
@@ -332,8 +339,8 @@ with name "PIXEL_FORMAT".
 Force bitexact output, useful to produce output which is not dependent
 on the specific build.
 
-@item -i @var{input_file}
-Read @var{input_file}.
+@item -i @var{input_url}
+Read @var{input_url}.
 
 @end table
 @c man end
@@ -418,7 +425,7 @@ The @code{csv} writer is equivalent to @code{compact}, but supports
 different defaults.
 
 Each section is printed on a single line.
-If no option is specifid, the output has the form:
+If no option is specified, the output has the form:
 @example
 section|key1=val1| ... |keyN=valN
 @end example
@@ -464,7 +471,7 @@ Perform no escaping.
 @end table
 
 @item print_section, p
-Print the section name at the begin of each line if the value is
+Print the section name at the beginning of each line if the value is
 @code{1}, disable it with value set to @code{0}. Default value is
 @code{1}.
 
@@ -577,14 +584,14 @@ value is 0.
 This is required for generating an XML file which can be validated
 through an XSD file.
 
-@item xsd_compliant, x
+@item xsd_strict, x
 If set to 1 perform more checks for ensuring that the output is XSD
 compliant. Default value is 0.
 This option automatically sets @option{fully_qualified} to 1.
 @end table
 
 For more information about the XML format, see
-@url{http://www.w3.org/XML/}.
+@url{https://www.w3.org/XML/}.
 @c man end WRITERS
 
 @chapter Timecode
@@ -646,7 +653,7 @@ DV, GXF and AVI timecodes are available in format metadata
 @ifset config-not-all
 @url{ffprobe-all.html,ffprobe-all},
 @end ifset
-@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay},
 @url{ffmpeg-utils.html,ffmpeg-utils},
 @url{ffmpeg-scaler.html,ffmpeg-scaler},
 @url{ffmpeg-resampler.html,ffmpeg-resampler},
@@ -665,7 +672,7 @@ ffprobe(1),
 @ifset config-not-all
 ffprobe-all(1),
 @end ifset
-ffmpeg(1), ffplay(1), ffserver(1),
+ffmpeg(1), ffplay(1),
 ffmpeg-utils(1), ffmpeg-scaler(1), ffmpeg-resampler(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1), ffmpeg-formats(1),
 ffmpeg-devices(1), ffmpeg-protocols(1), ffmpeg-filters(1)

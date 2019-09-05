@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "ast.h"
 
-static int ast_probe(AVProbeData *p)
+static int ast_probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) != MKTAG('S','T','R','M'))
         return 0;
@@ -90,7 +90,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
     pos  = avio_tell(s->pb);
     type = avio_rl32(s->pb);
     size = avio_rb32(s->pb);
-    if (size > INT_MAX / s->streams[0]->codecpar->channels)
+    if (!s->streams[0]->codecpar->channels || size > INT_MAX / s->streams[0]->codecpar->channels)
         return AVERROR_INVALIDDATA;
 
     size *= s->streams[0]->codecpar->channels;
@@ -102,7 +102,7 @@ static int ast_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->stream_index = 0;
         pkt->pos = pos;
     } else {
-        av_log(s, AV_LOG_ERROR, "unknown chunk %x\n", type);
+        av_log(s, AV_LOG_ERROR, "unknown chunk %"PRIx32"\n", type);
         avio_skip(s->pb, size);
         ret = AVERROR_INVALIDDATA;
     }

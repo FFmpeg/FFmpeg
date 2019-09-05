@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int h261_probe(AVProbeData *p)
+static int h261_probe(const AVProbeData *p)
 {
     int i;
     int valid_psc=0;

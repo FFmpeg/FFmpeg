@@ -146,6 +146,7 @@ static int decode_frame(AVCodecContext *avctx,
     uint32_t offs[4];
     int i, j, ret, is_chroma;
     const int planes = 3;
+    int is_pal;
     uint8_t *out;
 
     if (buf_size < 4) {
@@ -155,18 +156,26 @@ static int decode_frame(AVCodecContext *avctx,
 
     header      = AV_RL32(buf);
     version     = header & 0xff;
+    is_pal      = buf[1] == 2 && version == 1;
     header_size = (header & (1<<30))? 8 : 4; /* bit 30 means pad to 8 bytes */
 
     if (version > 5) {
-        av_log(avctx, AV_LOG_ERROR,
-               "This file is encoded with Fraps version %d. " \
-               "This codec can only decode versions <= 5.\n", version);
+        avpriv_report_missing_feature(avctx, "Fraps version %u", version);
         return AVERROR_PATCHWELCOME;
     }
 
     buf += header_size;
 
-    if (version < 2) {
+    if (is_pal) {
+        unsigned needed_size = avctx->width * avctx->height + 1024;
+        needed_size += header_size;
+        if (buf_size != needed_size) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Invalid frame length %d (should be %d)\n",
+                   buf_size, needed_size);
+            return AVERROR_INVALIDDATA;
+        }
+    } else if (version < 2) {
         unsigned needed_size = avctx->width * avctx->height * 3;
         if (version == 0) needed_size /= 2;
         needed_size += header_size;
@@ -209,7 +218,7 @@ static int decode_frame(AVCodecContext *avctx,
     f->pict_type = AV_PICTURE_TYPE_I;
     f->key_frame = 1;
 
-    avctx->pix_fmt = version & 1 ? AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
+    avctx->pix_fmt = version & 1 ? is_pal ? AV_PIX_FMT_PAL8 : AV_PIX_FMT_BGR24 : AV_PIX_FMT_YUVJ420P;
     avctx->color_range = version & 1 ? AVCOL_RANGE_UNSPECIFIED
                                      : AVCOL_RANGE_JPEG;
     avctx->colorspace = version & 1 ? AVCOL_SPC_UNSPECIFIED : AVCOL_SPC_BT709;
@@ -245,11 +254,25 @@ static int decode_frame(AVCodecContext *avctx,
         break;
 
     case 1:
+        if (is_pal) {
+            uint32_t *pal = (uint32_t *)f->data[1];
+
+            for (y = 0; y < 256; y++) {
+                pal[y] = AV_RL32(buf) | 0xFF000000;
+                buf += 4;
+            }
+
+            for (y = 0; y <avctx->height; y++)
+                memcpy(&f->data[0][y * f->linesize[0]],
+                       &buf[y * avctx->width],
+                       avctx->width);
+        } else {
         /* Fraps v1 is an upside-down BGR24 */
             for (y = 0; y<avctx->height; y++)
                 memcpy(&f->data[0][(avctx->height - y - 1) * f->linesize[0]],
                        &buf[y * avctx->width * 3],
                        3 * avctx->width);
+        }
         break;
 
     case 2:
@@ -325,4 +348,5 @@ AVCodec ff_fraps_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1 | AV_CODEC_CAP_FRAME_THREADS,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

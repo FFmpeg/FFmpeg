@@ -8,6 +8,7 @@
 #codec_id 1: pcm_s16le
 #sample_rate 1: 48000
 #channel_layout 1: 3
-0,          0,          0,        1, 12441600, 0x627d1548
+#channel_layout_name 1: stereo
+0,          0,          0,        1, 12441600, 0x74f53304
 1,          0,          0,     1024,     4096, 0x00000000
 1,       1024,       1024,      896,     3584, 0x00000000

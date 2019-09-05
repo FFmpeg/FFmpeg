@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 encoder
+ * MPEG-1/2 encoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -22,7 +22,7 @@
 
 /**
  * @file
- * MPEG1/2 encoder
+ * MPEG-1/2 encoder
  */
 
 #include <stdint.h>
@@ -60,6 +60,8 @@ static uint32_t mpeg1_chr_dc_uni[512];
 
 static uint8_t mpeg1_index_run[2][64];
 static int8_t  mpeg1_max_level[2][64];
+
+#define A53_MAX_CC_COUNT 0x1f
 
 static av_cold void init_uni_ac_vlc(RLTable *rl, uint8_t *uni_ac_vlc_len)
 {
@@ -144,12 +146,12 @@ static av_cold int encode_init(AVCodecContext *avctx)
 
     if (find_frame_rate_index(s) < 0) {
         if (s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-            av_log(avctx, AV_LOG_ERROR, "MPEG1/2 does not support %d/%d fps\n",
+            av_log(avctx, AV_LOG_ERROR, "MPEG-1/2 does not support %d/%d fps\n",
                    avctx->time_base.den, avctx->time_base.num);
             return -1;
         } else {
             av_log(avctx, AV_LOG_INFO,
-                   "MPEG1/2 does not support %d/%d fps, there may be AV sync issues\n",
+                   "MPEG-1/2 does not support %d/%d fps, there may be AV sync issues\n",
                    avctx->time_base.den, avctx->time_base.num);
         }
     }
@@ -249,7 +251,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
     if (s->current_picture.f->key_frame) {
         AVRational framerate = ff_mpeg12_frame_rate_tab[s->frame_rate_index];
 
-        /* mpeg1 header repeated every gop */
+        /* MPEG-1 header repeated every GOP */
         put_header(s, SEQ_START_CODE);
 
         put_sbits(&s->pb, 12, s->width  & 0xFFF);
@@ -348,12 +350,13 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
                                 height != s->height ||
                                 s->avctx->color_primaries != AVCOL_PRI_UNSPECIFIED ||
                                 s->avctx->color_trc != AVCOL_TRC_UNSPECIFIED ||
-                                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED);
+                                s->avctx->colorspace != AVCOL_SPC_UNSPECIFIED ||
+                                s->video_format != VIDEO_FORMAT_UNSPECIFIED);
 
             if (s->seq_disp_ext == 1 || (s->seq_disp_ext == -1 && use_seq_disp_ext)) {
                 put_header(s, EXT_START_CODE);
                 put_bits(&s->pb, 4, 2);                         // sequence display extension
-                put_bits(&s->pb, 3, 0);                         // video_format: 0 is components
+                put_bits(&s->pb, 3, s->video_format);           // video_format
                 put_bits(&s->pb, 1, 1);                         // colour_description
                 put_bits(&s->pb, 8, s->avctx->color_primaries); // colour_primaries
                 put_bits(&s->pb, 8, s->avctx->color_trc);       // transfer_characteristics
@@ -423,7 +426,7 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
     AVFrameSideData *side_data;
     mpeg1_encode_sequence_header(s);
 
-    /* mpeg1 picture header */
+    /* MPEG-1 picture header */
     put_header(s, PICTURE_START_CODE);
     /* temporal reference */
 
@@ -540,6 +543,36 @@ void ff_mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
             put_bits(&s->pb, 7, fpa_type); // S3D_video_format_type
             put_bits(&s->pb, 8, 0x04);  // reserved_data[0]
             put_bits(&s->pb, 8, 0xFF);  // reserved_data[1]
+        }
+    }
+
+    if (s->codec_id == AV_CODEC_ID_MPEG2VIDEO && s->a53_cc) {
+        side_data = av_frame_get_side_data(s->current_picture_ptr->f,
+            AV_FRAME_DATA_A53_CC);
+        if (side_data) {
+            if (side_data->size <= A53_MAX_CC_COUNT * 3 && side_data->size % 3 == 0) {
+                int i = 0;
+
+                put_header (s, USER_START_CODE);
+
+                put_bits(&s->pb, 8, 'G');                   // user_identifier
+                put_bits(&s->pb, 8, 'A');
+                put_bits(&s->pb, 8, '9');
+                put_bits(&s->pb, 8, '4');
+                put_bits(&s->pb, 8, 3);                     // user_data_type_code
+                put_bits(&s->pb, 8,
+                    (side_data->size / 3 & A53_MAX_CC_COUNT) | 0x40); // flags, cc_count
+                put_bits(&s->pb, 8, 0xff);                  // em_data
+
+                for (i = 0; i < side_data->size; i++)
+                    put_bits(&s->pb, 8, side_data->data[i]);
+
+                put_bits(&s->pb, 8, 0xff);                  // marker_bits
+            } else {
+                av_log(s->avctx, AV_LOG_WARNING,
+                    "Warning Closed Caption size (%d) can not exceed 93 bytes "
+                    "and must be a multiple of 3\n", side_data->size);
+            }
         }
     }
 
@@ -1125,6 +1158,13 @@ static const AVOption mpeg2_options[] = {
     {     "auto",   NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = -1},  0, 0, VE, "seq_disp_ext" },
     {     "never",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 0 },  0, 0, VE, "seq_disp_ext" },
     {     "always", NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = 1 },  0, 0, VE, "seq_disp_ext" },
+    { "video_format",     "Video_format in the sequence_display_extension indicating the source of the video.", OFFSET(video_format), AV_OPT_TYPE_INT, { .i64 = VIDEO_FORMAT_UNSPECIFIED }, 0, 7, VE, "video_format" },
+    {     "component",    NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_COMPONENT  },  0, 0, VE, "video_format" },
+    {     "pal",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_PAL        },  0, 0, VE, "video_format" },
+    {     "ntsc",         NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_NTSC       },  0, 0, VE, "video_format" },
+    {     "secam",        NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_SECAM      },  0, 0, VE, "video_format" },
+    {     "mac",          NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_MAC        },  0, 0, VE, "video_format" },
+    {     "unspecified",  NULL, 0, AV_OPT_TYPE_CONST,  {.i64 = VIDEO_FORMAT_UNSPECIFIED},  0, 0, VE, "video_format" },
     FF_MPV_COMMON_OPTS
     { NULL },
 };

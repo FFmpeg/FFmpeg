@@ -150,32 +150,32 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
     if((s->out_format == FMT_H263 || s->out_format == FMT_H261) && s->mpeg_quant==0){
 
         __asm__ volatile(
-            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            "movd %%"FF_REG_a", "MM"3           \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
             "pxor "MM"4, "MM"4                  \n\t" // 0
             MOVQ" (%2), "MM"5                   \n\t" // qmat[0]
             "pxor "MM"6, "MM"6                  \n\t"
             "psubw (%3), "MM"6                  \n\t" // -bias[0]
-            "mov $-128, %%"REG_a"               \n\t"
+            "mov $-128, %%"FF_REG_a"            \n\t"
             ".p2align 4                         \n\t"
             "1:                                 \n\t"
-            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            MOVQ" (%1, %%"FF_REG_a"), "MM"0     \n\t" // block[i]
             SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
             "psubusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
             "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16
             "por "MM"0, "MM"4                   \n\t"
             RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            MOVQ" "MM"0, (%5, %%"FF_REG_a")     \n\t"
             "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
-            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
-            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            MOVQ" (%4, %%"FF_REG_a"), "MM"1     \n\t"
+            MOVQ" "MM"7, (%1, %%"FF_REG_a")     \n\t" // 0
             "pandn "MM"1, "MM"0                 \n\t"
             PMAXW(MM"0", MM"3")
-            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
+            "add $"MMREG_WIDTH", %%"FF_REG_a"   \n\t"
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
-            "movd "MM"3, %%"REG_a"              \n\t"
+            "movd "MM"3, %%"FF_REG_a"           \n\t"
             "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat), "r" (bias),
@@ -185,31 +185,31 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         );
     }else{ // FMT_H263
         __asm__ volatile(
-            "movd %%"REG_a", "MM"3              \n\t" // last_non_zero_p1
+            "movd %%"FF_REG_a", "MM"3           \n\t" // last_non_zero_p1
             SPREADW(MM"3")
             "pxor "MM"7, "MM"7                  \n\t" // 0
             "pxor "MM"4, "MM"4                  \n\t" // 0
-            "mov $-128, %%"REG_a"               \n\t"
+            "mov $-128, %%"FF_REG_a"            \n\t"
             ".p2align 4                         \n\t"
             "1:                                 \n\t"
-            MOVQ" (%1, %%"REG_a"), "MM"0        \n\t" // block[i]
+            MOVQ" (%1, %%"FF_REG_a"), "MM"0     \n\t" // block[i]
             SAVE_SIGN(MM"1", MM"0")                   // ABS(block[i])
-            MOVQ" (%3, %%"REG_a"), "MM"6        \n\t" // bias[0]
+            MOVQ" (%3, %%"FF_REG_a"), "MM"6     \n\t" // bias[0]
             "paddusw "MM"6, "MM"0               \n\t" // ABS(block[i]) + bias[0]
-            MOVQ" (%2, %%"REG_a"), "MM"5        \n\t" // qmat[i]
+            MOVQ" (%2, %%"FF_REG_a"), "MM"5     \n\t" // qmat[i]
             "pmulhw "MM"5, "MM"0                \n\t" // (ABS(block[i])*qmat[0] + bias[0]*qmat[0])>>16
             "por "MM"0, "MM"4                   \n\t"
             RESTORE_SIGN(MM"1", MM"0")                // out=((ABS(block[i])*qmat[0] - bias[0]*qmat[0])>>16)*sign(block[i])
-            MOVQ" "MM"0, (%5, %%"REG_a")        \n\t"
+            MOVQ" "MM"0, (%5, %%"FF_REG_a")     \n\t"
             "pcmpeqw "MM"7, "MM"0               \n\t" // out==0 ? 0xFF : 0x00
-            MOVQ" (%4, %%"REG_a"), "MM"1        \n\t"
-            MOVQ" "MM"7, (%1, %%"REG_a")        \n\t" // 0
+            MOVQ" (%4, %%"FF_REG_a"), "MM"1     \n\t"
+            MOVQ" "MM"7, (%1, %%"FF_REG_a")     \n\t" // 0
             "pandn "MM"1, "MM"0                 \n\t"
             PMAXW(MM"0", MM"3")
-            "add $"MMREG_WIDTH", %%"REG_a"      \n\t"
+            "add $"MMREG_WIDTH", %%"FF_REG_a"   \n\t"
             " js 1b                             \n\t"
             PMAX(MM"3", MM"0")
-            "movd "MM"3, %%"REG_a"              \n\t"
+            "movd "MM"3, %%"FF_REG_a"           \n\t"
             "movzbl %%al, %%eax                 \n\t" // last_non_zero_p1
             : "+a" (last_non_zero_p1)
             : "r" (block+64), "r" (qmat+64), "r" (bias+64),
@@ -322,7 +322,7 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3E] = temp_block[0x3D]; block[0x33] = temp_block[0x36];
         block[0x2F] = temp_block[0x2F]; block[0x37] = temp_block[0x37];
         block[0x3B] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
-    }else{
+    } else if (s->idsp.perm_type == FF_IDCT_PERM_NONE) {
         if(last_non_zero_p1 <= 1) goto end;
         block[0x01] = temp_block[0x01];
         block[0x08] = temp_block[0x08]; block[0x10] = temp_block[0x10];
@@ -366,6 +366,57 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0x3D] = temp_block[0x3D]; block[0x36] = temp_block[0x36];
         block[0x2F] = temp_block[0x2F]; block[0x37] = temp_block[0x37];
         block[0x3E] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
+    } else if (s->idsp.perm_type == FF_IDCT_PERM_TRANSPOSE) {
+        if(last_non_zero_p1 <= 1) goto end;
+        block[0x08] = temp_block[0x01];
+        block[0x01] = temp_block[0x08]; block[0x02] = temp_block[0x10];
+        if(last_non_zero_p1 <= 4) goto end;
+        block[0x09] = temp_block[0x09]; block[0x10] = temp_block[0x02];
+        block[0x18] = temp_block[0x03];
+        if(last_non_zero_p1 <= 7) goto end;
+        block[0x11] = temp_block[0x0A]; block[0x0A] = temp_block[0x11];
+        block[0x03] = temp_block[0x18]; block[0x04] = temp_block[0x20];
+        if(last_non_zero_p1 <= 11) goto end;
+        block[0x0B] = temp_block[0x19];
+        block[0x12] = temp_block[0x12]; block[0x19] = temp_block[0x0B];
+        block[0x20] = temp_block[0x04]; block[0x28] = temp_block[0x05];
+        if(last_non_zero_p1 <= 16) goto end;
+        block[0x21] = temp_block[0x0C]; block[0x1A] = temp_block[0x13];
+        block[0x13] = temp_block[0x1A]; block[0x0C] = temp_block[0x21];
+        block[0x05] = temp_block[0x28]; block[0x06] = temp_block[0x30];
+        block[0x0D] = temp_block[0x29]; block[0x14] = temp_block[0x22];
+        if(last_non_zero_p1 <= 24) goto end;
+        block[0x1B] = temp_block[0x1B]; block[0x22] = temp_block[0x14];
+        block[0x29] = temp_block[0x0D]; block[0x30] = temp_block[0x06];
+        block[0x38] = temp_block[0x07]; block[0x31] = temp_block[0x0E];
+        block[0x2A] = temp_block[0x15]; block[0x23] = temp_block[0x1C];
+        if(last_non_zero_p1 <= 32) goto end;
+        block[0x1C] = temp_block[0x23]; block[0x15] = temp_block[0x2A];
+        block[0x0E] = temp_block[0x31]; block[0x07] = temp_block[0x38];
+        block[0x0F] = temp_block[0x39]; block[0x16] = temp_block[0x32];
+        block[0x1D] = temp_block[0x2B]; block[0x24] = temp_block[0x24];
+        if(last_non_zero_p1 <= 40) goto end;
+        block[0x2B] = temp_block[0x1D]; block[0x32] = temp_block[0x16];
+        block[0x39] = temp_block[0x0F]; block[0x3A] = temp_block[0x17];
+        block[0x33] = temp_block[0x1E]; block[0x2C] = temp_block[0x25];
+        block[0x25] = temp_block[0x2C]; block[0x1E] = temp_block[0x33];
+        if(last_non_zero_p1 <= 48) goto end;
+        block[0x17] = temp_block[0x3A]; block[0x1F] = temp_block[0x3B];
+        block[0x26] = temp_block[0x34]; block[0x2D] = temp_block[0x2D];
+        block[0x34] = temp_block[0x26]; block[0x3B] = temp_block[0x1F];
+        block[0x3C] = temp_block[0x27]; block[0x35] = temp_block[0x2E];
+        if(last_non_zero_p1 <= 56) goto end;
+        block[0x2E] = temp_block[0x35]; block[0x27] = temp_block[0x3C];
+        block[0x2F] = temp_block[0x3D]; block[0x36] = temp_block[0x36];
+        block[0x3D] = temp_block[0x2F]; block[0x3E] = temp_block[0x37];
+        block[0x37] = temp_block[0x3E]; block[0x3F] = temp_block[0x3F];
+    } else {
+        av_log(s, AV_LOG_DEBUG, "s->idsp.perm_type: %d\n",
+                (int)s->idsp.perm_type);
+        av_assert0(s->idsp.perm_type == FF_IDCT_PERM_NONE ||
+                s->idsp.perm_type == FF_IDCT_PERM_LIBMPEG2 ||
+                s->idsp.perm_type == FF_IDCT_PERM_SIMPLE ||
+                s->idsp.perm_type == FF_IDCT_PERM_TRANSPOSE);
     }
     end:
     return last_non_zero_p1 - 1;

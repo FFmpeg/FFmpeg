@@ -55,7 +55,7 @@
 #include "internal.h"
 #include "video.h"
 
-typedef struct {
+typedef struct DejudderContext {
     const AVClass *class;
     int64_t *ringbuff;
     int i1, i2, i3, i4;

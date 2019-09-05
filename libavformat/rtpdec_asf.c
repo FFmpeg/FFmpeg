@@ -101,12 +101,12 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
 {
     int ret = 0;
     if (av_strstart(p, "pgmpu:data:application/vnd.ms.wms-hdr.asfv1;base64,", &p)) {
-        AVIOContext pb;
+        AVIOContext pb = { 0 };
         RTSPState *rt = s->priv_data;
         AVDictionary *opts = NULL;
         int len = strlen(p) * 6 / 8;
         char *buf = av_mallocz(len);
-        AVInputFormat *iformat;
+        ff_const59 AVInputFormat *iformat;
 
         if (!buf)
             return AVERROR(ENOMEM);
@@ -139,12 +139,12 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         ret = avformat_open_input(&rt->asf_ctx, "", iformat, &opts);
         av_dict_free(&opts);
         if (ret < 0) {
-            av_free(buf);
+            av_free(pb.buffer);
             return ret;
         }
         av_dict_copy(&s->metadata, rt->asf_ctx->metadata, 0);
         rt->asf_pb_pos = avio_tell(&pb);
-        av_free(buf);
+        av_free(pb.buffer);
         rt->asf_ctx->pb = NULL;
     }
     return ret;
@@ -300,7 +300,7 @@ static void asfrtp_close_context(PayloadContext *asf)
 }
 
 #define RTP_ASF_HANDLER(n, s, t) \
-RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
+const RTPDynamicProtocolHandler ff_ms_rtp_ ## n ## _handler = { \
     .enc_name         = s, \
     .codec_type       = t, \
     .codec_id         = AV_CODEC_ID_NONE, \

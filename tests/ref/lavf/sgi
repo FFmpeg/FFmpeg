@@ -1,3 +1,3 @@
-d446e540a7c18da5fd3cc0e9942cd46f *./tests/data/images/sgi/02.sgi
-./tests/data/images/sgi/%02d.sgi CRC=0x6da01946
-307287 ./tests/data/images/sgi/02.sgi
+d446e540a7c18da5fd3cc0e9942cd46f *tests/data/images/sgi/02.sgi
+tests/data/images/sgi/%02d.sgi CRC=0x6da01946
+307287 tests/data/images/sgi/02.sgi

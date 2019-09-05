@@ -35,6 +35,7 @@
 #define AAC_RENAME(x)       x ## _fixed
 #define AAC_RENAME_32(x)    x ## _fixed_32
 typedef int                 INTFLOAT;
+typedef unsigned            UINTFLOAT;  ///< Equivalent to INTFLOAT, Used as temporal cast to avoid undefined sign overflow operations.
 typedef int64_t             INT64FLOAT;
 typedef int16_t             SHORTFLOAT;
 typedef SoftFloat           AAC_FLOAT;
@@ -45,7 +46,7 @@ typedef int                 AAC_SIGNE;
 #define Q30(x)              (int)((x)*1073741824.0 + 0.5)
 #define Q31(x)              (int)((x)*2147483648.0 + 0.5)
 #define RANGE15(x)          x
-#define GET_GAIN(x, y)      (-(y) << (x)) + 1024
+#define GET_GAIN(x, y)      (-(y) * (1 << (x))) + 1024
 #define AAC_MUL16(x, y)     (int)(((int64_t)(x) * (y) + 0x8000) >> 16)
 #define AAC_MUL26(x, y)     (int)(((int64_t)(x) * (y) + 0x2000000) >> 26)
 #define AAC_MUL30(x, y)     (int)(((int64_t)(x) * (y) + 0x20000000) >> 30)
@@ -72,7 +73,7 @@ typedef int                 AAC_SIGNE;
 #define AAC_MSUB31_V3(x, y, z)    (int)((((int64_t)(x) * (z)) - \
                                       ((int64_t)(y) * (z)) + \
                                         0x40000000) >> 31)
-#define AAC_HALF_SUM(x, y)  (x) >> 1 + (y) >> 1
+#define AAC_HALF_SUM(x, y)  (((x) >> 1) + ((y) >> 1))
 #define AAC_SRA_R(x, y)     (int)(((x) + (1 << ((y) - 1))) >> (y))
 
 #else
@@ -83,6 +84,7 @@ typedef int                 AAC_SIGNE;
 #define AAC_RENAME(x)       x
 #define AAC_RENAME_32(x)    x
 typedef float               INTFLOAT;
+typedef float               UINTFLOAT;
 typedef float               INT64FLOAT;
 typedef float               SHORTFLOAT;
 typedef float               AAC_FLOAT;

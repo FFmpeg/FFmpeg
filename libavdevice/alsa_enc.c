@@ -130,7 +130,7 @@ static int audio_write_frame(AVFormatContext *s1, int stream_index,
     pkt.data     = (*frame)->data[0];
     pkt.size     = (*frame)->nb_samples * s->frame_size;
     pkt.dts      = (*frame)->pkt_dts;
-    pkt.duration = av_frame_get_pkt_duration(*frame);
+    pkt.duration = (*frame)->pkt_duration;
     return audio_write_packet(s1, &pkt);
 }
 
@@ -151,7 +151,7 @@ static int audio_get_device_list(AVFormatContext *h, AVDeviceInfoList *device_li
 }
 
 static const AVClass alsa_muxer_class = {
-    .class_name     = "ALSA muxer",
+    .class_name     = "ALSA outdev",
     .item_name      = av_default_item_name,
     .version        = LIBAVUTIL_VERSION_INT,
     .category       = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,

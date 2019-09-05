@@ -31,7 +31,7 @@
  * and it can be deflated or not. Similarly, pixel data comes after the header
  * and a variable size value, and it can be deflated or just raw.
  *
- * Supports: BGRA, BGR24, RGB555, RGB8
+ * Supports: PAL8, BGRA, BGR24, RGB555
  */
 
 #include <stdint.h>
@@ -59,9 +59,12 @@ typedef struct RsccContext {
     unsigned int tiles_size;
     int component_size;
 
+    uint8_t palette[AVPALETTE_SIZE];
+
     /* zlib interaction */
     uint8_t *inflated_buf;
     uLongf inflated_size;
+    int valid_pixels;
 } RsccContext;
 
 static av_cold int rscc_init(AVCodecContext *avctx)
@@ -83,14 +86,24 @@ static av_cold int rscc_init(AVCodecContext *avctx)
 
     /* Get pixel format and the size of the pixel */
     if (avctx->codec_tag == MKTAG('I', 'S', 'C', 'C')) {
-        avctx->pix_fmt = AV_PIX_FMT_BGRA;
-        ctx->component_size = 4;
+        if (avctx->extradata && avctx->extradata_size == 4) {
+            if ((avctx->extradata[0] >> 1) & 1) {
+                avctx->pix_fmt = AV_PIX_FMT_BGRA;
+                ctx->component_size = 4;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_BGR24;
+                ctx->component_size = 3;
+            }
+        } else {
+            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            ctx->component_size = 4;
+        }
     } else if (avctx->codec_tag == MKTAG('R', 'S', 'C', 'C')) {
         ctx->component_size = avctx->bits_per_coded_sample / 8;
         switch (avctx->bits_per_coded_sample) {
         case 8:
-            avpriv_report_missing_feature(avctx, "8 bits per pixel");
-            return AVERROR_PATCHWELCOME;
+            avctx->pix_fmt = AV_PIX_FMT_PAL8;
+            break;
         case 16:
             avctx->pix_fmt = AV_PIX_FMT_RGB555LE;
             break;
@@ -98,7 +111,7 @@ static av_cold int rscc_init(AVCodecContext *avctx)
             avctx->pix_fmt = AV_PIX_FMT_BGR24;
             break;
         case 32:
-            avctx->pix_fmt = AV_PIX_FMT_BGRA;
+            avctx->pix_fmt = AV_PIX_FMT_BGR0;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Invalid bits per pixel value (%d)\n",
@@ -155,6 +168,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
 
     /* Read number of tiles, and allocate the array */
     tiles_nb = bytestream2_get_le16(gbc);
+
+    if (tiles_nb == 0) {
+        av_log(avctx, AV_LOG_DEBUG, "no tiles\n");
+        return avpkt->size;
+    }
+
     av_fast_malloc(&ctx->tiles, &ctx->tiles_size,
                    tiles_nb * sizeof(*ctx->tiles));
     if (!ctx->tiles) {
@@ -180,6 +199,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         /* If necessary, uncompress tiles, and hijack the bytestream reader */
         if (packed_tiles_size != tiles_nb * TILE_SIZE) {
             uLongf length = tiles_nb * TILE_SIZE;
+
+            if (bytestream2_get_bytes_left(gbc) < packed_tiles_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto end;
+            }
+
             inflated_tiles = av_malloc(length);
             if (!inflated_tiles) {
                 ret = AVERROR(ENOMEM);
@@ -208,6 +233,12 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
         ctx->tiles[i].w = bytestream2_get_le16(gbc);
         ctx->tiles[i].y = bytestream2_get_le16(gbc);
         ctx->tiles[i].h = bytestream2_get_le16(gbc);
+
+        if (pixel_size + ctx->tiles[i].w * (int64_t)ctx->tiles[i].h * ctx->component_size > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid tile dimensions\n");
+            ret = AVERROR_INVALIDDATA;
+            goto end;
+        }
 
         pixel_size += ctx->tiles[i].w * ctx->tiles[i].h * ctx->component_size;
 
@@ -279,7 +310,7 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     /* Allocate when needed */
-    ret = ff_reget_buffer(avctx, ctx->reference);
+    ret = ff_reget_buffer(avctx, ctx->reference, 0);
     if (ret < 0)
         goto end;
 
@@ -308,8 +339,28 @@ static int rscc_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         frame->pict_type = AV_PICTURE_TYPE_P;
     }
-    *got_frame = 1;
 
+    /* Palette handling */
+    if (avctx->pix_fmt == AV_PIX_FMT_PAL8) {
+        int size;
+        const uint8_t *palette = av_packet_get_side_data(avpkt,
+                                                         AV_PKT_DATA_PALETTE,
+                                                         &size);
+        if (palette && size == AVPALETTE_SIZE) {
+            frame->palette_has_changed = 1;
+            memcpy(ctx->palette, palette, AVPALETTE_SIZE);
+        } else if (palette) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
+        }
+        memcpy (frame->data[1], ctx->palette, AVPALETTE_SIZE);
+    }
+    // We only return a picture when enough of it is undamaged, this avoids copying nearly broken frames around
+    if (ctx->valid_pixels < ctx->inflated_size)
+        ctx->valid_pixels += pixel_size;
+    if (ctx->valid_pixels >= ctx->inflated_size * (100 - avctx->discard_damaged_percentage) / 100)
+        *got_frame = 1;
+
+    ret = avpkt->size;
 end:
     av_free(inflated_tiles);
     return ret;

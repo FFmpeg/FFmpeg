@@ -21,7 +21,6 @@
 #include <string.h>
 
 #include "avcodec.h"
-#include "libavutil/atomic.h"
 #include "libavutil/internal.h"
 #include "libavutil/mem.h"
 #include "libavutil/opt.h"
@@ -29,15 +28,15 @@
 #if FF_API_OLD_BSF
 FF_DISABLE_DEPRECATION_WARNINGS
 
-AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
+const AVBitStreamFilter *av_bitstream_filter_next(const AVBitStreamFilter *f)
 {
     const AVBitStreamFilter *filter = NULL;
     void *opaque = NULL;
 
     while (filter != f)
-        filter = av_bsf_next(&opaque);
+        filter = av_bsf_iterate(&opaque);
 
-    return av_bsf_next(&opaque);
+    return av_bsf_iterate(&opaque);
 }
 
 void av_register_bitstream_filter(AVBitStreamFilter *bsf)
@@ -123,6 +122,8 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
                 shorthand[0] = opt->name;
 
             ret = av_opt_set_from_string(priv->ctx->priv_data, bsfc->args, shorthand, "=", ":");
+            if (ret < 0)
+                return ret;
         }
 
         ret = av_bsf_init(priv->ctx);
@@ -130,7 +131,7 @@ int av_bitstream_filter_filter(AVBitStreamFilterContext *bsfc,
             return ret;
     }
 
-    pkt.data = buf;
+    pkt.data = (uint8_t *)buf;
     pkt.size = buf_size;
 
     ret = av_bsf_send_packet(priv->ctx, &pkt);

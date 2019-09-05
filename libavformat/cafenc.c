@@ -81,12 +81,15 @@ static uint32_t samples_per_packet(enum AVCodecID codec_id, int channels, int bl
         return 320;
     case AV_CODEC_ID_MP1:
         return 384;
+    case AV_CODEC_ID_OPUS:
+        return 960;
     case AV_CODEC_ID_MP2:
     case AV_CODEC_ID_MP3:
         return 1152;
     case AV_CODEC_ID_AC3:
         return 1536;
     case AV_CODEC_ID_QDM2:
+    case AV_CODEC_ID_QDMC:
         return 2048 * channels;
     case AV_CODEC_ID_ALAC:
         return 4096;
@@ -120,12 +123,17 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_PATCHWELCOME;
     }
 
+    if (par->codec_id == AV_CODEC_ID_OPUS && par->channels > 2) {
+        av_log(s, AV_LOG_ERROR, "Only mono and stereo are supported for Opus\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if (!codec_tag) {
         av_log(s, AV_LOG_ERROR, "unsupported codec\n");
         return AVERROR_INVALIDDATA;
     }
 
-    if (!par->block_align && !pb->seekable) {
+    if (!par->block_align && !(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
         return AVERROR_INVALIDDATA;
     }
@@ -169,7 +177,7 @@ static int caf_write_header(AVFormatContext *s)
         avio_wb16(pb, 0x81FF); /* Mode set (all modes for AMR_NB) */
         avio_w8(pb, 0x00); /* Mode change period (no restriction) */
         avio_w8(pb, 0x01); /* Frames per sample */
-    } else if (par->codec_id == AV_CODEC_ID_QDM2) {
+    } else if (par->codec_id == AV_CODEC_ID_QDM2 || par->codec_id == AV_CODEC_ID_QDMC) {
         ffio_wfourcc(pb, "kuki");
         avio_wb64(pb, par->extradata_size);
         avio_write(pb, par->extradata, par->extradata_size);
@@ -235,7 +243,7 @@ static int caf_write_trailer(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int64_t file_size = avio_tell(pb);
 
         avio_seek(pb, caf->data, SEEK_SET);

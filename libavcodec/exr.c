@@ -3,7 +3,7 @@
  * Copyright (c) 2006 Industrial Light & Magic, a division of Lucas Digital Ltd. LLC
  * Copyright (c) 2009 Jimmy Christensen
  *
- * B44/B44A, Tile added by Jokyo Images support by CNC - French National Center for Cinema
+ * B44/B44A, Tile, UINT32 added by Jokyo Images support by CNC - French National Center for Cinema
  *
  * This file is part of FFmpeg.
  *
@@ -37,6 +37,7 @@
 #include <float.h>
 #include <zlib.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/common.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/intfloat.h"
@@ -45,6 +46,12 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+
+#if HAVE_BIGENDIAN
+#include "bswapdsp.h"
+#endif
+
+#include "exrdsp.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
@@ -59,6 +66,8 @@ enum ExrCompr {
     EXR_PXR24,
     EXR_B44,
     EXR_B44A,
+    EXR_DWA,
+    EXR_DWB,
     EXR_UNKN,
 };
 
@@ -105,12 +114,19 @@ typedef struct EXRThreadData {
     uint16_t *lut;
 
     int ysize, xsize;
+
+    int channel_line_size;
 } EXRThreadData;
 
 typedef struct EXRContext {
     AVClass *class;
     AVFrame *picture;
     AVCodecContext *avctx;
+    ExrDSPContext dsp;
+
+#if HAVE_BIGENDIAN
+    BswapDSPContext bbdsp;
+#endif
 
     enum ExrCompr compression;
     enum ExrPixelType pixel_type;
@@ -122,11 +138,12 @@ typedef struct EXRContext {
     uint32_t ymax, ymin;
     uint32_t xdelta, ydelta;
 
-    uint64_t scan_line_size;
     int scan_lines_per_block;
 
     EXRTileAttribute tile_attr; /* header data attribute of tile */
     int is_tile; /* 0 if scanline, 1 if tile */
+
+    int is_luma;/* 1 if there is an Y plane */
 
     GetByteContext gb;
     const uint8_t *buf;
@@ -190,13 +207,13 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
                 mantissa <<= 1;
                 exp -= (1 << 23);
             }
-            // clamp the mantissa to 10-bits
+            // clamp the mantissa to 10 bits
             mantissa &= ((1 << 10) - 1);
-            // shift left to generate single-precision mantissa of 23-bits
+            // shift left to generate single-precision mantissa of 23 bits
             mantissa <<= 13;
         }
     } else {
-        // shift left to generate single-precision mantissa of 23-bits
+        // shift left to generate single-precision mantissa of 23 bits
         mantissa <<= 13;
         // generate single precision biased exponent value
         exp = (exp << 13) + HALF_FLOAT_MIN_BIASED_EXP_AS_SINGLE_FP_EXP;
@@ -215,9 +232,9 @@ static union av_intfloat32 exr_half2float(uint16_t hf)
  *
  * @return normalized 16-bit unsigned int
  */
-static inline uint16_t exr_flt2uint(uint32_t v)
+static inline uint16_t exr_flt2uint(int32_t v)
 {
-    unsigned int exp = v >> 23;
+    int32_t exp = v >> 23;
     // "HACK": negative values result in exp<  0, so clipping them to 0
     // is also handled by this condition, avoids explicit check for sign bit.
     if (exp <= 127 + 7 - 24) // we would shift out all bits anyway
@@ -248,39 +265,7 @@ static inline uint16_t exr_halflt2uint(uint16_t v)
     return (v + (1 << 16)) >> (exp + 1);
 }
 
-static void predictor(uint8_t *src, int size)
-{
-    uint8_t *t    = src + 1;
-    uint8_t *stop = src + size;
-
-    while (t < stop) {
-        int d = (int) t[-1] + (int) t[0] - 128;
-        t[0] = d;
-        ++t;
-    }
-}
-
-static void reorder_pixels(uint8_t *src, uint8_t *dst, int size)
-{
-    const int8_t *t1 = src;
-    const int8_t *t2 = src + (size + 1) / 2;
-    int8_t *s        = dst;
-    int8_t *stop     = s + size;
-
-    while (1) {
-        if (s < stop)
-            *(s++) = *(t1++);
-        else
-            break;
-
-        if (s < stop)
-            *(s++) = *(t2++);
-        else
-            break;
-    }
-}
-
-static int zip_uncompress(const uint8_t *src, int compressed_size,
+static int zip_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     unsigned long dest_len = uncompressed_size;
@@ -289,13 +274,15 @@ static int zip_uncompress(const uint8_t *src, int compressed_size,
         dest_len != uncompressed_size)
         return AVERROR_INVALIDDATA;
 
-    predictor(td->tmp, uncompressed_size);
-    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    av_assert1(uncompressed_size % 2 == 0);
+
+    s->dsp.predictor(td->tmp, uncompressed_size);
+    s->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
 
-static int rle_uncompress(const uint8_t *src, int compressed_size,
+static int rle_uncompress(EXRContext *ctx, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td)
 {
     uint8_t *d      = td->tmp;
@@ -334,8 +321,10 @@ static int rle_uncompress(const uint8_t *src, int compressed_size,
     if (dend != d)
         return AVERROR_INVALIDDATA;
 
-    predictor(td->tmp, uncompressed_size);
-    reorder_pixels(td->tmp, td->uncompressed_data, uncompressed_size);
+    av_assert1(uncompressed_size % 2 == 0);
+
+    ctx->dsp.predictor(td->tmp, uncompressed_size);
+    ctx->dsp.reorder_pixels(td->uncompressed_data, td->tmp, uncompressed_size);
 
     return 0;
 }
@@ -569,7 +558,7 @@ static int huf_decode(const uint64_t *hcode, const HufDec *hdecod,
     while (lc > 0) {
         const HufDec pl = hdecod[(c << (HUF_DECBITS - lc)) & HUF_DECMASK];
 
-        if (pl.len) {
+        if (pl.len && lc >= pl.len) {
             lc -= pl.len;
             get_code(pl.lit, rlc, c, lc, gb, out, oe, outb);
         } else {
@@ -746,8 +735,12 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
     uint16_t maxval, min_non_zero, max_non_zero;
     uint16_t *ptr;
     uint16_t *tmp = (uint16_t *)td->tmp;
-    uint8_t *out;
+    uint16_t *out;
+    uint16_t *in;
     int ret, i, j;
+    int pixel_half_size;/* 1 for half, 2 for float and uint32 */
+    EXRChannel *channel;
+    int tmp_offset;
 
     if (!td->bitmap)
         td->bitmap = av_malloc(BITMAP_SIZE);
@@ -780,24 +773,42 @@ static int piz_uncompress(EXRContext *s, const uint8_t *src, int ssize,
 
     ptr = tmp;
     for (i = 0; i < s->nb_channels; i++) {
-        EXRChannel *channel = &s->channels[i];
-        int size = channel->pixel_type;
+        channel = &s->channels[i];
 
-        for (j = 0; j < size; j++)
-            wav_decode(ptr + j, td->xsize, size, td->ysize,
-                       td->xsize * size, maxval);
-        ptr += td->xsize * td->ysize * size;
+        if (channel->pixel_type == EXR_HALF)
+            pixel_half_size = 1;
+        else
+            pixel_half_size = 2;
+
+        for (j = 0; j < pixel_half_size; j++)
+            wav_decode(ptr + j, td->xsize, pixel_half_size, td->ysize,
+                       td->xsize * pixel_half_size, maxval);
+        ptr += td->xsize * td->ysize * pixel_half_size;
     }
 
     apply_lut(td->lut, tmp, dsize / sizeof(uint16_t));
 
-    out = td->uncompressed_data;
-    for (i = 0; i < td->ysize; i++)
+    out = (uint16_t *)td->uncompressed_data;
+    for (i = 0; i < td->ysize; i++) {
+        tmp_offset = 0;
         for (j = 0; j < s->nb_channels; j++) {
-            uint16_t *in = tmp + j * td->xsize * td->ysize + i * td->xsize;
-            memcpy(out, in, td->xsize * 2);
-            out += td->xsize * 2;
+            channel = &s->channels[j];
+            if (channel->pixel_type == EXR_HALF)
+                pixel_half_size = 1;
+            else
+                pixel_half_size = 2;
+
+            in = tmp + tmp_offset * td->xsize * td->ysize + i * td->xsize * pixel_half_size;
+            tmp_offset += pixel_half_size;
+
+#if HAVE_BIGENDIAN
+            s->bbdsp.bswap16_buf(out, in, td->xsize * pixel_half_size);
+#else
+            memcpy(out, in, td->xsize * 2 * pixel_half_size);
+#endif
+            out += td->xsize * pixel_half_size;
         }
+    }
 
     return 0;
 }
@@ -806,15 +817,20 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                             int compressed_size, int uncompressed_size,
                             EXRThreadData *td)
 {
-    unsigned long dest_len, expected_len;
+    unsigned long dest_len, expected_len = 0;
     const uint8_t *in = td->tmp;
     uint8_t *out;
     int c, i, j;
 
-    if (s->pixel_type == EXR_FLOAT)
-        expected_len = (uncompressed_size / 4) * 3; /* PRX 24 store float in 24 bit instead of 32 */
-    else
-        expected_len = uncompressed_size;
+    for (i = 0; i < s->nb_channels; i++) {
+        if (s->channels[i].pixel_type == EXR_FLOAT) {
+            expected_len += (td->xsize * td->ysize * 3);/* PRX 24 store float in 24 bit instead of 32 */
+        } else if (s->channels[i].pixel_type == EXR_HALF) {
+            expected_len += (td->xsize * td->ysize * 2);
+        } else {//UINT 32
+            expected_len += (td->xsize * td->ysize * 4);
+        }
+    }
 
     dest_len = expected_len;
 
@@ -839,7 +855,7 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                 in     = ptr[2] + td->xsize;
 
                 for (j = 0; j < td->xsize; ++j) {
-                    uint32_t diff = (*(ptr[0]++) << 24) |
+                    uint32_t diff = ((unsigned)*(ptr[0]++) << 24) |
                                     (*(ptr[1]++) << 16) |
                                     (*(ptr[2]++) << 8);
                     pixel += diff;
@@ -857,6 +873,22 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
                     bytestream_put_le16(&out, pixel);
                 }
                 break;
+            case EXR_UINT:
+                ptr[0] = in;
+                ptr[1] = ptr[0] + s->xdelta;
+                ptr[2] = ptr[1] + s->xdelta;
+                ptr[3] = ptr[2] + s->xdelta;
+                in     = ptr[3] + s->xdelta;
+
+                for (j = 0; j < s->xdelta; ++j) {
+                    uint32_t diff = (*(ptr[0]++) << 24) |
+                    (*(ptr[1]++) << 16) |
+                    (*(ptr[2]++) << 8 ) |
+                    (*(ptr[3]++));
+                    pixel += diff;
+                    bytestream_put_le32(&out, pixel);
+                }
+                break;
             default:
                 return AVERROR_INVALIDDATA;
             }
@@ -867,7 +899,7 @@ static int pxr24_uncompress(EXRContext *s, const uint8_t *src,
 
 static void unpack_14(const uint8_t b[14], uint16_t s[16])
 {
-    unsigned short shift = (b[ 2] >> 2);
+    unsigned short shift = (b[ 2] >> 2) & 15;
     unsigned short bias = (0x20 << shift);
     int i;
 
@@ -919,56 +951,74 @@ static void unpack_3(const uint8_t b[3], uint16_t s[16])
 static int b44_uncompress(EXRContext *s, const uint8_t *src, int compressed_size,
                           int uncompressed_size, EXRThreadData *td) {
     const int8_t *sr = src;
-    int stayToUncompress = compressed_size;
-    int nbB44BlockW, nbB44BlockH;
-    int indexHgX, indexHgY, indexOut, indexTmp;
-    uint16_t tmpBuffer[16]; /* B44 use 4x4 half float pixel */
+    int stay_to_uncompress = compressed_size;
+    int nb_b44_block_w, nb_b44_block_h;
+    int index_tl_x, index_tl_y, index_out, index_tmp;
+    uint16_t tmp_buffer[16]; /* B44 use 4x4 half float pixel */
     int c, iY, iX, y, x;
+    int target_channel_offset = 0;
 
     /* calc B44 block count */
-    nbB44BlockW = td->xsize / 4;
+    nb_b44_block_w = td->xsize / 4;
     if ((td->xsize % 4) != 0)
-        nbB44BlockW++;
+        nb_b44_block_w++;
 
-    nbB44BlockH = td->ysize / 4;
+    nb_b44_block_h = td->ysize / 4;
     if ((td->ysize % 4) != 0)
-        nbB44BlockH++;
+        nb_b44_block_h++;
 
     for (c = 0; c < s->nb_channels; c++) {
-        for (iY = 0; iY < nbB44BlockH; iY++) {
-            for (iX = 0; iX < nbB44BlockW; iX++) {/* For each B44 block */
-                if (stayToUncompress < 3) {
-                    av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stayToUncompress);
-                    return AVERROR_INVALIDDATA;
-                }
-
-                if (src[compressed_size - stayToUncompress + 2] == 0xfc) { /* B44A block */
-                    unpack_3(sr, tmpBuffer);
-                    sr += 3;
-                    stayToUncompress -= 3;
-                }  else {/* B44 Block */
-                    if (stayToUncompress < 14) {
-                        av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stayToUncompress);
+        if (s->channels[c].pixel_type == EXR_HALF) {/* B44 only compress half float data */
+            for (iY = 0; iY < nb_b44_block_h; iY++) {
+                for (iX = 0; iX < nb_b44_block_w; iX++) {/* For each B44 block */
+                    if (stay_to_uncompress < 3) {
+                        av_log(s, AV_LOG_ERROR, "Not enough data for B44A block: %d", stay_to_uncompress);
                         return AVERROR_INVALIDDATA;
                     }
-                    unpack_14(sr, tmpBuffer);
-                    sr += 14;
-                    stayToUncompress -= 14;
-                }
 
-                /* copy data to uncompress buffer (B44 block can exceed target resolution)*/
-                indexHgX = iX * 4;
-                indexHgY = iY * 4;
+                    if (src[compressed_size - stay_to_uncompress + 2] == 0xfc) { /* B44A block */
+                        unpack_3(sr, tmp_buffer);
+                        sr += 3;
+                        stay_to_uncompress -= 3;
+                    }  else {/* B44 Block */
+                        if (stay_to_uncompress < 14) {
+                            av_log(s, AV_LOG_ERROR, "Not enough data for B44 block: %d", stay_to_uncompress);
+                            return AVERROR_INVALIDDATA;
+                        }
+                        unpack_14(sr, tmp_buffer);
+                        sr += 14;
+                        stay_to_uncompress -= 14;
+                    }
 
-                for (y = indexHgY; y < FFMIN(indexHgY + 4, td->ysize); y++) {
-                    for (x = indexHgX; x < FFMIN(indexHgX + 4, td->xsize); x++) {
-                        indexOut = (c * td->xsize + y * td->xsize * s->nb_channels + x) * 2;
-                        indexTmp = (y-indexHgY) * 4 + (x-indexHgX);
-                        td->uncompressed_data[indexOut] = tmpBuffer[indexTmp] & 0xff;
-                        td->uncompressed_data[indexOut + 1] = tmpBuffer[indexTmp] >> 8;
+                    /* copy data to uncompress buffer (B44 block can exceed target resolution)*/
+                    index_tl_x = iX * 4;
+                    index_tl_y = iY * 4;
+
+                    for (y = index_tl_y; y < FFMIN(index_tl_y + 4, td->ysize); y++) {
+                        for (x = index_tl_x; x < FFMIN(index_tl_x + 4, td->xsize); x++) {
+                            index_out = target_channel_offset * td->xsize + y * td->channel_line_size + 2 * x;
+                            index_tmp = (y-index_tl_y) * 4 + (x-index_tl_x);
+                            td->uncompressed_data[index_out] = tmp_buffer[index_tmp] & 0xff;
+                            td->uncompressed_data[index_out + 1] = tmp_buffer[index_tmp] >> 8;
+                        }
                     }
                 }
             }
+            target_channel_offset += 2;
+        } else {/* Float or UINT 32 channel */
+            if (stay_to_uncompress < td->ysize * td->xsize * 4) {
+                av_log(s, AV_LOG_ERROR, "Not enough data for uncompress channel: %d", stay_to_uncompress);
+                return AVERROR_INVALIDDATA;
+            }
+
+            for (y = 0; y < td->ysize; y++) {
+                index_out = target_channel_offset * td->xsize + y * td->channel_line_size;
+                memcpy(&td->uncompressed_data[index_out], sr, td->xsize * 4);
+                sr += td->xsize * 4;
+            }
+            target_channel_offset += 4;
+
+            stay_to_uncompress -= td->ysize * td->xsize * 4;
         }
     }
 
@@ -984,16 +1034,16 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     const uint8_t *channel_buffer[4] = { 0 };
     const uint8_t *buf = s->buf;
     uint64_t line_offset, uncompressed_size;
-    uint32_t xdelta = s->xdelta;
     uint16_t *ptr_x;
     uint8_t *ptr;
-    uint32_t data_size, line, col = 0;
-    uint32_t tileX, tileY, tileLevelX, tileLevelY;
-    int channelLineSize, indexSrc, tX, tY, tCh;
+    uint32_t data_size;
+    uint64_t line, col = 0;
+    uint64_t tile_x, tile_y, tile_level_x, tile_level_y;
     const uint8_t *src;
     int axmax = (avctx->width - (s->xmax + 1)) * 2 * s->desc->nb_components; /* nb pixel to add at the right of the datawindow */
     int bxmin = s->xmin * 2 * s->desc->nb_components; /* nb pixel to add at the left of the datawindow */
     int i, x, buf_size = s->buf_size;
+    int c, rgb_channel_count;
     float one_gamma = 1.0f / s->gamma;
     avpriv_trc_function trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
     int ret;
@@ -1001,40 +1051,51 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
     line_offset = AV_RL64(s->gb.buffer + jobnr * 8);
 
     if (s->is_tile) {
-        if (line_offset > buf_size - 20)
+        if (buf_size < 20 || line_offset > buf_size - 20)
             return AVERROR_INVALIDDATA;
 
         src  = buf + line_offset + 20;
 
-        tileX = AV_RL32(src - 20);
-        tileY = AV_RL32(src - 16);
-        tileLevelX = AV_RL32(src - 12);
-        tileLevelY = AV_RL32(src - 8);
+        tile_x = AV_RL32(src - 20);
+        tile_y = AV_RL32(src - 16);
+        tile_level_x = AV_RL32(src - 12);
+        tile_level_y = AV_RL32(src - 8);
 
         data_size = AV_RL32(src - 4);
-        if (data_size <= 0 || data_size > buf_size)
+        if (data_size <= 0 || data_size > buf_size - line_offset - 20)
             return AVERROR_INVALIDDATA;
 
-        if (tileLevelX || tileLevelY) { /* tile level, is not the full res level */
+        if (tile_level_x || tile_level_y) { /* tile level, is not the full res level */
             avpriv_report_missing_feature(s->avctx, "Subres tile before full res tile");
             return AVERROR_PATCHWELCOME;
         }
 
-        line = s->tile_attr.ySize * tileY;
-        col = s->tile_attr.xSize * tileX;
+        if (s->xmin || s->ymin) {
+            avpriv_report_missing_feature(s->avctx, "Tiles with xmin/ymin");
+            return AVERROR_PATCHWELCOME;
+        }
 
-        td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tileY * s->tile_attr.ySize);
-        td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tileX * s->tile_attr.xSize);
-        uncompressed_size = s->current_channel_offset * (uint64_t)td->ysize * td->xsize;
+        line = s->tile_attr.ySize * tile_y;
+        col = s->tile_attr.xSize * tile_x;
+
+        if (line < s->ymin || line > s->ymax ||
+            col  < s->xmin || col  > s->xmax)
+            return AVERROR_INVALIDDATA;
+
+        td->ysize = FFMIN(s->tile_attr.ySize, s->ydelta - tile_y * s->tile_attr.ySize);
+        td->xsize = FFMIN(s->tile_attr.xSize, s->xdelta - tile_x * s->tile_attr.xSize);
 
         if (col) { /* not the first tile of the line */
-            bxmin = 0; axmax = 0; /* doesn't add pixel at the left of the datawindow */
+            bxmin = 0; /* doesn't add pixel at the left of the datawindow */
         }
 
         if ((col + td->xsize) != s->xdelta)/* not the last tile of the line */
             axmax = 0; /* doesn't add pixel at the right of the datawindow */
+
+        td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
     } else {
-        if (line_offset > buf_size - 8)
+        if (buf_size < 8 || line_offset > buf_size - 8)
             return AVERROR_INVALIDDATA;
 
         src  = buf + line_offset + 8;
@@ -1044,12 +1105,15 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             return AVERROR_INVALIDDATA;
 
         data_size = AV_RL32(src - 4);
-        if (data_size <= 0 || data_size > buf_size)
+        if (data_size <= 0 || data_size > buf_size - line_offset - 8)
             return AVERROR_INVALIDDATA;
 
         td->ysize          = FFMIN(s->scan_lines_per_block, s->ymax - line + 1); /* s->ydelta - line ?? */
         td->xsize          = s->xdelta;
-        uncompressed_size = s->scan_line_size * td->ysize;
+
+        td->channel_line_size = td->xsize * s->current_channel_offset;/* uncompress size of one line */
+        uncompressed_size = td->channel_line_size * (uint64_t)td->ysize;/* uncompress size of the block */
+
         if ((s->compression == EXR_RAW && (data_size != uncompressed_size ||
                                            line_offset > buf_size - uncompressed_size)) ||
             (s->compression != EXR_RAW && (data_size > uncompressed_size ||
@@ -1066,7 +1130,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
 
     if (data_size < uncompressed_size) {
         av_fast_padded_malloc(&td->uncompressed_data,
-                              &td->uncompressed_size, uncompressed_size);
+                              &td->uncompressed_size, uncompressed_size + 64);/* Force 64 padding for AVX2 reorder_pixels dst */
 
         if (!td->uncompressed_data)
             return AVERROR(ENOMEM);
@@ -1075,7 +1139,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         switch (s->compression) {
         case EXR_ZIP1:
         case EXR_ZIP16:
-            ret = zip_uncompress(src, data_size, uncompressed_size, td);
+            ret = zip_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_PIZ:
             ret = piz_uncompress(s, src, data_size, uncompressed_size, td);
@@ -1084,7 +1148,7 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             ret = pxr24_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_RLE:
-            ret = rle_uncompress(src, data_size, uncompressed_size, td);
+            ret = rle_uncompress(s, src, data_size, uncompressed_size, td);
             break;
         case EXR_B44:
         case EXR_B44A:
@@ -1098,45 +1162,30 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
         src = td->uncompressed_data;
     }
 
-    if (s->is_tile) {
-        indexSrc = 0;
-        channelLineSize = td->xsize * 2;
-        if (s->pixel_type == EXR_FLOAT)
-            channelLineSize *= 2;
-
-        /* reorganise tile data to have each channel one after the other instead of line by line */
-        for (tY = 0; tY < td->ysize; tY ++) {
-            for (tCh = 0; tCh < s->nb_channels; tCh++) {
-                for (tX = 0; tX < channelLineSize; tX++) {
-                    td->tmp[tCh * channelLineSize * td->ysize + tY * channelLineSize + tX] = src[indexSrc];
-                    indexSrc++;
-                }
-            }
-        }
-
-        channel_buffer[0] = td->tmp + td->xsize * s->channel_offsets[0]  * td->ysize;
-        channel_buffer[1] = td->tmp + td->xsize * s->channel_offsets[1]  * td->ysize;
-        channel_buffer[2] = td->tmp + td->xsize * s->channel_offsets[2]  * td->ysize;
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = td->tmp + td->xsize * s->channel_offsets[3];
-    } else {
-        channel_buffer[0] = src + xdelta * s->channel_offsets[0];
-        channel_buffer[1] = src + xdelta * s->channel_offsets[1];
-        channel_buffer[2] = src + xdelta * s->channel_offsets[2];
-        if (s->channel_offsets[3] >= 0)
-            channel_buffer[3] = src + xdelta * s->channel_offsets[3];
+    if (!s->is_luma) {
+        channel_buffer[0] = src + td->xsize * s->channel_offsets[0];
+        channel_buffer[1] = src + td->xsize * s->channel_offsets[1];
+        channel_buffer[2] = src + td->xsize * s->channel_offsets[2];
+        rgb_channel_count = 3;
+    } else { /* put y data in the first channel_buffer */
+        channel_buffer[0] = src + td->xsize * s->channel_offsets[1];
+        rgb_channel_count = 1;
     }
+    if (s->channel_offsets[3] >= 0)
+        channel_buffer[3] = src + td->xsize * s->channel_offsets[3];
 
     ptr = p->data[0] + line * p->linesize[0] + (col * s->desc->nb_components * 2);
 
     for (i = 0;
          i < td->ysize; i++, ptr += p->linesize[0]) {
 
-        const uint8_t *r, *g, *b, *a;
+        const uint8_t * a;
+        const uint8_t *rgb[3];
 
-        r = channel_buffer[0];
-        g = channel_buffer[1];
-        b = channel_buffer[2];
+        for (c = 0; c < rgb_channel_count; c++){
+            rgb[c] = channel_buffer[c];
+        }
+
         if (channel_buffer[3])
             a = channel_buffer[3];
 
@@ -1151,68 +1200,61 @@ static int decode_block(AVCodecContext *avctx, void *tdata,
             if (trc_func) {
                 for (x = 0; x < td->xsize; x++) {
                     union av_intfloat32 t;
-                    t.i = bytestream_get_le32(&r);
-                    t.f = trc_func(t.f);
-                    *ptr_x++ = exr_flt2uint(t.i);
 
-                    t.i = bytestream_get_le32(&g);
-                    t.f = trc_func(t.f);
-                    *ptr_x++ = exr_flt2uint(t.i);
-
-                    t.i = bytestream_get_le32(&b);
-                    t.f = trc_func(t.f);
-                    *ptr_x++ = exr_flt2uint(t.i);
+                    for (c = 0; c < rgb_channel_count; c++) {
+                        t.i = bytestream_get_le32(&rgb[c]);
+                        t.f = trc_func(t.f);
+                        *ptr_x++ = exr_flt2uint(t.i);
+                    }
                     if (channel_buffer[3])
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             } else {
                 for (x = 0; x < td->xsize; x++) {
                     union av_intfloat32 t;
-                    t.i = bytestream_get_le32(&r);
-                    if (t.f > 0.0f)  /* avoid negative values */
-                        t.f = powf(t.f, one_gamma);
-                    *ptr_x++ = exr_flt2uint(t.i);
+                    int c;
 
-                    t.i = bytestream_get_le32(&g);
-                    if (t.f > 0.0f)
-                        t.f = powf(t.f, one_gamma);
-                    *ptr_x++ = exr_flt2uint(t.i);
+                    for (c = 0; c < rgb_channel_count; c++) {
+                        t.i = bytestream_get_le32(&rgb[c]);
+                        if (t.f > 0.0f)  /* avoid negative values */
+                            t.f = powf(t.f, one_gamma);
+                        *ptr_x++ = exr_flt2uint(t.i);
+                    }
 
-                    t.i = bytestream_get_le32(&b);
-                    if (t.f > 0.0f)
-                        t.f = powf(t.f, one_gamma);
-                    *ptr_x++ = exr_flt2uint(t.i);
                     if (channel_buffer[3])
                         *ptr_x++ = exr_flt2uint(bytestream_get_le32(&a));
                 }
             }
-        } else {
+        } else if (s->pixel_type == EXR_HALF) {
             // 16-bit
             for (x = 0; x < td->xsize; x++) {
-                *ptr_x++ = s->gamma_table[bytestream_get_le16(&r)];
-                *ptr_x++ = s->gamma_table[bytestream_get_le16(&g)];
-                *ptr_x++ = s->gamma_table[bytestream_get_le16(&b)];
+                int c;
+                for (c = 0; c < rgb_channel_count; c++) {
+                    *ptr_x++ = s->gamma_table[bytestream_get_le16(&rgb[c])];
+                }
+
                 if (channel_buffer[3])
                     *ptr_x++ = exr_halflt2uint(bytestream_get_le16(&a));
+            }
+        } else if (s->pixel_type == EXR_UINT) {
+            for (x = 0; x < td->xsize; x++) {
+                for (c = 0; c < rgb_channel_count; c++) {
+                    *ptr_x++ = bytestream_get_le32(&rgb[c]) >> 16;
+                }
+
+                if (channel_buffer[3])
+                    *ptr_x++ = bytestream_get_le32(&a) >> 16;
             }
         }
 
         // Zero out the end if xmax+1 is not w
         memset(ptr_x, 0, axmax);
 
-        if (s->is_tile) {
-            channel_buffer[0] += channelLineSize;
-            channel_buffer[1] += channelLineSize;
-            channel_buffer[2] += channelLineSize;
-            if (channel_buffer[3])
-                channel_buffer[3] += channelLineSize;
-        } else {
-            channel_buffer[0] += s->scan_line_size;
-            channel_buffer[1] += s->scan_line_size;
-            channel_buffer[2] += s->scan_line_size;
-            if (channel_buffer[3])
-                channel_buffer[3] += s->scan_line_size;
-        }
+        channel_buffer[0] += td->channel_line_size;
+        channel_buffer[1] += td->channel_line_size;
+        channel_buffer[2] += td->channel_line_size;
+        if (channel_buffer[3])
+            channel_buffer[3] += td->channel_line_size;
     }
 
     return 0;
@@ -1259,9 +1301,12 @@ static int check_header_variable(EXRContext *s,
     return var_size;
 }
 
-static int decode_header(EXRContext *s)
+static int decode_header(EXRContext *s, AVFrame *frame)
 {
+    AVDictionary *metadata = NULL;
     int magic_number, version, i, flags, sar = 0;
+    int layer_match = 0;
+    int ret;
 
     s->current_channel_offset = 0;
     s->xmin               = ~0;
@@ -1282,6 +1327,7 @@ static int decode_header(EXRContext *s)
     s->tile_attr.xSize    = -1;
     s->tile_attr.ySize    = -1;
     s->is_tile            = 0;
+    s->is_luma            = 0;
 
     if (bytestream2_get_bytes_left(&s->gb) < 10) {
         av_log(s->avctx, AV_LOG_ERROR, "Header too short to parse.\n");
@@ -1304,12 +1350,14 @@ static int decode_header(EXRContext *s)
 
     flags = bytestream2_get_le24(&s->gb);
 
-    if (flags == 0x00)
-        s->is_tile = 0;
-    else if (flags & 0x02)
+    if (flags & 0x02)
         s->is_tile = 1;
-    else{
-        avpriv_report_missing_feature(s->avctx, "flags %d", flags);
+    if (flags & 0x08) {
+        avpriv_report_missing_feature(s->avctx, "deep data");
+        return AVERROR_PATCHWELCOME;
+    }
+    if (flags & 0x10) {
+        avpriv_report_missing_feature(s->avctx, "multipart");
         return AVERROR_PATCHWELCOME;
     }
 
@@ -1319,8 +1367,10 @@ static int decode_header(EXRContext *s)
         if ((var_size = check_header_variable(s, "channels",
                                               "chlist", 38)) >= 0) {
             GetByteContext ch_gb;
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             bytestream2_init(&ch_gb, s->gb.buffer, var_size);
 
@@ -1332,31 +1382,46 @@ static int decode_header(EXRContext *s)
 
                 if (strcmp(s->layer, "") != 0) {
                     if (strncmp(ch_gb.buffer, s->layer, strlen(s->layer)) == 0) {
+                        layer_match = 1;
+                        av_log(s->avctx, AV_LOG_INFO,
+                               "Channel match layer : %s.\n", ch_gb.buffer);
                         ch_gb.buffer += strlen(s->layer);
                         if (*ch_gb.buffer == '.')
                             ch_gb.buffer++;         /* skip dot if not given */
+                    } else {
+                        layer_match = 0;
                         av_log(s->avctx, AV_LOG_INFO,
-                               "Layer %s.%s matched.\n", s->layer, ch_gb.buffer);
+                               "Channel doesn't match layer : %s.\n", ch_gb.buffer);
                     }
+                } else {
+                    layer_match = 1;
                 }
 
-                if (!strcmp(ch_gb.buffer, "R") ||
-                    !strcmp(ch_gb.buffer, "X") ||
-                    !strcmp(ch_gb.buffer, "U"))
-                    channel_index = 0;
-                else if (!strcmp(ch_gb.buffer, "G") ||
-                         !strcmp(ch_gb.buffer, "Y") ||
-                         !strcmp(ch_gb.buffer, "V"))
-                    channel_index = 1;
-                else if (!strcmp(ch_gb.buffer, "B") ||
-                         !strcmp(ch_gb.buffer, "Z") ||
-                         !strcmp(ch_gb.buffer, "W"))
-                    channel_index = 2;
-                else if (!strcmp(ch_gb.buffer, "A"))
-                    channel_index = 3;
-                else
-                    av_log(s->avctx, AV_LOG_WARNING,
-                           "Unsupported channel %.256s.\n", ch_gb.buffer);
+                if (layer_match) { /* only search channel if the layer match is valid */
+                    if (!strcmp(ch_gb.buffer, "R") ||
+                        !strcmp(ch_gb.buffer, "X") ||
+                        !strcmp(ch_gb.buffer, "U")) {
+                        channel_index = 0;
+                        s->is_luma = 0;
+                    } else if (!strcmp(ch_gb.buffer, "G") ||
+                               !strcmp(ch_gb.buffer, "V")) {
+                        channel_index = 1;
+                        s->is_luma = 0;
+                    } else if (!strcmp(ch_gb.buffer, "Y")) {
+                        channel_index = 1;
+                        s->is_luma = 1;
+                    } else if (!strcmp(ch_gb.buffer, "B") ||
+                               !strcmp(ch_gb.buffer, "Z") ||
+                               !strcmp(ch_gb.buffer, "W")){
+                               channel_index = 2;
+                        s->is_luma = 0;
+                    } else if (!strcmp(ch_gb.buffer, "A")) {
+                        channel_index = 3;
+                    } else {
+                        av_log(s->avctx, AV_LOG_WARNING,
+                               "Unsupported channel %.256s.\n", ch_gb.buffer);
+                    }
+                }
 
                 /* skip until you get a 0 */
                 while (bytestream2_get_bytes_left(&ch_gb) > 0 &&
@@ -1365,63 +1430,80 @@ static int decode_header(EXRContext *s)
 
                 if (bytestream2_get_bytes_left(&ch_gb) < 4) {
                     av_log(s->avctx, AV_LOG_ERROR, "Incomplete header.\n");
-                    return AVERROR_INVALIDDATA;
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
                 }
 
                 current_pixel_type = bytestream2_get_le32(&ch_gb);
                 if (current_pixel_type >= EXR_UNKNOWN) {
                     avpriv_report_missing_feature(s->avctx, "Pixel type %d",
                                                   current_pixel_type);
-                    return AVERROR_PATCHWELCOME;
+                    ret = AVERROR_PATCHWELCOME;
+                    goto fail;
                 }
 
                 bytestream2_skip(&ch_gb, 4);
                 xsub = bytestream2_get_le32(&ch_gb);
                 ysub = bytestream2_get_le32(&ch_gb);
+
                 if (xsub != 1 || ysub != 1) {
                     avpriv_report_missing_feature(s->avctx,
                                                   "Subsampling %dx%d",
                                                   xsub, ysub);
-                    return AVERROR_PATCHWELCOME;
+                    ret = AVERROR_PATCHWELCOME;
+                    goto fail;
                 }
 
-                if (s->channel_offsets[channel_index] == -1){/* channel have not been previously assign */
-                    if (channel_index >= 0) {
-                        if (s->pixel_type != EXR_UNKNOWN &&
-                            s->pixel_type != current_pixel_type) {
-                            av_log(s->avctx, AV_LOG_ERROR,
-                                   "RGB channels not of the same depth.\n");
-                            return AVERROR_INVALIDDATA;
-                        }
-                        s->pixel_type                     = current_pixel_type;
-                        s->channel_offsets[channel_index] = s->current_channel_offset;
+                if (channel_index >= 0 && s->channel_offsets[channel_index] == -1) { /* channel has not been previously assigned */
+                    if (s->pixel_type != EXR_UNKNOWN &&
+                        s->pixel_type != current_pixel_type) {
+                        av_log(s->avctx, AV_LOG_ERROR,
+                               "RGB channels not of the same depth.\n");
+                        ret = AVERROR_INVALIDDATA;
+                        goto fail;
                     }
+                    s->pixel_type                     = current_pixel_type;
+                    s->channel_offsets[channel_index] = s->current_channel_offset;
+                } else if (channel_index >= 0) {
+                    av_log(s->avctx, AV_LOG_ERROR,
+                            "Multiple channels with index %d.\n", channel_index);
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
                 }
 
                 s->channels = av_realloc(s->channels,
                                          ++s->nb_channels * sizeof(EXRChannel));
-                if (!s->channels)
-                    return AVERROR(ENOMEM);
+                if (!s->channels) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
                 channel             = &s->channels[s->nb_channels - 1];
                 channel->pixel_type = current_pixel_type;
                 channel->xsub       = xsub;
                 channel->ysub       = ysub;
 
-                s->current_channel_offset += 1 << current_pixel_type;
+                if (current_pixel_type == EXR_HALF) {
+                    s->current_channel_offset += 2;
+                } else {/* Float or UINT32 */
+                    s->current_channel_offset += 4;
+                }
             }
 
             /* Check if all channels are set with an offset or if the channels
              * are causing an overflow  */
-            if (FFMIN3(s->channel_offsets[0],
-                       s->channel_offsets[1],
-                       s->channel_offsets[2]) < 0) {
-                if (s->channel_offsets[0] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing red channel.\n");
-                if (s->channel_offsets[1] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing green channel.\n");
-                if (s->channel_offsets[2] < 0)
-                    av_log(s->avctx, AV_LOG_ERROR, "Missing blue channel.\n");
-                return AVERROR_INVALIDDATA;
+            if (!s->is_luma){/* if we expected to have at least 3 channels */
+                if (FFMIN3(s->channel_offsets[0],
+                           s->channel_offsets[1],
+                           s->channel_offsets[2]) < 0) {
+                    if (s->channel_offsets[0] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing red channel.\n");
+                    if (s->channel_offsets[1] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing green channel.\n");
+                    if (s->channel_offsets[2] < 0)
+                        av_log(s->avctx, AV_LOG_ERROR, "Missing blue channel.\n");
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
+                }
             }
 
             // skip one last byte and update main gb
@@ -1429,8 +1511,10 @@ static int decode_header(EXRContext *s)
             continue;
         } else if ((var_size = check_header_variable(s, "dataWindow", "box2i",
                                                      31)) >= 0) {
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             s->xmin   = bytestream2_get_le32(&s->gb);
             s->ymin   = bytestream2_get_le32(&s->gb);
@@ -1442,8 +1526,10 @@ static int decode_header(EXRContext *s)
             continue;
         } else if ((var_size = check_header_variable(s, "displayWindow",
                                                      "box2i", 34)) >= 0) {
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             bytestream2_skip(&s->gb, 8);
             s->w = bytestream2_get_le32(&s->gb) + 1;
@@ -1453,29 +1539,36 @@ static int decode_header(EXRContext *s)
         } else if ((var_size = check_header_variable(s, "lineOrder",
                                                      "lineOrder", 25)) >= 0) {
             int line_order;
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             line_order = bytestream2_get_byte(&s->gb);
             av_log(s->avctx, AV_LOG_DEBUG, "line order: %d.\n", line_order);
             if (line_order > 2) {
                 av_log(s->avctx, AV_LOG_ERROR, "Unknown line order.\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
 
             continue;
         } else if ((var_size = check_header_variable(s, "pixelAspectRatio",
                                                      "float", 31)) >= 0) {
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             sar = bytestream2_get_le32(&s->gb);
 
             continue;
         } else if ((var_size = check_header_variable(s, "compression",
                                                      "compression", 29)) >= 0) {
-            if (!var_size)
-                return AVERROR_INVALIDDATA;
+            if (!var_size) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
 
             if (s->compression == EXR_UNKN)
                 s->compression = bytestream2_get_byte(&s->gb);
@@ -1502,14 +1595,24 @@ static int decode_header(EXRContext *s)
             if (s->tile_attr.level_mode >= EXR_TILE_LEVEL_UNKNOWN){
                 avpriv_report_missing_feature(s->avctx, "Tile level mode %d",
                                               s->tile_attr.level_mode);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto fail;
             }
 
             if (s->tile_attr.level_round >= EXR_TILE_ROUND_UNKNOWN) {
                 avpriv_report_missing_feature(s->avctx, "Tile level round %d",
                                               s->tile_attr.level_round);
-                return AVERROR_PATCHWELCOME;
+                ret = AVERROR_PATCHWELCOME;
+                goto fail;
             }
+
+            continue;
+        } else if ((var_size = check_header_variable(s, "writer",
+                                                     "string", 1)) >= 0) {
+            uint8_t key[256] = { 0 };
+
+            bytestream2_get_buffer(&s->gb, key, FFMIN(sizeof(key) - 1, var_size));
+            av_dict_set(&metadata, "writer", key, 0);
 
             continue;
         }
@@ -1517,7 +1620,8 @@ static int decode_header(EXRContext *s)
         // Check if there are enough bytes for a header
         if (bytestream2_get_bytes_left(&s->gb) <= 9) {
             av_log(s->avctx, AV_LOG_ERROR, "Incomplete header\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         // Process unknown variables
@@ -1532,26 +1636,32 @@ static int decode_header(EXRContext *s)
 
     if (s->compression == EXR_UNKN) {
         av_log(s->avctx, AV_LOG_ERROR, "Missing compression attribute.\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     if (s->is_tile) {
         if (s->tile_attr.xSize < 1 || s->tile_attr.ySize < 1) {
             av_log(s->avctx, AV_LOG_ERROR, "Invalid tile attribute.\n");
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
     }
 
-    s->scan_line_size = s->xdelta * s->current_channel_offset;
-
     if (bytestream2_get_bytes_left(&s->gb) <= 0) {
         av_log(s->avctx, AV_LOG_ERROR, "Incomplete frame.\n");
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
+
+    frame->metadata = metadata;
 
     // aaand we are done
     bytestream2_skip(&s->gb, 1);
     return 0;
+fail:
+    av_dict_free(&metadata);
+    return ret;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data,
@@ -1564,24 +1674,34 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     int y, ret;
     int out_line_size;
-    int nb_blocks;/* nb scanline or nb tile */
+    int nb_blocks;   /* nb scanline or nb tile */
+    uint64_t start_offset_table;
+    uint64_t start_next_scanline;
+    PutByteContext offset_table_writer;
 
     bytestream2_init(&s->gb, avpkt->data, avpkt->size);
 
-    if ((ret = decode_header(s)) < 0)
+    if ((ret = decode_header(s, picture)) < 0)
         return ret;
 
     switch (s->pixel_type) {
     case EXR_FLOAT:
     case EXR_HALF:
-        if (s->channel_offsets[3] >= 0)
-            avctx->pix_fmt = AV_PIX_FMT_RGBA64;
-        else
-            avctx->pix_fmt = AV_PIX_FMT_RGB48;
-        break;
     case EXR_UINT:
-        avpriv_request_sample(avctx, "32-bit unsigned int");
-        return AVERROR_PATCHWELCOME;
+        if (s->channel_offsets[3] >= 0) {
+            if (!s->is_luma) {
+                avctx->pix_fmt = AV_PIX_FMT_RGBA64;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_YA16;
+            }
+        } else {
+            if (!s->is_luma) {
+                avctx->pix_fmt = AV_PIX_FMT_RGB48;
+            } else {
+                avctx->pix_fmt = AV_PIX_FMT_GRAY16;
+            }
+        }
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Missing channel list.\n");
         return AVERROR_INVALIDDATA;
@@ -1643,6 +1763,25 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     if (bytestream2_get_bytes_left(&s->gb) < nb_blocks * 8)
         return AVERROR_INVALIDDATA;
 
+    // check offset table and recreate it if need
+    if (!s->is_tile && bytestream2_peek_le64(&s->gb) == 0) {
+        av_log(s->avctx, AV_LOG_DEBUG, "recreating invalid scanline offset table\n");
+
+        start_offset_table = bytestream2_tell(&s->gb);
+        start_next_scanline = start_offset_table + nb_blocks * 8;
+        bytestream2_init_writer(&offset_table_writer, &avpkt->data[start_offset_table], nb_blocks * 8);
+
+        for (y = 0; y < nb_blocks; y++) {
+            /* write offset of prev scanline in offset table */
+            bytestream2_put_le64(&offset_table_writer, start_next_scanline);
+
+            /* get len of next scanline */
+            bytestream2_seek(&s->gb, start_next_scanline + 4, SEEK_SET);/* skip line number */
+            start_next_scanline += (bytestream2_get_le32(&s->gb) + 8);
+        }
+        bytestream2_seek(&s->gb, start_offset_table, SEEK_SET);
+    }
+
     // save pointer we are going to use in decode_block
     s->buf      = avpkt->data;
     s->buf_size = avpkt->size;
@@ -1659,6 +1798,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     avctx->execute2(avctx, decode_block, s->thread_data, NULL, nb_blocks);
 
     // Zero out the end if ymax+1 is not h
+    ptr = picture->data[0] + ((s->ymax+1) * picture->linesize[0]);
     for (y = s->ymax + 1; y < avctx->height; y++) {
         memset(ptr, 0, out_line_size);
         ptr += picture->linesize[0];
@@ -1679,6 +1819,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avpriv_trc_function trc_func = NULL;
 
     s->avctx              = avctx;
+
+    ff_exrdsp_init(&s->dsp);
+
+#if HAVE_BIGENDIAN
+    ff_bswapdsp_init(&s->bbdsp);
+#endif
 
     trc_func = avpriv_get_trc_function_from_trc(s->apply_trc_type);
     if (trc_func) {
@@ -1705,7 +1851,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         }
     }
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;
@@ -1717,7 +1863,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 static int decode_init_thread_copy(AVCodecContext *avctx)
 {    EXRContext *s = avctx->priv_data;
 
-    // allocate thread data, used for non EXR_RAW compreesion types
+    // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
     if (!s->thread_data)
         return AVERROR_INVALIDDATA;

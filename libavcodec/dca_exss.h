@@ -87,6 +87,6 @@ typedef struct DCAExssParser {
     DCAExssAsset   assets[1];    ///< Audio asset descriptors
 } DCAExssParser;
 
-int ff_dca_exss_parse(DCAExssParser *s, uint8_t *data, int size);
+int ff_dca_exss_parse(DCAExssParser *s, const uint8_t *data, int size);
 
 #endif

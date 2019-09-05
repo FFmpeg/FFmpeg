@@ -239,17 +239,18 @@ static void dvb_encode_rle8(uint8_t **pq,
             x += len;
         }
         /* end of line */
-        // 00000000 00000000 end of 8-bit/pixel_code_string
+        // 00000000 end of 8-bit/pixel_code_string
         *q++ = 0x00;
-        *q++ = 0x00;
+        *q++ = 0xf0;
         bitmap += linesize;
     }
     *pq = q;
 }
 
-static int encode_dvb_subtitles(DVBSubtitleContext *s,
+static int encode_dvb_subtitles(AVCodecContext *avctx,
                                 uint8_t *outbuf, const AVSubtitle *h)
 {
+    DVBSubtitleContext *s = avctx->priv_data;
     uint8_t *q, *pseg_len;
     int page_id, region_id, clut_id, object_id, i, bpp_index, page_state;
 
@@ -260,6 +261,19 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
 
     if (h->num_rects && !h->rects)
         return -1;
+
+    if (avctx->width > 0 && avctx->height > 0) {
+        /* display definition segment */
+        *q++ = 0x0f; /* sync_byte */
+        *q++ = 0x14; /* segment_type */
+        bytestream_put_be16(&q, page_id);
+        pseg_len = q;
+        q += 2; /* segment length */
+        *q++ = 0x00; /* dds version number & display window flag */
+        bytestream_put_be16(&q, avctx->width - 1); /* display width */
+        bytestream_put_be16(&q, avctx->height - 1); /* display height */
+        bytestream_put_be16(&pseg_len, q - pseg_len - 2);
+    }
 
     /* page composition segment */
 
@@ -342,6 +356,9 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
         } else if (h->rects[region_id]->nb_colors <= 16) {
             /* 4 bpp, standard encoding */
             bpp_index = 1;
+        } else if (h->rects[region_id]->nb_colors <= 256) {
+            /* 8 bpp, standard encoding */
+            bpp_index = 2;
         } else {
             return -1;
         }
@@ -443,10 +460,9 @@ static int dvbsub_encode(AVCodecContext *avctx,
                          unsigned char *buf, int buf_size,
                          const AVSubtitle *sub)
 {
-    DVBSubtitleContext *s = avctx->priv_data;
     int ret;
 
-    ret = encode_dvb_subtitles(s, buf, sub);
+    ret = encode_dvb_subtitles(avctx, buf, sub);
     return ret;
 }
 

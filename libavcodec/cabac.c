@@ -28,11 +28,11 @@
 
 #include "libavutil/common.h"
 #include "libavutil/timer.h"
-#include "get_bits.h"
+
 #include "cabac.h"
 #include "cabac_functions.h"
 
-const uint8_t ff_h264_cabac_tables[512 + 4*2*64 + 4*64 + 63] = {
+DECLARE_ASM_ALIGNED(1, const uint8_t, ff_h264_cabac_tables)[512 + 4*2*64 + 4*64 + 63] = {
     9,8,7,7,6,6,6,6,5,5,5,5,5,5,5,5,
     4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
     3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,
@@ -182,7 +182,7 @@ int ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size){
 #if CABAC_BITS == 16
     c->low =  (*c->bytestream++)<<18;
     c->low+=  (*c->bytestream++)<<10;
-    // Keep our fetches on a 2-byte boundry as this should avoid ever having to
+    // Keep our fetches on a 2-byte boundary as this should avoid ever having to
     // do unaligned loads if the compiler (or asm) optimises the double byte
     // load into a single instruction
     if(((uintptr_t)c->bytestream & 1) == 0) {

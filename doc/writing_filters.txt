@@ -31,21 +31,19 @@ If everything went right, you should get a foobar.png with Lena edge-detected.
 That's it, your new playground is ready.
 
 Some little details about what's going on:
-libavfilter/allfilters.c:avfilter_register_all() is called at runtime to create
-a list of the available filters, but it's important to know that this file is
-also parsed by the configure script, which in turn will define variables for
-the build system and the C:
+libavfilter/allfilters.c:this file is parsed by the configure script, which in turn
+will define variables for the build system and the C:
 
     --- after running configure ---
 
-    $ grep FOOBAR config.mak
+    $ grep FOOBAR ffbuild/config.mak
     CONFIG_FOOBAR_FILTER=yes
     $ grep FOOBAR config.h
     #define CONFIG_FOOBAR_FILTER 1
 
-CONFIG_FOOBAR_FILTER=yes from the config.mak is later used to enable the filter in
-libavfilter/Makefile and CONFIG_FOOBAR_FILTER=1 from the config.h will be used
-for registering the filter in libavfilter/allfilters.c.
+CONFIG_FOOBAR_FILTER=yes from the ffbuild/config.mak is later used to enable
+the filter in libavfilter/Makefile and CONFIG_FOOBAR_FILTER=1 from the config.h
+will be used for registering the filter in libavfilter/allfilters.c.
 
 Filter code layout
 ==================
@@ -391,7 +389,7 @@ distributor with something like this:
 
     td.in  = in;
     td.out = out;
-    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ctx->graph->nb_threads));
+    ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     // ...
 

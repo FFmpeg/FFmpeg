@@ -1,0 +1,27 @@
+Common abbreviations/shorthands we use that don't need a comment
+================================================================
+
+dsp: digital signal processing
+dst/adst: (asymmetric) discrete sine transform
+ec: entropy coding or error concealment
+er: error resilience
+fdct/idct: forward/inverse discrete cosine transform
+fft: fast Fourier transform
+gop: group of pictures
+hw/sw: hardware/software
+lp: lowpass
+lpf: loop filter
+lut: lookup table
+mb: macroblock
+mc: motion compensation
+me: motion estimation
+mv: motion vector
+nal: network abstraction layer
+pel/qpel/epel/hpel/fpel: pixel / quarter-pixel / eighth-pixel / half-pixel / full-pixel
+pp: post process
+qp: quantization parameter
+rc: rate control
+sei: supplemental enhancement information
+sl: slice
+vlc: variable length coding
+vq: vector quantization

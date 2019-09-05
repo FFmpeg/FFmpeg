@@ -59,22 +59,24 @@ typedef struct BinkDemuxContext {
     int smush_size;
 } BinkDemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     const uint8_t *b = p->buf;
     int smush = AV_RN32(p->buf) == AV_RN32("SMUS");
 
     do {
-        if (((b[0] == 'B' && b[1] == 'I' && b[2] == 'K' &&
-             (b[3] == 'b' || b[3] == 'f' || b[3] == 'g' || b[3] == 'h' || b[3] == 'i')) ||
+        if (((b[0] == 'B' && b[1] == 'I' && b[2] == 'K' && /* Bink 1 */
+             (b[3] == 'b' || b[3] == 'f' || b[3] == 'g' || b[3] == 'h' || b[3] == 'i' ||
+              b[3] == 'k')) ||
              (b[0] == 'K' && b[1] == 'B' && b[2] == '2' && /* Bink 2 */
-             (b[3] == 'a' || b[3] == 'd' || b[3] == 'f' || b[3] == 'g'))) &&
+             (b[3] == 'a' || b[3] == 'd' || b[3] == 'f' || b[3] == 'g' || b[3] == 'h' ||
+              b[3] == 'i' || b[3] == 'j' || b[3] == 'k'))) &&
             AV_RL32(b+8) > 0 &&  // num_frames
             AV_RL32(b+20) > 0 && AV_RL32(b+20) <= BINK_MAX_WIDTH &&
             AV_RL32(b+24) > 0 && AV_RL32(b+24) <= BINK_MAX_HEIGHT &&
             AV_RL32(b+28) > 0 && AV_RL32(b+32) > 0)  // fps num,den
             return AVPROBE_SCORE_MAX;
-            b += SMUSH_BLOCK_SIZE;
+        b += SMUSH_BLOCK_SIZE;
     } while (smush && b < p->buf + p->buf_size - 32);
     return 0;
 }
@@ -90,6 +92,8 @@ static int read_header(AVFormatContext *s)
     uint16_t flags;
     int keyframe;
     int ret;
+    uint32_t signature;
+    uint8_t revision;
 
     vst = avformat_new_stream(s, NULL);
     if (!vst)
@@ -158,8 +162,15 @@ static int read_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
+    signature = (vst->codecpar->codec_tag & 0xFFFFFF);
+    revision = ((vst->codecpar->codec_tag >> 24) % 0xFF);
+
+    if ((signature == AV_RL32("BIK") && (revision == 'k')) ||
+        (signature == AV_RL32("KB2") && (revision == 'i' || revision == 'j' || revision == 'k')))
+        avio_skip(pb, 4); /* unknown new field */
+
     if (bink->num_audio_tracks) {
-        avio_skip(pb, 4 * bink->num_audio_tracks);
+        avio_skip(pb, 4 * bink->num_audio_tracks); /* max decoded size */
 
         for (i = 0; i < bink->num_audio_tracks; i++) {
             ast = avformat_new_stream(s, NULL);
@@ -264,7 +275,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->pts = bink->audio_pts[bink->current_track - 1];
 
             /* Each audio packet reports the number of decompressed samples
-               (in bytes). We use this value to calcuate the audio PTS */
+               (in bytes). We use this value to calculate the audio PTS */
             if (pkt->size >= 4)
                 bink->audio_pts[bink->current_track -1] +=
                     AV_RL32(pkt->data) / (2 * s->streams[bink->current_track]->codecpar->channels);
@@ -292,7 +303,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
     /* seek to the first frame */

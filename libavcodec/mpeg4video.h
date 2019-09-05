@@ -1,5 +1,5 @@
 /*
- * MPEG4 encoder/decoder internal header.
+ * MPEG-4 encoder/decoder internal header.
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2010 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -41,7 +41,12 @@
 #define NBIT_VO_TYPE             5
 #define ARTS_VO_TYPE            10
 #define ACE_VO_TYPE             12
+#define SIMPLE_STUDIO_VO_TYPE   14
+#define CORE_STUDIO_VO_TYPE     15
 #define ADV_SIMPLE_VO_TYPE      17
+
+#define VOT_VIDEO_ID 1
+#define VOT_STILL_TEXTURE_ID 2
 
 // aspect_ratio_info
 #define EXTENDED_PAR 15
@@ -58,6 +63,10 @@
 #define GOP_STARTCODE        0x1B3
 #define VISUAL_OBJ_STARTCODE 0x1B5
 #define VOP_STARTCODE        0x1B6
+#define SLICE_STARTCODE      0x1B7
+#define EXT_STARTCODE        0x1B8
+
+#define QUANT_MATRIX_EXT_ID  0x3
 
 /* smaller packets likely don't contain a real frame */
 #define MAX_NVOP_SIZE 19
@@ -105,9 +114,17 @@ typedef struct Mpeg4DecContext {
     int cplx_estimation_trash_i;
     int cplx_estimation_trash_p;
     int cplx_estimation_trash_b;
+
+    VLC studio_intra_tab[12];
+    VLC studio_luma_dc;
+    VLC studio_chroma_dc;
+
+    int rgb;
 } Mpeg4DecContext;
 
-/* dc encoding for mpeg4 */
+static const uint8_t mpeg4_block_count[4] = {0, 6, 8, 12};
+
+/* dc encoding for MPEG-4 */
 extern const uint8_t ff_mpeg4_DCtab_lum[13][2];
 extern const uint8_t ff_mpeg4_DCtab_chrom[13][2];
 
@@ -134,6 +151,10 @@ extern const uint16_t ff_mpeg4_resync_prefix[8];
 
 extern const uint8_t ff_mpeg4_dc_threshold[8];
 
+extern const uint16_t ff_mpeg4_studio_dc_luma[19][2];
+extern const uint16_t ff_mpeg4_studio_dc_chroma[19][2];
+extern const uint16_t ff_mpeg4_studio_intra[12][22][2];
+
 void ff_mpeg4_encode_mb(MpegEncContext *s,
                         int16_t block[6][64],
                         int motion_x, int motion_y);
@@ -142,7 +163,7 @@ void ff_mpeg4_pred_ac(MpegEncContext *s, int16_t *block, int n,
 void ff_set_mpeg4_time(MpegEncContext *s);
 int ff_mpeg4_encode_picture_header(MpegEncContext *s, int picture_number);
 
-int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb);
+int ff_mpeg4_decode_picture_header(Mpeg4DecContext *ctx, GetBitContext *gb, int header);
 void ff_mpeg4_encode_video_packet_header(MpegEncContext *s);
 void ff_mpeg4_clean_buffers(MpegEncContext *s);
 void ff_mpeg4_stuffing(PutBitContext *pbc);
@@ -152,6 +173,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s);
 int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx);
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s);
 int ff_mpeg4_decode_video_packet_header(Mpeg4DecContext *ctx);
+int ff_mpeg4_decode_studio_slice_header(Mpeg4DecContext *ctx);
 void ff_mpeg4_init_direct_mv(MpegEncContext *s);
 void ff_mpeg4videodec_static_init(void);
 int ff_mpeg4_workaround_bugs(AVCodecContext *avctx);
@@ -236,12 +258,12 @@ static inline int ff_mpeg4_pred_dc(MpegEncContext *s, int n, int level,
             if (level < 0) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "dc<0 at %dx%d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
             if (level > 2048 + scale) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "dc overflow at %dx%d\n", s->mb_x, s->mb_y);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
         if (level < 0)

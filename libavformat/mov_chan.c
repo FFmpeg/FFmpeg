@@ -557,8 +557,9 @@ int ff_mov_read_chan(AVFormatContext *s, AVIOContext *pb, AVStream *st,
     bitmap     = avio_rb32(pb);
     num_descr  = avio_rb32(pb);
 
-    av_log(s, AV_LOG_TRACE, "chan: layout=%u bitmap=%u num_descr=%u\n",
-            layout_tag, bitmap, num_descr);
+    av_log(s, AV_LOG_TRACE, "chan: layout=%"PRIu32" "
+           "bitmap=%"PRIu32" num_descr=%"PRIu32"\n",
+           layout_tag, bitmap, num_descr);
 
     if (size < 12ULL + num_descr * 20ULL)
         return 0;

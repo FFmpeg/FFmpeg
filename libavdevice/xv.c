@@ -151,7 +151,7 @@ static int xv_write_header(AVFormatContext *s)
                                          xv->window_width, xv->window_height,
                                          0, 0, 0);
         if (!xv->window_title) {
-            if (!(xv->window_title = av_strdup(s->filename))) {
+            if (!(xv->window_title = av_strdup(s->url))) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }

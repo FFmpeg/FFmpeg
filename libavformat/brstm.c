@@ -38,7 +38,7 @@ typedef struct BRSTMDemuxContext {
     int         little_endian;
 } BRSTMDemuxContext;
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (AV_RL32(p->buf) == MKTAG('R','S','T','M') &&
         (AV_RL16(p->buf + 4) == 0xFFFE ||
@@ -47,7 +47,7 @@ static int probe(AVProbeData *p)
     return 0;
 }
 
-static int probe_bfstm(AVProbeData *p)
+static int probe_bfstm(const AVProbeData *p)
 {
     if ((AV_RL32(p->buf) == MKTAG('F','S','T','M') ||
          AV_RL32(p->buf) == MKTAG('C','S','T','M')) &&
@@ -230,7 +230,7 @@ static int read_header(AVFormatContext *s)
     b->current_block = 0;
     b->block_count = read32(s);
     if (b->block_count > UINT16_MAX) {
-        av_log(s, AV_LOG_WARNING, "too many blocks: %u\n", b->block_count);
+        av_log(s, AV_LOG_WARNING, "too many blocks: %"PRIu32"\n", b->block_count);
         return AVERROR_INVALIDDATA;
     }
 

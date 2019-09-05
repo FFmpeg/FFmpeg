@@ -28,11 +28,11 @@
 #include "libavutil/channel_layout.h"
 #include "libavutil/float_dsp.h"
 #include "libavutil/mathematics.h"
-#include "avcodec.h"
+
 #define BITSTREAM_READER_LE
+#include "avcodec.h"
 #include "get_bits.h"
 #include "internal.h"
-
 #include "lsp.h"
 #include "acelp_vectors.h"
 #include "acelp_pitch_delay.h"
@@ -494,7 +494,7 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
         else                              ctx->mode = MODE_5k0;
         av_log(avctx, AV_LOG_WARNING,
                "Invalid block_align: %d. Mode %s guessed based on bitrate: %"PRId64"\n",
-               avctx->block_align, modes[ctx->mode].mode_name, (int64_t)avctx->bit_rate);
+               avctx->block_align, modes[ctx->mode].mode_name, avctx->bit_rate);
     }
 
     av_log(avctx, AV_LOG_DEBUG, "Mode: %s\n", modes[ctx->mode].mode_name);

@@ -22,14 +22,15 @@
 
 #include <inttypes.h>
 
+#include "libavutil/common.h"
+#include "libavutil/intreadwrite.h"
+
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "bytestream.h"
 #include "get_bits.h"
 #include "internal.h"
 #include "unary.h"
-#include "libavutil/common.h"
-#include "libavutil/intreadwrite.h"
 
 static int dxtory_decode_v1_rgb(AVCodecContext *avctx, AVFrame *pic,
                                 const uint8_t *src, int src_size,
@@ -200,12 +201,12 @@ static int check_slice_size(AVCodecContext *avctx,
 
     if (slice_size > src_size - off) {
         av_log(avctx, AV_LOG_ERROR,
-               "invalid slice size %"PRIu32" (only %"PRIu32" bytes left)\n",
+               "invalid slice size %d (only %d bytes left)\n",
                slice_size, src_size - off);
         return AVERROR_INVALIDDATA;
     }
     if (slice_size <= 16) {
-        av_log(avctx, AV_LOG_ERROR, "invalid slice size %"PRIu32"\n",
+        av_log(avctx, AV_LOG_ERROR, "invalid slice size %d\n",
                slice_size);
         return AVERROR_INVALIDDATA;
     }
@@ -213,7 +214,7 @@ static int check_slice_size(AVCodecContext *avctx,
     cur_slice_size = AV_RL32(src + off);
     if (cur_slice_size != slice_size - 16) {
         av_log(avctx, AV_LOG_ERROR,
-               "Slice sizes mismatch: got %"PRIu32" instead of %"PRIu32"\n",
+               "Slice sizes mismatch: got %d instead of %d\n",
                cur_slice_size, slice_size - 16);
     }
 
@@ -271,16 +272,30 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
                             setup_lru_func setup_lru,
                             enum AVPixelFormat fmt)
 {
-    GetByteContext gb;
+    GetByteContext gb, gb_check;
     GetBitContext  gb2;
     int nslices, slice, line = 0;
     uint32_t off, slice_size;
+    uint64_t off_check;
     uint8_t lru[3][8];
     int ret;
 
     ret = load_buffer(avctx, src, src_size, &gb, &nslices, &off);
     if (ret < 0)
         return ret;
+
+    off_check = off;
+    gb_check = gb;
+    for (slice = 0; slice < nslices; slice++) {
+        slice_size = bytestream2_get_le32(&gb_check);
+
+        if (slice_size <= 16 + (avctx->height * avctx->width / (8 * nslices)))
+            return AVERROR_INVALIDDATA;
+        off_check += slice_size;
+    }
+
+    if (off_check - avctx->discard_damaged_percentage*off_check/100 > src_size)
+        return AVERROR_INVALIDDATA;
 
     avctx->pix_fmt = fmt;
     if ((ret = ff_get_buffer(avctx, pic, 0)) < 0)
@@ -304,11 +319,7 @@ static int dxtory_decode_v2(AVCodecContext *avctx, AVFrame *pic,
     }
 
     if (avctx->height - line) {
-        av_log(avctx, AV_LOG_VERBOSE,
-               "Not enough slice data available, "
-               "cropping the frame by %d pixels\n",
-                avctx->height - line);
-        avctx->height = line;
+        avpriv_request_sample(avctx, "Not enough slice data available");
     }
 
     return 0;
@@ -325,7 +336,7 @@ static int dx2_decode_slice_5x5(GetBitContext *gb, AVFrame *frame,
     int stride   = frame->linesize[0];
     uint8_t *dst = frame->data[0] + stride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && get_bits_left(gb) > 6 * width; y++) {
         for (x = 0; x < width; x++) {
             b = decode_sym_565(gb, lru[0], 5);
             g = decode_sym_565(gb, lru[1], is_565 ? 6 : 5);
@@ -391,7 +402,7 @@ static int dx2_decode_slice_rgb(GetBitContext *gb, AVFrame *frame,
     int stride   = frame->linesize[0];
     uint8_t *dst = frame->data[0] + stride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && get_bits_left(gb) > 6 * width; y++) {
         for (x = 0; x < width; x++) {
             dst[x * 3 + 0] = decode_sym(gb, lru[0]);
             dst[x * 3 + 1] = decode_sym(gb, lru[1]);
@@ -436,7 +447,7 @@ static int dx2_decode_slice_410(GetBitContext *gb, AVFrame *frame,
     uint8_t *U  = frame->data[1] + (ustride >> 2) * line;
     uint8_t *V  = frame->data[2] + (vstride >> 2) * line;
 
-    for (y = 0; y < left - 3 && get_bits_left(gb) > 16; y += 4) {
+    for (y = 0; y < left - 3 && get_bits_left(gb) > 9 * width; y += 4) {
         for (x = 0; x < width; x += 4) {
             for (j = 0; j < 4; j++)
                 for (i = 0; i < 4; i++)
@@ -480,7 +491,7 @@ static int dx2_decode_slice_420(GetBitContext *gb, AVFrame *frame,
     uint8_t *V  = frame->data[2] + (vstride >> 1) * line;
 
 
-    for (y = 0; y < left - 1 && get_bits_left(gb) > 16; y += 2) {
+    for (y = 0; y < left - 1 && get_bits_left(gb) > 6 * width; y += 2) {
         for (x = 0; x < width; x += 2) {
             Y[x + 0 + 0 * ystride] = decode_sym(gb, lru[0]);
             Y[x + 1 + 0 * ystride] = decode_sym(gb, lru[0]);
@@ -523,7 +534,7 @@ static int dx2_decode_slice_444(GetBitContext *gb, AVFrame *frame,
     uint8_t *U  = frame->data[1] + ustride * line;
     uint8_t *V  = frame->data[2] + vstride * line;
 
-    for (y = 0; y < left && get_bits_left(gb) > 16; y++) {
+    for (y = 0; y < left && get_bits_left(gb) > 6 * width; y++) {
         for (x = 0; x < width; x++) {
             Y[x] = decode_sym(gb, lru[0]);
             U[x] = decode_sym(gb, lru[1]) ^ 0x80;

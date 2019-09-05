@@ -49,10 +49,10 @@ static av_cold void dct_unquantize_init_mmi(MpegEncContext *s)
 
 av_cold void ff_mpv_common_init_mips(MpegEncContext *s)
 {
-#if HAVE_MSA
-    dct_unquantize_init_msa(s);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     dct_unquantize_init_mmi(s);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    dct_unquantize_init_msa(s);
+#endif  // #if HAVE_MSA
 }

@@ -23,6 +23,7 @@
 
 #include "libavutil/common.h"
 #include "libavutil/ffmath.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "celp_filters.h"
 #include "internal.h"
@@ -68,7 +69,6 @@ static av_cold int cng_decode_init(AVCodecContext *avctx)
     p->excitation       = av_mallocz_array(avctx->frame_size, sizeof(*p->excitation));
     if (!p->refl_coef || !p->target_refl_coef || !p->lpc_coef ||
         !p->filter_out || !p->excitation) {
-        cng_decode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -120,6 +120,11 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
+    if (avctx->internal->skip_samples > 10 * avctx->frame_size) {
+        avctx->internal->skip_samples = 0;
+        return AVERROR_INVALIDDATA;
+    }
+
     if (p->inited) {
         p->energy = p->energy / 2 + p->target_energy / 2;
         for (i = 0; i < p->order; i++)
@@ -147,7 +152,7 @@ static int cng_decode_frame(AVCodecContext *avctx, void *data,
         return ret;
     buf_out = (int16_t *)frame->data[0];
     for (i = 0; i < avctx->frame_size; i++)
-        buf_out[i] = p->filter_out[i + p->order];
+        buf_out[i] = av_clip_int16(p->filter_out[i + p->order]);
     memcpy(p->filter_out, p->filter_out + avctx->frame_size,
            p->order * sizeof(*p->filter_out));
 
@@ -169,4 +174,6 @@ AVCodec ff_comfortnoise_decoder = {
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
     .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE |
+                      FF_CODEC_CAP_INIT_CLEANUP,
 };

@@ -11,7 +11,6 @@ typedef struct {
     AVFormatContext *mux;
     AVStream *stream;
     AVFilterContext *sink;
-    AVFilterLink *link;
 } Stream;
 
 static int create_sink(Stream *st, AVFilterGraph *graph,
@@ -36,7 +35,6 @@ static int create_sink(Stream *st, AVFilterGraph *graph,
     ret = avfilter_link(f, idx, st->sink, 0);
     if (ret < 0)
         return ret;
-    st->link = st->sink->inputs[0];
     return 0;
 }
 
@@ -64,9 +62,7 @@ int main(int argc, char **argv)
     out_dev_name = argv + 2;
     nb_out_dev = argc - 2;
 
-    av_register_all();
     avdevice_register_all();
-    avfilter_register_all();
 
     /* Create input graph */
     if (!(in_graph = avfilter_graph_alloc())) {
@@ -143,7 +139,7 @@ int main(int argc, char **argv)
             goto fail;
         }
         if (!(st->mux->oformat->flags & AVFMT_NOFILE)) {
-            ret = avio_open2(&st->mux->pb, st->mux->filename, AVIO_FLAG_WRITE,
+            ret = avio_open2(&st->mux->pb, st->mux->url, AVIO_FLAG_WRITE,
                              NULL, NULL);
             if (ret < 0) {
                 av_log(st->mux, AV_LOG_ERROR, "Failed to init output: %s\n",
@@ -163,26 +159,24 @@ int main(int argc, char **argv)
             av_log(NULL, AV_LOG_ERROR, "Failed to create output stream\n");
             goto fail;
         }
-        st->stream->codec->codec_type = st->link->type;
-        st->stream->time_base = st->stream->codec->time_base =
-            st->link->time_base;
-        switch (st->link->type) {
+        st->stream->codecpar->codec_type = av_buffersink_get_type(st->sink);
+        st->stream->time_base = av_buffersink_get_time_base(st->sink);
+        switch (av_buffersink_get_type(st->sink)) {
         case AVMEDIA_TYPE_VIDEO:
-            st->stream->codec->codec_id = AV_CODEC_ID_RAWVIDEO;
+            st->stream->codecpar->codec_id = AV_CODEC_ID_RAWVIDEO;
             st->stream->avg_frame_rate =
             st->stream->  r_frame_rate = av_buffersink_get_frame_rate(st->sink);
-            st->stream->codec->width               = st->link->w;
-            st->stream->codec->height              = st->link->h;
-            st->stream->codec->sample_aspect_ratio = st->link->sample_aspect_ratio;
-            st->stream->codec->pix_fmt             = st->link->format;
+            st->stream->codecpar->width               = av_buffersink_get_w(st->sink);
+            st->stream->codecpar->height              = av_buffersink_get_h(st->sink);
+            st->stream->codecpar->sample_aspect_ratio = av_buffersink_get_sample_aspect_ratio(st->sink);
+            st->stream->codecpar->format              = av_buffersink_get_format(st->sink);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            st->stream->codec->channel_layout = st->link->channel_layout;
-            st->stream->codec->channels = avfilter_link_get_channels(st->link);
-            st->stream->codec->sample_rate = st->link->sample_rate;
-            st->stream->codec->sample_fmt = st->link->format;
-            st->stream->codec->codec_id =
-                av_get_pcm_codec(st->stream->codec->sample_fmt, -1);
+            st->stream->codecpar->channel_layout = av_buffersink_get_channel_layout(st->sink);
+            st->stream->codecpar->channels       = av_buffersink_get_channels(st->sink);
+            st->stream->codecpar->sample_rate    = av_buffersink_get_sample_rate(st->sink);
+            st->stream->codecpar->format         = av_buffersink_get_format(st->sink);
+            st->stream->codecpar->codec_id       = av_get_pcm_codec(st->stream->codecpar->format, -1);
             break;
         default:
             av_assert0(!"reached");
@@ -240,14 +234,14 @@ int main(int argc, char **argv)
                 }
                 if (frame->pts != AV_NOPTS_VALUE)
                     frame->pts = av_rescale_q(frame->pts,
-                                              st->link  ->time_base,
+                                              av_buffersink_get_time_base(st->sink),
                                               st->stream->time_base);
                 ret = av_interleaved_write_uncoded_frame(st->mux,
                                                          st->stream->index,
                                                          frame);
                 frame = NULL;
                 if (ret < 0) {
-                    av_log(st->stream->codec, AV_LOG_ERROR,
+                    av_log(st->mux, AV_LOG_ERROR,
                            "Error writing frame: %s\n", av_err2str(ret));
                     goto fail;
                 }

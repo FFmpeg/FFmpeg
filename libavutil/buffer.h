@@ -256,9 +256,10 @@ AVBufferPool *av_buffer_pool_init(int size, AVBufferRef* (*alloc)(int size));
  * @param alloc a function that will be used to allocate new buffers when the
  *              pool is empty.
  * @param pool_free a function that will be called immediately before the pool
- *                  is freed. I.e. after av_buffer_pool_can_uninit() is called
- *                  by the pool and all the frames are returned to the pool and
- *                  freed. It is intended to uninitialize the user opaque data.
+ *                  is freed. I.e. after av_buffer_pool_uninit() is called
+ *                  by the caller and all the frames are returned to the pool
+ *                  and freed. It is intended to uninitialize the user opaque
+ *                  data.
  * @return newly created buffer pool on success, NULL on error.
  */
 AVBufferPool *av_buffer_pool_init2(int size, void *opaque,

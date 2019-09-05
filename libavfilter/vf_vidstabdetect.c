@@ -30,7 +30,7 @@
 
 #include "vidstabutils.h"
 
-typedef struct {
+typedef struct StabData {
     const AVClass *class;
 
     VSMotionDetect md;
@@ -107,10 +107,11 @@ static int config_input(AVFilterLink *inlink)
     VSMotionDetect* md = &(s->md);
     VSFrameInfo fi;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    int is_planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
 
     vsFrameInfoInit(&fi, inlink->w, inlink->h,
                     ff_av2vs_pixfmt(ctx, inlink->format));
-    if (fi.bytesPerPixel != av_get_bits_per_pixel(desc)/8) {
+    if (!is_planar && fi.bytesPerPixel != av_get_bits_per_pixel(desc)/8) {
         av_log(ctx, AV_LOG_ERROR, "pixel-format error: wrong bits/per/pixel, please report a BUG");
         return AVERROR(EINVAL);
     }

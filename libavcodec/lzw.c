@@ -71,6 +71,9 @@ static int lzw_get_code(struct LZWState * s)
 {
     int c;
 
+    if (s->bbits < s->cursize && bytestream2_get_bytes_left(&s->gb) <= 0)
+        return s->end_code;
+
     if(s->mode == FF_LZW_GIF) {
         while (s->bbits < s->cursize) {
             if (!s->bs) {

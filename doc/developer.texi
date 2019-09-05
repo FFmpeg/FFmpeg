@@ -10,9 +10,7 @@
 
 @contents
 
-@chapter Developers Guide
-
-@section Notes for external developers
+@chapter Notes for external developers
 
 This document is mostly useful for internal FFmpeg developers.
 External developers who need to use the API in their application should
@@ -30,15 +28,13 @@ For more detailed legal information about the use of FFmpeg in
 external programs read the @file{LICENSE} file in the source tree and
 consult @url{https://ffmpeg.org/legal.html}.
 
-@section Contributing
+@chapter Contributing
 
-There are 3 ways by which code gets into FFmpeg.
+There are 2 ways by which code gets into FFmpeg:
 @itemize @bullet
-@item Submitting patches to the main developer mailing list.
+@item Submitting patches to the ffmpeg-devel mailing list.
       See @ref{Submitting patches} for details.
 @item Directly committing changes to the main tree.
-@item Committing changes to a git clone, for example on github.com or
-      gitorious.org. And asking us to merge these changes.
 @end itemize
 
 Whichever way, changes should be reviewed by the maintainer of the code
@@ -47,9 +43,9 @@ The developer making the commit and the author are responsible for their changes
 and should try to fix issues their commit causes.
 
 @anchor{Coding Rules}
-@section Coding Rules
+@chapter Coding Rules
 
-@subsection Code formatting conventions
+@section Code formatting conventions
 
 There are the following guidelines regarding the indentation in files:
 
@@ -74,7 +70,7 @@ The presentation is one inspired by 'indent -i4 -kr -nut'.
 The main priority in FFmpeg is simplicity and small code size in order to
 minimize the bug count.
 
-@subsection Comments
+@section Comments
 Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
 above them explaining what the function does, even if it is just one sentence.
@@ -114,7 +110,7 @@ int myfunc(int my_parameter)
 ...
 @end example
 
-@subsection C language features
+@section C language features
 
 FFmpeg is programmed in the ISO C90 language with a few additional
 features from ISO C99, namely:
@@ -131,6 +127,14 @@ designated struct initializers (@samp{struct s x = @{ .i = 17 @};});
 
 @item
 compound literals (@samp{x = (struct s) @{ 17, 23 @};}).
+
+@item
+for loops with variable definition (@samp{for (int i = 0; i < 8; i++)});
+
+@item
+Implementation defined behavior for signed integers is assumed to match the
+expected behavior for two's complement. Non representable values in integer
+casts are binary truncated. Shift right of signed values uses sign extension.
 @end itemize
 
 These features are supported by all compilers we care about, so we will not
@@ -155,7 +159,7 @@ mixing statements and declarations;
 GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 @end itemize
 
-@subsection Naming conventions
+@section Naming conventions
 All names should be composed with underscores (_), not CamelCase. For example,
 @samp{avfilter_get_video_buffer} is an acceptable function name and
 @samp{AVFilterGetVideo} is not. The exception from this are type names, like
@@ -179,7 +183,7 @@ e.g. @samp{ff_w64_demuxer}.
 @item
 For variables and functions visible outside of file scope, used internally
 across multiple libraries, use @code{avpriv_} as prefix, for example,
-@samp{avpriv_aac_parse_header}.
+@samp{avpriv_report_missing_feature}.
 
 @item
 Each library has its own prefix for public symbols, in addition to the
@@ -199,7 +203,7 @@ letter as they are reserved by the C standard. Names starting with @code{_}
 are reserved at the file level and may not be used for externally visible
 symbols. If in doubt, just avoid names starting with @code{_} altogether.
 
-@subsection Miscellaneous conventions
+@section Miscellaneous conventions
 
 @itemize @bullet
 @item
@@ -211,7 +215,7 @@ Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
 @end itemize
 
-@subsection Editor configuration
+@section Editor configuration
 In order to configure Vim to follow FFmpeg formatting conventions, paste
 the following snippet into your @file{.vimrc}:
 @example
@@ -244,10 +248,10 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
 (setq c-default-style "ffmpeg")
 @end lisp
 
-@section Development Policy
+@chapter Development Policy
 
-@enumerate
-@item
+@section Patches/Committing
+@subheading Licenses for patches must be compatible with FFmpeg.
 Contributions should be licensed under the
 @uref{http://www.gnu.org/licenses/lgpl-2.1.html, LGPL 2.1},
 including an "or any later version" clause, or, if you prefer
@@ -260,15 +264,15 @@ preferred.
 If you add a new file, give it a proper license header. Do not copy and
 paste it from a random place, use an existing file as template.
 
-@item
-You must not commit code which breaks FFmpeg! (Meaning unfinished but
-enabled code which breaks compilation or compiles but does not work or
-breaks the regression tests)
-You can commit unfinished stuff (for testing etc), but it must be disabled
-(#ifdef etc) by default so it does not interfere with other developers'
-work.
+@subheading You must not commit code which breaks FFmpeg!
+This means unfinished code which is enabled and breaks compilation,
+or compiles but does not work/breaks the regression tests. Code which
+is unfinished but disabled may be permitted under-circumstances, like
+missing samples or an implementation with a small subset of features.
+Always check the mailing list for any reviewers with issues and test
+FATE before you push.
 
-@item
+@subheading Keep the main commit message short with an extended description below.
 The commit message should have a short first line in the form of
 a @samp{topic: short description} as a header, separated by a newline
 from the body consisting of an explanation of why the change is necessary.
@@ -276,30 +280,24 @@ If the commit fixes a known bug on the bug tracker, the commit message
 should include its bug ID. Referring to the issue on the bug tracker does
 not exempt you from writing an excerpt of the bug in the commit message.
 
-@item
-You do not have to over-test things. If it works for you, and you think it
-should work for others, then commit. If your code has problems
-(portability, triggers compiler bugs, unusual environment etc) they will be
-reported and eventually fixed.
+@subheading Testing must be adequate but not excessive.
+If it works for you, others, and passes FATE then it should be OK to commit
+it, provided it fits the other committing criteria. You should not worry about
+over-testing things. If your code has problems (portability, triggers
+compiler bugs, unusual environment etc) they will be reported and eventually
+fixed.
 
-@item
-Do not commit unrelated changes together, split them into self-contained
-pieces. Also do not forget that if part B depends on part A, but A does not
-depend on B, then A can and should be committed first and separate from B.
-Keeping changes well split into self-contained parts makes reviewing and
-understanding them on the commit log mailing list easier. This also helps
-in case of debugging later on.
+@subheading Do not commit unrelated changes together.
+They should be split them into self-contained pieces. Also do not forget
+that if part B depends on part A, but A does not depend on B, then A can
+and should be committed first and separate from B. Keeping changes well
+split into self-contained parts makes reviewing and understanding them on
+the commit log mailing list easier. This also helps in case of debugging
+later on.
 Also if you have doubts about splitting or not splitting, do not hesitate to
 ask/discuss it on the developer mailing list.
 
-@item
-Do not change behavior of the programs (renaming options etc) or public
-API or ABI without first discussing it on the ffmpeg-devel mailing list.
-Do not remove functionality from the code. Just improve!
-
-Note: Redundant code can be removed.
-
-@item
+@subheading Ask before you change the build system (configure, etc).
 Do not commit changes to the build system (Makefiles, configure script)
 which change behavior, defaults etc, without asking first. The same
 applies to compiler warning fixes, trivial looking fixes and to code
@@ -308,7 +306,7 @@ the way we do. Send your changes as patches to the ffmpeg-devel mailing
 list, and if the code maintainers say OK, you may commit. This does not
 apply to files you wrote and/or maintain.
 
-@item
+@subheading Cosmetic changes should be kept in separate patches.
 We refuse source indentation and other cosmetic changes if they are mixed
 with functional changes, such commits will be rejected and removed. Every
 developer has his own indentation style, you should not change it. Of course
@@ -322,7 +320,7 @@ NOTE: If you had to put if()@{ .. @} over a large (> 5 lines) chunk of code,
 then either do NOT change the indentation of the inner part within (do not
 move it to the right)! or do so in a separate commit
 
-@item
+@subheading Commit messages should always be filled out properly.
 Always fill out the commit log message. Describe in a few lines what you
 changed and why. You can refer to mailing list postings if you fix a
 particular bug. Comments such as "fixed!" or "Changed it." are unacceptable.
@@ -334,47 +332,31 @@ area changed: Short 1 line description
 details describing what and why and giving references.
 @end example
 
-@item
+@subheading Credit the author of the patch.
 Make sure the author of the commit is set correctly. (see git commit --author)
 If you apply a patch, send an
 answer to ffmpeg-devel (or wherever you got the patch from) saying that
 you applied the patch.
 
-@item
+@subheading Complex patches should refer to discussion surrounding them.
 When applying patches that have been discussed (at length) on the mailing
 list, reference the thread in the log message.
 
-@item
+@subheading Always wait long enough before pushing changes
 Do NOT commit to code actively maintained by others without permission.
-Send a patch to ffmpeg-devel instead. If no one answers within a reasonable
-timeframe (12h for build failures and security fixes, 3 days small changes,
+Send a patch to ffmpeg-devel. If no one answers within a reasonable
+time-frame (12h for build failures and security fixes, 3 days small changes,
 1 week for big patches) then commit your patch if you think it is OK.
 Also note, the maintainer can simply ask for more time to review!
 
-@item
-Subscribe to the ffmpeg-cvslog mailing list. The diffs of all commits
-are sent there and reviewed by all the other developers. Bugs and possible
-improvements or general questions regarding commits are discussed there. We
-expect you to react if problems with your code are uncovered.
+@section Code
+@subheading API/ABI changes should be discussed before they are made.
+Do not change behavior of the programs (renaming options etc) or public
+API or ABI without first discussing it on the ffmpeg-devel mailing list.
+Do not remove widely used functionality or features (redundant code can be removed).
 
-@item
-Update the documentation if you change behavior or add features. If you are
-unsure how best to do this, send a patch to ffmpeg-devel, the documentation
-maintainer(s) will review and commit your stuff.
-
-@item
-Try to keep important discussions and requests (also) on the public
-developer mailing list, so that all developers can benefit from them.
-
-@item
-Never write to unallocated memory, never write over the end of arrays,
-always check values read from some untrusted source before using them
-as array index or other risky things.
-
-@item
-Remember to check if you need to bump versions for the specific libav*
-parts (libavutil, libavcodec, libavformat) you are changing. You need
-to change the version integer.
+@subheading Remember to check if you need to bump versions for libav*.
+Depending on the change, you may need to change the version integer.
 Incrementing the first component means no backward compatibility to
 previous versions (e.g. removal of a function from the public API).
 Incrementing the second component means backward compatible change
@@ -384,7 +366,7 @@ Incrementing the third component means a noteworthy binary compatible
 change (e.g. encoder bug fix that matters for the decoder). The third
 component always starts at 100 to distinguish FFmpeg from Libav.
 
-@item
+@subheading Warnings for correct code may be disabled if there is no other option.
 Compiler warnings indicate potential bugs or code with bad style. If a type of
 warning always points to correct and clean code, that warning should
 be disabled, not the code changed.
@@ -393,18 +375,84 @@ If it is a bug, the bug has to be fixed. If it is not, the code should
 be changed to not generate a warning unless that causes a slowdown
 or obfuscates the code.
 
-@item
+@subheading Check untrusted input properly.
+Never write to unallocated memory, never write over the end of arrays,
+always check values read from some untrusted source before using them
+as array index or other risky things.
+
+@section Documentation/Other
+@subheading Subscribe to the ffmpeg-devel mailing list.
+It is important to be subscribed to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-devel, ffmpeg-devel}
+mailing list. Almost any non-trivial patch is to be sent there for review.
+Other developers may have comments about your contribution. We expect you see
+those comments, and to improve it if requested. (N.B. Experienced committers
+have other channels, and may sometimes skip review for trivial fixes.) Also,
+discussion here about bug fixes and FFmpeg improvements by other developers may
+be helpful information for you. Finally, by being a list subscriber, your
+contribution will be posted immediately to the list, without the moderation
+hold which messages from non-subscribers experience.
+
+However, it is more important to the project that we receive your patch than
+that you be subscribed to the ffmpeg-devel list. If you have a patch, and don't
+want to subscribe and discuss the patch, then please do send it to the list
+anyway.
+
+@subheading Subscribe to the ffmpeg-cvslog mailing list.
+Diffs of all commits are sent to the
+@uref{https://lists.ffmpeg.org/mailman/listinfo/ffmpeg-cvslog, ffmpeg-cvslog}
+mailing list. Some developers read this list to review all code base changes
+from all sources. Subscribing to this list is not mandatory.
+
+@subheading Keep the documentation up to date.
+Update the documentation if you change behavior or add features. If you are
+unsure how best to do this, send a patch to ffmpeg-devel, the documentation
+maintainer(s) will review and commit your stuff.
+
+@subheading Important discussions should be accessible to all.
+Try to keep important discussions and requests (also) on the public
+developer mailing list, so that all developers can benefit from them.
+
+@subheading Check your entries in MAINTAINERS.
 Make sure that no parts of the codebase that you maintain are missing from the
 @file{MAINTAINERS} file. If something that you want to maintain is missing add it with
 your name after it.
 If at some point you no longer want to maintain some code, then please help in
 finding a new maintainer and also don't forget to update the @file{MAINTAINERS} file.
-@end enumerate
 
 We think our rules are not too hard. If you have comments, contact us.
 
+@chapter Code of conduct
+
+Be friendly and respectful towards others and third parties.
+Treat others the way you yourself want to be treated.
+
+Be considerate. Not everyone shares the same viewpoint and priorities as you do.
+Different opinions and interpretations help the project.
+Looking at issues from a different perspective assists development.
+
+Do not assume malice for things that can be attributed to incompetence. Even if
+it is malice, it's rarely good to start with that as initial assumption.
+
+Stay friendly even if someone acts contrarily. Everyone has a bad day
+once in a while.
+If you yourself have a bad day or are angry then try to take a break and reply
+once you are calm and without anger if you have to.
+
+Try to help other team members and cooperate if you can.
+
+The goal of software development is to create technical excellence, not for any
+individual to be better and "win" against the others. Large software projects
+are only possible and successful through teamwork.
+
+If someone struggles do not put them down. Give them a helping hand
+instead and point them in the right direction.
+
+Finally, keep in mind the immortal words of Bill and Ted,
+"Be excellent to each other."
+
 @anchor{Submitting patches}
-@section Submitting patches
+@chapter Submitting patches
 
 First, read the @ref{Coding Rules} above if you did not yet, in particular
 the rules regarding patch submission.
@@ -437,7 +485,11 @@ Patches should be posted to the
 mailing list. Use @code{git send-email} when possible since it will properly
 send patches without requiring extra care. If you cannot, then send patches
 as base64-encoded attachments, so your patch is not trashed during
-transmission.
+transmission. Also ensure the correct mime type is used
+(text/x-diff or text/x-patch or at least text/plain) and that only one
+patch is inline or attached per mail.
+You can check @url{https://patchwork.ffmpeg.org}, if your patch does not show up, its mime type
+likely was wrong.
 
 Your patch will be reviewed on the mailing list. You will likely be asked
 to make some changes and are expected to send in an improved version that
@@ -449,7 +501,7 @@ Give us a few days to react. But if some time passes without reaction,
 send a reminder by email. Your patch should eventually be dealt with.
 
 
-@section New codecs or formats checklist
+@chapter New codecs or formats checklist
 
 @enumerate
 @item
@@ -501,7 +553,7 @@ Did you make sure it compiles standalone, i.e. with
 @end enumerate
 
 
-@section patch submission checklist
+@chapter Patch submission checklist
 
 @enumerate
 @item
@@ -511,9 +563,9 @@ Does @code{make fate} pass with the patch applied?
 Was the patch generated with git format-patch or send-email?
 
 @item
-Did you sign off your patch? (git commit -s)
-See @url{http://git.kernel.org/?p=linux/kernel/git/torvalds/linux.git;a=blob_plain;f=Documentation/SubmittingPatches} for the meaning
-of sign off.
+Did you sign-off your patch? (@code{git commit -s})
+See @uref{https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/plain/Documentation/process/submitting-patches.rst, Sign your work} for the meaning
+of @dfn{sign-off}.
 
 @item
 Did you provide a clear git commit log message?
@@ -614,7 +666,7 @@ Test your code with valgrind and or Address Sanitizer to ensure it's free
 of leaks, out of array accesses, etc.
 @end enumerate
 
-@section Patch review process
+@chapter Patch review process
 
 All patches posted to ffmpeg-devel will be reviewed, unless they contain a
 clear note that the patch is not for the git master branch.
@@ -645,7 +697,7 @@ to be reviewed, please consider helping to review other patches, that is a great
 way to get everyone's patches reviewed sooner.
 
 @anchor{Regression tests}
-@section Regression tests
+@chapter Regression tests
 
 Before submitting a patch (or committing to the repository), you should at least
 test that you did not break anything.
@@ -656,7 +708,7 @@ Running 'make fate' accomplishes this, please see @url{fate.html} for details.
 this case, the reference results of the regression tests shall be modified
 accordingly].
 
-@subsection Adding files to the fate-suite dataset
+@section Adding files to the fate-suite dataset
 
 When there is no muxer or encoder available to generate test media for a
 specific test then the media has to be included in the fate-suite.
@@ -667,7 +719,7 @@ Once you have a working fate test and fate sample, provide in the commit
 message or introductory message for the patch series that you post to
 the ffmpeg-devel mailing list, a direct link to download the sample media.
 
-@subsection Visualizing Test Coverage
+@section Visualizing Test Coverage
 
 The FFmpeg build system allows visualizing the test coverage in an easy
 manner with the coverage tools @code{gcov}/@code{lcov}.  This involves
@@ -694,7 +746,7 @@ You can use the command @code{make lcov-reset} to reset the coverage
 measurements. You will need to rerun @code{make lcov} after running a
 new test.
 
-@subsection Using Valgrind
+@section Using Valgrind
 
 The configure script provides a shortcut for using valgrind to spot bugs
 related to memory handling. Just add the option
@@ -708,7 +760,7 @@ In case you need finer control over how valgrind is invoked, use the
 your configure line instead.
 
 @anchor{Release process}
-@section Release process
+@chapter Release process
 
 FFmpeg maintains a set of @strong{release branches}, which are the
 recommended deliverable for system integrators and distributors (such as
@@ -740,7 +792,7 @@ adjustments to the symbol versioning file. Please discuss such changes
 on the @strong{ffmpeg-devel} mailing list in time to allow forward planning.
 
 @anchor{Criteria for Point Releases}
-@subsection Criteria for Point Releases
+@section Criteria for Point Releases
 
 Changes that match the following criteria are valid candidates for
 inclusion into a point release:
@@ -764,7 +816,7 @@ point releases of the same release branch.
 The order for checking the rules is (1 OR 2 OR 3) AND 4.
 
 
-@subsection Release Checklist
+@section Release Checklist
 
 The release process involves the following steps:
 

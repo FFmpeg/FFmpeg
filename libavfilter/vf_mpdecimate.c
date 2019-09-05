@@ -33,7 +33,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct DecimateContext {
     const AVClass *class;
     int lo, hi;                    ///< lower and higher threshold number of differences
                                    ///< values for 8x8 blocks

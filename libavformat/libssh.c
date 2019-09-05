@@ -103,7 +103,7 @@ static av_cold int libssh_authentication(LIBSSHContext *libssh, const char *user
         }
     }
 
-    if (!authorized && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
+    if (!authorized && password && (auth_methods & SSH_AUTH_METHOD_PASSWORD)) {
         if (ssh_userauth_password(libssh->session, NULL, password) == SSH_AUTH_SUCCESS) {
             av_log(libssh, AV_LOG_DEBUG, "Authentication successful with password.\n");
             authorized = 1;
@@ -295,7 +295,7 @@ static int libssh_read(URLContext *h, unsigned char *buf, int size)
         av_log(libssh, AV_LOG_ERROR, "Read error.\n");
         return AVERROR(EIO);
     }
-    return bytes_read;
+    return bytes_read ? bytes_read : AVERROR_EOF;
 }
 
 static int libssh_write(URLContext *h, const unsigned char *buf, int size)

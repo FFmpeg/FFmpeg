@@ -227,7 +227,7 @@ typedef struct ASFContext {
     const char *languages[128];
     int nb_languages;
     int64_t creation_time;
-    /* non streamed additonnal info */
+    /* non-streamed additional info */
     uint64_t nb_packets;                 ///< how many packets are there in the file, invalid if broadcasting
     int64_t duration;                    ///< in 100ns units
     /* packet filling */
@@ -431,7 +431,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 
         entry = av_dict_get(s->streams[n]->metadata, "language", NULL, 0);
         if (entry) {
-            const char *iso6391lang = av_convert_lang_to(entry->value, AV_LANG_ISO639_1);
+            const char *iso6391lang = ff_convert_lang_to(entry->value, AV_LANG_ISO639_1);
             if (iso6391lang) {
                 int i;
                 for (i = 0; i < asf->nb_languages; i++) {
@@ -473,7 +473,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     avio_wl64(pb, duration); /* end time stamp (in 100ns units) */
     avio_wl64(pb, asf->duration); /* duration (in 100ns units) */
     avio_wl64(pb, PREROLL_TIME); /* start time stamp */
-    avio_wl32(pb, (asf->is_streamed || !pb->seekable) ? 3 : 2);  /* ??? */
+    avio_wl32(pb, (asf->is_streamed || !(pb->seekable & AVIO_SEEKABLE_NORMAL)) ? 3 : 2);  /* ??? */
     avio_wl32(pb, s->packet_size); /* packet size */
     avio_wl32(pb, s->packet_size); /* packet size */
     avio_wl32(pb, bit_rate ? bit_rate : -1); /* Maximum data rate in bps */
@@ -530,7 +530,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_wl32(pb, 5000); /* maximum buffer size ms */
             avio_wl32(pb, 0); /* max initial buffer fullness */
             avio_wl32(pb, 0); /* max object size */
-            avio_wl32(pb, (!asf->is_streamed && pb->seekable) << 1); /* flags - seekable */
+            avio_wl32(pb, (!asf->is_streamed && (pb->seekable & AVIO_SEEKABLE_NORMAL)) << 1); /* flags - seekable */
             avio_wl16(pb, n + 1); /* stream number */
             avio_wl16(pb, asf->streams[n].stream_language_index); /* language id index */
             avio_wl64(pb, 0); /* avg time per frame */
@@ -578,7 +578,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
     }
     end_header(pb, hpos);
 
-    /* title and other infos */
+    /* title and other info */
     if (has_title) {
         int len;
         uint8_t *buf;
@@ -683,7 +683,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
             avio_wl16(pb, 40 + par->extradata_size); /* size */
 
             /* BITMAPINFOHEADER header */
-            ff_put_bmp_header(pb, par, ff_codec_bmp_tags, 1, 0);
+            ff_put_bmp_header(pb, par, 1, 0);
         }
         end_header(pb, hpos);
     }
@@ -1135,7 +1135,7 @@ static int asf_write_trailer(AVFormatContext *s)
     }
     avio_flush(s->pb);
 
-    if (asf->is_streamed || !s->pb->seekable) {
+    if (asf->is_streamed || !(s->pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         put_chunk(s, 0x4524, 0, 0); /* end of stream */
     } else {
         /* rewrite an updated header */

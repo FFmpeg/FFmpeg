@@ -21,7 +21,7 @@
 
 /**
  * @file
- * H.264 / AVC / MPEG4 part10 prediction functions.
+ * H.264 / AVC / MPEG-4 part10 prediction functions.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 

@@ -235,8 +235,8 @@ void ff_msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     }
 
     s->dc_table_index = 1;
-    s->mv_table_index = 1; /* only if P frame */
-    s->use_skip_mb_code = 1; /* only if P frame */
+    s->mv_table_index = 1; /* only if P-frame */
+    s->use_skip_mb_code = 1; /* only if P-frame */
     s->per_mb_rl_table = 0;
     if(s->msmpeg4_version==4)
         s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
@@ -314,11 +314,6 @@ void ff_msmpeg4_encode_motion(MpegEncContext * s,
 
     mx += 32;
     my += 32;
-#if 0
-    if ((unsigned)mx >= 64 ||
-        (unsigned)my >= 64)
-        av_log(s->avctx, AV_LOG_ERROR, "error mx=%d my=%d\n", mx, my);
-#endif
     mv = &ff_mv_tables[s->mv_table_index];
 
     code = mv->table_mv_index[(mx << 6) | my];
@@ -577,9 +572,8 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
     }
 }
 
-/* Encoding of a block. Very similar to MPEG4 except for a different
-   escape coding (same as H263) and more vlc tables.
- */
+/* Encoding of a block; very similar to MPEG-4 except for a different
+ * escape coding (same as H.263) and more VLC tables. */
 void ff_msmpeg4_encode_block(MpegEncContext * s, int16_t * block, int n)
 {
     int level, run, last, i, j, last_index;

@@ -1,4 +1,4 @@
-#Installing FFmpeg:
+## Installing FFmpeg
 
 1. Type `./configure` to create the configuration. A list of configure
 options is printed by running `configure --help`.

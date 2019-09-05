@@ -1,4 +1,4 @@
-acda7042ecc5b917824d9cf62ee3b46c *tests/data/fate/vsynth_lena-vc2-444p10.mov
+c0de26ba4c95df2e07ab249158fa947c *tests/data/fate/vsynth_lena-vc2-444p10.mov
 1577815 tests/data/fate/vsynth_lena-vc2-444p10.mov
 da13c67fe1c6d98dd73e92a6ba006edc *tests/data/fate/vsynth_lena-vc2-444p10.out.rawvideo
 stddev:    0.42 PSNR: 55.56 MAXDIFF:    7 bytes:  7603200/   760320

@@ -91,7 +91,7 @@ typedef struct ImageBlockCoder {
 
 typedef struct DCTBlockCoder {
     int      *prev_dc;
-    int      prev_dc_stride;
+    ptrdiff_t prev_dc_stride;
     int      prev_dc_height;
     int      quality;
     uint16_t qmat[64];
@@ -298,6 +298,10 @@ static void rac_normalise(RangeCoder *c)
             c->got_error = 1;
             c->low = 1;
         }
+        if (c->low > c->range) {
+            c->got_error = 1;
+            c->low = 1;
+        }
         if (c->range >= RAC_BOTTOM)
             return;
     }
@@ -356,8 +360,9 @@ static int rac_get_model2_sym(RangeCoder *c, Model2 *m)
 
 static int rac_get_model_sym(RangeCoder *c, Model *m)
 {
-    int prob, prob2, helper, val;
+    int val;
     int end, end2;
+    unsigned prob, prob2, helper;
 
     prob       = 0;
     prob2      = c->range;
@@ -388,9 +393,10 @@ static int rac_get_model_sym(RangeCoder *c, Model *m)
 
 static int rac_get_model256_sym(RangeCoder *c, Model256 *m)
 {
-    int prob, prob2, helper, val;
+    int val;
     int start, end;
     int ssym;
+    unsigned prob, prob2, helper;
 
     prob2      = c->range;
     c->range >>= MODEL_SCALE;
@@ -450,7 +456,7 @@ static int decode_coeff(RangeCoder *c, Model *m)
 }
 
 static void decode_fill_block(RangeCoder *c, FillBlockCoder *fc,
-                              uint8_t *dst, int stride, int block_size)
+                              uint8_t *dst, ptrdiff_t stride, int block_size)
 {
     int i;
 
@@ -461,7 +467,7 @@ static void decode_fill_block(RangeCoder *c, FillBlockCoder *fc,
 }
 
 static void decode_image_block(RangeCoder *c, ImageBlockCoder *ic,
-                               uint8_t *dst, int stride, int block_size)
+                               uint8_t *dst, ptrdiff_t stride, int block_size)
 {
     int i, j;
     int vec_size;
@@ -557,7 +563,7 @@ static int decode_dct(RangeCoder *c, DCTBlockCoder *bc, int *block,
 }
 
 static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
-                             uint8_t *dst, int stride, int block_size,
+                             uint8_t *dst, ptrdiff_t stride, int block_size,
                              int *block, int mb_x, int mb_y)
 {
     int i, j;
@@ -580,8 +586,8 @@ static void decode_dct_block(RangeCoder *c, DCTBlockCoder *bc,
 }
 
 static void decode_haar_block(RangeCoder *c, HaarBlockCoder *hc,
-                              uint8_t *dst, int stride, int block_size,
-                              int *block)
+                              uint8_t *dst, ptrdiff_t stride,
+                              int block_size, int *block)
 {
     const int hsize = block_size >> 1;
     int A, B, C, D, t1, t2, t3, t4;
@@ -731,7 +737,7 @@ static int mss3_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         return buf_size;
     c->got_error = 0;
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
+    if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0)
         return ret;
     c->pic->key_frame = keyframe;
     c->pic->pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;

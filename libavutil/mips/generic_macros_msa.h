@@ -23,206 +23,172 @@
 
 #include <stdint.h>
 #include <msa.h>
+#include <config.h>
+
+#if HAVE_MSA2
+#include <msa2.h>
+#endif
 
 #define ALIGNMENT           16
 #define ALLOC_ALIGNED(align) __attribute__ ((aligned((align) << 1)))
 
-#define LD_B(RTYPE, psrc) *((RTYPE *)(psrc))
-#define LD_UB(...) LD_B(v16u8, __VA_ARGS__)
-#define LD_SB(...) LD_B(v16i8, __VA_ARGS__)
+#define LD_V(RTYPE, psrc) *((RTYPE *)(psrc))
+#define LD_UB(...) LD_V(v16u8, __VA_ARGS__)
+#define LD_SB(...) LD_V(v16i8, __VA_ARGS__)
+#define LD_UH(...) LD_V(v8u16, __VA_ARGS__)
+#define LD_SH(...) LD_V(v8i16, __VA_ARGS__)
+#define LD_UW(...) LD_V(v4u32, __VA_ARGS__)
+#define LD_SW(...) LD_V(v4i32, __VA_ARGS__)
 
-#define LD_H(RTYPE, psrc) *((RTYPE *)(psrc))
-#define LD_UH(...) LD_H(v8u16, __VA_ARGS__)
-#define LD_SH(...) LD_H(v8i16, __VA_ARGS__)
-
-#define LD_W(RTYPE, psrc) *((RTYPE *)(psrc))
-#define LD_UW(...) LD_W(v4u32, __VA_ARGS__)
-#define LD_SW(...) LD_W(v4i32, __VA_ARGS__)
-
-#define ST_B(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
-#define ST_UB(...) ST_B(v16u8, __VA_ARGS__)
-#define ST_SB(...) ST_B(v16i8, __VA_ARGS__)
-
-#define ST_H(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
-#define ST_UH(...) ST_H(v8u16, __VA_ARGS__)
-#define ST_SH(...) ST_H(v8i16, __VA_ARGS__)
-
-#define ST_W(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
-#define ST_UW(...) ST_W(v4u32, __VA_ARGS__)
-#define ST_SW(...) ST_W(v4i32, __VA_ARGS__)
+#define ST_V(RTYPE, in, pdst) *((RTYPE *)(pdst)) = (in)
+#define ST_UB(...) ST_V(v16u8, __VA_ARGS__)
+#define ST_SB(...) ST_V(v16i8, __VA_ARGS__)
+#define ST_UH(...) ST_V(v8u16, __VA_ARGS__)
+#define ST_SH(...) ST_V(v8i16, __VA_ARGS__)
+#define ST_UW(...) ST_V(v4u32, __VA_ARGS__)
+#define ST_SW(...) ST_V(v4i32, __VA_ARGS__)
 
 #if (__mips_isa_rev >= 6)
-    #define LW(psrc)                           \
-    ( {                                        \
-        uint8_t *psrc_m = (uint8_t *) (psrc);  \
-        uint32_t val_m;                        \
-                                               \
-        __asm__ volatile (                     \
-            "lw  %[val_m],  %[psrc_m]  \n\t"   \
-                                               \
-            : [val_m] "=r" (val_m)             \
-            : [psrc_m] "m" (*psrc_m)           \
-        );                                     \
-                                               \
-        val_m;                                 \
+    #define LH(psrc)                              \
+    ( {                                           \
+        uint16_t val_lh_m = *(uint16_t *)(psrc);  \
+        val_lh_m;                                 \
+    } )
+
+    #define LW(psrc)                              \
+    ( {                                           \
+        uint32_t val_lw_m = *(uint32_t *)(psrc);  \
+        val_lw_m;                                 \
     } )
 
     #if (__mips == 64)
-        #define LD(psrc)                           \
-        ( {                                        \
-            uint8_t *psrc_m = (uint8_t *) (psrc);  \
-            uint64_t val_m = 0;                    \
-                                                   \
-            __asm__ volatile (                     \
-                "ld  %[val_m],  %[psrc_m]  \n\t"   \
-                                                   \
-                : [val_m] "=r" (val_m)             \
-                : [psrc_m] "m" (*psrc_m)           \
-            );                                     \
-                                                   \
-            val_m;                                 \
+        #define LD(psrc)                               \
+        ( {                                            \
+            uint64_t val_ld_m =  *(uint64_t *)(psrc);  \
+            val_ld_m;                                  \
         } )
     #else  // !(__mips == 64)
-        #define LD(psrc)                                              \
-        ( {                                                           \
-            uint8_t *psrc_m = (uint8_t *) (psrc);                     \
-            uint32_t val0_m, val1_m;                                  \
-            uint64_t val_m = 0;                                       \
-                                                                      \
-            val0_m = LW(psrc_m);                                      \
-            val1_m = LW(psrc_m + 4);                                  \
-                                                                      \
-            val_m = (uint64_t) (val1_m);                              \
-            val_m = (uint64_t) ((val_m << 32) & 0xFFFFFFFF00000000);  \
-            val_m = (uint64_t) (val_m | (uint64_t) val0_m);           \
-                                                                      \
-            val_m;                                                    \
+        #define LD(psrc)                                                    \
+        ( {                                                                 \
+            uint8_t *psrc_ld_m = (uint8_t *) (psrc);                        \
+            uint32_t val0_ld_m, val1_ld_m;                                  \
+            uint64_t val_ld_m = 0;                                          \
+                                                                            \
+            val0_ld_m = LW(psrc_ld_m);                                      \
+            val1_ld_m = LW(psrc_ld_m + 4);                                  \
+                                                                            \
+            val_ld_m = (uint64_t) (val1_ld_m);                              \
+            val_ld_m = (uint64_t) ((val_ld_m << 32) & 0xFFFFFFFF00000000);  \
+            val_ld_m = (uint64_t) (val_ld_m | (uint64_t) val0_ld_m);        \
+                                                                            \
+            val_ld_m;                                                       \
         } )
     #endif  // (__mips == 64)
 
-    #define SH(val, pdst)                      \
-    {                                          \
-        uint8_t *pdst_m = (uint8_t *) (pdst);  \
-        uint16_t val_m = (val);                \
-                                               \
-        __asm__ volatile (                     \
-            "sh  %[val_m],  %[pdst_m]  \n\t"   \
-                                               \
-            : [pdst_m] "=m" (*pdst_m)          \
-            : [val_m] "r" (val_m)              \
-        );                                     \
-    }
+    #define SH(val, pdst)  *(uint16_t *)(pdst) = (val);
+    #define SW(val, pdst)  *(uint32_t *)(pdst) = (val);
+    #define SD(val, pdst)  *(uint64_t *)(pdst) = (val);
 
-    #define SW(val, pdst)                      \
-    {                                          \
-        uint8_t *pdst_m = (uint8_t *) (pdst);  \
-        uint32_t val_m = (val);                \
-                                               \
-        __asm__ volatile (                     \
-            "sw  %[val_m],  %[pdst_m]  \n\t"   \
-                                               \
-            : [pdst_m] "=m" (*pdst_m)          \
-            : [val_m] "r" (val_m)              \
-        );                                     \
-    }
-
-    #define SD(val, pdst)                      \
-    {                                          \
-        uint8_t *pdst_m = (uint8_t *) (pdst);  \
-        uint64_t val_m = (val);                \
-                                               \
-        __asm__ volatile (                     \
-            "sd  %[val_m],  %[pdst_m]  \n\t"   \
-                                               \
-            : [pdst_m] "=m" (*pdst_m)          \
-            : [val_m] "r" (val_m)              \
-        );                                     \
-    }
 #else  // !(__mips_isa_rev >= 6)
-    #define LW(psrc)                           \
-    ( {                                        \
-        uint8_t *psrc_m = (uint8_t *) (psrc);  \
-        uint32_t val_m;                        \
-                                               \
-        __asm__ volatile (                     \
-            "ulw  %[val_m],  %[psrc_m]  \n\t"  \
-                                               \
-            : [val_m] "=r" (val_m)             \
-            : [psrc_m] "m" (*psrc_m)           \
-        );                                     \
-                                               \
-        val_m;                                 \
+    #define LH(psrc)                                 \
+    ( {                                              \
+        uint8_t *psrc_lh_m = (uint8_t *) (psrc);     \
+        uint16_t val_lh_m;                           \
+                                                     \
+        __asm__ volatile (                           \
+            "ulh  %[val_lh_m],  %[psrc_lh_m]  \n\t"  \
+                                                     \
+            : [val_lh_m] "=r" (val_lh_m)             \
+            : [psrc_lh_m] "m" (*psrc_lh_m)           \
+        );                                           \
+                                                     \
+        val_lh_m;                                    \
+    } )
+
+    #define LW(psrc)                                 \
+    ( {                                              \
+        uint8_t *psrc_lw_m = (uint8_t *) (psrc);     \
+        uint32_t val_lw_m;                           \
+                                                     \
+        __asm__ volatile (                           \
+            "ulw  %[val_lw_m],  %[psrc_lw_m]  \n\t"  \
+                                                     \
+            : [val_lw_m] "=r" (val_lw_m)             \
+            : [psrc_lw_m] "m" (*psrc_lw_m)           \
+        );                                           \
+                                                     \
+        val_lw_m;                                    \
     } )
 
     #if (__mips == 64)
-        #define LD(psrc)                           \
-        ( {                                        \
-            uint8_t *psrc_m = (uint8_t *) (psrc);  \
-            uint64_t val_m = 0;                    \
-                                                   \
-            __asm__ volatile (                     \
-                "uld  %[val_m],  %[psrc_m]  \n\t"  \
-                                                   \
-                : [val_m] "=r" (val_m)             \
-                : [psrc_m] "m" (*psrc_m)           \
-            );                                     \
-                                                   \
-            val_m;                                 \
+        #define LD(psrc)                                 \
+        ( {                                              \
+            uint8_t *psrc_ld_m = (uint8_t *) (psrc);     \
+            uint64_t val_ld_m = 0;                       \
+                                                         \
+            __asm__ volatile (                           \
+                "uld  %[val_ld_m],  %[psrc_ld_m]  \n\t"  \
+                                                         \
+                : [val_ld_m] "=r" (val_ld_m)             \
+                : [psrc_ld_m] "m" (*psrc_ld_m)           \
+            );                                           \
+                                                         \
+            val_ld_m;                                    \
         } )
     #else  // !(__mips == 64)
-        #define LD(psrc)                                              \
-        ( {                                                           \
-            uint8_t *psrc_m1 = (uint8_t *) (psrc);                    \
-            uint32_t val0_m, val1_m;                                  \
-            uint64_t val_m = 0;                                       \
-                                                                      \
-            val0_m = LW(psrc_m1);                                     \
-            val1_m = LW(psrc_m1 + 4);                                 \
-                                                                      \
-            val_m = (uint64_t) (val1_m);                              \
-            val_m = (uint64_t) ((val_m << 32) & 0xFFFFFFFF00000000);  \
-            val_m = (uint64_t) (val_m | (uint64_t) val0_m);           \
-                                                                      \
-            val_m;                                                    \
+        #define LD(psrc)                                                    \
+        ( {                                                                 \
+            uint8_t *psrc_ld_m = (uint8_t *) (psrc);                        \
+            uint32_t val0_ld_m, val1_ld_m;                                  \
+            uint64_t val_ld_m = 0;                                          \
+                                                                            \
+            val0_ld_m = LW(psrc_ld_m);                                      \
+            val1_ld_m = LW(psrc_ld_m + 4);                                  \
+                                                                            \
+            val_ld_m = (uint64_t) (val1_ld_m);                              \
+            val_ld_m = (uint64_t) ((val_ld_m << 32) & 0xFFFFFFFF00000000);  \
+            val_ld_m = (uint64_t) (val_ld_m | (uint64_t) val0_ld_m);        \
+                                                                            \
+            val_ld_m;                                                       \
         } )
     #endif  // (__mips == 64)
 
-    #define SH(val, pdst)                      \
-    {                                          \
-        uint8_t *pdst_m = (uint8_t *) (pdst);  \
-        uint16_t val_m = (val);                \
-                                               \
-        __asm__ volatile (                     \
-            "ush  %[val_m],  %[pdst_m]  \n\t"  \
-                                               \
-            : [pdst_m] "=m" (*pdst_m)          \
-            : [val_m] "r" (val_m)              \
-        );                                     \
+    #define SH(val, pdst)                            \
+    {                                                \
+        uint8_t *pdst_sh_m = (uint8_t *) (pdst);     \
+        uint16_t val_sh_m = (val);                   \
+                                                     \
+        __asm__ volatile (                           \
+            "ush  %[val_sh_m],  %[pdst_sh_m]  \n\t"  \
+                                                     \
+            : [pdst_sh_m] "=m" (*pdst_sh_m)          \
+            : [val_sh_m] "r" (val_sh_m)              \
+        );                                           \
     }
 
-    #define SW(val, pdst)                      \
-    {                                          \
-        uint8_t *pdst_m = (uint8_t *) (pdst);  \
-        uint32_t val_m = (val);                \
-                                               \
-        __asm__ volatile (                     \
-            "usw  %[val_m],  %[pdst_m]  \n\t"  \
-                                               \
-            : [pdst_m] "=m" (*pdst_m)          \
-            : [val_m] "r" (val_m)              \
-        );                                     \
+    #define SW(val, pdst)                            \
+    {                                                \
+        uint8_t *pdst_sw_m = (uint8_t *) (pdst);     \
+        uint32_t val_sw_m = (val);                   \
+                                                     \
+        __asm__ volatile (                           \
+            "usw  %[val_sw_m],  %[pdst_sw_m]  \n\t"  \
+                                                     \
+            : [pdst_sw_m] "=m" (*pdst_sw_m)          \
+            : [val_sw_m] "r" (val_sw_m)              \
+        );                                           \
     }
 
-    #define SD(val, pdst)                                          \
-    {                                                              \
-        uint8_t *pdst_m1 = (uint8_t *) (pdst);                     \
-        uint32_t val0_m, val1_m;                                   \
-                                                                   \
-        val0_m = (uint32_t) ((val) & 0x00000000FFFFFFFF);          \
-        val1_m = (uint32_t) (((val) >> 32) & 0x00000000FFFFFFFF);  \
-                                                                   \
-        SW(val0_m, pdst_m1);                                       \
-        SW(val1_m, pdst_m1 + 4);                                   \
+    #define SD(val, pdst)                                             \
+    {                                                                 \
+        uint8_t *pdst_sd_m = (uint8_t *) (pdst);                      \
+        uint32_t val0_sd_m, val1_sd_m;                                \
+                                                                      \
+        val0_sd_m = (uint32_t) ((val) & 0x00000000FFFFFFFF);          \
+        val1_sd_m = (uint32_t) (((val) >> 32) & 0x00000000FFFFFFFF);  \
+                                                                      \
+        SW(val0_sd_m, pdst_sd_m);                                     \
+        SW(val1_sd_m, pdst_sd_m + 4);                                 \
     }
 #endif // (__mips_isa_rev >= 6)
 
@@ -241,6 +207,12 @@
     out1 = LW((psrc) + stride);                    \
     out2 = LW((psrc) + 2 * stride);                \
     out3 = LW((psrc) + 3 * stride);                \
+}
+
+#define LW2(psrc, stride, out0, out1)  \
+{                                      \
+    out0 = LW((psrc));                 \
+    out1 = LW((psrc) + stride);        \
 }
 
 /* Description : Load double words with stride
@@ -291,426 +263,256 @@
     SD(in3, (pdst) + 3 * stride);              \
 }
 
-/* Description : Load vectors with 16 byte elements with stride
+/* Description : Load vector elements with stride
    Arguments   : Inputs  - psrc    (source pointer to load from)
                          - stride
                  Outputs - out0, out1
                  Return Type - as per RTYPE
-   Details     : Loads 16 byte elements in 'out0' from (psrc)
-                 Loads 16 byte elements in 'out1' from (psrc + stride)
+   Details     : Loads elements in 'out0' from (psrc)
+                 Loads elements in 'out1' from (psrc + stride)
 */
-#define LD_B2(RTYPE, psrc, stride, out0, out1)  \
+#define LD_V2(RTYPE, psrc, stride, out0, out1)  \
 {                                               \
-    out0 = LD_B(RTYPE, (psrc));                 \
-    out1 = LD_B(RTYPE, (psrc) + stride);        \
+    out0 = LD_V(RTYPE, (psrc));                 \
+    out1 = LD_V(RTYPE, (psrc) + stride);        \
 }
-#define LD_UB2(...) LD_B2(v16u8, __VA_ARGS__)
-#define LD_SB2(...) LD_B2(v16i8, __VA_ARGS__)
+#define LD_UB2(...) LD_V2(v16u8, __VA_ARGS__)
+#define LD_SB2(...) LD_V2(v16i8, __VA_ARGS__)
+#define LD_UH2(...) LD_V2(v8u16, __VA_ARGS__)
+#define LD_SH2(...) LD_V2(v8i16, __VA_ARGS__)
+#define LD_SW2(...) LD_V2(v4i32, __VA_ARGS__)
 
-#define LD_B3(RTYPE, psrc, stride, out0, out1, out2)  \
+#define LD_V3(RTYPE, psrc, stride, out0, out1, out2)  \
 {                                                     \
-    LD_B2(RTYPE, (psrc), stride, out0, out1);         \
-    out2 = LD_B(RTYPE, (psrc) + 2 * stride);          \
+    LD_V2(RTYPE, (psrc), stride, out0, out1);         \
+    out2 = LD_V(RTYPE, (psrc) + 2 * stride);          \
 }
-#define LD_UB3(...) LD_B3(v16u8, __VA_ARGS__)
-#define LD_SB3(...) LD_B3(v16i8, __VA_ARGS__)
+#define LD_UB3(...) LD_V3(v16u8, __VA_ARGS__)
+#define LD_SB3(...) LD_V3(v16i8, __VA_ARGS__)
 
-#define LD_B4(RTYPE, psrc, stride, out0, out1, out2, out3)   \
+#define LD_V4(RTYPE, psrc, stride, out0, out1, out2, out3)   \
 {                                                            \
-    LD_B2(RTYPE, (psrc), stride, out0, out1);                \
-    LD_B2(RTYPE, (psrc) + 2 * stride , stride, out2, out3);  \
+    LD_V2(RTYPE, (psrc), stride, out0, out1);                \
+    LD_V2(RTYPE, (psrc) + 2 * stride , stride, out2, out3);  \
 }
-#define LD_UB4(...) LD_B4(v16u8, __VA_ARGS__)
-#define LD_SB4(...) LD_B4(v16i8, __VA_ARGS__)
+#define LD_UB4(...) LD_V4(v16u8, __VA_ARGS__)
+#define LD_SB4(...) LD_V4(v16i8, __VA_ARGS__)
+#define LD_UH4(...) LD_V4(v8u16, __VA_ARGS__)
+#define LD_SH4(...) LD_V4(v8i16, __VA_ARGS__)
 
-#define LD_B5(RTYPE, psrc, stride, out0, out1, out2, out3, out4)  \
+#define LD_V5(RTYPE, psrc, stride, out0, out1, out2, out3, out4)  \
 {                                                                 \
-    LD_B4(RTYPE, (psrc), stride, out0, out1, out2, out3);         \
-    out4 = LD_B(RTYPE, (psrc) + 4 * stride);                      \
+    LD_V4(RTYPE, (psrc), stride, out0, out1, out2, out3);         \
+    out4 = LD_V(RTYPE, (psrc) + 4 * stride);                      \
 }
-#define LD_UB5(...) LD_B5(v16u8, __VA_ARGS__)
-#define LD_SB5(...) LD_B5(v16i8, __VA_ARGS__)
+#define LD_UB5(...) LD_V5(v16u8, __VA_ARGS__)
+#define LD_SB5(...) LD_V5(v16i8, __VA_ARGS__)
 
-#define LD_B6(RTYPE, psrc, stride, out0, out1, out2, out3, out4, out5)  \
+#define LD_V6(RTYPE, psrc, stride, out0, out1, out2, out3, out4, out5)  \
 {                                                                       \
-    LD_B4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
-    LD_B2(RTYPE, (psrc) + 4 * stride, stride, out4, out5);              \
+    LD_V4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
+    LD_V2(RTYPE, (psrc) + 4 * stride, stride, out4, out5);              \
 }
-#define LD_UB6(...) LD_B6(v16u8, __VA_ARGS__)
-#define LD_SB6(...) LD_B6(v16i8, __VA_ARGS__)
+#define LD_UB6(...) LD_V6(v16u8, __VA_ARGS__)
+#define LD_SB6(...) LD_V6(v16i8, __VA_ARGS__)
+#define LD_UH6(...) LD_V6(v8u16, __VA_ARGS__)
+#define LD_SH6(...) LD_V6(v8i16, __VA_ARGS__)
 
-#define LD_B7(RTYPE, psrc, stride,                               \
+#define LD_V7(RTYPE, psrc, stride,                               \
               out0, out1, out2, out3, out4, out5, out6)          \
 {                                                                \
-    LD_B5(RTYPE, (psrc), stride, out0, out1, out2, out3, out4);  \
-    LD_B2(RTYPE, (psrc) + 5 * stride, stride, out5, out6);       \
+    LD_V5(RTYPE, (psrc), stride, out0, out1, out2, out3, out4);  \
+    LD_V2(RTYPE, (psrc) + 5 * stride, stride, out5, out6);       \
 }
-#define LD_UB7(...) LD_B7(v16u8, __VA_ARGS__)
-#define LD_SB7(...) LD_B7(v16i8, __VA_ARGS__)
+#define LD_UB7(...) LD_V7(v16u8, __VA_ARGS__)
+#define LD_SB7(...) LD_V7(v16i8, __VA_ARGS__)
 
-#define LD_B8(RTYPE, psrc, stride,                                      \
+#define LD_V8(RTYPE, psrc, stride,                                      \
               out0, out1, out2, out3, out4, out5, out6, out7)           \
 {                                                                       \
-    LD_B4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
-    LD_B4(RTYPE, (psrc) + 4 * stride, stride, out4, out5, out6, out7);  \
+    LD_V4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
+    LD_V4(RTYPE, (psrc) + 4 * stride, stride, out4, out5, out6, out7);  \
 }
-#define LD_UB8(...) LD_B8(v16u8, __VA_ARGS__)
-#define LD_SB8(...) LD_B8(v16i8, __VA_ARGS__)
+#define LD_UB8(...) LD_V8(v16u8, __VA_ARGS__)
+#define LD_SB8(...) LD_V8(v16i8, __VA_ARGS__)
+#define LD_UH8(...) LD_V8(v8u16, __VA_ARGS__)
+#define LD_SH8(...) LD_V8(v8i16, __VA_ARGS__)
 
-/* Description : Load vectors with 8 halfword elements with stride
-   Arguments   : Inputs  - psrc    (source pointer to load from)
-                         - stride
-                 Outputs - out0, out1
-   Details     : Loads 8 halfword elements in 'out0' from (psrc)
-                 Loads 8 halfword elements in 'out1' from (psrc + stride)
-*/
-#define LD_H2(RTYPE, psrc, stride, out0, out1)  \
-{                                               \
-    out0 = LD_H(RTYPE, (psrc));                 \
-    out1 = LD_H(RTYPE, (psrc) + (stride));      \
-}
-#define LD_UH2(...) LD_H2(v8u16, __VA_ARGS__)
-#define LD_SH2(...) LD_H2(v8i16, __VA_ARGS__)
-
-#define LD_H4(RTYPE, psrc, stride, out0, out1, out2, out3)  \
-{                                                           \
-    LD_H2(RTYPE, (psrc), stride, out0, out1);               \
-    LD_H2(RTYPE, (psrc) + 2 * stride, stride, out2, out3);  \
-}
-#define LD_UH4(...) LD_H4(v8u16, __VA_ARGS__)
-#define LD_SH4(...) LD_H4(v8i16, __VA_ARGS__)
-
-#define LD_H6(RTYPE, psrc, stride, out0, out1, out2, out3, out4, out5)  \
-{                                                                       \
-    LD_H4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
-    LD_H2(RTYPE, (psrc) + 4 * stride, stride, out4, out5);              \
-}
-#define LD_UH6(...) LD_H6(v8u16, __VA_ARGS__)
-#define LD_SH6(...) LD_H6(v8i16, __VA_ARGS__)
-
-#define LD_H8(RTYPE, psrc, stride,                                      \
-              out0, out1, out2, out3, out4, out5, out6, out7)           \
-{                                                                       \
-    LD_H4(RTYPE, (psrc), stride, out0, out1, out2, out3);               \
-    LD_H4(RTYPE, (psrc) + 4 * stride, stride, out4, out5, out6, out7);  \
-}
-#define LD_UH8(...) LD_H8(v8u16, __VA_ARGS__)
-#define LD_SH8(...) LD_H8(v8i16, __VA_ARGS__)
-
-#define LD_H16(RTYPE, psrc, stride,                                   \
+#define LD_V16(RTYPE, psrc, stride,                                   \
                out0, out1, out2, out3, out4, out5, out6, out7,        \
                out8, out9, out10, out11, out12, out13, out14, out15)  \
 {                                                                     \
-    LD_H8(RTYPE, (psrc), stride,                                      \
+    LD_V8(RTYPE, (psrc), stride,                                      \
           out0, out1, out2, out3, out4, out5, out6, out7);            \
-    LD_H8(RTYPE, (psrc) + 8 * stride, stride,                         \
+    LD_V8(RTYPE, (psrc) + 8 * stride, stride,                         \
           out8, out9, out10, out11, out12, out13, out14, out15);      \
 }
-#define LD_SH16(...) LD_H16(v8i16, __VA_ARGS__)
+#define LD_SH16(...) LD_V16(v8i16, __VA_ARGS__)
 
-/* Description : Load as 4x4 block of signed halfword elements from 1D source
-                 data into 4 vectors (Each vector with 4 signed halfwords)
-   Arguments   : Inputs  - psrc
-                 Outputs - out0, out1, out2, out3
-*/
-#define LD4x4_SH(psrc, out0, out1, out2, out3)                \
-{                                                             \
-    out0 = LD_SH(psrc);                                       \
-    out2 = LD_SH(psrc + 8);                                   \
-    out1 = (v8i16) __msa_ilvl_d((v2i64) out0, (v2i64) out0);  \
-    out3 = (v8i16) __msa_ilvl_d((v2i64) out2, (v2i64) out2);  \
-}
-
-/* Description : Load 2 vectors of signed word elements with stride
-   Arguments   : Inputs  - psrc    (source pointer to load from)
-                         - stride
-                 Outputs - out0, out1
-                 Return Type - signed word
-*/
-#define LD_SW2(psrc, stride, out0, out1)  \
-{                                         \
-    out0 = LD_SW((psrc));                 \
-    out1 = LD_SW((psrc) + stride);        \
-}
-
-/* Description : Store vectors of 16 byte elements with stride
+/* Description : Store vectors with stride
    Arguments   : Inputs  - in0, in1, stride
                  Outputs - pdst    (destination pointer to store to)
-   Details     : Stores 16 byte elements from 'in0' to (pdst)
-                 Stores 16 byte elements from 'in1' to (pdst + stride)
+   Details     : Stores elements from 'in0' to (pdst)
+                 Stores elements from 'in1' to (pdst + stride)
 */
-#define ST_B2(RTYPE, in0, in1, pdst, stride)  \
+#define ST_V2(RTYPE, in0, in1, pdst, stride)  \
 {                                             \
-    ST_B(RTYPE, in0, (pdst));                 \
-    ST_B(RTYPE, in1, (pdst) + stride);        \
+    ST_V(RTYPE, in0, (pdst));                 \
+    ST_V(RTYPE, in1, (pdst) + stride);        \
 }
-#define ST_UB2(...) ST_B2(v16u8, __VA_ARGS__)
-#define ST_SB2(...) ST_B2(v16i8, __VA_ARGS__)
+#define ST_UB2(...) ST_V2(v16u8, __VA_ARGS__)
+#define ST_SB2(...) ST_V2(v16i8, __VA_ARGS__)
+#define ST_UH2(...) ST_V2(v8u16, __VA_ARGS__)
+#define ST_SH2(...) ST_V2(v8i16, __VA_ARGS__)
+#define ST_SW2(...) ST_V2(v4i32, __VA_ARGS__)
 
-#define ST_B4(RTYPE, in0, in1, in2, in3, pdst, stride)    \
+#define ST_V4(RTYPE, in0, in1, in2, in3, pdst, stride)    \
 {                                                         \
-    ST_B2(RTYPE, in0, in1, (pdst), stride);               \
-    ST_B2(RTYPE, in2, in3, (pdst) + 2 * stride, stride);  \
+    ST_V2(RTYPE, in0, in1, (pdst), stride);               \
+    ST_V2(RTYPE, in2, in3, (pdst) + 2 * stride, stride);  \
 }
-#define ST_UB4(...) ST_B4(v16u8, __VA_ARGS__)
-#define ST_SB4(...) ST_B4(v16i8, __VA_ARGS__)
+#define ST_UB4(...) ST_V4(v16u8, __VA_ARGS__)
+#define ST_SB4(...) ST_V4(v16i8, __VA_ARGS__)
+#define ST_SH4(...) ST_V4(v8i16, __VA_ARGS__)
+#define ST_SW4(...) ST_V4(v4i32, __VA_ARGS__)
 
-#define ST_B8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,        \
-              pdst, stride)                                         \
-{                                                                   \
-    ST_B4(RTYPE, in0, in1, in2, in3, pdst, stride);                 \
-    ST_B4(RTYPE, in4, in5, in6, in7, (pdst) + 4 * stride, stride);  \
-}
-#define ST_UB8(...) ST_B8(v16u8, __VA_ARGS__)
-
-/* Description : Store vectors of 8 halfword elements with stride
-   Arguments   : Inputs  - in0, in1, stride
-                 Outputs - pdst    (destination pointer to store to)
-   Details     : Stores 8 halfword elements from 'in0' to (pdst)
-                 Stores 8 halfword elements from 'in1' to (pdst + stride)
-*/
-#define ST_H2(RTYPE, in0, in1, pdst, stride)  \
-{                                             \
-    ST_H(RTYPE, in0, (pdst));                 \
-    ST_H(RTYPE, in1, (pdst) + stride);        \
-}
-#define ST_UH2(...) ST_H2(v8u16, __VA_ARGS__)
-#define ST_SH2(...) ST_H2(v8i16, __VA_ARGS__)
-
-#define ST_H4(RTYPE, in0, in1, in2, in3, pdst, stride)    \
-{                                                         \
-    ST_H2(RTYPE, in0, in1, (pdst), stride);               \
-    ST_H2(RTYPE, in2, in3, (pdst) + 2 * stride, stride);  \
-}
-#define ST_SH4(...) ST_H4(v8i16, __VA_ARGS__)
-
-#define ST_H6(RTYPE, in0, in1, in2, in3, in4, in5, pdst, stride)  \
+#define ST_V6(RTYPE, in0, in1, in2, in3, in4, in5, pdst, stride)  \
 {                                                                 \
-    ST_H4(RTYPE, in0, in1, in2, in3, (pdst), stride);             \
-    ST_H2(RTYPE, in4, in5, (pdst) + 4 * stride, stride);          \
+    ST_V4(RTYPE, in0, in1, in2, in3, (pdst), stride);             \
+    ST_V2(RTYPE, in4, in5, (pdst) + 4 * stride, stride);          \
 }
-#define ST_SH6(...) ST_H6(v8i16, __VA_ARGS__)
+#define ST_SH6(...) ST_V6(v8i16, __VA_ARGS__)
 
-#define ST_H8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
+#define ST_V8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride)  \
 {                                                                           \
-    ST_H4(RTYPE, in0, in1, in2, in3, (pdst), stride);                       \
-    ST_H4(RTYPE, in4, in5, in6, in7, (pdst) + 4 * stride, stride);          \
+    ST_V4(RTYPE, in0, in1, in2, in3, (pdst), stride);                       \
+    ST_V4(RTYPE, in4, in5, in6, in7, (pdst) + 4 * stride, stride);          \
 }
-#define ST_SH8(...) ST_H8(v8i16, __VA_ARGS__)
+#define ST_UB8(...) ST_V8(v16u8, __VA_ARGS__)
+#define ST_SH8(...) ST_V8(v8i16, __VA_ARGS__)
+#define ST_SW8(...) ST_V8(v4i32, __VA_ARGS__)
 
-/* Description : Store vectors of word elements with stride
-   Arguments   : Inputs  - in0, in1, stride
-                 Outputs - pdst    (destination pointer to store to)
-                 Return Type - signed word
-   Details     : Stores 4 word elements from 'in0' to (pdst)
-                 Stores 4 word elements from 'in1' to (pdst + stride)
-*/
-#define ST_SW2(in0, in1, pdst, stride)  \
-{                                       \
-    ST_SW(in0, (pdst));                 \
-    ST_SW(in1, (pdst) + stride);        \
+/* Description : Store half word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores half word 'idx0' from 'in' to (pdst)
+ *               Stores half word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_H1(in, idx, pdst)                             \
+{                                                        \
+    uint16_t out0_m;                                     \
+    out0_m = __msa_copy_u_h((v8i16) in, idx);            \
+    SH(out0_m, (pdst));                                  \
 }
-#define ST_SW8(in0, in1, in2, in3, in4, in5, in6, in7,  \
-               pdst, stride)                            \
-{                                                       \
-    ST_SW2(in0, in1, (pdst), stride);                   \
-    ST_SW2(in2, in3, (pdst) + 2 * stride, stride);      \
-    ST_SW2(in4, in5, (pdst) + 4 * stride, stride);      \
-    ST_SW2(in6, in7, (pdst) + 6 * stride, stride);      \
+#define ST_H2(in, idx0, idx1, pdst, stride)              \
+{                                                        \
+    uint16_t out0_m, out1_m;                             \
+    out0_m = __msa_copy_u_h((v8i16) in, idx0);           \
+    out1_m = __msa_copy_u_h((v8i16) in, idx1);           \
+    SH(out0_m, (pdst));                                  \
+    SH(out1_m, (pdst) + stride);                         \
 }
-
-/* Description : Store as 2x4 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, stidx, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index stidx halfword element from 'in' vector is copied and
-                 stored on first line
-                 Index stidx+1 halfword element from 'in' vector is copied and
-                 stored on second line
-                 Index stidx+2 halfword element from 'in' vector is copied and
-                 stored on third line
-                 Index stidx+3 halfword element from 'in' vector is copied and
-                 stored on fourth line
-*/
-#define ST2x4_UB(in, stidx, pdst, stride)              \
-{                                                      \
-    uint16_t out0_m, out1_m, out2_m, out3_m;           \
-    uint8_t *pblk_2x4_m = (uint8_t *) (pdst);          \
-                                                       \
-    out0_m = __msa_copy_u_h((v8i16) in, (stidx));      \
-    out1_m = __msa_copy_u_h((v8i16) in, (stidx + 1));  \
-    out2_m = __msa_copy_u_h((v8i16) in, (stidx + 2));  \
-    out3_m = __msa_copy_u_h((v8i16) in, (stidx + 3));  \
-                                                       \
-    SH(out0_m, pblk_2x4_m);                            \
-    SH(out1_m, pblk_2x4_m + stride);                   \
-    SH(out2_m, pblk_2x4_m + 2 * stride);               \
-    SH(out3_m, pblk_2x4_m + 3 * stride);               \
+#define ST_H4(in, idx0, idx1, idx2, idx3, pdst, stride)  \
+{                                                        \
+    uint16_t out0_m, out1_m, out2_m, out3_m;             \
+    out0_m = __msa_copy_u_h((v8i16) in, idx0);           \
+    out1_m = __msa_copy_u_h((v8i16) in, idx1);           \
+    out2_m = __msa_copy_u_h((v8i16) in, idx2);           \
+    out3_m = __msa_copy_u_h((v8i16) in, idx3);           \
+    SH(out0_m, (pdst));                                  \
+    SH(out1_m, (pdst) + stride);                         \
+    SH(out2_m, (pdst) + 2 * stride);                     \
+    SH(out3_m, (pdst) + 3 * stride);                     \
+}
+#define ST_H8(in, idx0, idx1, idx2, idx3, idx4, idx5,            \
+              idx6, idx7, pdst, stride)                          \
+{                                                                \
+    ST_H4(in, idx0, idx1, idx2, idx3, pdst, stride)              \
+    ST_H4(in, idx4, idx5, idx6, idx7, (pdst) + 4*stride, stride) \
 }
 
-/* Description : Store as 4x2 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index 0 word element from input vector is copied and stored
-                 on first line
-                 Index 1 word element from input vector is copied and stored
-                 on second line
-*/
-#define ST4x2_UB(in, pdst, stride)             \
+/* Description : Store word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores word 'idx0' from 'in' to (pdst)
+ *               Stores word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_W1(in, idx, pdst)                             \
+{                                                        \
+    uint32_t out0_m;                                     \
+    out0_m = __msa_copy_u_w((v4i32) in, idx);            \
+    SW(out0_m, (pdst));                                  \
+}
+#define ST_W2(in, idx0, idx1, pdst, stride)              \
+{                                                        \
+    uint32_t out0_m, out1_m;                             \
+    out0_m = __msa_copy_u_w((v4i32) in, idx0);           \
+    out1_m = __msa_copy_u_w((v4i32) in, idx1);           \
+    SW(out0_m, (pdst));                                  \
+    SW(out1_m, (pdst) + stride);                         \
+}
+#define ST_W4(in, idx0, idx1, idx2, idx3, pdst, stride)  \
+{                                                        \
+    uint32_t out0_m, out1_m, out2_m, out3_m;             \
+    out0_m = __msa_copy_u_w((v4i32) in, idx0);           \
+    out1_m = __msa_copy_u_w((v4i32) in, idx1);           \
+    out2_m = __msa_copy_u_w((v4i32) in, idx2);           \
+    out3_m = __msa_copy_u_w((v4i32) in, idx3);           \
+    SW(out0_m, (pdst));                                  \
+    SW(out1_m, (pdst) + stride);                         \
+    SW(out2_m, (pdst) + 2*stride);                       \
+    SW(out3_m, (pdst) + 3*stride);                       \
+}
+#define ST_W8(in0, in1, idx0, idx1, idx2, idx3,                 \
+              idx4, idx5, idx6, idx7, pdst, stride)             \
+{                                                               \
+    ST_W4(in0, idx0, idx1, idx2, idx3, pdst, stride)            \
+    ST_W4(in1, idx4, idx5, idx6, idx7, pdst + 4*stride, stride) \
+}
+
+/* Description : Store double word elements of vector with stride
+ * Arguments   : Inputs  - in   source vector
+ *                       - pdst    (destination pointer to store to)
+ *                       - stride
+ * Details     : Stores double word 'idx0' from 'in' to (pdst)
+ *               Stores double word 'idx1' from 'in' to (pdst + stride)
+ *               Similar for other elements
+ */
+#define ST_D1(in, idx, pdst)                   \
 {                                              \
-    uint32_t out0_m, out1_m;                   \
-    uint8_t *pblk_4x2_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_w((v4i32) in, 0);    \
-    out1_m = __msa_copy_u_w((v4i32) in, 1);    \
-                                               \
-    SW(out0_m, pblk_4x2_m);                    \
-    SW(out1_m, pblk_4x2_m + stride);           \
+    uint64_t out0_m;                           \
+    out0_m = __msa_copy_u_d((v2i64) in, idx);  \
+    SD(out0_m, (pdst));                        \
 }
-
-/* Description : Store as 4x4 byte block to destination memory from input vector
-   Arguments   : Inputs  - in0, in1, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Idx0 word element from input vector 'in0' is copied and stored
-                 on first line
-                 Idx1 word element from input vector 'in0' is copied and stored
-                 on second line
-                 Idx2 word element from input vector 'in1' is copied and stored
-                 on third line
-                 Idx3 word element from input vector 'in1' is copied and stored
-                 on fourth line
-*/
-#define ST4x4_UB(in0, in1, idx0, idx1, idx2, idx3, pdst, stride)  \
-{                                                                 \
-    uint32_t out0_m, out1_m, out2_m, out3_m;                      \
-    uint8_t *pblk_4x4_m = (uint8_t *) (pdst);                     \
-                                                                  \
-    out0_m = __msa_copy_u_w((v4i32) in0, idx0);                   \
-    out1_m = __msa_copy_u_w((v4i32) in0, idx1);                   \
-    out2_m = __msa_copy_u_w((v4i32) in1, idx2);                   \
-    out3_m = __msa_copy_u_w((v4i32) in1, idx3);                   \
-                                                                  \
-    SW4(out0_m, out1_m, out2_m, out3_m, pblk_4x4_m, stride);      \
-}
-#define ST4x8_UB(in0, in1, pdst, stride)                            \
-{                                                                   \
-    uint8_t *pblk_4x8 = (uint8_t *) (pdst);                         \
-                                                                    \
-    ST4x4_UB(in0, in0, 0, 1, 2, 3, pblk_4x8, stride);               \
-    ST4x4_UB(in1, in1, 0, 1, 2, 3, pblk_4x8 + 4 * stride, stride);  \
-}
-
-/* Description : Store as 6x4 byte block to destination memory from input
-                 vectors
-   Arguments   : Inputs  - in0, in1, pdst, stride
-                 Return Type - unsigned byte
-   Details     : Index 0 word element from input vector 'in0' is copied and
-                 stored on first line followed by index 2 halfword element
-                 Index 2 word element from input vector 'in0' is copied and
-                 stored on second line followed by index 2 halfword element
-                 Index 0 word element from input vector 'in1' is copied and
-                 stored on third line followed by index 2 halfword element
-                 Index 2 word element from input vector 'in1' is copied and
-                 stored on fourth line followed by index 2 halfword element
-*/
-#define ST6x4_UB(in0, in1, pdst, stride)       \
-{                                              \
-    uint32_t out0_m, out1_m, out2_m, out3_m;   \
-    uint16_t out4_m, out5_m, out6_m, out7_m;   \
-    uint8_t *pblk_6x4_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_w((v4i32) in0, 0);   \
-    out1_m = __msa_copy_u_w((v4i32) in0, 2);   \
-    out2_m = __msa_copy_u_w((v4i32) in1, 0);   \
-    out3_m = __msa_copy_u_w((v4i32) in1, 2);   \
-                                               \
-    out4_m = __msa_copy_u_h((v8i16) in0, 2);   \
-    out5_m = __msa_copy_u_h((v8i16) in0, 6);   \
-    out6_m = __msa_copy_u_h((v8i16) in1, 2);   \
-    out7_m = __msa_copy_u_h((v8i16) in1, 6);   \
-                                               \
-    SW(out0_m, pblk_6x4_m);                    \
-    SH(out4_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out1_m, pblk_6x4_m);                    \
-    SH(out5_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out2_m, pblk_6x4_m);                    \
-    SH(out6_m, (pblk_6x4_m + 4));              \
-    pblk_6x4_m += stride;                      \
-    SW(out3_m, pblk_6x4_m);                    \
-    SH(out7_m, (pblk_6x4_m + 4));              \
-}
-
-/* Description : Store as 8x1 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst
-   Details     : Index 0 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst)
-*/
-#define ST8x1_UB(in, pdst)                   \
-{                                            \
-    uint64_t out0_m;                         \
-    out0_m = __msa_copy_u_d((v2i64) in, 0);  \
-    SD(out0_m, pdst);                        \
-}
-
-/* Description : Store as 8x2 byte block to destination memory from input vector
-   Arguments   : Inputs  - in, pdst, stride
-   Details     : Index 0 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst)
-                 Index 1 double word element from input vector 'in' is copied
-                 and stored to destination memory at (pdst + stride)
-*/
-#define ST8x2_UB(in, pdst, stride)             \
+#define ST_D2(in, idx0, idx1, pdst, stride)    \
 {                                              \
     uint64_t out0_m, out1_m;                   \
-    uint8_t *pblk_8x2_m = (uint8_t *) (pdst);  \
-                                               \
-    out0_m = __msa_copy_u_d((v2i64) in, 0);    \
-    out1_m = __msa_copy_u_d((v2i64) in, 1);    \
-                                               \
-    SD(out0_m, pblk_8x2_m);                    \
-    SD(out1_m, pblk_8x2_m + stride);           \
+    out0_m = __msa_copy_u_d((v2i64) in, idx0); \
+    out1_m = __msa_copy_u_d((v2i64) in, idx1); \
+    SD(out0_m, (pdst));                        \
+    SD(out1_m, (pdst) + stride);               \
 }
-
-/* Description : Store as 8x4 byte block to destination memory from input
-                 vectors
-   Arguments   : Inputs  - in0, in1, pdst, stride
-   Details     : Index 0 double word element from input vector 'in0' is copied
-                 and stored to destination memory at (pblk_8x4_m)
-                 Index 1 double word element from input vector 'in0' is copied
-                 and stored to destination memory at (pblk_8x4_m + stride)
-                 Index 0 double word element from input vector 'in1' is copied
-                 and stored to destination memory at (pblk_8x4_m + 2 * stride)
-                 Index 1 double word element from input vector 'in1' is copied
-                 and stored to destination memory at (pblk_8x4_m + 3 * stride)
-*/
-#define ST8x4_UB(in0, in1, pdst, stride)                      \
+#define ST_D4(in0, in1, idx0, idx1, idx2, idx3, pdst, stride) \
 {                                                             \
     uint64_t out0_m, out1_m, out2_m, out3_m;                  \
-    uint8_t *pblk_8x4_m = (uint8_t *) (pdst);                 \
-                                                              \
-    out0_m = __msa_copy_u_d((v2i64) in0, 0);                  \
-    out1_m = __msa_copy_u_d((v2i64) in0, 1);                  \
-    out2_m = __msa_copy_u_d((v2i64) in1, 0);                  \
-    out3_m = __msa_copy_u_d((v2i64) in1, 1);                  \
-                                                              \
-    SD4(out0_m, out1_m, out2_m, out3_m, pblk_8x4_m, stride);  \
+    out0_m = __msa_copy_u_d((v2i64) in0, idx0);               \
+    out1_m = __msa_copy_u_d((v2i64) in0, idx1);               \
+    out2_m = __msa_copy_u_d((v2i64) in1, idx2);               \
+    out3_m = __msa_copy_u_d((v2i64) in1, idx3);               \
+    SD(out0_m, (pdst));                                       \
+    SD(out1_m, (pdst) + stride);                              \
+    SD(out2_m, (pdst) + 2 * stride);                          \
+    SD(out3_m, (pdst) + 3 * stride);                          \
 }
-#define ST8x8_UB(in0, in1, in2, in3, pdst, stride)        \
-{                                                         \
-    uint8_t *pblk_8x8_m = (uint8_t *) (pdst);             \
-                                                          \
-    ST8x4_UB(in0, in1, pblk_8x8_m, stride);               \
-    ST8x4_UB(in2, in3, pblk_8x8_m + 4 * stride, stride);  \
-}
-#define ST12x4_UB(in0, in1, in2, pdst, stride)                \
-{                                                             \
-    uint8_t *pblk_12x4_m = (uint8_t *) (pdst);                \
-                                                              \
-    /* left 8x4 */                                            \
-    ST8x4_UB(in0, in1, pblk_12x4_m, stride);                  \
-    /* right 4x4 */                                           \
-    ST4x4_UB(in2, in2, 0, 1, 2, 3, pblk_12x4_m + 8, stride);  \
+#define ST_D8(in0, in1, in2, in3, idx0, idx1, idx2, idx3,              \
+              idx4, idx5, idx6, idx7, pdst, stride)                    \
+{                                                                      \
+    ST_D4(in0, in1, idx0, idx1, idx2, idx3, pdst, stride)              \
+    ST_D4(in2, in3, idx4, idx5, idx6, idx7, pdst + 4 * stride, stride) \
 }
 
 /* Description : Store as 12x8 byte block to destination memory from
@@ -776,7 +578,7 @@
 /* Description : average with rounding (in0 + in1 + 1) / 2.
    Arguments   : Inputs  - in0, in1, in2, in3,
                  Outputs - out0, out1
-                 Return Type - signed byte
+                 Return Type - as per RTYPE
    Details     : Each byte element from 'in0' vector is added with each byte
                  element from 'in1' vector. The addition of the elements plus 1
                 (for rounding) is done unsigned with full precision,
@@ -941,7 +743,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Unsigned byte elements from mult0 are multiplied with
                  unsigned byte elements from cnst0 producing a result
                  twice the size of input i.e. unsigned halfword.
@@ -969,7 +771,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - signed halfword
+                 Return Type - as per RTYPE
    Details     : Signed byte elements from mult0 are multiplied with
                  signed byte elements from cnst0 producing a result
                  twice the size of input i.e. signed halfword.
@@ -1004,7 +806,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - signed word
+                 Return Type - as per RTYPE
    Details     : Signed halfword elements from mult0 are multiplied with
                  signed halfword elements from cnst0 producing a result
                  twice the size of input i.e. signed word.
@@ -1032,7 +834,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - signed halfword
+                 Return Type - as per RTYPE
    Details     : Signed byte elements from mult0 are multiplied with
                  signed byte elements from cnst0 producing a result
                  twice the size of input i.e. signed halfword.
@@ -1061,7 +863,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Unsigned byte elements from mult0 are multiplied with
                  unsigned byte elements from cnst0 producing a result
                  twice the size of input i.e. unsigned halfword.
@@ -1082,7 +884,7 @@
    Arguments   : Inputs  - mult0, mult1
                            cnst0, cnst1
                  Outputs - out0, out1
-                 Return Type - signed word
+                 Return Type - as per RTYPE
    Details     : Signed halfword elements from mult0 are multiplied with
                  signed halfword elements from cnst0 producing a result
                  twice the size of input i.e. signed word.
@@ -1111,7 +913,7 @@
                  either vector are copied to the output vector
    Arguments   : Inputs  - in0, in1, min_vec
                  Outputs - in0, in1, (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Minimum of unsigned halfword element values from 'in0' and
                  'min_value' are written to output vector 'in0'
 */
@@ -1131,62 +933,79 @@
 
 /* Description : Clips all halfword elements of input vector between min & max
                  out = ((in) < (min)) ? (min) : (((in) > (max)) ? (max) : (in))
-   Arguments   : Inputs  - in       (input vector)
-                         - min      (min threshold)
-                         - max      (max threshold)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                         - min   (min threshold)
+                         - max   (max threshold)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed halfword
 */
-#define CLIP_SH(in, min, max)                           \
-( {                                                     \
-    v8i16 out_m;                                        \
-                                                        \
-    out_m = __msa_max_s_h((v8i16) min, (v8i16) in);     \
-    out_m = __msa_min_s_h((v8i16) max, (v8i16) out_m);  \
-    out_m;                                              \
-} )
+#define CLIP_SH(in, min, max)                     \
+{                                                 \
+    in = __msa_max_s_h((v8i16) min, (v8i16) in);  \
+    in = __msa_min_s_h((v8i16) max, (v8i16) in);  \
+}
 
 /* Description : Clips all signed halfword elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
-                 Return Type - signed halfword
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
+                 Return Type - signed halfwords
 */
-#define CLIP_SH_0_255(in)                                 \
-( {                                                       \
-    v8i16 max_m = __msa_ldi_h(255);                       \
-    v8i16 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_h((v8i16) in, 0);                \
-    out_m = __msa_min_s_h((v8i16) max_m, (v8i16) out_m);  \
-    out_m;                                                \
-} )
+#define CLIP_SH_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_h((v8i16) in, 0);         \
+    in = (v8i16) __msa_sat_u_h((v8u16) in, 7);  \
+}
+
 #define CLIP_SH2_0_255(in0, in1)  \
 {                                 \
-    in0 = CLIP_SH_0_255(in0);     \
-    in1 = CLIP_SH_0_255(in1);     \
+    CLIP_SH_0_255(in0);           \
+    CLIP_SH_0_255(in1);           \
 }
+
 #define CLIP_SH4_0_255(in0, in1, in2, in3)  \
 {                                           \
     CLIP_SH2_0_255(in0, in1);               \
     CLIP_SH2_0_255(in2, in3);               \
 }
 
+#define CLIP_SH8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SH4_0_255(in0, in1, in2, in3);     \
+    CLIP_SH4_0_255(in4, in5, in6, in7);     \
+}
+
 /* Description : Clips all signed word elements of input vector
                  between 0 & 255
-   Arguments   : Inputs  - in       (input vector)
-                 Outputs - out_m    (output vector with clipped elements)
+   Arguments   : Inputs  - in    (input vector)
+                 Outputs - in    (output vector with clipped elements)
                  Return Type - signed word
 */
-#define CLIP_SW_0_255(in)                                 \
-( {                                                       \
-    v4i32 max_m = __msa_ldi_w(255);                       \
-    v4i32 out_m;                                          \
-                                                          \
-    out_m = __msa_maxi_s_w((v4i32) in, 0);                \
-    out_m = __msa_min_s_w((v4i32) max_m, (v4i32) out_m);  \
-    out_m;                                                \
-} )
+#define CLIP_SW_0_255(in)                       \
+{                                               \
+    in = __msa_maxi_s_w((v4i32) in, 0);         \
+    in = (v4i32) __msa_sat_u_w((v4u32) in, 7);  \
+}
+
+#define CLIP_SW2_0_255(in0, in1)  \
+{                                 \
+    CLIP_SW_0_255(in0);           \
+    CLIP_SW_0_255(in1);           \
+}
+
+#define CLIP_SW4_0_255(in0, in1, in2, in3)  \
+{                                           \
+    CLIP_SW2_0_255(in0, in1);               \
+    CLIP_SW2_0_255(in2, in3);               \
+}
+
+#define CLIP_SW8_0_255(in0, in1, in2, in3,  \
+                       in4, in5, in6, in7)  \
+{                                           \
+    CLIP_SW4_0_255(in0, in1, in2, in3);     \
+    CLIP_SW4_0_255(in4, in5, in6, in7);     \
+}
 
 /* Description : Addition of 4 signed word elements
                  4 signed word elements of input vector are added together and
@@ -1202,7 +1021,7 @@
                                                       \
     res0_m = __msa_hadd_s_d((v4i32) in, (v4i32) in);  \
     res1_m = __msa_splati_d(res0_m, 1);               \
-    res0_m = res0_m + res1_m;                         \
+    res0_m += res1_m;                                 \
     sum_m = __msa_copy_s_w((v4i32) res0_m, 0);        \
     sum_m;                                            \
 } )
@@ -1223,7 +1042,7 @@
     res_m = __msa_hadd_u_w((v8u16) in, (v8u16) in);      \
     res0_m = __msa_hadd_u_d(res_m, res_m);               \
     res1_m = (v2u64) __msa_splati_d((v2i64) res0_m, 1);  \
-    res0_m = res0_m + res1_m;                            \
+    res0_m += res1_m;                                    \
     sum_m = __msa_copy_u_w((v4i32) res0_m, 0);           \
     sum_m;                                               \
 } )
@@ -1315,6 +1134,15 @@
                  unsigned absolute diff values, even-odd pairs are added
                  together to generate 8 halfword results.
 */
+#if HAVE_MSA2
+#define SAD_UB2_UH(in0, in1, ref0, ref1)                                 \
+( {                                                                      \
+    v8u16 sad_m = { 0 };                                                 \
+    sad_m += __builtin_msa2_sad_adj2_u_w2x_b((v16u8) in0, (v16u8) ref0); \
+    sad_m += __builtin_msa2_sad_adj2_u_w2x_b((v16u8) in1, (v16u8) ref1); \
+    sad_m;                                                               \
+} )
+#else
 #define SAD_UB2_UH(in0, in1, ref0, ref1)                        \
 ( {                                                             \
     v16u8 diff0_m, diff1_m;                                     \
@@ -1328,6 +1156,7 @@
                                                                 \
     sad_m;                                                      \
 } )
+#endif // #if HAVE_MSA2
 
 /* Description : Insert specified word elements from input vectors to 1
                  destination vector
@@ -1352,6 +1181,7 @@
 }
 #define INSERT_W4_UB(...) INSERT_W4(v16u8, __VA_ARGS__)
 #define INSERT_W4_SB(...) INSERT_W4(v16i8, __VA_ARGS__)
+#define INSERT_W4_SH(...) INSERT_W4(v8i16, __VA_ARGS__)
 #define INSERT_W4_SW(...) INSERT_W4(v4i32, __VA_ARGS__)
 
 /* Description : Insert specified double word elements from input vectors to 1
@@ -1367,6 +1197,7 @@
 }
 #define INSERT_D2_UB(...) INSERT_D2(v16u8, __VA_ARGS__)
 #define INSERT_D2_SB(...) INSERT_D2(v16i8, __VA_ARGS__)
+#define INSERT_D2_SH(...) INSERT_D2(v8i16, __VA_ARGS__)
 #define INSERT_D2_SD(...) INSERT_D2(v2i64, __VA_ARGS__)
 
 /* Description : Interleave even byte elements from vectors
@@ -1544,6 +1375,7 @@
     out2 = (RTYPE) __msa_ilvr_b((v16i8) in4, (v16i8) in5);              \
 }
 #define ILVR_B3_UB(...) ILVR_B3(v16u8, __VA_ARGS__)
+#define ILVR_B3_SB(...) ILVR_B3(v16i8, __VA_ARGS__)
 #define ILVR_B3_UH(...) ILVR_B3(v8u16, __VA_ARGS__)
 #define ILVR_B3_SH(...) ILVR_B3(v8i16, __VA_ARGS__)
 
@@ -1573,7 +1405,7 @@
 /* Description : Interleave right half of halfword elements from vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
                  Outputs - out0, out1, out2, out3
-                 Return Type - signed halfword
+                 Return Type - as per RTYPE
    Details     : Right half of halfword elements of in0 and right half of
                  halfword elements of in1 are interleaved and copied to out0.
                  Right half of halfword elements of in2 and right half of
@@ -1625,16 +1457,16 @@
 /* Description : Interleave right half of double word elements from vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
                  Outputs - out0, out1, out2, out3
-                 Return Type - unsigned double word
+                 Return Type - as per RTYPE
    Details     : Right half of double word elements of in0 and right half of
                  double word elements of in1 are interleaved and copied to out0.
                  Right half of double word elements of in2 and right half of
                  double word elements of in3 are interleaved and copied to out1.
 */
-#define ILVR_D2(RTYPE, in0, in1, in2, in3, out0, out1)          \
-{                                                               \
-    out0 = (RTYPE) __msa_ilvr_d((v2i64) (in0), (v2i64) (in1));  \
-    out1 = (RTYPE) __msa_ilvr_d((v2i64) (in2), (v2i64) (in3));  \
+#define ILVR_D2(RTYPE, in0, in1, in2, in3, out0, out1)      \
+{                                                           \
+    out0 = (RTYPE) __msa_ilvr_d((v2i64) in0, (v2i64) in1);  \
+    out1 = (RTYPE) __msa_ilvr_d((v2i64) in2, (v2i64) in3);  \
 }
 #define ILVR_D2_UB(...) ILVR_D2(v16u8, __VA_ARGS__)
 #define ILVR_D2_SB(...) ILVR_D2(v16i8, __VA_ARGS__)
@@ -1643,7 +1475,7 @@
 #define ILVR_D3(RTYPE, in0, in1, in2, in3, in4, in5, out0, out1, out2)  \
 {                                                                       \
     ILVR_D2(RTYPE, in0, in1, in2, in3, out0, out1);                     \
-    out2 = (RTYPE) __msa_ilvr_d((v2i64) (in4), (v2i64) (in5));          \
+    out2 = (RTYPE) __msa_ilvr_d((v2i64) in4, (v2i64) in5);              \
 }
 #define ILVR_D3_SB(...) ILVR_D3(v16i8, __VA_ARGS__)
 
@@ -1655,6 +1487,24 @@
 }
 #define ILVR_D4_SB(...) ILVR_D4(v16i8, __VA_ARGS__)
 #define ILVR_D4_UB(...) ILVR_D4(v16u8, __VA_ARGS__)
+
+/* Description : Interleave left half of double word elements from vectors
+   Arguments   : Inputs  - in0, in1, in2, in3
+                 Outputs - out0, out1
+                 Return Type - as per RTYPE
+   Details     : Left half of double word elements of in0 and left half of
+                 double word elements of in1 are interleaved and copied to out0.
+                 Left half of double word elements of in2 and left half of
+                 double word elements of in3 are interleaved and copied to out1.
+*/
+#define ILVL_D2(RTYPE, in0, in1, in2, in3, out0, out1)      \
+{                                                           \
+    out0 = (RTYPE) __msa_ilvl_d((v2i64) in0, (v2i64) in1);  \
+    out1 = (RTYPE) __msa_ilvl_d((v2i64) in2, (v2i64) in3);  \
+}
+#define ILVL_D2_UB(...) ILVL_D2(v16u8, __VA_ARGS__)
+#define ILVL_D2_SB(...) ILVL_D2(v16i8, __VA_ARGS__)
+#define ILVL_D2_SH(...) ILVL_D2(v8i16, __VA_ARGS__)
 
 /* Description : Interleave both left and right half of input vectors
    Arguments   : Inputs  - in0, in1
@@ -1681,6 +1531,7 @@
     out0 = (RTYPE) __msa_ilvr_h((v8i16) in0, (v8i16) in1);  \
     out1 = (RTYPE) __msa_ilvl_h((v8i16) in0, (v8i16) in1);  \
 }
+#define ILVRL_H2_UB(...) ILVRL_H2(v16u8, __VA_ARGS__)
 #define ILVRL_H2_SB(...) ILVRL_H2(v16i8, __VA_ARGS__)
 #define ILVRL_H2_SH(...) ILVRL_H2(v8i16, __VA_ARGS__)
 #define ILVRL_H2_SW(...) ILVRL_H2(v4i32, __VA_ARGS__)
@@ -1698,14 +1549,14 @@
                  5-bit signed immediate value are copied to the output vector
    Arguments   : Inputs  - in0, in1, in2, in3, max_val
                  Outputs - in0, in1, in2, in3 (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Maximum of signed halfword element values from 'in0' and
                  'max_val' are written to output vector 'in0'
 */
-#define MAXI_SH2(RTYPE, in0, in1, max_val)                 \
-{                                                          \
-    in0 = (RTYPE) __msa_maxi_s_h((v8i16) in0, (max_val));  \
-    in1 = (RTYPE) __msa_maxi_s_h((v8i16) in1, (max_val));  \
+#define MAXI_SH2(RTYPE, in0, in1, max_val)               \
+{                                                        \
+    in0 = (RTYPE) __msa_maxi_s_h((v8i16) in0, max_val);  \
+    in1 = (RTYPE) __msa_maxi_s_h((v8i16) in1, max_val);  \
 }
 #define MAXI_SH2_UH(...) MAXI_SH2(v8u16, __VA_ARGS__)
 #define MAXI_SH2_SH(...) MAXI_SH2(v8i16, __VA_ARGS__)
@@ -1716,13 +1567,22 @@
     MAXI_SH2(RTYPE, in2, in3, max_val);               \
 }
 #define MAXI_SH4_UH(...) MAXI_SH4(v8u16, __VA_ARGS__)
+#define MAXI_SH4_SH(...) MAXI_SH4(v8i16, __VA_ARGS__)
+
+#define MAXI_SH8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, max_val)  \
+{                                                                         \
+    MAXI_SH4(RTYPE, in0, in1, in2, in3, max_val);                         \
+    MAXI_SH4(RTYPE, in4, in5, in6, in7, max_val);                         \
+}
+#define MAXI_SH8_UH(...) MAXI_SH8(v8u16, __VA_ARGS__)
+#define MAXI_SH8_SH(...) MAXI_SH8(v8i16, __VA_ARGS__)
 
 /* Description : Saturate the halfword element values to the max
                  unsigned value of (sat_val+1 bits)
                  The element data width remains unchanged
    Arguments   : Inputs  - in0, in1, in2, in3, sat_val
                  Outputs - in0, in1, in2, in3 (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Each unsigned halfword element from 'in0' is saturated to the
                  value generated with (sat_val+1) bit range
                  Results are in placed to original vectors
@@ -1738,16 +1598,25 @@
 #define SAT_UH4(RTYPE, in0, in1, in2, in3, sat_val)  \
 {                                                    \
     SAT_UH2(RTYPE, in0, in1, sat_val);               \
-    SAT_UH2(RTYPE, in2, in3, sat_val)                \
+    SAT_UH2(RTYPE, in2, in3, sat_val);               \
 }
 #define SAT_UH4_UH(...) SAT_UH4(v8u16, __VA_ARGS__)
+#define SAT_UH4_SH(...) SAT_UH4(v8i16, __VA_ARGS__)
+
+#define SAT_UH8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, sat_val)  \
+{                                                                        \
+    SAT_UH4(RTYPE, in0, in1, in2, in3, sat_val);                         \
+    SAT_UH4(RTYPE, in4, in5, in6, in7, sat_val);                         \
+}
+#define SAT_UH8_UH(...) SAT_UH8(v8u16, __VA_ARGS__)
+#define SAT_UH8_SH(...) SAT_UH8(v8i16, __VA_ARGS__)
 
 /* Description : Saturate the halfword element values to the max
                  unsigned value of (sat_val+1 bits)
                  The element data width remains unchanged
    Arguments   : Inputs  - in0, in1, in2, in3, sat_val
                  Outputs - in0, in1, in2, in3 (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Each unsigned halfword element from 'in0' is saturated to the
                  value generated with (sat_val+1) bit range
                  Results are in placed to original vectors
@@ -1761,7 +1630,7 @@
 
 #define SAT_SH3(RTYPE, in0, in1, in2, sat_val)          \
 {                                                       \
-    SAT_SH2(RTYPE, in0, in1, sat_val)                   \
+    SAT_SH2(RTYPE, in0, in1, sat_val);                  \
     in2 = (RTYPE) __msa_sat_s_h((v8i16) in2, sat_val);  \
 }
 #define SAT_SH3_SH(...) SAT_SH3(v8i16, __VA_ARGS__)
@@ -1778,7 +1647,7 @@
                  The element data width remains unchanged
    Arguments   : Inputs  - in0, in1, in2, in3, sat_val
                  Outputs - in0, in1, in2, in3 (in place)
-                 Return Type - unsigned word
+                 Return Type - as per RTYPE
    Details     : Each unsigned word element from 'in0' is saturated to the
                  value generated with (sat_val+1) bit range
                  Results are in placed to original vectors
@@ -1930,7 +1799,7 @@
 /* Description : Pack even double word elements of vector pairs
    Arguments   : Inputs  - in0, in1, in2, in3
                  Outputs - out0, out1
-                 Return Type - unsigned byte
+                 Return Type - as per RTYPE
    Details     : Even double elements of in0 are copied to the left half of
                  out0 & even double elements of in1 are copied to the right
                  half of out0.
@@ -2037,6 +1906,7 @@
     XORI_B4_128(RTYPE, in4, in5, in6, in7);                         \
 }
 #define XORI_B8_128_SB(...) XORI_B8_128(v16i8, __VA_ARGS__)
+#define XORI_B8_128_UB(...) XORI_B8_128(v16u8, __VA_ARGS__)
 
 /* Description : Addition of signed halfword elements and signed saturation
    Arguments   : Inputs  - in0, in1, in2, in3
@@ -2071,6 +1941,11 @@
                  result is in place written to 'in0'
                  Similar for other pairs
 */
+#define SLLI_2V(in0, in1, shift)  \
+{                                 \
+    in0 = in0 << shift;           \
+    in1 = in1 << shift;           \
+}
 #define SLLI_4V(in0, in1, in2, in3, shift)  \
 {                                           \
     in0 = in0 << shift;                     \
@@ -2100,7 +1975,7 @@
 /* Description : Shift right logical all halfword elements of vector
    Arguments   : Inputs  - in0, in1, in2, in3, shift
                  Outputs - in0, in1, in2, in3 (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Each element of vector 'in0' is shifted right logical by
                  number of bits respective element holds in vector 'shift' and
                  result is in place written to 'in0'
@@ -2116,10 +1991,28 @@
 }
 #define SRL_H4_UH(...) SRL_H4(v8u16, __VA_ARGS__)
 
+#define SRLR_H4(RTYPE, in0, in1, in2, in3, shift)            \
+{                                                            \
+    in0 = (RTYPE) __msa_srlr_h((v8i16) in0, (v8i16) shift);  \
+    in1 = (RTYPE) __msa_srlr_h((v8i16) in1, (v8i16) shift);  \
+    in2 = (RTYPE) __msa_srlr_h((v8i16) in2, (v8i16) shift);  \
+    in3 = (RTYPE) __msa_srlr_h((v8i16) in3, (v8i16) shift);  \
+}
+#define SRLR_H4_UH(...) SRLR_H4(v8u16, __VA_ARGS__)
+#define SRLR_H4_SH(...) SRLR_H4(v8i16, __VA_ARGS__)
+
+#define SRLR_H8(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7, shift)  \
+{                                                                      \
+    SRLR_H4(RTYPE, in0, in1, in2, in3, shift);                         \
+    SRLR_H4(RTYPE, in4, in5, in6, in7, shift);                         \
+}
+#define SRLR_H8_UH(...) SRLR_H8(v8u16, __VA_ARGS__)
+#define SRLR_H8_SH(...) SRLR_H8(v8i16, __VA_ARGS__)
+
 /* Description : Shift right arithmetic rounded halfwords
    Arguments   : Inputs  - in0, in1, shift
                  Outputs - in0, in1, (in place)
-                 Return Type - unsigned halfword
+                 Return Type - as per RTYPE
    Details     : Each element of vector 'in0' is shifted right arithmetic by
                  number of bits respective element holds in vector 'shift'.
                  The last discarded bit is added to shifted value for rounding
@@ -2280,6 +2173,22 @@
     out3 = in6 - in7;                                                         \
 }
 
+/* Description : Sign extend byte elements from right half of the vector
+   Arguments   : Input  - in    (byte vector)
+                 Output - out   (sign extended halfword vector)
+                 Return Type - signed halfword
+   Details     : Sign bit of byte elements from input vector 'in' is
+                 extracted and interleaved with same vector 'in' to generate
+                 8 halfword elements keeping sign intact
+*/
+#define UNPCK_R_SB_SH(in, out)                       \
+{                                                    \
+    v16i8 sign_m;                                    \
+                                                     \
+    sign_m = __msa_clti_s_b((v16i8) in, 0);          \
+    out = (v8i16) __msa_ilvr_b(sign_m, (v16i8) in);  \
+}
+
 /* Description : Sign extend halfword elements from right half of the vector
    Arguments   : Inputs  - in    (input halfword vector)
                  Outputs - out   (sign extended word vectors)
@@ -2288,6 +2197,12 @@
                  extracted and interleaved with same vector 'in0' to generate
                  4 word elements keeping sign intact
 */
+#if HAVE_MSA2
+#define UNPCK_R_SH_SW(in, out)                           \
+{                                                        \
+    out = (v4i32) __builtin_msa2_w2x_lo_s_h((v8i16) in); \
+}
+#else
 #define UNPCK_R_SH_SW(in, out)                       \
 {                                                    \
     v8i16 sign_m;                                    \
@@ -2295,6 +2210,7 @@
     sign_m = __msa_clti_s_h((v8i16) in, 0);          \
     out = (v4i32) __msa_ilvr_h(sign_m, (v8i16) in);  \
 }
+#endif // #if HAVE_MSA2
 
 /* Description : Sign extend byte elements from input vector and return
                  halfword results in pair of vectors
@@ -2307,6 +2223,13 @@
                  Then interleaved left with same vector 'in0' to
                  generate 8 signed halfword elements in 'out1'
 */
+#if HAVE_MSA2
+#define UNPCK_SB_SH(in, out0, out1)                       \
+{                                                         \
+    out0 = (v4i32) __builtin_msa2_w2x_lo_s_b((v16i8) in); \
+    out1 = (v4i32) __builtin_msa2_w2x_hi_s_b((v16i8) in); \
+}
+#else
 #define UNPCK_SB_SH(in, out0, out1)                  \
 {                                                    \
     v16i8 tmp_m;                                     \
@@ -2314,6 +2237,7 @@
     tmp_m = __msa_clti_s_b((v16i8) in, 0);           \
     ILVRL_B2_SH(tmp_m, in, out0, out1);              \
 }
+#endif // #if HAVE_MSA2
 
 /* Description : Zero extend unsigned byte elements to halfword elements
    Arguments   : Inputs  - in           (1 input unsigned byte vector)
@@ -2340,6 +2264,13 @@
                  Then interleaved left with same vector 'in0' to
                  generate 4 signed word elements in 'out1'
 */
+#if HAVE_MSA2
+#define UNPCK_SH_SW(in, out0, out1)                       \
+{                                                         \
+    out0 = (v4i32) __builtin_msa2_w2x_lo_s_h((v8i16) in); \
+    out1 = (v4i32) __builtin_msa2_w2x_hi_s_h((v8i16) in); \
+}
+#else
 #define UNPCK_SH_SW(in, out0, out1)                  \
 {                                                    \
     v8i16 tmp_m;                                     \
@@ -2347,6 +2278,7 @@
     tmp_m = __msa_clti_s_h((v8i16) in, 0);           \
     ILVRL_H2_SW(tmp_m, in, out0, out1);              \
 }
+#endif // #if HAVE_MSA2
 
 /* Description : Swap two variables
    Arguments   : Inputs  - in0, in1
@@ -2445,7 +2377,7 @@
 /* Description : Transposes input 8x4 byte block into 4x8
    Arguments   : Inputs  - in0, in1, in2, in3      (input 8x4 byte block)
                  Outputs - out0, out1, out2, out3  (output 4x8 byte block)
-                 Return Type - unsigned byte
+                 Return Type - as per RTYPE
    Details     :
 */
 #define TRANSPOSE8x4_UB(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,  \
@@ -2472,7 +2404,7 @@
                            (input 8x8 byte block)
                  Outputs - out0, out1, out2, out3, out4, out5, out6, out7
                            (output 8x8 byte block)
-                 Return Type - unsigned byte
+                 Return Type - as per RTYPE
    Details     :
 */
 #define TRANSPOSE8x8_UB(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,   \
@@ -2570,8 +2502,6 @@
     out5 = (v16u8) __msa_ilvod_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \
                                                                              \
     tmp2_m = (v16u8) __msa_ilvod_h((v8i16) tmp5_m, (v8i16) tmp4_m);          \
-    tmp2_m = (v16u8) __msa_ilvod_h((v8i16) tmp5_m, (v8i16) tmp4_m);          \
-    tmp3_m = (v16u8) __msa_ilvod_h((v8i16) tmp7_m, (v8i16) tmp6_m);          \
     tmp3_m = (v16u8) __msa_ilvod_h((v8i16) tmp7_m, (v8i16) tmp6_m);          \
     out3 = (v16u8) __msa_ilvev_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \
     out7 = (v16u8) __msa_ilvod_w((v4i32) tmp3_m, (v4i32) tmp2_m);            \
@@ -2596,7 +2526,7 @@
 /* Description : Transposes 8x8 block with half word elements in vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
                  Outputs - out0, out1, out2, out3, out4, out5, out6, out7
-                 Return Type - signed halfword
+                 Return Type - as per RTYPE
    Details     :
 */
 #define TRANSPOSE8x8_H(RTYPE, in0, in1, in2, in3, in4, in5, in6, in7,   \
@@ -2646,8 +2576,6 @@
 /* Description : Average byte elements from pair of vectors and store 8x4 byte
                  block in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  averaged (a + b)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2679,8 +2607,6 @@
 /* Description : Average byte elements from pair of vectors and store 16x4 byte
                  block in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  averaged (a + b)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2707,8 +2633,6 @@
 /* Description : Average rounded byte elements from pair of vectors and store
                  8x4 byte block in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  average rounded (a + b + 1)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2738,8 +2662,6 @@
 /* Description : Average rounded byte elements from pair of vectors and store
                  16x4 byte block in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  average rounded (a + b + 1)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2764,8 +2686,6 @@
                  average rounded with destination and store 8x4 byte block
                  in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  average rounded (a + b + 1)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2794,8 +2714,6 @@
                  average rounded with destination and store 16x4 byte block
                  in destination memory
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7, pdst, stride
-                 Outputs -
-                 Return Type -
    Details     : Each byte element from input vector pair 'in0' and 'in1' are
                  average rounded (a + b + 1)/2 and stored in 'tmp0_m'
                  Each byte element from input vector pair 'in2' and 'in3' are
@@ -2822,8 +2740,6 @@
 
 /* Description : Add block 4x4
    Arguments   : Inputs  - in0, in1, in2, in3, pdst, stride
-                 Outputs -
-                 Return Type - unsigned bytes
    Details     : Least significant 4 bytes from each input vector are added to
                  the destination bytes, clipped between 0-255 and then stored.
 */
@@ -2865,13 +2781,11 @@
 */
 #define DPADD_SH3_SH(in0, in1, in2, coeff0, coeff1, coeff2)         \
 ( {                                                                 \
-    v8i16 tmp1_m;                                                   \
     v8i16 out0_m;                                                   \
                                                                     \
     out0_m = __msa_dotp_s_h((v16i8) in0, (v16i8) coeff0);           \
     out0_m = __msa_dpadd_s_h(out0_m, (v16i8) in1, (v16i8) coeff1);  \
-    tmp1_m = __msa_dotp_s_h((v16i8) in2, (v16i8) coeff2);           \
-    out0_m = __msa_adds_s_h(out0_m, tmp1_m);                        \
+    out0_m = __msa_dpadd_s_h(out0_m, (v16i8) in2, (v16i8) coeff2);  \
                                                                     \
     out0_m;                                                         \
 } )
@@ -2894,20 +2808,18 @@
 
 /* Description : Converts inputs to unsigned bytes, interleave, average & store
                  as 8x4 unsigned byte block
-   Arguments   : Inputs  - in0, in1, in2, in3, dst0, dst1, dst2, dst3,
-                           pdst, stride
+   Arguments   : Inputs  - in0, in1, in2, in3, dst0, dst1, pdst, stride
 */
-#define CONVERT_UB_AVG_ST8x4_UB(in0, in1, in2, in3,                    \
-                                dst0, dst1, dst2, dst3, pdst, stride)  \
-{                                                                      \
-    v16u8 tmp0_m, tmp1_m, tmp2_m, tmp3_m;                              \
-    uint8_t *pdst_m = (uint8_t *) (pdst);                              \
-                                                                       \
-    tmp0_m = PCKEV_XORI128_UB(in0, in1);                               \
-    tmp1_m = PCKEV_XORI128_UB(in2, in3);                               \
-    ILVR_D2_UB(dst1, dst0, dst3, dst2, tmp2_m, tmp3_m);                \
-    AVER_UB2_UB(tmp0_m, tmp2_m, tmp1_m, tmp3_m, tmp0_m, tmp1_m);       \
-    ST8x4_UB(tmp0_m, tmp1_m, pdst_m, stride);                          \
+#define CONVERT_UB_AVG_ST8x4_UB(in0, in1, in2, in3,           \
+                                dst0, dst1, pdst, stride)     \
+{                                                             \
+    v16u8 tmp0_m, tmp1_m;                                     \
+    uint8_t *pdst_m = (uint8_t *) (pdst);                     \
+                                                              \
+    tmp0_m = PCKEV_XORI128_UB(in0, in1);                      \
+    tmp1_m = PCKEV_XORI128_UB(in2, in3);                      \
+    AVER_UB2_UB(tmp0_m, dst0, tmp1_m, dst1, tmp0_m, tmp1_m);  \
+    ST_D4(tmp0_m, tmp1_m, 0, 1, 0, 1, pdst_m, stride);        \
 }
 
 /* Description : Pack even byte elements, extract 0 & 2 index words from pair

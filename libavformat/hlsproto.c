@@ -69,14 +69,6 @@ typedef struct HLSContext {
     int64_t last_load_time;
 } HLSContext;
 
-static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
-{
-    int len = ff_get_line(s, buf, maxlen);
-    while (len > 0 && av_isspace(buf[len - 1]))
-        buf[--len] = '\0';
-    return len;
-}
-
 static void free_segment_list(HLSContext *s)
 {
     int i;
@@ -122,7 +114,7 @@ static int parse_playlist(URLContext *h, const char *url)
                                    h->protocol_whitelist, h->protocol_blacklist)) < 0)
         return ret;
 
-    read_chomp_line(in, line, sizeof(line));
+    ff_get_chomp_line(in, line, sizeof(line));
     if (strcmp(line, "#EXTM3U")) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -131,7 +123,7 @@ static int parse_playlist(URLContext *h, const char *url)
     free_segment_list(s);
     s->finished = 0;
     while (!avio_feof(in)) {
-        read_chomp_line(in, line, sizeof(line));
+        ff_get_chomp_line(in, line, sizeof(line));
         if (av_strstart(line, "#EXT-X-STREAM-INF:", &ptr)) {
             struct variant_info info = {{0}};
             is_variant = 1;
@@ -303,7 +295,7 @@ retry:
         }
         goto retry;
     }
-    url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
+    url = s->segments[s->cur_seq_no - s->start_seq_no]->url;
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
     ret = ffurl_open_whitelist(&s->seg_hd, url, AVIO_FLAG_READ,
                                &h->interrupt_callback, NULL,

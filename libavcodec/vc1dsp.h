@@ -35,17 +35,17 @@ typedef void (*vc1op_pixels_func)(uint8_t *block/*align width (8 or 16)*/, const
 typedef struct VC1DSPContext {
     /* vc1 functions */
     void (*vc1_inv_trans_8x8)(int16_t *b);
-    void (*vc1_inv_trans_8x4)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_4x8)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_4x4)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_8x8_dc)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, int line_size, int16_t *block);
-    void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, int line_size, int16_t *block);
+    void (*vc1_inv_trans_8x4)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_4x8)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_4x4)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_8x8_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
+    void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, ptrdiff_t stride, int16_t *block);
     void (*vc1_v_overlap)(uint8_t *src, int stride);
     void (*vc1_h_overlap)(uint8_t *src, int stride);
     void (*vc1_v_s_overlap)(int16_t *top,  int16_t *bottom);
-    void (*vc1_h_s_overlap)(int16_t *left, int16_t *right);
+    void (*vc1_h_s_overlap)(int16_t *left, int16_t *right, int left_stride, int right_stride, int flags);
     void (*vc1_v_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_h_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_v_loop_filter8)(uint8_t *src, int stride, int pq);
@@ -87,5 +87,6 @@ void ff_vc1dsp_init_aarch64(VC1DSPContext* dsp);
 void ff_vc1dsp_init_arm(VC1DSPContext* dsp);
 void ff_vc1dsp_init_ppc(VC1DSPContext *c);
 void ff_vc1dsp_init_x86(VC1DSPContext* dsp);
+void ff_vc1dsp_init_mips(VC1DSPContext* dsp);
 
 #endif /* AVCODEC_VC1DSP_H */

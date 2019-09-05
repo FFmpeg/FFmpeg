@@ -42,12 +42,12 @@ It should avoid useless features that almost no one needs.
 @chapter See Also
 
 @ifhtml
-@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-utils.html,ffmpeg-utils}
 @end ifhtml
 
 @ifnothtml
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg(1), ffplay(1), ffprobe(1),
 ffmpeg-utils(1)
 @end ifnothtml
 

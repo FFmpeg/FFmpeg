@@ -247,7 +247,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
         type &= ~0x40;
     }
     if (type > 1) {
-        av_log(ctx, AV_LOG_ERROR, "Unimplemented RTP/JPEG type %d\n", type);
+        avpriv_report_missing_feature(ctx, "RTP/JPEG type %"PRIu8, type);
         return AVERROR_PATCHWELCOME;
     }
 
@@ -379,7 +379,7 @@ static int jpeg_parse_packet(AVFormatContext *ctx, PayloadContext *jpeg,
     return AVERROR(EAGAIN);
 }
 
-RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_jpeg_dynamic_handler = {
     .enc_name          = "JPEG",
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_MJPEG,

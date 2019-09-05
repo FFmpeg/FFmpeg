@@ -113,18 +113,12 @@ static uint32_t lcg_next(uint32_t *s)
     return *s;
 }
 
-static void lcg_seek(uint32_t *s, int64_t dt)
+static void lcg_seek(uint32_t *s, uint32_t dt)
 {
     uint32_t a, c, t = *s;
 
-    if (dt >= 0) {
-        a = LCG_A;
-        c = LCG_C;
-    } else { /* coefficients for a step backward */
-        a = LCG_AI;
-        c = (uint32_t)(LCG_AI * LCG_C);
-        dt = -dt;
-    }
+    a = LCG_A;
+    c = LCG_C;
     while (dt) {
         if (dt & 1)
             t = a * t + c;
@@ -221,12 +215,12 @@ static void wavesynth_seek(struct wavesynth_context *ws, int64_t ts)
     ws->next_inter = i;
     ws->next_ts = i < ws->nb_inter ? ws->inter[i].ts_start : INF_TS;
     *last = -1;
-    lcg_seek(&ws->dither_state, ts - ws->cur_ts);
+    lcg_seek(&ws->dither_state, (uint32_t)ts - (uint32_t)ws->cur_ts);
     if (ws->pink_need) {
         int64_t pink_ts_cur  = (ws->cur_ts + PINK_UNIT - 1) & ~(PINK_UNIT - 1);
         int64_t pink_ts_next = ts & ~(PINK_UNIT - 1);
         int pos = ts & (PINK_UNIT - 1);
-        lcg_seek(&ws->pink_state, (pink_ts_next - pink_ts_cur) << 1);
+        lcg_seek(&ws->pink_state, (pink_ts_next - pink_ts_cur) * 2);
         if (pos) {
             pink_fill(ws);
             ws->pink_pos = pos;
@@ -253,7 +247,7 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
     edata_end = edata + avc->extradata_size;
     ws->nb_inter = AV_RL32(edata);
     edata += 4;
-    if (ws->nb_inter < 0)
+    if (ws->nb_inter < 0 || (edata_end - edata) / 24 < ws->nb_inter)
         return AVERROR(EINVAL);
     ws->inter = av_calloc(ws->nb_inter, sizeof(*ws->inter));
     if (!ws->inter)
@@ -267,13 +261,16 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
         in->type     = AV_RL32(edata + 16);
         in->channels = AV_RL32(edata + 20);
         edata += 24;
-        if (in->ts_start < cur_ts || in->ts_end <= in->ts_start)
+        if (in->ts_start < cur_ts ||
+            in->ts_end <= in->ts_start ||
+            (uint64_t)in->ts_end - in->ts_start > INT64_MAX
+        )
             return AVERROR(EINVAL);
         cur_ts = in->ts_start;
         dt = in->ts_end - in->ts_start;
         switch (in->type) {
             case WS_SINE:
-                if (edata_end - edata < 20)
+                if (edata_end - edata < 20 || avc->sample_rate <= 0)
                     return AVERROR(EINVAL);
                 f1  = AV_RL32(edata +  0);
                 f2  = AV_RL32(edata +  4);
@@ -304,8 +301,8 @@ static int wavesynth_parse_extradata(AVCodecContext *avc)
             default:
                 return AVERROR(EINVAL);
         }
-        in->amp0 = (int64_t)a1 << 32;
-        in->damp = (((int64_t)a2 << 32) - ((int64_t)a1 << 32)) / dt;
+        in->amp0 = (uint64_t)a1 << 32;
+        in->damp = (int64_t)(((uint64_t)a2 << 32) - ((uint64_t)a1 << 32)) / dt;
     }
     if (edata != edata_end)
         return AVERROR(EINVAL);

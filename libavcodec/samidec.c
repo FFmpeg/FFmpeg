@@ -48,6 +48,9 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
     AVBPrint *dst_content = &sami->encoded_content;
     AVBPrint *dst_source = &sami->encoded_source;
 
+    if (!dupsrc)
+        return AVERROR(ENOMEM);
+
     av_bprint_clear(&sami->encoded_content);
     av_bprint_clear(&sami->content);
     av_bprint_clear(&sami->encoded_source);
@@ -113,10 +116,14 @@ static int sami_paragraph_to_ass(AVCodecContext *avctx, const char *src)
 
     av_bprint_clear(&sami->full);
     if (sami->source.len) {
-        ff_htmlmarkup_to_ass(avctx, dst_source, sami->source.str);
+        ret = ff_htmlmarkup_to_ass(avctx, dst_source, sami->source.str);
+        if (ret < 0)
+            goto end;
         av_bprintf(&sami->full, "{\\i1}%s{\\i0}\\N", sami->encoded_source.str);
     }
-    ff_htmlmarkup_to_ass(avctx, dst_content, sami->content.str);
+    ret = ff_htmlmarkup_to_ass(avctx, dst_content, sami->content.str);
+    if (ret < 0)
+        goto end;
     av_bprintf(&sami->full, "%s", sami->encoded_content.str);
 
 end:
@@ -131,9 +138,12 @@ static int sami_decode_frame(AVCodecContext *avctx,
     const char *ptr = avpkt->data;
     SAMIContext *sami = avctx->priv_data;
 
-    if (ptr && avpkt->size > 0 && !sami_paragraph_to_ass(avctx, ptr)) {
+    if (ptr && avpkt->size > 0) {
+        int ret = sami_paragraph_to_ass(avctx, ptr);
+        if (ret < 0)
+            return ret;
         // TODO: pass escaped sami->encoded_source.str as source
-        int ret = ff_ass_add_rect(sub, sami->full.str, sami->readorder++, 0, NULL, NULL);
+        ret = ff_ass_add_rect(sub, sami->full.str, sami->readorder++, 0, NULL, NULL);
         if (ret < 0)
             return ret;
     }

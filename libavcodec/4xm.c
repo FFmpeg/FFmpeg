@@ -145,7 +145,7 @@ typedef struct FourXContext {
     int mv[256];
     VLC pre_vlc;
     int last_dc;
-    DECLARE_ALIGNED(16, int16_t, block)[6][64];
+    DECLARE_ALIGNED(32, int16_t, block)[6][64];
     void *bitstream_buffer;
     unsigned int bitstream_buffer_size;
     int version;
@@ -158,7 +158,7 @@ typedef struct FourXContext {
 #define FIX_1_847759065 121095
 #define FIX_2_613125930 171254
 
-#define MULTIPLY(var, const) (((var) * (const)) >> 16)
+#define MULTIPLY(var, const) ((int)((var) * (unsigned)(const)) >> 16)
 
 static void idct(int16_t block[64])
 {
@@ -351,6 +351,8 @@ static int decode_p_block(FourXContext *f, uint16_t *dst, const uint16_t *src,
     index = size2index[log2h][log2w];
     av_assert0(index >= 0);
 
+    if (get_bits_left(&f->gb) < 1)
+        return AVERROR_INVALIDDATA;
     h     = 1 << log2h;
     code  = get_vlc2(&f->gb, block_type_vlc[1 - (f->version > 1)][index].table,
                      BLOCK_TYPE_VLC_BITS, 1);
@@ -498,7 +500,7 @@ static int decode_i_block(FourXContext *f, int16_t *block)
 
     if (get_bits_left(&f->gb) < 2){
         av_log(f->avctx, AV_LOG_ERROR, "%d bits left before decode_i_block()\n", get_bits_left(&f->gb));
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* DC coef */
@@ -532,7 +534,7 @@ static int decode_i_block(FourXContext *f, int16_t *block)
             }
             i    += code >> 4;
             if (i >= 64) {
-                av_log(f->avctx, AV_LOG_ERROR, "run %d oveflow\n", i);
+                av_log(f->avctx, AV_LOG_ERROR, "run %d overflow\n", i);
                 return 0;
             }
 
@@ -697,6 +699,7 @@ static const uint8_t *read_huffman_tables(FourXContext *f,
         len_tab[j]  = len;
     }
 
+    ff_free_vlc(&f->pre_vlc);
     if (init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257, len_tab, 1, 1,
                  bits_tab, 4, 4, 0))
         return NULL;
@@ -732,7 +735,7 @@ static int decode_i2_frame(FourXContext *f, const uint8_t *buf, int length)
         for (x = 0; x < width; x += 16) {
             unsigned int color[4] = { 0 }, bits;
             if (buf_end - buf < 8)
-                return -1;
+                return AVERROR_INVALIDDATA;
             // warning following is purely guessed ...
             color[0] = bytestream2_get_le16u(&g3);
             color[1] = bytestream2_get_le16u(&g3);

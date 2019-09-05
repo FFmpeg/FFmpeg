@@ -19,11 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
 
-static int pvf_probe(AVProbeData *p)
+static int pvf_probe(const AVProbeData *p)
 {
     if (!memcmp(p->buf, "PVF1\n", 5))
         return AVPROBE_SCORE_MAX;
@@ -44,7 +45,8 @@ static int pvf_read_header(AVFormatContext *s)
                &bps) != 3)
         return AVERROR_INVALIDDATA;
 
-    if (channels <= 0 || bps <= 0 || sample_rate <= 0)
+    if (channels <= 0 || channels > FF_SANE_NB_CHANNELS ||
+        bps <= 0 || bps > INT_MAX / FF_SANE_NB_CHANNELS || sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);

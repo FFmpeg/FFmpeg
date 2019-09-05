@@ -197,7 +197,7 @@ static int str_to_time(const char *str, int64_t *rtime)
         if (end > cur + 1)
             cur = end;
     }
-    *rtime = (hours * 3600 + minutes * 60 + seconds) * AV_TIME_BASE;
+    *rtime = (hours * 3600LL + minutes * 60LL + seconds) * AV_TIME_BASE;
     return cur - str;
 }
 
@@ -927,7 +927,7 @@ static void expand_timestamps(void *log, struct sbg_script *s)
         }
     }
     if (s->start_ts == AV_NOPTS_VALUE)
-        s->start_ts = s->opt_start_at_first ? s->tseq[0].ts.t : now;
+        s->start_ts = (s->opt_start_at_first && s->tseq) ? s->tseq[0].ts.t : now;
     s->end_ts = s->opt_duration ? s->start_ts + s->opt_duration :
                 AV_NOPTS_VALUE; /* may be overridden later by -E option */
     cur_ts = now;
@@ -1367,7 +1367,7 @@ static int encode_intervals(struct sbg_script *s, AVCodecParameters *par,
     return 0;
 }
 
-static av_cold int sbg_read_probe(AVProbeData *p)
+static av_cold int sbg_read_probe(const AVProbeData *p)
 {
     int r, score;
     struct sbg_script script = { 0 };

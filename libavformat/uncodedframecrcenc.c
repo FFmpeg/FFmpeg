@@ -79,7 +79,7 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
     int nb_planes, nb_samples, p;
     const char *name;
 
-    nb_planes  = av_frame_get_channels(frame);
+    nb_planes  = frame->channels;
     nb_samples = frame->nb_samples;
     if (!av_sample_fmt_is_planar(frame->format)) {
         nb_samples *= nb_planes;
@@ -115,7 +115,7 @@ static void audio_frame_cksum(AVBPrint *bp, AVFrame *frame)
         default:
             av_assert0(!"reached");
         }
-        av_bprintf(bp, ", 0x%08x", cksum);
+        av_bprintf(bp, ", 0x%08"PRIx32, cksum);
     }
 }
 

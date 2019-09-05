@@ -24,6 +24,7 @@
 #include <vdpau/vdpau.h>
 
 #include "avcodec.h"
+#include "hwaccel.h"
 #include "vc1.h"
 #include "vdpau.h"
 #include "vdpau_internal.h"
@@ -135,7 +136,7 @@ static int vdpau_vc1_init(AVCodecContext *avctx)
 }
 
 #if CONFIG_WMV3_VDPAU_HWACCEL
-AVHWAccel ff_wmv3_vdpau_hwaccel = {
+const AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .name           = "wm3_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_WMV3,
@@ -146,11 +147,13 @@ AVHWAccel ff_wmv3_vdpau_hwaccel = {
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
     .init           = vdpau_vc1_init,
     .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };
 #endif
 
-AVHWAccel ff_vc1_vdpau_hwaccel = {
+const AVHWAccel ff_vc1_vdpau_hwaccel = {
     .name           = "vc1_vdpau",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_VC1,
@@ -161,5 +164,7 @@ AVHWAccel ff_vc1_vdpau_hwaccel = {
     .frame_priv_data_size = sizeof(struct vdpau_picture_context),
     .init           = vdpau_vc1_init,
     .uninit         = ff_vdpau_common_uninit,
+    .frame_params   = ff_vdpau_common_frame_params,
     .priv_data_size = sizeof(VDPAUContext),
+    .caps_internal  = HWACCEL_CAP_ASYNC_SAFE,
 };

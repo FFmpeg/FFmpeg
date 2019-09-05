@@ -181,7 +181,7 @@ static unsigned int match_colors(const uint8_t *block, ptrdiff_t stride,
     int x, y, k = 0;
     int c0_point, half_point, c3_point;
     uint8_t color[16];
-    const int indexMap[8] = {
+    static const int indexMap[8] = {
         0 << 30, 2 << 30, 0 << 30, 2 << 30,
         3 << 30, 3 << 30, 1 << 30, 1 << 30,
     };
@@ -213,7 +213,7 @@ static unsigned int match_colors(const uint8_t *block, ptrdiff_t stride,
      * the same inside that subinterval.
      *
      * Relying on this 1d approximation isn't always optimal in terms of
-     * euclidean distance, but it's very close and a lot faster.
+     * Euclidean distance, but it's very close and a lot faster.
      *
      * http://cbloomrants.blogspot.com/2008/12/12-08-08-dxtc-summary.html */
     c0_point   = (stops[1] + stops[3]) >> 1;
@@ -309,7 +309,7 @@ static void optimize_colors(const uint8_t *block, ptrdiff_t stride,
     if (fabs(vfb) > magn)
         magn = fabs(vfb);
 
-    /* if magnitudo is too small, default to luminance */
+    /* if magnitude is too small, default to luminance */
     if (magn < 4.0f) {
         /* JPEG YCbCr luma coefs, scaled by 1000 */
         v_r = 299;
@@ -359,8 +359,8 @@ static int refine_colors(const uint8_t *block, ptrdiff_t stride,
     /* Additional magic to save a lot of multiplies in the accumulating loop.
      * The tables contain precomputed products of weights for least squares
      * system, accumulated inside one 32-bit register */
-    const int w1tab[4] = { 3, 0, 2, 1 };
-    const int prods[4] = { 0x090000, 0x000900, 0x040102, 0x010402 };
+    static const int w1tab[4] = { 3, 0, 2, 1 };
+    static const int prods[4] = { 0x090000, 0x000900, 0x040102, 0x010402 };
 
     /* Check if all pixels have the same index */
     if ((mask ^ (mask << 2)) < 4) {
@@ -647,9 +647,26 @@ static int dxt5ys_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
     return 16;
 }
 
+/**
+ * Compress one block of RGBA pixels in a RGTC1U texture and store the
+ * resulting bytes in 'dst'. Use the alpha channel of the input image.
+ *
+ * @param dst    output buffer.
+ * @param stride scanline in bytes.
+ * @param block  block to compress.
+ * @return how much texture data has been written.
+ */
+static int rgtc1u_alpha_block(uint8_t *dst, ptrdiff_t stride, const uint8_t *block)
+{
+    compress_alpha(dst, stride, block);
+
+    return 8;
+}
+
 av_cold void ff_texturedspenc_init(TextureDSPContext *c)
 {
-    c->dxt1_block   = dxt1_block;
-    c->dxt5_block   = dxt5_block;
-    c->dxt5ys_block = dxt5ys_block;
+    c->dxt1_block         = dxt1_block;
+    c->dxt5_block         = dxt5_block;
+    c->dxt5ys_block       = dxt5ys_block;
+    c->rgtc1u_alpha_block = rgtc1u_alpha_block;
 }

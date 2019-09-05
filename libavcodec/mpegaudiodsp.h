@@ -19,14 +19,18 @@
 #ifndef AVCODEC_MPEGAUDIODSP_H
 #define AVCODEC_MPEGAUDIODSP_H
 
+#include <stddef.h>
 #include <stdint.h>
+
 #include "libavutil/common.h"
 
 typedef struct MPADSPContext {
     void (*apply_window_float)(float *synth_buf, float *window,
-                               int *dither_state, float *samples, int incr);
+                               int *dither_state, float *samples,
+                               ptrdiff_t incr);
     void (*apply_window_fixed)(int32_t *synth_buf, int32_t *window,
-                               int *dither_state, int16_t *samples, int incr);
+                               int *dither_state, int16_t *samples,
+                               ptrdiff_t incr);
     void (*dct32_float)(float *dst, const float *src);
     void (*dct32_fixed)(int *dst, const int *src);
 
@@ -46,13 +50,13 @@ extern const int32_t ff_mpa_enwindow[257];
 void ff_mpa_synth_filter_fixed(MPADSPContext *s,
                                int32_t *synth_buf_ptr, int *synth_buf_offset,
                                int32_t *window, int *dither_state,
-                               int16_t *samples, int incr,
+                               int16_t *samples, ptrdiff_t incr,
                                int32_t *sb_samples);
 
 void ff_mpa_synth_filter_float(MPADSPContext *s,
                                float *synth_buf_ptr, int *synth_buf_offset,
                                float *window, int *dither_state,
-                               float *samples, int incr,
+                               float *samples, ptrdiff_t incr,
                                float *sb_samples);
 
 void ff_mpadsp_init_aarch64(MPADSPContext *s);
@@ -67,10 +71,10 @@ void ff_mpa_synth_init_fixed(int32_t *window);
 
 void ff_mpadsp_apply_window_float(float *synth_buf, float *window,
                                   int *dither_state, float *samples,
-                                  int incr);
+                                  ptrdiff_t incr);
 void ff_mpadsp_apply_window_fixed(int32_t *synth_buf, int32_t *window,
                                   int *dither_state, int16_t *samples,
-                                  int incr);
+                                  ptrdiff_t incr);
 
 void ff_imdct36_blocks_float(float *out, float *buf, float *in,
                              int count, int switch_point, int block_type);

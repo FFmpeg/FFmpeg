@@ -22,6 +22,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "audio.h"
 #include "video.h"
@@ -54,6 +55,7 @@ typedef struct AudioHistogramContext {
     float *combine_buffer;
     AVFrame *in[101];
     int first;
+    int nb_samples;
 } AudioHistogramContext;
 
 #define OFFSET(x) offsetof(AudioHistogramContext, x)
@@ -63,8 +65,8 @@ static const AVOption ahistogram_options[] = {
     { "dmode", "set method to display channels", OFFSET(dmode), AV_OPT_TYPE_INT, {.i64=SINGLE}, 0, NB_DMODES-1, FLAGS, "dmode" },
         { "single", "all channels use single histogram", 0, AV_OPT_TYPE_CONST, {.i64=SINGLE},   0, 0, FLAGS, "dmode" },
         { "separate", "each channel have own histogram", 0, AV_OPT_TYPE_CONST, {.i64=SEPARATE}, 0, 0, FLAGS, "dmode" },
-    { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, 0, FLAGS },
-    { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, 0, FLAGS },
+    { "rate", "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
+    { "r",    "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"}, 0, INT_MAX, FLAGS },
     { "size", "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, FLAGS },
     { "s",    "set video size", OFFSET(w), AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, FLAGS },
     { "scale", "set display scale", OFFSET(scale), AV_OPT_TYPE_INT, {.i64=LOG}, LINEAR, NB_SCALES-1, FLAGS, "scale" },
@@ -117,13 +119,8 @@ static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
     AudioHistogramContext *s = ctx->priv;
-    int nb_samples;
 
-    nb_samples = FFMAX(1024, ((double)inlink->sample_rate / av_q2d(s->frame_rate)) + 0.5);
-    inlink->partial_buf_size =
-    inlink->min_samples =
-    inlink->max_samples = nb_samples;
-
+    s->nb_samples = FFMAX(1, av_rescale(inlink->sample_rate, s->frame_rate.den, s->frame_rate.num));
     s->dchannels = s->dmode == SINGLE ? 1 : inlink->channels;
     s->shistogram = av_calloc(s->w, s->dchannels * sizeof(*s->shistogram));
     if (!s->shistogram)
@@ -369,6 +366,28 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, av_frame_clone(s->out));
 }
 
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *inlink = ctx->inputs[0];
+    AVFilterLink *outlink = ctx->outputs[0];
+    AudioHistogramContext *s = ctx->priv;
+    AVFrame *in;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
+    ret = ff_inlink_consume_samples(inlink, s->nb_samples, s->nb_samples, &in);
+    if (ret < 0)
+        return ret;
+    if (ret > 0)
+        return filter_frame(inlink, in);
+
+    FF_FILTER_FORWARD_STATUS(inlink, outlink);
+    FF_FILTER_FORWARD_WANTED(outlink, inlink);
+
+    return FFERROR_NOT_READY;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioHistogramContext *s = ctx->priv;
@@ -382,17 +401,16 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_frame_free(&s->in[i]);
 }
 
-static const AVFilterPad audiovectorscope_inputs[] = {
+static const AVFilterPad ahistogram_inputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_AUDIO,
         .config_props = config_input,
-        .filter_frame = filter_frame,
     },
     { NULL }
 };
 
-static const AVFilterPad audiovectorscope_outputs[] = {
+static const AVFilterPad ahistogram_outputs[] = {
     {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
@@ -407,7 +425,8 @@ AVFilter ff_avf_ahistogram = {
     .uninit        = uninit,
     .query_formats = query_formats,
     .priv_size     = sizeof(AudioHistogramContext),
-    .inputs        = audiovectorscope_inputs,
-    .outputs       = audiovectorscope_outputs,
+    .activate      = activate,
+    .inputs        = ahistogram_inputs,
+    .outputs       = ahistogram_outputs,
     .priv_class    = &ahistogram_class,
 };

@@ -1,6 +1,6 @@
 /*
  * id RoQ (.roq) File Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -59,7 +59,7 @@ typedef struct RoqDemuxContext {
 
 } RoqDemuxContext;
 
-static int roq_probe(AVProbeData *p)
+static int roq_probe(const AVProbeData *p)
 {
     if ((AV_RL16(&p->buf[0]) != RoQ_MAGIC_NUMBER) ||
         (AV_RL32(&p->buf[2]) != 0xFFFFFFFF))
@@ -157,6 +157,9 @@ static int roq_read_packet(AVFormatContext *s,
             chunk_size = AV_RL32(&preamble[2]) + RoQ_CHUNK_PREAMBLE_SIZE * 2 +
                 codebook_size;
 
+            if (chunk_size > INT_MAX)
+                return AVERROR_INVALIDDATA;
+
             /* rewind */
             avio_seek(pb, codebook_offset, SEEK_SET);
 
@@ -219,8 +222,10 @@ static int roq_read_packet(AVFormatContext *s,
             pkt->pos= avio_tell(pb);
             ret = avio_read(pb, pkt->data + RoQ_CHUNK_PREAMBLE_SIZE,
                 chunk_size);
-            if (ret != chunk_size)
+            if (ret != chunk_size) {
+                av_packet_unref(pkt);
                 ret = AVERROR(EIO);
+            }
 
             packet_read = 1;
             break;

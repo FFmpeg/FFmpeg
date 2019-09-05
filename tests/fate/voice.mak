@@ -7,7 +7,7 @@ fate-g722-encode: SRC = tests/data/asynth-16000-1.wav
 fate-g722-encode: CMD = enc_dec_pcm wav framemd5 s16le $(SRC) -c:a g722
 
 FATE_VOICE-yes += $(FATE_G722-yes)
-fate-g722: $(FATE_G722)
+fate-g722: $(FATE_G722-yes)
 
 FATE_G723_1 += fate-g723_1-dec-1
 fate-g723_1-dec-1: CMD = framecrc -postfilter 0 -i $(TARGET_SAMPLES)/g723_1/ineqd53.tco
@@ -33,8 +33,7 @@ fate-g723_1-dec-7: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx6
 FATE_G723_1 += fate-g723_1-dec-8
 fate-g723_1-dec-8: CMD = framecrc -postfilter 1 -i $(TARGET_SAMPLES)/g723_1/dtx63e.tco
 
-FATE_G723_1-$(call DEMDEC, G723_1, G723_1) += $(FATE_G723_1)
-FATE_SAMPLES_AVCONV += $(FATE_G723_1-yes)
+FATE_VOICE-$(call DEMDEC, G723_1, G723_1) += $(FATE_G723_1)
 fate-g723_1: $(FATE_G723_1)
 
 FATE_G726 += fate-g726-encode-2bit
@@ -62,7 +61,7 @@ FATE_GSM-$(call DEMDEC, MOV, GSM) += fate-gsm-toast
 fate-gsm-toast: CMD = framecrc -i $(TARGET_SAMPLES)/gsm/sample-gsm-8000.mov -t 10
 
 FATE_VOICE-yes += $(FATE_GSM-yes)
-fate-gsm: $(FATE_GSM)
+fate-gsm: $(FATE_GSM-yes)
 
 FATE_VOICE-$(call DEMDEC, QCP, QCELP) += fate-qcelp
 fate-qcelp: CMD = pcm -i $(TARGET_SAMPLES)/qcp/0036580847.QCP

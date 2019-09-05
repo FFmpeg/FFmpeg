@@ -26,13 +26,13 @@ implementing robust and fast codecs as well as for experimentation.
 @chapter See Also
 
 @ifhtml
-@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe}, @url{ffserver.html,ffserver},
+@url{ffmpeg.html,ffmpeg}, @url{ffplay.html,ffplay}, @url{ffprobe.html,ffprobe},
 @url{ffmpeg-codecs.html,ffmpeg-codecs}, @url{ffmpeg-bitstream-filters.html,bitstream-filters},
 @url{libavutil.html,libavutil}
 @end ifhtml
 
 @ifnothtml
-ffmpeg(1), ffplay(1), ffprobe(1), ffserver(1),
+ffmpeg(1), ffplay(1), ffprobe(1),
 ffmpeg-codecs(1), ffmpeg-bitstream-filters(1),
 libavutil(3)
 @end ifnothtml

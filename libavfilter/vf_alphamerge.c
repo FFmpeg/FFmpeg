@@ -25,34 +25,29 @@
 
 #include <string.h>
 
+#include "libavutil/imgutils.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
-#include "bufferqueue.h"
 #include "drawutils.h"
 #include "formats.h"
+#include "filters.h"
 #include "internal.h"
 #include "video.h"
 
 enum { Y, U, V, A };
 
-typedef struct {
+typedef struct AlphaMergeContext {
     int is_packed_rgb;
     uint8_t rgba_map[4];
-    struct FFBufQueue queue_main;
-    struct FFBufQueue queue_alpha;
+    AVFrame *main_frame;
+    AVFrame *alpha_frame;
 } AlphaMergeContext;
-
-static av_cold void uninit(AVFilterContext *ctx)
-{
-    AlphaMergeContext *merge = ctx->priv;
-    ff_bufqueue_discard_all(&merge->queue_main);
-    ff_bufqueue_discard_all(&merge->queue_alpha);
-}
 
 static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat main_fmts[] = {
         AV_PIX_FMT_YUVA444P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA420P,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_RGBA, AV_PIX_FMT_BGRA, AV_PIX_FMT_ARGB, AV_PIX_FMT_ABGR,
         AV_PIX_FMT_NONE
     };
@@ -84,7 +79,8 @@ static int config_input_main(AVFilterLink *inlink)
 {
     AlphaMergeContext *merge = inlink->dst->priv;
     merge->is_packed_rgb =
-        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0;
+        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0 &&
+        inlink->format != AV_PIX_FMT_GBRAP;
     return 0;
 }
 
@@ -129,55 +125,60 @@ static void draw_frame(AVFilterContext *ctx,
             }
         }
     } else {
-        int y;
         const int main_linesize = main_buf->linesize[A];
         const int alpha_linesize = alpha_buf->linesize[Y];
-        for (y = 0; y < h && y < alpha_buf->height; y++) {
-            memcpy(main_buf->data[A] + y * main_linesize,
-                   alpha_buf->data[Y] + y * alpha_linesize,
-                   FFMIN(main_linesize, alpha_linesize));
-        }
+        av_image_copy_plane(main_buf->data[A], main_linesize,
+                            alpha_buf->data[Y], alpha_linesize,
+                            FFMIN(main_linesize, alpha_linesize), alpha_buf->height);
     }
 }
 
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
+static int activate(AVFilterContext *ctx)
 {
-    AVFilterContext *ctx = inlink->dst;
-    AlphaMergeContext *merge = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AlphaMergeContext *s = ctx->priv;
+    int ret;
 
-    int ret = 0;
-    int is_alpha = (inlink == ctx->inputs[1]);
-    struct FFBufQueue *queue =
-        (is_alpha ? &merge->queue_alpha : &merge->queue_main);
-    ff_bufqueue_add(ctx, queue, buf);
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
 
-    do {
-        AVFrame *main_buf, *alpha_buf;
+    if (!s->main_frame) {
+        ret = ff_inlink_consume_frame(ctx->inputs[0], &s->main_frame);
+        if (ret < 0)
+            return ret;
+    }
 
-        if (!ff_bufqueue_peek(&merge->queue_main, 0) ||
-            !ff_bufqueue_peek(&merge->queue_alpha, 0)) break;
+    if (!s->alpha_frame) {
+        ret = ff_inlink_consume_frame(ctx->inputs[1], &s->alpha_frame);
+        if (ret < 0)
+            return ret;
+    }
 
-        main_buf = ff_bufqueue_get(&merge->queue_main);
-        alpha_buf = ff_bufqueue_get(&merge->queue_alpha);
-
-        draw_frame(ctx, main_buf, alpha_buf);
-        ret = ff_filter_frame(ctx->outputs[0], main_buf);
-        av_frame_free(&alpha_buf);
-    } while (ret >= 0);
-    return ret;
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    AlphaMergeContext *merge = ctx->priv;
-    int in, ret;
-
-    in = ff_bufqueue_peek(&merge->queue_main, 0) ? 1 : 0;
-    ret = ff_request_frame(ctx->inputs[in]);
-    if (ret < 0)
+    if (s->main_frame && s->alpha_frame) {
+        draw_frame(ctx, s->main_frame, s->alpha_frame);
+        ret = ff_filter_frame(outlink, s->main_frame);
+        av_frame_free(&s->alpha_frame);
+        s->main_frame = NULL;
         return ret;
-    return 0;
+    }
+
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[0], outlink);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[1], outlink);
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[0]) &&
+        !s->main_frame) {
+        ff_inlink_request_frame(ctx->inputs[0]);
+        return 0;
+    }
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[1]) &&
+        !s->alpha_frame) {
+        ff_inlink_request_frame(ctx->inputs[1]);
+        return 0;
+    }
+
+    return FFERROR_NOT_READY;
 }
 
 static const AVFilterPad alphamerge_inputs[] = {
@@ -185,12 +186,10 @@ static const AVFilterPad alphamerge_inputs[] = {
         .name             = "main",
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = config_input_main,
-        .filter_frame     = filter_frame,
         .needs_writable   = 1,
     },{
         .name             = "alpha",
         .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = filter_frame,
     },
     { NULL }
 };
@@ -200,7 +199,6 @@ static const AVFilterPad alphamerge_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -209,9 +207,9 @@ AVFilter ff_vf_alphamerge = {
     .name           = "alphamerge",
     .description    = NULL_IF_CONFIG_SMALL("Copy the luma value of the second "
                       "input into the alpha channel of the first input."),
-    .uninit         = uninit,
     .priv_size      = sizeof(AlphaMergeContext),
     .query_formats  = query_formats,
     .inputs         = alphamerge_inputs,
     .outputs        = alphamerge_outputs,
+    .activate       = activate,
 };

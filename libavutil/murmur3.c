@@ -60,7 +60,7 @@ static uint64_t inline get_k1(const uint8_t *src)
     return k;
 }
 
-static uint64_t inline get_k2(const uint8_t *src)
+static inline uint64_t get_k2(const uint8_t *src)
 {
     uint64_t k = AV_RL64(src + 8);
     k *= c2;
@@ -69,7 +69,7 @@ static uint64_t inline get_k2(const uint8_t *src)
     return k;
 }
 
-static uint64_t inline update_h1(uint64_t k, uint64_t h1, uint64_t h2)
+static inline uint64_t update_h1(uint64_t k, uint64_t h1, uint64_t h2)
 {
     k ^= h1;
     k = ROT(k, 27);
@@ -79,7 +79,7 @@ static uint64_t inline update_h1(uint64_t k, uint64_t h1, uint64_t h2)
     return k;
 }
 
-static uint64_t inline update_h2(uint64_t k, uint64_t h1, uint64_t h2)
+static inline uint64_t update_h2(uint64_t k, uint64_t h1, uint64_t h2)
 {
     k ^= h2;
     k = ROT(k, 31);
@@ -89,7 +89,11 @@ static uint64_t inline update_h2(uint64_t k, uint64_t h1, uint64_t h2)
     return k;
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_murmur3_update(AVMurMur3 *c, const uint8_t *src, int len)
+#else
+void av_murmur3_update(AVMurMur3 *c, const uint8_t *src, size_t len)
+#endif
 {
     const uint8_t *end;
     uint64_t h1 = c->h1, h2 = c->h2;

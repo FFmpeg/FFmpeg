@@ -24,6 +24,7 @@ HTMLPAGES   = $(AVPROGS-yes:%=doc/%.html) $(AVPROGS-yes:%=doc/%-all.html) $(COMP
               doc/fate.html                                             \
               doc/general.html                                          \
               doc/git-howto.html                                        \
+              doc/mailing-list-faq.html                                 \
               doc/nut.html                                              \
               doc/platform.html                                         \
 
@@ -36,38 +37,12 @@ DOCS-$(CONFIG_MANPAGES)  += $(MANPAGES)
 DOCS-$(CONFIG_TXTPAGES)  += $(TXTPAGES)
 DOCS = $(DOCS-yes)
 
-DOC_EXAMPLES-$(CONFIG_AVIO_DIR_CMD_EXAMPLE)      += avio_dir_cmd
-DOC_EXAMPLES-$(CONFIG_AVIO_READING_EXAMPLE)      += avio_reading
-DOC_EXAMPLES-$(CONFIG_AVCODEC_EXAMPLE)           += avcodec
-DOC_EXAMPLES-$(CONFIG_DECODING_ENCODING_EXAMPLE) += decoding_encoding
-DOC_EXAMPLES-$(CONFIG_DEMUXING_DECODING_EXAMPLE) += demuxing_decoding
-DOC_EXAMPLES-$(CONFIG_EXTRACT_MVS_EXAMPLE)       += extract_mvs
-DOC_EXAMPLES-$(CONFIG_FILTER_AUDIO_EXAMPLE)      += filter_audio
-DOC_EXAMPLES-$(CONFIG_FILTERING_AUDIO_EXAMPLE)   += filtering_audio
-DOC_EXAMPLES-$(CONFIG_FILTERING_VIDEO_EXAMPLE)   += filtering_video
-DOC_EXAMPLES-$(CONFIG_METADATA_EXAMPLE)          += metadata
-DOC_EXAMPLES-$(CONFIG_MUXING_EXAMPLE)            += muxing
-DOC_EXAMPLES-$(CONFIG_QSVDEC_EXAMPLE)            += qsvdec
-DOC_EXAMPLES-$(CONFIG_REMUXING_EXAMPLE)          += remuxing
-DOC_EXAMPLES-$(CONFIG_RESAMPLING_AUDIO_EXAMPLE)  += resampling_audio
-DOC_EXAMPLES-$(CONFIG_SCALING_VIDEO_EXAMPLE)     += scaling_video
-DOC_EXAMPLES-$(CONFIG_TRANSCODE_AAC_EXAMPLE)     += transcode_aac
-DOC_EXAMPLES-$(CONFIG_TRANSCODING_EXAMPLE)       += transcoding
-ALL_DOC_EXAMPLES_LIST = $(DOC_EXAMPLES-) $(DOC_EXAMPLES-yes)
-
-DOC_EXAMPLES       := $(DOC_EXAMPLES-yes:%=doc/examples/%$(PROGSSUF)$(EXESUF))
-ALL_DOC_EXAMPLES   := $(ALL_DOC_EXAMPLES_LIST:%=doc/examples/%$(PROGSSUF)$(EXESUF))
-ALL_DOC_EXAMPLES_G := $(ALL_DOC_EXAMPLES_LIST:%=doc/examples/%$(PROGSSUF)_g$(EXESUF))
-PROGS              += $(DOC_EXAMPLES)
-
 all-$(CONFIG_DOC): doc
 
 doc: documentation
 
 apidoc: doc/doxy/html
 documentation: $(DOCS)
-
-examples: $(DOC_EXAMPLES)
 
 TEXIDEP = perl $(SRC_PATH)/doc/texidep.pl $(SRC_PATH) $< $@ >$(@:%=%.d)
 
@@ -121,11 +96,9 @@ doc/%.3: doc/%.pod $(GENTEXI)
 	$(M)pod2man --section=3 --center=" " --release=" " --date=" " $< > $@
 
 $(DOCS) doc/doxy/html: | doc/
-$(DOC_EXAMPLES:%$(EXESUF)=%.o): | doc/examples
-OBJDIRS += doc/examples
 
-DOXY_INPUT      = $(INSTHEADERS) $(DOC_EXAMPLES:%$(EXESUF)=%.c) $(LIB_EXAMPLES:%$(EXESUF)=%.c)
-DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT))
+DOXY_INPUT      = $(INSTHEADERS)
+DOXY_INPUT_DEPS = $(addprefix $(SRC_PATH)/, $(DOXY_INPUT)) ffbuild/config.mak
 
 doc/doxy/html: TAG = DOXY
 doc/doxy/html: $(SRC_PATH)/doc/Doxyfile $(SRC_PATH)/doc/doxy-wrapper.sh $(DOXY_INPUT_DEPS)
@@ -171,11 +144,7 @@ clean:: docclean
 distclean:: docclean
 	$(RM) doc/config.texi
 
-examplesclean:
-	$(RM) $(ALL_DOC_EXAMPLES) $(ALL_DOC_EXAMPLES_G)
-	$(RM) $(CLEANSUFFIXES:%=doc/examples/%)
-
-docclean: examplesclean
+docclean::
 	$(RM) $(CLEANSUFFIXES:%=doc/%)
 	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 doc/*.3 doc/avoptions_*.texi
 	$(RM) -r doc/doxy/html

@@ -21,7 +21,7 @@
  */
 
 /*
- * signal_standard, color_siting, store_user_comments and klv_fill_key version
+ * signal_standard, color_siting, store_user_comments, sample rate and klv_fill_key version
  * fixes sponsored by NOA GmbH
  */
 
@@ -48,12 +48,15 @@
 #include "libavutil/time_internal.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/dnxhddata.h"
-#include "libavcodec/h264.h"
+#include "libavcodec/dv_profile.h"
+#include "libavcodec/h264_ps.h"
+#include "libavcodec/golomb.h"
 #include "libavcodec/internal.h"
 #include "audiointerleave.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
+#include "avc.h"
 #include "mxf.h"
 #include "config.h"
 
@@ -87,10 +90,18 @@ typedef struct MXFStreamContext {
     int color_siting;
     int signal_standard;
     int h_chroma_sub_sample;
+    int v_chroma_sub_sample;
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing
     int video_bit_rate;
+    int slice_offset;
+    int frame_size;          ///< frame size in bytes
+    int seq_closed_gop;      ///< all gops in sequence are closed, used in mpeg-2 descriptor
+    int max_gop;             ///< maximum gop size, used by mpeg-2 descriptor
+    int b_picture_count;     ///< maximum number of consecutive b pictures, used in mpeg-2 descriptor
+    int low_delay;           ///< low delay, used in mpeg-2 descriptor
+    int avc_intra;
 } MXFStreamContext;
 
 typedef struct MXFContainerEssenceEntry {
@@ -100,25 +111,69 @@ typedef struct MXFContainerEssenceEntry {
     void (*write_desc)(AVFormatContext *, AVStream *);
 } MXFContainerEssenceEntry;
 
+typedef struct MXFPackage {
+    char *name;
+    enum MXFMetadataSetType type;
+    int instance;
+    struct MXFPackage *ref;
+} MXFPackage;
+
+enum ULIndex {
+    INDEX_MPEG2 = 0,
+    INDEX_AES3,
+    INDEX_WAV,
+    INDEX_D10_625_50_50_VIDEO,
+    INDEX_D10_625_50_50_AUDIO,
+    INDEX_D10_525_60_50_VIDEO,
+    INDEX_D10_525_60_50_AUDIO,
+    INDEX_D10_625_50_40_VIDEO,
+    INDEX_D10_625_50_40_AUDIO,
+    INDEX_D10_525_60_40_VIDEO,
+    INDEX_D10_525_60_40_AUDIO,
+    INDEX_D10_625_50_30_VIDEO,
+    INDEX_D10_625_50_30_AUDIO,
+    INDEX_D10_525_60_30_VIDEO,
+    INDEX_D10_525_60_30_AUDIO,
+    INDEX_DV,
+    INDEX_DV25_525_60,
+    INDEX_DV25_625_50,
+    INDEX_DV25_525_60_IEC,
+    INDEX_DV25_625_50_IEC,
+    INDEX_DV50_525_60,
+    INDEX_DV50_625_50,
+    INDEX_DV100_1080_60,
+    INDEX_DV100_1080_50,
+    INDEX_DV100_720_60,
+    INDEX_DV100_720_50,
+    INDEX_DNXHD,
+    INDEX_JPEG2000,
+    INDEX_H264,
+    INDEX_S436M,
+    INDEX_PRORES,
+};
+
 static const struct {
     enum AVCodecID id;
-    int index;
+    enum ULIndex index;
 } mxf_essence_mappings[] = {
-    { AV_CODEC_ID_MPEG2VIDEO, 0 },
-    { AV_CODEC_ID_PCM_S24LE,  1 },
-    { AV_CODEC_ID_PCM_S16LE,  1 },
-    { AV_CODEC_ID_DVVIDEO,   15 },
-    { AV_CODEC_ID_DNXHD,     24 },
-    { AV_CODEC_ID_JPEG2000,  34 },
-    { AV_CODEC_ID_H264,      35 },
+    { AV_CODEC_ID_MPEG2VIDEO, INDEX_MPEG2 },
+    { AV_CODEC_ID_PCM_S24LE,  INDEX_AES3 },
+    { AV_CODEC_ID_PCM_S16LE,  INDEX_AES3 },
+    { AV_CODEC_ID_DVVIDEO,    INDEX_DV },
+    { AV_CODEC_ID_DNXHD,      INDEX_DNXHD },
+    { AV_CODEC_ID_JPEG2000,   INDEX_JPEG2000 },
+    { AV_CODEC_ID_H264,       INDEX_H264 },
+    { AV_CODEC_ID_PRORES,     INDEX_PRORES },
     { AV_CODEC_ID_NONE }
 };
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_h264_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st);
 static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st);
+static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st);
 
 static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x02,0x0D,0x01,0x03,0x01,0x02,0x04,0x60,0x01 },
@@ -192,6 +247,7 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x00,0x00,0x00 },
       mxf_write_cdci_desc },
+
     // DV25 525/60
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x02,0x40,0x01 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
@@ -202,7 +258,19 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x02,0x00 },
       mxf_write_cdci_desc },
-    // DV50 525/60
+
+    // IEC DV25 525/60
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x02,0x01,0x01 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x01,0x00 },
+      mxf_write_cdci_desc },
+    // IEC DV25 625/50
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x02,0x02,0x01 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x01,0x02,0x00 },
+      mxf_write_cdci_desc },
+
+      // DV50 525/60
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x02,0x50,0x01 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x03,0x00 },
@@ -232,55 +300,10 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x18,0x01,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x02,0x02,0x02,0x02,0x08,0x00 },
       mxf_write_cdci_desc },
-    // DNxHD 1080p 10bit high
+    // DNxHD
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x01,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 1080p 8bit medium
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x03,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 1080p 8bit high
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x04,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 1080i 10bit high
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x07,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 1080i 8bit medium
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x08,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 1080i 8bit high
-    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x09,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 720p 10bit
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x10,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 720p 8bit high
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x11,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 720p 8bit medium
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x12,0x00,0x00 },
-      mxf_write_cdci_desc },
-    // DNxHD 720p 8bit low
-    { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x01,0x0d,0x01,0x03,0x01,0x02,0x11,0x01,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
-      { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x0A,0x04,0x01,0x02,0x02,0x71,0x13,0x00,0x00 },
       mxf_write_cdci_desc },
     // JPEG2000
     { { 0x06,0x0e,0x2b,0x34,0x04,0x01,0x01,0x07,0x0d,0x01,0x03,0x01,0x02,0x0c,0x01,0x00 },
@@ -291,7 +314,17 @@ static const MXFContainerEssenceEntry mxf_essence_container_uls[] = {
     { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x0D,0x01,0x03,0x01,0x02,0x10,0x60,0x01 },
       { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x15,0x01,0x05,0x00 },
       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x00,0x00,0x00 },
-      mxf_write_mpegvideo_desc },
+      mxf_write_h264_desc },
+    // S436M ANC
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x0D,0x01,0x03,0x01,0x02,0x0e,0x00,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0D,0x01,0x03,0x01,0x17,0x01,0x02,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x01,0x5C,0x00 },
+      mxf_write_s436m_anc_desc },
+    // ProRes
+    { { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x0d,0x01,0x03,0x01,0x02,0x1c,0x01,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01,0x15,0x01,0x17,0x00 },
+      { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x03,0x00 },
+      mxf_write_cdci_desc },
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
       { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },
@@ -317,6 +350,7 @@ typedef struct MXFContext {
     AVStream *timecode_track;
     int timecode_base;       ///< rounded time code base (25 or 30)
     int edit_unit_byte_count; ///< fixed edit unit byte count
+    int content_package_rate; ///< content package rate in system element, see SMPTE 326M
     uint64_t body_offset;
     uint32_t instance_number;
     uint8_t umid[16];        ///< unique material identifier
@@ -325,6 +359,8 @@ typedef struct MXFContext {
     uint32_t tagged_value_count;
     AVRational audio_edit_rate;
     int store_user_comments;
+    int track_instance_count; // used to generate MXFTrack uuids
+    int cbr_index;           ///< use a constant bitrate index
 } MXFContext;
 
 static const uint8_t uuid_base[]            = { 0xAD,0xAB,0x44,0x24,0x2f,0x25,0x4d,0xc7,0x92,0xff,0x29,0xbd };
@@ -352,12 +388,14 @@ static const uint8_t multiple_desc_ul[]     = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x
 
 /**
  * SMPTE RP210 http://www.smpte-ra.org/mdd/index.html
+ *             https://smpte-ra.org/sites/default/files/Labels.xml
  */
 static const MXFLocalTagPair mxf_local_tag_batch[] = {
     // preface set
     { 0x3C0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x01,0x01,0x15,0x02,0x00,0x00,0x00,0x00}}, /* Instance UID */
     { 0x3B02, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x10,0x02,0x04,0x00,0x00}}, /* Last Modified Date */
     { 0x3B05, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x01,0x02,0x01,0x05,0x00,0x00,0x00}}, /* Version */
+    { 0x3B07, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x03,0x01,0x02,0x01,0x04,0x00,0x00,0x00}}, /* Object Model Version */
     { 0x3B06, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x06,0x04,0x00,0x00}}, /* Identifications reference */
     { 0x3B03, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x02,0x01,0x00,0x00}}, /* Content Storage reference */
     { 0x3B09, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x01,0x02,0x02,0x03,0x00,0x00,0x00,0x00}}, /* Operational Pattern UL */
@@ -367,9 +405,12 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3C09, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x01,0x00,0x00,0x00}}, /* This Generation UID */
     { 0x3C01, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x02,0x01,0x00,0x00}}, /* Company Name */
     { 0x3C02, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x03,0x01,0x00,0x00}}, /* Product Name */
+    { 0x3C03, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x04,0x00,0x00,0x00}}, /* Product Version */
     { 0x3C04, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x05,0x01,0x00,0x00}}, /* Version String */
     { 0x3C05, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x07,0x00,0x00,0x00}}, /* Product ID */
     { 0x3C06, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x07,0x02,0x01,0x10,0x02,0x03,0x00,0x00}}, /* Modification Date */
+    { 0x3C07, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x0A,0x00,0x00,0x00}}, /* Toolkit Version */
+    { 0x3C08, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x05,0x20,0x07,0x01,0x06,0x01,0x00,0x00}}, /* Platform */
     // Content Storage
     { 0x1901, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x05,0x01,0x00,0x00}}, /* Package strong reference batch */
     { 0x1902, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x06,0x01,0x01,0x04,0x05,0x02,0x00,0x00}}, /* Package strong reference batch */
@@ -412,20 +453,36 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x320D, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x03,0x02,0x05,0x00,0x00,0x00}}, /* Video Line Map */
     { 0x3203, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x02,0x02,0x00,0x00,0x00}}, /* Stored Width */
     { 0x3202, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x02,0x01,0x00,0x00,0x00}}, /* Stored Height */
+    { 0x3216, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x03,0x02,0x08,0x00,0x00,0x00}}, /* Stored F2 Offset */
+    { 0x3205, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x08,0x00,0x00,0x00}}, /* Sampled Width */
+    { 0x3204, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x07,0x00,0x00,0x00}}, /* Sampled Height */
+    { 0x3206, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x09,0x00,0x00,0x00}}, /* Sampled X Offset */
+    { 0x3207, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x0A,0x00,0x00,0x00}}, /* Sampled Y Offset */
     { 0x3209, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x0C,0x00,0x00,0x00}}, /* Display Width */
     { 0x3208, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x0B,0x00,0x00,0x00}}, /* Display Height */
+    { 0x320A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x0D,0x00,0x00,0x00}}, /* Display X offset */
     { 0x320B, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x0E,0x00,0x00,0x00}}, /* Presentation Y offset */
+    { 0x3217, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x03,0x02,0x07,0x00,0x00,0x00}}, /* Display F2 offset */
     { 0x320E, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x00,0x00,0x00}}, /* Aspect Ratio */
+    { 0x3210, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x02,0x01,0x01,0x01,0x02,0x00}}, /* Transfer characteristic */
+    { 0x3213, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x18,0x01,0x02,0x00,0x00,0x00,0x00}}, /* Image Start Offset */
+    { 0x3214, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x18,0x01,0x03,0x00,0x00,0x00,0x00}}, /* Image End Offset */
     { 0x3201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x06,0x01,0x00,0x00,0x00,0x00}}, /* Picture Essence Coding */
     { 0x3212, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x03,0x01,0x06,0x00,0x00,0x00}}, /* Field Dominance (Opt) */
     { 0x3215, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x05,0x01,0x13,0x00,0x00,0x00,0x00}}, /* Signal Standard */
     // CDCI Picture Essence Descriptor
     { 0x3301, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x03,0x0A,0x00,0x00,0x00}}, /* Component Depth */
     { 0x3302, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x05,0x00,0x00,0x00}}, /* Horizontal Subsampling */
+    { 0x3308, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x01,0x10,0x00,0x00,0x00}}, /* Vertical Subsampling */
     { 0x3303, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x01,0x06,0x00,0x00,0x00}}, /* Color Siting */
+    { 0x3307, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x18,0x01,0x04,0x00,0x00,0x00,0x00}}, /* Padding Bits */
+    { 0x3304, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x03,0x03,0x00,0x00,0x00}}, /* Black Ref level */
+    { 0x3305, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x01,0x05,0x03,0x04,0x00,0x00,0x00}}, /* White Ref level */
+    { 0x3306, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x01,0x05,0x03,0x05,0x00,0x00,0x00}}, /* Color Range */
     // Generic Sound Essence Descriptor
     { 0x3D02, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x04,0x02,0x03,0x01,0x04,0x00,0x00,0x00}}, /* Locked/Unlocked */
     { 0x3D03, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x01,0x01,0x01,0x00,0x00}}, /* Audio sampling rate */
+    { 0x3D04, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x01,0x04,0x02,0x01,0x01,0x03,0x00,0x00,0x00}}, /* Audio Ref Level */
     { 0x3D07, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x01,0x01,0x04,0x00,0x00,0x00}}, /* ChannelCount */
     { 0x3D01, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x04,0x04,0x02,0x03,0x03,0x04,0x00,0x00,0x00}}, /* Quantization bits */
     { 0x3D06, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x02,0x04,0x02,0x04,0x02,0x00,0x00,0x00,0x00}}, /* Sound Essence Compression */
@@ -440,10 +497,21 @@ static const MXFLocalTagPair mxf_local_tag_batch[] = {
     { 0x3F0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x04,0x04,0x02,0x05,0x00,0x00,0x00}}, /* Index Entry Array */
     // MPEG video Descriptor
     { 0x8000, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x0B,0x00,0x00}}, /* BitRate */
+    { 0x8003, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x05,0x00,0x00}}, /* LowDelay */
+    { 0x8004, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x06,0x00,0x00}}, /* ClosedGOP */
+    { 0x8006, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x08,0x00,0x00}}, /* MaxGOP */
     { 0x8007, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x0A,0x00,0x00}}, /* ProfileAndLevel */
+    { 0x8008, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x01,0x06,0x02,0x01,0x09,0x00,0x00}}, /* BPictureCount */
     // Wave Audio Essence Descriptor
     { 0x3D09, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x03,0x05,0x00,0x00,0x00}}, /* Average Bytes Per Second */
     { 0x3D0A, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x05,0x04,0x02,0x03,0x02,0x01,0x00,0x00,0x00}}, /* Block Align */
+};
+
+static const MXFLocalTagPair mxf_avc_subdescriptor_local_tags[] = {
+    { 0x8100, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x04,0x06,0x10,0x00,0x00}}, /* SubDescriptors */
+    { 0x8200, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0E,0x00,0x00}}, /* AVC Decoding Delay */
+    { 0x8201, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0A,0x00,0x00}}, /* AVC Profile */
+    { 0x8202, {0x06,0x0E,0x2B,0x34,0x01,0x01,0x01,0x0E,0x04,0x01,0x06,0x06,0x01,0x0D,0x00,0x00}}, /* AVC Level */
 };
 
 static const MXFLocalTagPair mxf_user_comments_local_tag[] = {
@@ -485,15 +553,14 @@ static int klv_ber_length(uint64_t len)
 static int klv_encode_ber_length(AVIOContext *pb, uint64_t len)
 {
     // Determine the best BER size
-    int size;
-    if (len < 128) {
+    int size = klv_ber_length(len);
+    if (size == 1) {
         //short form
         avio_w8(pb, len);
         return 1;
     }
 
-    size = (av_log2(len) >> 3) + 1;
-
+    size --;
     // long form
     avio_w8(pb, 0x80 + size);
     while(size) {
@@ -527,14 +594,32 @@ static int mxf_get_essence_container_ul_index(enum AVCodecID id)
     return -1;
 }
 
+static void mxf_write_local_tags(AVIOContext *pb, const MXFLocalTagPair *local_tags, int count)
+{
+    int i;
+    for (i = 0; i < count; i++) {
+        avio_wb16(pb, local_tags[i].local_tag);
+        avio_write(pb, local_tags[i].uid, 16);
+    }
+}
+
 static void mxf_write_primer_pack(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int local_tag_number, i = 0;
+    int avc_tags_count = 0;
 
     local_tag_number = FF_ARRAY_ELEMS(mxf_local_tag_batch);
     local_tag_number += mxf->store_user_comments * FF_ARRAY_ELEMS(mxf_user_comments_local_tag);
+
+    for (i = 0; i < s->nb_streams; i++) {
+        MXFStreamContext *sc = s->streams[i]->priv_data;
+        if (s->streams[i]->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
+            avc_tags_count = FF_ARRAY_ELEMS(mxf_avc_subdescriptor_local_tags);
+            local_tag_number += avc_tags_count;
+        }
+    }
 
     avio_write(pb, primer_pack_key, 16);
     klv_encode_ber_length(pb, local_tag_number * 18 + 8);
@@ -551,6 +636,8 @@ static void mxf_write_primer_pack(AVFormatContext *s)
             avio_wb16(pb, mxf_user_comments_local_tag[i].local_tag);
             avio_write(pb, mxf_user_comments_local_tag[i].uid, 16);
         }
+    if (avc_tags_count > 0)
+        mxf_write_local_tags(pb, mxf_avc_subdescriptor_local_tags, avc_tags_count);
 }
 
 static void mxf_write_local_tag(AVIOContext *pb, int size, int tag)
@@ -598,9 +685,14 @@ static void mxf_write_essence_container_refs(AVFormatContext *s)
 
     mxf_write_refs_count(pb, DESCRIPTOR_COUNT(c->essence_container_count));
     av_log(s,AV_LOG_DEBUG, "essence container count:%d\n", c->essence_container_count);
-    for (i = 0; i < c->essence_container_count; i++) {
+    for (i = 0; i < s->nb_streams; i++) {
         MXFStreamContext *sc = s->streams[i]->priv_data;
+        // check first track of essence container type and only write it once
+        if (sc->track_essence_element_key[15] != 0)
+            continue;
         avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
+        if (c->essence_container_count == 1)
+            break;
     }
 
     if (c->essence_container_count > 1)
@@ -614,7 +706,7 @@ static void mxf_write_preface(AVFormatContext *s)
 
     mxf_write_metadata_key(pb, 0x012f00);
     PRINT_KEY(s, "preface key", pb->buf_ptr - 16);
-    klv_encode_ber_length(pb, 130 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
+    klv_encode_ber_length(pb, 138 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write preface set uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -627,7 +719,11 @@ static void mxf_write_preface(AVFormatContext *s)
 
     // write version
     mxf_write_local_tag(pb, 2, 0x3B05);
-    avio_wb16(pb, 258); // v1.2
+    avio_wb16(pb, 259); // v1.3
+
+    // Object Model Version
+    mxf_write_local_tag(pb, 4, 0x3B07);
+    avio_wb32(pb, 1);
 
     // write identification_refs
     mxf_write_local_tag(pb, 16 + 8, 0x3B06);
@@ -671,7 +767,7 @@ static uint64_t mxf_utf16len(const char *utf8_str)
             size += 2;
         continue;
 invalid:
-        av_log(NULL, AV_LOG_ERROR, "Invaid UTF8 sequence in mxf_utf16len\n\n");
+        av_log(NULL, AV_LOG_ERROR, "Invalid UTF8 sequence in mxf_utf16len\n\n");
     }
     size += 1;
     return size;
@@ -712,6 +808,22 @@ static void mxf_write_local_tag_utf16(AVIOContext *pb, int tag, const char *valu
     avio_put_str16be(pb, value);
 }
 
+static void store_version(AVFormatContext *s){
+    AVIOContext *pb = s->pb;
+
+    if (s->flags & AVFMT_FLAG_BITEXACT) {
+        avio_wb16(pb, 0); // major
+        avio_wb16(pb, 0); // minor
+        avio_wb16(pb, 0); // tertiary
+    } else {
+        avio_wb16(pb, LIBAVFORMAT_VERSION_MAJOR); // major
+        avio_wb16(pb, LIBAVFORMAT_VERSION_MINOR); // minor
+        avio_wb16(pb, LIBAVFORMAT_VERSION_MICRO); // tertiary
+    }
+    avio_wb16(pb, 0); // patch
+    avio_wb16(pb, 0); // release
+}
+
 static void mxf_write_identification(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
@@ -726,7 +838,7 @@ static void mxf_write_identification(AVFormatContext *s)
 
     version = s->flags & AVFMT_FLAG_BITEXACT ?
         "0.0.0" : AV_STRINGIFY(LIBAVFORMAT_VERSION);
-    length = 72 + mxf_utf16_local_tag_length(company) +
+    length = 100 +mxf_utf16_local_tag_length(company) +
                   mxf_utf16_local_tag_length(product) +
                   mxf_utf16_local_tag_length(version);
     klv_encode_ber_length(pb, length);
@@ -741,6 +853,10 @@ static void mxf_write_identification(AVFormatContext *s)
     mxf_write_uuid(pb, Identification, 1);
     mxf_write_local_tag_utf16(pb, 0x3C01, company); // Company Name
     mxf_write_local_tag_utf16(pb, 0x3C02, product); // Product Name
+
+    mxf_write_local_tag(pb, 10, 0x3C03); // Product Version
+    store_version(s);
+
     mxf_write_local_tag_utf16(pb, 0x3C04, version); // Version String
 
     // write product uid
@@ -750,15 +866,19 @@ static void mxf_write_identification(AVFormatContext *s)
     // modification date
     mxf_write_local_tag(pb, 8, 0x3C06);
     avio_wb64(pb, mxf->timestamp);
+
+    mxf_write_local_tag(pb, 10, 0x3C07); // Toolkit Version
+    store_version(s);
 }
 
-static void mxf_write_content_storage(AVFormatContext *s)
+static void mxf_write_content_storage(AVFormatContext *s, MXFPackage *packages, int package_count)
 {
     AVIOContext *pb = s->pb;
+    int i;
 
     mxf_write_metadata_key(pb, 0x011800);
     PRINT_KEY(s, "content storage key", pb->buf_ptr - 16);
-    klv_encode_ber_length(pb, 92);
+    klv_encode_ber_length(pb, 60 + (16 * package_count));
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -766,10 +886,11 @@ static void mxf_write_content_storage(AVFormatContext *s)
     PRINT_KEY(s, "content storage uid", pb->buf_ptr - 16);
 
     // write package reference
-    mxf_write_local_tag(pb, 16 * 2 + 8, 0x1901);
-    mxf_write_refs_count(pb, 2);
-    mxf_write_uuid(pb, MaterialPackage, 0);
-    mxf_write_uuid(pb, SourcePackage, 0);
+    mxf_write_local_tag(pb, 16 * package_count + 8, 0x1901);
+    mxf_write_refs_count(pb, package_count);
+    for (i = 0; i < package_count; i++) {
+        mxf_write_uuid(pb, packages[i].type, packages[i].instance);
+    }
 
     // write essence container data
     mxf_write_local_tag(pb, 8 + 16, 0x1902);
@@ -777,7 +898,7 @@ static void mxf_write_content_storage(AVFormatContext *s)
     mxf_write_uuid(pb, EssenceContainerData, 0);
 }
 
-static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
+static void mxf_write_track(AVFormatContext *s, AVStream *st, MXFPackage *package)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -789,7 +910,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
     // write track uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, st->index);
+    mxf_write_uuid(pb, Track, mxf->track_instance_count);
     PRINT_KEY(s, "track uid", pb->buf_ptr - 16);
 
     // write track id
@@ -798,14 +919,15 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
     // write track number
     mxf_write_local_tag(pb, 4, 0x4804);
-    if (type == MaterialPackage)
+    if (package->type == MaterialPackage)
         avio_wb32(pb, 0); // track number of material package is 0
     else
         avio_write(pb, sc->track_essence_element_key + 12, 4);
 
+    // write edit rate
     mxf_write_local_tag(pb, 8, 0x4B01);
 
-    if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer){
+    if (st == mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer) {
         avio_wb32(pb, mxf->tc.rate.num);
         avio_wb32(pb, mxf->tc.rate.den);
     } else {
@@ -819,7 +941,7 @@ static void mxf_write_track(AVFormatContext *s, AVStream *st, enum MXFMetadataSe
 
     // write sequence refs
     mxf_write_local_tag(pb, 16, 0x4803);
-    mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
+    mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 }
 
 static const uint8_t smpte_12m_timecode_track_data_ul[] = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x01,0x03,0x02,0x01,0x01,0x00,0x00,0x00 };
@@ -841,14 +963,14 @@ static void mxf_write_common_fields(AVFormatContext *s, AVStream *st)
     // write duration
     mxf_write_local_tag(pb, 8, 0x0202);
 
-    if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO){
+    if (st != mxf->timecode_track && s->oformat == &ff_mxf_opatom_muxer && st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
     } else {
         avio_wb64(pb, mxf->duration);
     }
 }
 
-static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
+static void mxf_write_sequence(AVFormatContext *s, AVStream *st, MXFPackage *package)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -859,7 +981,7 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadat
     klv_encode_ber_length(pb, 80);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type == MaterialPackage ? Sequence: Sequence + TypeBottom, st->index);
+    mxf_write_uuid(pb, Sequence, mxf->track_instance_count);
 
     PRINT_KEY(s, "sequence uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
@@ -871,12 +993,11 @@ static void mxf_write_sequence(AVFormatContext *s, AVStream *st, enum MXFMetadat
         component = TimecodeComponent;
     else
         component = SourceClip;
-    if (type == SourcePackage)
-        component += TypeBottom;
-    mxf_write_uuid(pb, component, st->index);
+
+    mxf_write_uuid(pb, component, mxf->track_instance_count);
 }
 
-static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
+static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, MXFPackage *package)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -886,8 +1007,7 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum 
 
     // UID
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type == MaterialPackage ? TimecodeComponent :
-                   TimecodeComponent + TypeBottom, st->index);
+    mxf_write_uuid(pb, TimecodeComponent, mxf->track_instance_count);
 
     mxf_write_common_fields(s, st);
 
@@ -904,8 +1024,9 @@ static void mxf_write_timecode_component(AVFormatContext *s, AVStream *st, enum 
     avio_w8(pb, !!(mxf->tc.flags & AV_TIMECODE_FLAG_DROPFRAME));
 }
 
-static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enum MXFMetadataSetType type)
+static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, MXFPackage *package)
 {
+    MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int i;
 
@@ -915,7 +1036,7 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type == MaterialPackage ? SourceClip: SourceClip + TypeBottom, st->index);
+    mxf_write_uuid(pb, SourceClip, mxf->track_instance_count);
 
     PRINT_KEY(s, "structural component uid", pb->buf_ptr - 16);
     mxf_write_common_fields(s, st);
@@ -926,19 +1047,32 @@ static void mxf_write_structural_component(AVFormatContext *s, AVStream *st, enu
 
     // write source package uid, end of the reference
     mxf_write_local_tag(pb, 32, 0x1101);
-    if (type == SourcePackage) {
+    if (!package->ref) {
         for (i = 0; i < 4; i++)
             avio_wb64(pb, 0);
     } else
-        mxf_write_umid(s, 1);
+        mxf_write_umid(s, package->ref->instance);
 
     // write source track id
     mxf_write_local_tag(pb, 4, 0x1102);
-    if (type == SourcePackage)
+    if (package->type == SourcePackage && !package->ref)
         avio_wb32(pb, 0);
     else
         avio_wb32(pb, st->index+2);
 }
+
+static void mxf_write_tape_descriptor(AVFormatContext *s)
+{
+    AVIOContext *pb = s->pb;
+
+    mxf_write_metadata_key(pb, 0x012e00);
+    PRINT_KEY(s, "tape descriptor key", pb->buf_ptr - 16);
+    klv_encode_ber_length(pb, 20);
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, TapeDescriptor, 0);
+    PRINT_KEY(s, "tape_desc uid", pb->buf_ptr - 16);
+}
+
 
 static void mxf_write_multi_descriptor(AVFormatContext *s)
 {
@@ -977,14 +1111,16 @@ static void mxf_write_multi_descriptor(AVFormatContext *s)
         mxf_write_uuid(pb, SubDescriptor, i);
 }
 
-static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static int64_t mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID key)
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
+    int64_t pos;
 
     avio_write(pb, key, 16);
-    klv_encode_ber4_length(pb, size+20+8+12+20);
+    klv_encode_ber4_length(pb, 0);
+    pos = avio_tell(pb);
 
     mxf_write_local_tag(pb, 16, 0x3C0A);
     mxf_write_uuid(pb, SubDescriptor, st->index);
@@ -993,39 +1129,111 @@ static void mxf_write_generic_desc(AVFormatContext *s, AVStream *st, const UID k
     avio_wb32(pb, st->index+2);
 
     mxf_write_local_tag(pb, 8, 0x3001);
-    avio_wb32(pb, mxf->time_base.den);
-    avio_wb32(pb, mxf->time_base.num);
+    if (s->oformat == &ff_mxf_d10_muxer) {
+        avio_wb32(pb, mxf->time_base.den);
+        avio_wb32(pb, mxf->time_base.num);
+    } else {
+        if (st->codecpar->codec_id == AV_CODEC_ID_PCM_S16LE ||
+            st->codecpar->codec_id == AV_CODEC_ID_PCM_S24LE) {
+            avio_wb32(pb, st->codecpar->sample_rate);
+            avio_wb32(pb, 1);
+        } else {
+            avio_wb32(pb, mxf->time_base.den);
+            avio_wb32(pb, mxf->time_base.num);
+        }
+    }
 
     mxf_write_local_tag(pb, 16, 0x3004);
     avio_write(pb, mxf_essence_container_uls[sc->index].container_ul, 16);
+
+    return pos;
 }
 
+static const UID mxf_s436m_anc_descriptor_key = { 0x06,0x0e,0x2b,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x5c,0x00 };
 static const UID mxf_mpegvideo_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x51,0x00 };
 static const UID mxf_wav_descriptor_key       = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x48,0x00 };
 static const UID mxf_aes3_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x47,0x00 };
 static const UID mxf_cdci_descriptor_key      = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x28,0x00 };
 static const UID mxf_generic_sound_descriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0D,0x01,0x01,0x01,0x01,0x01,0x42,0x00 };
 
-static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static const UID mxf_avc_subdescriptor_key = { 0x06,0x0E,0x2B,0x34,0x02,0x53,0x01,0x01,0x0d,0x01,0x01,0x01,0x01,0x01,0x6E,0x00 };
+
+static int get_trc(UID ul, enum AVColorTransferCharacteristic trc)
+{
+    switch (trc){
+    case AVCOL_TRC_GAMMA28   :
+    case AVCOL_TRC_GAMMA22   :
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x01,0x00,0x00}), 16);
+        return 0;
+    case AVCOL_TRC_BT709     :
+    case AVCOL_TRC_SMPTE170M :
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x02,0x00,0x00}), 16);
+        return 0;
+    case AVCOL_TRC_SMPTE240M :
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x04,0x01,0x01,0x01,0x01,0x03,0x00,0x00}), 16);
+        return 0;
+    case AVCOL_TRC_BT1361_ECG:
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x06,0x04,0x01,0x01,0x01,0x01,0x05,0x00,0x00}), 16);
+        return 0;
+    case AVCOL_TRC_LINEAR    :
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x06,0x04,0x01,0x01,0x01,0x01,0x06,0x00,0x00}), 16);
+        return 0;
+    case AVCOL_TRC_SMPTE428  :
+        memcpy(ul, ((UID){0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x08,0x04,0x01,0x01,0x01,0x01,0x07,0x00,0x00}), 16);
+        return 0;
+    default:
+        return -1;
+    }
+}
+
+static int64_t mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID key)
 {
     MXFStreamContext *sc = st->priv_data;
     AVIOContext *pb = s->pb;
+    int stored_width  = (st->codecpar->width +15)/16*16;
     int stored_height = (st->codecpar->height+15)/16*16;
     int display_height;
     int f1, f2;
-    unsigned desc_size = size+8+8+8+8+8+8+8+5+16+4+12+20+5;
-    if (sc->interlaced && sc->field_dominance)
-        desc_size += 5;
-    if (sc->signal_standard)
-        desc_size += 5;
+    UID transfer_ul = {0};
+    int64_t pos = mxf_write_generic_desc(s, st, key);
 
-    mxf_write_generic_desc(s, st, key, desc_size);
+    get_trc(transfer_ul, st->codecpar->color_trc);
 
     mxf_write_local_tag(pb, 4, 0x3203);
-    avio_wb32(pb, st->codecpar->width);
+    avio_wb32(pb, stored_width);
 
     mxf_write_local_tag(pb, 4, 0x3202);
     avio_wb32(pb, stored_height>>sc->interlaced);
+
+    if (s->oformat == &ff_mxf_d10_muxer) {
+        //Stored F2 Offset
+        mxf_write_local_tag(pb, 4, 0x3216);
+        avio_wb32(pb, 0);
+
+        //Image Start Offset
+        mxf_write_local_tag(pb, 4, 0x3213);
+        avio_wb32(pb, 0);
+
+        //Image End Offset
+        mxf_write_local_tag(pb, 4, 0x3214);
+        avio_wb32(pb, 0);
+    }
+
+    //Sampled width
+    mxf_write_local_tag(pb, 4, 0x3205);
+    avio_wb32(pb, st->codecpar->width);
+
+    //Samples height
+    mxf_write_local_tag(pb, 4, 0x3204);
+    avio_wb32(pb, st->codecpar->height>>sc->interlaced);
+
+    //Sampled X Offset
+    mxf_write_local_tag(pb, 4, 0x3206);
+    avio_wb32(pb, 0);
+
+    //Sampled Y Offset
+    mxf_write_local_tag(pb, 4, 0x3207);
+    avio_wb32(pb, 0);
 
     mxf_write_local_tag(pb, 4, 0x3209);
     avio_wb32(pb, st->codecpar->width);
@@ -1040,9 +1248,19 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     mxf_write_local_tag(pb, 4, 0x3208);
     avio_wb32(pb, display_height>>sc->interlaced);
 
-    // presentation Y offset
+    // display X offset
+    mxf_write_local_tag(pb, 4, 0x320A);
+    avio_wb32(pb, 0);
+
+    // display Y offset
     mxf_write_local_tag(pb, 4, 0x320B);
     avio_wb32(pb, (st->codecpar->height - display_height)>>sc->interlaced);
+
+    if (sc->interlaced) {
+        //Display F2 Offset
+        mxf_write_local_tag(pb, 4, 0x3217);
+        avio_wb32(pb, -((st->codecpar->height - display_height)&1));
+    }
 
     // component depth
     mxf_write_local_tag(pb, 4, 0x3301);
@@ -1052,9 +1270,34 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     mxf_write_local_tag(pb, 4, 0x3302);
     avio_wb32(pb, sc->h_chroma_sub_sample);
 
+    // vertical subsampling
+    mxf_write_local_tag(pb, 4, 0x3308);
+    avio_wb32(pb, sc->v_chroma_sub_sample);
+
     // color siting
     mxf_write_local_tag(pb, 1, 0x3303);
     avio_w8(pb, sc->color_siting);
+
+    // Padding Bits
+    mxf_write_local_tag(pb, 2, 0x3307);
+    avio_wb16(pb, 0);
+
+    if (st->codecpar->color_range != AVCOL_RANGE_UNSPECIFIED) {
+        int black = 0,
+            white = (1<<sc->component_depth) - 1,
+            color = (1<<sc->component_depth) - 1;
+        if (st->codecpar->color_range == AVCOL_RANGE_MPEG) {
+            black = 1   << (sc->component_depth - 4);
+            white = 235 << (sc->component_depth - 8);
+            color = (14 << (sc->component_depth - 4)) + 1;
+        }
+        mxf_write_local_tag(pb, 4, 0x3304);
+        avio_wb32(pb, black);
+        mxf_write_local_tag(pb, 4, 0x3305);
+        avio_wb32(pb, white);
+        mxf_write_local_tag(pb, 4, 0x3306);
+        avio_wb32(pb, color);
+    }
 
     if (sc->signal_standard) {
         mxf_write_local_tag(pb, 1, 0x3215);
@@ -1076,7 +1319,7 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     default:   f1 =  0; f2 =   0; break;
     }
 
-    if (!sc->interlaced) {
+    if (!sc->interlaced && f2) {
         f2  = 0;
         f1 *= 2;
     }
@@ -1092,6 +1335,12 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
     avio_wb32(pb, sc->aspect_ratio.num);
     avio_wb32(pb, sc->aspect_ratio.den);
 
+    //Transfer characteristic
+    if (transfer_ul[0]) {
+        mxf_write_local_tag(pb, 16, 0x3210);
+        avio_write(pb, transfer_ul, 16);
+    };
+
     mxf_write_local_tag(pb, 16, 0x3201);
     avio_write(pb, *sc->codec_ul, 16);
 
@@ -1100,11 +1349,75 @@ static void mxf_write_cdci_common(AVFormatContext *s, AVStream *st, const UID ke
         avio_w8(pb, sc->field_dominance);
     }
 
+    if (st->codecpar->codec_id == AV_CODEC_ID_H264 && !sc->avc_intra) {
+        // write avc sub descriptor ref
+        mxf_write_local_tag(pb, 8 + 16, 0x8100);
+        mxf_write_refs_count(pb, 1);
+        mxf_write_uuid(pb, AVCSubDescriptor, 0);
+    }
+
+    return pos;
+}
+
+static void mxf_update_klv_size(AVIOContext *pb, int64_t pos)
+{
+    int64_t cur_pos = avio_tell(pb);
+    int size = cur_pos - pos;
+    avio_seek(pb, pos - 4, SEEK_SET);
+    klv_encode_ber4_length(pb, size);
+    avio_seek(pb, cur_pos, SEEK_SET);
+}
+
+static void mxf_write_avc_subdesc(AVFormatContext *s, AVStream *st)
+{
+    AVIOContext *pb = s->pb;
+    int64_t pos;
+
+    avio_write(pb, mxf_avc_subdescriptor_key, 16);
+    klv_encode_ber4_length(pb, 0);
+    pos = avio_tell(pb);
+
+    mxf_write_local_tag(pb, 16, 0x3C0A);
+    mxf_write_uuid(pb, AVCSubDescriptor, 0);
+
+    mxf_write_local_tag(pb, 1, 0x8200);
+    avio_w8(pb, 0xFF); // AVC Decoding Delay, unknown
+
+    mxf_write_local_tag(pb, 1, 0x8201);
+    avio_w8(pb, st->codecpar->profile); // AVC Profile
+
+    mxf_write_local_tag(pb, 1, 0x8202);
+    avio_w8(pb, st->codecpar->level); // AVC Level
+
+    mxf_update_klv_size(s->pb, pos);
 }
 
 static void mxf_write_cdci_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key, 0);
+    int64_t pos = mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_H264) {
+        mxf_write_avc_subdesc(s, st);
+    }
+}
+
+static void mxf_write_h264_desc(AVFormatContext *s, AVStream *st)
+{
+    MXFStreamContext *sc = st->priv_data;
+    if (sc->avc_intra) {
+        mxf_write_mpegvideo_desc(s, st);
+    } else {
+        int64_t pos = mxf_write_cdci_common(s, st, mxf_cdci_descriptor_key);
+        mxf_update_klv_size(s->pb, pos);
+        mxf_write_avc_subdesc(s, st);
+    }
+}
+
+static void mxf_write_s436m_anc_desc(AVFormatContext *s, AVStream *st)
+{
+    int64_t pos = mxf_write_generic_desc(s, st, mxf_s436m_anc_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
 }
 
 static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
@@ -1112,10 +1425,9 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
     AVIOContext *pb = s->pb;
     MXFStreamContext *sc = st->priv_data;
     int profile_and_level = (st->codecpar->profile<<4) | st->codecpar->level;
+    int64_t pos = mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key);
 
     if (st->codecpar->codec_id != AV_CODEC_ID_H264) {
-        mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 8+5);
-
         // bit rate
         mxf_write_local_tag(pb, 4, 0x8000);
         avio_wb32(pb, sc->video_bit_rate);
@@ -1125,24 +1437,35 @@ static void mxf_write_mpegvideo_desc(AVFormatContext *s, AVStream *st)
         if (!st->codecpar->profile)
             profile_and_level |= 0x80; // escape bit
         avio_w8(pb, profile_and_level);
-    } else {
-        mxf_write_cdci_common(s, st, mxf_mpegvideo_descriptor_key, 0);
+
+        // low delay
+        mxf_write_local_tag(pb, 1, 0x8003);
+        avio_w8(pb, sc->low_delay);
+
+        // closed gop
+        mxf_write_local_tag(pb, 1, 0x8004);
+        avio_w8(pb, sc->seq_closed_gop);
+
+        // max gop
+        mxf_write_local_tag(pb, 2, 0x8006);
+        avio_wb16(pb, sc->max_gop);
+
+        // b picture count
+        mxf_write_local_tag(pb, 2, 0x8008);
+        avio_wb16(pb, sc->b_picture_count);
     }
+
+    mxf_update_klv_size(pb, pos);
 }
 
-static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static int64_t mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, const UID key)
 {
     AVIOContext *pb = s->pb;
     MXFContext *mxf = s->priv_data;
     int show_warnings = !mxf->footer_partition_offset;
-    int duration_size = 0;
+    int64_t pos = mxf_write_generic_desc(s, st, key);
 
-    if (s->oformat == &ff_mxf_opatom_muxer)
-        duration_size = 12;
-
-    mxf_write_generic_desc(s, st, key, size+duration_size+5+12+8+8);
-
-    if (duration_size > 0){
+    if (s->oformat == &ff_mxf_opatom_muxer) {
         mxf_write_local_tag(pb, 8, 0x3002);
         avio_wb64(pb, mxf->body_offset / mxf->edit_unit_byte_count);
     }
@@ -1156,6 +1479,11 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
     avio_wb32(pb, st->codecpar->sample_rate);
     avio_wb32(pb, 1);
 
+    if (s->oformat == &ff_mxf_d10_muxer) {
+        mxf_write_local_tag(pb, 1, 0x3D04);
+        avio_w8(pb, 0);
+    }
+
     mxf_write_local_tag(pb, 4, 0x3D07);
     if (mxf->channel_count == -1) {
         if (show_warnings && (s->oformat == &ff_mxf_d10_muxer) && (st->codecpar->channels != 4) && (st->codecpar->channels != 8))
@@ -1168,20 +1496,19 @@ static void mxf_write_generic_sound_common(AVFormatContext *s, AVStream *st, con
             av_log(s, AV_LOG_WARNING, "d10_channelcount shall be set to 4 or 8 : the output will not comply to MXF D-10 specs\n");
         avio_wb32(pb, mxf->channel_count);
     } else {
-        if (show_warnings && mxf->channel_count != -1 && s->oformat != &ff_mxf_opatom_muxer)
-            av_log(s, AV_LOG_ERROR, "-d10_channelcount requires MXF D-10 and will be ignored\n");
         avio_wb32(pb, st->codecpar->channels);
     }
 
     mxf_write_local_tag(pb, 4, 0x3D01);
     avio_wb32(pb, av_get_bits_per_sample(st->codecpar->codec_id));
+
+    return pos;
 }
 
-static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key, unsigned size)
+static int64_t mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key)
 {
     AVIOContext *pb = s->pb;
-
-    mxf_write_generic_sound_common(s, st, key, size+6+8);
+    int64_t pos = mxf_write_generic_sound_common(s, st, key);
 
     mxf_write_local_tag(pb, 2, 0x3D0A);
     avio_wb16(pb, st->codecpar->block_align);
@@ -1189,21 +1516,26 @@ static void mxf_write_wav_common(AVFormatContext *s, AVStream *st, const UID key
     // avg bytes per sec
     mxf_write_local_tag(pb, 4, 0x3D09);
     avio_wb32(pb, st->codecpar->block_align*st->codecpar->sample_rate);
+
+    return pos;
 }
 
 static void mxf_write_wav_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_wav_common(s, st, mxf_wav_descriptor_key, 0);
+    int64_t pos = mxf_write_wav_common(s, st, mxf_wav_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
 }
 
 static void mxf_write_aes3_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_wav_common(s, st, mxf_aes3_descriptor_key, 0);
+    int64_t pos = mxf_write_wav_common(s, st, mxf_aes3_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
 }
 
 static void mxf_write_generic_sound_desc(AVFormatContext *s, AVStream *st)
 {
-    mxf_write_generic_sound_common(s, st, mxf_generic_sound_descriptor_key, 0);
+    int64_t pos = mxf_write_generic_sound_common(s, st, mxf_generic_sound_descriptor_key);
+    mxf_update_klv_size(s->pb, pos);
 }
 
 static const uint8_t mxf_indirect_value_utf16le[] = { 0x4c,0x00,0x02,0x10,0x01,0x00,0x00,0x00,0x00,0x06,0x0e,0x2b,0x34,0x01,0x04,0x01,0x01 };
@@ -1255,15 +1587,15 @@ static int mxf_write_user_comments(AVFormatContext *s, const AVDictionary *m)
     return count;
 }
 
-static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, const char *package_name)
+static void mxf_write_package(AVFormatContext *s, MXFPackage *package)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int i, track_count = s->nb_streams+1;
-    int name_size = mxf_utf16_local_tag_length(package_name);
+    int name_size = mxf_utf16_local_tag_length(package->name);
     int user_comment_count = 0;
 
-    if (type == MaterialPackage) {
+    if (package->type == MaterialPackage) {
         if (mxf->store_user_comments)
             user_comment_count = mxf_write_user_comments(s, s->metadata);
         mxf_write_metadata_key(pb, 0x013600);
@@ -1277,18 +1609,18 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, 
 
     // write uid
     mxf_write_local_tag(pb, 16, 0x3C0A);
-    mxf_write_uuid(pb, type, 0);
-    av_log(s,AV_LOG_DEBUG, "package type:%d\n", type);
+    mxf_write_uuid(pb, package->type, package->instance);
+    av_log(s, AV_LOG_DEBUG, "package type:%d\n", package->type);
     PRINT_KEY(s, "package uid", pb->buf_ptr - 16);
 
     // write package umid
     mxf_write_local_tag(pb, 32, 0x4401);
-    mxf_write_umid(s, type == SourcePackage);
+    mxf_write_umid(s, package->instance);
     PRINT_KEY(s, "package umid second part", pb->buf_ptr - 16);
 
     // package name
     if (name_size)
-        mxf_write_local_tag_utf16(pb, 0x4402, package_name);
+        mxf_write_local_tag_utf16(pb, 0x4402, package->name);
 
     // package creation date
     mxf_write_local_tag(pb, 8, 0x4405);
@@ -1301,10 +1633,9 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, 
     // write track refs
     mxf_write_local_tag(pb, track_count*16 + 8, 0x4403);
     mxf_write_refs_count(pb, track_count);
-    mxf_write_uuid(pb, type == MaterialPackage ? Track :
-                   Track + TypeBottom, -1); // timecode track
-    for (i = 0; i < s->nb_streams; i++)
-        mxf_write_uuid(pb, type == MaterialPackage ? Track : Track + TypeBottom, i);
+    // these are the uuids of the tracks the will be written in mxf_write_track
+    for (i = 0; i < track_count; i++)
+        mxf_write_uuid(pb, Track,  mxf->track_instance_count + i);
 
     // write user comment refs
     if (mxf->store_user_comments) {
@@ -1315,27 +1646,41 @@ static void mxf_write_package(AVFormatContext *s, enum MXFMetadataSetType type, 
     }
 
     // write multiple descriptor reference
-    if (type == SourcePackage) {
+    if (package->type == SourcePackage && package->instance == 1) {
         mxf_write_local_tag(pb, 16, 0x4701);
         if (s->nb_streams > 1) {
             mxf_write_uuid(pb, MultipleDescriptor, 0);
             mxf_write_multi_descriptor(s);
         } else
             mxf_write_uuid(pb, SubDescriptor, 0);
+    } else if (package->type == SourcePackage && package->instance == 2) {
+        mxf_write_local_tag(pb, 16, 0x4701);
+        mxf_write_uuid(pb, TapeDescriptor, 0);
+        mxf_write_tape_descriptor(s);
     }
 
+    /*
+     * for every 1 track in a package there is 1 sequence and 1 component.
+     * all 3 of these elements share the same instance number for generating
+     * there instance uuids. mxf->track_instance_count stores this value.
+     * mxf->track_instance_count is incremented after a group of all 3 of
+     * these elements are written.
+     */
+
     // write timecode track
-    mxf_write_track(s, mxf->timecode_track, type);
-    mxf_write_sequence(s, mxf->timecode_track, type);
-    mxf_write_timecode_component(s, mxf->timecode_track, type);
+    mxf_write_track(s, mxf->timecode_track, package);
+    mxf_write_sequence(s, mxf->timecode_track, package);
+    mxf_write_timecode_component(s, mxf->timecode_track, package);
+    mxf->track_instance_count++;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        mxf_write_track(s, st, type);
-        mxf_write_sequence(s, st, type);
-        mxf_write_structural_component(s, st, type);
+        mxf_write_track(s, st, package);
+        mxf_write_sequence(s, st, package);
+        mxf_write_structural_component(s, st, package);
+        mxf->track_instance_count++;
 
-        if (type == SourcePackage) {
+        if (package->type == SourcePackage && package->instance == 1) {
             MXFStreamContext *sc = st->priv_data;
             mxf_essence_container_uls[sc->index].write_desc(s, st);
         }
@@ -1366,33 +1711,49 @@ static int mxf_write_essence_container_data(AVFormatContext *s)
 
 static int mxf_write_header_metadata_sets(AVFormatContext *s)
 {
-    const char *material_package_name = NULL;
-    const char *file_package_name = NULL;
+    MXFContext *mxf = s->priv_data;
     AVDictionaryEntry *entry = NULL;
     AVStream *st = NULL;
     int i;
+    MXFPackage packages[3] = {{0}};
+    int package_count = 2;
+    packages[0].type = MaterialPackage;
+    packages[1].type = SourcePackage;
+    packages[1].instance = 1;
+    packages[0].ref = &packages[1];
+
 
     if (entry = av_dict_get(s->metadata, "material_package_name", NULL, 0))
-       material_package_name = entry->value;
+       packages[0].name = entry->value;
 
     if (entry = av_dict_get(s->metadata, "file_package_name", NULL, 0)) {
-        file_package_name = entry->value;
+        packages[1].name = entry->value;
     } else {
         /* check if any of the streams contain a file_package_name */
         for (i = 0; i < s->nb_streams; i++) {
             st = s->streams[i];
             if (entry = av_dict_get(st->metadata, "file_package_name", NULL, 0)) {
-                file_package_name = entry->value;
+                packages[1].name = entry->value;
                 break;
             }
         }
     }
 
+    entry = av_dict_get(s->metadata, "reel_name", NULL, 0);
+    if (entry) {
+        packages[2].name = entry->value;
+        packages[2].type = SourcePackage;
+        packages[2].instance = 2;
+        packages[1].ref = &packages[2];
+        package_count = 3;
+    }
+
     mxf_write_preface(s);
     mxf_write_identification(s);
-    mxf_write_content_storage(s);
-    mxf_write_package(s, MaterialPackage, material_package_name);
-    mxf_write_package(s, SourcePackage, file_package_name);
+    mxf_write_content_storage(s, packages, package_count);
+    mxf->track_instance_count = 0;
+    for (i = 0; i < package_count; i++)
+        mxf_write_package(s, &packages[i]);
     mxf_write_essence_container_data(s);
     return 0;
 }
@@ -1412,6 +1773,9 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int i, j, temporal_reordering = 0;
     int key_index = mxf->last_key_index;
+    int prev_non_b_picture = 0;
+    int audio_frame_size = 0;
+    int64_t pos;
 
     av_log(s, AV_LOG_DEBUG, "edit units count %d\n", mxf->edit_units_count);
 
@@ -1420,12 +1784,8 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
 
     avio_write(pb, index_table_segment_key, 16);
 
-    if (mxf->edit_unit_byte_count) {
-        klv_encode_ber_length(pb, 80);
-    } else {
-        klv_encode_ber_length(pb, 85 + 12+(s->nb_streams+1LL)*6 +
-                              12+mxf->edit_units_count*(11+mxf->slice_count*4LL));
-    }
+    klv_encode_ber4_length(pb, 0);
+    pos = avio_tell(pb);
 
     // instance id
     mxf_write_local_tag(pb, 16, 0x3C0A);
@@ -1459,44 +1819,52 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
     mxf_write_local_tag(pb, 4, 0x3F07);
     avio_wb32(pb, 1);
 
-    if (!mxf->edit_unit_byte_count) {
-        // real slice count - 1
-        mxf_write_local_tag(pb, 1, 0x3F08);
-        avio_w8(pb, mxf->slice_count);
+    // real slice count - 1
+    mxf_write_local_tag(pb, 1, 0x3F08);
+    avio_w8(pb, !mxf->edit_unit_byte_count); // only one slice for CBR
 
-        // delta entry array
-        mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
-        avio_wb32(pb, s->nb_streams+1); // num of entries
-        avio_wb32(pb, 6);               // size of one entry
-        // write system item delta entry
-        avio_w8(pb, 0);
-        avio_w8(pb, 0); // slice entry
-        avio_wb32(pb, 0); // element delta
-        for (i = 0; i < s->nb_streams; i++) {
-            AVStream *st = s->streams[i];
-            MXFStreamContext *sc = st->priv_data;
-            avio_w8(pb, sc->temporal_reordering);
-            if (sc->temporal_reordering)
-                temporal_reordering = 1;
-            if (i == 0) { // video track
-                avio_w8(pb, 0); // slice number
-                avio_wb32(pb, KAG_SIZE); // system item size including klv fill
-            } else { // audio track
-                unsigned audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
+    // delta entry array
+    mxf_write_local_tag(pb, 8 + (s->nb_streams+1)*6, 0x3F09);
+    avio_wb32(pb, s->nb_streams+1); // num of entries
+    avio_wb32(pb, 6);               // size of one entry
+    // write system item delta entry
+    avio_w8(pb, 0);
+    avio_w8(pb, 0); // slice entry
+    avio_wb32(pb, 0); // element delta
+    // write each stream delta entry
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MXFStreamContext *sc = st->priv_data;
+        avio_w8(pb, sc->temporal_reordering);
+        if (sc->temporal_reordering)
+            temporal_reordering = 1;
+        if (mxf->edit_unit_byte_count) {
+            avio_w8(pb, 0); // slice number
+            avio_wb32(pb, sc->slice_offset);
+        } else if (i == 0) { // video track
+            avio_w8(pb, 0); // slice number
+            avio_wb32(pb, KAG_SIZE); // system item size including klv fill
+        } else { // audio or data track
+            if (!audio_frame_size) {
+                audio_frame_size = sc->aic.samples[0]*sc->aic.sample_size;
                 audio_frame_size += klv_fill_size(audio_frame_size);
-                avio_w8(pb, 1);
-                avio_wb32(pb, (i-1)*audio_frame_size); // element delta
             }
+            avio_w8(pb, 1);
+            avio_wb32(pb, (i-1)*audio_frame_size); // element delta
         }
+    }
 
-        mxf_write_local_tag(pb, 8 + mxf->edit_units_count*(11+mxf->slice_count*4), 0x3F0A);
+    if (!mxf->edit_unit_byte_count) {
+        MXFStreamContext *sc = s->streams[0]->priv_data;
+        mxf_write_local_tag(pb, 8 + mxf->edit_units_count*15, 0x3F0A);
         avio_wb32(pb, mxf->edit_units_count);  // num of entries
-        avio_wb32(pb, 11+mxf->slice_count*4);  // size of one entry
+        avio_wb32(pb, 15);  // size of one entry
 
         for (i = 0; i < mxf->edit_units_count; i++) {
             int temporal_offset = 0;
 
-            if (!(mxf->index_entries[i].flags & 0x33)) { // I frame
+            if (!(mxf->index_entries[i].flags & 0x33)) { // I-frame
+                sc->max_gop = FFMAX(sc->max_gop, i - mxf->last_key_index);
                 mxf->last_key_index = key_index;
                 key_index = i;
             }
@@ -1516,14 +1884,16 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             avio_w8(pb, temporal_offset);
 
             if ((mxf->index_entries[i].flags & 0x30) == 0x30) { // back and forward prediction
+                sc->b_picture_count = FFMAX(sc->b_picture_count, i - prev_non_b_picture);
                 avio_w8(pb, mxf->last_key_index - i);
             } else {
                 avio_w8(pb, key_index - i); // key frame offset
                 if ((mxf->index_entries[i].flags & 0x20) == 0x20) // only forward
                     mxf->last_key_index = key_index;
+                prev_non_b_picture = i;
             }
 
-            if (!(mxf->index_entries[i].flags & 0x33) && // I frame
+            if (!(mxf->index_entries[i].flags & 0x33) && // I-frame
                 mxf->index_entries[i].flags & 0x40 && !temporal_offset)
                 mxf->index_entries[i].flags |= 0x80; // random access
             avio_w8(pb, mxf->index_entries[i].flags);
@@ -1531,12 +1901,16 @@ static void mxf_write_index_table_segment(AVFormatContext *s)
             avio_wb64(pb, mxf->index_entries[i].offset);
             if (s->nb_streams > 1)
                 avio_wb32(pb, mxf->index_entries[i].slice_offset);
+            else
+                avio_wb32(pb, 0);
         }
 
         mxf->last_key_index = key_index - mxf->edit_units_count;
         mxf->last_indexed_edit_unit += mxf->edit_units_count;
         mxf->edit_units_count = 0;
     }
+
+    mxf_update_klv_size(pb, pos);
 }
 
 static void mxf_write_klv_fill(AVFormatContext *s)
@@ -1564,13 +1938,12 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
 
     if (!mxf->edit_unit_byte_count && mxf->edit_units_count)
         index_byte_count = 85 + 12+(s->nb_streams+1)*6 +
-            12+mxf->edit_units_count*(11+mxf->slice_count*4);
+            12+mxf->edit_units_count*15;
     else if (mxf->edit_unit_byte_count && indexsid)
         index_byte_count = 80;
 
     if (index_byte_count) {
-        // add encoded ber length
-        index_byte_count += 16 + klv_ber_length(index_byte_count);
+        index_byte_count += 16 + 4; // add encoded ber4 length
         index_byte_count += klv_fill_size(index_byte_count);
     }
 
@@ -1589,11 +1962,11 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     else
         avio_write(pb, body_partition_key, 16);
 
-    klv_encode_ber_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
+    klv_encode_ber4_length(pb, 88 + 16LL * DESCRIPTOR_COUNT(mxf->essence_container_count));
 
     // write partition value
     avio_wb16(pb, 1); // majorVersion
-    avio_wb16(pb, 2); // minorVersion
+    avio_wb16(pb, 3); // minorVersion
     avio_wb32(pb, KAG_SIZE); // KAGSize
 
     avio_wb64(pb, partition_offset); // ThisPartition
@@ -1640,6 +2013,7 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
         mxf_write_klv_fill(s);
         start = avio_tell(s->pb);
         mxf_write_primer_pack(s);
+        mxf_write_klv_fill(s);
         mxf_write_header_metadata_sets(s);
         pos = avio_tell(s->pb);
         header_byte_count = pos - start + klv_fill_size(pos);
@@ -1656,87 +2030,119 @@ static int mxf_write_partition(AVFormatContext *s, int bodysid,
     return 0;
 }
 
-static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st,
-AVPacket *pkt)
+static const struct {
+    int profile;
+    UID codec_ul;
+} mxf_prores_codec_uls[] = {
+    { FF_PROFILE_PRORES_PROXY,    { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x01,0x00 } },
+    { FF_PROFILE_PRORES_LT,       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x02,0x00 } },
+    { FF_PROFILE_PRORES_STANDARD, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x03,0x00 } },
+    { FF_PROFILE_PRORES_HQ,       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x04,0x00 } },
+    { FF_PROFILE_PRORES_4444,     { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x05,0x00 } },
+    { FF_PROFILE_PRORES_XQ,       { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x03,0x06,0x06,0x00 } },
+};
+
+static int mxf_parse_prores_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    int i, cid;
-    uint8_t* header_cid;
-    int frame_size = 0;
+    int i, profile;
+
+    if (mxf->header_written)
+        return 1;
+
+    sc->codec_ul = NULL;
+    profile = st->codecpar->profile;
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_prores_codec_uls); i++) {
+        if (profile == mxf_prores_codec_uls[i].profile) {
+            sc->codec_ul = &mxf_prores_codec_uls[i].codec_ul;
+            break;
+        }
+    }
+    if (!sc->codec_ul)
+        return 0;
+
+    sc->frame_size = pkt->size;
+
+    return 1;
+}
+
+static const struct {
+    int cid;
+    UID codec_ul;
+} mxf_dnxhd_codec_uls[] = {
+    { 1235, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x01,0x00,0x00 } }, // 1080p 10bit HIGH
+    { 1237, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x03,0x00,0x00 } }, // 1080p 8bit MED
+    { 1238, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x04,0x00,0x00 } }, // 1080p 8bit HIGH
+    { 1241, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x07,0x00,0x00 } }, // 1080i 10bit HIGH
+    { 1242, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x08,0x00,0x00 } }, // 1080i 8bit MED
+    { 1243, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x09,0x00,0x00 } }, // 1080i 8bit HIGH
+    { 1244, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x0a,0x00,0x00 } }, // 1080i 8bit TR
+    { 1250, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x10,0x00,0x00 } }, // 720p 10bit
+    { 1251, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x11,0x00,0x00 } }, // 720p 8bit HIGH
+    { 1252, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x12,0x00,0x00 } }, // 720p 8bit MED
+    { 1253, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x13,0x00,0x00 } }, // 720p 8bit LOW
+    { 1256, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x16,0x00,0x00 } }, // 1080p 10bit 444
+    { 1258, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x18,0x00,0x00 } }, // 720p 8bit TR
+    { 1259, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x19,0x00,0x00 } }, // 1080p 8bit TR
+    { 1260, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x1a,0x00,0x00 } }, // 1080i 8bit TR MBAFF
+    { 1270, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x24,0x00,0x00 } }, // DNXHR 444
+    { 1271, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x25,0x00,0x00 } }, // DNXHR HQX
+    { 1272, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x26,0x00,0x00 } }, // DNXHR HQ
+    { 1273, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x27,0x00,0x00 } }, // DNXHR SQ
+    { 1274, { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x71,0x28,0x00,0x00 } }, // DNXHR LB
+};
+
+static int mxf_parse_dnxhd_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
+{
+    MXFContext *mxf = s->priv_data;
+    MXFStreamContext *sc = st->priv_data;
+    int i, cid, frame_size = 0;
 
     if (mxf->header_written)
         return 1;
 
     if (pkt->size < 43)
-        return -1;
+        return 0;
 
-    header_cid = pkt->data + 0x28;
-    cid = header_cid[0] << 24 | header_cid[1] << 16 | header_cid[2] << 8 | header_cid[3];
-
-    if ((frame_size = avpriv_dnxhd_get_frame_size(cid)) < 0)
-        return -1;
-    if ((sc->interlaced = avpriv_dnxhd_get_interlaced(cid)) < 0)
-        return AVERROR_INVALIDDATA;
-
-    switch (cid) {
-    case 1235:
-        sc->index = 24;
-        sc->component_depth = 10;
-        break;
-    case 1237:
-        sc->index = 25;
-        break;
-    case 1238:
-        sc->index = 26;
-        break;
-    case 1241:
-        sc->index = 27;
-        sc->component_depth = 10;
-        break;
-    case 1242:
-        sc->index = 28;
-        break;
-    case 1243:
-        sc->index = 29;
-        break;
-    case 1250:
-        sc->index = 30;
-        sc->component_depth = 10;
-        break;
-    case 1251:
-        sc->index = 31;
-        break;
-    case 1252:
-        sc->index = 32;
-        break;
-    case 1253:
-        sc->index = 33;
-        break;
-    default:
-        return -1;
-    }
-
-    sc->codec_ul = &mxf_essence_container_uls[sc->index].codec_ul;
-    sc->aspect_ratio = (AVRational){ 16, 9 };
-
-    if(s->oformat == &ff_mxf_opatom_muxer){
-        mxf->edit_unit_byte_count = frame_size;
-        return 1;
-    }
-
-    mxf->edit_unit_byte_count = KAG_SIZE;
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        MXFStreamContext *sc = st->priv_data;
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            mxf->edit_unit_byte_count += 16 + 4 + sc->aic.samples[0]*sc->aic.sample_size;
-            mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
-        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            mxf->edit_unit_byte_count += 16 + 4 + frame_size;
-            mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+    sc->codec_ul = NULL;
+    cid = AV_RB32(pkt->data + 0x28);
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_dnxhd_codec_uls); i++) {
+        if (cid == mxf_dnxhd_codec_uls[i].cid) {
+            sc->codec_ul = &mxf_dnxhd_codec_uls[i].codec_ul;
+            break;
         }
     }
+    if (!sc->codec_ul)
+        return 0;
+
+    sc->component_depth = 0;
+    switch (pkt->data[0x21] >> 5) {
+    case 1: sc->component_depth = 8; break;
+    case 2: sc->component_depth = 10; break;
+    case 3: sc->component_depth = 12; break;
+    }
+    if (!sc->component_depth)
+        return 0;
+
+    if ((frame_size = avpriv_dnxhd_get_frame_size(cid)) == DNXHD_VARIABLE) {
+        frame_size = avpriv_dnxhd_get_hr_frame_size(cid, st->codecpar->width, st->codecpar->height);
+    }
+    if (frame_size < 0)
+        return 0;
+
+    if ((sc->interlaced = avpriv_dnxhd_get_interlaced(cid)) < 0)
+        return 0;
+
+    if (cid >= 1270) { // RI raster
+        av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
+                  st->codecpar->width, st->codecpar->height,
+                  INT_MAX);
+    } else {
+        sc->aspect_ratio = (AVRational){ 16, 9 };
+    }
+
+    sc->frame_size = pkt->size;
 
     return 1;
 }
@@ -1746,7 +2152,8 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
     uint8_t *vs_pack, *vsc_pack;
-    int i, ul_index, frame_size, stype, pal;
+    int ul_index, stype, pal;
+    const AVDVProfile *profile;
 
     if (mxf->header_written)
         return 1;
@@ -1755,15 +2162,18 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
     if (pkt->size < 120000)
         return -1;
 
+    profile = av_dv_frame_profile(NULL, pkt->data, pkt->size);
+
     vs_pack  = pkt->data + 80*5 + 48;
     vsc_pack = pkt->data + 80*5 + 53;
     stype    = vs_pack[3] & 0x1f;
     pal      = (vs_pack[3] >> 5) & 0x1;
 
-    if ((vs_pack[2] & 0x07) == 0x02)
+    if ((vsc_pack[2] & 0x07) == 0x02) {
         sc->aspect_ratio = (AVRational){ 16, 9 };
-    else
+    } else {
         sc->aspect_ratio = (AVRational){ 4, 3 };
+    }
 
     sc->interlaced = (vsc_pack[3] >> 4) & 0x01;
     // TODO: fix dv encoder to set proper FF/FS value in VSC pack
@@ -1772,46 +2182,29 @@ static int mxf_parse_dv_frame(AVFormatContext *s, AVStream *st, AVPacket *pkt)
 
     switch (stype) {
     case 0x18: // DV100 720p
-        ul_index = 6 + pal;
-        frame_size = pal ? 288000 : 240000;
+        ul_index = INDEX_DV100_720_50 + pal;
         if (sc->interlaced) {
             av_log(s, AV_LOG_ERROR, "source marked as interlaced but codec profile is progressive\n");
             sc->interlaced = 0;
         }
         break;
     case 0x14: // DV100 1080i
-        ul_index = 4 + pal;
-        frame_size = pal ? 576000 : 480000;
+        ul_index = INDEX_DV100_1080_50 + pal;
         break;
     case 0x04: // DV50
-        ul_index = 2 + pal;
-        frame_size = pal ? 288000 : 240000;
+        ul_index = INDEX_DV50_525_60 + pal;
         break;
     default: // DV25
-        ul_index = 0 + pal;
-        frame_size = pal ? 144000 : 120000;
-    }
-
-    sc->index = ul_index + 16;
-    sc->codec_ul =  &mxf_essence_container_uls[sc->index].codec_ul;
-
-    if(s->oformat == &ff_mxf_opatom_muxer) {
-        mxf->edit_unit_byte_count = frame_size;
-        return 1;
-    }
-
-    mxf->edit_unit_byte_count = KAG_SIZE;
-    for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
-        MXFStreamContext *sc = st->priv_data;
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-            mxf->edit_unit_byte_count += 16 + 4 + sc->aic.samples[0]*sc->aic.sample_size;
-            mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
-        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
-            mxf->edit_unit_byte_count += 16 + 4 + frame_size;
-            mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+        if (profile && profile->pix_fmt == AV_PIX_FMT_YUV420P && pal) {
+            ul_index = INDEX_DV25_525_60_IEC + pal;
+            break;
         }
+        ul_index = INDEX_DV25_525_60 + pal;
     }
+
+    sc->index = ul_index;
+    sc->codec_ul =  &mxf_essence_container_uls[sc->index].codec_ul;
+    sc->frame_size = pkt->size;
 
     return 1;
 }
@@ -1821,21 +2214,31 @@ static const struct {
     int frame_size;
     int profile;
     uint8_t interlaced;
+    int intra_only; // 1 or 0 when there are separate UIDs for Long GOP and Intra, -1 when Intra/LGOP detection can be ignored
 } mxf_h264_codec_uls[] = {
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x20,0x01 },      0, 110, 0 }, // AVC High 10 Intra
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x01 }, 232960,   0, 1 }, // AVC Intra 50 1080i60
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x02 }, 281088,   0, 1 }, // AVC Intra 50 1080i50
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x03 }, 232960,   0, 0 }, // AVC Intra 50 1080p30
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x04 }, 281088,   0, 0 }, // AVC Intra 50 1080p25
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x08 }, 116736,   0, 0 }, // AVC Intra 50 720p60
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x09 }, 140800,   0, 0 }, // AVC Intra 50 720p50
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x30,0x01 },      0, 122, 0 }, // AVC High 422 Intra
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x01 }, 472576,   0, 1 }, // AVC Intra 100 1080i60
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x02 }, 568832,   0, 1 }, // AVC Intra 100 1080i50
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x03 }, 472576,   0, 0 }, // AVC Intra 100 1080p30
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x04 }, 568832,   0, 0 }, // AVC Intra 100 1080p25
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x08 }, 236544,   0, 0 }, // AVC Intra 100 720p60
-    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x09 }, 284672,   0, 0 }, // AVC Intra 100 720p50
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x11,0x01 },      0,  66, 0, -1 }, // AVC Baseline
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x20,0x01 },      0,  77, 0, -1 }, // AVC Main
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x30,0x01 },      0,  88, 0, -1 }, // AVC Extended
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x40,0x01 },      0, 100, 0, -1 }, // AVC High
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x50,0x01 },      0, 110, 0,  0 }, // AVC High 10
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x60,0x01 },      0, 122, 0,  0 }, // AVC High 422
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x31,0x70,0x01 },      0, 244, 0,  0 }, // AVC High 444
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x20,0x01 },      0, 110, 0,  1 }, // AVC High 10 Intra
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x01 }, 232960, 110, 1,  1 }, // AVC High 10 Intra RP2027 Class 50 1080/59.94i
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x02 }, 281088, 110, 1,  1 }, // AVC High 10 Intra RP2027 Class 50 1080/50i
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x03 }, 232960, 110, 0,  1 }, // AVC High 10 Intra RP2027 Class 50 1080/29.97p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x04 }, 281088, 110, 0,  1 }, // AVC High 10 Intra RP2027 Class 50 1080/25p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x08 }, 116736, 110, 0,  1 }, // AVC High 10 Intra RP2027 Class 50 720/59.94p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x21,0x09 }, 140800, 110, 0,  1 }, // AVC High 10 Intra RP2027 Class 50 720/50p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x30,0x01 },      0, 122, 0,  1 }, // AVC High 422 Intra
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x01 }, 472576, 122, 1,  1 }, // AVC High 422 Intra RP2027 Class 100 1080/59.94i
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x02 }, 568832, 122, 1,  1 }, // AVC High 422 Intra RP2027 Class 100 1080/50i
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x03 }, 472576, 122, 0,  1 }, // AVC High 422 Intra RP2027 Class 100 1080/29.97p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x04 }, 568832, 122, 0,  1 }, // AVC High 422 Intra RP2027 Class 100 1080/25p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x08 }, 236544, 122, 0,  1 }, // AVC High 422 Intra RP2027 Class 100 720/59.94p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0a,0x04,0x01,0x02,0x02,0x01,0x32,0x31,0x09 }, 284672, 122, 0,  1 }, // AVC High 422 Intra RP2027 Class 100 720/50p
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x01,0x32,0x40,0x01 },      0, 244, 0,  1 }, // AVC High 444 Intra
+    {{ 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x0d,0x04,0x01,0x02,0x02,0x01,0x32,0x50,0x01 },      0,  44, 0, -1 }, // AVC CAVLC 444
 };
 
 static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
@@ -1843,33 +2246,69 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
 {
     MXFContext *mxf = s->priv_data;
     MXFStreamContext *sc = st->priv_data;
-    static const int mxf_h264_num_codec_uls = sizeof(mxf_h264_codec_uls) / sizeof(mxf_h264_codec_uls[0]);
+    H264SequenceParameterSet *sps = NULL;
+    GetBitContext gb;
     const uint8_t *buf = pkt->data;
     const uint8_t *buf_end = pkt->data + pkt->size;
+    const uint8_t *nal_end;
     uint32_t state = -1;
     int extra_size = 512; // support AVC Intra files without SPS/PPS header
-    int i, frame_size;
-    uint8_t uid_found;
-
-    if (pkt->size > extra_size)
-        buf_end -= pkt->size - extra_size; // no need to parse beyond SPS/PPS header
+    int i, frame_size, slice_type, intra_only = 0;
 
     for (;;) {
         buf = avpriv_find_start_code(buf, buf_end, &state);
         if (buf >= buf_end)
             break;
-        --buf;
+
         switch (state & 0x1f) {
-        case NAL_SPS:
-            st->codecpar->profile = buf[1];
+        case H264_NAL_SPS:
             e->flags |= 0x40;
+
+            if (mxf->header_written)
+                break;
+
+            nal_end = ff_avc_find_startcode(buf, buf_end);
+            sps = ff_avc_decode_sps(buf, nal_end - buf);
+            if (!sps) {
+                av_log(s, AV_LOG_ERROR, "error parsing sps\n");
+                return 0;
+            }
+
+            sc->aspect_ratio.num = st->codecpar->width * sps->sar.num;
+            sc->aspect_ratio.den = st->codecpar->height * sps->sar.den;
+            av_reduce(&sc->aspect_ratio.num, &sc->aspect_ratio.den,
+                      sc->aspect_ratio.num, sc->aspect_ratio.den, 1024*1024);
+            intra_only = (sps->constraint_set_flags >> 3) & 1;
+            sc->interlaced = !sps->frame_mbs_only_flag;
+            sc->component_depth = sps->bit_depth_luma;
+
+            buf = nal_end;
             break;
-        case NAL_PPS:
+        case H264_NAL_PPS:
             if (e->flags & 0x40) { // sequence header present
                 e->flags |= 0x80; // random access
                 extra_size = 0;
-                buf = buf_end;
             }
+            break;
+        case H264_NAL_IDR_SLICE:
+            e->flags |= 0x04; // IDR Picture
+            buf = buf_end;
+            break;
+        case H264_NAL_SLICE:
+            init_get_bits8(&gb, buf, buf_end - buf);
+            get_ue_golomb_long(&gb); // skip first_mb_in_slice
+            slice_type = get_ue_golomb_31(&gb);
+            switch (slice_type % 5) {
+            case 0:
+                e->flags |= 0x20; // P Picture
+                e->flags |= 0x06; // P Picture
+                break;
+            case 1:
+                e->flags |= 0x30; // B Picture
+                e->flags |= 0x03; // non-referenced B Picture
+                break;
+            }
+            buf = buf_end;
             break;
         default:
             break;
@@ -1879,26 +2318,38 @@ static int mxf_parse_h264_frame(AVFormatContext *s, AVStream *st,
     if (mxf->header_written)
         return 1;
 
-    sc->aspect_ratio = (AVRational){ 16, 9 }; // 16:9 is mandatory for broadcast HD
-    sc->component_depth = 10; // AVC Intra is always 10 Bit
-    sc->interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0;
-    if (sc->interlaced)
-        sc->field_dominance = 1; // top field first is mandatory for AVC Intra
-
-    uid_found = 0;
+    if (!sps)
+        sc->interlaced = st->codecpar->field_order != AV_FIELD_PROGRESSIVE ? 1 : 0;
+    sc->codec_ul = NULL;
     frame_size = pkt->size + extra_size;
-    for (i = 0; i < mxf_h264_num_codec_uls; i++) {
+
+    for (i = 0; i < FF_ARRAY_ELEMS(mxf_h264_codec_uls); i++) {
         if (frame_size == mxf_h264_codec_uls[i].frame_size && sc->interlaced == mxf_h264_codec_uls[i].interlaced) {
             sc->codec_ul = &mxf_h264_codec_uls[i].uid;
-            return 1;
-        } else if (st->codecpar->profile == mxf_h264_codec_uls[i].profile) {
+            sc->component_depth = 10; // AVC Intra is always 10 Bit
+            sc->aspect_ratio = (AVRational){ 16, 9 }; // 16:9 is mandatory for broadcast HD
+            st->codecpar->profile = mxf_h264_codec_uls[i].profile;
+            sc->avc_intra = 1;
+            mxf->cbr_index = 1;
+            sc->frame_size = pkt->size;
+            if (sc->interlaced)
+                sc->field_dominance = 1; // top field first is mandatory for AVC Intra
+            break;
+        } else if (sps && mxf_h264_codec_uls[i].frame_size == 0 &&
+                   mxf_h264_codec_uls[i].profile == sps->profile_idc &&
+                   (mxf_h264_codec_uls[i].intra_only < 0 ||
+                    mxf_h264_codec_uls[i].intra_only == intra_only)) {
             sc->codec_ul = &mxf_h264_codec_uls[i].uid;
-            uid_found = 1;
+            st->codecpar->profile = sps->profile_idc;
+            st->codecpar->level = sps->level_idc;
+            // continue to check for avc intra
         }
     }
 
-    if (!uid_found) {
-        av_log(s, AV_LOG_ERROR, "AVC Intra 50/100 supported only\n");
+    av_free(sps);
+
+    if (!sc->codec_ul) {
+        av_log(s, AV_LOG_ERROR, "h264 profile not supported\n");
         return 0;
     }
 
@@ -1951,6 +2402,7 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             if ((pkt->data[i+1] & 0xf0) == 0x10) { // seq ext
                 st->codecpar->profile = pkt->data[i+1] & 0x07;
                 st->codecpar->level   = pkt->data[i+2] >> 4;
+                sc->low_delay = pkt->data[i+6] >> 7;
             } else if (i + 5 < pkt->size && (pkt->data[i+1] & 0xf0) == 0x80) { // pict coding ext
                 sc->interlaced = !(pkt->data[i+5] & 0x80); // progressive frame
                 if (sc->interlaced)
@@ -1959,9 +2411,14 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
             }
         } else if (c == 0x1b8) { // gop
             if (pkt->data[i+4]>>6 & 0x01) { // closed
+                if (sc->seq_closed_gop == -1)
+                    sc->seq_closed_gop = 1;
                 sc->closed_gop = 1;
                 if (e->flags & 0x40) // sequence header present
                     e->flags |= 0x80; // random access
+            } else {
+                sc->seq_closed_gop = 0;
+                sc->closed_gop = 0;
             }
         } else if (c == 0x1b3) { // seq
             e->flags |= 0x40;
@@ -1976,10 +2433,10 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
         } else if (c == 0x100) { // pic
             int pict_type = (pkt->data[i+2]>>3) & 0x07;
             e->temporal_ref = (pkt->data[i+1]<<2) | (pkt->data[i+2]>>6);
-            if (pict_type == 2) { // P frame
+            if (pict_type == 2) { // P-frame
                 e->flags |= 0x22;
-                sc->closed_gop = 0; // reset closed gop, don't matter anymore
-            } else if (pict_type == 3) { // B frame
+                sc->closed_gop = 0; // reset closed GOP, don't matter anymore
+            } else if (pict_type == 3) { // B-frame
                 if (sc->closed_gop)
                     e->flags |= 0x13; // only backward prediction
                 else
@@ -1996,8 +2453,9 @@ static int mxf_parse_mpeg2_frame(AVFormatContext *s, AVStream *st,
     return !!sc->codec_ul;
 }
 
-static uint64_t mxf_parse_timestamp(time_t timestamp)
+static uint64_t mxf_parse_timestamp(int64_t timestamp64)
 {
+    time_t timestamp = timestamp64 / 1000000;
     struct tm tmbuf;
     struct tm *time = gmtime_r(&timestamp, &tmbuf);
     if (!time)
@@ -2007,7 +2465,8 @@ static uint64_t mxf_parse_timestamp(time_t timestamp)
            (uint64_t) time->tm_mday       << 32 |
                       time->tm_hour       << 24 |
                       time->tm_min        << 16 |
-                      time->tm_sec        << 8;
+                      time->tm_sec        << 8  |
+                      (timestamp64 % 1000000) / 4000;
 }
 
 static void mxf_gen_umid(AVFormatContext *s)
@@ -2046,7 +2505,7 @@ static int mxf_write_header(AVFormatContext *s)
     if (!s->nb_streams)
         return -1;
 
-    if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1){
+    if (s->oformat == &ff_mxf_opatom_muxer && s->nb_streams !=1) {
         av_log(s, AV_LOG_ERROR, "there must be exactly one stream for mxf opatom\n");
         return -1;
     }
@@ -2073,11 +2532,18 @@ static int mxf_write_header(AVFormatContext *s)
             // Default component depth to 8
             sc->component_depth = 8;
             sc->h_chroma_sub_sample = 2;
+            sc->v_chroma_sub_sample = 2;
             sc->color_siting = 0xFF;
+
+            if (st->codecpar->sample_aspect_ratio.num && st->codecpar->sample_aspect_ratio.den) {
+                sc->aspect_ratio = av_mul_q(st->codecpar->sample_aspect_ratio,
+                                            av_make_q(st->codecpar->width, st->codecpar->height));
+            }
 
             if (pix_desc) {
                 sc->component_depth     = pix_desc->comp[0].depth;
                 sc->h_chroma_sub_sample = 1 << pix_desc->log2_chroma_w;
+                sc->v_chroma_sub_sample = 1 << pix_desc->log2_chroma_h;
             }
             switch (ff_choose_chroma_location(s, st)) {
             case AVCHROMA_LOC_TOPLEFT: sc->color_siting = 0; break;
@@ -2093,37 +2559,48 @@ static int mxf_write_header(AVFormatContext *s)
                        tbc.den, tbc.num);
                 return AVERROR(EINVAL);
             }
+            mxf->content_package_rate = ff_mxf_get_content_package_rate(tbc);
             mxf->time_base = spf->time_base;
             rate = av_inv_q(mxf->time_base);
             avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if((ret = mxf_init_timecode(s, st, rate)) < 0)
                 return ret;
 
+            if (st->codecpar->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
+                sc->seq_closed_gop = -1; // unknown yet
+            }
+
             sc->video_bit_rate = st->codecpar->bit_rate;
+
+            if (s->oformat == &ff_mxf_d10_muxer ||
+                st->codecpar->codec_id == AV_CODEC_ID_DNXHD ||
+                st->codecpar->codec_id == AV_CODEC_ID_DVVIDEO)
+                mxf->cbr_index = 1;
+
             if (s->oformat == &ff_mxf_d10_muxer) {
+                if (st->codecpar->codec_id != AV_CODEC_ID_MPEG2VIDEO) {
+                    av_log(s, AV_LOG_ERROR, "error MXF D-10 only support MPEG-2 Video\n");
+                    return AVERROR(EINVAL);
+                }
                 if ((sc->video_bit_rate == 50000000) && (mxf->time_base.den == 25)) {
-                    sc->index = 3;
+                    sc->index = INDEX_D10_625_50_50_VIDEO;
                 } else if ((sc->video_bit_rate == 49999840 || sc->video_bit_rate == 50000000) && (mxf->time_base.den != 25)) {
-                    sc->index = 5;
+                    sc->index = INDEX_D10_525_60_50_VIDEO;
                 } else if (sc->video_bit_rate == 40000000) {
-                    if (mxf->time_base.den == 25) sc->index = 7;
-                    else                          sc->index = 9;
+                    if (mxf->time_base.den == 25) sc->index = INDEX_D10_625_50_40_VIDEO;
+                    else                          sc->index = INDEX_D10_525_60_40_VIDEO;
                 } else if (sc->video_bit_rate == 30000000) {
-                    if (mxf->time_base.den == 25) sc->index = 11;
-                    else                          sc->index = 13;
+                    if (mxf->time_base.den == 25) sc->index = INDEX_D10_625_50_30_VIDEO;
+                    else                          sc->index = INDEX_D10_525_60_30_VIDEO;
                 } else {
                     av_log(s, AV_LOG_ERROR, "error MXF D-10 only support 30/40/50 mbit/s\n");
                     return -1;
                 }
 
-                mxf->edit_unit_byte_count = KAG_SIZE; // system element
-                mxf->edit_unit_byte_count += 16 + 4 + (uint64_t)sc->video_bit_rate *
-                    mxf->time_base.num / (8*mxf->time_base.den);
-                mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
-                mxf->edit_unit_byte_count += 16 + 4 + 4 + spf->samples_per_frame[0]*8*4;
-                mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
-
                 sc->signal_standard = 1;
+                sc->color_siting = 0;
+                sc->frame_size = (int64_t)sc->video_bit_rate *
+                    mxf->time_base.num / (8*mxf->time_base.den);
             }
             if (mxf->signal_standard >= 0)
                 sc->signal_standard = mxf->signal_standard;
@@ -2143,6 +2620,7 @@ static int mxf_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support 16 or 24 bits le audio\n");
                 }
                 sc->index = ((MXFStreamContext*)s->streams[0]->priv_data)->index + 1;
+                sc->frame_size = 4 + 8 * spf[0].samples_per_frame[0] * 4;
             } else if (s->oformat == &ff_mxf_opatom_muxer) {
                 AVRational tbc = av_inv_q(mxf->audio_edit_rate);
 
@@ -2157,7 +2635,7 @@ static int mxf_write_header(AVFormatContext *s)
                 }
 
                 spf = ff_mxf_get_samples_per_frame(s, tbc);
-                if (!spf){
+                if (!spf) {
                     av_log(s, AV_LOG_ERROR, "Unsupported timecode frame rate %d/%d\n", tbc.den, tbc.num);
                     return AVERROR(EINVAL);
                 }
@@ -2168,9 +2646,23 @@ static int mxf_write_header(AVFormatContext *s)
 
                 mxf->timecode_base = (tbc.den + tbc.num/2) / tbc.num;
                 mxf->edit_unit_byte_count = (av_get_bits_per_sample(st->codecpar->codec_id) * st->codecpar->channels) >> 3;
-                sc->index = 2;
+                sc->index = INDEX_WAV;
             } else {
                 mxf->slice_count = 1;
+                sc->frame_size = (st->codecpar->channels * spf[0].samples_per_frame[0] *
+                                  av_get_bits_per_sample(st->codecpar->codec_id)) / 8;
+            }
+        } else if (st->codecpar->codec_type == AVMEDIA_TYPE_DATA) {
+            AVDictionaryEntry *e = av_dict_get(st->metadata, "data_type", NULL, 0);
+            if (e && !strcmp(e->value, "vbi_vanc_smpte_436M")) {
+                sc->index = INDEX_S436M;
+            } else {
+                av_log(s, AV_LOG_ERROR, "track %d: unsupported data type\n", i);
+                return -1;
+            }
+            if (st->index != s->nb_streams - 1) {
+                av_log(s, AV_LOG_ERROR, "data track must be placed last\n");
+                return -1;
             }
         }
 
@@ -2211,7 +2703,7 @@ static int mxf_write_header(AVFormatContext *s)
             sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
-    if (ff_parse_creation_time_metadata(s, &timestamp, 1) > 0)
+    if (ff_parse_creation_time_metadata(s, &timestamp, 0) > 0)
         mxf->timestamp = mxf_parse_timestamp(timestamp);
     mxf->duration = -1;
 
@@ -2241,14 +2733,22 @@ static void mxf_write_system_item(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned frame;
     uint32_t time_code;
+    int i, system_item_bitmap = 0x58; // UL, user date/time stamp, picture present
 
     frame = mxf->last_indexed_edit_unit + mxf->edit_units_count;
 
     // write system metadata pack
     avio_write(pb, system_metadata_pack_key, 16);
     klv_encode_ber4_length(pb, 57);
-    avio_w8(pb, 0x5c); // UL, user date/time stamp, picture and sound item present
-    avio_w8(pb, 0x04); // content package rate
+
+    for (i = 0; i < s->nb_streams; i++) {
+        if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_AUDIO)
+            system_item_bitmap |= 0x4;
+        else if (s->streams[i]->codecpar->codec_type == AVMEDIA_TYPE_DATA)
+            system_item_bitmap |= 0x2;
+    }
+    avio_w8(pb, system_item_bitmap);
+    avio_w8(pb, mxf->content_package_rate); // content package rate
     avio_w8(pb, 0x00); // content package type
     avio_wb16(pb, 0x00); // channel handle
     avio_wb16(pb, (mxf->tc.start + frame) & 0xFFFF); // continuity count, supposed to overflow
@@ -2274,35 +2774,6 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_w8(pb, 0x83); // UMID
     avio_wb16(pb, 0x20);
     mxf_write_umid(s, 1);
-}
-
-static void mxf_write_d10_video_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
-{
-    MXFContext *mxf = s->priv_data;
-    AVIOContext *pb = s->pb;
-    MXFStreamContext *sc = st->priv_data;
-    int packet_size = (uint64_t)sc->video_bit_rate*mxf->time_base.num /
-        (8*mxf->time_base.den); // frame size
-    int pad;
-
-    packet_size += 16 + 4;
-    packet_size += klv_fill_size(packet_size);
-
-    klv_encode_ber4_length(pb, pkt->size);
-    avio_write(pb, pkt->data, pkt->size);
-
-    // ensure CBR muxing by padding to correct video frame size
-    pad = packet_size - pkt->size - 16 - 4;
-    if (pad > 20) {
-        avio_write(s->pb, klv_fill_key, 16);
-        pad -= 16 + 4;
-        klv_encode_ber4_length(s->pb, pad);
-        ffio_fill(s->pb, 0, pad);
-        av_assert1(!(avio_tell(s->pb) & (KAG_SIZE-1)));
-    } else {
-        av_log(s, AV_LOG_WARNING, "cannot fill d-10 video packet\n");
-        ffio_fill(s->pb, 0, pad);
-    }
 }
 
 static void mxf_write_d10_audio_packet(AVFormatContext *s, AVStream *st, AVPacket *pkt)
@@ -2388,6 +2859,27 @@ static int mxf_write_opatom_packet(AVFormatContext *s, AVPacket *pkt, MXFIndexEn
     return 0;
 }
 
+static void mxf_compute_edit_unit_byte_count(AVFormatContext *s)
+{
+    MXFContext *mxf = s->priv_data;
+    int i;
+
+    if (s->oformat == &ff_mxf_opatom_muxer) {
+        MXFStreamContext *sc = s->streams[0]->priv_data;
+        mxf->edit_unit_byte_count = sc->frame_size;
+        return;
+    }
+
+    mxf->edit_unit_byte_count = KAG_SIZE; // system element
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        MXFStreamContext *sc = st->priv_data;
+        sc->slice_offset = mxf->edit_unit_byte_count;
+        mxf->edit_unit_byte_count += 16 + 4 + sc->frame_size;
+        mxf->edit_unit_byte_count += klv_fill_size(mxf->edit_unit_byte_count);
+    }
+}
+
 static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
@@ -2397,7 +2889,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     MXFIndexEntry ie = {0};
     int err;
 
-    if (!mxf->edit_unit_byte_count && !(mxf->edit_units_count % EDIT_UNITS_PER_BODY)) {
+    if (!mxf->cbr_index && !mxf->edit_unit_byte_count && !(mxf->edit_units_count % EDIT_UNITS_PER_BODY)) {
         if ((err = av_reallocp_array(&mxf->index_entries, mxf->edit_units_count
                                      + EDIT_UNITS_PER_BODY, sizeof(*mxf->index_entries))) < 0) {
             mxf->edit_units_count = 0;
@@ -2416,6 +2908,11 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "could not get dnxhd profile\n");
             return -1;
         }
+    } else if (st->codecpar->codec_id == AV_CODEC_ID_PRORES) {
+        if (!mxf_parse_prores_frame(s, st, pkt)) {
+            av_log(s, AV_LOG_ERROR, "could not get prores profile\n");
+            return -1;
+        }
     } else if (st->codecpar->codec_id == AV_CODEC_ID_DVVIDEO) {
         if (!mxf_parse_dv_frame(s, st, pkt)) {
             av_log(s, AV_LOG_ERROR, "could not get dv profile\n");
@@ -2426,6 +2923,16 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_ERROR, "could not get h264 profile\n");
             return -1;
         }
+    }
+
+    if (mxf->cbr_index) {
+        if (pkt->size != sc->frame_size && st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            av_log(s, AV_LOG_ERROR, "track %d: frame size does not match index unit size, %d != %d\n",
+                   st->index, pkt->size, sc->frame_size);
+            return -1;
+        }
+        if (!mxf->header_written)
+            mxf_compute_edit_unit_byte_count(s);
     }
 
     if (s->oformat == &ff_mxf_opatom_muxer)
@@ -2447,7 +2954,7 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (st->index == 0) {
         if (!mxf->edit_unit_byte_count &&
             (!mxf->edit_units_count || mxf->edit_units_count > EDIT_UNITS_PER_BODY) &&
-            !(ie.flags & 0x33)) { // I frame, Gop start
+            !(ie.flags & 0x33)) { // I-frame, GOP start
             mxf_write_klv_fill(s);
             if ((err = mxf_write_partition(s, 1, 2, body_partition_key, 0)) < 0)
                 return err;
@@ -2476,11 +2983,9 @@ static int mxf_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     mxf_write_klv_fill(s);
     avio_write(pb, sc->track_essence_element_key, 16); // write key
-    if (s->oformat == &ff_mxf_d10_muxer) {
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO)
-            mxf_write_d10_video_packet(s, st, pkt);
-        else
-            mxf_write_d10_audio_packet(s, st, pkt);
+    if (s->oformat == &ff_mxf_d10_muxer &&
+        st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
+        mxf_write_d10_audio_packet(s, st, pkt);
     } else {
         klv_encode_ber4_length(pb, pkt->size); // write length
         avio_write(pb, pkt->data, pkt->size);
@@ -2523,7 +3028,7 @@ static int mxf_write_footer(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
-    int err = 0;
+    int i, err = 0;
 
     if (!mxf->header_written ||
         (s->oformat == &ff_mxf_opatom_muxer && !mxf->body_partition_offset)) {
@@ -2549,8 +3054,8 @@ static int mxf_write_footer(AVFormatContext *s)
     mxf_write_klv_fill(s);
     mxf_write_random_index_pack(s);
 
-    if (s->pb->seekable) {
-        if (s->oformat == &ff_mxf_opatom_muxer){
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
+        if (s->oformat == &ff_mxf_opatom_muxer) {
             /* rewrite body partition to update lengths */
             avio_seek(pb, mxf->body_partition_offset[0], SEEK_SET);
             if ((err = mxf_write_opatom_body_partition(s)) < 0)
@@ -2566,6 +3071,11 @@ static int mxf_write_footer(AVFormatContext *s)
         } else {
             if ((err = mxf_write_partition(s, 0, 0, header_closed_partition_key, 1)) < 0)
                 goto end;
+        }
+        // update footer partition offset
+        for (i = 0; i < mxf->body_partitions_count; i++) {
+            avio_seek(pb, mxf->body_partition_offset[i]+44, SEEK_SET);
+            avio_wb64(pb, mxf->footer_partition_offset);
         }
     }
 
@@ -2597,6 +3107,9 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             while (pktl) {
                 if (!stream_count || pktl->pkt.stream_index == 0)
                     break;
+                // update last packet in packet buffer
+                if (s->streams[pktl->pkt.stream_index]->last_in_packet_buffer != pktl)
+                    s->streams[pktl->pkt.stream_index]->last_in_packet_buffer = pktl;
                 last = pktl;
                 pktl = pktl->next;
                 stream_count--;
@@ -2604,9 +3117,6 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
             // purge packet queue
             while (pktl) {
                 AVPacketList *next = pktl->next;
-
-                if(s->streams[pktl->pkt.stream_index]->last_in_packet_buffer == pktl)
-                    s->streams[pktl->pkt.stream_index]->last_in_packet_buffer= NULL;
                 av_packet_unref(&pktl->pkt);
                 av_freep(&pktl);
                 pktl = next;
@@ -2637,7 +3147,8 @@ static int mxf_interleave_get_packet(AVFormatContext *s, AVPacket *out, AVPacket
     }
 }
 
-static int mxf_compare_timestamps(AVFormatContext *s, AVPacket *next, AVPacket *pkt)
+static int mxf_compare_timestamps(AVFormatContext *s, const AVPacket *next,
+                                                      const AVPacket *pkt)
 {
     MXFStreamContext *sc  = s->streams[pkt ->stream_index]->priv_data;
     MXFStreamContext *sc2 = s->streams[next->stream_index]->priv_data;
@@ -2653,7 +3164,7 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
 }
 
 #define MXF_COMMON_OPTIONS \
-    { "signal_standard", "Force/set Sigal Standard",\
+    { "signal_standard", "Force/set Signal Standard",\
       offsetof(MXFContext, signal_standard), AV_OPT_TYPE_INT, {.i64 = -1}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
     { "bt601", "ITU-R BT.601 and BT.656, also SMPTE 125M (525 and 625 line interlaced)",\
       0, AV_OPT_TYPE_CONST, {.i64 = 1}, -1, 7, AV_OPT_FLAG_ENCODING_PARAM, "signal_standard"},\
@@ -2706,6 +3217,8 @@ static const AVOption opatom_options[] = {
     { "mxf_audio_edit_rate", "Audio edit rate for timecode",
         offsetof(MXFContext, audio_edit_rate), AV_OPT_TYPE_RATIONAL, {.dbl=25}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     MXF_COMMON_OPTIONS
+    { "store_user_comments", "",
+      offsetof(MXFContext, store_user_comments), AV_OPT_TYPE_BOOL, {.i64 = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 

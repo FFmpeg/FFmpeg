@@ -222,13 +222,37 @@ int av_strcasecmp(const char *a, const char *b)
 
 int av_strncasecmp(const char *a, const char *b, size_t n)
 {
-    const char *end = a + n;
     uint8_t c1, c2;
+    if (n <= 0)
+        return 0;
     do {
         c1 = av_tolower(*a++);
         c2 = av_tolower(*b++);
-    } while (a < end && c1 && c1 == c2);
+    } while (--n && c1 && c1 == c2);
     return c1 - c2;
+}
+
+char *av_strireplace(const char *str, const char *from, const char *to)
+{
+    char *ret = NULL;
+    const char *pstr2, *pstr = str;
+    size_t tolen = strlen(to), fromlen = strlen(from);
+    AVBPrint pbuf;
+
+    av_bprint_init(&pbuf, 1, AV_BPRINT_SIZE_UNLIMITED);
+    while ((pstr2 = av_stristr(pstr, from))) {
+        av_bprint_append_data(&pbuf, pstr, pstr2 - pstr);
+        pstr = pstr2 + fromlen;
+        av_bprint_append_data(&pbuf, to, tolen);
+    }
+    av_bprint_append_data(&pbuf, pstr, strlen(pstr));
+    if (!av_bprint_is_complete(&pbuf)) {
+        av_bprint_finalize(&pbuf, NULL);
+    } else {
+        av_bprint_finalize(&pbuf, &ret);
+    }
+
+    return ret;
 }
 
 const char *av_basename(const char *path)

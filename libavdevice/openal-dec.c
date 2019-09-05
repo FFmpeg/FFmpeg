@@ -139,7 +139,7 @@ static int read_header(AVFormatContext *ctx)
 
     /* Open device for capture */
     ad->device =
-        alcCaptureOpenDevice(ctx->filename[0] ? ctx->filename : NULL,
+        alcCaptureOpenDevice(ctx->url[0] ? ctx->url : NULL,
                              ad->sample_rate,
                              ad->sample_format,
                              ad->sample_rate); /* Maximum 1 second of sample data to be read at once */
@@ -187,9 +187,16 @@ static int read_packet(AVFormatContext* ctx, AVPacket *pkt)
     const char *error_msg;
     ALCint nb_samples;
 
-    /* Get number of samples available */
-    alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
-    if (error = al_get_error(ad->device, &error_msg)) goto fail;
+    for (;;) {
+        /* Get number of samples available */
+        alcGetIntegerv(ad->device, ALC_CAPTURE_SAMPLES, (ALCsizei) sizeof(ALCint), &nb_samples);
+        if (error = al_get_error(ad->device, &error_msg)) goto fail;
+        if (nb_samples > 0)
+            break;
+        if (ctx->flags & AVFMT_FLAG_NONBLOCK)
+            return AVERROR(EAGAIN);
+        av_usleep(1000);
+    }
 
     /* Create a packet of appropriate size */
     if ((error = av_new_packet(pkt, nb_samples*ad->sample_step)) < 0)
@@ -234,7 +241,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass class = {
-    .class_name = "openal",
+    .class_name = "openal indev",
     .item_name = av_default_item_name,
     .option = options,
     .version = LIBAVUTIL_VERSION_INT,

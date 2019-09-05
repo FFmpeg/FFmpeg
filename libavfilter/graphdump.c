@@ -25,7 +25,6 @@
 #include "libavutil/bprint.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
-#include "avfiltergraph.h"
 #include "internal.h"
 
 static int print_link_prop(AVBPrint *buf, AVFilterLink *link)
@@ -157,7 +156,7 @@ char *avfilter_graph_dump(AVFilterGraph *graph, const char *options)
     AVBPrint buf;
     char *dump;
 
-    av_bprint_init(&buf, 0, 0);
+    av_bprint_init(&buf, 0, AV_BPRINT_SIZE_COUNT_ONLY);
     avfilter_graph_dump_to_buf(&buf, graph);
     av_bprint_init(&buf, buf.len + 1, buf.len + 1);
     avfilter_graph_dump_to_buf(&buf, graph);

@@ -1,6 +1,6 @@
 /*
  * Microsoft RLE video decoder
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -42,8 +42,6 @@ typedef struct MsrleContext {
     AVFrame *frame;
 
     GetByteContext gb;
-    const unsigned char *buf;
-    int size;
 
     uint32_t pal[256];
 } MsrleContext;
@@ -92,18 +90,21 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     int istride = FFALIGN(avctx->width*avctx->bits_per_coded_sample, 32) / 8;
     int ret;
 
-    s->buf = buf;
-    s->size = buf_size;
+    if (buf_size < 2) //Minimally a end of picture code should be there
+        return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_reget_buffer(avctx, s->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, s->frame, 0)) < 0)
         return ret;
 
     if (avctx->bits_per_coded_sample > 1 && avctx->bits_per_coded_sample <= 8) {
-        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, NULL);
+        int size;
+        const uint8_t *pal = av_packet_get_side_data(avpkt, AV_PKT_DATA_PALETTE, &size);
 
-        if (pal) {
+        if (pal && size == AVPALETTE_SIZE) {
             s->frame->palette_has_changed = 1;
             memcpy(s->pal, pal, AVPALETTE_SIZE);
+        } else if (pal) {
+            av_log(avctx, AV_LOG_ERROR, "Palette size %d is wrong\n", size);
         }
         /* make the palette available */
         memcpy(s->frame->data[1], s->pal, AVPALETTE_SIZE);
@@ -147,6 +148,13 @@ static int msrle_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static void msrle_decode_flush(AVCodecContext *avctx)
+{
+    MsrleContext *s = avctx->priv_data;
+
+    av_frame_unref(s->frame);
+}
+
 static av_cold int msrle_decode_end(AVCodecContext *avctx)
 {
     MsrleContext *s = avctx->priv_data;
@@ -166,5 +174,6 @@ AVCodec ff_msrle_decoder = {
     .init           = msrle_decode_init,
     .close          = msrle_decode_end,
     .decode         = msrle_decode_frame,
+    .flush          = msrle_decode_flush,
     .capabilities   = AV_CODEC_CAP_DR1,
 };

@@ -31,6 +31,10 @@
 #include "libavutil/attributes.h"
 #include "libavutil/common.h"
 
+#if !USE_FIXED
+SINETABLE120960(120);
+SINETABLE120960(960);
+#endif
 #if !CONFIG_HARDCODED_TABLES
 SINETABLE(  32);
 SINETABLE(  64);
@@ -59,7 +63,7 @@ SINETABLE_CONST INTFLOAT * const AAC_RENAME(ff_sine_windows)[] = {
     NULL, NULL, NULL, NULL, NULL, // unused
     AAC_RENAME(ff_sine_32) , AAC_RENAME(ff_sine_64), AAC_RENAME(ff_sine_128),
     AAC_RENAME(ff_sine_256), AAC_RENAME(ff_sine_512), AAC_RENAME(ff_sine_1024),
-    AAC_RENAME(ff_sine_2048), AAC_RENAME(ff_sine_4096), AAC_RENAME(ff_sine_8192)
+    AAC_RENAME(ff_sine_2048), AAC_RENAME(ff_sine_4096), AAC_RENAME(ff_sine_8192),
 };
 
 // Generate a sine window.

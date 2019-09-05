@@ -104,14 +104,14 @@ fate-acodec-dca: tests/data/asynth-44100-2.wav
 fate-acodec-dca: SRC = tests/data/asynth-44100-2.wav
 fate-acodec-dca: CMD = md5 -i $(TARGET_PATH)/$(SRC) -c:a dca -strict -2 -f dts -flags +bitexact
 fate-acodec-dca: CMP = oneline
-fate-acodec-dca: REF = 7ffdefdf47069289990755c79387cc90
+fate-acodec-dca: REF = 2aa580ac67820fce4f581b96ebb34acc
 
 FATE_ACODEC-$(call ENCDEC, DCA, WAV) += fate-acodec-dca2
 fate-acodec-dca2: CMD = enc_dec_pcm dts wav s16le $(SRC) -c:a dca -strict -2 -flags +bitexact
 fate-acodec-dca2: REF = $(SRC)
 fate-acodec-dca2: CMP = stddev
 fate-acodec-dca2: CMP_SHIFT = -2048
-fate-acodec-dca2: CMP_TARGET = 527
+fate-acodec-dca2: CMP_TARGET = 535
 fate-acodec-dca2: SIZE_TOLERANCE = 1632
 
 FATE_ACODEC-$(call ENCDEC, FLAC, FLAC) += fate-acodec-flac fate-acodec-flac-exact-rice
@@ -154,8 +154,8 @@ FATE_ACODEC-$(call ENCDEC, WAVPACK, WV) += fate-acodec-wavpack
 fate-acodec-wavpack: FMT = wv
 fate-acodec-wavpack: CODEC = wavpack -compression_level 1
 
-FATE_ACODEC-$(call ENCDEC, TTA, MATROSKA) += fate-acodec-tta
-fate-acodec-tta: FMT = matroska
+FATE_ACODEC-$(call ENCDEC, TTA, TTA) += fate-acodec-tta
+fate-acodec-tta: FMT = tta
 
 FATE_ACODEC += $(FATE_ACODEC-yes)
 

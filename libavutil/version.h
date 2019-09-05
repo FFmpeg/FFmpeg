@@ -18,6 +18,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu
+ * Libavutil version macros
+ */
+
 #ifndef AVUTIL_VERSION_H
 #define AVUTIL_VERSION_H
 
@@ -28,6 +34,21 @@
  *
  * Useful to check and match library version in order to maintain
  * backward compatibility.
+ *
+ * The FFmpeg libraries follow a versioning sheme very similar to
+ * Semantic Versioning (http://semver.org/)
+ * The difference is that the component called PATCH is called MICRO in FFmpeg
+ * and its value is reset to 100 instead of 0 to keep it above or equal to 100.
+ * Also we do not increase MICRO for every bugfix or change in git master.
+ *
+ * Prior to FFmpeg 3.2 point releases did not change any lib version number to
+ * avoid aliassing different git master checkouts.
+ * Starting with FFmpeg 3.2, the released library versions will occupy
+ * a separate MAJOR.MINOR that is not used on the master development branch.
+ * That is if we branch a release of master 55.10.123 we will bump to 55.11.100
+ * for the release and master will continue at 55.12.100 after it. Each new
+ * point release will then bump the MICRO improving the usefulness of the lib
+ * versions.
  *
  * @{
  */
@@ -49,12 +70,6 @@
  */
 
 /**
- * @file
- * @ingroup lavu
- * Libavutil version macros
- */
-
-/**
  * @defgroup lavu_ver Version and Build diagnostics
  *
  * Macros and function useful to check at compiletime and at runtime
@@ -63,8 +78,8 @@
  * @{
  */
 
-#define LIBAVUTIL_VERSION_MAJOR  55
-#define LIBAVUTIL_VERSION_MINOR  24
+#define LIBAVUTIL_VERSION_MAJOR  56
+#define LIBAVUTIL_VERSION_MINOR  35
 #define LIBAVUTIL_VERSION_MICRO 100
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -78,9 +93,7 @@
 #define LIBAVUTIL_IDENT         "Lavu" AV_STRINGIFY(LIBAVUTIL_VERSION)
 
 /**
- * @}
- *
- * @defgroup depr_guards Deprecation guards
+ * @defgroup lavu_depr_guards Deprecation Guards
  * FF_API_* defines may be placed below to indicate public API that will be
  * dropped at a future version bump. The defines themselves are not part of
  * the public API and may change, break or disappear at any time.
@@ -92,36 +105,34 @@
  * @{
  */
 
-#ifndef FF_API_VDPAU
-#define FF_API_VDPAU                    (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_XVMC
-#define FF_API_XVMC                     (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_OPT_TYPE_METADATA
-#define FF_API_OPT_TYPE_METADATA        (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
-#ifndef FF_API_DLOG
-#define FF_API_DLOG                     (LIBAVUTIL_VERSION_MAJOR < 56)
-#endif
 #ifndef FF_API_VAAPI
-#define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_VAAPI                    (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_FRAME_QP
-#define FF_API_FRAME_QP                 (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_FRAME_QP                 (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_PLUS1_MINUS1
-#define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_PLUS1_MINUS1             (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 #ifndef FF_API_ERROR_FRAME
-#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 56)
+#define FF_API_ERROR_FRAME              (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
-#ifndef FF_API_CRC_BIG_TABLE
-#define FF_API_CRC_BIG_TABLE            (LIBAVUTIL_VERSION_MAJOR < 56)
+#ifndef FF_API_PKT_PTS
+#define FF_API_PKT_PTS                  (LIBAVUTIL_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_CRYPTO_SIZE_T
+#define FF_API_CRYPTO_SIZE_T            (LIBAVUTIL_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_FRAME_GET_SET
+#define FF_API_FRAME_GET_SET            (LIBAVUTIL_VERSION_MAJOR < 57)
+#endif
+#ifndef FF_API_PSEUDOPAL
+#define FF_API_PSEUDOPAL                (LIBAVUTIL_VERSION_MAJOR < 57)
 #endif
 
 
 /**
+ * @}
  * @}
  */
 

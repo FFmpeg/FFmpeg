@@ -29,7 +29,7 @@
 /** maximum number of channels */
 #define PSY_MAX_CHANS 20
 
-/* cutoff for VBR is purposedly increased, since LP filtering actually
+/* cutoff for VBR is purposely increased, since LP filtering actually
  * hinders VBR performance rather than the opposite
  */
 #define AAC_CUTOFF_FROM_BITRATE(bit_rate,channels,sample_rate) (bit_rate ? FFMIN3(FFMIN3( \
@@ -39,7 +39,7 @@
     22000, \
     sample_rate / 2): (sample_rate / 2))
 #define AAC_CUTOFF(s) ( \
-    (s->flags & CODEC_FLAG_QSCALE) \
+    (s->flags & AV_CODEC_FLAG_QSCALE) \
     ? s->sample_rate / 2 \
     : AAC_CUTOFF_FROM_BITRATE(s->bit_rate, s->channels, s->sample_rate) \
 )

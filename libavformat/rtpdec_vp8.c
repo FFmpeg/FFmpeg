@@ -46,7 +46,7 @@ struct PayloadContext {
     int          prev_pictureid;
     int          broken_frame;
     /* If sequence_dirty is set, we have lost some data (critical or
-     * non-critical) and decoding will have some sort of artefacts, and
+     * non-critical) and decoding will have some sort of artifacts, and
      * we thus should request a new keyframe.
      */
     int          sequence_dirty;
@@ -276,7 +276,7 @@ static int vp8_need_keyframe(PayloadContext *vp8)
     return vp8->sequence_dirty || !vp8->sequence_ok;
 }
 
-RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_vp8_dynamic_handler = {
     .enc_name       = "VP8",
     .codec_type     = AVMEDIA_TYPE_VIDEO,
     .codec_id       = AV_CODEC_ID_VP8,

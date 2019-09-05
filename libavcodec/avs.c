@@ -59,7 +59,7 @@ avs_decode_frame(AVCodecContext * avctx,
     AvsBlockType type;
     GetBitContext change_map = {0}; //init to silence warning
 
-    if ((ret = ff_reget_buffer(avctx, p)) < 0)
+    if ((ret = ff_reget_buffer(avctx, p, 0)) < 0)
         return ret;
     p->pict_type = AV_PICTURE_TYPE_P;
     p->key_frame = 0;
@@ -186,4 +186,5 @@ AVCodec ff_avs_decoder = {
     .decode         = avs_decode_frame,
     .close          = avs_decode_end,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

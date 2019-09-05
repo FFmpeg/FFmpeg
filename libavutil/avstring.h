@@ -266,6 +266,11 @@ int av_strcasecmp(const char *a, const char *b);
  */
 int av_strncasecmp(const char *a, const char *b, size_t n);
 
+/**
+ * Locale-independent strings replace.
+ * @note This means only ASCII-range characters are replace
+ */
+char *av_strireplace(const char *str, const char *from, const char *to);
 
 /**
  * Thread safe basename.
@@ -394,6 +399,12 @@ int av_utf8_decode(int32_t *codep, const uint8_t **bufp, const uint8_t *buf_end,
  *            list.
  */
 int av_match_list(const char *name, const char *list, char separator);
+
+/**
+ * See libc sscanf manual for more information.
+ * Locale-independent sscanf implementation.
+ */
+int av_sscanf(const char *string, const char *format, ...);
 
 /**
  * @}

@@ -152,6 +152,7 @@ static void arith2_init(ArithCoder *c, GetByteContext *gB)
     c->low           = 0;
     c->high          = 0xFFFFFF;
     c->value         = bytestream2_get_be24(gB);
+    c->overread      = 0;
     c->gbc.gB        = gB;
     c->get_model_sym = arith2_get_model_sym;
     c->get_number    = arith2_get_number;
@@ -174,7 +175,7 @@ static int decode_pal_v2(MSS12Context *ctx, const uint8_t *buf, int buf_size)
     return 1 + ncol * 3;
 }
 
-static int decode_555(GetByteContext *gB, uint16_t *dst, int stride,
+static int decode_555(AVCodecContext *avctx, GetByteContext *gB, uint16_t *dst, ptrdiff_t stride,
                       int keyframe, int w, int h)
 {
     int last_symbol = 0, repeat = 0, prev_avail = 0;
@@ -212,7 +213,7 @@ static int decode_555(GetByteContext *gB, uint16_t *dst, int stride,
                     repeat = 0;
                     while (b-- > 130) {
                         if (repeat >= (INT_MAX >> 8) - 1) {
-                            av_log(NULL, AV_LOG_ERROR, "repeat overflow\n");
+                            av_log(avctx, AV_LOG_ERROR, "repeat overflow\n");
                             return AVERROR_INVALIDDATA;
                         }
                         repeat = (repeat << 8) + bytestream2_get_byte(gB) + 1;
@@ -237,8 +238,8 @@ static int decode_555(GetByteContext *gB, uint16_t *dst, int stride,
     return 0;
 }
 
-static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, int pal_stride,
-                      uint8_t *rgb_dst, int rgb_stride, uint32_t *pal,
+static int decode_rle(GetBitContext *gb, uint8_t *pal_dst, ptrdiff_t pal_stride,
+                      uint8_t *rgb_dst, ptrdiff_t rgb_stride, uint32_t *pal,
                       int keyframe, int kf_slipt, int slice, int w, int h)
 {
     uint8_t bits[270] = { 0 };
@@ -422,7 +423,13 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_vc1_decode_blocks(v);
 
-    ff_er_frame_end(&s->er);
+    if (v->end_mb_x == s->mb_width && s->end_mb_y == s->mb_height) {
+        ff_er_frame_end(&s->er);
+    } else {
+        av_log(v->s.avctx, AV_LOG_WARNING,
+               "disabling error correction due to block count mismatch %dx%d != %dx%d\n",
+               v->end_mb_x, s->end_mb_y, s->mb_width, s->mb_height);
+    }
 
     ff_mpv_frame_end(s);
 
@@ -458,9 +465,9 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
     return 0;
 }
 
-typedef struct Rectangle {
+struct Rectangle {
     int coded, x, y, w, h;
-} Rectangle;
+};
 
 #define MAX_WMV9_RECTANGLES 20
 #define ARITH2_PADDING 2
@@ -479,11 +486,8 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     int keyframe, has_wmv9, has_mv, is_rle, is_555, ret;
 
-    Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
+    struct Rectangle wmv9rects[MAX_WMV9_RECTANGLES], *r;
     int used_rects = 0, i, implicit_rect = 0, av_uninit(wmv9_mask);
-
-    av_assert0(AV_INPUT_BUFFER_PADDING_SIZE >=
-               ARITH2_PADDING + (MIN_CACHE_BITS + 7) / 8);
 
     if ((ret = init_get_bits8(&gb, buf, buf_size)) < 0)
         return ret;
@@ -614,7 +618,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     } else {
-        if ((ret = ff_reget_buffer(avctx, ctx->last_pic)) < 0)
+        if ((ret = ff_reget_buffer(avctx, ctx->last_pic, 0)) < 0)
             return ret;
         if ((ret = av_frame_ref(frame, ctx->last_pic)) < 0)
             return ret;
@@ -631,7 +635,7 @@ static int mss2_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     if (is_555) {
         bytestream2_init(&gB, buf, buf_size);
 
-        if (decode_555(&gB, (uint16_t *)c->rgb_pic, c->rgb_stride >> 1,
+        if (decode_555(avctx, &gB, (uint16_t *)c->rgb_pic, c->rgb_stride >> 1,
                        keyframe, avctx->width, avctx->height))
             return AVERROR_INVALIDDATA;
 

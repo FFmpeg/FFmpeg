@@ -83,6 +83,16 @@ const uint8_t ff_dirac_next_ctx[DIRAC_CTX_COUNT] = {
 
 int16_t ff_dirac_prob_branchless[256][2];
 
+av_cold void ff_dirac_init_arith_tables(void)
+{
+    int i;
+
+    for (i = 0; i < 256; i++) {
+        ff_dirac_prob_branchless[i][0] =  ff_dirac_prob[255-i];
+        ff_dirac_prob_branchless[i][1] = -ff_dirac_prob[i];
+    }
+}
+
 void ff_dirac_init_arith_decoder(DiracArith *c, GetBitContext *gb, int length)
 {
     int i;
@@ -105,11 +115,8 @@ void ff_dirac_init_arith_decoder(DiracArith *c, GetBitContext *gb, int length)
 
     c->counter = -16;
     c->range   = 0xffff;
-
-    for (i = 0; i < 256; i++) {
-        ff_dirac_prob_branchless[i][0] =  ff_dirac_prob[255-i];
-        ff_dirac_prob_branchless[i][1] = -ff_dirac_prob[i];
-    }
+    c->error   = 0;
+    c->overread= 0;
 
     for (i = 0; i < DIRAC_CTX_COUNT; i++)
         c->contexts[i] = 0x8000;

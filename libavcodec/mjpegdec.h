@@ -39,18 +39,21 @@
 #include "hpeldsp.h"
 #include "idctdsp.h"
 
+#undef near /* This file uses struct member 'near' which in windows.h is defined as empty. */
+
 #define MAX_COMPONENTS 4
 
 typedef struct MJpegDecodeContext {
     AVClass *class;
     AVCodecContext *avctx;
     GetBitContext gb;
+    int buf_size;
 
     int start_code; /* current start code */
     int buffer_size;
     uint8_t *buffer;
 
-    int16_t quant_matrixes[4][64];
+    uint16_t quant_matrixes[4][64];
     VLC vlcs[3][4];
     int qscale[4];      ///< quantizer scale calculated from quant_matrixes
 
@@ -61,6 +64,7 @@ typedef struct MJpegDecodeContext {
     int lossless;
     int ls;
     int progressive;
+    int bayer;          /* true if it's a bayer-encoded JPEG embedded in a DNG */
     int rgb;
     uint8_t upscale_h[4];
     uint8_t upscale_v[4];
@@ -98,7 +102,7 @@ typedef struct MJpegDecodeContext {
     int got_picture;                                ///< we found a SOF and picture is valid, too.
     int linesize[MAX_COMPONENTS];                   ///< linesize << interlaced
     int8_t *qscale_table;
-    DECLARE_ALIGNED(16, int16_t, block)[64];
+    DECLARE_ALIGNED(32, int16_t, block)[64];
     int16_t (*blocks[MAX_COMPONENTS])[64]; ///< intermediate sums (progressive mode)
     uint8_t *last_nnz[MAX_COMPONENTS];
     uint64_t coefs_finished[MAX_COMPONENTS]; ///< bitmask of which coefs have been completely decoded (progressive mode)
@@ -130,6 +134,24 @@ typedef struct MJpegDecodeContext {
     AVStereo3D *stereo3d; ///!< stereoscopic information (cached, since it is read before frame allocation)
 
     const AVPixFmtDescriptor *pix_desc;
+
+    uint8_t **iccdata;
+    int *iccdatalens;
+    int iccnum;
+    int iccread;
+
+    // Raw stream data for hwaccel use.
+    const uint8_t *raw_image_buffer;
+    size_t         raw_image_buffer_size;
+    const uint8_t *raw_scan_buffer;
+    size_t         raw_scan_buffer_size;
+
+    uint8_t raw_huffman_lengths[2][4][16];
+    uint8_t raw_huffman_values[2][4][256];
+
+    enum AVPixelFormat hwaccel_sw_pix_fmt;
+    enum AVPixelFormat hwaccel_pix_fmt;
+    void *hwaccel_picture_private;
 } MJpegDecodeContext;
 
 int ff_mjpeg_decode_init(AVCodecContext *avctx);

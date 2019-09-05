@@ -24,7 +24,7 @@
 #include "libavutil/intreadwrite.h"
 
 // http://multimedia.cx/ingenient.txt
-static int ingenient_probe(AVProbeData *p)
+static int ingenient_probe(const AVProbeData *p)
 {
     if (   AV_RN32(p->buf) != AV_RN32("MJPG")
         || p->buf_size < 50

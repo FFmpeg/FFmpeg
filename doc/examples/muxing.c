@@ -161,7 +161,7 @@ static void add_stream(OutputStream *ost, AVFormatContext *oc,
         c->gop_size      = 12; /* emit one intra frame every twelve frames at most */
         c->pix_fmt       = STREAM_PIX_FMT;
         if (c->codec_id == AV_CODEC_ID_MPEG2VIDEO) {
-            /* just for testing, we also add B frames */
+            /* just for testing, we also add B-frames */
             c->max_b_frames = 2;
         }
         if (c->codec_id == AV_CODEC_ID_MPEG1VIDEO) {
@@ -335,15 +335,15 @@ static int write_audio_frame(AVFormatContext *oc, OutputStream *ost)
         if (ret < 0)
             exit(1);
 
-            /* convert to destination format */
-            ret = swr_convert(ost->swr_ctx,
-                              ost->frame->data, dst_nb_samples,
-                              (const uint8_t **)frame->data, frame->nb_samples);
-            if (ret < 0) {
-                fprintf(stderr, "Error while converting\n");
-                exit(1);
-            }
-            frame = ost->frame;
+        /* convert to destination format */
+        ret = swr_convert(ost->swr_ctx,
+                          ost->frame->data, dst_nb_samples,
+                          (const uint8_t **)frame->data, frame->nb_samples);
+        if (ret < 0) {
+            fprintf(stderr, "Error while converting\n");
+            exit(1);
+        }
+        frame = ost->frame;
 
         frame->pts = av_rescale_q(ost->samples_count, (AVRational){1, c->sample_rate}, c->time_base);
         ost->samples_count += dst_nb_samples;
@@ -440,15 +440,7 @@ static void open_video(AVFormatContext *oc, AVCodec *codec, OutputStream *ost, A
 static void fill_yuv_image(AVFrame *pict, int frame_index,
                            int width, int height)
 {
-    int x, y, i, ret;
-
-    /* when we pass a frame to the encoder, it may keep a reference to it
-     * internally;
-     * make sure we do not overwrite it here
-     */
-    ret = av_frame_make_writable(pict);
-    if (ret < 0)
-        exit(1);
+    int x, y, i;
 
     i = frame_index;
 
@@ -475,6 +467,11 @@ static AVFrame *get_video_frame(OutputStream *ost)
                       STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
         return NULL;
 
+    /* when we pass a frame to the encoder, it may keep a reference to it
+     * internally; make sure we do not overwrite it here */
+    if (av_frame_make_writable(ost->frame) < 0)
+        exit(1);
+
     if (c->pix_fmt != AV_PIX_FMT_YUV420P) {
         /* as we only generate a YUV420P picture, we must convert it
          * to the codec pixel format if needed */
@@ -491,9 +488,9 @@ static AVFrame *get_video_frame(OutputStream *ost)
             }
         }
         fill_yuv_image(ost->tmp_frame, ost->next_pts, c->width, c->height);
-        sws_scale(ost->sws_ctx,
-                  (const uint8_t * const *)ost->tmp_frame->data, ost->tmp_frame->linesize,
-                  0, c->height, ost->frame->data, ost->frame->linesize);
+        sws_scale(ost->sws_ctx, (const uint8_t * const *) ost->tmp_frame->data,
+                  ost->tmp_frame->linesize, 0, c->height, ost->frame->data,
+                  ost->frame->linesize);
     } else {
         fill_yuv_image(ost->frame, ost->next_pts, c->width, c->height);
     }
@@ -566,9 +563,6 @@ int main(int argc, char **argv)
     int encode_video = 0, encode_audio = 0;
     AVDictionary *opt = NULL;
     int i;
-
-    /* Initialize libavcodec, and register all codecs and formats. */
-    av_register_all();
 
     if (argc < 2) {
         printf("usage: %s output_file\n"

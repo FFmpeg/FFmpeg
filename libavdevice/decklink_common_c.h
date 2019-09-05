@@ -1,6 +1,7 @@
 /*
  * Blackmagic DeckLink common code
  * Copyright (c) 2013-2014 Ramiro Polla
+ * Copyright (c) 2017 Akamai Technologies, Inc.
  *
  * This file is part of FFmpeg.
  *
@@ -22,6 +23,15 @@
 #ifndef AVDEVICE_DECKLINK_COMMON_C_H
 #define AVDEVICE_DECKLINK_COMMON_C_H
 
+typedef enum DecklinkPtsSource {
+    PTS_SRC_AUDIO     = 1,
+    PTS_SRC_VIDEO     = 2,
+    PTS_SRC_REFERENCE = 3,
+    PTS_SRC_WALLCLOCK = 4,
+    PTS_SRC_ABS_WALLCLOCK = 5,
+    PTS_SRC_NB
+} DecklinkPtsSource;
+
 struct decklink_cctx {
     const AVClass *cclass;
 
@@ -34,6 +44,20 @@ struct decklink_cctx {
     double preroll;
     int v210;
     int audio_channels;
+    int audio_depth;
+    int duplex_mode;
+    DecklinkPtsSource audio_pts_source;
+    DecklinkPtsSource video_pts_source;
+    int audio_input;
+    int video_input;
+    int tc_format;
+    int draw_bars;
+    char *format_code;
+    int raw_format;
+    int64_t queue_size;
+    int copyts;
+    int64_t timestamp_align;
+    int timing_offset;
 };
 
 #endif /* AVDEVICE_DECKLINK_COMMON_C_H */

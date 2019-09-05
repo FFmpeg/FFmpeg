@@ -95,7 +95,7 @@ static void purge_dialogues(AVFormatContext *s, int force)
                    ass->expected_readorder, dialogue->readorder);
             ass->expected_readorder = dialogue->readorder;
         }
-        avio_printf(s->pb, "Dialogue: %s\r\n", dialogue->line);
+        avio_print(s->pb, "Dialogue: ", dialogue->line, "\r\n");
         if (dialogue == ass->last_added_dialogue)
             ass->last_added_dialogue = next;
         av_freep(&dialogue->line);

@@ -116,7 +116,7 @@ static int64_t read_line(AVBPrint *buf, AVIOContext *pb)
     return pos;
 }
 
-static int lrc_probe(AVProbeData *p)
+static int lrc_probe(const AVProbeData *p)
 {
     int64_t offset = 0;
     int64_t mm;
@@ -212,6 +212,7 @@ static int lrc_read_header(AVFormatContext *s)
     }
     ff_subtitles_queue_finalize(s, &lrc->q);
     ff_metadata_conv_ctx(s, NULL, ff_lrc_metadata_conv);
+    av_bprint_finalize(&line, NULL);
     return 0;
 }
 

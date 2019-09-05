@@ -32,7 +32,7 @@ typedef struct VqfContext {
     int remaining_bits;
 } VqfContext;
 
-static int vqf_probe(AVProbeData *probe_packet)
+static int vqf_probe(const AVProbeData *probe_packet)
 {
     if (AV_RL32(probe_packet->buf) != MKTAG('T','W','I','N'))
         return 0;
@@ -107,6 +107,9 @@ static int vqf_read_header(AVFormatContext *s)
 
     header_size = avio_rb32(s->pb);
 
+    if (header_size < 0)
+        return AVERROR_INVALIDDATA;
+
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codecpar->codec_id   = AV_CODEC_ID_TWINVQ;
     st->start_time = 0;
@@ -120,7 +123,7 @@ static int vqf_read_header(AVFormatContext *s)
 
         len = avio_rb32(s->pb);
 
-        if ((unsigned) len > INT_MAX/2) {
+        if ((unsigned) len > INT_MAX/2 || header_size < 8) {
             av_log(s, AV_LOG_ERROR, "Malformed header\n");
             return -1;
         }
@@ -140,7 +143,7 @@ static int vqf_read_header(AVFormatContext *s)
                 return AVERROR_INVALIDDATA;
             }
 
-            st->codecpar->bit_rate = read_bitrate * 1000;
+            st->codecpar->bit_rate = (int64_t)read_bitrate * 1000;
             break;
         case MKTAG('D','S','I','Z'): // size of compressed data
         {
@@ -212,7 +215,7 @@ static int vqf_read_header(AVFormatContext *s)
         break;
     default:
         av_log(s, AV_LOG_ERROR, "Mode not supported: %d Hz, %"PRId64" kb/s.\n",
-               st->codecpar->sample_rate, (int64_t)st->codecpar->bit_rate);
+               st->codecpar->sample_rate, st->codecpar->bit_rate);
         return -1;
     }
     c->frame_bit_len = st->codecpar->bit_rate*size/st->codecpar->sample_rate;

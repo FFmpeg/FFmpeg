@@ -37,7 +37,7 @@ typedef struct {
     AVRational frame_rate;
 } AQTitleContext;
 
-static int aqt_probe(AVProbeData *p)
+static int aqt_probe(const AVProbeData *p)
 {
     int frame;
     const char *ptr = p->buf;

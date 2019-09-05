@@ -1,6 +1,6 @@
 /*
  * Real Audio 1.0 (14.4K)
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -1512,11 +1512,11 @@ static void add_wav(int16_t *dest, int n, int skip_first, int *m,
 
     v[0] = 0;
     for (i=!skip_first; i<3; i++)
-        v[i] = (ff_gain_val_tab[n][i] * m[i]) >> ff_gain_exp_tab[n];
+        v[i] = (ff_gain_val_tab[n][i] * (unsigned)m[i]) >> ff_gain_exp_tab[n];
 
     if (v[0]) {
         for (i=0; i < BLOCKSIZE; i++)
-            dest[i] = (s1[i]*v[0] + s2[i]*v[1] + s3[i]*v[2]) >> 12;
+            dest[i] = (int)((s1[i]*(unsigned)v[0]) + s2[i]*v[1] + s3[i]*v[2]) >> 12;
     } else {
         for (i=0; i < BLOCKSIZE; i++)
             dest[i] = (             s2[i]*v[1] + s3[i]*v[2]) >> 12;
@@ -1569,11 +1569,11 @@ int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
         b = 0x1000000 / b;
         for (j=0; j <= i; j++) {
 #if CONFIG_FTRAPV
-            int a = bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12);
+            int a = bp2[j] - ((int)(refl[i+1] * (unsigned)bp2[i-j]) >> 12);
             if((int)(a*(unsigned)b) != a*(int64_t)b)
                 return 1;
 #endif
-            bp1[j] = ((bp2[j] - ((refl[i+1] * bp2[i-j]) >> 12)) * b) >> 12;
+            bp1[j] = (int)((bp2[j] - ((int)(refl[i+1] * (unsigned)bp2[i-j]) >> 12)) * (unsigned)b) >> 12;
         }
 
         if ((unsigned) bp1[i] + 0x1000 > 0x1fff)
@@ -1598,10 +1598,10 @@ void ff_eval_coefs(int *coefs, const int *refl)
     int i, j;
 
     for (i=0; i < LPC_ORDER; i++) {
-        b1[i] = refl[i] << 4;
+        b1[i] = refl[i] * 16;
 
         for (j=0; j < i; j++)
-            b1[j] = ((refl[i] * b2[i-j-1]) >> 12) + b2[j];
+            b1[j] = ((int)(refl[i] * (unsigned)b2[i-j-1]) >> 12) + b2[j];
 
         FFSWAP(int *, b1, b2);
     }
@@ -1701,7 +1701,7 @@ void ff_subblock_synthesis(RA144Context *ractx, const int16_t *lpc_coefs,
     if (cba_idx) {
         cba_idx += BLOCKSIZE/2 - 1;
         ff_copy_and_dup(ractx->buffer_a, ractx->adapt_cb, cba_idx);
-        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * gval) >> 12;
+        m[0] = (ff_irms(&ractx->adsp, ractx->buffer_a) * (unsigned)gval) >> 12;
     } else {
         m[0] = 0;
     }

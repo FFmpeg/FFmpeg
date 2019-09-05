@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "pcm.h"
 
-static int nist_probe(AVProbeData *p)
+static int nist_probe(const AVProbeData *p)
 {
     if (AV_RL64(p->buf) == AV_RL64("NIST_1A\x0a"))
         return AVPROBE_SCORE_MAX;
@@ -89,7 +89,7 @@ static int nist_read_header(AVFormatContext *s)
 
             return 0;
         } else if (!memcmp(buffer, "channel_count", 13)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->channels);
+            sscanf(buffer, "%*s %*s %u", &st->codecpar->channels);
         } else if (!memcmp(buffer, "sample_byte_format", 18)) {
             sscanf(buffer, "%*s %*s %31s", format);
 
@@ -108,11 +108,11 @@ static int nist_read_header(AVFormatContext *s)
         } else if (!memcmp(buffer, "sample_count", 12)) {
             sscanf(buffer, "%*s %*s %"SCNd64, &st->duration);
         } else if (!memcmp(buffer, "sample_n_bytes", 14)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &bps);
+            sscanf(buffer, "%*s %*s %d", &bps);
         } else if (!memcmp(buffer, "sample_rate", 11)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->sample_rate);
+            sscanf(buffer, "%*s %*s %d", &st->codecpar->sample_rate);
         } else if (!memcmp(buffer, "sample_sig_bits", 15)) {
-            sscanf(buffer, "%*s %*s %"SCNd32, &st->codecpar->bits_per_coded_sample);
+            sscanf(buffer, "%*s %*s %d", &st->codecpar->bits_per_coded_sample);
         } else {
             char key[32], value[32];
             if (sscanf(buffer, "%31s %*s %31s", key, value) == 2) {

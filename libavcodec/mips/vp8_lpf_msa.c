@@ -540,14 +540,8 @@ void ff_vp8_h_loop_filter_simple_msa(uint8_t *src, ptrdiff_t pitch,
     ILVRL_B2_SH(q0, p0, tmp1, tmp0);
 
     src -= 1;
-    ST2x4_UB(tmp1, 0, src, pitch);
-    src += 4 * pitch;
-    ST2x4_UB(tmp1, 4, src, pitch);
-    src += 4 * pitch;
-    ST2x4_UB(tmp0, 0, src, pitch);
-    src += 4 * pitch;
-    ST2x4_UB(tmp0, 4, src, pitch);
-    src += 4 * pitch;
+    ST_H8(tmp1, 0, 1, 2, 3, 4, 5, 6, 7, src, pitch)
+    ST_H8(tmp0, 0, 1, 2, 3, 4, 5, 6, 7, src + 8 * pitch, pitch)
 }
 
 void ff_vp8_v_loop_filter8uv_inner_msa(uint8_t *src_u, uint8_t *src_v,
@@ -596,7 +590,6 @@ void ff_vp8_h_loop_filter8uv_inner_msa(uint8_t *src_u, uint8_t *src_v,
                                        ptrdiff_t pitch, int b_limit_in,
                                        int limit_in, int thresh_in)
 {
-    uint8_t *temp_src_u, *temp_src_v;
     v16u8 p3, p2, p1, p0, q3, q2, q1, q0;
     v16u8 mask, hev, flat, thresh, limit, b_limit;
     v16u8 row0, row1, row2, row3, row4, row5, row6, row7, row8;
@@ -623,15 +616,8 @@ void ff_vp8_h_loop_filter8uv_inner_msa(uint8_t *src_u, uint8_t *src_v,
     tmp1 = (v4i32) __msa_ilvl_b((v16i8) q1, (v16i8) q0);
     ILVRL_H2_SW(tmp1, tmp0, tmp4, tmp5);
 
-    temp_src_u = src_u - 2;
-    ST4x4_UB(tmp2, tmp2, 0, 1, 2, 3, temp_src_u, pitch);
-    temp_src_u += 4 * pitch;
-    ST4x4_UB(tmp3, tmp3, 0, 1, 2, 3, temp_src_u, pitch);
-
-    temp_src_v = src_v - 2;
-    ST4x4_UB(tmp4, tmp4, 0, 1, 2, 3, temp_src_v, pitch);
-    temp_src_v += 4 * pitch;
-    ST4x4_UB(tmp5, tmp5, 0, 1, 2, 3, temp_src_v, pitch);
+    ST_W8(tmp2, tmp3, 0, 1, 2, 3, 0, 1, 2, 3, src_u - 2, pitch);
+    ST_W8(tmp4, tmp5, 0, 1, 2, 3, 0, 1, 2, 3, src_v - 2, pitch);
 }
 
 void ff_vp8_v_loop_filter16_inner_msa(uint8_t *src, ptrdiff_t pitch,
@@ -684,7 +670,6 @@ void ff_vp8_h_loop_filter16_inner_msa(uint8_t *src, ptrdiff_t pitch,
     ILVRL_H2_SH(tmp1, tmp0, tmp4, tmp5);
 
     src -= 2;
-    ST4x8_UB(tmp2, tmp3, src, pitch);
-    src += (8 * pitch);
-    ST4x8_UB(tmp4, tmp5, src, pitch);
+    ST_W8(tmp2, tmp3, 0, 1, 2, 3, 0, 1, 2, 3, src, pitch)
+    ST_W8(tmp4, tmp5, 0, 1, 2, 3, 0, 1, 2, 3, src + 8 * pitch, pitch)
 }

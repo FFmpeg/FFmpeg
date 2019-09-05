@@ -40,7 +40,7 @@ typedef struct CDXLDemuxContext {
     int64_t     filesize;
 } CDXLDemuxContext;
 
-static int cdxl_read_probe(AVProbeData *p)
+static int cdxl_read_probe(const AVProbeData *p)
 {
     int score = AVPROBE_SCORE_EXTENSION + 10;
 

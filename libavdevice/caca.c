@@ -178,7 +178,7 @@ static int caca_write_header(AVFormatContext *s)
     }
 
     if (!c->window_title)
-        c->window_title = av_strdup(s->filename);
+        c->window_title = av_strdup(s->url);
     caca_set_display_title(c->display, c->window_title);
     caca_set_display_time(c->display, av_rescale_q(1, st->codec->time_base, AV_TIME_BASE_Q));
 
@@ -220,7 +220,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass caca_class = {
-    .class_name = "caca_outdev",
+    .class_name = "caca outdev",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,

@@ -48,8 +48,8 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
 {
     struct MuxChain *chain = s->priv_data;
     AVFormatContext *mpegts_ctx = NULL, *rtp_ctx = NULL;
-    AVOutputFormat *mpegts_format = av_guess_format("mpegts", NULL, NULL);
-    AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
+    ff_const59 AVOutputFormat *mpegts_format = av_guess_format("mpegts", NULL, NULL);
+    ff_const59 AVOutputFormat *rtp_format    = av_guess_format("rtp", NULL, NULL);
     int i, ret = AVERROR(ENOMEM);
     AVStream *st;
 
@@ -85,6 +85,10 @@ static int rtp_mpegts_write_header(AVFormatContext *s)
     }
     rtp_ctx->oformat = rtp_format;
     st = avformat_new_stream(rtp_ctx, NULL);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     st->time_base.num   = 1;
     st->time_base.den   = 90000;
     st->codecpar->codec_id = AV_CODEC_ID_MPEG2TS;

@@ -25,6 +25,7 @@
  * David Bartovčak and Miroslav Vrankić
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
@@ -44,6 +45,7 @@ typedef struct ATADenoiseContext {
     float fthra[4], fthrb[4];
     int thra[4], thrb[4];
 
+    int planes;
     int nb_planes;
     int planewidth[4];
     int planeheight[4];
@@ -67,7 +69,8 @@ static const AVOption atadenoise_options[] = {
     { "1b", "set threshold B for 2nd plane", OFFSET(fthrb[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "2a", "set threshold A for 3rd plane", OFFSET(fthra[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
-    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=33},   5, SIZE, FLAGS },
+    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, FLAGS },
+    { "p",  "set what planes to filter",     OFFSET(planes),   AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
     { NULL }
 };
 
@@ -77,6 +80,11 @@ static int query_formats(AVFilterContext *ctx)
 {
     static const enum AVPixelFormat pixel_fmts[] = {
         AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_GRAY9,
+        AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_GRAY12,
+        AV_PIX_FMT_GRAY14,
+        AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_YUV410P, AV_PIX_FMT_YUV411P,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P,
         AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV444P,
@@ -85,6 +93,10 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ411P,
         AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
         AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10,
+        AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV420P12,
+        AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_YUV444P14, AV_PIX_FMT_YUV422P14, AV_PIX_FMT_YUV420P14,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRP9, AV_PIX_FMT_GBRP10,
         AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRP14, AV_PIX_FMT_GBRP16,
@@ -101,8 +113,8 @@ static av_cold int init(AVFilterContext *ctx)
     ATADenoiseContext *s = ctx->priv;
 
     if (!(s->size & 1)) {
-        av_log(ctx, AV_LOG_ERROR, "size %d is invalid. Must be an odd value.\n", s->size);
-        return AVERROR(EINVAL);
+        av_log(ctx, AV_LOG_WARNING, "size %d is invalid. Must be an odd value, setting it to %d.\n", s->size, s->size|1);
+        s->size |= 1;
     }
     s->mid = s->size / 2 + 1;
 
@@ -135,6 +147,12 @@ static int filter_slice8(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs
         const uint8_t **data = (const uint8_t **)s->data[p];
         const int *linesize = (const int *)s->linesize[p];
         const uint8_t *srcf[SIZE];
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane(dst, out->linesize[p], src, in->linesize[p],
+                                w, slice_end - slice_start);
+            continue;
+        }
 
         for (i = 0; i < size; i++)
             srcf[i] = data[i] + slice_start * linesize[i];
@@ -206,6 +224,12 @@ static int filter_slice16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         const uint8_t **data = (const uint8_t **)s->data[p];
         const int *linesize = (const int *)s->linesize[p];
         const uint16_t *srcf[SIZE];
+
+        if (!((1 << p) & s->planes)) {
+            av_image_copy_plane((uint8_t *)dst, out->linesize[p], (uint8_t *)src, in->linesize[p],
+                                w * 2, slice_end - slice_start);
+            continue;
+        }
 
         for (i = 0; i < s->size; i++)
             srcf[i] = (const uint16_t *)(data[i] + slice_start * linesize[i]);
@@ -337,7 +361,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
         ctx->internal->execute(ctx, s->filter_slice, &td, NULL,
                                FFMIN3(s->planeheight[1],
                                       s->planeheight[2],
-                                      ctx->graph->nb_threads));
+                                      ff_filter_get_nb_threads(ctx)));
         av_frame_copy_props(out, in);
     } else {
         out = av_frame_clone(in);

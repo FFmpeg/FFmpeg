@@ -26,6 +26,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 #include "mpegvideo.h"
 #include "dnxhddata.h"
 
@@ -45,6 +47,9 @@ typedef struct DNXHDEncContext {
     MpegEncContext m; ///< Used for quantization dsp functions
 
     int cid;
+    int profile;
+    int bit_depth;
+    int is_444;
     const CIDEntry *cid_table;
     uint8_t *msip; ///< Macroblock Scan Indexes Payload
     uint32_t *slice_size;
@@ -58,6 +63,10 @@ typedef struct DNXHDEncContext {
     unsigned dct_uv_offset;
     unsigned block_width_l2;
 
+    int frame_size;
+    int coding_unit_size;
+    int data_offset;
+
     int interlaced;
     int cur_field;
 
@@ -65,7 +74,9 @@ typedef struct DNXHDEncContext {
     unsigned min_padding;
     int intra_quant_bias;
 
-    DECLARE_ALIGNED(16, int16_t, blocks)[8][64];
+    DECLARE_ALIGNED(32, int16_t, blocks)[12][64];
+    DECLARE_ALIGNED(16, uint8_t, edge_buf_y)[512]; // has to hold 16x16 uint16 when depth=10
+    DECLARE_ALIGNED(16, uint8_t, edge_buf_uv)[2][512]; // has to hold 16x16 uint16_t when depth=10
 
     int      (*qmatrix_c)     [64];
     int      (*qmatrix_l)     [64];
@@ -75,6 +86,8 @@ typedef struct DNXHDEncContext {
     unsigned frame_bits;
     uint8_t *src[3];
 
+    uint32_t *orig_vlc_codes;
+    uint8_t  *orig_vlc_bits;
     uint32_t *vlc_codes;
     uint8_t  *vlc_bits;
     uint16_t *run_codes;
@@ -89,10 +102,11 @@ typedef struct DNXHDEncContext {
     uint8_t  *mb_qscale;
 
     RCCMPEntry *mb_cmp;
-    RCEntry   (*mb_rc)[8160];
+    RCCMPEntry *mb_cmp_tmp;
+    RCEntry    *mb_rc;
 
-    void (*get_pixels_8x4_sym)(int16_t * /* align 16 */,
-                               const uint8_t *, ptrdiff_t);
+    void (*get_pixels_8x4_sym)(int16_t *av_restrict /* align 16 */ block,
+                               const uint8_t *pixels, ptrdiff_t line_size);
 } DNXHDEncContext;
 
 void ff_dnxhdenc_init_x86(DNXHDEncContext *ctx);

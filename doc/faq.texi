@@ -76,7 +76,7 @@ the gcc developers. Note that we will not add workarounds for gcc bugs.
 
 Also note that (some of) the gcc developers believe this is not a bug or
 not a bug they should fix:
-@url{http://gcc.gnu.org/bugzilla/show_bug.cgi?id=11203}.
+@url{https://gcc.gnu.org/bugzilla/show_bug.cgi?id=11203}.
 Then again, some of them do not know the difference between an undecidable
 problem and an NP-hard problem...
 
@@ -257,13 +257,13 @@ default.
 @section Which are good parameters for encoding high quality MPEG-4?
 
 '-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
-things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd'.
+things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Which are good parameters for encoding high quality MPEG-1/MPEG-2?
 
 '-mbd rd -trellis 2 -cmp 2 -subcmp 2 -g 100 -pass 1/2'
 but beware the '-g 100' might cause problems with some decoders.
-Things to try: '-bf 2', '-flags qprd', '-flags mv0', '-flags skiprd.
+Things to try: '-bf 2', '-mpv_flags qp_rd', '-mpv_flags mv0', '-mpv_flags skip_rd'.
 
 @section Interlaced video looks very bad when encoded with ffmpeg, what is wrong?
 
@@ -311,18 +311,18 @@ invoking ffmpeg with several @option{-i} options.
 For audio, to put all channels together in a single stream (example: two
 mono streams into one stereo stream): this is sometimes called to
 @emph{merge} them, and can be done using the
-@url{https://ffmpeg.org/ffmpeg-filters.html#amerge, @code{amerge}} filter.
+@url{ffmpeg-filters.html#amerge, @code{amerge}} filter.
 
 @item
 For audio, to play one on top of the other: this is called to @emph{mix}
 them, and can be done by first merging them into a single stream and then
-using the @url{https://ffmpeg.org/ffmpeg-filters.html#pan, @code{pan}} filter to mix
+using the @url{ffmpeg-filters.html#pan, @code{pan}} filter to mix
 the channels at will.
 
 @item
 For video, to display both together, side by side or one on top of a part of
 the other; it can be done using the
-@url{https://ffmpeg.org/ffmpeg-filters.html#overlay, @code{overlay}} video filter.
+@url{ffmpeg-filters.html#overlay, @code{overlay}} video filter.
 
 @end itemize
 
@@ -333,19 +333,19 @@ There are several solutions, depending on the exact circumstances.
 
 @subsection Concatenating using the concat @emph{filter}
 
-FFmpeg has a @url{https://ffmpeg.org/ffmpeg-filters.html#concat,
+FFmpeg has a @url{ffmpeg-filters.html#concat,
 @code{concat}} filter designed specifically for that, with examples in the
 documentation. This operation is recommended if you need to re-encode.
 
 @subsection Concatenating using the concat @emph{demuxer}
 
-FFmpeg has a @url{https://www.ffmpeg.org/ffmpeg-formats.html#concat,
+FFmpeg has a @url{ffmpeg-formats.html#concat,
 @code{concat}} demuxer which you can use when you want to avoid a re-encode and
 your format doesn't support file level concatenation.
 
 @subsection Concatenating using the concat @emph{protocol} (file level)
 
-FFmpeg has a @url{https://ffmpeg.org/ffmpeg-protocols.html#concat,
+FFmpeg has a @url{ffmpeg-protocols.html#concat,
 @code{concat}} protocol designed specifically for that, with examples in the
 documentation.
 
@@ -385,7 +385,7 @@ mkfifo intermediate2.mpg
 ffmpeg -i input1.avi -qscale:v 1 -y intermediate1.mpg < /dev/null &
 ffmpeg -i input2.avi -qscale:v 1 -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-ffmpeg -f mpeg -i - -c:v mpeg4 -acodec libmp3lame output.avi
+ffmpeg -f mpeg -i - -c:v mpeg4 -c:a libmp3lame output.avi
 @end example
 
 @subsection Concatenating using raw audio and video
@@ -407,13 +407,13 @@ mkfifo temp2.a
 mkfifo temp2.v
 mkfifo all.a
 mkfifo all.v
-ffmpeg -i input1.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
-ffmpeg -i input2.flv -vn -f u16le -acodec pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
+ffmpeg -i input1.flv -vn -f u16le -c:a pcm_s16le -ac 2 -ar 44100 - > temp1.a < /dev/null &
+ffmpeg -i input2.flv -vn -f u16le -c:a pcm_s16le -ac 2 -ar 44100 - > temp2.a < /dev/null &
 ffmpeg -i input1.flv -an -f yuv4mpegpipe - > temp1.v < /dev/null &
 @{ ffmpeg -i input2.flv -an -f yuv4mpegpipe - < /dev/null | tail -n +2 > temp2.v ; @} &
 cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
-ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
+ffmpeg -f u16le -c:a pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
        -y output.flv
 rm temp[12].[av] all.[av]
@@ -485,7 +485,7 @@ scaling adjusts the SAR to keep the DAR constant.
 
 If you want to stretch, or “unstretch”, the image, you need to override the
 information with the
-@url{https://ffmpeg.org/ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
+@url{ffmpeg-filters.html#setdar_002c-setsar, @code{setdar or setsar filters}}.
 
 Do not forget to examine carefully the original video to check whether the
 stretching comes from the image or from the aspect ratio information.
@@ -500,6 +500,71 @@ ffmpeg -i ega_screen.nut -vf scale=640:480,setsar=1 ega_screen_scaled.nut
 ffmpeg -i ega_screen.nut -vf setdar=4/3 ega_screen_anamorphic.nut
 ffmpeg -i ega_screen.nut -aspect 4/3 -c copy ega_screen_overridden.nut
 @end example
+
+@anchor{background task}
+@section How do I run ffmpeg as a background task?
+
+ffmpeg normally checks the console input, for entries like "q" to stop
+and "?" to give help, while performing operations. ffmpeg does not have a way of
+detecting when it is running as a background task.
+When it checks the console input, that can cause the process running ffmpeg
+in the background to suspend.
+
+To prevent those input checks, allowing ffmpeg to run as a background task,
+use the @url{ffmpeg.html#stdin-option, @code{-nostdin} option}
+in the ffmpeg invocation. This is effective whether you run ffmpeg in a shell
+or invoke ffmpeg in its own process via an operating system API.
+
+As an alternative, when you are running ffmpeg in a shell, you can redirect
+standard input to @code{/dev/null} (on Linux and macOS)
+or @code{NUL} (on Windows). You can do this redirect either
+on the ffmpeg invocation, or from a shell script which calls ffmpeg.
+
+For example:
+
+@example
+ffmpeg -nostdin -i INPUT OUTPUT
+@end example
+
+or (on Linux, macOS, and other UNIX-like shells):
+
+@example
+ffmpeg -i INPUT OUTPUT </dev/null
+@end example
+
+or (on Windows):
+
+@example
+ffmpeg -i INPUT OUTPUT <NUL
+@end example
+
+@section How do I prevent ffmpeg from suspending with a message like @emph{suspended (tty output)}?
+
+If you run ffmpeg in the background, you may find that its process suspends.
+There may be a message like @emph{suspended (tty output)}. The question is how
+to prevent the process from being suspended.
+
+For example:
+
+@example
+% ffmpeg -i INPUT OUTPUT &> ~/tmp/log.txt &
+[1] 93352
+%
+[1]  + suspended (tty output)  ffmpeg -i INPUT OUTPUT &>
+@end example
+
+The message "tty output" notwithstanding, the problem here is that
+ffmpeg normally checks the console input when it runs. The operating system
+detects this, and suspends the process until you can bring it to the
+foreground and attend to it.
+
+The solution is to use the right techniques to tell ffmpeg not to consult
+console input. You can use the
+@url{ffmpeg.html#stdin-option, @code{-nostdin} option},
+or redirect standard input with @code{< /dev/null}.
+See FAQ
+@ref{background task, @emph{How do I run ffmpeg as a background task?}}
+for details.
 
 @chapter Development
 
@@ -536,7 +601,7 @@ No. These tools are too bloated and they complicate the build.
 FFmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
-read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
+read @uref{https://web.archive.org/web/20111004021423/http://kernel.org/pub/linux/docs/lkml/#s15, "Programming Religion"}.
 
 @section Why are the ffmpeg programs devoid of debugging symbols?
 

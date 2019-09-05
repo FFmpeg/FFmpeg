@@ -33,6 +33,8 @@
 #define SINETABLE_CONST
 #define SINETABLE(size) \
     INTFLOAT AAC_RENAME(ff_sine_##size)[size]
+#define SINETABLE120960(size) \
+    INTFLOAT AAC_RENAME(ff_sine_##size)[size]
 #define FF_ARRAY_ELEMS(a) (sizeof(a) / sizeof((a)[0]))
 #include "sinewin_tablegen.h"
 #include "tableprint.h"

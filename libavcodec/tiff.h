@@ -20,7 +20,7 @@
 
 /**
  * @file
- * TIFF tables
+ * TIFF constants & data structures
  *
  * For more information about the TIFF format, check the official docs at:
  * http://partners.adobe.com/public/developer/tiff/index.html
@@ -33,7 +33,17 @@
 #include <stdint.h>
 #include "tiff_common.h"
 
-/** abridged list of TIFF tags */
+/** TIFF types in ascenting priority (last in the list is highest) */
+enum TiffType {
+    /** TIFF image based on the TIFF 6.0 or TIFF/EP (ISO 12234-2) specifications */
+    TIFF_TYPE_TIFF,
+    /** Digital Negative (DNG) image */
+    TIFF_TYPE_DNG,
+    /** Digital Negative (DNG) image part of an CinemaDNG image sequence */
+    TIFF_TYPE_CINEMADNG,
+};
+
+/** abridged list of TIFF and TIFF/EP tags */
 enum TiffTags {
     TIFF_SUBFILE            = 0xfe,
     TIFF_WIDTH              = 0x100,
@@ -70,21 +80,42 @@ enum TiffTags {
     TIFF_TILE_LENGTH        = 0x143,
     TIFF_TILE_OFFSETS       = 0x144,
     TIFF_TILE_BYTE_COUNTS   = 0x145,
+    TIFF_SUB_IFDS           = 0x14A,
     TIFF_EXTRASAMPLES       = 0x152,
     TIFF_YCBCR_COEFFICIENTS = 0x211,
     TIFF_YCBCR_SUBSAMPLING  = 0x212,
     TIFF_YCBCR_POSITIONING  = 0x213,
     TIFF_REFERENCE_BW       = 0x214,
+    TIFF_CFA_PATTERN_DIM    = 0x828D,
+    TIFF_CFA_PATTERN        = 0x828E,
     TIFF_COPYRIGHT          = 0x8298,
     TIFF_MODEL_TIEPOINT     = 0x8482,
     TIFF_MODEL_PIXEL_SCALE  = 0x830E,
     TIFF_MODEL_TRANSFORMATION= 0x8480,
     TIFF_GEO_KEY_DIRECTORY  = 0x87AF,
     TIFF_GEO_DOUBLE_PARAMS  = 0x87B0,
-    TIFF_GEO_ASCII_PARAMS   = 0x87B1
+    TIFF_GEO_ASCII_PARAMS   = 0x87B1,
 };
 
-/** list of TIFF compression types */
+/** abridged list of DNG tags */
+enum DngTags {
+    DNG_VERSION             = 0xC612,
+    DNG_BACKWARD_VERSION    = 0xC613,
+    DNG_LINEARIZATION_TABLE = 0xC618,
+    DNG_BLACK_LEVEL         = 0xC61A,
+    DNG_WHITE_LEVEL         = 0xC61D,
+};
+
+/** list of CinemaDNG tags */
+enum CinemaDngTags {
+    CINEMADNG_TIME_CODES    = 0xC763,
+    CINEMADNG_FRAME_RATE    = 0xC764,
+    CINEMADNG_T_STOP        = 0xC772,
+    CINEMADNG_REEL_NAME     = 0xC789,
+    CINEMADNG_CAMERA_LABEL  = 0xC7A1,
+};
+
+/** list of TIFF, TIFF/EP and DNG compression types */
 enum TiffCompr {
     TIFF_RAW = 1,
     TIFF_CCITT_RLE,
@@ -147,6 +178,7 @@ enum TiffGeoTagKey {
     TIFF_VERTICAL_UNITS_GEOKEY               = 4099
 };
 
+/** list of TIFF, TIFF/AP and DNG PhotometricInterpretation (TIFF_PHOTOMETRIC) values */
 enum TiffPhotometric {
     TIFF_PHOTOMETRIC_NONE       = -1,
     TIFF_PHOTOMETRIC_WHITE_IS_ZERO,      /* mono or grayscale, 0 is white */
@@ -159,7 +191,7 @@ enum TiffPhotometric {
     TIFF_PHOTOMETRIC_CIE_LAB    = 8,     /* 1976 CIE L*a*b* */
     TIFF_PHOTOMETRIC_ICC_LAB,            /* ICC L*a*b* */
     TIFF_PHOTOMETRIC_ITU_LAB,            /* ITU L*a*b* */
-    TIFF_PHOTOMETRIC_CFA        = 32803, /* Color Filter Array (DNG) */
+    TIFF_PHOTOMETRIC_CFA        = 32803, /* Color Filter Array (TIFF/AP and DNG) */
     TIFF_PHOTOMETRIC_LOG_L      = 32844, /* CIE Log2(L) */
     TIFF_PHOTOMETRIC_LOG_LUV,            /* CIE Log L*u*v* */
     TIFF_PHOTOMETRIC_LINEAR_RAW = 34892, /* Linear Raw (DNG) */

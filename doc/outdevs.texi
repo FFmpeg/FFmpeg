@@ -104,7 +104,7 @@ The argument must be one of @code{algorithms}, @code{antialiases},
 The following command shows the @command{ffmpeg} output is an
 CACA window, forcing its size to 80x25:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt rgb24 -window_size 80x25 -f caca -
 @end example
 
 @item
@@ -131,8 +131,8 @@ and @code{--extra-ldflags}.
 On Windows, you need to run the IDL files through @command{widl}.
 
 DeckLink is very picky about the formats it supports. Pixel format is always
-uyvy422, framerate and video size must be determined for your device with
-@command{-list_formats 1}. Audio sample rate is always 48 kHz.
+uyvy422, framerate, field order and video size must be determined for your
+device with @command{-list_formats 1}. Audio sample rate is always 48 kHz.
 
 @subsection Options
 
@@ -140,7 +140,8 @@ uyvy422, framerate and video size must be determined for your device with
 
 @item list_devices
 If set to @option{true}, print a list of devices and exit.
-Defaults to @option{false}.
+Defaults to @option{false}. Alternatively you can use the @code{-sinks}
+option of ffmpeg to list the available output devices.
 
 @item list_formats
 If set to @option{true}, print a list of supported formats and exit.
@@ -149,6 +150,14 @@ Defaults to @option{false}.
 @item preroll
 Amount of time to preroll video in seconds.
 Defaults to @option{0.5}.
+
+@item duplex_mode
+Sets the decklink device duplex mode. Must be @samp{unset}, @samp{half} or @samp{full}.
+Defaults to @samp{unset}.
+
+@item timing_offset
+Sets the genlock timing pixel offset on the used output.
+Defaults to @samp{unset}.
 
 @end table
 
@@ -206,7 +215,7 @@ Set x/y coordinate of top left corner. Default is 0.
 Play a file on framebuffer device @file{/dev/fb0}.
 Required pixel format depends on current framebuffer settings.
 @example
-ffmpeg -re -i INPUT -vcodec rawvideo -pix_fmt bgra -f fbdev /dev/fb0
+ffmpeg -re -i INPUT -c:v rawvideo -pix_fmt bgra -f fbdev /dev/fb0
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
@@ -348,9 +357,18 @@ Set the SDL window size, can be a string of the form
 If not specified it defaults to the size of the input video,
 downscaled according to the aspect ratio.
 
+@item window_x
+@item window_y
+Set the position of the window on the screen.
+
 @item window_fullscreen
 Set fullscreen mode when non-zero value is provided.
 Default value is zero.
+
+@item window_enable_quit
+Enable quit action (using window button or keyboard key)
+when non-zero value is provided.
+Default value is 1 (enable quit action)
 @end table
 
 @subsection Interactive commands
@@ -368,12 +386,16 @@ Quit the device immediately.
 The following command shows the @command{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
+ffmpeg -i INPUT -c:v rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
 
 @section sndio
 
 sndio audio output device.
+
+@section v4l2
+
+Video4Linux2 output device.
 
 @section xv
 

@@ -1,5 +1,5 @@
 /*
- * MPEG1/2 muxer
+ * MPEG-1/2 muxer
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -151,7 +151,7 @@ static int put_system_header(AVFormatContext *ctx, uint8_t *buf,
         put_bits(&pb, 1, 1);
     } else {
         put_bits(&pb, 1, 0); /* variable bitrate */
-        put_bits(&pb, 1, 0); /* non constrainted bit stream */
+        put_bits(&pb, 1, 0); /* nonconstrained bitstream */
     }
 
     if (s->is_vcd || s->is_dvd) {
@@ -353,7 +353,8 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
             if (!s->is_mpeg2 &&
                 (st->codecpar->codec_id == AV_CODEC_ID_AC3 ||
                  st->codecpar->codec_id == AV_CODEC_ID_DTS ||
-                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE))
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_S16BE ||
+                 st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD))
                  av_log(ctx, AV_LOG_WARNING,
                         "%s in MPEG-1 system streams is not widely supported, "
                         "consider using the vob or the dvd muxer "
@@ -369,14 +370,53 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                     if (lpcm_freq_tab[j] == st->codecpar->sample_rate)
                         break;
                 }
-                if (j == 4)
+                if (j == 4) {
+                    int sr;
+                    av_log(ctx, AV_LOG_ERROR, "Invalid sampling rate for PCM stream.\n");
+                    av_log(ctx, AV_LOG_INFO, "Allowed sampling rates:");
+                    for (sr = 0; sr < 4; sr++)
+                         av_log(ctx, AV_LOG_INFO, " %d", lpcm_freq_tab[sr]);
+                    av_log(ctx, AV_LOG_INFO, "\n");
                     goto fail;
-                if (st->codecpar->channels > 8)
-                    return -1;
+                }
+                if (st->codecpar->channels > 8) {
+                    av_log(ctx, AV_LOG_ERROR, "At most 8 channels allowed for LPCM streams.\n");
+                    goto fail;
+                }
                 stream->lpcm_header[0] = 0x0c;
                 stream->lpcm_header[1] = (st->codecpar->channels - 1) | (j << 4);
                 stream->lpcm_header[2] = 0x80;
                 stream->lpcm_align     = st->codecpar->channels * 2;
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+                int freq;
+
+                switch (st->codecpar->sample_rate) {
+                case 48000: freq = 0; break;
+                case 96000: freq = 1; break;
+                case 44100: freq = 2; break;
+                case 32000: freq = 3; break;
+                default:
+                    av_log(ctx, AV_LOG_ERROR, "Unsupported sample rate.\n");
+                    return AVERROR(EINVAL);
+                }
+
+                stream->lpcm_header[0] = 0x0c;
+                stream->lpcm_header[1] = (freq << 4) |
+                                         (((st->codecpar->bits_per_coded_sample - 16) / 4) << 6) |
+                                         st->codecpar->channels - 1;
+                stream->lpcm_header[2] = 0x80;
+                stream->id = lpcm_id++;
+                stream->lpcm_align = st->codecpar->channels * st->codecpar->bits_per_coded_sample / 8;
+            } else if (st->codecpar->codec_id == AV_CODEC_ID_MLP ||
+                       st->codecpar->codec_id == AV_CODEC_ID_TRUEHD) {
+                       av_log(ctx, AV_LOG_ERROR, "Support for muxing audio codec %s not implemented.\n",
+                              avcodec_get_name(st->codecpar->codec_id));
+                       return AVERROR_PATCHWELCOME;
+            } else if (st->codecpar->codec_id != AV_CODEC_ID_MP1 &&
+                       st->codecpar->codec_id != AV_CODEC_ID_MP2 &&
+                       st->codecpar->codec_id != AV_CODEC_ID_MP3) {
+                       av_log(ctx, AV_LOG_ERROR, "Unsupported audio codec. Must be one of mp1, mp2, mp3, 16-bit pcm_dvd, pcm_s16be, ac3 or dts.\n");
+                       goto fail;
             } else {
                 stream->id = mpa_id++;
             }
@@ -397,7 +437,7 @@ static av_cold int mpeg_mux_init(AVFormatContext *ctx)
                 stream->max_buffer_size = 6 * 1024 + props->buffer_size / 8;
             else {
                 av_log(ctx, AV_LOG_WARNING,
-                       "VBV buffer size not set, using default size of 130KB\n"
+                       "VBV buffer size not set, using default size of 230KB\n"
                        "If you want the mpeg file to be compliant to some specification\n"
                        "Like DVD, VCD or others, make sure you set the correct buffer size\n");
                 // FIXME: this is probably too small as default
@@ -1146,8 +1186,23 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
         stream->next_packet = &stream->premux_packet;
     *stream->next_packet     =
     pkt_desc                 = av_mallocz(sizeof(PacketDesc));
+    if (!pkt_desc)
+        return AVERROR(ENOMEM);
     pkt_desc->pts            = pts;
     pkt_desc->dts            = dts;
+
+    if (st->codecpar->codec_id == AV_CODEC_ID_PCM_DVD) {
+        if (size < 3) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid packet size %d\n", size);
+            return AVERROR(EINVAL);
+        }
+
+        /* Skip first 3 bytes of packet data, which comprise PCM header
+           and will be written fresh by this muxer. */
+        buf += 3;
+        size -= 3;
+    }
+
     pkt_desc->unwritten_size =
     pkt_desc->size           = size;
     if (!stream->predecode_packet)
@@ -1190,7 +1245,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
             break;
     }
 
-    /* End header according to MPEG1 systems standard. We do not write
+    /* End header according to MPEG-1 systems standard. We do not write
      * it as it is usually not needed by decoders and because it
      * complicates MPEG stream concatenation. */
     // avio_wb32(ctx->pb, ISO_11172_END_CODE);

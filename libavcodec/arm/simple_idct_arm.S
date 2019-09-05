@@ -64,7 +64,7 @@ function ff_simple_idct_arm, export=1
 
 
 __row_loop:
-        @@ read the row and check if it is null, almost null, or not, according to strongarm specs, it is not necessary to optimize ldr accesses (i.e. split 32bits in 2 16bits words), at least it gives more usable registers :)
+        @@ read the row and check if it is null, almost null, or not, according to strongarm specs, it is not necessary to optimize ldr accesses (i.e. split 32 bits in two 16-bit words), at least it gives more usable registers :)
         ldr r1, [r14, #0]        @ R1=(int32)(R12)[0]=ROWr32[0] (relative row cast to a 32b pointer)
         ldr r2, [r14, #4]        @ R2=(int32)(R12)[1]=ROWr32[1]
         ldr r3, [r14, #8]        @ R3=ROWr32[2]
@@ -234,8 +234,8 @@ __end_a_evaluation:
         @@ row[7] = (a0 - b0) >> ROW_SHIFT;
         add r8, r6, r0           @ R8=a0+b0
         add r9, r2, r1           @ R9=a1+b1
-        @@ put 2 16 bits half-words in a 32bits word
-        @@ ROWr32[0]=ROWr16[0] | (ROWr16[1]<<16) (only Little Endian compliant then!!!)
+        @@ put two 16-bit half-words in a 32-bit word
+        @@ ROWr32[0]=ROWr16[0] | (ROWr16[1]<<16) (only little-endian compliant then!!!)
         ldr r10, =MASK_MSHW      @ R10=0xFFFF0000
         and r9, r10, r9, lsl #ROW_SHIFT2MSHW @ R9=0xFFFF0000 & ((a1+b1)<<5)
         mvn r11, r10             @ R11= NOT R10= 0x0000FFFF

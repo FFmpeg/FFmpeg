@@ -39,17 +39,49 @@
 #  define EXTERN_C
 #endif
 
-#ifndef AVSC_USE_STDCALL
-#  define AVSC_CC __cdecl
-#else
-#  define AVSC_CC __stdcall
+#ifdef BUILDING_AVSCORE
+#  if defined(GCC) && defined(X86_32)
+#    define AVSC_CC
+#  else // MSVC builds and 64-bit GCC
+#    ifndef AVSC_USE_STDCALL
+#      define AVSC_CC __cdecl
+#    else
+#      define AVSC_CC __stdcall
+#    endif
+#  endif
+#else // needed for programs that talk to AviSynth+
+#  ifndef AVSC_WIN32_GCC32 // see comment below
+#    ifndef AVSC_USE_STDCALL
+#      define AVSC_CC __cdecl
+#    else
+#      define AVSC_CC __stdcall
+#    endif
+#  else
+#    define AVSC_CC
+#  endif
 #endif
+
+// On 64-bit Windows, there's only one calling convention,
+// so there is no difference between MSVC and GCC. On 32-bit,
+// this isn't true. The convention that GCC needs to use to
+// even build AviSynth+ as 32-bit makes anything that uses
+// it incompatible with 32-bit MSVC builds of AviSynth+.
+// The AVSC_WIN32_GCC32 define is meant to provide a user
+// switchable way to make builds of FFmpeg to test 32-bit
+// GCC builds of AviSynth+ without having to screw around
+// with alternate headers, while still default to the usual
+// situation of using 32-bit MSVC builds of AviSynth+.
+
+// Hopefully, this situation will eventually be resolved
+// and a broadly compatible solution will arise so the
+// same 32-bit FFmpeg build can handle either MSVC or GCC
+// builds of AviSynth+.
 
 #define AVSC_INLINE static __inline
 
 #ifdef BUILDING_AVSCORE
-#  define AVSC_EXPORT EXTERN_C
-#  define AVSC_API(ret, name) EXTERN_C __declspec(dllexport) ret AVSC_CC name
+#  define AVSC_EXPORT __declspec(dllexport)
+#  define AVSC_API(ret, name) EXTERN_C AVSC_EXPORT ret AVSC_CC name
 #else
 #  define AVSC_EXPORT EXTERN_C __declspec(dllexport)
 #  ifndef AVSC_NO_DECLSPEC

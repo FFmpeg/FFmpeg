@@ -19,7 +19,6 @@
 #include "config.h"
 #include "libavutil/attributes.h"
 #include "libavutil/cpu.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavcodec/mpegvideodsp.h"
 #include "libavcodec/videodsp.h"
@@ -53,8 +52,9 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src,
     const int dyh = (dyy - (1 << (16 + shift))) * (h - 1);
     const int dxh = dxy * (h - 1);
     const int dyw = dyx * (w - 1);
-    int need_emu  =  (unsigned) ix >= width  - w ||
-                     (unsigned) iy >= height - h;
+    int need_emu  =  (unsigned) ix >= width  - w || width < w ||
+                     (unsigned) iy >= height - h || height< h
+                     ;
 
     if ( // non-constant fullpel offset (3% of blocks)
         ((ox ^ (ox + dxw)) | (ox ^ (ox + dxh)) | (ox ^ (ox + dxw + dxh)) |

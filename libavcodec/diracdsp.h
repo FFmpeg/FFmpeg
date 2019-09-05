@@ -22,6 +22,7 @@
 #define AVCODEC_DIRACDSP_H
 
 #include <stdint.h>
+#include <stddef.h>
 
 typedef void (*dirac_weight_func)(uint8_t *block, int stride, int log2_denom, int weight, int h);
 typedef void (*dirac_biweight_func)(uint8_t *dst, const uint8_t *src, int stride, int log2_denom, int weightd, int weights, int h);
@@ -45,6 +46,9 @@ typedef struct {
     void (*put_rect_clamped)(uint8_t *dst/*align 16*/, int dst_stride, const uint8_t *src/*align 16*/, int src_stride, int width, int height/*mod 2*/);
     void (*add_rect_clamped)(uint8_t *dst/*align 16*/, const uint16_t *src/*align 16*/, int stride, const int16_t *idwt/*align 16*/, int idwt_stride, int width, int height/*mod 2*/);
     void (*add_dirac_obmc[3])(uint16_t *dst, const uint8_t *src, int stride, const uint8_t *obmc_weight, int yblen);
+
+    /* 0-1: int16_t and int32_t asm/c, 2-3: int16 and int32_t, C only */
+    void (*dequant_subband[4])(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h);
 
     dirac_weight_func weight_dirac_pixels_tab[3];
     dirac_biweight_func biweight_dirac_pixels_tab[3];

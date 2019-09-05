@@ -13,8 +13,9 @@ You can disable all the demuxers using the configure option
 the option @code{--enable-demuxer=@var{DEMUXER}}, or disable it
 with the option @code{--disable-demuxer=@var{DEMUXER}}.
 
-The option @code{-formats} of the ff* tools will display the list of
-enabled demuxers.
+The option @code{-demuxers} of the ff* tools will display the list of
+enabled demuxers. Use @code{-formats} to view a combined list of
+enabled demuxers and muxers.
 
 The description of some of the currently available demuxers follows.
 
@@ -23,17 +24,6 @@ The description of some of the currently available demuxers follows.
 Audible Format 2, 3, and 4 demuxer.
 
 This demuxer is used to demux Audible Format 2, 3, and 4 (.aa) files.
-
-@section applehttp
-
-Apple HTTP Live Streaming demuxer.
-
-This demuxer presents all AVStreams from all variant streams.
-The id field is set to the bitrate variant index number. By setting
-the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
-the caller can decide which variant streams to actually receive.
-The total bitrate of the variant that the stream belongs to is
-available in a metadata key named "variant_bitrate".
 
 @section apng
 
@@ -72,7 +62,7 @@ Do not try to resynchronize by looking for a certain optional start code.
 Virtual concatenation script demuxer.
 
 This demuxer reads a list of files and other directives from a text file and
-demuxes them one after the other, as if all their packet had been muxed
+demuxes them one after the other, as if all their packets had been muxed
 together.
 
 The timestamps in the files are adjusted so that the first file starts at 0
@@ -107,7 +97,7 @@ Identify the script type and version. It also sets the @option{safe} option
 to 1 if it was -1.
 
 To make FFmpeg recognize the format automatically, this directive must
-appears exactly as is (no extra space or byte-order-mark) on the very first
+appear exactly as is (no extra space or byte-order-mark) on the very first
 line of the script.
 
 @item @code{duration @var{dur}}
@@ -243,29 +233,38 @@ file subdir/file-2.wav
 @end example
 @end itemize
 
-@section flv
+@section dash
+
+Dynamic Adaptive Streaming over HTTP demuxer.
+
+This demuxer presents all AVStreams found in the manifest.
+By setting the discard flags on AVStreams the caller can decide
+which streams to actually receive.
+Each stream mirrors the @code{id} and @code{bandwidth} properties from the
+@code{<Representation>} as metadata keys named "id" and "variant_bitrate" respectively.
+
+@section flv, live_flv
 
 Adobe Flash Video Format demuxer.
 
-This demuxer is used to demux FLV files and RTMP network streams.
+This demuxer is used to demux FLV files and RTMP network streams. In case of live network streams, if you force format, you may use live_flv option instead of flv to survive timestamp discontinuities.
+
+@example
+ffmpeg -f flv -i myfile.flv ...
+ffmpeg -f live_flv -i rtmp://<any.server>/anything/key ....
+@end example
+
 
 @table @option
 @item -flv_metadata @var{bool}
 Allocate the streams according to the onMetaData array content.
+
+@item -flv_ignore_prevtag @var{bool}
+Ignore the size of previous tag value.
+
+@item -flv_full_metadata @var{bool}
+Output all context of the onMetadata.
 @end table
-
-@section libgme
-
-The Game Music Emu library is a collection of video game music file emulators.
-
-See @url{http://code.google.com/p/game-music-emu/} for more information.
-
-Some files have multiple tracks. The demuxer will pick the first track by
-default. The @option{track_index} option can be used to select a different
-track. Track indexes start at 0. The demuxer exports the number of tracks as
-@var{tracks} meta data entry.
-
-For very large files, the @option{max_size} option may have to be adjusted.
 
 @section gif
 
@@ -305,6 +304,45 @@ Note that in the above example the shortest option for overlay filter is
 used to end the output video at the length of the shortest input file,
 which in this case is @file{input.mp4} as the GIF in this example loops
 infinitely.
+
+@section hls
+
+HLS demuxer
+
+Apple HTTP Live Streaming demuxer.
+
+This demuxer presents all AVStreams from all variant streams.
+The id field is set to the bitrate variant index number. By setting
+the discard flags on AVStreams (by pressing 'a' or 'v' in ffplay),
+the caller can decide which variant streams to actually receive.
+The total bitrate of the variant that the stream belongs to is
+available in a metadata key named "variant_bitrate".
+
+It accepts the following options:
+
+@table @option
+@item live_start_index
+segment index to start live streams at (negative values are from the end).
+
+@item allowed_extensions
+',' separated list of file extensions that hls is allowed to access.
+
+@item max_reload
+Maximum number of times a insufficient list is attempted to be reloaded.
+Default value is 1000.
+
+@item http_persistent
+Use persistent HTTP connections. Applicable only for HTTP streams.
+Enabled by default.
+
+@item http_multiple
+Use multiple HTTP connections for downloading HTTP segments.
+Enabled by default for HTTP/1.1 servers.
+
+@item http_seekable
+Use HTTP partial requests for downloading HTTP segments.
+0 = disable, 1 = enable, -1 = auto, Default is auto.
+@end table
 
 @section image2
 
@@ -441,6 +479,116 @@ ffmpeg -framerate 10 -pattern_type glob -i "*.png" out.mkv
 @end example
 @end itemize
 
+@section libgme
+
+The Game Music Emu library is a collection of video game music file emulators.
+
+See @url{https://bitbucket.org/mpyne/game-music-emu/overview} for more information.
+
+It accepts the following options:
+
+@table @option
+
+@item track_index
+Set the index of which track to demux. The demuxer can only export one track.
+Track indexes start at 0. Default is to pick the first track. Number of tracks
+is exported as @var{tracks} metadata entry.
+
+@item sample_rate
+Set the sampling rate of the exported track. Range is 1000 to 999999. Default is 44100.
+
+@item max_size @emph{(bytes)}
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read.
+Default is 50 MiB.
+
+@end table
+
+@section libmodplug
+
+ModPlug based module demuxer
+
+See @url{https://github.com/Konstanty/libmodplug}
+
+It will export one 2-channel 16-bit 44.1 kHz audio stream.
+Optionally, a @code{pal8} 16-color video stream can be exported with or without printed metadata.
+
+It accepts the following options:
+
+@table @option
+@item noise_reduction
+Apply a simple low-pass filter. Can be 1 (on) or 0 (off). Default is 0.
+
+@item reverb_depth
+Set amount of reverb. Range 0-100. Default is 0.
+
+@item reverb_delay
+Set delay in ms, clamped to 40-250 ms. Default is 0.
+
+@item bass_amount
+Apply bass expansion a.k.a. XBass or megabass. Range is 0 (quiet) to 100 (loud). Default is 0.
+
+@item bass_range
+Set cutoff i.e. upper-bound for bass frequencies. Range is 10-100 Hz. Default is 0.
+
+@item surround_depth
+Apply a Dolby Pro-Logic surround effect. Range is 0 (quiet) to 100 (heavy). Default is 0.
+
+@item surround_delay
+Set surround delay in ms, clamped to 5-40 ms. Default is 0.
+
+@item max_size
+The demuxer buffers the entire file into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of files that can be read. Range is 0 to 100 MiB.
+0 removes buffer size limit (not recommended). Default is 5 MiB.
+
+@item video_stream_expr
+String which is evaluated using the eval API to assign colors to the generated video stream.
+Variables which can be used are @code{x}, @code{y}, @code{w}, @code{h}, @code{t}, @code{speed},
+@code{tempo}, @code{order}, @code{pattern} and @code{row}.
+
+@item video_stream
+Generate video stream. Can be 1 (on) or 0 (off). Default is 0.
+
+@item video_stream_w
+Set video frame width in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_h
+Set video frame height in 'chars' where one char indicates 8 pixels. Range is 20-512. Default is 30.
+
+@item video_stream_ptxt
+Print metadata on video stream. Includes @code{speed}, @code{tempo}, @code{order}, @code{pattern},
+@code{row} and @code{ts} (time in ms). Can be 1 (on) or 0 (off). Default is 1.
+
+@end table
+
+@section libopenmpt
+
+libopenmpt based module demuxer
+
+See @url{https://lib.openmpt.org/libopenmpt/} for more information.
+
+Some files have multiple subsongs (tracks) this can be set with the @option{subsong}
+option.
+
+It accepts the following options:
+
+@table @option
+@item subsong
+Set the subsong index. This can be either  'all', 'auto', or the index of the
+subsong. Subsong indexes start at 0. The default is 'auto'.
+
+The default value is to let libopenmpt choose.
+
+@item layout
+Set the channel layout. Valid values are 1, 2, and 4 channel layouts.
+The default value is STEREO.
+
+@item sample_rate
+Set the sample rate for libopenmpt to output.
+Range is from 1000 to INT_MAX. The value default is 48000.
+@end table
+
 @section mov/mp4/3gp/QuickTime
 
 QuickTime / MP4 demuxer.
@@ -468,6 +616,9 @@ This demuxer accepts the following options:
 Set size limit for looking up a new synchronization. Default value is
 65536.
 
+@item skip_unknown_pmt
+Skip PMTs for programs not defined in the PAT. Default value is 0.
+
 @item fix_teletext_pts
 Override teletext packet PTS and DTS values with the timestamps calculated
 from the PCR of the first program which the teletext stream is part of and is
@@ -482,6 +633,10 @@ Show the detected raw packet size, cannot be set by the user.
 Scan and combine all PMTs. The value is an integer with value from -1
 to 1 (-1 means automatic setting, 1 means enabled, 0 means
 disabled). Default value is -1.
+
+@item merge_pmt_versions
+Re-use existing streams when a PMT's version is updated and elementary
+streams move to different PIDs. Default value is 0.
 @end table
 
 @section mpjpeg
@@ -578,5 +733,21 @@ Example: convert the captions to a format most players understand:
 @example
 ffmpeg -i http://www.ted.com/talks/subtitles/id/1/lang/en talk1-en.srt
 @end example
+
+@section vapoursynth
+
+Vapoursynth wrapper.
+
+Due to security concerns, Vapoursynth scripts will not
+be autodetected so the input format has to be forced. For ff* CLI tools,
+add @code{-f vapoursynth} before the input @code{-i yourscript.vpy}.
+
+This demuxer accepts the following option:
+@table @option
+@item max_script_size
+The demuxer buffers the entire script into memory. Adjust this value to set the maximum buffer size,
+which in turn, acts as a ceiling for the size of scripts that can be read.
+Default is 1 MiB.
+@end table
 
 @c man end DEMUXERS

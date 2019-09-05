@@ -43,7 +43,7 @@ typedef struct DTSHDDemuxContext {
     uint64_t    data_end;
 } DTSHDDemuxContext;
 
-static int dtshd_probe(AVProbeData *p)
+static int dtshd_probe(const AVProbeData *p)
 {
     if (AV_RB64(p->buf) == DTSHDHDR)
         return AVPROBE_SCORE_MAX;
@@ -89,7 +89,7 @@ static int dtshd_read_header(AVFormatContext *s)
             dtshd->data_end = data_start + chunk_size;
             if (dtshd->data_end <= chunk_size)
                 return AVERROR_INVALIDDATA;
-            if (!pb->seekable)
+            if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
                 goto break_loop;
             goto skip;
             break;

@@ -56,7 +56,7 @@ enum {
 #define CFA_BLGRAY  0x20000000U
 #define CFA_BRGRAY  0x10000000U
 
-static int cine_read_probe(AVProbeData *p)
+static int cine_read_probe(const AVProbeData *p)
 {
     int HeaderSize;
     if (p->buf[0] == 'C' && p->buf[1] == 'I' &&  // Type
@@ -111,7 +111,7 @@ static int cine_read_header(AVFormatContext *avctx)
     compression = avio_rl16(pb);
     version     = avio_rl16(pb);
     if (version != 1) {
-        avpriv_request_sample(avctx, "uknown version %i", version);
+        avpriv_request_sample(avctx, "unknown version %i", version);
         return AVERROR_INVALIDDATA;
     }
 
@@ -267,8 +267,12 @@ static int cine_read_header(AVFormatContext *avctx)
 
     /* parse image offsets */
     avio_seek(pb, offImageOffsets, SEEK_SET);
-    for (i = 0; i < st->duration; i++)
+    for (i = 0; i < st->duration; i++) {
+        if (avio_feof(pb))
+            return AVERROR_INVALIDDATA;
+
         av_add_index_entry(st, avio_rl64(pb), i, 0, 0, AVINDEX_KEYFRAME);
+    }
 
     return 0;
 }
@@ -307,7 +311,7 @@ static int cine_read_seek(AVFormatContext *avctx, int stream_index, int64_t time
     if ((flags & AVSEEK_FLAG_FRAME) || (flags & AVSEEK_FLAG_BYTE))
         return AVERROR(ENOSYS);
 
-    if (!avctx->pb->seekable)
+    if (!(avctx->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     cine->pts = timestamp;

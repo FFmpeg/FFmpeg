@@ -23,44 +23,33 @@
 
 #include "hpeldsp_mips.h"
 #include "libavcodec/bit_depth_template.c"
-#include "libavutil/mips/asmdefs.h"
+#include "libavutil/mips/mmiutils.h"
 #include "constants.h"
 
 void ff_put_pixels4_8_mmi(uint8_t *block, const uint8_t *pixels,
     ptrdiff_t line_size, int h)
 {
-    double ftmp[2];
-    mips_reg addr[2];
-    uint64_t low32;
+    double ftmp[4];
+    DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr1],   %[line_size],   %[line_size]            \n\t"
         "1:                                                             \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[pixels])                         \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "swc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
+        MMI_ULWC1(%[ftmp0], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
+        MMI_ULWC1(%[ftmp1], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
 
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[pixels])                         \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "swc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
+        PTR_ADDI   "%[h],       %[h],           -0x02                   \n\t"
 
-        PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
+        MMI_SWC1(%[ftmp0], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        MMI_SWC1(%[ftmp1], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
-          [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
-          [low32]"=&r"(low32),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_LOW32
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
           [h]"+&r"(h)
         : [line_size]"r"((mips_reg)line_size)
@@ -71,36 +60,35 @@ void ff_put_pixels4_8_mmi(uint8_t *block, const uint8_t *pixels,
 void ff_put_pixels8_8_mmi(uint8_t *block, const uint8_t *pixels,
     ptrdiff_t line_size, int h)
 {
-    double ftmp[2];
-    mips_reg addr[2];
+    double ftmp[4];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr1],   %[line_size],   %[line_size]            \n\t"
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
-
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp1], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp2], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp3], %[pixels], 0x00)
+        PTR_ADDU   "%[pixels],   %[pixels],      %[line_size]           \n\t"
 
         PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
+
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        MMI_SDC1(%[ftmp1], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        MMI_SDC1(%[ftmp2], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+        MMI_SDC1(%[ftmp3], %[block], 0x00)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]            \n\t"
+
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
-          [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
+          [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_ALL64
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
           [h]"+&r"(h)
         : [line_size]"r"((mips_reg)line_size)
@@ -111,49 +99,45 @@ void ff_put_pixels8_8_mmi(uint8_t *block, const uint8_t *pixels,
 void ff_put_pixels16_8_mmi(uint8_t *block, const uint8_t *pixels,
     ptrdiff_t line_size, int h)
 {
-    double ftmp[4];
-    mips_reg addr[2];
+    double ftmp[8];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr1],   %[line_size],   %[line_size]            \n\t"
-        "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp2],   0x0f(%[pixels])                         \n\t"
-        "gsldrc1    %[ftmp2],   0x08(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x08(%[addr0])                          \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        "sdc1       %[ftmp2],   0x08(%[block])                          \n\t"
-        "gssdxc1    %[ftmp3],   0x08(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
+        "1:                                                            \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp2], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp3], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp4], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp6], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]           \n\t"
+        MMI_ULDC1(%[ftmp5], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp7], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]           \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp2],   0x0f(%[pixels])                         \n\t"
-        "gsldrc1    %[ftmp2],   0x08(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x08(%[addr0])                          \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        "sdc1       %[ftmp2],   0x08(%[block])                          \n\t"
-        "gssdxc1    %[ftmp3],   0x08(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr1]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr1]                \n\t"
+        PTR_ADDI   "%[h],       %[h],           -0x04                  \n\t"
 
-        PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
-        "bnez       %[h],       1b                                      \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDC1(%[ftmp2], %[block], 0x08)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]           \n\t"
+        MMI_SDC1(%[ftmp1], %[block], 0x00)
+        MMI_SDC1(%[ftmp3], %[block], 0x08)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]           \n\t"
+        MMI_SDC1(%[ftmp4], %[block], 0x00)
+        MMI_SDC1(%[ftmp6], %[block], 0x08)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]           \n\t"
+        MMI_SDC1(%[ftmp5], %[block], 0x00)
+        MMI_SDC1(%[ftmp7], %[block], 0x08)
+        PTR_ADDU   "%[block],   %[block],       %[line_size]           \n\t"
+
+        "bnez       %[h],       1b                                     \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
-          [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
+          [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          RESTRICT_ASM_ALL64
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
           [h]"+&r"(h)
         : [line_size]"r"((mips_reg)line_size)
@@ -165,53 +149,32 @@ void ff_avg_pixels4_8_mmi(uint8_t *block, const uint8_t *pixels,
     ptrdiff_t line_size, int h)
 {
     double ftmp[4];
-    mips_reg addr[3];
-    uint64_t low32;
+    mips_reg addr[2];
+    DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr2],   %[line_size],   %[line_size]            \n\t"
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[pixels])                         \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
+        MMI_ULWC1(%[ftmp0], %[pixels], 0x00)
+        MMI_ULWC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[block])                          \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
+        MMI_ULWC1(%[ftmp2], %[block], 0x00)
+        MMI_ULWC1(%[ftmp3], %[addr1], 0x00)
+
+        PTR_ADDI   "%[h],       %[h],           -0x02                   \n\t"
+
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
+        MMI_SWC1(%[ftmp0], %[block], 0x00)
+        MMI_SWC1(%[ftmp1], %[addr1], 0x00)
+        PTR_ADDU   "%[pixels],  %[addr0],       %[line_size]            \n\t"
+        PTR_ADDU   "%[block],   %[addr1],       %[line_size]            \n\t"
 
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[pixels])                         \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "uld        %[low32],   0x00(%[block])                          \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
-
-        PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_LOW32
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
-          [addr2]"=&r"(addr[2]),
-          [low32]"=&r"(low32),
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
           [h]"+&r"(h)
         : [line_size]"r"((mips_reg)line_size)
@@ -224,41 +187,35 @@ void ff_avg_pixels8_8_mmi(uint8_t *block, const uint8_t *pixels,
 {
     double ftmp[4];
     mips_reg addr[3];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         PTR_ADDU   "%[addr2],   %[line_size],   %[line_size]            \n\t"
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
         PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[block])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[block])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp2], %[block], 0x00)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDXC1(%[ftmp1], %[block], %[line_size], 0x00)
         PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
         PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
         PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[block])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[block])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp2], %[block], 0x00)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDXC1(%[ftmp1], %[block], %[line_size], 0x00)
         PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
         PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
 
@@ -266,6 +223,8 @@ void ff_avg_pixels8_8_mmi(uint8_t *block, const uint8_t *pixels,
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [addr2]"=&r"(addr[2]),
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
@@ -279,77 +238,61 @@ void ff_avg_pixels16_8_mmi(uint8_t *block, const uint8_t *pixels,
     ptrdiff_t line_size, int h)
 {
     double ftmp[8];
-    mips_reg addr[3];
+    mips_reg addr[1];
+    DECLARE_VAR_ALL64;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr2],   %[line_size],   %[line_size]            \n\t"
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp4],   0x0f(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "gsldrc1    %[ftmp4],   0x08(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp5],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x08(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[block])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[block])                          \n\t"
-        "gsldlc1    %[ftmp6],   0x0f(%[block])                          \n\t"
-        "gsldrc1    %[ftmp6],   0x08(%[block])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp7],   0x0f(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp7],   0x08(%[addr1])                          \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
-        "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        "sdc1       %[ftmp4],   0x08(%[block])                          \n\t"
-        "gssdxc1    %[ftmp5],   0x08(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
-
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr0],   %[pixels],      %[line_size]            \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp4],   0x0f(%[pixels])                         \n\t"
-        PTR_ADDU   "%[addr1],   %[block],       %[line_size]            \n\t"
-        "gsldrc1    %[ftmp4],   0x08(%[pixels])                         \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp5],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x08(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[block])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[block])                          \n\t"
-        "gsldlc1    %[ftmp6],   0x0f(%[block])                          \n\t"
-        "gsldrc1    %[ftmp6],   0x08(%[block])                          \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp7],   0x0f(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp7],   0x08(%[addr1])                          \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
-        "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[block])                          \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[block],  %[line_size])           \n\t"
-        "sdc1       %[ftmp4],   0x08(%[block])                          \n\t"
-        "gssdxc1    %[ftmp5],   0x08(%[block],  %[line_size])           \n\t"
-        PTR_ADDU   "%[pixels],  %[pixels],      %[addr2]                \n\t"
-        PTR_ADDU   "%[block],   %[block],       %[addr2]                \n\t"
-
         PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp4], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp5], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp2], %[block], 0x00)
+        MMI_ULDC1(%[ftmp6], %[block], 0x08)
+        PTR_ADDU   "%[addr0],   %[block],       %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp7], %[addr0], 0x08)
+        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
+        "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
+        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDC1(%[ftmp4], %[block], 0x08)
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_SDC1(%[ftmp5], %[addr0], 0x08)
+        PTR_ADDU   "%[block],   %[addr0],       %[line_size]            \n\t"
+
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp4], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp1], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp5], %[pixels], 0x08)
+        PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp2], %[block], 0x00)
+        MMI_ULDC1(%[ftmp6], %[block], 0x08)
+        PTR_ADDU   "%[addr0],   %[block],       %[line_size]            \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp7], %[addr0], 0x08)
+        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
+        "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
+        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
+        "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
+        MMI_SDC1(%[ftmp0], %[block], 0x00)
+        MMI_SDC1(%[ftmp4], %[block], 0x08)
+        MMI_SDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_SDC1(%[ftmp5], %[addr0], 0x08)
+        PTR_ADDU   "%[block],   %[addr0],       %[line_size]            \n\t"
+
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
-          [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
-          [addr2]"=&r"(addr[2]),
+          RESTRICT_ASM_ALL64
+          [addr0]"=&r"(addr[0]),
           [block]"+&r"(block),              [pixels]"+&r"(pixels),
           [h]"+&r"(h)
         : [line_size]"r"((mips_reg)line_size)
@@ -363,57 +306,34 @@ inline void ff_put_pixels4_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[4];
     mips_reg addr[5];
-    uint64_t low32;
+    DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
-        PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
-        PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "uld        %[low32],   0x00(%[src1])                           \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "uld        %[low32],   0x00(%[src2])                           \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
+        MMI_ULWC1(%[ftmp0], %[src1], 0x00)
+        MMI_ULWC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
-        PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
+        MMI_ULWC1(%[ftmp2], %[src2], 0x00)
+        MMI_ULWC1(%[ftmp3], %[addr1], 0x00)
+        PTR_ADDU   "%[src1],    %[addr0],       %[src_stride1]          \n\t"
+        PTR_ADDU   "%[src2],    %[addr1],       %[src_stride2]          \n\t"
+
+        PTR_ADDI   "%[h],       %[h],           -0x02                   \n\t"
+
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
-        PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
+        MMI_SWC1(%[ftmp0], %[dst], 0x00)
+        PTR_ADDU   "%[dst],     %[dst],         %[dst_stride]           \n\t"
+        MMI_SWC1(%[ftmp1], %[dst], 0x00)
+        PTR_ADDU   "%[dst],     %[dst],         %[dst_stride]           \n\t"
 
-        PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "uld        %[low32],   0x00(%[src1])                           \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "uld        %[low32],   0x00(%[src2])                           \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
-        PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
-        PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
-        PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
-
-        PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_LOW32
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
-          [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
-          [addr4]"=&r"(addr[4]),
-          [low32]"=&r"(low32),
           [dst]"+&r"(dst),                  [src1]"+&r"(src1),
           [src2]"+&r"(src2),                [h]"+&r"(h)
         : [dst_stride]"r"((mips_reg)dst_stride),
@@ -429,45 +349,40 @@ inline void ff_put_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[4];
     mips_reg addr[5];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
         PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
         PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
+
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
@@ -475,6 +390,8 @@ inline void ff_put_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
           [addr4]"=&r"(addr[4]),
@@ -493,69 +410,56 @@ inline void ff_put_pixels16_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[8];
     mips_reg addr[5];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
         PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
         PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
+
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp4],   0x0f(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp4],   0x08(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp5],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x08(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp4], %[src1], 0x08)
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp5], %[addr0], 0x08)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp6],   0x0f(%[src2])                           \n\t"
-        "gsldrc1    %[ftmp6],   0x08(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp6], %[src2], 0x08)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp7],   0x0f(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp7],   0x08(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp7], %[addr1], 0x08)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        "sdc1       %[ftmp4],   0x08(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp5],   0x08(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
+        MMI_SDC1(%[ftmp4], %[dst], 0x08)
+        MMI_SDXC1(%[ftmp5], %[dst], %[dst_stride], 0x08)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp4],   0x0f(%[src1])                           \n\t"
-        "gsldrc1    %[ftmp4],   0x08(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp5],   0x0f(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x08(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp4], %[src1], 0x08)
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp5], %[addr0], 0x08)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp6],   0x0f(%[src2])                           \n\t"
-        "gsldrc1    %[ftmp6],   0x08(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp6], %[src2], 0x08)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp7],   0x0f(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp7],   0x08(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp7], %[addr1], 0x08)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp4],   %[ftmp4],       %[ftmp6]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "pavgb      %[ftmp5],   %[ftmp5],       %[ftmp7]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        "sdc1       %[ftmp4],   0x08(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp5],   0x08(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
+        MMI_SDC1(%[ftmp4], %[dst], 0x08)
+        MMI_SDXC1(%[ftmp5], %[dst], %[dst_stride], 0x08)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
@@ -565,6 +469,8 @@ inline void ff_put_pixels16_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
           [addr4]"=&r"(addr[4]),
@@ -583,72 +489,37 @@ inline void ff_avg_pixels4_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[6];
     mips_reg addr[6];
-    uint64_t low32;
+    DECLARE_VAR_LOW32;
 
     __asm__ volatile (
-        PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
-        PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
-        PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "uld        %[low32],   0x00(%[src1])                           \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "uld        %[low32],   0x00(%[src2])                           \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
+        MMI_ULWC1(%[ftmp0], %[src1], 0x00)
+        MMI_ULWC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
-        PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
+        MMI_ULWC1(%[ftmp2], %[src2], 0x00)
+        MMI_ULWC1(%[ftmp3], %[addr1], 0x00)
+        PTR_ADDU   "%[src1],    %[addr0],       %[src_stride1]          \n\t"
+        PTR_ADDU   "%[src2],    %[addr1],       %[src_stride2]          \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        PTR_ADDU   "%[addr5],   %[dst],         %[dst_stride]           \n\t"
-        "uld        %[low32],   0x00(%[dst])                            \n\t"
-        "mtc1       %[low32],   %[ftmp4]                                \n\t"
-        "uld        %[low32],   0x00(%[addr5])                          \n\t"
-        "mtc1       %[low32],   %[ftmp5]                                \n\t"
+        PTR_ADDU   "%[addr2],   %[dst],         %[dst_stride]           \n\t"
+        MMI_ULWC1(%[ftmp4], %[dst], 0x00)
+        MMI_ULWC1(%[ftmp5], %[addr2], 0x00)
+        PTR_ADDI   "%[h],       %[h],           -0x02                   \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp5]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
-        PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
+        MMI_SWC1(%[ftmp0], %[dst], 0x00)
+        MMI_SWC1(%[ftmp1], %[addr2], 0x00)
+        PTR_ADDU   "%[dst],     %[addr2],       %[dst_stride]           \n\t"
 
-        PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "uld        %[low32],   0x00(%[src1])                           \n\t"
-        "mtc1       %[low32],   %[ftmp0]                                \n\t"
-        "uld        %[low32],   0x00(%[addr0])                          \n\t"
-        "mtc1       %[low32],   %[ftmp1]                                \n\t"
-        "uld        %[low32],   0x00(%[src2])                           \n\t"
-        "mtc1       %[low32],   %[ftmp2]                                \n\t"
-        PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "uld        %[low32],   0x00(%[addr1])                          \n\t"
-        "mtc1       %[low32],   %[ftmp3]                                \n\t"
-        PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
-        PTR_ADDU   "%[addr5],   %[dst],         %[dst_stride]           \n\t"
-        "uld        %[low32],   0x00(%[dst])                            \n\t"
-        "mtc1       %[low32],   %[ftmp4]                                \n\t"
-        "uld        %[low32],   0x00(%[addr5])                          \n\t"
-        "mtc1       %[low32],   %[ftmp5]                                \n\t"
-        "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
-        "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp5]                \n\t"
-        "swc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gsswxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
-        PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
-        PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
-
-        PTR_ADDI   "%[h],       %[h],           -0x04                   \n\t"
         "bnez       %[h],       1b                                      \n\t"
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          RESTRICT_ASM_LOW32
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
-          [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
-          [addr4]"=&r"(addr[4]),            [addr5]"=&r"(addr[5]),
-          [low32]"=&r"(low32),
+          [addr2]"=&r"(addr[2]),
           [dst]"+&r"(dst),                  [src1]"+&r"(src1),
           [src2]"+&r"(src2),                [h]"+&r"(h)
         : [dst_stride]"r"((mips_reg)dst_stride),
@@ -664,59 +535,50 @@ inline void ff_avg_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[6];
     mips_reg addr[6];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
         PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
         PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
+
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         PTR_ADDU   "%[addr5],   %[dst],         %[dst_stride]           \n\t"
-        "gsldlc1    %[ftmp4],   0x07(%[dst])                            \n\t"
-        "gsldrc1    %[ftmp4],   0x00(%[dst])                            \n\t"
-        "gsldlc1    %[ftmp5],   0x07(%[addr5])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[addr5])                          \n\t"
+        MMI_ULDC1(%[ftmp4], %[dst], 0x00)
+        MMI_ULDC1(%[ftmp5], %[addr5], 0x00)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp5]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp2]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         PTR_ADDU   "%[addr5],   %[dst],         %[dst_stride]           \n\t"
-        "gsldlc1    %[ftmp4],   0x07(%[dst])                            \n\t"
-        "gsldrc1    %[ftmp4],   0x00(%[dst])                            \n\t"
-        "gsldlc1    %[ftmp5],   0x07(%[addr5])                          \n\t"
-        "gsldrc1    %[ftmp5],   0x00(%[addr5])                          \n\t"
+        MMI_ULDC1(%[ftmp4], %[dst], 0x00)
+        MMI_ULDC1(%[ftmp5], %[addr5], 0x00)
         "pavgb      %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp5]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
@@ -725,6 +587,8 @@ inline void ff_avg_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
           [addr4]"=&r"(addr[4]),            [addr5]"=&r"(addr[5]),
@@ -795,24 +659,23 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
 {
     double ftmp[5];
     mips_reg addr[5];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         "pcmpeqb    %[ftmp4],   %[ftmp4],       %[ftmp4]                \n\t"
         PTR_ADDU   "%[addr2],   %[src_stride1], %[src_stride1]          \n\t"
         PTR_ADDU   "%[addr3],   %[src_stride2], %[src_stride2]          \n\t"
         PTR_ADDU   "%[addr4],   %[dst_stride],  %[dst_stride]           \n\t"
+
         "1:                                                             \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
@@ -821,22 +684,18 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
-        "gsldlc1    %[ftmp0],   0x07(%[src1])                           \n\t"
+        MMI_ULDC1(%[ftmp0], %[src1], 0x00)
         PTR_ADDU   "%[addr0],   %[src1],        %[src_stride1]          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[src1])                           \n\t"
-        "gsldlc1    %[ftmp1],   0x07(%[addr0])                          \n\t"
-        "gsldrc1    %[ftmp1],   0x00(%[addr0])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[src2])                           \n\t"
+        MMI_ULDC1(%[ftmp1], %[addr0], 0x00)
+        MMI_ULDC1(%[ftmp2], %[src2], 0x00)
         PTR_ADDU   "%[addr1],   %[src2],        %[src_stride2]          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[src2])                           \n\t"
-        "gsldlc1    %[ftmp3],   0x07(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp3], %[addr1], 0x00)
         PTR_ADDU   "%[src1],    %[src1],        %[addr2]                \n\t"
-        "gsldrc1    %[ftmp3],   0x00(%[addr1])                          \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
         "xor        %[ftmp2],   %[ftmp2],       %[ftmp4]                \n\t"
@@ -845,8 +704,8 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         "pavgb      %[ftmp1],   %[ftmp1],       %[ftmp3]                \n\t"
         "xor        %[ftmp0],   %[ftmp0],       %[ftmp4]                \n\t"
         "xor        %[ftmp1],   %[ftmp1],       %[ftmp4]                \n\t"
-        "sdc1       %[ftmp0],   0x00(%[dst])                            \n\t"
-        "gssdxc1    %[ftmp1],   0x00(%[dst],    %[dst_stride])          \n\t"
+        MMI_SDC1(%[ftmp0], %[dst], 0x00)
+        MMI_SDXC1(%[ftmp1], %[dst], %[dst_stride], 0x00)
         PTR_ADDU   "%[src2],    %[src2],        %[addr3]                \n\t"
         PTR_ADDU   "%[dst],     %[dst],         %[addr4]                \n\t"
 
@@ -855,6 +714,8 @@ inline void ff_put_no_rnd_pixels8_l2_8_mmi(uint8_t *dst, const uint8_t *src1,
         : [ftmp0]"=&f"(ftmp[0]),            [ftmp1]"=&f"(ftmp[1]),
           [ftmp2]"=&f"(ftmp[2]),            [ftmp3]"=&f"(ftmp[3]),
           [ftmp4]"=&f"(ftmp[4]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [addr2]"=&r"(addr[2]),            [addr3]"=&r"(addr[3]),
           [addr4]"=&r"(addr[4]),
@@ -981,6 +842,8 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
 #if 1
     double ftmp[10];
     mips_reg addr[2];
+    DECLARE_VAR_ALL64;
+    DECLARE_VAR_ADDRT;
 
     __asm__ volatile (
         "xor        %[ftmp7],   %[ftmp7],       %[ftmp7]                \n\t"
@@ -993,11 +856,9 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
         "psllh      %[ftmp6],   %[ftmp6],       %[ftmp8]                \n\t"
 
         "dli        %[addr0],   0x02                                    \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[pixels])                         \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[pixels])                         \n\t"
         "dmtc1      %[addr0],   %[ftmp9]                                \n\t"
-        "gsldlc1    %[ftmp4],   0x08(%[pixels])                         \n\t"
-        "gsldrc1    %[ftmp4],   0x01(%[pixels])                         \n\t"
+        MMI_ULDC1(%[ftmp0], %[pixels], 0x00)
+        MMI_ULDC1(%[ftmp4], %[pixels], 0x01)
         "mov.d      %[ftmp1],   %[ftmp0]                                \n\t"
         "mov.d      %[ftmp5],   %[ftmp4]                                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp7]                \n\t"
@@ -1009,12 +870,11 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
         "xor        %[addr0],   %[addr0],       %[addr0]                \n\t"
         PTR_ADDU   "%[pixels],  %[pixels],      %[line_size]            \n\t"
         ".p2align   3                                                   \n\t"
+
         "1:                                                             \n\t"
         PTR_ADDU   "%[addr1],   %[pixels],      %[addr0]                \n\t"
-        "gsldlc1    %[ftmp0],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp0],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp2],   0x08(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x01(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp0], %[addr1], 0x00)
+        MMI_ULDC1(%[ftmp2], %[addr1], 0x01)
         "mov.d      %[ftmp1],   %[ftmp0]                                \n\t"
         "mov.d      %[ftmp3],   %[ftmp2]                                \n\t"
         "punpcklbh  %[ftmp0],   %[ftmp0],       %[ftmp7]                \n\t"
@@ -1030,13 +890,11 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
         "psrlh      %[ftmp4],   %[ftmp4],       %[ftmp9]                \n\t"
         "psrlh      %[ftmp5],   %[ftmp5],       %[ftmp9]                \n\t"
         "packushb   %[ftmp4],   %[ftmp4],       %[ftmp5]                \n\t"
-        "gssdxc1    %[ftmp4],   0x00(%[block],  %[addr0])               \n\t"
+        MMI_SDXC1(%[ftmp4], %[block], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[line_size]            \n\t"
         PTR_ADDU   "%[addr1],   %[pixels],      %[addr0]                \n\t"
-        "gsldlc1    %[ftmp2],   0x07(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp2],   0x00(%[addr1])                          \n\t"
-        "gsldlc1    %[ftmp4],   0x08(%[addr1])                          \n\t"
-        "gsldrc1    %[ftmp4],   0x01(%[addr1])                          \n\t"
+        MMI_ULDC1(%[ftmp2], %[addr1], 0x00)
+        MMI_ULDC1(%[ftmp4], %[addr1], 0x01)
         "mov.d      %[ftmp3],   %[ftmp2]                                \n\t"
         "mov.d      %[ftmp5],   %[ftmp4]                                \n\t"
         "punpcklbh  %[ftmp2],   %[ftmp2],       %[ftmp7]                \n\t"
@@ -1052,7 +910,7 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
         "psrlh      %[ftmp0],   %[ftmp0],       %[ftmp9]                \n\t"
         "psrlh      %[ftmp1],   %[ftmp1],       %[ftmp9]                \n\t"
         "packushb   %[ftmp0],   %[ftmp0],       %[ftmp1]                \n\t"
-        "gssdxc1    %[ftmp0],   0x00(%[block],  %[addr0])               \n\t"
+        MMI_SDXC1(%[ftmp0], %[block], %[addr0], 0x00)
         PTR_ADDU   "%[addr0],   %[addr0],       %[line_size]            \n\t"
         PTR_ADDU   "%[h],       %[h],           -0x02                   \n\t"
         "bnez       %[h],       1b                                      \n\t"
@@ -1061,6 +919,8 @@ void ff_put_pixels8_xy2_8_mmi(uint8_t *block, const uint8_t *pixels,
           [ftmp4]"=&f"(ftmp[4]),            [ftmp5]"=&f"(ftmp[5]),
           [ftmp6]"=&f"(ftmp[6]),            [ftmp7]"=&f"(ftmp[7]),
           [ftmp8]"=&f"(ftmp[8]),            [ftmp9]"=&f"(ftmp[9]),
+          RESTRICT_ASM_ALL64
+          RESTRICT_ASM_ADDRT
           [addr0]"=&r"(addr[0]),            [addr1]"=&r"(addr[1]),
           [h]"+&r"(h),                      [pixels]"+&r"(pixels)
         : [block]"r"(block),                [line_size]"r"((mips_reg)line_size)

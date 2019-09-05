@@ -21,11 +21,10 @@
  */
 
 #include "get_bits.h"
-#include "hevc.h"
+#include "hevcdec.h"
 
 #include "bit_depth_template.c"
 #include "hevcdsp.h"
-
 
 static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height,
                           GetBitContext *gb, int pcm_bit_depth)
@@ -42,8 +41,8 @@ static void FUNC(put_pcm)(uint8_t *_dst, ptrdiff_t stride, int width, int height
     }
 }
 
-static av_always_inline void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coeffs,
-                                                     ptrdiff_t stride, int size)
+static av_always_inline void FUNC(add_residual)(uint8_t *_dst, int16_t *res,
+                                                ptrdiff_t stride, int size)
 {
     int x, y;
     pixel *dst = (pixel *)_dst;
@@ -52,37 +51,36 @@ static av_always_inline void FUNC(transquant_bypass)(uint8_t *_dst, int16_t *coe
 
     for (y = 0; y < size; y++) {
         for (x = 0; x < size; x++) {
-            dst[x] = av_clip_pixel(dst[x] + *coeffs);
-            coeffs++;
+            dst[x] = av_clip_pixel(dst[x] + *res);
+            res++;
         }
         dst += stride;
     }
 }
 
-static void FUNC(transform_add4x4)(uint8_t *_dst, int16_t *coeffs,
-                                       ptrdiff_t stride)
+static void FUNC(add_residual4x4)(uint8_t *_dst, int16_t *res,
+                                  ptrdiff_t stride)
 {
-    FUNC(transquant_bypass)(_dst, coeffs, stride, 4);
+    FUNC(add_residual)(_dst, res, stride, 4);
 }
 
-static void FUNC(transform_add8x8)(uint8_t *_dst, int16_t *coeffs,
-                                       ptrdiff_t stride)
+static void FUNC(add_residual8x8)(uint8_t *_dst, int16_t *res,
+                                  ptrdiff_t stride)
 {
-    FUNC(transquant_bypass)(_dst, coeffs, stride, 8);
+    FUNC(add_residual)(_dst, res, stride, 8);
 }
 
-static void FUNC(transform_add16x16)(uint8_t *_dst, int16_t *coeffs,
-                                         ptrdiff_t stride)
+static void FUNC(add_residual16x16)(uint8_t *_dst, int16_t *res,
+                                    ptrdiff_t stride)
 {
-    FUNC(transquant_bypass)(_dst, coeffs, stride, 16);
+    FUNC(add_residual)(_dst, res, stride, 16);
 }
 
-static void FUNC(transform_add32x32)(uint8_t *_dst, int16_t *coeffs,
-                                         ptrdiff_t stride)
+static void FUNC(add_residual32x32)(uint8_t *_dst, int16_t *res,
+                                    ptrdiff_t stride)
 {
-    FUNC(transquant_bypass)(_dst, coeffs, stride, 32);
+    FUNC(add_residual)(_dst, res, stride, 32);
 }
-
 
 static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
 {
@@ -106,13 +104,11 @@ static void FUNC(transform_rdpcm)(int16_t *_coeffs, int16_t log2_size, int mode)
     }
 }
 
-static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
+static void FUNC(dequant)(int16_t *coeffs, int16_t log2_size)
 {
     int shift  = 15 - BIT_DEPTH - log2_size;
     int x, y;
     int size = 1 << log2_size;
-    int16_t *coeffs = _coeffs;
-
 
     if (shift > 0) {
         int offset = 1 << (shift - 1);
@@ -125,7 +121,7 @@ static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
     } else {
         for (y = 0; y < size; y++) {
             for (x = 0; x < size; x++) {
-                *coeffs = *coeffs << -shift;
+                *coeffs = *(uint16_t*)coeffs << -shift;
                 coeffs++;
             }
         }
@@ -134,8 +130,6 @@ static void FUNC(transform_skip)(int16_t *_coeffs, int16_t log2_size)
 
 #define SET(dst, x)   (dst) = (x)
 #define SCALE(dst, x) (dst) = av_clip_int16(((x) + add) >> shift)
-#define ADD_AND_SCALE(dst, x)                                           \
-    (dst) = av_clip_pixel((dst) + av_clip_int16(((x) + add) >> shift))
 
 #define TR_4x4_LUMA(dst, src, step, assign)                             \
     do {                                                                \
@@ -174,112 +168,113 @@ static void FUNC(transform_4x4_luma)(int16_t *coeffs)
 
 #undef TR_4x4_LUMA
 
-#define TR_4(dst, src, dstep, sstep, assign, end)                              \
-    do {                                                                       \
-        const int e0 = 64 * src[0 * sstep] + 64 * src[2 * sstep];              \
-        const int e1 = 64 * src[0 * sstep] - 64 * src[2 * sstep];              \
-        const int o0 = 83 * src[1 * sstep] + 36 * src[3 * sstep];              \
-        const int o1 = 36 * src[1 * sstep] - 83 * src[3 * sstep];              \
-                                                                               \
-        assign(dst[0 * dstep], e0 + o0);                                       \
-        assign(dst[1 * dstep], e1 + o1);                                       \
-        assign(dst[2 * dstep], e1 - o1);                                       \
-        assign(dst[3 * dstep], e0 - o0);                                       \
+#define TR_4(dst, src, dstep, sstep, assign, end)                 \
+    do {                                                          \
+        const int e0 = 64 * src[0 * sstep] + 64 * src[2 * sstep]; \
+        const int e1 = 64 * src[0 * sstep] - 64 * src[2 * sstep]; \
+        const int o0 = 83 * src[1 * sstep] + 36 * src[3 * sstep]; \
+        const int o1 = 36 * src[1 * sstep] - 83 * src[3 * sstep]; \
+                                                                  \
+        assign(dst[0 * dstep], e0 + o0);                          \
+        assign(dst[1 * dstep], e1 + o1);                          \
+        assign(dst[2 * dstep], e1 - o1);                          \
+        assign(dst[3 * dstep], e0 - o0);                          \
     } while (0)
 
-#define TR_8(dst, src, dstep, sstep, assign, end)                              \
-    do {                                                                       \
-        int i, j;                                                              \
-        int e_8[4];                                                            \
-        int o_8[4] = { 0 };                                                    \
-        for (i = 0; i < 4; i++)                                                \
-            for (j = 1; j < end; j += 2)                                       \
-                o_8[i] += transform[4 * j][i] * src[j * sstep];                \
-        TR_4(e_8, src, 1, 2 * sstep, SET, 4);                                  \
-                                                                               \
-        for (i = 0; i < 4; i++) {                                              \
-            assign(dst[i * dstep], e_8[i] + o_8[i]);                           \
-            assign(dst[(7 - i) * dstep], e_8[i] - o_8[i]);                     \
-        }                                                                      \
+#define TR_8(dst, src, dstep, sstep, assign, end)                 \
+    do {                                                          \
+        int i, j;                                                 \
+        int e_8[4];                                               \
+        int o_8[4] = { 0 };                                       \
+        for (i = 0; i < 4; i++)                                   \
+            for (j = 1; j < end; j += 2)                          \
+                o_8[i] += transform[4 * j][i] * src[j * sstep];   \
+        TR_4(e_8, src, 1, 2 * sstep, SET, 4);                     \
+                                                                  \
+        for (i = 0; i < 4; i++) {                                 \
+            assign(dst[i * dstep], e_8[i] + o_8[i]);              \
+            assign(dst[(7 - i) * dstep], e_8[i] - o_8[i]);        \
+        }                                                         \
     } while (0)
 
-#define TR_16(dst, src, dstep, sstep, assign, end)                             \
-    do {                                                                       \
-        int i, j;                                                              \
-        int e_16[8];                                                           \
-        int o_16[8] = { 0 };                                                   \
-        for (i = 0; i < 8; i++)                                                \
-            for (j = 1; j < end; j += 2)                                       \
-                o_16[i] += transform[2 * j][i] * src[j * sstep];               \
-        TR_8(e_16, src, 1, 2 * sstep, SET, 8);                                 \
-                                                                               \
-        for (i = 0; i < 8; i++) {                                              \
-            assign(dst[i * dstep], e_16[i] + o_16[i]);                         \
-            assign(dst[(15 - i) * dstep], e_16[i] - o_16[i]);                  \
-        }                                                                      \
+#define TR_16(dst, src, dstep, sstep, assign, end)                \
+    do {                                                          \
+        int i, j;                                                 \
+        int e_16[8];                                              \
+        int o_16[8] = { 0 };                                      \
+        for (i = 0; i < 8; i++)                                   \
+            for (j = 1; j < end; j += 2)                          \
+                o_16[i] += transform[2 * j][i] * src[j * sstep];  \
+        TR_8(e_16, src, 1, 2 * sstep, SET, 8);                    \
+                                                                  \
+        for (i = 0; i < 8; i++) {                                 \
+            assign(dst[i * dstep], e_16[i] + o_16[i]);            \
+            assign(dst[(15 - i) * dstep], e_16[i] - o_16[i]);     \
+        }                                                         \
     } while (0)
 
-#define TR_32(dst, src, dstep, sstep, assign, end)                             \
-    do {                                                                       \
-        int i, j;                                                              \
-        int e_32[16];                                                          \
-        int o_32[16] = { 0 };                                                  \
-        for (i = 0; i < 16; i++)                                               \
-            for (j = 1; j < end; j += 2)                                       \
-                o_32[i] += transform[j][i] * src[j * sstep];                   \
-        TR_16(e_32, src, 1, 2 * sstep, SET, end/2);                            \
-                                                                               \
-        for (i = 0; i < 16; i++) {                                             \
-            assign(dst[i * dstep], e_32[i] + o_32[i]);                         \
-            assign(dst[(31 - i) * dstep], e_32[i] - o_32[i]);                  \
-        }                                                                      \
+#define TR_32(dst, src, dstep, sstep, assign, end)                \
+    do {                                                          \
+        int i, j;                                                 \
+        int e_32[16];                                             \
+        int o_32[16] = { 0 };                                     \
+        for (i = 0; i < 16; i++)                                  \
+            for (j = 1; j < end; j += 2)                          \
+                o_32[i] += transform[j][i] * src[j * sstep];      \
+        TR_16(e_32, src, 1, 2 * sstep, SET, end / 2);             \
+                                                                  \
+        for (i = 0; i < 16; i++) {                                \
+            assign(dst[i * dstep], e_32[i] + o_32[i]);            \
+            assign(dst[(31 - i) * dstep], e_32[i] - o_32[i]);     \
+        }                                                         \
     } while (0)
 
-#define IDCT_VAR4(H)                                                          \
-    int      limit2   = FFMIN(col_limit + 4, H)
-#define IDCT_VAR8(H)                                                          \
-        int      limit   = FFMIN(col_limit, H);                               \
-        int      limit2   = FFMIN(col_limit + 4, H)
+#define IDCT_VAR4(H)                                              \
+    int limit2 = FFMIN(col_limit + 4, H)
+#define IDCT_VAR8(H)                                              \
+    int limit  = FFMIN(col_limit, H);                             \
+    int limit2 = FFMIN(col_limit + 4, H)
 #define IDCT_VAR16(H)   IDCT_VAR8(H)
 #define IDCT_VAR32(H)   IDCT_VAR8(H)
 
-#define IDCT(H)                                                              \
-static void FUNC(idct_##H ##x ##H )(                                         \
-                   int16_t *coeffs, int col_limit) {                         \
-    int i;                                                                   \
-    int      shift   = 7;                                                    \
-    int      add     = 1 << (shift - 1);                                     \
-    int16_t *src     = coeffs;                                               \
-    IDCT_VAR ##H(H);                                                         \
-                                                                             \
-    for (i = 0; i < H; i++) {                                                \
-        TR_ ## H(src, src, H, H, SCALE, limit2);                             \
-        if (limit2 < H && i%4 == 0 && !!i)                                   \
-            limit2 -= 4;                                                     \
-        src++;                                                               \
-    }                                                                        \
-                                                                             \
-    shift   = 20 - BIT_DEPTH;                                                \
-    add     = 1 << (shift - 1);                                              \
-    for (i = 0; i < H; i++) {                                                \
-        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);                        \
-        coeffs += H;                                                         \
-    }                                                                        \
+#define IDCT(H)                                                   \
+static void FUNC(idct_ ## H ## x ## H )(int16_t *coeffs,          \
+                                        int col_limit)            \
+{                                                                 \
+    int i;                                                        \
+    int      shift = 7;                                           \
+    int      add   = 1 << (shift - 1);                            \
+    int16_t *src   = coeffs;                                      \
+    IDCT_VAR ## H(H);                                             \
+                                                                  \
+    for (i = 0; i < H; i++) {                                     \
+        TR_ ## H(src, src, H, H, SCALE, limit2);                  \
+        if (limit2 < H && i%4 == 0 && !!i)                        \
+            limit2 -= 4;                                          \
+        src++;                                                    \
+    }                                                             \
+                                                                  \
+    shift = 20 - BIT_DEPTH;                                       \
+    add   = 1 << (shift - 1);                                     \
+    for (i = 0; i < H; i++) {                                     \
+        TR_ ## H(coeffs, coeffs, 1, 1, SCALE, limit);             \
+        coeffs += H;                                              \
+    }                                                             \
 }
 
-#define IDCT_DC(H)                                                           \
-static void FUNC(idct_##H ##x ##H ##_dc)(                                    \
-                   int16_t *coeffs) {                                        \
-    int i, j;                                                                \
-    int      shift   = 14 - BIT_DEPTH;                                       \
-    int      add     = 1 << (shift - 1);                                     \
-    int      coeff   = (((coeffs[0] + 1) >> 1) + add) >> shift;              \
-                                                                             \
-    for (j = 0; j < H; j++) {                                                \
-        for (i = 0; i < H; i++) {                                            \
-            coeffs[i+j*H] = coeff;                                           \
-        }                                                                    \
-    }                                                                        \
+#define IDCT_DC(H)                                                \
+static void FUNC(idct_ ## H ## x ## H ## _dc)(int16_t *coeffs)    \
+{                                                                 \
+    int i, j;                                                     \
+    int shift = 14 - BIT_DEPTH;                                   \
+    int add   = 1 << (shift - 1);                                 \
+    int coeff = (((coeffs[0] + 1) >> 1) + add) >> shift;          \
+                                                                  \
+    for (j = 0; j < H; j++) {                                     \
+        for (i = 0; i < H; i++) {                                 \
+            coeffs[i + j * H] = coeff;                            \
+        }                                                         \
+    }                                                             \
 }
 
 IDCT( 4)
@@ -299,7 +294,6 @@ IDCT_DC(32)
 
 #undef SET
 #undef SCALE
-#undef ADD_AND_SCALE
 
 static void FUNC(sao_band_filter)(uint8_t *_dst, uint8_t *_src,
                                   ptrdiff_t stride_dst, ptrdiff_t stride_src,
@@ -399,8 +393,8 @@ static void FUNC(sao_edge_restore_0)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val   = sao_offset_val[0];
-            int y_stride_dst = stride_dst * (height - 1);
-            int y_stride_src = stride_src * (height - 1);
+            ptrdiff_t y_stride_dst = stride_dst * (height - 1);
+            ptrdiff_t y_stride_src = stride_src * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
             height--;
@@ -450,8 +444,8 @@ static void FUNC(sao_edge_restore_1)(uint8_t *_dst, uint8_t *_src,
         }
         if (borders[3]) {
             int offset_val   = sao_offset_val[0];
-            int y_stride_dst = stride_dst * (height - 1);
-            int y_stride_src = stride_src * (height - 1);
+            ptrdiff_t y_stride_dst = stride_dst * (height - 1);
+            ptrdiff_t y_stride_src = stride_src * (height - 1);
             for (x = init_x; x < width; x++)
                 dst[x + y_stride_dst] = av_clip_pixel(src[x + y_stride_src] + offset_val);
             height--;
@@ -599,7 +593,7 @@ static void FUNC(put_hevc_pel_bi_w_pixels)(uint8_t *_dst, ptrdiff_t _dststride, 
     ox1     = ox1 * (1 << (BIT_DEPTH - 8));
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++) {
-            dst[x] = av_clip_pixel(( (src[x] << (14 - BIT_DEPTH)) * wx1 + src2[x] * wx0 + ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+            dst[x] = av_clip_pixel(( (src[x] << (14 - BIT_DEPTH)) * wx1 + src2[x] * wx0 + (ox0 + ox1 + 1) * (1 << log2Wd)) >> (log2Wd + 1));
         }
         src  += srcstride;
         dst  += dststride;
@@ -921,7 +915,7 @@ static void FUNC(put_hevc_qpel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -976,7 +970,7 @@ static void FUNC(put_hevc_qpel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((QPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -1057,7 +1051,7 @@ static void FUNC(put_hevc_qpel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((QPEL_FILTER(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -1361,7 +1355,7 @@ static void FUNC(put_hevc_epel_bi_w_h)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((EPEL_FILTER(src, 1) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -1413,7 +1407,7 @@ static void FUNC(put_hevc_epel_bi_w_v)(uint8_t *_dst, ptrdiff_t _dststride, uint
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((EPEL_FILTER(src, srcstride) >> (BIT_DEPTH - 8)) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         src  += srcstride;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
@@ -1492,12 +1486,14 @@ static void FUNC(put_hevc_epel_bi_w_hv)(uint8_t *_dst, ptrdiff_t _dststride, uin
     for (y = 0; y < height; y++) {
         for (x = 0; x < width; x++)
             dst[x] = av_clip_pixel(((EPEL_FILTER(tmp, MAX_PB_SIZE) >> 6) * wx1 + src2[x] * wx0 +
-                                    ((ox0 + ox1 + 1) << log2Wd)) >> (log2Wd + 1));
+                                    ((ox0 + ox1 + 1) * (1 << log2Wd))) >> (log2Wd + 1));
         tmp  += MAX_PB_SIZE;
         dst  += dststride;
         src2 += MAX_PB_SIZE;
     }
-}// line zero
+}
+
+// line zero
 #define P3 pix[-4 * xstride]
 #define P2 pix[-3 * xstride]
 #define P1 pix[-2 * xstride]

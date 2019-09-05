@@ -25,7 +25,6 @@
 #include "libavutil/attributes.h"
 #include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/x86/asm.h"
 #include "libavutil/x86/cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
@@ -54,13 +53,13 @@ DECLARE_ASM_CONST(8, uint64_t, b15Mask)=   0x001F001F001F001FLL;
 DECLARE_ASM_CONST(8, uint64_t, g15Mask)=   0x03E003E003E003E0LL;
 DECLARE_ASM_CONST(8, uint64_t, r15Mask)=   0x7C007C007C007C00LL;
 
-DECLARE_ALIGNED(8, const uint64_t, ff_M24A)         = 0x00FF0000FF0000FFLL;
-DECLARE_ALIGNED(8, const uint64_t, ff_M24B)         = 0xFF0000FF0000FF00LL;
-DECLARE_ALIGNED(8, const uint64_t, ff_M24C)         = 0x0000FF0000FF0000LL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_M24A)         = 0x00FF0000FF0000FFLL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_M24B)         = 0xFF0000FF0000FF00LL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_M24C)         = 0x0000FF0000FF0000LL;
 
-DECLARE_ALIGNED(8, const uint64_t, ff_bgr2YOffset)  = 0x1010101010101010ULL;
-DECLARE_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
-DECLARE_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_bgr2YOffset)  = 0x1010101010101010ULL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_bgr2UVOffset) = 0x8080808080808080ULL;
+DECLARE_ASM_ALIGNED(8, const uint64_t, ff_w1111)        = 0x0001000100010001ULL;
 
 
 //MMX versions
@@ -221,16 +220,16 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         "movdqa     %%xmm3, %%xmm4 \n\t" \
         "movdqa     %%xmm3, %%xmm7 \n\t" \
         "movl           %3, %%ecx  \n\t" \
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "mov                                 %0, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
         ".p2align                             4             \n\t" /* FIXME Unroll? */\
         "1:                                                 \n\t"\
-        "movddup                  8(%%"REG_d"), %%xmm0      \n\t" /* filterCoeff */\
-        "movdqa              (%%"REG_S", %%"REG_c", 2), %%xmm2      \n\t" /* srcData */\
-        "movdqa            16(%%"REG_S", %%"REG_c", 2), %%xmm5      \n\t" /* srcData */\
-        "add                                $16, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
-        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "movddup                  8(%%"FF_REG_d"), %%xmm0   \n\t" /* filterCoeff */\
+        "movdqa              (%%"FF_REG_S", %%"FF_REG_c", 2), %%xmm2 \n\t" /* srcData */\
+        "movdqa            16(%%"FF_REG_S", %%"FF_REG_c", 2), %%xmm5 \n\t" /* srcData */\
+        "add                                $16, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
+        "test                         %%"FF_REG_S", %%"FF_REG_S"     \n\t"\
         "pmulhw                           %%xmm0, %%xmm2      \n\t"\
         "pmulhw                           %%xmm0, %%xmm5      \n\t"\
         "paddw                            %%xmm2, %%xmm3      \n\t"\
@@ -239,13 +238,13 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         "psraw                               $3, %%xmm3      \n\t"\
         "psraw                               $3, %%xmm4      \n\t"\
         "packuswb                         %%xmm4, %%xmm3      \n\t"\
-        "movntdq                          %%xmm3, (%1, %%"REG_c")\n\t"\
-        "add                         $16, %%"REG_c"         \n\t"\
-        "cmp                          %2, %%"REG_c"         \n\t"\
+        "movntdq                          %%xmm3, (%1, %%"FF_REG_c") \n\t"\
+        "add                         $16, %%"FF_REG_c"        \n\t"\
+        "cmp                          %2, %%"FF_REG_c"        \n\t"\
         "movdqa                   %%xmm7, %%xmm3            \n\t" \
         "movdqa                   %%xmm7, %%xmm4            \n\t" \
-        "mov                                 %0, %%"REG_d"  \n\t"\
-        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "mov                                 %0, %%"FF_REG_d"        \n\t"\
+        "mov                        (%%"FF_REG_d"), %%"FF_REG_S"     \n\t"\
         "jb                                  1b             \n\t"
 
     if (offset) {
@@ -260,7 +259,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
               "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
               "m"(filterSize), "m"(((uint64_t *) dither)[0])
               : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
-                "%"REG_d, "%"REG_S, "%"REG_c
+                "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_c
               );
     } else {
         __asm__ volatile(
@@ -270,7 +269,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
               "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset),
               "m"(filterSize), "m"(((uint64_t *) dither)[0])
               : XMM_CLOBBERS("%xmm0" , "%xmm1" , "%xmm2" , "%xmm3" , "%xmm4" , "%xmm5" , "%xmm7" ,)
-                "%"REG_d, "%"REG_S, "%"REG_c
+                "%"FF_REG_d, "%"FF_REG_S, "%"FF_REG_c
               );
     }
 }
@@ -430,14 +429,14 @@ av_cold void ff_sws_init_swscale_x86(SwsContext *c)
 #define ASSIGN_VSCALEX_FUNC(vscalefn, opt, do_16_case, condition_8bit) \
 switch(c->dstBpc){ \
     case 16:                          do_16_case;                          break; \
-    case 10: if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE) vscalefn = ff_yuv2planeX_10_ ## opt; break; \
     case 9:  if (!isBE(c->dstFormat)) vscalefn = ff_yuv2planeX_9_  ## opt; break; \
     case 8: if ((condition_8bit) && !c->use_mmx_vfilter) vscalefn = ff_yuv2planeX_8_  ## opt; break; \
     }
 #define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
     switch(c->dstBpc){ \
     case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
-    case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
+    case 10: if (!isBE(c->dstFormat) && c->dstFormat != AV_PIX_FMT_P010LE && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
     case 8:                                      vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
     default: av_assert0(c->dstBpc>8); \

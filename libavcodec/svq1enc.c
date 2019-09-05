@@ -152,7 +152,7 @@ static int encode_block(SVQ1EncContext *s, uint8_t *src, uint8_t *ref,
                 vector = codebook + stage * size * 16 + i * size;
                 sqr    = s->ssd_int8_vs_int16(vector, block[stage], size);
                 diff   = block_sum[stage] - sum;
-                score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64bit slooow
+                score  = sqr - (diff * (int64_t)diff >> (level + 3)); // FIXME: 64 bits slooow
                 if (score < best_vector_score) {
                     int mean = diff + (size >> 1) >> (level + 3);
                     av_assert2(mean > -300 && mean < 300);
@@ -283,19 +283,6 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
         s->m.b8_stride                     = 2 * s->m.mb_width + 1;
         s->m.f_code                        = 1;
         s->m.pict_type                     = s->pict_type;
-#if FF_API_MOTION_EST
-FF_DISABLE_DEPRECATION_WARNINGS
-        s->m.me_method                     = s->avctx->me_method;
-        if (s->motion_est == FF_ME_EPZS) {
-            if (s->avctx->me_method == ME_ZERO)
-                s->motion_est = FF_ME_ZERO;
-            else if (s->avctx->me_method == ME_EPZS)
-                s->motion_est = FF_ME_EPZS;
-            else if (s->avctx->me_method == ME_X1)
-                s->motion_est = FF_ME_XONE;
-        }
-FF_ENABLE_DEPRECATION_WARNINGS
-#endif
         s->m.motion_est                    = s->motion_est;
         s->m.me.scene_change_score         = 0;
         // s->m.out_format                    = FMT_H263;
@@ -641,15 +628,17 @@ FF_ENABLE_DEPRECATION_WARNINGS
     ff_side_data_set_encoder_stats(pkt, pict->quality, NULL, 0, s->pict_type);
 
     svq1_write_header(s, s->pict_type);
-    for (i = 0; i < 3; i++)
-        if (svq1_encode_plane(s, i,
+    for (i = 0; i < 3; i++) {
+        int ret = svq1_encode_plane(s, i,
                               pict->data[i],
                               s->last_picture->data[i],
                               s->current_picture->data[i],
                               s->frame_width  / (i ? 4 : 1),
                               s->frame_height / (i ? 4 : 1),
                               pict->linesize[i],
-                              s->current_picture->linesize[i]) < 0) {
+                              s->current_picture->linesize[i]);
+        emms_c();
+        if (ret < 0) {
             int j;
             for (j = 0; j < i; j++) {
                 av_freep(&s->motion_val8[j]);
@@ -658,6 +647,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             av_freep(&s->scratchbuf);
             return -1;
         }
+    }
 
     // avpriv_align_put_bits(&s->pb);
     while (put_bits_count(&s->pb) & 31)

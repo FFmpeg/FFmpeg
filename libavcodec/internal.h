@@ -48,8 +48,8 @@
 #define FF_CODEC_CAP_INIT_CLEANUP           (1 << 1)
 /**
  * Decoders marked with FF_CODEC_CAP_SETS_PKT_DTS want to set
- * AVFrame.pkt_dts manually. If the flag is set, utils.c won't overwrite
- * this field. If it's unset, utils.c tries to guess the pkt_dts field
+ * AVFrame.pkt_dts manually. If the flag is set, decode.c won't overwrite
+ * this field. If it's unset, decode.c tries to guess the pkt_dts field
  * from the input AVPacket.
  */
 #define FF_CODEC_CAP_SETS_PKT_DTS           (1 << 2)
@@ -58,6 +58,16 @@
  * skipped due to the skip_frame setting.
  */
 #define FF_CODEC_CAP_SKIP_FRAME_FILL_PARAM  (1 << 3)
+/**
+ * The decoder sets the cropping fields in the output frames manually.
+ * If this cap is set, the generic code will initialize output frame
+ * dimensions to coded rather than display values.
+ */
+#define FF_CODEC_CAP_EXPORTS_CROPPING       (1 << 4)
+/**
+ * Codec initializes slice-based threading with a main function
+ */
+#define FF_CODEC_CAP_SLICE_THREAD_HAS_MF    (1 << 5)
 
 #ifdef TRACE
 #   define ff_tlog(ctx, ...) av_log(ctx, AV_LOG_TRACE, __VA_ARGS__)
@@ -66,15 +76,20 @@
 #endif
 
 
-#if !FF_API_QUANT_BIAS
 #define FF_DEFAULT_QUANT_BIAS 999999
-#endif
 
-#define FF_SANE_NB_CHANNELS 64U
+#define FF_QSCALE_TYPE_MPEG1 0
+#define FF_QSCALE_TYPE_MPEG2 1
+#define FF_QSCALE_TYPE_H264  2
+#define FF_QSCALE_TYPE_VP56  3
+
+#define FF_SANE_NB_CHANNELS 512U
 
 #define FF_SIGNBIT(x) ((x) >> CHAR_BIT * sizeof(x) - 1)
 
-#if HAVE_AVX
+#if HAVE_SIMD_ALIGN_64
+#   define STRIDE_ALIGN 64 /* AVX-512 */
+#elif HAVE_SIMD_ALIGN_32
 #   define STRIDE_ALIGN 32
 #elif HAVE_SIMD_ALIGN_16
 #   define STRIDE_ALIGN 16
@@ -100,6 +115,16 @@ typedef struct FramePool {
     int channels;
     int samples;
 } FramePool;
+
+typedef struct DecodeSimpleContext {
+    AVPacket *in_pkt;
+    AVFrame  *out_frame;
+} DecodeSimpleContext;
+
+typedef struct DecodeFilterContext {
+    AVBSFContext **bsfs;
+    int         nb_bsfs;
+} DecodeFilterContext;
 
 typedef struct AVCodecInternal {
     /**
@@ -137,11 +162,14 @@ typedef struct AVCodecInternal {
 
     void *thread_ctx;
 
+    DecodeSimpleContext ds;
+    DecodeFilterContext filter;
+
     /**
-     * Current packet as passed into the decoder, to avoid having to pass the
-     * packet into every function.
+     * Properties (timestamps+side data) extracted from the last packet passed
+     * for decoding.
      */
-    AVPacket *pkt;
+    AVPacket *last_pkt_props;
 
     /**
      * temporary buffer used for encoders to store their bitstream
@@ -173,6 +201,31 @@ typedef struct AVCodecInternal {
     int buffer_pkt_valid; // encoding: packet without data can be valid
     AVFrame *buffer_frame;
     int draining_done;
+    /* set to 1 when the caller is using the old decoding API */
+    int compat_decode;
+    int compat_decode_warned;
+    /* this variable is set by the decoder internals to signal to the old
+     * API compat wrappers the amount of data consumed from the last packet */
+    size_t compat_decode_consumed;
+    /* when a partial packet has been consumed, this stores the remaining size
+     * of the packet (that should be submitted in the next decode call */
+    size_t compat_decode_partial_size;
+    AVFrame *compat_decode_frame;
+
+    int showed_multi_packet_warning;
+
+    int skip_samples_multiplier;
+
+    /* to prevent infinite loop on errors when draining */
+    int nb_draining_errors;
+
+    /* used when avctx flag AV_CODEC_FLAG_DROPCHANGED is set */
+    int changed_frames_dropped;
+    int initial_format;
+    int initial_width, initial_height;
+    int initial_sample_rate;
+    int initial_channels;
+    uint64_t initial_channel_layout;
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -190,20 +243,7 @@ int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int avpriv_toupper4(unsigned int x);
 
-/**
- * does needed setup of pkt_pts/pos and such for (re)get_buffer();
- */
-int ff_init_buffer_info(AVCodecContext *s, AVFrame *frame);
-
-
 void ff_color_frame(AVFrame *frame, const int color[4]);
-
-extern volatile int ff_avcodec_locked;
-int ff_lock_avcodec(AVCodecContext *log_ctx, const AVCodec *codec);
-int ff_unlock_avcodec(const AVCodec *codec);
-
-int avpriv_lock_avformat(void);
-int avpriv_unlock_avformat(void);
 
 /**
  * Maximum size in bytes of extradata.
@@ -261,7 +301,7 @@ static av_always_inline int64_t ff_samples_to_time_base(AVCodecContext *avctx,
 static av_always_inline float ff_exp2fi(int x) {
     /* Normal range */
     if (-126 <= x && x <= 128)
-        return av_int2float(x+127 << 23);
+        return av_int2float((x+127) << 23);
     /* Too large */
     else if (x > 128)
         return INFINITY;
@@ -280,11 +320,12 @@ static av_always_inline float ff_exp2fi(int x) {
  */
 int ff_get_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
+#define FF_REGET_BUFFER_FLAG_READONLY 1 ///< the returned buffer does not need to be writable
 /**
- * Identical in function to av_frame_make_writable(), except it uses
- * ff_get_buffer() to allocate the buffer when needed.
+ * Identical in function to ff_get_buffer(), except it reuses the existing buffer
+ * if available.
  */
-int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame);
+int ff_reget_buffer(AVCodecContext *avctx, AVFrame *frame, int flags);
 
 int ff_thread_can_start_frame(AVCodecContext *avctx);
 
@@ -330,6 +371,12 @@ int ff_side_data_update_matrix_encoding(AVFrame *frame,
  * Select the (possibly hardware accelerated) pixel format.
  * This is a wrapper around AVCodecContext.get_format() and should be used
  * instead of calling get_format() directly.
+ *
+ * The list of pixel formats must contain at least one valid entry, and is
+ * terminated with AV_PIX_FMT_NONE.  If it is possible to decode to software,
+ * the last entry in the list must be the most accurate software format.
+ * If it is not possible to decode to software, AVCodecContext.sw_pix_fmt
+ * must be set before calling this function.
  */
 int ff_get_format(AVCodecContext *avctx, const enum AVPixelFormat *fmt);
 
@@ -344,5 +391,44 @@ int ff_decode_frame_props(AVCodecContext *avctx, AVFrame *frame);
 AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
+
+/**
+ * Check AVFrame for A53 side data and allocate and fill SEI message with A53 info
+ *
+ * @param frame      Raw frame to get A53 side data from
+ * @param prefix_len Number of bytes to allocate before SEI message
+ * @param data       Pointer to a variable to store allocated memory
+ *                   Upon return the variable will hold NULL on error or if frame has no A53 info.
+ *                   Otherwise it will point to prefix_len uninitialized bytes followed by
+ *                   *sei_size SEI message
+ * @param sei_size   Pointer to a variable to store generated SEI message length
+ * @return           Zero on success, negative error code on failure
+ */
+int ff_alloc_a53_sei(const AVFrame *frame, size_t prefix_len,
+                     void **data, size_t *sei_size);
+
+/**
+ * Get an estimated video bitrate based on frame size, frame rate and coded
+ * bits per pixel.
+ */
+int64_t ff_guess_coded_bitrate(AVCodecContext *avctx);
+
+/**
+ * Check if a value is in the list. If not, return the default value
+ *
+ * @param ctx                Context for the log msg
+ * @param val_name           Name of the checked value, for log msg
+ * @param array_valid_values Array of valid int, ended with INT_MAX
+ * @param default_value      Value return if checked value is not in the array
+ * @return                   Value or default_value.
+ */
+int ff_int_from_list_or_default(void *ctx, const char * val_name, int val,
+                                const int * array_valid_values, int default_value);
+
+#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avcodec)
+#    define av_export_avcodec __declspec(dllimport)
+#else
+#    define av_export_avcodec
+#endif
 
 #endif /* AVCODEC_INTERNAL_H */

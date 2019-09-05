@@ -20,10 +20,11 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 
-static int probe(AVProbeData *p)
+static int probe(const AVProbeData *p)
 {
     if (p->buf_size < 2096)
         return 0;
@@ -53,9 +54,14 @@ static int read_header(AVFormatContext *s)
     avio_rl32(s->pb);
     st->codecpar->sample_rate = avio_rl32(s->pb);
     st->codecpar->channels    = avio_rl32(s->pb);
+    if (st->codecpar->channels > FF_SANE_NB_CHANNELS)
+        return AVERROR(ENOSYS);
     s->internal->data_offset = avio_rl32(s->pb);
     avio_r8(s->pb);
-    st->codecpar->block_align = st->codecpar->channels * avio_rl32(s->pb);
+    st->codecpar->block_align = avio_rl32(s->pb);
+    if (st->codecpar->block_align > INT_MAX / FF_SANE_NB_CHANNELS)
+        return AVERROR_INVALIDDATA;
+    st->codecpar->block_align *= st->codecpar->channels;
 
     avio_seek(s->pb, s->internal->data_offset, SEEK_SET);
 

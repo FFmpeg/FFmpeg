@@ -33,7 +33,7 @@ typedef struct PCMDVDContext {
     int block_size;          // Size of a block of samples in bytes
     int last_block_size;     // Size of the last block of samples in bytes
     int samples_per_block;   // Number of samples per channel per block
-    int groups_per_block;    // Number of 20/24bit sample groups per block
+    int groups_per_block;    // Number of 20/24-bit sample groups per block
     uint8_t *extra_samples;  // Pointer to leftover samples from a frame
     int extra_sample_count;  // Number of leftover samples in the buffer
 } PCMDVDContext;
@@ -106,7 +106,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
                       avctx->sample_rate *
                       avctx->bits_per_coded_sample;
 
-    /* 4 samples form a group in 20/24bit PCM on DVD Video.
+    /* 4 samples form a group in 20/24-bit PCM on DVD Video.
      * A block is formed by the number of groups that are
      * needed to complete a set of samples for each channel. */
     if (avctx->bits_per_coded_sample == 16) {
@@ -142,7 +142,7 @@ static int pcm_dvd_parse_header(AVCodecContext *avctx, const uint8_t *header)
         ff_dlog(avctx,
                 "pcm_dvd_parse_header: %d channels, %d bits per sample, %d Hz, %"PRId64" bit/s\n",
                 avctx->channels, avctx->bits_per_coded_sample,
-                avctx->sample_rate, (int64_t)avctx->bit_rate);
+                avctx->sample_rate, avctx->bit_rate);
 
     s->last_header = header_int;
 

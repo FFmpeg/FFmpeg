@@ -1,0 +1,4 @@
+38195b0437f6ae1c910ba108e7a799d1 *tests/data/fate/vsynth_lena-prores_444_int.mov
+5696258 tests/data/fate/vsynth_lena-prores_444_int.mov
+466380156e4d2b811f4ffb9c5a8bca72 *tests/data/fate/vsynth_lena-prores_444_int.out.rawvideo
+stddev:    0.88 PSNR: 49.23 MAXDIFF:    9 bytes:  7603200/  7603200

@@ -30,9 +30,9 @@
 #define AVCODEC_MPC_H
 
 #include "libavutil/lfg.h"
+
 #include "avcodec.h"
 #include "bswapdsp.h"
-#include "get_bits.h"
 #include "mpegaudio.h"
 #include "mpegaudiodsp.h"
 
@@ -52,7 +52,6 @@ typedef struct Band {
 typedef struct MPCContext {
     BswapDSPContext bdsp;
     MPADSPContext mpadsp;
-    GetBitContext gb;
     int IS, MSS, gapless;
     int lastframelen;
     int maxbands, last_max_band;

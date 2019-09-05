@@ -1,3 +1,3 @@
-c34e37ea49237c2d1ea81a5944328e59 *./tests/data/lavf/pgmpipe.pgm
-2534775 ./tests/data/lavf/pgmpipe.pgm
-./tests/data/lavf/pgmpipe.pgm CRC=0x7aa0122f
+c34e37ea49237c2d1ea81a5944328e59 *tests/data/lavf/pgmpipe.pgm
+2534775 tests/data/lavf/pgmpipe.pgm
+tests/data/lavf/pgmpipe.pgm CRC=0x7aa0122f

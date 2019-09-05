@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * @ingroup lavu_ripemd
+ * Public header for RIPEMD hash function implementation.
+ */
+
 #ifndef AVUTIL_RIPEMD_H
 #define AVUTIL_RIPEMD_H
 
@@ -29,7 +35,9 @@
 
 /**
  * @defgroup lavu_ripemd RIPEMD
- * @ingroup lavu_crypto
+ * @ingroup lavu_hash
+ * RIPEMD hash function implementation.
+ *
  * @{
  */
 
@@ -58,7 +66,11 @@ int av_ripemd_init(struct AVRIPEMD* context, int bits);
  * @param data    input data to update hash with
  * @param len     input data length
  */
+#if FF_API_CRYPTO_SIZE_T
 void av_ripemd_update(struct AVRIPEMD* context, const uint8_t* data, unsigned int len);
+#else
+void av_ripemd_update(struct AVRIPEMD* context, const uint8_t* data, size_t len);
+#endif
 
 /**
  * Finish hashing and output digest value.

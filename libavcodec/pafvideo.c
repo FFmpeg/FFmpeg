@@ -78,6 +78,7 @@ static av_cold int paf_video_init(AVCodecContext *avctx)
 {
     PAFVideoDecContext *c = avctx->priv_data;
     int i;
+    int ret;
 
     c->width  = avctx->width;
     c->height = avctx->height;
@@ -90,6 +91,9 @@ static av_cold int paf_video_init(AVCodecContext *avctx)
     }
 
     avctx->pix_fmt = AV_PIX_FMT_PAL8;
+    ret = av_image_check_size2(avctx->width, FFALIGN(avctx->height, 256), avctx->max_pixels, avctx->pix_fmt, 0, avctx);
+    if (ret < 0)
+        return ret;
 
     c->pic = av_frame_alloc();
     if (!c->pic)
@@ -181,6 +185,8 @@ static int decode_0(PAFVideoDecContext *c, uint8_t *pkt, uint8_t code)
             dend   = c->frame[page] + c->frame_size;
             offset = (x & 0x7F) * 2;
             j      = bytestream2_get_le16(&c->gb) + offset;
+            if (bytestream2_get_bytes_left(&c->gb) < (j - offset) * 16)
+                return AVERROR_INVALIDDATA;
             do {
                 offset++;
                 if (dst + 3 * c->width + 4 > dend)
@@ -198,7 +204,8 @@ static int decode_0(PAFVideoDecContext *c, uint8_t *pkt, uint8_t code)
     do {
         set_src_position(c, &src, &send);
         if ((src + 3 * c->width + 4 > send) ||
-            (dst + 3 * c->width + 4 > dend))
+            (dst + 3 * c->width + 4 > dend) ||
+            bytestream2_get_bytes_left(&c->gb) < 4)
             return AVERROR_INVALIDDATA;
         copy_block4(dst, src, c->width, c->width, 4);
         i++;
@@ -267,16 +274,25 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
     uint8_t code, *dst, *end;
     int i, frame, ret;
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0)
-        return ret;
+    if (pkt->size < 2)
+        return AVERROR_INVALIDDATA;
 
     bytestream2_init(&c->gb, pkt->data, pkt->size);
 
     code = bytestream2_get_byte(&c->gb);
-    if (code & 0x20) {  // frame is keyframe
-        for (i = 0; i < 4; i++)
-            memset(c->frame[i], 0, c->frame_size);
+    if ((code & 0xF) > 4 || (code & 0xF) == 3) {
+        avpriv_request_sample(avctx, "unknown/invalid code");
+        return AVERROR_INVALIDDATA;
+    }
 
+    if ((code & 0xF) == 0 &&
+        c->video_size / 32 - (int64_t)bytestream2_get_bytes_left(&c->gb) > c->video_size / 32 * (int64_t)avctx->discard_damaged_percentage / 100)
+        return AVERROR_INVALIDDATA;
+
+    if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0)
+        return ret;
+
+    if (code & 0x20) {  // frame is keyframe
         memset(c->pic->data[1], 0, AVPALETTE_SIZE);
         c->current_frame  = 0;
         c->pic->key_frame = 1;
@@ -312,6 +328,10 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
         }
         c->pic->palette_has_changed = 1;
     }
+
+    if (code & 0x20)
+        for (i = 0; i < 4; i++)
+            memset(c->frame[i], 0, c->frame_size);
 
     switch (code & 0x0F) {
     case 0:
@@ -367,8 +387,7 @@ static int paf_video_decode(AVCodecContext *avctx, void *data,
         }
         break;
     default:
-        avpriv_request_sample(avctx, "unknown/invalid code");
-        return AVERROR_INVALIDDATA;
+        av_assert0(0);
     }
 
     av_image_copy_plane(c->pic->data[0], c->pic->linesize[0],

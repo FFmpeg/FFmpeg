@@ -66,7 +66,7 @@ static void vc2_subband_dwt_97(VC2TransformContext *t, dwtcoef *data,
      */
     for (y = 0; y < synth_height; y++) {
         for (x = 0; x < synth_width; x++)
-            synthl[x] = datal[x] << 1;
+            synthl[x] = datal[x] * 2;
         synthl += synth_width;
         datal += stride;
     }
@@ -255,21 +255,27 @@ static void vc2_subband_dwt_haar_shift(VC2TransformContext *t, dwtcoef *data,
     dwt_haar(t, data, stride, width, height, 1);
 }
 
-av_cold int ff_vc2enc_init_transforms(VC2TransformContext *s, int p_width, int p_height)
+av_cold int ff_vc2enc_init_transforms(VC2TransformContext *s, int p_stride,
+                                      int p_height, int slice_w, int slice_h)
 {
     s->vc2_subband_dwt[VC2_TRANSFORM_9_7]    = vc2_subband_dwt_97;
     s->vc2_subband_dwt[VC2_TRANSFORM_5_3]    = vc2_subband_dwt_53;
     s->vc2_subband_dwt[VC2_TRANSFORM_HAAR]   = vc2_subband_dwt_haar;
     s->vc2_subband_dwt[VC2_TRANSFORM_HAAR_S] = vc2_subband_dwt_haar_shift;
 
-    s->buffer = av_malloc(2*p_width*p_height*sizeof(dwtcoef));
+    /* Pad by the slice size, only matters for non-Haar wavelets */
+    s->buffer = av_calloc((p_stride + slice_w)*(p_height + slice_h), sizeof(dwtcoef));
     if (!s->buffer)
         return 1;
+
+    s->padding = (slice_h >> 1)*p_stride + (slice_w >> 1);
+    s->buffer += s->padding;
 
     return 0;
 }
 
 av_cold void ff_vc2enc_free_transforms(VC2TransformContext *s)
 {
-    av_freep(&s->buffer);
+    av_free(s->buffer - s->padding);
+    s->buffer = NULL;
 }

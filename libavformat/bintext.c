@@ -126,6 +126,53 @@ static void predict_width(AVCodecParameters *par, uint64_t fsize, int got_width)
         par->width = fsize > 4000 ? (160<<3) : (80<<3);
 }
 
+static int bin_probe(const AVProbeData *p)
+{
+    const uint8_t *d = p->buf;
+    int magic = 0, sauce = 0;
+    int invisible = 0;
+    int i;
+
+    if (p->buf_size > 256)
+        magic = !memcmp(d + p->buf_size - 256, next_magic, sizeof(next_magic));
+    if (p->buf_size > 128)
+        sauce = !memcmp(d + p->buf_size - 128, "SAUCE00", 7);
+
+    if (magic)
+        return AVPROBE_SCORE_EXTENSION + 1;
+
+    if (av_match_ext(p->filename, "bin")) {
+        AVCodecParameters par;
+        int got_width = 0;
+        par.width = par.height = 0;
+        if (sauce)
+            return AVPROBE_SCORE_EXTENSION + 1;
+
+        predict_width(&par, p->buf_size, got_width);
+        if (par.width <= 0)
+            return 0;
+        calculate_height(&par, p->buf_size);
+        if (par.height <= 0)
+            return 0;
+
+        for (i = 0; i < p->buf_size - 256;  i+=2) {
+            if ((d[i+1] & 15) == (d[i+1] >> 4) && d[i] && d[i] != 0xFF && d[i] != ' ') {
+                invisible ++;
+            }
+        }
+
+        if (par.width * par.height * 2 / (8*16) == p->buf_size)
+            return AVPROBE_SCORE_MAX / 2;
+        return 0;
+    }
+
+    if (sauce)
+        return 1;
+
+    return 0;
+}
+
+
 static int bintext_read_header(AVFormatContext *s)
 {
     BinDemuxContext *bin = s->priv_data;
@@ -141,7 +188,7 @@ static int bintext_read_header(AVFormatContext *s)
     st->codecpar->extradata[0] = 16;
     st->codecpar->extradata[1] = 0;
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int got_width = 0;
         bin->fsize = avio_size(pb);
         if (ff_sauce_read(s, &bin->fsize, &got_width, 0) < 0)
@@ -157,7 +204,7 @@ static int bintext_read_header(AVFormatContext *s)
 #endif /* CONFIG_BINTEXT_DEMUXER */
 
 #if CONFIG_XBIN_DEMUXER
-static int xbin_probe(AVProbeData *p)
+static int xbin_probe(const AVProbeData *p)
 {
     const uint8_t *d = p->buf;
 
@@ -199,7 +246,7 @@ static int xbin_read_header(AVFormatContext *s)
     if (avio_read(pb, st->codecpar->extradata + 2, st->codecpar->extradata_size - 2) < 0)
         return AVERROR(EIO);
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         bin->fsize = avio_size(pb) - 9 - st->codecpar->extradata_size;
         ff_sauce_read(s, &bin->fsize, NULL, 0);
         avio_seek(pb, 9 + st->codecpar->extradata_size, SEEK_SET);
@@ -237,7 +284,7 @@ static int adf_read_header(AVFormatContext *s)
     if (avio_read(pb, st->codecpar->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
 
-    if (pb->seekable) {
+    if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
         int got_width = 0;
         bin->fsize = avio_size(pb) - 1 - 192 - 4096;
         st->codecpar->width = 80<<3;
@@ -255,7 +302,7 @@ static const uint8_t idf_magic[] = {
     0x04, 0x31, 0x2e, 0x34, 0x00, 0x00, 0x00, 0x00, 0x4f, 0x00, 0x15, 0x00
 };
 
-static int idf_probe(AVProbeData *p)
+static int idf_probe(const AVProbeData *p)
 {
     if (p->buf_size < sizeof(idf_magic))
         return 0;
@@ -271,7 +318,7 @@ static int idf_read_header(AVFormatContext *s)
     AVStream *st;
     int got_width = 0;
 
-    if (!pb->seekable)
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL))
         return AVERROR(EIO);
 
     st = init_stream(s);
@@ -326,7 +373,7 @@ static int read_packet(AVFormatContext *s,
 static const AVOption options[] = {
     { "linespeed", "set simulated line speed (bytes per second)", OFFSET(chars_per_frame), AV_OPT_TYPE_INT, {.i64 = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "set video size, such as 640x480 or hd720.", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
-    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "framerate", "set framerate (frames per second)", OFFSET(framerate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
@@ -343,9 +390,9 @@ AVInputFormat ff_bintext_demuxer = {
     .name           = "bin",
     .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
     .priv_data_size = sizeof(BinDemuxContext),
+    .read_probe     = bin_probe,
     .read_header    = bintext_read_header,
     .read_packet    = read_packet,
-    .extensions     = "bin",
     .priv_class     = CLASS("Binary text demuxer"),
 };
 #endif

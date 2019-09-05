@@ -79,7 +79,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
     int code, ret;
     int yoffset;
 
-    if ((ret = ff_reget_buffer(avctx, vid->frame)) < 0)
+    if ((ret = ff_reget_buffer(avctx, vid->frame, 0)) < 0)
         return ret;
     wrap_to_next_line = vid->frame->linesize[0] - avctx->width;
 
@@ -109,6 +109,11 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
             if(yoffset >= avctx->height)
                 return AVERROR_INVALIDDATA;
             dst += vid->frame->linesize[0] * yoffset;
+        case VIDEO_P_FRAME:
+        case VIDEO_I_FRAME:
+            break;
+        default:
+            return AVERROR_INVALIDDATA;
     }
 
     // main code
@@ -163,4 +168,5 @@ AVCodec ff_bethsoftvid_decoder = {
     .close          = bethsoftvid_decode_end,
     .decode         = bethsoftvid_decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

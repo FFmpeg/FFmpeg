@@ -1,5 +1,5 @@
 /*
- * copyright (C) 2003 The FFmpeg Project
+ * Copyright (C) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -26,7 +26,7 @@
 
 /* these coefficients dequantize intraframe Y plane coefficients
  * (note: same as JPEG) */
-static const int8_t vp31_intra_y_dequant[64] = {
+static const uint8_t vp31_intra_y_dequant[64] = {
     16, 11, 10, 16,  24,  40,  51,  61,
     12, 12, 14, 19,  26,  58,  60,  55,
     14, 13, 16, 24,  40,  57,  69,  56,
@@ -39,7 +39,7 @@ static const int8_t vp31_intra_y_dequant[64] = {
 
 /* these coefficients dequantize intraframe C plane coefficients
  * (note: same as JPEG) */
-static const int8_t vp31_intra_c_dequant[64] = {
+static const uint8_t vp31_intra_c_dequant[64] = {
     17, 18, 24, 47, 99, 99, 99, 99,
     18, 21, 26, 66, 99, 99, 99, 99,
     24, 26, 56, 99, 99, 99, 99, 99,
@@ -51,7 +51,7 @@ static const int8_t vp31_intra_c_dequant[64] = {
 };
 
 /* these coefficients dequantize interframe coefficients (all planes) */
-static const int8_t vp31_inter_dequant[64] = {
+static const uint8_t vp31_inter_dequant[64] = {
     16, 16, 16, 20, 24, 28,  32,  40,
     16, 16, 20, 24, 28, 32,  40,  48,
     16, 20, 24, 28, 32, 40,  48,  64,
@@ -73,7 +73,7 @@ static const uint8_t vp31_dc_scale_factor[64] = {
      20,  10,  10,  10,  10,  10,  10,  10
 };
 
-static const uint32_t vp31_ac_scale_factor[64] = {
+static const uint16_t vp31_ac_scale_factor[64] = {
     500, 450, 400, 370, 340, 310, 285, 265,
     245, 225, 210, 195, 185, 180, 170, 160,
     150, 145, 135, 130, 125, 115, 110, 107,
@@ -198,11 +198,10 @@ static const int8_t fixed_motion_vector_table[64] = {
 };
 
 /* only tokens 0..6 indicate eob runs */
-static const uint8_t eob_run_base[7] = {
-    1, 2, 3, 4, 8, 16, 0
-};
-static const uint8_t eob_run_get_bits[7] = {
-    0, 0, 0, 2, 3, 4, 12
+static const struct {
+    uint8_t base, bits;
+} eob_run_table[7] = {
+    {1, 0}, {2, 0}, {3, 0}, {4, 2}, {8, 3}, {16, 4}, {0, 12}
 };
 
 static const uint8_t zero_run_base[32] = {

@@ -1,4 +1,4 @@
-34425303a27433cfa2cf077258c21c68 *tests/data/fate/vsynth2-y41p.avi
+4eda6db518001a8f2bbb2ec4b414b05a *tests/data/fate/vsynth2-y41p.avi
 7610052 tests/data/fate/vsynth2-y41p.avi
 7c760febffcf1c2e43e494f38b010af1 *tests/data/fate/vsynth2-y41p.out.rawvideo
 stddev:    1.32 PSNR: 45.72 MAXDIFF:   34 bytes:  7603200/  7603200

@@ -80,7 +80,7 @@ static av_cold int wma_decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    /* extract flag infos */
+    /* extract flag info */
     flags2    = 0;
     extradata = avctx->extradata;
     if (avctx->codec->id == AV_CODEC_ID_WMAV1 && avctx->extradata_size >= 4)
@@ -349,7 +349,7 @@ static int decode_exp_vlc(WMACodecContext *s, int ch)
             av_log(s->avctx, AV_LOG_ERROR, "Exponent vlc invalid\n");
             return -1;
         }
-        /* NOTE: this offset is the same as MPEG4 AAC ! */
+        /* NOTE: this offset is the same as MPEG-4 AAC! */
         last_exp += code - 60;
         if ((unsigned) last_exp + 60 >= FF_ARRAY_ELEMS(pow_tab)) {
             av_log(s->avctx, AV_LOG_ERROR, "Exponent out of range: %d\n",
@@ -426,7 +426,7 @@ static void wma_window(WMACodecContext *s, float *out)
 
 /**
  * @return 0 if OK. 1 if last block of frame. return -1 if
- * unrecorrable error.
+ * unrecoverable error.
  */
 static int wma_decode_block(WMACodecContext *s)
 {

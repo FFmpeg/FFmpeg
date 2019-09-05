@@ -239,7 +239,11 @@ av_cold int av_sha512_init(AVSHA512 *ctx, int bits)
     return 0;
 }
 
+#if FF_API_CRYPTO_SIZE_T
 void av_sha512_update(AVSHA512* ctx, const uint8_t* data, unsigned int len)
+#else
+void av_sha512_update(AVSHA512* ctx, const uint8_t* data, size_t len)
+#endif
 {
     unsigned int i, j;
 

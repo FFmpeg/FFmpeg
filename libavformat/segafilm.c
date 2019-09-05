@@ -1,6 +1,6 @@
 /*
  * Sega FILM Format (CPK) Demuxer
- * Copyright (c) 2003 The FFmpeg Project
+ * Copyright (c) 2003 The FFmpeg project
  *
  * This file is part of FFmpeg.
  *
@@ -64,7 +64,7 @@ typedef struct FilmDemuxContext {
     unsigned int version;
 } FilmDemuxContext;
 
-static int film_probe(AVProbeData *p)
+static int film_probe(const AVProbeData *p)
 {
     if (AV_RB32(&p->buf[0]) != FILM_TAG)
         return 0;
@@ -239,7 +239,7 @@ static int film_read_header(AVFormatContext *s)
         } else {
             film->sample_table[i].stream = film->video_stream_index;
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
-            film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : 1;
+            film->sample_table[i].keyframe = (scratch[8] & 0x80) ? 0 : AVINDEX_KEYFRAME;
             video_frame_counter++;
             if (film->video_type)
                 av_add_index_entry(s->streams[film->video_stream_index],
@@ -270,12 +270,28 @@ static int film_read_packet(AVFormatContext *s,
     FilmDemuxContext *film = s->priv_data;
     AVIOContext *pb = s->pb;
     film_sample *sample;
+    film_sample *next_sample = NULL;
+    int next_sample_id;
     int ret = 0;
 
     if (film->current_sample >= film->sample_count)
         return AVERROR_EOF;
 
     sample = &film->sample_table[film->current_sample];
+
+    /* Find the next sample from the same stream, assuming there is one;
+     * this is used to calculate the duration below */
+    next_sample_id = film->current_sample + 1;
+    while (next_sample == NULL) {
+        if (next_sample_id >= film->sample_count)
+            break;
+
+        next_sample = &film->sample_table[next_sample_id];
+        if (next_sample->stream != sample->stream) {
+            next_sample = NULL;
+            next_sample_id++;
+        }
+    }
 
     /* position the stream (will probably be there anyway) */
     avio_seek(pb, sample->sample_offset, SEEK_SET);
@@ -285,7 +301,11 @@ static int film_read_packet(AVFormatContext *s,
         ret = AVERROR(EIO);
 
     pkt->stream_index = sample->stream;
+    pkt->dts = sample->pts;
     pkt->pts = sample->pts;
+    pkt->flags |= sample->keyframe ? AV_PKT_FLAG_KEY : 0;
+    if (next_sample != NULL)
+        pkt->duration = next_sample->pts - sample->pts;
 
     film->current_sample++;
 

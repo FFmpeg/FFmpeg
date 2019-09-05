@@ -28,6 +28,7 @@
 #define AVCODEC_AC3_H
 
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
+#define EAC3_MAX_CHANNELS 16          /**< maximum number of channels in EAC3 */
 #define AC3_MAX_CHANNELS 7            /**< maximum number of channels, including coupling channel */
 #define CPL_CH 0                      /**< coupling channel index */
 
@@ -87,7 +88,7 @@ typedef int16_t                 SHORTFLOAT;
 #define AC3_NORM(norm)          (1.0f/(norm))
 #define AC3_MUL(a,b)            ((a) * (b))
 #define AC3_RANGE(x)            (dynamic_range_tab[(x)])
-#define AC3_HEAVY_RANGE(x)      (heavy_dynamic_range_tab[(x)])
+#define AC3_HEAVY_RANGE(x)      (ff_ac3_heavy_dynamic_range_tab[(x)])
 #define AC3_DYNAMIC_RANGE(x)    (powf(x,  s->drc_scale))
 #define AC3_SPX_BLEND(x)        (x)* (1.0f/32)
 #define AC3_DYNAMIC_RANGE1      1.0f

@@ -88,6 +88,7 @@ AVCodec ff_ayuv_decoder = {
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif
 #if CONFIG_V408_DECODER
@@ -99,5 +100,6 @@ AVCodec ff_v408_decoder = {
     .init         = v408_decode_init,
     .decode       = v408_decode_frame,
     .capabilities = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };
 #endif

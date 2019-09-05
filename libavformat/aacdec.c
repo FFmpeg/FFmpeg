@@ -20,14 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "avio_internal.h"
 #include "internal.h"
-#include "rawdec.h"
 #include "id3v1.h"
+#include "id3v2.h"
 #include "apetag.h"
 
-static int adts_aac_probe(AVProbeData *p)
+#define ADTS_HEADER_SIZE 7
+
+static int adts_aac_probe(const AVProbeData *p)
 {
     int max_frames = 0, first_frames = 0;
     int fsize, frames;
@@ -70,15 +74,37 @@ static int adts_aac_probe(AVProbeData *p)
         return AVPROBE_SCORE_EXTENSION;
     else if (max_frames >= 3)
         return AVPROBE_SCORE_EXTENSION / 2;
-    else if (max_frames >= 1)
+    else if (first_frames >= 1)
         return 1;
     else
         return 0;
 }
 
+static int adts_aac_resync(AVFormatContext *s)
+{
+    uint16_t state;
+
+    // skip data until an ADTS frame is found
+    state = avio_r8(s->pb);
+    while (!avio_feof(s->pb) && avio_tell(s->pb) < s->probesize) {
+        state = (state << 8) | avio_r8(s->pb);
+        if ((state >> 4) != 0xFFF)
+            continue;
+        avio_seek(s->pb, -2, SEEK_CUR);
+        break;
+    }
+    if (s->pb->eof_reached)
+        return AVERROR_EOF;
+    if ((state >> 4) != 0xFFF)
+        return AVERROR_INVALIDDATA;
+
+    return 0;
+}
+
 static int adts_aac_read_header(AVFormatContext *s)
 {
     AVStream *st;
+    int ret;
 
     st = avformat_new_stream(s, NULL);
     if (!st)
@@ -89,12 +115,16 @@ static int adts_aac_read_header(AVFormatContext *s)
     st->need_parsing         = AVSTREAM_PARSE_FULL_RAW;
 
     ff_id3v1_read(s);
-    if (s->pb->seekable &&
+    if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) &&
         !av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);
         avio_seek(s->pb, cur, SEEK_SET);
     }
+
+    ret = adts_aac_resync(s);
+    if (ret < 0)
+        return ret;
 
     // LCM of all possible ADTS sample rates
     avpriv_set_pts_info(st, 64, 1, 28224000);
@@ -102,12 +132,92 @@ static int adts_aac_read_header(AVFormatContext *s)
     return 0;
 }
 
+static int handle_id3(AVFormatContext *s, AVPacket *pkt)
+{
+    AVDictionary *metadata = NULL;
+    AVIOContext ioctx;
+    ID3v2ExtraMeta *id3v2_extra_meta = NULL;
+    int ret;
+
+    ret = av_append_packet(s->pb, pkt, ff_id3v2_tag_len(pkt->data) - pkt->size);
+    if (ret < 0) {
+        av_packet_unref(pkt);
+        return ret;
+    }
+
+    ffio_init_context(&ioctx, pkt->data, pkt->size, 0, NULL, NULL, NULL, NULL);
+    ff_id3v2_read_dict(&ioctx, &metadata, ID3v2_DEFAULT_MAGIC, &id3v2_extra_meta);
+    if ((ret = ff_id3v2_parse_priv_dict(&metadata, &id3v2_extra_meta)) < 0)
+        goto error;
+
+    if (metadata) {
+        if ((ret = av_dict_copy(&s->metadata, metadata, 0)) < 0)
+            goto error;
+        s->event_flags |= AVFMT_EVENT_FLAG_METADATA_UPDATED;
+    }
+
+error:
+    av_packet_unref(pkt);
+    ff_id3v2_free_extra_meta(&id3v2_extra_meta);
+    av_dict_free(&metadata);
+
+    return ret;
+}
+
+static int adts_aac_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    int ret, fsize;
+
+retry:
+    ret = av_get_packet(s->pb, pkt, ADTS_HEADER_SIZE);
+    if (ret < 0)
+        return ret;
+
+    if (ret < ADTS_HEADER_SIZE) {
+        av_packet_unref(pkt);
+        return AVERROR(EIO);
+    }
+
+    if ((AV_RB16(pkt->data) >> 4) != 0xfff) {
+        // Parse all the ID3 headers between frames
+        int append = ID3v2_HEADER_SIZE - ADTS_HEADER_SIZE;
+
+        av_assert2(append > 0);
+        ret = av_append_packet(s->pb, pkt, append);
+        if (ret != append) {
+            av_packet_unref(pkt);
+            return AVERROR(EIO);
+        }
+        if (!ff_id3v2_match(pkt->data, ID3v2_DEFAULT_MAGIC)) {
+            av_packet_unref(pkt);
+            ret = adts_aac_resync(s);
+        } else
+            ret = handle_id3(s, pkt);
+        if (ret < 0)
+            return ret;
+
+        goto retry;
+    }
+
+    fsize = (AV_RB32(pkt->data + 3) >> 13) & 0x1FFF;
+    if (fsize < ADTS_HEADER_SIZE) {
+        av_packet_unref(pkt);
+        return AVERROR_INVALIDDATA;
+    }
+
+    ret = av_append_packet(s->pb, pkt, fsize - pkt->size);
+    if (ret < 0)
+        av_packet_unref(pkt);
+
+    return ret;
+}
+
 AVInputFormat ff_aac_demuxer = {
     .name         = "aac",
     .long_name    = NULL_IF_CONFIG_SMALL("raw ADTS AAC (Advanced Audio Coding)"),
     .read_probe   = adts_aac_probe,
     .read_header  = adts_aac_read_header,
-    .read_packet  = ff_raw_read_partial_packet,
+    .read_packet  = adts_aac_read_packet,
     .flags        = AVFMT_GENERIC_INDEX,
     .extensions   = "aac",
     .mime_type    = "audio/aac,audio/aacp,audio/x-aac",

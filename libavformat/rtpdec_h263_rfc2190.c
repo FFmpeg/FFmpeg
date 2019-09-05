@@ -107,7 +107,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
             /* Invalid src for this format, and bits that should be zero
              * according to RFC 2190 aren't zero. */
             av_log(ctx, AV_LOG_WARNING,
-                   "Interpreting H263 RTP data as RFC 2429/4629 even though "
+                   "Interpreting H.263 RTP data as RFC 2429/4629 even though "
                    "signalled with a static payload type.\n");
             data->newformat = 1;
             return ff_h263_handle_packet(ctx, data, st, pkt, timestamp, buf,
@@ -183,7 +183,7 @@ static int h263_handle_packet(AVFormatContext *ctx, PayloadContext *data,
     return 0;
 }
 
-RTPDynamicProtocolHandler ff_h263_rfc2190_dynamic_handler = {
+const RTPDynamicProtocolHandler ff_h263_rfc2190_dynamic_handler = {
     .codec_type        = AVMEDIA_TYPE_VIDEO,
     .codec_id          = AV_CODEC_ID_H263,
     .need_parsing      = AVSTREAM_PARSE_FULL,

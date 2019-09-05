@@ -1,3 +1,3 @@
-0629055fd82366317c651a0af4bb82d7 *./tests/data/images/xbm/02.xbm
-./tests/data/images/xbm/%02d.xbm CRC=0xc9a20204
-76411 ./tests/data/images/xbm/02.xbm
+0629055fd82366317c651a0af4bb82d7 *tests/data/images/xbm/02.xbm
+tests/data/images/xbm/%02d.xbm CRC=0xc9a20204
+76411 tests/data/images/xbm/02.xbm

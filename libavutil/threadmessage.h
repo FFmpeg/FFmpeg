@@ -69,10 +69,10 @@ int av_thread_message_queue_recv(AVThreadMessageQueue *mq,
 /**
  * Set the sending error code.
  *
- * If the error code is set to non-zero, av_thread_message_queue_recv() will
- * return it immediately when there are no longer available messages.
- * Conventional values, such as AVERROR_EOF or AVERROR(EAGAIN), can be used
- * to cause the receiving thread to stop or suspend its operation.
+ * If the error code is set to non-zero, av_thread_message_queue_send() will
+ * return it immediately. Conventional values, such as AVERROR_EOF or
+ * AVERROR(EAGAIN), can be used to cause the sending thread to stop or
+ * suspend its operation.
  */
 void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
                                           int err);
@@ -80,10 +80,10 @@ void av_thread_message_queue_set_err_send(AVThreadMessageQueue *mq,
 /**
  * Set the receiving error code.
  *
- * If the error code is set to non-zero, av_thread_message_queue_send() will
- * return it immediately. Conventional values, such as AVERROR_EOF or
- * AVERROR(EAGAIN), can be used to cause the sending thread to stop or
- * suspend its operation.
+ * If the error code is set to non-zero, av_thread_message_queue_recv() will
+ * return it immediately when there are no longer available messages.
+ * Conventional values, such as AVERROR_EOF or AVERROR(EAGAIN), can be used
+ * to cause the receiving thread to stop or suspend its operation.
  */
 void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
                                           int err);
@@ -94,6 +94,14 @@ void av_thread_message_queue_set_err_recv(AVThreadMessageQueue *mq,
  */
 void av_thread_message_queue_set_free_func(AVThreadMessageQueue *mq,
                                            void (*free_func)(void *msg));
+
+/**
+ * Return the current number of messages in the queue.
+ *
+ * @return the current number of messages or AVERROR(ENOSYS) if lavu was built
+ *         without thread support
+ */
+int av_thread_message_queue_nb_elems(AVThreadMessageQueue *mq);
 
 /**
  * Flush the message queue

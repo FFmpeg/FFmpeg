@@ -23,10 +23,9 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixfmt.h"
 #include "avfilter.h"
-#include "bufferqueue.h"
 #include "formats.h"
+#include "framesync.h"
 #include "internal.h"
-#include "dualinput.h"
 #include "video.h"
 #include "blend.h"
 
@@ -35,13 +34,14 @@
 
 typedef struct BlendContext {
     const AVClass *class;
-    FFDualInputContext dinput;
+    FFFrameSync fs;
     int hsub, vsub;             ///< chroma subsampling values
     int nb_planes;
     char *all_expr;
     enum BlendMode all_mode;
     double all_opacity;
 
+    int depth;
     FilterParams params[4];
     int tblend;
     AVFrame *prev_frame;        /* only used with tblend */
@@ -66,16 +66,19 @@ typedef struct ThreadData {
     { "c3_mode", "set component #3 blend mode", OFFSET(params[3].mode), AV_OPT_TYPE_INT, {.i64=0}, 0, BLEND_NB-1, FLAGS, "mode"},\
     { "all_mode", "set blend mode for all components", OFFSET(all_mode), AV_OPT_TYPE_INT, {.i64=-1},-1, BLEND_NB-1, FLAGS, "mode"},\
     { "addition",   "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_ADDITION},   0, 0, FLAGS, "mode" },\
-    { "addition128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_ADDITION128}, 0, 0, FLAGS, "mode" },\
+    { "addition128","", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINMERGE}, 0, 0, FLAGS, "mode" },\
+    { "grainmerge", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINMERGE}, 0, 0, FLAGS, "mode" },\
     { "and",        "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AND},        0, 0, FLAGS, "mode" },\
     { "average",    "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_AVERAGE},    0, 0, FLAGS, "mode" },\
     { "burn",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_BURN},       0, 0, FLAGS, "mode" },\
     { "darken",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DARKEN},     0, 0, FLAGS, "mode" },\
     { "difference", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIFFERENCE}, 0, 0, FLAGS, "mode" },\
-    { "difference128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIFFERENCE128}, 0, 0, FLAGS, "mode" },\
+    { "difference128", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINEXTRACT}, 0, 0, FLAGS, "mode" },\
+    { "grainextract", "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GRAINEXTRACT}, 0, 0, FLAGS, "mode" },\
     { "divide",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DIVIDE},     0, 0, FLAGS, "mode" },\
     { "dodge",      "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_DODGE},      0, 0, FLAGS, "mode" },\
     { "exclusion",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXCLUSION},  0, 0, FLAGS, "mode" },\
+    { "extremity",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_EXTREMITY},  0, 0, FLAGS, "mode" },\
     { "freeze",     "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_FREEZE},     0, 0, FLAGS, "mode" },\
     { "glow",       "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_GLOW},       0, 0, FLAGS, "mode" },\
     { "hardlight",  "", 0, AV_OPT_TYPE_CONST, {.i64=BLEND_HARDLIGHT},  0, 0, FLAGS, "mode" },\
@@ -113,26 +116,27 @@ typedef struct ThreadData {
 
 static const AVOption blend_options[] = {
     COMMON_OPTIONS,
-    { "shortest",    "force termination when the shortest input terminates", OFFSET(dinput.shortest), AV_OPT_TYPE_BOOL, {.i64=0}, 0, 1, FLAGS },
-    { "repeatlast",  "repeat last bottom frame", OFFSET(dinput.repeatlast), AV_OPT_TYPE_BOOL, {.i64=1}, 0, 1, FLAGS },
     { NULL }
 };
 
-AVFILTER_DEFINE_CLASS(blend);
+FRAMESYNC_DEFINE_CLASS(blend, BlendContext, fs);
 
-#define COPY(src)                                                            \
-static void blend_copy ## src(const uint8_t *top, ptrdiff_t top_linesize,    \
+#define COPY(src, depth)                                                            \
+static void blend_copy ## src##_##depth(const uint8_t *top, ptrdiff_t top_linesize,    \
                             const uint8_t *bottom, ptrdiff_t bottom_linesize,\
                             uint8_t *dst, ptrdiff_t dst_linesize,            \
                             ptrdiff_t width, ptrdiff_t height,               \
-                            FilterParams *param, double *values)             \
+                            FilterParams *param, double *values, int starty) \
 {                                                                            \
     av_image_copy_plane(dst, dst_linesize, src, src ## _linesize,            \
-                        width, height);                                 \
+                        width * depth / 8, height);                          \
 }
 
-COPY(top)
-COPY(bottom)
+COPY(top, 8)
+COPY(bottom, 8)
+
+COPY(top, 16)
+COPY(bottom, 16)
 
 #undef COPY
 
@@ -140,7 +144,7 @@ static void blend_normal_8bit(const uint8_t *top, ptrdiff_t top_linesize,
                               const uint8_t *bottom, ptrdiff_t bottom_linesize,
                               uint8_t *dst, ptrdiff_t dst_linesize,
                               ptrdiff_t width, ptrdiff_t height,
-                              FilterParams *param, double *values)
+                              FilterParams *param, double *values, int starty)
 {
     const double opacity = param->opacity;
     int i, j;
@@ -159,7 +163,7 @@ static void blend_normal_16bit(const uint8_t *_top, ptrdiff_t top_linesize,
                                   const uint8_t *_bottom, ptrdiff_t bottom_linesize,
                                   uint8_t *_dst, ptrdiff_t dst_linesize,
                                   ptrdiff_t width, ptrdiff_t height,
-                                  FilterParams *param, double *values)
+                                  FilterParams *param, double *values, int starty)
 {
     const uint16_t *top = (uint16_t*)_top;
     const uint16_t *bottom = (uint16_t*)_bottom;
@@ -185,7 +189,7 @@ static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,    
                                  const uint8_t *bottom, ptrdiff_t bottom_linesize,   \
                                  uint8_t *dst, ptrdiff_t dst_linesize,               \
                                  ptrdiff_t width, ptrdiff_t height,                \
-                                 FilterParams *param, double *values)          \
+                                 FilterParams *param, double *values, int starty) \
 {                                                                              \
     double opacity = param->opacity;                                           \
     int i, j;                                                                  \
@@ -200,15 +204,15 @@ static void blend_## name##_8bit(const uint8_t *top, ptrdiff_t top_linesize,    
     }                                                                          \
 }
 
-#define DEFINE_BLEND16(name, expr)                                             \
-static void blend_## name##_16bit(const uint8_t *_top, ptrdiff_t top_linesize,       \
+#define DEFINE_BLEND16(name, expr, depth)                                            \
+static void blend_## name##_##depth##bit(const uint8_t *_top, ptrdiff_t top_linesize,\
                                   const uint8_t *_bottom, ptrdiff_t bottom_linesize, \
                                   uint8_t *_dst, ptrdiff_t dst_linesize,             \
                                   ptrdiff_t width, ptrdiff_t height,           \
-                                  FilterParams *param, double *values)         \
+                                  FilterParams *param, double *values, int starty)         \
 {                                                                              \
-    const uint16_t *top = (uint16_t*)_top;                                     \
-    const uint16_t *bottom = (uint16_t*)_bottom;                               \
+    const uint16_t *top = (const uint16_t*)_top;                               \
+    const uint16_t *bottom = (const uint16_t*)_bottom;                         \
     uint16_t *dst = (uint16_t*)_dst;                                           \
     double opacity = param->opacity;                                           \
     int i, j;                                                                  \
@@ -235,14 +239,15 @@ static void blend_## name##_16bit(const uint8_t *_top, ptrdiff_t top_linesize,  
 #define DODGE(a, b)       (((a) == 255) ? (a) : FFMIN(255, (((b) << 8) / (255 - (a)))))
 
 DEFINE_BLEND8(addition,   FFMIN(255, A + B))
-DEFINE_BLEND8(addition128, av_clip_uint8(A + B - 128))
+DEFINE_BLEND8(grainmerge, av_clip_uint8(A + B - 128))
 DEFINE_BLEND8(average,    (A + B) / 2)
 DEFINE_BLEND8(subtract,   FFMAX(0, A - B))
 DEFINE_BLEND8(multiply,   MULTIPLY(1, A, B))
 DEFINE_BLEND8(multiply128,av_clip_uint8((A - 128) * B / 32. + 128))
 DEFINE_BLEND8(negation,   255 - FFABS(255 - A - B))
+DEFINE_BLEND8(extremity,  FFABS(255 - A - B))
 DEFINE_BLEND8(difference, FFABS(A - B))
-DEFINE_BLEND8(difference128, av_clip_uint8(128 + A - B))
+DEFINE_BLEND8(grainextract, av_clip_uint8(128 + A - B))
 DEFINE_BLEND8(screen,     SCREEN(1, A, B))
 DEFINE_BLEND8(overlay,    (A < 128) ? MULTIPLY(2, A, B) : SCREEN(2, A, B))
 DEFINE_BLEND8(hardlight,  (B < 128) ? MULTIPLY(2, B, A) : SCREEN(2, B, A))
@@ -276,44 +281,174 @@ DEFINE_BLEND8(linearlight,av_clip_uint8((B < 128) ? B + 2 * A - 255 : B + 2 * (A
 #define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, 65535 - ((65535 - (b)) << 16) / (a)))
 #define DODGE(a, b)       (((a) == 65535) ? (a) : FFMIN(65535, (((b) << 16) / (65535 - (a)))))
 
-DEFINE_BLEND16(addition,   FFMIN(65535, A + B))
-DEFINE_BLEND16(addition128, av_clip_uint16(A + B - 32768))
-DEFINE_BLEND16(average,    (A + B) / 2)
-DEFINE_BLEND16(subtract,   FFMAX(0, A - B))
-DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B))
-DEFINE_BLEND16(multiply128, av_clip_uint16((A - 32768) * B / 8192. + 32768))
-DEFINE_BLEND16(negation,   65535 - FFABS(65535 - A - B))
-DEFINE_BLEND16(difference, FFABS(A - B))
-DEFINE_BLEND16(difference128, av_clip_uint16(32768 + A - B))
-DEFINE_BLEND16(screen,     SCREEN(1, A, B))
-DEFINE_BLEND16(overlay,    (A < 32768) ? MULTIPLY(2, A, B) : SCREEN(2, A, B))
-DEFINE_BLEND16(hardlight,  (B < 32768) ? MULTIPLY(2, B, A) : SCREEN(2, B, A))
-DEFINE_BLEND16(hardmix,    (A < (65535 - B)) ? 0: 65535)
-DEFINE_BLEND16(heat,       (A == 0) ? 0 : 65535 - FFMIN(((65535 - B) * (65535 - B)) / A, 65535))
-DEFINE_BLEND16(freeze,     (B == 0) ? 0 : 65535 - FFMIN(((65535 - A) * (65535 - A)) / B, 65535))
-DEFINE_BLEND16(darken,     FFMIN(A, B))
-DEFINE_BLEND16(lighten,    FFMAX(A, B))
-DEFINE_BLEND16(divide,     av_clip_uint16(B == 0 ? 65535 : 65535 * A / B))
-DEFINE_BLEND16(dodge,      DODGE(A, B))
-DEFINE_BLEND16(burn,       BURN(A, B))
-DEFINE_BLEND16(softlight,  (A > 32767) ? B + (65535 - B) * (A - 32767.5) / 32767.5 * (0.5 - fabs(B - 32767.5) / 65535): B - B * ((32767.5 - A) / 32767.5) * (0.5 - fabs(B - 32767.5)/65535))
-DEFINE_BLEND16(exclusion,  A + B - 2 * A * B / 65535)
-DEFINE_BLEND16(pinlight,   (B < 32768) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 32768)))
-DEFINE_BLEND16(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 65535)
-DEFINE_BLEND16(reflect,    (B == 65535) ? B : FFMIN(65535, (A * A / (65535 - B))))
-DEFINE_BLEND16(glow,       (A == 65535) ? A : FFMIN(65535, (B * B / (65535 - A))))
-DEFINE_BLEND16(and,        A & B)
-DEFINE_BLEND16(or,         A | B)
-DEFINE_BLEND16(xor,        A ^ B)
-DEFINE_BLEND16(vividlight, (A < 32768) ? BURN(2 * A, B) : DODGE(2 * (A - 32768), B))
-DEFINE_BLEND16(linearlight,av_clip_uint16((B < 32768) ? B + 2 * A - 65535 : B + 2 * (A - 32768)))
+DEFINE_BLEND16(addition,   FFMIN(65535, A + B), 16)
+DEFINE_BLEND16(grainmerge, av_clip_uint16(A + B - 32768), 16)
+DEFINE_BLEND16(average,    (A + B) / 2, 16)
+DEFINE_BLEND16(subtract,   FFMAX(0, A - B), 16)
+DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B), 16)
+DEFINE_BLEND16(multiply128, av_clip_uint16((A - 32768) * B / 8192. + 32768), 16)
+DEFINE_BLEND16(negation,   65535 - FFABS(65535 - A - B), 16)
+DEFINE_BLEND16(extremity,  FFABS(65535 - A - B), 16)
+DEFINE_BLEND16(difference, FFABS(A - B), 16)
+DEFINE_BLEND16(grainextract, av_clip_uint16(32768 + A - B), 16)
+DEFINE_BLEND16(screen,     SCREEN(1, A, B), 16)
+DEFINE_BLEND16(overlay,    (A < 32768) ? MULTIPLY(2, A, B) : SCREEN(2, A, B), 16)
+DEFINE_BLEND16(hardlight,  (B < 32768) ? MULTIPLY(2, B, A) : SCREEN(2, B, A), 16)
+DEFINE_BLEND16(hardmix,    (A < (65535 - B)) ? 0: 65535, 16)
+DEFINE_BLEND16(heat,       (A == 0) ? 0 : 65535 - FFMIN(((65535 - B) * (65535 - B)) / A, 65535), 16)
+DEFINE_BLEND16(freeze,     (B == 0) ? 0 : 65535 - FFMIN(((65535 - A) * (65535 - A)) / B, 65535), 16)
+DEFINE_BLEND16(darken,     FFMIN(A, B), 16)
+DEFINE_BLEND16(lighten,    FFMAX(A, B), 16)
+DEFINE_BLEND16(divide,     av_clip_uint16(B == 0 ? 65535 : 65535 * A / B), 16)
+DEFINE_BLEND16(dodge,      DODGE(A, B), 16)
+DEFINE_BLEND16(burn,       BURN(A, B), 16)
+DEFINE_BLEND16(softlight,  (A > 32767) ? B + (65535 - B) * (A - 32767.5) / 32767.5 * (0.5 - fabs(B - 32767.5) / 65535): B - B * ((32767.5 - A) / 32767.5) * (0.5 - fabs(B - 32767.5)/65535), 16)
+DEFINE_BLEND16(exclusion,  A + B - 2 * A * B / 65535, 16)
+DEFINE_BLEND16(pinlight,   (B < 32768) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 32768)), 16)
+DEFINE_BLEND16(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 65535, 16)
+DEFINE_BLEND16(reflect,    (B == 65535) ? B : FFMIN(65535, (A * A / (65535 - B))), 16)
+DEFINE_BLEND16(glow,       (A == 65535) ? A : FFMIN(65535, (B * B / (65535 - A))), 16)
+DEFINE_BLEND16(and,        A & B, 16)
+DEFINE_BLEND16(or,         A | B, 16)
+DEFINE_BLEND16(xor,        A ^ B, 16)
+DEFINE_BLEND16(vividlight, (A < 32768) ? BURN(2 * A, B) : DODGE(2 * (A - 32768), B), 16)
+DEFINE_BLEND16(linearlight,av_clip_uint16((B < 32768) ? B + 2 * A - 65535 : B + 2 * (A - 32768)), 16)
+
+#undef MULTIPLY
+#undef SCREEN
+#undef BURN
+#undef DODGE
+
+#define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 1023))
+#define SCREEN(x, a, b)   (1023 - (x) * ((1023 - (a)) * (1023 - (b)) / 1023))
+#define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, 1023 - ((1023 - (b)) << 10) / (a)))
+#define DODGE(a, b)       (((a) == 1023) ? (a) : FFMIN(1023, (((b) << 10) / (1023 - (a)))))
+
+DEFINE_BLEND16(addition,   FFMIN(1023, A + B), 10)
+DEFINE_BLEND16(grainmerge, (int)av_clip_uintp2(A + B - 512, 10), 10)
+DEFINE_BLEND16(average,    (A + B) / 2, 10)
+DEFINE_BLEND16(subtract,   FFMAX(0, A - B), 10)
+DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B), 10)
+DEFINE_BLEND16(multiply128, (int)av_clip_uintp2((A - 512) * B / 128. + 512, 10), 10)
+DEFINE_BLEND16(negation,   1023 - FFABS(1023 - A - B), 10)
+DEFINE_BLEND16(extremity,  FFABS(1023 - A - B), 10)
+DEFINE_BLEND16(difference, FFABS(A - B), 10)
+DEFINE_BLEND16(grainextract, (int)av_clip_uintp2(512 + A - B, 10), 10)
+DEFINE_BLEND16(screen,     SCREEN(1, A, B), 10)
+DEFINE_BLEND16(overlay,    (A < 512) ? MULTIPLY(2, A, B) : SCREEN(2, A, B), 10)
+DEFINE_BLEND16(hardlight,  (B < 512) ? MULTIPLY(2, B, A) : SCREEN(2, B, A), 10)
+DEFINE_BLEND16(hardmix,    (A < (1023 - B)) ? 0: 1023, 10)
+DEFINE_BLEND16(heat,       (A == 0) ? 0 : 1023 - FFMIN(((1023 - B) * (1023 - B)) / A, 1023), 10)
+DEFINE_BLEND16(freeze,     (B == 0) ? 0 : 1023 - FFMIN(((1023 - A) * (1023 - A)) / B, 1023), 10)
+DEFINE_BLEND16(darken,     FFMIN(A, B), 10)
+DEFINE_BLEND16(lighten,    FFMAX(A, B), 10)
+DEFINE_BLEND16(divide,     (int)av_clip_uintp2(B == 0 ? 1023 : 1023 * A / B, 10), 10)
+DEFINE_BLEND16(dodge,      DODGE(A, B), 10)
+DEFINE_BLEND16(burn,       BURN(A, B), 10)
+DEFINE_BLEND16(softlight,  (A > 511) ? B + (1023 - B) * (A - 511.5) / 511.5 * (0.5 - fabs(B - 511.5) / 1023): B - B * ((511.5 - A) / 511.5) * (0.5 - fabs(B - 511.5)/1023), 10)
+DEFINE_BLEND16(exclusion,  A + B - 2 * A * B / 1023, 10)
+DEFINE_BLEND16(pinlight,   (B < 512) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 512)), 10)
+DEFINE_BLEND16(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 1023, 10)
+DEFINE_BLEND16(reflect,    (B == 1023) ? B : FFMIN(1023, (A * A / (1023 - B))), 10)
+DEFINE_BLEND16(glow,       (A == 1023) ? A : FFMIN(1023, (B * B / (1023 - A))), 10)
+DEFINE_BLEND16(and,        A & B, 10)
+DEFINE_BLEND16(or,         A | B, 10)
+DEFINE_BLEND16(xor,        A ^ B, 10)
+DEFINE_BLEND16(vividlight, (A < 512) ? BURN(2 * A, B) : DODGE(2 * (A - 512), B), 10)
+DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 512) ? B + 2 * A - 1023 : B + 2 * (A - 512), 10), 10)
+
+#undef MULTIPLY
+#undef SCREEN
+#undef BURN
+#undef DODGE
+
+#define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 4095))
+#define SCREEN(x, a, b)   (4095 - (x) * ((4095 - (a)) * (4095 - (b)) / 4095))
+#define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, 4095 - ((4095 - (b)) << 12) / (a)))
+#define DODGE(a, b)       (((a) == 4095) ? (a) : FFMIN(4095, (((b) << 12) / (4095 - (a)))))
+
+DEFINE_BLEND16(addition,   FFMIN(4095, A + B), 12)
+DEFINE_BLEND16(grainmerge, (int)av_clip_uintp2(A + B - 2048, 12), 12)
+DEFINE_BLEND16(average,    (A + B) / 2, 12)
+DEFINE_BLEND16(subtract,   FFMAX(0, A - B), 12)
+DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B), 12)
+DEFINE_BLEND16(multiply128, (int)av_clip_uintp2((A - 2048) * B / 512. + 2048, 12), 12)
+DEFINE_BLEND16(negation,   4095 - FFABS(4095 - A - B), 12)
+DEFINE_BLEND16(extremity,  FFABS(4095 - A - B), 12)
+DEFINE_BLEND16(difference, FFABS(A - B), 12)
+DEFINE_BLEND16(grainextract, (int)av_clip_uintp2(2048 + A - B, 12), 12)
+DEFINE_BLEND16(screen,     SCREEN(1, A, B), 12)
+DEFINE_BLEND16(overlay,    (A < 2048) ? MULTIPLY(2, A, B) : SCREEN(2, A, B), 12)
+DEFINE_BLEND16(hardlight,  (B < 2048) ? MULTIPLY(2, B, A) : SCREEN(2, B, A), 12)
+DEFINE_BLEND16(hardmix,    (A < (4095 - B)) ? 0: 4095, 12)
+DEFINE_BLEND16(heat,       (A == 0) ? 0 : 4095 - FFMIN(((4095 - B) * (4095 - B)) / A, 4095), 12)
+DEFINE_BLEND16(freeze,     (B == 0) ? 0 : 4095 - FFMIN(((4095 - A) * (4095 - A)) / B, 4095), 12)
+DEFINE_BLEND16(darken,     FFMIN(A, B), 12)
+DEFINE_BLEND16(lighten,    FFMAX(A, B), 12)
+DEFINE_BLEND16(divide,     (int)av_clip_uintp2(B == 0 ? 4095 : 4095 * A / B, 12), 12)
+DEFINE_BLEND16(dodge,      DODGE(A, B), 12)
+DEFINE_BLEND16(burn,       BURN(A, B), 12)
+DEFINE_BLEND16(softlight,  (A > 2047) ? B + (4095 - B) * (A - 2047.5) / 2047.5 * (0.5 - fabs(B - 2047.5) / 4095): B - B * ((2047.5 - A) / 2047.5) * (0.5 - fabs(B - 2047.5)/4095), 12)
+DEFINE_BLEND16(exclusion,  A + B - 2 * A * B / 4095, 12)
+DEFINE_BLEND16(pinlight,   (B < 2048) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 2048)), 12)
+DEFINE_BLEND16(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 4095, 12)
+DEFINE_BLEND16(reflect,    (B == 4095) ? B : FFMIN(4095, (A * A / (4095 - B))), 12)
+DEFINE_BLEND16(glow,       (A == 4095) ? A : FFMIN(4095, (B * B / (4095 - A))), 12)
+DEFINE_BLEND16(and,        A & B, 12)
+DEFINE_BLEND16(or,         A | B, 12)
+DEFINE_BLEND16(xor,        A ^ B, 12)
+DEFINE_BLEND16(vividlight, (A < 2048) ? BURN(2 * A, B) : DODGE(2 * (A - 2048), B), 12)
+DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 2048) ? B + 2 * A - 4095 : B + 2 * (A - 2048), 12), 12)
+
+#undef MULTIPLY
+#undef SCREEN
+#undef BURN
+#undef DODGE
+
+#define MULTIPLY(x, a, b) ((x) * (((a) * (b)) / 511))
+#define SCREEN(x, a, b)   (511 - (x) * ((511 - (a)) * (511 - (b)) / 511))
+#define BURN(a, b)        (((a) == 0) ? (a) : FFMAX(0, 511 - ((511 - (b)) << 9) / (a)))
+#define DODGE(a, b)       (((a) == 511) ? (a) : FFMIN(511, (((b) << 9) / (511 - (a)))))
+
+DEFINE_BLEND16(addition,   FFMIN(511, A + B), 9)
+DEFINE_BLEND16(grainmerge, (int)av_clip_uintp2(A + B - 256, 9), 9)
+DEFINE_BLEND16(average,    (A + B) / 2, 9)
+DEFINE_BLEND16(subtract,   FFMAX(0, A - B), 9)
+DEFINE_BLEND16(multiply,   MULTIPLY(1, A, B), 9)
+DEFINE_BLEND16(multiply128, (int)av_clip_uintp2((A - 256) * B / 64. + 256, 9), 9)
+DEFINE_BLEND16(negation,   511 - FFABS(511 - A - B), 9)
+DEFINE_BLEND16(extremity,  FFABS(511 - A - B), 9)
+DEFINE_BLEND16(difference, FFABS(A - B), 9)
+DEFINE_BLEND16(grainextract, (int)av_clip_uintp2(256 + A - B, 9), 9)
+DEFINE_BLEND16(screen,     SCREEN(1, A, B), 9)
+DEFINE_BLEND16(overlay,    (A < 256) ? MULTIPLY(2, A, B) : SCREEN(2, A, B), 9)
+DEFINE_BLEND16(hardlight,  (B < 256) ? MULTIPLY(2, B, A) : SCREEN(2, B, A), 9)
+DEFINE_BLEND16(hardmix,    (A < (511 - B)) ? 0: 511, 9)
+DEFINE_BLEND16(heat,       (A == 0) ? 0 : 511 - FFMIN(((511 - B) * (511 - B)) / A, 511), 9)
+DEFINE_BLEND16(freeze,     (B == 0) ? 0 : 511 - FFMIN(((511 - A) * (511 - A)) / B, 511), 9)
+DEFINE_BLEND16(darken,     FFMIN(A, B), 9)
+DEFINE_BLEND16(lighten,    FFMAX(A, B), 9)
+DEFINE_BLEND16(divide,     (int)av_clip_uintp2(B == 0 ? 511 : 511 * A / B, 9), 9)
+DEFINE_BLEND16(dodge,      DODGE(A, B), 9)
+DEFINE_BLEND16(burn,       BURN(A, B), 9)
+DEFINE_BLEND16(softlight,  (A > 511) ? B + (511 - B) * (A - 511.5) / 511.5 * (0.5 - fabs(B - 511.5) / 511): B - B * ((511.5 - A) / 511.5) * (0.5 - fabs(B - 511.5)/511), 9)
+DEFINE_BLEND16(exclusion,  A + B - 2 * A * B / 511, 9)
+DEFINE_BLEND16(pinlight,   (B < 256) ? FFMIN(A, 2 * B) : FFMAX(A, 2 * (B - 256)), 9)
+DEFINE_BLEND16(phoenix,    FFMIN(A, B) - FFMAX(A, B) + 511, 9)
+DEFINE_BLEND16(reflect,    (B == 511) ? B : FFMIN(511, (A * A / (511 - B))), 9)
+DEFINE_BLEND16(glow,       (A == 511) ? A : FFMIN(511, (B * B / (511 - A))), 9)
+DEFINE_BLEND16(and,        A & B, 9)
+DEFINE_BLEND16(or,         A | B, 9)
+DEFINE_BLEND16(xor,        A ^ B, 9)
+DEFINE_BLEND16(vividlight, (A < 256) ? BURN(2 * A, B) : DODGE(2 * (A - 256), B), 9)
+DEFINE_BLEND16(linearlight,(int)av_clip_uintp2((B < 256) ? B + 2 * A - 511 : B + 2 * (A - 256), 9), 9)
 
 #define DEFINE_BLEND_EXPR(type, name, div)                                     \
 static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,          \
                                const uint8_t *_bottom, ptrdiff_t bottom_linesize,    \
                                uint8_t *_dst, ptrdiff_t dst_linesize,                \
                                ptrdiff_t width, ptrdiff_t height,              \
-                               FilterParams *param, double *values)            \
+                               FilterParams *param, double *values, int starty) \
 {                                                                              \
     const type *top = (type*)_top;                                             \
     const type *bottom = (type*)_bottom;                                       \
@@ -325,7 +460,7 @@ static void blend_expr_## name(const uint8_t *_top, ptrdiff_t top_linesize,     
     bottom_linesize /= div;                                                    \
                                                                                \
     for (y = 0; y < height; y++) {                                             \
-        values[VAR_Y] = y;                                                     \
+        values[VAR_Y] = y + starty;                                            \
         for (x = 0; x < width; x++) {                                          \
             values[VAR_X]      = x;                                            \
             values[VAR_TOP]    = values[VAR_A] = top[x];                       \
@@ -352,7 +487,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     uint8_t *dst    = td->dst->data[td->plane];
     double values[VAR_VARS_NB];
 
-    values[VAR_N]  = td->inlink->frame_count;
+    values[VAR_N]  = td->inlink->frame_count_out;
     values[VAR_T]  = td->dst->pts == AV_NOPTS_VALUE ? NAN : td->dst->pts * av_q2d(td->inlink->time_base);
     values[VAR_W]  = td->w;
     values[VAR_H]  = td->h;
@@ -365,7 +500,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
                      td->bottom->linesize[td->plane],
                      dst + slice_start * td->dst->linesize[td->plane],
                      td->dst->linesize[td->plane],
-                     td->w, height, td->param, &values[0]);
+                     td->w, height, td->param, &values[0], slice_start);
     return 0;
 }
 
@@ -393,7 +528,7 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
                           .w = outw, .h = outh, .param = param, .plane = plane,
                           .inlink = inlink };
 
-        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ctx->graph->nb_threads));
+        ctx->internal->execute(ctx, filter_slice, &td, NULL, FFMIN(outh, ff_filter_get_nb_threads(ctx)));
     }
 
     if (!s->tblend)
@@ -402,13 +537,28 @@ static AVFrame *blend_frame(AVFilterContext *ctx, AVFrame *top_buf,
     return dst_buf;
 }
 
+static int blend_frame_for_dualinput(FFFrameSync *fs)
+{
+    AVFilterContext *ctx = fs->parent;
+    AVFrame *top_buf, *bottom_buf, *dst_buf;
+    int ret;
+
+    ret = ff_framesync_dualinput_get(fs, &top_buf, &bottom_buf);
+    if (ret < 0)
+        return ret;
+    if (!bottom_buf)
+        return ff_filter_frame(ctx->outputs[0], top_buf);
+    dst_buf = blend_frame(ctx, top_buf, bottom_buf);
+    return ff_filter_frame(ctx->outputs[0], dst_buf);
+}
+
 static av_cold int init(AVFilterContext *ctx)
 {
     BlendContext *s = ctx->priv;
 
     s->tblend = !strcmp(ctx->filter->name, "tblend");
 
-    s->dinput.process = blend_frame;
+    s->fs.on_event = blend_frame_for_dualinput;
     return 0;
 }
 
@@ -419,9 +569,16 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_YUVJ444P, AV_PIX_FMT_YUVJ440P, AV_PIX_FMT_YUVJ422P,AV_PIX_FMT_YUVJ420P, AV_PIX_FMT_YUVJ411P,
         AV_PIX_FMT_YUV444P, AV_PIX_FMT_YUV440P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV411P, AV_PIX_FMT_YUV410P,
         AV_PIX_FMT_GBRP, AV_PIX_FMT_GBRAP, AV_PIX_FMT_GRAY8,
+        AV_PIX_FMT_YUV420P9, AV_PIX_FMT_YUV422P9, AV_PIX_FMT_YUV444P9,
+        AV_PIX_FMT_YUVA420P9, AV_PIX_FMT_YUVA422P9, AV_PIX_FMT_YUVA444P9, AV_PIX_FMT_GBRP9,
+        AV_PIX_FMT_YUV420P10, AV_PIX_FMT_YUV422P10, AV_PIX_FMT_YUV444P10, AV_PIX_FMT_YUV440P10,
+        AV_PIX_FMT_YUVA420P10, AV_PIX_FMT_YUVA422P10, AV_PIX_FMT_YUVA444P10,
+        AV_PIX_FMT_GBRP10, AV_PIX_FMT_GBRAP10, AV_PIX_FMT_GRAY10,
+        AV_PIX_FMT_YUV420P12, AV_PIX_FMT_YUV422P12, AV_PIX_FMT_YUV444P12, AV_PIX_FMT_YUV440P12,
+        AV_PIX_FMT_GBRP12, AV_PIX_FMT_GBRAP12, AV_PIX_FMT_GRAY12,
         AV_PIX_FMT_YUV420P16, AV_PIX_FMT_YUV422P16, AV_PIX_FMT_YUV444P16,
         AV_PIX_FMT_YUVA420P16, AV_PIX_FMT_YUVA422P16, AV_PIX_FMT_YUVA444P16,
-        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GRAY16,
+        AV_PIX_FMT_GBRP16, AV_PIX_FMT_GBRAP16, AV_PIX_FMT_GRAY16,
         AV_PIX_FMT_NONE
     };
 
@@ -436,58 +593,89 @@ static av_cold void uninit(AVFilterContext *ctx)
     BlendContext *s = ctx->priv;
     int i;
 
-    ff_dualinput_uninit(&s->dinput);
+    ff_framesync_uninit(&s->fs);
     av_frame_free(&s->prev_frame);
 
     for (i = 0; i < FF_ARRAY_ELEMS(s->params); i++)
         av_expr_free(s->params[i].e);
 }
 
-void ff_blend_init(FilterParams *param, int is_16bit)
+#define DEFINE_INIT_BLEND_FUNC(depth, nbits)                                              \
+static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param)           \
+{                                                                                         \
+    switch (param->mode) {                                                                \
+        case BLEND_ADDITION:   param->blend = blend_addition_##depth##bit;   break;       \
+        case BLEND_GRAINMERGE: param->blend = blend_grainmerge_##depth##bit; break;       \
+        case BLEND_AND:        param->blend = blend_and_##depth##bit;        break;       \
+        case BLEND_AVERAGE:    param->blend = blend_average_##depth##bit;    break;       \
+        case BLEND_BURN:       param->blend = blend_burn_##depth##bit;       break;       \
+        case BLEND_DARKEN:     param->blend = blend_darken_##depth##bit;     break;       \
+        case BLEND_DIFFERENCE: param->blend = blend_difference_##depth##bit; break;       \
+        case BLEND_GRAINEXTRACT: param->blend = blend_grainextract_##depth##bit; break;   \
+        case BLEND_DIVIDE:     param->blend = blend_divide_##depth##bit;     break;       \
+        case BLEND_DODGE:      param->blend = blend_dodge_##depth##bit;      break;       \
+        case BLEND_EXCLUSION:  param->blend = blend_exclusion_##depth##bit;  break;       \
+        case BLEND_EXTREMITY:  param->blend = blend_extremity_##depth##bit;  break;       \
+        case BLEND_FREEZE:     param->blend = blend_freeze_##depth##bit;     break;       \
+        case BLEND_GLOW:       param->blend = blend_glow_##depth##bit;       break;       \
+        case BLEND_HARDLIGHT:  param->blend = blend_hardlight_##depth##bit;  break;       \
+        case BLEND_HARDMIX:    param->blend = blend_hardmix_##depth##bit;    break;       \
+        case BLEND_HEAT:       param->blend = blend_heat_##depth##bit;       break;       \
+        case BLEND_LIGHTEN:    param->blend = blend_lighten_##depth##bit;    break;       \
+        case BLEND_LINEARLIGHT:param->blend = blend_linearlight_##depth##bit;break;       \
+        case BLEND_MULTIPLY:   param->blend = blend_multiply_##depth##bit;   break;       \
+        case BLEND_MULTIPLY128:param->blend = blend_multiply128_##depth##bit;break;       \
+        case BLEND_NEGATION:   param->blend = blend_negation_##depth##bit;   break;       \
+        case BLEND_NORMAL:     param->blend = blend_normal_##nbits##bit;     break;       \
+        case BLEND_OR:         param->blend = blend_or_##depth##bit;         break;       \
+        case BLEND_OVERLAY:    param->blend = blend_overlay_##depth##bit;    break;       \
+        case BLEND_PHOENIX:    param->blend = blend_phoenix_##depth##bit;    break;       \
+        case BLEND_PINLIGHT:   param->blend = blend_pinlight_##depth##bit;   break;       \
+        case BLEND_REFLECT:    param->blend = blend_reflect_##depth##bit;    break;       \
+        case BLEND_SCREEN:     param->blend = blend_screen_##depth##bit;     break;       \
+        case BLEND_SOFTLIGHT:  param->blend = blend_softlight_##depth##bit;  break;       \
+        case BLEND_SUBTRACT:   param->blend = blend_subtract_##depth##bit;   break;       \
+        case BLEND_VIVIDLIGHT: param->blend = blend_vividlight_##depth##bit; break;       \
+        case BLEND_XOR:        param->blend = blend_xor_##depth##bit;        break;       \
+    }                                                                                     \
+}
+DEFINE_INIT_BLEND_FUNC(8, 8);
+DEFINE_INIT_BLEND_FUNC(9, 16);
+DEFINE_INIT_BLEND_FUNC(10, 16);
+DEFINE_INIT_BLEND_FUNC(12, 16);
+DEFINE_INIT_BLEND_FUNC(16, 16);
+
+void ff_blend_init(FilterParams *param, int depth)
 {
-    switch (param->mode) {
-    case BLEND_ADDITION:   param->blend = is_16bit ? blend_addition_16bit   : blend_addition_8bit;   break;
-    case BLEND_ADDITION128: param->blend = is_16bit ? blend_addition128_16bit : blend_addition128_8bit; break;
-    case BLEND_AND:        param->blend = is_16bit ? blend_and_16bit        : blend_and_8bit;        break;
-    case BLEND_AVERAGE:    param->blend = is_16bit ? blend_average_16bit    : blend_average_8bit;    break;
-    case BLEND_BURN:       param->blend = is_16bit ? blend_burn_16bit       : blend_burn_8bit;       break;
-    case BLEND_DARKEN:     param->blend = is_16bit ? blend_darken_16bit     : blend_darken_8bit;     break;
-    case BLEND_DIFFERENCE: param->blend = is_16bit ? blend_difference_16bit : blend_difference_8bit; break;
-    case BLEND_DIFFERENCE128: param->blend = is_16bit ? blend_difference128_16bit: blend_difference128_8bit; break;
-    case BLEND_DIVIDE:     param->blend = is_16bit ? blend_divide_16bit     : blend_divide_8bit;     break;
-    case BLEND_DODGE:      param->blend = is_16bit ? blend_dodge_16bit      : blend_dodge_8bit;      break;
-    case BLEND_EXCLUSION:  param->blend = is_16bit ? blend_exclusion_16bit  : blend_exclusion_8bit;  break;
-    case BLEND_FREEZE:     param->blend = is_16bit ? blend_freeze_16bit     : blend_freeze_8bit;     break;
-    case BLEND_GLOW:       param->blend = is_16bit ? blend_glow_16bit       : blend_glow_8bit;       break;
-    case BLEND_HARDLIGHT:  param->blend = is_16bit ? blend_hardlight_16bit  : blend_hardlight_8bit;  break;
-    case BLEND_HARDMIX:    param->blend = is_16bit ? blend_hardmix_16bit    : blend_hardmix_8bit;    break;
-    case BLEND_HEAT:       param->blend = is_16bit ? blend_heat_16bit       : blend_heat_8bit;       break;
-    case BLEND_LIGHTEN:    param->blend = is_16bit ? blend_lighten_16bit    : blend_lighten_8bit;    break;
-    case BLEND_LINEARLIGHT:param->blend = is_16bit ? blend_linearlight_16bit: blend_linearlight_8bit;break;
-    case BLEND_MULTIPLY:   param->blend = is_16bit ? blend_multiply_16bit   : blend_multiply_8bit;   break;
-    case BLEND_MULTIPLY128:param->blend = is_16bit ? blend_multiply128_16bit: blend_multiply128_8bit;break;
-    case BLEND_NEGATION:   param->blend = is_16bit ? blend_negation_16bit   : blend_negation_8bit;   break;
-    case BLEND_NORMAL:     param->blend = param->opacity == 1 ? blend_copytop :
-                                          param->opacity == 0 ? blend_copybottom :
-                                          is_16bit ? blend_normal_16bit     : blend_normal_8bit;     break;
-    case BLEND_OR:         param->blend = is_16bit ? blend_or_16bit         : blend_or_8bit;         break;
-    case BLEND_OVERLAY:    param->blend = is_16bit ? blend_overlay_16bit    : blend_overlay_8bit;    break;
-    case BLEND_PHOENIX:    param->blend = is_16bit ? blend_phoenix_16bit    : blend_phoenix_8bit;    break;
-    case BLEND_PINLIGHT:   param->blend = is_16bit ? blend_pinlight_16bit   : blend_pinlight_8bit;   break;
-    case BLEND_REFLECT:    param->blend = is_16bit ? blend_reflect_16bit    : blend_reflect_8bit;    break;
-    case BLEND_SCREEN:     param->blend = is_16bit ? blend_screen_16bit     : blend_screen_8bit;     break;
-    case BLEND_SOFTLIGHT:  param->blend = is_16bit ? blend_softlight_16bit  : blend_softlight_8bit;  break;
-    case BLEND_SUBTRACT:   param->blend = is_16bit ? blend_subtract_16bit   : blend_subtract_8bit;   break;
-    case BLEND_VIVIDLIGHT: param->blend = is_16bit ? blend_vividlight_16bit : blend_vividlight_8bit; break;
-    case BLEND_XOR:        param->blend = is_16bit ? blend_xor_16bit        : blend_xor_8bit;        break;
+    switch (depth) {
+    case 8:
+        init_blend_func_8_8bit(param);
+        break;
+    case 9:
+        init_blend_func_9_16bit(param);
+        break;
+    case 10:
+        init_blend_func_10_16bit(param);
+        break;
+    case 12:
+        init_blend_func_12_16bit(param);
+        break;
+    case 16:
+        init_blend_func_16_16bit(param);
+        break;
     }
 
     if (param->opacity == 0 && param->mode != BLEND_NORMAL) {
-        param->blend = blend_copytop;
+        param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+    } else if (param->mode == BLEND_NORMAL) {
+        if (param->opacity == 1)
+            param->blend = depth > 8 ? blend_copytop_16 : blend_copytop_8;
+        else if (param->opacity == 0)
+            param->blend = depth > 8 ? blend_copybottom_16 : blend_copybottom_8;
     }
 
     if (ARCH_X86)
-        ff_blend_init_x86(param, is_16bit);
+        ff_blend_init_x86(param, depth);
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -496,7 +684,7 @@ static int config_output(AVFilterLink *outlink)
     AVFilterLink *toplink = ctx->inputs[TOP];
     BlendContext *s = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = av_pix_fmt_desc_get(toplink->format);
-    int ret, plane, is_16bit;
+    int ret, plane;
 
     if (!s->tblend) {
         AVFilterLink *bottomlink = ctx->inputs[BOTTOM];
@@ -505,19 +693,12 @@ static int config_output(AVFilterLink *outlink)
             av_log(ctx, AV_LOG_ERROR, "inputs must be of same pixel format\n");
             return AVERROR(EINVAL);
         }
-        if (toplink->w                       != bottomlink->w ||
-            toplink->h                       != bottomlink->h ||
-            toplink->sample_aspect_ratio.num != bottomlink->sample_aspect_ratio.num ||
-            toplink->sample_aspect_ratio.den != bottomlink->sample_aspect_ratio.den) {
+        if (toplink->w != bottomlink->w || toplink->h != bottomlink->h) {
             av_log(ctx, AV_LOG_ERROR, "First input link %s parameters "
-                   "(size %dx%d, SAR %d:%d) do not match the corresponding "
-                   "second input link %s parameters (%dx%d, SAR %d:%d)\n",
+                   "(size %dx%d) do not match the corresponding "
+                   "second input link %s parameters (size %dx%d)\n",
                    ctx->input_pads[TOP].name, toplink->w, toplink->h,
-                   toplink->sample_aspect_ratio.num,
-                   toplink->sample_aspect_ratio.den,
-                   ctx->input_pads[BOTTOM].name, bottomlink->w, bottomlink->h,
-                   bottomlink->sample_aspect_ratio.num,
-                   bottomlink->sample_aspect_ratio.den);
+                   ctx->input_pads[BOTTOM].name, bottomlink->w, bottomlink->h);
             return AVERROR(EINVAL);
         }
     }
@@ -531,11 +712,11 @@ static int config_output(AVFilterLink *outlink)
     s->hsub = pix_desc->log2_chroma_w;
     s->vsub = pix_desc->log2_chroma_h;
 
-    is_16bit = pix_desc->comp[0].depth == 16;
+    s->depth = pix_desc->comp[0].depth;
     s->nb_planes = av_pix_fmt_count_planes(toplink->format);
 
     if (!s->tblend)
-        if ((ret = ff_dualinput_init(ctx, &s->dinput)) < 0)
+        if ((ret = ff_framesync_init_dualinput(&s->fs, ctx)) < 0)
             return ret;
 
     for (plane = 0; plane < FF_ARRAY_ELEMS(s->params); plane++) {
@@ -546,7 +727,7 @@ static int config_output(AVFilterLink *outlink)
         if (s->all_opacity < 1)
             param->opacity = s->all_opacity;
 
-        ff_blend_init(param, is_16bit);
+        ff_blend_init(param, s->depth);
 
         if (s->all_expr && !param->expr_str) {
             param->expr_str = av_strdup(s->all_expr);
@@ -558,36 +739,34 @@ static int config_output(AVFilterLink *outlink)
                                 NULL, NULL, NULL, NULL, 0, ctx);
             if (ret < 0)
                 return ret;
-            param->blend = is_16bit? blend_expr_16bit : blend_expr_8bit;
+            param->blend = s->depth > 8 ? blend_expr_16bit : blend_expr_8bit;
         }
     }
 
-    return 0;
+    if (s->tblend)
+        return 0;
+
+    ret = ff_framesync_configure(&s->fs);
+    outlink->time_base = s->fs.time_base;
+
+    return ret;
 }
 
 #if CONFIG_BLEND_FILTER
 
-static int request_frame(AVFilterLink *outlink)
+static int activate(AVFilterContext *ctx)
 {
-    BlendContext *s = outlink->src->priv;
-    return ff_dualinput_request_frame(&s->dinput, outlink);
-}
-
-static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
-{
-    BlendContext *s = inlink->dst->priv;
-    return ff_dualinput_filter_frame(&s->dinput, inlink, buf);
+    BlendContext *s = ctx->priv;
+    return ff_framesync_activate(&s->fs);
 }
 
 static const AVFilterPad blend_inputs[] = {
     {
         .name          = "top",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
     },{
         .name          = "bottom",
         .type          = AVMEDIA_TYPE_VIDEO,
-        .filter_frame  = filter_frame,
     },
     { NULL }
 };
@@ -597,7 +776,6 @@ static const AVFilterPad blend_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -605,10 +783,12 @@ static const AVFilterPad blend_outputs[] = {
 AVFilter ff_vf_blend = {
     .name          = "blend",
     .description   = NULL_IF_CONFIG_SMALL("Blend two video frames into each other."),
+    .preinit       = blend_framesync_preinit,
     .init          = init,
     .uninit        = uninit,
     .priv_size     = sizeof(BlendContext),
     .query_formats = query_formats,
+    .activate      = activate,
     .inputs        = blend_inputs,
     .outputs       = blend_outputs,
     .priv_class    = &blend_class,
@@ -621,11 +801,17 @@ AVFilter ff_vf_blend = {
 
 static int tblend_filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
-    BlendContext *s = inlink->dst->priv;
-    AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx = inlink->dst;
+    BlendContext *s = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
 
     if (s->prev_frame) {
-        AVFrame *out = blend_frame(inlink->dst, frame, s->prev_frame);
+        AVFrame *out;
+
+        if (ctx->is_disabled)
+            out = av_frame_clone(frame);
+        else
+            out = blend_frame(ctx, frame, s->prev_frame);
         av_frame_free(&s->prev_frame);
         s->prev_frame = frame;
         return ff_filter_frame(outlink, out);
@@ -669,7 +855,7 @@ AVFilter ff_vf_tblend = {
     .uninit        = uninit,
     .inputs        = tblend_inputs,
     .outputs       = tblend_outputs,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };
 
 #endif

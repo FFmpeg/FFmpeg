@@ -25,7 +25,7 @@
 #include "internal.h"
 #include "rawdec.h"
 
-static int wsd_probe(AVProbeData *p)
+static int wsd_probe(const AVProbeData *p)
 {
     if (p->buf_size < 45 || memcmp(p->buf, "1bit", 4) ||
         !AV_RB32(p->buf + 36) || !p->buf[44] ||
@@ -128,7 +128,7 @@ static int wsd_read_header(AVFormatContext *s)
     st->codecpar->sample_rate = avio_rb32(pb) / 8;
     avio_skip(pb, 4);
     st->codecpar->channels    = avio_r8(pb) & 0xF;
-    st->codecpar->bit_rate    = st->codecpar->channels * st->codecpar->sample_rate * 8LL;
+    st->codecpar->bit_rate    = (int64_t)st->codecpar->channels * st->codecpar->sample_rate * 8LL;
     if (!st->codecpar->channels)
         return AVERROR_INVALIDDATA;
 
@@ -137,7 +137,7 @@ static int wsd_read_header(AVFormatContext *s)
     if (!(channel_assign & 1)) {
         int i;
         for (i = 1; i < 32; i++)
-            if (channel_assign & (1 << i))
+            if ((channel_assign >> i) & 1)
                 st->codecpar->channel_layout |= wsd_to_av_channel_layoyt(s, i);
     }
 
@@ -161,6 +161,7 @@ static int wsd_read_header(AVFormatContext *s)
     return avio_seek(pb, data_offset, SEEK_SET);
 }
 
+FF_RAW_DEMUXER_CLASS(wsd)
 AVInputFormat ff_wsd_demuxer = {
     .name         = "wsd",
     .long_name    = NULL_IF_CONFIG_SMALL("Wideband Single-bit Data (WSD)"),
@@ -170,4 +171,6 @@ AVInputFormat ff_wsd_demuxer = {
     .extensions   = "wsd",
     .flags        = AVFMT_GENERIC_INDEX | AVFMT_NO_BYTE_SEEK,
     .raw_codec_id = AV_CODEC_ID_DSD_MSBF,
+    .priv_data_size = sizeof(FFRawDemuxerContext),
+    .priv_class     = &wsd_demuxer_class,
 };

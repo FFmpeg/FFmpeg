@@ -39,7 +39,6 @@
 #include "mpeg12data.h"
 #include "mpegvideodata.h"
 #include "bytestream.h"
-#include "vdpau_internal.h"
 #include "thread.h"
 
 uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
@@ -68,20 +67,13 @@ static const uint8_t table_mb_btype[11][2] = {
     { 2, 5 }, // 0x1E MB_QUANT|MB_FOR|MB_BACK|MB_PAT
 };
 
-#define INIT_2D_VLC_RL(rl, static_size)\
-{\
-    static RL_VLC_ELEM rl_vlc_table[static_size];\
-    rl.rl_vlc[0] = rl_vlc_table;\
-    init_2d_vlc_rl(&rl, static_size);\
-}
-
-static av_cold void init_2d_vlc_rl(RLTable *rl, unsigned static_size)
+av_cold void ff_init_2d_vlc_rl(RLTable *rl, unsigned static_size, int flags)
 {
     int i;
     VLC_TYPE table[680][2] = {{0}};
     VLC vlc = { .table = table, .table_allocated = static_size };
     av_assert0(static_size <= FF_ARRAY_ELEMS(table));
-    init_vlc(&vlc, TEX_VLC_BITS, rl->n + 2, &rl->table_vlc[0][1], 4, 2, &rl->table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC);
+    init_vlc(&vlc, TEX_VLC_BITS, rl->n + 2, &rl->table_vlc[0][1], 4, 2, &rl->table_vlc[0][0], 4, 2, INIT_VLC_USE_NEW_STATIC | flags);
 
     for (i = 0; i < vlc.table_size; i++) {
         int code = vlc.table[i][0];
@@ -174,8 +166,8 @@ av_cold void ff_mpeg12_init_vlcs(void)
         ff_rl_init(&ff_rl_mpeg1, ff_mpeg12_static_rl_table_store[0]);
         ff_rl_init(&ff_rl_mpeg2, ff_mpeg12_static_rl_table_store[1]);
 
-        INIT_2D_VLC_RL(ff_rl_mpeg1, 680);
-        INIT_2D_VLC_RL(ff_rl_mpeg2, 674);
+        INIT_2D_VLC_RL(ff_rl_mpeg1, 680, 0);
+        INIT_2D_VLC_RL(ff_rl_mpeg2, 674, 0);
     }
 }
 

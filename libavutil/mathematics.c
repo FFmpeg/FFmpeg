@@ -115,15 +115,15 @@ int64_t av_rescale_rnd(int64_t a, int64_t b, int64_t c, enum AVRounding rnd)
         if (t1 > INT64_MAX)
             return INT64_MIN;
         return t1;
-    }
 #else
+        /* reference code doing (a*b + r) / c, requires libavutil/integer.h */
         AVInteger ai;
         ai = av_mul_i(av_int2i(a), av_int2i(b));
         ai = av_add_i(ai, av_int2i(r));
 
         return av_i2int(av_div_i(ai, av_int2i(c)));
-    }
 #endif
+    }
 }
 
 int64_t av_rescale(int64_t a, int64_t b, int64_t c)
@@ -198,7 +198,7 @@ int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t i
     m = inc_tb.num * (int64_t)ts_tb.den;
     d = inc_tb.den * (int64_t)ts_tb.num;
 
-    if (m % d == 0)
+    if (m % d == 0 && ts <= INT64_MAX - m / d)
         return ts + m / d;
     if (m < d)
         return ts;
@@ -206,6 +206,10 @@ int64_t av_add_stable(AVRational ts_tb, int64_t ts, AVRational inc_tb, int64_t i
     {
         int64_t old = av_rescale_q(ts, ts_tb, inc_tb);
         int64_t old_ts = av_rescale_q(old, inc_tb, ts_tb);
+
+        if (old == INT64_MAX)
+            return ts;
+
         return av_rescale_q(old + 1, inc_tb, ts_tb) + (ts - old_ts);
     }
 }

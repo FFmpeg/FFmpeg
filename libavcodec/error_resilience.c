@@ -27,7 +27,6 @@
 
 #include <limits.h>
 
-#include "libavutil/atomic.h"
 #include "libavutil/internal.h"
 #include "avcodec.h"
 #include "error_resilience.h"
@@ -42,7 +41,7 @@
  * @param stride the number of MVs to get to the next row
  * @param mv_step the number of MVs per row or column in a macroblock
  */
-static void set_mv_strides(ERContext *s, int *mv_step, int *stride)
+static void set_mv_strides(ERContext *s, ptrdiff_t *mv_step, ptrdiff_t *stride)
 {
     if (s->avctx->codec_id == AV_CODEC_ID_H264) {
         av_assert0(s->quarter_sample);
@@ -95,7 +94,7 @@ static void put_dc(ERContext *s, uint8_t *dest_y, uint8_t *dest_cb,
     }
 }
 
-static void filter181(int16_t *data, int width, int height, int stride)
+static void filter181(int16_t *data, int width, int height, ptrdiff_t stride)
 {
     int x, y;
 
@@ -108,7 +107,7 @@ static void filter181(int16_t *data, int width, int height, int stride)
             dc = -prev_dc +
                  data[x     + y * stride] * 8 -
                  data[x + 1 + y * stride];
-            dc = (dc * 10923 + 32768) >> 16;
+            dc = (av_clip(dc, INT_MIN/10923, INT_MAX/10923 - 32768) * 10923 + 32768) >> 16;
             prev_dc = data[x + y * stride];
             data[x + y * stride] = dc;
         }
@@ -124,7 +123,7 @@ static void filter181(int16_t *data, int width, int height, int stride)
             dc = -prev_dc +
                  data[x +  y      * stride] * 8 -
                  data[x + (y + 1) * stride];
-            dc = (dc * 10923 + 32768) >> 16;
+            dc = (av_clip(dc, INT_MIN/10923, INT_MAX/10923 - 32768) * 10923 + 32768) >> 16;
             prev_dc = data[x + y * stride];
             data[x + y * stride] = dc;
         }
@@ -137,7 +136,7 @@ static void filter181(int16_t *data, int width, int height, int stride)
  * @param h     height in 8 pixel blocks
  */
 static void guess_dc(ERContext *s, int16_t *dc, int w,
-                     int h, int stride, int is_luma)
+                     int h, ptrdiff_t stride, int is_luma)
 {
     int b_x, b_y;
     int16_t  (*col )[4] = av_malloc_array(stride, h*sizeof( int16_t)*4);
@@ -240,9 +239,10 @@ fail:
  * @param h     height in 8 pixel blocks
  */
 static void h_block_filter(ERContext *s, uint8_t *dst, int w,
-                           int h, int stride, int is_luma)
+                           int h, ptrdiff_t stride, int is_luma)
 {
-    int b_x, b_y, mvx_stride, mvy_stride;
+    int b_x, b_y;
+    ptrdiff_t mvx_stride, mvy_stride;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
@@ -308,9 +308,10 @@ static void h_block_filter(ERContext *s, uint8_t *dst, int w,
  * @param h     height in 8 pixel blocks
  */
 static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
-                           int stride, int is_luma)
+                           ptrdiff_t stride, int is_luma)
 {
-    int b_x, b_y, mvx_stride, mvy_stride;
+    int b_x, b_y;
+    ptrdiff_t mvx_stride, mvy_stride;
     const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
     set_mv_strides(s, &mvx_stride, &mvy_stride);
     mvx_stride >>= is_luma;
@@ -373,22 +374,39 @@ static void v_block_filter(ERContext *s, uint8_t *dst, int w, int h,
     }
 }
 
+#define MV_FROZEN    8
+#define MV_CHANGED   4
+#define MV_UNCHANGED 2
+#define MV_LISTED    1
+static av_always_inline void add_blocklist(int (*blocklist)[2], int *blocklist_length, uint8_t *fixed, int mb_x, int mb_y, int mb_xy)
+{
+    if (fixed[mb_xy])
+        return;
+    fixed[mb_xy] = MV_LISTED;
+    blocklist[ *blocklist_length   ][0] = mb_x;
+    blocklist[(*blocklist_length)++][1] = mb_y;
+}
+
 static void guess_mv(ERContext *s)
 {
-    uint8_t *fixed = s->er_temp_buffer;
-#define MV_FROZEN    3
-#define MV_CHANGED   2
-#define MV_UNCHANGED 1
-    const int mb_stride = s->mb_stride;
+    int (*blocklist)[2], (*next_blocklist)[2];
+    uint8_t *fixed;
+    const ptrdiff_t mb_stride = s->mb_stride;
     const int mb_width  = s->mb_width;
     int mb_height = s->mb_height;
     int i, depth, num_avail;
-    int mb_x, mb_y, mot_step, mot_stride;
+    int mb_x, mb_y;
+    ptrdiff_t mot_step, mot_stride;
+    int blocklist_length, next_blocklist_length;
 
     if (s->last_pic.f && s->last_pic.f->data[0])
         mb_height = FFMIN(mb_height, (s->last_pic.f->height+15)>>4);
     if (s->next_pic.f && s->next_pic.f->data[0])
         mb_height = FFMIN(mb_height, (s->next_pic.f->height+15)>>4);
+
+    blocklist      = (int (*)[2])s->er_temp_buffer;
+    next_blocklist = blocklist + s->mb_stride * s->mb_height;
+    fixed          = (uint8_t *)(next_blocklist + s->mb_stride * s->mb_height);
 
     set_mv_strides(s, &mot_step, &mot_stride);
 
@@ -419,7 +437,7 @@ static void guess_mv(ERContext *s)
     }
 
     if ((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) ||
-        num_avail <= mb_width / 2) {
+        num_avail <= FFMAX(mb_width, mb_height) / 2) {
         for (mb_y = 0; mb_y < mb_height; mb_y++) {
             for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
                 const int mb_xy = mb_x + mb_y * s->mb_stride;
@@ -439,239 +457,265 @@ static void guess_mv(ERContext *s)
         return;
     }
 
+    blocklist_length = 0;
+    for (mb_y = 0; mb_y < mb_height; mb_y++) {
+        for (mb_x = 0; mb_x < mb_width; mb_x++) {
+            const int mb_xy = mb_x + mb_y * mb_stride;
+            if (fixed[mb_xy] == MV_FROZEN) {
+                if (mb_x)               add_blocklist(blocklist, &blocklist_length, fixed, mb_x - 1, mb_y, mb_xy - 1);
+                if (mb_y)               add_blocklist(blocklist, &blocklist_length, fixed, mb_x, mb_y - 1, mb_xy - mb_stride);
+                if (mb_x+1 < mb_width)  add_blocklist(blocklist, &blocklist_length, fixed, mb_x + 1, mb_y, mb_xy + 1);
+                if (mb_y+1 < mb_height) add_blocklist(blocklist, &blocklist_length, fixed, mb_x, mb_y + 1, mb_xy + mb_stride);
+            }
+        }
+    }
+
     for (depth = 0; ; depth++) {
         int changed, pass, none_left;
+        int blocklist_index;
 
         none_left = 1;
         changed   = 1;
         for (pass = 0; (changed || pass < 2) && pass < 10; pass++) {
-            int mb_x, mb_y;
             int score_sum = 0;
 
             changed = 0;
-            for (mb_y = 0; mb_y < mb_height; mb_y++) {
-                for (mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                    const int mb_xy        = mb_x + mb_y * s->mb_stride;
-                    int mv_predictor[8][2] = { { 0 } };
-                    int ref[8]             = { 0 };
-                    int pred_count         = 0;
-                    int j;
-                    int best_score         = 256 * 256 * 256 * 64;
-                    int best_pred          = 0;
-                    const int mot_index    = (mb_x + mb_y * mot_stride) * mot_step;
-                    int prev_x = 0, prev_y = 0, prev_ref = 0;
+            for (blocklist_index = 0; blocklist_index < blocklist_length; blocklist_index++) {
+                const int mb_x = blocklist[blocklist_index][0];
+                const int mb_y = blocklist[blocklist_index][1];
+                const int mb_xy = mb_x + mb_y * mb_stride;
+                int mv_predictor[8][2];
+                int ref[8];
+                int pred_count;
+                int j;
+                int best_score;
+                int best_pred;
+                int mot_index;
+                int prev_x, prev_y, prev_ref;
 
-                    if ((mb_x ^ mb_y ^ pass) & 1)
-                        continue;
+                if ((mb_x ^ mb_y ^ pass) & 1)
+                    continue;
+                av_assert2(fixed[mb_xy] != MV_FROZEN);
 
-                    if (fixed[mb_xy] == MV_FROZEN)
-                        continue;
-                    av_assert1(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
-                    av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
-                    j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1]         == MV_FROZEN)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_FROZEN)
-                        j = 1;
-                    if (j == 0)
-                        continue;
+                av_assert1(!IS_INTRA(s->cur_pic.mb_type[mb_xy]));
+                av_assert1(s->last_pic.f && s->last_pic.f->data[0]);
 
-                    j = 0;
-                    if (mb_x > 0             && fixed[mb_xy - 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_x + 1 < mb_width  && fixed[mb_xy + 1        ] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y > 0             && fixed[mb_xy - mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] == MV_CHANGED)
-                        j = 1;
-                    if (j == 0 && pass > 1)
-                        continue;
+                j = 0;
+                if (mb_x > 0)
+                    j |= fixed[mb_xy - 1];
+                if (mb_x + 1 < mb_width)
+                    j |= fixed[mb_xy + 1];
+                if (mb_y > 0)
+                    j |= fixed[mb_xy - mb_stride];
+                if (mb_y + 1 < mb_height)
+                    j |= fixed[mb_xy + mb_stride];
 
-                    none_left = 0;
+                av_assert2(j & MV_FROZEN);
 
-                    if (mb_x > 0 && fixed[mb_xy - 1]) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index - mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index - mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy - 1)];
-                        pred_count++;
-                    }
-                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index + mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index + mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy + 1)];
-                        pred_count++;
-                    }
-                    if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy - s->mb_stride)];
-                        pred_count++;
-                    }
-                    if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride]) {
-                        mv_predictor[pred_count][0] =
-                            s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][0];
-                        mv_predictor[pred_count][1] =
-                            s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][1];
-                        ref[pred_count] =
-                            s->cur_pic.ref_index[0][4 * (mb_xy + s->mb_stride)];
-                        pred_count++;
-                    }
-                    if (pred_count == 0)
-                        continue;
+                if (!(j & MV_CHANGED) && pass > 1)
+                    continue;
 
-                    if (pred_count > 1) {
-                        int sum_x = 0, sum_y = 0, sum_r = 0;
-                        int max_x, max_y, min_x, min_y, max_r, min_r;
+                none_left = 0;
+                pred_count = 0;
+                mot_index  = (mb_x + mb_y * mot_stride) * mot_step;
 
-                        for (j = 0; j < pred_count; j++) {
-                            sum_x += mv_predictor[j][0];
-                            sum_y += mv_predictor[j][1];
-                            sum_r += ref[j];
-                            if (j && ref[j] != ref[j - 1])
-                                goto skip_mean_and_median;
-                        }
-
-                        /* mean */
-                        mv_predictor[pred_count][0] = sum_x / j;
-                        mv_predictor[pred_count][1] = sum_y / j;
-                                 ref[pred_count]    = sum_r / j;
-
-                        /* median */
-                        if (pred_count >= 3) {
-                            min_y = min_x = min_r =  99999;
-                            max_y = max_x = max_r = -99999;
-                        } else {
-                            min_x = min_y = max_x = max_y = min_r = max_r = 0;
-                        }
-                        for (j = 0; j < pred_count; j++) {
-                            max_x = FFMAX(max_x, mv_predictor[j][0]);
-                            max_y = FFMAX(max_y, mv_predictor[j][1]);
-                            max_r = FFMAX(max_r, ref[j]);
-                            min_x = FFMIN(min_x, mv_predictor[j][0]);
-                            min_y = FFMIN(min_y, mv_predictor[j][1]);
-                            min_r = FFMIN(min_r, ref[j]);
-                        }
-                        mv_predictor[pred_count + 1][0] = sum_x - max_x - min_x;
-                        mv_predictor[pred_count + 1][1] = sum_y - max_y - min_y;
-                                 ref[pred_count + 1]    = sum_r - max_r - min_r;
-
-                        if (pred_count == 4) {
-                            mv_predictor[pred_count + 1][0] /= 2;
-                            mv_predictor[pred_count + 1][1] /= 2;
-                                     ref[pred_count + 1]    /= 2;
-                        }
-                        pred_count += 2;
-                    }
-
-skip_mean_and_median:
-                    /* zero MV */
+                if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index - mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index - mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy - 1)];
                     pred_count++;
-
-                    prev_x   = s->cur_pic.motion_val[0][mot_index][0];
-                    prev_y   = s->cur_pic.motion_val[0][mot_index][1];
-                    prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
-
-                    /* last MV */
-                    mv_predictor[pred_count][0] = prev_x;
-                    mv_predictor[pred_count][1] = prev_y;
-                             ref[pred_count]    = prev_ref;
+                }
+                if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index + mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index + mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy + 1)];
                     pred_count++;
+                }
+                if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index - mot_stride * mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy - s->mb_stride)];
+                    pred_count++;
+                }
+                if (mb_y + 1<mb_height && fixed[mb_xy + mb_stride] > 1) {
+                    mv_predictor[pred_count][0] =
+                        s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][0];
+                    mv_predictor[pred_count][1] =
+                        s->cur_pic.motion_val[0][mot_index + mot_stride * mot_step][1];
+                    ref[pred_count] =
+                        s->cur_pic.ref_index[0][4 * (mb_xy + s->mb_stride)];
+                    pred_count++;
+                }
+                if (pred_count == 0)
+                    continue;
 
-skip_last_mv:
+                if (pred_count > 1) {
+                    int sum_x = 0, sum_y = 0, sum_r = 0;
+                    int max_x, max_y, min_x, min_y, max_r, min_r;
 
                     for (j = 0; j < pred_count; j++) {
-                        int *linesize = s->cur_pic.f->linesize;
-                        int score = 0;
-                        uint8_t *src = s->cur_pic.f->data[0] +
-                                       mb_x * 16 + mb_y * 16 * linesize[0];
-
-                        s->cur_pic.motion_val[0][mot_index][0] =
-                            s->mv[0][0][0] = mv_predictor[j][0];
-                        s->cur_pic.motion_val[0][mot_index][1] =
-                            s->mv[0][0][1] = mv_predictor[j][1];
-
-                        // predictor intra or otherwise not available
-                        if (ref[j] < 0)
-                            continue;
-
-                        s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
-                                     MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
-
-                        if (mb_x > 0 && fixed[mb_xy - 1]) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * linesize[0] - 1] -
-                                               src[k * linesize[0]]);
-                        }
-                        if (mb_x + 1 < mb_width && fixed[mb_xy + 1]) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k * linesize[0] + 15] -
-                                               src[k * linesize[0] + 16]);
-                        }
-                        if (mb_y > 0 && fixed[mb_xy - mb_stride]) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k - linesize[0]] - src[k]);
-                        }
-                        if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride]) {
-                            int k;
-                            for (k = 0; k < 16; k++)
-                                score += FFABS(src[k + linesize[0] * 15] -
-                                               src[k + linesize[0] * 16]);
-                        }
-
-                        if (score <= best_score) { // <= will favor the last MV
-                            best_score = score;
-                            best_pred  = j;
-                        }
+                        sum_x += mv_predictor[j][0];
+                        sum_y += mv_predictor[j][1];
+                        sum_r += ref[j];
+                        if (j && ref[j] != ref[j - 1])
+                            goto skip_mean_and_median;
                     }
-                    score_sum += best_score;
-                    s->mv[0][0][0] = mv_predictor[best_pred][0];
-                    s->mv[0][0][1] = mv_predictor[best_pred][1];
 
-                    for (i = 0; i < mot_step; i++)
-                        for (j = 0; j < mot_step; j++) {
-                            s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
-                            s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
-                        }
+                    /* mean */
+                    mv_predictor[pred_count][0] = sum_x / j;
+                    mv_predictor[pred_count][1] = sum_y / j;
+                             ref[pred_count]    = sum_r / j;
 
-                    s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
+                    /* median */
+                    if (pred_count >= 3) {
+                        min_y = min_x = min_r =  99999;
+                        max_y = max_x = max_r = -99999;
+                    } else {
+                        min_x = min_y = max_x = max_y = min_r = max_r = 0;
+                    }
+                    for (j = 0; j < pred_count; j++) {
+                        max_x = FFMAX(max_x, mv_predictor[j][0]);
+                        max_y = FFMAX(max_y, mv_predictor[j][1]);
+                        max_r = FFMAX(max_r, ref[j]);
+                        min_x = FFMIN(min_x, mv_predictor[j][0]);
+                        min_y = FFMIN(min_y, mv_predictor[j][1]);
+                        min_r = FFMIN(min_r, ref[j]);
+                    }
+                    mv_predictor[pred_count + 1][0] = sum_x - max_x - min_x;
+                    mv_predictor[pred_count + 1][1] = sum_y - max_y - min_y;
+                             ref[pred_count + 1]    = sum_r - max_r - min_r;
+
+                    if (pred_count == 4) {
+                        mv_predictor[pred_count + 1][0] /= 2;
+                        mv_predictor[pred_count + 1][1] /= 2;
+                                 ref[pred_count + 1]    /= 2;
+                    }
+                    pred_count += 2;
+                }
+
+skip_mean_and_median:
+                /* zero MV */
+                mv_predictor[pred_count][0] =
+                mv_predictor[pred_count][1] =
+                         ref[pred_count]    = 0;
+                pred_count++;
+
+                prev_x   = s->cur_pic.motion_val[0][mot_index][0];
+                prev_y   = s->cur_pic.motion_val[0][mot_index][1];
+                prev_ref = s->cur_pic.ref_index[0][4 * mb_xy];
+
+                /* last MV */
+                mv_predictor[pred_count][0] = prev_x;
+                mv_predictor[pred_count][1] = prev_y;
+                         ref[pred_count]    = prev_ref;
+                pred_count++;
+
+                best_pred = 0;
+                best_score = 256 * 256 * 256 * 64;
+                for (j = 0; j < pred_count; j++) {
+                    int *linesize = s->cur_pic.f->linesize;
+                    int score = 0;
+                    uint8_t *src = s->cur_pic.f->data[0] +
+                                   mb_x * 16 + mb_y * 16 * linesize[0];
+
+                    s->cur_pic.motion_val[0][mot_index][0] =
+                        s->mv[0][0][0] = mv_predictor[j][0];
+                    s->cur_pic.motion_val[0][mot_index][1] =
+                        s->mv[0][0][1] = mv_predictor[j][1];
+
+                    // predictor intra or otherwise not available
+                    if (ref[j] < 0)
+                        continue;
+
+                    s->decode_mb(s->opaque, ref[j], MV_DIR_FORWARD,
                                  MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
 
+                    if (mb_x > 0 && fixed[mb_xy - 1] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k * linesize[0] - 1] -
+                                           src[k * linesize[0]]);
+                    }
+                    if (mb_x + 1 < mb_width && fixed[mb_xy + 1] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k * linesize[0] + 15] -
+                                           src[k * linesize[0] + 16]);
+                    }
+                    if (mb_y > 0 && fixed[mb_xy - mb_stride] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k - linesize[0]] - src[k]);
+                    }
+                    if (mb_y + 1 < mb_height && fixed[mb_xy + mb_stride] > 1) {
+                        int k;
+                        for (k = 0; k < 16; k++)
+                            score += FFABS(src[k + linesize[0] * 15] -
+                                           src[k + linesize[0] * 16]);
+                    }
 
-                    if (s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y) {
-                        fixed[mb_xy] = MV_CHANGED;
-                        changed++;
-                    } else
-                        fixed[mb_xy] = MV_UNCHANGED;
+                    if (score <= best_score) { // <= will favor the last MV
+                        best_score = score;
+                        best_pred  = j;
+                    }
                 }
+                score_sum += best_score;
+                s->mv[0][0][0] = mv_predictor[best_pred][0];
+                s->mv[0][0][1] = mv_predictor[best_pred][1];
+
+                for (i = 0; i < mot_step; i++)
+                    for (j = 0; j < mot_step; j++) {
+                        s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][0] = s->mv[0][0][0];
+                        s->cur_pic.motion_val[0][mot_index + i + j * mot_stride][1] = s->mv[0][0][1];
+                    }
+
+                s->decode_mb(s->opaque, ref[best_pred], MV_DIR_FORWARD,
+                             MV_TYPE_16X16, &s->mv, mb_x, mb_y, 0, 0);
+
+
+                if (s->mv[0][0][0] != prev_x || s->mv[0][0][1] != prev_y) {
+                    fixed[mb_xy] = MV_CHANGED;
+                    changed++;
+                } else
+                    fixed[mb_xy] = MV_UNCHANGED;
             }
         }
 
         if (none_left)
             return;
 
-        for (i = 0; i < mb_width * mb_height; i++) {
-            int mb_xy = s->mb_index2xy[i];
-            if (fixed[mb_xy])
+        next_blocklist_length = 0;
+
+        for (blocklist_index = 0; blocklist_index < blocklist_length; blocklist_index++) {
+            const int mb_x = blocklist[blocklist_index][0];
+            const int mb_y = blocklist[blocklist_index][1];
+            const int mb_xy = mb_x + mb_y * mb_stride;
+
+            if (fixed[mb_xy] & (MV_CHANGED|MV_UNCHANGED|MV_FROZEN)) {
                 fixed[mb_xy] = MV_FROZEN;
+                if (mb_x > 0)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x - 1, mb_y, mb_xy - 1);
+                if (mb_y > 0)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x, mb_y - 1, mb_xy - mb_stride);
+                if (mb_x + 1 < mb_width)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x + 1, mb_y, mb_xy + 1);
+                if (mb_y + 1 < mb_height)
+                    add_blocklist(next_blocklist, &next_blocklist_length, fixed, mb_x, mb_y + 1, mb_xy + mb_stride);
+            }
         }
+        av_assert0(next_blocklist_length <= mb_height * mb_width);
+        FFSWAP(int , blocklist_length, next_blocklist_length);
+        FFSWAP(void*, blocklist, next_blocklist);
     }
 }
 
@@ -762,16 +806,13 @@ void ff_er_frame_start(ERContext *s)
 
     memset(s->error_status_table, ER_MB_ERROR | VP_START | ER_MB_END,
            s->mb_stride * s->mb_height * sizeof(uint8_t));
-    s->error_count    = 3 * s->mb_num;
+    atomic_init(&s->error_count, 3 * s->mb_num);
     s->error_occurred = 0;
 }
 
 static int er_supported(ERContext *s)
 {
     if(s->avctx->hwaccel && s->avctx->hwaccel->decode_slice           ||
-#if FF_API_CAP_VDPAU
-       s->avctx->codec->capabilities&AV_CODEC_CAP_HWACCEL_VDPAU          ||
-#endif
        !s->cur_pic.f                                                  ||
        s->cur_pic.field_picture
     )
@@ -810,20 +851,20 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     mask &= ~VP_START;
     if (status & (ER_AC_ERROR | ER_AC_END)) {
         mask           &= ~(ER_AC_ERROR | ER_AC_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_DC_ERROR | ER_DC_END)) {
         mask           &= ~(ER_DC_ERROR | ER_DC_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
     if (status & (ER_MV_ERROR | ER_MV_END)) {
         mask           &= ~(ER_MV_ERROR | ER_MV_END);
-        avpriv_atomic_int_add_and_fetch(&s->error_count, start_i - end_i - 1);
+        atomic_fetch_add(&s->error_count, start_i - end_i - 1);
     }
 
     if (status & ER_MB_ERROR) {
         s->error_occurred = 1;
-        avpriv_atomic_int_set(&s->error_count, INT_MAX);
+        atomic_store(&s->error_count, INT_MAX);
     }
 
     if (mask == ~0x7F) {
@@ -836,7 +877,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
     }
 
     if (end_i == s->mb_num)
-        avpriv_atomic_int_set(&s->error_count, INT_MAX);
+        atomic_store(&s->error_count, INT_MAX);
     else {
         s->error_status_table[end_xy] &= mask;
         s->error_status_table[end_xy] |= status;
@@ -851,7 +892,7 @@ void ff_er_add_slice(ERContext *s, int startx, int starty,
         prev_status &= ~ VP_START;
         if (prev_status != (ER_MV_END | ER_DC_END | ER_AC_END)) {
             s->error_occurred = 1;
-            avpriv_atomic_int_set(&s->error_count, INT_MAX);
+            atomic_store(&s->error_count, INT_MAX);
         }
     }
 }
@@ -868,10 +909,10 @@ void ff_er_frame_end(ERContext *s)
 
     /* We do not support ER of field pictures yet,
      * though it should not crash if enabled. */
-    if (!s->avctx->error_concealment || s->error_count == 0            ||
+    if (!s->avctx->error_concealment || !atomic_load(&s->error_count)  ||
         s->avctx->lowres                                               ||
         !er_supported(s)                                               ||
-        s->error_count == 3 * s->mb_width *
+        atomic_load(&s->error_count) == 3 * s->mb_width *
                           (s->avctx->skip_top + s->avctx->skip_bottom)) {
         return;
     }
@@ -885,7 +926,7 @@ void ff_er_frame_end(ERContext *s)
     if (   mb_x == s->mb_width
         && s->avctx->codec_id == AV_CODEC_ID_MPEG2VIDEO
         && (FFALIGN(s->avctx->height, 16)&16)
-        && s->error_count == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
+        && atomic_load(&s->error_count) == 3 * s->mb_width * (s->avctx->skip_top + s->avctx->skip_bottom + 1)
     ) {
         av_log(s->avctx, AV_LOG_DEBUG, "ignoring last missing slice\n");
         return;
@@ -1080,6 +1121,8 @@ void ff_er_frame_end(ERContext *s)
     av_log(s->avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors in %c frame\n",
            dc_error, ac_error, mv_error, av_get_picture_type_char(s->cur_pic.f->pict_type));
 
+    s->cur_pic.f->decode_error_flags |= FF_DECODE_ERROR_CONCEALMENT_ACTIVE;
+
     is_intra_likely = is_intra_more_likely(s);
 
     /* set unknown mb-type to most likely */
@@ -1136,7 +1179,7 @@ void ff_er_frame_end(ERContext *s)
                 s->mv[0][0][1] = s->cur_pic.motion_val[dir][mb_x * 2 + mb_y * 2 * s->b8_stride][1];
             }
 
-            s->decode_mb(s->opaque, 0 /* FIXME h264 partitioned slices need this set */,
+            s->decode_mb(s->opaque, 0 /* FIXME H.264 partitioned slices need this set */,
                          mv_dir, mv_type, &s->mv, mb_x, mb_y, 0, 0);
         }
     }

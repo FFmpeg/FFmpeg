@@ -28,8 +28,8 @@
 
 #define BITSTREAM_READER_LE
 #include "avcodec.h"
-#include "get_bits.h"
 #include "bytestream.h"
+#include "get_bits.h"
 #include "internal.h"
 #include "mathops.h"
 #include "tscc2data.h"
@@ -235,16 +235,13 @@ static int tscc2_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((ret = ff_reget_buffer(avctx, c->pic)) < 0) {
-        return ret;
+    if (frame_type == 0) {
+        // Skip duplicate frames
+        return buf_size;
     }
 
-    if (frame_type == 0) {
-        *got_frame      = 1;
-        if ((ret = av_frame_ref(data, c->pic)) < 0)
-            return ret;
-
-        return buf_size;
+    if ((ret = ff_reget_buffer(avctx, c->pic, 0)) < 0) {
+        return ret;
     }
 
     if (bytestream2_get_bytes_left(&gb) < 4) {

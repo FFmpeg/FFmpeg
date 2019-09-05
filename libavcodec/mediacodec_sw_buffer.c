@@ -27,9 +27,9 @@
 #include "libavutil/mem.h"
 
 #include "avcodec.h"
-#include "mediacodecdec.h"
 #include "mediacodec_wrapper.h"
 #include "mediacodec_sw_buffer.h"
+#include "mediacodecdec_common.h"
 
 #define QCOM_TILE_WIDTH 64
 #define QCOM_TILE_HEIGHT 32

@@ -22,12 +22,9 @@
 
 #include "libavutil/avassert.h"
 
-#include "hevc.h"
-
-// The headers above may include w32threads.h, which uses the original
-// _WIN32_WINNT define, while dxva2_internal.h redefines it to target a
-// potentially newer version.
 #include "dxva2_internal.h"
+#include "hevc_data.h"
+#include "hevcdec.h"
 
 #define MAX_SLICES 256
 
@@ -242,7 +239,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
                                              DECODER_BUFFER_DESC *sc)
 {
     const HEVCContext *h = avctx->priv_data;
-    AVDXVAContext *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     const HEVCFrame *current_picture = h->ref;
     struct hevc_dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
     DXVA_Slice_HEVC_Short *slice = NULL;
@@ -257,7 +254,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
 
     /* Create an annex B bitstream buffer with only slice NAL and finalize slice */
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         type = D3D11_VIDEO_DECODER_BUFFER_BITSTREAM;
         if (FAILED(ID3D11VideoContext_GetDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context,
                                                        D3D11VA_CONTEXT(ctx)->decoder,
@@ -311,7 +308,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         slice->SliceBytesInBuffer += padding;
     }
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD)
+    if (ff_dxva2_is_d3d11(avctx))
         if (FAILED(ID3D11VideoContext_ReleaseDecoderBuffer(D3D11VA_CONTEXT(ctx)->video_context, D3D11VA_CONTEXT(ctx)->decoder, type)))
             return -1;
 #endif
@@ -324,7 +321,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
         return -1;
 
 #if CONFIG_D3D11VA
-    if (avctx->pix_fmt == AV_PIX_FMT_D3D11VA_VLD) {
+    if (ff_dxva2_is_d3d11(avctx)) {
         D3D11_VIDEO_DECODER_BUFFER_DESC *dsc11 = bs;
         memset(dsc11, 0, sizeof(*dsc11));
         dsc11->BufferType           = type;
@@ -361,12 +358,10 @@ static int dxva2_hevc_start_frame(AVCodecContext *avctx,
                                   av_unused uint32_t size)
 {
     const HEVCContext *h = avctx->priv_data;
-    AVDXVAContext *ctx = avctx->hwaccel_context;
+    AVDXVAContext *ctx = DXVA_CONTEXT(avctx);
     struct hevc_dxva2_picture_context *ctx_pic = h->ref->hwaccel_picture_private;
 
-    if (DXVA_CONTEXT_DECODER(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_CFG(avctx, ctx) == NULL ||
-        DXVA_CONTEXT_COUNT(avctx, ctx) <= 0)
+    if (!DXVA_CONTEXT_VALID(avctx, ctx))
         return -1;
     av_assert0(ctx_pic);
 
@@ -423,27 +418,52 @@ static int dxva2_hevc_end_frame(AVCodecContext *avctx)
 }
 
 #if CONFIG_HEVC_DXVA2_HWACCEL
-AVHWAccel ff_hevc_dxva2_hwaccel = {
+const AVHWAccel ff_hevc_dxva2_hwaccel = {
     .name           = "hevc_dxva2",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_DXVA2_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
     .decode_slice   = dxva2_hevc_decode_slice,
     .end_frame      = dxva2_hevc_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif
 
 #if CONFIG_HEVC_D3D11VA_HWACCEL
-AVHWAccel ff_hevc_d3d11va_hwaccel = {
+const AVHWAccel ff_hevc_d3d11va_hwaccel = {
     .name           = "hevc_d3d11va",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = AV_CODEC_ID_HEVC,
     .pix_fmt        = AV_PIX_FMT_D3D11VA_VLD,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
     .start_frame    = dxva2_hevc_start_frame,
     .decode_slice   = dxva2_hevc_decode_slice,
     .end_frame      = dxva2_hevc_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
     .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
+};
+#endif
+
+#if CONFIG_HEVC_D3D11VA2_HWACCEL
+const AVHWAccel ff_hevc_d3d11va2_hwaccel = {
+    .name           = "hevc_d3d11va2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = AV_CODEC_ID_HEVC,
+    .pix_fmt        = AV_PIX_FMT_D3D11,
+    .init           = ff_dxva2_decode_init,
+    .uninit         = ff_dxva2_decode_uninit,
+    .start_frame    = dxva2_hevc_start_frame,
+    .decode_slice   = dxva2_hevc_decode_slice,
+    .end_frame      = dxva2_hevc_end_frame,
+    .frame_params   = ff_dxva2_common_frame_params,
+    .frame_priv_data_size = sizeof(struct hevc_dxva2_picture_context),
+    .priv_data_size = sizeof(FFDXVASharedContext),
 };
 #endif

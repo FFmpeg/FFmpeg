@@ -48,19 +48,10 @@ static const AVOption avdct_options[] = {
 {"simplemmx", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEMMX }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"arm", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ARM }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"altivec", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_ALTIVEC }, INT_MIN, INT_MAX, V|E|D, "idct"},
-#if FF_API_ARCH_SH4
-{"sh4", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SH4 }, INT_MIN, INT_MAX, V|E|D, "idct"},
-#endif
 {"simplearm", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARM }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simplearmv5te", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARMV5TE }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simplearmv6", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEARMV6 }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"simpleneon", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLENEON }, INT_MIN, INT_MAX, V|E|D, "idct"},
-#if FF_API_ARCH_ALPHA
-{"simplealpha", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_SIMPLEALPHA }, INT_MIN, INT_MAX, V|E|D, "idct"},
-#endif
-#if FF_API_UNUSED_MEMBERS
-{"ipp", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_IPP }, INT_MIN, INT_MAX, V|E|D, "idct"},
-#endif
 {"xvid", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_XVID }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"xvidmmx", "experimental / for debugging", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_XVID }, INT_MIN, INT_MAX, V|E|D, "idct"},
 {"faani", "floating point AAN IDCT (experimental / for debugging)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_IDCT_FAAN }, INT_MIN, INT_MAX, V|D|E, "idct"},
@@ -132,8 +123,7 @@ int avcodec_dct_init(AVDCT *dsp)
     }
 #endif
 
-    avcodec_close(avctx);
-    av_free(avctx);
+    avcodec_free_context(&avctx);
 
     return 0;
 }

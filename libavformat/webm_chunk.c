@@ -50,9 +50,10 @@ typedef struct WebMChunkContext {
     char *header_filename;
     int chunk_duration;
     int chunk_index;
+    char *http_method;
     uint64_t duration_written;
-    int prev_pts;
-    AVOutputFormat *oformat;
+    int64_t prev_pts;
+    ff_const59 AVOutputFormat *oformat;
     AVFormatContext *avf;
 } WebMChunkContext;
 
@@ -83,7 +84,7 @@ static int chunk_mux_init(AVFormatContext *s)
     return 0;
 }
 
-static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
+static int get_chunk_filename(AVFormatContext *s, int is_header, char filename[MAX_FILENAME_SIZE])
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
@@ -91,14 +92,20 @@ static int get_chunk_filename(AVFormatContext *s, int is_header, char *filename)
         return AVERROR(EINVAL);
     }
     if (is_header) {
+        int len;
         if (!wc->header_filename) {
+            av_log(oc, AV_LOG_ERROR, "No header filename provided\n");
             return AVERROR(EINVAL);
         }
-        av_strlcpy(filename, wc->header_filename, strlen(wc->header_filename) + 1);
+        len = av_strlcpy(filename, wc->header_filename, MAX_FILENAME_SIZE);
+        if (len >= MAX_FILENAME_SIZE) {
+            av_log(oc, AV_LOG_ERROR, "Header filename too long\n");
+            return AVERROR(EINVAL);
+        }
     } else {
         if (av_get_frame_filename(filename, MAX_FILENAME_SIZE,
-                                  s->filename, wc->chunk_index - 1) < 0) {
-            av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->filename);
+                                  s->url, wc->chunk_index - 1) < 0) {
+            av_log(oc, AV_LOG_ERROR, "Invalid chunk filename template '%s'\n", s->url);
             return AVERROR(EINVAL);
         }
     }
@@ -110,23 +117,35 @@ static int webm_chunk_write_header(AVFormatContext *s)
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = NULL;
     int ret;
+    int i;
+    AVDictionary *options = NULL;
+    char oc_filename[MAX_FILENAME_SIZE];
+    char *oc_url;
 
     // DASH Streams can only have either one track per file.
     if (s->nb_streams != 1) { return AVERROR_INVALIDDATA; }
 
     wc->chunk_index = wc->chunk_start_index;
-    wc->oformat = av_guess_format("webm", s->filename, "video/webm");
+    wc->oformat = av_guess_format("webm", s->url, "video/webm");
     if (!wc->oformat)
         return AVERROR_MUXER_NOT_FOUND;
+    wc->prev_pts = AV_NOPTS_VALUE;
 
     ret = chunk_mux_init(s);
     if (ret < 0)
         return ret;
     oc = wc->avf;
-    ret = get_chunk_filename(s, 1, oc->filename);
+    ret = get_chunk_filename(s, 1, oc_filename);
     if (ret < 0)
         return ret;
-    ret = s->io_open(s, &oc->pb, oc->filename, AVIO_FLAG_WRITE, NULL);
+    oc_url = av_strdup(oc_filename);
+    if (!oc_url)
+        return AVERROR(ENOMEM);
+    ff_format_set_url(oc, oc_url);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &oc->pb, oc->url, AVIO_FLAG_WRITE, &options);
+    av_dict_free(&options);
     if (ret < 0)
         return ret;
 
@@ -135,6 +154,10 @@ static int webm_chunk_write_header(AVFormatContext *s)
     if (ret < 0)
         return ret;
     ff_format_io_close(s, &oc->pb);
+    for (i = 0; i < s->nb_streams; i++) {
+        // ms precision is the de-facto standard timescale for mkv files.
+        avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
+    }
     return 0;
 }
 
@@ -151,7 +174,7 @@ static int chunk_start(AVFormatContext *s)
     return 0;
 }
 
-static int chunk_end(AVFormatContext *s)
+static int chunk_end(AVFormatContext *s, int flush)
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
@@ -160,22 +183,28 @@ static int chunk_end(AVFormatContext *s)
     uint8_t *buffer;
     AVIOContext *pb;
     char filename[MAX_FILENAME_SIZE];
+    AVDictionary *options = NULL;
 
-    if (wc->chunk_start_index == wc->chunk_index)
+    if (!oc->pb)
         return 0;
-    // Flush the cluster in WebM muxer.
-    oc->oformat->write_packet(oc, NULL);
+
+    if (flush)
+        // Flush the cluster in WebM muxer.
+        oc->oformat->write_packet(oc, NULL);
     buffer_size = avio_close_dyn_buf(oc->pb, &buffer);
+    oc->pb = NULL;
     ret = get_chunk_filename(s, 0, filename);
     if (ret < 0)
         goto fail;
-    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, NULL);
+    if (wc->http_method)
+        av_dict_set(&options, "method", wc->http_method, 0);
+    ret = s->io_open(s, &pb, filename, AVIO_FLAG_WRITE, &options);
     if (ret < 0)
         goto fail;
     avio_write(pb, buffer, buffer_size);
     ff_format_io_close(s, &pb);
-    oc->pb = NULL;
 fail:
+    av_dict_free(&options);
     av_free(buffer);
     return (ret < 0) ? ret : 0;
 }
@@ -188,34 +217,27 @@ static int webm_chunk_write_packet(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO) {
-        wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
-                                             st->time_base,
-                                             (AVRational) {1, 1000});
+        if (wc->prev_pts != AV_NOPTS_VALUE)
+            wc->duration_written += av_rescale_q(pkt->pts - wc->prev_pts,
+                                                 st->time_base,
+                                                 (AVRational) {1, 1000});
         wc->prev_pts = pkt->pts;
     }
 
     // For video, a new chunk is started only on key frames. For audio, a new
-    // chunk is started based on chunk_duration.
-    if ((st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
+    // chunk is started based on chunk_duration. Also, a new chunk is started
+    // unconditionally if there is no currently open chunk.
+    if (!oc->pb || (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO &&
          (pkt->flags & AV_PKT_FLAG_KEY)) ||
         (st->codecpar->codec_type == AVMEDIA_TYPE_AUDIO &&
-         (pkt->pts == 0 || wc->duration_written >= wc->chunk_duration))) {
+         wc->duration_written >= wc->chunk_duration)) {
         wc->duration_written = 0;
-        if ((ret = chunk_end(s)) < 0 || (ret = chunk_start(s)) < 0) {
-            goto fail;
+        if ((ret = chunk_end(s, 1)) < 0 || (ret = chunk_start(s)) < 0) {
+            return ret;
         }
     }
 
     ret = oc->oformat->write_packet(oc, pkt);
-    if (ret < 0)
-        goto fail;
-
-fail:
-    if (ret < 0) {
-        oc->streams = NULL;
-        oc->nb_streams = 0;
-        avformat_free_context(oc);
-    }
 
     return ret;
 }
@@ -224,12 +246,20 @@ static int webm_chunk_write_trailer(AVFormatContext *s)
 {
     WebMChunkContext *wc = s->priv_data;
     AVFormatContext *oc = wc->avf;
+    int ret;
+
+    if (!oc->pb) {
+        ret = chunk_start(s);
+        if (ret < 0)
+            goto fail;
+    }
     oc->oformat->write_trailer(oc);
-    chunk_end(s);
+    ret = chunk_end(s, 0);
+fail:
     oc->streams = NULL;
     oc->nb_streams = 0;
     avformat_free_context(oc);
-    return 0;
+    return ret;
 }
 
 #define OFFSET(x) offsetof(WebMChunkContext, x)
@@ -237,6 +267,7 @@ static const AVOption options[] = {
     { "chunk_start_index",  "start index of the chunk", OFFSET(chunk_start_index), AV_OPT_TYPE_INT, {.i64 = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
     { "header", "filename of the header where the initialization data will be written", OFFSET(header_filename), AV_OPT_TYPE_STRING, { 0 }, 0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { "audio_chunk_duration", "duration of each chunk in milliseconds", OFFSET(chunk_duration), AV_OPT_TYPE_INT, {.i64 = 5000}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+    { "method", "set the HTTP method", OFFSET(http_method), AV_OPT_TYPE_STRING, {.str = NULL},  0, 0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 

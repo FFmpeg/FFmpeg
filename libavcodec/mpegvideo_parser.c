@@ -1,5 +1,5 @@
 /*
- * MPEG1 / MPEG2 video parser
+ * MPEG-1 / MPEG-2 video parser
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2002-2004 Michael Niedermayer <michaelni@gmx.at>
  *
@@ -61,7 +61,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
             if (bytes_left >= 2) {
                 s->pict_type = (buf[1] >> 3) & 7;
                 if (bytes_left >= 4)
-                vbv_delay = ((buf[1] & 0x07) << 13) | (buf[2] << 5) | (buf[3]  >> 3);
+                    vbv_delay = ((buf[1] & 0x07) << 13) | (buf[2] << 5) | (buf[3] >> 3);
             }
             break;
         case SEQ_START_CODE:
@@ -131,7 +131,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                             }
                         }
 
-                        if (!pc->progressive_sequence) {
+                        if (!pc->progressive_sequence && !progressive_frame) {
                             if (top_field_first)
                                 s->field_order = AV_FIELD_TT;
                             else
@@ -168,8 +168,10 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
     if (pix_fmt != AV_PIX_FMT_NONE) {
         s->format = pix_fmt;
-        s->width  = s->coded_width  = pc->width;
-        s->height = s->coded_height = pc->height;
+        s->width  = pc->width;
+        s->height = pc->height;
+        s->coded_width  = FFALIGN(pc->width,  16);
+        s->coded_height = FFALIGN(pc->height, 16);
     }
 
 #if FF_API_AVCTX_TIMEBASE

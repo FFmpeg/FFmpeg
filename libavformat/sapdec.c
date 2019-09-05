@@ -42,7 +42,7 @@ struct SAPState {
     int eof;
 };
 
-static int sap_probe(AVProbeData *p)
+static int sap_probe(const AVProbeData *p)
 {
     if (av_strstart(p->filename, "sap:", NULL))
         return AVPROBE_SCORE_MAX;
@@ -68,13 +68,13 @@ static int sap_read_header(AVFormatContext *s)
     uint8_t recvbuf[RTP_MAX_PACKET_LENGTH];
     int port;
     int ret, i;
-    AVInputFormat* infmt;
+    ff_const59 AVInputFormat* infmt;
 
     if (!ff_network_init())
         return AVERROR(EIO);
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port,
-                 path, sizeof(path), s->filename);
+                 path, sizeof(path), s->url);
     if (port < 0)
         port = 9875;
 

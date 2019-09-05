@@ -20,11 +20,12 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/internal.h"
 #include "avformat.h"
 #include "internal.h"
 #include "pcm.h"
 
-static int epaf_probe(AVProbeData *p)
+static int epaf_probe(const AVProbeData *p)
 {
     if (((AV_RL32(p->buf) == MKTAG('f','a','p',' ') &&
           AV_RL32(p->buf + 8) == 1) ||
@@ -59,7 +60,7 @@ static int epaf_read_header(AVFormatContext *s)
         channels    = avio_rb32(s->pb);
     }
 
-    if (!channels || !sample_rate)
+    if (channels <= 0 || channels > FF_SANE_NB_CHANNELS || sample_rate <= 0)
         return AVERROR_INVALIDDATA;
 
     st = avformat_new_stream(s, NULL);

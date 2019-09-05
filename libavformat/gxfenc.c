@@ -57,7 +57,7 @@ typedef struct GXFStreamContext {
     int pframes;
     int bframes;
     int p_per_gop;
-    int b_per_i_or_p; ///< number of B frames per I frame or P frame
+    int b_per_i_or_p; ///< number of B-frames per I-frame or P-frame
     int first_gop_closed;
     unsigned order;   ///< interleaving order
 } GXFStreamContext;
@@ -311,7 +311,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     int64_t pos;
     int len;
-    const char *filename = strrchr(s->filename, '/');
+    const char *filename = strrchr(s->url, '/');
 
     pos = avio_tell(pb);
     avio_wb16(pb, 0); /* size */
@@ -320,7 +320,7 @@ static int gxf_write_material_data_section(AVFormatContext *s)
     if (filename)
         filename++;
     else
-        filename = s->filename;
+        filename = s->url;
     len = strlen(filename);
 
     avio_w8(pb, MAT_NAME);
@@ -709,7 +709,7 @@ static int gxf_write_header(AVFormatContext *s)
     int ret;
     AVDictionaryEntry *tcr = av_dict_get(s->metadata, "timecode", NULL, 0);
 
-    if (!pb->seekable) {
+    if (!(pb->seekable & AVIO_SEEKABLE_NORMAL)) {
         av_log(s, AV_LOG_ERROR, "gxf muxer does not support streamed output, patch welcome\n");
         return -1;
     }
@@ -987,10 +987,11 @@ static int gxf_write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int gxf_compare_field_nb(AVFormatContext *s, AVPacket *next, AVPacket *cur)
+static int gxf_compare_field_nb(AVFormatContext *s, const AVPacket *next,
+                                                    const AVPacket *cur)
 {
     GXFContext *gxf = s->priv_data;
-    AVPacket *pkt[2] = { cur, next };
+    const AVPacket *pkt[2] = { cur, next };
     int i, field_nb[2];
     GXFStreamContext *sc[2];
 

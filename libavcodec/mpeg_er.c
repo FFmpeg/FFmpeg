@@ -71,12 +71,15 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     s->mb_skipped = mb_skipped;
     s->mb_x       = mb_x;
     s->mb_y       = mb_y;
+    s->mcsel      = 0;
     memcpy(s->mv, mv, sizeof(*mv));
 
     ff_init_block_index(s);
     ff_update_block_index(s);
 
     s->bdsp.clear_blocks(s->block[0]);
+    if (!s->chroma_y_shift)
+        s->bdsp.clear_blocks(s->block[6]);
 
     s->dest[0] = s->current_picture.f->data[0] +
                  s->mb_y * 16 * s->linesize +
@@ -91,7 +94,7 @@ static void mpeg_er_decode_mb(void *opaque, int ref, int mv_dir, int mv_type,
     if (ref)
         av_log(s->avctx, AV_LOG_DEBUG,
                "Interlaced error concealment is not fully implemented\n");
-    ff_mpv_decode_mb(s, s->block);
+    ff_mpv_reconstruct_mb(s, s->block);
 }
 
 int ff_mpeg_er_init(MpegEncContext *s)
@@ -109,7 +112,7 @@ int ff_mpeg_er_init(MpegEncContext *s)
     er->mb_stride   = s->mb_stride;
     er->b8_stride   = s->b8_stride;
 
-    er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride);
+    er->er_temp_buffer     = av_malloc(s->mb_height * s->mb_stride * (4*sizeof(int) + 1));
     er->error_status_table = av_mallocz(mb_array_size);
     if (!er->er_temp_buffer || !er->error_status_table)
         goto fail;

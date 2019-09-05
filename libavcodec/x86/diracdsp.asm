@@ -22,13 +22,15 @@
 
 SECTION_RODATA
 pw_7: times 8 dw 7
+convert_to_unsigned_10bit: times 4 dd 0x200
+clip_10bit:                times 8 dw 0x3ff
 
 cextern pw_3
 cextern pw_16
 cextern pw_32
 cextern pb_80
 
-section .text
+SECTION .text
 
 %macro UNPACK_ADD 6
     mov%5   %1, %3
@@ -263,3 +265,83 @@ ADD_RECT sse2
 HPEL_FILTER sse2
 ADD_OBMC 32, sse2
 ADD_OBMC 16, sse2
+
+INIT_XMM sse4
+
+; void dequant_subband_32(uint8_t *src, uint8_t *dst, ptrdiff_t stride, const int qf, const int qs, int tot_v, int tot_h)
+cglobal dequant_subband_32, 7, 7, 4, src, dst, stride, qf, qs, tot_v, tot_h
+    movd   m2, qfd
+    movd   m3, qsd
+    SPLATD m2
+    SPLATD m3
+    mov    r4, tot_hq
+    mov    r3, dstq
+
+    .loop_v:
+    mov    tot_hq, r4
+    mov    dstq,   r3
+
+    .loop_h:
+    movu   m0, [srcq]
+
+    pabsd  m1, m0
+    pmulld m1, m2
+    paddd  m1, m3
+    psrld  m1,  2
+    psignd m1, m0
+
+    movu   [dstq], m1
+
+    add    srcq, mmsize
+    add    dstq, mmsize
+    sub    tot_hd, 4
+    jg     .loop_h
+
+    add    r3, strideq
+    dec    tot_vd
+    jg     .loop_v
+
+    RET
+
+INIT_XMM sse4
+; void put_signed_rect_clamped_10(uint8_t *dst, int dst_stride, const uint8_t *src, int src_stride, int width, int height)
+%if ARCH_X86_64
+cglobal put_signed_rect_clamped_10, 6, 8, 5, dst, dst_stride, src, src_stride, w, h, t1, t2
+%else
+cglobal put_signed_rect_clamped_10, 5, 7, 5, dst, dst_stride, src, src_stride, w, t1, t2
+    %define  hd  r5mp
+%endif
+    shl      wd, 2
+    add    srcq, wq
+    neg      wq
+    mov     t2q, dstq
+    mov     t1q, wq
+    pxor     m2, m2
+    mova     m3, [clip_10bit]
+    mova     m4, [convert_to_unsigned_10bit]
+
+    .loop_h:
+    mov    dstq, t2q
+    mov      wq, t1q
+
+    .loop_w:
+    movu     m0, [srcq+wq+0*mmsize]
+    movu     m1, [srcq+wq+1*mmsize]
+
+    paddd    m0, m4
+    paddd    m1, m4
+    packusdw m0, m0, m1
+    CLIPW    m0, m2, m3 ; packusdw saturates so it's fine
+
+    movu     [dstq], m0
+
+    add      dstq, 1*mmsize
+    add      wq,   2*mmsize
+    jl       .loop_w
+
+    add    srcq, src_strideq
+    add     t2q, dst_strideq
+    sub      hd, 1
+    jg       .loop_h
+
+    RET

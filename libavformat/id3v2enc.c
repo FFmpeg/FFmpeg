@@ -84,7 +84,7 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     len = avio_close_dyn_buf(dyn_buf, &pb);
 
     avio_wb32(avioc, tag);
-    /* ID3v2.3 frame size is not synchsafe */
+    /* ID3v2.3 frame size is not sync-safe */
     if (id3->version == 3)
         avio_wb32(avioc, len);
     else
@@ -93,6 +93,59 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
     avio_write(avioc, pb, len);
 
     av_freep(&pb);
+    return len + ID3v2_HEADER_SIZE;
+}
+
+/**
+ * Write a priv frame with owner and data. 'key' is the owner prepended with
+ * ID3v2_PRIV_METADATA_PREFIX. 'data' is provided as a string. Any \xXX
+ * (where 'X' is a valid hex digit) will be unescaped to the byte value.
+ */
+static int id3v2_put_priv(ID3v2EncContext *id3, AVIOContext *avioc, const char *key, const char *data)
+{
+    int len;
+    uint8_t *pb;
+    AVIOContext *dyn_buf;
+
+    if (!av_strstart(key, ID3v2_PRIV_METADATA_PREFIX, &key)) {
+        return 0;
+    }
+
+    if (avio_open_dyn_buf(&dyn_buf) < 0)
+        return AVERROR(ENOMEM);
+
+    // owner + null byte.
+    avio_write(dyn_buf, key, strlen(key) + 1);
+
+    while (*data) {
+        if (av_strstart(data, "\\x", &data)) {
+            if (data[0] && data[1] && av_isxdigit(data[0]) && av_isxdigit(data[1])) {
+                char digits[] = {data[0], data[1], 0};
+                avio_w8(dyn_buf, strtol(digits, NULL, 16));
+                data += 2;
+            } else {
+                ffio_free_dyn_buf(&dyn_buf);
+                av_log(avioc, AV_LOG_ERROR, "Invalid escape '\\x%.2s' in metadata tag '"
+                       ID3v2_PRIV_METADATA_PREFIX "%s'.\n", data, key);
+                return AVERROR(EINVAL);
+            }
+        } else {
+            avio_write(dyn_buf, data++, 1);
+        }
+    }
+
+    len = avio_close_dyn_buf(dyn_buf, &pb);
+
+    avio_wb32(avioc, MKBETAG('P', 'R', 'I', 'V'));
+    if (id3->version == 3)
+        avio_wb32(avioc, len);
+    else
+        id3v2_put_size(avioc, len);
+    avio_wb16(avioc, 0);
+    avio_write(avioc, pb, len);
+
+    av_free(pb);
+
     return len + ID3v2_HEADER_SIZE;
 }
 
@@ -186,6 +239,13 @@ static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
             continue;
         }
 
+        if ((ret = id3v2_put_priv(id3, pb, t->key, t->value)) > 0) {
+            id3->len += ret;
+            continue;
+        } else if (ret < 0) {
+            return ret;
+        }
+
         /* unknown tag, write as TXXX frame */
         if ((ret = id3v2_put_ttag(id3, pb, t->key, t->value, MKBETAG('T', 'X', 'X', 'X'), enc)) < 0)
             return ret;
@@ -193,6 +253,42 @@ static int write_metadata(AVIOContext *pb, AVDictionary **metadata,
     }
 
     return 0;
+}
+
+static int write_ctoc(AVFormatContext *s, ID3v2EncContext *id3, int enc)
+{
+    uint8_t *dyn_buf = NULL;
+    AVIOContext *dyn_bc = NULL;
+    char name[123];
+    int len, ret;
+
+    if (s->nb_chapters == 0)
+        return 0;
+
+    if ((ret = avio_open_dyn_buf(&dyn_bc)) < 0)
+        goto fail;
+
+    id3->len += avio_put_str(dyn_bc, "toc");
+    avio_w8(dyn_bc, 0x03);
+    avio_w8(dyn_bc, s->nb_chapters);
+    for (int i = 0; i < s->nb_chapters; i++) {
+        snprintf(name, 122, "ch%d", i);
+        id3->len += avio_put_str(dyn_bc, name);
+    }
+    len = avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    id3->len += 16 + ID3v2_HEADER_SIZE;
+
+    avio_wb32(s->pb, MKBETAG('C', 'T', 'O', 'C'));
+    avio_wb32(s->pb, len);
+    avio_wb16(s->pb, 0);
+    avio_write(s->pb, dyn_buf, len);
+
+fail:
+    if (dyn_bc && !dyn_buf)
+        avio_close_dyn_buf(dyn_bc, &dyn_buf);
+    av_freep(&dyn_buf);
+
+    return ret;
 }
 
 static int write_chapter(AVFormatContext *s, ID3v2EncContext *id3, int id, int enc)
@@ -244,6 +340,9 @@ int ff_id3v2_write_metadata(AVFormatContext *s, ID3v2EncContext *id3)
 
     ff_standardize_creation_time(s);
     if ((ret = write_metadata(s->pb, &s->metadata, id3, enc)) < 0)
+        return ret;
+
+    if ((ret = write_ctoc(s, id3, enc)) < 0)
         return ret;
 
     for (i = 0; i < s->nb_chapters; i++) {

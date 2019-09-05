@@ -1,3 +1,3 @@
-fc958a32b4fca7b1c40cbdaef2d1416e *./tests/data/lavf/lavf.wav
-88274 ./tests/data/lavf/lavf.wav
-./tests/data/lavf/lavf.wav CRC=0x3a1da17e
+fc958a32b4fca7b1c40cbdaef2d1416e *tests/data/lavf/lavf.wav
+88274 tests/data/lavf/lavf.wav
+tests/data/lavf/lavf.wav CRC=0x3a1da17e

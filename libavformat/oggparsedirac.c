@@ -55,14 +55,14 @@ static int dirac_header(AVFormatContext *s, int idx)
     if (av_image_check_sar(st->codecpar->width, st->codecpar->height, dsh->sample_aspect_ratio) >= 0)
         st->sample_aspect_ratio = dsh->sample_aspect_ratio;
 
-    // dirac in ogg always stores timestamps as though the video were interlaced
+    // Dirac in Ogg always stores timestamps as though the video were interlaced
     avpriv_set_pts_info(st, 64, dsh->framerate.den, 2 * dsh->framerate.num);
 
     av_freep(&dsh);
     return 1;
 }
 
-// various undocument things: granule is signed (only for dirac!)
+// various undocumented things: granule is signed (only for Dirac!)
 static uint64_t dirac_gptopts(AVFormatContext *s, int idx, uint64_t granule,
                               int64_t *dts_out)
 {

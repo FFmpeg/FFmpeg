@@ -138,10 +138,10 @@ static av_cold void h264dsp_init_mmi(H264DSPContext * c, const int bit_depth,
 av_cold void ff_h264dsp_init_mips(H264DSPContext *c, const int bit_depth,
                                   const int chroma_format_idc)
 {
-#if HAVE_MSA
-    h264dsp_init_msa(c, bit_depth, chroma_format_idc);
-#endif  // #if HAVE_MSA
 #if HAVE_MMI
     h264dsp_init_mmi(c, bit_depth, chroma_format_idc);
 #endif /* HAVE_MMI */
+#if HAVE_MSA
+    h264dsp_init_msa(c, bit_depth, chroma_format_idc);
+#endif  // #if HAVE_MSA
 }

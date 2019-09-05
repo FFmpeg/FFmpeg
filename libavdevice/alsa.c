@@ -177,8 +177,8 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     snd_pcm_uframes_t buffer_size, period_size;
     uint64_t layout = ctx->streams[0]->codecpar->channel_layout;
 
-    if (ctx->filename[0] == 0) audio_device = "default";
-    else                       audio_device = ctx->filename;
+    if (ctx->url[0] == 0) audio_device = "default";
+    else                  audio_device = ctx->url;
 
     if (*codec_id == AV_CODEC_ID_NONE)
         *codec_id = DEFAULT_CODEC_ID;
@@ -300,6 +300,10 @@ av_cold int ff_alsa_close(AVFormatContext *s1)
 {
     AlsaData *s = s1->priv_data;
 
+    if (snd_pcm_stream(s->h) == SND_PCM_STREAM_PLAYBACK) {
+        snd_pcm_nonblock(s->h, 0);
+        snd_pcm_drain(s->h);
+    }
     av_freep(&s->reorder_buf);
     if (CONFIG_ALSA_INDEV)
         ff_timefilter_destroy(s->timefilter);

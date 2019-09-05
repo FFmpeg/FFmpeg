@@ -89,6 +89,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 #include "postprocess.h"
 #include "postprocess_internal.h"
 #include "libavutil/avstring.h"
+#include "libavutil/ppc/util_altivec.h"
 
 #include "libavutil/ffversion.h"
 const char postproc_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
@@ -109,10 +110,6 @@ const char *postproc_license(void)
 #define LICENSE_PREFIX "libpostproc license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
-
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
 
 #define GET_MODE_BUFFER_SIZE 500
 #define OPTIONS_ARRAY_SIZE 10
@@ -561,10 +558,10 @@ static av_always_inline void do_a_deblock_C(uint8_t *src, int step,
 #endif
 
 typedef void (*pp_fn)(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-                      const QP_STORE_T QPs[], int QPStride, int isColor, PPContext *c2);
+                      const int8_t QPs[], int QPStride, int isColor, PPContext *c2);
 
 static inline void postProcess(const uint8_t src[], int srcStride, uint8_t dst[], int dstStride, int width, int height,
-        const QP_STORE_T QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
+        const int8_t QPs[], int QPStride, int isColor, pp_mode *vm, pp_context *vc)
 {
     pp_fn pp = postProcess_C;
     PPContext *c= (PPContext *)vc;
@@ -873,9 +870,9 @@ static void reallocBuffers(PPContext *c, int width, int height, int stride, int 
     }
 
     reallocAlign((void **)&c->deintTemp, 2*width+32);
-    reallocAlign((void **)&c->nonBQPTable, qpStride*mbHeight*sizeof(QP_STORE_T));
-    reallocAlign((void **)&c->stdQPTable, qpStride*mbHeight*sizeof(QP_STORE_T));
-    reallocAlign((void **)&c->forcedQPTable, mbWidth*sizeof(QP_STORE_T));
+    reallocAlign((void **)&c->nonBQPTable, qpStride*mbHeight*sizeof(int8_t));
+    reallocAlign((void **)&c->stdQPTable, qpStride*mbHeight*sizeof(int8_t));
+    reallocAlign((void **)&c->forcedQPTable, mbWidth*sizeof(int8_t));
 }
 
 static const char * context_to_name(void * ptr) {
@@ -943,7 +940,7 @@ av_cold void pp_free_context(void *vc){
 void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
                      uint8_t * dst[3], const int dstStride[3],
                      int width, int height,
-                     const QP_STORE_T *QP_store,  int QPStride,
+                     const int8_t *QP_store,  int QPStride,
                      pp_mode *vm,  void *vc, int pict_type)
 {
     int mbWidth = (width+15)>>4;

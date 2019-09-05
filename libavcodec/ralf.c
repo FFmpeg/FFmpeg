@@ -220,7 +220,7 @@ static inline int extend_code(GetBitContext *gb, int val, int range, int bits)
         val -= range;
     }
     if (bits)
-        val = (val << bits) | get_bits(gb, bits);
+        val = ((unsigned)val << bits) | get_bits(gb, bits);
     return val;
 }
 
@@ -286,7 +286,7 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
             add_bits--;
         range    = 10;
         range2   = 21;
-        code_vlc = set->long_codes + code_params - 15;
+        code_vlc = set->long_codes + (code_params - 15);
     } else {
         add_bits = 0;
         range    = 6;
@@ -300,8 +300,8 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
         t = get_vlc2(gb, code_vlc->table, code_vlc->bits, 2);
         code1 = t / range2;
         code2 = t % range2;
-        dst[i]     = extend_code(gb, code1, range, 0) << add_bits;
-        dst[i + 1] = extend_code(gb, code2, range, 0) << add_bits;
+        dst[i]     = extend_code(gb, code1, range, 0) * (1 << add_bits);
+        dst[i + 1] = extend_code(gb, code2, range, 0) * (1 << add_bits);
         if (add_bits) {
             dst[i]     |= get_bits(gb, add_bits);
             dst[i + 1] |= get_bits(gb, add_bits);
@@ -323,7 +323,7 @@ static void apply_lpc(RALFContext *ctx, int ch, int length, int bits)
 
         acc = 0;
         for (j = 0; j < flen; j++)
-            acc += ctx->filter[j] * audio[i - j - 1];
+            acc += (unsigned)ctx->filter[j] * audio[i - j - 1];
         if (acc < 0) {
             acc = (acc + bias - 1) >> ctx->filter_bits;
             acc = FFMAX(acc, min_clip);

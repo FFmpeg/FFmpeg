@@ -22,11 +22,6 @@
 #define SWSCALE_SWSCALE_INTERNAL_H
 
 #include "config.h"
-
-#if HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
-
 #include "version.h"
 
 #include "libavutil/avassert.h"
@@ -36,6 +31,7 @@
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/ppc/util_altivec.h"
 
 #define STR(s) AV_TOSTRING(s) // AV_STRINGIFY is too long
 
@@ -91,9 +87,9 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t *src[],
  * Write one line of horizontally scaled data to planar output
  * without any additional vertical scaling (or point-scaling).
  *
- * @param src     scaled source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For >8bit
+ * @param src     scaled source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For >8-bit
  *                output, this is in uint16_t
  * @param dstW    width of destination in pixels
  * @param dither  ordered dither array of type int16_t and size 8
@@ -106,11 +102,11 @@ typedef void (*yuv2planar1_fn)(const int16_t *src, uint8_t *dest, int dstW,
  * Write one line of horizontally scaled data to planar output
  * with multi-point vertical scaling between input pixels.
  *
- * @param filter        vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param src           scaled luma (Y) or alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param filter        vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param src           scaled luma (Y) or alpha (A) source data, 15 bits for
+ *                      8-10-bit output, 19 bits for 16-bit output (in int32_t)
  * @param filterSize    number of vertical input lines to scale
- * @param dest          pointer to output plane. For >8bit
+ * @param dest          pointer to output plane. For >8-bit
  *                      output, this is in uint16_t
  * @param dstW          width of destination pixels
  * @param offset        Dither offset
@@ -124,13 +120,13 @@ typedef void (*yuv2planarX_fn)(const int16_t *filter, int filterSize,
  * with multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit
+ *                      output, 19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit
+ *                      output, 19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param dest          pointer to the output plane. For >8bit
+ * @param dest          pointer to the output plane. For >8-bit
  *                      output, this is in uint16_t
  * @param dstW          width of chroma planes
  */
@@ -147,15 +143,15 @@ typedef void (*yuv2interleavedX_fn)(struct SwsContext *c,
  * that this function may do chroma scaling, see the "uvalpha" argument.
  *
  * @param c       SWS scaling context
- * @param lumSrc  scaled luma (Y) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrUSrc scaled chroma (U) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrVSrc scaled chroma (V) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param alpSrc  scaled alpha (A) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For 16bit output, this is
+ * @param lumSrc  scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrUSrc scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param alpSrc  scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For 16-bit output, this is
  *                uint16_t
  * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
  *                to write into dest[]
@@ -180,15 +176,15 @@ typedef void (*yuv2packed1_fn)(struct SwsContext *c, const int16_t *lumSrc,
  * output by doing bilinear scaling between two input lines.
  *
  * @param c       SWS scaling context
- * @param lumSrc  scaled luma (Y) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrUSrc scaled chroma (U) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrVSrc scaled chroma (V) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param alpSrc  scaled alpha (A) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the output plane. For 16bit output, this is
+ * @param lumSrc  scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrUSrc scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param alpSrc  scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                19 bits for 16-bit output (in int32_t)
+ * @param dest    pointer to the output plane. For 16-bit output, this is
  *                uint16_t
  * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
  *                to write into dest[]
@@ -214,19 +210,19 @@ typedef void (*yuv2packed2_fn)(struct SwsContext *c, const int16_t *lumSrc[2],
  * output by doing multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param lumSrc        scaled luma (Y) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param lumFilterSize number of vertical luma/alpha input lines to scale
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param alpSrc        scaled alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param dest          pointer to the output plane. For 16bit output, this is
+ * @param alpSrc        scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param dest          pointer to the output plane. For 16-bit output, this is
  *                      uint16_t
  * @param dstW          width of lumSrc and alpSrc in pixels, number of pixels
  *                      to write into dest[]
@@ -248,19 +244,19 @@ typedef void (*yuv2packedX_fn)(struct SwsContext *c, const int16_t *lumFilter,
  * output by doing multi-point vertical scaling between input pixels.
  *
  * @param c             SWS scaling context
- * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
- * @param lumSrc        scaled luma (Y) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12 bits [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param lumFilterSize number of vertical luma/alpha input lines to scale
- * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
- * @param chrUSrc       scaled chroma (U) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param chrVSrc       scaled chroma (V) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
+ * @param chrFilter     vertical chroma scaling coefficients, 12 bits [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param chrVSrc       scaled chroma (V) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
  * @param chrFilterSize number of vertical chroma input lines to scale
- * @param alpSrc        scaled alpha (A) source data, 15bit for 8-10bit output,
- *                      19-bit for 16bit output (in int32_t)
- * @param dest          pointer to the output planes. For 16bit output, this is
+ * @param alpSrc        scaled alpha (A) source data, 15 bits for 8-10-bit output,
+ *                      19 bits for 16-bit output (in int32_t)
+ * @param dest          pointer to the output planes. For 16-bit output, this is
  *                      uint16_t
  * @param dstW          width of lumSrc and alpSrc in pixels, number of pixels
  *                      to write into dest[]
@@ -339,6 +335,8 @@ typedef struct SwsContext {
 
     uint32_t pal_yuv[256];
     uint32_t pal_rgb[256];
+
+    float uint2float_lut[256];
 
     /**
      * @name Scaled horizontal lines ring buffer.
@@ -554,7 +552,7 @@ typedef struct SwsContext {
      * Scale one horizontal line of input data using a bilinear filter
      * to produce one line of output data. Compared to SwsContext->hScale(),
      * please take note of the following caveats when using these:
-     * - Scaling is done using only 7bit instead of 14bit coefficients.
+     * - Scaling is done using only 7 bits instead of 14-bit coefficients.
      * - You can use no more than 5 input pixels to produce 4 output
      *   pixels. Therefore, this filter should not be used for downscaling
      *   by more than ~20% in width (because that equals more than 5/4th
@@ -585,15 +583,15 @@ typedef struct SwsContext {
      * @param dst        pointer to destination buffer for horizontally scaled
      *                   data. If the number of bits per component of one
      *                   destination pixel (SwsContext->dstBpc) is <= 10, data
-     *                   will be 15bpc in 16bits (int16_t) width. Else (i.e.
+     *                   will be 15 bpc in 16 bits (int16_t) width. Else (i.e.
      *                   SwsContext->dstBpc == 16), data will be 19bpc in
-     *                   32bits (int32_t) width.
+     *                   32 bits (int32_t) width.
      * @param dstW       width of destination image
      * @param src        pointer to source data to be scaled. If the number of
      *                   bits per component of a source pixel (SwsContext->srcBpc)
-     *                   is 8, this is 8bpc in 8bits (uint8_t) width. Else
+     *                   is 8, this is 8bpc in 8 bits (uint8_t) width. Else
      *                   (i.e. SwsContext->dstBpc > 8), this is native depth
-     *                   in 16bits (uint16_t) width. In other words, for 9-bit
+     *                   in 16 bits (uint16_t) width. In other words, for 9-bit
      *                   YUV input, this is 9bpc, for 10-bit YUV input, this is
      *                   10bpc, and for 16-bit RGB or YUV, this is 16bpc.
      * @param filter     filter coefficients to be used per output pixel for
@@ -652,14 +650,12 @@ static av_always_inline int is16BPS(enum AVPixelFormat pix_fmt)
     return desc->comp[0].depth == 16;
 }
 
-static av_always_inline int is9_OR_10BPS(enum AVPixelFormat pix_fmt)
+static av_always_inline int isNBPS(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
     return desc->comp[0].depth >= 9 && desc->comp[0].depth <= 14;
 }
-
-#define isNBPS(x) is9_OR_10BPS(x)
 
 static av_always_inline int isBE(enum AVPixelFormat pix_fmt)
 {
@@ -682,6 +678,17 @@ static av_always_inline int isPlanarYUV(enum AVPixelFormat pix_fmt)
     return ((desc->flags & AV_PIX_FMT_FLAG_PLANAR) && isYUV(pix_fmt));
 }
 
+/*
+ * Identity semi-planar YUV formats. Specifically, those are YUV formats
+ * where the second and third components (U & V) are on the same plane.
+ */
+static av_always_inline int isSemiPlanarYUV(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (isPlanarYUV(pix_fmt) && desc->comp[1].plane == desc->comp[2].plane);
+}
+
 static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -689,104 +696,82 @@ static av_always_inline int isRGB(enum AVPixelFormat pix_fmt)
     return (desc->flags & AV_PIX_FMT_FLAG_RGB);
 }
 
-#if 0 // FIXME
-#define isGray(x) \
-    (!(av_pix_fmt_desc_get(x)->flags & AV_PIX_FMT_FLAG_PAL) && \
-     av_pix_fmt_desc_get(x)->nb_components <= 2)
-#else
-#define isGray(x)                      \
-    ((x) == AV_PIX_FMT_GRAY8       ||  \
-     (x) == AV_PIX_FMT_YA8         ||  \
-     (x) == AV_PIX_FMT_GRAY16BE    ||  \
-     (x) == AV_PIX_FMT_GRAY16LE    ||  \
-     (x) == AV_PIX_FMT_YA16BE      ||  \
-     (x) == AV_PIX_FMT_YA16LE)
-#endif
+static av_always_inline int isGray(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !(desc->flags & AV_PIX_FMT_FLAG_PAL) &&
+           !(desc->flags & AV_PIX_FMT_FLAG_HWACCEL) &&
+           desc->nb_components <= 2 &&
+           pix_fmt != AV_PIX_FMT_MONOBLACK &&
+           pix_fmt != AV_PIX_FMT_MONOWHITE;
+}
 
-#define isRGBinInt(x) \
-    (           \
-     (x) == AV_PIX_FMT_RGB48BE     ||  \
-     (x) == AV_PIX_FMT_RGB48LE     ||  \
-     (x) == AV_PIX_FMT_RGB32       ||  \
-     (x) == AV_PIX_FMT_RGB32_1     ||  \
-     (x) == AV_PIX_FMT_RGB24       ||  \
-     (x) == AV_PIX_FMT_RGB565BE    ||  \
-     (x) == AV_PIX_FMT_RGB565LE    ||  \
-     (x) == AV_PIX_FMT_RGB555BE    ||  \
-     (x) == AV_PIX_FMT_RGB555LE    ||  \
-     (x) == AV_PIX_FMT_RGB444BE    ||  \
-     (x) == AV_PIX_FMT_RGB444LE    ||  \
-     (x) == AV_PIX_FMT_RGB8        ||  \
-     (x) == AV_PIX_FMT_RGB4        ||  \
-     (x) == AV_PIX_FMT_RGB4_BYTE   ||  \
-     (x) == AV_PIX_FMT_RGBA64BE    ||  \
-     (x) == AV_PIX_FMT_RGBA64LE    ||  \
-     (x) == AV_PIX_FMT_MONOBLACK   ||  \
-     (x) == AV_PIX_FMT_MONOWHITE   \
-    )
-#define isBGRinInt(x) \
-    (           \
-     (x) == AV_PIX_FMT_BGR48BE     ||  \
-     (x) == AV_PIX_FMT_BGR48LE     ||  \
-     (x) == AV_PIX_FMT_BGR32       ||  \
-     (x) == AV_PIX_FMT_BGR32_1     ||  \
-     (x) == AV_PIX_FMT_BGR24       ||  \
-     (x) == AV_PIX_FMT_BGR565BE    ||  \
-     (x) == AV_PIX_FMT_BGR565LE    ||  \
-     (x) == AV_PIX_FMT_BGR555BE    ||  \
-     (x) == AV_PIX_FMT_BGR555LE    ||  \
-     (x) == AV_PIX_FMT_BGR444BE    ||  \
-     (x) == AV_PIX_FMT_BGR444LE    ||  \
-     (x) == AV_PIX_FMT_BGR8        ||  \
-     (x) == AV_PIX_FMT_BGR4        ||  \
-     (x) == AV_PIX_FMT_BGR4_BYTE   ||  \
-     (x) == AV_PIX_FMT_BGRA64BE    ||  \
-     (x) == AV_PIX_FMT_BGRA64LE    ||  \
-     (x) == AV_PIX_FMT_MONOBLACK   ||  \
-     (x) == AV_PIX_FMT_MONOWHITE   \
-    )
+static av_always_inline int isRGBinInt(enum AVPixelFormat pix_fmt)
+{
+    return pix_fmt == AV_PIX_FMT_RGB48BE     ||
+           pix_fmt == AV_PIX_FMT_RGB48LE     ||
+           pix_fmt == AV_PIX_FMT_RGB32       ||
+           pix_fmt == AV_PIX_FMT_RGB32_1     ||
+           pix_fmt == AV_PIX_FMT_RGB24       ||
+           pix_fmt == AV_PIX_FMT_RGB565BE    ||
+           pix_fmt == AV_PIX_FMT_RGB565LE    ||
+           pix_fmt == AV_PIX_FMT_RGB555BE    ||
+           pix_fmt == AV_PIX_FMT_RGB555LE    ||
+           pix_fmt == AV_PIX_FMT_RGB444BE    ||
+           pix_fmt == AV_PIX_FMT_RGB444LE    ||
+           pix_fmt == AV_PIX_FMT_RGB8        ||
+           pix_fmt == AV_PIX_FMT_RGB4        ||
+           pix_fmt == AV_PIX_FMT_RGB4_BYTE   ||
+           pix_fmt == AV_PIX_FMT_RGBA64BE    ||
+           pix_fmt == AV_PIX_FMT_RGBA64LE    ||
+           pix_fmt == AV_PIX_FMT_MONOBLACK   ||
+           pix_fmt == AV_PIX_FMT_MONOWHITE;
+}
 
-#define isRGBinBytes(x) (           \
-           (x) == AV_PIX_FMT_RGB48BE     \
-        || (x) == AV_PIX_FMT_RGB48LE     \
-        || (x) == AV_PIX_FMT_RGBA64BE    \
-        || (x) == AV_PIX_FMT_RGBA64LE    \
-        || (x) == AV_PIX_FMT_RGBA        \
-        || (x) == AV_PIX_FMT_ARGB        \
-        || (x) == AV_PIX_FMT_RGB24       \
-    )
-#define isBGRinBytes(x) (           \
-           (x) == AV_PIX_FMT_BGR48BE     \
-        || (x) == AV_PIX_FMT_BGR48LE     \
-        || (x) == AV_PIX_FMT_BGRA64BE    \
-        || (x) == AV_PIX_FMT_BGRA64LE    \
-        || (x) == AV_PIX_FMT_BGRA        \
-        || (x) == AV_PIX_FMT_ABGR        \
-        || (x) == AV_PIX_FMT_BGR24       \
-    )
+static av_always_inline int isBGRinInt(enum AVPixelFormat pix_fmt)
+{
+    return pix_fmt == AV_PIX_FMT_BGR48BE     ||
+           pix_fmt == AV_PIX_FMT_BGR48LE     ||
+           pix_fmt == AV_PIX_FMT_BGR32       ||
+           pix_fmt == AV_PIX_FMT_BGR32_1     ||
+           pix_fmt == AV_PIX_FMT_BGR24       ||
+           pix_fmt == AV_PIX_FMT_BGR565BE    ||
+           pix_fmt == AV_PIX_FMT_BGR565LE    ||
+           pix_fmt == AV_PIX_FMT_BGR555BE    ||
+           pix_fmt == AV_PIX_FMT_BGR555LE    ||
+           pix_fmt == AV_PIX_FMT_BGR444BE    ||
+           pix_fmt == AV_PIX_FMT_BGR444LE    ||
+           pix_fmt == AV_PIX_FMT_BGR8        ||
+           pix_fmt == AV_PIX_FMT_BGR4        ||
+           pix_fmt == AV_PIX_FMT_BGR4_BYTE   ||
+           pix_fmt == AV_PIX_FMT_BGRA64BE    ||
+           pix_fmt == AV_PIX_FMT_BGRA64LE    ||
+           pix_fmt == AV_PIX_FMT_MONOBLACK   ||
+           pix_fmt == AV_PIX_FMT_MONOWHITE;
+}
 
-#define isBayer(x) ( \
-           (x)==AV_PIX_FMT_BAYER_BGGR8    \
-        || (x)==AV_PIX_FMT_BAYER_BGGR16LE \
-        || (x)==AV_PIX_FMT_BAYER_BGGR16BE \
-        || (x)==AV_PIX_FMT_BAYER_RGGB8    \
-        || (x)==AV_PIX_FMT_BAYER_RGGB16LE \
-        || (x)==AV_PIX_FMT_BAYER_RGGB16BE \
-        || (x)==AV_PIX_FMT_BAYER_GBRG8    \
-        || (x)==AV_PIX_FMT_BAYER_GBRG16LE \
-        || (x)==AV_PIX_FMT_BAYER_GBRG16BE \
-        || (x)==AV_PIX_FMT_BAYER_GRBG8    \
-        || (x)==AV_PIX_FMT_BAYER_GRBG16LE \
-        || (x)==AV_PIX_FMT_BAYER_GRBG16BE \
-    )
+static av_always_inline int isBayer(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return !!(desc->flags & AV_PIX_FMT_FLAG_BAYER);
+}
 
-#define isAnyRGB(x) \
-    (           \
-          isBayer(x)          ||    \
-          isRGBinInt(x)       ||    \
-          isBGRinInt(x)       ||    \
-          isRGB(x)      \
-    )
+static av_always_inline int isAnyRGB(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
+            pix_fmt == AV_PIX_FMT_MONOBLACK || pix_fmt == AV_PIX_FMT_MONOWHITE;
+}
+
+static av_always_inline int isFloat(enum AVPixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
+    av_assert0(desc);
+    return desc->flags & AV_PIX_FMT_FLAG_FLOAT;
+}
 
 static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
 {
@@ -797,30 +782,15 @@ static av_always_inline int isALPHA(enum AVPixelFormat pix_fmt)
     return desc->flags & AV_PIX_FMT_FLAG_ALPHA;
 }
 
-#if 1
-#define isPacked(x)         (       \
-           (x)==AV_PIX_FMT_PAL8        \
-        || (x)==AV_PIX_FMT_YUYV422     \
-        || (x)==AV_PIX_FMT_YVYU422     \
-        || (x)==AV_PIX_FMT_UYVY422     \
-        || (x)==AV_PIX_FMT_YA8       \
-        || (x)==AV_PIX_FMT_YA16LE      \
-        || (x)==AV_PIX_FMT_YA16BE      \
-        || (x)==AV_PIX_FMT_AYUV64LE    \
-        || (x)==AV_PIX_FMT_AYUV64BE    \
-        ||  isRGBinInt(x)           \
-        ||  isBGRinInt(x)           \
-    )
-#else
 static av_always_inline int isPacked(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
     av_assert0(desc);
-    return ((desc->nb_components >= 2 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) ||
-            pix_fmt == AV_PIX_FMT_PAL8);
+    return (desc->nb_components >= 2 && !(desc->flags & AV_PIX_FMT_FLAG_PLANAR)) ||
+            pix_fmt == AV_PIX_FMT_PAL8 ||
+            pix_fmt == AV_PIX_FMT_MONOBLACK || pix_fmt == AV_PIX_FMT_MONOWHITE;
 }
 
-#endif
 static av_always_inline int isPlanar(enum AVPixelFormat pix_fmt)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
@@ -845,9 +815,17 @@ static av_always_inline int isPlanarRGB(enum AVPixelFormat pix_fmt)
 
 static av_always_inline int usePal(enum AVPixelFormat pix_fmt)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(pix_fmt);
-    av_assert0(desc);
-    return (desc->flags & AV_PIX_FMT_FLAG_PAL) || (desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL);
+    switch (pix_fmt) {
+    case AV_PIX_FMT_PAL8:
+    case AV_PIX_FMT_BGR4_BYTE:
+    case AV_PIX_FMT_BGR8:
+    case AV_PIX_FMT_GRAY8:
+    case AV_PIX_FMT_RGB4_BYTE:
+    case AV_PIX_FMT_RGB8:
+        return 1;
+    default:
+        return 0;
+    }
 }
 
 extern const uint64_t ff_dither4[2];
@@ -890,6 +868,7 @@ void ff_sws_init_output_funcs(SwsContext *c,
                               yuv2packedX_fn *yuv2packedX,
                               yuv2anyX_fn *yuv2anyX);
 void ff_sws_init_swscale_ppc(SwsContext *c);
+void ff_sws_init_swscale_vsx(SwsContext *c);
 void ff_sws_init_swscale_x86(SwsContext *c);
 void ff_sws_init_swscale_aarch64(SwsContext *c);
 void ff_sws_init_swscale_arm(SwsContext *c);

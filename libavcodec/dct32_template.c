@@ -21,17 +21,28 @@
 
 #include "dct32.h"
 #include "mathops.h"
+#include "libavutil/internal.h"
+
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
+#endif
 
 #if DCT32_FLOAT
 #   define dct32 ff_dct32_float
 #   define FIXHR(x)       ((float)(x))
 #   define MULH3(x, y, s) ((s)*(y)*(x))
 #   define INTFLOAT float
+#   define SUINTFLOAT float
 #else
 #   define dct32 ff_dct32_fixed
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #   define MULH3(x, y, s) MULH((s)*(x), y)
 #   define INTFLOAT int
+#   define SUINTFLOAT SUINT
 #endif
 
 
@@ -112,11 +123,12 @@
 #define ADD(a, b) val##a += val##b
 
 /* DCT32 without 1/sqrt(2) coef zero scaling. */
-void dct32(INTFLOAT *out, const INTFLOAT *tab)
+void dct32(INTFLOAT *out, const INTFLOAT *tab_arg)
 {
-    INTFLOAT tmp0, tmp1;
+    const SUINTFLOAT *tab = tab_arg;
+    SUINTFLOAT tmp0, tmp1;
 
-    INTFLOAT val0 , val1 , val2 , val3 , val4 , val5 , val6 , val7 ,
+    SUINTFLOAT val0 , val1 , val2 , val3 , val4 , val5 , val6 , val7 ,
              val8 , val9 , val10, val11, val12, val13, val14, val15,
              val16, val17, val18, val19, val20, val21, val22, val23,
              val24, val25, val26, val27, val28, val29, val30, val31;

@@ -33,7 +33,7 @@ typedef struct {
     FFDemuxSubtitlesQueue q;
 } PJSContext;
 
-static int pjs_probe(AVProbeData *p)
+static int pjs_probe(const AVProbeData *p)
 {
     char c;
     int64_t start, end;

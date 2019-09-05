@@ -107,7 +107,7 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
                     if (src < source || src >= source_end)
                         return AVERROR_INVALIDDATA;
                     shift += 2;
-                    val |= *src << shift;
+                    val |= (unsigned)*src << shift;
                     if (*src & 0xC)
                         break;
                 }
@@ -193,7 +193,6 @@ static int decode_bmv_frame(const uint8_t *source, int src_len, uint8_t *frame, 
         if (dst == dst_end)
             return 0;
     }
-    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
@@ -295,4 +294,5 @@ AVCodec ff_bmv_video_decoder = {
     .init           = decode_init,
     .decode         = decode_frame,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_THREADSAFE,
 };

@@ -26,7 +26,10 @@
 #include <jni.h>
 
 /*
- * Attach a JNI environment to the current thread.
+ * Attach permanently a JNI environment to the current thread and retrieve it.
+ *
+ * If successfully attached, the JNI environment will automatically be detached
+ * at thread destruction.
  *
  * @param attached pointer to an integer that will be set to 1 if the
  * environment has been attached to the current thread or 0 if it is
@@ -34,15 +37,7 @@
  * @param log_ctx context used for logging, can be NULL
  * @return the JNI environment on success, NULL otherwise
  */
-JNIEnv *ff_jni_attach_env(int *attached, void *log_ctx);
-
-/*
- * Detach the JNI environment from the current thread.
- *
- * @param log_ctx context used for logging, can be NULL
- * @return 0 on success, < 0 otherwise
- */
-int ff_jni_detach_env(void *log_ctx);
+JNIEnv *ff_jni_get_env(void *log_ctx);
 
 /*
  * Convert a jstring to its utf characters equivalent.

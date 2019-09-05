@@ -30,6 +30,9 @@
 #    define NDEBUG
 #endif
 
+// This can be enabled to allow detection of additional integer overflows with ubsan
+//#define CHECKED
+
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -40,6 +43,7 @@
 #include "cpu.h"
 #include "dict.h"
 #include "macros.h"
+#include "mem.h"
 #include "pixfmt.h"
 #include "version.h"
 
@@ -48,7 +52,7 @@
 #endif
 
 #ifndef emms_c
-#   define emms_c() while(0)
+#   define emms_c() do {} while(0)
 #endif
 
 #ifndef attribute_align_arg
@@ -59,10 +63,10 @@
 #endif
 #endif
 
-#if defined(_MSC_VER) && CONFIG_SHARED
-#    define av_export __declspec(dllimport)
+#if defined(_WIN32) && CONFIG_SHARED && !defined(BUILDING_avutil)
+#    define av_export_avutil __declspec(dllimport)
 #else
-#    define av_export
+#    define av_export_avutil
 #endif
 
 #if HAVE_PRAGMA_DEPRECATED
@@ -73,8 +77,8 @@
 #        define FF_DISABLE_DEPRECATION_WARNINGS __pragma(warning(push)) __pragma(warning(disable:4996))
 #        define FF_ENABLE_DEPRECATION_WARNINGS  __pragma(warning(pop))
 #    else
-#        define FF_DISABLE_DEPRECATION_WARNINGS _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
-#        define FF_ENABLE_DEPRECATION_WARNINGS  _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")
+#        define FF_DISABLE_DEPRECATION_WARNINGS _Pragma("GCC diagnostic push") _Pragma("GCC diagnostic ignored \"-Wdeprecated-declarations\"")
+#        define FF_ENABLE_DEPRECATION_WARNINGS  _Pragma("GCC diagnostic pop")
 #    endif
 #else
 #    define FF_DISABLE_DEPRECATION_WARNINGS
@@ -107,24 +111,30 @@
     DECLARE_ALIGNED(a, t, la_##v) s o;                  \
     t (*v) o = la_##v
 
-#define LOCAL_ALIGNED(a, t, v, ...) E1(LOCAL_ALIGNED_A(a, t, v, __VA_ARGS__,,))
+#define LOCAL_ALIGNED(a, t, v, ...) LOCAL_ALIGNED_##a(t, v, __VA_ARGS__)
 
-#if HAVE_LOCAL_ALIGNED_8
+#if HAVE_LOCAL_ALIGNED
+#   define LOCAL_ALIGNED_4(t, v, ...) E1(LOCAL_ALIGNED_D(4, t, v, __VA_ARGS__,,))
+#else
+#   define LOCAL_ALIGNED_4(t, v, ...) E1(LOCAL_ALIGNED_A(4, t, v, __VA_ARGS__,,))
+#endif
+
+#if HAVE_LOCAL_ALIGNED
 #   define LOCAL_ALIGNED_8(t, v, ...) E1(LOCAL_ALIGNED_D(8, t, v, __VA_ARGS__,,))
 #else
-#   define LOCAL_ALIGNED_8(t, v, ...) LOCAL_ALIGNED(8, t, v, __VA_ARGS__)
+#   define LOCAL_ALIGNED_8(t, v, ...) E1(LOCAL_ALIGNED_A(8, t, v, __VA_ARGS__,,))
 #endif
 
-#if HAVE_LOCAL_ALIGNED_16
+#if HAVE_LOCAL_ALIGNED
 #   define LOCAL_ALIGNED_16(t, v, ...) E1(LOCAL_ALIGNED_D(16, t, v, __VA_ARGS__,,))
 #else
-#   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
+#   define LOCAL_ALIGNED_16(t, v, ...) E1(LOCAL_ALIGNED_A(16, t, v, __VA_ARGS__,,))
 #endif
 
-#if HAVE_LOCAL_ALIGNED_32
+#if HAVE_LOCAL_ALIGNED
 #   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_D(32, t, v, __VA_ARGS__,,))
 #else
-#   define LOCAL_ALIGNED_32(t, v, ...) LOCAL_ALIGNED(32, t, v, __VA_ARGS__)
+#   define LOCAL_ALIGNED_32(t, v, ...) E1(LOCAL_ALIGNED_A(32, t, v, __VA_ARGS__,,))
 #endif
 
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
@@ -258,6 +268,16 @@ void avpriv_request_sample(void *avc,
 #   define ff_dlog(ctx, ...) do { if (0) av_log(ctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
 #endif
 
+// For debuging we use signed operations so overflows can be detected (by ubsan)
+// For production we use unsigned so there are no undefined operations
+#ifdef CHECKED
+#define SUINT   int
+#define SUINT32 int32_t
+#else
+#define SUINT   unsigned
+#define SUINT32 uint32_t
+#endif
+
 /**
  * Clip and convert a double value into the long long amin-amax range.
  * This function is needed because conversion of floating point to integers when
@@ -330,6 +350,23 @@ static av_always_inline av_const int avpriv_mirror(int x, int w)
 
 void ff_check_pixfmt_descriptors(void);
 
-extern const uint8_t ff_reverse[256];
+/**
+ * Set a dictionary value to an ISO-8601 compliant timestamp string.
+ *
+ * @param s AVFormatContext
+ * @param key metadata key
+ * @param timestamp unix timestamp in microseconds
+ * @return <0 on error
+ */
+int avpriv_dict_set_timestamp(AVDictionary **dict, const char *key, int64_t timestamp);
+
+// Helper macro for AV_PIX_FMT_FLAG_PSEUDOPAL deprecation. Code inside FFmpeg
+// should always use FF_PSEUDOPAL. Once the public API flag gets removed, all
+// code using it is dead code.
+#if FF_API_PSEUDOPAL
+#define FF_PSEUDOPAL AV_PIX_FMT_FLAG_PSEUDOPAL
+#else
+#define FF_PSEUDOPAL 0
+#endif
 
 #endif /* AVUTIL_INTERNAL_H */

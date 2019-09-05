@@ -1,11 +1,8 @@
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSMPEG4V1) += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -idct simple -i $(TARGET_SAMPLES)/msmpeg4v1/mpg4.avi -an
 
-FATE_MSS1 += fate-mss1-pal
-fate-mss1-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv
-
-FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += $(FATE_MSS1)
-fate-mss1: $(FATE_MSS1)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MSS1) += fate-mss1-pal
+fate-mss1-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss1/screen_codec.wmv -an
 
 FATE_MSS2 += fate-mss2-pal
 fate-mss2-pal: CMD = framecrc -i $(TARGET_SAMPLES)/mss2/rlepal.wmv
@@ -40,15 +37,18 @@ fate-msvideo1-16bit: CMD = framecrc -i $(TARGET_SAMPLES)/cram/clock-cram16.avi -
 FATE_MICROSOFT-$(call DEMDEC, AVI, MSVIDEO1) += $(FATE_MSVIDEO1)
 fate-msvideo1: $(FATE_MSVIDEO1)
 
-FATE_WMV8_DRM += fate-wmv8-drm
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, MTS2) += fate-mts2
+fate-mts2: CMD = framecrc -i $(TARGET_SAMPLES)/mts2/ScreenCapture.xesc
+
+FATE_WMV3_DRM += fate-wmv3-drm-dec
 # discard last packet to avoid fails due to overread of VC-1 decoder
-fate-wmv8-drm: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -frames:v 129
+fate-wmv3-drm-dec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -an -frames:v 129
 
-FATE_WMV8_DRM += fate-wmv8-drm-nodec
-fate-wmv8-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -acodec copy -vcodec copy
+FATE_WMV3_DRM += fate-wmv3-drm-nodec
+fate-wmv3-drm-nodec: CMD = framecrc -cryptokey 137381538c84c068111902a59c5cf6c340247c39 -i $(TARGET_SAMPLES)/wmv8/wmv_drm.wmv -c:a copy -c:v copy
 
-FATE_MICROSOFT-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV8_DRM)
-fate-wmv8_drm: $(FATE_WMV8_DRM)
+FATE_SAMPLES_AVCONV-$(call DEMDEC, ASF, WMV3) += $(FATE_WMV3_DRM)
+fate-wmv3-drm: $(FATE_WMV3_DRM)
 
 FATE_MICROSOFT-$(call DEMDEC, ASF, WMV2) += fate-wmv8-x8intra
 fate-wmv8-x8intra: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/wmv8/wmv8_x8intra.wmv -an
@@ -70,6 +70,12 @@ fate-vc1_sa20021: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SA20021.vc1
 
 FATE_VC1-$(CONFIG_VC1_DEMUXER) += fate-vc1_ilaced_twomv
 fate-vc1_ilaced_twomv: CMD = framecrc -flags +bitexact -i $(TARGET_SAMPLES)/vc1/ilaced_twomv.vc1
+
+FATE_VC1-$(CONFIG_VC1T_DEMUXER) += fate-vc1test_smm0005
+fate-vc1test_smm0005: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SMM0005.rcv
+
+FATE_VC1-$(CONFIG_VC1T_DEMUXER) += fate-vc1test_smm0015
+fate-vc1test_smm0015: CMD = framecrc -i $(TARGET_SAMPLES)/vc1/SMM0015.rcv
 
 FATE_VC1-$(CONFIG_MOV_DEMUXER) += fate-vc1-ism
 fate-vc1-ism: CMD = framecrc -i $(TARGET_SAMPLES)/isom/vc1-wmapro.ism -an

@@ -33,18 +33,19 @@
 #include <libavutil/opt.h>
 #include <unistd.h>
 
-void process_client(AVIOContext *client, const char *in_uri)
+static void process_client(AVIOContext *client, const char *in_uri)
 {
     AVIOContext *input = NULL;
     uint8_t buf[1024];
     int ret, n, reply_code;
-    char *resource = NULL;
+    uint8_t *resource = NULL;
     while ((ret = avio_handshake(client)) > 0) {
         av_opt_get(client, "resource", AV_OPT_SEARCH_CHILDREN, &resource);
         // check for strlen(resource) is necessary, because av_opt_get()
         // may return empty string.
         if (resource && strlen(resource))
             break;
+        av_freep(&resource);
     }
     if (ret < 0)
         goto end;
@@ -93,15 +94,16 @@ end:
     avio_close(client);
     fprintf(stderr, "Closing input\n");
     avio_close(input);
+    av_freep(&resource);
 }
 
 int main(int argc, char **argv)
 {
-    av_log_set_level(AV_LOG_TRACE);
     AVDictionary *options = NULL;
     AVIOContext *client = NULL, *server = NULL;
     const char *in_uri, *out_uri;
     int ret, pid;
+    av_log_set_level(AV_LOG_TRACE);
     if (argc < 3) {
         printf("usage: %s input http://hostname[:port]\n"
                "API example program to serve http to multiple clients.\n"
@@ -112,7 +114,6 @@ int main(int argc, char **argv)
     in_uri = argv[1];
     out_uri = argv[2];
 
-    av_register_all();
     avformat_network_init();
 
     if ((ret = av_dict_set(&options, "listen", "2", 0)) < 0) {

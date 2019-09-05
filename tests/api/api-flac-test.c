@@ -31,7 +31,7 @@
 #include "libavutil/common.h"
 #include "libavutil/samplefmt.h"
 
-#define NUMBER_OF_FRAMES 200
+#define NUMBER_OF_AUDIO_FRAMES 200
 #define NAME_BUFF_SIZE 100
 
 /* generate i-th frame of test audio */
@@ -137,26 +137,26 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         return AVERROR(ENOMEM);
     }
 
-    raw_in = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
+    raw_in = av_malloc(in_frame->linesize[0] * NUMBER_OF_AUDIO_FRAMES);
     if (!raw_in) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_in\n");
         return AVERROR(ENOMEM);
     }
 
-    raw_out = av_malloc(in_frame->linesize[0] * NUMBER_OF_FRAMES);
+    raw_out = av_malloc(in_frame->linesize[0] * NUMBER_OF_AUDIO_FRAMES);
     if (!raw_out) {
         av_log(NULL, AV_LOG_ERROR, "Can't allocate memory for raw_out\n");
         return AVERROR(ENOMEM);
     }
 
-    for (i = 0; i < NUMBER_OF_FRAMES; i++) {
+    for (i = 0; i < NUMBER_OF_AUDIO_FRAMES; i++) {
         av_init_packet(&enc_pkt);
         enc_pkt.data = NULL;
         enc_pkt.size = 0;
 
         generate_raw_frame((uint16_t*)(in_frame->data[0]), i, enc_ctx->sample_rate,
                            enc_ctx->channels, enc_ctx->frame_size);
-        in_frame_bytes = in_frame->nb_samples * av_frame_get_channels(in_frame) * sizeof(uint16_t);
+        in_frame_bytes = in_frame->nb_samples * in_frame->channels * sizeof(uint16_t);
         if (in_frame_bytes > in_frame->linesize[0]) {
             av_log(NULL, AV_LOG_ERROR, "Incorrect value of input frame linesize\n");
             return 1;
@@ -197,7 +197,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
                     av_log(NULL, AV_LOG_ERROR, "Error frames before and after decoding has different sample format\n");
                     return AVERROR_UNKNOWN;
                 }
-                out_frame_bytes = out_frame->nb_samples * av_frame_get_channels(out_frame) * sizeof(uint16_t);
+                out_frame_bytes = out_frame->nb_samples * out_frame->channels * sizeof(uint16_t);
                 if (out_frame_bytes > out_frame->linesize[0]) {
                     av_log(NULL, AV_LOG_ERROR, "Incorrect value of output frame linesize\n");
                     return 1;
@@ -209,7 +209,7 @@ static int run_test(AVCodec *enc, AVCodec *dec, AVCodecContext *enc_ctx,
         av_packet_unref(&enc_pkt);
     }
 
-    if (memcmp(raw_in, raw_out, out_frame_bytes * NUMBER_OF_FRAMES) != 0) {
+    if (memcmp(raw_in, raw_out, out_frame_bytes * NUMBER_OF_AUDIO_FRAMES) != 0) {
         av_log(NULL, AV_LOG_ERROR, "Output differs\n");
         return 1;
     }
@@ -244,8 +244,6 @@ int main(void)
     uint64_t channel_layouts[] = {AV_CH_LAYOUT_STEREO, AV_CH_LAYOUT_5POINT1_BACK, AV_CH_LAYOUT_SURROUND, AV_CH_LAYOUT_STEREO_DOWNMIX};
     int sample_rates[] = {8000, 44100, 48000, 192000};
     int cl, sr;
-
-    avcodec_register_all();
 
     enc = avcodec_find_encoder(AV_CODEC_ID_FLAC);
     if (!enc) {

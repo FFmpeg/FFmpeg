@@ -61,7 +61,22 @@ static const struct ogg_codec * const ogg_codecs[] = {
 
 static int64_t ogg_calc_pts(AVFormatContext *s, int idx, int64_t *dts);
 static int ogg_new_stream(AVFormatContext *s, uint32_t serial);
-static int ogg_restore(AVFormatContext *s, int discard);
+static int ogg_restore(AVFormatContext *s);
+
+static void free_stream(AVFormatContext *s, int i)
+{
+    struct ogg *ogg = s->priv_data;
+    struct ogg_stream *stream = &ogg->streams[i];
+
+    av_freep(&stream->buf);
+    if (stream->codec &&
+        stream->codec->cleanup) {
+        stream->codec->cleanup(s, i);
+    }
+
+    av_freep(&stream->private);
+    av_freep(&stream->new_metadata);
+}
 
 //FIXME We could avoid some structure duplication
 static int ogg_save(AVFormatContext *s)
@@ -95,12 +110,12 @@ static int ogg_save(AVFormatContext *s)
     ogg->state = ost;
 
     if (ret < 0)
-        ogg_restore(s, 0);
+        ogg_restore(s);
 
     return ret;
 }
 
-static int ogg_restore(AVFormatContext *s, int discard)
+static int ogg_restore(AVFormatContext *s)
 {
     struct ogg *ogg = s->priv_data;
     AVIOContext *bc = s->pb;
@@ -112,10 +127,15 @@ static int ogg_restore(AVFormatContext *s, int discard)
 
     ogg->state = ost->next;
 
-    if (!discard) {
+        for (i = 0; i < ogg->nstreams; i++) {
+            struct ogg_stream *stream = &ogg->streams[i];
+            av_freep(&stream->buf);
+            av_freep(&stream->new_metadata);
 
-        for (i = 0; i < ogg->nstreams; i++)
-            av_freep(&ogg->streams[i].buf);
+            if (i >= ost->nstreams || !ost->streams[i].private) {
+                free_stream(s, i);
+            }
+        }
 
         avio_seek(bc, ost->pos, SEEK_SET);
         ogg->page_pos = -1;
@@ -128,7 +148,6 @@ static int ogg_restore(AVFormatContext *s, int discard)
         } else
             memcpy(ogg->streams, ost->streams,
                    ost->nstreams * sizeof(*ogg->streams));
-    }
 
     av_free(ost);
 
@@ -193,7 +212,7 @@ static int ogg_replace_stream(AVFormatContext *s, uint32_t serial, int nsegs)
     const struct ogg_codec *codec;
     int i = 0;
 
-    if (s->pb->seekable) {
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL) {
         uint8_t magic[8];
         int64_t pos = avio_tell(s->pb);
         avio_skip(s->pb, nsegs);
@@ -339,7 +358,7 @@ static int ogg_read_page(AVFormatContext *s, int *sid)
             sync[(sp + 2) & 3] == 'g' && sync[(sp + 3) & 3] == 'S')
             break;
 
-        if(!i && bc->seekable && ogg->page_pos > 0) {
+        if(!i && (bc->seekable & AVIO_SEEKABLE_NORMAL) && ogg->page_pos > 0) {
             memset(sync, 0, 4);
             avio_seek(bc, ogg->page_pos+4, SEEK_SET);
             ogg->page_pos = -1;
@@ -527,7 +546,11 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
     os->incomplete = 0;
 
     if (os->header) {
-        os->header = os->codec->header(s, idx);
+        if ((ret = os->codec->header(s, idx)) < 0) {
+            av_log(s, AV_LOG_ERROR, "Header processing failed: %s\n", av_err2str(ret));
+            return ret;
+        }
+        os->header = ret;
         if (!os->header) {
             os->segp  = segp;
             os->psize = psize;
@@ -558,8 +581,12 @@ static int ogg_packet(AVFormatContext *s, int *sid, int *dstart, int *dsize,
     } else {
         os->pflags    = 0;
         os->pduration = 0;
-        if (os->codec && os->codec->packet)
-            os->codec->packet(s, idx);
+        if (os->codec && os->codec->packet) {
+            if ((ret = os->codec->packet(s, idx)) < 0) {
+                av_log(s, AV_LOG_ERROR, "Packet processing failed: %s\n", av_err2str(ret));
+                return ret;
+            }
+        }
         if (sid)
             *sid = idx;
         if (dstart)
@@ -597,7 +624,7 @@ static int ogg_get_length(AVFormatContext *s)
     int64_t size, end;
     int streams_left=0;
 
-    if (!s->pb->seekable)
+    if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return 0;
 
 // already set
@@ -631,7 +658,7 @@ static int ogg_get_length(AVFormatContext *s)
         }
     }
 
-    ogg_restore(s, 0);
+    ogg_restore(s);
 
     ret = ogg_save(s);
     if (ret < 0)
@@ -643,6 +670,8 @@ static int ogg_get_length(AVFormatContext *s)
         int64_t pts;
         if (i < 0) continue;
         pts = ogg_calc_pts(s, i, NULL);
+        if (s->streams[i]->duration == AV_NOPTS_VALUE)
+            continue;
         if (pts != AV_NOPTS_VALUE && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start) {
             s->streams[i]->duration -= pts;
             ogg->streams[i].got_start= 1;
@@ -652,7 +681,7 @@ static int ogg_get_length(AVFormatContext *s)
             streams_left--;
         }
     }
-    ogg_restore (s, 0);
+    ogg_restore (s);
 
     return 0;
 }
@@ -663,13 +692,7 @@ static int ogg_read_close(AVFormatContext *s)
     int i;
 
     for (i = 0; i < ogg->nstreams; i++) {
-        av_freep(&ogg->streams[i].buf);
-        if (ogg->streams[i].codec &&
-            ogg->streams[i].codec->cleanup) {
-            ogg->streams[i].codec->cleanup(s, i);
-        }
-        av_freep(&ogg->streams[i].private);
-        av_freep(&ogg->streams[i].new_metadata);
+        free_stream(s, i);
     }
 
     ogg->nstreams = 0;
@@ -707,8 +730,10 @@ static int ogg_read_header(AVFormatContext *s)
                    "Headers mismatch for stream %d: "
                    "expected %d received %d.\n",
                    i, os->codec->nb_header, os->nb_header);
-            if (s->error_recognition & AV_EF_EXPLODE)
+            if (s->error_recognition & AV_EF_EXPLODE) {
+                ogg_read_close(s);
                 return AVERROR_INVALIDDATA;
+            }
         }
         if (os->start_granule != OGG_NOGRANULE_VALUE)
             os->lastpts = s->streams[i]->start_time =
@@ -916,7 +941,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
     return ret;
 }
 
-static int ogg_probe(AVProbeData *p)
+static int ogg_probe(const AVProbeData *p)
 {
     if (!memcmp("OggS", p->buf, 5) && p->buf[5] <= 0x7)
         return AVPROBE_SCORE_MAX;

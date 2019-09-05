@@ -71,7 +71,7 @@ static inline void smv_img_pnt(uint8_t *dst_data[4], uint8_t *src_data[4],
             src_linesizes[i], h, nlines);
     }
     if (desc->flags & AV_PIX_FMT_FLAG_PAL ||
-        desc->flags & AV_PIX_FMT_FLAG_PSEUDOPAL)
+        desc->flags & FF_PSEUDOPAL)
         dst_data[1] = src_data[1];
 }
 
@@ -152,6 +152,10 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
 
     cur_frame = avpkt->pts % s->frames_per_jpeg;
 
+    /* cur_frame is later used to calculate the buffer offset, so it mustn't be negative */
+    if (cur_frame < 0)
+        cur_frame += s->frames_per_jpeg;
+
     /* Are we at the start of a block? */
     if (!cur_frame) {
         av_frame_unref(mjpeg_data);
@@ -189,16 +193,17 @@ static int smvjpeg_decode_frame(AVCodecContext *avctx, void *data, int *data_siz
         s->picture[1]->width         = avctx->width;
         s->picture[1]->height        = avctx->height;
         s->picture[1]->format        = avctx->pix_fmt;
-        /* ff_init_buffer_info(avctx, &s->picture[1]); */
         smv_img_pnt(s->picture[1]->data, mjpeg_data->data, mjpeg_data->linesize,
                     avctx->pix_fmt, avctx->width, avctx->height, cur_frame);
         for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
             s->picture[1]->linesize[i] = mjpeg_data->linesize[i];
 
         ret = av_frame_ref(data, s->picture[1]);
+        if (ret < 0)
+            return ret;
     }
 
-    return ret;
+    return avpkt->size;
 }
 
 static const AVClass smvjpegdec_class = {

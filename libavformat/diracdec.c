@@ -23,7 +23,7 @@
 #include "avformat.h"
 #include "rawdec.h"
 
-static int dirac_probe(AVProbeData *p)
+static int dirac_probe(const AVProbeData *p)
 {
     unsigned size;
     if (AV_RL32(p->buf) != MKTAG('B', 'B', 'C', 'D'))

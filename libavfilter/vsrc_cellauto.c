@@ -37,7 +37,7 @@
 #include "formats.h"
 #include "video.h"
 
-typedef struct {
+typedef struct CellAutoContext {
     const AVClass *class;
     int w, h;
     char *filename;
@@ -65,8 +65,8 @@ static const AVOption cellauto_options[] = {
     { "f",        "read initial pattern from file", OFFSET(filename), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "pattern",  "set initial pattern", OFFSET(pattern), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
     { "p",        "set initial pattern", OFFSET(pattern), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, FLAGS },
-    { "rate",     "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
-    { "r",        "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, 0, FLAGS },
+    { "rate",     "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
+    { "r",        "set video rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, FLAGS },
     { "size",     "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
     { "s",        "set video size", OFFSET(w),    AV_OPT_TYPE_IMAGE_SIZE, {.str = NULL}, 0, 0, FLAGS },
     { "rule",     "set rule",       OFFSET(rule), AV_OPT_TYPE_INT,    {.i64 = 110},  0, 255, FLAGS },
@@ -199,7 +199,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%u\n",
+           "s:%dx%d r:%d/%d rule:%d stitch:%d scroll:%d full:%d seed:%"PRIu32"\n",
            s->w, s->h, s->frame_rate.num, s->frame_rate.den,
            s->rule, s->stitch, s->scroll, s->start_full,
            s->random_seed);
