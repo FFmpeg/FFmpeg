@@ -440,8 +440,13 @@ static int mediacodec_receive_frame(AVCodecContext *avctx, AVFrame *frame)
             if (ret >= 0) {
                 s->buffered_pkt.size -= ret;
                 s->buffered_pkt.data += ret;
-                if (s->buffered_pkt.size <= 0)
+                if (s->buffered_pkt.size <= 0) {
                     av_packet_unref(&s->buffered_pkt);
+                } else {
+                    av_log(avctx, AV_LOG_WARNING,
+                           "could not send entire packet in single input buffer (%d < %d)\n",
+                           ret, s->buffered_pkt.size+ret);
+                }
             } else if (ret < 0 && ret != AVERROR(EAGAIN)) {
                 return ret;
             }
