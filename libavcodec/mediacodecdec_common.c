@@ -612,7 +612,11 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
         }
 
         pts = pkt->pts;
-        if (pts != AV_NOPTS_VALUE && avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
+        if (pts == AV_NOPTS_VALUE) {
+            av_log(avctx, AV_LOG_WARNING, "Input packet is missing PTS\n");
+            pts = 0;
+        }
+        if (pts && avctx->pkt_timebase.num && avctx->pkt_timebase.den) {
             pts = av_rescale_q(pts, avctx->pkt_timebase, AV_TIME_BASE_Q);
         }
 
