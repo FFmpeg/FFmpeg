@@ -569,7 +569,6 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
     int offset = 0;
     int need_draining = 0;
     uint8_t *data;
-    ssize_t index = s->current_input_buffer;
     size_t size;
     FFAMediaCodec *codec = s->codec;
     int status;
@@ -591,6 +590,7 @@ int ff_mediacodec_dec_send(AVCodecContext *avctx, MediaCodecDecContext *s,
     }
 
     while (offset < pkt->size || (need_draining && !s->draining)) {
+        ssize_t index = s->current_input_buffer;
         if (index < 0) {
             index = ff_AMediaCodec_dequeueInputBuffer(codec, input_dequeue_timeout_us);
             if (ff_AMediaCodec_infoTryAgainLater(codec, index)) {
