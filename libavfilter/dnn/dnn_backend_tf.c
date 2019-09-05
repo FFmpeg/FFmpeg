@@ -25,6 +25,7 @@
 
 #include "dnn_backend_tf.h"
 #include "dnn_backend_native.h"
+#include "dnn_backend_native_layer_conv2d.h"
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_pad.h"
