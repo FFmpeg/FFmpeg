@@ -6905,6 +6905,66 @@ colorbalance=rs=.3
 @end example
 @end itemize
 
+@section colorchannelmixer
+
+Adjust video input frames by re-mixing color channels.
+
+This filter modifies a color channel by adding the values associated to
+the other channels of the same pixels. For example if the value to
+modify is red, the output value will be:
+@example
+@var{red}=@var{red}*@var{rr} + @var{blue}*@var{rb} + @var{green}*@var{rg} + @var{alpha}*@var{ra}
+@end example
+
+The filter accepts the following options:
+
+@table @option
+@item rr
+@item rg
+@item rb
+@item ra
+Adjust contribution of input red, green, blue and alpha channels for output red channel.
+Default is @code{1} for @var{rr}, and @code{0} for @var{rg}, @var{rb} and @var{ra}.
+
+@item gr
+@item gg
+@item gb
+@item ga
+Adjust contribution of input red, green, blue and alpha channels for output green channel.
+Default is @code{1} for @var{gg}, and @code{0} for @var{gr}, @var{gb} and @var{ga}.
+
+@item br
+@item bg
+@item bb
+@item ba
+Adjust contribution of input red, green, blue and alpha channels for output blue channel.
+Default is @code{1} for @var{bb}, and @code{0} for @var{br}, @var{bg} and @var{ba}.
+
+@item ar
+@item ag
+@item ab
+@item aa
+Adjust contribution of input red, green, blue and alpha channels for output alpha channel.
+Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{ab}.
+
+Allowed ranges for options are @code{[-2.0, 2.0]}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Convert source to grayscale:
+@example
+colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3
+@end example
+@item
+Simulate sepia tones:
+@example
+colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
+@end example
+@end itemize
+
 @section colorkey
 RGB colorspace color keying.
 
@@ -7028,66 +7088,6 @@ colorlevels=rimax=0.902:gimax=0.902:bimax=0.902
 Increase brightness:
 @example
 colorlevels=romin=0.5:gomin=0.5:bomin=0.5
-@end example
-@end itemize
-
-@section colorchannelmixer
-
-Adjust video input frames by re-mixing color channels.
-
-This filter modifies a color channel by adding the values associated to
-the other channels of the same pixels. For example if the value to
-modify is red, the output value will be:
-@example
-@var{red}=@var{red}*@var{rr} + @var{blue}*@var{rb} + @var{green}*@var{rg} + @var{alpha}*@var{ra}
-@end example
-
-The filter accepts the following options:
-
-@table @option
-@item rr
-@item rg
-@item rb
-@item ra
-Adjust contribution of input red, green, blue and alpha channels for output red channel.
-Default is @code{1} for @var{rr}, and @code{0} for @var{rg}, @var{rb} and @var{ra}.
-
-@item gr
-@item gg
-@item gb
-@item ga
-Adjust contribution of input red, green, blue and alpha channels for output green channel.
-Default is @code{1} for @var{gg}, and @code{0} for @var{gr}, @var{gb} and @var{ga}.
-
-@item br
-@item bg
-@item bb
-@item ba
-Adjust contribution of input red, green, blue and alpha channels for output blue channel.
-Default is @code{1} for @var{bb}, and @code{0} for @var{br}, @var{bg} and @var{ba}.
-
-@item ar
-@item ag
-@item ab
-@item aa
-Adjust contribution of input red, green, blue and alpha channels for output alpha channel.
-Default is @code{1} for @var{aa}, and @code{0} for @var{ar}, @var{ag} and @var{ab}.
-
-Allowed ranges for options are @code{[-2.0, 2.0]}.
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Convert source to grayscale:
-@example
-colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3
-@end example
-@item
-Simulate sepia tones:
-@example
-colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
 @end example
 @end itemize
 
@@ -7609,6 +7609,40 @@ Use nullsrc and CIQRCodeGenerator to create a QR code for the FFmpeg homepage,
 given as complete and escaped command-line for Apple's standard bash shell:
 @example
 ffmpeg -f lavfi -i nullsrc=s=100x100,coreimage=filter=CIQRCodeGenerator@@inputMessage=https\\\\\://FFmpeg.org/@@inputCorrectionLevel=H -frames:v 1 QRCode.png
+@end example
+@end itemize
+
+@section cover_rect
+
+Cover a rectangular object
+
+It accepts the following options:
+
+@table @option
+@item cover
+Filepath of the optional cover image, needs to be in yuv420.
+
+@item mode
+Set covering mode.
+
+It accepts the following values:
+@table @samp
+@item cover
+cover it by the supplied image
+@item blur
+cover it by interpolating the surrounding pixels
+@end table
+
+Default value is @var{blur}.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Cover a rectangular object by the supplied image of a given video using @command{ffmpeg}:
+@example
+ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
 @end example
 @end itemize
 
@@ -9452,6 +9486,50 @@ edgedetect=mode=colormix:high=0
 @end example
 @end itemize
 
+@section elbg
+
+Apply a posterize effect using the ELBG (Enhanced LBG) algorithm.
+
+For each input image, the filter will compute the optimal mapping from
+the input to the output given the codebook length, that is the number
+of distinct output colors.
+
+This filter accepts the following options.
+
+@table @option
+@item codebook_length, l
+Set codebook length. The value must be a positive integer, and
+represents the number of distinct output colors. Default value is 256.
+
+@item nb_steps, n
+Set the maximum number of iterations to apply for computing the optimal
+mapping. The higher the value the better the result and the higher the
+computation time. Default value is 1.
+
+@item seed, s
+Set a random seed, must be an integer included between 0 and
+UINT32_MAX. If not specified, or if explicitly set to -1, the filter
+will try to use a good random seed on a best effort basis.
+
+@item pal8
+Set pal8 output pixel format. This option does not work with codebook
+length greater than 256.
+@end table
+
+@section entropy
+
+Measure graylevel entropy in histogram of color channels of video frames.
+
+It accepts the following parameters:
+
+@table @option
+@item mode
+Can be either @var{normal} or @var{diff}. Default is @var{normal}.
+
+@var{diff} mode measures entropy of histogram delta values, absolute differences
+between neighbour histogram values.
+@end table
+
 @section eq
 Set brightness, contrast, saturation and approximate gamma adjustment.
 
@@ -9627,50 +9705,6 @@ ffmpeg -i video.avi -filter_complex 'extractplanes=y+u+v[y][u][v]' -map '[y]' y.
 @end example
 @end itemize
 
-@section elbg
-
-Apply a posterize effect using the ELBG (Enhanced LBG) algorithm.
-
-For each input image, the filter will compute the optimal mapping from
-the input to the output given the codebook length, that is the number
-of distinct output colors.
-
-This filter accepts the following options.
-
-@table @option
-@item codebook_length, l
-Set codebook length. The value must be a positive integer, and
-represents the number of distinct output colors. Default value is 256.
-
-@item nb_steps, n
-Set the maximum number of iterations to apply for computing the optimal
-mapping. The higher the value the better the result and the higher the
-computation time. Default value is 1.
-
-@item seed, s
-Set a random seed, must be an integer included between 0 and
-UINT32_MAX. If not specified, or if explicitly set to -1, the filter
-will try to use a good random seed on a best effort basis.
-
-@item pal8
-Set pal8 output pixel format. This option does not work with codebook
-length greater than 256.
-@end table
-
-@section entropy
-
-Measure graylevel entropy in histogram of color channels of video frames.
-
-It accepts the following parameters:
-
-@table @option
-@item mode
-Can be either @var{normal} or @var{diff}. Default is @var{normal}.
-
-@var{diff} mode measures entropy of histogram delta values, absolute differences
-between neighbour histogram values.
-@end table
-
 @section fade
 
 Apply a fade-in/out effect to the input video.
@@ -9762,6 +9796,40 @@ fade=t=in:st=5.5:d=0.5
 
 @end itemize
 
+@section fftdnoiz
+Denoise frames using 3D FFT (frequency domain filtering).
+
+The filter accepts the following options:
+
+@table @option
+@item sigma
+Set the noise sigma constant. This sets denoising strength.
+Default value is 1. Allowed range is from 0 to 30.
+Using very high sigma with low overlap may give blocking artifacts.
+
+@item amount
+Set amount of denoising. By default all detected noise is reduced.
+Default value is 1. Allowed range is from 0 to 1.
+
+@item block
+Set size of block, Default is 4, can be 3, 4, 5 or 6.
+Actual size of block in pixels is 2 to power of @var{block}, so by default
+block size in pixels is 2^4 which is 16.
+
+@item overlap
+Set block overlap. Default is 0.5. Allowed range is from 0.2 to 0.8.
+
+@item prev
+Set number of previous frames to use for denoising. By default is set to 0.
+
+@item next
+Set number of next frames to to use for denoising. By default is set to 0.
+
+@item planes
+Set planes which will be filtered, by default are all available filtered
+except alpha.
+@end table
+
 @section fftfilt
 Apply arbitrary expressions to samples in frequency domain
 
@@ -9845,40 +9913,6 @@ fftfilt=dc_Y=0:weight_Y='exp(-4 * ((Y+X)/(W+H)))'
 @end example
 
 @end itemize
-
-@section fftdnoiz
-Denoise frames using 3D FFT (frequency domain filtering).
-
-The filter accepts the following options:
-
-@table @option
-@item sigma
-Set the noise sigma constant. This sets denoising strength.
-Default value is 1. Allowed range is from 0 to 30.
-Using very high sigma with low overlap may give blocking artifacts.
-
-@item amount
-Set amount of denoising. By default all detected noise is reduced.
-Default value is 1. Allowed range is from 0 to 1.
-
-@item block
-Set size of block, Default is 4, can be 3, 4, 5 or 6.
-Actual size of block in pixels is 2 to power of @var{block}, so by default
-block size in pixels is 2^4 which is 16.
-
-@item overlap
-Set block overlap. Default is 0.5. Allowed range is from 0.2 to 0.8.
-
-@item prev
-Set number of previous frames to use for denoising. By default is set to 0.
-
-@item next
-Set number of next frames to to use for denoising. By default is set to 0.
-
-@item planes
-Set planes which will be filtered, by default are all available filtered
-except alpha.
-@end table
 
 @section field
 
@@ -10366,40 +10400,6 @@ Number of mipmaps, default is 3.
 
 @item xmin, ymin, xmax, ymax
 Specifies the rectangle in which to search.
-@end table
-
-@subsection Examples
-
-@itemize
-@item
-Cover a rectangular object by the supplied image of a given video using @command{ffmpeg}:
-@example
-ffmpeg -i file.ts -vf find_rect=newref.pgm,cover_rect=cover.jpg:mode=cover new.mkv
-@end example
-@end itemize
-
-@section cover_rect
-
-Cover a rectangular object
-
-It accepts the following options:
-
-@table @option
-@item cover
-Filepath of the optional cover image, needs to be in yuv420.
-
-@item mode
-Set covering mode.
-
-It accepts the following values:
-@table @samp
-@item cover
-cover it by the supplied image
-@item blur
-cover it by interpolating the surrounding pixels
-@end table
-
-Default value is @var{blur}.
 @end table
 
 @subsection Examples
@@ -16449,6 +16449,114 @@ in [-30,0] will filter edges. Default value is @option{luma_threshold}.
 If a chroma option is not explicitly set, the corresponding luma value
 is set.
 
+@section sobel
+Apply sobel operator to input video stream.
+
+The filter accepts the following option:
+
+@table @option
+@item planes
+Set which planes will be processed, unprocessed planes will be copied.
+By default value 0xf, all planes will be processed.
+
+@item scale
+Set value which will be multiplied with filtered result.
+
+@item delta
+Set value which will be added to filtered result.
+@end table
+
+@anchor{spp}
+@section spp
+
+Apply a simple postprocessing filter that compresses and decompresses the image
+at several (or - in the case of @option{quality} level @code{6} - all) shifts
+and average the results.
+
+The filter accepts the following options:
+
+@table @option
+@item quality
+Set quality. This option defines the number of levels for averaging. It accepts
+an integer in the range 0-6. If set to @code{0}, the filter will have no
+effect. A value of @code{6} means the higher quality. For each increment of
+that value the speed drops by a factor of approximately 2.  Default value is
+@code{3}.
+
+@item qp
+Force a constant quantization parameter. If not set, the filter will use the QP
+from the video stream (if available).
+
+@item mode
+Set thresholding mode. Available modes are:
+
+@table @samp
+@item hard
+Set hard thresholding (default).
+@item soft
+Set soft thresholding (better de-ringing effect, but likely blurrier).
+@end table
+
+@item use_bframe_qp
+Enable the use of the QP from the B-Frames if set to @code{1}. Using this
+option may cause flicker since the B-Frames have often larger QP. Default is
+@code{0} (not enabled).
+@end table
+
+@section sr
+
+Scale the input by applying one of the super-resolution methods based on
+convolutional neural networks. Supported models:
+
+@itemize
+@item
+Super-Resolution Convolutional Neural Network model (SRCNN).
+See @url{https://arxiv.org/abs/1501.00092}.
+
+@item
+Efficient Sub-Pixel Convolutional Neural Network model (ESPCN).
+See @url{https://arxiv.org/abs/1609.05158}.
+@end itemize
+
+Training scripts as well as scripts for model file (.pb) saving can be found at
+@url{https://github.com/XueweiMeng/sr/tree/sr_dnn_native}. Original repository
+is at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
+
+Native model files (.model) can be generated from TensorFlow model
+files (.pb) by using tools/python/convert.py
+
+The filter accepts the following options:
+
+@table @option
+@item dnn_backend
+Specify which DNN backend to use for model loading and execution. This option accepts
+the following values:
+
+@table @samp
+@item native
+Native implementation of DNN loading and execution.
+
+@item tensorflow
+TensorFlow backend. To enable this backend you
+need to install the TensorFlow for C library (see
+@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
+@code{--enable-libtensorflow}
+@end table
+
+Default value is @samp{native}.
+
+@item model
+Set path to model file specifying network architecture and its parameters.
+Note that different backends use different file formats. TensorFlow backend
+can load files for both formats, while native backend can load files for only
+its format.
+
+@item scale_factor
+Set scale factor for SRCNN model. Allowed values are @code{2}, @code{3} and @code{4}.
+Default value is @code{2}. Scale factor is necessary for SRCNN model, because it accepts
+input upscaled using bicubic upscaling with proper scale factor.
+@end table
+
 @section ssim
 
 Obtain the SSIM (Structural SImilarity Metric) between two input videos.
@@ -16750,114 +16858,6 @@ Same as above, but for audio:
 asendcmd='5.0 astreamselect map 1',astreamselect=inputs=2:map=0
 @end example
 @end itemize
-
-@section sobel
-Apply sobel operator to input video stream.
-
-The filter accepts the following option:
-
-@table @option
-@item planes
-Set which planes will be processed, unprocessed planes will be copied.
-By default value 0xf, all planes will be processed.
-
-@item scale
-Set value which will be multiplied with filtered result.
-
-@item delta
-Set value which will be added to filtered result.
-@end table
-
-@anchor{spp}
-@section spp
-
-Apply a simple postprocessing filter that compresses and decompresses the image
-at several (or - in the case of @option{quality} level @code{6} - all) shifts
-and average the results.
-
-The filter accepts the following options:
-
-@table @option
-@item quality
-Set quality. This option defines the number of levels for averaging. It accepts
-an integer in the range 0-6. If set to @code{0}, the filter will have no
-effect. A value of @code{6} means the higher quality. For each increment of
-that value the speed drops by a factor of approximately 2.  Default value is
-@code{3}.
-
-@item qp
-Force a constant quantization parameter. If not set, the filter will use the QP
-from the video stream (if available).
-
-@item mode
-Set thresholding mode. Available modes are:
-
-@table @samp
-@item hard
-Set hard thresholding (default).
-@item soft
-Set soft thresholding (better de-ringing effect, but likely blurrier).
-@end table
-
-@item use_bframe_qp
-Enable the use of the QP from the B-Frames if set to @code{1}. Using this
-option may cause flicker since the B-Frames have often larger QP. Default is
-@code{0} (not enabled).
-@end table
-
-@section sr
-
-Scale the input by applying one of the super-resolution methods based on
-convolutional neural networks. Supported models:
-
-@itemize
-@item
-Super-Resolution Convolutional Neural Network model (SRCNN).
-See @url{https://arxiv.org/abs/1501.00092}.
-
-@item
-Efficient Sub-Pixel Convolutional Neural Network model (ESPCN).
-See @url{https://arxiv.org/abs/1609.05158}.
-@end itemize
-
-Training scripts as well as scripts for model file (.pb) saving can be found at
-@url{https://github.com/XueweiMeng/sr/tree/sr_dnn_native}. Original repository
-is at @url{https://github.com/HighVoltageRocknRoll/sr.git}.
-
-Native model files (.model) can be generated from TensorFlow model
-files (.pb) by using tools/python/convert.py
-
-The filter accepts the following options:
-
-@table @option
-@item dnn_backend
-Specify which DNN backend to use for model loading and execution. This option accepts
-the following values:
-
-@table @samp
-@item native
-Native implementation of DNN loading and execution.
-
-@item tensorflow
-TensorFlow backend. To enable this backend you
-need to install the TensorFlow for C library (see
-@url{https://www.tensorflow.org/install/install_c}) and configure FFmpeg with
-@code{--enable-libtensorflow}
-@end table
-
-Default value is @samp{native}.
-
-@item model
-Set path to model file specifying network architecture and its parameters.
-Note that different backends use different file formats. TensorFlow backend
-can load files for both formats, while native backend can load files for only
-its format.
-
-@item scale_factor
-Set scale factor for SRCNN model. Allowed values are @code{2}, @code{3} and @code{4}.
-Default value is @code{2}. Scale factor is necessary for SRCNN model, because it accepts
-input upscaled using bicubic upscaling with proper scale factor.
-@end table
 
 @anchor{subtitles}
 @section subtitles
