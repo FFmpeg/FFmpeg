@@ -90,10 +90,6 @@ typedef struct InputParams{
     int height, width, channels;
 } InputParams;
 
-typedef struct DepthToSpaceParams{
-    int block_size;
-} DepthToSpaceParams;
-
 // Represents simple feed-forward convolutional network.
 typedef struct ConvolutionalNetwork{
     Layer *layers;
