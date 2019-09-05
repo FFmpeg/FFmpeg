@@ -525,8 +525,8 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
     if (status < 0) {
         char *desc = ff_AMediaFormat_toString(format);
         av_log(avctx, AV_LOG_ERROR,
-            "Failed to configure codec (status = %d) with format %s\n",
-            status, desc);
+            "Failed to configure codec %s (status = %d) with format %s\n",
+            s->codec_name, status, desc);
         av_freep(&desc);
 
         ret = AVERROR_EXTERNAL;
@@ -537,8 +537,8 @@ int ff_mediacodec_dec_init(AVCodecContext *avctx, MediaCodecDecContext *s,
     if (status < 0) {
         char *desc = ff_AMediaFormat_toString(format);
         av_log(avctx, AV_LOG_ERROR,
-            "Failed to start codec (status = %d) with format %s\n",
-            status, desc);
+            "Failed to start codec %s (status = %d) with format %s\n",
+            s->codec_name, status, desc);
         av_freep(&desc);
         ret = AVERROR_EXTERNAL;
         goto fail;
