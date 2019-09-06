@@ -1461,7 +1461,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
     set_http_options(s, &options, hls);
     snprintf(temp_filename, sizeof(temp_filename), use_temp_file ? "%s.tmp" : "%s", vs->m3u8_name);
-    if ((ret = hlsenc_io_open(s, (byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? &hls->m3u8_out : &vs->out, temp_filename, &options)) < 0) {
+    if ((ret = hlsenc_io_open(s, byterange_mode ? &hls->m3u8_out : &vs->out, temp_filename, &options)) < 0) {
         if (hls->ignore_io_errors)
             ret = 0;
         goto fail;
@@ -1473,33 +1473,33 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     vs->discontinuity_set = 0;
-    ff_hls_write_playlist_header((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, hls->version, hls->allowcache,
+    ff_hls_write_playlist_header(byterange_mode ? hls->m3u8_out : vs->out, hls->version, hls->allowcache,
                                  target_duration, sequence, hls->pl_type, hls->flags & HLS_I_FRAMES_ONLY);
 
     if ((hls->flags & HLS_DISCONT_START) && sequence==hls->start_sequence && vs->discontinuity_set==0 ) {
-        avio_printf((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, "#EXT-X-DISCONTINUITY\n");
+        avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "#EXT-X-DISCONTINUITY\n");
         vs->discontinuity_set = 1;
     }
     if (vs->has_video && (hls->flags & HLS_INDEPENDENT_SEGMENTS)) {
-        avio_printf((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
+        avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "#EXT-X-INDEPENDENT-SEGMENTS\n");
     }
     for (en = vs->segments; en; en = en->next) {
         if ((hls->encrypt || hls->key_info_file) && (!key_uri || strcmp(en->key_uri, key_uri) ||
                                     av_strcasecmp(en->iv_string, iv_string))) {
-            avio_printf((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
+            avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "#EXT-X-KEY:METHOD=AES-128,URI=\"%s\"", en->key_uri);
             if (*en->iv_string)
-                avio_printf((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, ",IV=0x%s", en->iv_string);
-            avio_printf((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, "\n");
+                avio_printf(byterange_mode ? hls->m3u8_out : vs->out, ",IV=0x%s", en->iv_string);
+            avio_printf(byterange_mode ? hls->m3u8_out : vs->out, "\n");
             key_uri = en->key_uri;
             iv_string = en->iv_string;
         }
 
         if ((hls->segment_type == SEGMENT_TYPE_FMP4) && (en == vs->segments)) {
-            ff_hls_write_init_file((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, (hls->flags & HLS_SINGLE_FILE) ? en->filename : vs->fmp4_init_filename,
+            ff_hls_write_init_file(byterange_mode ? hls->m3u8_out : vs->out, (hls->flags & HLS_SINGLE_FILE) ? en->filename : vs->fmp4_init_filename,
                                    hls->flags & HLS_SINGLE_FILE, vs->init_range_length, 0);
         }
 
-        ret = ff_hls_write_file_entry((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out, en->discont, byterange_mode,
+        ret = ff_hls_write_file_entry(byterange_mode ? hls->m3u8_out : vs->out, en->discont, byterange_mode,
                                       en->duration, hls->flags & HLS_ROUND_DURATIONS,
                                       en->size, en->pos, vs->baseurl,
                                       en->filename, prog_date_time_p, en->keyframe_size, en->keyframe_pos, hls->flags & HLS_I_FRAMES_ONLY);
@@ -1509,7 +1509,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
     }
 
     if (last && (hls->flags & HLS_OMIT_ENDLIST)==0)
-        ff_hls_write_end_list((byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? hls->m3u8_out : vs->out);
+        ff_hls_write_end_list(byterange_mode ? hls->m3u8_out : vs->out);
 
     if (vs->vtt_m3u8_name) {
         snprintf(temp_vtt_filename, sizeof(temp_vtt_filename), use_temp_file ? "%s.tmp" : "%s", vs->vtt_m3u8_name);
@@ -1536,7 +1536,7 @@ static int hls_window(AVFormatContext *s, int last, VariantStream *vs)
 
 fail:
     av_dict_free(&options);
-    ret = hlsenc_io_close(s, (byterange_mode || hls->segment_type == SEGMENT_TYPE_FMP4) ? &hls->m3u8_out : &vs->out, temp_filename);
+    ret = hlsenc_io_close(s, byterange_mode ? &hls->m3u8_out : &vs->out, temp_filename);
     if (ret < 0) {
         return ret;
     }
