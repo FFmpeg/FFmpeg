@@ -290,7 +290,6 @@ static void set_http_options(AVFormatContext *s, AVDictionary **options, HLSCont
     if (c->method) {
         av_dict_set(options, "method", c->method, 0);
     } else if (http_base_proto) {
-        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
         av_dict_set(options, "method", "PUT", 0);
     }
     if (c->user_agent)
@@ -2673,6 +2672,7 @@ static int hls_init(AVFormatContext *s)
     const char *vtt_pattern = "%d.vtt";
     char *p = NULL;
     int vtt_basename_size = 0;
+    int http_base_proto = ff_is_http_proto(s->url);
     int fmp4_init_filename_len = strlen(hls->fmp4_init_filename) + 1;
 
     hls->has_default_key = 0;
@@ -2688,6 +2688,10 @@ static int hls_init(AVFormatContext *s)
         ret = AVERROR(EINVAL);
         av_log(s, AV_LOG_ERROR, "Periodic re-key not supported when more than one variant streams are present\n");
         goto fail;
+    }
+
+    if (!hls->method && http_base_proto) {
+        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
     }
 
     ret = validate_name(hls->nb_varstreams, s->url);
