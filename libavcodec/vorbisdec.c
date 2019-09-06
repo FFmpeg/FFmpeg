@@ -1513,7 +1513,7 @@ static av_always_inline int vorbis_residue_decode_internal(vorbis_context *vc,
                                 }
 
                             } else if (vr_type == 2) {
-                                unsigned voffs_div = FASTDIV(voffset << 1, ch <<1);
+                                unsigned voffs_div = ch == 1 ? voffset : FASTDIV(voffset, ch);
                                 unsigned voffs_mod = voffset - voffs_div * ch;
 
                                 for (k = 0; k < step; ++k) {
