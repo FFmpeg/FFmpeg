@@ -130,14 +130,11 @@ cglobal remap4_8bit_line, 7, 9, 11, dst, width, src, in_linesize, u, v, ker, x, 
         pmulld          m4, m5
 
         paddd           m2, m4
-        vextracti128   xm1, m2, 1
-        paddd           m1, m2
-        phaddd          m1, m1
-        phaddd          m1, m1
-        psrld           m1, m1, 0xe
-        packuswb        m1, m1
+        HADDD           m2, m1
+        psrld           m2, m2, 0xe
+        packuswb        m2, m2
 
-        pextrb   [dstq+xq], xm1, 0
+        pextrb   [dstq+xq], xm2, 0
 
         add   xq, 1
         add   yq, 32
