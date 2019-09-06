@@ -543,7 +543,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             while(run-- && blk < blocks){
                 uint32_t col;
                 out = smk->pic->data[0] + (blk / bw) * (stride * 4) + (blk % bw) * 4;
-                col = mode * 0x01010101;
+                col = mode * 0x01010101U;
                 for(i = 0; i < 4; i++) {
                     *((uint32_t*)out) = col;
                     out += stride;
