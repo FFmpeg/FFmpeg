@@ -2698,7 +2698,7 @@ static int hls_init(AVFormatContext *s)
     }
 
     if (!hls->method && http_base_proto) {
-        av_log(c, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
+        av_log(hls, AV_LOG_WARNING, "No HTTP method set, hls muxer defaulting to method PUT.\n");
     }
 
     ret = validate_name(hls->nb_varstreams, s->url);
