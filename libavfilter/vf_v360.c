@@ -219,9 +219,10 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
         const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                          \
                                                                                                            \
         for (int y = slice_start; y < slice_end; y++) {                                                    \
-            const uint16_t *u = s->u[plane] + y * width * ws * ws;                                         \
-            const uint16_t *v = s->v[plane] + y * width * ws * ws;                                         \
-            const int16_t *ker = s->ker[plane] + y * width * ws * ws;                                      \
+            const unsigned map = s->map[plane];                                                            \
+            const uint16_t *u = s->u[map] + y * width * ws * ws;                                           \
+            const uint16_t *v = s->v[map] + y * width * ws * ws;                                           \
+            const int16_t *ker = s->ker[map] + y * width * ws * ws;                                        \
                                                                                                            \
             s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                     \
         }                                                                                                  \
@@ -1911,6 +1912,21 @@ static inline void mirror(const float *modifier, float *vec)
     vec[2] *= modifier[2];
 }
 
+static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
+{
+    s->u[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
+    s->v[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
+    if (!s->u[p] || !s->v[p])
+        return AVERROR(ENOMEM);
+    if (sizeof_ker) {
+        s->ker[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_ker);
+        if (!s->ker[p])
+            return AVERROR(ENOMEM);
+    }
+
+    return 0;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -2103,23 +2119,33 @@ static int config_output(AVFilterLink *outlink)
     s->inplanewidth[0]  = s->inplanewidth[3]  = inlink->w;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    for (p = 0; p < s->nb_planes; p++) {
-        s->u[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
-        s->v[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
-        if (!s->u[p] || !s->v[p])
-            return AVERROR(ENOMEM);
-        if (sizeof_ker) {
-            s->ker[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_ker);
-            if (!s->ker[p])
-                return AVERROR(ENOMEM);
-        }
+    if (desc->log2_chroma_h == desc->log2_chroma_w && desc->log2_chroma_h == 0) {
+        s->nb_allocated = 1;
+        s->map[0] = s->map[1] = s->map[2] = s->map[3] = 0;
+        allocate_plane(s, sizeof_uv, sizeof_ker, 0);
+    } else if (desc->log2_chroma_h == desc->log2_chroma_w) {
+        s->nb_allocated = 2;
+        s->map[0] = 0;
+        s->map[1] = s->map[2] = 1;
+        s->map[3] = 0;
+        allocate_plane(s, sizeof_uv, sizeof_ker, 0);
+        allocate_plane(s, sizeof_uv, sizeof_ker, 1);
+    } else {
+        s->nb_allocated = 3;
+        s->map[0] = 0;
+        s->map[1] = 1;
+        s->map[2] = 2;
+        s->map[3] = 0;
+        allocate_plane(s, sizeof_uv, sizeof_ker, 0);
+        allocate_plane(s, sizeof_uv, sizeof_ker, 1);
+        allocate_plane(s, sizeof_uv, sizeof_ker, 2);
     }
 
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, rot_mat);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, mirror_modifier);
 
     // Calculate remap data
-    for (p = 0; p < s->nb_planes; p++) {
+    for (p = 0; p < s->nb_allocated; p++) {
         const int width = s->planewidth[p];
         const int height = s->planeheight[p];
         const int in_width = s->inplanewidth[p];
@@ -2176,7 +2202,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     V360Context *s = ctx->priv;
     int p;
 
-    for (p = 0; p < s->nb_planes; p++) {
+    for (p = 0; p < s->nb_allocated; p++) {
         av_freep(&s->u[p]);
         av_freep(&s->v[p]);
         av_freep(&s->ker[p]);

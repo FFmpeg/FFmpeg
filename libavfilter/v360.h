@@ -97,9 +97,11 @@ typedef struct V360Context {
     int planewidth[4], planeheight[4];
     int inplanewidth[4], inplaneheight[4];
     int nb_planes;
+    int nb_allocated;
 
     uint16_t *u[4], *v[4];
     int16_t *ker[4];
+    unsigned map[4];
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
