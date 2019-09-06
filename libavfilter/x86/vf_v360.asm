@@ -18,9 +18,10 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%if HAVE_AVX2_EXTERNAL && ARCH_X86_64
 
 %include "libavutil/x86/x86util.asm"
+
+%if HAVE_AVX2_EXTERNAL
 
 SECTION_RODATA
 
@@ -62,8 +63,11 @@ cglobal remap1_8bit_line, 6, 7, 6, dst, width, src, in_linesize, u, v, x
 INIT_YMM avx2
 cglobal remap2_8bit_line, 7, 8, 8, dst, width, src, in_linesize, u, v, ker, x
     movsxdifnidn widthq, widthd
-    xor             xq, xq
     movd           xm0, in_linesized
+%if ARCH_X86_32
+DEFINE_ARGS dst, width, src, x, u, v, ker
+%endif
+    xor             xq, xq
     pcmpeqw         m7, m7
     vpbroadcastd    m0, xm0
     vpbroadcastd    m6, [pd_255]
@@ -91,6 +95,8 @@ cglobal remap2_8bit_line, 7, 8, 8, dst, width, src, in_linesize, u, v, ker, x
         cmp   xq, widthq
         jl .loop
     RET
+
+%if ARCH_X86_64
 
 INIT_YMM avx2
 cglobal remap4_8bit_line, 7, 9, 11, dst, width, src, in_linesize, u, v, ker, x, y
@@ -139,4 +145,5 @@ cglobal remap4_8bit_line, 7, 9, 11, dst, width, src, in_linesize, u, v, ker, x, 
         jl .loop
     RET
 
+%endif
 %endif

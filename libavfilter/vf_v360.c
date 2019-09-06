@@ -285,7 +285,7 @@ void ff_v360_init(V360Context *s, int depth)
         break;
     }
 
-    if (ARCH_X86_64)
+    if (ARCH_X86)
         ff_v360_init_x86(s, depth);
 }
 
