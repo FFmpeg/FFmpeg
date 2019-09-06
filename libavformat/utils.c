@@ -1774,16 +1774,20 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return ret;
 }
 
-extern int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts);
-int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts) {
+extern int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts, int block);
+int av_try_read_frame(AVFormatContext *s, int * nb_packets, int64_t * ts, int block) {
     int ret = 0;
     AVPacket pkt1;
     AVPacket *pkt = &pkt1;
 
 retry:
     ret = read_frame_internal(s, pkt);
-    if (ret == AVERROR(EAGAIN))
-        goto retry;
+    if (ret == AVERROR(EAGAIN)) {
+        if (block)
+            goto retry;
+        else
+            return ret;
+    }
     if (ret < 0)
         return ret;
     if (ts != NULL && pkt->dts != AV_NOPTS_VALUE && pkt->stream_index >= 0 && s->nb_streams > 0) {
@@ -6207,7 +6211,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
         int64_t now = av_gettime();
         int64_t start_time = now;
         while ((*missing_streams)) {
-            ret = av_try_read_frame(ic, &nb_packets, NULL);
+            ret = av_try_read_frame(ic, &nb_packets, NULL, 1);
             if (ret < 0) {
                 av_log(NULL, AV_LOG_ERROR, "%s: av_try_read_frame fail!\n", __func__);
                 goto fail;
