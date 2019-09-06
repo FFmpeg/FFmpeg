@@ -9538,7 +9538,7 @@ The filter accepts the following options:
 @table @option
 @item contrast
 Set the contrast expression. The value must be a float value in range
-@code{-2.0} to @code{2.0}. The default value is "1".
+@code{-1000.0} to @code{1000.0}. The default value is "1".
 
 @item brightness
 Set the brightness expression. The value must be a float value in
