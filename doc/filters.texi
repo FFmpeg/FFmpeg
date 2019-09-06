@@ -18065,6 +18065,20 @@ Default resolution depends on formats.
 @item roll
 Set rotation for the output video. Values in degrees.
 
+@item rorder
+Set rotation order for the output video. Choose one item for each position.
+
+@table @samp
+@item y, Y
+yaw
+@item p, P
+pitch
+@item r, R
+roll
+@end table
+
+Default value is @b{@samp{ypr}}.
+
 @item h_flip
 @item v_flip
 @item d_flip

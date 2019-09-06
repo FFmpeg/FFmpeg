@@ -90,6 +90,7 @@ static const AVOption v360_options[] = {
     {       "yaw", "yaw rotation",                     OFFSET(yaw), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "yaw"},
     {     "pitch", "pitch rotation",                 OFFSET(pitch), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "pitch"},
     {      "roll", "roll rotation",                   OFFSET(roll), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "roll"},
+    {    "rorder", "rotation order",                OFFSET(rorder), AV_OPT_TYPE_STRING, {.str="ypr"},           0,                   0, FLAGS, "rorder"},
     {     "h_fov", "horizontal field of view",       OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},          0.f,               180.f, FLAGS, "h_fov"},
     {     "v_fov", "vertical field of view",         OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},          0.f,                90.f, FLAGS, "v_fov"},
     {    "h_flip", "flip video horizontally",       OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "h_flip"},
@@ -494,6 +495,26 @@ static int get_rotation(char c)
         return ROT_180;
     case '3':
         return ROT_270;
+    default:
+        return -1;
+    }
+}
+
+/**
+ * Convert char to corresponding rotation order.
+ */
+static int get_rorder(char c)
+{
+    switch (c) {
+    case 'Y':
+    case 'y':
+        return YAW;
+    case 'P':
+    case 'p':
+        return PITCH;
+    case 'R':
+    case 'r':
+        return ROLL;
     default:
         return -1;
     }
@@ -1849,11 +1870,26 @@ static void xyz_to_barrel(const V360Context *s,
 
 }
 
+static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
+{
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            float sum = 0;
+
+            for (int k = 0; k < 3; k++)
+                sum += a[i][k] * b[k][j];
+
+            c[i][j] = sum;
+        }
+    }
+}
+
 /**
  * Calculate rotation matrix for yaw/pitch/roll angles.
  */
 static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
-                                             float rot_mat[3][3])
+                                             float rot_mat[3][3],
+                                             const int rotation_order[3])
 {
     const float yaw_rad   = yaw   * M_PI / 180.f;
     const float pitch_rad = pitch * M_PI / 180.f;
@@ -1866,17 +1902,23 @@ static inline void calculate_rotation_matrix(float yaw, float pitch, float roll,
     const float sin_roll  = sinf(roll_rad);
     const float cos_roll  = cosf(roll_rad);
 
-    rot_mat[0][0] = sin_yaw * sin_pitch * sin_roll + cos_yaw * cos_roll;
-    rot_mat[0][1] = sin_yaw * sin_pitch * cos_roll - cos_yaw * sin_roll;
-    rot_mat[0][2] = sin_yaw * cos_pitch;
+    float m[3][3][3];
+    float temp[3][3];
 
-    rot_mat[1][0] = cos_pitch * sin_roll;
-    rot_mat[1][1] = cos_pitch * cos_roll;
-    rot_mat[1][2] = -sin_pitch;
+    m[0][0][0] =  cos_yaw;  m[0][0][1] = 0;          m[0][0][2] =  sin_yaw;
+    m[0][1][0] =  0;        m[0][1][1] = 1;          m[0][1][2] =  0;
+    m[0][2][0] = -sin_yaw;  m[0][2][1] = 0;          m[0][2][2] =  cos_yaw;
 
-    rot_mat[2][0] = cos_yaw * sin_pitch * sin_roll - sin_yaw * cos_roll;
-    rot_mat[2][1] = cos_yaw * sin_pitch * cos_roll + sin_yaw * sin_roll;
-    rot_mat[2][2] = cos_yaw * cos_pitch;
+    m[1][0][0] = 1;         m[1][0][1] = 0;          m[1][0][2] =  0;
+    m[1][1][0] = 0;         m[1][1][1] = cos_pitch;  m[1][1][2] = -sin_pitch;
+    m[1][2][0] = 0;         m[1][2][1] = sin_pitch;  m[1][2][2] =  cos_pitch;
+
+    m[2][0][0] = cos_roll;  m[2][0][1] = -sin_roll;  m[2][0][2] =  0;
+    m[2][1][0] = sin_roll;  m[2][1][1] =  cos_roll;  m[2][1][2] =  0;
+    m[2][2][0] = 0;         m[2][2][1] =  0;         m[2][2][2] =  1;
+
+    multiply_matrix(temp, m[rotation_order[0]], m[rotation_order[1]]);
+    multiply_matrix(rot_mat, temp, m[rotation_order[2]]);
 }
 
 /**
@@ -1985,6 +2027,26 @@ static int config_output(AVFilterLink *outlink)
     }
 
     ff_v360_init(s, depth);
+
+    for (int order = 0; order < NB_RORDERS; order++) {
+        const char c = s->rorder[order];
+        int rorder;
+
+        if (c == '\0') {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Incomplete rorder option. Direction for all 3 rotation orders should be specified.\n");
+            return AVERROR(EINVAL);
+        }
+
+        rorder = get_rorder(c);
+        if (rorder == -1) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Incorrect rotation order symbol '%c' in rorder option.\n", c);
+            return AVERROR(EINVAL);
+        }
+
+        s->rotation_order[order] = rorder;
+    }
 
     switch (s->in) {
     case EQUIRECTANGULAR:
@@ -2141,7 +2203,7 @@ static int config_output(AVFilterLink *outlink)
         allocate_plane(s, sizeof_uv, sizeof_ker, 2);
     }
 
-    calculate_rotation_matrix(s->yaw, s->pitch, s->roll, rot_mat);
+    calculate_rotation_matrix(s->yaw, s->pitch, s->roll, rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, mirror_modifier);
 
     // Calculate remap data

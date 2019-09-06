@@ -70,20 +70,29 @@ enum Rotation {
     NB_ROTATIONS,
 };
 
+enum RotationOrder {
+    YAW,
+    PITCH,
+    ROLL,
+    NB_RORDERS,
+};
+
 typedef struct V360Context {
     const AVClass *class;
     int in, out;
     int interp;
     int width, height;
-    char* in_forder;
-    char* out_forder;
-    char* in_frot;
-    char* out_frot;
+    char *in_forder;
+    char *out_forder;
+    char *in_frot;
+    char *out_frot;
+    char *rorder;
 
     int in_cubemap_face_order[6];
     int out_cubemap_direction_order[6];
     int in_cubemap_face_rotation[6];
     int out_cubemap_face_rotation[6];
+    int rotation_order[3];
 
     float in_pad, out_pad;
 
