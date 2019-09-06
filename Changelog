@@ -1,6 +1,74 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 4.2.1:
+- avformat/vividas: check for tiny blocks using alignment
+- avcodec/vc1_pred: Fix refdist in scaleforopp()
+- avcodec/vorbisdec: fix FASTDIV usage for vr_type == 2
+- avcodec/iff: Check for overlap in cmap_read_palette()
+- avcodec/apedec: Fix 32bit int overflow in do_apply_filter()
+- lavf/rawenc: Only accept the appropriate stream type for raw muxers.
+- avformat/matroskadec: use av_fast_realloc to reallocate ebml list arrays
+- avformat/matroskadec: use proper types for some EbmlSyntax fields
+- avcodec/ralf: fix undefined shift in extend_code()
+- avcodec/ralf: fix undefined shift
+- avcodec/bgmc: Check input space in ff_bgmc_decode_init()
+- avcodec/vp3: Check for end of input in 2 places of vp4_unpack_macroblocks()
+- avcodec/truemotion2: Fix multiple integer overflows in tm2_null_res_block()
+- avcodec/vc1_block: Check the return code from vc1_decode_p_block()
+- avcodec/vc1dec: Require res_sprite for wmv3images
+- avcodec/vc1_block: Check for double escapes
+- avcodec/vorbisdec: Check get_vlc2() failure
+- avcodec/tta: Fix integer overflow in prediction
+- avcodec/vb: Check input packet size to be large enough to contain flags
+- avcodec/cavsdec: Limit the number of access units per packet to 2
+- avcodec/atrac9dec: Check block_align
+- avcodec/alac: Check for bps of 0
+- avcodec/alac: Fix multiple integer overflows in lpc_prediction()
+- avcodec/rl2: set dimensions
+- avcodec/aacdec: Add FF_CODEC_CAP_INIT_CLEANUP
+- avcodec/idcinvideo: Add 320x240 default maximum resolution
+- avformat/realtextdec: free queue on error
+- avcodec/vp5/6/8: use vpX_rac_is_end()
+- avformat/vividas: Check av_xiphlacing() return value before use
+- avcodec/alsdec: Fix integer overflow in decode_var_block_data()
+- avcodec/alsdec: Limit maximum channels to 512
+- avcodec/anm: Check input size for a frame with just a stop code
+- avcodec/flicvideo: Optimize and Simplify FLI_COPY in flic_decode_frame_24BPP() by using bytestream2_get_buffer()
+- avcodec/loco: Check left column value
+- avcodec/ffwavesynth: Fixes invalid shift with pink noise seeking
+- avcodec/ffwavesynth: Fix integer overflow for some corner case values
+- avcodec/indeo2: Check remaining input more often
+- avcodec/diracdec: Check that slices are fewer than pixels
+- avcodec/vp56: Consider the alpha start as end of the prior header
+- avcodec/4xm: Check for end of input in decode_p_block()
+- avcodec/hevcdec: Check delta_luma_weight_l0/1
+- avcodec/hnm4video: Optimize postprocess_current_frame()
+- avcodec/hevc_refs: Optimize 16bit generate_missing_ref()
+- avcodec/scpr: Use av_memcpy_backptr() in type 17 and 33
+- avcodec/tiff: Enforce increasing offsets
+- avcodec/dds: Use ff_set_dimensions()
+- avformat/vividas: Fix another infinite loop
+- avformat/vividas: Fix infinite loop in header parser
+- avcodec/mpc8: Fix 32bit mask/enum
+- avcodec/alsdec: Fix integer overflows of raw_samples in decode_var_block_data()
+- avcodec/alsdec: Fix integer overflow of raw_samples in decode_blocks()
+- avcodec/alsdec: fix mantisse shift
+- avcodec/pngdec: consider chunk size in minimal size check
+- avcodec/vc1_block: Fix invalid shifts in vc1_decode_i_blocks()
+- avcodec/vc1_block: fix invalid shift in vc1_decode_p_mb()
+- avcodec/aacdec_template: fix integer overflow in imdct_and_windowing()
+- avformat/mpegts: Check if ready on SCTE reception
+- avcodec/omx: fix xFramerate calculation
+- avformat/avidec: add support for recognizing HEVC fourcc when demuxing
+- avformat/mpegts: fix teletext PTS when selecting teletext streams only
+- avcodec/h2645_parse: zero initialize the rbsp buffer
+- avcodec/omx: Fix handling of fragmented buffers
+- avcodec/omx: ensure zerocopy mode can be disabled on rpi builds
+- avformat/mxfdec: do not ignore bad size errors
+- avformat/matroskadec: Fix seeking
+- ffplay: properly detect all window size changes
+
 version 4.2:
 - tpad filter
 - AV1 decoding support through libdav1d
