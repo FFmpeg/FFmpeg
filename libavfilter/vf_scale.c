@@ -412,7 +412,7 @@ static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, s
                          out,out_stride);
 }
 
-static int filter_frame(AVFilterLink *link, AVFrame *in)
+static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
 {
     ScaleContext *scale = link->dst->priv;
     AVFilterLink *outlink = link->dst->outputs[0];
@@ -421,6 +421,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     char buf[32];
     int in_range;
 
+    *frame_out = NULL;
     if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
 
@@ -449,8 +450,10 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             return ret;
     }
 
-    if (!scale->sws)
-        return ff_filter_frame(outlink, in);
+    if (!scale->sws) {
+        *frame_out = in;
+        return 0;
+    }
 
     scale->hsub = desc->log2_chroma_w;
     scale->vsub = desc->log2_chroma_h;
@@ -460,6 +463,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
         av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
+    *frame_out = out;
 
     av_frame_copy_props(out, in);
     out->width  = outlink->w;
@@ -533,7 +537,21 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     }
 
     av_frame_free(&in);
-    return ff_filter_frame(outlink, out);
+    return 0;
+}
+
+static int filter_frame(AVFilterLink *link, AVFrame *in)
+{
+    AVFilterContext *ctx = link->dst;
+    AVFilterLink *outlink = ctx->outputs[0];
+    AVFrame *out;
+    int ret;
+
+    ret = scale_frame(link, in, &out);
+    if (out)
+        return ff_filter_frame(outlink, out);
+
+    return ret;
 }
 
 static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
