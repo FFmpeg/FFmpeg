@@ -2601,6 +2601,8 @@ static int hls_write_trailer(struct AVFormatContext *s)
             }
             reflush_dynbuf(vs, &range_length);
             ret = hlsenc_io_close(s, &vs->out, filename);
+            if (ret < 0)
+                av_log(s, AV_LOG_WARNING, "Failed to upload file '%s' at the end.\n", vs->avf->url);
         }
         av_free(vs->temp_buffer);
 
