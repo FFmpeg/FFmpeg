@@ -18084,6 +18084,12 @@ Default value is @b{@samp{ypr}}.
 @item d_flip
 Flip the output video horizontally/vertically/in-depth. Boolean values.
 
+@item in_trans
+Set if input video is transposed. Boolean value, by default disabled.
+
+@item out_trans
+Set if output video needs to be transposed. Boolean value, by default disabled.
+
 @end table
 
 @subsection Examples

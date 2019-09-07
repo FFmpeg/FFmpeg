@@ -93,9 +93,11 @@ static const AVOption v360_options[] = {
     {    "rorder", "rotation order",                OFFSET(rorder), AV_OPT_TYPE_STRING, {.str="ypr"},           0,                   0, FLAGS, "rorder"},
     {     "h_fov", "horizontal field of view",       OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},          0.f,               180.f, FLAGS, "h_fov"},
     {     "v_fov", "vertical field of view",         OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},          0.f,                90.f, FLAGS, "v_fov"},
-    {    "h_flip", "flip video horizontally",       OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "h_flip"},
-    {    "v_flip", "flip video vertically",         OFFSET(v_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "v_flip"},
-    {    "d_flip", "flip video indepth",            OFFSET(d_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "d_flip"},
+    {    "h_flip", "flip out video horizontally",   OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "h_flip"},
+    {    "v_flip", "flip out video vertically",     OFFSET(v_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "v_flip"},
+    {    "d_flip", "flip out video indepth",        OFFSET(d_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "d_flip"},
+    {  "in_trans", "transpose video input",   OFFSET(in_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "in_transpose"},
+    { "out_trans", "transpose video output", OFFSET(out_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "out_transpose"},
     { NULL }
 };
 
@@ -2165,6 +2167,12 @@ static int config_output(AVFilterLink *outlink)
     } else if (s->width > 0 || s->height > 0) {
         av_log(ctx, AV_LOG_ERROR, "Both width and height values should be specified.\n");
         return AVERROR(EINVAL);
+    } else {
+        if (s->out_transpose)
+            FFSWAP(int, w, h);
+
+        if (s->in_transpose)
+            FFSWAP(int, w, h);
     }
 
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
@@ -2223,10 +2231,16 @@ static int config_output(AVFilterLink *outlink)
                 uint16_t *v = s->v[p] + (j * width + i) * elements;
                 int16_t *ker = s->ker[p] + (j * width + i) * elements;
 
-                out_transform(s, i, j, width, height, vec);
+                if (s->out_transpose)
+                    out_transform(s, j, i, height, width, vec);
+                else
+                    out_transform(s, i, j, width, height, vec);
                 rotate(rot_mat, vec);
                 mirror(mirror_modifier, vec);
-                in_transform(s, vec, in_width, in_height, r_tmp.u, r_tmp.v, &du, &dv);
+                if (s->in_transpose)
+                    in_transform(s, vec, in_height, in_width, r_tmp.v, r_tmp.u, &du, &dv);
+                else
+                    in_transform(s, vec, in_width, in_height, r_tmp.u, r_tmp.v, &du, &dv);
                 calculate_kernel(du, dv, &r_tmp, u, v, ker);
             }
         }

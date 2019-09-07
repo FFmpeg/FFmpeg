@@ -99,6 +99,7 @@ typedef struct V360Context {
     float yaw, pitch, roll;
 
     int h_flip, v_flip, d_flip;
+    int in_transpose, out_transpose;
 
     float h_fov, v_fov;
     float flat_range[3];
