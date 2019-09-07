@@ -96,6 +96,8 @@ static const AVOption v360_options[] = {
     {    "h_flip", "flip out video horizontally",   OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "h_flip"},
     {    "v_flip", "flip out video vertically",     OFFSET(v_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "v_flip"},
     {    "d_flip", "flip out video indepth",        OFFSET(d_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "d_flip"},
+    {   "ih_flip", "flip in video horizontally",   OFFSET(ih_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "ih_flip"},
+    {   "iv_flip", "flip in video vertically",     OFFSET(iv_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "iv_flip"},
     {  "in_trans", "transpose video input",   OFFSET(in_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "in_transpose"},
     { "out_trans", "transpose video output", OFFSET(out_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "out_transpose"},
     { NULL }
@@ -815,6 +817,9 @@ static void xyz_to_cube(const V360Context *s,
 
     face = s->in_cubemap_face_order[*direction];
     rotate_cube_face(uf, vf, s->in_cubemap_face_rotation[face]);
+
+    (*uf) *= s->input_mirror_modifier[0];
+    (*vf) *= s->input_mirror_modifier[1];
 }
 
 /**
@@ -1125,7 +1130,6 @@ static void xyz_to_cube3x2(const V360Context *s,
                 new_vi = av_clip(roundf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
-
             us[i + 1][j + 1] = u_shift + new_ui;
             vs[i + 1][j + 1] = v_shift + new_vi;
         }
@@ -1259,7 +1263,6 @@ static void xyz_to_cube1x6(const V360Context *s,
                 new_vi = av_clip(roundf(0.5f * new_ehi * (vf + 1.f)), 0, new_ehi - 1);
             }
 
-
             us[i + 1][j + 1] =           new_ui;
             vs[i + 1][j + 1] = v_shift + new_vi;
         }
@@ -1337,7 +1340,6 @@ static void xyz_to_cube6x1(const V360Context *s,
                 new_vi = av_clip(roundf(0.5f *     ehi * (vf + 1.f)), 0,     ehi - 1);
             }
 
-
             us[i + 1][j + 1] = u_shift + new_ui;
             vs[i + 1][j + 1] =           new_vi;
         }
@@ -1387,8 +1389,8 @@ static void xyz_to_equirect(const V360Context *s,
                             const float *vec, int width, int height,
                             uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
-    const float phi   = atan2f(vec[0], -vec[2]);
-    const float theta = asinf(-vec[1]);
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
+    const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
     float uf, vf;
     int ui, vi;
     int i, j;
@@ -1420,19 +1422,51 @@ static int prepare_eac_in(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    s->in_cubemap_face_order[RIGHT] = TOP_RIGHT;
-    s->in_cubemap_face_order[LEFT]  = TOP_LEFT;
-    s->in_cubemap_face_order[UP]    = BOTTOM_RIGHT;
-    s->in_cubemap_face_order[DOWN]  = BOTTOM_LEFT;
-    s->in_cubemap_face_order[FRONT] = TOP_MIDDLE;
-    s->in_cubemap_face_order[BACK]  = BOTTOM_MIDDLE;
+    if (s->ih_flip && s->iv_flip) {
+        s->in_cubemap_face_order[RIGHT] = BOTTOM_LEFT;
+        s->in_cubemap_face_order[LEFT]  = BOTTOM_RIGHT;
+        s->in_cubemap_face_order[UP]    = TOP_LEFT;
+        s->in_cubemap_face_order[DOWN]  = TOP_RIGHT;
+        s->in_cubemap_face_order[FRONT] = BOTTOM_MIDDLE;
+        s->in_cubemap_face_order[BACK]  = TOP_MIDDLE;
+    } else if (s->ih_flip) {
+        s->in_cubemap_face_order[RIGHT] = TOP_LEFT;
+        s->in_cubemap_face_order[LEFT]  = TOP_RIGHT;
+        s->in_cubemap_face_order[UP]    = BOTTOM_LEFT;
+        s->in_cubemap_face_order[DOWN]  = BOTTOM_RIGHT;
+        s->in_cubemap_face_order[FRONT] = TOP_MIDDLE;
+        s->in_cubemap_face_order[BACK]  = BOTTOM_MIDDLE;
+    } else if (s->iv_flip) {
+        s->in_cubemap_face_order[RIGHT] = BOTTOM_RIGHT;
+        s->in_cubemap_face_order[LEFT]  = BOTTOM_LEFT;
+        s->in_cubemap_face_order[UP]    = TOP_RIGHT;
+        s->in_cubemap_face_order[DOWN]  = TOP_LEFT;
+        s->in_cubemap_face_order[FRONT] = BOTTOM_MIDDLE;
+        s->in_cubemap_face_order[BACK]  = TOP_MIDDLE;
+    } else {
+        s->in_cubemap_face_order[RIGHT] = TOP_RIGHT;
+        s->in_cubemap_face_order[LEFT]  = TOP_LEFT;
+        s->in_cubemap_face_order[UP]    = BOTTOM_RIGHT;
+        s->in_cubemap_face_order[DOWN]  = BOTTOM_LEFT;
+        s->in_cubemap_face_order[FRONT] = TOP_MIDDLE;
+        s->in_cubemap_face_order[BACK]  = BOTTOM_MIDDLE;
+    }
 
-    s->in_cubemap_face_rotation[TOP_LEFT]      = ROT_0;
-    s->in_cubemap_face_rotation[TOP_MIDDLE]    = ROT_0;
-    s->in_cubemap_face_rotation[TOP_RIGHT]     = ROT_0;
-    s->in_cubemap_face_rotation[BOTTOM_LEFT]   = ROT_270;
-    s->in_cubemap_face_rotation[BOTTOM_MIDDLE] = ROT_90;
-    s->in_cubemap_face_rotation[BOTTOM_RIGHT]  = ROT_270;
+    if (s->iv_flip) {
+        s->in_cubemap_face_rotation[TOP_LEFT]      = ROT_270;
+        s->in_cubemap_face_rotation[TOP_MIDDLE]    = ROT_90;
+        s->in_cubemap_face_rotation[TOP_RIGHT]     = ROT_270;
+        s->in_cubemap_face_rotation[BOTTOM_LEFT]   = ROT_0;
+        s->in_cubemap_face_rotation[BOTTOM_MIDDLE] = ROT_0;
+        s->in_cubemap_face_rotation[BOTTOM_RIGHT]  = ROT_0;
+    } else {
+        s->in_cubemap_face_rotation[TOP_LEFT]      = ROT_0;
+        s->in_cubemap_face_rotation[TOP_MIDDLE]    = ROT_0;
+        s->in_cubemap_face_rotation[TOP_RIGHT]     = ROT_0;
+        s->in_cubemap_face_rotation[BOTTOM_LEFT]   = ROT_270;
+        s->in_cubemap_face_rotation[BOTTOM_MIDDLE] = ROT_90;
+        s->in_cubemap_face_rotation[BOTTOM_RIGHT]  = ROT_270;
+    }
 
     return 0;
 }
@@ -1694,8 +1728,8 @@ static void xyz_to_dfisheye(const V360Context *s,
     const float ew = width / 2.f;
     const float eh = height;
 
-    const float phi   = atan2f(-vec[1], -vec[0]);
-    const float theta = acosf(fabsf(vec[2])) / M_PI;
+    const float phi   = atan2f(-vec[1], -vec[0]) * s->input_mirror_modifier[0];
+    const float theta = acosf(fabsf(vec[2])) / M_PI * s->input_mirror_modifier[1];
 
     float uf = (theta * cosf(phi) * scale + 0.5f) * ew;
     float vf = (theta * sinf(phi) * scale + 0.5f) * eh;
@@ -1818,8 +1852,8 @@ static void xyz_to_barrel(const V360Context *s,
 {
     const float scale = 0.99f;
 
-    const float phi   = atan2f(vec[0], -vec[2]);
-    const float theta = asinf(-vec[1]);
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
+    const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
     const float theta_range = M_PI / 4.f;
 
     int ew, eh;
@@ -1832,7 +1866,7 @@ static void xyz_to_barrel(const V360Context *s,
         ew = 4 * width / 5;
         eh = height;
 
-        u_shift = 0;
+        u_shift = s->ih_flip ? width / 5 : 0;
         v_shift = 0;
 
         uf = (phi   / M_PI        * scale + 1.f) * ew / 2.f;
@@ -1841,7 +1875,7 @@ static void xyz_to_barrel(const V360Context *s,
         ew = width  / 5;
         eh = height / 2;
 
-        u_shift = 4 * ew;
+        u_shift = s->ih_flip ? 0 : 4 * ew;
 
         if (theta < 0.f) {  // UP
             uf =  vec[0] / vec[1];
@@ -1852,6 +1886,9 @@ static void xyz_to_barrel(const V360Context *s,
             vf = -vec[2] / vec[1];
             v_shift = eh;
         }
+
+        uf *= s->input_mirror_modifier[0] * s->input_mirror_modifier[1];
+        vf *= s->input_mirror_modifier[1];
 
         uf = 0.5f * ew * (uf * scale + 1.f);
         vf = 0.5f * eh * (vf * scale + 1.f);
@@ -1869,7 +1906,6 @@ static void xyz_to_barrel(const V360Context *s,
             vs[i + 1][j + 1] = v_shift + av_clip(vi + i, 0, eh - 1);
         }
     }
-
 }
 
 static void multiply_matrix(float c[3][3], const float a[3][3], const float b[3][3])
@@ -1984,7 +2020,7 @@ static int config_output(AVFilterLink *outlink)
     int err;
     int p, h, w;
     float hf, wf;
-    float mirror_modifier[3];
+    float output_mirror_modifier[3];
     void (*in_transform)(const V360Context *s,
                          const float *vec, int width, int height,
                          uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv);
@@ -1994,6 +2030,9 @@ static int config_output(AVFilterLink *outlink)
     void (*calculate_kernel)(float du, float dv, const XYRemap *r_tmp,
                              uint16_t *u, uint16_t *v, int16_t *ker);
     float rot_mat[3][3];
+
+    s->input_mirror_modifier[0] = s->ih_flip ? -1.f : 1.f;
+    s->input_mirror_modifier[1] = s->iv_flip ? -1.f : 1.f;
 
     switch (s->interp) {
     case NEAREST:
@@ -2212,7 +2251,7 @@ static int config_output(AVFilterLink *outlink)
     }
 
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, rot_mat, s->rotation_order);
-    set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, mirror_modifier);
+    set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, output_mirror_modifier);
 
     // Calculate remap data
     for (p = 0; p < s->nb_allocated; p++) {
@@ -2236,7 +2275,7 @@ static int config_output(AVFilterLink *outlink)
                 else
                     out_transform(s, i, j, width, height, vec);
                 rotate(rot_mat, vec);
-                mirror(mirror_modifier, vec);
+                mirror(output_mirror_modifier, vec);
                 if (s->in_transpose)
                     in_transform(s, vec, in_height, in_width, r_tmp.v, r_tmp.u, &du, &dv);
                 else
