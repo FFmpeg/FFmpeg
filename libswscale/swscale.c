@@ -291,11 +291,9 @@ static int swscale(SwsContext *c, const uint8_t *src[],
 
 
     if (isPacked(c->srcFormat)) {
-        src[0] =
         src[1] =
         src[2] =
         src[3] = src[0];
-        srcStride[0] =
         srcStride[1] =
         srcStride[2] =
         srcStride[3] = srcStride[0];
