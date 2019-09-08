@@ -408,7 +408,7 @@ int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
 void ff_color_frame(AVFrame *frame, const int c[4])
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(frame->format);
-    int p, y, x;
+    int p, y;
 
     av_assert0(desc->flags & AV_PIX_FMT_FLAG_PLANAR);
 
@@ -419,8 +419,8 @@ void ff_color_frame(AVFrame *frame, const int c[4])
         int height = is_chroma ? AV_CEIL_RSHIFT(frame->height, desc->log2_chroma_h) : frame->height;
         for (y = 0; y < height; y++) {
             if (desc->comp[0].depth >= 9) {
-                for (x = 0; x<bytes; x++)
-                    ((uint16_t*)dst)[x] = c[p];
+                ((uint16_t*)dst)[0] = c[p];
+                av_memcpy_backptr(dst + 2, 2, bytes - 2);
             }else
                 memset(dst, c[p], bytes);
             dst += frame->linesize[p];
