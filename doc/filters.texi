@@ -17928,6 +17928,7 @@ Available formats:
 @table @samp
 
 @item e
+@item equirect
 Equirectangular projection.
 
 @item c3x2
@@ -17997,6 +17998,8 @@ Default value is @b{@samp{000000}}.
 Equi-Angular Cubemap.
 
 @item flat
+@item gnomonic
+@item rectilinear
 Regular video. @i{(output only)}
 
 Format specific options:
@@ -18028,6 +18031,15 @@ Default value is @b{@samp{0}}.
 @item barrel
 @item fb
 Facebook's 360 format.
+
+@item sg
+Stereographic format. @i{(output only)}
+
+Format specific options:
+@table @option
+@item h_fov
+Set field of view. Values in degrees.
+@end table
 
 @end table
 
