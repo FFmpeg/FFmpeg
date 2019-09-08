@@ -31,6 +31,7 @@ enum Projections {
     DUAL_FISHEYE,
     BARREL,
     CUBEMAP_1_6,
+    STEREOGRAPHIC,
     NB_PROJECTIONS,
 };
 

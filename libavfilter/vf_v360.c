@@ -74,6 +74,7 @@ static const AVOption v360_options[] = {
     {    "barrel", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "out" },
     {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "out" },
     {      "c1x6", "cubemap 1x6",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "out" },
+    {        "sg", "stereographic",                              0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1378,6 +1379,36 @@ static void equirect_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in stereographic format.
+ *
+ * @param s filter context
+ * @param i horizontal position on frame [0, height)
+ * @param j vertical position on frame [0, width)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void stereographic_to_xyz(const V360Context *s,
+                                 int i, int j, int width, int height,
+                                 float *vec)
+{
+    const float z  = 0.5f * s->h_fov * M_PI / 180.f;
+    const float x  = z * (2.f * i / width  - 1.f);
+    const float y  = z * (2.f * j / height - 1.f);
+    const float xy = x * x + y * y;
+    float norm;
+
+    vec[0] = 2.f * x / (1.f + xy);
+    vec[1] = (-1.f + xy) / (1.f + xy);
+    vec[2] = 2.f * y / (1.f + xy);
+
+    norm = sqrtf(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+    vec[0] /= norm;
+    vec[1] /= norm;
+    vec[2] /= norm;
+}
+
+/**
  * Calculate frame position in equirectangular format for corresponding 3D coordinates on sphere.
  *
  * @param s filter context
@@ -2193,6 +2224,12 @@ static int config_output(AVFilterLink *outlink)
         err = 0;
         w = roundf(wf / 4.f * 5.f);
         h = roundf(hf);
+        break;
+    case STEREOGRAPHIC:
+        out_transform = stereographic_to_xyz;
+        err = 0;
+        w = FFMAX(roundf(wf), roundf(hf));
+        h = w;
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
