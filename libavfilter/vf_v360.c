@@ -222,6 +222,7 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
     for (int plane = 0; plane < s->nb_planes; plane++) {                                                   \
         const int in_linesize  = in->linesize[plane];                                                      \
         const int out_linesize = out->linesize[plane];                                                     \
+        const int uv_linesize = s->uv_linesize[plane];                                                     \
         const uint8_t *src = in->data[plane];                                                              \
         uint8_t *dst = out->data[plane];                                                                   \
         const int width = s->planewidth[plane];                                                            \
@@ -232,9 +233,9 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
                                                                                                            \
         for (int y = slice_start; y < slice_end; y++) {                                                    \
             const unsigned map = s->map[plane];                                                            \
-            const uint16_t *u = s->u[map] + y * width * ws * ws;                                           \
-            const uint16_t *v = s->v[map] + y * width * ws * ws;                                           \
-            const int16_t *ker = s->ker[map] + y * width * ws * ws;                                        \
+            const uint16_t *u = s->u[map] + y * uv_linesize * ws * ws;                                     \
+            const uint16_t *v = s->v[map] + y * uv_linesize * ws * ws;                                     \
+            const int16_t *ker = s->ker[map] + y * uv_linesize * ws * ws;                                  \
                                                                                                            \
             s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                     \
         }                                                                                                  \
@@ -2035,12 +2036,12 @@ static inline void mirror(const float *modifier, float *vec)
 
 static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
 {
-    s->u[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
-    s->v[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_uv);
+    s->u[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_uv);
+    s->v[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_uv);
     if (!s->u[p] || !s->v[p])
         return AVERROR(ENOMEM);
     if (sizeof_ker) {
-        s->ker[p] = av_calloc(s->planewidth[p] * s->planeheight[p], sizeof_ker);
+        s->ker[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_ker);
         if (!s->ker[p])
             return AVERROR(ENOMEM);
     }
@@ -2266,6 +2267,9 @@ static int config_output(AVFilterLink *outlink)
     s->planewidth[1]  = s->planewidth[2] = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3] = w;
 
+    for (int i = 0; i < 4; i++)
+        s->uv_linesize[i] = FFALIGN(s->planewidth[i], 8);
+
     outlink->h = h;
     outlink->w = w;
 
@@ -2303,6 +2307,7 @@ static int config_output(AVFilterLink *outlink)
     // Calculate remap data
     for (p = 0; p < s->nb_allocated; p++) {
         const int width = s->planewidth[p];
+        const int uv_linesize = s->uv_linesize[p];
         const int height = s->planeheight[p];
         const int in_width = s->inplanewidth[p];
         const int in_height = s->inplaneheight[p];
@@ -2313,9 +2318,9 @@ static int config_output(AVFilterLink *outlink)
 
         for (i = 0; i < width; i++) {
             for (j = 0; j < height; j++) {
-                uint16_t *u = s->u[p] + (j * width + i) * elements;
-                uint16_t *v = s->v[p] + (j * width + i) * elements;
-                int16_t *ker = s->ker[p] + (j * width + i) * elements;
+                uint16_t *u = s->u[p] + (j * uv_linesize + i) * elements;
+                uint16_t *v = s->v[p] + (j * uv_linesize + i) * elements;
+                int16_t *ker = s->ker[p] + (j * uv_linesize + i) * elements;
 
                 if (s->out_transpose)
                     out_transform(s, j, i, height, width, vec);

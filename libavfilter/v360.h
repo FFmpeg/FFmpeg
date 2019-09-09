@@ -110,6 +110,7 @@ typedef struct V360Context {
 
     int planewidth[4], planeheight[4];
     int inplanewidth[4], inplaneheight[4];
+    int uv_linesize[4];
     int nb_planes;
     int nb_allocated;
 
