@@ -29,16 +29,12 @@ void *ff_mediacodec_surface_ref(void *surface, void *log_ctx)
 {
     JNIEnv *env = NULL;
 
-    void *reference = NULL;
-
     env = ff_jni_get_env(log_ctx);
     if (!env) {
         return NULL;
     }
 
-    reference = (*env)->NewGlobalRef(env, surface);
-
-    return reference;
+    return (*env)->NewGlobalRef(env, surface);
 }
 
 int ff_mediacodec_surface_unref(void *surface, void *log_ctx)
