@@ -18040,10 +18040,6 @@ Format specific options:
 @item h_fov
 @item v_fov
 Set horizontal/vertical field of view. Values in degrees.
-
-@item p_lon
-@item p_lat
-Set central point of projection longitude/latitude. Values in degrees.
 @end table
 
 @end table
