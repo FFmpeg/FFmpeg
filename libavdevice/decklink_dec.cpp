@@ -784,6 +784,8 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                             if (packed_metadata) {
                                 if (av_packet_add_side_data(&pkt, AV_PKT_DATA_STRINGS_METADATA, packed_metadata, metadata_len) < 0)
                                     av_freep(&packed_metadata);
+                                else if (!ctx->tc_seen)
+                                    ctx->tc_seen = ctx->frameCount;
                             }
                         }
                     }
@@ -791,6 +793,14 @@ HRESULT decklink_input_callback::VideoInputFrameArrived(
                     av_log(avctx, AV_LOG_DEBUG, "Unable to find timecode.\n");
                 }
             }
+        }
+
+        if (ctx->tc_format && cctx->wait_for_tc && !ctx->tc_seen) {
+
+            av_log(avctx, AV_LOG_WARNING, "No TC detected yet. wait_for_tc set. Dropping. \n");
+            av_log(avctx, AV_LOG_WARNING, "Frame received (#%lu) - "
+                        "- Frames dropped %u\n", ctx->frameCount, ++ctx->dropped);
+            return S_OK;
         }
 
         pkt.pts = get_pkt_pts(videoFrame, audioFrame, wallclock, abs_wallclock, ctx->video_pts_source, ctx->video_st->time_base, &initial_video_pts, cctx->copyts);

@@ -149,6 +149,7 @@ struct decklink_ctx {
 
     int channels;
     int audio_depth;
+    unsigned long tc_seen;    // used with option wait_for_tc
 };
 
 typedef enum { DIRECTION_IN, DIRECTION_OUT} decklink_direction_t;

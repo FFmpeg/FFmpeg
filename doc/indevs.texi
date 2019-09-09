@@ -395,6 +395,14 @@ Either sync could go wrong by 1 frame or in a rarer case
 @option{timestamp_align} seconds.
 Defaults to @samp{0}.
 
+@item wait_for_tc (@emph{bool})
+Drop frames till a frame with timecode is received. Sometimes serial timecode
+isn't received with the first input frame. If that happens, the stored stream
+timecode will be inaccurate. If this option is set to @option{true}, input frames
+are dropped till a frame with timecode is received.
+Option @var{timecode_format} must be specified.
+Defaults to @option{false}.
+
 @end table
 
 @subsection Examples
