@@ -17987,7 +17987,7 @@ Designation of angles:
 90 degrees clockwise
 @item 2
 180 degrees clockwise
-@item 4
+@item 3
 270 degrees clockwise
 @end table
 
