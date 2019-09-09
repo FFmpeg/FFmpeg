@@ -854,6 +854,9 @@ static int epic_decode_tile(ePICContext *dc, uint8_t *out, int tile_height,
                     uint32_t ref_pix = curr_row[x - 1];
                     if (!x || !epic_decode_from_cache(dc, ref_pix, &pix)) {
                         pix = epic_decode_pixel_pred(dc, x, y, curr_row, above_row);
+                        if (is_pixel_on_stack(dc, pix))
+                            return AVERROR_INVALIDDATA;
+
                         if (x) {
                             int ret = epic_add_pixel_to_cache(&dc->hash,
                                                               ref_pix,
