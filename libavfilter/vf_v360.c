@@ -33,6 +33,8 @@
  * 5) Remap input frame to output frame using precalculated data
  */
 
+#include <math.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
@@ -2319,12 +2321,16 @@ static int config_output(AVFilterLink *outlink)
                     out_transform(s, j, i, height, width, vec);
                 else
                     out_transform(s, i, j, width, height, vec);
+                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
                 rotate(rot_mat, vec);
+                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
+                normalize_vector(vec);
                 mirror(output_mirror_modifier, vec);
                 if (s->in_transpose)
                     in_transform(s, vec, in_height, in_width, r_tmp.v, r_tmp.u, &du, &dv);
                 else
                     in_transform(s, vec, in_width, in_height, r_tmp.u, r_tmp.v, &du, &dv);
+                av_assert1(!isnan(du) && !isnan(dv));
                 calculate_kernel(du, dv, &r_tmp, u, v, ker);
             }
         }
