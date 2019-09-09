@@ -237,9 +237,9 @@ static void apply_ltp_mips(AACContext *ac, SingleChannelElement *sce)
 
         if (ltp->lag < 1024)
             num_samples = ltp->lag + 1024;
-            j = (2048 - num_samples) >> 2;
-            k = (2048 - num_samples) & 3;
-            p_predTime = &predTime[num_samples];
+        j = (2048 - num_samples) >> 2;
+        k = (2048 - num_samples) & 3;
+        p_predTime = &predTime[num_samples];
 
         for (i = 0; i < num_samples; i++)
             predTime[i] = sce->ltp_state[i + 2048 - ltp->lag] * ltp->coef;
