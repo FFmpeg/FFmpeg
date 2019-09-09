@@ -980,6 +980,7 @@ static int init_report(const char *env)
     char *filename_template = NULL;
     char *key, *val;
     int ret, count = 0;
+    int prog_loglevel, envlevel = 0;
     time_t now;
     struct tm *tm;
     AVBPrint filename;
@@ -1011,6 +1012,7 @@ static int init_report(const char *env)
                 av_log(NULL, AV_LOG_FATAL, "Invalid report file level\n");
                 exit_program(1);
             }
+            envlevel = 1;
         } else {
             av_log(NULL, AV_LOG_ERROR, "Unknown key '%s' in FFREPORT\n", key);
         }
@@ -1027,6 +1029,10 @@ static int init_report(const char *env)
         return AVERROR(ENOMEM);
     }
 
+    prog_loglevel = av_log_get_level();
+    if (!envlevel)
+        report_file_level = FFMAX(report_file_level, prog_loglevel);
+
     report_file = fopen(filename.str, "w");
     if (!report_file) {
         int ret = AVERROR(errno);
@@ -1037,11 +1043,12 @@ static int init_report(const char *env)
     av_log_set_callback(log_callback_report);
     av_log(NULL, AV_LOG_INFO,
            "%s started on %04d-%02d-%02d at %02d:%02d:%02d\n"
-           "Report written to \"%s\"\n",
+           "Report written to \"%s\"\n"
+           "Log level: %d\n",
            program_name,
            tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
            tm->tm_hour, tm->tm_min, tm->tm_sec,
-           filename.str);
+           filename.str, report_file_level);
     av_bprint_finalize(&filename, NULL);
     return 0;
 }
