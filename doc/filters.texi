@@ -18038,7 +18038,12 @@ Stereographic format. @i{(output only)}
 Format specific options:
 @table @option
 @item h_fov
-Set field of view. Values in degrees.
+@item v_fov
+Set horizontal/vertical field of view. Values in degrees.
+
+@item p_lon
+@item p_lat
+Set central point of projection longitude/latitude. Values in degrees.
 @end table
 
 @end table

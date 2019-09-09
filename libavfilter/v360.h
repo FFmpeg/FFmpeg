@@ -105,6 +105,7 @@ typedef struct V360Context {
 
     float h_fov, v_fov;
     float flat_range[3];
+    float p_lon, p_lat;
 
     float input_mirror_modifier[2];
 

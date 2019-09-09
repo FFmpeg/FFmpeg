@@ -33,6 +33,8 @@
  * 5) Remap input frame to output frame using precalculated data
  */
 
+#include <float.h>
+
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/pixdesc.h"
@@ -105,6 +107,8 @@ static const AVOption v360_options[] = {
     {   "iv_flip", "flip in video vertically",     OFFSET(iv_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "iv_flip"},
     {  "in_trans", "transpose video input",   OFFSET(in_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "in_transpose"},
     { "out_trans", "transpose video output", OFFSET(out_transpose), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "out_transpose"},
+    {     "p_lon", "central projection longitude",   OFFSET(p_lon), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "p_lon"},
+    {     "p_lat", "central projection latitude",    OFFSET(p_lat), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},        -90.f,                90.f, FLAGS, "p_lat"},
     { NULL }
 };
 
@@ -1406,14 +1410,26 @@ static void stereographic_to_xyz(const V360Context *s,
                                  int i, int j, int width, int height,
                                  float *vec)
 {
-    const float z  = 0.5f * s->h_fov * M_PI / 180.f;
-    const float x  = z * (2.f * i / width  - 1.f);
-    const float y  = z * (2.f * j / height - 1.f);
-    const float xy = x * x + y * y;
+    const float x = ((2.f * i) / width  - 1.f) * (s->h_fov / 180.f) * M_PI;
+    const float y = ((2.f * j) / height - 1.f) * (s->v_fov /  90.f) * M_PI_2;
+    const float rho = hypotf(x, y) + FLT_EPSILON;
+    const float c = 2.f * atan2f(rho, 0.15f / 2.f);
+    const float cos_c = cosf(c);
+    const float sin_c = sinf(c);
+    const float cp_x = s->p_lon / 180.f * M_PI;
+    const float cp_y = s->p_lat / 90.f * M_PI_2;
 
-    vec[0] = 2.f * x / (1.f + xy);
-    vec[1] = (-1.f + xy) / (1.f + xy);
-    vec[2] = 2.f * y / (1.f + xy);
+    const float phi   = cp_x + atan2f(x * sin_c, rho * cosf(cp_y) * cos_c - y * sinf(cp_y) * sin_c);
+    const float theta = asinf(cos_c * sinf(cp_y) + (y * sin_c * cosf(cp_y)) / rho);
+
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] =  cos_theta * sin_phi;
+    vec[1] = -sin_theta;
+    vec[2] = -cos_theta * cos_phi;
 
     normalize_vector(vec);
 }
