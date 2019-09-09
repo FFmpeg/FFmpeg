@@ -244,6 +244,9 @@ static int jpg_decode_block(JPGContext *c, GetBitContext *gb,
     const int is_chroma = !!plane;
     const uint8_t *qmat = is_chroma ? chroma_quant : luma_quant;
 
+    if (get_bits_left(gb) < 1)
+        return AVERROR_INVALIDDATA;
+
     c->bdsp.clear_block(block);
     dc = get_vlc2(gb, c->dc_vlc[is_chroma].table, 9, 3);
     if (dc < 0)
