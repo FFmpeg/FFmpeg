@@ -2643,6 +2643,7 @@ failed:
             ff_format_io_close(s, &vs->out);
             hls_window(s, 1, vs);
         }
+        ffio_free_dyn_buf(&oc->pb);
         avformat_free_context(oc);
 
         vs->avf = NULL;
