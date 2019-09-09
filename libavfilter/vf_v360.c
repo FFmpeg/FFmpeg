@@ -690,6 +690,20 @@ static inline void rotate_cube_face_inverse(float *uf, float *vf, int rotation)
 }
 
 /**
+ * Normalize vector.
+ *
+ * @param vec vector
+ */
+static void normalize_vector(float *vec)
+{
+    const float norm = sqrtf(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
+
+    vec[0] /= norm;
+    vec[1] /= norm;
+    vec[2] /= norm;
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding cubemap position.
  * Common operation for every cubemap.
  *
@@ -704,7 +718,6 @@ static void cube_to_xyz(const V360Context *s,
                         float *vec)
 {
     const int direction = s->out_cubemap_direction_order[face];
-    float norm;
     float l_x, l_y, l_z;
 
     uf /= (1.f - s->out_pad);
@@ -745,10 +758,11 @@ static void cube_to_xyz(const V360Context *s,
         break;
     }
 
-    norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
-    vec[0] = l_x / norm;
-    vec[1] = l_y / norm;
-    vec[2] = l_z / norm;
+    vec[0] = l_x;
+    vec[1] = l_y;
+    vec[2] = l_z;
+
+    normalize_vector(vec);
 }
 
 /**
@@ -1396,16 +1410,12 @@ static void stereographic_to_xyz(const V360Context *s,
     const float x  = z * (2.f * i / width  - 1.f);
     const float y  = z * (2.f * j / height - 1.f);
     const float xy = x * x + y * y;
-    float norm;
 
     vec[0] = 2.f * x / (1.f + xy);
     vec[1] = (-1.f + xy) / (1.f + xy);
     vec[2] = 2.f * y / (1.f + xy);
 
-    norm = sqrtf(vec[0] * vec[0] + vec[1] * vec[1] + vec[2] * vec[2]);
-    vec[0] /= norm;
-    vec[1] /= norm;
-    vec[2] /= norm;
+    normalize_vector(vec);
 }
 
 /**
@@ -1555,7 +1565,6 @@ static void eac_to_xyz(const V360Context *s,
     int u_face, v_face, face;
 
     float l_x, l_y, l_z;
-    float norm;
 
     float uf = (float)i / width;
     float vf = (float)j / height;
@@ -1629,10 +1638,11 @@ static void eac_to_xyz(const V360Context *s,
         av_assert0(0);
     }
 
-    norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
-    vec[0] = l_x / norm;
-    vec[1] = l_y / norm;
-    vec[2] = l_z / norm;
+    vec[0] = l_x;
+    vec[1] = l_y;
+    vec[2] = l_z;
+
+    normalize_vector(vec);
 }
 
 /**
@@ -1735,11 +1745,11 @@ static void flat_to_xyz(const V360Context *s,
     const float l_y = -s->flat_range[1] * (2.f * j / height - 1.f);
     const float l_z =  s->flat_range[2];
 
-    const float norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
+    vec[0] = l_x;
+    vec[1] = l_y;
+    vec[2] = l_z;
 
-    vec[0] = l_x / norm;
-    vec[1] = l_y / norm;
-    vec[2] = l_z / norm;
+    normalize_vector(vec);
 }
 
 /**
@@ -1833,7 +1843,6 @@ static void barrel_to_xyz(const V360Context *s,
         const int eh = height / 2;
 
         float uf, vf;
-        float norm;
 
         if (j < eh) {   // UP
             uf = 2.f * (i - 4 * ew) / ew  - 1.f;
@@ -1856,17 +1865,13 @@ static void barrel_to_xyz(const V360Context *s,
             l_y = -1.f;
             l_z =  vf;
         }
-
-        norm = sqrtf(l_x * l_x + l_y * l_y + l_z * l_z);
-
-        l_x /= norm;
-        l_y /= norm;
-        l_z /= norm;
     }
 
     vec[0] = l_x;
     vec[1] = l_y;
     vec[2] = l_z;
+
+    normalize_vector(vec);
 }
 
 /**
