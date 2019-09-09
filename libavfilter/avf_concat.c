@@ -136,7 +136,7 @@ static int config_output(AVFilterLink *outlink)
     for (seg = 1; seg < cat->nb_segments; seg++) {
         inlink = ctx->inputs[in_no + seg * ctx->nb_outputs];
         if (outlink->frame_rate.num != inlink->frame_rate.num ||
-            outlink->frame_rate.den != outlink->frame_rate.den) {
+            outlink->frame_rate.den != inlink->frame_rate.den) {
             av_log(ctx, AV_LOG_VERBOSE,
                     "Video inputs have different frame rates, output will be VFR\n");
             outlink->frame_rate = av_make_q(1, 0);
