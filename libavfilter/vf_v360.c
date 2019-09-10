@@ -1410,8 +1410,8 @@ static void stereographic_to_xyz(const V360Context *s,
                                  int i, int j, int width, int height,
                                  float *vec)
 {
-    const float x = ((2.f * i) / width  - 1.f) * (s->h_fov / 180.f) * M_PI;
-    const float y = ((2.f * j) / height - 1.f) * (s->v_fov /  90.f) * M_PI_2;
+    const float x = ((2.f * i) / width  - 1.f) * (s->h_fov / 180.f);
+    const float y = ((2.f * j) / height - 1.f) * (s->v_fov / 180.f);
     const float xy = x * x + y * y;
 
     vec[0] = 2.f * x / (1.f + xy);
