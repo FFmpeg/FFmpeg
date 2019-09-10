@@ -886,6 +886,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
             ret = AVERROR(ENOMEM);
             goto end;
         }
+        rep->parent = s;
         representation_segmenttemplate_node = find_child_node_by_name(representation_node, "SegmentTemplate");
         representation_baseurl_node = find_child_node_by_name(representation_node, "BaseURL");
         representation_segmentlist_node = find_child_node_by_name(representation_node, "SegmentList");
@@ -958,7 +959,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 xmlFree(timescale_val);
             }
             if (startnumber_val) {
-                rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
+                rep->start_number = rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
                 xmlFree(startnumber_val);
             }
@@ -1016,6 +1017,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             duration_val = get_val_from_nodes_tab(segmentlists_tab, 3, "duration");
             timescale_val = get_val_from_nodes_tab(segmentlists_tab, 3, "timescale");
+            startnumber_val = get_val_from_nodes_tab(segmentlists_tab, 4, "startNumber");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
@@ -1026,6 +1028,12 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
                 av_log(s, AV_LOG_TRACE, "rep->fragment_timescale = [%"PRId64"]\n", rep->fragment_timescale);
                 xmlFree(timescale_val);
             }
+            if (startnumber_val) {
+                rep->start_number = rep->first_seq_no = (int64_t) strtoll(startnumber_val, NULL, 10);
+                av_log(s, AV_LOG_TRACE, "rep->first_seq_no = [%"PRId64"]\n", rep->first_seq_no);
+                xmlFree(startnumber_val);
+            }
+
             fragmenturl_node = xmlFirstElementChild(representation_segmentlist_node);
             while (fragmenturl_node) {
                 ret = parse_manifest_segmenturlnode(s, rep, fragmenturl_node,
