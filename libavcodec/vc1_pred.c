@@ -191,9 +191,9 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
     n >>= hpel;
     if (v->s.pict_type == AV_PICTURE_TYPE_B && !v->second_field && dir == 1) {
         if (dim)
-            n = scaleforopp_y(v, n, dir) << hpel;
+            n = scaleforopp_y(v, n, dir) * (1 << hpel);
         else
-            n = scaleforopp_x(v, n) << hpel;
+            n = scaleforopp_x(v, n)      * (1 << hpel);
         return n;
     }
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
