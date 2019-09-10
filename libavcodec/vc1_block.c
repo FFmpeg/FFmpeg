@@ -1997,7 +1997,7 @@ static int vc1_decode_b_mb(VC1Context *v)
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
             if (v->rangeredfrm)
                 for (j = 0; j < 64; j++)
-                    s->block[i][j] <<= 1;
+                    s->block[i][j] *= 2;
             s->idsp.put_signed_pixels_clamped(s->block[i],
                                               s->dest[dst_idx] + off,
                                               i & 4 ? s->uvlinesize
