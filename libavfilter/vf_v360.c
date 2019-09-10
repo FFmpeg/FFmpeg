@@ -2265,7 +2265,7 @@ static int config_output(AVFilterLink *outlink)
     case FLAT:
         out_transform = flat_to_xyz;
         err = prepare_flat_out(ctx);
-        w = roundf(wf * s->flat_range[0] / s->flat_range[1] / 2.f);
+        w = roundf(wf);
         h = roundf(hf);
         break;
     case DUAL_FISHEYE:
