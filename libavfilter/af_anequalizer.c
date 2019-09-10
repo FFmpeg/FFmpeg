@@ -205,8 +205,10 @@ static av_cold int init(AVFilterContext *ctx)
             .type         = AVMEDIA_TYPE_VIDEO,
             .config_props = config_video,
         };
-        if (!vpad.name)
+        if (!vpad.name) {
+            av_freep(&pad.name);
             return AVERROR(ENOMEM);
+        }
     }
 
     ret = ff_insert_outpad(ctx, 0, &pad);
