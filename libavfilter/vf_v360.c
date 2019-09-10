@@ -64,6 +64,7 @@ static const AVOption v360_options[] = {
     {    "barrel", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {      "c1x6", "cubemap 1x6",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "in" },
+    {        "sg", "stereographic",                              0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -1421,6 +1422,44 @@ static void stereographic_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate frame position in stereographic format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_stereographic(const V360Context *s,
+                                 const float *vec, int width, int height,
+                                 uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float x = av_clipf(vec[0] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[0];
+    const float y = av_clipf(vec[2] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[1];
+    float uf, vf;
+    int ui, vi;
+    int i, j;
+
+    uf = (x + 1.f) * width  / 2.f;
+    vf = (y + 1.f) * height / 2.f;
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (i = -1; i < 3; i++) {
+        for (j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = av_clip(ui + j, 0, width - 1);
+            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+        }
+    }
+}
+
+/**
  * Calculate frame position in equirectangular format for corresponding 3D coordinates on sphere.
  *
  * @param s filter context
@@ -2175,6 +2214,12 @@ static int config_output(AVFilterLink *outlink)
         in_transform = xyz_to_barrel;
         err = 0;
         wf = inlink->w / 5.f * 4.f;
+        hf = inlink->h;
+        break;
+    case STEREOGRAPHIC:
+        in_transform = xyz_to_stereographic;
+        err = 0;
+        wf = inlink->w;
         hf = inlink->h;
         break;
     default:

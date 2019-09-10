@@ -18033,7 +18033,7 @@ Default value is @b{@samp{0}}.
 Facebook's 360 format.
 
 @item sg
-Stereographic format. @i{(output only)}
+Stereographic format.
 
 Format specific options:
 @table @option
