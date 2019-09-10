@@ -239,8 +239,11 @@ static int fir_to_phase(SincContext *s, float **h, int *len, int *post_len, floa
     s->rdft = s->irdft = NULL;
     s->rdft  = av_rdft_init(av_log2(work_len), DFT_R2C);
     s->irdft = av_rdft_init(av_log2(work_len), IDFT_C2R);
-    if (!s->rdft || !s->irdft)
+    if (!s->rdft || !s->irdft) {
+        av_free(pi_wraps);
+        av_free(work);
         return AVERROR(ENOMEM);
+    }
 
     av_rdft_calc(s->rdft, work);   /* Cepstral: */
     UNPACK(work, work_len);
