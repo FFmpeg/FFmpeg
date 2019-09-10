@@ -18095,7 +18095,7 @@ Default value is @b{@samp{ypr}}.
 @item h_flip
 @item v_flip
 @item d_flip
-Flip the output video horizontally/vertically/in-depth. Boolean values.
+Flip the output video horizontally(swaps left-right)/vertically(swaps up-down)/in-depth(swaps back-forward). Boolean values.
 
 @item ih_flip
 @item iv_flip
