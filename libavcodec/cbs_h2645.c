@@ -1586,7 +1586,7 @@ const CodedBitstreamType ff_cbs_type_h265 = {
 
 int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
                                 CodedBitstreamFragment *au,
-                                const H264RawSEIPayload *payload)
+                                H264RawSEIPayload *payload)
 {
     H264RawSEI *sei = NULL;
     int err, i;
@@ -1608,8 +1608,10 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
         AVBufferRef *sei_ref;
 
         sei = av_mallocz(sizeof(*sei));
-        if (!sei)
-            return AVERROR(ENOMEM);
+        if (!sei) {
+            err = AVERROR(ENOMEM);
+            goto fail;
+        }
 
         sei->nal_unit_header.nal_unit_type = H264_NAL_SEI;
         sei->nal_unit_header.nal_ref_idc   = 0;
@@ -1618,7 +1620,8 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
                                    &cbs_h264_free_sei, NULL, 0);
         if (!sei_ref) {
             av_freep(&sei);
-            return AVERROR(ENOMEM);
+            err = AVERROR(ENOMEM);
+            goto fail;
         }
 
         for (i = 0; i < au->nb_units; i++) {
@@ -1631,13 +1634,16 @@ int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
                                          sei, sei_ref);
         av_buffer_unref(&sei_ref);
         if (err < 0)
-            return err;
+            goto fail;
     }
 
     memcpy(&sei->payload[sei->payload_count], payload, sizeof(*payload));
     ++sei->payload_count;
 
     return 0;
+fail:
+    cbs_h264_free_sei_payload(payload);
+    return err;
 }
 
 void ff_cbs_h264_delete_sei_message(CodedBitstreamContext *ctx,

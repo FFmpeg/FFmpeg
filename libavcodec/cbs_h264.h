@@ -468,10 +468,13 @@ typedef struct CodedBitstreamH264Context {
 
 /**
  * Add an SEI message to an access unit.
+ *
+ * On success, the payload will be owned by a unit in access_unit;
+ * on failure, the content of the payload will be freed.
  */
 int ff_cbs_h264_add_sei_message(CodedBitstreamContext *ctx,
                                 CodedBitstreamFragment *access_unit,
-                                const H264RawSEIPayload *payload);
+                                H264RawSEIPayload *payload);
 
 /**
  * Delete an SEI message from an access unit.
