@@ -35,6 +35,7 @@
 #include "v4l2_m2m.h"
 
 #define USEC_PER_SEC 1000000
+static AVRational v4l2_timebase = { 1, USEC_PER_SEC };
 
 static inline V4L2m2mContext *buf_to_m2mctx(V4L2Buffer *buf)
 {
@@ -48,32 +49,37 @@ static inline AVCodecContext *logger(V4L2Buffer *buf)
     return buf_to_m2mctx(buf)->avctx;
 }
 
+static inline AVRational v4l2_get_timebase(V4L2Buffer *avbuf)
+{
+    V4L2m2mContext *s = buf_to_m2mctx(avbuf);
+
+    if (s->avctx->pkt_timebase.num)
+        return s->avctx->pkt_timebase;
+    return s->avctx->time_base;
+}
+
 static inline void v4l2_set_pts(V4L2Buffer *out, int64_t pts)
 {
-    V4L2m2mContext *s = buf_to_m2mctx(out);
-    AVRational v4l2_timebase = { 1, USEC_PER_SEC };
     int64_t v4l2_pts;
 
     if (pts == AV_NOPTS_VALUE)
         pts = 0;
 
     /* convert pts to v4l2 timebase */
-    v4l2_pts = av_rescale_q(pts, s->avctx->time_base, v4l2_timebase);
+    v4l2_pts = av_rescale_q(pts, v4l2_get_timebase(out), v4l2_timebase);
     out->buf.timestamp.tv_usec = v4l2_pts % USEC_PER_SEC;
     out->buf.timestamp.tv_sec = v4l2_pts / USEC_PER_SEC;
 }
 
 static inline int64_t v4l2_get_pts(V4L2Buffer *avbuf)
 {
-    V4L2m2mContext *s = buf_to_m2mctx(avbuf);
-    AVRational v4l2_timebase = { 1, USEC_PER_SEC };
     int64_t v4l2_pts;
 
     /* convert pts back to encoder timebase */
     v4l2_pts = (int64_t)avbuf->buf.timestamp.tv_sec * USEC_PER_SEC +
                         avbuf->buf.timestamp.tv_usec;
 
-    return av_rescale_q(v4l2_pts, v4l2_timebase, s->avctx->time_base);
+    return av_rescale_q(v4l2_pts, v4l2_timebase, v4l2_get_timebase(avbuf));
 }
 
 static enum AVColorPrimaries v4l2_get_color_primaries(V4L2Buffer *buf)
