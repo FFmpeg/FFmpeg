@@ -1397,6 +1397,26 @@ static void equirect_to_xyz(const V360Context *s,
 }
 
 /**
+ * Prepare data for processing stereographic output format.
+ *
+ * @param ctx filter context
+ *
+ * @return error code
+ */
+static int prepare_stereographic_out(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    const float h_angle = tan(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
+    const float v_angle = tan(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
+
+    s->flat_range[0] = h_angle;
+    s->flat_range[1] = v_angle;
+
+    return 0;
+}
+
+/**
  * Calculate 3D coordinates on sphere for corresponding frame position in stereographic format.
  *
  * @param s filter context
@@ -1410,11 +1430,8 @@ static void stereographic_to_xyz(const V360Context *s,
                                  int i, int j, int width, int height,
                                  float *vec)
 {
-    const float h_angle = tan(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
-    const float v_angle = tan(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
-
-    const float x = ((2.f * i) / width  - 1.f) * h_angle;
-    const float y = ((2.f * j) / height - 1.f) * v_angle;
+    const float x = ((2.f * i) / width  - 1.f) * s->flat_range[0];
+    const float y = ((2.f * j) / height - 1.f) * s->flat_range[1];
     const float xy = x * x + y * y;
 
     vec[0] = 2.f * x / (1.f + xy);
@@ -2282,7 +2299,7 @@ static int config_output(AVFilterLink *outlink)
         break;
     case STEREOGRAPHIC:
         out_transform = stereographic_to_xyz;
-        err = 0;
+        err = prepare_stereographic_out(ctx);
         w = FFMAX(roundf(wf), roundf(hf));
         h = w;
         break;
