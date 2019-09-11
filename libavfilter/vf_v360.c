@@ -1410,8 +1410,11 @@ static void stereographic_to_xyz(const V360Context *s,
                                  int i, int j, int width, int height,
                                  float *vec)
 {
-    const float x = ((2.f * i) / width  - 1.f) * (s->h_fov / 180.f);
-    const float y = ((2.f * j) / height - 1.f) * (s->v_fov / 180.f);
+    const float h_angle = tan(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
+    const float v_angle = tan(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
+
+    const float x = ((2.f * i) / width  - 1.f) * h_angle;
+    const float y = ((2.f * j) / height - 1.f) * v_angle;
     const float xy = x * x + y * y;
 
     vec[0] = 2.f * x / (1.f + xy);
