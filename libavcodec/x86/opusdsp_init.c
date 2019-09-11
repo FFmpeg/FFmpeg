@@ -28,7 +28,7 @@ av_cold void ff_opus_dsp_init_x86(OpusDSP *ctx)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_FMA3_FAST(cpu_flags)) {
+    if (EXTERNAL_FMA3(cpu_flags)) {
         ctx->postfilter = ff_opus_postfilter_fma3;
         ctx->deemphasis = ff_opus_deemphasis_fma3;
     }
