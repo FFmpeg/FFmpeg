@@ -2366,6 +2366,7 @@ static int hls_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         if (hls->flags & HLS_SINGLE_FILE) {
             ret = flush_dynbuf(vs, &range_length);
+            av_freep(&vs->temp_buffer);
             if (ret < 0) {
                 return ret;
             }
