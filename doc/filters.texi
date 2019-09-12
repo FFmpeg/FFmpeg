@@ -18010,11 +18010,12 @@ Set horizontal/vertical field of view. Values in degrees.
 @end table
 
 @item dfisheye
-Dual fisheye. @i{(input only)}
+Dual fisheye.
 
 Format specific options:
 @table @option
 @item in_pad
+@item out_pad
 Set padding proportion. Values in decimals.
 
 Example values:

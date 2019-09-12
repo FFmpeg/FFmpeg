@@ -71,6 +71,7 @@ static const AVOption v360_options[] = {
     {      "c3x2", "cubemap 3x2",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_3_2},     0,                   0, FLAGS, "out" },
     {      "c6x1", "cubemap 6x1",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_6_1},     0,                   0, FLAGS, "out" },
     {       "eac", "equi-angular cubemap",                       0, AV_OPT_TYPE_CONST,  {.i64=EQUIANGULAR},     0,                   0, FLAGS, "out" },
+    {  "dfisheye", "dual fisheye",                               0, AV_OPT_TYPE_CONST,  {.i64=DUAL_FISHEYE},    0,                   0, FLAGS, "out" },
     {      "flat", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
     {"rectilinear", "regular video",                             0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
     {  "gnomonic", "regular video",                              0, AV_OPT_TYPE_CONST,  {.i64=FLAT},            0,                   0, FLAGS, "out" },
@@ -1814,6 +1815,41 @@ static void flat_to_xyz(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in dual fisheye format.
+ *
+ * @param s filter context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void dfisheye_to_xyz(const V360Context *s,
+                            int i, int j, int width, int height,
+                            float *vec)
+{
+    const float scale = 1.f + s->out_pad;
+
+    const float ew = width / 2.f;
+    const float eh = height;
+
+    const int ei = i >= ew ? i - ew : i;
+    const float m = i >= ew ? -1.f : 1.f;
+
+    const float uf = ((2.f * ei) / ew - 1.f) * scale;
+    const float vf = ((2.f *  j) / eh - 1.f) * scale;
+
+    const float phi   = M_PI + atan2f(vf, uf * m);
+    const float theta = m * M_PI_2 * (1.f - hypotf(uf, vf));
+
+    vec[0] = cosf(theta) * cosf(phi);
+    vec[1] = cosf(theta) * sinf(phi);
+    vec[2] = sinf(theta);
+
+    normalize_vector(vec);
+}
+
+/**
  * Calculate frame position in dual fisheye format for corresponding 3D coordinates on sphere.
  *
  * @param s filter context
@@ -2289,8 +2325,11 @@ static int config_output(AVFilterLink *outlink)
         h = roundf(hf);
         break;
     case DUAL_FISHEYE:
-        av_log(ctx, AV_LOG_ERROR, "Dual fisheye format is not accepted as output.\n");
-        return AVERROR(EINVAL);
+        out_transform = dfisheye_to_xyz;
+        err = 0;
+        w = roundf(wf);
+        h = roundf(hf);
+        break;
     case BARREL:
         out_transform = barrel_to_xyz;
         err = 0;
