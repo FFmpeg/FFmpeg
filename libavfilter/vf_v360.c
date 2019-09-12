@@ -1043,8 +1043,8 @@ static void process_cube_coordinates(const V360Context *s,
  * Calculate 3D coordinates on sphere for corresponding frame position in cubemap3x2 format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1163,8 +1163,8 @@ static void xyz_to_cube3x2(const V360Context *s,
  * Calculate 3D coordinates on sphere for corresponding frame position in cubemap1x6 format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1191,8 +1191,8 @@ static void cube1x6_to_xyz(const V360Context *s,
  * Calculate 3D coordinates on sphere for corresponding frame position in cubemap6x1 format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1373,8 +1373,8 @@ static void xyz_to_cube6x1(const V360Context *s,
  * Calculate 3D coordinates on sphere for corresponding frame position in equirectangular format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1420,8 +1420,8 @@ static int prepare_stereographic_out(AVFilterContext *ctx)
  * Calculate 3D coordinates on sphere for corresponding frame position in stereographic format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1609,8 +1609,8 @@ static int prepare_eac_out(AVFilterContext *ctx)
  * Calculate 3D coordinates on sphere for corresponding frame position in equi-angular cubemap format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1792,8 +1792,8 @@ static int prepare_flat_out(AVFilterContext *ctx)
  * Calculate 3D coordinates on sphere for corresponding frame position in flat format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
@@ -1869,8 +1869,8 @@ static void xyz_to_dfisheye(const V360Context *s,
  * Calculate 3D coordinates on sphere for corresponding frame position in barrel facebook's format.
  *
  * @param s filter context
- * @param i horizontal position on frame [0, height)
- * @param j vertical position on frame [0, width)
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
  * @param width frame width
  * @param height frame height
  * @param vec coordinates on sphere
