@@ -501,6 +501,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 
         switch (pix_fmt_id) {
         case 0x11110000: /* for bayer-encoded huffman lossless JPEGs embedded in DNGs */
+            if (!s->bayer)
+                goto unk_pixfmt;
             s->avctx->pix_fmt = AV_PIX_FMT_GRAY16LE;
             break;
         case 0x11111100:
