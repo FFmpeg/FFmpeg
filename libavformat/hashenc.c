@@ -29,7 +29,7 @@
 
 struct HashContext {
     const AVClass *avclass;
-    struct AVHashContext *hash;
+    struct AVHashContext **hashes;
     char *hash_name;
     int format_version;
 };
@@ -72,20 +72,24 @@ static const AVOption framemd5_options[] = {
 #endif
 
 #if CONFIG_HASH_MUXER || CONFIG_MD5_MUXER
-static int hash_write_header(struct AVFormatContext *s)
+static int hash_init(struct AVFormatContext *s)
 {
+    int res;
     struct HashContext *c = s->priv_data;
-    int res = av_hash_alloc(&c->hash, c->hash_name);
+    c->hashes = av_mallocz_array(1, sizeof(c->hashes));
+    if (!c->hashes)
+        return AVERROR(ENOMEM);
+    res = av_hash_alloc(&c->hashes[0], c->hash_name);
     if (res < 0)
         return res;
-    av_hash_init(c->hash);
+    av_hash_init(c->hashes[0]);
     return 0;
 }
 
 static int hash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 {
     struct HashContext *c = s->priv_data;
-    av_hash_update(c->hash, pkt->data, pkt->size);
+    av_hash_update(c->hashes[0], pkt->data, pkt->size);
     return 0;
 }
 
@@ -93,15 +97,22 @@ static int hash_write_trailer(struct AVFormatContext *s)
 {
     struct HashContext *c = s->priv_data;
     char buf[AV_HASH_MAX_SIZE*2+128];
-    snprintf(buf, sizeof(buf) - 200, "%s=", av_hash_get_name(c->hash));
+    snprintf(buf, sizeof(buf) - 200, "%s=", av_hash_get_name(c->hashes[0]));
 
-    av_hash_final_hex(c->hash, buf + strlen(buf), sizeof(buf) - strlen(buf));
+    av_hash_final_hex(c->hashes[0], buf + strlen(buf), sizeof(buf) - strlen(buf));
     av_strlcatf(buf, sizeof(buf), "\n");
     avio_write(s->pb, buf, strlen(buf));
     avio_flush(s->pb);
 
-    av_hash_freep(&c->hash);
     return 0;
+}
+
+static void hash_free(struct AVFormatContext *s)
+{
+    struct HashContext *c = s->priv_data;
+    if (c->hashes)
+        av_hash_freep(&c->hashes[0]);
+    av_freep(&c->hashes);
 }
 #endif
 
@@ -119,9 +130,10 @@ AVOutputFormat ff_hash_muxer = {
     .priv_data_size    = sizeof(struct HashContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = hash_write_header,
+    .init              = hash_init,
     .write_packet      = hash_write_packet,
     .write_trailer     = hash_write_trailer,
+    .deinit            = hash_free,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
     .priv_class        = &hashenc_class,
@@ -142,9 +154,10 @@ AVOutputFormat ff_md5_muxer = {
     .priv_data_size    = sizeof(struct HashContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
-    .write_header      = hash_write_header,
+    .init              = hash_init,
     .write_packet      = hash_write_packet,
     .write_trailer     = hash_write_trailer,
+    .deinit            = hash_free,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
     .priv_class        = &md5enc_class,
@@ -164,24 +177,34 @@ static void framehash_print_extradata(struct AVFormatContext *s)
             char buf[AV_HASH_MAX_SIZE*2+1];
 
             avio_printf(s->pb, "#extradata %d, %31d, ", i, par->extradata_size);
-            av_hash_init(c->hash);
-            av_hash_update(c->hash, par->extradata, par->extradata_size);
-            av_hash_final_hex(c->hash, buf, sizeof(buf));
+            av_hash_init(c->hashes[0]);
+            av_hash_update(c->hashes[0], par->extradata, par->extradata_size);
+            av_hash_final_hex(c->hashes[0], buf, sizeof(buf));
             avio_write(s->pb, buf, strlen(buf));
             avio_printf(s->pb, "\n");
         }
     }
 }
 
+static int framehash_init(struct AVFormatContext *s)
+{
+    int res;
+    struct HashContext *c = s->priv_data;
+    c->hashes = av_mallocz_array(1, sizeof(c->hashes));
+    if (!c->hashes)
+        return AVERROR(ENOMEM);
+    res = av_hash_alloc(&c->hashes[0], c->hash_name);
+    if (res < 0)
+        return res;
+    return 0;
+}
+
 static int framehash_write_header(struct AVFormatContext *s)
 {
     struct HashContext *c = s->priv_data;
-    int res = av_hash_alloc(&c->hash, c->hash_name);
-    if (res < 0)
-        return res;
     avio_printf(s->pb, "#format: frame checksums\n");
     avio_printf(s->pb, "#version: %d\n", c->format_version);
-    avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hash));
+    avio_printf(s->pb, "#hash: %s\n", av_hash_get_name(c->hashes[0]));
     framehash_print_extradata(s);
     ff_framehash_write_header(s);
     avio_printf(s->pb, "#stream#, dts,        pts, duration,     size, hash\n");
@@ -193,30 +216,30 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     struct HashContext *c = s->priv_data;
     char buf[AV_HASH_MAX_SIZE*2+128];
     int len;
-    av_hash_init(c->hash);
-    av_hash_update(c->hash, pkt->data, pkt->size);
+    av_hash_init(c->hashes[0]);
+    av_hash_update(c->hashes[0], pkt->data, pkt->size);
 
     snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), "%d, %10"PRId64", %10"PRId64", %8"PRId64", %8d, ",
              pkt->stream_index, pkt->dts, pkt->pts, pkt->duration, pkt->size);
     len = strlen(buf);
-    av_hash_final_hex(c->hash, buf + len, sizeof(buf) - len);
+    av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
     avio_write(s->pb, buf, strlen(buf));
 
     if (c->format_version > 1 && pkt->side_data_elems) {
         int i, j;
         avio_printf(s->pb, ", S=%d", pkt->side_data_elems);
         for (i = 0; i < pkt->side_data_elems; i++) {
-            av_hash_init(c->hash);
+            av_hash_init(c->hashes[0]);
             if (HAVE_BIGENDIAN && pkt->side_data[i].type == AV_PKT_DATA_PALETTE) {
                 for (j = 0; j < pkt->side_data[i].size; j += sizeof(uint32_t)) {
                     uint32_t data = AV_RL32(pkt->side_data[i].data + j);
-                    av_hash_update(c->hash, (uint8_t *)&data, sizeof(uint32_t));
+                    av_hash_update(c->hashes[0], (uint8_t *)&data, sizeof(uint32_t));
                 }
             } else
-                av_hash_update(c->hash, pkt->side_data[i].data, pkt->side_data[i].size);
+                av_hash_update(c->hashes[0], pkt->side_data[i].data, pkt->side_data[i].size);
             snprintf(buf, sizeof(buf) - (AV_HASH_MAX_SIZE * 2 + 1), ", %8d, ", pkt->side_data[i].size);
             len = strlen(buf);
-            av_hash_final_hex(c->hash, buf + len, sizeof(buf) - len);
+            av_hash_final_hex(c->hashes[0], buf + len, sizeof(buf) - len);
             avio_write(s->pb, buf, strlen(buf));
         }
     }
@@ -226,11 +249,12 @@ static int framehash_write_packet(struct AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int framehash_write_trailer(struct AVFormatContext *s)
+static void framehash_free(struct AVFormatContext *s)
 {
     struct HashContext *c = s->priv_data;
-    av_hash_freep(&c->hash);
-    return 0;
+    if (c->hashes)
+        av_hash_freep(&c->hashes[0]);
+    av_freep(&c->hashes);
 }
 #endif
 
@@ -248,9 +272,10 @@ AVOutputFormat ff_framehash_muxer = {
     .priv_data_size    = sizeof(struct HashContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .init              = framehash_init,
     .write_header      = framehash_write_header,
     .write_packet      = framehash_write_packet,
-    .write_trailer     = framehash_write_trailer,
+    .deinit            = framehash_free,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
     .priv_class        = &framehash_class,
@@ -271,9 +296,10 @@ AVOutputFormat ff_framemd5_muxer = {
     .priv_data_size    = sizeof(struct HashContext),
     .audio_codec       = AV_CODEC_ID_PCM_S16LE,
     .video_codec       = AV_CODEC_ID_RAWVIDEO,
+    .init              = framehash_init,
     .write_header      = framehash_write_header,
     .write_packet      = framehash_write_packet,
-    .write_trailer     = framehash_write_trailer,
+    .deinit            = framehash_free,
     .flags             = AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT |
                          AVFMT_TS_NEGATIVE,
     .priv_class        = &framemd5_class,
