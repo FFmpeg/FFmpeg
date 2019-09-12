@@ -2240,7 +2240,7 @@ static int config_output(AVFilterLink *outlink)
         in_transform = xyz_to_stereographic;
         err = 0;
         wf = inlink->w;
-        hf = inlink->h;
+        hf = inlink->h / 2.f;
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
@@ -2300,8 +2300,8 @@ static int config_output(AVFilterLink *outlink)
     case STEREOGRAPHIC:
         out_transform = stereographic_to_xyz;
         err = prepare_stereographic_out(ctx);
-        w = FFMAX(roundf(wf), roundf(hf));
-        h = w;
+        w = roundf(wf);
+        h = roundf(hf * 2.f);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
