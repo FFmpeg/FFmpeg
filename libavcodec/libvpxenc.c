@@ -116,6 +116,11 @@ typedef struct VPxEncoderContext {
     int tune_content;
     int corpus_complexity;
     int tpl_model;
+    /**
+     * If the driver does not support ROI then warn the first time we
+     * encounter a frame with ROI side data.
+     */
+    int roi_warned;
 } VPxContext;
 
 /** String mappings for enum vp8e_enc_control_id */
@@ -1057,6 +1062,185 @@ static int queue_frames(AVCodecContext *avctx, AVPacket *pkt_out)
     return size;
 }
 
+static int set_roi_map(AVCodecContext *avctx, const AVFrameSideData *sd, int frame_width, int frame_height,
+                       vpx_roi_map_t *roi_map, int block_size, int segment_cnt)
+{
+    /**
+     * range of vpx_roi_map_t.delta_q[i] is [-63, 63]
+     */
+#define MAX_DELTA_Q 63
+
+    const AVRegionOfInterest *roi = NULL;
+    int nb_rois;
+    uint32_t self_size;
+    int segment_id;
+
+    /* record the mapping from delta_q to "segment id + 1" in segment_mapping[].
+     * the range of delta_q is [-MAX_DELTA_Q, MAX_DELTA_Q],
+     * and its corresponding array index is [0, 2 * MAX_DELTA_Q],
+     * and so the length of the mapping array is 2 * MAX_DELTA_Q + 1.
+     * "segment id + 1", so we can say there's no mapping if the value of array element is zero.
+     */
+    int segment_mapping[2 * MAX_DELTA_Q + 1] = { 0 };
+
+    memset(roi_map, 0, sizeof(*roi_map));
+
+    /* segment id 0 in roi_map is reserved for the areas not covered by AVRegionOfInterest.
+     * segment id 0 in roi_map is also for the areas with AVRegionOfInterest.qoffset near 0.
+     * (delta_q of segment id 0 is 0).
+     */
+    segment_mapping[MAX_DELTA_Q] = 1;
+    segment_id = 1;
+
+    roi = (const AVRegionOfInterest*)sd->data;
+    self_size = roi->self_size;
+    if (!self_size || sd->size % self_size) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid AVRegionOfInterest.self_size.\n");
+        return AVERROR(EINVAL);
+    }
+    nb_rois = sd->size / self_size;
+
+    /* This list must be iterated from zero because regions are
+     * defined in order of decreasing importance. So discard less
+     * important areas if they exceed the segment count.
+     */
+    for (int i = 0; i < nb_rois; i++) {
+        int delta_q;
+        int mapping_index;
+
+        roi = (const AVRegionOfInterest*)(sd->data + self_size * i);
+        if (!roi->qoffset.den) {
+            av_log(avctx, AV_LOG_ERROR, "AVRegionOfInterest.qoffset.den must not be zero.\n");
+            return AVERROR(EINVAL);
+        }
+
+        delta_q = (int)(roi->qoffset.num * 1.0f / roi->qoffset.den * MAX_DELTA_Q);
+        delta_q = av_clip(delta_q, -MAX_DELTA_Q, MAX_DELTA_Q);
+
+        mapping_index = delta_q + MAX_DELTA_Q;
+        if (!segment_mapping[mapping_index]) {
+            if (segment_id == segment_cnt) {
+                av_log(avctx, AV_LOG_WARNING,
+                       "ROI only supports %d segments (and segment 0 is reserved for non-ROIs), skipping the left ones.\n",
+                       segment_cnt);
+                break;
+            }
+
+            segment_mapping[mapping_index] = segment_id + 1;
+            roi_map->delta_q[segment_id] = delta_q;
+            segment_id++;
+        }
+    }
+
+    roi_map->rows = (frame_height + block_size - 1) / block_size;
+    roi_map->cols = (frame_width  + block_size - 1) / block_size;
+    roi_map->roi_map = av_mallocz_array(roi_map->rows * roi_map->cols, sizeof(*roi_map->roi_map));
+    if (!roi_map->roi_map) {
+        av_log(avctx, AV_LOG_ERROR, "roi_map alloc failed.\n");
+        return AVERROR(ENOMEM);
+    }
+
+    /* This list must be iterated in reverse, so for the case that
+     * two regions are overlapping, the more important area takes effect.
+     */
+    for (int i = nb_rois - 1; i >= 0; i--) {
+        int delta_q;
+        int mapping_value;
+        int starty, endy, startx, endx;
+
+        roi = (const AVRegionOfInterest*)(sd->data + self_size * i);
+
+        starty = av_clip(roi->top / block_size, 0, roi_map->rows);
+        endy   = av_clip((roi->bottom + block_size - 1) / block_size, 0, roi_map->rows);
+        startx = av_clip(roi->left / block_size, 0, roi_map->cols);
+        endx   = av_clip((roi->right + block_size - 1) / block_size, 0, roi_map->cols);
+
+        delta_q = (int)(roi->qoffset.num * 1.0f / roi->qoffset.den * MAX_DELTA_Q);
+        delta_q = av_clip(delta_q, -MAX_DELTA_Q, MAX_DELTA_Q);
+
+        mapping_value = segment_mapping[delta_q + MAX_DELTA_Q];
+        if (mapping_value) {
+            for (int y = starty; y < endy; y++)
+                for (int x = startx; x < endx; x++)
+                    roi_map->roi_map[x + y * roi_map->cols] = mapping_value - 1;
+        }
+    }
+
+    return 0;
+}
+
+static int vp9_encode_set_roi(AVCodecContext *avctx, int frame_width, int frame_height, const AVFrameSideData *sd)
+{
+    VPxContext *ctx = avctx->priv_data;
+
+#ifdef VPX_CTRL_VP9E_SET_ROI_MAP
+    int version = vpx_codec_version();
+    int major = VPX_VERSION_MAJOR(version);
+    int minor = VPX_VERSION_MINOR(version);
+    int patch = VPX_VERSION_PATCH(version);
+
+    if (major > 1 || (major == 1 && minor > 8) || (major == 1 && minor == 8 && patch >= 1)) {
+        vpx_roi_map_t roi_map;
+        const int segment_cnt = 8;
+        const int block_size = 8;
+        int ret;
+
+        if (ctx->aq_mode > 0 || ctx->cpu_used < 5 || ctx->deadline != VPX_DL_REALTIME) {
+            if (!ctx->roi_warned) {
+                ctx->roi_warned = 1;
+                av_log(avctx, AV_LOG_WARNING, "ROI is only enabled when aq_mode is 0, cpu_used >= 5 "
+                                              "and deadline is REALTIME, so skipping ROI.\n");
+                return AVERROR(EINVAL);
+            }
+        }
+
+        ret = set_roi_map(avctx, sd, frame_width, frame_height, &roi_map, block_size, segment_cnt);
+        if (ret) {
+            log_encoder_error(avctx, "Failed to set_roi_map.\n");
+            return ret;
+        }
+
+        memset(roi_map.ref_frame, -1, sizeof(roi_map.ref_frame));
+
+        if (vpx_codec_control(&ctx->encoder, VP9E_SET_ROI_MAP, &roi_map)) {
+            log_encoder_error(avctx, "Failed to set VP9E_SET_ROI_MAP codec control.\n");
+            ret = AVERROR_INVALIDDATA;
+        }
+        av_freep(&roi_map.roi_map);
+        return ret;
+    }
+#endif
+
+    if (!ctx->roi_warned) {
+        ctx->roi_warned = 1;
+        av_log(avctx, AV_LOG_WARNING, "ROI is not supported, please upgrade libvpx to version >= 1.8.1. "
+                                      "You may need to rebuild ffmpeg.\n");
+    }
+    return 0;
+}
+
+static int vp8_encode_set_roi(AVCodecContext *avctx, int frame_width, int frame_height, const AVFrameSideData *sd)
+{
+    vpx_roi_map_t roi_map;
+    const int segment_cnt = 4;
+    const int block_size = 16;
+    VPxContext *ctx = avctx->priv_data;
+
+    int ret = set_roi_map(avctx, sd, frame_width, frame_height, &roi_map, block_size, segment_cnt);
+    if (ret) {
+        log_encoder_error(avctx, "Failed to set_roi_map.\n");
+        return ret;
+    }
+
+    if (vpx_codec_control(&ctx->encoder, VP8E_SET_ROI_MAP, &roi_map)) {
+        log_encoder_error(avctx, "Failed to set VP8E_SET_ROI_MAP codec control.\n");
+        ret = AVERROR_INVALIDDATA;
+    }
+
+    av_freep(&roi_map.roi_map);
+    return ret;
+}
+
 static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
                       const AVFrame *frame, int *got_packet)
 {
@@ -1068,6 +1252,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
     vpx_enc_frame_flags_t flags = 0;
 
     if (frame) {
+        const AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
         rawimg                      = &ctx->rawimg;
         rawimg->planes[VPX_PLANE_Y] = frame->data[0];
         rawimg->planes[VPX_PLANE_U] = frame->data[1];
@@ -1111,6 +1296,14 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             AVDictionaryEntry* en = av_dict_get(frame->metadata, "vp8-flags", NULL, 0);
             if (en) {
                 flags |= strtoul(en->value, NULL, 10);
+            }
+        }
+
+        if (sd) {
+            if (avctx->codec_id == AV_CODEC_ID_VP8) {
+                vp8_encode_set_roi(avctx, frame->width, frame->height, sd);
+            } else {
+                vp9_encode_set_roi(avctx, frame->width, frame->height, sd);
             }
         }
     }
