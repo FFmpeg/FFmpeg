@@ -1071,6 +1071,10 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int nb_components, int p
     int resync_mb_x = 0;
     int vpred[6];
 
+    if (!s->bayer && s->nb_components < 3)
+        return AVERROR_INVALIDDATA;
+    if (s->bayer && s->nb_components > 2)
+        return AVERROR_INVALIDDATA;
     if (s->nb_components <= 0 || s->nb_components > 4)
         return AVERROR_INVALIDDATA;
     if (s->v_max != 1 || s->h_max != 1 || !s->lossless)
