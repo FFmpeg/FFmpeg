@@ -536,7 +536,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
         c->decomp_len = len;
     } else { // ZLIB-compressed data
         c->zstream.total_in = c->zstream.total_out = 0;
-        c->zstream.next_in = (uint8_t*)buf;
+        c->zstream.next_in = buf;
         c->zstream.avail_in = len;
         c->zstream.next_out = c->decomp_buf;
         c->zstream.avail_out = c->decomp_size;
