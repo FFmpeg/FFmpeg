@@ -1883,7 +1883,7 @@ static void barrel_to_xyz(const V360Context *s,
     float l_x, l_y, l_z;
 
     if (i < 4 * width / 5) {
-        const float theta_range = M_PI / 4.f;
+        const float theta_range = M_PI_4;
 
         const int ew = 4 * width / 5;
         const int eh = height;
@@ -1955,7 +1955,7 @@ static void xyz_to_barrel(const V360Context *s,
 
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
-    const float theta_range = M_PI / 4.f;
+    const float theta_range = M_PI_4;
 
     int ew, eh;
     int u_shift, v_shift;
