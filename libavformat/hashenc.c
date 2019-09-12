@@ -36,18 +36,37 @@ struct HashContext {
 
 #define OFFSET(x) offsetof(struct HashContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
-#if CONFIG_HASH_MUXER || CONFIG_FRAMEHASH_MUXER
+#define HASH_OPT(defaulttype) \
+    { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = defaulttype}, 0, 0, ENC }
+#define FORMAT_VERSION_OPT \
+    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 2}, 1, 2, ENC }
+
+#if CONFIG_HASH_MUXER
 static const AVOption hash_options[] = {
-    { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = "sha256"}, 0, 0, ENC },
-    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 2}, 1, 2, ENC },
+    HASH_OPT("sha256"),
     { NULL },
 };
 #endif
 
-#if CONFIG_MD5_MUXER || CONFIG_FRAMEMD5_MUXER
+#if CONFIG_FRAMEHASH_MUXER
+static const AVOption framehash_options[] = {
+    HASH_OPT("sha256"),
+    FORMAT_VERSION_OPT,
+    { NULL },
+};
+#endif
+
+#if CONFIG_MD5_MUXER
 static const AVOption md5_options[] = {
-    { "hash", "set hash to use", OFFSET(hash_name), AV_OPT_TYPE_STRING, {.str = "md5"}, 0, 0, ENC },
-    { "format_version", "file format version", OFFSET(format_version), AV_OPT_TYPE_INT, {.i64 = 2}, 1, 2, ENC },
+    HASH_OPT("md5"),
+    { NULL },
+};
+#endif
+
+#if CONFIG_FRAMEMD5_MUXER
+static const AVOption framemd5_options[] = {
+    HASH_OPT("md5"),
+    FORMAT_VERSION_OPT,
     { NULL },
 };
 #endif
@@ -219,7 +238,7 @@ static int framehash_write_trailer(struct AVFormatContext *s)
 static const AVClass framehash_class = {
     .class_name = "frame hash muxer",
     .item_name  = av_default_item_name,
-    .option     = hash_options,
+    .option     = framehash_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
@@ -242,7 +261,7 @@ AVOutputFormat ff_framehash_muxer = {
 static const AVClass framemd5_class = {
     .class_name = "frame MD5 muxer",
     .item_name  = av_default_item_name,
-    .option     = md5_options,
+    .option     = framemd5_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
