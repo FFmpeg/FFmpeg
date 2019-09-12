@@ -2064,6 +2064,53 @@ Specify whether to remove all fragments when finished. Default 0 (do not remove)
 
 @end table
 
+@anchor{streamhash}
+@section streamhash
+
+Per stream hash testing format.
+
+This muxer computes and prints a cryptographic hash of all the input frames,
+on a per-stream basis. This can be used for equality checks without having
+to do a complete binary comparison.
+
+By default audio frames are converted to signed 16-bit raw audio and
+video frames to raw video before computing the hash, but the output
+of explicit conversions to other codecs can also be used. Timestamps
+are ignored. It uses the SHA-256 cryptographic hash function by default,
+but supports several other algorithms.
+
+The output of the muxer consists of one line per stream of the form:
+@var{streamindex},@var{streamtype},@var{algo}=@var{hash}, where
+@var{streamindex} is the index of the mapped stream, @var{streamtype} is a
+single characer indicating the type of stream, @var{algo} is a short string
+representing the hash function used, and @var{hash} is a hexadecimal number
+representing the computed hash.
+
+@table @option
+@item hash @var{algorithm}
+Use the cryptographic hash function specified by the string @var{algorithm}.
+Supported values include @code{MD5}, @code{murmur3}, @code{RIPEMD128},
+@code{RIPEMD160}, @code{RIPEMD256}, @code{RIPEMD320}, @code{SHA160},
+@code{SHA224}, @code{SHA256} (default), @code{SHA512/224}, @code{SHA512/256},
+@code{SHA384}, @code{SHA512}, @code{CRC32} and @code{adler32}.
+
+@end table
+
+@subsection Examples
+
+To compute the SHA-256 hash of the input converted to raw audio and
+video, and store it in the file @file{out.sha256}:
+@example
+ffmpeg -i INPUT -f streamhash out.sha256
+@end example
+
+To print an MD5 hash to stdout use the command:
+@example
+ffmpeg -i INPUT -f streamhash -hash md5 -
+@end example
+
+See also the @ref{hash} and @ref{framehash} muxers.
+
 @anchor{fifo}
 @section fifo
 

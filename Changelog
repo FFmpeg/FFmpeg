@@ -10,6 +10,7 @@ version <next>:
 - IMM5 video decoder
 - ZeroMQ protocol
 - support Sipro ACELP.KELVIN decoding
+- streamhash muxer
 
 
 version 4.2:
