@@ -1777,14 +1777,9 @@ static int prepare_flat_out(AVFilterContext *ctx)
     const float h_angle = 0.5f * s->h_fov * M_PI / 180.f;
     const float v_angle = 0.5f * s->v_fov * M_PI / 180.f;
 
-    const float sin_phi   = sinf(h_angle);
-    const float cos_phi   = cosf(h_angle);
-    const float sin_theta = sinf(v_angle);
-    const float cos_theta = cosf(v_angle);
-
-    s->flat_range[0] =  cos_theta * sin_phi;
-    s->flat_range[1] =  sin_theta;
-    s->flat_range[2] = -cos_theta * cos_phi;
+    s->flat_range[0] =  tan(h_angle);
+    s->flat_range[1] =  tan(v_angle);
+    s->flat_range[2] = -1.f;
 
     return 0;
 }
