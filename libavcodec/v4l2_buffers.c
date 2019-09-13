@@ -351,10 +351,18 @@ static int v4l2_buffer_swframe_to_buf(const AVFrame *frame, V4L2Buffer *out)
     switch (pixel_format) {
     case V4L2_PIX_FMT_YUV420M:
     case V4L2_PIX_FMT_YVU420M:
+#ifdef V4L2_PIX_FMT_YUV422M
     case V4L2_PIX_FMT_YUV422M:
+#endif
+#ifdef V4L2_PIX_FMT_YVU422M
     case V4L2_PIX_FMT_YVU422M:
+#endif
+#ifdef V4L2_PIX_FMT_YUV444M
     case V4L2_PIX_FMT_YUV444M:
+#endif
+#ifdef V4L2_PIX_FMT_YVU444M
     case V4L2_PIX_FMT_YVU444M:
+#endif
     case V4L2_PIX_FMT_NV12M:
     case V4L2_PIX_FMT_NV21M:
     case V4L2_PIX_FMT_NV12MT_16X16:

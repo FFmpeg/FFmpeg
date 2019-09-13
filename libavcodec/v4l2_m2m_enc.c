@@ -245,8 +245,10 @@ static int v4l2_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     V4L2m2mContext *s = ((V4L2m2mPriv*)avctx->priv_data)->context;
     V4L2Context *const output = &s->output;
 
+#ifdef V4L2_CID_MPEG_VIDEO_FORCE_KEY_FRAME
     if (frame && frame->pict_type == AV_PICTURE_TYPE_I)
         v4l2_set_ext_ctrl(s, MPEG_CID(FORCE_KEY_FRAME), 0, "force key frame");
+#endif
 
     return ff_v4l2_context_enqueue_frame(output, frame);
 }
