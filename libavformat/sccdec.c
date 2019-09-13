@@ -140,7 +140,6 @@ try_again:
         sub->duration = FFMAX(1200, ts_end - ts_start);
         memmove(line, line2, sizeof(line));
         line2[0] = 0;
-        FFSWAP(ptrdiff_t, len, len2);
     }
 
     if (line[0])
