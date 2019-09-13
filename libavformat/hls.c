@@ -254,11 +254,9 @@ static void free_playlist_list(HLSContext *c)
         av_freep(&pls->init_sec_buf);
         av_packet_unref(&pls->pkt);
         av_freep(&pls->pb.buffer);
-        if (pls->input)
-            ff_format_io_close(c->ctx, &pls->input);
+        ff_format_io_close(c->ctx, &pls->input);
         pls->input_read_done = 0;
-        if (pls->input_next)
-            ff_format_io_close(c->ctx, &pls->input_next);
+        ff_format_io_close(c->ctx, &pls->input_next);
         pls->input_next_requested = 0;
         if (pls->ctx) {
             pls->ctx->pb = NULL;
@@ -2006,11 +2004,9 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
             }
             av_log(s, AV_LOG_INFO, "Now receiving playlist %d, segment %d\n", i, pls->cur_seq_no);
         } else if (first && !cur_needed && pls->needed) {
-            if (pls->input)
-                ff_format_io_close(pls->parent, &pls->input);
+            ff_format_io_close(pls->parent, &pls->input);
             pls->input_read_done = 0;
-            if (pls->input_next)
-                ff_format_io_close(pls->parent, &pls->input_next);
+            ff_format_io_close(pls->parent, &pls->input_next);
             pls->input_next_requested = 0;
             pls->needed = 0;
             changed = 1;
@@ -2251,11 +2247,9 @@ static int hls_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_playlists; i++) {
         /* Reset reading */
         struct playlist *pls = c->playlists[i];
-        if (pls->input)
-            ff_format_io_close(pls->parent, &pls->input);
+        ff_format_io_close(pls->parent, &pls->input);
         pls->input_read_done = 0;
-        if (pls->input_next)
-            ff_format_io_close(pls->parent, &pls->input_next);
+        ff_format_io_close(pls->parent, &pls->input_next);
         pls->input_next_requested = 0;
         av_packet_unref(&pls->pkt);
         pls->pb.eof_reached = 0;
