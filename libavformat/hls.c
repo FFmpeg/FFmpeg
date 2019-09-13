@@ -664,7 +664,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         } else if (ret < 0) {
             if (ret != AVERROR_EOF)
                 av_log(s, AV_LOG_WARNING,
-                    "keepalive request failed for '%s' when opening url, retrying with new connection: %s\n",
+                    "keepalive request failed for '%s' with error: '%s' when opening url, retrying with new connection\n",
                     url, av_err2str(ret));
             ret = s->io_open(s, pb, url, AVIO_FLAG_READ, &tmp);
         }
@@ -721,7 +721,7 @@ static int parse_playlist(HLSContext *c, const char *url,
         } else if (ret < 0) {
             if (ret != AVERROR_EOF)
                 av_log(c->ctx, AV_LOG_WARNING,
-                    "keepalive request failed for '%s' when parsing playlist, retrying with new connection: %s\n",
+                    "keepalive request failed for '%s' with error: '%s' when parsing playlist\n",
                     url, av_err2str(ret));
             in = NULL;
         }
@@ -1483,7 +1483,7 @@ reload:
         if (ret < 0) {
             if (ff_check_interrupt(c->interrupt_callback))
                 return AVERROR_EXIT;
-            av_log(v->parent, AV_LOG_WARNING, "Failed to open segment %d of playlist %d\n",
+            av_log(v->parent, AV_LOG_WARNING, "Failed to open next segment %d of playlist %d\n",
                    v->cur_seq_no + 1,
                    v->index);
         } else {
