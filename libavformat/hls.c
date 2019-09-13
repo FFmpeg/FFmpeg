@@ -620,9 +620,6 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     int ret;
     int is_http = 0;
 
-    av_dict_copy(&tmp, opts, 0);
-    av_dict_copy(&tmp, opts2, 0);
-
     if (av_strstart(url, "crypto", NULL)) {
         if (url[6] == '+' || url[6] == ':')
             proto_name = avio_find_protocol_name(url + 7);
@@ -655,9 +652,13 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;
 
+    av_dict_copy(&tmp, opts, 0);
+    av_dict_copy(&tmp, opts2, 0);
+
     if (is_http && c->http_persistent && *pb) {
         ret = open_url_keepalive(c->ctx, pb, url);
         if (ret == AVERROR_EXIT) {
+            av_dict_free(&tmp);
             return ret;
         } else if (ret < 0) {
             if (ret != AVERROR_EOF)
