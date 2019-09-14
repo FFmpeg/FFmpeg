@@ -22,6 +22,13 @@
 #define AVFILTER_V360_H
 #include "avfilter.h"
 
+enum StereoFormats {
+    STEREO_2D,
+    STEREO_SBS,
+    STEREO_TB,
+    NB_STEREO_FMTS,
+};
+
 enum Projections {
     EQUIRECTANGULAR,
     CUBEMAP_3_2,
@@ -95,6 +102,8 @@ typedef struct V360Context {
     int out_cubemap_face_rotation[6];
     int rotation_order[3];
 
+    int in_stereo, out_stereo;
+
     float in_pad, out_pad;
 
     float yaw, pitch, roll;
@@ -107,6 +116,11 @@ typedef struct V360Context {
     float flat_range[3];
 
     float input_mirror_modifier[2];
+
+    int pr_width[4], pr_height[4];
+
+    int in_offset_w[4], in_offset_h[4];
+    int out_offset_w[4], out_offset_h[4];
 
     int planewidth[4], planeheight[4];
     int inplanewidth[4], inplaneheight[4];

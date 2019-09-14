@@ -18080,6 +18080,21 @@ Set the output video resolution.
 
 Default resolution depends on formats.
 
+@item in_stereo
+@item out_stereo
+Set the input/output stereo format.
+
+@table @samp
+@item 2d
+2D mono
+@item sbs
+Side by side
+@item tb
+Top bottom
+@end table
+
+Default value is @b{@samp{2d}} for input and output format.
+
 @item yaw
 @item pitch
 @item roll

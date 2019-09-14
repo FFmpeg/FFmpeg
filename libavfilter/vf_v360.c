@@ -90,6 +90,11 @@ static const AVOption v360_options[] = {
     {   "lanczos", "lanczos interpolation",                      0, AV_OPT_TYPE_CONST,  {.i64=LANCZOS},         0,                   0, FLAGS, "interp" },
     {         "w", "output width",                   OFFSET(width), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "w"},
     {         "h", "output height",                 OFFSET(height), AV_OPT_TYPE_INT,    {.i64=0},               0,           INT16_MAX, FLAGS, "h"},
+    { "in_stereo", "input stereo format",        OFFSET(in_stereo), AV_OPT_TYPE_INT,    {.i64=STEREO_2D},       0,    NB_STEREO_FMTS-1, FLAGS, "stereo" },
+    {"out_stereo", "output stereo format",      OFFSET(out_stereo), AV_OPT_TYPE_INT,    {.i64=STEREO_2D},       0,    NB_STEREO_FMTS-1, FLAGS, "stereo" },
+    {        "2d", "2d mono",                                    0, AV_OPT_TYPE_CONST,  {.i64=STEREO_2D},       0,                   0, FLAGS, "stereo" },
+    {       "sbs", "side by side",                               0, AV_OPT_TYPE_CONST,  {.i64=STEREO_SBS},      0,                   0, FLAGS, "stereo" },
+    {        "tb", "top bottom",                                 0, AV_OPT_TYPE_CONST,  {.i64=STEREO_TB},       0,                   0, FLAGS, "stereo" },
     { "in_forder", "input cubemap face order",   OFFSET(in_forder), AV_OPT_TYPE_STRING, {.str="rludfb"},        0,     NB_DIRECTIONS-1, FLAGS, "in_forder"},
     {"out_forder", "output cubemap face order", OFFSET(out_forder), AV_OPT_TYPE_STRING, {.str="rludfb"},        0,     NB_DIRECTIONS-1, FLAGS, "out_forder"},
     {   "in_frot", "input cubemap face rotation",  OFFSET(in_frot), AV_OPT_TYPE_STRING, {.str="000000"},        0,     NB_DIRECTIONS-1, FLAGS, "in_frot"},
@@ -222,25 +227,31 @@ static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jo
     const AVFrame *in = td->in;                                                                            \
     AVFrame *out = td->out;                                                                                \
                                                                                                            \
-    for (int plane = 0; plane < s->nb_planes; plane++) {                                                   \
-        const int in_linesize  = in->linesize[plane];                                                      \
-        const int out_linesize = out->linesize[plane];                                                     \
-        const int uv_linesize = s->uv_linesize[plane];                                                     \
-        const uint8_t *src = in->data[plane];                                                              \
-        uint8_t *dst = out->data[plane];                                                                   \
-        const int width = s->planewidth[plane];                                                            \
-        const int height = s->planeheight[plane];                                                          \
+    for (int stereo = 0; stereo < 1 + s->out_stereo > STEREO_2D; stereo++) {                               \
+        for (int plane = 0; plane < s->nb_planes; plane++) {                                               \
+            const int in_linesize  = in->linesize[plane];                                                  \
+            const int out_linesize = out->linesize[plane];                                                 \
+            const int uv_linesize = s->uv_linesize[plane];                                                 \
+            const int in_offset_w = stereo ? s->in_offset_w[plane] : 0;                                    \
+            const int in_offset_h = stereo ? s->in_offset_h[plane] : 0;                                    \
+            const int out_offset_w = stereo ? s->out_offset_w[plane] : 0;                                  \
+            const int out_offset_h = stereo ? s->out_offset_h[plane] : 0;                                  \
+            const uint8_t *src = in->data[plane] + in_offset_h * in_linesize + in_offset_w * (bits >> 3);  \
+            uint8_t *dst = out->data[plane] + out_offset_h * out_linesize + out_offset_w * (bits >> 3);    \
+            const int width = s->pr_width[plane];                                                          \
+            const int height = s->pr_height[plane];                                                        \
                                                                                                            \
-        const int slice_start = (height *  jobnr     ) / nb_jobs;                                          \
-        const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                          \
+            const int slice_start = (height *  jobnr     ) / nb_jobs;                                      \
+            const int slice_end   = (height * (jobnr + 1)) / nb_jobs;                                      \
                                                                                                            \
-        for (int y = slice_start; y < slice_end; y++) {                                                    \
-            const unsigned map = s->map[plane];                                                            \
-            const uint16_t *u = s->u[map] + y * uv_linesize * ws * ws;                                     \
-            const uint16_t *v = s->v[map] + y * uv_linesize * ws * ws;                                     \
-            const int16_t *ker = s->ker[map] + y * uv_linesize * ws * ws;                                  \
+            for (int y = slice_start; y < slice_end; y++) {                                                \
+                const unsigned map = s->map[plane];                                                        \
+                const uint16_t *u = s->u[map] + y * uv_linesize * ws * ws;                                 \
+                const uint16_t *v = s->v[map] + y * uv_linesize * ws * ws;                                 \
+                const int16_t *ker = s->ker[map] + y * uv_linesize * ws * ws;                              \
                                                                                                            \
-            s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                     \
+                s->remap_line(dst + y * out_linesize, width, src, in_linesize, u, v, ker);                 \
+            }                                                                                              \
         }                                                                                                  \
     }                                                                                                      \
                                                                                                            \
@@ -2119,12 +2130,12 @@ static inline void mirror(const float *modifier, float *vec)
 
 static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
 {
-    s->u[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_uv);
-    s->v[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_uv);
+    s->u[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_uv);
+    s->v[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_uv);
     if (!s->u[p] || !s->v[p])
         return AVERROR(ENOMEM);
     if (sizeof_ker) {
-        s->ker[p] = av_calloc(s->uv_linesize[p] * s->planeheight[p], sizeof_ker);
+        s->ker[p] = av_calloc(s->uv_linesize[p] * s->pr_height[p], sizeof_ker);
         if (!s->ker[p])
             return AVERROR(ENOMEM);
     }
@@ -2158,6 +2169,8 @@ static int config_output(AVFilterLink *outlink)
     int elements;
     int err;
     int h, w;
+    int in_offset_h, in_offset_w;
+    int out_offset_h, out_offset_w;
     float hf, wf;
     float output_mirror_modifier[3];
     void (*in_transform)(const V360Context *s,
@@ -2229,36 +2242,68 @@ static int config_output(AVFilterLink *outlink)
         s->rotation_order[order] = rorder;
     }
 
+    switch (s->in_stereo) {
+    case STEREO_2D:
+        w = inlink->w;
+        h = inlink->h;
+        in_offset_w = in_offset_h = 0;
+        break;
+    case STEREO_SBS:
+        w = inlink->w / 2;
+        h = inlink->h;
+        in_offset_w = w;
+        in_offset_h = 0;
+        break;
+    case STEREO_TB:
+        w = inlink->w;
+        h = inlink->h / 2;
+        in_offset_w = 0;
+        in_offset_h = h;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    s->inplaneheight[1] = s->inplaneheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    s->inplaneheight[0] = s->inplaneheight[3] = h;
+    s->inplanewidth[1]  = s->inplanewidth[2]  = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
+    s->inplanewidth[0]  = s->inplanewidth[3]  = w;
+
+    s->in_offset_h[1] = s->in_offset_h[2] = FF_CEIL_RSHIFT(in_offset_h, desc->log2_chroma_h);
+    s->in_offset_h[0] = s->in_offset_h[3] = in_offset_h;
+    s->in_offset_w[1] = s->in_offset_w[2] = FF_CEIL_RSHIFT(in_offset_w, desc->log2_chroma_w);
+    s->in_offset_w[0] = s->in_offset_w[3] = in_offset_w;
+
     switch (s->in) {
     case EQUIRECTANGULAR:
         in_transform = xyz_to_equirect;
         err = 0;
-        wf = inlink->w;
-        hf = inlink->h;
+        wf = w;
+        hf = h;
         break;
     case CUBEMAP_3_2:
         in_transform = xyz_to_cube3x2;
         err = prepare_cube_in(ctx);
-        wf = inlink->w / 3.f * 4.f;
-        hf = inlink->h;
+        wf = w / 3.f * 4.f;
+        hf = h;
         break;
     case CUBEMAP_1_6:
         in_transform = xyz_to_cube1x6;
         err = prepare_cube_in(ctx);
-        wf = inlink->w * 4.f;
-        hf = inlink->h / 3.f;
+        wf = w * 4.f;
+        hf = h / 3.f;
         break;
     case CUBEMAP_6_1:
         in_transform = xyz_to_cube6x1;
         err = prepare_cube_in(ctx);
-        wf = inlink->w / 3.f * 2.f;
-        hf = inlink->h * 2.f;
+        wf = w / 3.f * 2.f;
+        hf = h * 2.f;
         break;
     case EQUIANGULAR:
         in_transform = xyz_to_eac;
         err = prepare_eac_in(ctx);
-        wf = inlink->w;
-        hf = inlink->h / 9.f * 8.f;
+        wf = w;
+        hf = h / 9.f * 8.f;
         break;
     case FLAT:
         av_log(ctx, AV_LOG_ERROR, "Flat format is not accepted as input.\n");
@@ -2266,20 +2311,20 @@ static int config_output(AVFilterLink *outlink)
     case DUAL_FISHEYE:
         in_transform = xyz_to_dfisheye;
         err = 0;
-        wf = inlink->w;
-        hf = inlink->h;
+        wf = w;
+        hf = h;
         break;
     case BARREL:
         in_transform = xyz_to_barrel;
         err = 0;
-        wf = inlink->w / 5.f * 4.f;
-        hf = inlink->h;
+        wf = w / 5.f * 4.f;
+        hf = h;
         break;
     case STEREOGRAPHIC:
         in_transform = xyz_to_stereographic;
         err = 0;
-        wf = inlink->w;
-        hf = inlink->h / 2.f;
+        wf = w;
+        hf = h / 2.f;
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
@@ -2374,21 +2419,45 @@ static int config_output(AVFilterLink *outlink)
             return err;
     }
 
+    s->pr_height[1] = s->pr_height[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    s->pr_height[0] = s->pr_height[3] = h;
+    s->pr_width[1]  = s->pr_width[2] = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
+    s->pr_width[0]  = s->pr_width[3] = w;
+
+    switch (s->out_stereo) {
+    case STEREO_2D:
+        out_offset_w = out_offset_h = 0;
+        break;
+    case STEREO_SBS:
+        out_offset_w = w;
+        out_offset_h = 0;
+        w *= 2;
+        break;
+    case STEREO_TB:
+        out_offset_w = 0;
+        out_offset_h = h;
+        h *= 2;
+        break;
+    default:
+        av_assert0(0);
+    }
+
+    s->out_offset_h[1] = s->out_offset_h[2] = FF_CEIL_RSHIFT(out_offset_h, desc->log2_chroma_h);
+    s->out_offset_h[0] = s->out_offset_h[3] = out_offset_h;
+    s->out_offset_w[1] = s->out_offset_w[2] = FF_CEIL_RSHIFT(out_offset_w, desc->log2_chroma_w);
+    s->out_offset_w[0] = s->out_offset_w[3] = out_offset_w;
+
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = h;
-    s->planewidth[1]  = s->planewidth[2] = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-    s->planewidth[0]  = s->planewidth[3] = w;
+    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
+    s->planewidth[0]  = s->planewidth[3]  = w;
 
     for (int i = 0; i < 4; i++)
-        s->uv_linesize[i] = FFALIGN(s->planewidth[i], 8);
+        s->uv_linesize[i] = FFALIGN(s->pr_width[i], 8);
 
     outlink->h = h;
     outlink->w = w;
 
-    s->inplaneheight[1] = s->inplaneheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->inplaneheight[0] = s->inplaneheight[3] = inlink->h;
-    s->inplanewidth[1]  = s->inplanewidth[2]  = FF_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-    s->inplanewidth[0]  = s->inplanewidth[3]  = inlink->w;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
     if (desc->log2_chroma_h == desc->log2_chroma_w && desc->log2_chroma_h == 0) {
@@ -2409,9 +2478,9 @@ static int config_output(AVFilterLink *outlink)
 
     // Calculate remap data
     for (int p = 0; p < s->nb_allocated; p++) {
-        const int width = s->planewidth[p];
+        const int width = s->pr_width[p];
         const int uv_linesize = s->uv_linesize[p];
-        const int height = s->planeheight[p];
+        const int height = s->pr_height[p];
         const int in_width = s->inplanewidth[p];
         const int in_height = s->inplaneheight[p];
         float du, dv;
