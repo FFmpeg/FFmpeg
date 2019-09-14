@@ -1265,7 +1265,7 @@ static int parse_manifest(AVFormatContext *s, const char *url, AVIOContext *in)
     } else {
         LIBXML_TEST_VERSION
 
-            doc = xmlReadMemory(buffer, filesize, c->base_url, NULL, 0);
+        doc = xmlReadMemory(buffer, filesize, c->base_url, NULL, 0);
         root_element = xmlDocGetRootElement(doc);
         node = root_element;
 
