@@ -18144,6 +18144,11 @@ Extract back view of Equi-Angular Cubemap:
 @example
 ffmpeg -i input.mkv -vf v360=eac:flat:yaw=180 output.mkv
 @end example
+@item
+Convert transposed and horizontally flipped Equi-Angular Cubemap in side-by-side stereo format to equirectangular top-bottom stereo format:
+@example
+v360=eac:equirect:in_stereo=sbs:in_trans=1:ih_flip=1:out_stereo=tb
+@end example
 @end itemize
 
 @section vaguedenoiser
