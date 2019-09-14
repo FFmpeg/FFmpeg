@@ -1827,9 +1827,14 @@ static void dfisheye_to_xyz(const V360Context *s,
     const float phi   = M_PI + atan2f(vf, uf * m);
     const float theta = m * M_PI_2 * (1.f - hypotf(uf, vf));
 
-    vec[0] = cosf(theta) * cosf(phi);
-    vec[1] = cosf(theta) * sinf(phi);
-    vec[2] = sinf(theta);
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] = cos_theta * cos_phi;
+    vec[1] = cos_theta * sin_phi;
+    vec[2] = sin_theta;
 
     normalize_vector(vec);
 }
