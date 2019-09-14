@@ -337,10 +337,8 @@ static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
 static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
                             uint16_t *u, uint16_t *v, int16_t *ker)
 {
-    int i, j;
-
-    for (i = 0; i < 2; i++) {
-        for (j = 0; j < 2; j++) {
+    for (int i = 0; i < 2; i++) {
+        for (int j = 0; j < 2; j++) {
             u[i * 2 + j] = r_tmp->u[i + 1][j + 1];
             v[i * 2 + j] = r_tmp->v[i + 1][j + 1];
         }
@@ -382,15 +380,14 @@ static inline void calculate_bicubic_coeffs(float t, float *coeffs)
 static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
-    int i, j;
     float du_coeffs[4];
     float dv_coeffs[4];
 
     calculate_bicubic_coeffs(du, du_coeffs);
     calculate_bicubic_coeffs(dv, dv_coeffs);
 
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
             ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
@@ -406,10 +403,9 @@ static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
  */
 static inline void calculate_lanczos_coeffs(float t, float *coeffs)
 {
-    int i;
     float sum = 0.f;
 
-    for (i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         const float x = M_PI * (t - i + 1);
         if (x == 0.f) {
             coeffs[i] = 1.f;
@@ -419,7 +415,7 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
         sum += coeffs[i];
     }
 
-    for (i = 0; i < 4; i++) {
+    for (int i = 0; i < 4; i++) {
         coeffs[i] /= sum;
     }
 }
@@ -437,15 +433,14 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
 static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
-    int i, j;
     float du_coeffs[4];
     float dv_coeffs[4];
 
     calculate_lanczos_coeffs(du, du_coeffs);
     calculate_lanczos_coeffs(dv, dv_coeffs);
 
-    for (i = 0; i < 4; i++) {
-        for (j = 0; j < 4; j++) {
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
             u[i * 4 + j] = r_tmp->u[i][j];
             v[i * 4 + j] = r_tmp->v[i][j];
             ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
@@ -1094,7 +1089,6 @@ static void xyz_to_cube3x2(const V360Context *s,
     float uf, vf;
     int ui, vi;
     int ewi, ehi;
-    int i, j;
     int direction, face;
     int u_face, v_face;
 
@@ -1118,8 +1112,8 @@ static void xyz_to_cube3x2(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             int new_ui = ui + j;
             int new_vi = vi + i;
             int u_shift, v_shift;
@@ -1238,7 +1232,6 @@ static void xyz_to_cube1x6(const V360Context *s,
     float uf, vf;
     int ui, vi;
     int ehi;
-    int i, j;
     int direction, face;
 
     xyz_to_cube(s, vec, &uf, &vf, &direction);
@@ -1258,8 +1251,8 @@ static void xyz_to_cube1x6(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             int new_ui = ui + j;
             int new_vi = vi + i;
             int v_shift;
@@ -1315,7 +1308,6 @@ static void xyz_to_cube6x1(const V360Context *s,
     float uf, vf;
     int ui, vi;
     int ewi;
-    int i, j;
     int direction, face;
 
     xyz_to_cube(s, vec, &uf, &vf, &direction);
@@ -1335,8 +1327,8 @@ static void xyz_to_cube6x1(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             int new_ui = ui + j;
             int new_vi = vi + i;
             int u_shift;
@@ -1463,7 +1455,6 @@ static void xyz_to_stereographic(const V360Context *s,
     const float y = av_clipf(vec[2] / (1.f - vec[1]), -1.f, 1.f) * s->input_mirror_modifier[1];
     float uf, vf;
     int ui, vi;
-    int i, j;
 
     uf = (x + 1.f) * width  / 2.f;
     vf = (y + 1.f) * height / 2.f;
@@ -1473,8 +1464,8 @@ static void xyz_to_stereographic(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             us[i + 1][j + 1] = av_clip(ui + j, 0, width - 1);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
@@ -1501,7 +1492,6 @@ static void xyz_to_equirect(const V360Context *s,
     const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
     float uf, vf;
     int ui, vi;
-    int i, j;
 
     uf = (phi   / M_PI   + 1.f) * width  / 2.f;
     vf = (theta / M_PI_2 + 1.f) * height / 2.f;
@@ -1511,8 +1501,8 @@ static void xyz_to_equirect(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             us[i + 1][j + 1] = mod(ui + j, width);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
@@ -1730,7 +1720,6 @@ static void xyz_to_eac(const V360Context *s,
 
     float uf, vf;
     int ui, vi;
-    int i, j;
     int direction, face;
     int u_face, v_face;
 
@@ -1756,8 +1745,8 @@ static void xyz_to_eac(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
@@ -1874,7 +1863,6 @@ static void xyz_to_dfisheye(const V360Context *s,
 
     int ui, vi;
     int u_shift;
-    int i, j;
 
     if (vec[2] >= 0) {
         u_shift = 0;
@@ -1889,8 +1877,8 @@ static void xyz_to_dfisheye(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             us[i + 1][j + 1] = av_clip(u_shift + ui + j, 0, width  - 1);
             vs[i + 1][j + 1] = av_clip(          vi + i, 0, height - 1);
         }
@@ -1993,7 +1981,6 @@ static void xyz_to_barrel(const V360Context *s,
     int u_shift, v_shift;
     float uf, vf;
     int ui, vi;
-    int i, j;
 
     if (theta > -theta_range && theta < theta_range) {
         ew = 4 * width / 5;
@@ -2033,8 +2020,8 @@ static void xyz_to_barrel(const V360Context *s,
     *du = uf - ui;
     *dv = vf - vi;
 
-    for (i = -1; i < 3; i++) {
-        for (j = -1; j < 3; j++) {
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
             us[i + 1][j + 1] = u_shift + av_clip(ui + j, 0, ew - 1);
             vs[i + 1][j + 1] = v_shift + av_clip(vi + i, 0, eh - 1);
         }
@@ -2165,7 +2152,7 @@ static int config_output(AVFilterLink *outlink)
     int sizeof_ker;
     int elements;
     int err;
-    int p, h, w;
+    int h, w;
     float hf, wf;
     float output_mirror_modifier[3];
     void (*in_transform)(const V360Context *s,
@@ -2416,7 +2403,7 @@ static int config_output(AVFilterLink *outlink)
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, output_mirror_modifier);
 
     // Calculate remap data
-    for (p = 0; p < s->nb_allocated; p++) {
+    for (int p = 0; p < s->nb_allocated; p++) {
         const int width = s->planewidth[p];
         const int uv_linesize = s->uv_linesize[p];
         const int height = s->planeheight[p];
@@ -2425,10 +2412,9 @@ static int config_output(AVFilterLink *outlink)
         float du, dv;
         float vec[3];
         XYRemap r_tmp;
-        int i, j;
 
-        for (i = 0; i < width; i++) {
-            for (j = 0; j < height; j++) {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
                 uint16_t *u = s->u[p] + (j * uv_linesize + i) * elements;
                 uint16_t *v = s->v[p] + (j * uv_linesize + i) * elements;
                 int16_t *ker = s->ker[p] + (j * uv_linesize + i) * elements;
@@ -2482,9 +2468,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
-    int p;
 
-    for (p = 0; p < s->nb_allocated; p++) {
+    for (int p = 0; p < s->nb_allocated; p++) {
         av_freep(&s->u[p]);
         av_freep(&s->v[p]);
         av_freep(&s->ker[p]);
