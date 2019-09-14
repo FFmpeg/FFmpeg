@@ -2537,7 +2537,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
         vs = &hls->var_streams[i];
         oc = vs->avf;
         vtt_oc = vs->vtt_avf;
-        old_filename = av_strdup(vs->avf->url);
+        old_filename = av_strdup(oc->url);
         use_temp_file = 0;
 
         if (!old_filename) {
@@ -2546,9 +2546,9 @@ static int hls_write_trailer(struct AVFormatContext *s)
         if (hls->key_info_file || hls->encrypt) {
             av_dict_set(&options, "encryption_key", hls->key_string, 0);
             av_dict_set(&options, "encryption_iv", hls->iv_string, 0);
-            filename = av_asprintf("crypto:%s", vs->avf->url);
+            filename = av_asprintf("crypto:%s", oc->url);
         } else {
-            filename = av_asprintf("%s", vs->avf->url);
+            filename = av_asprintf("%s", oc->url);
         }
         if (!filename) {
             av_free(old_filename);
@@ -2559,7 +2559,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
             int range_length = 0;
             if (!vs->init_range_length) {
                 uint8_t *buffer = NULL;
-                av_write_frame(vs->avf, NULL); /* Flush any buffered data */
+                av_write_frame(oc, NULL); /* Flush any buffered data */
                 avio_flush(oc->pb);
 
                 range_length = avio_close_dyn_buf(oc->pb, &buffer);
@@ -2580,7 +2580,7 @@ static int hls_write_trailer(struct AVFormatContext *s)
             set_http_options(s, &options, hls);
             ret = hlsenc_io_open(s, &vs->out, filename, &options);
             if (ret < 0) {
-                av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n", vs->avf->url);
+                av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n", oc->url);
                 goto failed;
             }
             if (hls->segment_type == SEGMENT_TYPE_FMP4)
@@ -2598,13 +2598,13 @@ static int hls_write_trailer(struct AVFormatContext *s)
             ff_format_io_close(s, &vs->out);
             ret = hlsenc_io_open(s, &vs->out, filename, &options);
             if (ret < 0) {
-                av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n", vs->avf->url);
+                av_log(s, AV_LOG_ERROR, "Failed to open file '%s'\n", oc->url);
                 goto failed;
             }
             reflush_dynbuf(vs, &range_length);
             ret = hlsenc_io_close(s, &vs->out, filename);
             if (ret < 0)
-                av_log(s, AV_LOG_WARNING, "Failed to upload file '%s' at the end.\n", vs->avf->url);
+                av_log(s, AV_LOG_WARNING, "Failed to upload file '%s' at the end.\n", oc->url);
         }
         av_free(vs->temp_buffer);
 
@@ -2620,7 +2620,7 @@ failed:
         if (use_temp_file && !(hls->flags & HLS_SINGLE_FILE)) {
             hls_rename_temp_file(s, oc);
             av_free(old_filename);
-            old_filename = av_strdup(vs->avf->url);
+            old_filename = av_strdup(oc->url);
 
             if (!old_filename) {
                 return AVERROR(ENOMEM);
