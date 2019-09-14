@@ -222,7 +222,7 @@ int ff_h263_resync(MpegEncContext *s){
             get_bits(&s->gb, 8);
         }
 
-        if (show_bits_long(&s->gb, 32) == SLICE_START_CODE)
+        if (get_bits_left(&s->gb) >= 32 && show_bits_long(&s->gb, 32) == SLICE_START_CODE)
             return get_bits_count(&s->gb);
         else
             return -1;
