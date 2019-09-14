@@ -102,6 +102,7 @@ static const AVOption v360_options[] = {
     {    "rorder", "rotation order",                OFFSET(rorder), AV_OPT_TYPE_STRING, {.str="ypr"},           0,                   0, FLAGS, "rorder"},
     {     "h_fov", "horizontal field of view",       OFFSET(h_fov), AV_OPT_TYPE_FLOAT,  {.dbl=90.f},     0.00001f,               360.f, FLAGS, "h_fov"},
     {     "v_fov", "vertical field of view",         OFFSET(v_fov), AV_OPT_TYPE_FLOAT,  {.dbl=45.f},     0.00001f,               360.f, FLAGS, "v_fov"},
+    {     "d_fov", "diagonal field of view",         OFFSET(d_fov), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,               360.f, FLAGS, "d_fov"},
     {    "h_flip", "flip out video horizontally",   OFFSET(h_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "h_flip"},
     {    "v_flip", "flip out video vertically",     OFFSET(v_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "v_flip"},
     {    "d_flip", "flip out video indepth",        OFFSET(d_flip), AV_OPT_TYPE_BOOL,   {.i64=0},               0,                   1, FLAGS, "d_flip"},
@@ -2139,6 +2140,20 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
     return 0;
 }
 
+static void fov_from_dfov(V360Context *s, float w, float h)
+{
+    const float d_angle = 0.5 * FFMIN(s->d_fov, 359.f) * M_PI / 180.f;
+    const float d = hypotf(w, h);
+
+    s->h_fov = atan2f(tanf(d_angle) * w, d) * 360.f / M_PI;
+    s->v_fov = atan2f(tanf(d_angle) * h, d) * 360.f / M_PI;
+
+    if (s->h_fov < 0.f)
+        s->h_fov += 360.f;
+    if (s->v_fov < 0.f)
+        s->v_fov += 360.f;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -2161,6 +2176,7 @@ static int config_output(AVFilterLink *outlink)
                           float *vec);
     void (*calculate_kernel)(float du, float dv, const XYRemap *r_tmp,
                              uint16_t *u, uint16_t *v, int16_t *ker);
+    int (*prepare_out)(AVFilterContext *ctx);
     float rot_mat[3][3];
 
     s->input_mirror_modifier[0] = s->ih_flip ? -1.f : 1.f;
@@ -2285,65 +2301,61 @@ static int config_output(AVFilterLink *outlink)
     switch (s->out) {
     case EQUIRECTANGULAR:
         out_transform = equirect_to_xyz;
-        err = 0;
+        prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case CUBEMAP_3_2:
         out_transform = cube3x2_to_xyz;
-        err = prepare_cube_out(ctx);
+        prepare_out = prepare_cube_out;
         w = roundf(wf / 4.f * 3.f);
         h = roundf(hf);
         break;
     case CUBEMAP_1_6:
         out_transform = cube1x6_to_xyz;
-        err = prepare_cube_out(ctx);
+        prepare_out = prepare_cube_out;
         w = roundf(wf / 4.f);
         h = roundf(hf * 3.f);
         break;
     case CUBEMAP_6_1:
         out_transform = cube6x1_to_xyz;
-        err = prepare_cube_out(ctx);
+        prepare_out = prepare_cube_out;
         w = roundf(wf / 2.f * 3.f);
         h = roundf(hf / 2.f);
         break;
     case EQUIANGULAR:
         out_transform = eac_to_xyz;
-        err = prepare_eac_out(ctx);
+        prepare_out = prepare_eac_out;
         w = roundf(wf);
         h = roundf(hf / 8.f * 9.f);
         break;
     case FLAT:
         out_transform = flat_to_xyz;
-        err = prepare_flat_out(ctx);
+        prepare_out = prepare_flat_out;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case DUAL_FISHEYE:
         out_transform = dfisheye_to_xyz;
-        err = 0;
+        prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case BARREL:
         out_transform = barrel_to_xyz;
-        err = 0;
+        prepare_out = NULL;
         w = roundf(wf / 4.f * 5.f);
         h = roundf(hf);
         break;
     case STEREOGRAPHIC:
         out_transform = stereographic_to_xyz;
-        err = prepare_stereographic_out(ctx);
+        prepare_out = prepare_stereographic_out;
         w = roundf(wf);
         h = roundf(hf * 2.f);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");
         return AVERROR_BUG;
-    }
-
-    if (err != 0) {
-        return err;
     }
 
     // Override resolution with user values if specified
@@ -2359,6 +2371,15 @@ static int config_output(AVFilterLink *outlink)
 
         if (s->in_transpose)
             FFSWAP(int, w, h);
+    }
+
+    if (s->d_fov > 0.f)
+        fov_from_dfov(s, w, h);
+
+    if (prepare_out) {
+        err = prepare_out(ctx);
+        if (err != 0)
+            return err;
     }
 
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);

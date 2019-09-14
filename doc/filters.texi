@@ -18006,7 +18006,10 @@ Format specific options:
 @table @option
 @item h_fov
 @item v_fov
-Set horizontal/vertical field of view. Values in degrees.
+@item d_fov
+Set horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
 @end table
 
 @item dfisheye
@@ -18040,7 +18043,10 @@ Format specific options:
 @table @option
 @item h_fov
 @item v_fov
-Set horizontal/vertical field of view. Values in degrees.
+@item d_fov
+Set horizontal/vertical/diagonal field of view. Values in degrees.
+
+If diagonal field of view is set it overrides horizontal and vertical field of view.
 @end table
 
 @end table
