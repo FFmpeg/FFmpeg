@@ -2142,11 +2142,11 @@ static int allocate_plane(V360Context *s, int sizeof_uv, int sizeof_ker, int p)
 
 static void fov_from_dfov(V360Context *s, float w, float h)
 {
-    const float d_angle = 0.5 * FFMIN(s->d_fov, 359.f) * M_PI / 180.f;
+    const float da = tanf(0.5 * FFMIN(s->d_fov, 359.f) * M_PI / 180.f);
     const float d = hypotf(w, h);
 
-    s->h_fov = atan2f(tanf(d_angle) * w, d) * 360.f / M_PI;
-    s->v_fov = atan2f(tanf(d_angle) * h, d) * 360.f / M_PI;
+    s->h_fov = atan2f(da * w, d) * 360.f / M_PI;
+    s->v_fov = atan2f(da * h, d) * 360.f / M_PI;
 
     if (s->h_fov < 0.f)
         s->h_fov += 360.f;
