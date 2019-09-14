@@ -300,8 +300,8 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
         t = get_vlc2(gb, code_vlc->table, code_vlc->bits, 2);
         code1 = t / range2;
         code2 = t % range2;
-        dst[i]     = extend_code(gb, code1, range, 0) * (1 << add_bits);
-        dst[i + 1] = extend_code(gb, code2, range, 0) * (1 << add_bits);
+        dst[i]     = extend_code(gb, code1, range, 0) * (1U << add_bits);
+        dst[i + 1] = extend_code(gb, code2, range, 0) * (1U << add_bits);
         if (add_bits) {
             dst[i]     |= get_bits(gb, add_bits);
             dst[i + 1] |= get_bits(gb, add_bits);
