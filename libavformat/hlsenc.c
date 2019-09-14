@@ -466,6 +466,7 @@ static int flush_dynbuf(VariantStream *vs, int *range_length)
     *range_length = avio_close_dyn_buf(ctx->pb, &vs->temp_buffer);
     ctx->pb = NULL;
     avio_write(vs->out, vs->temp_buffer, *range_length);
+    avio_flush(vs->out);
 
     // re-open buffer
     return avio_open_dyn_buf(&ctx->pb);
