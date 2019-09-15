@@ -2157,6 +2157,14 @@ static void fov_from_dfov(V360Context *s, float w, float h)
         s->v_fov += 360.f;
 }
 
+static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDescriptor *desc)
+{
+    outw[1] = outw[2] = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
+    outw[0] = outw[3] = w;
+    outh[1] = outh[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
+    outh[0] = outh[3] = h;
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -2264,15 +2272,8 @@ static int config_output(AVFilterLink *outlink)
         av_assert0(0);
     }
 
-    s->inplaneheight[1] = s->inplaneheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
-    s->inplaneheight[0] = s->inplaneheight[3] = h;
-    s->inplanewidth[1]  = s->inplanewidth[2]  = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-    s->inplanewidth[0]  = s->inplanewidth[3]  = w;
-
-    s->in_offset_h[1] = s->in_offset_h[2] = FF_CEIL_RSHIFT(in_offset_h, desc->log2_chroma_h);
-    s->in_offset_h[0] = s->in_offset_h[3] = in_offset_h;
-    s->in_offset_w[1] = s->in_offset_w[2] = FF_CEIL_RSHIFT(in_offset_w, desc->log2_chroma_w);
-    s->in_offset_w[0] = s->in_offset_w[3] = in_offset_w;
+    set_dimensions(s->inplanewidth, s->inplaneheight, w, h, desc);
+    set_dimensions(s->in_offset_w, s->in_offset_h, in_offset_w, in_offset_h, desc);
 
     switch (s->in) {
     case EQUIRECTANGULAR:
@@ -2419,10 +2420,7 @@ static int config_output(AVFilterLink *outlink)
             return err;
     }
 
-    s->pr_height[1] = s->pr_height[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
-    s->pr_height[0] = s->pr_height[3] = h;
-    s->pr_width[1]  = s->pr_width[2] = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-    s->pr_width[0]  = s->pr_width[3] = w;
+    set_dimensions(s->pr_width, s->pr_height, w, h, desc);
 
     switch (s->out_stereo) {
     case STEREO_2D:
@@ -2442,15 +2440,8 @@ static int config_output(AVFilterLink *outlink)
         av_assert0(0);
     }
 
-    s->out_offset_h[1] = s->out_offset_h[2] = FF_CEIL_RSHIFT(out_offset_h, desc->log2_chroma_h);
-    s->out_offset_h[0] = s->out_offset_h[3] = out_offset_h;
-    s->out_offset_w[1] = s->out_offset_w[2] = FF_CEIL_RSHIFT(out_offset_w, desc->log2_chroma_w);
-    s->out_offset_w[0] = s->out_offset_w[3] = out_offset_w;
-
-    s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(h, desc->log2_chroma_h);
-    s->planeheight[0] = s->planeheight[3] = h;
-    s->planewidth[1]  = s->planewidth[2]  = FF_CEIL_RSHIFT(w, desc->log2_chroma_w);
-    s->planewidth[0]  = s->planewidth[3]  = w;
+    set_dimensions(s->out_offset_w, s->out_offset_h, out_offset_w, out_offset_h, desc);
+    set_dimensions(s->planewidth, s->planeheight, w, h, desc);
 
     for (int i = 0; i < 4; i++)
         s->uv_linesize[i] = FFALIGN(s->pr_width[i], 8);
