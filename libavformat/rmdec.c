@@ -724,8 +724,8 @@ static int rm_sync(AVFormatContext *s, int64_t *timestamp, int *flags, int *stre
 
             num = avio_rb16(pb);
             *timestamp = avio_rb32(pb);
-            mlti_id = (avio_r8(pb)>>1)-1<<16;
-            mlti_id = FFMAX(mlti_id, 0);
+            mlti_id = avio_r8((pb) >> 1) - 1;
+            mlti_id = FFMAX(mlti_id, 0) << 16;
             *flags = avio_r8(pb); /* flags */
         }
         for(i=0;i<s->nb_streams;i++) {
