@@ -57,7 +57,7 @@ You need to explicitly configure the build with @code{--enable-libdav1d}.
 
 @subsection Options
 
-The following option is supported by the libdav1d wrapper.
+The following options are supported by the libdav1d wrapper.
 
 @table @option
 
@@ -68,8 +68,8 @@ Set amount of frame threads to use during decoding. The default value is 0 (auto
 Set amount of tile threads to use during decoding. The default value is 0 (autodetect).
 
 @item filmgrain
-Apply film grain to the decoded video if present in the bitstream. The default value
-is true.
+Apply film grain to the decoded video if present in the bitstream. Defaults to the
+internal default of the library.
 
 @end table
 
