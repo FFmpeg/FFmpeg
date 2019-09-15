@@ -164,7 +164,7 @@ pkt_alloc:
                     put_bits(&pb, 31, 0x7FFFFFFF);
                     unary -= 31;
                 } else {
-                    put_bits(&pb, unary, (1 << unary) - 1);
+                    put_bits(&pb, unary, (1U << unary) - 1);
                     unary = 0;
                 }
             } while (unary);
