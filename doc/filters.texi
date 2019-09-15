@@ -16645,16 +16645,20 @@ side by side crosseye with half width resolution
 (right eye left, left eye right)
 
 @item abl
+@item tbl
 above-below (left eye above, right eye below)
 
 @item abr
+@item tbr
 above-below (right eye above, left eye below)
 
 @item ab2l
+@item tb2l
 above-below with half height resolution
 (left eye above, right eye below)
 
 @item ab2r
+@item tb2r
 above-below with half height resolution
 (right eye above, left eye below)
 
@@ -16698,16 +16702,20 @@ side by side crosseye with half width resolution
 (right eye left, left eye right)
 
 @item abl
+@item tbl
 above-below (left eye above, right eye below)
 
 @item abr
+@item tbr
 above-below (right eye above, left eye below)
 
 @item ab2l
+@item tb2l
 above-below with half height resolution
 (left eye above, right eye below)
 
 @item ab2r
+@item tb2r
 above-below with half height resolution
 (right eye above, left eye below)
 
