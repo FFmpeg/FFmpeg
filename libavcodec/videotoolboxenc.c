@@ -1112,7 +1112,7 @@ static int vtenc_create_encoder(AVCodecContext   *avctx,
                                         kVTCompressionPropertyKey_ProfileLevel,
                                         profile_level);
             if (status) {
-                av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d\n", status);
+                av_log(avctx, AV_LOG_ERROR, "Error setting profile/level property: %d. Output will be encoded using a supported profile/level combination.\n", status);
             }
         }
     }
