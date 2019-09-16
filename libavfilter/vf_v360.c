@@ -2478,8 +2478,8 @@ static int config_output(AVFilterLink *outlink)
         float vec[3];
         XYRemap rmap;
 
-        for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
                 uint16_t *u = s->u[p] + (j * uv_linesize + i) * elements;
                 uint16_t *v = s->v[p] + (j * uv_linesize + i) * elements;
                 int16_t *ker = s->ker[p] + (j * uv_linesize + i) * elements;
