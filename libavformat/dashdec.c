@@ -1017,7 +1017,7 @@ static int parse_manifest_representation(AVFormatContext *s, const char *url,
 
             duration_val = get_val_from_nodes_tab(segmentlists_tab, 3, "duration");
             timescale_val = get_val_from_nodes_tab(segmentlists_tab, 3, "timescale");
-            startnumber_val = get_val_from_nodes_tab(segmentlists_tab, 4, "startNumber");
+            startnumber_val = get_val_from_nodes_tab(segmentlists_tab, 3, "startNumber");
             if (duration_val) {
                 rep->fragment_duration = (int64_t) strtoll(duration_val, NULL, 10);
                 av_log(s, AV_LOG_TRACE, "rep->fragment_duration = [%"PRId64"]\n", rep->fragment_duration);
