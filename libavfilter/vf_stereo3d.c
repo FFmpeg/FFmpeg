@@ -559,8 +559,6 @@ static int config_output(AVFilterLink *outlink)
         break;
     case CHECKERBOARD_LR:
     case CHECKERBOARD_RL:
-        s->out.width     = s->width * 2;
-        break;
     case INTERLEAVE_COLS_LR:
     case INTERLEAVE_COLS_RL:
         s->out.width     = s->width * 2;
