@@ -672,7 +672,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *inpicref)
     AVFilterContext *ctx  = inlink->dst;
     Stereo3DContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
-    AVFrame *out, *oleft, *oright, *ileft, *iright;
+    AVFrame *out = NULL, *oleft, *oright, *ileft, *iright;
     int out_off_left[4], out_off_right[4];
     int i, ret;
 
@@ -1082,6 +1082,7 @@ copy:
         av_frame_free(&s->prev);
         av_frame_free(&inpicref);
     }
+    av_assert0(out);
     out->sample_aspect_ratio = s->aspect;
     return ff_filter_frame(outlink, out);
 }
