@@ -768,6 +768,8 @@ static void cube_to_xyz(const V360Context *s,
         l_y = -vf;
         l_z =  1.f;
         break;
+    default:
+        av_assert0(0);
     }
 
     vec[0] = l_x;
