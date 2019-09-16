@@ -1190,15 +1190,11 @@ plot_white_point(uint16_t*      pixels,
     if (cie == LUV) {
         double wup, wvp;
         xy_to_upvp(cs->xWhite, cs->yWhite, &wup, &wvp);
-        wx = wup;
-        wy = wvp;
         wx = (w - 1) * wup;
         wy = (h - 1) - ((int) ((h - 1) * wvp));
     } else if (cie == UCS) {
         double wu, wv;
         xy_to_uv(cs->xWhite, cs->yWhite, &wu, &wv);
-        wx = wu;
-        wy = wv;
         wx = (w - 1) * wu;
         wy = (h - 1) - ((int) ((h - 1) * wv));
     } else if (cie == XYY) {
