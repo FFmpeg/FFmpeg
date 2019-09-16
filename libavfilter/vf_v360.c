@@ -320,19 +320,19 @@ void ff_v360_init(V360Context *s, int depth)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param r_tmp calculated 4x4 window
+ * @param rmap calculated 4x4 window
  * @param u u remap data
  * @param v v remap data
  * @param ker ker remap data
  */
-static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
+static void nearest_kernel(float du, float dv, const XYRemap *rmap,
                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
     const int i = roundf(dv) + 1;
     const int j = roundf(du) + 1;
 
-    u[0] = r_tmp->u[i][j];
-    v[0] = r_tmp->v[i][j];
+    u[0] = rmap->u[i][j];
+    v[0] = rmap->v[i][j];
 }
 
 /**
@@ -340,18 +340,18 @@ static void nearest_kernel(float du, float dv, const XYRemap *r_tmp,
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param r_tmp calculated 4x4 window
+ * @param rmap calculated 4x4 window
  * @param u u remap data
  * @param v v remap data
  * @param ker ker remap data
  */
-static void bilinear_kernel(float du, float dv, const XYRemap *r_tmp,
+static void bilinear_kernel(float du, float dv, const XYRemap *rmap,
                             uint16_t *u, uint16_t *v, int16_t *ker)
 {
     for (int i = 0; i < 2; i++) {
         for (int j = 0; j < 2; j++) {
-            u[i * 2 + j] = r_tmp->u[i + 1][j + 1];
-            v[i * 2 + j] = r_tmp->v[i + 1][j + 1];
+            u[i * 2 + j] = rmap->u[i + 1][j + 1];
+            v[i * 2 + j] = rmap->v[i + 1][j + 1];
         }
     }
 
@@ -383,12 +383,12 @@ static inline void calculate_bicubic_coeffs(float t, float *coeffs)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param r_tmp calculated 4x4 window
+ * @param rmap calculated 4x4 window
  * @param u u remap data
  * @param v v remap data
  * @param ker ker remap data
  */
-static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
+static void bicubic_kernel(float du, float dv, const XYRemap *rmap,
                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
@@ -399,8 +399,8 @@ static void bicubic_kernel(float du, float dv, const XYRemap *r_tmp,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            u[i * 4 + j] = r_tmp->u[i][j];
-            v[i * 4 + j] = r_tmp->v[i][j];
+            u[i * 4 + j] = rmap->u[i][j];
+            v[i * 4 + j] = rmap->v[i][j];
             ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
         }
     }
@@ -436,12 +436,12 @@ static inline void calculate_lanczos_coeffs(float t, float *coeffs)
  *
  * @param du horizontal relative coordinate
  * @param dv vertical relative coordinate
- * @param r_tmp calculated 4x4 window
+ * @param rmap calculated 4x4 window
  * @param u u remap data
  * @param v v remap data
  * @param ker ker remap data
  */
-static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
+static void lanczos_kernel(float du, float dv, const XYRemap *rmap,
                            uint16_t *u, uint16_t *v, int16_t *ker)
 {
     float du_coeffs[4];
@@ -452,8 +452,8 @@ static void lanczos_kernel(float du, float dv, const XYRemap *r_tmp,
 
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            u[i * 4 + j] = r_tmp->u[i][j];
-            v[i * 4 + j] = r_tmp->v[i][j];
+            u[i * 4 + j] = rmap->u[i][j];
+            v[i * 4 + j] = rmap->v[i][j];
             ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
         }
     }
@@ -2189,7 +2189,7 @@ static int config_output(AVFilterLink *outlink)
     void (*out_transform)(const V360Context *s,
                           int i, int j, int width, int height,
                           float *vec);
-    void (*calculate_kernel)(float du, float dv, const XYRemap *r_tmp,
+    void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
                              uint16_t *u, uint16_t *v, int16_t *ker);
     int (*prepare_out)(AVFilterContext *ctx);
     float rot_mat[3][3];
@@ -2478,7 +2478,7 @@ static int config_output(AVFilterLink *outlink)
         const int in_height = s->inplaneheight[p];
         float du, dv;
         float vec[3];
-        XYRemap r_tmp;
+        XYRemap rmap;
 
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
@@ -2496,11 +2496,11 @@ static int config_output(AVFilterLink *outlink)
                 normalize_vector(vec);
                 mirror(output_mirror_modifier, vec);
                 if (s->in_transpose)
-                    in_transform(s, vec, in_height, in_width, r_tmp.v, r_tmp.u, &du, &dv);
+                    in_transform(s, vec, in_height, in_width, rmap.v, rmap.u, &du, &dv);
                 else
-                    in_transform(s, vec, in_width, in_height, r_tmp.u, r_tmp.v, &du, &dv);
+                    in_transform(s, vec, in_width, in_height, rmap.u, rmap.v, &du, &dv);
                 av_assert1(!isnan(du) && !isnan(dv));
-                calculate_kernel(du, dv, &r_tmp, u, v, ker);
+                calculate_kernel(du, dv, &rmap, u, v, ker);
             }
         }
     }
