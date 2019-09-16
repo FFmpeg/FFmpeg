@@ -2162,7 +2162,7 @@ static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDes
 }
 
 // Calculate remap data
-static av_always_inline void v360_filter(AVFilterContext *ctx)
+static av_always_inline int v360_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     V360Context *s = ctx->priv;
 
@@ -2172,11 +2172,13 @@ static av_always_inline void v360_filter(AVFilterContext *ctx)
         const int height = s->pr_height[p];
         const int in_width = s->inplanewidth[p];
         const int in_height = s->inplaneheight[p];
+        const int slice_start = (height *  jobnr     ) / nb_jobs;
+        const int slice_end   = (height * (jobnr + 1)) / nb_jobs;
         float du, dv;
         float vec[3];
         XYRemap rmap;
 
-        for (int j = 0; j < height; j++) {
+        for (int j = slice_start; j < slice_end; j++) {
             for (int i = 0; i < width; i++) {
                 uint16_t *u = s->u[p] + (j * uv_linesize + i) * s->elements;
                 uint16_t *v = s->v[p] + (j * uv_linesize + i) * s->elements;
@@ -2200,6 +2202,8 @@ static av_always_inline void v360_filter(AVFilterContext *ctx)
             }
         }
     }
+
+    return 0;
 }
 
 static int config_output(AVFilterLink *outlink)
@@ -2493,7 +2497,7 @@ static int config_output(AVFilterLink *outlink)
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
-    v360_filter(ctx);
+    ctx->internal->execute(ctx, v360_slice, NULL, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 
     return 0;
 }
