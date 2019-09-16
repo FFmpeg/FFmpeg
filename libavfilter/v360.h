@@ -115,7 +115,10 @@ typedef struct V360Context {
     float h_fov, v_fov, d_fov;
     float flat_range[3];
 
+    float rot_mat[3][3];
+
     float input_mirror_modifier[2];
+    float output_mirror_modifier[3];
 
     int pr_width[4], pr_height[4];
 

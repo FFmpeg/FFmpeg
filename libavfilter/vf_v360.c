@@ -2182,7 +2182,6 @@ static int config_output(AVFilterLink *outlink)
     int in_offset_h, in_offset_w;
     int out_offset_h, out_offset_w;
     float hf, wf;
-    float output_mirror_modifier[3];
     void (*in_transform)(const V360Context *s,
                          const float *vec, int width, int height,
                          uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv);
@@ -2192,7 +2191,6 @@ static int config_output(AVFilterLink *outlink)
     void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
                              uint16_t *u, uint16_t *v, int16_t *ker);
     int (*prepare_out)(AVFilterContext *ctx);
-    float rot_mat[3][3];
 
     s->input_mirror_modifier[0] = s->ih_flip ? -1.f : 1.f;
     s->input_mirror_modifier[1] = s->iv_flip ? -1.f : 1.f;
@@ -2466,8 +2464,8 @@ static int config_output(AVFilterLink *outlink)
         allocate_plane(s, sizeof_uv, sizeof_ker, 1);
     }
 
-    calculate_rotation_matrix(s->yaw, s->pitch, s->roll, rot_mat, s->rotation_order);
-    set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, output_mirror_modifier);
+    calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
+    set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
     // Calculate remap data
     for (int p = 0; p < s->nb_allocated; p++) {
@@ -2491,10 +2489,10 @@ static int config_output(AVFilterLink *outlink)
                 else
                     out_transform(s, i, j, width, height, vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
-                rotate(rot_mat, vec);
+                rotate(s->rot_mat, vec);
                 av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
                 normalize_vector(vec);
-                mirror(output_mirror_modifier, vec);
+                mirror(s->output_mirror_modifier, vec);
                 if (s->in_transpose)
                     in_transform(s, vec, in_height, in_width, rmap.v, rmap.u, &du, &dv);
                 else
