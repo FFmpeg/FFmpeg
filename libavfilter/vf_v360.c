@@ -2454,15 +2454,15 @@ static int config_output(AVFilterLink *outlink)
     if (desc->log2_chroma_h == desc->log2_chroma_w && desc->log2_chroma_h == 0) {
         s->nb_allocated = 1;
         s->map[0] = s->map[1] = s->map[2] = s->map[3] = 0;
-        allocate_plane(s, sizeof_uv, sizeof_ker, 0);
     } else {
         s->nb_allocated = 2;
         s->map[0] = 0;
         s->map[1] = s->map[2] = 1;
         s->map[3] = 0;
-        allocate_plane(s, sizeof_uv, sizeof_ker, 0);
-        allocate_plane(s, sizeof_uv, sizeof_ker, 1);
     }
+
+    for (int i = 0; i < s->nb_allocated; i++)
+        allocate_plane(s, sizeof_uv, sizeof_ker, i);
 
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
