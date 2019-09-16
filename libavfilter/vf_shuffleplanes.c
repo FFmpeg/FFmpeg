@@ -142,7 +142,6 @@ static const AVFilterPad shuffleplanes_inputs[] = {
         .type             = AVMEDIA_TYPE_VIDEO,
         .config_props     = shuffleplanes_config_input,
         .filter_frame     = shuffleplanes_filter_frame,
-        .get_video_buffer = ff_null_get_video_buffer,
     },
     { NULL },
 };
