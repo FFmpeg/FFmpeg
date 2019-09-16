@@ -138,7 +138,6 @@ static int filter_vertically_##name(AVFilterContext *ctx, void *arg, int jobnr, 
         float acc = 0;                                                                        \
         int count = 0;                                                                        \
                                                                                               \
-        ptr = buffer + x;                                                                     \
         src = s->buffer + x;                                                                  \
                                                                                               \
         for (i = 0; i < radius; i++) {                                                        \
