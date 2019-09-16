@@ -207,12 +207,6 @@ static void remap1_##bits##bit_line_c(uint8_t *dst, int width, const uint8_t *sr
 DEFINE_REMAP1_LINE( 8, 1)
 DEFINE_REMAP1_LINE(16, 2)
 
-typedef struct XYRemap {
-    uint16_t u[4][4];
-    uint16_t v[4][4];
-    float ker[4][4];
-} XYRemap;
-
 /**
  * Generate remapping function with a given window size and pixel depth.
  *
@@ -2167,6 +2161,47 @@ static void set_dimensions(int *outw, int *outh, int w, int h, const AVPixFmtDes
     outh[0] = outh[3] = h;
 }
 
+// Calculate remap data
+static av_always_inline void v360_filter(AVFilterContext *ctx)
+{
+    V360Context *s = ctx->priv;
+
+    for (int p = 0; p < s->nb_allocated; p++) {
+        const int width = s->pr_width[p];
+        const int uv_linesize = s->uv_linesize[p];
+        const int height = s->pr_height[p];
+        const int in_width = s->inplanewidth[p];
+        const int in_height = s->inplaneheight[p];
+        float du, dv;
+        float vec[3];
+        XYRemap rmap;
+
+        for (int j = 0; j < height; j++) {
+            for (int i = 0; i < width; i++) {
+                uint16_t *u = s->u[p] + (j * uv_linesize + i) * s->elements;
+                uint16_t *v = s->v[p] + (j * uv_linesize + i) * s->elements;
+                int16_t *ker = s->ker[p] + (j * uv_linesize + i) * s->elements;
+
+                if (s->out_transpose)
+                    s->out_transform(s, j, i, height, width, vec);
+                else
+                    s->out_transform(s, i, j, width, height, vec);
+                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
+                rotate(s->rot_mat, vec);
+                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
+                normalize_vector(vec);
+                mirror(s->output_mirror_modifier, vec);
+                if (s->in_transpose)
+                    s->in_transform(s, vec, in_height, in_width, rmap.v, rmap.u, &du, &dv);
+                else
+                    s->in_transform(s, vec, in_width, in_height, rmap.u, rmap.v, &du, &dv);
+                av_assert1(!isnan(du) && !isnan(dv));
+                s->calculate_kernel(du, dv, &rmap, u, v, ker);
+            }
+        }
+    }
+}
+
 static int config_output(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
@@ -2176,20 +2211,11 @@ static int config_output(AVFilterLink *outlink)
     const int depth = desc->comp[0].depth;
     int sizeof_uv;
     int sizeof_ker;
-    int elements;
     int err;
     int h, w;
     int in_offset_h, in_offset_w;
     int out_offset_h, out_offset_w;
     float hf, wf;
-    void (*in_transform)(const V360Context *s,
-                         const float *vec, int width, int height,
-                         uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv);
-    void (*out_transform)(const V360Context *s,
-                          int i, int j, int width, int height,
-                          float *vec);
-    void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
-                             uint16_t *u, uint16_t *v, int16_t *ker);
     int (*prepare_out)(AVFilterContext *ctx);
 
     s->input_mirror_modifier[0] = s->ih_flip ? -1.f : 1.f;
@@ -2197,32 +2223,32 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->interp) {
     case NEAREST:
-        calculate_kernel = nearest_kernel;
+        s->calculate_kernel = nearest_kernel;
         s->remap_slice = depth <= 8 ? remap1_8bit_slice : remap1_16bit_slice;
-        elements = 1;
-        sizeof_uv = sizeof(uint16_t) * elements;
+        s->elements = 1;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
         sizeof_ker = 0;
         break;
     case BILINEAR:
-        calculate_kernel = bilinear_kernel;
+        s->calculate_kernel = bilinear_kernel;
         s->remap_slice = depth <= 8 ? remap2_8bit_slice : remap2_16bit_slice;
-        elements = 2 * 2;
-        sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(uint16_t) * elements;
+        s->elements = 2 * 2;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_ker = sizeof(uint16_t) * s->elements;
         break;
     case BICUBIC:
-        calculate_kernel = bicubic_kernel;
+        s->calculate_kernel = bicubic_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
-        elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(uint16_t) * elements;
+        s->elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_ker = sizeof(uint16_t) * s->elements;
         break;
     case LANCZOS:
-        calculate_kernel = lanczos_kernel;
+        s->calculate_kernel = lanczos_kernel;
         s->remap_slice = depth <= 8 ? remap4_8bit_slice : remap4_16bit_slice;
-        elements = 4 * 4;
-        sizeof_uv = sizeof(uint16_t) * elements;
-        sizeof_ker = sizeof(uint16_t) * elements;
+        s->elements = 4 * 4;
+        sizeof_uv = sizeof(uint16_t) * s->elements;
+        sizeof_ker = sizeof(uint16_t) * s->elements;
         break;
     default:
         av_assert0(0);
@@ -2277,31 +2303,31 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->in) {
     case EQUIRECTANGULAR:
-        in_transform = xyz_to_equirect;
+        s->in_transform = xyz_to_equirect;
         err = 0;
         wf = w;
         hf = h;
         break;
     case CUBEMAP_3_2:
-        in_transform = xyz_to_cube3x2;
+        s->in_transform = xyz_to_cube3x2;
         err = prepare_cube_in(ctx);
         wf = w / 3.f * 4.f;
         hf = h;
         break;
     case CUBEMAP_1_6:
-        in_transform = xyz_to_cube1x6;
+        s->in_transform = xyz_to_cube1x6;
         err = prepare_cube_in(ctx);
         wf = w * 4.f;
         hf = h / 3.f;
         break;
     case CUBEMAP_6_1:
-        in_transform = xyz_to_cube6x1;
+        s->in_transform = xyz_to_cube6x1;
         err = prepare_cube_in(ctx);
         wf = w / 3.f * 2.f;
         hf = h * 2.f;
         break;
     case EQUIANGULAR:
-        in_transform = xyz_to_eac;
+        s->in_transform = xyz_to_eac;
         err = prepare_eac_in(ctx);
         wf = w;
         hf = h / 9.f * 8.f;
@@ -2310,19 +2336,19 @@ static int config_output(AVFilterLink *outlink)
         av_log(ctx, AV_LOG_ERROR, "Flat format is not accepted as input.\n");
         return AVERROR(EINVAL);
     case DUAL_FISHEYE:
-        in_transform = xyz_to_dfisheye;
+        s->in_transform = xyz_to_dfisheye;
         err = 0;
         wf = w;
         hf = h;
         break;
     case BARREL:
-        in_transform = xyz_to_barrel;
+        s->in_transform = xyz_to_barrel;
         err = 0;
         wf = w / 5.f * 4.f;
         hf = h;
         break;
     case STEREOGRAPHIC:
-        in_transform = xyz_to_stereographic;
+        s->in_transform = xyz_to_stereographic;
         err = 0;
         wf = w;
         hf = h / 2.f;
@@ -2338,55 +2364,55 @@ static int config_output(AVFilterLink *outlink)
 
     switch (s->out) {
     case EQUIRECTANGULAR:
-        out_transform = equirect_to_xyz;
+        s->out_transform = equirect_to_xyz;
         prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case CUBEMAP_3_2:
-        out_transform = cube3x2_to_xyz;
+        s->out_transform = cube3x2_to_xyz;
         prepare_out = prepare_cube_out;
         w = roundf(wf / 4.f * 3.f);
         h = roundf(hf);
         break;
     case CUBEMAP_1_6:
-        out_transform = cube1x6_to_xyz;
+        s->out_transform = cube1x6_to_xyz;
         prepare_out = prepare_cube_out;
         w = roundf(wf / 4.f);
         h = roundf(hf * 3.f);
         break;
     case CUBEMAP_6_1:
-        out_transform = cube6x1_to_xyz;
+        s->out_transform = cube6x1_to_xyz;
         prepare_out = prepare_cube_out;
         w = roundf(wf / 2.f * 3.f);
         h = roundf(hf / 2.f);
         break;
     case EQUIANGULAR:
-        out_transform = eac_to_xyz;
+        s->out_transform = eac_to_xyz;
         prepare_out = prepare_eac_out;
         w = roundf(wf);
         h = roundf(hf / 8.f * 9.f);
         break;
     case FLAT:
-        out_transform = flat_to_xyz;
+        s->out_transform = flat_to_xyz;
         prepare_out = prepare_flat_out;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case DUAL_FISHEYE:
-        out_transform = dfisheye_to_xyz;
+        s->out_transform = dfisheye_to_xyz;
         prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);
         break;
     case BARREL:
-        out_transform = barrel_to_xyz;
+        s->out_transform = barrel_to_xyz;
         prepare_out = NULL;
         w = roundf(wf / 4.f * 5.f);
         h = roundf(hf);
         break;
     case STEREOGRAPHIC:
-        out_transform = stereographic_to_xyz;
+        s->out_transform = stereographic_to_xyz;
         prepare_out = prepare_stereographic_out;
         w = roundf(wf);
         h = roundf(hf * 2.f);
@@ -2467,41 +2493,7 @@ static int config_output(AVFilterLink *outlink)
     calculate_rotation_matrix(s->yaw, s->pitch, s->roll, s->rot_mat, s->rotation_order);
     set_mirror_modifier(s->h_flip, s->v_flip, s->d_flip, s->output_mirror_modifier);
 
-    // Calculate remap data
-    for (int p = 0; p < s->nb_allocated; p++) {
-        const int width = s->pr_width[p];
-        const int uv_linesize = s->uv_linesize[p];
-        const int height = s->pr_height[p];
-        const int in_width = s->inplanewidth[p];
-        const int in_height = s->inplaneheight[p];
-        float du, dv;
-        float vec[3];
-        XYRemap rmap;
-
-        for (int j = 0; j < height; j++) {
-            for (int i = 0; i < width; i++) {
-                uint16_t *u = s->u[p] + (j * uv_linesize + i) * elements;
-                uint16_t *v = s->v[p] + (j * uv_linesize + i) * elements;
-                int16_t *ker = s->ker[p] + (j * uv_linesize + i) * elements;
-
-                if (s->out_transpose)
-                    out_transform(s, j, i, height, width, vec);
-                else
-                    out_transform(s, i, j, width, height, vec);
-                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
-                rotate(s->rot_mat, vec);
-                av_assert1(!isnan(vec[0]) && !isnan(vec[1]) && !isnan(vec[2]));
-                normalize_vector(vec);
-                mirror(s->output_mirror_modifier, vec);
-                if (s->in_transpose)
-                    in_transform(s, vec, in_height, in_width, rmap.v, rmap.u, &du, &dv);
-                else
-                    in_transform(s, vec, in_width, in_height, rmap.u, rmap.v, &du, &dv);
-                av_assert1(!isnan(du) && !isnan(dv));
-                calculate_kernel(du, dv, &rmap, u, v, ker);
-            }
-        }
-    }
+    v360_filter(ctx);
 
     return 0;
 }

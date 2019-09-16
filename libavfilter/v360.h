@@ -85,6 +85,12 @@ enum RotationOrder {
     NB_RORDERS,
 };
 
+typedef struct XYRemap {
+    uint16_t u[4][4];
+    uint16_t v[4][4];
+    float ker[4][4];
+} XYRemap;
+
 typedef struct V360Context {
     const AVClass *class;
     int in, out;
@@ -130,10 +136,22 @@ typedef struct V360Context {
     int uv_linesize[4];
     int nb_planes;
     int nb_allocated;
+    int elements;
 
     uint16_t *u[4], *v[4];
     int16_t *ker[4];
     unsigned map[4];
+
+    void (*in_transform)(const struct V360Context *s,
+                         const float *vec, int width, int height,
+                         uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv);
+
+    void (*out_transform)(const struct V360Context *s,
+                          int i, int j, int width, int height,
+                          float *vec);
+
+    void (*calculate_kernel)(float du, float dv, const XYRemap *rmap,
+                             uint16_t *u, uint16_t *v, int16_t *ker);
 
     int (*remap_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
 
