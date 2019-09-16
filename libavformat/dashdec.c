@@ -1203,6 +1203,7 @@ static int parse_programinformation(AVFormatContext *s, xmlNodePtr node)
         }
         node = xmlNextElementSibling(node);
         xmlFree(val);
+        val = NULL;
     }
     return 0;
 }
