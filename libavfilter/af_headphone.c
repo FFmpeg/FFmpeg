@@ -709,7 +709,7 @@ static int query_formats(AVFilterContext *ctx)
     if (s->hrir_fmt == HRIR_MULTI) {
         hrir_layouts = ff_all_channel_counts();
         if (!hrir_layouts)
-            ret = AVERROR(ENOMEM);
+            return AVERROR(ENOMEM);
         ret = ff_channel_layouts_ref(hrir_layouts, &ctx->inputs[1]->out_channel_layouts);
         if (ret)
             return ret;
