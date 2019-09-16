@@ -1067,6 +1067,7 @@ following image formats are supported:
 @item AAC+                   @tab  E  @tab  IX
     @tab encoding supported through external library libfdk-aac
 @item AC-3                   @tab IX  @tab  IX
+@item ACELP.KELVIN           @tab     @tab  X
 @item ADPCM 4X Movie         @tab     @tab  X
 @item APDCM Yamaha AICA      @tab     @tab  X
 @item ADPCM CDROM XA         @tab     @tab  X

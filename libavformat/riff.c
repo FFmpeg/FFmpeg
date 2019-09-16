@@ -540,6 +540,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { AV_CODEC_ID_AAC,             0x00ff },
     { AV_CODEC_ID_G723_1,          0x0111 },
     { AV_CODEC_ID_SIPR,            0x0130 },
+    { AV_CODEC_ID_ACELP_KELVIN,    0x0135 },
     { AV_CODEC_ID_WMAV1,           0x0160 },
     { AV_CODEC_ID_WMAV2,           0x0161 },
     { AV_CODEC_ID_WMAPRO,          0x0162 },
