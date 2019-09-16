@@ -1,3 +1,4 @@
+
 /*
  * ffmpeg option parsing
  *
@@ -2769,13 +2770,14 @@ static int opt_target(void *optctx, const char *opt, const char *arg)
     } else {
         /* Try to determine PAL/NTSC by peeking in the input files */
         if (nb_input_files) {
-            int i, j, fr;
+            int i, j;
             for (j = 0; j < nb_input_files; j++) {
                 for (i = 0; i < input_files[j]->nb_streams; i++) {
                     AVStream *st = input_files[j]->ctx->streams[i];
+                    int64_t fr;
                     if (st->codecpar->codec_type != AVMEDIA_TYPE_VIDEO)
                         continue;
-                    fr = st->time_base.den * 1000 / st->time_base.num;
+                    fr = st->time_base.den * 1000LL / st->time_base.num;
                     if (fr == 25000) {
                         norm = PAL;
                         break;
