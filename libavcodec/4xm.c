@@ -525,6 +525,10 @@ static int decode_i_block(FourXContext *f, int16_t *block)
             break;
         if (code == 0xf0) {
             i += 16;
+            if (i >= 64) {
+                av_log(f->avctx, AV_LOG_ERROR, "run %d overflow\n", i);
+                return 0;
+            }
         } else {
             if (code & 0xf) {
                 level = get_xbits(&f->gb, code & 0xf);
