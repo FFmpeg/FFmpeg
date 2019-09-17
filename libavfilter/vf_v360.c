@@ -65,6 +65,7 @@ static const AVOption v360_options[] = {
     {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "in" },
     {      "c1x6", "cubemap 1x6",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "in" },
     {        "sg", "stereographic",                              0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0, FLAGS, "in" },
+    {  "mercator", "mercator",                                   0, AV_OPT_TYPE_CONST,  {.i64=MERCATOR},        0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -79,6 +80,7 @@ static const AVOption v360_options[] = {
     {        "fb", "barrel facebook's 360 format",               0, AV_OPT_TYPE_CONST,  {.i64=BARREL},          0,                   0, FLAGS, "out" },
     {      "c1x6", "cubemap 1x6",                                0, AV_OPT_TYPE_CONST,  {.i64=CUBEMAP_1_6},     0,                   0, FLAGS, "out" },
     {        "sg", "stereographic",                              0, AV_OPT_TYPE_CONST,  {.i64=STEREOGRAPHIC},   0,                   0, FLAGS, "out" },
+    {  "mercator", "mercator",                                   0, AV_OPT_TYPE_CONST,  {.i64=MERCATOR},        0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1517,6 +1519,70 @@ static void xyz_to_equirect(const V360Context *s,
 }
 
 /**
+ * Calculate frame position in mercator format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_mercator(const V360Context *s,
+                            const float *vec, int width, int height,
+                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
+    const float theta = 0.5f * asinhf(vec[1] / sqrtf(1.f - vec[1] * vec[1])) * s->input_mirror_modifier[1];
+    float uf, vf;
+    int ui, vi;
+
+    uf = (phi   / M_PI + 1.f) * width  / 2.f;
+    vf = (theta / M_PI + 1.f) * height / 2.f;
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = mod(ui + j, width);
+            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+        }
+    }
+}
+
+/**
+ * Calculate 3D coordinates on sphere for corresponding frame position in mercator format.
+ *
+ * @param s filter context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void mercator_to_xyz(const V360Context *s,
+                            int i, int j, int width, int height,
+                            float *vec)
+{
+    const float phi   = ((2.f * i) / width  - 1.f) * M_PI;
+    const float theta = atanf(sinhf(((2.f * j) / height - 1.f) * 2.f * M_PI));
+
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] =  cos_theta * sin_phi;
+    vec[1] = -sin_theta;
+    vec[2] = -cos_theta * cos_phi;
+}
+
+/**
  * Prepare data for processing equi-angular cubemap input format.
  *
  * @param ctx filter context
@@ -2357,6 +2423,12 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h / 2.f;
         break;
+    case MERCATOR:
+        s->in_transform = xyz_to_mercator;
+        err = 0;
+        wf = w;
+        hf = h;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -2420,6 +2492,12 @@ static int config_output(AVFilterLink *outlink)
         prepare_out = prepare_stereographic_out;
         w = roundf(wf);
         h = roundf(hf * 2.f);
+        break;
+    case MERCATOR:
+        s->out_transform = mercator_to_xyz;
+        prepare_out = NULL;
+        w = roundf(wf);
+        h = roundf(hf);
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified output format is not handled.\n");

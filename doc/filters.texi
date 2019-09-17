@@ -18057,6 +18057,9 @@ Set horizontal/vertical/diagonal field of view. Values in degrees.
 If diagonal field of view is set it overrides horizontal and vertical field of view.
 @end table
 
+@item mercator
+Mercator format.
+
 @end table
 
 @item interp

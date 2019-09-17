@@ -39,6 +39,7 @@ enum Projections {
     BARREL,
     CUBEMAP_1_6,
     STEREOGRAPHIC,
+    MERCATOR,
     NB_PROJECTIONS,
 };
 
