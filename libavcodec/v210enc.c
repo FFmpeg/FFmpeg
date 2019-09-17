@@ -75,7 +75,7 @@ av_cold void ff_v210enc_init(V210EncContext *s)
 {
     s->pack_line_8  = v210_planar_pack_8_c;
     s->pack_line_10 = v210_planar_pack_10_c;
-    s->sample_factor_8  = 1;
+    s->sample_factor_8  = 2;
     s->sample_factor_10 = 1;
 
     if (ARCH_X86)
@@ -150,18 +150,18 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (w < avctx->width - 1) {
                 WRITE_PIXELS(u, y, v, 10);
 
-                val = CLIP(*y++, 10);
+                val = CLIP(*y++, 10) << (10-10);
                 if (w == avctx->width - 2) {
                     AV_WL32(dst, val);
                     dst += 4;
                 }
             }
             if (w < avctx->width - 3) {
-                val |= (CLIP(*u++, 10) << 10) | (CLIP(*y++, 10) << 20);
+                val |= (CLIP(*u++, 10) << (20-10)) | (CLIP(*y++, 10) << (30-10));
                 AV_WL32(dst, val);
                 dst += 4;
 
-                val = CLIP(*v++, 10) | (CLIP(*y++, 10) << 10);
+                val = CLIP(*v++, 10) << (10-10) | (CLIP(*y++, 10) << (20-10));
                 AV_WL32(dst, val);
                 dst += 4;
             }
@@ -177,7 +177,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         const uint8_t *u = pic->data[1];
         const uint8_t *v = pic->data[2];
 
-        const int sample_size = 12 * s->sample_factor_8;
+        const int sample_size = 6 * s->sample_factor_8;
         const int sample_w    = avctx->width / sample_size;
 
         for (h = 0; h < avctx->height; h++) {
@@ -188,7 +188,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             y += w;
             u += w >> 1;
             v += w >> 1;
-            dst += sample_w * 32 * s->sample_factor_8;
+            dst += sample_w * 16 * s->sample_factor_8;
 
             for (; w < avctx->width - 5; w += 6) {
                 WRITE_PIXELS(u, y, v, 8);
@@ -199,18 +199,18 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             if (w < avctx->width - 1) {
                 WRITE_PIXELS(u, y, v, 8);
 
-                val = CLIP(*y++, 8) << 2;
+                val = CLIP(*y++, 8) << (10-8);
                 if (w == avctx->width - 2) {
                     AV_WL32(dst, val);
                     dst += 4;
                 }
             }
             if (w < avctx->width - 3) {
-                val |= (CLIP(*u++, 8) << 12) | (CLIP(*y++, 8) << 22);
+                val |= (CLIP(*u++, 8) << (20-8)) | (CLIP(*y++, 8) << (30-8));
                 AV_WL32(dst, val);
                 dst += 4;
 
-                val = (CLIP(*v++, 8) << 2) | (CLIP(*y++, 8) << 12);
+                val = (CLIP(*v++, 8) << (10-8)) | (CLIP(*y++, 8) << (20-8));
                 AV_WL32(dst, val);
                 dst += 4;
             }
