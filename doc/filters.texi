@@ -756,7 +756,7 @@ aecho=0.8:0.88:60:0.4
 @end example
 
 @item
-If delay is very short, then it sound like a (metallic) robot playing music:
+If delay is very short, then it sounds like a (metallic) robot playing music:
 @example
 aecho=0.8:0.88:6:0.4
 @end example
@@ -1157,11 +1157,11 @@ It can be used as component for digital crossover filters,
 room equalization, cross talk cancellation, wavefield synthesis,
 auralization, ambiophonics, ambisonics and spatialization.
 
-This filter uses second stream as FIR coefficients.
-If second stream holds single channel, it will be used
-for all input channels in first stream, otherwise
-number of channels in second stream must be same as
-number of channels in first stream.
+This filter uses the second stream as FIR coefficients.
+If the second stream holds a single channel, it will be used
+for all input channels in the first stream, otherwise
+the number of channels in the second stream must be same as
+the number of channels in the first stream.
 
 It accepts the following parameters:
 
@@ -1766,7 +1766,7 @@ Each sample is adjusted by looking for other samples with similar contexts. This
 context similarity is defined by comparing their surrounding patches of size
 @option{p}. Patches are searched in an area of @option{r} around the sample.
 
-The filter accepts the following options.
+The filter accepts the following options:
 
 @table @option
 @item s
@@ -2965,12 +2965,12 @@ Compensation Delay Line is a metric based delay to compensate differing
 positions of microphones or speakers.
 
 For example, you have recorded guitar with two microphones placed in
-different location. Because the front of sound wave has fixed speed in
+different locations. Because the front of sound wave has fixed speed in
 normal conditions, the phasing of microphones can vary and depends on
 their location and interposition. The best sound mix can be achieved when
-these microphones are in phase (synchronized). Note that distance of
-~30 cm between microphones makes one microphone to capture signal in
-antiphase to another microphone. That makes the final mix sounding moody.
+these microphones are in phase (synchronized). Note that a distance of
+~30 cm between microphones makes one microphone capture the signal in
+antiphase to the other microphone. That makes the final mix sound moody.
 This filter helps to solve phasing problems by adding different delays
 to each microphone track and make them synchronized.
 
@@ -2979,7 +2979,7 @@ synchronize other tracks one by one with it.
 Remember that synchronization/delay tolerance depends on sample rate, too.
 Higher sample rates will give more tolerance.
 
-It accepts the following parameters:
+The filter accepts the following parameters:
 
 @table @option
 @item mm
@@ -3003,7 +3003,7 @@ Set wet amount. Amount of processed (wet) signal.
 Default is 1.
 
 @item temp
-Set temperature degree in Celsius. This is the temperature of the environment.
+Set temperature in degrees Celsius. This is the temperature of the environment.
 Default is 20.
 @end table
 
@@ -6638,7 +6638,7 @@ If the interlacing is unknown or the decoder does not export this information,
 top field first will be assumed.
 
 @item deint
-Specify which frames to deinterlace. Accept one of the following
+Specify which frames to deinterlace. Accepts one of the following
 values:
 
 @table @option
@@ -11423,7 +11423,7 @@ All streams must be of same pixel format and of same height.
 Note that this filter is faster than using @ref{overlay} and @ref{pad} filter
 to create same output.
 
-The filter accept the following option:
+The filter accepts the following option:
 
 @table @option
 @item inputs
@@ -13262,7 +13262,7 @@ the following values: "blur", "blur_no_scale", "median", "gaussian",
 or "bilateral". The default value is "gaussian".
 
 The meaning of @var{param1}, @var{param2}, @var{param3}, and @var{param4}
-depend on the smooth type. @var{param1} and
+depends on the smooth type. @var{param1} and
 @var{param2} accept integer positive values or 0. @var{param3} and
 @var{param4} accept floating point values.
 
@@ -14443,7 +14443,7 @@ __kernel void blend_images(__write_only image2d_t dst,
 
 Alter frame colors in video with pseudocolors.
 
-This filter accept the following options:
+This filter accepts the following options:
 
 @table @option
 @item c0
@@ -14768,7 +14768,7 @@ Enable checking the parity bit. In the event of a parity error, the filter will 
 @code{0x00} for that character. Default is false.
 
 @item lp
-Lowpass lines prior further proccessing. Default is disabled.
+Lowpass lines prior to further processing. Default is disabled.
 @end table
 
 @subsection Examples
@@ -18748,7 +18748,7 @@ All streams must be of same pixel format and of same width.
 Note that this filter is faster than using @ref{overlay} and @ref{pad} filter
 to create same output.
 
-The filter accept the following option:
+The filter accepts the following options:
 
 @table @option
 @item inputs
@@ -18769,11 +18769,11 @@ implemented based on the de-interlace algorithm written by Jim
 Easterbrook for BBC R&D, the Weston 3 field deinterlacing filter
 uses filter coefficients calculated by BBC R&D.
 
-This filter use field-dominance information in frame to decide which
+This filter uses field-dominance information in frame to decide which
 of each pair of fields to place first in the output.
 If it gets it wrong use @ref{setfield} filter before @code{w3fdif} filter.
 
-There are two sets of filter coefficients, so called "simple":
+There are two sets of filter coefficients, so called "simple"
 and "complex". Which set of filter coefficients is used can
 be set by passing an optional parameter:
 
@@ -18790,7 +18790,7 @@ More-complex filter coefficient set.
 Default value is @samp{complex}.
 
 @item deint
-Specify which frames to deinterlace. Accept one of the following values:
+Specify which frames to deinterlace. Accepts one of the following values:
 
 @table @samp
 @item all
@@ -18998,7 +18998,7 @@ Default is @code{3}.
 @section xmedian
 Pick median pixels from several input videos.
 
-The filter accept the following options:
+The filter accepts the following options:
 
 @table @option
 @item inputs
@@ -19015,7 +19015,7 @@ Stack video inputs into custom layout.
 
 All streams must be of same pixel format.
 
-The filter accept the following option:
+The filter accepts the following options:
 
 @table @option
 @item inputs
@@ -19044,24 +19044,24 @@ terminates. Default value is 0.
 
 @itemize
 @item
-Display 4 inputs into 2x2 grid,
-note that if inputs are of different sizes unused gaps might appear,
+Display 4 inputs into 2x2 grid.
+Note that if inputs are of different sizes unused gaps might appear,
 as not all of output video is used.
 @example
 xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0
 @end example
 
 @item
-Display 4 inputs into 1x4 grid,
-note that if inputs are of different sizes unused gaps might appear,
+Display 4 inputs into 1x4 grid.
+Note that if inputs are of different sizes unused gaps might appear,
 as not all of output video is used.
 @example
 xstack=inputs=4:layout=0_0|0_h0|0_h0+h1|0_h0+h1+h2
 @end example
 
 @item
-Display 9 inputs into 3x3 grid,
-note that if inputs are of different sizes unused gaps might appear,
+Display 9 inputs into 3x3 grid.
+Note that if inputs are of different sizes unused gaps might appear,
 as not all of output video is used.
 @example
 xstack=inputs=9:layout=w3_0|w3_h0+h2|w3_h0|0_h4|0_0|w3+w1_0|0_h1+h2|w3+w1_h0|w3+w1_h1+h2
@@ -19113,7 +19113,7 @@ If the interlacing is unknown or the decoder does not export this information,
 top field first will be assumed.
 
 @item deint
-Specify which frames to deinterlace. Accept one of the following
+Specify which frames to deinterlace. Accepts one of the following
 values:
 
 @table @option
@@ -19171,7 +19171,7 @@ If the interlacing is unknown or the decoder does not export this information,
 top field first will be assumed.
 
 @item deint
-Specify which frames to deinterlace. Accept one of the following
+Specify which frames to deinterlace. Accepts one of the following
 values:
 
 @table @option
@@ -22574,8 +22574,9 @@ implemented with custom @var{basefreq} and @var{endfreq}, use @var{axisfile}
 option instead.
 
 @item font
-Specify fontconfig pattern. This has lower priority than @var{fontfile}.
-The : in the pattern may be replaced by | to avoid unnecessary escaping.
+Specify fontconfig pattern. This has lower priority than @var{fontfile}. The
+@code{:} in the pattern may be replaced by @code{|} to avoid unnecessary
+escaping.
 
 @item fontcolor
 Specify font color expression. This is arithmetic expression that should return

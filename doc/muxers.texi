@@ -902,8 +902,8 @@ serving up segments can be configured to reject requests to *.tmp to prevent acc
 before they have been added to the m3u8 playlist. This flag also affects how m3u8 playlist files are created.
 If this flag is set, all playlist files will written into temporary file and renamed after they are complete, similarly as segments are handled.
 But playlists with @code{file} protocol and with type (@code{hls_playlist_type}) other than @code{vod}
-are always written into temporary file regardles of this flag. Master playlist files (@code{master_pl_name}), if any, with @code{file} protocol,
-are always written into temporary file regardles of this flag if @code{master_pl_publish_rate} value is other than zero.
+are always written into temporary file regardless of this flag. Master playlist files (@code{master_pl_name}), if any, with @code{file} protocol,
+are always written into temporary file regardless of this flag if @code{master_pl_publish_rate} value is other than zero.
 
 @end table
 
