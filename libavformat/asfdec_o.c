@@ -1542,14 +1542,7 @@ static void reset_packet_state(AVFormatContext *s)
     asf->sub_dts           = 0;
     for (i = 0; i < asf->nb_streams; i++) {
         ASFPacket *pkt = &asf->asf_st[i]->pkt;
-        pkt->size_left = 0;
-        pkt->data_size = 0;
-        pkt->duration  = 0;
-        pkt->flags     = 0;
-        pkt->dts       = 0;
-        pkt->duration  = 0;
-        av_packet_unref(&pkt->avpkt);
-        av_init_packet(&pkt->avpkt);
+        reset_packet(pkt);
     }
 }
 
