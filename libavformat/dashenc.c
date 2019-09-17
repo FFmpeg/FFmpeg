@@ -66,6 +66,9 @@ enum {
     FRAG_TYPE_NB
 };
 
+#define MPD_PROFILE_DASH 1
+#define MPD_PROFILE_DVB  2
+
 typedef struct Segment {
     char file[1024];
     int64_t start_pos;
@@ -87,6 +90,9 @@ typedef struct AdaptationSet {
     AVRational min_frame_rate, max_frame_rate;
     int ambiguous_frame_rate;
     int64_t max_frag_duration;
+    int max_width, max_height;
+    int nb_streams;
+    AVRational par;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -128,6 +134,7 @@ typedef struct OutputStream {
     int muxer_overhead;
     int frag_type;
     int64_t gop_size;
+    AVRational sar;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -180,6 +187,7 @@ typedef struct DASHContext {
     int frag_type;
     int write_prft;
     int64_t max_gop_size;
+    int profile;
 } DASHContext;
 
 static struct codec_string {
@@ -796,6 +804,12 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
                 as->id, as->media_type == AVMEDIA_TYPE_VIDEO ? "video" : "audio");
     if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
         avio_printf(out, " maxFrameRate=\"%d/%d\"", as->max_frame_rate.num, as->max_frame_rate.den);
+    else if (as->media_type == AVMEDIA_TYPE_VIDEO && as->max_frame_rate.num && !as->ambiguous_frame_rate && !av_cmp_q(as->min_frame_rate, as->max_frame_rate))
+        avio_printf(out, " frameRate=\"%d/%d\"", as->max_frame_rate.num, as->max_frame_rate.den);
+    if (as->media_type == AVMEDIA_TYPE_VIDEO) {
+        avio_printf(out, " maxWidth=\"%d\" maxHeight=\"%d\"", as->max_width, as->max_height);
+        avio_printf(out, " par=\"%d:%d\"", as->par.num, as->par.den);
+    }
     lang = av_dict_get(as->metadata, "language", NULL, 0);
     if (lang)
         avio_printf(out, " lang=\"%s\"", lang->value);
@@ -823,7 +837,12 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
         if (as->media_type == AVMEDIA_TYPE_VIDEO) {
             avio_printf(out, "\t\t\t<Representation id=\"%d\" mimeType=\"video/%s\" codecs=\"%s\"%s width=\"%d\" height=\"%d\"",
                 i, os->format_name, os->codec_str, bandwidth_str, s->streams[i]->codecpar->width, s->streams[i]->codecpar->height);
-            if (st->avg_frame_rate.num)
+            if (st->codecpar->field_order == AV_FIELD_UNKNOWN)
+                avio_printf(out, " scanType=\"unknown\"");
+            else if (st->codecpar->field_order != AV_FIELD_PROGRESSIVE)
+                avio_printf(out, " scanType=\"interlaced\"");
+            avio_printf(out, " sar=\"%d:%d\"", os->sar.num, os->sar.den);
+            if (st->avg_frame_rate.num && av_cmp_q(as->min_frame_rate, as->max_frame_rate) < 0)
                 avio_printf(out, " frameRate=\"%d/%d\"", st->avg_frame_rate.num, st->avg_frame_rate.den);
             avio_printf(out, ">\n");
         } else {
@@ -852,8 +871,13 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
 static int add_adaptation_set(AVFormatContext *s, AdaptationSet **as, enum AVMediaType type)
 {
     DASHContext *c = s->priv_data;
+    void *mem;
 
-    void *mem = av_realloc(c->as, sizeof(*c->as) * (c->nb_as + 1));
+    if (c->profile & MPD_PROFILE_DVB && (c->nb_as + 1) > 16) {
+        av_log(s, AV_LOG_ERROR, "DVB-DASH profile allows a max of 16 Adaptation Sets\n");
+        return AVERROR(EINVAL);
+    }
+    mem = av_realloc(c->as, sizeof(*c->as) * (c->nb_as + 1));
     if (!mem)
         return AVERROR(ENOMEM);
     c->as = mem;
@@ -880,7 +904,12 @@ static int adaptation_set_add_stream(AVFormatContext *s, int as_idx, int i)
         av_log(s, AV_LOG_ERROR, "Stream %d is already assigned to an AdaptationSet\n", i);
         return AVERROR(EINVAL);
     }
+    if (c->profile & MPD_PROFILE_DVB && (as->nb_streams + 1) > 16) {
+        av_log(s, AV_LOG_ERROR, "DVB-DASH profile allows a max of 16 Representations per Adaptation Set\n");
+        return AVERROR(EINVAL);
+    }
     os->as_idx = as_idx;
+    ++as->nb_streams;
 
     return 0;
 }
@@ -901,6 +930,7 @@ static int parse_adaptation_sets(AVFormatContext *s)
             snprintf(as->id, sizeof(as->id), "%d", i);
 
             c->streams[i].as_idx = c->nb_as;
+            ++as->nb_streams;
         }
         goto end;
     }
@@ -1077,8 +1107,13 @@ static int write_manifest(AVFormatContext *s, int final)
                 "\txmlns=\"urn:mpeg:dash:schema:mpd:2011\"\n"
                 "\txmlns:xlink=\"http://www.w3.org/1999/xlink\"\n"
                 "\txsi:schemaLocation=\"urn:mpeg:DASH:schema:MPD:2011 http://standards.iso.org/ittf/PubliclyAvailableStandards/MPEG-DASH_schema_files/DASH-MPD.xsd\"\n"
-                "\tprofiles=\"urn:mpeg:dash:profile:isoff-live:2011\"\n"
-                "\ttype=\"%s\"\n", final ? "static" : "dynamic");
+                "\tprofiles=\"");
+    if (c->profile & MPD_PROFILE_DASH)
+         avio_printf(out, "%s%s", "urn:mpeg:dash:profile:isoff-live:2011", c->profile & MPD_PROFILE_DVB ? "," : "\"\n");
+    if (c->profile & MPD_PROFILE_DVB)
+         avio_printf(out, "%s", "urn:dvb:dash:profile:dvb-dash:2014\"\n");
+    avio_printf(out, "\ttype=\"%s\"\n",
+                final ? "static" : "dynamic");
     if (final) {
         avio_printf(out, "\tmediaPresentationDuration=\"");
         write_time(out, c->total_duration);
@@ -1249,6 +1284,10 @@ static int dash_init(AVFormatContext *s)
     if (c->single_file)
         c->use_template = 0;
 
+    if (!c->profile) {
+        av_log(s, AV_LOG_ERROR, "At least one profile must be enabled.\n");
+        return AVERROR(EINVAL);
+    }
 #if FF_API_DASH_MIN_SEG_DURATION
     if (c->min_seg_duration != 5000000) {
         av_log(s, AV_LOG_WARNING, "The min_seg_duration option is deprecated and will be removed. Please use the -seg_duration\n");
@@ -1445,6 +1484,11 @@ static int dash_init(AVFormatContext *s)
         os->frag_duration = as->frag_duration;
         os->frag_type = as->frag_type;
 
+        if (c->profile & MPD_PROFILE_DVB && (os->seg_duration > 15000000 || os->seg_duration < 960000)) {
+            av_log(s, AV_LOG_ERROR, "Segment duration %"PRId64" is outside the allowed range for DVB-DASH profile\n", os->seg_duration);
+            return AVERROR(EINVAL);
+        }
+
         if (os->frag_type == FRAG_TYPE_DURATION && !os->frag_duration) {
             av_log(s, AV_LOG_WARNING, "frag_type set to duration for stream %d but no frag_duration set\n", i);
             os->frag_type = c->streaming ? FRAG_TYPE_EVERY_FRAME : FRAG_TYPE_NONE;
@@ -1501,6 +1545,7 @@ static int dash_init(AVFormatContext *s)
         s->avoid_negative_ts = ctx->avoid_negative_ts;
         if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
             AVRational avg_frame_rate = s->streams[i]->avg_frame_rate;
+            AVRational par;
             if (avg_frame_rate.num > 0) {
                 if (av_cmp_q(avg_frame_rate, as->min_frame_rate) < 0)
                     as->min_frame_rate = avg_frame_rate;
@@ -1509,6 +1554,27 @@ static int dash_init(AVFormatContext *s)
             } else {
                 as->ambiguous_frame_rate = 1;
             }
+
+            if (st->codecpar->width > as->max_width)
+                as->max_width = st->codecpar->width;
+            if (st->codecpar->height > as->max_height)
+                as->max_height = st->codecpar->height;
+
+            if (st->sample_aspect_ratio.num)
+                os->sar = st->sample_aspect_ratio;
+            else
+                os->sar = (AVRational){1,1};
+            av_reduce(&par.num, &par.den,
+                      st->codecpar->width * (int64_t)os->sar.num,
+                      st->codecpar->height * (int64_t)os->sar.den,
+                      1024 * 1024);
+
+            if (as->par.num && av_cmp_q(par, as->par)) {
+                av_log(s, AV_LOG_ERROR, "Conflicting stream par values in Adaptation Set %d\n", os->as_idx);
+                return AVERROR(EINVAL);
+            }
+            as->par = par;
+
             c->has_video = 1;
         }
 
@@ -2179,6 +2245,9 @@ static const AVOption options[] = {
     { "ldash", "Enable Low-latency dash. Constrains the value of a few elements", OFFSET(ldash), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "master_m3u8_publish_rate", "Publish master playlist every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     { "write_prft", "Write producer reference time element", OFFSET(write_prft), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
+    { "mpd_profile", "Set profiles. Elements and values used in the manifest may be constrained by them", OFFSET(profile), AV_OPT_TYPE_FLAGS, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
+    { "dash", "MPEG-DASH ISO Base media file format live profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DASH }, 0, UINT_MAX, E, "mpd_profile"},
+    { "dvb_dash", "DVB-DASH profile", 0, AV_OPT_TYPE_CONST, {.i64 = MPD_PROFILE_DVB }, 0, UINT_MAX, E, "mpd_profile"},
     { NULL },
 };
 
