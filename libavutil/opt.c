@@ -1119,7 +1119,7 @@ static char *get_opt_flags_string(void *obj, const char *unit, int64_t value)
 }
 
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
-                     int req_flags, int rej_flags)
+                     int req_flags, int rej_flags, enum AVOptionType parent_type)
 {
     const AVOption *opt = NULL;
     AVOptionRanges *r;
@@ -1199,6 +1199,11 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "<boolean>");
                 break;
             case AV_OPT_TYPE_CONST:
+                if (parent_type == AV_OPT_TYPE_INT)
+                    av_log(av_log_obj, AV_LOG_INFO, "%-12d ", opt->default_val.i64);
+                else
+                    av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
+                break;
             default:
                 av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
                 break;
@@ -1303,7 +1308,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
 
         av_log(av_log_obj, AV_LOG_INFO, "\n");
         if (opt->unit && opt->type != AV_OPT_TYPE_CONST)
-            opt_list(obj, av_log_obj, opt->unit, req_flags, rej_flags);
+            opt_list(obj, av_log_obj, opt->unit, req_flags, rej_flags, opt->type);
     }
 }
 
@@ -1314,7 +1319,7 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
 
     av_log(av_log_obj, AV_LOG_INFO, "%s AVOptions:\n", (*(AVClass **)obj)->class_name);
 
-    opt_list(obj, av_log_obj, NULL, req_flags, rej_flags);
+    opt_list(obj, av_log_obj, NULL, req_flags, rej_flags, -1);
 
     return 0;
 }
