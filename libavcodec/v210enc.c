@@ -26,25 +26,14 @@
 #include "internal.h"
 #include "v210enc.h"
 
-#define CLIP(v) av_clip(v, 4, 1019)
-#define CLIP8(v) av_clip(v, 1, 254)
-
-#define WRITE_PIXELS(a, b, c)           \
-    do {                                \
-        val  =  CLIP(*a++);             \
-        val |= (CLIP(*b++) << 10) |     \
-               (CLIP(*c++) << 20);      \
-        AV_WL32(dst, val);              \
-        dst += 4;                       \
-    } while (0)
-
-#define WRITE_PIXELS8(a, b, c)          \
-    do {                                \
-        val  = (CLIP8(*a++) << 2);      \
-        val |= (CLIP8(*b++) << 12) |    \
-               (CLIP8(*c++) << 22);     \
-        AV_WL32(dst, val);              \
-        dst += 4;                       \
+#define CLIP(v, depth) av_clip(v, 1 << (depth-8), ((1 << depth)-(1 << (depth-8)) -1))
+#define WRITE_PIXELS(a, b, c, depth)                      \
+    do {                                                  \
+        val  =  CLIP(*a++, depth)  << (10-depth);         \
+        val |=  (CLIP(*b++, depth) << (20-depth)) |       \
+                (CLIP(*c++, depth) << (30-depth));        \
+        AV_WL32(dst, val);                                \
+        dst += 4;                                         \
     } while (0)
 
 static void v210_planar_pack_8_c(const uint8_t *y, const uint8_t *u,
@@ -56,14 +45,14 @@ static void v210_planar_pack_8_c(const uint8_t *y, const uint8_t *u,
 
     /* unroll this to match the assembly */
     for (i = 0; i < width - 11; i += 12) {
-        WRITE_PIXELS8(u, y, v);
-        WRITE_PIXELS8(y, u, y);
-        WRITE_PIXELS8(v, y, u);
-        WRITE_PIXELS8(y, v, y);
-        WRITE_PIXELS8(u, y, v);
-        WRITE_PIXELS8(y, u, y);
-        WRITE_PIXELS8(v, y, u);
-        WRITE_PIXELS8(y, v, y);
+        WRITE_PIXELS(u, y, v, 8);
+        WRITE_PIXELS(y, u, y, 8);
+        WRITE_PIXELS(v, y, u, 8);
+        WRITE_PIXELS(y, v, y, 8);
+        WRITE_PIXELS(u, y, v, 8);
+        WRITE_PIXELS(y, u, y, 8);
+        WRITE_PIXELS(v, y, u, 8);
+        WRITE_PIXELS(y, v, y, 8);
     }
 }
 
@@ -75,10 +64,10 @@ static void v210_planar_pack_10_c(const uint16_t *y, const uint16_t *u,
     int i;
 
     for (i = 0; i < width - 5; i += 6) {
-        WRITE_PIXELS(u, y, v);
-        WRITE_PIXELS(y, u, y);
-        WRITE_PIXELS(v, y, u);
-        WRITE_PIXELS(y, v, y);
+        WRITE_PIXELS(u, y, v, 10);
+        WRITE_PIXELS(y, u, y, 10);
+        WRITE_PIXELS(v, y, u, 10);
+        WRITE_PIXELS(y, v, y, 10);
     }
 }
 
@@ -153,26 +142,26 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             dst += sample_w * 16 * s->sample_factor_10;
 
             for (; w < avctx->width - 5; w += 6) {
-                WRITE_PIXELS(u, y, v);
-                WRITE_PIXELS(y, u, y);
-                WRITE_PIXELS(v, y, u);
-                WRITE_PIXELS(y, v, y);
+                WRITE_PIXELS(u, y, v, 10);
+                WRITE_PIXELS(y, u, y, 10);
+                WRITE_PIXELS(v, y, u, 10);
+                WRITE_PIXELS(y, v, y, 10);
             }
             if (w < avctx->width - 1) {
-                WRITE_PIXELS(u, y, v);
+                WRITE_PIXELS(u, y, v, 10);
 
-                val = CLIP(*y++);
+                val = CLIP(*y++, 10);
                 if (w == avctx->width - 2) {
                     AV_WL32(dst, val);
                     dst += 4;
                 }
             }
             if (w < avctx->width - 3) {
-                val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
+                val |= (CLIP(*u++, 10) << 10) | (CLIP(*y++, 10) << 20);
                 AV_WL32(dst, val);
                 dst += 4;
 
-                val = CLIP(*v++) | (CLIP(*y++) << 10);
+                val = CLIP(*v++, 10) | (CLIP(*y++, 10) << 10);
                 AV_WL32(dst, val);
                 dst += 4;
             }
@@ -202,26 +191,26 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
             dst += sample_w * 32 * s->sample_factor_8;
 
             for (; w < avctx->width - 5; w += 6) {
-                WRITE_PIXELS8(u, y, v);
-                WRITE_PIXELS8(y, u, y);
-                WRITE_PIXELS8(v, y, u);
-                WRITE_PIXELS8(y, v, y);
+                WRITE_PIXELS(u, y, v, 8);
+                WRITE_PIXELS(y, u, y, 8);
+                WRITE_PIXELS(v, y, u, 8);
+                WRITE_PIXELS(y, v, y, 8);
             }
             if (w < avctx->width - 1) {
-                WRITE_PIXELS8(u, y, v);
+                WRITE_PIXELS(u, y, v, 8);
 
-                val = CLIP8(*y++) << 2;
+                val = CLIP(*y++, 8) << 2;
                 if (w == avctx->width - 2) {
                     AV_WL32(dst, val);
                     dst += 4;
                 }
             }
             if (w < avctx->width - 3) {
-                val |= (CLIP8(*u++) << 12) | (CLIP8(*y++) << 22);
+                val |= (CLIP(*u++, 8) << 12) | (CLIP(*y++, 8) << 22);
                 AV_WL32(dst, val);
                 dst += 4;
 
-                val = (CLIP8(*v++) << 2) | (CLIP8(*y++) << 12);
+                val = (CLIP(*v++, 8) << 2) | (CLIP(*y++, 8) << 12);
                 AV_WL32(dst, val);
                 dst += 4;
             }
