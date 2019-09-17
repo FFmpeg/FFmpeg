@@ -1034,6 +1034,23 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
     return res & flag->default_val.i64;
 }
 
+static void log_int_value(void *av_log_obj, int level, int64_t i)
+{
+    if (i == INT_MAX) {
+        av_log(av_log_obj, level, "INT_MAX");
+    } else if (i == INT_MIN) {
+        av_log(av_log_obj, level, "INT_MIN");
+    } else if (i == UINT32_MAX) {
+        av_log(av_log_obj, level, "UINT32_MAX");
+    } else if (i == INT64_MAX) {
+        av_log(av_log_obj, level, "I64_MAX");
+    } else if (i == INT64_MIN) {
+        av_log(av_log_obj, level, "I64_MIN");
+    } else {
+        av_log(av_log_obj, level, "%"PRId64, i);
+    }
+}
+
 static void log_value(void *av_log_obj, int level, double d)
 {
     if      (d == INT_MAX) {
@@ -1254,7 +1271,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 if (def_const)
                     av_log(av_log_obj, AV_LOG_INFO, "%s", def_const);
                 else
-                    log_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
+                    log_int_value(av_log_obj, AV_LOG_INFO, opt->default_val.i64);
                 break;
             }
             case AV_OPT_TYPE_DOUBLE:
