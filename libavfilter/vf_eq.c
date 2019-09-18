@@ -174,12 +174,18 @@ static int set_expr(AVExpr **pexpr, const char *expr, const char *option, void *
     return 0;
 }
 
+void ff_eq_init(EQContext *eq)
+{
+    eq->process = process_c;
+    if (ARCH_X86)
+        ff_eq_init_x86(eq);
+}
+
 static int initialize(AVFilterContext *ctx)
 {
     EQContext *eq = ctx->priv;
     int ret;
-
-    eq->process = process_c;
+    ff_eq_init(eq);
 
     if ((ret = set_expr(&eq->contrast_pexpr,     eq->contrast_expr,     "contrast",     ctx)) < 0 ||
         (ret = set_expr(&eq->brightness_pexpr,   eq->brightness_expr,   "brightness",   ctx)) < 0 ||
@@ -190,9 +196,6 @@ static int initialize(AVFilterContext *ctx)
         (ret = set_expr(&eq->gamma_b_pexpr,      eq->gamma_b_expr,      "gamma_b",      ctx)) < 0 ||
         (ret = set_expr(&eq->gamma_weight_pexpr, eq->gamma_weight_expr, "gamma_weight", ctx)) < 0 )
         return ret;
-
-    if (ARCH_X86)
-        ff_eq_init_x86(eq);
 
     if (eq->eval_mode == EVAL_MODE_INIT) {
         set_gamma(eq);

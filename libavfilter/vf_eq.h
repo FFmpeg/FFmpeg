@@ -100,6 +100,7 @@ typedef struct EQContext {
     enum EvalMode { EVAL_MODE_INIT, EVAL_MODE_FRAME, EVAL_MODE_NB } eval_mode;
 } EQContext;
 
+void ff_eq_init(EQContext *eq);
 void ff_eq_init_x86(EQContext *eq);
 
 #endif /* AVFILTER_EQ_H */

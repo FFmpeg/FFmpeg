@@ -165,6 +165,9 @@ static const struct {
     #if CONFIG_COLORSPACE_FILTER
         { "vf_colorspace", checkasm_check_colorspace },
     #endif
+    #if CONFIG_EQ_FILTER
+        { "vf_eq", checkasm_check_vf_eq },
+    #endif
     #if CONFIG_GBLUR_FILTER
         { "vf_gblur", checkasm_check_vf_gblur },
     #endif
