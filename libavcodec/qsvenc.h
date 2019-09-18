@@ -185,6 +185,8 @@ typedef struct QSVEncContext {
     char *load_plugins;
     SetEncodeCtrlCB *set_encode_ctrl_cb;
     int forced_idr;
+
+    mfxSyncPoint last_enc_sync;
 } QSVEncContext;
 
 int ff_qsv_enc_init(AVCodecContext *avctx, QSVEncContext *q);

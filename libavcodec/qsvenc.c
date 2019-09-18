@@ -1366,8 +1366,13 @@ static int encode_frame(AVCodecContext *avctx, QSVEncContext *q,
 
     do {
         ret = MFXVideoENCODE_EncodeFrameAsync(q->session, enc_ctrl, surf, bs, sync);
+
+        if (ret == MFX_ERR_NONE)
+            q->last_enc_sync = *sync;
+
         if (ret == MFX_WRN_DEVICE_BUSY)
-            av_usleep(500);
+            ff_qsv_handle_device_busy(&q->session, &q->last_enc_sync, &ret, 500);
+
     } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_WRN_IN_EXECUTION);
 
     if (ret > 0)
@@ -1433,9 +1438,9 @@ int ff_qsv_encode(AVCodecContext *avctx, QSVEncContext *q,
         av_fifo_generic_read(q->async_fifo, &sync,    sizeof(sync),    NULL);
         av_fifo_generic_read(q->async_fifo, &bs,      sizeof(bs),      NULL);
 
-        do {
-            ret = MFXVideoCORE_SyncOperation(q->session, *sync, 1000);
-        } while (ret == MFX_WRN_IN_EXECUTION);
+        ret = MFXVideoCORE_SyncOperation(q->session, *sync, MFX_INFINITE);
+        if (ret < 0)
+            return ret;
 
         new_pkt.dts  = av_rescale_q(bs->DecodeTimeStamp, (AVRational){1, 90000}, avctx->time_base);
         new_pkt.pts  = av_rescale_q(bs->TimeStamp,       (AVRational){1, 90000}, avctx->time_base);

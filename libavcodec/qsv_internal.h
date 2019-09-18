@@ -111,4 +111,6 @@ int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *session,
 
 int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame);
 
+void ff_qsv_handle_device_busy(mfxSession *session, mfxSyncPoint *sync, mfxStatus *ret, unsigned sleep);
+
 #endif /* AVCODEC_QSV_INTERNAL_H */

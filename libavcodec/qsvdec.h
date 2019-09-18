@@ -70,6 +70,8 @@ typedef struct QSVContext {
 
     mfxExtBuffer **ext_buffers;
     int         nb_ext_buffers;
+
+    mfxSyncPoint last_dec_sync;
 } QSVContext;
 
 extern const AVCodecHWConfigInternal *ff_qsv_hw_configs[];

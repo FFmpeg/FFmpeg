@@ -404,8 +404,12 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
 
         ret = MFXVideoDECODE_DecodeFrameAsync(q->session, avpkt->size ? &bs : NULL,
                                               insurf, &outsurf, sync);
+
+        if (ret == MFX_ERR_NONE)
+            q->last_dec_sync = *sync;
+
         if (ret == MFX_WRN_DEVICE_BUSY)
-            av_usleep(500);
+            ff_qsv_handle_device_busy(&q->session, &q->last_dec_sync, &ret, 500);
 
     } while (ret == MFX_WRN_DEVICE_BUSY || ret == MFX_ERR_MORE_SURFACE);
 
@@ -457,9 +461,9 @@ static int qsv_decode(AVCodecContext *avctx, QSVContext *q,
         out_frame->queued = 0;
 
         if (avctx->pix_fmt != AV_PIX_FMT_QSV) {
-            do {
-                ret = MFXVideoCORE_SyncOperation(q->session, *sync, 1000);
-            } while (ret == MFX_WRN_IN_EXECUTION);
+            ret = MFXVideoCORE_SyncOperation(q->session, *sync, MFX_INFINITE);
+            if (ret < 0)
+                return ret;
         }
 
         av_freep(&sync);

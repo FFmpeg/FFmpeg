@@ -32,6 +32,7 @@
 #include "libavutil/hwcontext_qsv.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
+#include "libavutil/time.h"
 
 #include "avcodec.h"
 #include "qsv_internal.h"
@@ -757,4 +758,20 @@ int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *psession,
 
     *psession = session;
     return 0;
+}
+
+void ff_qsv_handle_device_busy(mfxSession *session, mfxSyncPoint *sync, mfxStatus *ret, unsigned sleep)
+{
+    int sync_ret;
+
+    if (*sync) {
+        sync_ret = MFXVideoCORE_SyncOperation(*session, *sync, MFX_INFINITE);
+        if (sync_ret == MFX_ERR_NONE) {
+            *sync = NULL;
+        } else {
+            *ret = MFX_ERR_ABORTED;
+        }
+    } else {
+        av_usleep(sleep);
+    }
 }
