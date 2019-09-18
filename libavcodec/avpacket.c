@@ -54,7 +54,7 @@ AVPacket *av_packet_alloc(void)
     if (!pkt)
         return pkt;
 
-    av_packet_unref(pkt);
+    av_init_packet(pkt);
 
     return pkt;
 }
