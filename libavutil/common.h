@@ -240,7 +240,7 @@ static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
  */
 static av_always_inline av_const unsigned av_mod_uintp2_c(unsigned a, unsigned p)
 {
-    return a & ((1 << p) - 1);
+    return a & ((1U << p) - 1);
 }
 
 /**
