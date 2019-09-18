@@ -211,8 +211,8 @@ static int cbs_av1_read_ns(CodedBitstreamContext *ctx, GetBitContext *gbc,
                            uint32_t n, const char *name,
                            const int *subscripts, uint32_t *write_to)
 {
-    uint32_t w, m, v, extra_bit, value;
-    int position;
+    uint32_t m, v, extra_bit, value;
+    int position, w;
 
     av_assert0(n > 0);
 
