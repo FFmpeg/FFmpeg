@@ -28,6 +28,8 @@
 
 extern void ff_process_one_line_mmxext(const uint8_t *src, uint8_t *dst, short contrast,
                                        short brightness, int w);
+extern void ff_process_one_line_sse2(const uint8_t *src, uint8_t *dst, short contrast,
+                                     short brightness, int w);
 
 static void process_mmxext(EQParameters *param, uint8_t *dst, int dst_stride,
                            const uint8_t *src, int src_stride, int w, int h)
@@ -44,11 +46,28 @@ static void process_mmxext(EQParameters *param, uint8_t *dst, int dst_stride,
     emms_c();
 }
 
+static void process_sse2(EQParameters *param, uint8_t *dst, int dst_stride,
+                         const uint8_t *src, int src_stride, int w, int h)
+{
+    short contrast = (short) (param->contrast * 256 * 16);
+    short brightness = ((short) (100.0 * param->brightness + 100.0) * 511)
+                       / 200 - 128 - contrast / 32;
+
+    while (h--) {
+        ff_process_one_line_sse2(src, dst, contrast, brightness, w);
+        src += src_stride;
+        dst += dst_stride;
+    }
+}
+
 av_cold void ff_eq_init_x86(EQContext *eq)
 {
     int cpu_flags = av_get_cpu_flags();
 
     if (cpu_flags & AV_CPU_FLAG_MMXEXT) {
         eq->process = process_mmxext;
+    }
+    if (cpu_flags & AV_CPU_FLAG_SSE2) {
+        eq->process = process_sse2;
     }
 }
