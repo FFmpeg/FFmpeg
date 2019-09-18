@@ -748,7 +748,7 @@ static int cbs_h26 ## h26n ## _replace_ ## ps_var(CodedBitstreamContext *ctx, \
     CodedBitstreamH26 ## h26n ## Context *priv = ctx->priv_data; \
     H26 ## h26n ## Raw ## ps_name *ps_var = unit->content; \
     unsigned int id = ps_var->id_element; \
-    if (id > FF_ARRAY_ELEMS(priv->ps_var)) { \
+    if (id >= FF_ARRAY_ELEMS(priv->ps_var)) { \
         av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid " #ps_name \
                " id : %d.\n", id); \
         return AVERROR_INVALIDDATA; \
