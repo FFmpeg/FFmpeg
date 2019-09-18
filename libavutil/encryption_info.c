@@ -331,8 +331,10 @@ uint8_t *av_encryption_init_info_add_side_data(const AVEncryptionInitInfo *info,
             memcpy(cur_buffer, cur_info->key_ids[i], cur_info->key_id_size);
             cur_buffer += cur_info->key_id_size;
         }
-        memcpy(cur_buffer, cur_info->data, cur_info->data_size);
-        cur_buffer += cur_info->data_size;
+        if (cur_info->data_size > 0) {
+            memcpy(cur_buffer, cur_info->data, cur_info->data_size);
+            cur_buffer += cur_info->data_size;
+        }
     }
 
     return buffer;
