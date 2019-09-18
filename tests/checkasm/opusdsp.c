@@ -67,7 +67,7 @@ static void test_deemphasis(void)
     LOCAL_ALIGNED(16, float, dst1, [FFALIGN(MAX_SIZE, 4)]);
     float coeff0 = (float)rnd() / (UINT_MAX >> 5) - 16.0f, coeff1 = coeff0;
 
-    declare_func(float, float *out, float *in, float coeff, int len);
+    declare_func_float(float, float *out, float *in, float coeff, int len);
 
     randomize_float(src, MAX_SIZE);
 
