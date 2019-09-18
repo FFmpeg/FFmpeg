@@ -881,13 +881,16 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             return err;
         }
 
-        if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
-            (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
+        if (pkt->flags & AV_PKT_FLAG_CORRUPT) {
             av_log(s, AV_LOG_WARNING,
-                   "Dropped corrupted packet (stream = %d)\n",
-                   pkt->stream_index);
-            av_packet_unref(pkt);
-            continue;
+                   "Packet corrupt (stream = %d, dts = %s)",
+                   pkt->stream_index, av_ts2str(pkt->dts));
+            if (s->flags & AVFMT_FLAG_DISCARD_CORRUPT) {
+                av_log(s, AV_LOG_WARNING, ", dropping it.\n");
+                av_packet_unref(pkt);
+                continue;
+            }
+            av_log(s, AV_LOG_WARNING, ".\n");
         }
 
         av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
