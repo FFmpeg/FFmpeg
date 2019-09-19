@@ -62,9 +62,9 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
     if (session) {
         q->session = session;
     } else if (hw_frames_ref) {
-        if (q->internal_session) {
-            MFXClose(q->internal_session);
-            q->internal_session = NULL;
+        if (q->internal_qs.session) {
+            MFXClose(q->internal_qs.session);
+            q->internal_qs.session = NULL;
         }
         av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
 
@@ -72,7 +72,7 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
         if (!q->frames_ctx.hw_frames_ctx)
             return AVERROR(ENOMEM);
 
-        ret = ff_qsv_init_session_frames(avctx, &q->internal_session,
+        ret = ff_qsv_init_session_frames(avctx, &q->internal_qs.session,
                                          &q->frames_ctx, q->load_plugins,
                                          q->iopattern == MFX_IOPATTERN_OUT_OPAQUE_MEMORY);
         if (ret < 0) {
@@ -80,28 +80,28 @@ static int qsv_init_session(AVCodecContext *avctx, QSVContext *q, mfxSession ses
             return ret;
         }
 
-        q->session = q->internal_session;
+        q->session = q->internal_qs.session;
     } else if (hw_device_ref) {
-        if (q->internal_session) {
-            MFXClose(q->internal_session);
-            q->internal_session = NULL;
+        if (q->internal_qs.session) {
+            MFXClose(q->internal_qs.session);
+            q->internal_qs.session = NULL;
         }
 
-        ret = ff_qsv_init_session_device(avctx, &q->internal_session,
+        ret = ff_qsv_init_session_device(avctx, &q->internal_qs.session,
                                          hw_device_ref, q->load_plugins);
         if (ret < 0)
             return ret;
 
-        q->session = q->internal_session;
+        q->session = q->internal_qs.session;
     } else {
-        if (!q->internal_session) {
-            ret = ff_qsv_init_internal_session(avctx, &q->internal_session,
+        if (!q->internal_qs.session) {
+            ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
                                                q->load_plugins);
             if (ret < 0)
                 return ret;
         }
 
-        q->session = q->internal_session;
+        q->session = q->internal_qs.session;
     }
 
     /* make sure the decoder is uninitialized */
@@ -529,8 +529,7 @@ int ff_qsv_decode_close(QSVContext *q)
     av_fifo_free(q->async_fifo);
     q->async_fifo = NULL;
 
-    if (q->internal_session)
-        MFXClose(q->internal_session);
+    ff_qsv_close_internal_session(&q->internal_qs);
 
     av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
     av_buffer_unref(&q->frames_ctx.mids_buf);
