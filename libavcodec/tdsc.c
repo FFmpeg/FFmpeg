@@ -187,7 +187,7 @@ static void tdsc_paint_cursor(AVCodecContext *avctx, uint8_t *dst, int stride)
 static int tdsc_load_cursor(AVCodecContext *avctx)
 {
     TDSCContext *ctx  = avctx->priv_data;
-    int i, j, k, ret, bits, cursor_fmt;
+    int i, j, k, ret, cursor_fmt;
     uint8_t *dst;
 
     ctx->cursor_hot_x = bytestream2_get_le16(&ctx->gbc);
@@ -231,7 +231,7 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
     case CUR_FMT_MONO:
         for (j = 0; j < ctx->cursor_h; j++) {
             for (i = 0; i < ctx->cursor_w; i += 32) {
-                bits = bytestream2_get_be32(&ctx->gbc);
+                uint32_t bits = bytestream2_get_be32(&ctx->gbc);
                 for (k = 0; k < 32; k++) {
                     dst[0] = !!(bits & 0x80000000);
                     dst   += 4;
@@ -244,7 +244,7 @@ static int tdsc_load_cursor(AVCodecContext *avctx)
         dst = ctx->cursor;
         for (j = 0; j < ctx->cursor_h; j++) {
             for (i = 0; i < ctx->cursor_w; i += 32) {
-                bits = bytestream2_get_be32(&ctx->gbc);
+                uint32_t bits = bytestream2_get_be32(&ctx->gbc);
                 for (k = 0; k < 32; k++) {
                     int mask_bit = !!(bits & 0x80000000);
                     switch (dst[0] * 2 + mask_bit) {
