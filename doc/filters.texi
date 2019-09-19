@@ -18060,6 +18060,9 @@ If diagonal field of view is set it overrides horizontal and vertical field of v
 @item mercator
 Mercator format.
 
+@item ball
+Ball format, gives significant distortion toward the back.
+
 @end table
 
 @item interp

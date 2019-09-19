@@ -40,6 +40,7 @@ enum Projections {
     CUBEMAP_1_6,
     STEREOGRAPHIC,
     MERCATOR,
+    BALL,
     NB_PROJECTIONS,
 };
 
