@@ -1318,6 +1318,9 @@ static int rtsp_send_cmd_with_content_async(AVFormatContext *s,
     char buf[4096], *out_buf;
     char base64buf[AV_BASE64_SIZE(sizeof(buf))];
 
+    if (!rt->rtsp_hd_out)
+        return ENOTCONN;
+
     /* Add in RTSP headers */
     out_buf = buf;
     rt->seq++;
