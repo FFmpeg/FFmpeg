@@ -352,6 +352,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
     uint8_t *zero, *last, *cur;
     JLSState *state;
     int off = 0, stride = 1, width, shift, ret = 0;
+    int decoded_height = 0;
 
     zero = av_mallocz(s->picture_ptr->linesize[0]);
     if (!zero)
@@ -427,6 +428,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
                 skip_bits(&s->gb, 16); /* skip RSTn */
             }
         }
+        decoded_height = i;
     } else if (ilv == 1) { /* line interleaving */
         int j;
         int Rc[3] = { 0, 0, 0 };
@@ -452,6 +454,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
             last = cur;
             cur += s->picture_ptr->linesize[0];
         }
+        decoded_height = i;
     } else if (ilv == 2) { /* sample interleaving */
         avpriv_report_missing_feature(s->avctx, "Sample interleaved images");
         ret = AVERROR_PATCHWELCOME;
@@ -517,7 +520,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         if (s->bits <= 8) {
             uint8_t *src = s->picture_ptr->data[0];
 
-            for (i = 0; i < s->height; i++) {
+            for (i = 0; i < decoded_height; i++) {
                 for (x = off; x < w; x += stride)
                     src[x] <<= shift;
                 src += s->picture_ptr->linesize[0];
@@ -525,7 +528,7 @@ int ff_jpegls_decode_picture(MJpegDecodeContext *s, int near,
         } else {
             uint16_t *src = (uint16_t *)s->picture_ptr->data[0];
 
-            for (i = 0; i < s->height; i++) {
+            for (i = 0; i < decoded_height; i++) {
                 for (x = 0; x < w; x++)
                     src[x] <<= shift;
                 src += s->picture_ptr->linesize[0] / 2;
