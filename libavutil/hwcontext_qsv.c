@@ -1180,11 +1180,6 @@ static int qsv_device_derive_from_child(AVHWDeviceContext *ctx,
         goto fail;
     }
 
-    ret = MFXQueryVersion(hwctx->session,&ver);
-    if (ret == MFX_ERR_NONE) {
-        av_log(ctx, AV_LOG_VERBOSE, "MFX compile/runtime API: %d.%d/%d.%d\n",
-               MFX_VERSION_MAJOR, MFX_VERSION_MINOR, ver.Major, ver.Minor);
-    }
     return 0;
 
 fail:
