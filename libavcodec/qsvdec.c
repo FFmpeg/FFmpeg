@@ -193,6 +193,8 @@ static int qsv_decode_preinit(AVCodecContext *avctx, QSVContext *q, enum AVPixel
         iopattern = MFX_IOPATTERN_OUT_SYSTEM_MEMORY;
     q->iopattern = iopattern;
 
+    ff_qsv_print_iopattern(avctx, q->iopattern, "Decoder");
+
     ret = qsv_init_session(avctx, q, session, avctx->hw_frames_ctx, avctx->hw_device_ctx);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing an MFX session\n");

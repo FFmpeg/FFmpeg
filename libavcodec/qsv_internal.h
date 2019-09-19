@@ -101,6 +101,9 @@ typedef struct QSVFramesContext {
     int  nb_mids;
 } QSVFramesContext;
 
+int ff_qsv_print_iopattern(void *log_ctx, int mfx_iopattern,
+                           const char *extra_string);
+
 /**
  * Convert a libmfx error code into an ffmpeg error code.
  */

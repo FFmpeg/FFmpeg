@@ -138,6 +138,35 @@ int ff_qsv_level_to_mfx(enum AVCodecID codec_id, int level)
 }
 
 static const struct {
+    int mfx_iopattern;
+    const char *desc;
+} qsv_iopatterns[] = {
+    {MFX_IOPATTERN_IN_VIDEO_MEMORY,     "input is video memory surface"         },
+    {MFX_IOPATTERN_IN_SYSTEM_MEMORY,    "input is system memory surface"        },
+    {MFX_IOPATTERN_IN_OPAQUE_MEMORY,    "input is opaque memory surface"        },
+    {MFX_IOPATTERN_OUT_VIDEO_MEMORY,    "output is video memory surface"        },
+    {MFX_IOPATTERN_OUT_SYSTEM_MEMORY,   "output is system memory surface"       },
+    {MFX_IOPATTERN_OUT_OPAQUE_MEMORY,   "output is opaque memory surface"       },
+};
+
+int ff_qsv_print_iopattern(void *log_ctx, int mfx_iopattern,
+                           const char *extra_string)
+{
+    const char *desc = NULL;
+
+    for (int i = 0; i < FF_ARRAY_ELEMS(qsv_iopatterns); i++) {
+        if (qsv_iopatterns[i].mfx_iopattern == mfx_iopattern) {
+            desc = qsv_iopatterns[i].desc;
+        }
+    }
+    if (!desc)
+        desc = "unknown iopattern";
+
+    av_log(log_ctx, AV_LOG_VERBOSE, "%s: %s\n", extra_string, desc);
+    return 0;
+}
+
+static const struct {
     mfxStatus   mfxerr;
     int         averr;
     const char *desc;
