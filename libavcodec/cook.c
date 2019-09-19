@@ -60,7 +60,7 @@
 #define MONO            0x1000001
 #define STEREO          0x1000002
 #define JOINT_STEREO    0x1000003
-#define MC_COOK         0x2000000   // multichannel Cook, not supported
+#define MC_COOK         0x2000000
 
 #define SUBBAND_SIZE    20
 #define MAX_SUBPACKETS   5
