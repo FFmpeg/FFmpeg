@@ -2016,13 +2016,15 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
 
         start_code = -1;
         buf        = avpriv_find_start_code(buf, s->gb.buffer_end, &start_code);
+        if (start_code < SLICE_MIN_START_CODE || start_code > SLICE_MAX_START_CODE)
+            return AVERROR_INVALIDDATA;
         mb_y       = start_code - SLICE_MIN_START_CODE;
         if (s->codec_id != AV_CODEC_ID_MPEG1VIDEO && s->mb_height > 2800/16)
             mb_y += (*buf&0xE0)<<2;
         mb_y <<= field_pic;
         if (s->picture_structure == PICT_BOTTOM_FIELD)
             mb_y++;
-        if (mb_y < 0 || mb_y >= s->end_mb_y)
+        if (mb_y >= s->end_mb_y)
             return AVERROR_INVALIDDATA;
     }
 }
