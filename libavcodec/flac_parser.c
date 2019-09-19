@@ -313,7 +313,7 @@ static int check_header_mismatch(FLACParseContext  *fpc,
         (child_fi->frame_or_sample_num
          != header_fi->frame_or_sample_num + 1)) {
         FLACHeaderMarker *curr;
-        int expected_frame_num, expected_sample_num;
+        int64_t expected_frame_num, expected_sample_num;
         /* If there are frames in the middle we expect this deduction,
            as they are probably valid and this one follows it */
 
