@@ -1010,7 +1010,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
             formant_postfilter(p, lpc, p->audio, out);
         } else { // if output is not postfiltered it should be scaled by 2
             for (i = 0; i < FRAME_LEN; i++)
-                out[i] = av_clip_int16(p->audio[LPC_ORDER + i] << 1);
+                out[i] = av_clip_int16(2 * p->audio[LPC_ORDER + i]);
         }
     }
 
