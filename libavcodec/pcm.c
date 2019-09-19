@@ -271,7 +271,7 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
 #define DECODE(size, endian, src, dst, n, shift, offset)                \
     for (; n > 0; n--) {                                                \
         uint ## size ## _t v = bytestream_get_ ## endian(&src);         \
-        AV_WN ## size ## A(dst, (v - offset) << shift);                 \
+        AV_WN ## size ## A(dst, (uint ## size ## _t)(v - offset) << shift); \
         dst += size / 8;                                                \
     }
 
@@ -282,7 +282,7 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         dst = frame->extended_data[c];                                \
         for (i = n; i > 0; i--) {                                       \
             uint ## size ## _t v = bytestream_get_ ## endian(&src);     \
-            AV_WN ## size ## A(dst, (v - offset) << shift);             \
+            AV_WN ## size ## A(dst, (uint ## size ##_t)(v - offset) << shift); \
             dst += size / 8;                                            \
         }                                                               \
     }
