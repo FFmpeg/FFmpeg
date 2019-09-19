@@ -1065,7 +1065,7 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
 {
     int blk, ch;
 
-    snr_offset = (snr_offset - 240) << 2;
+    snr_offset = (snr_offset - 240) * 4;
 
     reset_block_bap(s);
     for (blk = 0; blk < s->num_blocks; blk++) {
