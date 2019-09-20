@@ -132,8 +132,7 @@ static void truespeech_correlate_filter(TSContext *dec)
         if(i > 0){
             memcpy(tmp, dec->cvector, i * sizeof(*tmp));
             for(j = 0; j < i; j++)
-                dec->cvector[j] = ((tmp[i - j - 1] * dec->vector[i]) +
-                                   (dec->cvector[j] << 15) + 0x4000) >> 15;
+                dec->cvector[j] += (tmp[i - j - 1] * dec->vector[i] + 0x4000) >> 15;
         }
         dec->cvector[i] = (8 - dec->vector[i]) >> 3;
     }
@@ -256,7 +255,7 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
         int sum = 0;
         for(k = 0; k < 8; k++)
             sum += ptr0[k] * ptr1[k];
-        sum = (sum + (out[i] << 12) + 0x800) >> 12;
+        sum = out[i] + ((sum + 0x800) >> 12);
         out[i] = av_clip(sum, -0x7FFE, 0x7FFE);
         for(k = 7; k > 0; k--)
             ptr0[k] = ptr0[k - 1];
@@ -274,7 +273,7 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
         for(k = 7; k > 0; k--)
             ptr0[k] = ptr0[k - 1];
         ptr0[0] = out[i];
-        out[i] = ((out[i] << 12) - sum) >> 12;
+        out[i] += (- sum) >> 12;
     }
 
     for(i = 0; i < 8; i++)
