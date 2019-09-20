@@ -835,6 +835,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, err;
     AVStream *st;
 
+    pkt->data = NULL;
+    pkt->size = 0;
+    av_init_packet(pkt);
+
     for (;;) {
         AVPacketList *pktl = s->internal->raw_packet_buffer;
         const AVPacket *pkt1;
@@ -852,9 +856,6 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
 
-        pkt->data = NULL;
-        pkt->size = 0;
-        av_init_packet(pkt);
         ret = s->iformat->read_packet(s, pkt);
         if (ret < 0) {
             av_packet_unref(pkt);
@@ -1450,6 +1451,8 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
     int size      = pkt ? pkt->size : 0;
     int ret = 0, got_output = 0;
 
+    av_init_packet(&out_pkt);
+
     if (!pkt) {
         av_init_packet(&flush_pkt);
         pkt        = &flush_pkt;
@@ -1464,7 +1467,6 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
         int64_t next_pts = pkt->pts;
         int64_t next_dts = pkt->dts;
 
-        av_init_packet(&out_pkt);
         len = av_parser_parse2(st->parser, st->internal->avctx,
                                &out_pkt.data, &out_pkt.size, data, size,
                                pkt->pts, pkt->dts, pkt->pos);
