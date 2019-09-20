@@ -33,30 +33,37 @@
 static DNNReturnType set_input_output_native(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
+    DnnOperand *oprd = NULL;
 
     if (network->layers_num <= 0 || network->operands_num <= 0)
         return DNN_ERROR;
 
     av_assert0(input->dt == DNN_FLOAT);
+    for (int i = 0; i < network->operands_num; ++i) {
+        oprd = &network->operands[i];
+        if (strcmp(oprd->name, input_name) == 0) {
+            if (oprd->type != DOT_INPUT)
+                return DNN_ERROR;
+            break;
+        }
+        oprd = NULL;
+    }
 
-    /**
-     * as the first step, suppose network->operands[0] is the input operand.
-     */
-    network->operands[0].dims[0] = 1;
-    network->operands[0].dims[1] = input->height;
-    network->operands[0].dims[2] = input->width;
-    network->operands[0].dims[3] = input->channels;
-    network->operands[0].type = DOT_INPUT;
-    network->operands[0].data_type = DNN_FLOAT;
-    network->operands[0].isNHWC = 1;
-
-    av_freep(&network->operands[0].data);
-    network->operands[0].length = calculate_operand_data_length(&network->operands[0]);
-    network->operands[0].data = av_malloc(network->operands[0].length);
-    if (!network->operands[0].data)
+    if (!oprd)
         return DNN_ERROR;
 
-    input->data = network->operands[0].data;
+    oprd->dims[0] = 1;
+    oprd->dims[1] = input->height;
+    oprd->dims[2] = input->width;
+    oprd->dims[3] = input->channels;
+
+    av_freep(&oprd->data);
+    oprd->length = calculate_operand_data_length(oprd);
+    oprd->data = av_malloc(oprd->length);
+    if (!oprd->data)
+        return DNN_ERROR;
+
+    input->data = oprd->data;
     return DNN_SUCCESS;
 }
 
