@@ -185,6 +185,7 @@ typedef struct MIContext {
     int64_t out_pts;
     int b_width, b_height, b_count;
     int log2_mb_size;
+    int bitdepth;
 
     int scd_method;
     int scene_changed;
@@ -343,6 +344,7 @@ static int config_input(AVFilterLink *inlink)
 
     mi_ctx->log2_chroma_h = desc->log2_chroma_h;
     mi_ctx->log2_chroma_w = desc->log2_chroma_w;
+    mi_ctx->bitdepth = desc->comp[0].depth;
 
     mi_ctx->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
@@ -383,7 +385,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     if (mi_ctx->scd_method == SCD_METHOD_FDIFF) {
-        mi_ctx->sad = ff_scene_sad_get_fn(8);
+        mi_ctx->sad = ff_scene_sad_get_fn(mi_ctx->bitdepth == 8 ? 8 : 16);
         if (!mi_ctx->sad)
             return AVERROR(EINVAL);
     }
@@ -843,7 +845,7 @@ static int detect_scene_change(MIContext *mi_ctx)
         if (*tail || mafd == HUGE_VAL) {
             mi_ctx->sad(p1, linesize1, p2, linesize2, me_ctx->width, me_ctx->height, &sad);
             emms_c();
-            mafd = (double) sad / (me_ctx->height * me_ctx->width * 3);
+            mafd = (double) sad * 100.0 / (me_ctx->height * me_ctx->width) / (1 << mi_ctx->bitdepth);
         }
         diff = fabs(mafd - mi_ctx->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
