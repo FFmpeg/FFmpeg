@@ -460,10 +460,7 @@ int ff_packet_list_put(AVPacketList **packet_buffer,
             return ret;
         }
     } else {
-        // TODO: Adapt callers in this file so the line below can use
-        //       av_packet_move_ref() to effectively move the reference
-        //       to the list.
-        pktl->pkt = *pkt;
+        av_packet_move_ref(&pktl->pkt, pkt);
     }
 
     if (*packet_buffer)
@@ -835,6 +832,7 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     for (;;) {
         AVPacketList *pktl = s->internal->raw_packet_buffer;
+        const AVPacket *pkt1;
 
         if (pktl) {
             st = s->streams[pktl->pkt.stream_index];
@@ -922,9 +920,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_packet_unref(pkt);
             return err;
         }
-        s->internal->raw_packet_buffer_remaining_size -= pkt->size;
+        pkt1 = &s->internal->raw_packet_buffer_end->pkt;
+        s->internal->raw_packet_buffer_remaining_size -= pkt1->size;
 
-        if ((err = probe_codec(s, st, pkt)) < 0)
+        if ((err = probe_codec(s, st, pkt1)) < 0)
             return err;
     }
 }
@@ -3032,8 +3031,8 @@ static int has_codec_parameters(AVStream *st, const char **errmsg_ptr)
 }
 
 /* returns 1 or 0 if or if not decoded data was returned, or a negative error */
-static int try_decode_frame(AVFormatContext *s, AVStream *st, AVPacket *avpkt,
-                            AVDictionary **options)
+static int try_decode_frame(AVFormatContext *s, AVStream *st,
+                            const AVPacket *avpkt, AVDictionary **options)
 {
     AVCodecContext *avctx = st->internal->avctx;
     const AVCodec *codec;
@@ -3525,7 +3524,7 @@ fail:
     return ret;
 }
 
-static int extract_extradata(AVStream *st, AVPacket *pkt)
+static int extract_extradata(AVStream *st, const AVPacket *pkt)
 {
     AVStreamInternal *sti = st->internal;
     AVPacket *pkt_ref;
@@ -3588,7 +3587,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     int64_t read_size;
     AVStream *st;
     AVCodecContext *avctx;
-    AVPacket pkt1, *pkt;
+    AVPacket pkt1;
     int64_t old_offset  = avio_tell(ic->pb);
     // new streams might appear, no options for those
     int orig_nb_streams = ic->nb_streams;
@@ -3707,6 +3706,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
     read_size = 0;
     for (;;) {
+        const AVPacket *pkt;
         int analyzed_all_streams;
         if (ff_check_interrupt(&ic->interrupt_callback)) {
             ret = AVERROR_EXIT;
@@ -3800,14 +3800,16 @@ FF_ENABLE_DEPRECATION_WARNINGS
             break;
         }
 
-        pkt = &pkt1;
-
         if (!(ic->flags & AVFMT_FLAG_NOBUFFER)) {
             ret = ff_packet_list_put(&ic->internal->packet_buffer,
                                      &ic->internal->packet_buffer_end,
-                                     pkt, 0);
+                                     &pkt1, 0);
             if (ret < 0)
                 goto find_stream_info_err;
+
+            pkt = &ic->internal->packet_buffer_end->pkt;
+        } else {
+            pkt = &pkt1;
         }
 
         st = ic->streams[pkt->stream_index];
@@ -3885,7 +3887,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                        limit,
                        t, pkt->stream_index);
                 if (ic->flags & AVFMT_FLAG_NOBUFFER)
-                    av_packet_unref(pkt);
+                    av_packet_unref(&pkt1);
                 break;
             }
             if (pkt->duration) {
@@ -3922,7 +3924,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                          (options && i < orig_nb_streams) ? &options[i] : NULL);
 
         if (ic->flags & AVFMT_FLAG_NOBUFFER)
-            av_packet_unref(pkt);
+            av_packet_unref(&pkt1);
 
         st->codec_info_nb_frames++;
         count++;
