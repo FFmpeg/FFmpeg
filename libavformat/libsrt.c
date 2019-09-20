@@ -494,6 +494,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             s->pbkeylen = strtol(buf, NULL, 10);
         }
         if (av_find_info_tag(buf, sizeof(buf), "passphrase", p)) {
+            av_freep(&s->passphrase);
             s->passphrase = av_strndup(buf, strlen(buf));
         }
         if (av_find_info_tag(buf, sizeof(buf), "mss", p)) {
