@@ -1605,8 +1605,8 @@ static void xyz_to_ball(const V360Context *s,
     float uf, vf;
     int ui, vi;
 
-    uf = (1.f - r * vec[0] / l) * width  / 2.f;
-    vf = (1.f + r * vec[1] / l) * height / 2.f;
+    uf = (1.f - r * vec[0] * s->input_mirror_modifier[0] / l) * width  / 2.f;
+    vf = (1.f + r * vec[1] * s->input_mirror_modifier[1] / l) * height / 2.f;
     ui = floorf(uf);
     vi = floorf(vf);
 
