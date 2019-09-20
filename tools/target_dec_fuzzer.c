@@ -54,6 +54,9 @@
 #include "libavcodec/bytestream.h"
 #include "libavformat/avformat.h"
 
+//For FF_SANE_NB_CHANNELS, so we dont waste energy testing things that will get instantly rejected
+#include "libavcodec/internal.h"
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
 
 extern AVCodec * codec_list[];
@@ -170,6 +173,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             parser = av_parser_init(c->id);
 
         extradata_size = bytestream2_get_le32(&gbc);
+
+        ctx->sample_rate                        = bytestream2_get_le32(&gbc);
+        ctx->channels                           = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
+
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (ctx->extradata) {
