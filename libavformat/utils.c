@@ -1441,28 +1441,26 @@ void ff_packet_list_free(AVPacketList **pkt_buf, AVPacketList **pkt_buf_end)
 /**
  * Parse a packet, add all split parts to parse_queue.
  *
- * @param pkt Packet to parse, NULL when flushing the parser at end of stream.
+ * @param pkt   Packet to parse; must not be NULL.
+ * @param flush Indicates whether to flush. If set, pkt must be blank.
  */
-static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
+static int parse_packet(AVFormatContext *s, AVPacket *pkt,
+                        int stream_index, int flush)
 {
-    AVPacket out_pkt = { 0 }, flush_pkt = { 0 };
+    AVPacket out_pkt = { 0 };
     AVStream *st = s->streams[stream_index];
-    uint8_t *data = pkt ? pkt->data : NULL;
-    int size      = pkt ? pkt->size : 0;
-    int ret = 0, got_output = 0;
+    uint8_t *data = pkt->data;
+    int size      = pkt->size;
+    int ret = 0, got_output = flush;
 
     av_init_packet(&out_pkt);
 
-    if (!pkt) {
-        av_init_packet(&flush_pkt);
-        pkt        = &flush_pkt;
-        got_output = 1;
-    } else if (!size && st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
+    if (!size && !flush && st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) {
         // preserve 0-size sync packets
         compute_pkt_fields(s, st, st->parser, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
     }
 
-    while (size > 0 || (pkt == &flush_pkt && got_output)) {
+    while (size > 0 || (flush && got_output)) {
         int len;
         int64_t next_pts = pkt->pts;
         int64_t next_dts = pkt->dts;
@@ -1546,7 +1544,7 @@ static int parse_packet(AVFormatContext *s, AVPacket *pkt, int stream_index)
     }
 
     /* end of the stream => close and free the parser */
-    if (pkt == &flush_pkt) {
+    if (flush) {
         av_parser_close(st->parser);
         st->parser = NULL;
     }
@@ -1595,7 +1593,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             for (i = 0; i < s->nb_streams; i++) {
                 st = s->streams[i];
                 if (st->parser && st->need_parsing)
-                    parse_packet(s, NULL, st->index);
+                    parse_packet(s, pkt, st->index, 1);
             }
             /* all remaining packets are now in parse_queue =>
              * really terminate parsing */
@@ -1683,7 +1681,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             got_packet = 1;
         } else if (st->discard < AVDISCARD_ALL) {
-            if ((ret = parse_packet(s, pkt, pkt->stream_index)) < 0)
+            if ((ret = parse_packet(s, pkt, pkt->stream_index, 0)) < 0)
                 return ret;
             st->codecpar->sample_rate = st->internal->avctx->sample_rate;
             st->codecpar->bit_rate = st->internal->avctx->bit_rate;
