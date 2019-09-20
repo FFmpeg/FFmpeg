@@ -3812,7 +3812,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
                                      &ic->internal->packet_buffer_end,
                                      &pkt1, 0);
             if (ret < 0)
-                goto find_stream_info_err;
+                goto unref_then_goto_end;
 
             pkt = &ic->internal->packet_buffer_end->pkt;
         } else {
@@ -3827,7 +3827,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!st->internal->avctx_inited) {
             ret = avcodec_parameters_to_context(avctx, st->codecpar);
             if (ret < 0)
-                goto find_stream_info_err;
+                goto unref_then_goto_end;
             st->internal->avctx_inited = 1;
         }
 
@@ -3915,7 +3915,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
         if (!st->internal->avctx->extradata) {
             ret = extract_extradata(st, pkt);
             if (ret < 0)
-                goto find_stream_info_err;
+                goto unref_then_goto_end;
         }
 
         /* If still no information, we try to open the codec and to
@@ -4191,6 +4191,10 @@ find_stream_info_err:
         av_log(ic, AV_LOG_DEBUG, "After avformat_find_stream_info() pos: %"PRId64" bytes read:%"PRId64" seeks:%d frames:%d\n",
                avio_tell(ic->pb), ic->pb->bytes_read, ic->pb->seek_count, count);
     return ret;
+
+unref_then_goto_end:
+    av_packet_unref(&pkt1);
+    goto find_stream_info_err;
 }
 
 AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s)
