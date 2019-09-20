@@ -1585,10 +1585,9 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
     while (!got_packet && !s->internal->parse_queue) {
         AVStream *st;
-        AVPacket cur_pkt;
 
         /* read next packet */
-        ret = ff_read_packet(s, &cur_pkt);
+        ret = ff_read_packet(s, pkt);
         if (ret < 0) {
             if (ret == AVERROR(EAGAIN))
                 return ret;
@@ -1603,7 +1602,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             break;
         }
         ret = 0;
-        st  = s->streams[cur_pkt.stream_index];
+        st  = s->streams[pkt->stream_index];
 
         /* update context if required */
         if (st->internal->need_context_update) {
@@ -1621,7 +1620,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
 
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
             if (ret < 0) {
-                av_packet_unref(&cur_pkt);
+                av_packet_unref(pkt);
                 return ret;
             }
 
@@ -1630,7 +1629,7 @@ FF_DISABLE_DEPRECATION_WARNINGS
             /* update deprecated public codec context */
             ret = avcodec_parameters_to_context(st->codec, st->codecpar);
             if (ret < 0) {
-                av_packet_unref(&cur_pkt);
+                av_packet_unref(pkt);
                 return ret;
             }
 FF_ENABLE_DEPRECATION_WARNINGS
@@ -1639,23 +1638,23 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st->internal->need_context_update = 0;
         }
 
-        if (cur_pkt.pts != AV_NOPTS_VALUE &&
-            cur_pkt.dts != AV_NOPTS_VALUE &&
-            cur_pkt.pts < cur_pkt.dts) {
+        if (pkt->pts != AV_NOPTS_VALUE &&
+            pkt->dts != AV_NOPTS_VALUE &&
+            pkt->pts < pkt->dts) {
             av_log(s, AV_LOG_WARNING,
                    "Invalid timestamps stream=%d, pts=%s, dts=%s, size=%d\n",
-                   cur_pkt.stream_index,
-                   av_ts2str(cur_pkt.pts),
-                   av_ts2str(cur_pkt.dts),
-                   cur_pkt.size);
+                   pkt->stream_index,
+                   av_ts2str(pkt->pts),
+                   av_ts2str(pkt->dts),
+                   pkt->size);
         }
         if (s->debug & FF_FDEBUG_TS)
             av_log(s, AV_LOG_DEBUG,
                    "ff_read_packet stream=%d, pts=%s, dts=%s, size=%d, duration=%"PRId64", flags=%d\n",
-                   cur_pkt.stream_index,
-                   av_ts2str(cur_pkt.pts),
-                   av_ts2str(cur_pkt.dts),
-                   cur_pkt.size, cur_pkt.duration, cur_pkt.flags);
+                   pkt->stream_index,
+                   av_ts2str(pkt->pts),
+                   av_ts2str(pkt->dts),
+                   pkt->size, pkt->duration, pkt->flags);
 
         if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
             st->parser = av_parser_init(st->codecpar->codec_id);
@@ -1675,7 +1674,6 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
         if (!st->need_parsing || !st->parser) {
             /* no parsing needed: we just output the packet as is */
-            *pkt = cur_pkt;
             compute_pkt_fields(s, st, NULL, pkt, AV_NOPTS_VALUE, AV_NOPTS_VALUE);
             if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
                 (pkt->flags & AV_PKT_FLAG_KEY) && pkt->dts != AV_NOPTS_VALUE) {
@@ -1685,7 +1683,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
             }
             got_packet = 1;
         } else if (st->discard < AVDISCARD_ALL) {
-            if ((ret = parse_packet(s, &cur_pkt, cur_pkt.stream_index)) < 0)
+            if ((ret = parse_packet(s, pkt, pkt->stream_index)) < 0)
                 return ret;
             st->codecpar->sample_rate = st->internal->avctx->sample_rate;
             st->codecpar->bit_rate = st->internal->avctx->bit_rate;
@@ -1694,15 +1692,12 @@ FF_ENABLE_DEPRECATION_WARNINGS
             st->codecpar->codec_id = st->internal->avctx->codec_id;
         } else {
             /* free packet */
-            av_packet_unref(&cur_pkt);
+            av_packet_unref(pkt);
         }
         if (pkt->flags & AV_PKT_FLAG_KEY)
             st->skip_to_keyframe = 0;
         if (st->skip_to_keyframe) {
-            av_packet_unref(&cur_pkt);
-            if (got_packet) {
-                *pkt = cur_pkt;
-            }
+            av_packet_unref(pkt);
             got_packet = 0;
         }
     }
