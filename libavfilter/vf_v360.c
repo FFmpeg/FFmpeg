@@ -353,10 +353,10 @@ static void bilinear_kernel(float du, float dv, const XYRemap *rmap,
         }
     }
 
-    ker[0] = (1.f - du) * (1.f - dv) * 16384;
-    ker[1] =        du  * (1.f - dv) * 16384;
-    ker[2] = (1.f - du) *        dv  * 16384;
-    ker[3] =        du  *        dv  * 16384;
+    ker[0] = (1.f - du) * (1.f - dv) * 16385;
+    ker[1] =        du  * (1.f - dv) * 16385;
+    ker[2] = (1.f - du) *        dv  * 16385;
+    ker[3] =        du  *        dv  * 16385;
 }
 
 /**
@@ -399,7 +399,7 @@ static void bicubic_kernel(float du, float dv, const XYRemap *rmap,
         for (int j = 0; j < 4; j++) {
             u[i * 4 + j] = rmap->u[i][j];
             v[i * 4 + j] = rmap->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16385;
         }
     }
 }
@@ -452,7 +452,7 @@ static void lanczos_kernel(float du, float dv, const XYRemap *rmap,
         for (int j = 0; j < 4; j++) {
             u[i * 4 + j] = rmap->u[i][j];
             v[i * 4 + j] = rmap->v[i][j];
-            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16384;
+            ker[i * 4 + j] = du_coeffs[j] * dv_coeffs[i] * 16385;
         }
     }
 }
