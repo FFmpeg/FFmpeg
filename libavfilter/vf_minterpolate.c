@@ -230,7 +230,7 @@ static const AVOption minterpolate_options[] = {
     { "scd", "scene change detection method", OFFSET(scd_method), AV_OPT_TYPE_INT, {.i64 = SCD_METHOD_FDIFF}, SCD_METHOD_NONE, SCD_METHOD_FDIFF, FLAGS, "scene" },
         CONST("none",   "disable detection",                    SCD_METHOD_NONE,        "scene"),
         CONST("fdiff",  "frame difference",                     SCD_METHOD_FDIFF,       "scene"),
-    { "scd_threshold", "scene change threshold", OFFSET(scd_threshold), AV_OPT_TYPE_DOUBLE, {.dbl = 5.0}, 0, 100.0, FLAGS },
+    { "scd_threshold", "scene change threshold", OFFSET(scd_threshold), AV_OPT_TYPE_DOUBLE, {.dbl = 10.}, 0, 100.0, FLAGS },
     { NULL }
 };
 
@@ -1105,6 +1105,7 @@ static void interpolate(AVFilterLink *inlink, AVFrame *avf_out)
     }
 
     if (mi_ctx->scene_changed) {
+        av_log(ctx, AV_LOG_DEBUG, "scene changed, input pts %"PRId64"\n", mi_ctx->frames[1].avf->pts);
         /* duplicate frame */
         av_frame_copy(avf_out, alpha > ALPHA_MAX / 2 ? mi_ctx->frames[2].avf : mi_ctx->frames[1].avf);
         return;

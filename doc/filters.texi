@@ -13640,7 +13640,7 @@ Frame difference. Corresponding pixel values are compared and if it satisfies @v
 Default method is @samp{fdiff}.
 
 @item scd_threshold
-Scene change detection threshold. Default is @code{5.0}.
+Scene change detection threshold. Default is @code{10.}.
 @end table
 
 @section mix
