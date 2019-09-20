@@ -28,6 +28,7 @@
 #include "dnn_backend_native_layer_pad.h"
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layer_depth2space.h"
+#include "dnn_backend_native_layer_maximum.h"
 
 static DNNReturnType set_input_output_native(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
@@ -78,6 +79,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
     LayerPadParams *pad_params;
+    DnnLayerMaximumParams *maximum_params;
 
     model = av_malloc(sizeof(DNNModel));
     if (!model){
@@ -237,6 +239,21 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             network->layers[layer].type = MIRROR_PAD;
             network->layers[layer].params = pad_params;
             break;
+        case MAXIMUM:
+            maximum_params = av_malloc(sizeof(*maximum_params));
+            if (!maximum_params){
+                avio_closep(&model_file_context);
+                ff_dnn_free_model_native(&model);
+                return NULL;
+            }
+            maximum_params->val.u32 = avio_rl32(model_file_context);
+            dnn_size += 4;
+            network->layers[layer].type = MAXIMUM;
+            network->layers[layer].params = maximum_params;
+            network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+            network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
+            dnn_size += 8;
+            break;
         default:
             avio_closep(&model_file_context);
             ff_dnn_free_model_native(&model);
@@ -290,6 +307,7 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
     ConvolutionalParams *conv_params;
     DepthToSpaceParams *depth_to_space_params;
     LayerPadParams *pad_params;
+    DnnLayerMaximumParams *maximum_params;
 
     if (network->layers_num <= 0 || network->operands_num <= 0)
         return DNN_ERROR;
@@ -313,6 +331,11 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
             dnn_execute_layer_pad(network->operands, network->layers[layer].input_operand_indexes,
                                   network->layers[layer].output_operand_index, pad_params);
             break;
+        case MAXIMUM:
+            maximum_params = (DnnLayerMaximumParams *)network->layers[layer].params;
+            dnn_execute_layer_maximum(network->operands, network->layers[layer].input_operand_indexes,
+                                  network->layers[layer].output_operand_index, maximum_params);
+            break;
         case INPUT:
             return DNN_ERROR;
         }
@@ -333,10 +356,19 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
     return DNN_SUCCESS;
 }
 
-int32_t calculate_operand_data_length(DnnOperand* operand)
+int32_t calculate_operand_dims_count(const DnnOperand *oprd)
+{
+    int32_t result = 1;
+    for (int i = 0; i < 4; ++i)
+        result *= oprd->dims[i];
+
+    return result;
+}
+
+int32_t calculate_operand_data_length(const DnnOperand* oprd)
 {
     // currently, we just support DNN_FLOAT
-    return operand->dims[0] * operand->dims[1] * operand->dims[2] * operand->dims[3] * sizeof(float);
+    return oprd->dims[0] * oprd->dims[1] * oprd->dims[2] * oprd->dims[3] * sizeof(float);
 }
 
 void ff_dnn_free_model_native(DNNModel **model)

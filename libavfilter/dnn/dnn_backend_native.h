@@ -30,7 +30,7 @@
 #include "../dnn_interface.h"
 #include "libavformat/avio.h"
 
-typedef enum {INPUT, CONV, DEPTH_TO_SPACE, MIRROR_PAD} DNNLayerType;
+typedef enum {INPUT = 0, CONV = 1, DEPTH_TO_SPACE = 2, MIRROR_PAD = 3, MAXIMUM = 4} DNNLayerType;
 
 typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_INPUT} DNNOperandType;
 
@@ -104,6 +104,6 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
 
 void ff_dnn_free_model_native(DNNModel **model);
 
-int32_t calculate_operand_data_length(DnnOperand *operand);
-
+int32_t calculate_operand_data_length(const DnnOperand *oprd);
+int32_t calculate_operand_dims_count(const DnnOperand *oprd);
 #endif

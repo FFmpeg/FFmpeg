@@ -30,6 +30,7 @@
 #include "libavformat/avio.h"
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_pad.h"
+#include "dnn_backend_native_layer_maximum.h"
 
 #include <tensorflow/c/c_api.h>
 
@@ -401,6 +402,48 @@ static DNNReturnType add_pad_layer(TFModel *tf_model, TF_Operation **cur_op,
     return DNN_SUCCESS;
 }
 
+static DNNReturnType add_maximum_layer(TFModel *tf_model, TF_Operation **cur_op,
+                                       DnnLayerMaximumParams *params, const int layer)
+{
+    TF_Operation *op;
+    TF_Tensor *tensor;
+    TF_OperationDescription *op_desc;
+    TF_Output input;
+    float *y;
+
+    char name_buffer[NAME_BUFFER_SIZE];
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "maximum/y%d", layer);
+
+    op_desc = TF_NewOperation(tf_model->graph, "Const", name_buffer);
+    TF_SetAttrType(op_desc, "dtype", TF_FLOAT);
+    tensor = TF_AllocateTensor(TF_FLOAT, NULL, 0, TF_DataTypeSize(TF_FLOAT));
+    y = (float *)TF_TensorData(tensor);
+    *y = params->val.y;
+    TF_SetAttrTensor(op_desc, "value", tensor, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+    op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    snprintf(name_buffer, NAME_BUFFER_SIZE, "maximum%d", layer);
+    op_desc = TF_NewOperation(tf_model->graph, "Maximum", name_buffer);
+    input.oper = *cur_op;
+    input.index = 0;
+    TF_AddInput(op_desc, input);
+    input.oper = op;
+    TF_AddInput(op_desc, input);
+    TF_SetAttrType(op_desc, "T", TF_FLOAT);
+    *cur_op = TF_FinishOperation(op_desc, tf_model->status);
+    if (TF_GetCode(tf_model->status) != TF_OK){
+        return DNN_ERROR;
+    }
+
+    return DNN_SUCCESS;
+}
+
 static DNNReturnType load_native_model(TFModel *tf_model, const char *model_filename)
 {
     int32_t layer;
@@ -470,6 +513,10 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
         case MIRROR_PAD:
             layer_add_res = add_pad_layer(tf_model, &op,
                                           (LayerPadParams *)conv_network->layers[layer].params, layer);
+            break;
+        case MAXIMUM:
+            layer_add_res = add_maximum_layer(tf_model, &op,
+                                          (DnnLayerMaximumParams *)conv_network->layers[layer].params, layer);
             break;
         default:
             CLEANUP_ON_ERROR(tf_model);
