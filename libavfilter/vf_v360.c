@@ -1916,9 +1916,8 @@ static int prepare_flat_out(AVFilterContext *ctx)
     const float h_angle = 0.5f * s->h_fov * M_PI / 180.f;
     const float v_angle = 0.5f * s->v_fov * M_PI / 180.f;
 
-    s->flat_range[0] =  tanf(h_angle);
-    s->flat_range[1] =  tanf(v_angle);
-    s->flat_range[2] = -1.f;
+    s->flat_range[0] = tanf(h_angle);
+    s->flat_range[1] = tanf(v_angle);
 
     return 0;
 }
@@ -1939,11 +1938,10 @@ static void flat_to_xyz(const V360Context *s,
 {
     const float l_x =  s->flat_range[0] * (2.f * i / width  - 1.f);
     const float l_y = -s->flat_range[1] * (2.f * j / height - 1.f);
-    const float l_z =  s->flat_range[2];
 
-    vec[0] = l_x;
-    vec[1] = l_y;
-    vec[2] = l_z;
+    vec[0] =  l_x;
+    vec[1] =  l_y;
+    vec[2] = -1.f;
 
     normalize_vector(vec);
 }
