@@ -678,8 +678,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
     if (av_codec_is_decoder(codec))
         av_freep(&avctx->subtitle_header);
 
-    if (avctx->channels > FF_SANE_NB_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "Too many channels: %d\n", avctx->channels);
+    if (avctx->channels > FF_SANE_NB_CHANNELS || avctx->channels < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Too many or invalid channels: %d\n", avctx->channels);
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
