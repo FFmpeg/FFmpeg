@@ -1073,8 +1073,8 @@ static void cube3x2_to_xyz(const V360Context *s,
     const int ewi = ceilf(ew * (u_face + 1)) - u_shift;
     const int ehi = ceilf(eh * (v_face + 1)) - v_shift;
 
-    const float uf = 2.f * (i - u_shift) / ewi - 1.f;
-    const float vf = 2.f * (j - v_shift) / ehi - 1.f;
+    const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
+    const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
 
     cube_to_xyz(s, uf, vf, face, vec);
 }
@@ -1114,8 +1114,8 @@ static void xyz_to_cube3x2(const V360Context *s,
     ewi = ceilf(ew * (u_face + 1)) - ceilf(ew * u_face);
     ehi = ceilf(eh * (v_face + 1)) - ceilf(eh * v_face);
 
-    uf = 0.5f * ewi * (uf + 1.f);
-    vf = 0.5f * ehi * (vf + 1.f);
+    uf = 0.5f * ewi * (uf + 1.f) - 0.5f;
+    vf = 0.5f * ehi * (vf + 1.f) - 0.5f;
 
     ui = floorf(uf);
     vi = floorf(vf);
@@ -1188,8 +1188,8 @@ static void cube1x6_to_xyz(const V360Context *s,
     const int v_shift = ceilf(eh * face);
     const int ehi = ceilf(eh * (face + 1)) - v_shift;
 
-    const float uf = 2.f *  i            / ew  - 1.f;
-    const float vf = 2.f * (j - v_shift) / ehi - 1.f;
+    const float uf = 2.f * (i           + 0.5f) / ew  - 1.f;
+    const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
 
     cube_to_xyz(s, uf, vf, face, vec);
 }
@@ -1216,8 +1216,8 @@ static void cube6x1_to_xyz(const V360Context *s,
     const int u_shift = ceilf(ew * face);
     const int ewi = ceilf(ew * (face + 1)) - u_shift;
 
-    const float uf = 2.f * (i - u_shift) / ewi - 1.f;
-    const float vf = 2.f *  j            / eh  - 1.f;
+    const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
+    const float vf = 2.f * (j           + 0.5f) / eh  - 1.f;
 
     cube_to_xyz(s, uf, vf, face, vec);
 }
@@ -1253,8 +1253,8 @@ static void xyz_to_cube1x6(const V360Context *s,
     face = s->in_cubemap_face_order[direction];
     ehi = ceilf(eh * (face + 1)) - ceilf(eh * face);
 
-    uf = 0.5f * ewi * (uf + 1.f);
-    vf = 0.5f * ehi * (vf + 1.f);
+    uf = 0.5f * ewi * (uf + 1.f) - 0.5f;
+    vf = 0.5f * ehi * (vf + 1.f) - 0.5f;
 
     ui = floorf(uf);
     vi = floorf(vf);
@@ -1329,8 +1329,8 @@ static void xyz_to_cube6x1(const V360Context *s,
     face = s->in_cubemap_face_order[direction];
     ewi = ceilf(ew * (face + 1)) - ceilf(ew * face);
 
-    uf = 0.5f * ewi * (uf + 1.f);
-    vf = 0.5f * ehi * (vf + 1.f);
+    uf = 0.5f * ewi * (uf + 1.f) - 0.5f;
+    vf = 0.5f * ehi * (vf + 1.f) - 0.5f;
 
     ui = floorf(uf);
     vi = floorf(vf);
