@@ -38,6 +38,7 @@ static DNNReturnType set_input_output_native(void *model, DNNInputData *input, c
     if (network->layers_num <= 0 || network->operands_num <= 0)
         return DNN_ERROR;
 
+    /* inputs */
     av_assert0(input->dt == DNN_FLOAT);
     for (int i = 0; i < network->operands_num; ++i) {
         oprd = &network->operands[i];
@@ -64,6 +65,28 @@ static DNNReturnType set_input_output_native(void *model, DNNInputData *input, c
         return DNN_ERROR;
 
     input->data = oprd->data;
+
+    /* outputs */
+    network->nb_output = 0;
+    av_freep(&network->output_indexes);
+    network->output_indexes = av_mallocz_array(nb_output, sizeof(*network->output_indexes));
+    if (!network->output_indexes)
+        return DNN_ERROR;
+
+    for (uint32_t i = 0; i < nb_output; ++i) {
+        const char *output_name = output_names[i];
+        for (int j = 0; j < network->operands_num; ++j) {
+            oprd = &network->operands[j];
+            if (strcmp(oprd->name, output_name) == 0) {
+                network->output_indexes[network->nb_output++] = j;
+                break;
+            }
+        }
+    }
+
+    if (network->nb_output != nb_output)
+        return DNN_ERROR;
+
     return DNN_SUCCESS;
 }
 
@@ -315,6 +338,7 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
     DepthToSpaceParams *depth_to_space_params;
     LayerPadParams *pad_params;
     DnnLayerMaximumParams *maximum_params;
+    uint32_t nb = FFMIN(nb_output, network->nb_output);
 
     if (network->layers_num <= 0 || network->operands_num <= 0)
         return DNN_ERROR;
@@ -348,17 +372,13 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
         }
     }
 
-    // native mode does not support multiple outputs yet
-    if (nb_output > 1)
-        return DNN_ERROR;
-
-    /**
-     * as the first step, suppose network->operands[network->operands_num - 1] is the output operand.
-     */
-    outputs[0].data = network->operands[network->operands_num - 1].data;
-    outputs[0].height = network->operands[network->operands_num - 1].dims[1];
-    outputs[0].width = network->operands[network->operands_num - 1].dims[2];
-    outputs[0].channels = network->operands[network->operands_num - 1].dims[3];
+    for (uint32_t i = 0; i < nb; ++i) {
+        DnnOperand *oprd = &network->operands[network->output_indexes[i]];
+        outputs[i].data = oprd->data;
+        outputs[i].height = oprd->dims[1];
+        outputs[i].width = oprd->dims[2];
+        outputs[i].channels = oprd->dims[3];
+    }
 
     return DNN_SUCCESS;
 }
@@ -401,6 +421,7 @@ void ff_dnn_free_model_native(DNNModel **model)
             av_freep(&network->operands[operand].data);
         av_freep(&network->operands);
 
+        av_freep(&network->output_indexes);
         av_freep(&network);
         av_freep(model);
     }
