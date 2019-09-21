@@ -2048,16 +2048,15 @@ static void dfisheye_to_xyz(const V360Context *s,
     const float uf = ((2.f * ei) / ew - 1.f) * scale;
     const float vf = ((2.f *  j) / eh - 1.f) * scale;
 
-    const float phi   = M_PI + atan2f(vf, uf * m);
-    const float theta = m * M_PI_2 * (1.f - hypotf(uf, vf));
+    const float h     = hypotf(uf, vf);
+    const float lh    = h > 0.f ? h : 1.f;
+    const float theta = m * M_PI_2 * (1.f - h);
 
-    const float sin_phi   = sinf(phi);
-    const float cos_phi   = cosf(phi);
     const float sin_theta = sinf(theta);
     const float cos_theta = cosf(theta);
 
-    vec[0] = cos_theta * cos_phi;
-    vec[1] = cos_theta * sin_phi;
+    vec[0] = cos_theta *  uf / lh;
+    vec[1] = cos_theta * -vf / lh;
     vec[2] = sin_theta;
 
     normalize_vector(vec);
