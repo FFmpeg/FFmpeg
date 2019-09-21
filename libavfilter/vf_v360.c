@@ -1603,12 +1603,13 @@ static void xyz_to_ball(const V360Context *s,
                         uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
     const float l = hypotf(vec[0], vec[1]);
-    const float r = sinf(acosf(-vec[2]) * 0.5f);
+    const float r = sqrtf(1.f + vec[2]) / M_SQRT2;
     float uf, vf;
     int ui, vi;
 
-    uf = (1.f - r * vec[0] * s->input_mirror_modifier[0] / l) * width  / 2.f;
-    vf = (1.f + r * vec[1] * s->input_mirror_modifier[1] / l) * height / 2.f;
+    uf = (1.f + r * vec[0] * s->input_mirror_modifier[0] / (l > 0.f ? l : 1.f)) * width  * 0.5f;
+    vf = (1.f - r * vec[1] * s->input_mirror_modifier[1] / (l > 0.f ? l : 1.f)) * height * 0.5f;
+
     ui = floorf(uf);
     vi = floorf(vf);
 
