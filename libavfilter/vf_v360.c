@@ -2083,11 +2083,12 @@ static void xyz_to_dfisheye(const V360Context *s,
     const float ew = width / 2.f;
     const float eh = height;
 
-    const float phi   = atan2f(-vec[1], -vec[0]) * s->input_mirror_modifier[0];
-    const float theta = acosf(fabsf(vec[2])) / M_PI * s->input_mirror_modifier[1];
+    const float h     = hypotf(vec[0], vec[1]);
+    const float lh    = h > 0.f ? h : 1.f;
+    const float theta = acosf(fabsf(vec[2])) / M_PI;
 
-    float uf = (theta * cosf(phi) * scale + 0.5f) * ew;
-    float vf = (theta * sinf(phi) * scale + 0.5f) * eh;
+    float uf = (theta * (-vec[0] / lh) * s->input_mirror_modifier[0] * scale + 0.5f) * ew;
+    float vf = (theta * (-vec[1] / lh) * s->input_mirror_modifier[1] * scale + 0.5f) * eh;
 
     int ui, vi;
     int u_shift;
