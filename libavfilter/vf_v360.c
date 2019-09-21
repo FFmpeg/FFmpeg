@@ -1643,17 +1643,11 @@ static void ball_to_xyz(const V360Context *s,
     const float l = hypotf(x, y);
 
     if (l <= 1.f) {
-        const float phi   = atan2f(x, y);
-        const float theta = 2.f * asinf(l);
+        const float z = 2.f * l * sqrtf(1.f - l * l);
 
-        const float sin_phi   = sinf(phi);
-        const float cos_phi   = cosf(phi);
-        const float sin_theta = sinf(theta);
-        const float cos_theta = cosf(theta);
-
-        vec[0] =  sin_theta * sin_phi;
-        vec[1] = -sin_theta * cos_phi;
-        vec[2] = -cos_theta;
+        vec[0] =  z * x / (l > 0.f ? l : 1.f);
+        vec[1] = -z * y / (l > 0.f ? l : 1.f);
+        vec[2] = -1.f + 2.f * l * l;
     } else {
         vec[0] =  0.f;
         vec[1] = -1.f;
