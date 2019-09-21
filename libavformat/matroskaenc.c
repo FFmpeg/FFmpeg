@@ -717,8 +717,7 @@ static int get_aac_sample_rates(AVFormatContext *s, uint8_t *extradata, int extr
     MPEG4AudioConfig mp4ac;
     int ret;
 
-    ret = avpriv_mpeg4audio_get_config(&mp4ac, extradata,
-                                       extradata_size * 8, 1);
+    ret = avpriv_mpeg4audio_get_config2(&mp4ac, extradata, extradata_size, 1, s);
     /* Don't abort if the failure is because of missing extradata. Assume in that
      * case a bitstream filter will provide the muxer with the extradata in the
      * first packet.
