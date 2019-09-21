@@ -100,7 +100,11 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
-    if (buf_end - buf < maplength)
+    /* scanlines are aligned on 16 bit boundaries */
+    len  = (depth * w + 7) >> 3;
+    alen = len + (len & 1);
+
+    if (buf_end - buf < maplength + (len * h) * 3 / 256)
         return AVERROR_INVALIDDATA;
 
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
@@ -135,10 +139,6 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         ptr    = p->data[0];
         stride = p->linesize[0];
     }
-
-    /* scanlines are aligned on 16 bit boundaries */
-    len  = (depth * w + 7) >> 3;
-    alen = len + (len & 1);
 
     if (type == RT_BYTE_ENCODED) {
         int value, run;
