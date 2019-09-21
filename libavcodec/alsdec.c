@@ -302,8 +302,8 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
     if ((ret = init_get_bits8(&gb, avctx->extradata, avctx->extradata_size)) < 0)
         return ret;
 
-    config_offset = avpriv_mpeg4audio_get_config(&m4ac, avctx->extradata,
-                                                 avctx->extradata_size * 8, 1);
+    config_offset = avpriv_mpeg4audio_get_config2(&m4ac, avctx->extradata,
+                                                  avctx->extradata_size, 1, avctx);
 
     if (config_offset < 0)
         return AVERROR_INVALIDDATA;
