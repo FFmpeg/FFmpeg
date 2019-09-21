@@ -1200,7 +1200,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
                 break;
             case AV_OPT_TYPE_CONST:
                 if (parent_type == AV_OPT_TYPE_INT)
-                    av_log(av_log_obj, AV_LOG_INFO, "%-12d ", opt->default_val.i64);
+                    av_log(av_log_obj, AV_LOG_INFO, "%-12"PRId64" ", opt->default_val.i64);
                 else
                     av_log(av_log_obj, AV_LOG_INFO, "%-12s ", "");
                 break;
