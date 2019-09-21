@@ -975,7 +975,7 @@ static int decode_audio_specific_config_gb(AACContext *ac,
     int i, ret;
     GetBitContext gbc = *gb;
 
-    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension)) < 0)
+    if ((i = ff_mpeg4audio_get_config_gb(m4ac, &gbc, sync_extension, avctx)) < 0)
         return AVERROR_INVALIDDATA;
 
     if (m4ac->sampling_index > 12) {
