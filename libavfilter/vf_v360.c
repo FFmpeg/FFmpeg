@@ -2093,7 +2093,7 @@ static void xyz_to_dfisheye(const V360Context *s,
     int ui, vi;
     int u_shift;
 
-    if (vec[2] >= 0) {
+    if (vec[2] >= 0.f) {
         u_shift = 0;
     } else {
         u_shift = ceilf(ew);
