@@ -132,8 +132,8 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
             return AVERROR(ENOMEM);
         stride = (w + 15 >> 3) * depth;
     } else {
-    ptr    = p->data[0];
-    stride = p->linesize[0];
+        ptr    = p->data[0];
+        stride = p->linesize[0];
     }
 
     /* scanlines are aligned on 16 bit boundaries */
