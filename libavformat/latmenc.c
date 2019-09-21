@@ -53,12 +53,13 @@ static const AVClass latm_muxer_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
+static int latm_decode_extradata(AVFormatContext *s, uint8_t *buf, int size)
 {
+    LATMContext *ctx = s->priv_data;
     MPEG4AudioConfig m4ac;
 
     if (size > MAX_EXTRADATA_SIZE) {
-        av_log(ctx, AV_LOG_ERROR, "Extradata is larger than currently supported.\n");
+        av_log(s, AV_LOG_ERROR, "Extradata is larger than currently supported.\n");
         return AVERROR_INVALIDDATA;
     }
     ctx->off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
@@ -67,13 +68,13 @@ static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
 
     if (ctx->object_type == AOT_ALS && (ctx->off & 7)) {
         // as long as avpriv_mpeg4audio_get_config works correctly this is impossible
-        av_log(ctx, AV_LOG_ERROR, "BUG: ALS offset is not byte-aligned\n");
+        av_log(s, AV_LOG_ERROR, "BUG: ALS offset is not byte-aligned\n");
         return AVERROR_INVALIDDATA;
     }
     /* FIXME: are any formats not allowed in LATM? */
 
     if (m4ac.object_type > AOT_SBR && m4ac.object_type != AOT_ALS) {
-        av_log(ctx, AV_LOG_ERROR, "Muxing MPEG-4 AOT %d in LATM is not supported\n", m4ac.object_type);
+        av_log(s, AV_LOG_ERROR, "Muxing MPEG-4 AOT %d in LATM is not supported\n", m4ac.object_type);
         return AVERROR_INVALIDDATA;
     }
     ctx->channel_conf = m4ac.chan_config;
@@ -84,18 +85,17 @@ static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
 
 static int latm_write_header(AVFormatContext *s)
 {
-    LATMContext *ctx = s->priv_data;
     AVCodecParameters *par = s->streams[0]->codecpar;
 
     if (par->codec_id == AV_CODEC_ID_AAC_LATM)
         return 0;
     if (par->codec_id != AV_CODEC_ID_AAC && par->codec_id != AV_CODEC_ID_MP4ALS) {
-        av_log(ctx, AV_LOG_ERROR, "Only AAC, LATM and ALS are supported\n");
+        av_log(s, AV_LOG_ERROR, "Only AAC, LATM and ALS are supported\n");
         return AVERROR(EINVAL);
     }
 
     if (par->extradata_size > 0 &&
-        latm_decode_extradata(ctx, par->extradata, par->extradata_size) < 0)
+        latm_decode_extradata(s, par->extradata, par->extradata_size) < 0)
         return AVERROR_INVALIDDATA;
 
     return 0;
@@ -170,7 +170,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
             side_data = av_packet_get_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
                                                 &side_data_size);
             if (side_data_size) {
-                if (latm_decode_extradata(ctx, side_data, side_data_size) < 0)
+                if (latm_decode_extradata(s, side_data, side_data_size) < 0)
                     return AVERROR_INVALIDDATA;
                 ret = ff_alloc_extradata(par, side_data_size);
                 if (ret < 0)
