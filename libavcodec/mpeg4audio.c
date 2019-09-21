@@ -93,6 +93,10 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
     c->chan_config = get_bits(gb, 4);
     if (c->chan_config < FF_ARRAY_ELEMS(ff_mpeg4audio_channels))
         c->channels = ff_mpeg4audio_channels[c->chan_config];
+    else {
+        av_log(NULL, AV_LOG_ERROR, "Invalid chan_config %d\n", c->chan_config);
+        return AVERROR_INVALIDDATA;
+    }
     c->sbr = -1;
     c->ps  = -1;
     if (c->object_type == AOT_SBR || (c->object_type == AOT_PS &&
