@@ -100,13 +100,13 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (ret < 0)
         return ret;
 
+    if (buf_end - buf < maplength)
+        return AVERROR_INVALIDDATA;
+
     if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
         return ret;
 
     p->pict_type = AV_PICTURE_TYPE_I;
-
-    if (buf_end - buf < maplength)
-        return AVERROR_INVALIDDATA;
 
     if (depth > 8 && maplength) {
         av_log(avctx, AV_LOG_WARNING, "useless colormap found or file is corrupted, trying to recover\n");
