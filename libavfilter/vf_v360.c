@@ -1768,8 +1768,8 @@ static void eac_to_xyz(const V360Context *s,
 
     float l_x, l_y, l_z;
 
-    float uf = (float)i / width;
-    float vf = (float)j / height;
+    float uf = (i + 0.5f) / width;
+    float vf = (j + 0.5f) / height;
 
     // EAC has 2-pixel padding on faces except between faces on the same row
     // Padding pixels seems not to be stretched with tangent as regular pixels
@@ -1887,6 +1887,9 @@ static void xyz_to_eac(const V360Context *s,
 
     uf *= width;
     vf *= height;
+
+    uf -= 0.5f;
+    vf -= 0.5f;
 
     ui = floorf(uf);
     vi = floorf(vf);
