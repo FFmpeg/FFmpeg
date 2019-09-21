@@ -18063,6 +18063,9 @@ Mercator format.
 @item ball
 Ball format, gives significant distortion toward the back.
 
+@item hammer
+Hammer-Aitoff map projection format.
+
 @end table
 
 @item interp

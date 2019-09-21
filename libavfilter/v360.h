@@ -41,6 +41,7 @@ enum Projections {
     STEREOGRAPHIC,
     MERCATOR,
     BALL,
+    HAMMER,
     NB_PROJECTIONS,
 };
 
