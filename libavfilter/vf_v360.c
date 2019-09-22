@@ -2598,7 +2598,7 @@ static int config_output(AVFilterLink *outlink)
         s->in_transform = xyz_to_mercator;
         err = 0;
         wf = w;
-        hf = h;
+        hf = h / 2.f;
         break;
     case BALL:
         s->in_transform = xyz_to_ball;
@@ -2680,7 +2680,7 @@ static int config_output(AVFilterLink *outlink)
         s->out_transform = mercator_to_xyz;
         prepare_out = NULL;
         w = roundf(wf);
-        h = roundf(hf);
+        h = roundf(hf * 2.f);
         break;
     case BALL:
         s->out_transform = ball_to_xyz;
