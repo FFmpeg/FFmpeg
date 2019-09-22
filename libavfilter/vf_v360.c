@@ -1414,11 +1414,8 @@ static int prepare_stereographic_out(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    const float h_angle = tanf(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
-    const float v_angle = tanf(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
-
-    s->flat_range[0] = h_angle;
-    s->flat_range[1] = v_angle;
+    s->flat_range[0] = tanf(FFMIN(s->h_fov, 359.f) * M_PI / 720.f);
+    s->flat_range[1] = tanf(FFMIN(s->v_fov, 359.f) * M_PI / 720.f);
 
     return 0;
 }
@@ -1990,11 +1987,8 @@ static int prepare_flat_out(AVFilterContext *ctx)
 {
     V360Context *s = ctx->priv;
 
-    const float h_angle = 0.5f * s->h_fov * M_PI / 180.f;
-    const float v_angle = 0.5f * s->v_fov * M_PI / 180.f;
-
-    s->flat_range[0] = tanf(h_angle);
-    s->flat_range[1] = tanf(v_angle);
+    s->flat_range[0] = tanf(0.5f * s->h_fov * M_PI / 180.f);
+    s->flat_range[1] = tanf(0.5f * s->v_fov * M_PI / 180.f);
 
     return 0;
 }
