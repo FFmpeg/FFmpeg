@@ -1555,12 +1555,12 @@ static void xyz_to_mercator(const V360Context *s,
                             uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
     const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0];
-    const float theta = 0.5f * asinhf(vec[1] / sqrtf(1.f - vec[1] * vec[1])) * s->input_mirror_modifier[1];
+    const float theta = -vec[1] * s->input_mirror_modifier[1];
     float uf, vf;
     int ui, vi;
 
-    uf = (phi   / M_PI + 1.f) * width  / 2.f;
-    vf = (theta / M_PI + 1.f) * height / 2.f;
+    uf = (phi / M_PI + 1.f) * width / 2.f;
+    vf = (av_clipf(logf((1.f + theta) / (1.f - theta)) / (2.f * M_PI), -1.f, 1.f) + 1.f) * height / 2.f;
     ui = floorf(uf);
     vi = floorf(vf);
 
@@ -1569,7 +1569,7 @@ static void xyz_to_mercator(const V360Context *s,
 
     for (int i = -1; i < 3; i++) {
         for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = mod(ui + j, width);
+            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
     }
