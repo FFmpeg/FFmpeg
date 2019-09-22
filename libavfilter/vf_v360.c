@@ -105,8 +105,10 @@ static const AVOption v360_options[] = {
     {"out_forder", "output cubemap face order", OFFSET(out_forder), AV_OPT_TYPE_STRING, {.str="rludfb"},        0,     NB_DIRECTIONS-1, FLAGS, "out_forder"},
     {   "in_frot", "input cubemap face rotation",  OFFSET(in_frot), AV_OPT_TYPE_STRING, {.str="000000"},        0,     NB_DIRECTIONS-1, FLAGS, "in_frot"},
     {  "out_frot", "output cubemap face rotation",OFFSET(out_frot), AV_OPT_TYPE_STRING, {.str="000000"},        0,     NB_DIRECTIONS-1, FLAGS, "out_frot"},
-    {    "in_pad", "input cubemap pads",            OFFSET(in_pad), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,                 1.f, FLAGS, "in_pad"},
-    {   "out_pad", "output cubemap pads",          OFFSET(out_pad), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,                 1.f, FLAGS, "out_pad"},
+    {    "in_pad", "percent input cubemap pads",    OFFSET(in_pad), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,                 1.f, FLAGS, "in_pad"},
+    {   "out_pad", "percent output cubemap pads",  OFFSET(out_pad), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},           0.f,                 1.f, FLAGS, "out_pad"},
+    {   "fin_pad", "fixed input cubemap pads",     OFFSET(fin_pad), AV_OPT_TYPE_INT,    {.i64=0},               0,                 100, FLAGS, "fin_pad"},
+    {  "fout_pad", "fixed output cubemap pads",   OFFSET(fout_pad), AV_OPT_TYPE_INT,    {.i64=0},               0,                 100, FLAGS, "fout_pad"},
     {       "yaw", "yaw rotation",                     OFFSET(yaw), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "yaw"},
     {     "pitch", "pitch rotation",                 OFFSET(pitch), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "pitch"},
     {      "roll", "roll rotation",                   OFFSET(roll), AV_OPT_TYPE_FLOAT,  {.dbl=0.f},        -180.f,               180.f, FLAGS, "roll"},
@@ -724,16 +726,18 @@ static void normalize_vector(float *vec)
  * @param vf vertical cubemap coordinate [0, 1)
  * @param face face of cubemap
  * @param vec coordinates on sphere
+ * @param scalew scale for uf
+ * @param scaleh scale for vf
  */
 static void cube_to_xyz(const V360Context *s,
                         float uf, float vf, int face,
-                        float *vec)
+                        float *vec, float scalew, float scaleh)
 {
     const int direction = s->out_cubemap_direction_order[face];
     float l_x, l_y, l_z;
 
-    uf /= (1.f - s->out_pad);
-    vf /= (1.f - s->out_pad);
+    uf /= scalew;
+    vf /= scaleh;
 
     rotate_cube_face_inverse(&uf, &vf, s->out_cubemap_face_rotation[face]);
 
@@ -1063,6 +1067,9 @@ static void cube3x2_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
+    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_width  / 3.f) : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_height / 2.f) : 1.f - s->out_pad;
+
     const float ew = width  / 3.f;
     const float eh = height / 2.f;
 
@@ -1078,7 +1085,7 @@ static void cube3x2_to_xyz(const V360Context *s,
     const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
     const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
 
-    cube_to_xyz(s, uf, vf, face, vec);
+    cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 }
 
 /**
@@ -1097,6 +1104,8 @@ static void xyz_to_cube3x2(const V360Context *s,
                            const float *vec, int width, int height,
                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
+    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width  / 3.f) : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 2.f) : 1.f - s->in_pad;
     const float ew = width  / 3.f;
     const float eh = height / 2.f;
     float uf, vf;
@@ -1107,8 +1116,8 @@ static void xyz_to_cube3x2(const V360Context *s,
 
     xyz_to_cube(s, vec, &uf, &vf, &direction);
 
-    uf *= (1.f - s->in_pad);
-    vf *= (1.f - s->in_pad);
+    uf *= scalew;
+    vf *= scaleh;
 
     face = s->in_cubemap_face_order[direction];
     u_face = face % 3;
@@ -1143,13 +1152,13 @@ static void xyz_to_cube3x2(const V360Context *s,
                 uf = 2.f * new_ui / ewi - 1.f;
                 vf = 2.f * new_vi / ehi - 1.f;
 
-                uf /= (1.f - s->in_pad);
-                vf /= (1.f - s->in_pad);
+                uf /= scalew;
+                vf /= scaleh;
 
                 process_cube_coordinates(s, uf, vf, direction, &uf, &vf, &face);
 
-                uf *= (1.f - s->in_pad);
-                vf *= (1.f - s->in_pad);
+                uf *= scalew;
+                vf *= scaleh;
 
                 u_face = face % 3;
                 v_face = face / 3;
@@ -1182,6 +1191,9 @@ static void cube1x6_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
+    const float scalew = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / s->out_width : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_height / 6.f) : 1.f - s->out_pad;
+
     const float ew = width;
     const float eh = height / 6.f;
 
@@ -1193,7 +1205,7 @@ static void cube1x6_to_xyz(const V360Context *s,
     const float uf = 2.f * (i           + 0.5f) / ew  - 1.f;
     const float vf = 2.f * (j - v_shift + 0.5f) / ehi - 1.f;
 
-    cube_to_xyz(s, uf, vf, face, vec);
+    cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 }
 
 /**
@@ -1210,6 +1222,9 @@ static void cube6x1_to_xyz(const V360Context *s,
                            int i, int j, int width, int height,
                            float *vec)
 {
+    const float scalew = s->fout_pad > 0 ? 1.f - s->fout_pad / (s->out_width / 6.f)   : 1.f - s->out_pad;
+    const float scaleh = s->fout_pad > 0 ? 1.f - (float)(s->fout_pad) / s->out_height : 1.f - s->out_pad;
+
     const float ew = width / 6.f;
     const float eh = height;
 
@@ -1221,7 +1236,7 @@ static void cube6x1_to_xyz(const V360Context *s,
     const float uf = 2.f * (i - u_shift + 0.5f) / ewi - 1.f;
     const float vf = 2.f * (j           + 0.5f) / eh  - 1.f;
 
-    cube_to_xyz(s, uf, vf, face, vec);
+    cube_to_xyz(s, uf, vf, face, vec, scalew, scaleh);
 }
 
 /**
@@ -1240,6 +1255,8 @@ static void xyz_to_cube1x6(const V360Context *s,
                            const float *vec, int width, int height,
                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
+    const float scalew = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_width : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_height / 6.f) : 1.f - s->in_pad;
     const float eh = height / 6.f;
     const int ewi = width;
     float uf, vf;
@@ -1249,8 +1266,8 @@ static void xyz_to_cube1x6(const V360Context *s,
 
     xyz_to_cube(s, vec, &uf, &vf, &direction);
 
-    uf *= (1.f - s->in_pad);
-    vf *= (1.f - s->in_pad);
+    uf *= scalew;
+    vf *= scaleh;
 
     face = s->in_cubemap_face_order[direction];
     ehi = ceilf(eh * (face + 1)) - ceilf(eh * face);
@@ -1279,13 +1296,13 @@ static void xyz_to_cube1x6(const V360Context *s,
                 uf = 2.f * new_ui / ewi - 1.f;
                 vf = 2.f * new_vi / ehi - 1.f;
 
-                uf /= (1.f - s->in_pad);
-                vf /= (1.f - s->in_pad);
+                uf /= scalew;
+                vf /= scaleh;
 
                 process_cube_coordinates(s, uf, vf, direction, &uf, &vf, &face);
 
-                uf *= (1.f - s->in_pad);
-                vf *= (1.f - s->in_pad);
+                uf *= scalew;
+                vf *= scaleh;
 
                 v_shift = ceilf(eh * face);
                 new_ehi = ceilf(eh * (face + 1)) - v_shift;
@@ -1316,6 +1333,8 @@ static void xyz_to_cube6x1(const V360Context *s,
                            const float *vec, int width, int height,
                            uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
 {
+    const float scalew = s->fin_pad > 0 ? 1.f - s->fin_pad / (s->in_width / 6.f)   : 1.f - s->in_pad;
+    const float scaleh = s->fin_pad > 0 ? 1.f - (float)(s->fin_pad) / s->in_height : 1.f - s->in_pad;
     const float ew = width / 6.f;
     const int ehi = height;
     float uf, vf;
@@ -1325,8 +1344,8 @@ static void xyz_to_cube6x1(const V360Context *s,
 
     xyz_to_cube(s, vec, &uf, &vf, &direction);
 
-    uf *= (1.f - s->in_pad);
-    vf *= (1.f - s->in_pad);
+    uf *= scalew;
+    vf *= scaleh;
 
     face = s->in_cubemap_face_order[direction];
     ewi = ceilf(ew * (face + 1)) - ceilf(ew * face);
@@ -1355,13 +1374,13 @@ static void xyz_to_cube6x1(const V360Context *s,
                 uf = 2.f * new_ui / ewi - 1.f;
                 vf = 2.f * new_vi / ehi - 1.f;
 
-                uf /= (1.f - s->in_pad);
-                vf /= (1.f - s->in_pad);
+                uf /= scalew;
+                vf /= scaleh;
 
                 process_cube_coordinates(s, uf, vf, direction, &uf, &vf, &face);
 
-                uf *= (1.f - s->in_pad);
-                vf *= (1.f - s->in_pad);
+                uf *= scalew;
+                vf *= scaleh;
 
                 u_shift = ceilf(ew * face);
                 new_ewi = ceilf(ew * (face + 1)) - u_shift;
@@ -2516,6 +2535,12 @@ static int config_output(AVFilterLink *outlink)
     set_dimensions(s->inplanewidth, s->inplaneheight, w, h, desc);
     set_dimensions(s->in_offset_w, s->in_offset_h, in_offset_w, in_offset_h, desc);
 
+    s->in_width = s->inplanewidth[0];
+    s->in_height = s->inplaneheight[0];
+
+    if (s->in_transpose)
+        FFSWAP(int, s->in_width, s->in_height);
+
     switch (s->in) {
     case EQUIRECTANGULAR:
         s->in_transform = xyz_to_equirect;
@@ -2698,6 +2723,12 @@ static int config_output(AVFilterLink *outlink)
     }
 
     set_dimensions(s->pr_width, s->pr_height, w, h, desc);
+
+    s->out_width = s->pr_width[0];
+    s->out_height = s->pr_height[0];
+
+    if (s->out_transpose)
+        FFSWAP(int, s->out_width, s->out_height);
 
     switch (s->out_stereo) {
     case STEREO_2D:

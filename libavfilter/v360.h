@@ -114,6 +114,7 @@ typedef struct V360Context {
     int in_stereo, out_stereo;
 
     float in_pad, out_pad;
+    int fin_pad, fout_pad;
 
     float yaw, pitch, roll;
 
@@ -128,6 +129,9 @@ typedef struct V360Context {
 
     float input_mirror_modifier[2];
     float output_mirror_modifier[3];
+
+    int in_width, in_height;
+    int out_width, out_height;
 
     int pr_width[4], pr_height[4];
 

@@ -17961,6 +17961,12 @@ No padding.
 
 Default value is @b{@samp{0}}.
 
+@item fin_pad
+@item fout_pad
+Set fixed padding for the input/output cubemap. Values in pixels.
+
+Default value is @b{@samp{0}}. If greater than zero it overrides other padding options.
+
 @item in_forder
 @item out_forder
 Set order of faces for the input/output cubemap. Choose one direction for each position.
