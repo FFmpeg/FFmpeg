@@ -145,8 +145,8 @@ typedef struct V360Context {
     int nb_allocated;
     int elements;
 
-    uint16_t *u[4], *v[4];
-    int16_t *ker[4];
+    uint16_t *u[2], *v[2];
+    int16_t *ker[2];
     unsigned map[4];
 
     void (*in_transform)(const struct V360Context *s,
