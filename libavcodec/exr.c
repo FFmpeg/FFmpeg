@@ -1861,7 +1861,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
 #if HAVE_THREADS
 static int decode_init_thread_copy(AVCodecContext *avctx)
-{    EXRContext *s = avctx->priv_data;
+{
+    EXRContext *s = avctx->priv_data;
 
     // allocate thread data, used for non EXR_RAW compression types
     s->thread_data = av_mallocz_array(avctx->thread_count, sizeof(EXRThreadData));
