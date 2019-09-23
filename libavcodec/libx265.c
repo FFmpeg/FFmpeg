@@ -47,6 +47,12 @@ typedef struct libx265Context {
     char *tune;
     char *profile;
     char *x265_opts;
+
+    /**
+     * If the encoder does not support ROI then warn the first time we
+     * encounter a frame with ROI side data.
+     */
+    int roi_warned;
 } libx265Context;
 
 static int is_keyframe(NalUnitType naltype)
@@ -310,7 +316,10 @@ static av_cold int libx265_encode_set_roi(libx265Context *ctx, const AVFrame *fr
     AVFrameSideData *sd = av_frame_get_side_data(frame, AV_FRAME_DATA_REGIONS_OF_INTEREST);
     if (sd) {
         if (ctx->params->rc.aqMode == X265_AQ_NONE) {
-            av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+            if (!ctx->roi_warned) {
+                ctx->roi_warned = 1;
+                av_log(ctx, AV_LOG_WARNING, "Adaptive quantization must be enabled to use ROI encoding, skipping ROI.\n");
+            }
         } else {
             /* 8x8 block when qg-size is 8, 16*16 block otherwise. */
             int mb_size = (ctx->params->rc.qgSize == 8) ? 8 : 16;
