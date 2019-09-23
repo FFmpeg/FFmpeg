@@ -446,6 +446,9 @@ static void dump_sidedata(void *ctx, AVStream *st, const char *indent)
         case AV_PKT_DATA_CONTENT_LIGHT_LEVEL:
             dump_content_light_metadata(ctx, &sd);
             break;
+        case AV_PKT_DATA_ICC_PROFILE:
+            av_log(ctx, AV_LOG_INFO, "ICC Profile");
+            break;
         default:
             av_log(ctx, AV_LOG_INFO,
                    "unknown side data type %d (%d bytes)", sd.type, sd.size);
