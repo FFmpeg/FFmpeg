@@ -47,7 +47,8 @@ void av_bsf_free(AVBSFContext **pctx)
 
     av_opt_free(ctx);
 
-    av_packet_free(&ctx->internal->buffer_pkt);
+    if (ctx->internal)
+        av_packet_free(&ctx->internal->buffer_pkt);
     av_freep(&ctx->internal);
     av_freep(&ctx->priv_data);
 
