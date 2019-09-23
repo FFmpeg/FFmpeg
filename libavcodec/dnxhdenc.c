@@ -542,6 +542,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     if (avctx->active_thread_type == FF_THREAD_SLICE) {
         for (i = 1; i < avctx->thread_count; i++) {
             ctx->thread[i] = av_malloc(sizeof(DNXHDEncContext));
+            if (!ctx->thread[i])
+                goto fail;
             memcpy(ctx->thread[i], ctx, sizeof(DNXHDEncContext));
         }
     }
