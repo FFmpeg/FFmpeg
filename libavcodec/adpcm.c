@@ -111,6 +111,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
     case AV_CODEC_ID_ADPCM_MTAF:
         min_channels = 2;
         max_channels = 8;
+        if (avctx->channels & 1) {
+            avpriv_request_sample(avctx, "channel count %d\n", avctx->channels);
+            return AVERROR_PATCHWELCOME;
+        }
         break;
     case AV_CODEC_ID_ADPCM_PSX:
         max_channels = 8;
