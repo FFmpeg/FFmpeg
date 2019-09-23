@@ -78,6 +78,7 @@ static const AVOption options[] = {
     { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "skip_sidx", "Skip writing of sidx atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_colr", "Write colr atom (Experimental, may be renamed or changed, do not use from scripts)", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_COLR}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "prefer_icc", "If writing colr atom prioritise usage of ICC profile if it exists in stream packet side data", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_PREFER_ICC}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "write_gama", "Write deprecated gama atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_WRITE_GAMA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "use_metadata_tags", "Use mdta atom for metadata.", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_USE_MDTA}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "skip_trailer", "Skip writing the mfra/tfra/mfro trailer for fragmented files", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_SKIP_TRAILER}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -1866,12 +1867,30 @@ static int mov_write_gama_tag(AVFormatContext *s, AVIOContext *pb, MOVTrack *tra
     return 0;
 }
 
-static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track)
+static int mov_write_colr_tag(AVIOContext *pb, MOVTrack *track, int prefer_icc)
 {
     int64_t pos = avio_tell(pb);
 
     // Ref (MOV): https://developer.apple.com/library/mac/technotes/tn2162/_index.html#//apple_ref/doc/uid/DTS40013070-CH1-TNTAG9
     // Ref (MP4): ISO/IEC 14496-12:2012
+
+    const uint8_t *icc_profile;
+    int icc_profile_size;
+
+    if (prefer_icc) {
+        icc_profile = av_stream_get_side_data(track->st, AV_PKT_DATA_ICC_PROFILE, &icc_profile_size);
+
+        if (icc_profile) {
+            avio_wb32(pb, 12 + icc_profile_size);
+            ffio_wfourcc(pb, "colr");
+            ffio_wfourcc(pb, "prof");
+            avio_write(pb, icc_profile, icc_profile_size);
+            return 12 + icc_profile_size;
+        }
+        else {
+            av_log(NULL, AV_LOG_INFO, "no ICC profile found, will write nclx/nclc colour info instead\n");
+        }
+    }
 
     if (track->par->color_primaries == AVCOL_PRI_UNSPECIFIED &&
         track->par->color_trc == AVCOL_TRC_UNSPECIFIED &&
@@ -2117,7 +2136,7 @@ static int mov_write_video_tag(AVFormatContext *s, AVIOContext *pb, MOVMuxContex
     }
     if (mov->flags & FF_MOV_FLAG_WRITE_COLR) {
         if (track->mode == MODE_MOV || track->mode == MODE_MP4)
-            mov_write_colr_tag(pb, track);
+            mov_write_colr_tag(pb, track, mov->flags & FF_MOV_FLAG_PREFER_ICC);
         else
             av_log(mov->fc, AV_LOG_WARNING, "Not writing 'colr' atom. Format is not MOV or MP4.\n");
     }
