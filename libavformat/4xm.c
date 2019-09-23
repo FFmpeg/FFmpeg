@@ -241,7 +241,8 @@ static int fourxm_read_header(AVFormatContext *s)
         size       = AV_RL32(&header[i + 4]);
         if (size > header_size - i - 8 && (fourcc_tag == vtrk_TAG || fourcc_tag == strk_TAG)) {
             av_log(s, AV_LOG_ERROR, "chunk larger than array %d>%d\n", size, header_size - i - 8);
-            return AVERROR_INVALIDDATA;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
 
         if (fourcc_tag == std__TAG) {
