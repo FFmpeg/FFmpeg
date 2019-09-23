@@ -119,7 +119,27 @@ static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
 
 static void nvenc_print_driver_requirement(AVCodecContext *avctx, int level)
 {
-#if NVENCAPI_CHECK_VERSION(8, 1)
+#if NVENCAPI_CHECK_VERSION(9, 2)
+    const char *minver = "(unknown)";
+#elif NVENCAPI_CHECK_VERSION(9, 1)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "436.15";
+# else
+    const char *minver = "435.21";
+# endif
+#elif NVENCAPI_CHECK_VERSION(9, 0)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "418.81";
+# else
+    const char *minver = "418.30";
+# endif
+#elif NVENCAPI_CHECK_VERSION(8, 2)
+# if defined(_WIN32) || defined(__CYGWIN__)
+    const char *minver = "397.93";
+# else
+    const char *minver = "396.24";
+#endif
+#elif NVENCAPI_CHECK_VERSION(8, 1)
 # if defined(_WIN32) || defined(__CYGWIN__)
     const char *minver = "390.77";
 # else
