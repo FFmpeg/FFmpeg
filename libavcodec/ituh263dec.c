@@ -1089,6 +1089,11 @@ int ff_h263_decode_picture_header(MpegEncContext *s)
     if ((ret = av_image_check_size(s->width, s->height, 0, s)) < 0)
         return ret;
 
+    if (!(s->avctx->flags2 & AV_CODEC_FLAG2_CHUNKS)) {
+        if ((s->width * s->height / 256 / 8) > get_bits_left(&s->gb))
+            return AVERROR_INVALIDDATA;
+    }
+
     s->mb_width = (s->width  + 15) / 16;
     s->mb_height = (s->height  + 15) / 16;
     s->mb_num = s->mb_width * s->mb_height;
