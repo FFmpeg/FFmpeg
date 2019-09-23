@@ -1546,6 +1546,7 @@ static int mov_read_enda(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
+    uint8_t *icc_profile;
     char color_parameter_type[5] = { 0 };
     uint16_t color_primaries, color_trc, color_matrix;
     int ret;
@@ -1558,12 +1559,22 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (ret < 0)
         return ret;
     if (strncmp(color_parameter_type, "nclx", 4) &&
-        strncmp(color_parameter_type, "nclc", 4)) {
+        strncmp(color_parameter_type, "nclc", 4) &&
+        strncmp(color_parameter_type, "prof", 4)) {
         av_log(c->fc, AV_LOG_WARNING, "unsupported color_parameter_type %s\n",
                color_parameter_type);
         return 0;
     }
 
+    if (!strncmp(color_parameter_type, "prof", 4)) {
+        icc_profile = av_stream_new_side_data(st, AV_PKT_DATA_ICC_PROFILE, atom.size - 4);
+        if (!icc_profile)
+            return AVERROR(ENOMEM);
+        ret = ffio_read_size(pb, icc_profile, atom.size - 4);
+        if (ret < 0)
+            return ret;
+    }
+    else {
     color_primaries = avio_rb16(pb);
     color_trc = avio_rb16(pb);
     color_matrix = avio_rb16(pb);
@@ -1592,7 +1603,7 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codecpar->color_trc       = color_trc;
     st->codecpar->color_space     = color_matrix;
     av_log(c->fc, AV_LOG_TRACE, "\n");
-
+    }
     return 0;
 }
 
