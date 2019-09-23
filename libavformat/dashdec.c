@@ -363,8 +363,7 @@ static void free_representation(struct representation *pls)
     free_fragment(&pls->init_section);
     av_freep(&pls->init_sec_buf);
     av_freep(&pls->pb.buffer);
-    if (pls->input)
-        ff_format_io_close(pls->parent, &pls->input);
+    ff_format_io_close(pls->parent, &pls->input);
     if (pls->ctx) {
         pls->ctx->pb = NULL;
         avformat_close_input(&pls->ctx);
@@ -2183,8 +2182,7 @@ static void recheck_discard_flags(AVFormatContext *s, struct representation **p,
             av_log(s, AV_LOG_INFO, "Now receiving stream_index %d\n", pls->stream_index);
         } else if (!needed && pls->ctx) {
             close_demux_for_component(pls);
-            if (pls->input)
-                ff_format_io_close(pls->parent, &pls->input);
+            ff_format_io_close(pls->parent, &pls->input);
             av_log(s, AV_LOG_INFO, "No longer receiving stream_index %d\n", pls->stream_index);
         }
     }
@@ -2245,8 +2243,7 @@ static int dash_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (cur->is_restart_needed) {
             cur->cur_seg_offset = 0;
             cur->init_sec_buf_read_offset = 0;
-            if (cur->input)
-                ff_format_io_close(cur->parent, &cur->input);
+            ff_format_io_close(cur->parent, &cur->input);
             ret = reopen_demux_for_component(s, cur);
             cur->is_restart_needed = 0;
         }
@@ -2284,8 +2281,7 @@ static int dash_seek(AVFormatContext *s, struct representation *pls, int64_t see
         return av_seek_frame(pls->ctx, -1, seek_pos_msec * 1000, flags);
     }
 
-    if (pls->input)
-        ff_format_io_close(pls->parent, &pls->input);
+    ff_format_io_close(pls->parent, &pls->input);
 
     // find the nearest fragment
     if (pls->n_timelines > 0 && pls->fragment_timescale > 0) {
