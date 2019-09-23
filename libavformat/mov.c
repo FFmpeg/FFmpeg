@@ -1575,34 +1575,34 @@ static int mov_read_colr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             return ret;
     }
     else {
-    color_primaries = avio_rb16(pb);
-    color_trc = avio_rb16(pb);
-    color_matrix = avio_rb16(pb);
+        color_primaries = avio_rb16(pb);
+        color_trc = avio_rb16(pb);
+        color_matrix = avio_rb16(pb);
 
-    av_log(c->fc, AV_LOG_TRACE,
-           "%s: pri %d trc %d matrix %d",
-           color_parameter_type, color_primaries, color_trc, color_matrix);
+        av_log(c->fc, AV_LOG_TRACE,
+               "%s: pri %d trc %d matrix %d",
+               color_parameter_type, color_primaries, color_trc, color_matrix);
 
-    if (!strncmp(color_parameter_type, "nclx", 4)) {
-        uint8_t color_range = avio_r8(pb) >> 7;
-        av_log(c->fc, AV_LOG_TRACE, " full %"PRIu8"", color_range);
-        if (color_range)
-            st->codecpar->color_range = AVCOL_RANGE_JPEG;
-        else
-            st->codecpar->color_range = AVCOL_RANGE_MPEG;
-    }
+        if (!strncmp(color_parameter_type, "nclx", 4)) {
+            uint8_t color_range = avio_r8(pb) >> 7;
+            av_log(c->fc, AV_LOG_TRACE, " full %"PRIu8"", color_range);
+            if (color_range)
+                st->codecpar->color_range = AVCOL_RANGE_JPEG;
+            else
+                st->codecpar->color_range = AVCOL_RANGE_MPEG;
+        }
 
-    if (!av_color_primaries_name(color_primaries))
-        color_primaries = AVCOL_PRI_UNSPECIFIED;
-    if (!av_color_transfer_name(color_trc))
-        color_trc = AVCOL_TRC_UNSPECIFIED;
-    if (!av_color_space_name(color_matrix))
-        color_matrix = AVCOL_SPC_UNSPECIFIED;
+        if (!av_color_primaries_name(color_primaries))
+            color_primaries = AVCOL_PRI_UNSPECIFIED;
+        if (!av_color_transfer_name(color_trc))
+            color_trc = AVCOL_TRC_UNSPECIFIED;
+        if (!av_color_space_name(color_matrix))
+            color_matrix = AVCOL_SPC_UNSPECIFIED;
 
-    st->codecpar->color_primaries = color_primaries;
-    st->codecpar->color_trc       = color_trc;
-    st->codecpar->color_space     = color_matrix;
-    av_log(c->fc, AV_LOG_TRACE, "\n");
+        st->codecpar->color_primaries = color_primaries;
+        st->codecpar->color_trc       = color_trc;
+        st->codecpar->color_space     = color_matrix;
+        av_log(c->fc, AV_LOG_TRACE, "\n");
     }
     return 0;
 }
