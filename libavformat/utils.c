@@ -872,8 +872,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         err = av_packet_make_refcounted(pkt);
-        if (err < 0)
+        if (err < 0) {
+            av_packet_unref(pkt);
             return err;
+        }
 
         if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
             (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
@@ -914,8 +916,10 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
         err = ff_packet_list_put(&s->internal->raw_packet_buffer,
                                  &s->internal->raw_packet_buffer_end,
                                  pkt, 0);
-        if (err)
+        if (err < 0) {
+            av_packet_unref(pkt);
             return err;
+        }
         s->internal->raw_packet_buffer_remaining_size -= pkt->size;
 
         if ((err = probe_codec(s, st, pkt)) < 0)
@@ -1608,15 +1612,19 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             }
 
             ret = avcodec_parameters_to_context(st->internal->avctx, st->codecpar);
-            if (ret < 0)
+            if (ret < 0) {
+                av_packet_unref(&cur_pkt);
                 return ret;
+            }
 
 #if FF_API_LAVF_AVCTX
 FF_DISABLE_DEPRECATION_WARNINGS
             /* update deprecated public codec context */
             ret = avcodec_parameters_to_context(st->codec, st->codecpar);
-            if (ret < 0)
+            if (ret < 0) {
+                av_packet_unref(&cur_pkt);
                 return ret;
+            }
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
 
