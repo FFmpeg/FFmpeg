@@ -515,6 +515,66 @@ static void set_color_range(AVCodecContext *avctx)
 #endif
 #endif
 
+/**
+ * Set the target bitrate to VPX library default. Also set CRF to 32 if needed.
+ */
+static void set_vp8_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    VPxContext *ctx = avctx->priv_data;
+    av_assert0(!avctx->bit_rate);
+    avctx->bit_rate = enccfg->rc_target_bitrate * 1000;
+    if (enccfg->rc_end_usage == VPX_CQ) {
+        av_log(avctx, AV_LOG_WARNING,
+               "Bitrate not specified for constrained quality mode, using default of %dkbit/sec\n",
+               enccfg->rc_target_bitrate);
+    } else {
+        enccfg->rc_end_usage = VPX_CQ;
+        ctx->crf = 32;
+        av_log(avctx, AV_LOG_WARNING,
+               "Neither bitrate nor constrained quality specified, using default CRF of %d and bitrate of %dkbit/sec\n",
+               ctx->crf, enccfg->rc_target_bitrate);
+    }
+}
+
+
+#if CONFIG_LIBVPX_VP9_ENCODER
+/**
+ * Keep the target bitrate at 0 to engage constant quality mode. If CRF is not
+ * set, use 32.
+ */
+static void set_vp9_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    VPxContext *ctx = avctx->priv_data;
+    av_assert0(!avctx->bit_rate);
+    if (enccfg->rc_end_usage != VPX_Q && ctx->lossless < 0) {
+        enccfg->rc_end_usage = VPX_Q;
+        ctx->crf = 32;
+        av_log(avctx, AV_LOG_WARNING,
+               "Neither bitrate nor constrained quality specified, using default CRF of %d\n",
+               ctx->crf);
+    }
+}
+#endif
+
+/**
+ * Called when the bitrate is not set. It sets appropriate default values for
+ * bitrate and CRF.
+ */
+static void set_vpx_defaults(AVCodecContext *avctx,
+                             struct vpx_codec_enc_cfg *enccfg)
+{
+    av_assert0(!avctx->bit_rate);
+#if CONFIG_LIBVPX_VP9_ENCODER
+    if (avctx->codec_id == AV_CODEC_ID_VP9) {
+        set_vp9_defaults(avctx, enccfg);
+        return;
+    }
+#endif
+    set_vp8_defaults(avctx, enccfg);
+}
+
 static av_cold int vpx_init(AVCodecContext *avctx,
                             const struct vpx_codec_iface *iface)
 {
@@ -585,18 +645,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
     if (avctx->bit_rate) {
         enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                                   AV_ROUND_NEAR_INF);
-#if CONFIG_LIBVPX_VP9_ENCODER
-    } else if (enccfg.rc_end_usage == VPX_Q) {
-#endif
     } else {
-        if (enccfg.rc_end_usage == VPX_CQ) {
-            enccfg.rc_target_bitrate = 1000000;
-        } else {
-            avctx->bit_rate = enccfg.rc_target_bitrate * 1000;
-            av_log(avctx, AV_LOG_WARNING,
-                   "Neither bitrate nor constrained quality specified, using default bitrate of %dkbit/sec\n",
-                   enccfg.rc_target_bitrate);
-        }
+        // Set bitrate to default value. Also sets CRF to default if needed.
+        set_vpx_defaults(avctx, &enccfg);
     }
 
     if (avctx->codec_id == AV_CODEC_ID_VP9 && ctx->lossless == 1) {
@@ -1459,6 +1510,7 @@ static const AVOption vp9_options[] = {
 #undef LEGACY_OPTIONS
 
 static const AVCodecDefault defaults[] = {
+    { "b",                 "0" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
     { "g",                "-1" },
