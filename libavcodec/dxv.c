@@ -783,7 +783,7 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
             return ret;
     }
 
-    bytestream2_seek(gb, data_start + op_offset + skip0 + skip1 - 12, SEEK_SET);
+    bytestream2_seek(gb, data_start - 12 + op_offset + skip0 + skip1, SEEK_SET);
 
     return 0;
 }
