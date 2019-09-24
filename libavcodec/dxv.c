@@ -755,7 +755,6 @@ static int dxv_decompress_cocg(DXVContext *ctx, GetByteContext *gb,
     skip0 = dxv_decompress_opcodes(gb, op_data0, op_size0);
     if (skip0 < 0)
         return skip0;
-    bytestream2_seek(gb, data_start + op_offset + skip0 - 12, SEEK_SET);
     if (op_size1 > max_op_size1)
         return AVERROR_INVALIDDATA;
     skip1 = dxv_decompress_opcodes(gb, op_data1, op_size1);
