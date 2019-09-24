@@ -348,6 +348,7 @@ static int sbc_decode_frame(AVCodecContext *avctx,
     if (frame_length <= 0)
         return frame_length;
 
+    avctx->channels =
     frame->channels = sbc->frame.channels;
     frame->format = AV_SAMPLE_FMT_S16P;
     frame->nb_samples = sbc->frame.blocks * sbc->frame.subbands;
