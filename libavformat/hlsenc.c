@@ -486,7 +486,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     float playlist_duration = 0.0f;
     int ret = 0, path_size, sub_path_size;
     int segment_cnt = 0;
-    char *dirname = NULL, *p, *sub_path;
+    char *dirname = NULL, *sub_path;
     char *path = NULL;
     char *vtt_dirname = NULL;
     AVDictionary *options = NULL;
@@ -517,13 +517,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     }
 
     if (segment && !hls->use_localtime_mkdir) {
-        dirname = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
-        if (!dirname) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-        p = (char *)av_basename(dirname);
-        *p = '\0';
+        char *dirname_r = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
+        dirname = (char*)av_dirname(dirname_r);
     }
 
     /* if %v is present in the file's directory
@@ -542,7 +537,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
             }
         }
 
-        av_free(dirname);
+        av_freep(&dirname);
         dirname = r_dirname;
     }
 
@@ -578,13 +573,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         }
 
         if ((segment->sub_filename[0] != '\0')) {
-            vtt_dirname = av_strdup(vs->vtt_avf->url);
-            if (!vtt_dirname) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
-            p = (char *)av_basename(vtt_dirname);
-            *p = '\0';
+            char *vtt_dirname_r = av_strdup(vs->vtt_avf->url);
+            vtt_dirname = (char*)av_dirname(vtt_dirname_r);
             sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname);
             sub_path = av_malloc(sub_path_size);
             if (!sub_path) {
