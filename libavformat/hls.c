@@ -413,7 +413,11 @@ static struct segment *new_init_section(struct playlist *pls,
     if (!sec)
         return NULL;
 
-    ff_make_absolute_url(tmp_str, sizeof(tmp_str), url_base, info->uri);
+    if (!av_strncasecmp(info->uri, "data:", 5)) {
+        strncpy(tmp_str, info->uri, strlen(info->uri));
+    } else {
+        ff_make_absolute_url(tmp_str, sizeof(tmp_str), url_base, info->uri);
+    }
     sec->url = av_strdup(tmp_str);
     if (!sec->url) {
         av_free(sec);
@@ -627,6 +631,9 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     if (av_strstart(url, "crypto", NULL)) {
         if (url[6] == '+' || url[6] == ':')
             proto_name = avio_find_protocol_name(url + 7);
+    } else if (av_strstart(url, "data", NULL)) {
+        if (url[4] == '+' || url[4] == ':')
+            proto_name = avio_find_protocol_name(url + 5);
     }
 
     if (!proto_name)
@@ -646,12 +653,16 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
         }
     } else if (av_strstart(proto_name, "http", NULL)) {
         is_http = 1;
+    } else if (av_strstart(proto_name, "data", NULL)) {
+        ;
     } else
         return AVERROR_INVALIDDATA;
 
     if (!strncmp(proto_name, url, strlen(proto_name)) && url[strlen(proto_name)] == ':')
         ;
     else if (av_strstart(url, "crypto", NULL) && !strncmp(proto_name, url + 7, strlen(proto_name)) && url[7 + strlen(proto_name)] == ':')
+        ;
+    else if (av_strstart(url, "data", NULL) && !strncmp(proto_name, url + 5, strlen(proto_name)) && url[5 + strlen(proto_name)] == ':')
         ;
     else if (strcmp(proto_name, "file") || !strncmp(url, "file,", 5))
         return AVERROR_INVALIDDATA;

@@ -1791,7 +1791,7 @@ const URLProtocol ff_http_protocol = {
     .priv_data_size      = sizeof(HTTPContext),
     .priv_data_class     = &http_context_class,
     .flags               = URL_PROTOCOL_FLAG_NETWORK,
-    .default_whitelist   = "http,https,tls,rtp,tcp,udp,crypto,httpproxy"
+    .default_whitelist   = "http,https,tls,rtp,tcp,udp,crypto,httpproxy,data"
 };
 #endif /* CONFIG_HTTP_PROTOCOL */
 
