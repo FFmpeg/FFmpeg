@@ -34,6 +34,8 @@ typedef struct PacketList {
     PacketListEntry *head, *tail;
 } PacketList;
 
+#define FF_PACKETLIST_FLAG_PREPEND (1 << 0) /**< Prepend created AVPacketList instead of appending */
+
 /**
  * Append an AVPacket to the list.
  *
