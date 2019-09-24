@@ -884,10 +884,8 @@ int ff_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
-        if (pkt->stream_index >= (unsigned)s->nb_streams) {
-            av_log(s, AV_LOG_ERROR, "Invalid stream index %d\n", pkt->stream_index);
-            continue;
-        }
+        av_assert0(pkt->stream_index < (unsigned)s->nb_streams &&
+                   "Invalid stream index.\n");
 
         st = s->streams[pkt->stream_index];
 
