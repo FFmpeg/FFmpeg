@@ -1635,7 +1635,7 @@ static void xyz_to_ball(const V360Context *s,
 
     for (int i = -1; i < 3; i++) {
         for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = mod(ui + j, width);
+            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
     }
@@ -1743,7 +1743,7 @@ static void xyz_to_hammer(const V360Context *s,
 
     for (int i = -1; i < 3; i++) {
         for (int j = -1; j < 3; j++) {
-            us[i + 1][j + 1] = mod(ui + j, width);
+            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
             vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
         }
     }
