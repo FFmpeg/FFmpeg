@@ -51,6 +51,12 @@ static int g729_parse(AVCodecParserContext *s1, AVCodecContext *avctx,
         s->duration   = avctx->frame_size;
     }
 
+    if (!s->block_size) {
+        *poutbuf      = buf;
+        *poutbuf_size = buf_size;
+        return buf_size;
+    }
+
     if (!s->remaining)
         s->remaining = s->block_size;
     if (s->remaining <= buf_size) {
