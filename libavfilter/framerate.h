@@ -43,6 +43,7 @@ typedef struct FrameRateContext {
     int interp_end;                     ///< end of range to apply linear interpolation
 
     int line_size[4];                   ///< bytes of pixel data per line for each plane
+    int height[4];                      ///< height of each plane
     int vsub;
 
     AVRational srce_time_base;          ///< timebase of source
