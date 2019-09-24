@@ -235,44 +235,38 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static void blend_frames_c(BLEND_FUNC_PARAMS)
-{
-    int line, pixel;
-    for (line = 0; line < height; line++) {
-        for (pixel = 0; pixel < width; pixel++)
-            dst[pixel] = ((src1[pixel] * factor1) + (src2[pixel] * factor2) + half) >> BLEND_FACTOR_DEPTH8;
-        src1 += src1_linesize;
-        src2 += src2_linesize;
-        dst  += dst_linesize;
-    }
+#define BLEND_FRAME_FUNC(nbits)                         \
+static void blend_frames##nbits##_c(BLEND_FUNC_PARAMS)  \
+{                                                       \
+    int line, pixel;                                    \
+    uint##nbits##_t *dstw  = (uint##nbits##_t *)dst;    \
+    uint##nbits##_t *src1w = (uint##nbits##_t *)src1;   \
+    uint##nbits##_t *src2w = (uint##nbits##_t *)src2;   \
+    int bytes = nbits / 8;                              \
+    width /= bytes;                                     \
+    src1_linesize /= bytes;                             \
+    src2_linesize /= bytes;                             \
+    dst_linesize /= bytes;                              \
+    for (line = 0; line < height; line++) {             \
+        for (pixel = 0; pixel < width; pixel++)         \
+            dstw[pixel] = ((src1w[pixel] * factor1) +   \
+                    (src2w[pixel] * factor2) + half)    \
+                    >> BLEND_FACTOR_DEPTH(nbits);       \
+        src1w += src1_linesize;                         \
+        src2w += src2_linesize;                         \
+        dstw  += dst_linesize;                          \
+    }                                                   \
 }
-
-static void blend_frames16_c(BLEND_FUNC_PARAMS)
-{
-    int line, pixel;
-    uint16_t *dstw = (uint16_t *)dst;
-    uint16_t *src1w = (uint16_t *)src1;
-    uint16_t *src2w = (uint16_t *)src2;
-    width /= 2;
-    src1_linesize /= 2;
-    src2_linesize /= 2;
-    dst_linesize /= 2;
-    for (line = 0; line < height; line++) {
-        for (pixel = 0; pixel < width; pixel++)
-            dstw[pixel] = ((src1w[pixel] * factor1) + (src2w[pixel] * factor2) + half) >> BLEND_FACTOR_DEPTH16;
-        src1w += src1_linesize;
-        src2w += src2_linesize;
-        dstw  += dst_linesize;
-    }
-}
+BLEND_FRAME_FUNC(8)
+BLEND_FRAME_FUNC(16)
 
 void ff_framerate_init(FrameRateContext *s)
 {
     if (s->bitdepth == 8) {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH8;
-        s->blend = blend_frames_c;
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH(8);
+        s->blend = blend_frames8_c;
     } else {
-        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH16;
+        s->blend_factor_max = 1 << BLEND_FACTOR_DEPTH(16);
         s->blend = blend_frames16_c;
     }
     if (ARCH_X86)

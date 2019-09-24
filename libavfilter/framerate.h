@@ -28,8 +28,7 @@
                           ptrdiff_t width, ptrdiff_t height, \
                           int factor1, int factor2, int half
 
-#define BLEND_FACTOR_DEPTH8   7
-#define BLEND_FACTOR_DEPTH16 15
+#define BLEND_FACTOR_DEPTH(n) (n-1)
 
 typedef void (*blend_func)(BLEND_FUNC_PARAMS);
 
