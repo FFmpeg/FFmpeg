@@ -1613,16 +1613,13 @@ static int hls_start(AVFormatContext *s, VariantStream *vs)
             if (c->use_localtime_mkdir) {
                 const char *dir;
                 char *fn_copy = av_strdup(oc->url);
-                if (!fn_copy) {
-                    return AVERROR(ENOMEM);
-                }
                 dir = av_dirname(fn_copy);
                 if (ff_mkdir_p(dir) == -1 && errno != EEXIST) {
                     av_log(oc, AV_LOG_ERROR, "Could not create directory %s with use_localtime_mkdir\n", dir);
-                    av_free(fn_copy);
+                    av_freep(&fn_copy);
                     return AVERROR(errno);
                 }
-                av_free(fn_copy);
+                av_freep(&fn_copy);
             }
         } else {
             char *filename = NULL;
@@ -1784,11 +1781,6 @@ static int validate_name(int nb_vs, const char *fn)
     }
 
     fn_dup = av_strdup(fn);
-    if (!fn_dup) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     filename = av_basename(fn);
     subdir_name = av_dirname(fn_dup);
 
@@ -1846,11 +1838,6 @@ static int format_name(const char *buf, char **s, int index, const char *varname
     /* if %v is present in the file's directory, create sub-directory */
     if (av_stristr(dir, "%v") && proto && !strcmp(proto, "file")) {
         mod_buf_dup = av_strdup(*s);
-        if (!mod_buf_dup) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
-
         dir = av_dirname(mod_buf_dup);
         if (ff_mkdir_p(dir) == -1 && errno != EEXIST) {
             ret = AVERROR(errno);
@@ -2151,11 +2138,6 @@ static int update_master_pl_info(AVFormatContext *s)
     int ret = 0;
 
     fn1 = av_strdup(s->url);
-    if (!fn1) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
-    }
-
     dir = av_dirname(fn1);
 
     /**
@@ -2164,10 +2146,6 @@ static int update_master_pl_info(AVFormatContext *s)
      */
     if (dir && av_stristr(av_basename(dir), "%v")) {
         fn2 = av_strdup(dir);
-        if (!fn2) {
-            ret = AVERROR(ENOMEM);
-            goto fail;
-        }
         dir = av_dirname(fn2);
     }
 
