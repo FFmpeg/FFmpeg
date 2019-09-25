@@ -839,6 +839,8 @@ static int activate(AVFilterContext *ctx)
     int ret = 0, status;
     int64_t pts;
 
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(ctx->outputs[0], ctx);
+
     if ((fm->got_frame[INPUT_MAIN] == 0) &&
         (ret = ff_inlink_consume_frame(ctx->inputs[INPUT_MAIN], &frame)) > 0) {
         ret = filter_frame(ctx->inputs[INPUT_MAIN], frame);
