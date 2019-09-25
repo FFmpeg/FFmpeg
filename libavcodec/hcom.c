@@ -52,7 +52,8 @@ static av_cold int hcom_init(AVCodecContext *avctx)
     if (avctx->extradata_size <= 7)
         return AVERROR_INVALIDDATA;
     s->dict_entries = AV_RB16(avctx->extradata);
-    if (avctx->extradata_size < s->dict_entries * 4 + 7)
+    if (avctx->extradata_size < s->dict_entries * 4 + 7 ||
+        s->dict_entries == 0)
         return AVERROR_INVALIDDATA;
     s->delta_compression = AV_RB32(avctx->extradata + 2);
     s->sample = s->first_sample = avctx->extradata[avctx->extradata_size - 1];
