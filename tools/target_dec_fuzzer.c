@@ -297,7 +297,7 @@ maximums_reached:
         decode_handler(ctx, frame, &got_frame, &avpkt);
     } while (got_frame == 1 && it++ < maxiteration);
 
-    fprintf(stderr, "pixels decoded: %"PRId64", iterations: %d\n", ec_pixels, it);
+    fprintf(stderr, "pixels decoded: %"PRId64", samples decoded: %"PRId64", iterations: %d\n", ec_pixels, nb_samples, it);
 
     av_frame_free(&frame);
     avcodec_free_context(&ctx);
