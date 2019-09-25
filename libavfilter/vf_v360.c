@@ -68,6 +68,7 @@ static const AVOption v360_options[] = {
     {  "mercator", "mercator",                                   0, AV_OPT_TYPE_CONST,  {.i64=MERCATOR},        0,                   0, FLAGS, "in" },
     {      "ball", "ball",                                       0, AV_OPT_TYPE_CONST,  {.i64=BALL},            0,                   0, FLAGS, "in" },
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "in" },
+    {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "in" },
     {    "output", "set output projection",            OFFSET(out), AV_OPT_TYPE_INT,    {.i64=CUBEMAP_3_2},     0,    NB_PROJECTIONS-1, FLAGS, "out" },
     {         "e", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
     {  "equirect", "equirectangular",                            0, AV_OPT_TYPE_CONST,  {.i64=EQUIRECTANGULAR}, 0,                   0, FLAGS, "out" },
@@ -85,6 +86,7 @@ static const AVOption v360_options[] = {
     {  "mercator", "mercator",                                   0, AV_OPT_TYPE_CONST,  {.i64=MERCATOR},        0,                   0, FLAGS, "out" },
     {      "ball", "ball",                                       0, AV_OPT_TYPE_CONST,  {.i64=BALL},            0,                   0, FLAGS, "out" },
     {    "hammer", "hammer",                                     0, AV_OPT_TYPE_CONST,  {.i64=HAMMER},          0,                   0, FLAGS, "out" },
+    {"sinusoidal", "sinusoidal",                                 0, AV_OPT_TYPE_CONST,  {.i64=SINUSOIDAL},      0,                   0, FLAGS, "out" },
     {    "interp", "set interpolation method",      OFFSET(interp), AV_OPT_TYPE_INT,    {.i64=BILINEAR},        0, NB_INTERP_METHODS-1, FLAGS, "interp" },
     {      "near", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
     {   "nearest", "nearest neighbour",                          0, AV_OPT_TYPE_CONST,  {.i64=NEAREST},         0,                   0, FLAGS, "interp" },
@@ -1750,6 +1752,72 @@ static void xyz_to_hammer(const V360Context *s,
 }
 
 /**
+ * Calculate 3D coordinates on sphere for corresponding frame position in sinusoidal format.
+ *
+ * @param s filter private context
+ * @param i horizontal position on frame [0, width)
+ * @param j vertical position on frame [0, height)
+ * @param width frame width
+ * @param height frame height
+ * @param vec coordinates on sphere
+ */
+static void sinusoidal_to_xyz(const V360Context *s,
+                              int i, int j, int width, int height,
+                              float *vec)
+{
+    const float theta = ((2.f * j) / height - 1.f) * M_PI_2;
+    const float phi   = ((2.f * i) / width  - 1.f) * M_PI / cosf(theta);
+
+    const float sin_phi   = sinf(phi);
+    const float cos_phi   = cosf(phi);
+    const float sin_theta = sinf(theta);
+    const float cos_theta = cosf(theta);
+
+    vec[0] =  cos_theta * sin_phi;
+    vec[1] = -sin_theta;
+    vec[2] = -cos_theta * cos_phi;
+
+    normalize_vector(vec);
+}
+
+/**
+ * Calculate frame position in sinusoidal format for corresponding 3D coordinates on sphere.
+ *
+ * @param s filter private context
+ * @param vec coordinates on sphere
+ * @param width frame width
+ * @param height frame height
+ * @param us horizontal coordinates for interpolation window
+ * @param vs vertical coordinates for interpolation window
+ * @param du horizontal relative coordinate
+ * @param dv vertical relative coordinate
+ */
+static void xyz_to_sinusoidal(const V360Context *s,
+                              const float *vec, int width, int height,
+                              uint16_t us[4][4], uint16_t vs[4][4], float *du, float *dv)
+{
+    const float theta = asinf(-vec[1]) * s->input_mirror_modifier[1];
+    const float phi   = atan2f(vec[0], -vec[2]) * s->input_mirror_modifier[0] * cosf(theta);
+    float uf, vf;
+    int ui, vi;
+
+    uf = (phi   / M_PI   + 1.f) * width  / 2.f;
+    vf = (theta / M_PI_2 + 1.f) * height / 2.f;
+    ui = floorf(uf);
+    vi = floorf(vf);
+
+    *du = uf - ui;
+    *dv = vf - vi;
+
+    for (int i = -1; i < 3; i++) {
+        for (int j = -1; j < 3; j++) {
+            us[i + 1][j + 1] = av_clip(ui + j, 0, width  - 1);
+            vs[i + 1][j + 1] = av_clip(vi + i, 0, height - 1);
+        }
+    }
+}
+
+/**
  * Prepare data for processing equi-angular cubemap input format.
  *
  * @param ctx filter context
@@ -2612,6 +2680,12 @@ static int config_output(AVFilterLink *outlink)
         wf = w;
         hf = h;
         break;
+    case SINUSOIDAL:
+        s->in_transform = xyz_to_sinusoidal;
+        err = 0;
+        wf = w;
+        hf = h;
+        break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Specified input format is not handled.\n");
         return AVERROR_BUG;
@@ -2690,6 +2764,12 @@ static int config_output(AVFilterLink *outlink)
         break;
     case HAMMER:
         s->out_transform = hammer_to_xyz;
+        prepare_out = NULL;
+        w = roundf(wf);
+        h = roundf(hf);
+        break;
+    case SINUSOIDAL:
+        s->out_transform = sinusoidal_to_xyz;
         prepare_out = NULL;
         w = roundf(wf);
         h = roundf(hf);

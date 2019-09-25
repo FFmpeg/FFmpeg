@@ -42,6 +42,7 @@ enum Projections {
     MERCATOR,
     BALL,
     HAMMER,
+    SINUSOIDAL,
     NB_PROJECTIONS,
 };
 
