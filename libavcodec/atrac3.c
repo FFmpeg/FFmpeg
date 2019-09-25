@@ -964,7 +964,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    if (avctx->block_align >= UINT_MAX / 2)
+    if (avctx->block_align >= UINT_MAX / 2 || avctx->block_align <= 0)
         return AVERROR(EINVAL);
 
     q->decoded_bytes_buffer = av_mallocz(FFALIGN(avctx->block_align, 4) +
