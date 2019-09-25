@@ -257,6 +257,8 @@ static int activate(AVFilterContext *ctx)
     int status, ret = 0;
     int64_t pts;
 
+    FF_FILTER_FORWARD_STATUS_BACK(outlink, inlink);
+
     if (s->in && ff_outlink_frame_wanted(outlink)) {
         double zoom = -1, dx = -1, dy = -1;
 
