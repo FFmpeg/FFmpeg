@@ -2065,7 +2065,7 @@ static av_cold int tiff_init(AVCodecContext *avctx)
     s->width  = 0;
     s->height = 0;
     s->subsampling[0] =
-    s->subsampling[1] = 2;
+    s->subsampling[1] = 1;
     s->avctx  = avctx;
     ff_lzw_decode_open(&s->lzw);
     if (!s->lzw)
