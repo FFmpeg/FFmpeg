@@ -1924,6 +1924,11 @@ static int get_buffer_internal(AVCodecContext *avctx, AVFrame *frame, int flags)
             av_log(avctx, AV_LOG_ERROR, "pic->data[*]!=NULL in get_buffer_internal\n");
             return AVERROR(EINVAL);
         }
+    } else if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if (frame->nb_samples > avctx->max_samples) {
+            av_log(avctx, AV_LOG_ERROR, "samples per frame %d, exceeds max_samples %"PRId64"\n", frame->nb_samples, avctx->max_samples);
+            return AVERROR(EINVAL);
+        }
     }
     ret = ff_decode_frame_props(avctx, frame);
     if (ret < 0)
