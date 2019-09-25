@@ -243,7 +243,10 @@ static int aiff_read_header(AVFormatContext *s)
         if (size < 0)
             return size;
 
-        filesize -= size + 8;
+        if (size >= 0x7fffffff - 8)
+            filesize = 0;
+        else
+            filesize -= size + 8;
 
         switch (tag) {
         case MKTAG('C', 'O', 'M', 'M'):     /* Common chunk */
