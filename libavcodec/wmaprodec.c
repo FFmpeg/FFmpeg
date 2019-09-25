@@ -1793,6 +1793,12 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
     AVFrame *frame = data;
     int i, ret, offset = INT_MAX;
 
+    if (!s->frames[s->current_stream]->data[0]) {
+        s->frames[s->current_stream]->nb_samples = 512;
+        if ((ret = ff_get_buffer(avctx, s->frames[s->current_stream], 0)) < 0) {
+            return ret;
+        }
+    }
     /* decode current stream packet */
     ret = decode_packet(avctx, &s->xma[s->current_stream], s->frames[s->current_stream],
                         &got_stream_frame_ptr, avpkt);
@@ -1920,10 +1926,6 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
         s->frames[i] = av_frame_alloc();
         if (!s->frames[i])
             return AVERROR(ENOMEM);
-        s->frames[i]->nb_samples = 512;
-        if ((ret = ff_get_buffer(avctx, s->frames[i], 0)) < 0) {
-            return AVERROR(ENOMEM);
-        }
 
         s->start_channel[i] = start_channels;
         start_channels += s->xma[i].nb_channels;
