@@ -37,7 +37,7 @@
 #define DST_MAX_CHANNELS 6
 #define DST_MAX_ELEMENTS (2 * DST_MAX_CHANNELS)
 
-#define DSD_FS44(sample_rate) (sample_rate * 8 / 44100)
+#define DSD_FS44(sample_rate) (sample_rate * 8LL / 44100)
 
 #define DST_SAMPLES_PER_FRAME(sample_rate) (588 * DSD_FS44(sample_rate))
 
