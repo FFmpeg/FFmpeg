@@ -1815,15 +1815,17 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     #define INTERLEAVE_OUTPUT(bps)                                                   \
     {                                                                                \
         int##bps##_t *dest = (int##bps##_t*)frame->data[0];                          \
+        int channels = avctx->channels;                                              \
+        int32_t **raw_samples = ctx->raw_samples;                                    \
         shift = bps - ctx->avctx->bits_per_raw_sample;                               \
         if (!ctx->cs_switch) {                                                       \
             for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
-                for (c = 0; c < avctx->channels; c++)                                \
-                    *dest++ = ctx->raw_samples[c][sample] * (1U << shift);            \
+                for (c = 0; c < channels; c++)                                       \
+                    *dest++ = raw_samples[c][sample] * (1U << shift);                \
         } else {                                                                     \
             for (sample = 0; sample < ctx->cur_frame_length; sample++)               \
-                for (c = 0; c < avctx->channels; c++)                                \
-                    *dest++ = ctx->raw_samples[sconf->chan_pos[c]][sample] * (1U << shift); \
+                for (c = 0; c < channels; c++)                                       \
+                    *dest++ = raw_samples[sconf->chan_pos[c]][sample] * (1U << shift);\
         }                                                                            \
     }
 
