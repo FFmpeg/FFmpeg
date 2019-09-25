@@ -94,6 +94,7 @@ const uint64_t maxpixels_per_frame = 4096 * 4096;
 uint64_t maxpixels;
 
 const uint64_t maxsamples_per_frame = 256*1024*32;
+uint64_t maxsamples;
 
 static const uint64_t FUZZ_TAG = 0x4741542D5A5A5546ULL;
 
@@ -103,6 +104,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const uint8_t *end = data + size;
     uint32_t it = 0;
     uint64_t ec_pixels = 0;
+    uint64_t nb_samples = 0;
     int (*decode_handler)(AVCodecContext *avctx, AVFrame *picture,
                           int *got_picture_ptr,
                           const AVPacket *avpkt) = NULL;
@@ -131,6 +133,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AVMEDIA_TYPE_SUBTITLE: decode_handler = subtitle_handler     ; break;
     }
     maxpixels = maxpixels_per_frame * maxiteration;
+    maxsamples = maxsamples_per_frame * maxiteration;
     switch (c->id) {
         // Allows a small input to generate gigantic output
     case AV_CODEC_ID_BINKVIDEO: maxpixels /= 32; break;
@@ -267,6 +270,10 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             if (it > 20 || ec_pixels > 4 * ctx->max_pixels)
                 ctx->error_concealment = 0;
             if (ec_pixels > maxpixels)
+                goto maximums_reached;
+
+            nb_samples += frame->nb_samples;
+            if (nb_samples > maxsamples)
                 goto maximums_reached;
 
             if (ret <= 0 || ret > avpkt.size)
