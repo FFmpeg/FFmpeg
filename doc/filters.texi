@@ -19047,6 +19047,11 @@ where X is video input from which to take width or height.
 Multiple values can be used when separated by '+'. In such
 case values are summed together.
 
+Note that if inputs are of different sizes gaps may appear, as not all of
+the output video frame will be filled. Similarly, videos can overlap each
+other if their position doesn't leave enough space for the full frame of
+adjoining videos.
+
 For 2 inputs, a default layout of @code{0_0|w0_0} is set. In all other cases,
 a layout must be set by the user.
 
