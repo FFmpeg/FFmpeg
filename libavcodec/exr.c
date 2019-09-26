@@ -1307,6 +1307,7 @@ static int decode_header(EXRContext *s, AVFrame *frame)
     int magic_number, version, i, flags, sar = 0;
     int layer_match = 0;
     int ret;
+    int dup_channels = 0;
 
     s->current_channel_offset = 0;
     s->xmin               = ~0;
@@ -1465,10 +1466,12 @@ static int decode_header(EXRContext *s, AVFrame *frame)
                     s->pixel_type                     = current_pixel_type;
                     s->channel_offsets[channel_index] = s->current_channel_offset;
                 } else if (channel_index >= 0) {
-                    av_log(s->avctx, AV_LOG_ERROR,
+                    av_log(s->avctx, AV_LOG_WARNING,
                             "Multiple channels with index %d.\n", channel_index);
-                    ret = AVERROR_INVALIDDATA;
-                    goto fail;
+                    if (++dup_channels > 10) {
+                        ret = AVERROR_INVALIDDATA;
+                        goto fail;
+                    }
                 }
 
                 s->channels = av_realloc(s->channels,
