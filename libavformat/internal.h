@@ -763,7 +763,8 @@ void ff_format_set_url(AVFormatContext *s, char *url);
  *
  * @param head  List head element
  * @param tail  List tail element
- * @param pkt   The packet being appended
+ * @param pkt   The packet being appended. The data described in it will
+ *              be made reference counted if it isn't already.
  * @param flags Any combination of FF_PACKETLIST_FLAG_* flags
  * @return 0 on success, negative AVERROR value on failure. On failure,
            the list is unchanged

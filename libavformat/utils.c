@@ -460,6 +460,11 @@ int ff_packet_list_put(AVPacketList **packet_buffer,
             return ret;
         }
     } else {
+        ret = av_packet_make_refcounted(pkt);
+        if (ret < 0) {
+            av_free(pktl);
+            return ret;
+        }
         av_packet_move_ref(&pktl->pkt, pkt);
     }
 
