@@ -905,7 +905,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
     for (i = 0; i < dstW; i++) {
         int j;
         int Y = -0x40000000;
-        int64_t A = 0xffff<<14;
+        int64_t A = 0xffff;
 
         for (j = 0; j < lumFilterSize; j++)
             Y += lumSrc[j][i] * lumFilter[j];
@@ -915,6 +915,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
         Y = av_clip_uint16(Y);
 
         if (hasAlpha) {
+            A = 1<<14;
             for (j = 0; j < lumFilterSize; j++)
                 A += alpSrc[j][i] * lumFilter[j];
 
@@ -923,7 +924,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
         }
 
         output_pixel(&dest[2 * i    ], Y);
-        output_pixel(&dest[2 * i + 1], hasAlpha ? A : 65535);
+        output_pixel(&dest[2 * i + 1], A);
     }
 }
 
