@@ -3443,7 +3443,7 @@ const OptionDef options[] = {
     { "stdin",          OPT_BOOL | OPT_EXPERT,                       { &stdin_interaction },
       "enable or disable interaction on standard input" },
     { "timelimit",      HAS_ARG | OPT_EXPERT,                        { .func_arg = opt_timelimit },
-        "set max runtime in seconds", "limit" },
+        "set max runtime in seconds in CPU user time", "limit" },
     { "dump",           OPT_BOOL | OPT_EXPERT,                       { &do_pkt_dump },
         "dump each input packet" },
     { "hex",            OPT_BOOL | OPT_EXPERT,                       { &do_hex_dump },

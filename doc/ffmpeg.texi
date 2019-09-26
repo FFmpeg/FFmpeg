@@ -1383,7 +1383,7 @@ it will usually display as 0 if not supported.
 Show benchmarking information during the encode.
 Shows real, system and user time used in various steps (audio/video encode/decode).
 @item -timelimit @var{duration} (@emph{global})
-Exit after ffmpeg has been running for @var{duration} seconds.
+Exit after ffmpeg has been running for @var{duration} seconds in CPU user time.
 @item -dump (@emph{global})
 Dump each input packet to stderr.
 @item -hex (@emph{global})
