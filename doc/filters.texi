@@ -19060,27 +19060,70 @@ terminates. Default value is 0.
 @itemize
 @item
 Display 4 inputs into 2x2 grid.
-Note that if inputs are of different sizes unused gaps might appear,
-as not all of output video is used.
+
+Layout:
+@example
+input1(0, 0)  | input3(w0, 0)
+input2(0, h0) | input4(w0, h0)
+@end example
+
 @example
 xstack=inputs=4:layout=0_0|0_h0|w0_0|w0_h0
 @end example
 
+Note that if inputs are of different sizes, gaps or overlaps may occur.
+
 @item
 Display 4 inputs into 1x4 grid.
-Note that if inputs are of different sizes unused gaps might appear,
-as not all of output video is used.
+
+Layout:
+@example
+input1(0, 0)
+input2(0, h0)
+input3(0, h0+h1)
+input4(0, h0+h1+h2)
+@end example
+
 @example
 xstack=inputs=4:layout=0_0|0_h0|0_h0+h1|0_h0+h1+h2
 @end example
 
+Note that if inputs are of different widths, unused space will appear.
+
 @item
 Display 9 inputs into 3x3 grid.
-Note that if inputs are of different sizes unused gaps might appear,
-as not all of output video is used.
+
+Layout:
 @example
-xstack=inputs=9:layout=w3_0|w3_h0+h2|w3_h0|0_h4|0_0|w3+w1_0|0_h1+h2|w3+w1_h0|w3+w1_h1+h2
+input1(0, 0)       | input4(w0, 0)      | input7(w0+w3, 0)
+input2(0, h0)      | input5(w0, h0)     | input8(w0+w3, h0)
+input3(0, h0+h1)   | input6(w0, h0+h1)  | input9(w0+w3, h0+h1)
 @end example
+
+@example
+xstack=inputs=9:layout=0_0|0_h0|0_h0+h1|w0_0|w0_h0|w0_h0+h1|w0+w3_0|w0+w3_h0|w0+w3_h0+h1
+@end example
+
+Note that if inputs are of different sizes, gaps or overlaps may occur.
+
+@item
+Display 16 inputs into 4x4 grid.
+
+Layout:
+@example
+input1(0, 0)       | input5(w0, 0)       | input9 (w0+w4, 0)       | input13(w0+w4+w8, 0)
+input2(0, h0)      | input6(w0, h0)      | input10(w0+w4, h0)      | input14(w0+w4+w8, h0)
+input3(0, h0+h1)   | input7(w0, h0+h1)   | input11(w0+w4, h0+h1)   | input15(w0+w4+w8, h0+h1)
+input4(0, h0+h1+h2)| input8(w0, h0+h1+h2)| input12(w0+w4, h0+h1+h2)| input16(w0+w4+w8, h0+h1+h2)
+@end example
+
+@example
+xstack=inputs=16:layout=0_0|0_h0|0_h0+h1|0_h0+h1+h2|w0_0|w0_h0|w0_h0+h1|w0_h0+h1+h2|w0+w4_0|
+w0+w4_h0|w0+w4_h0+h1|w0+w4_h0+h1+h2|w0+w4+w8_0|w0+w4+w8_h0|w0+w4+w8_h0+h1|w0+w4+w8_h0+h1+h2
+@end example
+
+Note that if inputs are of different sizes, gaps or overlaps may occur.
+
 @end itemize
 
 @anchor{yadif}
