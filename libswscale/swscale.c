@@ -271,7 +271,6 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     int lastInLumBuf = c->lastInLumBuf;
     int lastInChrBuf = c->lastInChrBuf;
 
-
     int lumStart = 0;
     int lumEnd = c->descIndex[0];
     int chrStart = lumEnd;
@@ -283,12 +282,10 @@ static int swscale(SwsContext *c, const uint8_t *src[],
     SwsSlice *vout_slice = &c->slice[c->numSlice-1];
     SwsFilterDescriptor *desc = c->desc;
 
-
     int needAlpha = c->needAlpha;
 
     int hasLumHoles = 1;
     int hasChrHoles = 1;
-
 
     if (isPacked(c->srcFormat)) {
         src[1] =
@@ -570,7 +567,6 @@ static av_cold void sws_init_swscale(SwsContext *c)
 
     ff_sws_init_input_funcs(c);
 
-
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 14) {
             c->hyScale = c->hcScale = hScale8To15_c;
@@ -788,8 +784,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     }
 
     if (c->gamma_flag && c->cascaded_context[0]) {
-
-
         ret = sws_scale(c->cascaded_context[0],
                     srcSlice, srcStride, srcSliceY, srcSliceH,
                     c->cascaded_tmp, c->cascaded_tmpStride);
@@ -982,7 +976,6 @@ int attribute_align_arg sws_scale(struct SwsContext *c,
     if (srcSliceY_internal + srcSliceH == c->srcH)
         c->sliceDir = 0;
     ret = c->swscale(c, src2, srcStride2, srcSliceY_internal, srcSliceH, dst2, dstStride2);
-
 
     if (c->dstXYZ && !(c->srcXYZ && c->srcW==c->dstW && c->srcH==c->dstH)) {
         int dstY = c->dstY ? c->dstY : srcSliceY + srcSliceH;
