@@ -904,7 +904,7 @@ yuv2ya16_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < dstW; i++) {
         int j;
-        int Y = 1 << 18;
+        int64_t Y = 1 << 18;
         int64_t A = 0xffff<<14;
 
         for (j = 0; j < lumFilterSize; j++)
