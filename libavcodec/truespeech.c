@@ -281,7 +281,7 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
 
     ptr0 = dec->tmp3;
     for(i = 0; i < 60; i++){
-        int sum = out[i] << 12;
+        int sum = out[i] * (1 << 12);
         for(k = 0; k < 8; k++)
             sum += ptr0[k] * t[k];
         for(k = 7; k > 0; k--)
