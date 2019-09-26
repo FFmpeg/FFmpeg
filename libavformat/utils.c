@@ -2912,9 +2912,9 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
             case AVMEDIA_TYPE_VIDEO:
             case AVMEDIA_TYPE_AUDIO:
                 if (st->start_time != AV_NOPTS_VALUE || st->first_dts  != AV_NOPTS_VALUE) {
-                    av_log(ic, AV_LOG_DEBUG, "stream %d : no PTS found at end of file, duration not set\n", i);
+                    av_log(ic, AV_LOG_WARNING, "stream %d : no PTS found at end of file, duration not set\n", i);
                 } else
-                    av_log(ic, AV_LOG_DEBUG, "stream %d : no TS found at start of file, duration not set\n", i);
+                    av_log(ic, AV_LOG_WARNING, "stream %d : no TS found at start of file, duration not set\n", i);
             }
         }
     }
