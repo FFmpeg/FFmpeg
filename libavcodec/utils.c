@@ -689,6 +689,11 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, const AVCodec *code
         ret = AVERROR(EINVAL);
         goto free_and_end;
     }
+    if (avctx->sample_rate < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid sample rate: %d\n", avctx->sample_rate);
+        ret = AVERROR(EINVAL);
+        goto free_and_end;
+    }
 
     avctx->codec = codec;
     if ((avctx->codec_type == AVMEDIA_TYPE_UNKNOWN || avctx->codec_type == codec->type) &&
