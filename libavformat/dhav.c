@@ -289,8 +289,9 @@ static int read_chunk(AVFormatContext *s)
 static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     DHAVContext *dhav = s->priv_data;
-    int ret;
+    int ret, stream_index;
 
+retry:
     while ((ret = read_chunk(s)) == 0)
         ;
 
@@ -357,10 +358,18 @@ static int dhav_read_packet(AVFormatContext *s, AVPacket *pkt)
         avpriv_set_pts_info(st, 64, 1, 1000);
     }
 
+    stream_index = dhav->type == 0xf0 ? dhav->audio_stream_index : dhav->video_stream_index;
+    if (stream_index < 0) {
+        avio_skip(s->pb, ret);
+        if (avio_rl32(s->pb) == MKTAG('d','h','a','v'))
+            avio_skip(s->pb, 4);
+        goto retry;
+    }
+
     ret = av_get_packet(s->pb, pkt, ret);
     if (ret < 0)
         return ret;
-    pkt->stream_index = dhav->type == 0xf0 ? dhav->audio_stream_index : dhav->video_stream_index;
+    pkt->stream_index = stream_index;
     if (dhav->type != 0xfc)
         pkt->flags   |= AV_PKT_FLAG_KEY;
     if (pkt->stream_index >= 0)
