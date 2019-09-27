@@ -848,8 +848,8 @@ do {                                                                           \
     }
 
     if (octx->cur_group.nb_opts || codec_opts || format_opts || resample_opts)
-        av_log(NULL, AV_LOG_WARNING, "Trailing options were found on the "
-               "commandline.\n");
+        av_log(NULL, AV_LOG_WARNING, "Trailing option(s) found in the "
+               "command: may be ignored.\n");
 
     av_log(NULL, AV_LOG_DEBUG, "Finished splitting the commandline.\n");
 
