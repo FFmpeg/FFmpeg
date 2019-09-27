@@ -54,7 +54,7 @@ extern const uint8_t ff_mpeg4audio_channels[8];
  * @param[in] gb       Extradata from container.
  * @param[in] sync_extension look for a sync extension after config if true.
  * @param[in] logctx opaque struct starting with an AVClass element, used for logging.
- * @return On error -1 is returned, on success AudioSpecificConfig bit index in extradata.
+ * @return negative AVERROR code on error, on success AudioSpecificConfig bit index in extradata.
  */
 int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
                                 int sync_extension, void *logctx);
@@ -66,7 +66,7 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
  * @param[in] buf      Extradata from container.
  * @param[in] bit_size Extradata size in bits.
  * @param[in] sync_extension look for a sync extension after config if true.
- * @return On error -1 is returned, on success AudioSpecificConfig bit index in extradata.
+ * @return negative AVERROR code on error, on success AudioSpecificConfig bit index in extradata.
  */
 int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
                                  int bit_size, int sync_extension);
