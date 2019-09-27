@@ -3,4 +3,4 @@
 #codec_id 0: hap
 #dimensions 0: 127x71
 #sar 0: 1/1
-0,          0,          0,        1,     3044, 0xcaf6ddd0
+0,          0,          0,        1,     3044, 0xcaf6ddd0, F=0x11

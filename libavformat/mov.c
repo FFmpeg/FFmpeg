@@ -2959,6 +2959,40 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
+static int mov_read_sdtp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    MOVStreamContext *sc;
+    int64_t i, entries;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams - 1];
+    sc = st->priv_data;
+
+    avio_r8(pb); /* version */
+    avio_rb24(pb); /* flags */
+    entries = atom.size - 4;
+
+    av_log(c->fc, AV_LOG_TRACE, "track[%u].sdtp.entries = %" PRId64 "\n",
+           c->fc->nb_streams - 1, entries);
+
+    if (sc->sdtp_data)
+        av_log(c->fc, AV_LOG_WARNING, "Duplicated SDTP atom\n");
+    av_freep(&sc->sdtp_data);
+    sc->sdtp_count = 0;
+
+    sc->sdtp_data = av_mallocz(entries);
+    if (!sc->sdtp_data)
+        return AVERROR(ENOMEM);
+
+    for (i = 0; i < entries && !pb->eof_reached; i++)
+        sc->sdtp_data[i] = avio_r8(pb);
+    sc->sdtp_count = i;
+
+    return 0;
+}
+
 static void mov_update_dts_shift(MOVStreamContext *sc, int duration)
 {
     if (duration < 0) {
@@ -6767,6 +6801,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('s','t','s','z'), mov_read_stsz }, /* sample size */
 { MKTAG('s','t','t','s'), mov_read_stts },
 { MKTAG('s','t','z','2'), mov_read_stsz }, /* compact sample size */
+{ MKTAG('s','d','t','p'), mov_read_sdtp }, /* independent and disposable samples */
 { MKTAG('t','k','h','d'), mov_read_tkhd }, /* track header */
 { MKTAG('t','f','d','t'), mov_read_tfdt },
 { MKTAG('t','f','h','d'), mov_read_tfhd }, /* track fragment header */
@@ -7231,6 +7266,7 @@ static int mov_read_close(AVFormatContext *s)
         av_freep(&sc->sample_sizes);
         av_freep(&sc->keyframes);
         av_freep(&sc->stts_data);
+        av_freep(&sc->sdtp_data);
         av_freep(&sc->stps_data);
         av_freep(&sc->elst_data);
         av_freep(&sc->rap_group);
@@ -7820,6 +7856,11 @@ static int mov_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
     if (st->discard == AVDISCARD_ALL)
         goto retry;
+    if (sc->sdtp_data && sc->current_sample <= sc->sdtp_count) {
+        uint8_t sample_flags = sc->sdtp_data[sc->current_sample - 1];
+        uint8_t sample_is_depended_on = (sample_flags >> 2) & 0x3;
+        pkt->flags |= sample_is_depended_on == MOV_SAMPLE_DEPENDENCY_NO ? AV_PKT_FLAG_DISPOSABLE : 0;
+    }
     pkt->flags |= sample->flags & AVINDEX_KEYFRAME ? AV_PKT_FLAG_KEY : 0;
     pkt->pos = sample->pos;
 
