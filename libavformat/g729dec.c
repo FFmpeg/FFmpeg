@@ -61,8 +61,7 @@ static int g729_read_header(AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
-    avpriv_set_pts_info(st, st->codecpar->block_align << 3, 1,
-                        st->codecpar->sample_rate);
+    avpriv_set_pts_info(st, 64, 80, st->codecpar->sample_rate);
 
     return 0;
 }
@@ -76,6 +75,7 @@ static int g729_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     pkt->dts = pkt->pts = pkt->pos / st->codecpar->block_align;
+    pkt->duration = 1;
 
     return 0;
 }
