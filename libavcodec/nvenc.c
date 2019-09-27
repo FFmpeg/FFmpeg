@@ -403,6 +403,19 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
     }
 #endif
 
+#ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
+    ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES);
+    if(avctx->refs != NV_ENC_NUM_REF_FRAMES_AUTOSELECT && ret <= 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "Multiple reference frames are not supported\n");
+        return AVERROR(ENOSYS);
+    }
+#else
+    if(avctx->refs != 0) {
+        av_log(avctx, AV_LOG_VERBOSE, "Multiple reference frames need SDK 9.1 at build time\n");
+        return AVERROR(ENOSYS);
+    }
+#endif
+
     ctx->support_dyn_bitrate = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_DYN_BITRATE_CHANGE);
 
     return 0;
@@ -1010,6 +1023,11 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->useBFramesAsRef = ctx->b_ref_mode;
 #endif
 
+#ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
+    h264->numRefL0 = avctx->refs;
+    h264->numRefL1 = avctx->refs;
+#endif
+
     return 0;
 }
 
@@ -1092,6 +1110,11 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
 
 #ifdef NVENC_HAVE_HEVC_BFRAME_REF_MODE
     hevc->useBFramesAsRef = ctx->b_ref_mode;
+#endif
+
+#ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
+    hevc->numRefL0 = avctx->refs;
+    hevc->numRefL1 = avctx->refs;
 #endif
 
     return 0;

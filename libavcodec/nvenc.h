@@ -54,6 +54,11 @@ typedef void ID3D11Device;
 #define NVENC_HAVE_HEVC_BFRAME_REF_MODE
 #endif
 
+// SDK 9.1 compile time feature checks
+#if NVENCAPI_CHECK_VERSION(9, 1)
+#define NVENC_HAVE_MULTIPLE_REF_FRAMES
+#endif
+
 typedef struct NvencSurface
 {
     NV_ENC_INPUT_PTR input_surface;
