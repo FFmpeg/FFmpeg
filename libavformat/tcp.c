@@ -543,9 +543,9 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
                 goto fail1;
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
                 add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
-                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s\n", uri , control.ip);
+                av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
             }
-            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s\n", uri , control.ip);
+            av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
         }
     }
 

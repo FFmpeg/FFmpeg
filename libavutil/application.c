@@ -188,7 +188,7 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
             struct sockaddr_in* in4 = (struct sockaddr_in*)&so_stg;
             if (inet_ntop(AF_INET, &(in4->sin_addr), so_ip_name, sizeof(control->ip))) {
                 control->family = AF_INET;
-                control->port = in4->sin_port;
+                control->port = ntohs(in4->sin_port);
             }
             break;
         }
@@ -196,7 +196,7 @@ int av_application_on_tcp_did_open(AVApplicationContext *h, int error, int fd, A
             struct sockaddr_in6* in6 = (struct sockaddr_in6*)&so_stg;
             if (inet_ntop(AF_INET6, &(in6->sin6_addr), so_ip_name, sizeof(control->ip))) {
                 control->family = AF_INET6;
-                control->port = in6->sin6_port;
+                control->port = ntohs(in6->sin6_port);
             }
             break;
         }
