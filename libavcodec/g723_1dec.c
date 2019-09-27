@@ -678,6 +678,8 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
             else                 t = INT32_MAX;
         } else
             t = p->sid_gain << shift;
+    } else if(shift < -31) {
+        t = (p->sid_gain < 0) ? -1 : 0;
     }else
         t = p->sid_gain >> -shift;
     x = av_clipl_int32(t * (int64_t)cng_filt[0] >> 16);
