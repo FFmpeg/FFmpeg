@@ -285,7 +285,7 @@ static AVFrame *get_audio_frame(OutputStream *ost)
 
     /* check if we want to generate more frames */
     if (av_compare_ts(ost->next_pts, ost->enc->time_base,
-                      STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
+                      STREAM_DURATION, (AVRational){ 1, 1 }) > 0)
         return NULL;
 
     for (j = 0; j <frame->nb_samples; j++) {
@@ -464,7 +464,7 @@ static AVFrame *get_video_frame(OutputStream *ost)
 
     /* check if we want to generate more frames */
     if (av_compare_ts(ost->next_pts, c->time_base,
-                      STREAM_DURATION, (AVRational){ 1, 1 }) >= 0)
+                      STREAM_DURATION, (AVRational){ 1, 1 }) > 0)
         return NULL;
 
     /* when we pass a frame to the encoder, it may keep a reference to it
