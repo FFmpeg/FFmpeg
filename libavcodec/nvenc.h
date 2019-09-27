@@ -192,6 +192,7 @@ typedef struct NvencContext
     int coder;
     int b_ref_mode;
     int a53_cc;
+    int dpb_size;
 } NvencContext;
 
 int ff_nvenc_encode_init(AVCodecContext *avctx);

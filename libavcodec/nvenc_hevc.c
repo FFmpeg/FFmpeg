@@ -127,6 +127,8 @@ static const AVOption options[] = {
     { "each",         "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 1 }, 0, 0,       VE, "b_ref_mode" },
     { "middle",       "",                                   0,                    AV_OPT_TYPE_CONST, { .i64 = 2 }, 0, 0,       VE, "b_ref_mode" },
 #endif
+    { "dpb_size",     "Specifies the DPB size used for encoding (0 means automatic)",
+                                                            OFFSET(dpb_size),     AV_OPT_TYPE_INT,   { .i64 = 0 }, 0, INT_MAX, VE },
     { NULL }
 };
 

@@ -949,9 +949,9 @@ static av_cold int nvenc_setup_h264_config(AVCodecContext *avctx)
     h264->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
     h264->outputAUD     = ctx->aud;
 
-    if (avctx->refs >= 0) {
+    if (ctx->dpb_size >= 0) {
         /* 0 means "let the hardware decide" */
-        h264->maxNumRefFrames = avctx->refs;
+        h264->maxNumRefFrames = ctx->dpb_size;
     }
     if (avctx->gop_size >= 0) {
         h264->idrPeriod = cc->gopLength;
@@ -1041,9 +1041,9 @@ static av_cold int nvenc_setup_hevc_config(AVCodecContext *avctx)
     hevc->repeatSPSPPS  = (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) ? 0 : 1;
     hevc->outputAUD     = ctx->aud;
 
-    if (avctx->refs >= 0) {
+    if (ctx->dpb_size >= 0) {
         /* 0 means "let the hardware decide" */
-        hevc->maxNumRefFramesInDPB = avctx->refs;
+        hevc->maxNumRefFramesInDPB = ctx->dpb_size;
     }
     if (avctx->gop_size >= 0) {
         hevc->idrPeriod = cc->gopLength;
@@ -1175,7 +1175,7 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
 
     if (ctx->bluray_compat) {
         ctx->aud = 1;
-        avctx->refs = FFMIN(FFMAX(avctx->refs, 0), 6);
+        ctx->dpb_size = FFMIN(FFMAX(avctx->refs, 0), 6);
         avctx->max_b_frames = FFMIN(avctx->max_b_frames, 3);
         switch (avctx->codec->id) {
         case AV_CODEC_ID_H264:
