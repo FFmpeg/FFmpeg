@@ -201,8 +201,8 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         }
         if (corr_int_num) {
             /* Compute denominator of pseudo-normalized correlation R'(0). */
-            corr_int_den = adsp->scalarproduct_int16(sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
-                                                    sig_scaled - best_delay_int + RES_PREV_DATA_SIZE,
+            corr_int_den = adsp->scalarproduct_int16(sig_scaled + RES_PREV_DATA_SIZE - best_delay_int,
+                                                     sig_scaled + RES_PREV_DATA_SIZE - best_delay_int,
                                                     subframe_size);
 
             /* Compute signals with non-integer delay k (with 1/8 precision),
