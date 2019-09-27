@@ -110,13 +110,23 @@ static int nvenc_map_error(NVENCSTATUS err, const char **desc)
     return AVERROR_UNKNOWN;
 }
 
-static int nvenc_print_error(void *log_ctx, NVENCSTATUS err,
+static int nvenc_print_error(AVCodecContext *avctx, NVENCSTATUS err,
                              const char *error_string)
 {
     const char *desc;
-    int ret;
-    ret = nvenc_map_error(err, &desc);
-    av_log(log_ctx, AV_LOG_ERROR, "%s: %s (%d)\n", error_string, desc, err);
+    const char *details = "(no details)";
+    int ret = nvenc_map_error(err, &desc);
+
+#ifdef NVENC_HAVE_GETLASTERRORSTRING
+    NvencContext *ctx = avctx->priv_data;
+    NV_ENCODE_API_FUNCTION_LIST *p_nvenc = &ctx->nvenc_dload_funcs.nvenc_funcs;
+
+    if (p_nvenc && ctx->nvencoder)
+        details = p_nvenc->nvEncGetLastErrorString(ctx->nvencoder);
+#endif
+
+    av_log(avctx, AV_LOG_ERROR, "%s: %s (%d): %s\n", error_string, desc, err, details);
+
     return ret;
 }
 

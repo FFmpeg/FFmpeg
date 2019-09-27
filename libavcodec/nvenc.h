@@ -58,6 +58,7 @@ typedef void ID3D11Device;
 #if NVENCAPI_CHECK_VERSION(9, 1)
 #define NVENC_HAVE_MULTIPLE_REF_FRAMES
 #define NVENC_HAVE_CUSTREAM_PTR
+#define NVENC_HAVE_GETLASTERRORSTRING
 #endif
 
 typedef struct NvencSurface
