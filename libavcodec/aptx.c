@@ -480,7 +480,7 @@ static void aptx_update_codeword_history(Channel *channel)
     int32_t cw = ((channel->quantize[0].quantized_sample & 3) << 0) +
                  ((channel->quantize[1].quantized_sample & 2) << 1) +
                  ((channel->quantize[2].quantized_sample & 1) << 3);
-    channel->codeword_history = (cw << 8) + (channel->codeword_history << 4);
+    channel->codeword_history = (cw << 8) + ((unsigned)channel->codeword_history << 4);
 }
 
 static void aptx_generate_dither(Channel *channel)
@@ -492,9 +492,9 @@ static void aptx_generate_dither(Channel *channel)
     aptx_update_codeword_history(channel);
 
     m = (int64_t)5184443 * (channel->codeword_history >> 7);
-    d = (m << 2) + (m >> 22);
+    d = (m * 4) + (m >> 22);
     for (subband = 0; subband < NB_SUBBANDS; subband++)
-        channel->dither[subband] = d << (23 - 5*subband);
+        channel->dither[subband] = (unsigned)d << (23 - 5*subband);
     channel->dither_parity = (d >> 25) & 1;
 }
 
@@ -759,12 +759,12 @@ static void aptx_invert_quantization(InvertQuantize *invert_quantize,
     if (quantized_sample < 0)
         qr = -qr;
 
-    qr = rshift64_clip24(((int64_t)qr<<32) + MUL64(dither, tables->invert_quantize_dither_factors[idx]), 32);
+    qr = rshift64_clip24((qr * (1LL<<32)) + MUL64(dither, tables->invert_quantize_dither_factors[idx]), 32);
     invert_quantize->reconstructed_difference = MUL64(invert_quantize->quantization_factor, qr) >> 19;
 
     /* update factor_select */
     factor_select = 32620 * invert_quantize->factor_select;
-    factor_select = rshift32(factor_select + (tables->quantize_factor_select_offset[idx] << 15), 15);
+    factor_select = rshift32(factor_select + (tables->quantize_factor_select_offset[idx] * (1 << 15)), 15);
     invert_quantize->factor_select = av_clip(factor_select, 0, tables->factor_max);
 
     /* update quantization factor */
@@ -801,7 +801,7 @@ static void aptx_prediction_filtering(Prediction *prediction,
     prediction->previous_reconstructed_sample = reconstructed_sample;
 
     reconstructed_differences = aptx_reconstructed_differences_update(prediction, reconstructed_difference, order);
-    srd0 = FFDIFFSIGN(reconstructed_difference, 0) << 23;
+    srd0 = FFDIFFSIGN(reconstructed_difference, 0) * (1 << 23);
     for (i = 0; i < order; i++) {
         int32_t srd = FF_SIGNBIT(reconstructed_differences[-i-1]) | 1;
         prediction->d_weight[i] -= rshift32(prediction->d_weight[i] - srd*srd0, 8);
@@ -830,7 +830,7 @@ static void aptx_process_subband(InvertQuantize *invert_quantize,
 
     range = 0x100000;
     sw1 = rshift32(-same_sign[1] * prediction->s_weight[1], 1);
-    sw1 = (av_clip(sw1, -range, range) & ~0xF) << 4;
+    sw1 = (av_clip(sw1, -range, range) & ~0xF) * 16;
 
     range = 0x300000;
     weight[0] = 254 * prediction->s_weight[0] + 0x800000*same_sign[0] + sw1;
@@ -1044,7 +1044,7 @@ static int aptx_decode_frame(AVCodecContext *avctx, void *data,
         for (channel = 0; channel < NB_CHANNELS; channel++)
             for (sample = 0; sample < 4; sample++)
                 AV_WN32A(&frame->data[channel][4*(opos+sample)],
-                         samples[channel][sample] << 8);
+                         samples[channel][sample] * 256);
     }
 
     *got_frame_ptr = 1;
