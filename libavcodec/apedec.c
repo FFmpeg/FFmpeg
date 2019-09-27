@@ -1055,7 +1055,7 @@ static av_always_inline int predictor_update_3930(APEPredictor *p,
                   d3 * p->coeffsA[filter][3];
 
     p->lastA[filter] = decoded + (predictionA >> 9);
-    p->filterA[filter] = p->lastA[filter] + ((p->filterA[filter] * 31) >> 5);
+    p->filterA[filter] = p->lastA[filter] + ((int)(p->filterA[filter] * 31U) >> 5);
 
     sign = APESIGN(decoded);
     p->coeffsA[filter][0] += ((d0 < 0) * 2 - 1) * sign;
