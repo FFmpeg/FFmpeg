@@ -460,6 +460,7 @@ static av_cold int nvenc_check_device(AVCodecContext *avctx, int idx)
         goto fail;
 
     ctx->cu_context = ctx->cu_context_internal;
+    ctx->cu_stream = NULL;
 
     if ((ret = nvenc_pop_context(avctx)) < 0)
         goto fail2;
@@ -546,6 +547,7 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
 
         if (cuda_device_hwctx) {
             ctx->cu_context = cuda_device_hwctx->cuda_ctx;
+            ctx->cu_stream = cuda_device_hwctx->stream;
         }
 #if CONFIG_D3D11VA
         else if (d3d11_device_hwctx) {
@@ -1245,14 +1247,24 @@ static av_cold int nvenc_setup_encoder(AVCodecContext *avctx)
         return res;
 
     nv_status = p_nvenc->nvEncInitializeEncoder(ctx->nvencoder, &ctx->init_encode_params);
+    if (nv_status != NV_ENC_SUCCESS) {
+        nvenc_pop_context(avctx);
+        return nvenc_print_error(avctx, nv_status, "InitializeEncoder failed");
+    }
+
+#ifdef NVENC_HAVE_CUSTREAM_PTR
+    if (ctx->cu_context) {
+        nv_status = p_nvenc->nvEncSetIOCudaStreams(ctx->nvencoder, &ctx->cu_stream, &ctx->cu_stream);
+        if (nv_status != NV_ENC_SUCCESS) {
+            nvenc_pop_context(avctx);
+            return nvenc_print_error(avctx, nv_status, "SetIOCudaStreams failed");
+        }
+    }
+#endif
 
     res = nvenc_pop_context(avctx);
     if (res < 0)
         return res;
-
-    if (nv_status != NV_ENC_SUCCESS) {
-        return nvenc_print_error(avctx, nv_status, "InitializeEncoder failed");
-    }
 
     if (ctx->encode_config.frameIntervalP > 1)
         avctx->has_b_frames = 2;

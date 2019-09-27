@@ -57,6 +57,7 @@ typedef void ID3D11Device;
 // SDK 9.1 compile time feature checks
 #if NVENCAPI_CHECK_VERSION(9, 1)
 #define NVENC_HAVE_MULTIPLE_REF_FRAMES
+#define NVENC_HAVE_CUSTREAM_PTR
 #endif
 
 typedef struct NvencSurface
@@ -132,6 +133,7 @@ typedef struct NvencContext
     NV_ENC_CONFIG encode_config;
     CUcontext cu_context;
     CUcontext cu_context_internal;
+    CUstream cu_stream;
     ID3D11Device *d3d11_device;
 
     int nb_surfaces;
