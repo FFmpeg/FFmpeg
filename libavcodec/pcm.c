@@ -264,6 +264,9 @@ static av_cold int pcm_decode_init(AVCodecContext *avctx)
         break;
     case AV_CODEC_ID_PCM_F16LE:
     case AV_CODEC_ID_PCM_F24LE:
+        if (avctx->bits_per_coded_sample < 1 || avctx->bits_per_coded_sample > 24)
+            return AVERROR_INVALIDDATA;
+
         s->scale = 1. / (1 << (avctx->bits_per_coded_sample - 1));
         s->fdsp = avpriv_float_dsp_alloc(0);
         if (!s->fdsp)
