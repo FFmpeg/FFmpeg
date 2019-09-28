@@ -846,7 +846,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                 q2 = FFABS(q2) * 2 + ((q2 < 0) ? 0 : v->halfpq) - 1;
             if (q2 && q1 != q2) {
                 for (k = 1; k < 8; k++)
-                    block[k << sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                    block[k << sh] += (int)(ac_val[k] * (unsigned)q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
             } else {
                 for (k = 1; k < 8; k++)
                     block[k << sh] += ac_val[k];
