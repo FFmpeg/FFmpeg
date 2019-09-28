@@ -36,7 +36,7 @@
 
 typedef struct Buf {
     AVFrame *frame;
-    struct Buf        *next;
+    struct Buf *next;
 } Buf;
 
 typedef struct FifoContext {
@@ -254,9 +254,9 @@ static int request_frame(AVFilterLink *outlink)
 
 static const AVFilterPad avfilter_vf_fifo_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_VIDEO,
-        .filter_frame     = add_to_queue,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_VIDEO,
+        .filter_frame = add_to_queue,
     },
     { NULL }
 };
@@ -271,23 +271,20 @@ static const AVFilterPad avfilter_vf_fifo_outputs[] = {
 };
 
 AVFilter ff_vf_fifo = {
-    .name      = "fifo",
+    .name        = "fifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input images and send them when they are requested."),
-
-    .init      = init,
-    .uninit    = uninit,
-
-    .priv_size = sizeof(FifoContext),
-
-    .inputs    = avfilter_vf_fifo_inputs,
-    .outputs   = avfilter_vf_fifo_outputs,
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(FifoContext),
+    .inputs      = avfilter_vf_fifo_inputs,
+    .outputs     = avfilter_vf_fifo_outputs,
 };
 
 static const AVFilterPad avfilter_af_afifo_inputs[] = {
     {
-        .name             = "default",
-        .type             = AVMEDIA_TYPE_AUDIO,
-        .filter_frame     = add_to_queue,
+        .name         = "default",
+        .type         = AVMEDIA_TYPE_AUDIO,
+        .filter_frame = add_to_queue,
     },
     { NULL }
 };
@@ -304,12 +301,9 @@ static const AVFilterPad avfilter_af_afifo_outputs[] = {
 AVFilter ff_af_afifo = {
     .name        = "afifo",
     .description = NULL_IF_CONFIG_SMALL("Buffer input frames and send them when they are requested."),
-
-    .init      = init,
-    .uninit    = uninit,
-
-    .priv_size = sizeof(FifoContext),
-
-    .inputs    = avfilter_af_afifo_inputs,
-    .outputs   = avfilter_af_afifo_outputs,
+    .init        = init,
+    .uninit      = uninit,
+    .priv_size   = sizeof(FifoContext),
+    .inputs      = avfilter_af_afifo_inputs,
+    .outputs     = avfilter_af_afifo_outputs,
 };
