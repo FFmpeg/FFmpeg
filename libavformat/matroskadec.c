@@ -3280,15 +3280,16 @@ static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
     int dstlen = *size;
 
     if (AV_RB32(&src[4]) != MKBETAG('i', 'c', 'p', 'f')) {
-        dst = av_malloc(dstlen + 8 + AV_INPUT_BUFFER_PADDING_SIZE);
+        dstlen += 8;
+
+        dst = av_malloc(dstlen + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!dst)
             return AVERROR(ENOMEM);
 
         AV_WB32(dst, dstlen);
         AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
-        memcpy(dst + 8, src, dstlen);
-        memset(dst + 8 + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-        dstlen += 8;
+        memcpy(dst + 8, src, dstlen - 8);
+        memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
     }
 
     *pdst = dst;
