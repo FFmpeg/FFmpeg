@@ -2974,9 +2974,9 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         for (i = 0; i < ic->nb_streams; i++) {
             st = ic->streams[i];
             if (st->time_base.den)
-            av_log(ic, AV_LOG_TRACE, "stream %d: start_time: %0.3f duration: %0.3f\n", i,
-                   (double) st->start_time * av_q2d(st->time_base),
-                   (double) st->duration   * av_q2d(st->time_base));
+                av_log(ic, AV_LOG_TRACE, "stream %d: start_time: %0.3f duration: %0.3f\n", i,
+                       (double) st->start_time * av_q2d(st->time_base),
+                       (double) st->duration   * av_q2d(st->time_base));
         }
         av_log(ic, AV_LOG_TRACE,
                 "format: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
