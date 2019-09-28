@@ -277,10 +277,10 @@ static int swf_write_header(AVFormatContext *s)
     swf->duration_pos = avio_tell(pb);
     avio_wl16(pb, (uint16_t)(DUMMY_DURATION * (int64_t)rate / rate_base)); /* frame count */
 
-    /* avm2/swf v9 (also v8?) files require a file attribute tag */
-    if (version == 9) {
+    /* swf v8 and later files require a file attribute tag */
+    if (version >= 8) {
         put_swf_tag(s, TAG_FILEATTRIBUTES);
-        avio_wl32(pb, 1<<3); /* set ActionScript v3/AVM2 flag */
+        avio_wl32(pb, (version >= 9) << 3); /* set ActionScript v3/AVM2 flag */
         put_swf_end_tag(s);
     }
 
