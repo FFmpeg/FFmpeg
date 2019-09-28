@@ -1858,10 +1858,11 @@ int av_read_frame(AVFormatContext *s, AVPacket *pkt)
 
         ret = ff_packet_list_put(&s->internal->packet_buffer,
                                  &s->internal->packet_buffer_end,
-                                 pkt, FF_PACKETLIST_FLAG_REF_PACKET);
-        av_packet_unref(pkt);
-        if (ret < 0)
+                                 pkt, 0);
+        if (ret < 0) {
+            av_packet_unref(pkt);
             return ret;
+        }
     }
 
 return_packet:
