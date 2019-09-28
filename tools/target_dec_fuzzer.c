@@ -139,6 +139,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         // Allows a small input to generate gigantic output
     case AV_CODEC_ID_BINKVIDEO: maxpixels /= 32; break;
     case AV_CODEC_ID_DIRAC:     maxpixels /= 8192; break;
+    case AV_CODEC_ID_DXV:       maxpixels /= 32;  break;
     case AV_CODEC_ID_MSRLE:     maxpixels /= 16;  break;
     case AV_CODEC_ID_QTRLE:     maxpixels /= 16;  break;
     case AV_CODEC_ID_SANM:      maxpixels /= 16;  break;
