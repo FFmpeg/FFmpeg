@@ -2956,7 +2956,11 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         /* at least one component has timings - we use them for all
          * the components */
         fill_all_stream_timings(ic);
-        ic->duration_estimation_method = AVFMT_DURATION_FROM_STREAM;
+        /* nut demuxer estimate the duration from PTS */
+        if(!strcmp(ic->iformat->name, "nut"))
+            ic->duration_estimation_method = AVFMT_DURATION_FROM_PTS;
+        else
+            ic->duration_estimation_method = AVFMT_DURATION_FROM_STREAM;
     } else {
         /* less precise: use bitrate info */
         estimate_timings_from_bit_rate(ic);
