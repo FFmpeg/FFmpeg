@@ -4699,6 +4699,14 @@ second of silence in audio:
 @example
 silenceremove=stop_periods=-1:stop_duration=1:stop_threshold=-90dB
 @end example
+
+@item
+Trim all digital silence samples, using peak detection, from beginning to end
+where there is more than 0 samples of digital silence in audio and digital
+silence is detected in all channels at same positions in stream:
+@example
+silenceremove=window=0:detection=peak:stop_mode=all:start_mode=all:stop_periods=-1:stop_threshold=0
+@end example
 @end itemize
 
 @section sofalizer
