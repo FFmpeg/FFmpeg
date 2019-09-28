@@ -825,7 +825,7 @@ static int vc1_decode_i_block_adv(VC1Context *v, int16_t block[64], int n,
                     return AVERROR_INVALIDDATA;
                 q2 = q2 * 2 + ((q2 == v->pq) ? v->halfpq : 0) - 1;
                 for (k = 1; k < 8; k++)
-                    block[k << sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                    block[k << sh] += (int)(ac_val[k] * (unsigned)q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
             } else {
                 for (k = 1; k < 8; k++)
                     block[k << sh] += ac_val[k];
