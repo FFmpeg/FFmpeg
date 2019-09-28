@@ -220,7 +220,7 @@ static av_cold int dnxhd_init_vlc(DNXHDEncContext *ctx)
     ctx->vlc_bits  = ctx->orig_vlc_bits + max_level * 2;
     for (level = -max_level; level < max_level; level++) {
         for (run = 0; run < 2; run++) {
-            int index = (level << 1) | run;
+            int index = level * (1 << 1) | run;
             int sign, offset = 0, alevel = level;
 
             MASK_ABS(sign, alevel);
@@ -616,7 +616,7 @@ void dnxhd_encode_block(DNXHDEncContext *ctx, int16_t *block,
         slevel = block[j];
         if (slevel) {
             int run_level = i - last_non_zero - 1;
-            int rlevel = (slevel << 1) | !!run_level;
+            int rlevel = slevel * (1 << 1) | !!run_level;
             put_bits(&ctx->m.pb, ctx->vlc_bits[rlevel], ctx->vlc_codes[rlevel]);
             if (run_level)
                 put_bits(&ctx->m.pb, ctx->run_bits[run_level],
@@ -696,7 +696,7 @@ int dnxhd_calc_ac_bits(DNXHDEncContext *ctx, int16_t *block, int last_index)
         level = block[j];
         if (level) {
             int run_level = i - last_non_zero - 1;
-            bits += ctx->vlc_bits[(level << 1) |
+            bits += ctx->vlc_bits[level * (1 << 1) |
                     !!run_level] + ctx->run_bits[run_level];
             last_non_zero = i;
         }
