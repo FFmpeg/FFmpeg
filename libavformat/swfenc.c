@@ -224,11 +224,12 @@ static int swf_write_header(AVFormatContext *s)
             }
             if (par->codec_id == AV_CODEC_ID_VP6F ||
                 par->codec_id == AV_CODEC_ID_FLV1 ||
+                par->codec_id == AV_CODEC_ID_PNG ||
                 par->codec_id == AV_CODEC_ID_MJPEG) {
                 swf->video_st  = s->streams[i];
                 swf->video_par = par;
             } else {
-                av_log(s, AV_LOG_ERROR, "SWF muxer only supports VP6, FLV1 and MJPEG\n");
+                av_log(s, AV_LOG_ERROR, "SWF muxer only supports VP6, FLV1, PNG and MJPEG\n");
                 return -1;
             }
         }
@@ -257,7 +258,7 @@ static int swf_write_header(AVFormatContext *s)
 
     if (!strcmp("avm2", s->oformat->name))
         version = 9;
-    else if (swf->video_par && swf->video_par->codec_id == AV_CODEC_ID_VP6F)
+    else if (swf->video_par && (swf->video_par->codec_id == AV_CODEC_ID_VP6F || swf->video_par->codec_id == AV_CODEC_ID_PNG))
         version = 8; /* version 8 and above support VP6 codec */
     else if (swf->video_par && swf->video_par->codec_id == AV_CODEC_ID_FLV1)
         version = 6; /* version 6 and above support FLV1 codec */
@@ -285,7 +286,7 @@ static int swf_write_header(AVFormatContext *s)
     }
 
     /* define a shape with the jpeg inside */
-    if (swf->video_par && swf->video_par->codec_id == AV_CODEC_ID_MJPEG) {
+    if (swf->video_par && (swf->video_par->codec_id == AV_CODEC_ID_MJPEG || swf->video_par->codec_id == AV_CODEC_ID_PNG)) {
         put_swf_tag(s, TAG_DEFINESHAPE);
 
         avio_wl16(pb, SHAPE_ID); /* ID of shape */
@@ -406,7 +407,7 @@ static int swf_write_video(AVFormatContext *s,
         avio_wl16(pb, swf->video_frame_number++);
         avio_write(pb, buf, size);
         put_swf_end_tag(s);
-    } else if (par->codec_id == AV_CODEC_ID_MJPEG) {
+    } else if (par->codec_id == AV_CODEC_ID_MJPEG || par->codec_id == AV_CODEC_ID_PNG) {
         if (swf->swf_frame_number > 0) {
             /* remove the shape */
             put_swf_tag(s, TAG_REMOVEOBJECT);
@@ -425,8 +426,9 @@ static int swf_write_video(AVFormatContext *s,
         avio_wl16(pb, BITMAP_ID); /* ID of the image */
 
         /* a dummy jpeg header seems to be required */
-        avio_wb32(pb, 0xffd8ffd9);
-        /* write the jpeg image */
+        if (par->codec_id == AV_CODEC_ID_MJPEG)
+            avio_wb32(pb, 0xffd8ffd9);
+        /* write the jpeg/png image */
         avio_write(pb, buf, size);
 
         put_swf_end_tag(s);
