@@ -523,7 +523,7 @@ static av_cold int init(AVFilterContext *ctx)
             int startg = FFMAX3(-bg, -rg, 0);
             int endg = FFMIN3(255-bg, 255-rg, 255);
             uint32_t y = (uint32_t)(( 299*rg + 1000*startg + 114*bg)/1000);
-            c = bg + (rg<<16) + 0x010101 * startg;
+            c = bg + rg * (1 << 16) + 0x010101 * startg;
             for (g = startg; g <= endg; g++) {
                 hqx->rgbtoyuv[c] = ((y++) << 16) + (u << 8) + v;
                 c+= 0x010101;
