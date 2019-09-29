@@ -838,6 +838,8 @@ int ff_qsv_close_internal_session(QSVSession *qs)
     if (qs->va_device_ctx) {
         qs->va_device_ctx->free(qs->va_device_ctx);
     }
+
+    av_buffer_unref(&qs->va_device_ref);
 #endif
     return 0;
 }
