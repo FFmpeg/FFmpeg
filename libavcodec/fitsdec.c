@@ -195,7 +195,6 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
     uint8_t *dst8;
     uint16_t *dst16;
     uint64_t t;
-    double scale;
     FITSHeader header;
     FITSContext * fitsctx = avctx->priv_data;
 
@@ -204,12 +203,6 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
     ret = fits_read_header(avctx, &ptr8, &header, end, &p->metadata);
     if (ret < 0)
         return ret;
-
-    scale = header.data_max - header.data_min;
-    if (scale <= 0 || !isfinite(scale)) {
-        scale = 1;
-    }
-    scale = 1/scale;
 
     if (header.rgb) {
         if (header.bitpix == 8) {
@@ -271,6 +264,13 @@ static int fits_decode_frame(AVCodecContext *avctx, void *data, int *got_frame, 
             CASE_RGB(16, dst16, uint16_t, AV_RB16);
         }
     } else {
+        double scale = header.data_max - header.data_min;
+
+        if (scale <= 0 || !isfinite(scale)) {
+            scale = 1;
+        }
+        scale = 1/scale;
+
         switch (header.bitpix) {
 #define CASE_GRAY(cas, dst, type, t, rd) \
     case cas: \
