@@ -757,6 +757,8 @@ static FrameDelta decompose_transform(double *model)
     double f = model[5];
     double delta = a * d - b * c;
 
+    memset(&ret, 0, sizeof(ret));
+
     ret.translation.s[0] = e;
     ret.translation.s[1] = f;
 
