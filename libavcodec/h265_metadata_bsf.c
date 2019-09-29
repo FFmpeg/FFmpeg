@@ -131,7 +131,7 @@ static void h265_metadata_guess_level(AVBSFContext *bsf,
     }
 
     desc = ff_h265_guess_level(ptl, bit_rate, width, height,
-                               0, tile_cols, tile_rows,
+                               0, tile_rows, tile_cols,
                                max_dec_pic_buffering);
     if (desc) {
         av_log(bsf, AV_LOG_DEBUG, "Stream appears to conform to "
