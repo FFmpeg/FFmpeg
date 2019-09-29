@@ -377,7 +377,7 @@ static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
                 in->dphi += in->ddphi;
                 break;
             case WS_NOISE:
-                val = amp * pink;
+                val = amp * (unsigned)pink;
                 break;
             default:
                 val = 0;
@@ -385,7 +385,7 @@ static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
         all_ch |= in->channels;
         for (c = in->channels, cv = channels; c; c >>= 1, cv++)
             if (c & 1)
-                *cv += val;
+                *cv += (unsigned)val;
     }
     val = (int32_t)lcg_next(&ws->dither_state) >> 16;
     for (c = all_ch, cv = channels; c; c >>= 1, cv++)
