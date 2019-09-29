@@ -145,7 +145,7 @@ static int transpose_vaapi_filter_frame(AVFilterLink *inlink, AVFrame *input_fra
 
     err = av_frame_copy_props(output_frame, input_frame);
     if (err < 0)
-        return err;
+        goto fail;
 
     err = ff_vaapi_vpp_init_params(avctx, &params,
                                    input_frame, output_frame);
