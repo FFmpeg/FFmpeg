@@ -2934,6 +2934,18 @@ skip_duration_calc:
     }
 }
 
+/* 1:1 map to AVDurationEstimationMethod */
+static const char *duration_name[] = {
+    [AVFMT_DURATION_FROM_PTS]     = "pts",
+    [AVFMT_DURATION_FROM_STREAM]  = "stream",
+    [AVFMT_DURATION_FROM_BITRATE] = "bit rate",
+};
+
+static const char *duration_estimate_name(enum AVDurationEstimationMethod method)
+{
+    return duration_name[method];
+}
+
 static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
 {
     int64_t file_size;
@@ -2979,9 +2991,10 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
                        (double) st->duration   * av_q2d(st->time_base));
         }
         av_log(ic, AV_LOG_TRACE,
-                "format: start_time: %0.3f duration: %0.3f bitrate=%"PRId64" kb/s\n",
+                "format: start_time: %0.3f duration: %0.3f (estimate from %s) bitrate=%"PRId64" kb/s\n",
                 (double) ic->start_time / AV_TIME_BASE,
                 (double) ic->duration   / AV_TIME_BASE,
+                duration_estimate_name(ic->duration_estimation_method),
                 (int64_t)ic->bit_rate / 1000);
     }
 }
