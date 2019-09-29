@@ -616,7 +616,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
         version = bytestream2_get_byte(&gbc);
         if (version != 1) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid AVCC header: "
-                   "first byte %u.", version);
+                   "first byte %u.\n", version);
             return AVERROR_INVALIDDATA;
         }
 
@@ -691,7 +691,7 @@ static int cbs_h2645_split_fragment(CodedBitstreamContext *ctx,
         version = bytestream2_get_byte(&gbc);
         if (version != 1) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid HVCC header: "
-                   "first byte %u.", version);
+                   "first byte %u.\n", version);
             return AVERROR_INVALIDDATA;
         }
 
