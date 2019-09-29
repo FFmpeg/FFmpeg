@@ -12,6 +12,7 @@ version <next>:
 - support Sipro ACELP.KELVIN decoding
 - streamhash muxer
 - sierpinski video source
+- scroll video filter
 
 
 version 4.2:

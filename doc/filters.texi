@@ -15650,6 +15650,26 @@ Scale a logo to 1/10th the height of a video, while preserving its display aspec
 @end example
 @end itemize
 
+@section scroll
+Scroll input video horizontally and/or vertically by constant speed.
+
+The filter accepts the following options:
+@table @option
+@item horizontal, h
+Set the horizontal scrolling speed. Default is 0. Allowed range is from -1 to 1.
+Negative values changes scrolling direction.
+
+@item vertical, v
+Set the vertical scrolling speed. Default is 0. Allowed range is from -1 to 1.
+Negative values changes scrolling direction.
+
+@item hpos
+Set the initial horizontal scrolling position. Default is 0. Allowed range is from 0 to 1.
+
+@item vpos
+Set the initial vertical scrolling position. Default is 0. Allowed range is from 0 to 1.
+@end table
+
 @anchor{selectivecolor}
 @section selectivecolor
 
