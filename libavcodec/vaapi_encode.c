@@ -1101,6 +1101,7 @@ int ff_vaapi_encode_send_frame(AVCodecContext *avctx, const AVFrame *frame)
     return 0;
 
 fail:
+    vaapi_encode_free(avctx, pic);
     return err;
 }
 
