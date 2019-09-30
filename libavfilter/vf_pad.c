@@ -210,7 +210,7 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 
 eval_fail:
-    av_log(NULL, AV_LOG_ERROR,
+    av_log(ctx, AV_LOG_ERROR,
            "Error when evaluating the expression '%s'\n", expr);
     return ret;
 
