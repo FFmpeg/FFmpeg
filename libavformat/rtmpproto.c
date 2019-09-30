@@ -2386,7 +2386,7 @@ static int handle_metadata(RTMPContext *rt, RTMPPacket *pkt)
         next += size + 3 + 4;
     }
     if (p != rt->flv_data + rt->flv_size) {
-        av_log(NULL, AV_LOG_WARNING, "Incomplete flv packets in "
+        av_log(rt, AV_LOG_WARNING, "Incomplete flv packets in "
                                      "RTMP_PT_METADATA packet\n");
         rt->flv_size = p - rt->flv_data;
     }
