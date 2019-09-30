@@ -746,7 +746,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     goto error;
                 }
                 val |= h[3].values[res] << 8;
-                pred[1] += sign_extend(val, 16);
+                pred[1] += (unsigned)sign_extend(val, 16);
                 *samples++ = pred[1];
             } else {
                 if(vlc[0].table)
@@ -769,7 +769,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
                     goto error;
                 }
                 val |= h[1].values[res] << 8;
-                pred[0] += sign_extend(val, 16);
+                pred[0] += (unsigned)sign_extend(val, 16);
                 *samples++ = pred[0];
             }
         }
