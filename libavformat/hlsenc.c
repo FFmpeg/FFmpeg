@@ -1305,7 +1305,7 @@ static int create_master_playlist(AVFormatContext *s,
     ret = hlsenc_io_open(s, &hls->m3u8_out, temp_filename, &options);
     av_dict_free(&options);
     if (ret < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Failed to open master play list file '%s'\n",
+        av_log(s, AV_LOG_ERROR, "Failed to open master play list file '%s'\n",
                 temp_filename);
         goto fail;
     }
@@ -1344,7 +1344,7 @@ static int create_master_playlist(AVFormatContext *s,
 
         m3u8_rel_name = get_relative_url(hls->master_m3u8_url, vs->m3u8_name);
         if (!m3u8_rel_name) {
-            av_log(NULL, AV_LOG_ERROR, "Unable to find relative URL\n");
+            av_log(s, AV_LOG_ERROR, "Unable to find relative URL\n");
             goto fail;
         }
 
@@ -1358,7 +1358,7 @@ static int create_master_playlist(AVFormatContext *s,
         }
 
         if (!vid_st && !aud_st) {
-            av_log(NULL, AV_LOG_WARNING, "Media stream not found\n");
+            av_log(s, AV_LOG_WARNING, "Media stream not found\n");
             continue;
         }
 
@@ -1399,7 +1399,7 @@ static int create_master_playlist(AVFormatContext *s,
                 }
             }
             if (j == hls->nb_ccstreams)
-                av_log(NULL, AV_LOG_WARNING, "mapping ccgroup %s not found\n",
+                av_log(s, AV_LOG_WARNING, "mapping ccgroup %s not found\n",
                         vs->ccgroup);
         }
 
