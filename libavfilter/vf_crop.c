@@ -244,7 +244,7 @@ static int config_input(AVFilterLink *link)
     return 0;
 
 fail_expr:
-    av_log(NULL, AV_LOG_ERROR, "Error when evaluating the expression '%s'\n", expr);
+    av_log(ctx, AV_LOG_ERROR, "Error when evaluating the expression '%s'\n", expr);
     return ret;
 }
 
