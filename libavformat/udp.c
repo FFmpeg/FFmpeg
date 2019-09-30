@@ -274,7 +274,7 @@ static int udp_set_multicast_sources(URLContext *h,
         }
         return 0;
 #else
-        av_log(NULL, AV_LOG_ERROR,
+        av_log(h, AV_LOG_ERROR,
                "Setting multicast sources only supported for IPv4\n");
         return AVERROR(EINVAL);
 #endif
@@ -283,7 +283,7 @@ static int udp_set_multicast_sources(URLContext *h,
     for (i = 0; i < nb_sources; i++) {
         struct ip_mreq_source mreqs;
         if (sources[i].ss_family != AF_INET) {
-            av_log(NULL, AV_LOG_ERROR, "Source/block address %d is of incorrect protocol family\n", i + 1);
+            av_log(h, AV_LOG_ERROR, "Source/block address %d is of incorrect protocol family\n", i + 1);
             return AVERROR(EINVAL);
         }
 
@@ -298,9 +298,9 @@ static int udp_set_multicast_sources(URLContext *h,
                        include ? IP_ADD_SOURCE_MEMBERSHIP : IP_BLOCK_SOURCE,
                        (const void *)&mreqs, sizeof(mreqs)) < 0) {
             if (include)
-                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_ADD_SOURCE_MEMBERSHIP)");
+                ff_log_net_error(h, AV_LOG_ERROR, "setsockopt(IP_ADD_SOURCE_MEMBERSHIP)");
             else
-                ff_log_net_error(NULL, AV_LOG_ERROR, "setsockopt(IP_BLOCK_SOURCE)");
+                ff_log_net_error(h, AV_LOG_ERROR, "setsockopt(IP_BLOCK_SOURCE)");
             return ff_neterrno();
         }
     }
