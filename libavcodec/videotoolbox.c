@@ -617,7 +617,7 @@ static void videotoolbox_decoder_callback(void *opaque,
     }
 
     if (!image_buffer) {
-        av_log(NULL, AV_LOG_DEBUG, "vt decoder cb: output image buffer is null\n");
+        av_log(avctx, AV_LOG_DEBUG, "vt decoder cb: output image buffer is null\n");
         return;
     }
 
