@@ -21856,6 +21856,10 @@ Values are interpreted as floats, returns true if metadata value is greater than
 @item expr
 Values are interpreted as floats, returns true if expression from option @code{expr}
 evaluates to true.
+
+@item ends_with
+Values are interpreted as strings, returns true if metadata value ends with
+the @code{value} option string.
 @end table
 
 @item expr

@@ -54,6 +54,7 @@ enum MetadataFunction {
     METADATAF_EQUAL,
     METADATAF_GREATER,
     METADATAF_EXPR,
+    METADATAF_ENDS_WITH,
     METADATAF_NB
 };
 
@@ -107,6 +108,7 @@ static const AVOption filt_name##_options[] = { \
     {   "equal",       NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EQUAL   },     0, 3, FLAGS, "function" }, \
     {   "greater",     NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_GREATER },     0, 3, FLAGS, "function" }, \
     {   "expr",        NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_EXPR    },     0, 3, FLAGS, "function" }, \
+    {   "ends_with",   NULL, 0, AV_OPT_TYPE_CONST, {.i64 = METADATAF_ENDS_WITH },   0, 0, FLAGS, "function" }, \
     { "expr", "set expression for expr function", OFFSET(expr_str), AV_OPT_TYPE_STRING, {.str = NULL }, 0, 0, FLAGS }, \
     { "file", "set file where to print metadata information", OFFSET(file_str), AV_OPT_TYPE_STRING, {.str=NULL}, 0, 0, FLAGS }, \
     { NULL } \
@@ -120,6 +122,14 @@ static int same_str(MetadataContext *s, const char *value1, const char *value2)
 static int starts_with(MetadataContext *s, const char *value1, const char *value2)
 {
     return !strncmp(value1, value2, strlen(value2));
+}
+
+static int ends_with(MetadataContext *s, const char *value1, const char *value2)
+{
+    const int len1 = strlen(value1);
+    const int len2 = strlen(value2);
+
+    return !strncmp(value1 + FFMAX(len1 - len2, 0), value2, len2);
 }
 
 static int equal(MetadataContext *s, const char *value1, const char *value2)
@@ -211,6 +221,9 @@ static av_cold int init(AVFilterContext *ctx)
         break;
     case METADATAF_STARTS_WITH:
         s->compare = starts_with;
+        break;
+    case METADATAF_ENDS_WITH:
+        s->compare = ends_with;
         break;
     case METADATAF_LESS:
         s->compare = less;
