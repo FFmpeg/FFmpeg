@@ -3,7 +3,7 @@ ed9fd697d0d782df6201f6a2db184552 *./tests/data/lavf/graylavf.fits
 ./tests/data/lavf/graylavf.fits CRC=0xbacf446c
 48e6caf6a59e32f9a8a39979c9183a7f *./tests/data/lavf/gray16belavf.fits
 10368000 ./tests/data/lavf/gray16belavf.fits
-./tests/data/lavf/gray16belavf.fits CRC=0xae2b58d4
+./tests/data/lavf/gray16belavf.fits CRC=0xce89ed97
 be2f7112fd193c9a909304c81e662769 *./tests/data/lavf/gbrplavf.fits
 15408000 ./tests/data/lavf/gbrplavf.fits
 ./tests/data/lavf/gbrplavf.fits CRC=0x04ed3828
