@@ -799,6 +799,9 @@ static int dxv_decompress_yo(DXVContext *ctx, GetByteContext *gb,
     uint8_t *dst, *table0[256] = { 0 }, *table1[256] = { 0 };
     int ret, state = 0, skip, oi = 0, v, vv;
 
+    if (op_offset < 8 || op_offset - 8 > bytestream2_get_bytes_left(gb))
+        return AVERROR_INVALIDDATA;
+
     dst = tex_data;
     bytestream2_skip(gb, op_offset - 8);
     if (op_size > max_op_size)
