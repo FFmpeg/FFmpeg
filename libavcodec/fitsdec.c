@@ -143,7 +143,7 @@ static int fits_read_header(AVCodecContext *avctx, const uint8_t **ptr, FITSHead
 
     size = abs(header->bitpix) >> 3;
     for (i = 0; i < header->naxis; i++) {
-        if (size && header->naxisn[i] > SIZE_MAX / size) {
+        if (size == 0 || header->naxisn[i] > SIZE_MAX / size) {
             av_log(avctx, AV_LOG_ERROR, "unsupported size of FITS image");
             return AVERROR_INVALIDDATA;
         }
