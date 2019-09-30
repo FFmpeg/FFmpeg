@@ -121,7 +121,7 @@ static int read_map(GetBitContext *gb, Table *t, unsigned int map[DST_MAX_CHANNE
 
 static av_always_inline int get_sr_golomb_dst(GetBitContext *gb, unsigned int k)
 {
-    int v = get_ur_golomb(gb, k, get_bits_left(gb), 0);
+    int v = get_ur_golomb_jpegls(gb, k, get_bits_left(gb), 0);
     if (v && get_bits1(gb))
         v = -v;
     return v;
