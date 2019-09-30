@@ -220,6 +220,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     int this_badness, current_badness, fixed_badness, new_badness, i, res;
     PhotosensitivityFrame ef;
     AVFrame *src, *out;
+    int free_in = 0;
     float factor;
     AVDictionary **metadata;
 
@@ -270,12 +271,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->history[s->history_pos] = this_badness;
         }
         src = s->last_frame_av;
+        free_in = 1;
     }
     s->history_pos = (s->history_pos + 1) % s->nb_frames;
 
     out = ff_get_video_buffer(outlink, in->width, in->height);
     if (!out) {
-        av_frame_free(&in);
+        if (free_in == 1)
+            av_frame_free(&in);
         return AVERROR(ENOMEM);
     }
     av_frame_copy_props(out, in);
@@ -296,6 +299,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_dict_set(metadata, "lavfi.photosensitivity.factor", value, 0);
     }
     av_frame_copy(out, src);
+    if (free_in == 1)
+        av_frame_free(&in);
     return ff_filter_frame(outlink, out);
 }
 
