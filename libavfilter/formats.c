@@ -317,7 +317,6 @@ do {                                                        \
     void *oldf = *f;                                        \
                                                             \
     if (!(*f) && !(*f = av_mallocz(sizeof(**f)))) {         \
-        unref_fn(f);                                        \
         return AVERROR(ENOMEM);                             \
     }                                                       \
                                                             \
