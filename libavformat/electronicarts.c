@@ -574,11 +574,12 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
     EaDemuxContext *ea = s->priv_data;
     AVIOContext *pb    = s->pb;
     int partial_packet = 0;
+    int hit_end = 0;
     unsigned int chunk_type, chunk_size;
     int ret = 0, packet_read = 0, key = 0;
     int av_uninit(num_samples);
 
-    while (!packet_read || partial_packet) {
+    while ((!packet_read && !hit_end) || partial_packet) {
         chunk_type = avio_rl32(pb);
         chunk_size = ea->big_endian ? avio_rb32(pb) : avio_rl32(pb);
         if (chunk_size < 8)
@@ -676,7 +677,7 @@ static int ea_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             if (avio_feof(pb))
                 ret = AVERROR_EOF;
-            packet_read = 1;
+            hit_end = 1;
             break;
 
         case MVIh_TAG:
@@ -737,6 +738,9 @@ get_video_packet:
 
     if (ret < 0 && partial_packet)
         av_packet_unref(pkt);
+    if (ret >= 0 && hit_end && !packet_read)
+        return AVERROR(EAGAIN);
+
     return ret;
 }
 
