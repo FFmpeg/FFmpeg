@@ -214,7 +214,7 @@ static void lpc_prediction(int32_t *error_buffer, uint32_t *buffer_out,
         /* LPC prediction */
         for (j = 0; j < lpc_order; j++)
             val += (pred[j] - d) * lpc_coefs[j];
-        val = (val + (1 << (lpc_quant - 1))) >> lpc_quant;
+        val = (val + (1LL << (lpc_quant - 1))) >> lpc_quant;
         val += d + error_val;
         buffer_out[i] = sign_extend(val, bps);
 
