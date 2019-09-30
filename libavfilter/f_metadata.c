@@ -283,6 +283,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MetadataContext *s = ctx->priv;
 
+    av_expr_free(s->expr);
+    s->expr = NULL;
     if (s->avio_context) {
         avio_closep(&s->avio_context);
     }
