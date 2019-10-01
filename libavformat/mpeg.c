@@ -490,6 +490,7 @@ static int mpegps_read_packet(AVFormatContext *s,
     AVStream *st;
     int len, startcode, i, es_type, ret;
     int lpcm_header_len = -1; //Init to suppress warning
+    int pcm_dvd = 0;
     int request_probe= 0;
     enum AVCodecID codec_id = AV_CODEC_ID_NONE;
     enum AVMediaType type;
@@ -513,6 +514,12 @@ redo:
                 /* MLP/TrueHD audio has a 4-byte header */
                 avio_r8(s->pb);
                 len--;
+            } else if (startcode >= 0xa0 && startcode <= 0xaf) {
+                ret = ffio_ensure_seekback(s->pb, 3);
+                if (ret < 0)
+                    return ret;
+                pcm_dvd = (avio_rb24(s->pb) & 0xFF) == 0x80;
+                avio_skip(s->pb, -3);
             }
         }
     }
@@ -591,7 +598,7 @@ redo:
         codec_id = AV_CODEC_ID_DTS;
     } else if (startcode >= 0xa0 && startcode <= 0xaf) {
         type     = AVMEDIA_TYPE_AUDIO;
-        if (lpcm_header_len >= 6 && startcode == 0xa1) {
+        if (!pcm_dvd) {
             codec_id = AV_CODEC_ID_MLP;
         } else {
             codec_id = AV_CODEC_ID_PCM_DVD;
