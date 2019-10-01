@@ -21,6 +21,7 @@
 #include "libavutil/opt.h"
 #include "avfilter.h"
 #include "audio.h"
+#include "filters.h"
 #include "formats.h"
 #include "framesync.h"
 #include "internal.h"
@@ -53,7 +54,7 @@ static int process_frame(FFFrameSync *fs)
     AVFilterContext *ctx = fs->parent;
     StreamSelectContext *s = fs->opaque;
     AVFrame **in = s->frames;
-    int i, j, ret = 0;
+    int i, j, ret = 0, have_out = 0;
 
     for (i = 0; i < ctx->nb_inputs; i++) {
         if ((ret = ff_framesync_get_frame(&s->fs, i, &in[i], 0)) < 0)
@@ -75,12 +76,15 @@ static int process_frame(FFFrameSync *fs)
                 out->pts = av_rescale_q(s->fs.pts, s->fs.time_base, ctx->outputs[i]->time_base);
                 s->last_pts[j] = in[j]->pts;
                 ret = ff_filter_frame(ctx->outputs[i], out);
+                have_out = 1;
                 if (ret < 0)
                     return ret;
             }
         }
     }
 
+    if (!have_out)
+        ff_filter_set_ready(ctx, 100);
     return ret;
 }
 
