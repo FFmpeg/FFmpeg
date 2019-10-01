@@ -50,8 +50,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = ff_get_video_buffer(outlink, in->width, in->height);
     int ret;
 
-    if (!out)
+    if (!out) {
         ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ret = av_frame_copy_props(out, in);
     if (ret < 0)

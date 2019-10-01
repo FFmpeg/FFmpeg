@@ -26,8 +26,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out = ff_get_audio_buffer(outlink, in->nb_samples);
     int ret;
 
-    if (!out)
+    if (!out) {
         ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     ret = av_frame_copy_props(out, in);
     if (ret < 0)
