@@ -208,6 +208,12 @@ fail:
     return ret;
 }
 
+static av_pure av_always_inline int pixel_belongs_to_box(DrawBoxContext *s, int x, int y)
+{
+    return (y - s->y < s->thickness) || (s->y + s->h - 1 - y < s->thickness) ||
+           (x - s->x < s->thickness) || (s->x + s->w - 1 - x < s->thickness);
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 {
     DrawBoxContext *s = inlink->dst->priv;
@@ -225,13 +231,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             if (s->invert_color) {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness))
+                    if (pixel_belongs_to_box(s, x, y))
                         row[0][x] = 0xff - row[0][x];
             } else {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
-                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness)) {
+                    if (pixel_belongs_to_box(s, x, y)) {
                         row[0][x           ] = s->yuv_color[Y];
                         row[1][x >> s->hsub] = s->yuv_color[U];
                         row[2][x >> s->hsub] = s->yuv_color[V];
@@ -250,15 +254,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
             if (s->invert_color) {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++)
-                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness))
+                    if (pixel_belongs_to_box(s, x, y))
                         row[0][x] = 0xff - row[0][x];
             } else {
                 for (x = FFMAX(xb, 0); x < xb + s->w && x < frame->width; x++) {
                     double alpha = (double)s->yuv_color[A] / 255;
 
-                    if ((y - yb < s->thickness) || (yb + s->h - 1 - y < s->thickness) ||
-                        (x - xb < s->thickness) || (xb + s->w - 1 - x < s->thickness)) {
+                    if (pixel_belongs_to_box(s, x, y)) {
                         row[0][x                 ] = (1 - alpha) * row[0][x                 ] + alpha * s->yuv_color[Y];
                         row[1][x >> s->hsub] = (1 - alpha) * row[1][x >> s->hsub] + alpha * s->yuv_color[U];
                         row[2][x >> s->hsub] = (1 - alpha) * row[2][x >> s->hsub] + alpha * s->yuv_color[V];
