@@ -77,9 +77,9 @@ fail:
 
 static int config_input_main(AVFilterLink *inlink)
 {
-    AlphaMergeContext *merge = inlink->dst->priv;
-    merge->is_packed_rgb =
-        ff_fill_rgba_map(merge->rgba_map, inlink->format) >= 0 &&
+    AlphaMergeContext *s = inlink->dst->priv;
+    s->is_packed_rgb =
+        ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0 &&
         inlink->format != AV_PIX_FMT_GBRAP;
     return 0;
 }
@@ -109,15 +109,15 @@ static void draw_frame(AVFilterContext *ctx,
                        AVFrame *main_buf,
                        AVFrame *alpha_buf)
 {
-    AlphaMergeContext *merge = ctx->priv;
+    AlphaMergeContext *s = ctx->priv;
     int h = main_buf->height;
 
-    if (merge->is_packed_rgb) {
+    if (s->is_packed_rgb) {
         int x, y;
         uint8_t *pin, *pout;
         for (y = 0; y < h; y++) {
             pin = alpha_buf->data[0] + y * alpha_buf->linesize[0];
-            pout = main_buf->data[0] + y * main_buf->linesize[0] + merge->rgba_map[A];
+            pout = main_buf->data[0] + y * main_buf->linesize[0] + s->rgba_map[A];
             for (x = 0; x < main_buf->width; x++) {
                 *pout = *pin;
                 pin += 1;
