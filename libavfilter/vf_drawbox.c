@@ -273,6 +273,46 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(inlink->dst->outputs[0], frame);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args, char *res, int res_len, int flags)
+{
+    DrawBoxContext *s = ctx->priv;
+    int ret;
+
+    if (   !strcmp(cmd, "w") || !strcmp(cmd, "width")
+        || !strcmp(cmd, "h") || !strcmp(cmd, "height")
+        || !strcmp(cmd, "x") || !strcmp(cmd, "y")
+        || !strcmp(cmd, "t") || !strcmp(cmd, "thickness")
+        || !strcmp(cmd, "c") || !strcmp(cmd, "color")
+        || !strcmp(cmd, "replace")) {
+
+        int old_x = s->x;
+        int old_y = s->y;
+        int old_w = s->w;
+        int old_h = s->h;
+        int old_t = s->thickness;
+        int old_r = s->replace;
+
+        AVFilterLink *inlink = ctx->inputs[0];
+
+        av_opt_set(s, cmd, args, 0);
+        init(ctx);
+
+        if ((ret = config_input(inlink)) < 0) {
+            s->x = old_x;
+            s->y = old_y;
+            s->w = old_w;
+            s->h = old_h;
+            s->thickness = old_t;
+            s->replace = old_r;
+            return ret;
+        }
+    } else {
+        ret = AVERROR(ENOSYS);
+    }
+
+    return ret;
+}
+
 #define OFFSET(x) offsetof(DrawBoxContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
@@ -323,6 +363,7 @@ AVFilter ff_vf_drawbox = {
     .query_formats = query_formats,
     .inputs        = drawbox_inputs,
     .outputs       = drawbox_outputs,
+    .process_command = process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
 #endif /* CONFIG_DRAWBOX_FILTER */
@@ -457,6 +498,7 @@ AVFilter ff_vf_drawgrid = {
     .inputs        = drawgrid_inputs,
     .outputs       = drawgrid_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = process_command,
 };
 
 #endif  /* CONFIG_DRAWGRID_FILTER */
