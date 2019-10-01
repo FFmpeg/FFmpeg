@@ -203,7 +203,7 @@ static int test_with_mode_constant(void)
     params.paddings[3][1] = 2;
 
     operands[0].data = input;
-    operands[0].dims[0] = 3;
+    operands[0].dims[0] = 1;
     operands[0].dims[1] = 2;
     operands[0].dims[2] = 2;
     operands[0].dims[3] = 3;
