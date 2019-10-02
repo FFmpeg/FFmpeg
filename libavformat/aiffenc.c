@@ -235,7 +235,7 @@ static int aiff_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static int aiff_write_trailer(AVFormatContext *s)
 {
-    int ret;
+    int ret = 0;
     AVIOContext *pb = s->pb;
     AIFFOutputContext *aiff = s->priv_data;
     AVCodecParameters *par = s->streams[aiff->audio_stream_idx]->codecpar;
@@ -263,7 +263,7 @@ static int aiff_write_trailer(AVFormatContext *s)
         /* Write ID3 tags */
         if (aiff->write_id3v2)
             if ((ret = put_id3v2_tags(s, aiff)) < 0)
-                return ret;
+                goto free;
 
         /* File length */
         file_size = avio_tell(pb);
@@ -273,9 +273,10 @@ static int aiff_write_trailer(AVFormatContext *s)
         avio_flush(pb);
     }
 
+free:
     ff_packet_list_free(&aiff->pict_list, &aiff->pict_list_end);
 
-    return 0;
+    return ret;
 }
 
 #define OFFSET(x) offsetof(AIFFOutputContext, x)
