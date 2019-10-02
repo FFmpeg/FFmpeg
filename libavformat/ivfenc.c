@@ -84,7 +84,8 @@ static int ivf_write_trailer(AVFormatContext *s)
 
         avio_seek(pb, 24, SEEK_SET);
         // overwrite the "length" field (duration)
-        avio_wl64(pb, ctx->frame_cnt * ctx->sum_delta_pts / (ctx->frame_cnt - 1));
+        avio_wl32(pb, ctx->frame_cnt * ctx->sum_delta_pts / (ctx->frame_cnt - 1));
+        avio_wl32(pb, 0); // zero out unused bytes
         avio_seek(pb, end, SEEK_SET);
     }
 
