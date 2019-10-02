@@ -178,8 +178,10 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         AVFrame *out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
         uint32_t *pal;
 
-        if (!out)
+        if (!out) {
+            av_frame_free(&frame);
             return AVERROR(ENOMEM);
+        }
         out->pts = frame->pts;
         av_frame_free(&frame);
         pal = (uint32_t *)out->data[1];
