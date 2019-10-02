@@ -223,7 +223,9 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->coefs[1]);
     av_freep(&s->coefs[2]);
     av_freep(&s->coefs[3]);
-    av_freep(&s->line);
+    av_freep(&s->line[0]);
+    av_freep(&s->line[1]);
+    av_freep(&s->line[2]);
     av_freep(&s->frame_prev[0]);
     av_freep(&s->frame_prev[1]);
     av_freep(&s->frame_prev[2]);
@@ -271,9 +273,11 @@ static int config_input(AVFilterLink *inlink)
     s->vsub  = desc->log2_chroma_h;
     s->depth = desc->comp[0].depth;
 
-    s->line = av_malloc_array(inlink->w, sizeof(*s->line));
-    if (!s->line)
-        return AVERROR(ENOMEM);
+    for (i = 0; i < 3; i++) {
+        s->line[i] = av_malloc_array(inlink->w, sizeof(*s->line[i]));
+        if (!s->line[i])
+            return AVERROR(ENOMEM);
+    }
 
     for (i = 0; i < 4; i++) {
         s->coefs[i] = precalc_coefs(s->strength[i], s->depth);
@@ -287,14 +291,38 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+typedef struct ThreadData {
+    AVFrame *in, *out;
+    int direct;
+} ThreadData;
+
+static int do_denoise(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
+{
+    HQDN3DContext *s = ctx->priv;
+    const ThreadData *td = data;
+    AVFrame *out = td->out;
+    AVFrame *in = td->in;
+    int direct = td->direct;
+
+    denoise(s, in->data[job_nr], out->data[job_nr],
+                s->line[job_nr], &s->frame_prev[job_nr],
+                AV_CEIL_RSHIFT(in->width,  (!!job_nr * s->hsub)),
+                AV_CEIL_RSHIFT(in->height, (!!job_nr * s->vsub)),
+                in->linesize[job_nr], out->linesize[job_nr],
+                s->coefs[job_nr ? CHROMA_SPATIAL : LUMA_SPATIAL],
+                s->coefs[job_nr ? CHROMA_TMP     : LUMA_TMP]);
+
+    return 0;
+}
+
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx  = inlink->dst;
-    HQDN3DContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
 
     AVFrame *out;
-    int c, direct = av_frame_is_writable(in) && !ctx->is_disabled;
+    int direct = av_frame_is_writable(in) && !ctx->is_disabled;
+    ThreadData td;
 
     if (direct) {
         out = in;
@@ -308,15 +336,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_frame_copy_props(out, in);
     }
 
-    for (c = 0; c < 3; c++) {
-        denoise(s, in->data[c], out->data[c],
-                s->line, &s->frame_prev[c],
-                AV_CEIL_RSHIFT(in->width,  (!!c * s->hsub)),
-                AV_CEIL_RSHIFT(in->height, (!!c * s->vsub)),
-                in->linesize[c], out->linesize[c],
-                s->coefs[c ? CHROMA_SPATIAL : LUMA_SPATIAL],
-                s->coefs[c ? CHROMA_TMP     : LUMA_TMP]);
-    }
+    td.in = in;
+    td.out = out;
+    td.direct = direct;
+    /* one thread per plane */
+    ctx->internal->execute(ctx, do_denoise, &td, NULL, 3);
 
     if (ctx->is_disabled) {
         av_frame_free(&out);
@@ -370,5 +394,5 @@ AVFilter ff_vf_hqdn3d = {
     .query_formats = query_formats,
     .inputs        = avfilter_vf_hqdn3d_inputs,
     .outputs       = avfilter_vf_hqdn3d_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
 };

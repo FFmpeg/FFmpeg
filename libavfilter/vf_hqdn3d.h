@@ -31,7 +31,7 @@
 typedef struct HQDN3DContext {
     const AVClass *class;
     int16_t *coefs[4];
-    uint16_t *line;
+    uint16_t *line[3];
     uint16_t *frame_prev[3];
     double strength[4];
     int hsub, vsub;
