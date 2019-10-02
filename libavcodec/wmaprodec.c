@@ -1902,7 +1902,9 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
     }
 
     /* encoder supports up to 64 streams / 64*2 channels (would have to alloc arrays) */
-    if (avctx->channels > XMA_MAX_CHANNELS || s->num_streams > XMA_MAX_STREAMS) {
+    if (avctx->channels > XMA_MAX_CHANNELS || s->num_streams > XMA_MAX_STREAMS ||
+        s->num_streams <= 0
+    ) {
         avpriv_request_sample(avctx, "More than %d channels in %d streams", XMA_MAX_CHANNELS, s->num_streams);
         return AVERROR_PATCHWELCOME;
     }
