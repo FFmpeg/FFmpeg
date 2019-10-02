@@ -1481,7 +1481,7 @@ static int vc1_decode_p_mb(VC1Context *v)
                     v->vc1dsp.vc1_inv_trans_8x8(v->block[v->cur_blk_idx][block_map[i]]);
                     if (v->rangeredfrm)
                         for (j = 0; j < 64; j++)
-                            v->block[v->cur_blk_idx][block_map[i]][j] <<= 1;
+                            v->block[v->cur_blk_idx][block_map[i]][j] *= 2;
                     block_cbp   |= 0xF << (i << 2);
                     block_intra |= 1 << i;
                 } else if (is_coded[i]) {
