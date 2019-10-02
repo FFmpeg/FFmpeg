@@ -49,9 +49,6 @@ static int put_id3v2_tags(AVFormatContext *s, AIFFOutputContext *aiff)
     AVIOContext *pb = s->pb;
     AVPacketList *pict_list = aiff->pict_list;
 
-    if (!pb->seekable & AVIO_SEEKABLE_NORMAL)
-        return 0;
-
     if (!s->metadata && !aiff->pict_list)
         return 0;
 
