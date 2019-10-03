@@ -72,7 +72,7 @@ static const AVOption flanger_options[] = {
 
 AVFILTER_DEFINE_CLASS(flanger);
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     FlangerContext *s = ctx->priv;
 

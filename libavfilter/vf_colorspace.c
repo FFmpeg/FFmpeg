@@ -732,7 +732,7 @@ static int create_filtergraph(AVFilterContext *ctx,
     return 0;
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     ColorSpaceContext *s = ctx->priv;
 

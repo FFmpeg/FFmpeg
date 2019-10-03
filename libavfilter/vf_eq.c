@@ -207,7 +207,7 @@ static int initialize(AVFilterContext *ctx)
     return 0;
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     EQContext *eq = ctx->priv;
 

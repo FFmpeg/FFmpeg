@@ -702,7 +702,7 @@ fail:
     return ff_filter_frame(outlink, out);
 }
 
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     ZScaleContext *s = ctx->priv;
 

@@ -221,7 +221,7 @@ static const AVOption delogo_options[]= {
 };
 
 AVFILTER_DEFINE_CLASS(delogo);
-static void uninit(AVFilterContext *ctx)
+static av_cold void uninit(AVFilterContext *ctx)
 {
     DelogoContext *s = ctx->priv;
 

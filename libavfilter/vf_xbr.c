@@ -380,7 +380,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     XBRContext *s = ctx->priv;
     static const xbrfunc_t xbrfuncs[] = {xbr2x, xbr3x, xbr4x};

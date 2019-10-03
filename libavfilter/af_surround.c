@@ -1372,7 +1372,7 @@ static void filter_5_1_back(AVFilterContext *ctx)
     }
 }
 
-static int init(AVFilterContext *ctx)
+static av_cold int init(AVFilterContext *ctx)
 {
     AudioSurroundContext *s = ctx->priv;
     float overlap;
