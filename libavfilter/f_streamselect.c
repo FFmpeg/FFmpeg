@@ -294,6 +294,12 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->map);
     av_freep(&s->frames);
     ff_framesync_uninit(&s->fs);
+
+    for (int i = 0; i < ctx->nb_inputs; i++)
+        av_freep(&ctx->input_pads[i].name);
+
+    for (int i = 0; i < ctx->nb_outputs; i++)
+        av_freep(&ctx->output_pads[i].name);
 }
 
 static int query_formats(AVFilterContext *ctx)
