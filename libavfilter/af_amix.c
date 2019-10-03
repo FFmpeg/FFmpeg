@@ -212,21 +212,21 @@ static void calculate_scales(MixContext *s, int nb_samples)
 
     for (i = 0; i < s->nb_inputs; i++)
         if (s->input_state[i] & INPUT_ON)
-            weight_sum += s->weights[i];
+            weight_sum += FFABS(s->weights[i]);
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (s->input_state[i] & INPUT_ON) {
-            if (s->scale_norm[i] > weight_sum / s->weights[i]) {
-                s->scale_norm[i] -= ((s->weight_sum / s->weights[i]) / s->nb_inputs) *
+            if (s->scale_norm[i] > weight_sum / FFABS(s->weights[i])) {
+                s->scale_norm[i] -= ((s->weight_sum / FFABS(s->weights[i])) / s->nb_inputs) *
                                     nb_samples / (s->dropout_transition * s->sample_rate);
-                s->scale_norm[i] = FFMAX(s->scale_norm[i], weight_sum / s->weights[i]);
+                s->scale_norm[i] = FFMAX(s->scale_norm[i], weight_sum / FFABS(s->weights[i]));
             }
         }
     }
 
     for (i = 0; i < s->nb_inputs; i++) {
         if (s->input_state[i] & INPUT_ON)
-            s->input_scale[i] = 1.0f / s->scale_norm[i];
+            s->input_scale[i] = 1.0f / s->scale_norm[i] * FFSIGN(s->weights[i]);
         else
             s->input_scale[i] = 0.0f;
     }
@@ -270,7 +270,7 @@ static int config_output(AVFilterLink *outlink)
     if (!s->input_scale || !s->scale_norm)
         return AVERROR(ENOMEM);
     for (i = 0; i < s->nb_inputs; i++)
-        s->scale_norm[i] = s->weight_sum / s->weights[i];
+        s->scale_norm[i] = s->weight_sum / FFABS(s->weights[i]);
     calculate_scales(s, 0);
 
     av_get_channel_layout_string(buf, sizeof(buf), -1, outlink->channel_layout);
@@ -540,12 +540,12 @@ static av_cold int init(AVFilterContext *ctx)
         p = NULL;
         sscanf(arg, "%f", &last_weight);
         s->weights[i] = last_weight;
-        s->weight_sum += last_weight;
+        s->weight_sum += FFABS(last_weight);
     }
 
     for (; i < s->nb_inputs; i++) {
         s->weights[i] = last_weight;
-        s->weight_sum += last_weight;
+        s->weight_sum += FFABS(last_weight);
     }
 
     return 0;
