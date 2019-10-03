@@ -21120,7 +21120,7 @@ __kernel void sierpinski_carpet(__write_only image2d_t dst,
 
 @section sierpinski
 
-Generate a Sierpinksi carpet fractal, and randomly pan around.
+Generate a Sierpinksi carpet/triangle fractal, and randomly pan around.
 
 This source accepts the following options:
 
@@ -21138,6 +21138,9 @@ Set seed which is used for random panning.
 
 @item jump
 Set max jump for single pan destination. Allowed range is from 1 to 10000.
+
+@item type
+Set fractal type, can be default @code{carpet} or @code{triangle}.
 @end table
 
 @c man end VIDEO SOURCES

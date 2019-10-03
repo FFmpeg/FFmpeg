@@ -39,6 +39,7 @@
 typedef struct SierpinskiContext {
     const AVClass *class;
     int w, h;
+    int type;
     AVRational frame_rate;
     uint64_t pts;
 
@@ -49,6 +50,7 @@ typedef struct SierpinskiContext {
     int dest_x, dest_y;
 
     AVLFG lfg;
+    int (*draw_slice)(AVFilterContext *ctx, void *arg, int job, int nb_jobs);
 } SierpinskiContext;
 
 #define OFFSET(x) offsetof(SierpinskiContext, x)
@@ -61,6 +63,9 @@ static const AVOption sierpinski_options[] = {
     {"r",    "set frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str="25"},      0,          0, FLAGS },
     {"seed", "set the seed",   OFFSET(seed),       AV_OPT_TYPE_INT,        {.i64=-1},       -1, UINT32_MAX, FLAGS },
     {"jump", "set the jump",   OFFSET(jump),       AV_OPT_TYPE_INT,        {.i64=100},       1,      10000, FLAGS },
+    {"type","set fractal type",OFFSET(type),       AV_OPT_TYPE_INT,        {.i64=0},         0,          1, FLAGS, "type" },
+    {"carpet", "sierpinksi carpet", 0,             AV_OPT_TYPE_CONST,      {.i64=0},         0,          0, FLAGS, "type" },
+    {"triangle", "sierpinksi triangle", 0,         AV_OPT_TYPE_CONST,      {.i64=1},         0,          0, FLAGS, "type" },
     {NULL},
 };
 
@@ -79,25 +84,6 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int config_output(AVFilterLink *inlink)
-{
-    AVFilterContext *ctx = inlink->src;
-    SierpinskiContext *s = ctx->priv;
-
-    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
-        return AVERROR(EINVAL);
-
-    inlink->w = s->w;
-    inlink->h = s->h;
-    inlink->time_base = av_inv_q(s->frame_rate);
-    inlink->sample_aspect_ratio = (AVRational) {1, 1};
-    if (s->seed == -1)
-        s->seed = av_get_random_seed();
-    av_lfg_init(&s->lfg, s->seed);
-
-    return 0;
-}
-
 static int fill_sierpinski(SierpinskiContext *s, int x, int y)
 {
     int pos_x = x + s->pos_x;
@@ -114,7 +100,32 @@ static int fill_sierpinski(SierpinskiContext *s, int x, int y)
     return 0;
 }
 
-static int draw_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+static int draw_triangle_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
+{
+    SierpinskiContext *s = ctx->priv;
+    AVFrame *frame = arg;
+    const int width  = frame->width;
+    const int height = frame->height;
+    const int start = (height *  job   ) / nb_jobs;
+    const int end   = (height * (job+1)) / nb_jobs;
+    uint8_t *dst = frame->data[0] + start * frame->linesize[0];
+
+    for (int y = start; y < end; y++) {
+        for (int x = 0; x < width; x++) {
+            if ((s->pos_x + x) & (s->pos_y + y)) {
+                AV_WL32(&dst[x*4], 0x00000000);
+            } else {
+                AV_WL32(&dst[x*4], 0xFFFFFFFF);
+            }
+        }
+
+        dst += frame->linesize[0];
+    }
+
+    return 0;
+}
+
+static int draw_carpet_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
     SierpinskiContext *s = ctx->priv;
     AVFrame *frame = arg;
@@ -135,6 +146,27 @@ static int draw_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 
         dst += frame->linesize[0];
     }
+
+    return 0;
+}
+
+static int config_output(AVFilterLink *inlink)
+{
+    AVFilterContext *ctx = inlink->src;
+    SierpinskiContext *s = ctx->priv;
+
+    if (av_image_check_size(s->w, s->h, 0, ctx) < 0)
+        return AVERROR(EINVAL);
+
+    inlink->w = s->w;
+    inlink->h = s->h;
+    inlink->time_base = av_inv_q(s->frame_rate);
+    inlink->sample_aspect_ratio = (AVRational) {1, 1};
+    if (s->seed == -1)
+        s->seed = av_get_random_seed();
+    av_lfg_init(&s->lfg, s->seed);
+
+    s->draw_slice = s->type ? draw_triangle_slice : draw_carpet_slice;
 
     return 0;
 }
@@ -162,7 +194,7 @@ static void draw_sierpinski(AVFilterContext *ctx, AVFrame *frame)
             s->pos_y--;
     }
 
-    ctx->internal->execute(ctx, draw_slice, frame, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
+    ctx->internal->execute(ctx, s->draw_slice, frame, NULL, FFMIN(outlink->h, ff_filter_get_nb_threads(ctx)));
 }
 
 static int sierpinski_request_frame(AVFilterLink *link)
@@ -193,7 +225,7 @@ static const AVFilterPad sierpinski_outputs[] = {
 
 AVFilter ff_vsrc_sierpinski = {
     .name          = "sierpinski",
-    .description   = NULL_IF_CONFIG_SMALL("Render a Sierpinski carpet fractal."),
+    .description   = NULL_IF_CONFIG_SMALL("Render a Sierpinski fractal."),
     .priv_size     = sizeof(SierpinskiContext),
     .priv_class    = &sierpinski_class,
     .query_formats = query_formats,
