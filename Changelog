@@ -14,6 +14,7 @@ version <next>:
 - sierpinski video source
 - scroll video filter
 - photosensitivity filter
+- anlms filter
 
 
 version 4.2:

@@ -63,6 +63,7 @@ OBJS-$(CONFIG_AMIX_FILTER)                   += af_amix.o
 OBJS-$(CONFIG_AMULTIPLY_FILTER)              += af_amultiply.o
 OBJS-$(CONFIG_ANEQUALIZER_FILTER)            += af_anequalizer.o
 OBJS-$(CONFIG_ANLMDN_FILTER)                 += af_anlmdn.o
+OBJS-$(CONFIG_ANLMS_FILTER)                  += af_anlms.o
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 OBJS-$(CONFIG_APAD_FILTER)                   += af_apad.o
 OBJS-$(CONFIG_APERMS_FILTER)                 += f_perms.o

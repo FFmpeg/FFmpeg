@@ -1814,6 +1814,58 @@ Change output mode.
 Syntax for the command is : "i", "o" or "n" string.
 @end table
 
+@section anlms
+Apply Normalized Least-Mean-Squares algorithm to the first audio stream using the second audio stream.
+
+This adaptive filter is used to mimic a desired filter by finding the filter coefficients that
+relate to producing the least mean square of the error signal (difference between the desired,
+2nd input audio stream and the actual signal, the 1st input audio stream).
+
+A description of the accepted options follows.
+
+@table @option
+@item order
+Set filter order.
+
+@item mu
+Set filter mu.
+
+@item eps
+Set the filter eps.
+
+@item leakage
+Set the filter leakage.
+
+@item out_mode
+It accepts the following values:
+@table @option
+@item i
+Pass the 1st input.
+
+@item d
+Pass the 2nd input.
+
+@item o
+Pass filtered samples.
+
+@item n
+Pass difference between desired and filtered samples.
+
+Default value is @var{o}.
+@end table
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+One of many usages of this filter is noise reduction, input audio is filtered
+with same samples that are delayed by fixed ammount, one such example for stereo audio is:
+@example
+asplit[a][b],[a]adelay=32S|32S[a],[b][a]anlms=order=128:leakage=0.0005:mu=.5:out_mode=o
+@end example
+@end itemize
+
 @section anull
 
 Pass the audio source unchanged to the output.

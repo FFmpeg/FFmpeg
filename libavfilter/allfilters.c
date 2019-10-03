@@ -56,6 +56,7 @@ extern AVFilter ff_af_amix;
 extern AVFilter ff_af_amultiply;
 extern AVFilter ff_af_anequalizer;
 extern AVFilter ff_af_anlmdn;
+extern AVFilter ff_af_anlms;
 extern AVFilter ff_af_anull;
 extern AVFilter ff_af_apad;
 extern AVFilter ff_af_aperms;
