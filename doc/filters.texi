@@ -21120,7 +21120,7 @@ __kernel void sierpinski_carpet(__write_only image2d_t dst,
 
 @section sierpinski
 
-Generate a Sierpinksi carpet/triangle fractal, and randomly pan around.
+Generate a Sierpinski carpet/triangle fractal, and randomly pan around.
 
 This source accepts the following options:
 
