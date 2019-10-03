@@ -2116,9 +2116,6 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
     }
 
     if (has_mastering_primaries || has_mastering_luminance) {
-        // Use similar rationals as other standards.
-        const int chroma_den = 50000;
-        const int luma_den = 10000;
         AVMasteringDisplayMetadata *metadata =
             (AVMasteringDisplayMetadata*) av_stream_new_side_data(
                 st, AV_PKT_DATA_MASTERING_DISPLAY_METADATA,
@@ -2128,29 +2125,19 @@ static int mkv_parse_video_color(AVStream *st, const MatroskaTrack *track) {
         }
         memset(metadata, 0, sizeof(AVMasteringDisplayMetadata));
         if (has_mastering_primaries) {
-            metadata->display_primaries[0][0] = av_make_q(
-                round(mastering_meta->r_x * chroma_den), chroma_den);
-            metadata->display_primaries[0][1] = av_make_q(
-                round(mastering_meta->r_y * chroma_den), chroma_den);
-            metadata->display_primaries[1][0] = av_make_q(
-                round(mastering_meta->g_x * chroma_den), chroma_den);
-            metadata->display_primaries[1][1] = av_make_q(
-                round(mastering_meta->g_y * chroma_den), chroma_den);
-            metadata->display_primaries[2][0] = av_make_q(
-                round(mastering_meta->b_x * chroma_den), chroma_den);
-            metadata->display_primaries[2][1] = av_make_q(
-                round(mastering_meta->b_y * chroma_den), chroma_den);
-            metadata->white_point[0] = av_make_q(
-                round(mastering_meta->white_x * chroma_den), chroma_den);
-            metadata->white_point[1] = av_make_q(
-                round(mastering_meta->white_y * chroma_den), chroma_den);
+            metadata->display_primaries[0][0] = av_d2q(mastering_meta->r_x, INT_MAX);
+            metadata->display_primaries[0][1] = av_d2q(mastering_meta->r_y, INT_MAX);
+            metadata->display_primaries[1][0] = av_d2q(mastering_meta->g_x, INT_MAX);
+            metadata->display_primaries[1][1] = av_d2q(mastering_meta->g_y, INT_MAX);
+            metadata->display_primaries[2][0] = av_d2q(mastering_meta->b_x, INT_MAX);
+            metadata->display_primaries[2][1] = av_d2q(mastering_meta->b_y, INT_MAX);
+            metadata->white_point[0] = av_d2q(mastering_meta->white_x, INT_MAX);
+            metadata->white_point[1] = av_d2q(mastering_meta->white_y, INT_MAX);
             metadata->has_primaries = 1;
         }
         if (has_mastering_luminance) {
-            metadata->max_luminance = av_make_q(
-                round(mastering_meta->max_luminance * luma_den), luma_den);
-            metadata->min_luminance = av_make_q(
-                round(mastering_meta->min_luminance * luma_den), luma_den);
+            metadata->max_luminance = av_d2q(mastering_meta->max_luminance, INT_MAX);
+            metadata->min_luminance = av_d2q(mastering_meta->min_luminance, INT_MAX);
             metadata->has_luminance = 1;
         }
     }
