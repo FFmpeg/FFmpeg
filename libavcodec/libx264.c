@@ -25,6 +25,7 @@
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/stereo3d.h"
+#include "libavutil/time.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -43,6 +44,11 @@
 // from x264.h, for quant_offsets, Macroblocks are 16x16
 // blocks of pixels (with respect to the luma plane)
 #define MB_SIZE 16
+
+typedef struct X264Opaque {
+    int64_t reordered_opaque;
+    int64_t wallclock;
+} X264Opaque;
 
 typedef struct X264Context {
     AVClass        *class;
@@ -98,7 +104,7 @@ typedef struct X264Context {
     AVDictionary *x264_params;
 
     int nb_reordered_opaque, next_reordered_opaque;
-    int64_t *reordered_opaque;
+    X264Opaque *reordered_opaque;
 
     /**
      * If the encoder does not support ROI then warn the first time we
@@ -292,7 +298,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     x264_picture_t pic_out = {0};
     int pict_type;
     int bit_depth;
-    int64_t *out_opaque;
+    int64_t wallclock = 0;
+    X264Opaque *out_opaque;
     AVFrameSideData *sd;
 
     x264_picture_init( &x4->pic );
@@ -314,7 +321,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
 
         x4->pic.i_pts  = frame->pts;
 
-        x4->reordered_opaque[x4->next_reordered_opaque] = frame->reordered_opaque;
+        x4->reordered_opaque[x4->next_reordered_opaque].reordered_opaque = frame->reordered_opaque;
+        x4->reordered_opaque[x4->next_reordered_opaque].wallclock = av_gettime();
         x4->pic.opaque = &x4->reordered_opaque[x4->next_reordered_opaque];
         x4->next_reordered_opaque++;
         x4->next_reordered_opaque %= x4->nb_reordered_opaque;
@@ -443,7 +451,8 @@ static int X264_frame(AVCodecContext *ctx, AVPacket *pkt, const AVFrame *frame,
     out_opaque = pic_out.opaque;
     if (out_opaque >= x4->reordered_opaque &&
         out_opaque < &x4->reordered_opaque[x4->nb_reordered_opaque]) {
-        ctx->reordered_opaque = *out_opaque;
+        ctx->reordered_opaque = out_opaque->reordered_opaque;
+        wallclock = out_opaque->wallclock;
     } else {
         // Unexpected opaque pointer on picture output
         ctx->reordered_opaque = 0;
@@ -473,6 +482,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
     pkt->flags |= AV_PKT_FLAG_KEY*pic_out.b_keyframe;
     if (ret) {
         ff_side_data_set_encoder_stats(pkt, (pic_out.i_qpplus1 - 1) * FF_QP2LAMBDA, NULL, 0, pict_type);
+        if (wallclock)
+            ff_side_data_set_prft(pkt, wallclock);
 
 #if FF_API_CODED_FRAME
 FF_DISABLE_DEPRECATION_WARNINGS
