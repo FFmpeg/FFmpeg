@@ -55,6 +55,7 @@ Do not draw edges.
 @item psnr
 Set error[?] variables during encoding.
 @item truncated
+Input bitstream might be randomly truncated.
 @item drop_changed
 Don't output frames whose parameters differ from first decoded frame in stream.
 Error AVERROR_INPUT_CHANGED is returned when a frame is dropped.
@@ -79,6 +80,8 @@ Deprecated, use mpegvideo private options instead.
 Apply interlaced motion estimation.
 @item cgop
 Use closed gop.
+@item output_corrupt
+Output even potentially corrupted frames.
 @end table
 
 @item me_method @var{integer} (@emph{encoding,video})
@@ -760,14 +763,12 @@ Set noise reduction.
 Set number of bits which should be loaded into the rc buffer before
 decoding starts.
 
-@item flags2 @var{flags} (@emph{decoding/encoding,audio,video})
+@item flags2 @var{flags} (@emph{decoding/encoding,audio,video,subtitles})
 
 Possible values:
 @table @samp
 @item fast
 Allow non spec compliant speedup tricks.
-@item sgop
-Deprecated, use mpegvideo private options instead.
 @item noout
 Skip bitstream encoding.
 @item ignorecrop
@@ -781,6 +782,10 @@ Show all frames before the first keyframe.
 @item export_mvs
 Export motion vectors into frame side-data (see @code{AV_FRAME_DATA_MOTION_VECTORS})
 for codecs that support it. See also @file{doc/examples/export_mvs.c}.
+@item skip_manual
+Do not skip samples and export skip information as frame side data.
+@item ass_ro_flush_noop
+Do not reset ASS ReadOrder field on flush.
 @end table
 
 @item error @var{integer} (@emph{encoding,video})
