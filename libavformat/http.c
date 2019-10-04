@@ -320,8 +320,11 @@ int ff_http_get_shutdown_status(URLContext *h)
     return ret;
 }
 
+int ff_http_do_new_request(URLContext *h, const char *uri) {
+    return ff_http_do_new_request2(h, uri, NULL);
+}
 
-int ff_http_do_new_request(URLContext *h, const char *uri)
+int ff_http_do_new_request2(URLContext *h, const char *uri, AVDictionary **opts)
 {
     HTTPContext *s = h->priv_data;
     AVDictionary *options = NULL;
@@ -365,6 +368,9 @@ int ff_http_do_new_request(URLContext *h, const char *uri)
     s->location = av_strdup(uri);
     if (!s->location)
         return AVERROR(ENOMEM);
+
+    if ((ret = av_opt_set_dict(s, opts)) < 0)
+        return ret;
 
     av_log(s, AV_LOG_INFO, "Opening \'%s\' for %s\n", uri, h->flags & AVIO_FLAG_WRITE ? "writing" : "reading");
     ret = http_open_cnx(h, &options);
