@@ -55,6 +55,8 @@ static int64_t read_ts(char **line, int *duration)
     if (sscanf(*line, "%"SCNd64",%"SCNd64, &start, &end) == 2) {
         *line += strcspn(*line, "\"");
         *line += !!**line;
+        if (end < start || end - (uint64_t)start > INT_MAX)
+            return AV_NOPTS_VALUE;
         *duration = end - start;
         return start;
     }
