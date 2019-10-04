@@ -392,6 +392,8 @@ AVCPBProperties *ff_add_cpb_side_data(AVCodecContext *avctx);
 
 int ff_side_data_set_encoder_stats(AVPacket *pkt, int quality, int64_t *error, int error_count, int pict_type);
 
+int ff_side_data_set_prft(AVPacket *pkt, int64_t timestamp);
+
 /**
  * Check AVFrame for A53 side data and allocate and fill SEI message with A53 info
  *

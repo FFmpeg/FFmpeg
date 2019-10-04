@@ -1176,6 +1176,11 @@ typedef struct AVCPBProperties {
     uint64_t vbv_delay;
 } AVCPBProperties;
 
+typedef struct AVProducerReferenceTime {
+    int64_t wallclock;
+    int flags;
+} AVProducerReferenceTime;
+
 /**
  * The decoder will keep a reference to the frame and may reuse it later.
  */
@@ -1409,6 +1414,11 @@ enum AVPacketSideDataType {
      * in ETSI TS 101 154 using AVActiveFormatDescription enum.
      */
     AV_PKT_DATA_AFD,
+
+    /**
+     * Producer Reference Time data corresponding to the AVProducerReferenceTime struct.
+     */
+    AV_PKT_DATA_PRFT,
 
     /**
      * The number of side data types.
