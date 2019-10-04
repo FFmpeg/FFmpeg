@@ -243,7 +243,7 @@ void ff_read_frame_flush(AVFormatContext *s);
 #define NTP_OFFSET_US (NTP_OFFSET * 1000000ULL)
 
 /** Get the current time since NTP epoch in microseconds. */
-uint64_t ff_ntp_time(void);
+uint64_t ff_ntp_time(int64_t timestamp);
 
 /**
  * Get the NTP time stamp formatted as per the RFC-5905.

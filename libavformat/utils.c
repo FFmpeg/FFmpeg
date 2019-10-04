@@ -4684,9 +4684,9 @@ void av_program_add_stream_index(AVFormatContext *ac, int progid, unsigned idx)
     }
 }
 
-uint64_t ff_ntp_time(void)
+uint64_t ff_ntp_time(int64_t timestamp)
 {
-    return (av_gettime() / 1000) * 1000 + NTP_OFFSET_US;
+    return (timestamp / 1000) * 1000 + NTP_OFFSET_US;
 }
 
 uint64_t ff_get_formatted_ntp_time(uint64_t ntp_time_us)

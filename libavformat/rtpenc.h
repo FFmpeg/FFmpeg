@@ -21,6 +21,7 @@
 #ifndef AVFORMAT_RTPENC_H
 #define AVFORMAT_RTPENC_H
 
+#include "libavutil/time.h"
 #include "avformat.h"
 #include "rtp.h"
 

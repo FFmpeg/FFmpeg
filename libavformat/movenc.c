@@ -4648,7 +4648,7 @@ static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
     }
 
     if (mov->write_prft == MOV_PRFT_SRC_WALLCLOCK) {
-        ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time());
+        ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(av_gettime()));
     } else if (mov->write_prft == MOV_PRFT_SRC_PTS) {
         pts_us = av_rescale_q(first_track->cluster[0].pts,
                               first_track->st->time_base, AV_TIME_BASE_Q);
