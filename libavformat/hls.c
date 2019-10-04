@@ -594,7 +594,7 @@ static int ensure_playlist(HLSContext *c, struct playlist **pls, const char *url
 }
 
 static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
-                              const char *url)
+                              const char *url, AVDictionary **options)
 {
 #if !CONFIG_HTTP_PROTOCOL
     return AVERROR_PROTOCOL_NOT_FOUND;
@@ -603,7 +603,7 @@ static int open_url_keepalive(AVFormatContext *s, AVIOContext **pb,
     URLContext *uc = ffio_geturlcontext(*pb);
     av_assert0(uc);
     (*pb)->eof_reached = 0;
-    ret = ff_http_do_new_request(uc, url);
+    ret = ff_http_do_new_request2(uc, url, options);
     if (ret < 0) {
         ff_format_io_close(s, pb);
     }
@@ -656,7 +656,7 @@ static int open_url(AVFormatContext *s, AVIOContext **pb, const char *url,
     av_dict_copy(&tmp, opts2, 0);
 
     if (is_http && c->http_persistent && *pb) {
-        ret = open_url_keepalive(c->ctx, pb, url);
+        ret = open_url_keepalive(c->ctx, pb, url, &tmp);
         if (ret == AVERROR_EXIT) {
             av_dict_free(&tmp);
             return ret;
@@ -714,7 +714,7 @@ static int parse_playlist(HLSContext *c, const char *url,
 
     if (is_http && !in && c->http_persistent && c->playlist_pb) {
         in = c->playlist_pb;
-        ret = open_url_keepalive(c->ctx, &c->playlist_pb, url);
+        ret = open_url_keepalive(c->ctx, &c->playlist_pb, url, NULL);
         if (ret == AVERROR_EXIT) {
             return ret;
         } else if (ret < 0) {
