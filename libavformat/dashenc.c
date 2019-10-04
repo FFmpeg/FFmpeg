@@ -86,6 +86,7 @@ typedef struct AdaptationSet {
     AVDictionary *metadata;
     AVRational min_frame_rate, max_frame_rate;
     int ambiguous_frame_rate;
+    int64_t max_frag_duration;
 } AdaptationSet;
 
 typedef struct OutputStream {
@@ -126,6 +127,7 @@ typedef struct OutputStream {
     int64_t total_pkt_duration;
     int muxer_overhead;
     int frag_type;
+    int64_t gop_size;
 } OutputStream;
 
 typedef struct DASHContext {
@@ -171,11 +173,13 @@ typedef struct DASHContext {
     SegmentType segment_type_option;  /* segment type as specified in options */
     int ignore_io_errors;
     int lhls;
+    int ldash;
     int master_publish_rate;
     int nr_of_streams_to_flush;
     int nr_of_streams_flushed;
     int frag_type;
     int write_prft;
+    int64_t max_gop_size;
 } DASHContext;
 
 static struct codec_string {
@@ -646,6 +650,10 @@ static void output_segment_list(OutputStream *os, AVIOContext *out, AVFormatCont
                 avio_printf(out, "availabilityTimeOffset=\"%.3f\" ",
                             os->availability_time_offset);
         }
+        if (c->ldash && !final && os->frag_type != FRAG_TYPE_NONE &&
+            (os->frag_type != FRAG_TYPE_DURATION || os->frag_duration != os->seg_duration))
+            avio_printf(out, "availabilityTimeComplete=\"false\" ");
+
         avio_printf(out, "initialization=\"%s\" media=\"%s\" startNumber=\"%d\"", os->init_seg_name, os->media_seg_name, c->use_timeline ? start_number : 1);
         if (c->presentation_time_offset)
             avio_printf(out, " presentationTimeOffset=\"%"PRId64"\"", c->presentation_time_offset);
@@ -793,6 +801,8 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
         avio_printf(out, " lang=\"%s\"", lang->value);
     avio_printf(out, ">\n");
 
+    if (!final && c->ldash && as->max_frag_duration)
+        avio_printf(out, "\t\t\t<Resync dT=\"%"PRId64"\" type=\"0\"/>\n", as->max_frag_duration);
     role = av_dict_get(as->metadata, "role", NULL, 0);
     if (role)
         avio_printf(out, "\t\t\t<Role schemeIdUri=\"urn:mpeg:dash:role:2011\" value=\"%s\"/>\n", role->value);
@@ -828,6 +838,9 @@ static int write_adaptation_set(AVFormatContext *s, AVIOContext *out, int as_ind
             avio_printf(out, "\t\t\t\t\t<UTCTiming schemeIdUri=\"urn:mpeg:dash:utc:http-xsdate:2014\" value=\"%s\"/>\n", c->utc_timing_url);
             avio_printf(out, "\t\t\t\t</ProducerReferenceTime>\n");
         }
+        if (!final && c->ldash && os->gop_size && os->frag_type != FRAG_TYPE_NONE &&
+            (os->frag_type != FRAG_TYPE_DURATION || os->frag_duration != os->seg_duration))
+            avio_printf(out, "\t\t\t\t<Resync dT=\"%"PRId64"\" type=\"1\"/>\n", os->gop_size);
         output_segment_list(os, out, s, i, final);
         avio_printf(out, "\t\t\t</Representation>\n");
     }
@@ -1076,7 +1089,8 @@ static int write_manifest(AVFormatContext *s, int final)
         if (c->use_template && !c->use_timeline)
             update_period = 500;
         avio_printf(out, "\tminimumUpdatePeriod=\"PT%"PRId64"S\"\n", update_period);
-        avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
+        if (!c->ldash)
+            avio_printf(out, "\tsuggestedPresentationDelay=\"PT%"PRId64"S\"\n", c->last_duration / AV_TIME_BASE);
         if (c->availability_start_time[0])
             avio_printf(out, "\tavailabilityStartTime=\"%s\"\n", c->availability_start_time);
         format_date(now_str, sizeof(now_str), av_gettime());
@@ -1089,7 +1103,7 @@ static int write_manifest(AVFormatContext *s, int final)
         }
     }
     avio_printf(out, "\tminBufferTime=\"");
-    write_time(out, c->last_duration * 2);
+    write_time(out, c->ldash && c->max_gop_size ? c->max_gop_size : c->last_duration * 2);
     avio_printf(out, "\">\n");
     avio_printf(out, "\t<ProgramInformation>\n");
     if (title) {
@@ -1255,6 +1269,11 @@ static int dash_init(AVFormatContext *s)
     if (c->lhls && !c->hls_playlist) {
         av_log(s, AV_LOG_WARNING, "LHLS option will be ignored as hls_playlist is not enabled\n");
         c->lhls = 0;
+    }
+
+    if (c->ldash && !c->streaming) {
+        av_log(s, AV_LOG_WARNING, "LDash option will be ignored as streaming is not enabled\n");
+        c->ldash = 0;
     }
 
     if (c->global_sidx && !c->single_file) {
@@ -1848,6 +1867,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
     DASHContext *c = s->priv_data;
     AVStream *st = s->streams[pkt->stream_index];
     OutputStream *os = &c->streams[pkt->stream_index];
+    AdaptationSet *as = &c->as[os->as_idx - 1];
     int64_t seg_end_duration, elapsed_duration;
     int ret;
 
@@ -1909,6 +1929,7 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
 
          os->availability_time_offset = ((double) os->seg_duration -
                                          frame_duration) / AV_TIME_BASE;
+        as->max_frag_duration = FFMAX(frame_duration, as->max_frag_duration);
     }
 
     if (c->use_template && !c->use_timeline) {
@@ -1987,8 +2008,14 @@ static int dash_write_packet(AVFormatContext *s, AVPacket *pkt)
                                                      AV_TIME_BASE_Q);
                 os->availability_time_offset = ((double) os->seg_duration -
                                                  frag_duration) / AV_TIME_BASE;
+               as->max_frag_duration = FFMAX(frag_duration, as->max_frag_duration);
             }
         }
+    }
+
+    if (pkt->flags & AV_PKT_FLAG_KEY && (os->packets_written || os->nb_segments) && !os->gop_size) {
+        os->gop_size = os->last_duration + av_rescale_q(os->total_pkt_duration, st->time_base, AV_TIME_BASE_Q);
+        c->max_gop_size = FFMAX(c->max_gop_size, os->gop_size);
     }
 
     if ((ret = ff_write_chained(os->ctx, 0, pkt, s, 0)) < 0)
@@ -2149,6 +2176,7 @@ static const AVOption options[] = {
     { "webm", "make segment file in WebM format", 0, AV_OPT_TYPE_CONST, {.i64 = SEGMENT_TYPE_WEBM }, 0, UINT_MAX,   E, "segment_type"},
     { "ignore_io_errors", "Ignore IO errors during open and write. Useful for long-duration runs with network output", OFFSET(ignore_io_errors), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "lhls", "Enable Low-latency HLS(Experimental). Adds #EXT-X-PREFETCH tag with current segment's URI", OFFSET(lhls), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
+    { "ldash", "Enable Low-latency dash. Constrains the value of a few elements", OFFSET(ldash), AV_OPT_TYPE_BOOL, { .i64 = 0 }, 0, 1, E },
     { "master_m3u8_publish_rate", "Publish master playlist every after this many segment intervals", OFFSET(master_publish_rate), AV_OPT_TYPE_INT, {.i64 = 0}, 0, UINT_MAX, E},
     { "write_prft", "Write producer reference time element", OFFSET(write_prft), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E},
     { NULL },
