@@ -785,7 +785,7 @@ int attribute_align_arg avcodec_receive_frame(AVCodecContext *avctx, AVFrame *fr
         if (avctx->frame_number > 1) {
             changed = avci->initial_format != frame->format;
 
-           switch(avctx->codec_type) {
+            switch(avctx->codec_type) {
             case AVMEDIA_TYPE_VIDEO:
                 changed |= avci->initial_width  != frame->width ||
                            avci->initial_height != frame->height;
