@@ -1475,6 +1475,9 @@ static int read_diff_float_data(ALSDecContext *ctx, unsigned int ra_frame) {
         ff_mlz_flush_dict(ctx->mlz);
     }
 
+    if (avctx->channels * 8 > get_bits_left(gb))
+        return AVERROR_INVALIDDATA;
+
     for (c = 0; c < avctx->channels; ++c) {
         if (use_acf) {
             //acf_flag
