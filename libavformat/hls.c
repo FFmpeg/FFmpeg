@@ -1449,6 +1449,7 @@ reload:
 
         if (c->http_multiple == 1 && v->input_next_requested) {
             FFSWAP(AVIOContext *, v->input, v->input_next);
+            v->cur_seg_offset = 0;
             v->input_next_requested = 0;
             ret = 0;
         } else {
