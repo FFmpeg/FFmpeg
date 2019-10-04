@@ -4630,6 +4630,7 @@ static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
 {
     int64_t pos = avio_tell(pb), pts_us, ntp_ts;
     MOVTrack *first_track;
+    int flags = 24;
 
     /* PRFT should be associated with at most one track. So, choosing only the
      * first track. */
@@ -4648,7 +4649,11 @@ static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
     }
 
     if (mov->write_prft == MOV_PRFT_SRC_WALLCLOCK) {
-        ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(av_gettime()));
+        if (first_track->cluster[0].prft.wallclock) {
+            ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(first_track->cluster[0].prft.wallclock));
+            flags = first_track->cluster[0].prft.flags;
+        } else
+            ntp_ts = ff_get_formatted_ntp_time(ff_ntp_time(av_gettime()));
     } else if (mov->write_prft == MOV_PRFT_SRC_PTS) {
         pts_us = av_rescale_q(first_track->cluster[0].pts,
                               first_track->st->time_base, AV_TIME_BASE_Q);
@@ -4662,7 +4667,7 @@ static int mov_write_prft_tag(AVIOContext *pb, MOVMuxContext *mov, int tracks)
     avio_wb32(pb, 0);                           // Size place holder
     ffio_wfourcc(pb, "prft");                   // Type
     avio_w8(pb, 1);                             // Version
-    avio_wb24(pb, 0);                           // Flags
+    avio_wb24(pb, flags);                       // Flags
     avio_wb32(pb, first_track->track_id);       // reference track ID
     avio_wb64(pb, ntp_ts);                      // NTP time stamp
     avio_wb64(pb, first_track->cluster[0].pts); //media time
@@ -5356,8 +5361,10 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVIOContext *pb = s->pb;
     MOVTrack *trk = &mov->tracks[pkt->stream_index];
     AVCodecParameters *par = trk->par;
+    AVProducerReferenceTime *prft;
     unsigned int samples_in_chunk = 0;
     int size = pkt->size, ret = 0;
+    int prft_size;
     uint8_t *reformatted_data = NULL;
 
     ret = check_pkt(s, pkt);
@@ -5629,6 +5636,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->cluster[trk->entry].flags |= MOV_DISPOSABLE_SAMPLE;
         trk->has_disposable++;
     }
+
+    prft = (AVProducerReferenceTime *)av_packet_get_side_data(pkt, AV_PKT_DATA_PRFT, &prft_size);
+    if (prft && prft_size == sizeof(AVProducerReferenceTime))
+        memcpy(&trk->cluster[trk->entry].prft, prft, prft_size);
+    else
+        memset(&trk->cluster[trk->entry].prft, 0, sizeof(AVProducerReferenceTime));
+
     trk->entry++;
     trk->sample_count += samples_in_chunk;
     mov->mdat_size    += size;
