@@ -234,8 +234,10 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
     int *dst = ctx->channel_data[ch];
 
     ctx->filter_params = get_vlc2(gb, set->filter_params.table, 9, 2);
-    ctx->filter_bits   = (ctx->filter_params - 2) >> 6;
-    ctx->filter_length = ctx->filter_params - (ctx->filter_bits << 6) - 1;
+    if (ctx->filter_params > 1) {
+        ctx->filter_bits   = (ctx->filter_params - 2) >> 6;
+        ctx->filter_length = ctx->filter_params - (ctx->filter_bits << 6) - 1;
+    }
 
     if (ctx->filter_params == FILTER_RAW) {
         for (i = 0; i < length; i++)
