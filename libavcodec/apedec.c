@@ -1364,6 +1364,8 @@ static void ape_unpack_mono(APEContext *ctx, int count)
     }
 
     ctx->entropy_decode_mono(ctx, count);
+    if (ctx->error)
+        return;
 
     /* Now apply the predictor decoding */
     ctx->predictor_decode_mono(ctx, count);
@@ -1387,6 +1389,8 @@ static void ape_unpack_stereo(APEContext *ctx, int count)
     }
 
     ctx->entropy_decode_stereo(ctx, count);
+    if (ctx->error)
+        return;
 
     /* Now apply the predictor decoding */
     ctx->predictor_decode_stereo(ctx, count);
