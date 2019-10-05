@@ -455,8 +455,12 @@ int ff_h2645_packet_split(H2645Packet *pkt, const uint8_t *buf, int length,
 
         if (pkt->nals_allocated < pkt->nb_nals + 1) {
             int new_size = pkt->nals_allocated + 1;
-            void *tmp = av_realloc_array(pkt->nals, new_size, sizeof(*pkt->nals));
+            void *tmp;
 
+            if (new_size >= INT_MAX / sizeof(*pkt->nals))
+                return AVERROR(ENOMEM);
+
+            tmp = av_fast_realloc(pkt->nals, &pkt->nal_buffer_size, new_size * sizeof(*pkt->nals));
             if (!tmp)
                 return AVERROR(ENOMEM);
 
