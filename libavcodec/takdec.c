@@ -176,8 +176,8 @@ static void set_sample_rate_params(AVCodecContext *avctx)
     } else {
         shift = 0;
     }
-    s->uval           = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << shift;
-    s->subframe_scale = FFALIGN(avctx->sample_rate + 511 >> 9, 4) << 1;
+    s->uval           = FFALIGN(avctx->sample_rate + 511LL >> 9, 4) << shift;
+    s->subframe_scale = FFALIGN(avctx->sample_rate + 511LL >> 9, 4) << 1;
 }
 
 static av_cold int tak_decode_init(AVCodecContext *avctx)
