@@ -73,7 +73,7 @@ static int write_header(AVFormatContext *s)
     if (cpr->silence_threshold != -1) {
 #if CPR_VERSION_INT >= AV_VERSION_INT(0, 7, 0)
         if (!chromaprint_set_option(cpr->ctx, "silence_threshold", cpr->silence_threshold)) {
-            av_log(s, AV_LOG_ERROR, "Failed to set silence threshold.\n");
+            av_log(s, AV_LOG_ERROR, "Failed to set silence threshold. Setting silence_threshold requires -algorithm 3 option.\n");
             goto fail;
         }
 #else
