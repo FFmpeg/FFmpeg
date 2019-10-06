@@ -6211,6 +6211,13 @@ Set vertical radius size, if zero it will be same as @code{sizeX}.
 Default is @code{0}.
 @end table
 
+@subsection Commands
+This filter supports same commands as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section bbox
 
 Compute the bounding box for the non-black pixels in the input frame
