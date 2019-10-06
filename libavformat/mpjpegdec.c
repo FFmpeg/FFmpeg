@@ -336,10 +336,8 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
         pkt->size = 0;
         pkt->pos  = avio_tell(s->pb);
 
-        /* we may need to return as much as all we've read back to the buffer */
-        ffio_ensure_seekback(s->pb, read_chunk);
-
-        while ((ret = av_append_packet(s->pb, pkt, read_chunk - remaining)) >= 0) {
+        while ((ret = ffio_ensure_seekback(s->pb, read_chunk - remaining)) >= 0 && /* we may need to return as much as all we've read back to the buffer */
+               (ret = av_append_packet(s->pb, pkt, read_chunk - remaining)) >= 0) {
             /* scan the new data */
             char *start;
 
