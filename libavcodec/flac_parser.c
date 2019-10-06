@@ -113,8 +113,8 @@ static int frame_header_is_valid(AVCodecContext *avctx, const uint8_t *buf,
  * This function is based on av_fifo_generic_read, which is why there is a comment
  * about a memory barrier for SMP.
  */
-static uint8_t* flac_fifo_read_wrap(FLACParseContext *fpc, int offset, int len,
-                               uint8_t** wrap_buf, int* allocated_size)
+static uint8_t *flac_fifo_read_wrap(FLACParseContext *fpc, int offset, int len,
+                                    uint8_t **wrap_buf, int *allocated_size)
 {
     AVFifoBuffer *f   = fpc->fifo_buf;
     uint8_t *start    = f->rptr + offset;
@@ -153,7 +153,7 @@ static uint8_t* flac_fifo_read_wrap(FLACParseContext *fpc, int offset, int len,
  * A second call to flac_fifo_read (with new offset and len) should be called
  * to get the post-wrap buf if the returned len is less than the requested.
  **/
-static uint8_t* flac_fifo_read(FLACParseContext *fpc, int offset, int *len)
+static uint8_t *flac_fifo_read(FLACParseContext *fpc, int offset, int *len)
 {
     AVFifoBuffer *f   = fpc->fifo_buf;
     uint8_t *start    = f->rptr + offset;
@@ -189,8 +189,8 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
                    "couldn't allocate FLACHeaderMarker\n");
             return AVERROR(ENOMEM);
         }
-        (*end_handle)->fi           = fi;
-        (*end_handle)->offset       = offset;
+        (*end_handle)->fi     = fi;
+        (*end_handle)->offset = offset;
 
         for (i = 0; i < FLAC_MAX_SEQUENTIAL_HEADERS; i++)
             (*end_handle)->link_penalty[i] = FLAC_HEADER_NOT_PENALIZED_YET;
@@ -201,9 +201,8 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
     return size;
 }
 
-static int find_headers_search(FLACParseContext *fpc, uint8_t *buf, int buf_size,
-                               int search_start)
-
+static int find_headers_search(FLACParseContext *fpc, uint8_t *buf,
+                               int buf_size, int search_start)
 {
     int size = 0, mod_offset = (buf_size - 1) % 4, i, j;
     uint32_t x;
@@ -464,7 +463,7 @@ static void score_sequences(FLACParseContext *fpc)
     }
 }
 
-static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
+static int get_best_header(FLACParseContext *fpc, const uint8_t **poutbuf,
                            int *poutbuf_size)
 {
     FLACHeaderMarker *header = fpc->best_header;
@@ -490,7 +489,7 @@ static int get_best_header(FLACParseContext* fpc, const uint8_t **poutbuf,
                                         &fpc->wrap_buf_allocated_size);
 
 
-    if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+    if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS) {
         if (header->fi.is_var_size)
           fpc->pc->pts = header->fi.frame_or_sample_num;
         else if (header->best_child)
@@ -524,7 +523,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             s->duration = fi.blocksize;
             if (!avctx->sample_rate)
                 avctx->sample_rate = fi.samplerate;
-            if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS){
+            if (fpc->pc->flags & PARSER_FLAG_USE_CODEC_TS) {
                 fpc->pc->pts = fi.frame_or_sample_num;
                 if (!fi.is_var_size)
                   fpc->pc->pts *= fi.blocksize;
@@ -594,7 +593,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
         /* Pad the end once if EOF, to check the final region for headers. */
         if (!buf_size) {
-            fpc->end_padded      = 1;
+            fpc->end_padded = 1;
             read_end = read_start + MAX_FRAME_HEADER_SIZE;
         } else {
             /* The maximum read size is the upper-bound of what the parser
@@ -691,13 +690,13 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                    fpc->best_header->offset);
 
             /* Set duration to 0. It is unknown or invalid in a junk frame. */
-            s->duration = 0;
-            *poutbuf_size     = fpc->best_header->offset;
-            *poutbuf          = flac_fifo_read_wrap(fpc, 0, *poutbuf_size,
-                                                    &fpc->wrap_buf,
-                                                    &fpc->wrap_buf_allocated_size);
+            s->duration   = 0;
+            *poutbuf_size = fpc->best_header->offset;
+            *poutbuf      = flac_fifo_read_wrap(fpc, 0, *poutbuf_size,
+                                                &fpc->wrap_buf,
+                                                &fpc->wrap_buf_allocated_size);
             return buf_size ? (read_end - buf) : (fpc->best_header->offset -
-                                           av_fifo_size(fpc->fifo_buf));
+                                                  av_fifo_size(fpc->fifo_buf));
         }
         if (!buf_size)
             return get_best_header(fpc, poutbuf, poutbuf_size);
