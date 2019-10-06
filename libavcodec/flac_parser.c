@@ -562,7 +562,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         for (curr = best_child->next; curr; curr = curr->next)
             curr->offset -= best_child->offset;
 
-        fpc->nb_headers_buffered--;
         best_child->offset = 0;
         fpc->headers       = best_child;
         if (fpc->nb_headers_buffered >= FLAC_MIN_HEADERS) {
