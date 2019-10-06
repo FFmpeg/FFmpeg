@@ -734,6 +734,7 @@ static void flac_parse_close(AVCodecParserContext *c)
         av_free(curr);
         curr = temp;
     }
+    fpc->headers = NULL;
     av_fifo_freep(&fpc->fifo_buf);
     av_freep(&fpc->wrap_buf);
 }
