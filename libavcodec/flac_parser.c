@@ -595,7 +595,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
         /* Pad the end once if EOF, to check the final region for headers. */
         if (!buf_size) {
             fpc->end_padded      = 1;
-            buf_size = MAX_FRAME_HEADER_SIZE;
             read_end = read_start + MAX_FRAME_HEADER_SIZE;
         } else {
             /* The maximum read size is the upper-bound of what the parser
@@ -668,7 +667,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                 fpc->fifo_buf->wptr += fpc->fifo_buf->end -
                     fpc->fifo_buf->buffer;
             }
-            buf_size = 0;
             read_start = read_end = NULL;
         }
     }
