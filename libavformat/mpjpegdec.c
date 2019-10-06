@@ -267,7 +267,7 @@ static char* mpjpeg_get_boundary(AVIOContext* pb)
         while (av_isspace(*start))
             start++;
 
-        if (!av_stristart(start, "boundary=", &start)) {
+        if (av_stristart(start, "boundary=", &start)) {
             end = strchr(start, ';');
             if (end)
                 len = end - start - 1;
