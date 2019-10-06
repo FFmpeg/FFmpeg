@@ -21384,7 +21384,7 @@ Convert input audio to a video output, representing the audio vector
 scope.
 
 The filter is used to measure the difference between channels of stereo
-audio stream. A monoaural signal, consisting of identical left and right
+audio stream. A monaural signal, consisting of identical left and right
 signal, results in straight vertical line. Any stereo separation is visible
 as a deviation from this line, creating a Lissajous figure.
 If the straight (or deviation from it) but horizontal line appears this
@@ -23752,7 +23752,7 @@ in @file{libavutil/frame.h}. For example, to choose
 
 @section spectrumsynth
 
-Sythesize audio from 2 input video spectrums, first input stream represents
+Synthesize audio from 2 input video spectrums, first input stream represents
 magnitude across time and second represents phase across time.
 The filter will transform from frequency domain as displayed in videos back
 to time domain as presented in audio output.
