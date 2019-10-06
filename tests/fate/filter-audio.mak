@@ -312,47 +312,47 @@ FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM
 fate-filter-hdcd-mix: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-mix: CMD = md5 -i $(SRC) -af hdcd -f s24le
 fate-filter-hdcd-mix: CMP = oneline
-fate-filter-hdcd-mix: REF = e7079913e90c124460cdbc712df5b84c
+fate-filter-hdcd-mix: REF = 77443573e0bd3532de52a8bc0e825da7
 
 # output will be different because of the gain mismatch in the second and third parts
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-mix-psoff
 fate-filter-hdcd-mix-psoff: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-mix-psoff: CMD = md5 -i $(SRC) -af hdcd=process_stereo=false -f s24le
 fate-filter-hdcd-mix-psoff: CMP = oneline
-fate-filter-hdcd-mix-psoff: REF = bd0e81fe17696b825ee3515ab928e6bb
+fate-filter-hdcd-mix-psoff: REF = 89e57885917a436b30855db4d478cefb
 
 # test the different analyze modes
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-pe
 fate-filter-hdcd-analyze-pe: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-pe: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=pe -f s24le
 fate-filter-hdcd-analyze-pe: CMP = oneline
-fate-filter-hdcd-analyze-pe: REF = bb83e97bbd0064b9b1c0ef2f2c8f0c77
+fate-filter-hdcd-analyze-pe: REF = 2d839d8a1cf73b10a566ce3d4cfaa79e
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-lle
 fate-filter-hdcd-analyze-lle: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-lle: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=lle -f s24le
 fate-filter-hdcd-analyze-lle: CMP = oneline
-fate-filter-hdcd-analyze-lle: REF = 121cc4a681aa0caef5c664fece7a3ddc
+fate-filter-hdcd-analyze-lle: REF = b4b185332b7025c191062f49a2c015f1
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-cdt
 fate-filter-hdcd-analyze-cdt: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-cdt: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=cdt -f s24le
 fate-filter-hdcd-analyze-cdt: CMP = oneline
-fate-filter-hdcd-analyze-cdt: REF = 12136e6a00dd532994f6edcc347af1d4
+fate-filter-hdcd-analyze-cdt: REF = afa6577675c63e87da3edbd442b7b6e2
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-tgm
 fate-filter-hdcd-analyze-tgm: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-tgm: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=tgm -f s24le
 fate-filter-hdcd-analyze-tgm: CMP = oneline
-fate-filter-hdcd-analyze-tgm: REF = a3c39f62e9b9b42c9c440d0045d5fb2f
+fate-filter-hdcd-analyze-tgm: REF = 285f0fd2249b4903cd5e1ad5ce004219
 # the two additional analyze modes from libhdcd
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-ltgm
 fate-filter-hdcd-analyze-ltgm: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-ltgm: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=lle:process_stereo=false -f s24le
 fate-filter-hdcd-analyze-ltgm: CMP = oneline
-fate-filter-hdcd-analyze-ltgm: REF = 76ffd86b762b5a93332039f27e4c0c0e
+fate-filter-hdcd-analyze-ltgm: REF = 404dc2301ea97e9f96c3d6d2ebcfeaa5
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-analyze-pel
 fate-filter-hdcd-analyze-pel: SRC = $(TARGET_SAMPLES)/filter/hdcd-mix.flac
 fate-filter-hdcd-analyze-pel: CMD = md5 -i $(SRC) -af hdcd=analyze_mode=pe:force_pe=true -f s24le
 fate-filter-hdcd-analyze-pel: CMP = oneline
-fate-filter-hdcd-analyze-pel: REF = 8156c5a3658d789ab46447d62151f5e9
+fate-filter-hdcd-analyze-pel: REF = 9342983208ec1a7f2b3e332ac4dcb723
 
 FATE_AFILTER_SAMPLES-$(call FILTERDEMDECENCMUX, HDCD, FLAC, FLAC, PCM_S24LE, PCM_S24LE) += fate-filter-hdcd-false-positive
 fate-filter-hdcd-false-positive: SRC = $(TARGET_SAMPLES)/filter/hdcd-false-positive.flac

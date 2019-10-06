@@ -244,9 +244,9 @@ static int find_new_headers(FLACParseContext *fpc, int search_start)
         uint8_t wrap[2];
 
         wrap[0]  = buf[read_len - 1];
-        read_len = search_end - search_start + 1;
-
         /* search_start + 1 is the post-wrap offset in the fifo. */
+        read_len = search_end - (search_start + 1) + 1;
+
         buf      = flac_fifo_read(fpc, search_start + 1, &read_len);
         wrap[1]  = buf[0];
 
