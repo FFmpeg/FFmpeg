@@ -221,7 +221,7 @@ static int find_headers_search(FLACParseContext *fpc, uint8_t *buf, int buf_size
     }
 
     for (; i < buf_size - 1; i += 4) {
-        x = AV_RB32(buf + i);
+        x = AV_RN32(buf + i);
         if (((x & ~(x + 0x01010101)) & 0x80808080)) {
             for (j = 0; j < 4; j++) {
                 if ((AV_RB16(buf + i + j) & 0xFFFE) == 0xFFF8)
