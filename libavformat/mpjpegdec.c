@@ -302,8 +302,9 @@ static int mpjpeg_read_packet(AVFormatContext *s, AVPacket *pkt)
             boundary = mpjpeg_get_boundary(s->pb);
         }
         if (boundary != NULL) {
-            mpjpeg->boundary = boundary;
-            mpjpeg->searchstr = av_asprintf( "\r\n%s\r\n", boundary );
+            mpjpeg->boundary = av_asprintf("--%s", boundary);
+            mpjpeg->searchstr = av_asprintf("\r\n--%s\r\n", boundary);
+            av_freep(&boundary);
         } else {
             mpjpeg->boundary = av_strdup("--");
             mpjpeg->searchstr = av_strdup("\r\n--");
