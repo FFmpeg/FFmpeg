@@ -10873,6 +10873,13 @@ Set vertical sigma, if negative it will be same as @code{sigma}.
 Default is @code{-1}.
 @end table
 
+@subsection Commands
+This filter supports same commands as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section geq
 
 Apply generic equation to each pixel.
