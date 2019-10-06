@@ -58,8 +58,9 @@
 
 typedef struct FLACHeaderMarker {
     int offset;       /**< byte offset from start of FLACParseContext->buffer */
-    int *link_penalty;  /**< pointer to array of local scores between this header
-                           and the one at a distance equal array position     */
+    int link_penalty[FLAC_MAX_SEQUENTIAL_HEADERS]; /**< array of local scores
+                           between this header and the one at a distance equal
+                           array position                                     */
     int max_score;    /**< maximum score found after checking each child that
                            has a valid CRC                                    */
     FLACFrameInfo fi; /**< decoded frame header info                          */
@@ -190,14 +191,6 @@ static int find_headers_search_validate(FLACParseContext *fpc, int offset)
         }
         (*end_handle)->fi           = fi;
         (*end_handle)->offset       = offset;
-        (*end_handle)->link_penalty = av_malloc(sizeof(int) *
-                                            FLAC_MAX_SEQUENTIAL_HEADERS);
-        if (!(*end_handle)->link_penalty) {
-            av_freep(end_handle);
-            av_log(fpc->avctx, AV_LOG_ERROR,
-                   "couldn't allocate link_penalty\n");
-            return AVERROR(ENOMEM);
-        }
 
         for (i = 0; i < FLAC_MAX_SEQUENTIAL_HEADERS; i++)
             (*end_handle)->link_penalty[i] = FLAC_HEADER_NOT_PENALIZED_YET;
@@ -559,7 +552,6 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
                        curr->max_score, curr->offset, curr->next->offset);
             }
             temp = curr->next;
-            av_freep(&curr->link_penalty);
             av_free(curr);
             fpc->nb_headers_buffered--;
         }
@@ -584,12 +576,10 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
 
         for (curr = fpc->headers; curr != fpc->best_header; curr = temp) {
             temp = curr->next;
-            av_freep(&curr->link_penalty);
             av_free(curr);
             fpc->nb_headers_buffered--;
         }
         fpc->headers = fpc->best_header->next;
-        av_freep(&fpc->best_header->link_penalty);
         av_freep(&fpc->best_header);
         fpc->nb_headers_buffered--;
     }
@@ -745,7 +735,6 @@ static void flac_parse_close(AVCodecParserContext *c)
 
     while (curr) {
         temp = curr->next;
-        av_freep(&curr->link_penalty);
         av_free(curr);
         curr = temp;
     }
