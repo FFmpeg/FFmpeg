@@ -136,7 +136,7 @@ static int write_trailer(AVFormatContext *s)
 
     switch (cpr->fp_format) {
     case FINGERPRINT_RAW:
-        avio_write(pb, fp, size);
+        avio_write(pb, fp, size * 4); //fp points to array of uint32_t
         break;
     case FINGERPRINT_COMPRESSED:
     case FINGERPRINT_BASE64:
