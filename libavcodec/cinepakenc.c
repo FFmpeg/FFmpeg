@@ -544,8 +544,9 @@ static int encode_mode(CinepakEncContext *s, int h,
                        uint8_t *last_data[4], int last_linesize[4],
                        strip_info *info, unsigned char *buf)
 {
-    int x, y, z, flags, bits, temp_size, header_ofs, ret = 0, mb_count = s->w * h / MB_AREA;
+    int x, y, z, bits, temp_size, header_ofs, ret = 0, mb_count = s->w * h / MB_AREA;
     int needs_extra_bit, should_write_temp;
+    uint32_t flags;
     unsigned char temp[64]; // 32/2 = 16 V4 blocks at 4 B each -> 64 B
     mb_info *mb;
     uint8_t *sub_scratch_data[4] = { 0 }, *sub_last_data[4] = { 0 };
@@ -599,7 +600,7 @@ static int encode_mode(CinepakEncContext *s, int h,
             flags = 0;
             for (y = x; y < FFMIN(x + 32, mb_count); y++)
                 if (s->mb[y].best_encoding == ENC_V4)
-                    flags |= 1 << (31 - y + x);
+                    flags |= 1U << (31 - y + x);
 
             AV_WB32(&buf[ret], flags);
             ret += 4;
@@ -626,13 +627,13 @@ static int encode_mode(CinepakEncContext *s, int h,
 
         for (x = 0; x < mb_count; x++) {
             mb                = &s->mb[x];
-            flags            |= (mb->best_encoding != ENC_SKIP) << (31 - bits++);
+            flags            |= (uint32_t)(mb->best_encoding != ENC_SKIP) << (31 - bits++);
             needs_extra_bit   = 0;
             should_write_temp = 0;
 
             if (mb->best_encoding != ENC_SKIP) {
                 if (bits < 32)
-                    flags |= (mb->best_encoding == ENC_V4) << (31 - bits++);
+                    flags |= (uint32_t)(mb->best_encoding == ENC_V4) << (31 - bits++);
                 else
                     needs_extra_bit = 1;
             }
@@ -651,7 +652,7 @@ static int encode_mode(CinepakEncContext *s, int h,
             }
 
             if (needs_extra_bit) {
-                flags = (mb->best_encoding == ENC_V4) << 31;
+                flags = (uint32_t)(mb->best_encoding == ENC_V4) << 31;
                 bits  = 1;
             }
 
