@@ -105,12 +105,14 @@ It takes a single signed native-endian 16-bit raw audio stream of at most 2 chan
 
 @table @option
 @item silence_threshold
-Threshold for detecting silence, ranges from -1 to 32767. -1 disables silence detection and
-is required for use with the AcoustID service. Default is -1.
+Threshold for detecting silence. Range is from -1 to 32767, where -1 disables
+silence detection. Silence detection can only be used with version 3 of the
+algorithm.
+Silence detection must be disabled for use with the AcoustID service. Default is -1.
 
 @item algorithm
-Version of algorithm to fingerprint with. Range is 0 to 4. Version 2 requires that silence
-detection be enabled. Default is 1.
+Version of algorithm to fingerprint with. Range is 0 to 4.
+Version 3 enables silence detection. Default is 1.
 
 @item fp_format
 Format to output the fingerprint as. Accepts the following options:
