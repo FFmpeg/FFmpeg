@@ -81,6 +81,17 @@
 #include "internal.h"
 #include "video.h"
 
+typedef struct NormalizeHistory {
+    uint8_t *history;       // History entries.
+    uint32_t history_sum;   // Sum of history entries.
+} NormalizeHistory;
+
+typedef struct NormalizeLocal {
+    uint8_t in;     // Original input byte value for this frame.
+    float smoothed; // Smoothed input value [0,255].
+    float out;      // Output value [0,255]
+} NormalizeLocal;
+
 typedef struct NormalizeContext {
     const AVClass *class;
 
@@ -98,10 +109,7 @@ typedef struct NormalizeContext {
     int frame_num;      // Increments on each frame, starting from 0.
 
     // Per-extremum, per-channel history, for temporal smoothing.
-    struct {
-        uint8_t *history;       // History entries.
-        uint32_t history_sum;   // Sum of history entries.
-    } min[3], max[3];           // Min and max for each channel in {R,G,B}.
+    NormalizeHistory min[3], max[3];           // Min and max for each channel in {R,G,B}.
     uint8_t *history_mem;       // Single allocation for above history entries
 
 } NormalizeContext;
@@ -126,11 +134,7 @@ AVFILTER_DEFINE_CLASS(normalize);
 static void normalize(NormalizeContext *s, AVFrame *in, AVFrame *out)
 {
     // Per-extremum, per-channel local variables.
-    struct {
-        uint8_t in;     // Original input byte value for this frame.
-        float smoothed; // Smoothed input value [0,255].
-        float out;      // Output value [0,255].
-    } min[3], max[3];   // Min and max for each channel in {R,G,B}.
+    NormalizeLocal min[3], max[3];   // Min and max for each channel in {R,G,B}.
 
     float rgb_min_smoothed; // Min input range for linked normalization
     float rgb_max_smoothed; // Max input range for linked normalization
