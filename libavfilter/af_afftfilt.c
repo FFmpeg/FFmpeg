@@ -188,6 +188,8 @@ static int config_input(AVFilterLink *inlink)
     if (!args)
         return AVERROR(ENOMEM);
 
+    saveptr = NULL;
+    last_expr = "1";
     for (ch = 0; ch < inlink->channels; ch++) {
         char *arg = av_strtok(ch == 0 ? args : NULL, "|", &saveptr);
 
