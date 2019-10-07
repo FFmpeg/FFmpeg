@@ -176,8 +176,8 @@ static void convolution_y_##bits##bit(const uint16_t *filter, int filt_w, \
     } \
 }
 
-conv_y_fn(uint8_t, 8);
-conv_y_fn(uint16_t, 10);
+conv_y_fn(uint8_t, 8)
+conv_y_fn(uint16_t, 10)
 
 static void vmafmotiondsp_init(VMAFMotionDSPContext *dsp, int bpp) {
     dsp->convolution_x = convolution_x;

@@ -639,11 +639,11 @@ static av_cold void init_blend_func_##depth##_##nbits##bit(FilterParams *param) 
         case BLEND_XOR:        param->blend = blend_xor_##depth##bit;        break;       \
     }                                                                                     \
 }
-DEFINE_INIT_BLEND_FUNC(8, 8);
-DEFINE_INIT_BLEND_FUNC(9, 16);
-DEFINE_INIT_BLEND_FUNC(10, 16);
-DEFINE_INIT_BLEND_FUNC(12, 16);
-DEFINE_INIT_BLEND_FUNC(16, 16);
+DEFINE_INIT_BLEND_FUNC(8, 8)
+DEFINE_INIT_BLEND_FUNC(9, 16)
+DEFINE_INIT_BLEND_FUNC(10, 16)
+DEFINE_INIT_BLEND_FUNC(12, 16)
+DEFINE_INIT_BLEND_FUNC(16, 16)
 
 void ff_blend_init(FilterParams *param, int depth)
 {

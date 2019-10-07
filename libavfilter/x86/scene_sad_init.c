@@ -37,9 +37,9 @@ static void FUNC_NAME(SCENE_SAD_PARAMS) {                                     \
 }
 
 #if HAVE_X86ASM
-SCENE_SAD_FUNC(scene_sad_sse2, ff_scene_sad_sse2, 16);
+SCENE_SAD_FUNC(scene_sad_sse2, ff_scene_sad_sse2, 16)
 #if HAVE_AVX2_EXTERNAL
-SCENE_SAD_FUNC(scene_sad_avx2, ff_scene_sad_avx2, 32);
+SCENE_SAD_FUNC(scene_sad_avx2, ff_scene_sad_avx2, 32)
 #endif
 #endif
 
