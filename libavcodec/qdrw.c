@@ -455,6 +455,8 @@ static int decode_frame(AVCodecContext *avctx,
                 avpriv_request_sample(avctx, "Pack type %d", pack_type);
                 return AVERROR_PATCHWELCOME;
             }
+            if (bytestream2_get_bytes_left(&gbc) < 30)
+                return AVERROR_INVALIDDATA;
             if ((ret = ff_get_buffer(avctx, p, 0)) < 0)
                 return ret;
 
