@@ -136,5 +136,4 @@ AVFilter ff_vf_showpalette = {
     .inputs        = showpalette_inputs,
     .outputs       = showpalette_outputs,
     .priv_class    = &showpalette_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
