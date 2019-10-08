@@ -281,6 +281,22 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    AudioNLMSContext *s = ctx->priv;
+    int ret;
+
+    if (   !strcmp(cmd, "mu") || !strcmp(cmd, "eps")
+        || !strcmp(cmd, "leakage") || !strcmp(cmd, "out_mode")) {
+        ret = av_opt_set(s, cmd, args, 0);
+    } else {
+        ret = AVERROR(ENOSYS);
+    }
+
+    return ret;
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioNLMSContext *s = ctx->priv;
@@ -325,4 +341,5 @@ AVFilter ff_af_anlms = {
     .inputs         = inputs,
     .outputs        = outputs,
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };

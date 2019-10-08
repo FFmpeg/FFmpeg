@@ -1870,11 +1870,15 @@ Default value is @var{o}.
 @itemize
 @item
 One of many usages of this filter is noise reduction, input audio is filtered
-with same samples that are delayed by fixed ammount, one such example for stereo audio is:
+with same samples that are delayed by fixed amount, one such example for stereo audio is:
 @example
 asplit[a][b],[a]adelay=32S|32S[a],[b][a]anlms=order=128:leakage=0.0005:mu=.5:out_mode=o
 @end example
 @end itemize
+
+@subsection Commands
+
+This filter supports the same commands as options, excluding option @code{order}.
 
 @section anull
 
