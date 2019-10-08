@@ -1157,6 +1157,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     AACContext *ac = avctx->priv_data;
     int ret;
 
+    if (avctx->sample_rate > 96000)
+        return AVERROR_INVALIDDATA;
+
     ret = ff_thread_once(&aac_table_init, &aac_static_table_init);
     if (ret != 0)
         return AVERROR_UNKNOWN;
