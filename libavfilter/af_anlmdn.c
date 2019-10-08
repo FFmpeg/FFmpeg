@@ -73,15 +73,16 @@ enum OutModes {
 
 #define OFFSET(x) offsetof(AudioNLMeansContext, x)
 #define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AFT AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption anlmdn_options[] = {
-    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AF },
+    { "s", "set denoising strength", OFFSET(a),  AV_OPT_TYPE_FLOAT,    {.dbl=0.00001},0.00001, 10, AFT },
     { "p", "set patch duration",     OFFSET(pd), AV_OPT_TYPE_DURATION, {.i64=2000}, 1000, 100000, AF },
     { "r", "set research duration",  OFFSET(rd), AV_OPT_TYPE_DURATION, {.i64=6000}, 2000, 300000, AF },
-    { "o", "set output mode",        OFFSET(om), AV_OPT_TYPE_INT,      {.i64=OUT_MODE},  0, NB_MODES-1, AF, "mode" },
-    {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AF, "mode" },
-    {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AF, "mode" },
-    {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AF, "mode" },
+    { "o", "set output mode",        OFFSET(om), AV_OPT_TYPE_INT,      {.i64=OUT_MODE},  0, NB_MODES-1, AFT, "mode" },
+    {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},   0,  0, AFT, "mode" },
+    {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},  0,  0, AFT, "mode" },
+    {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},0,  0, AFT, "mode" },
     { "m", "set smooth factor",      OFFSET(m),  AV_OPT_TYPE_FLOAT,    {.dbl=11.},       1, 15, AF },
     { NULL }
 };
@@ -339,29 +340,6 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_frame_free(&s->cache);
 }
 
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    AudioNLMeansContext *s = ctx->priv;
-
-    if (!strcmp(cmd, "s")) {
-        float a;
-
-        if (av_sscanf(args, "%f", &a) == 1)
-            s->a = av_clipf(a, 0.00001, 10);
-    } else if (!strcmp(cmd, "o")) {
-        if (!strcmp(args, "i")) {
-            s->om = IN_MODE;
-        } else if (!strcmp(args, "o")) {
-            s->om = OUT_MODE;
-        } else if (!strcmp(args, "n")) {
-            s->om = NOISE_MODE;
-        }
-    }
-
-    return 0;
-}
-
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -390,7 +368,7 @@ AVFilter ff_af_anlmdn = {
     .uninit        = uninit,
     .inputs        = inputs,
     .outputs       = outputs,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL |
                      AVFILTER_FLAG_SLICE_THREADS,
 };
