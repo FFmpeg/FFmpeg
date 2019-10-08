@@ -920,7 +920,6 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
     FFDemuxSubtitlesQueue *q;
     AVIOContext *pb = vobsub->sub_ctx->pb;
     int ret, psize, total_read = 0, i;
-    AVPacket idx_pkt = { 0 };
 
     int64_t min_ts = INT64_MAX;
     int sid = 0;
@@ -935,24 +934,22 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
     q = &vobsub->q[sid];
-    ret = ff_subtitles_queue_read_packet(q, &idx_pkt);
+    /* The returned packet will have size zero,
+     * so that it can be directly used with av_grow_packet. */
+    ret = ff_subtitles_queue_read_packet(q, pkt);
     if (ret < 0)
         return ret;
 
     /* compute maximum packet size using the next packet position. This is
      * useful when the len in the header is non-sense */
     if (q->current_sub_idx < q->nb_subs) {
-        psize = q->subs[q->current_sub_idx].pos - idx_pkt.pos;
+        psize = q->subs[q->current_sub_idx].pos - pkt->pos;
     } else {
         int64_t fsize = avio_size(pb);
-        psize = fsize < 0 ? 0xffff : fsize - idx_pkt.pos;
+        psize = fsize < 0 ? 0xffff : fsize - pkt->pos;
     }
 
-    avio_seek(pb, idx_pkt.pos, SEEK_SET);
-
-    av_init_packet(pkt);
-    pkt->size = 0;
-    pkt->data = NULL;
+    avio_seek(pb, pkt->pos, SEEK_SET);
 
     do {
         int n, to_read, startcode;
@@ -976,7 +973,7 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         total_read += pkt_size;
 
         /* the current chunk doesn't match the stream index (unlikely) */
-        if ((startcode & 0x1f) != s->streams[idx_pkt.stream_index]->id)
+        if ((startcode & 0x1f) != s->streams[pkt->stream_index]->id)
             break;
 
         ret = av_grow_packet(pkt, to_read);
@@ -988,16 +985,10 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
             pkt->size -= to_read - n;
     } while (total_read < psize);
 
-    pkt->pts = pkt->dts = idx_pkt.pts;
-    pkt->pos = idx_pkt.pos;
-    pkt->stream_index = idx_pkt.stream_index;
-
-    av_packet_unref(&idx_pkt);
     return 0;
 
 fail:
     av_packet_unref(pkt);
-    av_packet_unref(&idx_pkt);
     return ret;
 }
 
