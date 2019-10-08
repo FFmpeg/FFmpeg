@@ -4683,7 +4683,16 @@ This filter logs a message when it detects that the input audio volume is less
 or equal to a noise tolerance value for a duration greater or equal to the
 minimum detected noise duration.
 
-The printed times and duration are expressed in seconds.
+The printed times and duration are expressed in seconds. The
+@code{lavfi.silence_start} or @code{lavfi.silence_start.X} metadata key
+is set on the first frame whose timestamp equals or exceeds the detection
+duration and it contains the timestamp of the first frame of the silence.
+
+The @code{lavfi.silence_duration} or @code{lavfi.silence_duration.X}
+and @code{lavfi.silence_end} or @code{lavfi.silence_end.X} metadata
+keys are set on the first frame after the silence. If @option{mono} is
+enabled, and each channel is evaluated separately, the @code{.X}
+suffixed keys are used, and @code{X} corresponds to the channel number.
 
 The filter accepts the following options:
 
