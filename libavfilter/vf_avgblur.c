@@ -46,7 +46,7 @@ typedef struct AverageBlurContext {
 } AverageBlurContext;
 
 #define OFFSET(x) offsetof(AverageBlurContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption avgblur_options[] = {
     { "sizeX",  "set horizontal size",  OFFSET(radius),  AV_OPT_TYPE_INT, {.i64=1},   1, 1024, FLAGS },
@@ -287,22 +287,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    AverageBlurContext *s = ctx->priv;
-    int ret = 0;
-
-    if (   !strcmp(cmd, "sizeX") || !strcmp(cmd, "sizeY")
-        || !strcmp(cmd, "planes")) {
-        av_opt_set(s, cmd, args, 0);
-    } else {
-        ret = AVERROR(ENOSYS);
-    }
-
-    return ret;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AverageBlurContext *s = ctx->priv;
@@ -338,5 +322,5 @@ AVFilter ff_vf_avgblur = {
     .inputs        = avgblur_inputs,
     .outputs       = avgblur_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
