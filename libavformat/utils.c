@@ -268,7 +268,6 @@ int ffio_limit(AVIOContext *s, int size)
  * Return the number of bytes read or an error. */
 static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
 {
-    int64_t orig_pos   = pkt->pos; // av_grow_packet might reset pos
     int orig_size      = pkt->size;
     int ret;
 
@@ -301,7 +300,6 @@ static int append_packet_chunked(AVIOContext *s, AVPacket *pkt, int size)
     if (size > 0)
         pkt->flags |= AV_PKT_FLAG_CORRUPT;
 
-    pkt->pos = orig_pos;
     if (!pkt->size)
         av_packet_unref(pkt);
     return pkt->size > orig_size ? pkt->size - orig_size : ret;
