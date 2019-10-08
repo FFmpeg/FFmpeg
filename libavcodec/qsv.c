@@ -412,15 +412,21 @@ static int ff_qsv_set_display_handle(AVCodecContext *avctx, QSVSession *qs)
 #endif //AVCODEC_QSV_LINUX_SESSION_HANDLE
 
 int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
-                                 const char *load_plugins)
+                                 const char *load_plugins, int gpu_copy)
 {
-    mfxIMPL impl   = MFX_IMPL_AUTO_ANY;
-    mfxVersion ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
+    mfxIMPL          impl = MFX_IMPL_AUTO_ANY;
+    mfxVersion        ver = { { QSV_VERSION_MINOR, QSV_VERSION_MAJOR } };
+    mfxInitParam init_par = { MFX_IMPL_AUTO_ANY };
 
     const char *desc;
     int ret;
 
-    ret = MFXInit(impl, &ver, &qs->session);
+#if QSV_VERSION_ATLEAST(1, 16)
+    init_par.GPUCopy        = gpu_copy;
+#endif
+    init_par.Implementation = impl;
+    init_par.Version        = ver;
+    ret = MFXInitEx(init_par, &qs->session);
     if (ret < 0)
         return ff_qsv_print_error(avctx, ret,
                                   "Error initializing an internal MFX session");
@@ -712,7 +718,8 @@ static mfxStatus qsv_frame_get_hdl(mfxHDL pthis, mfxMemId mid, mfxHDL *hdl)
 }
 
 int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
-                               AVBufferRef *device_ref, const char *load_plugins)
+                               AVBufferRef *device_ref, const char *load_plugins,
+                               int gpu_copy)
 {
     static const mfxHandleType handle_types[] = {
         MFX_HANDLE_VA_DISPLAY,
@@ -722,11 +729,12 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
     AVHWDeviceContext    *device_ctx = (AVHWDeviceContext*)device_ref->data;
     AVQSVDeviceContext *device_hwctx = device_ctx->hwctx;
     mfxSession        parent_session = device_hwctx->session;
+    mfxInitParam            init_par = { MFX_IMPL_AUTO_ANY };
+    mfxHDL                    handle = NULL;
 
     mfxSession    session;
     mfxVersion    ver;
     mfxIMPL       impl;
-    mfxHDL        handle = NULL;
     mfxHandleType handle_type;
     mfxStatus err;
 
@@ -752,7 +760,12 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
                "from the session\n");
     }
 
-    err = MFXInit(impl, &ver, &session);
+#if QSV_VERSION_ATLEAST(1, 16)
+    init_par.GPUCopy        = gpu_copy;
+#endif
+    init_par.Implementation = impl;
+    init_par.Version        = ver;
+    err = MFXInitEx(init_par, &session);
     if (err != MFX_ERR_NONE)
         return ff_qsv_print_error(avctx, err,
                                   "Error initializing a child MFX session");
@@ -783,7 +796,7 @@ int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
 
 int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *psession,
                                QSVFramesContext *qsv_frames_ctx,
-                               const char *load_plugins, int opaque)
+                               const char *load_plugins, int opaque, int gpu_copy)
 {
     mfxFrameAllocator frame_allocator = {
         .pthis  = qsv_frames_ctx,
@@ -803,7 +816,7 @@ int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *psession,
     int ret;
 
     ret = ff_qsv_init_session_device(avctx, &session,
-                                     frames_ctx->device_ref, load_plugins);
+                                     frames_ctx->device_ref, load_plugins, gpu_copy);
     if (ret < 0)
         return ret;
 

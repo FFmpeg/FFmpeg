@@ -956,7 +956,8 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
 
         ret = ff_qsv_init_session_frames(avctx, &q->internal_qs.session,
                                          &q->frames_ctx, q->load_plugins,
-                                         q->param.IOPattern == MFX_IOPATTERN_IN_OPAQUE_MEMORY);
+                                         q->param.IOPattern == MFX_IOPATTERN_IN_OPAQUE_MEMORY,
+                                         MFX_GPUCOPY_OFF);
         if (ret < 0) {
             av_buffer_unref(&q->frames_ctx.hw_frames_ctx);
             return ret;
@@ -965,14 +966,15 @@ static int qsvenc_init_session(AVCodecContext *avctx, QSVEncContext *q)
         q->session = q->internal_qs.session;
     } else if (avctx->hw_device_ctx) {
         ret = ff_qsv_init_session_device(avctx, &q->internal_qs.session,
-                                         avctx->hw_device_ctx, q->load_plugins);
+                                         avctx->hw_device_ctx, q->load_plugins,
+                                         MFX_GPUCOPY_OFF);
         if (ret < 0)
             return ret;
 
         q->session = q->internal_qs.session;
     } else {
         ret = ff_qsv_init_internal_session(avctx, &q->internal_qs,
-                                           q->load_plugins);
+                                           q->load_plugins, MFX_GPUCOPY_OFF);
         if (ret < 0)
             return ret;
 

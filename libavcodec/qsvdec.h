@@ -59,12 +59,14 @@ typedef struct QSVContext {
     enum AVPixelFormat orig_pix_fmt;
     uint32_t fourcc;
     mfxFrameInfo frame_info;
+    AVBufferPool *pool;
 
     int initialized;
 
     // options set by the caller
     int async_depth;
     int iopattern;
+    int gpu_copy;
 
     char *load_plugins;
 

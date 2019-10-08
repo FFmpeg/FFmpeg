@@ -127,16 +127,17 @@ enum AVPictureType ff_qsv_map_pictype(int mfx_pic_type);
 enum AVFieldOrder ff_qsv_map_picstruct(int mfx_pic_struct);
 
 int ff_qsv_init_internal_session(AVCodecContext *avctx, QSVSession *qs,
-                                 const char *load_plugins);
+                                 const char *load_plugins, int gpu_copy);
 
 int ff_qsv_close_internal_session(QSVSession *qs);
 
 int ff_qsv_init_session_device(AVCodecContext *avctx, mfxSession *psession,
-                               AVBufferRef *device_ref, const char *load_plugins);
+                               AVBufferRef *device_ref, const char *load_plugins,
+                               int gpu_copy);
 
 int ff_qsv_init_session_frames(AVCodecContext *avctx, mfxSession *session,
                                QSVFramesContext *qsv_frames_ctx,
-                               const char *load_plugins, int opaque);
+                               const char *load_plugins, int opaque, int gpu_copy);
 
 int ff_qsv_find_surface_idx(QSVFramesContext *ctx, QSVFrame *frame);
 
