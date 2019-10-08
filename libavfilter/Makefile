@@ -376,6 +376,7 @@ OBJS-$(CONFIG_SCALE_QSV_FILTER)              += vf_scale_qsv.o
 OBJS-$(CONFIG_SCALE_VAAPI_FILTER)            += vf_scale_vaapi.o scale_eval.o vaapi_vpp.o
 OBJS-$(CONFIG_SCALE_VULKAN_FILTER)           += vf_scale_vulkan.o vulkan.o
 OBJS-$(CONFIG_SCALE2REF_FILTER)              += vf_scale.o scale_eval.o
+OBJS-$(CONFIG_SCDET_FILTER)                  += vf_scdet.o
 OBJS-$(CONFIG_SCROLL_FILTER)                 += vf_scroll.o
 OBJS-$(CONFIG_SELECT_FILTER)                 += f_select.o
 OBJS-$(CONFIG_SELECTIVECOLOR_FILTER)         += vf_selectivecolor.o

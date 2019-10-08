@@ -66,6 +66,7 @@ version <next>:
 - asubboost filter
 - Pro Pinball Series Soundbank demuxer
 - pcm_rechunk bitstream filter
+- scdet filter
 
 
 version 4.2:
