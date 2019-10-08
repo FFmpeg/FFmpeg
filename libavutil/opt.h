@@ -288,6 +288,7 @@ typedef struct AVOption {
  */
 #define AV_OPT_FLAG_READONLY        128
 #define AV_OPT_FLAG_BSF_PARAM       (1<<8) ///< a generic parameter which can be set by the user for bit stream filtering
+#define AV_OPT_FLAG_RUNTIME_PARAM   (1<<15) ///< a generic parameter which can be set by the user at runtime
 #define AV_OPT_FLAG_FILTERING_PARAM (1<<16) ///< a generic parameter which can be set by the user for filtering
 #define AV_OPT_FLAG_DEPRECATED      (1<<17) ///< set if option is deprecated, users should refer to AVOption.help text for more information
 //FIXME think about enc-audio, ... style flags
