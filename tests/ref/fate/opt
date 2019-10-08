@@ -18,31 +18,31 @@ num64=1
 flt=0.333333
 dbl=0.333333
 TestContext AVOptions:
-  -num               <int>        E........ set num (from 0 to 100) (default 0)
-  -toggle            <int>        E........ set toggle (from 0 to 1) (default 1)
-  -rational          <rational>   E........ set rational (from 0 to 10) (default 1/1)
-  -string            <string>     E........ set string (default "default")
-  -escape            <string>     E........ set escape str (default "\=,")
-  -flags             <flags>      E........ set flags (default cool)
-     cool                         E........ set cool flag
-     lame                         E........ set lame flag
-     mu                           E........ set mu flag
-  -size              <image_size> E........ set size (default "200x300")
-  -pix_fmt           <pix_fmt>    E........ set pixfmt (default 0bgr)
-  -sample_fmt        <sample_fmt> E........ set samplefmt (default s16)
-  -video_rate        <video_rate> E........ set videorate (default "25")
-  -duration          <duration>   E........ set duration (default 0.001)
-  -color             <color>      E........ set color (default "pink")
-  -cl                <channel_layout> E........ set channel layout (default 0x137)
-  -bin               <binary>     E........ set binary value
-  -bin1              <binary>     E........ set binary value
-  -bin2              <binary>     E........ set binary value
-  -num64             <int64>      E........ set num 64bit (from 0 to 100) (default 1)
-  -flt               <float>      E........ set float (from 0 to 100) (default 0.333333)
-  -dbl               <double>     E........ set double (from 0 to 100) (default 0.333333)
-  -bool1             <boolean>    E........ set boolean value (default auto)
-  -bool2             <boolean>    E........ set boolean value (default true)
-  -bool3             <boolean>    E........ set boolean value (default false)
+  -num               <int>        E......... set num (from 0 to 100) (default 0)
+  -toggle            <int>        E......... set toggle (from 0 to 1) (default 1)
+  -rational          <rational>   E......... set rational (from 0 to 10) (default 1/1)
+  -string            <string>     E......... set string (default "default")
+  -escape            <string>     E......... set escape str (default "\=,")
+  -flags             <flags>      E......... set flags (default cool)
+     cool                         E......... set cool flag
+     lame                         E......... set lame flag
+     mu                           E......... set mu flag
+  -size              <image_size> E......... set size (default "200x300")
+  -pix_fmt           <pix_fmt>    E......... set pixfmt (default 0bgr)
+  -sample_fmt        <sample_fmt> E......... set samplefmt (default s16)
+  -video_rate        <video_rate> E......... set videorate (default "25")
+  -duration          <duration>   E......... set duration (default 0.001)
+  -color             <color>      E......... set color (default "pink")
+  -cl                <channel_layout> E......... set channel layout (default 0x137)
+  -bin               <binary>     E......... set binary value
+  -bin1              <binary>     E......... set binary value
+  -bin2              <binary>     E......... set binary value
+  -num64             <int64>      E......... set num 64bit (from 0 to 100) (default 1)
+  -flt               <float>      E......... set float (from 0 to 100) (default 0.333333)
+  -dbl               <double>     E......... set double (from 0 to 100) (default 0.333333)
+  -bool1             <boolean>    E......... set boolean value (default auto)
+  -bool2             <boolean>    E......... set boolean value (default true)
+  -bool3             <boolean>    E......... set boolean value (default false)
 
 Testing av_opt_is_set_to_default()
 name:       num default:1 error:
