@@ -489,7 +489,6 @@ static int mpegps_read_packet(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
     int len, startcode, i, es_type, ret;
-    int lpcm_header_len = -1; //Init to suppress warning
     int pcm_dvd = 0;
     int request_probe= 0;
     enum AVCodecID codec_id = AV_CODEC_ID_NONE;
@@ -507,8 +506,7 @@ redo:
 
         if (!m->raw_ac3) {
             /* audio: skip header */
-            avio_r8(s->pb);
-            lpcm_header_len = avio_rb16(s->pb);
+            avio_skip(s->pb, 3);
             len -= 3;
             if (startcode >= 0xb0 && startcode <= 0xbf) {
                 /* MLP/TrueHD audio has a 4-byte header */
