@@ -52,7 +52,8 @@ typedef struct ColorChannelMixerContext {
 } ColorChannelMixerContext;
 
 #define OFFSET(x) offsetof(ColorChannelMixerContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+
 static const AVOption colorchannelmixer_options[] = {
     { "rr", "set the red gain for the red channel",     OFFSET(rr), AV_OPT_TYPE_DOUBLE, {.dbl=1}, -2, 2, FLAGS },
     { "rg", "set the green gain for the red channel",   OFFSET(rg), AV_OPT_TYPE_DOUBLE, {.dbl=0}, -2, 2, FLAGS },
@@ -408,18 +409,20 @@ static int config_output(AVFilterLink *outlink)
     ColorChannelMixerContext *s = ctx->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(outlink->format);
     const int depth = desc->comp[0].depth;
-    int i, j, size, *buffer;
+    int i, j, size, *buffer = s->buffer;
 
     ff_fill_rgba_map(s->rgba_map, outlink->format);
 
     size = 1 << depth;
-    s->buffer = buffer = av_malloc(16 * size * sizeof(*s->buffer));
-    if (!s->buffer)
-        return AVERROR(ENOMEM);
+    if (!s->buffer) {
+        s->buffer = buffer = av_malloc(16 * size * sizeof(*s->buffer));
+        if (!s->buffer)
+            return AVERROR(ENOMEM);
 
-    for (i = 0; i < 4; i++)
-        for (j = 0; j < 4; j++, buffer += size)
-            s->lut[i][j] = buffer;
+        for (i = 0; i < 4; i++)
+            for (j = 0; j < 4; j++, buffer += size)
+                s->lut[i][j] = buffer;
+    }
 
     for (i = 0; i < size; i++) {
         s->lut[R][R][i] = lrint(i * s->rr);
@@ -531,6 +534,17 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_output(ctx->outputs[0]);
+}
+
 static av_cold void uninit(AVFilterContext *ctx)
 {
     ColorChannelMixerContext *s = ctx->priv;
@@ -566,4 +580,5 @@ AVFilter ff_vf_colorchannelmixer = {
     .inputs        = colorchannelmixer_inputs,
     .outputs       = colorchannelmixer_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
