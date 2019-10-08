@@ -412,6 +412,13 @@ static inline int ff_norm_qscale(int qscale, int type)
 int ff_filter_get_nb_threads(AVFilterContext *ctx);
 
 /**
+ * Generic processing of user supplied commands that are set
+ * in the same way as the filter options.
+ */
+int ff_filter_process_command(AVFilterContext *ctx, const char *cmd,
+                              const char *arg, char *res, int res_len, int flags);
+
+/**
  * Perform any additional setup required for hardware frames.
  *
  * link->hw_frames_ctx must be set before calling this function.
