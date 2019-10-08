@@ -275,46 +275,39 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
 
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args, char *res, int res_len, int flags)
 {
+    AVFilterLink *inlink = ctx->inputs[0];
     DrawBoxContext *s = ctx->priv;
+    int old_x = s->x;
+    int old_y = s->y;
+    int old_w = s->w;
+    int old_h = s->h;
+    int old_t = s->thickness;
+    int old_r = s->replace;
     int ret;
 
-    if (   !strcmp(cmd, "w") || !strcmp(cmd, "width")
-        || !strcmp(cmd, "h") || !strcmp(cmd, "height")
-        || !strcmp(cmd, "x") || !strcmp(cmd, "y")
-        || !strcmp(cmd, "t") || !strcmp(cmd, "thickness")
-        || !strcmp(cmd, "c") || !strcmp(cmd, "color")
-        || !strcmp(cmd, "replace")) {
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
 
-        int old_x = s->x;
-        int old_y = s->y;
-        int old_w = s->w;
-        int old_h = s->h;
-        int old_t = s->thickness;
-        int old_r = s->replace;
-
-        AVFilterLink *inlink = ctx->inputs[0];
-
-        av_opt_set(s, cmd, args, 0);
-        init(ctx);
-
-        if ((ret = config_input(inlink)) < 0) {
-            s->x = old_x;
-            s->y = old_y;
-            s->w = old_w;
-            s->h = old_h;
-            s->thickness = old_t;
-            s->replace = old_r;
-            return ret;
-        }
-    } else {
-        ret = AVERROR(ENOSYS);
+    ret = init(ctx);
+    if (ret < 0)
+        goto end;
+    ret = config_input(inlink);;
+end:
+    if (ret < 0) {
+        s->x = old_x;
+        s->y = old_y;
+        s->w = old_w;
+        s->h = old_h;
+        s->thickness = old_t;
+        s->replace = old_r;
     }
 
     return ret;
 }
 
 #define OFFSET(x) offsetof(DrawBoxContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 #if CONFIG_DRAWBOX_FILTER
 
