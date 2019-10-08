@@ -832,11 +832,19 @@ static int detect_scene_change(MIContext *mi_ctx)
     ptrdiff_t linesize2 = mi_ctx->frames[2].avf->linesize[0];
 
     if (mi_ctx->scd_method == SCD_METHOD_FDIFF) {
-        double ret = 0, mafd, diff;
+        double ret = 0, mafd = HUGE_VAL, diff;
         uint64_t sad;
-        mi_ctx->sad(p1, linesize1, p2, linesize2, me_ctx->width, me_ctx->height, &sad);
-        emms_c();
-        mafd = (double) sad / (me_ctx->height * me_ctx->width * 3);
+        AVDictionaryEntry *e_mafd = NULL;
+        char *tail = NULL;
+
+        e_mafd = av_dict_get(mi_ctx->frames[2].avf->metadata, "lavfi.scd.mafd", NULL, AV_DICT_MATCH_CASE);
+        if (e_mafd)
+            mafd = strtod(e_mafd->value, &tail);
+        if (*tail || mafd == HUGE_VAL) {
+            mi_ctx->sad(p1, linesize1, p2, linesize2, me_ctx->width, me_ctx->height, &sad);
+            emms_c();
+            mafd = (double) sad / (me_ctx->height * me_ctx->width * 3);
+        }
         diff = fabs(mafd - mi_ctx->prev_mafd);
         ret  = av_clipf(FFMIN(mafd, diff), 0, 100.0);
         mi_ctx->prev_mafd = mafd;
