@@ -155,12 +155,13 @@ static int config_input(AVFilterLink *inlink)
 
 #define OFFSET(x) offsetof(ScrollContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define VFT AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption scroll_options[] = {
-    { "horizontal", "set the horizontal scrolling speed", OFFSET(h_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., FLAGS },
-    { "h",          "set the horizontal scrolling speed", OFFSET(h_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., FLAGS },
-    { "vertical",   "set the vertical scrolling speed",   OFFSET(v_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., FLAGS },
-    { "v",          "set the vertical scrolling speed",   OFFSET(v_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., FLAGS },
+    { "horizontal", "set the horizontal scrolling speed", OFFSET(h_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., VFT },
+    { "h",          "set the horizontal scrolling speed", OFFSET(h_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., VFT },
+    { "vertical",   "set the vertical scrolling speed",   OFFSET(v_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., VFT },
+    { "v",          "set the vertical scrolling speed",   OFFSET(v_speed), AV_OPT_TYPE_FLOAT, {.dbl=0.}, -1., 1., VFT },
     { "hpos",       "set initial horizontal position",    OFFSET(h_ipos),  AV_OPT_TYPE_FLOAT, {.dbl=0.},   0, 1., FLAGS },
     { "vpos",       "set initial vertical position",      OFFSET(v_ipos),  AV_OPT_TYPE_FLOAT, {.dbl=0.},   0, 1., FLAGS },
     { NULL }
@@ -195,4 +196,5 @@ AVFilter ff_vf_scroll = {
     .inputs        = scroll_inputs,
     .outputs       = scroll_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = ff_filter_process_command,
 };
