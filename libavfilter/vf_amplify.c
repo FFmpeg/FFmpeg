@@ -268,15 +268,16 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
 #define OFFSET(x) offsetof(AmplifyContext, x)
 #define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define VFT AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption amplify_options[] = {
     { "radius", "set radius", OFFSET(radius), AV_OPT_TYPE_INT, {.i64=2}, 1, 63, .flags = FLAGS },
-    { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = FLAGS },
-    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = FLAGS },
-    { "tolerance", "set tolerance", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, UINT16_MAX, .flags = FLAGS },
-    { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
-    { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = FLAGS },
-    { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
+    { "factor", "set factor", OFFSET(factor), AV_OPT_TYPE_FLOAT, {.dbl=2}, 0, UINT16_MAX, .flags = VFT },
+    { "threshold", "set threshold", OFFSET(threshold), AV_OPT_TYPE_FLOAT, {.dbl=10}, 0, UINT16_MAX, .flags = VFT },
+    { "tolerance", "set tolerance", OFFSET(tolerance), AV_OPT_TYPE_FLOAT, {.dbl=0}, 0, UINT16_MAX, .flags = VFT },
+    { "low", "set low limit for amplification", OFFSET(llimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = VFT },
+    { "high", "set high limit for amplification", OFFSET(hlimit), AV_OPT_TYPE_INT, {.i64=UINT16_MAX}, 0, UINT16_MAX, .flags = VFT },
+    { "planes", "set what planes to filter", OFFSET(planes), AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  VFT },
     { NULL },
 };
 
@@ -311,4 +312,5 @@ AVFilter ff_vf_amplify = {
     .init          = init,
     .uninit        = uninit,
     .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
