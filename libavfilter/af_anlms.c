@@ -60,17 +60,18 @@ typedef struct AudioNLMSContext {
 
 #define OFFSET(x) offsetof(AudioNLMSContext, x)
 #define A AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define AT AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption anlms_options[] = {
     { "order",   "set the filter order",   OFFSET(order),   AV_OPT_TYPE_INT,   {.i64=256},  1, INT16_MAX, A },
-    { "mu",      "set the filter mu",      OFFSET(mu),      AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 2, A },
-    { "eps",     "set the filter eps",     OFFSET(eps),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 1, A },
-    { "leakage", "set the filter leakage", OFFSET(leakage), AV_OPT_TYPE_FLOAT, {.dbl=0},    0, 1, A },
-    { "out_mode", "set output mode",       OFFSET(output_mode), AV_OPT_TYPE_INT, {.i64=OUT_MODE}, 0, NB_OMODES-1, A, "mode" },
-    {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},      0, 0, A, "mode" },
-    {  "d", "desired",               0,          AV_OPT_TYPE_CONST,    {.i64=DESIRED_MODE}, 0, 0, A, "mode" },
-    {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},     0, 0, A, "mode" },
-    {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},   0, 0, A, "mode" },
+    { "mu",      "set the filter mu",      OFFSET(mu),      AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 2, AT },
+    { "eps",     "set the filter eps",     OFFSET(eps),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 1, AT },
+    { "leakage", "set the filter leakage", OFFSET(leakage), AV_OPT_TYPE_FLOAT, {.dbl=0},    0, 1, AT },
+    { "out_mode", "set output mode",       OFFSET(output_mode), AV_OPT_TYPE_INT, {.i64=OUT_MODE}, 0, NB_OMODES-1, AT, "mode" },
+    {  "i", "input",                 0,          AV_OPT_TYPE_CONST,    {.i64=IN_MODE},      0, 0, AT, "mode" },
+    {  "d", "desired",               0,          AV_OPT_TYPE_CONST,    {.i64=DESIRED_MODE}, 0, 0, AT, "mode" },
+    {  "o", "output",                0,          AV_OPT_TYPE_CONST,    {.i64=OUT_MODE},     0, 0, AT, "mode" },
+    {  "n", "noise",                 0,          AV_OPT_TYPE_CONST,    {.i64=NOISE_MODE},   0, 0, AT, "mode" },
     { NULL }
 };
 
@@ -281,22 +282,6 @@ static av_cold int init(AVFilterContext *ctx)
     return 0;
 }
 
-static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
-                           char *res, int res_len, int flags)
-{
-    AudioNLMSContext *s = ctx->priv;
-    int ret;
-
-    if (   !strcmp(cmd, "mu") || !strcmp(cmd, "eps")
-        || !strcmp(cmd, "leakage") || !strcmp(cmd, "out_mode")) {
-        ret = av_opt_set(s, cmd, args, 0);
-    } else {
-        ret = AVERROR(ENOSYS);
-    }
-
-    return ret;
-}
-
 static av_cold void uninit(AVFilterContext *ctx)
 {
     AudioNLMSContext *s = ctx->priv;
@@ -341,5 +326,5 @@ AVFilter ff_af_anlms = {
     .inputs         = inputs,
     .outputs        = outputs,
     .flags          = AVFILTER_FLAG_SLICE_THREADS,
-    .process_command = process_command,
+    .process_command = ff_filter_process_command,
 };
