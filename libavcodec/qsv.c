@@ -835,10 +835,6 @@ int ff_qsv_close_internal_session(QSVSession *qs)
         qs->session = NULL;
     }
 #ifdef AVCODEC_QSV_LINUX_SESSION_HANDLE
-    if (qs->va_device_ctx) {
-        qs->va_device_ctx->free(qs->va_device_ctx);
-    }
-
     av_buffer_unref(&qs->va_device_ref);
 #endif
     return 0;
