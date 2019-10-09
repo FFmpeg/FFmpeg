@@ -113,7 +113,7 @@ static int test_with_same_dilate(void)
     operands[1].data = NULL;
 
     input_indexes[0] = 0;
-    convolve(operands, input_indexes, 1, &params);
+    dnn_execute_layer_conv2d(operands, input_indexes, 1, &params);
 
     output = operands[1].data;
     for (int i = 0; i < sizeof(expected_output) / sizeof(float); i++) {
@@ -212,7 +212,7 @@ static int test_with_valid(void)
     operands[1].data = NULL;
 
     input_indexes[0] = 0;
-    convolve(operands, input_indexes, 1, &params);
+    dnn_execute_layer_conv2d(operands, input_indexes, 1, &params);
 
     output = operands[1].data;
     for (int i = 0; i < sizeof(expected_output) / sizeof(float); i++) {

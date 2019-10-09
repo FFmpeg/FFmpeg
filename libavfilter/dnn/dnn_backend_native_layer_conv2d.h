@@ -35,5 +35,6 @@ typedef struct ConvolutionalParams{
     float *biases;
 } ConvolutionalParams;
 
-int convolve(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index, const ConvolutionalParams *conv_params);
+int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
+                             int32_t output_operand_index, const void *parameters);
 #endif

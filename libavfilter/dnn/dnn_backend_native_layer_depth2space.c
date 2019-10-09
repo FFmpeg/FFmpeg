@@ -27,9 +27,12 @@
 #include "libavutil/avassert.h"
 #include "dnn_backend_native_layer_depth2space.h"
 
-int depth_to_space(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index, int block_size)
+int dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                  int32_t output_operand_index, const void *parameters)
 {
     float *output;
+    const DepthToSpaceParams *params = (const DepthToSpaceParams *)parameters;
+    int block_size = params->block_size;
     int32_t input_operand_index = input_operand_indexes[0];
     int number = operands[input_operand_index].dims[0];
     int height = operands[input_operand_index].dims[1];

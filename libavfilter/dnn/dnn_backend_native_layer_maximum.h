@@ -37,6 +37,7 @@ typedef struct DnnLayerMaximumParams{
     }val;
 } DnnLayerMaximumParams;
 
-int dnn_execute_layer_maximum(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index, const DnnLayerMaximumParams *params);
+int dnn_execute_layer_maximum(DnnOperand *operands, const int32_t *input_operand_indexes,
+                              int32_t output_operand_index, const void *parameters);
 
 #endif

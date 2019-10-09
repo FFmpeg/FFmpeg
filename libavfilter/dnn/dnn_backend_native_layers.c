@@ -18,25 +18,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * @file
- * layer pad (equivalent to tf.pad) for native backend.
- */
-#ifndef AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_PAD_H
-#define AVFILTER_DNN_DNN_BACKEND_NATIVE_LAYER_PAD_H
+#include <string.h>
+#include "dnn_backend_native_layers.h"
+#include "dnn_backend_native_layer_pad.h"
+#include "dnn_backend_native_layer_conv2d.h"
+#include "dnn_backend_native_layer_depth2space.h"
+#include "dnn_backend_native_layer_maximum.h"
 
-#include <stdint.h>
-#include "dnn_backend_native.h"
-
-typedef enum {LPMP_CONSTANT, LPMP_REFLECT, LPMP_SYMMETRIC} LayerPadModeParam;
-
-typedef struct LayerPadParams{
-    int32_t paddings[4][2];
-    LayerPadModeParam mode;
-    float constant_values;
-} LayerPadParams;
-
-int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_indexes,
-                          int32_t output_operand_index, const void *parameters);
-
-#endif
+LAYER_EXEC_FUNC layer_funcs[DLT_COUNT] = {
+    NULL,
+    dnn_execute_layer_conv2d,
+    dnn_execute_layer_depth2space,
+    dnn_execute_layer_pad,
+    dnn_execute_layer_maximum,
+};

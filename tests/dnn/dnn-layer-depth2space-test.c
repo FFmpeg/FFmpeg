@@ -48,6 +48,7 @@ static int test(void)
     print(list(output.flatten()))
     */
 
+    DepthToSpaceParams params;
     DnnOperand operands[2];
     int32_t input_indexes[1];
     float input[1*5*3*4] = {
@@ -79,7 +80,8 @@ static int test(void)
     operands[1].data = NULL;
 
     input_indexes[0] = 0;
-    depth_to_space(operands, input_indexes, 1, 2);
+    params.block_size = 2;
+    dnn_execute_layer_depth2space(operands, input_indexes, 1, &params);
 
     output = operands[1].data;
     for (int i = 0; i < sizeof(expected_output) / sizeof(float); i++) {

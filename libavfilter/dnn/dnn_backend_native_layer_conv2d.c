@@ -23,7 +23,8 @@
 
 #define CLAMP_TO_EDGE(x, w) ((x) < 0 ? 0 : ((x) >= (w) ? (w - 1) : (x)))
 
-int convolve(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index, const ConvolutionalParams *conv_params)
+int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
+                             int32_t output_operand_index, const void *parameters)
 {
     float *output;
     int32_t input_operand_index = input_operand_indexes[0];
@@ -32,6 +33,7 @@ int convolve(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t
     int width = operands[input_operand_index].dims[2];
     int channel = operands[input_operand_index].dims[3];
     const float *input = operands[input_operand_index].data;
+    const ConvolutionalParams *conv_params = (const ConvolutionalParams *)parameters;
 
     int radius = conv_params->kernel_size >> 1;
     int src_linesize = width * conv_params->input_num;

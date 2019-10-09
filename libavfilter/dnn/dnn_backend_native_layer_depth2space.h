@@ -34,6 +34,7 @@ typedef struct DepthToSpaceParams{
     int block_size;
 } DepthToSpaceParams;
 
-int depth_to_space(DnnOperand *operands, const int32_t *input_operand_indexes, int32_t output_operand_index, int block_size);
+int dnn_execute_layer_depth2space(DnnOperand *operands, const int32_t *input_operand_indexes,
+                                  int32_t output_operand_index, const void *parameters);
 
 #endif
