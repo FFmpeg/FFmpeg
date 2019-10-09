@@ -65,7 +65,7 @@ typedef struct ThreadData {
 
 static int filter_slice(AVFilterContext *ctx, void *arg, int job, int nb_jobs)
 {
-    ThreadData *td = (ThreadData*)arg;
+    ThreadData *td = arg;
     AVFrame *in = td->in;
     AVFrame *out = td->out;
 
