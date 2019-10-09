@@ -140,7 +140,7 @@ fail:
 static int remap_planar##bits##_##name##_slice(AVFilterContext *ctx, void *arg,             \
                                                int jobnr, int nb_jobs)                      \
 {                                                                                           \
-    const ThreadData *td = (ThreadData*)arg;                                                \
+    const ThreadData *td = arg;                                                             \
     const AVFrame *in  = td->in;                                                            \
     const AVFrame *xin = td->xin;                                                           \
     const AVFrame *yin = td->yin;                                                           \
@@ -189,7 +189,7 @@ DEFINE_REMAP_PLANAR_FUNC(nearest, 16, 2)
 static int remap_packed##bits##_##name##_slice(AVFilterContext *ctx, void *arg,             \
                                                int jobnr, int nb_jobs)                      \
 {                                                                                           \
-    const ThreadData *td = (ThreadData*)arg;                                                \
+    const ThreadData *td = arg;                                                             \
     const AVFrame *in  = td->in;                                                            \
     const AVFrame *xin = td->xin;                                                           \
     const AVFrame *yin = td->yin;                                                           \
