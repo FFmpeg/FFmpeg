@@ -79,7 +79,7 @@ int avfilter_pad_count(const AVFilterPad *pads);
  * Get the name of an AVFilterPad.
  *
  * @param pads an array of AVFilterPads
- * @param pad_idx index of the pad in the array it; is the caller's
+ * @param pad_idx index of the pad in the array; it is the caller's
  *                responsibility to ensure the index is valid
  *
  * @return name of the pad_idx'th pad in pads
