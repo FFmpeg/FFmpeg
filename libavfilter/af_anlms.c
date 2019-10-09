@@ -63,7 +63,7 @@ typedef struct AudioNLMSContext {
 
 static const AVOption anlms_options[] = {
     { "order",   "set the filter order",   OFFSET(order),   AV_OPT_TYPE_INT,   {.i64=256},  1, INT16_MAX, A },
-    { "mu",      "set the filter mu",      OFFSET(mu),      AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, A },
+    { "mu",      "set the filter mu",      OFFSET(mu),      AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 2, A },
     { "eps",     "set the filter eps",     OFFSET(eps),     AV_OPT_TYPE_FLOAT, {.dbl=1},    0, 1, A },
     { "leakage", "set the filter leakage", OFFSET(leakage), AV_OPT_TYPE_FLOAT, {.dbl=0},    0, 1, A },
     { "out_mode", "set output mode",       OFFSET(output_mode), AV_OPT_TYPE_INT, {.i64=OUT_MODE}, 0, NB_OMODES-1, A, "mode" },
