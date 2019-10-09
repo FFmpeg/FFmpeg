@@ -226,7 +226,7 @@ DEFINE_REMAP1_LINE(16, 2)
 #define DEFINE_REMAP(ws, bits)                                                                             \
 static int remap##ws##_##bits##bit_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)          \
 {                                                                                                          \
-    ThreadData *td = (ThreadData*)arg;                                                                     \
+    ThreadData *td = arg;                                                                                  \
     const V360Context *s = ctx->priv;                                                                      \
     const AVFrame *in = td->in;                                                                            \
     AVFrame *out = td->out;                                                                                \
