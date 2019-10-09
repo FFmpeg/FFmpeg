@@ -4476,6 +4476,19 @@ Possible values are:
 @end table
 @end table
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item tempo
+Change filter tempo scale factor.
+Syntax for the command is : "@var{tempo}"
+
+@item pitch
+Change filter pitch scale factor.
+Syntax for the command is : "@var{pitch}"
+@end table
+
 @section sidechaincompress
 
 This filter acts like normal compressor but has the ability to compress
