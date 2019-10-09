@@ -331,15 +331,15 @@ static void apply_lut(int16_t *buf[3], ptrdiff_t stride,
     }
 }
 
-struct ThreadData {
+typedef struct ThreadData {
     AVFrame *in, *out;
     ptrdiff_t in_linesize[3], out_linesize[3];
     int in_ss_h, out_ss_h;
-};
+} ThreadData;
 
 static int convert(AVFilterContext *ctx, void *data, int job_nr, int n_jobs)
 {
-    struct ThreadData *td = data;
+    const ThreadData *td = data;
     ColorSpaceContext *s = ctx->priv;
     uint8_t *in_data[3], *out_data[3];
     int16_t *rgb[3];
@@ -771,7 +771,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     int res;
     ptrdiff_t rgb_stride = FFALIGN(in->width * sizeof(int16_t), 32);
     unsigned rgb_sz = rgb_stride * in->height;
-    struct ThreadData td;
+    ThreadData td;
 
     if (!out) {
         av_frame_free(&in);
