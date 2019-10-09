@@ -23,6 +23,52 @@
 
 #define CLAMP_TO_EDGE(x, w) ((x) < 0 ? 0 : ((x) >= (w) ? (w - 1) : (x)))
 
+int dnn_load_layer_conv2d(Layer *layer, AVIOContext *model_file_context, int file_size)
+{
+    ConvolutionalParams *conv_params;
+    int kernel_size;
+    int dnn_size = 0;
+    conv_params = av_malloc(sizeof(*conv_params));
+    if (!conv_params)
+        return 0;
+
+    conv_params->dilation = (int32_t)avio_rl32(model_file_context);
+    conv_params->padding_method = (int32_t)avio_rl32(model_file_context);
+    conv_params->activation = (int32_t)avio_rl32(model_file_context);
+    conv_params->input_num = (int32_t)avio_rl32(model_file_context);
+    conv_params->output_num = (int32_t)avio_rl32(model_file_context);
+    conv_params->kernel_size = (int32_t)avio_rl32(model_file_context);
+    kernel_size = conv_params->input_num * conv_params->output_num *
+                  conv_params->kernel_size * conv_params->kernel_size;
+    dnn_size += 24 + (kernel_size + conv_params->output_num << 2);
+    if (dnn_size > file_size || conv_params->input_num <= 0 ||
+        conv_params->output_num <= 0 || conv_params->kernel_size <= 0){
+        av_freep(&conv_params);
+        return 0;
+    }
+    conv_params->kernel = av_malloc(kernel_size * sizeof(float));
+    conv_params->biases = av_malloc(conv_params->output_num * sizeof(float));
+    if (!conv_params->kernel || !conv_params->biases){
+        av_freep(&conv_params->kernel);
+        av_freep(&conv_params->biases);
+        av_freep(&conv_params);
+        return 0;
+    }
+    for (int i = 0; i < kernel_size; ++i){
+        conv_params->kernel[i] = av_int2float(avio_rl32(model_file_context));
+    }
+    for (int i = 0; i < conv_params->output_num; ++i){
+        conv_params->biases[i] = av_int2float(avio_rl32(model_file_context));
+    }
+
+    layer->params = conv_params;
+
+    layer->input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
+    layer->output_operand_index = (int32_t)avio_rl32(model_file_context);
+    dnn_size += 8;
+    return dnn_size;
+}
+
 int dnn_execute_layer_conv2d(DnnOperand *operands, const int32_t *input_operand_indexes,
                              int32_t output_operand_index, const void *parameters)
 {

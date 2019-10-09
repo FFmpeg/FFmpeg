@@ -33,7 +33,7 @@
 /**
  * the enum value of DNNLayerType should not be changed,
  * the same values are used in convert_from_tensorflow.py
- * and, it is used to index the layer execution function pointer.
+ * and, it is used to index the layer execution/load function pointer.
  */
 typedef enum {
     DLT_INPUT = 0,
