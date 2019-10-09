@@ -1153,6 +1153,18 @@ Leave almost only low frequencies in audio:
 @example
 afftfilt="'real=re * (1-clip((b/nb)*b,0,1))':imag='im * (1-clip((b/nb)*b,0,1))'"
 @end example
+
+@item
+Apply robotize effect:
+@example
+afftfilt="real='hypot(re,im)*sin(0)':imag='hypot(re,im)*cos(0)':win_size=512:overlap=0.75"
+@end example
+
+@item
+Apply whisper effect:
+@example
+afftfilt="real='hypot(re,im)*cos((random(0)*2-1)*2*3.14)':imag='hypot(re,im)*sin((random(1)*2-1)*2*3.14)':win_size=128:overlap=0.8"
+@end example
 @end itemize
 
 @anchor{afir}
