@@ -30,7 +30,17 @@
 #include "../dnn_interface.h"
 #include "libavformat/avio.h"
 
-typedef enum {INPUT = 0, CONV = 1, DEPTH_TO_SPACE = 2, MIRROR_PAD = 3, MAXIMUM = 4} DNNLayerType;
+/**
+ * the enum value of DNNLayerType should not be changed,
+ * the same values are used in convert_from_tensorflow.py
+ */
+typedef enum {
+    DLT_INPUT = 0,
+    DLT_CONV2D = 1,
+    DLT_DEPTH_TO_SPACE = 2,
+    DLT_MIRROR_PAD = 3,
+    DLT_MAXIMUM = 4
+} DNNLayerType;
 
 typedef enum {DOT_INPUT = 1, DOT_OUTPUT = 2, DOT_INTERMEDIATE = DOT_INPUT | DOT_INPUT} DNNOperandType;
 

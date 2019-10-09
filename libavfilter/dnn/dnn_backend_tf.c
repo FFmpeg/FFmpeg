@@ -499,22 +499,22 @@ static DNNReturnType load_native_model(TFModel *tf_model, const char *model_file
 
     for (layer = 0; layer < conv_network->layers_num; ++layer){
         switch (conv_network->layers[layer].type){
-        case INPUT:
+        case DLT_INPUT:
             layer_add_res = DNN_SUCCESS;
             break;
-        case CONV:
+        case DLT_CONV2D:
             layer_add_res = add_conv_layer(tf_model, transpose_op, &op,
                                            (ConvolutionalParams *)conv_network->layers[layer].params, layer);
             break;
-        case DEPTH_TO_SPACE:
+        case DLT_DEPTH_TO_SPACE:
             layer_add_res = add_depth_to_space_layer(tf_model, &op,
                                                      (DepthToSpaceParams *)conv_network->layers[layer].params, layer);
             break;
-        case MIRROR_PAD:
+        case DLT_MIRROR_PAD:
             layer_add_res = add_pad_layer(tf_model, &op,
                                           (LayerPadParams *)conv_network->layers[layer].params, layer);
             break;
-        case MAXIMUM:
+        case DLT_MAXIMUM:
             layer_add_res = add_maximum_layer(tf_model, &op,
                                           (DnnLayerMaximumParams *)conv_network->layers[layer].params, layer);
             break;

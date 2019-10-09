@@ -188,8 +188,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     for (layer = 0; layer < network->layers_num; ++layer){
         layer_type = (int32_t)avio_rl32(model_file_context);
         dnn_size += 4;
+        network->layers[layer].type = layer_type;
         switch (layer_type){
-        case CONV:
+        case DLT_CONV2D:
             conv_params = av_malloc(sizeof(ConvolutionalParams));
             if (!conv_params){
                 avio_closep(&model_file_context);
@@ -231,10 +232,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
             network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
             dnn_size += 8;
-            network->layers[layer].type = CONV;
             network->layers[layer].params = conv_params;
             break;
-        case DEPTH_TO_SPACE:
+        case DLT_DEPTH_TO_SPACE:
             depth_to_space_params = av_malloc(sizeof(DepthToSpaceParams));
             if (!depth_to_space_params){
                 avio_closep(&model_file_context);
@@ -246,10 +246,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
             network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
             dnn_size += 8;
-            network->layers[layer].type = DEPTH_TO_SPACE;
             network->layers[layer].params = depth_to_space_params;
             break;
-        case MIRROR_PAD:
+        case DLT_MIRROR_PAD:
             pad_params = av_malloc(sizeof(LayerPadParams));
             if (!pad_params){
                 avio_closep(&model_file_context);
@@ -266,10 +265,9 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
             network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
             dnn_size += 8;
-            network->layers[layer].type = MIRROR_PAD;
             network->layers[layer].params = pad_params;
             break;
-        case MAXIMUM:
+        case DLT_MAXIMUM:
             maximum_params = av_malloc(sizeof(*maximum_params));
             if (!maximum_params){
                 avio_closep(&model_file_context);
@@ -278,7 +276,6 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
             }
             maximum_params->val.u32 = avio_rl32(model_file_context);
             dnn_size += 4;
-            network->layers[layer].type = MAXIMUM;
             network->layers[layer].params = maximum_params;
             network->layers[layer].input_operand_indexes[0] = (int32_t)avio_rl32(model_file_context);
             network->layers[layer].output_operand_index = (int32_t)avio_rl32(model_file_context);
@@ -347,27 +344,27 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
 
     for (layer = 0; layer < network->layers_num; ++layer){
         switch (network->layers[layer].type){
-        case CONV:
+        case DLT_CONV2D:
             conv_params = (ConvolutionalParams *)network->layers[layer].params;
             convolve(network->operands, network->layers[layer].input_operand_indexes,
                      network->layers[layer].output_operand_index, conv_params);
             break;
-        case DEPTH_TO_SPACE:
+        case DLT_DEPTH_TO_SPACE:
             depth_to_space_params = (DepthToSpaceParams *)network->layers[layer].params;
             depth_to_space(network->operands, network->layers[layer].input_operand_indexes,
                            network->layers[layer].output_operand_index, depth_to_space_params->block_size);
             break;
-        case MIRROR_PAD:
+        case DLT_MIRROR_PAD:
             pad_params = (LayerPadParams *)network->layers[layer].params;
             dnn_execute_layer_pad(network->operands, network->layers[layer].input_operand_indexes,
                                   network->layers[layer].output_operand_index, pad_params);
             break;
-        case MAXIMUM:
+        case DLT_MAXIMUM:
             maximum_params = (DnnLayerMaximumParams *)network->layers[layer].params;
             dnn_execute_layer_maximum(network->operands, network->layers[layer].input_operand_indexes,
                                   network->layers[layer].output_operand_index, maximum_params);
             break;
-        case INPUT:
+        case DLT_INPUT:
             return DNN_ERROR;
         }
     }
@@ -408,7 +405,7 @@ void ff_dnn_free_model_native(DNNModel **model)
     {
         network = (ConvolutionalNetwork *)(*model)->model;
         for (layer = 0; layer < network->layers_num; ++layer){
-            if (network->layers[layer].type == CONV){
+            if (network->layers[layer].type == DLT_CONV2D){
                 conv_params = (ConvolutionalParams *)network->layers[layer].params;
                 av_freep(&conv_params->kernel);
                 av_freep(&conv_params->biases);
