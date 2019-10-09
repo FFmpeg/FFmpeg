@@ -2417,6 +2417,15 @@ atempo=sqrt(3),atempo=sqrt(3)
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the following commands:
+@table @option
+@item tempo
+Change filter tempo scale factor.
+Syntax for the command is : "@var{tempo}"
+@end table
+
 @section atrim
 
 Trim the input so that the output contains one continuous subpart of the input.
