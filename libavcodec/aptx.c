@@ -989,6 +989,9 @@ static av_cold int aptx_init(AVCodecContext *avctx)
     AptXContext *s = avctx->priv_data;
     int chan, subband;
 
+    if (avctx->channels != 2)
+        return AVERROR_INVALIDDATA;
+
     s->hd = avctx->codec->id == AV_CODEC_ID_APTX_HD;
     s->block_size = s->hd ? 6 : 4;
 
