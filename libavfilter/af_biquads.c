@@ -503,127 +503,12 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *buf)
 static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
                            char *res, int res_len, int flags)
 {
-    BiquadsContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
+    int ret;
 
-    if ((!strcmp(cmd, "frequency") || !strcmp(cmd, "f")) &&
-        (s->filter_type == equalizer ||
-         s->filter_type == lowshelf  ||
-         s->filter_type == highshelf ||
-         s->filter_type == bass      ||
-         s->filter_type == treble    ||
-         s->filter_type == bandpass  ||
-         s->filter_type == bandreject||
-         s->filter_type == lowpass   ||
-         s->filter_type == highpass  ||
-         s->filter_type == allpass)) {
-        double freq;
-
-        if (sscanf(args, "%lf", &freq) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid frequency value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        s->frequency = freq;
-    } else if ((!strcmp(cmd, "gain") || !strcmp(cmd, "g")) &&
-        (s->filter_type == equalizer ||
-         s->filter_type == lowshelf  ||
-         s->filter_type == highshelf ||
-         s->filter_type == bass      ||
-         s->filter_type == treble)) {
-        double gain;
-
-        if (sscanf(args, "%lf", &gain) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid gain value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        s->gain = av_clipd(gain, -900, 900);
-    } else if (!strcmp(cmd, "mix") || !strcmp(cmd, "m")) {
-        double mix;
-
-        if (sscanf(args, "%lf", &mix) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid mix value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        s->mix = av_clipd(mix, 0, 1);
-    } else if ((!strcmp(cmd, "width") || !strcmp(cmd, "w")) &&
-        (s->filter_type == equalizer ||
-         s->filter_type == lowshelf  ||
-         s->filter_type == highshelf ||
-         s->filter_type == bass      ||
-         s->filter_type == treble    ||
-         s->filter_type == bandpass  ||
-         s->filter_type == bandreject||
-         s->filter_type == lowpass   ||
-         s->filter_type == highpass  ||
-         s->filter_type == allpass)) {
-        double width;
-
-        if (sscanf(args, "%lf", &width) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid width value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        s->width = width;
-    } else if ((!strcmp(cmd, "width_type") || !strcmp(cmd, "t")) &&
-        (s->filter_type == equalizer ||
-         s->filter_type == lowshelf  ||
-         s->filter_type == highshelf ||
-         s->filter_type == bass      ||
-         s->filter_type == treble    ||
-         s->filter_type == bandpass  ||
-         s->filter_type == bandreject||
-         s->filter_type == lowpass   ||
-         s->filter_type == highpass  ||
-         s->filter_type == allpass)) {
-        char width_type;
-
-        if (sscanf(args, "%c", &width_type) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid width_type value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        switch (width_type) {
-        case 'h': width_type = HERTZ;   break;
-        case 'q': width_type = QFACTOR; break;
-        case 'o': width_type = OCTAVE;  break;
-        case 's': width_type = SLOPE;   break;
-        case 'k': width_type = KHERTZ;  break;
-        default:
-            av_log(ctx, AV_LOG_ERROR, "Invalid width_type value: %c\n", width_type);
-            return AVERROR(EINVAL);
-        }
-
-        s->width_type = width_type;
-    } else if ((!strcmp(cmd, "a0") ||
-                !strcmp(cmd, "a1") ||
-                !strcmp(cmd, "a2") ||
-                !strcmp(cmd, "b0") ||
-                !strcmp(cmd, "b1") ||
-                !strcmp(cmd, "b2")) &&
-               s->filter_type == biquad) {
-        double value;
-
-        if (sscanf(args, "%lf", &value) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid biquad value.\n");
-            return AVERROR(EINVAL);
-        }
-
-        if (!strcmp(cmd, "a0"))
-            s->a0 = value;
-        else if (!strcmp(cmd, "a1"))
-            s->a1 = value;
-        else if (!strcmp(cmd, "a2"))
-            s->a2 = value;
-        else if (!strcmp(cmd, "b0"))
-            s->b0 = value;
-        else if (!strcmp(cmd, "b1"))
-            s->b1 = value;
-        else if (!strcmp(cmd, "b2"))
-            s->b2 = value;
-    }
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
 
     return config_filter(outlink, 0);
 }
@@ -654,7 +539,8 @@ static const AVFilterPad outputs[] = {
 };
 
 #define OFFSET(x) offsetof(BiquadsContext, x)
-#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define AF AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 #define DEFINE_BIQUAD_FILTER(name_, description_)                       \
 AVFILTER_DEFINE_CLASS(name_);                                           \
@@ -810,8 +696,8 @@ static const AVOption lowpass_options[] = {
     {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
     {"width", "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
-    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
-    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
@@ -834,8 +720,8 @@ static const AVOption highpass_options[] = {
     {"k", "kHz", 0, AV_OPT_TYPE_CONST, {.i64=KHERTZ}, 0, 0, FLAGS, "width_type"},
     {"width", "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
     {"w",     "set width", OFFSET(width), AV_OPT_TYPE_DOUBLE, {.dbl=0.707}, 0, 99999, FLAGS},
-    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
-    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, FLAGS},
+    {"poles", "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
+    {"p",     "set number of poles", OFFSET(poles), AV_OPT_TYPE_INT, {.i64=2}, 1, 2, AF},
     {"mix", "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"m",   "set mix", OFFSET(mix), AV_OPT_TYPE_DOUBLE, {.dbl=1}, 0, 1, FLAGS},
     {"channels", "set channels to filter", OFFSET(channels), AV_OPT_TYPE_CHANNEL_LAYOUT, {.i64=-1}, INT64_MIN, INT64_MAX, FLAGS},
