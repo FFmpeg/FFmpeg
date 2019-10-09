@@ -165,9 +165,9 @@ static int config_input(AVFilterLink *inlink)
         }
     }
 
-    if (s->all) {
-        for (int j = i + 1; j < s->nb_delays; j++)
-            s->chandelay[j].delay = s->chandelay[i].delay;
+    if (s->all && i) {
+        for (int j = i; j < s->nb_delays; j++)
+            s->chandelay[j].delay = s->chandelay[i-1].delay;
     }
 
     s->padding = s->chandelay[0].delay;
