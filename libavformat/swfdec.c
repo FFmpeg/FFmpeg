@@ -152,6 +152,8 @@ static int swf_read_header(AVFormatContext *s)
         swf->zpb->seekable = 0;
         if (inflateInit(&swf->zstream) != Z_OK) {
             av_log(s, AV_LOG_ERROR, "Unable to init zlib context\n");
+            av_freep(&swf->zbuf_in);
+            av_freep(&swf->zbuf_out);
             return AVERROR(EINVAL);
         }
         pb = swf->zpb;
