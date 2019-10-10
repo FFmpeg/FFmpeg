@@ -898,6 +898,11 @@ static int vobsub_read_header(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *sub_st = s->streams[i];
         sub_st->codecpar->extradata      = av_strdup(header_str);
+        if (!sub_st->codecpar->extradata) {
+            ret = AVERROR(ENOMEM);
+            sub_st->codecpar->extradata_size = 0;
+            goto end;
+        }
         sub_st->codecpar->extradata_size = header.len;
     }
     av_free(header_str);
