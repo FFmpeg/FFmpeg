@@ -172,8 +172,11 @@ static int smacker_read_header(AVFormatContext *s)
 
     /* init video codec */
     st = avformat_new_stream(s, NULL);
-    if (!st)
+    if (!st) {
+        av_freep(&smk->frm_size);
+        av_freep(&smk->frm_flags);
         return AVERROR(ENOMEM);
+    }
     smk->videoindex = st->index;
     st->codecpar->width = smk->width;
     st->codecpar->height = smk->height;
@@ -195,8 +198,11 @@ static int smacker_read_header(AVFormatContext *s)
         smk->indexes[i] = -1;
         if (smk->rates[i]) {
             ast[i] = avformat_new_stream(s, NULL);
-            if (!ast[i])
+            if (!ast[i]) {
+                av_freep(&smk->frm_size);
+                av_freep(&smk->frm_flags);
                 return AVERROR(ENOMEM);
+            }
             smk->indexes[i] = ast[i]->index;
             ast[i]->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
             if (smk->aflags[i] & SMK_AUD_BINKAUD) {
