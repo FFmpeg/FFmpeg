@@ -320,13 +320,11 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_dict_set(metadata, s->key, s->value, 0);
         }
         return ff_filter_frame(outlink, frame);
-        break;
     case METADATA_MODIFY:
         if (e && e->value) {
             av_dict_set(metadata, s->key, s->value, 0);
         }
         return ff_filter_frame(outlink, frame);
-        break;
     case METADATA_PRINT:
         if (!s->key && e) {
             s->print(ctx, "frame:%-4"PRId64" pts:%-7s pts_time:%s\n",
@@ -341,7 +339,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->print(ctx, "%s=%s\n", s->key, e->value);
         }
         return ff_filter_frame(outlink, frame);
-        break;
     case METADATA_DELETE:
         if (!s->key) {
             av_dict_free(metadata);
@@ -349,7 +346,6 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             av_dict_set(metadata, s->key, NULL, 0);
         }
         return ff_filter_frame(outlink, frame);
-        break;
     default:
         av_assert0(0);
     };
