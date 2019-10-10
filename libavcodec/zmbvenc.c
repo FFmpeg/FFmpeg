@@ -409,7 +409,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
      */
     c->pstride = FFALIGN((avctx->width + c->lrange) * c->bypp, 16);
     prev_size = FFALIGN(c->lrange * c->bypp, 16) + c->pstride * (c->lrange + avctx->height + c->urange);
-    prev_offset = FFALIGN(c->lrange, 16) + c->pstride * c->lrange;
+    prev_offset = FFALIGN(c->lrange * c->bypp, 16) + c->pstride * c->lrange;
     if (!(c->prev_buf = av_mallocz(prev_size))) {
         av_log(avctx, AV_LOG_ERROR, "Can't allocate picture.\n");
         return AVERROR(ENOMEM);
