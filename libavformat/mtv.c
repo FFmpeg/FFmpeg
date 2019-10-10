@@ -171,6 +171,8 @@ static int mtv_read_header(AVFormatContext *s)
     st->codecpar->width           = mtv->img_width;
     st->codecpar->height          = mtv->img_height;
     st->codecpar->extradata       = av_strdup("BottomUp");
+    if (!st->codecpar->extradata)
+        return AVERROR(ENOMEM);
     st->codecpar->extradata_size  = 9;
 
     // audio - mp3
