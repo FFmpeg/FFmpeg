@@ -147,10 +147,8 @@ static int get_audio_codec_id(enum AVCodecID codec_id)
     case AV_CODEC_ID_PCM_S8_PLANAR:
     case AV_CODEC_ID_PCM_S16BE_PLANAR:
         return 0;
-        break;
     case AV_CODEC_ID_ADPCM_ADX:
         return 2;
-        break;
     default:
         return -1;
     }
