@@ -889,7 +889,6 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
         strlen(vs->current_segment_final_filename_fmt)) {
         char * new_url = av_strdup(vs->current_segment_final_filename_fmt);
         if (!new_url) {
-            av_freep(&en);
             return AVERROR(ENOMEM);
         }
         ff_format_set_url(vs->avf, new_url);
@@ -901,7 +900,6 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
                        "you can try to remove second_level_segment_size flag\n",
                        vs->avf->url);
                 av_freep(&filename);
-                av_freep(&en);
                 return AVERROR(EINVAL);
             }
             ff_format_set_url(vs->avf, filename);
@@ -915,7 +913,6 @@ static int sls_flags_filename_process(struct AVFormatContext *s, HLSContext *hls
                        "you can try to remove second_level_segment_time flag\n",
                        vs->avf->url);
                 av_freep(&filename);
-                av_freep(&en);
                 return AVERROR(EINVAL);
             }
             ff_format_set_url(vs->avf, filename);
@@ -1037,6 +1034,7 @@ static int hls_append_segment(struct AVFormatContext *s, HLSContext *hls,
     en->var_stream_idx = vs->var_stream_idx;
     ret = sls_flags_filename_process(s, hls, vs, en, duration, pos, size);
     if (ret < 0) {
+        av_freep(&en);
         return ret;
     }
 
