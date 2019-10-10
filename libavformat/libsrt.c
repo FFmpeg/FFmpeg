@@ -478,6 +478,7 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
     SRTContext *s = h->priv_data;
     const char * p;
     char buf[256];
+    int ret = 0;
 
     if (srt_startup() < 0) {
         return AVERROR_UNKNOWN;
@@ -564,10 +565,18 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "streamid", p)) {
             av_freep(&s->streamid);
             s->streamid = av_strdup(buf);
+            if (!s->streamid) {
+                ret = AVERROR(ENOMEM);
+                goto err;
+            }
         }
         if (av_find_info_tag(buf, sizeof(buf), "smoother", p)) {
             av_freep(&s->smoother);
             s->smoother = av_strdup(buf);
+            if(!s->smoother) {
+                ret = AVERROR(ENOMEM);
+                goto err;
+            }
         }
         if (av_find_info_tag(buf, sizeof(buf), "messageapi", p)) {
             s->messageapi = strtol(buf, NULL, 10);
@@ -578,11 +587,16 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
             } else if (!strcmp(buf, "file")) {
                 s->transtype = SRTT_FILE;
             } else {
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto err;
             }
         }
     }
     return libsrt_setup(h, uri, flags);
+err:
+    av_freep(&s->smoother);
+    av_freep(&s->streamid);
+    return ret;
 }
 
 static int libsrt_read(URLContext *h, uint8_t *buf, int size)
