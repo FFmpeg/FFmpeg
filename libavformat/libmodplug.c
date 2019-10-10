@@ -216,9 +216,10 @@ static int modplug_read_header(AVFormatContext *s)
     ModPlug_SetSettings(&settings);
 
     modplug->f = ModPlug_Load(modplug->buf, sz);
-    if (!modplug->f)
+    if (!modplug->f) {
+        av_freep(&modplug->buf);
         return AVERROR_INVALIDDATA;
-
+    }
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
