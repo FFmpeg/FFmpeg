@@ -561,7 +561,6 @@ static av_always_inline int ff_hevc_nal_is_nonref(enum HEVCNALUnitType type)
     case HEVC_NAL_VCL_N12:
     case HEVC_NAL_VCL_N14:
         return 1;
-        break;
     default: break;
     }
     return 0;
