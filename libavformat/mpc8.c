@@ -168,6 +168,7 @@ static void mpc8_parse_seektable(AVFormatContext *s, int64_t off)
     size = gb_get_v(&gb);
     if(size > UINT_MAX/4 || size > c->samples/1152){
         av_log(s, AV_LOG_ERROR, "Seek table is too big\n");
+        av_free(buf);
         return;
     }
     seekd = get_bits(&gb, 4);
