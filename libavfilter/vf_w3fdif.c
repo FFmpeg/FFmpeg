@@ -94,6 +94,11 @@ static int config_input(AVFilterLink *inlink)
     s->planeheight[1] = s->planeheight[2] = FF_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
+    if (inlink->h < 3) {
+        av_log(ctx, AV_LOG_ERROR, "Video of less than 3 lines is not supported\n");
+        return AVERROR(EINVAL);
+    }
+
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     s->nb_threads = ctx->graph->nb_threads;
     s->work_line = av_calloc(s->nb_threads, sizeof(*s->work_line));
