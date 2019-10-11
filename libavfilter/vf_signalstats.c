@@ -491,7 +491,7 @@ static int compute_sat_hue_metrics8(AVFilterContext *ctx, void *arg, int jobnr, 
             const int yuvu = p_u[i];
             const int yuvv = p_v[i];
             p_sat[i] = hypot(yuvu - 128, yuvv - 128); // int or round?
-            ((int16_t*)p_hue)[i] = floor((180 / M_PI) * atan2f(yuvu-128, yuvv-128) + 180);
+            ((int16_t*)p_hue)[i] = fmod(floor((180 / M_PI) * atan2f(yuvu-128, yuvv-128) + 180), 360.);
         }
         p_u   += lsz_u;
         p_v   += lsz_v;
@@ -530,7 +530,7 @@ static int compute_sat_hue_metrics16(AVFilterContext *ctx, void *arg, int jobnr,
             const int yuvu = p_u[i];
             const int yuvv = p_v[i];
             p_sat[i] = hypot(yuvu - mid, yuvv - mid); // int or round?
-            ((int16_t*)p_hue)[i] = floor((180 / M_PI) * atan2f(yuvu-mid, yuvv-mid) + 180);
+            ((int16_t*)p_hue)[i] = fmod(floor((180 / M_PI) * atan2f(yuvu-mid, yuvv-mid) + 180), 360.);
         }
         p_u   += lsz_u;
         p_v   += lsz_v;
