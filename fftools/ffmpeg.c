@@ -1995,12 +1995,13 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     InputFile   *f = input_files [ist->file_index];
     int64_t start_time = (of->start_time == AV_NOPTS_VALUE) ? 0 : of->start_time;
     int64_t ost_tb_start_time = av_rescale_q(start_time, AV_TIME_BASE_Q, ost->mux_timebase);
-    AVPacket opkt = { 0 };
-
-    av_init_packet(&opkt);
+    AVPacket opkt;
 
     // EOF: flush output bitstream filters.
     if (!pkt) {
+        av_init_packet(&opkt);
+        opkt.data = NULL;
+        opkt.size = 0;
         output_packet(of, &opkt, ost, 1);
         return;
     }
@@ -2039,10 +2040,11 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     if (ost->enc_ctx->codec_type == AVMEDIA_TYPE_VIDEO)
         ost->sync_opts++;
 
+    if (av_packet_ref(&opkt, pkt) < 0)
+        exit_program(1);
+
     if (pkt->pts != AV_NOPTS_VALUE)
         opkt.pts = av_rescale_q(pkt->pts, ist->st->time_base, ost->mux_timebase) - ost_tb_start_time;
-    else
-        opkt.pts = AV_NOPTS_VALUE;
 
     if (pkt->dts == AV_NOPTS_VALUE)
         opkt.dts = av_rescale_q(ist->dts, AV_TIME_BASE_Q, ost->mux_timebase);
@@ -2060,18 +2062,6 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     }
 
     opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->mux_timebase);
-
-    opkt.flags    = pkt->flags;
-
-    if (pkt->buf) {
-        opkt.buf = av_buffer_ref(pkt->buf);
-        if (!opkt.buf)
-            exit_program(1);
-    }
-    opkt.data = pkt->data;
-    opkt.size = pkt->size;
-
-    av_copy_packet_side_data(&opkt, pkt);
 
     output_packet(of, &opkt, ost, 0);
 }
