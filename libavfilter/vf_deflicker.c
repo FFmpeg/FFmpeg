@@ -420,7 +420,10 @@ static int request_frame(AVFilterLink *outlink)
 
     ret = ff_request_frame(ctx->inputs[0]);
     if (ret == AVERROR_EOF && s->available > 0) {
-        AVFrame *buf = av_frame_clone(ff_bufqueue_peek(&s->q, s->size - 1));
+        AVFrame *buf = ff_bufqueue_peek(&s->q, s->available - 1);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        buf = av_frame_clone(buf);
         if (!buf)
             return AVERROR(ENOMEM);
 
