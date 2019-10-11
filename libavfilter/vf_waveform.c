@@ -290,9 +290,9 @@ static int query_formats(AVFilterContext *ctx)
     WaveformContext *s = ctx->priv;
     const enum AVPixelFormat *out_pix_fmts;
     const enum AVPixelFormat *in_pix_fmts;
-    const AVPixFmtDescriptor *desc;
-    AVFilterFormats *avff;
-    int depth, rgb, i, ret, ncomp;
+    const AVPixFmtDescriptor *desc, *desc2;
+    AVFilterFormats *avff, *avff2;
+    int depth, depth2, rgb, i, ret, ncomp, ncomp2;
 
     if (!ctx->inputs[0]->in_formats ||
         !ctx->inputs[0]->in_formats->nb_formats) {
@@ -316,10 +316,16 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     avff = ctx->inputs[0]->in_formats;
+    avff2 = ctx->inputs[0]->out_formats;
     desc = av_pix_fmt_desc_get(avff->formats[0]);
+    desc2 = av_pix_fmt_desc_get(avff2->formats[0]);
     ncomp = desc->nb_components;
+    ncomp2 = desc2->nb_components;
     rgb = desc->flags & AV_PIX_FMT_FLAG_RGB;
     depth = desc->comp[0].depth;
+    depth2 = desc2->comp[0].depth;
+    if (ncomp != ncomp2 || depth != depth2)
+        return AVERROR(EAGAIN);
     for (i = 1; i < avff->nb_formats; i++) {
         desc = av_pix_fmt_desc_get(avff->formats[i]);
         if (rgb != (desc->flags & AV_PIX_FMT_FLAG_RGB) ||
