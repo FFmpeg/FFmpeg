@@ -11019,6 +11019,14 @@ red/green/blue component. Return 0 if there is no such component.
 @item alpha(x, y)
 Return the value of the pixel at location (@var{x},@var{y}) of the alpha
 plane. Return 0 if there is no such plane.
+
+@item interpolation
+Set one of interpolation methods:
+@table @option
+@item nearest, n
+@item bilinear, b
+@end table
+Default is bilinear.
 @end table
 
 For functions, if @var{x} and @var{y} are outside the area, the value will be

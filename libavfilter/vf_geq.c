@@ -33,6 +33,12 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
+enum InterpolationMethods {
+    INTERP_NEAREST,
+    INTERP_BILINEAR,
+    NB_INTERP
+};
+
 static const char *const var_names[] = {   "X",   "Y",   "W",   "H",   "N",   "SW",   "SH",   "T",        NULL };
 enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_SW, VAR_SH, VAR_T, VAR_VARS_NB };
 
@@ -46,6 +52,7 @@ typedef struct GEQContext {
     double values[VAR_VARS_NB]; ///< expression values
     int hsub, vsub;             ///< chroma subsampling
     int planes;                 ///< number of planes
+    int interpolation;
     int is_rgb;
     int bps;
 } GEQContext;
@@ -70,6 +77,12 @@ static const AVOption geq_options[] = {
     { "g",          "set green expression",       OFFSET(expr_str[G]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "blue_expr",  "set blue expression",        OFFSET(expr_str[B]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
     { "b",          "set blue expression",        OFFSET(expr_str[B]), AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, FLAGS },
+    { "interpolation","set interpolation method", OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERP_BILINEAR}, 0, NB_INTERP-1, FLAGS, "interp" },
+    { "i",          "set interpolation method",   OFFSET(interpolation), AV_OPT_TYPE_INT, {.i64=INTERP_BILINEAR}, 0, NB_INTERP-1, FLAGS, "interp" },
+    { "nearest",    "nearest interpolation",      0,                   AV_OPT_TYPE_CONST, {.i64=INTERP_NEAREST},  0, 0, FLAGS, "interp" },
+    { "n",          "nearest interpolation",      0,                   AV_OPT_TYPE_CONST, {.i64=INTERP_NEAREST},  0, 0, FLAGS, "interp" },
+    { "bilinear",   "bilinear interpolation",     0,                   AV_OPT_TYPE_CONST, {.i64=INTERP_BILINEAR}, 0, 0, FLAGS, "interp" },
+    { "b",          "bilinear interpolation",     0,                   AV_OPT_TYPE_CONST, {.i64=INTERP_BILINEAR}, 0, 0, FLAGS, "interp" },
     {NULL},
 };
 
@@ -88,6 +101,7 @@ static inline double getpix(void *priv, double x, double y, int plane)
     if (!src)
         return 0;
 
+    if (geq->interpolation == INTERP_BILINEAR) {
     xi = x = av_clipd(x, 0, w - 2);
     yi = y = av_clipd(y, 0, h - 2);
 
@@ -103,6 +117,19 @@ static inline double getpix(void *priv, double x, double y, int plane)
     } else {
         return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
               +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+    }
+    } else {
+        xi = av_clipd(x, 0, w - 1);
+        yi = av_clipd(y, 0, h - 1);
+
+        if (geq->bps > 8) {
+            const uint16_t *src16 = (const uint16_t*)src;
+            linesize /= 2;
+
+            return src16[xi + yi * linesize];
+        } else {
+            return src[xi + yi * linesize];
+        }
     }
 }
 
