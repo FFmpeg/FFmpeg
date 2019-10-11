@@ -102,22 +102,22 @@ static inline double getpix(void *priv, double x, double y, int plane)
         return 0;
 
     if (geq->interpolation == INTERP_BILINEAR) {
-    xi = x = av_clipd(x, 0, w - 2);
-    yi = y = av_clipd(y, 0, h - 2);
+        xi = x = av_clipd(x, 0, w - 2);
+        yi = y = av_clipd(y, 0, h - 2);
 
-    x -= xi;
-    y -= yi;
+        x -= xi;
+        y -= yi;
 
-    if (geq->bps > 8) {
-        const uint16_t *src16 = (const uint16_t*)src;
-        linesize /= 2;
+        if (geq->bps > 8) {
+            const uint16_t *src16 = (const uint16_t*)src;
+            linesize /= 2;
 
-        return (1-y)*((1-x)*src16[xi +  yi    * linesize] + x*src16[xi + 1 +  yi    * linesize])
-              +   y *((1-x)*src16[xi + (yi+1) * linesize] + x*src16[xi + 1 + (yi+1) * linesize]);
-    } else {
-        return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
-              +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
-    }
+            return (1-y)*((1-x)*src16[xi +  yi    * linesize] + x*src16[xi + 1 +  yi    * linesize])
+                  +   y *((1-x)*src16[xi + (yi+1) * linesize] + x*src16[xi + 1 + (yi+1) * linesize]);
+        } else {
+            return (1-y)*((1-x)*src[xi +  yi    * linesize] + x*src[xi + 1 +  yi    * linesize])
+                  +   y *((1-x)*src[xi + (yi+1) * linesize] + x*src[xi + 1 + (yi+1) * linesize]);
+        }
     } else {
         xi = av_clipd(x, 0, w - 1);
         yi = av_clipd(y, 0, h - 1);
