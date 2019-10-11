@@ -1535,7 +1535,7 @@ static void json_print_section_header(WriterContext *wctx)
             if (parent_section && parent_section->id == SECTION_ID_PACKETS_AND_FRAMES) {
                 if (!json->compact)
                     JSON_INDENT();
-                printf("\"type\": \"%s\"%s", section->name, json->item_sep);
+                printf("\"type\": \"%s\"", section->name);
             }
         }
         av_bprint_finalize(&buf, NULL);
@@ -1579,8 +1579,10 @@ static inline void json_print_item_str(WriterContext *wctx,
 static void json_print_str(WriterContext *wctx, const char *key, const char *value)
 {
     JSONContext *json = wctx->priv;
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
 
-    if (wctx->nb_item[wctx->level])
+    if (wctx->nb_item[wctx->level] || (parent_section && parent_section->id == SECTION_ID_PACKETS_AND_FRAMES))
         printf("%s", json->item_sep);
     if (!json->compact)
         JSON_INDENT();
@@ -1590,9 +1592,11 @@ static void json_print_str(WriterContext *wctx, const char *key, const char *val
 static void json_print_int(WriterContext *wctx, const char *key, long long int value)
 {
     JSONContext *json = wctx->priv;
+    const struct section *parent_section = wctx->level ?
+        wctx->section[wctx->level-1] : NULL;
     AVBPrint buf;
 
-    if (wctx->nb_item[wctx->level])
+    if (wctx->nb_item[wctx->level] || (parent_section && parent_section->id == SECTION_ID_PACKETS_AND_FRAMES))
         printf("%s", json->item_sep);
     if (!json->compact)
         JSON_INDENT();
