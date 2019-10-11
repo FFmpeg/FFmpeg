@@ -3008,6 +3008,8 @@ static int opt_old2new(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
     char *s = av_asprintf("%s:%c", opt + 1, *opt);
+    if (!s)
+        return AVERROR(ENOMEM);
     int ret = parse_option(o, s, arg, options);
     av_free(s);
     return ret;
@@ -3039,6 +3041,8 @@ static int opt_qscale(void *optctx, const char *opt, const char *arg)
         return parse_option(o, "q:v", arg, options);
     }
     s = av_asprintf("q%s", opt + 6);
+    if (!s)
+        return AVERROR(ENOMEM);
     ret = parse_option(o, s, arg, options);
     av_free(s);
     return ret;
@@ -3084,6 +3088,8 @@ static int opt_timecode(void *optctx, const char *opt, const char *arg)
 {
     OptionsContext *o = optctx;
     char *tcr = av_asprintf("timecode=%s", arg);
+    if (!tcr)
+        return AVERROR(ENOMEM);
     int ret = parse_option(o, "metadata:g", tcr, options);
     if (ret >= 0)
         ret = av_dict_set(&o->g->codec_opts, "gop_timecode", arg, 0);
