@@ -585,6 +585,8 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
             av_strlcpy(sub_path, vtt_dirname, sub_path_size);
             av_strlcat(sub_path, segment->sub_filename, sub_path_size);
 
+            av_freep(&vtt_dirname);
+
             if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
                 if ((ret = vs->vtt_avf->io_open(vs->vtt_avf, &out, sub_path, AVIO_FLAG_WRITE, &options)) < 0) {
