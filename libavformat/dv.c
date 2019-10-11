@@ -495,16 +495,18 @@ static int dv_read_header(AVFormatContext *s)
 {
     unsigned state, marker_pos = 0;
     RawDVContext *c = s->priv_data;
+    int ret;
 
     c->dv_demux = avpriv_dv_init_demux(s);
     if (!c->dv_demux)
-        return -1;
+        return AVERROR(ENOMEM);
 
     state = avio_rb32(s->pb);
     while ((state & 0xffffff7f) != 0x1f07003f) {
         if (avio_feof(s->pb)) {
             av_log(s, AV_LOG_ERROR, "Cannot find DV header.\n");
-            return -1;
+            ret = AVERROR_INVALIDDATA;
+            goto fail;
         }
         if (state == 0x003f0700 || state == 0xff3f0700)
             marker_pos = avio_tell(s->pb);
@@ -518,8 +520,10 @@ static int dv_read_header(AVFormatContext *s)
     AV_WB32(c->buf, state);
 
     if (avio_read(s->pb, c->buf + 4, DV_PROFILE_BYTES - 4) != DV_PROFILE_BYTES - 4 ||
-        avio_seek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0)
-        return AVERROR(EIO);
+        avio_seek(s->pb, -DV_PROFILE_BYTES, SEEK_CUR) < 0) {
+        ret = AVERROR(EIO);
+        goto fail;
+    }
 
     c->dv_demux->sys = av_dv_frame_profile(c->dv_demux->sys,
                                            c->buf,
@@ -527,7 +531,8 @@ static int dv_read_header(AVFormatContext *s)
     if (!c->dv_demux->sys) {
         av_log(s, AV_LOG_ERROR,
                "Can't determine profile of DV input stream.\n");
-        return -1;
+        ret = AVERROR_INVALIDDATA;
+        goto fail;
     }
 
     s->bit_rate = av_rescale_q(c->dv_demux->sys->frame_size,
@@ -538,6 +543,11 @@ static int dv_read_header(AVFormatContext *s)
         dv_read_timecode(s);
 
     return 0;
+
+fail:
+    av_freep(&c->dv_demux);
+
+    return ret;
 }
 
 static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
