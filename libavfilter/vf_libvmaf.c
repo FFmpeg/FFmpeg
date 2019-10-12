@@ -110,6 +110,7 @@ FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
         const type *main_ptr = (const type *) s->gmain->data[0];                \
         \
         float *ptr = ref_data;                                                  \
+        float factor = 1.f / (1 << (bits - 8));                                 \
         \
         int h = s->height;                                                      \
         int w = s->width;                                                       \
@@ -118,7 +119,7 @@ FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
         \
         for (i = 0; i < h; i++) {                                               \
             for ( j = 0; j < w; j++) {                                          \
-                ptr[j] = (float)ref_ptr[j];                                     \
+                ptr[j] = ref_ptr[j] * factor;                                   \
             }                                                                   \
             ref_ptr += ref_stride / sizeof(*ref_ptr);                           \
             ptr += stride / sizeof(*ptr);                                       \
@@ -128,7 +129,7 @@ FRAMESYNC_DEFINE_CLASS(libvmaf, LIBVMAFContext, fs);
         \
         for (i = 0; i < h; i++) {                                               \
             for (j = 0; j < w; j++) {                                           \
-                ptr[j] = (float)main_ptr[j];                                    \
+                ptr[j] = main_ptr[j] * factor;                                  \
             }                                                                   \
             main_ptr += main_stride / sizeof(*main_ptr);                        \
             ptr += stride / sizeof(*ptr);                                       \
