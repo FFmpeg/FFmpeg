@@ -180,15 +180,15 @@ void ff_vc1_h_loop_filter16_mmi(uint8_t *src, int stride, int pq);
 
 void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y);
+                                      ptrdiff_t stride, int h, int x, int y);
 void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y);
+                                      ptrdiff_t stride, int h, int x, int y);
 void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y);
+                                      ptrdiff_t stride, int h, int x, int y);
 void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y);
+                                      ptrdiff_t stride, int h, int x, int y);
 
 #endif /* AVCODEC_MIPS_VC1DSP_MIPS_H */

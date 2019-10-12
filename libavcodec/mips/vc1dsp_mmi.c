@@ -2241,7 +2241,7 @@ DECLARE_FUNCTION(3, 3)
 
 void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y)
+                                      ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -2296,7 +2296,7 @@ void ff_put_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
 
 void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y)
+                                      ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -2349,7 +2349,7 @@ void ff_put_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
 
 void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y)
+                                      ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B =     (x) * (8 - y);
@@ -2407,7 +2407,7 @@ void ff_avg_no_rnd_vc1_chroma_mc8_mmi(uint8_t *dst /* align 8 */,
 
 void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
-                                      int stride, int h, int x, int y)
+                                      ptrdiff_t stride, int h, int x, int y)
 {
     const int A = (8 - x) * (8 - y);
     const int B = (    x) * (8 - y);
