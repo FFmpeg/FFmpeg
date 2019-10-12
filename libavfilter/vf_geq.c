@@ -81,8 +81,8 @@ static inline double getpix(void *priv, double x, double y, int plane)
     if (!src)
         return 0;
 
-    xi = x = av_clipf(x, 0, w - 2);
-    yi = y = av_clipf(y, 0, h - 2);
+    xi = x = av_clipd(x, 0, w - 2);
+    yi = y = av_clipd(y, 0, h - 2);
 
     x -= xi;
     y -= yi;
