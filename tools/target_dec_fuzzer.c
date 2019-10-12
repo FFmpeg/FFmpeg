@@ -171,6 +171,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size > 1024) {
         GetByteContext gbc;
         int extradata_size;
+        int flags;
         size -= 1024;
         bytestream2_init(&gbc, data + size, 1024);
         ctx->width                              = bytestream2_get_le32(&gbc);
@@ -178,8 +179,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         ctx->bit_rate                           = bytestream2_get_le64(&gbc);
         ctx->bits_per_coded_sample              = bytestream2_get_le32(&gbc);
         // Try to initialize a parser for this codec, note, this may fail which just means we test without one
-        if (bytestream2_get_byte(&gbc) & 1)
+        flags = bytestream2_get_byte(&gbc);
+        if (flags & 1)
             parser = av_parser_init(c->id);
+        if (flags & 2)
+            ctx->strict_std_compliance = FF_COMPLIANCE_EXPERIMENTAL;
 
         extradata_size = bytestream2_get_le32(&gbc);
 
