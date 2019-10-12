@@ -19086,6 +19086,9 @@ Similar as above, but shows difference between blue and red chroma.
 @item xflat
 Similar as above, but use different colors.
 
+@item yflat
+Similar as above, but again with different colors.
+
 @item chroma
 Displays only chroma.
 

@@ -45,6 +45,7 @@ enum FilterType {
     COLOR,
     ACOLOR,
     XFLAT,
+    YFLAT,
     NB_FILTERS
 };
 
@@ -158,6 +159,7 @@ static const AVOption waveform_options[] = {
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
         { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
         { "xflat",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=XFLAT},   0, 0, FLAGS, "filter" },
+        { "yflat",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=YFLAT},   0, 0, FLAGS, "filter" },
     { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_GRATICULES-1, FLAGS, "graticule" },
     { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_GRATICULES-1, FLAGS, "graticule" },
         { "none",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_NONE},   0, 0, FLAGS, "graticule" },
@@ -317,6 +319,7 @@ static int query_formats(AVFilterContext *ctx)
     case LOWPASS: in_pix_fmts = in_lowpass_pix_fmts; break;
     case CHROMA:
     case XFLAT:
+    case YFLAT:
     case AFLAT:
     case FLAT:    in_pix_fmts = in_flat_pix_fmts;    break;
     case ACOLOR:
@@ -1412,6 +1415,10 @@ AFLAT16(xflat16_row,           update16, update16_cr, 0, 0)
 AFLAT16(xflat16_row_mirror,    update16, update16_cr, 0, 1)
 AFLAT16(xflat16_column,        update16, update16_cr, 1, 0)
 AFLAT16(xflat16_column_mirror, update16, update16_cr, 1, 1)
+AFLAT16(yflat16_row,           update16_cr, update16_cr, 0, 0)
+AFLAT16(yflat16_row_mirror,    update16_cr, update16_cr, 0, 1)
+AFLAT16(yflat16_column,        update16_cr, update16_cr, 1, 0)
+AFLAT16(yflat16_column_mirror, update16_cr, update16_cr, 1, 1)
 
 AFLAT(aflat_row,           update, update,    0, 0)
 AFLAT(aflat_row_mirror,    update, update,    0, 1)
@@ -1421,6 +1428,10 @@ AFLAT(xflat_row,           update, update_cr, 0, 0)
 AFLAT(xflat_row_mirror,    update, update_cr, 0, 1)
 AFLAT(xflat_column,        update, update_cr, 1, 0)
 AFLAT(xflat_column_mirror, update, update_cr, 1, 1)
+AFLAT(yflat_row,           update_cr, update_cr, 0, 0)
+AFLAT(yflat_row_mirror,    update_cr, update_cr, 0, 1)
+AFLAT(yflat_column,        update_cr, update_cr, 1, 0)
+AFLAT(yflat_column_mirror, update_cr, update_cr, 1, 1)
 
 static av_always_inline void chroma16(WaveformContext *s,
                                       AVFrame *in, AVFrame *out,
@@ -2957,6 +2968,7 @@ static int config_input(AVFilterLink *inlink)
 
     switch (s->filter) {
     case XFLAT:
+    case YFLAT:
     case AFLAT: s->size = 256 * 2; break;
     case FLAT:  s->size = 256 * 3; break;
     default:    s->size = 256;     break;
@@ -3020,6 +3032,14 @@ static int config_input(AVFilterLink *inlink)
     case 0x1016: s->waveform_slice = xflat16_row_mirror;    break;
     case 0x0116: s->waveform_slice = xflat16_column;        break;
     case 0x0016: s->waveform_slice = xflat16_row;           break;
+    case 0x1107: s->waveform_slice = yflat_column_mirror; break;
+    case 0x1007: s->waveform_slice = yflat_row_mirror;    break;
+    case 0x0107: s->waveform_slice = yflat_column;        break;
+    case 0x0007: s->waveform_slice = yflat_row;           break;
+    case 0x1117: s->waveform_slice = yflat16_column_mirror; break;
+    case 0x1017: s->waveform_slice = yflat16_row_mirror;    break;
+    case 0x0117: s->waveform_slice = yflat16_column;        break;
+    case 0x0017: s->waveform_slice = yflat16_row;           break;
     }
 
     s->grat_yuva_color[0] = 255;
@@ -3048,6 +3068,7 @@ static int config_input(AVFilterLink *inlink)
     case CHROMA:
     case AFLAT:
     case XFLAT:
+    case YFLAT:
     case FLAT:
         if (s->graticule > GRAT_NONE && s->mode == 1)
             s->graticulef = s->bits > 8 ? graticule16_column : graticule_column;
@@ -3116,6 +3137,7 @@ static int config_input(AVFilterLink *inlink)
         }
         break;
     case XFLAT:
+    case YFLAT:
     case AFLAT:
         switch (s->scale) {
         case DIGITAL:
@@ -3332,6 +3354,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
                 break;
             case AFLAT:
             case XFLAT:
+            case YFLAT:
                 if (s->bits <= 8) {
                     envelope(s, out, plane, (plane + 0) % s->ncomp, s->mode ? offset_x : offset_y);
                     envelope(s, out, plane, (plane + 1) % s->ncomp, s->mode ? offset_x : offset_y);
