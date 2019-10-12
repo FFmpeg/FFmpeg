@@ -2728,6 +2728,11 @@ static int vc1_decode_i_blocks_adv(VC1Context *v)
             // do actual MB decoding and displaying
             if (v->fieldtx_is_raw)
                 v->fieldtx_plane[mb_pos] = get_bits1(&v->s.gb);
+            if (get_bits_left(&v->s.gb) <= 1) {
+                ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                return 0;
+            }
+
             cbp = get_vlc2(&v->s.gb, ff_msmp4_mb_i_vlc.table, MB_INTRA_VLC_BITS, 2);
             if (v->acpred_is_raw)
                 v->s.ac_pred = get_bits1(&v->s.gb);
@@ -2838,6 +2843,12 @@ static void vc1_decode_p_blocks(VC1Context *v)
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
 
+            if (v->fcm == ILACE_FIELD || (v->fcm == PROGRESSIVE && v->mv_type_is_raw) || v->skip_is_raw)
+                if (get_bits_left(&v->s.gb) <= 1) {
+                    ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                    return;
+                }
+
             if (v->fcm == ILACE_FIELD) {
                 vc1_decode_p_mb_intfi(v);
                 if (apply_loop_filter)
@@ -2920,6 +2931,12 @@ static void vc1_decode_b_blocks(VC1Context *v)
         init_block_index(v);
         for (; s->mb_x < s->mb_width; s->mb_x++) {
             ff_update_block_index(s);
+
+            if (v->fcm == ILACE_FIELD || v->skip_is_raw || v->dmb_is_raw)
+                if (get_bits_left(&v->s.gb) <= 1) {
+                    ff_er_add_slice(&s->er, 0, s->start_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR);
+                    return;
+                }
 
             if (v->fcm == ILACE_FIELD) {
                 vc1_decode_b_mb_intfi(v);
