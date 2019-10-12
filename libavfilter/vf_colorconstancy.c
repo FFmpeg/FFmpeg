@@ -280,7 +280,7 @@ static int slice_get_derivative(AVFilterContext* ctx, void* arg, int jobnr, int 
                     dst[INDX2D(r, c, width)] = 0;
                     for (g = 0; g < filtersize; ++g) {
                         dst[INDX2D(r, c, width)] += GAUSS(src, r,                        c + GINDX(filtersize, g),
-                                                          in_linesize, height, width, gauss[GINDX(filtersize, g)]);
+                                                          in_linesize, height, width, gauss[g]);
                     }
                 }
             }
@@ -295,7 +295,7 @@ static int slice_get_derivative(AVFilterContext* ctx, void* arg, int jobnr, int 
                     dst[INDX2D(r, c, width)] = 0;
                     for (g = 0; g < filtersize; ++g) {
                         dst[INDX2D(r, c, width)] += GAUSS(src, r + GINDX(filtersize, g), c,
-                                                          width, height, width, gauss[GINDX(filtersize, g)]);
+                                                          width, height, width, gauss[g]);
                     }
                 }
             }
