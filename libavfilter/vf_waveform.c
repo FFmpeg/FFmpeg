@@ -62,6 +62,13 @@ enum ScaleType {
     NB_SCALES
 };
 
+enum GraticuleType {
+    GRAT_NONE,
+    GRAT_GREEN,
+    GRAT_ORANGE,
+    NB_GRATICULES
+};
+
 typedef struct GraticuleLine {
     const char *name;
     uint16_t pos;
@@ -145,11 +152,11 @@ static const AVOption waveform_options[] = {
         { "color",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=COLOR},   0, 0, FLAGS, "filter" },
         { "acolor",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=ACOLOR},  0, 0, FLAGS, "filter" },
         { "xflat",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=XFLAT},   0, 0, FLAGS, "filter" },
-    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule" },
-    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, 2, FLAGS, "graticule" },
-        { "none",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=0}, 0, 0, FLAGS, "graticule" },
-        { "green",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=1}, 0, 0, FLAGS, "graticule" },
-        { "orange", NULL, 0, AV_OPT_TYPE_CONST, {.i64=2}, 0, 0, FLAGS, "graticule" },
+    { "graticule", "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_GRATICULES-1, FLAGS, "graticule" },
+    { "g",         "set graticule", OFFSET(graticule), AV_OPT_TYPE_INT, {.i64=0}, 0, NB_GRATICULES-1, FLAGS, "graticule" },
+        { "none",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_NONE},   0, 0, FLAGS, "graticule" },
+        { "green",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_GREEN},  0, 0, FLAGS, "graticule" },
+        { "orange", NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_ORANGE}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
@@ -2863,7 +2870,7 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->grat_yuva_color[0] = 255;
-    s->grat_yuva_color[2] = s->graticule == 2 ? 255 : 0;
+    s->grat_yuva_color[2] = s->graticule == GRAT_ORANGE ? 255 : 0;
     s->grat_yuva_color[3] = 255;
 
     switch (s->filter) {
@@ -2874,9 +2881,9 @@ static int config_input(AVFilterLink *inlink)
     case AFLAT:
     case XFLAT:
     case FLAT:
-        if (s->graticule && s->mode == 1)
+        if (s->graticule > GRAT_NONE && s->mode == 1)
             s->graticulef = s->bits > 8 ? graticule16_column : graticule_column;
-        else if (s->graticule && s->mode == 0)
+        else if (s->graticule > GRAT_NONE && s->mode == 0)
             s->graticulef = s->bits > 8 ? graticule16_row : graticule_row;
         break;
     }
