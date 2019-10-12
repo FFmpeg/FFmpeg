@@ -1138,7 +1138,7 @@ FLAT_FUNC(column,        1, 0)
 FLAT_FUNC(row_mirror,    0, 1)
 FLAT_FUNC(row,           0, 0)
 
-#define AFLAT16(name, update_cr, column, mirror)                                                                   \
+#define AFLAT16(name, update_cb, update_cr, column, mirror)                                                        \
 static int name(AVFilterContext *ctx,                                                                              \
                 void *arg, int jobnr,                                                                              \
                 int nb_jobs)                                                                                       \
@@ -1204,7 +1204,7 @@ static int name(AVFilterContext *ctx,                                           
                 update16(target, max, intensity, limit);                                                           \
                                                                                                                    \
                 target = d1 + x + d1_signed_linesize * (c0 + c1);                                                  \
-                update16(target, max, intensity, limit);                                                           \
+                update_cb(target, max, intensity, limit);                                                          \
                                                                                                                    \
                 target = d2 + x + d2_signed_linesize * (c0 + c2);                                                  \
                 update_cr(target, max, intensity, limit);                                                          \
@@ -1245,14 +1245,14 @@ static int name(AVFilterContext *ctx,                                           
                     target = d0_data - c0;                                                                         \
                     update16(target, max, intensity, limit);                                                       \
                     target = d1_data - (c0 + c1);                                                                  \
-                    update16(target, max, intensity, limit);                                                       \
+                    update_cb(target, max, intensity, limit);                                                      \
                     target = d2_data - (c0 + c2);                                                                  \
                     update_cr(target, max, intensity, limit);                                                      \
                 } else {                                                                                           \
                     target = d0_data + c0;                                                                         \
                     update16(target, max, intensity, limit);                                                       \
                     target = d1_data + (c0 + c1);                                                                  \
-                    update16(target, max, intensity, limit);                                                       \
+                    update_cb(target, max, intensity, limit);                                                      \
                     target = d2_data + (c0 + c2);                                                                  \
                     update_cr(target, max, intensity, limit);                                                      \
                 }                                                                                                  \
@@ -1272,7 +1272,7 @@ static int name(AVFilterContext *ctx,                                           
     return 0;                                                                                                      \
 }
 
-#define AFLAT(name, update_cr, column, mirror)                                                        \
+#define AFLAT(name, update_cb, update_cr, column, mirror)                                             \
 static int name(AVFilterContext *ctx,                                                                 \
                 void *arg, int jobnr,                                                                 \
                 int nb_jobs)                                                                          \
@@ -1336,7 +1336,7 @@ static int name(AVFilterContext *ctx,                                           
                 update(target, max, intensity);                                                       \
                                                                                                       \
                 target = d1 + x + d1_signed_linesize * (c0 + c1);                                     \
-                update(target, max, intensity);                                                       \
+                update_cb(target, max, intensity);                                                    \
                                                                                                       \
                 target = d2 + x + d2_signed_linesize * (c0 + c2);                                     \
                 update_cr(target, max, intensity);                                                    \
@@ -1377,14 +1377,14 @@ static int name(AVFilterContext *ctx,                                           
                     target = d0_data - c0;                                                            \
                     update(target, max, intensity);                                                   \
                     target = d1_data - (c0 + c1);                                                     \
-                    update(target, max, intensity);                                                   \
+                    update_cb(target, max, intensity);                                                \
                     target = d2_data - (c0 + c2);                                                     \
                     update_cr(target, max, intensity);                                                \
                 } else {                                                                              \
                     target = d0_data + c0;                                                            \
                     update(target, max, intensity);                                                   \
                     target = d1_data + (c0 + c1);                                                     \
-                    update(target, max, intensity);                                                   \
+                    update_cb(target, max, intensity);                                                \
                     target = d2_data + (c0 + c2);                                                     \
                     update_cr(target, max, intensity);                                                \
                 }                                                                                     \
@@ -1404,23 +1404,23 @@ static int name(AVFilterContext *ctx,                                           
     return 0;                                                                                         \
 }
 
-AFLAT16(aflat16_row,           update16,    0, 0)
-AFLAT16(aflat16_row_mirror,    update16,    0, 1)
-AFLAT16(aflat16_column,        update16,    1, 0)
-AFLAT16(aflat16_column_mirror, update16,    1, 1)
-AFLAT16(xflat16_row,           update16_cr, 0, 0)
-AFLAT16(xflat16_row_mirror,    update16_cr, 0, 1)
-AFLAT16(xflat16_column,        update16_cr, 1, 0)
-AFLAT16(xflat16_column_mirror, update16_cr, 1, 1)
+AFLAT16(aflat16_row,           update16, update16,    0, 0)
+AFLAT16(aflat16_row_mirror,    update16, update16,    0, 1)
+AFLAT16(aflat16_column,        update16, update16,    1, 0)
+AFLAT16(aflat16_column_mirror, update16, update16,    1, 1)
+AFLAT16(xflat16_row,           update16, update16_cr, 0, 0)
+AFLAT16(xflat16_row_mirror,    update16, update16_cr, 0, 1)
+AFLAT16(xflat16_column,        update16, update16_cr, 1, 0)
+AFLAT16(xflat16_column_mirror, update16, update16_cr, 1, 1)
 
-AFLAT(aflat_row,           update,    0, 0)
-AFLAT(aflat_row_mirror,    update,    0, 1)
-AFLAT(aflat_column,        update,    1, 0)
-AFLAT(aflat_column_mirror, update,    1, 1)
-AFLAT(xflat_row,           update_cr, 0, 0)
-AFLAT(xflat_row_mirror,    update_cr, 0, 1)
-AFLAT(xflat_column,        update_cr, 1, 0)
-AFLAT(xflat_column_mirror, update_cr, 1, 1)
+AFLAT(aflat_row,           update, update,    0, 0)
+AFLAT(aflat_row_mirror,    update, update,    0, 1)
+AFLAT(aflat_column,        update, update,    1, 0)
+AFLAT(aflat_column_mirror, update, update,    1, 1)
+AFLAT(xflat_row,           update, update_cr, 0, 0)
+AFLAT(xflat_row_mirror,    update, update_cr, 0, 1)
+AFLAT(xflat_column,        update, update_cr, 1, 0)
+AFLAT(xflat_column_mirror, update, update_cr, 1, 1)
 
 static av_always_inline void chroma16(WaveformContext *s,
                                       AVFrame *in, AVFrame *out,
