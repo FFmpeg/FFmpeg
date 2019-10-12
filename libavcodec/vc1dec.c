@@ -701,7 +701,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                         goto err;
                     }
                     slices = tmp;
-                    slices[n_slices].buf = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                    slices[n_slices].buf = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf) {
                         ret = AVERROR(ENOMEM);
                         goto err;
@@ -730,7 +730,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                         goto err;
                     }
                     slices = tmp;
-                    slices[n_slices].buf = av_mallocz(buf_size + AV_INPUT_BUFFER_PADDING_SIZE);
+                    slices[n_slices].buf = av_mallocz(size + AV_INPUT_BUFFER_PADDING_SIZE);
                     if (!slices[n_slices].buf) {
                         ret = AVERROR(ENOMEM);
                         goto err;
