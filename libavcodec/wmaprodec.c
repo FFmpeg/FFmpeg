@@ -437,7 +437,7 @@ static av_cold int decode_init(WMAProDecodeCtx *s, AVCodecContext *avctx, int nu
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels per XMA stream %d\n",
                s->nb_channels);
         return AVERROR_INVALIDDATA;
-    } else if (s->nb_channels > WMAPRO_MAX_CHANNELS) {
+    } else if (s->nb_channels > WMAPRO_MAX_CHANNELS || s->nb_channels > avctx->channels) {
         avpriv_request_sample(avctx,
                               "More than %d channels", WMAPRO_MAX_CHANNELS);
         return AVERROR_PATCHWELCOME;
