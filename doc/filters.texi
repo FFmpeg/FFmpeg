@@ -19108,6 +19108,9 @@ Display green graticule showing legal broadcast ranges.
 
 @item orange
 Display orange graticule showing legal broadcast ranges.
+
+@item invert
+Display invert graticule showing legal broadcast ranges.
 @end table
 
 @item opacity, o

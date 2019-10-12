@@ -66,6 +66,7 @@ enum GraticuleType {
     GRAT_NONE,
     GRAT_GREEN,
     GRAT_ORANGE,
+    GRAT_INVERT,
     NB_GRATICULES
 };
 
@@ -114,6 +115,11 @@ typedef struct WaveformContext {
     int (*waveform_slice)(AVFilterContext *ctx, void *arg,
                           int jobnr, int nb_jobs);
     void (*graticulef)(struct WaveformContext *s, AVFrame *out);
+    void (*blend_line)(uint8_t *dst, int size, int linesize, float o1, float o2,
+                       int v, int step);
+    void (*draw_text)(AVFrame *out, int x, int y, int mult,
+                      float o1, float o2, const char *txt,
+                      const uint8_t color[4]);
     const AVPixFmtDescriptor *desc;
     const AVPixFmtDescriptor *odesc;
 } WaveformContext;
@@ -157,6 +163,7 @@ static const AVOption waveform_options[] = {
         { "none",   NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_NONE},   0, 0, FLAGS, "graticule" },
         { "green",  NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_GREEN},  0, 0, FLAGS, "graticule" },
         { "orange", NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_ORANGE}, 0, 0, FLAGS, "graticule" },
+        { "invert", NULL, 0, AV_OPT_TYPE_CONST, {.i64=GRAT_INVERT}, 0, 0, FLAGS, "graticule" },
     { "opacity", "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "o",       "set graticule opacity", OFFSET(opacity), AV_OPT_TYPE_FLOAT, {.dbl=0.75}, 0, 1, FLAGS },
     { "flags", "set graticule flags", OFFSET(flags), AV_OPT_TYPE_FLAGS, {.i64=1}, 0, 3, FLAGS, "flags" },
@@ -2483,8 +2490,9 @@ static void blend_vline(uint8_t *dst, int height, int linesize, float o1, float 
     }
 }
 
-static void blend_vline16(uint16_t *dst, int height, int linesize, float o1, float o2, int v, int step)
+static void blend_vline16(uint8_t *ddst, int height, int linesize, float o1, float o2, int v, int step)
 {
+    uint16_t *dst = (uint16_t *)ddst;
     int y;
 
     for (y = 0; y < height; y += step) {
@@ -2494,7 +2502,7 @@ static void blend_vline16(uint16_t *dst, int height, int linesize, float o1, flo
     }
 }
 
-static void blend_hline(uint8_t *dst, int width, float o1, float o2, int v, int step)
+static void blend_hline(uint8_t *dst, int width, int unused, float o1, float o2, int v, int step)
 {
     int x;
 
@@ -2503,8 +2511,9 @@ static void blend_hline(uint8_t *dst, int width, float o1, float o2, int v, int 
     }
 }
 
-static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v, int step)
+static void blend_hline16(uint8_t *ddst, int width, int unused, float o1, float o2, int v, int step)
 {
+    uint16_t *dst = (uint16_t *)ddst;
     int x;
 
     for (x = 0; x < width; x += step) {
@@ -2512,7 +2521,7 @@ static void blend_hline16(uint16_t *dst, int width, float o1, float o2, int v, i
     }
 }
 
-static void draw_htext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+static void draw_htext(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
 {
     const uint8_t *font;
     int font_height;
@@ -2564,7 +2573,7 @@ static void draw_htext16(AVFrame *out, int x, int y, int mult, float o1, float o
     }
 }
 
-static void draw_vtext(AVFrame *out, int x, int y, float o1, float o2, const char *txt, const uint8_t color[4])
+static void draw_vtext(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
 {
     const uint8_t *font;
     int font_height;
@@ -2614,6 +2623,150 @@ static void draw_vtext16(AVFrame *out, int x, int y, int mult, float o1, float o
     }
 }
 
+static void iblend_vline(uint8_t *dst, int height, int linesize, float o1, float o2, int v, int step)
+{
+    int y;
+
+    for (y = 0; y < height; y += step) {
+        dst[0] = (v - dst[0]) * o1 + dst[0] * o2;
+
+        dst += linesize * step;
+    }
+}
+
+static void iblend_vline16(uint8_t *ddst, int height, int linesize, float o1, float o2, int v, int step)
+{
+    uint16_t *dst = (uint16_t *)ddst;
+    int y;
+
+    for (y = 0; y < height; y += step) {
+        dst[0] = (v - dst[0]) * o1 + dst[0] * o2;
+
+        dst += (linesize / 2) * step;
+    }
+}
+
+static void iblend_hline(uint8_t *dst, int width, int unused, float o1, float o2, int v, int step)
+{
+    int x;
+
+    for (x = 0; x < width; x += step) {
+        dst[x] = (v - dst[x]) * o1 + dst[x] * o2;
+    }
+}
+
+static void iblend_hline16(uint8_t *ddst, int width, int unused, float o1, float o2, int v, int step)
+{
+    uint16_t *dst = (uint16_t *)ddst;
+    int x;
+
+    for (x = 0; x < width; x += step) {
+        dst[x] = (v - dst[x]) * o1 + dst[x] * o2;
+    }
+}
+
+static void idraw_htext(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            uint8_t *p = out->data[plane] + y * out->linesize[plane] + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + (v - p[0]) * o1;
+                    p++;
+                }
+                p += out->linesize[plane] - 8;
+            }
+        }
+    }
+}
+
+static void idraw_htext16(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane] * mult;
+
+            uint16_t *p = (uint16_t *)(out->data[plane] + y * out->linesize[plane]) + (x + i * 8);
+            for (char_y = 0; char_y < font_height; char_y++) {
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + char_y] & mask)
+                        p[0] = p[0] * o2 + (v - p[0]) * o1;
+                    p++;
+                }
+                p += out->linesize[plane] / 2 - 8;
+            }
+        }
+    }
+}
+
+static void idraw_vtext(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane];
+
+            for (char_y = font_height - 1; char_y >= 0; char_y--) {
+                uint8_t *p = out->data[plane] + (y + i * 10) * out->linesize[plane] + x;
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
+                        p[char_y] = p[char_y] * o2 + (v - p[char_y]) * o1;
+                    p += out->linesize[plane];
+                }
+            }
+        }
+    }
+}
+
+static void idraw_vtext16(AVFrame *out, int x, int y, int mult, float o1, float o2, const char *txt, const uint8_t color[4])
+{
+    const uint8_t *font;
+    int font_height;
+    int i, plane;
+
+    font = avpriv_cga_font,   font_height =  8;
+
+    for (plane = 0; plane < 4 && out->data[plane]; plane++) {
+        for (i = 0; txt[i]; i++) {
+            int char_y, mask;
+            int v = color[plane] * mult;
+
+            for (char_y = 0; char_y < font_height; char_y++) {
+                uint16_t *p = (uint16_t *)(out->data[plane] + (y + i * 10) * out->linesize[plane]) + x;
+                for (mask = 0x80; mask; mask >>= 1) {
+                    if (font[txt[i] * font_height + font_height - 1 - char_y] & mask)
+                        p[char_y] = p[char_y] * o2 + (v - p[char_y]) * o1;
+                    p += out->linesize[plane] / 2;
+                }
+            }
+        }
+    }
+}
+
 static void graticule_none(WaveformContext *s, AVFrame *out)
 {
 }
@@ -2639,7 +2792,7 @@ static void graticule_row(WaveformContext *s, AVFrame *out)
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + offset_y * out->linesize[p] + x;
 
-                blend_vline(dst, height, out->linesize[p], o1, o2, v, step);
+                s->blend_line(dst, height, out->linesize[p], o1, o2, v, step);
             }
         }
 
@@ -2651,7 +2804,7 @@ static void graticule_row(WaveformContext *s, AVFrame *out)
             if (x < 0)
                 x = 4;
 
-            draw_vtext(out, x, offset_y + 2, o1, o2, name, s->grat_yuva_color);
+            s->draw_text(out, x, offset_y + 2, 1, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_x += s->size * (s->display == STACK);
@@ -2679,9 +2832,9 @@ static void graticule16_row(WaveformContext *s, AVFrame *out)
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[C].pos;
                 int x = offset_x + (s->mirror ? s->size - 1 - pos : pos);
-                uint16_t *dst = (uint16_t *)(out->data[p] + offset_y * out->linesize[p]) + x;
+                uint8_t *dst = (uint8_t *)(out->data[p] + offset_y * out->linesize[p]) + x * 2;
 
-                blend_vline16(dst, height, out->linesize[p], o1, o2, v, step);
+                s->blend_line(dst, height, out->linesize[p], o1, o2, v, step);
             }
         }
 
@@ -2693,7 +2846,7 @@ static void graticule16_row(WaveformContext *s, AVFrame *out)
             if (x < 0)
                 x = 4;
 
-            draw_vtext16(out, x, offset_y + 2, mult, o1, o2, name, s->grat_yuva_color);
+            s->draw_text(out, x, offset_y + 2, mult, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_x += s->size * (s->display == STACK);
@@ -2722,7 +2875,7 @@ static void graticule_column(WaveformContext *s, AVFrame *out)
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
                 uint8_t *dst = out->data[p] + y * out->linesize[p] + offset_x;
 
-                blend_hline(dst, width, o1, o2, v, step);
+                s->blend_line(dst, width, 1, o1, o2, v, step);
             }
         }
 
@@ -2734,7 +2887,7 @@ static void graticule_column(WaveformContext *s, AVFrame *out)
             if (y < 0)
                 y = 4;
 
-            draw_htext(out, 2 + offset_x, y, o1, o2, name, s->grat_yuva_color);
+            s->draw_text(out, 2 + offset_x, y, 1, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_y += s->size * (s->display == STACK);
@@ -2762,9 +2915,9 @@ static void graticule16_column(WaveformContext *s, AVFrame *out)
             for (l = 0; l < s->nb_glines ; l++) {
                 const uint16_t pos = s->glines[l].line[C].pos;
                 int y = offset_y + (s->mirror ? s->size - 1 - pos : pos);
-                uint16_t *dst = (uint16_t *)(out->data[p] + y * out->linesize[p]) + offset_x;
+                uint8_t *dst = (uint8_t *)(out->data[p] + y * out->linesize[p]) + offset_x * 2;
 
-                blend_hline16(dst, width, o1, o2, v, step);
+                s->blend_line(dst, width, 1, o1, o2, v, step);
             }
         }
 
@@ -2776,7 +2929,7 @@ static void graticule16_column(WaveformContext *s, AVFrame *out)
             if (y < 0)
                 y = 4;
 
-            draw_htext16(out, 2 + offset_x, y, mult, o1, o2, name, s->grat_yuva_color);
+            s->draw_text(out, 2 + offset_x, y, mult, o1, o2, name, s->grat_yuva_color);
         }
 
         offset_y += s->size * (s->display == STACK);
@@ -2870,8 +3023,23 @@ static int config_input(AVFilterLink *inlink)
     }
 
     s->grat_yuva_color[0] = 255;
-    s->grat_yuva_color[2] = s->graticule == GRAT_ORANGE ? 255 : 0;
+    s->grat_yuva_color[1] = s->graticule == GRAT_INVERT ? 255 : 0;
+    s->grat_yuva_color[2] = s->graticule == GRAT_ORANGE || s->graticule == GRAT_INVERT ? 255 : 0;
     s->grat_yuva_color[3] = 255;
+
+    if (s->mode == 0 && s->graticule != GRAT_INVERT) {
+        s->blend_line = s->bits <= 8 ? blend_vline : blend_vline16;
+        s->draw_text  = s->bits <= 8 ? draw_vtext  : draw_vtext16;
+    } else if (s->graticule != GRAT_INVERT) {
+        s->blend_line = s->bits <= 8 ? blend_hline : blend_hline16;
+        s->draw_text  = s->bits <= 8 ? draw_htext  : draw_htext16;
+    } else if (s->mode == 0 && s->graticule == GRAT_INVERT) {
+        s->blend_line = s->bits <= 8 ? iblend_vline : iblend_vline16;
+        s->draw_text  = s->bits <= 8 ? idraw_vtext  : idraw_vtext16;
+    } else if (s->graticule == GRAT_INVERT) {
+        s->blend_line = s->bits <= 8 ? iblend_hline : iblend_hline16;
+        s->draw_text  = s->bits <= 8 ? idraw_htext  : idraw_htext16;
+    }
 
     switch (s->filter) {
     case LOWPASS:
