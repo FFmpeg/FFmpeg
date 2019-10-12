@@ -190,6 +190,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         ctx->sample_rate                        = bytestream2_get_le32(&gbc);
         ctx->channels                           = (unsigned)bytestream2_get_le32(&gbc) % FF_SANE_NB_CHANNELS;
         ctx->block_align                        = bytestream2_get_le32(&gbc);
+        ctx->codec_tag                          = bytestream2_get_le32(&gbc);
 
         if (extradata_size < size) {
             ctx->extradata = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
