@@ -159,7 +159,7 @@ static void close_slaves(AVFormatContext *avf)
 static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
 {
     int i, ret;
-    AVDictionary *options = NULL;
+    AVDictionary *options = NULL, *bsf_options = NULL;
     AVDictionaryEntry *entry;
     char *filename;
     char *format = NULL, *select = NULL, *on_fail = NULL;
@@ -186,6 +186,12 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     STEAL_OPTION("onfail", on_fail);
     STEAL_OPTION("use_fifo", use_fifo);
     STEAL_OPTION("fifo_options", fifo_options_str);
+    entry = NULL;
+    while ((entry = av_dict_get(options, "bsfs", entry, AV_DICT_IGNORE_SUFFIX))) {
+        /* trim out strlen("bsfs") characters from key */
+        av_dict_set(&bsf_options, entry->key + 4, entry->value, 0);
+        av_dict_set(&options, entry->key, NULL, 0);
+    }
 
     ret = parse_slave_failure_policy_option(on_fail, tee_slave);
     if (ret < 0) {
@@ -311,8 +317,8 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
     }
 
     entry = NULL;
-    while (entry = av_dict_get(options, "bsfs", NULL, AV_DICT_IGNORE_SUFFIX)) {
-        const char *spec = entry->key + strlen("bsfs");
+    while (entry = av_dict_get(bsf_options, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
+        const char *spec = entry->key;
         if (*spec) {
             if (strspn(spec, slave_bsfs_spec_sep) != 1) {
                 av_log(avf, AV_LOG_ERROR,
@@ -352,7 +358,7 @@ static int open_slave(AVFormatContext *avf, char *slave, TeeSlave *tee_slave)
             }
         }
 
-        av_dict_set(&options, entry->key, NULL, 0);
+        av_dict_set(&bsf_options, entry->key, NULL, 0);
     }
 
     for (i = 0; i < avf->nb_streams; i++){
@@ -399,6 +405,7 @@ end:
     av_free(select);
     av_free(on_fail);
     av_dict_free(&options);
+    av_dict_free(&bsf_options);
     av_freep(&tmp_select);
     return ret;
 }
