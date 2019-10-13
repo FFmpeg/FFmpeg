@@ -150,7 +150,8 @@ static void gaussian_blur(AVFilterContext *ctx, int w, int h,
     int i, j;
 
     memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
-    memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
+    if (h > 1)
+        memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
     for (j = 2; j < h - 2; j++) {
         dst[0] = src[0];
         dst[1] = src[1];
@@ -180,8 +181,10 @@ static void gaussian_blur(AVFilterContext *ctx, int w, int h,
         dst += dst_linesize;
         src += src_linesize;
     }
-    memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
-    memcpy(dst, src, w);
+    if (h > 2)
+        memcpy(dst, src, w); dst += dst_linesize; src += src_linesize;
+    if (h > 3)
+        memcpy(dst, src, w);
 }
 
 enum {
