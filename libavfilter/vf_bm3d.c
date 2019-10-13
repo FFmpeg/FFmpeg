@@ -706,8 +706,8 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
     const int plane = td->plane;
     const int width = s->planewidth[plane];
     const int height = s->planeheight[plane];
-    const int block_pos_bottom = height - s->block_size;
-    const int block_pos_right  = width - s->block_size;
+    const int block_pos_bottom = FFMAX(0, height - s->block_size);
+    const int block_pos_right  = FFMAX(0, width - s->block_size);
     const int slice_start = (((height + block_step - 1) / block_step) * jobnr / nb_jobs) * block_step;
     const int slice_end = (jobnr == nb_jobs - 1) ? block_pos_bottom + block_step :
                           (((height + block_step - 1) / block_step) * (jobnr + 1) / nb_jobs) * block_step;
@@ -796,8 +796,8 @@ static int config_input(AVFilterLink *inlink)
     for (i = 0; i < s->nb_threads; i++) {
         SliceContext *sc = &s->slices[i];
 
-        sc->num = av_calloc(s->planewidth[0] * s->planeheight[0], sizeof(FFTSample));
-        sc->den = av_calloc(s->planewidth[0] * s->planeheight[0], sizeof(FFTSample));
+        sc->num = av_calloc(FFALIGN(s->planewidth[0], s->block_size) * FFALIGN(s->planeheight[0], s->block_size), sizeof(FFTSample));
+        sc->den = av_calloc(FFALIGN(s->planewidth[0], s->block_size) * FFALIGN(s->planeheight[0], s->block_size), sizeof(FFTSample));
         if (!sc->num || !sc->den)
             return AVERROR(ENOMEM);
 
