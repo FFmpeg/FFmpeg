@@ -1348,8 +1348,8 @@ static int name(AVFilterContext *ctx,                                           
                     c0_data += c0_linesize;                                                           \
                 if (!c1_shift_h || (y & c1_shift_h))                                                  \
                     c1_data += c1_linesize;                                                           \
-                if (!c1_shift_h || (y & c1_shift_h))                                                  \
-                    c2_data += c1_linesize;                                                           \
+                if (!c2_shift_h || (y & c2_shift_h))                                                  \
+                    c2_data += c2_linesize;                                                           \
                 d0_data += d0_linesize;                                                               \
                 d1_data += d1_linesize;                                                               \
                 d2_data += d2_linesize;                                                               \
