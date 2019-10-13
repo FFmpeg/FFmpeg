@@ -748,7 +748,7 @@ static int filter_frame(AVFilterContext *ctx, AVFrame **out, AVFrame *in, AVFram
     av_frame_copy_props(*out, in);
 
     for (p = 0; p < s->nb_planes; p++) {
-        const int nb_jobs = FFMIN(s->nb_threads, s->planeheight[p] / s->block_step);
+        const int nb_jobs = FFMIN(s->nb_threads, s->planeheight[p] / s->block_size);
         ThreadData td;
 
         if (!((1 << p) & s->planes) || ctx->is_disabled) {
