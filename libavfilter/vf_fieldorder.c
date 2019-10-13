@@ -108,8 +108,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             s->dst_tff ? "up" : "down");
     h = frame->height;
     for (plane = 0; plane < 4 && frame->data[plane] && frame->linesize[plane]; plane++) {
-        dst_line_step = out->linesize[plane];
-        src_line_step = frame->linesize[plane];
+        dst_line_step = out->linesize[plane] * (h > 2);
+        src_line_step = frame->linesize[plane] * (h > 2);
         line_size = s->line_size[plane];
         dst = out->data[plane];
         src = frame->data[plane];
