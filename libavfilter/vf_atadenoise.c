@@ -33,6 +33,7 @@
 #define FF_BUFQUEUE_SIZE 129
 #include "bufferqueue.h"
 
+#include "atadenoise.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -57,10 +58,8 @@ typedef struct ATADenoiseContext {
     int available;
 
     int (*filter_slice)(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs);
-    void (*filter_row)(const uint8_t *src, uint8_t *dst,
-                       const uint8_t *srcf[SIZE],
-                       int w, int mid, int size,
-                       int thra, int thrb);
+
+    ATADenoiseDSPContext dsp;
 } ATADenoiseContext;
 
 #define OFFSET(x) offsetof(ATADenoiseContext, x)
@@ -209,7 +208,7 @@ static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
             srcf[i] = data[i] + slice_start * linesize[i];
 
         for (y = slice_start; y < slice_end; y++) {
-            s->filter_row(src, dst, srcf, w, mid, size, thra, thrb);
+            s->dsp.filter_row(src, dst, srcf, w, mid, size, thra, thrb);
 
             dst += out->linesize[p];
             src += in->linesize[p];
@@ -239,9 +238,9 @@ static int config_input(AVFilterLink *inlink)
     depth = desc->comp[0].depth;
     s->filter_slice = filter_slice;
     if (depth == 8)
-        s->filter_row = filter_row8;
+        s->dsp.filter_row = filter_row8;
     else
-        s->filter_row = filter_row16;
+        s->dsp.filter_row = filter_row16;
 
     s->thra[0] = s->fthra[0] * (1 << depth) - 1;
     s->thra[1] = s->fthra[1] * (1 << depth) - 1;
@@ -249,6 +248,9 @@ static int config_input(AVFilterLink *inlink)
     s->thrb[0] = s->fthrb[0] * (1 << depth) - 1;
     s->thrb[1] = s->fthrb[1] * (1 << depth) - 1;
     s->thrb[2] = s->fthrb[2] * (1 << depth) - 1;
+
+    if (ARCH_X86)
+        ff_atadenoise_init_x86(&s->dsp, depth);
 
     return 0;
 }
