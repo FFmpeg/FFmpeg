@@ -7101,6 +7101,10 @@ colorchannelmixer=.393:.769:.189:0:.349:.686:.168:0:.272:.534:.131
 @end example
 @end itemize
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section colorkey
 RGB colorspace color keying.
 
