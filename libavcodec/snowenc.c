@@ -81,6 +81,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     s->m.bit_rate= avctx->bit_rate;
     s->m.lmin    = avctx->mb_lmin;
     s->m.lmax    = avctx->mb_lmax;
+    s->m.mb_num  = (avctx->width * avctx->height + 255) / 256; // For ratecontrol
 
     s->m.me.temp      =
     s->m.me.scratchpad= av_mallocz_array((avctx->width+64), 2*16*2*sizeof(uint8_t));
