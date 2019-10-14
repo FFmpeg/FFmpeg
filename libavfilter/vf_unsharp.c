@@ -230,10 +230,10 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
     return 0;
 }
 
-static int config_props(AVFilterLink *link)
+static int config_input(AVFilterLink *inlink)
 {
-    UnsharpContext *s = link->dst->priv;
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
+    UnsharpContext *s = inlink->dst->priv;
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     int ret;
 
     s->hsub = desc->log2_chroma_w;
@@ -241,13 +241,13 @@ static int config_props(AVFilterLink *link)
 
     // ensure (height / nb_threads) > 4 * steps_y,
     // so that we don't have too much overlap between two threads
-    s->nb_threads = FFMIN(ff_filter_get_nb_threads(link->dst),
-                          link->h / (4 * s->luma.steps_y));
+    s->nb_threads = FFMIN(ff_filter_get_nb_threads(inlink->dst),
+                          inlink->h / (4 * s->luma.steps_y));
 
-    ret = init_filter_param(link->dst, &s->luma,   "luma",   link->w);
+    ret = init_filter_param(inlink->dst, &s->luma,   "luma",   inlink->w);
     if (ret < 0)
         return ret;
-    ret = init_filter_param(link->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(link->w, s->hsub));
+    ret = init_filter_param(inlink->dst, &s->chroma, "chroma", AV_CEIL_RSHIFT(inlink->w, s->hsub));
     if (ret < 0)
         return ret;
 
@@ -325,7 +325,7 @@ static const AVFilterPad avfilter_vf_unsharp_inputs[] = {
         .name         = "default",
         .type         = AVMEDIA_TYPE_VIDEO,
         .filter_frame = filter_frame,
-        .config_props = config_props,
+        .config_props = config_input,
     },
     { NULL }
 };
