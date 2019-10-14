@@ -57,81 +57,90 @@ typedef struct TheadData {
     int height;
 } ThreadData;
 
-static int unsharp_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
-{
-    ThreadData *td = arg;
-    UnsharpFilterParam *fp = td->fp;
-    uint32_t **sc = fp->sc;
-    uint32_t *sr = fp->sr;
-    const uint8_t *src2 = NULL;  //silence a warning
-    const int amount = fp->amount;
-    const int steps_x = fp->steps_x;
-    const int steps_y = fp->steps_y;
-    const int scalebits = fp->scalebits;
-    const int32_t halfscale = fp->halfscale;
-
-    uint8_t *dst = td->dst;
-    const uint8_t *src = td->src;
-    const int dst_stride = td->dst_stride;
-    const int src_stride = td->src_stride;
-    const int width = td->width;
-    const int height = td->height;
-    const int sc_offset = jobnr * 2 * steps_y;
-    const int sr_offset = jobnr * (MAX_MATRIX_SIZE - 1);
-    const int slice_start = (height * jobnr) / nb_jobs;
-    const int slice_end = (height * (jobnr+1)) / nb_jobs;
-
-    int32_t res;
-    int x, y, z;
-    uint32_t tmp1, tmp2;
-
-    if (!amount) {
-        av_image_copy_plane(dst + slice_start * dst_stride, dst_stride,
-                            src + slice_start * src_stride, src_stride,
-                            width, slice_end - slice_start);
-        return 0;
-    }
-
-    for (y = 0; y < 2 * steps_y; y++)
-        memset(sc[sc_offset + y], 0, sizeof(sc[y][0]) * (width + 2 * steps_x));
-
-    // if this is not the first tile, we start from (slice_start - steps_y),
-    // so we can get smooth result at slice boundary
-    if (slice_start > steps_y) {
-        src += (slice_start - steps_y) * src_stride;
-        dst += (slice_start - steps_y) * dst_stride;
-    }
-
-    for (y = -steps_y + slice_start; y < steps_y + slice_end; y++) {
-        if (y < height)
-            src2 = src;
-
-        memset(sr + sr_offset, 0, sizeof(sr[0]) * (2 * steps_x - 1));
-        for (x = -steps_x; x < width + steps_x; x++) {
-            tmp1 = x <= 0 ? src2[0] : x >= width ? src2[width-1] : src2[x];
-            for (z = 0; z < steps_x * 2; z += 2) {
-                tmp2 = sr[sr_offset + z + 0] + tmp1; sr[sr_offset + z + 0] = tmp1;
-                tmp1 = sr[sr_offset + z + 1] + tmp2; sr[sr_offset + z + 1] = tmp2;
-            }
-            for (z = 0; z < steps_y * 2; z += 2) {
-                tmp2 = sc[sc_offset + z + 0][x + steps_x] + tmp1; sc[sc_offset + z + 0][x + steps_x] = tmp1;
-                tmp1 = sc[sc_offset + z + 1][x + steps_x] + tmp2; sc[sc_offset + z + 1][x + steps_x] = tmp2;
-            }
-            if (x >= steps_x && y >= (steps_y + slice_start)) {
-                const uint8_t *srx = src - steps_y * src_stride + x - steps_x;
-                uint8_t *dsx       = dst - steps_y * dst_stride + x - steps_x;
-
-                res = (int32_t)*srx + ((((int32_t) * srx - (int32_t)((tmp1 + halfscale) >> scalebits)) * amount) >> 16);
-                *dsx = av_clip_uint8(res);
-            }
-        }
-        if (y >= 0) {
-            dst += dst_stride;
-            src += src_stride;
-        }
-    }
-    return 0;
+#define DEF_UNSHARP_SLICE_FUNC(name, nbits)                                                           \
+static int name##_##nbits(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)                    \
+{                                                                                                     \
+    ThreadData *td = arg;                                                                             \
+    UnsharpFilterParam *fp = td->fp;                                                                  \
+    UnsharpContext *s = ctx->priv;                                                                    \
+    uint32_t **sc = fp->sc;                                                                           \
+    uint32_t *sr = fp->sr;                                                                            \
+    const uint##nbits##_t *src2 = NULL;                                                               \
+    const int amount = fp->amount;                                                                    \
+    const int steps_x = fp->steps_x;                                                                  \
+    const int steps_y = fp->steps_y;                                                                  \
+    const int scalebits = fp->scalebits;                                                              \
+    const int32_t halfscale = fp->halfscale;                                                          \
+                                                                                                      \
+    uint##nbits##_t *dst = (uint##nbits##_t*)td->dst;                                                 \
+    const uint##nbits##_t *src = (const uint##nbits##_t *)td->src;                                    \
+    int dst_stride = td->dst_stride;                                                                  \
+    int src_stride = td->src_stride;                                                                  \
+    const int width = td->width;                                                                      \
+    const int height = td->height;                                                                    \
+    const int sc_offset = jobnr * 2 * steps_y;                                                        \
+    const int sr_offset = jobnr * (MAX_MATRIX_SIZE - 1);                                              \
+    const int slice_start = (height * jobnr) / nb_jobs;                                               \
+    const int slice_end = (height * (jobnr+1)) / nb_jobs;                                             \
+                                                                                                      \
+    int32_t res;                                                                                      \
+    int x, y, z;                                                                                      \
+    uint32_t tmp1, tmp2;                                                                              \
+                                                                                                      \
+    if (!amount) {                                                                                    \
+        av_image_copy_plane(td->dst + slice_start * dst_stride, dst_stride,                           \
+                            td->src + slice_start * src_stride, src_stride,                           \
+                            width * s->bps, slice_end - slice_start);                                 \
+        return 0;                                                                                     \
+    }                                                                                                 \
+                                                                                                      \
+    for (y = 0; y < 2 * steps_y; y++)                                                                 \
+        memset(sc[sc_offset + y], 0, sizeof(sc[y][0]) * (width + 2 * steps_x));                       \
+                                                                                                      \
+    dst_stride = dst_stride / s->bps;                                                                 \
+    src_stride = src_stride / s->bps;                                                                 \
+    /* if this is not the first tile, we start from (slice_start - steps_y) */                        \
+    /* so we can get smooth result at slice boundary */                                               \
+    if (slice_start > steps_y) {                                                                      \
+        src += (slice_start - steps_y) * src_stride;                                                  \
+        dst += (slice_start - steps_y) * dst_stride;                                                  \
+    }                                                                                                 \
+                                                                                                      \
+    for (y = -steps_y + slice_start; y < steps_y + slice_end; y++) {                                  \
+        if (y < height)                                                                               \
+            src2 = src;                                                                               \
+                                                                                                      \
+        memset(sr + sr_offset, 0, sizeof(sr[0]) * (2 * steps_x - 1));                                 \
+        for (x = -steps_x; x < width + steps_x; x++) {                                                \
+            tmp1 = x <= 0 ? src2[0] : x >= width ? src2[width-1] : src2[x];                           \
+            for (z = 0; z < steps_x * 2; z += 2) {                                                    \
+                tmp2 = sr[sr_offset + z + 0] + tmp1; sr[sr_offset + z + 0] = tmp1;                    \
+                tmp1 = sr[sr_offset + z + 1] + tmp2; sr[sr_offset + z + 1] = tmp2;                    \
+            }                                                                                         \
+            for (z = 0; z < steps_y * 2; z += 2) {                                                    \
+                tmp2 = sc[sc_offset + z + 0][x + steps_x] + tmp1;                                     \
+                sc[sc_offset + z + 0][x + steps_x] = tmp1;                                            \
+                tmp1 = sc[sc_offset + z + 1][x + steps_x] + tmp2;                                     \
+                sc[sc_offset + z + 1][x + steps_x] = tmp2;                                            \
+            }                                                                                         \
+            if (x >= steps_x && y >= (steps_y + slice_start)) {                                       \
+                const uint##nbits##_t *srx = src - steps_y * src_stride + x - steps_x;                \
+                uint##nbits##_t *dsx       = dst - steps_y * dst_stride + x - steps_x;                \
+                                                                                                      \
+                res = (int32_t)*srx + ((((int32_t) * srx -                                            \
+                      (int32_t)((tmp1 + halfscale) >> scalebits)) * amount) >> (8+nbits));            \
+                *dsx = av_clip_uint##nbits(res);                                                      \
+            }                                                                                         \
+        }                                                                                             \
+        if (y >= 0) {                                                                                 \
+            dst += dst_stride;                                                                        \
+            src += src_stride;                                                                        \
+        }                                                                                             \
+    }                                                                                                 \
+    return 0;                                                                                         \
 }
+DEF_UNSHARP_SLICE_FUNC(unsharp_slice, 16);
+DEF_UNSHARP_SLICE_FUNC(unsharp_slice, 8);
 
 static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
 {
@@ -155,7 +164,7 @@ static int apply_unsharp_c(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
         td.height = plane_h[i];
         td.dst_stride = out->linesize[i];
         td.src_stride = in->linesize[i];
-        ctx->internal->execute(ctx, unsharp_slice, &td, NULL, FFMIN(plane_h[i], s->nb_threads));
+        ctx->internal->execute(ctx, s->unsharp_slice, &td, NULL, FFMIN(plane_h[i], s->nb_threads));
     }
     return 0;
 }
@@ -238,6 +247,9 @@ static int config_input(AVFilterLink *inlink)
 
     s->hsub = desc->log2_chroma_w;
     s->vsub = desc->log2_chroma_h;
+    s->bitdepth = desc->comp[0].depth;
+    s->bps = s->bitdepth > 8 ? 2 : 1;
+    s->unsharp_slice = s->bitdepth > 8 ? unsharp_slice_16 : unsharp_slice_8;
 
     // ensure (height / nb_threads) > 4 * steps_y,
     // so that we don't have too much overlap between two threads
