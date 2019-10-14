@@ -438,7 +438,7 @@ static int track_index(VividasDemuxContext *viv, AVFormatContext *s, uint8_t *bu
     ffio_read_varlen(pb); // track_index_len
     avio_r8(pb); // 'c'
     viv->n_sb_blocks = ffio_read_varlen(pb);
-    if (viv->n_sb_blocks * 2 > size)
+    if (viv->n_sb_blocks < 0 || viv->n_sb_blocks > size / 2)
         goto error;
     viv->sb_blocks = av_calloc(viv->n_sb_blocks, sizeof(VIV_SB_block));
     if (!viv->sb_blocks) {
