@@ -302,7 +302,7 @@ static int encode_q_branch(SnowContext *s, int level, int x, int y){
     if(P_LEFT[1]     > (c->ymax<<shift)) P_LEFT[1]    = (c->ymax<<shift);
     if(P_TOP[0]      > (c->xmax<<shift)) P_TOP[0]     = (c->xmax<<shift);
     if(P_TOP[1]      > (c->ymax<<shift)) P_TOP[1]     = (c->ymax<<shift);
-    if(P_TOPRIGHT[0] < (c->xmin<<shift)) P_TOPRIGHT[0]= (c->xmin<<shift);
+    if(P_TOPRIGHT[0] < (c->xmin * (1<<shift))) P_TOPRIGHT[0]= (c->xmin * (1<<shift));
     if(P_TOPRIGHT[0] > (c->xmax<<shift)) P_TOPRIGHT[0]= (c->xmax<<shift); //due to pmx no clip
     if(P_TOPRIGHT[1] > (c->ymax<<shift)) P_TOPRIGHT[1]= (c->ymax<<shift);
 
@@ -1757,7 +1757,7 @@ redo_frame:
             }else{
                 for(y=0; y<h; y++){
                     for(x=0; x<w; x++){
-                        s->spatial_dwt_buffer[y*w + x]=s->spatial_idwt_buffer[y*w + x]<<ENCODER_EXTRA_BITS;
+                        s->spatial_dwt_buffer[y*w + x]= s->spatial_idwt_buffer[y*w + x] * (1 << ENCODER_EXTRA_BITS);
                     }
                 }
             }
