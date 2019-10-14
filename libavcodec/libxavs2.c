@@ -31,7 +31,7 @@
     int err; \
     av_strlcatf(opt_str, sizeof(opt_str), format, __VA_ARGS__); \
     err = cae->api->opt_set2(cae->param, name, opt_str); \
-    if (err) {\
+    if (err < 0) {\
         av_log(avctx, AV_LOG_WARNING, "Invalid value for %s: %s\n", name, opt_str);\
     }\
 } while(0);
