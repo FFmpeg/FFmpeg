@@ -312,6 +312,15 @@ See @code{ffmpeg -filters} to view which filters have timeline support.
 
 @c man end FILTERGRAPH DESCRIPTION
 
+@anchor{commands}
+@chapter Changing options at runtime with a command
+
+Some options can be changed during the operation of the filter using
+a command. These options are marked 'T' on the output of
+@command{ffmpeg} @option{-h filter=<name of filter>}.
+The name of the command is the name of the option and the argument is
+the new value.
+
 @anchor{framesync}
 @chapter Options for filters with several inputs (framesync)
 @c man begin OPTIONS FOR FILTERS WITH SEVERAL INPUTS
