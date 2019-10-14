@@ -36,8 +36,8 @@
 
 typedef struct LenscorrectionCtx {
     const AVClass *av_class;
-    unsigned int width;
-    unsigned int height;
+    int width;
+    int height;
     int hsub, vsub;
     int nb_planes;
     double cx, cy, k1, k2;
