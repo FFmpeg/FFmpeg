@@ -15835,6 +15835,16 @@ Set the initial horizontal scrolling position. Default is 0. Allowed range is fr
 Set the initial vertical scrolling position. Default is 0. Allowed range is from 0 to 1.
 @end table
 
+@subsection Commands
+
+This filter supports the following @ref{commands}:
+@table @option
+@item horizontal, h
+Set the horizontal scrolling speed.
+@item vertical, v
+Set the vertical scrolling speed.
+@end table
+
 @anchor{selectivecolor}
 @section selectivecolor
 
