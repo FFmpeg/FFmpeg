@@ -162,6 +162,10 @@ static int read_table(GetBitContext *gb, Table *t, const int8_t code_pred_coeff[
                     c -= (x + 4) / 8;
                 else
                     c += (-x + 3) / 8;
+                if (!is_signed) {
+                    if (c < offset || c >= offset + (1<<coeff_bits))
+                        return AVERROR_INVALIDDATA;
+                }
                 t->coeff[i][j] = c;
             }
         }
