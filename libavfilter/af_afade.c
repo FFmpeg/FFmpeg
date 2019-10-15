@@ -459,16 +459,17 @@ static int activate(AVFilterContext *ctx)
         } else if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
             ff_outlink_set_status(ctx->outputs[0], status, pts);
             return 0;
-        } else {
-            if (ff_outlink_frame_wanted(ctx->outputs[0]) && !in) {
+        } else if (!ret) {
+            if (ff_outlink_frame_wanted(ctx->outputs[0])) {
                 ff_inlink_request_frame(ctx->inputs[1]);
                 return 0;
             }
+        } else {
+            in->pts = s->pts;
+            s->pts += av_rescale_q(in->nb_samples,
+                      (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
+            return ff_filter_frame(outlink, in);
         }
-        in->pts = s->pts;
-        s->pts += av_rescale_q(in->nb_samples,
-            (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
-        return ff_filter_frame(outlink, in);
     }
 
     if (ff_inlink_queued_samples(ctx->inputs[0]) > s->nb_samples) {
