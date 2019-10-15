@@ -484,7 +484,8 @@ static int activate(AVFilterContext *ctx)
         s->pts += av_rescale_q(in->nb_samples,
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
         return ff_filter_frame(outlink, in);
-    } else if (ff_framequeue_queued_samples(&ctx->inputs[1]->fifo) >= s->nb_samples) {
+    } else if (ff_framequeue_queued_samples(&ctx->inputs[0]->fifo) >= s->nb_samples &&
+               ff_framequeue_queued_samples(&ctx->inputs[1]->fifo) >= s->nb_samples) {
         if (s->overlap) {
             out = ff_get_audio_buffer(outlink, s->nb_samples);
             if (!out)
