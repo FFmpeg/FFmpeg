@@ -172,7 +172,8 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
                 if (ret < 0)
                     return ret;
                 memcpy(par->extradata, side_data, side_data_size);
-            }
+            } else
+                return AVERROR_INVALIDDATA;
         }
     }
 
