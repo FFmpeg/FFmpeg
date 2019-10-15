@@ -71,8 +71,7 @@ int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *lo
                 return AVERROR(ENOMEM);
 
             pkt->obus = tmp;
-            memset(pkt->obus + pkt->obus_allocated, 0,
-                   (new_size - pkt->obus_allocated) * sizeof(*tmp));
+            memset(pkt->obus + pkt->obus_allocated, 0, sizeof(*pkt->obus));
             pkt->obus_allocated = new_size;
         }
         obu = &pkt->obus[pkt->nb_obus];
