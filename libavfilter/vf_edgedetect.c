@@ -155,7 +155,8 @@ static void gaussian_blur(AVFilterContext *ctx, int w, int h,
     }
     for (j = 2; j < h - 2; j++) {
         dst[0] = src[0];
-        dst[1] = src[1];
+        if (w > 1)
+            dst[1] = src[1];
         for (i = 2; i < w - 2; i++) {
             /* Gaussian mask of size 5x5 with sigma = 1.4 */
             dst[i] = ((src[-2*src_linesize + i-2] + src[2*src_linesize + i-2]) * 2
@@ -176,8 +177,10 @@ static void gaussian_blur(AVFilterContext *ctx, int w, int h,
                     + src[i+1] * 12
                     + src[i+2] *  5) / 159;
         }
-        dst[i    ] = src[i    ];
-        dst[i + 1] = src[i + 1];
+        if (w > 2)
+            dst[i    ] = src[i    ];
+        if (w > 3)
+            dst[i + 1] = src[i + 1];
 
         dst += dst_linesize;
         src += src_linesize;
