@@ -524,7 +524,7 @@ void ff_h2645_packet_uninit(H2645Packet *pkt)
         av_freep(&pkt->nals[i].skipped_bytes_pos);
     }
     av_freep(&pkt->nals);
-    pkt->nals_allocated = 0;
+    pkt->nals_allocated = pkt->nal_buffer_size = 0;
     if (pkt->rbsp.rbsp_buffer_ref) {
         av_buffer_unref(&pkt->rbsp.rbsp_buffer_ref);
         pkt->rbsp.rbsp_buffer = NULL;
