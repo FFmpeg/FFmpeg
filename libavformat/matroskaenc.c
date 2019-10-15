@@ -592,7 +592,7 @@ static int64_t mkv_write_cues(AVFormatContext *s, mkv_cues *cues, mkv_track *tra
             tracks[j].has_cue = 0;
         for (j = 0; j < cues->num_entries - i && entry[j].pts == pts; j++) {
             int tracknum = entry[j].stream_idx;
-            av_assert0(tracknum>=0 && tracknum<num_tracks);
+
             if (tracks[tracknum].has_cue && s->streams[tracknum]->codecpar->codec_type != AVMEDIA_TYPE_SUBTITLE)
                 continue;
             tracks[tracknum].has_cue = 1;
