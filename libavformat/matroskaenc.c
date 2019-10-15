@@ -2230,16 +2230,12 @@ static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *p
     return pkt->duration;
 }
 
-static void mkv_start_new_cluster(AVFormatContext *s, AVPacket *pkt)
+static void mkv_end_cluster(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
 
     end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv);
     mkv->cluster_pos = -1;
-    av_log(s, AV_LOG_DEBUG,
-           "Starting new cluster at offset %" PRIu64 " bytes, "
-           "pts %" PRIu64 ", dts %" PRIu64 "\n",
-           avio_tell(s->pb), pkt->pts, pkt->dts);
     avio_flush(s->pb);
 }
 
@@ -2373,8 +2369,8 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
     if (mkv->cluster_pos != -1) {
         int64_t cluster_time = ts - mkv->cluster_pts;
         if ((int16_t)cluster_time != cluster_time) {
+            mkv_end_cluster(s);
             av_log(s, AV_LOG_WARNING, "Starting new cluster due to timestamp\n");
-            mkv_start_new_cluster(s, pkt);
         }
     }
 
@@ -2385,6 +2381,10 @@ static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt, int add_
             return ret;
         put_ebml_uint(mkv->cluster_bc, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
         mkv->cluster_pts = FFMAX(0, ts);
+        av_log(s, AV_LOG_DEBUG,
+               "Starting new cluster with timestamp "
+               "%" PRId64 " at offset %" PRId64 " bytes\n",
+               mkv->cluster_pts, mkv->cluster_pos);
     }
     pb = mkv->cluster_bc;
 
@@ -2477,7 +2477,7 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (mkv->cluster_pos != -1 && start_new_cluster) {
-        mkv_start_new_cluster(s, pkt);
+        mkv_end_cluster(s);
     }
 
     if (!mkv->cluster_pos)
@@ -2514,12 +2514,10 @@ static int mkv_write_flush_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!pkt) {
         if (mkv->cluster_pos != -1) {
-            end_ebml_master_crc32(s->pb, &mkv->cluster_bc, mkv);
-            mkv->cluster_pos = -1;
+            mkv_end_cluster(s);
             av_log(s, AV_LOG_DEBUG,
                    "Flushing cluster at offset %" PRIu64 " bytes\n",
                    avio_tell(s->pb));
-            avio_flush(s->pb);
         }
         return 1;
     }
