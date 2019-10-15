@@ -66,7 +66,11 @@ int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *lo
 
         if (pkt->obus_allocated < pkt->nb_obus + 1) {
             int new_size = pkt->obus_allocated + 1;
-            AV1OBU *tmp = av_realloc_array(pkt->obus, new_size, sizeof(*tmp));
+            AV1OBU *tmp;
+
+            if (new_size >= INT_MAX / sizeof(*tmp))
+                return AVERROR(ENOMEM);
+            tmp = av_fast_realloc(pkt->obus, &pkt->obus_allocated_size, new_size * sizeof(*tmp));
             if (!tmp)
                 return AVERROR(ENOMEM);
 
@@ -102,5 +106,5 @@ int ff_av1_packet_split(AV1Packet *pkt, const uint8_t *buf, int length, void *lo
 void ff_av1_packet_uninit(AV1Packet *pkt)
 {
     av_freep(&pkt->obus);
-    pkt->obus_allocated = 0;
+    pkt->obus_allocated = pkt->obus_allocated_size = 0;
 }

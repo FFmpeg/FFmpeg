@@ -56,6 +56,7 @@ typedef struct AV1Packet {
     AV1OBU *obus;
     int nb_obus;
     int obus_allocated;
+    unsigned obus_allocated_size;
 } AV1Packet;
 
 /**
