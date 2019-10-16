@@ -391,23 +391,12 @@ static void put_xiph_size(AVIOContext *pb, int size)
 static void mkv_deinit(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
-    uint8_t* buf;
-    if (mkv->cluster_bc) {
-        avio_close_dyn_buf(mkv->cluster_bc, &buf);
-        av_free(buf);
-    }
-    if (mkv->info_bc) {
-        avio_close_dyn_buf(mkv->info_bc, &buf);
-        av_free(buf);
-    }
-    if (mkv->tracks_bc) {
-        avio_close_dyn_buf(mkv->tracks_bc, &buf);
-        av_free(buf);
-    }
-    if (mkv->tags_bc) {
-        avio_close_dyn_buf(mkv->tags_bc, &buf);
-        av_free(buf);
-    }
+
+    ffio_free_dyn_buf(&mkv->cluster_bc);
+    ffio_free_dyn_buf(&mkv->info_bc);
+    ffio_free_dyn_buf(&mkv->tracks_bc);
+    ffio_free_dyn_buf(&mkv->tags_bc);
+
     if (mkv->seekhead) {
         av_freep(&mkv->seekhead->entries);
         av_freep(&mkv->seekhead);
