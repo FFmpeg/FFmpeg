@@ -125,7 +125,7 @@ static av_always_inline int filter_slice_rgba_planar(AVFilterContext *ctx, void 
             const uint8_t rin = srcr[j];
             const uint8_t gin = srcg[j];
             const uint8_t bin = srcb[j];
-            const uint8_t ain = srca[j];
+            const uint8_t ain = have_alpha ? srca[j] : 0;
 
             dstr[j] = av_clip_uint8(s->lut[R][R][rin] +
                                     s->lut[R][G][gin] +
@@ -184,7 +184,7 @@ static av_always_inline int filter_slice_rgba16_planar(AVFilterContext *ctx, voi
             const uint16_t rin = srcr[j];
             const uint16_t gin = srcg[j];
             const uint16_t bin = srcb[j];
-            const uint16_t ain = srca[j];
+            const uint16_t ain = have_alpha ? srca[j] : 0;
 
             dstr[j] = av_clip_uintp2(s->lut[R][R][rin] +
                                      s->lut[R][G][gin] +
