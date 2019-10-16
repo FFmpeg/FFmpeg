@@ -58,6 +58,11 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     ReverseContext *s = ctx->priv;
 
+    while (s->nb_frames > 0) {
+        av_frame_free(&s->frames[s->nb_frames - 1]);
+        s->nb_frames--;
+    }
+
     av_freep(&s->pts);
     av_freep(&s->frames);
 }
@@ -103,6 +108,7 @@ static int request_frame(AVFilterLink *outlink)
         AVFrame *out = s->frames[s->nb_frames - 1];
         out->pts     = s->pts[s->flush_idx++];
         ret          = ff_filter_frame(outlink, out);
+        s->frames[s->nb_frames - 1] = NULL;
         s->nb_frames--;
     }
 
@@ -262,6 +268,7 @@ static int areverse_request_frame(AVFilterLink *outlink)
         else
             reverse_samples_packed(out);
         ret = ff_filter_frame(outlink, out);
+        s->frames[s->nb_frames - 1] = NULL;
         s->nb_frames--;
     }
 
