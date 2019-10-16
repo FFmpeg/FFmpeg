@@ -169,7 +169,7 @@ static void filter_row##name(const uint8_t *ssrc, uint8_t *ddst,            \
            sum += srcix;                                                    \
        }                                                                    \
                                                                             \
-       dst[x] = sum / (r + l + 1);                                          \
+       dst[x] = (sum + ((r + l + 1) >> 1)) / (r + l + 1);                   \
    }                                                                        \
 }
 
