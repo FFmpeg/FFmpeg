@@ -222,7 +222,7 @@ static int config_input(AVFilterLink *inlink)
 
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    s->buffer = av_malloc_array(inlink->w, inlink->h * sizeof(*s->buffer));
+    s->buffer = av_malloc_array(FFALIGN(inlink->w, 16), FFALIGN(inlink->h, 16) * sizeof(*s->buffer));
     if (!s->buffer)
         return AVERROR(ENOMEM);
 
