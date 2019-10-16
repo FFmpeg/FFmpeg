@@ -388,7 +388,9 @@ static void put_xiph_size(AVIOContext *pb, int size)
 /**
  * Free the members allocated in the mux context.
  */
-static void mkv_free(MatroskaMuxContext *mkv) {
+static void mkv_deinit(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
     uint8_t* buf;
     if (mkv->cluster_bc) {
         avio_close_dyn_buf(mkv->cluster_bc, &buf);
@@ -1875,8 +1877,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     mkv->tracks = av_mallocz_array(s->nb_streams, sizeof(*mkv->tracks));
     if (!mkv->tracks) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
     ebml_header = start_ebml_master(pb, EBML_ID_HEADER, MAX_EBML_HEADER_SIZE);
     put_ebml_uint  (pb, EBML_ID_EBMLVERSION       ,           1);
@@ -1896,12 +1897,12 @@ static int mkv_write_header(AVFormatContext *s)
     // of every other currently defined level 1 element
     mkv->seekhead = mkv_start_seekhead(pb, mkv->segment_offset, 10);
     if (!mkv->seekhead) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     ret = mkv_add_seekhead_entry(mkv->seekhead, MATROSKA_ID_INFO, avio_tell(pb));
-    if (ret < 0) goto fail;
+    if (ret < 0)
+        return ret;
 
     ret = start_ebml_master_crc32(pb, &mkv->info_bc, mkv, MATROSKA_ID_INFO);
     if (ret < 0)
@@ -1971,38 +1972,36 @@ static int mkv_write_header(AVFormatContext *s)
     mkv->stream_durations        = av_mallocz(s->nb_streams * sizeof(int64_t));
     mkv->stream_duration_offsets = av_mallocz(s->nb_streams * sizeof(int64_t));
     if (!mkv->stream_durations || !mkv->stream_duration_offsets) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     ret = mkv_write_tracks(s);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     for (i = 0; i < s->nb_chapters; i++)
         mkv->chapter_id_offset = FFMAX(mkv->chapter_id_offset, 1LL - s->chapters[i]->id);
 
     ret = mkv_write_chapters(s);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     if (mkv->mode != MODE_WEBM) {
         ret = mkv_write_attachments(s);
         if (ret < 0)
-            goto fail;
+            return ret;
     }
 
     ret = mkv_write_tags(s);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
         mkv_write_seekhead(pb, mkv);
 
     mkv->cues = mkv_start_cues(mkv->segment_offset);
     if (!mkv->cues) {
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     if (s->metadata_header_padding > 0) {
@@ -2039,9 +2038,6 @@ static int mkv_write_header(AVFormatContext *s)
     }
 
     return 0;
-fail:
-    mkv_free(mkv);
-    return ret;
 }
 
 static int mkv_blockgroup_size(int pkt_size)
@@ -2664,7 +2660,6 @@ static int mkv_write_trailer(AVFormatContext *s)
         end_ebml_master(pb, mkv->segment);
     }
 
-    mkv_free(mkv);
     return 0;
 }
 
@@ -2811,6 +2806,7 @@ AVOutputFormat ff_matroska_muxer = {
     .video_codec       = CONFIG_LIBX264_ENCODER ?
                          AV_CODEC_ID_H264 : AV_CODEC_ID_MPEG4,
     .init              = mkv_init,
+    .deinit            = mkv_deinit,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
@@ -2845,6 +2841,7 @@ AVOutputFormat ff_webm_muxer = {
     .video_codec       = CONFIG_LIBVPX_VP9_ENCODER? AV_CODEC_ID_VP9 : AV_CODEC_ID_VP8,
     .subtitle_codec    = AV_CODEC_ID_WEBVTT,
     .init              = mkv_init,
+    .deinit            = mkv_deinit,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
@@ -2873,6 +2870,7 @@ AVOutputFormat ff_matroska_audio_muxer = {
                          AV_CODEC_ID_VORBIS : AV_CODEC_ID_AC3,
     .video_codec       = AV_CODEC_ID_NONE,
     .init              = mkv_init,
+    .deinit            = mkv_deinit,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_flush_packet,
     .write_trailer     = mkv_write_trailer,
