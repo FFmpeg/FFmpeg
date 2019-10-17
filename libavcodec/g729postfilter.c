@@ -346,7 +346,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         L_temp1 = gain_long_num * gain_long_num;
         L_temp1 = MULL(L_temp1, gain_den, FRAC_BITS);
 
-        tmp = ((sh_gain_long_num - sh_gain_num) << 1) - (sh_gain_long_den - sh_gain_den);
+        tmp = ((sh_gain_long_num - sh_gain_num) * 2) - (sh_gain_long_den - sh_gain_den);
         if (tmp > 0)
             L_temp0 >>= tmp;
         else
@@ -367,7 +367,7 @@ static int16_t long_term_filter(AudioDSPContext *adsp, int pitch_delay_int,
         /* Rescale selected signal to original value. */
         if (shift > 0)
             for (i = 0; i < subframe_size; i++)
-                selected_signal[i] <<= shift;
+                selected_signal[i] *= 1 << shift;
         else
             for (i = 0; i < subframe_size; i++)
                 selected_signal[i] >>= -shift;
@@ -464,7 +464,7 @@ static int16_t get_tilt_comp(AudioDSPContext *adsp, int16_t *lp_gn,
             speech[i] = (speech[i] * temp + 0x4000) >> 15;
     }
 
-    return -(rh1 << 15) / rh0;
+    return -(rh1 * (1 << 15)) / rh0;
 }
 
 /**
