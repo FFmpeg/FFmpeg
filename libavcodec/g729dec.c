@@ -536,12 +536,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
           fc_v[i] = <
                      \ fc_v[i] + gain_pitch * fc_v[i-pitch_delay], i >= pitch_delay
         */
-        ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
-                                     fc + pitch_delay_int[i],
-                                     fc, 1 << 14,
-                                     av_clip(ctx->past_gain_pitch[0], SHARP_MIN, SHARP_MAX),
-                                     0, 14,
-                                     SUBFRAME_SIZE - pitch_delay_int[i]);
+        if (SUBFRAME_SIZE > pitch_delay_int[i])
+            ff_acelp_weighted_vector_sum(fc + pitch_delay_int[i],
+                                         fc + pitch_delay_int[i],
+                                         fc, 1 << 14,
+                                         av_clip(ctx->past_gain_pitch[0], SHARP_MIN, SHARP_MAX),
+                                         0, 14,
+                                         SUBFRAME_SIZE - pitch_delay_int[i]);
 
         memmove(ctx->past_gain_pitch+1, ctx->past_gain_pitch, 5 * sizeof(int16_t));
         ctx->past_gain_code[1] = ctx->past_gain_code[0];
