@@ -36,6 +36,7 @@
 #define AVAPP_EVENT_IJK_FIND_STREAM_INFO   8 // IJK FIND STREAM INFO EVENT
 
 #define AVAPP_EVENT_IJK_PKG_COUNT_TRACKER   9 // IJK pkg count EVENT
+#define AVAPP_EVENT_IO_STATUS         10 // IJK io status EVENT
 
 #define AVAPP_EVENT_ASYNC_STATISTIC     0x11000 //AVAppAsyncStatistic
 #define AVAPP_EVENT_ASYNC_READ_SPEED    0x11001 //AVAppAsyncReadSpeed
@@ -215,6 +216,11 @@ typedef struct{
     int64_t first_audio_did_http_ok_timestamp;
 } AVAppPkgCountTracker;
 
+typedef struct{
+    int is_audio;
+    int io_error;
+} AVAppIOStatus;
+
 typedef struct AVApplicationContext AVApplicationContext;
 struct AVApplicationContext {
     const AVClass *av_class;    /**< information for av_log(). Set by av_application_open(). */
@@ -260,5 +266,5 @@ void av_application_on_dns_did_open(AVApplicationContext *h, char *hostname, cha
 
 void av_application_on_url_changed(AVApplicationContext *h,int url_change_count,int is_audio);
 void av_application_on_ijk_find_stream_info(AVApplicationContext *h, int64_t duration, int is_audio);
-
+void av_application_on_io_status(AVApplicationContext *h, AVAppIOStatus *status);
 #endif /* AVUTIL_APPLICATION_H */

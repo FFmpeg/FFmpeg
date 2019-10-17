@@ -283,3 +283,10 @@ void av_application_on_ijk_find_stream_info(AVApplicationContext *h, int64_t dur
         h->func_on_app_event(h, AVAPP_EVENT_IJK_FIND_STREAM_INFO, (void *)&event, sizeof(AVAppFindStreamInfo));
     }
 }
+
+void av_application_on_io_status(AVApplicationContext *h, AVAppIOStatus *status)
+{
+    if (h && h->func_on_app_event)
+        h->func_on_app_event(h, AVAPP_EVENT_IO_STATUS, (void *)status, sizeof(AVAppIOStatus));
+}
+

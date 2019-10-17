@@ -88,6 +88,8 @@
 #define AVERROR_IO_INTERRUPT -1004
 #define AVERROR_DNS_ERROR -2004
 #define AVERROR_DNS_TIMEOUT -2005
+#define AVERROR_STREAM_SIZE_NOT_MATCH -1005
+
 /**
  * Put a description of the AVERROR code errnum in errbuf.
  * In case of failure the global variable errno is set to indicate the
