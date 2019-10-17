@@ -283,7 +283,7 @@ static int activate(AVFilterContext *ctx)
                     s->frames[i] = av_frame_clone(frame);
             }
             av_frame_free(&frame);
-        } else {
+        } else if (s->frames[3]) {
             s->eof_frames--;
             s->frames[4] = av_frame_clone(s->frames[3]);
         }
@@ -343,7 +343,11 @@ static int activate(AVFilterContext *ctx)
     if (!s->eof && ff_inlink_acknowledge_status(inlink, &status, &pts)) {
         if (status == AVERROR_EOF) {
             s->eof = 1;
-            s->eof_frames = 2;
+            s->eof_frames = !!s->frames[0] + !!s->frames[1];
+            if (s->eof_frames <= 0) {
+                ff_outlink_set_status(outlink, AVERROR_EOF, pts);
+                return 0;
+            }
             ff_filter_set_ready(ctx, 10);
             return 0;
         }
