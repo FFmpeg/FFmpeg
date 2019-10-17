@@ -906,7 +906,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame, AVPac
             unsigned crc = av_crc(av_crc_get_table(AV_CRC_32_IEEE), 0, buf_p, v);
             if (crc) {
                 int64_t ts = avpkt->pts != AV_NOPTS_VALUE ? avpkt->pts : avpkt->dts;
-                av_log(f->avctx, AV_LOG_ERROR, "CRC mismatch %X!", crc);
+                av_log(f->avctx, AV_LOG_ERROR, "slice CRC mismatch %X!", crc);
                 if (ts != AV_NOPTS_VALUE && avctx->pkt_timebase.num) {
                     av_log(f->avctx, AV_LOG_ERROR, "at %f seconds\n", ts*av_q2d(avctx->pkt_timebase));
                 } else if (ts != AV_NOPTS_VALUE) {
