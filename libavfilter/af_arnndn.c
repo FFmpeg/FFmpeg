@@ -300,6 +300,11 @@ static RNNModel *rnnoise_model_from_file(FILE *f)
     INPUT_DENSE(denoise_output);
     INPUT_DENSE(vad_output);
 
+    if (vad_output->nb_neurons != 1) {
+        rnnoise_model_free(ret);
+        return NULL;
+    }
+
     return ret;
 }
 
