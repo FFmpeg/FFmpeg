@@ -260,6 +260,8 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     else
         frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
 
+    frame->reordered_opaque = c->reordered_opaque;
+
     // match timestamps and packet size
     frame->pts = frame->best_effort_timestamp = p->m.timestamp;
 #if FF_API_PKT_PTS
