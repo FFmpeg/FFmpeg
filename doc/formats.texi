@@ -27,6 +27,10 @@ stream information. A higher value will enable detecting more
 information in case it is dispersed into the stream, but will increase
 latency. Must be an integer not lesser than 32. It is 5000000 by default.
 
+@item max_probe_packets @var{integer} (@emph{input})
+Set the maximum number of buffered packets when probing a codec.
+Default is 2500 packets.
+
 @item packetsize @var{integer} (@emph{output})
 Set packet size.
 

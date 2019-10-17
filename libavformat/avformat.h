@@ -1951,6 +1951,13 @@ typedef struct AVFormatContext {
      * - decoding: set by user
      */
     int skip_estimate_duration_from_pts;
+
+    /**
+     * Maximum number of packets that can be probed
+     * - encoding: unused
+     * - decoding: set by user
+     */
+    int max_probe_packets;
 } AVFormatContext;
 
 #if FF_API_FORMAT_GET_SET
