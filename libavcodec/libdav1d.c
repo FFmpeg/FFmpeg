@@ -164,6 +164,11 @@ static void libdav1d_data_free(const uint8_t *data, void *opaque) {
     av_buffer_unref(&buf);
 }
 
+static void libdav1d_user_data_free(const uint8_t *data, void *opaque) {
+    av_assert0(data == opaque);
+    av_free(opaque);
+}
+
 static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 {
     Libdav1dContext *dav1d = c->priv_data;
@@ -191,6 +196,23 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
 
             pkt.buf = NULL;
             av_packet_unref(&pkt);
+
+            if (c->reordered_opaque != AV_NOPTS_VALUE) {
+                uint8_t *reordered_opaque = av_malloc(sizeof(c->reordered_opaque));
+                if (!reordered_opaque) {
+                    dav1d_data_unref(data);
+                    return AVERROR(ENOMEM);
+                }
+
+                memcpy(reordered_opaque, &c->reordered_opaque, sizeof(c->reordered_opaque));
+                res = dav1d_data_wrap_user_data(data, reordered_opaque,
+                                                libdav1d_user_data_free, reordered_opaque);
+                if (res < 0) {
+                    av_free(reordered_opaque);
+                    dav1d_data_unref(data);
+                    return res;
+                }
+            }
         }
     }
 
@@ -260,7 +282,10 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     else
         frame->format = c->pix_fmt = pix_fmt[p->p.layout][p->seq_hdr->hbd];
 
-    frame->reordered_opaque = c->reordered_opaque;
+    if (p->m.user_data.data)
+        memcpy(&frame->reordered_opaque, p->m.user_data.data, sizeof(frame->reordered_opaque));
+    else
+        frame->reordered_opaque = AV_NOPTS_VALUE;
 
     // match timestamps and packet size
     frame->pts = frame->best_effort_timestamp = p->m.timestamp;
