@@ -113,6 +113,14 @@ next:
     return ret;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    RandomContext *s = ctx->priv;
+
+    for (int i = 0; i < s->nb_frames; i++)
+        av_frame_free(&s->frames[i]);
+}
+
 static const AVFilterPad random_inputs[] = {
     {
         .name         = "default",
@@ -137,6 +145,7 @@ AVFilter ff_vf_random = {
     .priv_size   = sizeof(RandomContext),
     .priv_class  = &random_class,
     .init        = init,
+    .uninit      = uninit,
     .inputs      = random_inputs,
     .outputs     = random_outputs,
 };
