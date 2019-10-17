@@ -45,6 +45,7 @@ typedef struct ATADenoiseContext {
 
     float fthra[4], fthrb[4];
     int thra[4], thrb[4];
+    int algorithm;
 
     int planes;
     int nb_planes;
@@ -74,6 +75,9 @@ static const AVOption atadenoise_options[] = {
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, FLAGS },
     { "p",  "set what planes to filter",     OFFSET(planes),   AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
+    { "a",  "set variant of algorithm",      OFFSET(algorithm),AV_OPT_TYPE_INT,   {.i64=PARALLEL},  0, NB_ATAA-1, FLAGS, "a" },
+    { "p",  "parallel",                      0,                AV_OPT_TYPE_CONST, {.i64=PARALLEL},  0, 0,          FLAGS, "a" },
+    { "s",  "serial",                        0,                AV_OPT_TYPE_CONST, {.i64=SERIAL},    0, 0,          FLAGS, "a" },
     { NULL }
 };
 
@@ -175,6 +179,55 @@ static void filter_row##name(const uint8_t *ssrc, uint8_t *ddst,            \
 FILTER_ROW(uint8_t, 8)
 FILTER_ROW(uint16_t, 16)
 
+#define FILTER_ROW_SERIAL(type, name)                                       \
+static void filter_row##name##_serial(const uint8_t *ssrc, uint8_t *ddst,   \
+                                      const uint8_t *ssrcf[SIZE],           \
+                                      int w, int mid, int size,             \
+                                      int thra, int thrb)                   \
+{                                                                           \
+    const type *src = (const type *)ssrc;                                   \
+    const type **srcf = (const type **)ssrcf;                               \
+    type *dst = (type *)ddst;                                               \
+                                                                            \
+    for (int x = 0; x < w; x++) {                                           \
+       const int srcx = src[x];                                             \
+       unsigned lsumdiff = 0, rsumdiff = 0;                                 \
+       unsigned ldiff, rdiff;                                               \
+       unsigned sum = srcx;                                                 \
+       int l = 0, r = 0;                                                    \
+       int srcjx, srcix;                                                    \
+                                                                            \
+       for (int j = mid - 1; j >= 0; j--) {                                 \
+           srcjx = srcf[j][x];                                              \
+                                                                            \
+           ldiff = FFABS(srcx - srcjx);                                     \
+           lsumdiff += ldiff;                                               \
+           if (ldiff > thra ||                                              \
+               lsumdiff > thrb)                                             \
+               break;                                                       \
+           l++;                                                             \
+           sum += srcjx;                                                    \
+       }                                                                    \
+                                                                            \
+       for (int i = mid + 1; i < size; i++) {                               \
+           srcix = srcf[i][x];                                              \
+                                                                            \
+           rdiff = FFABS(srcx - srcix);                                     \
+           rsumdiff += rdiff;                                               \
+           if (rdiff > thra ||                                              \
+               rsumdiff > thrb)                                             \
+               break;                                                       \
+           r++;                                                             \
+           sum += srcix;                                                    \
+       }                                                                    \
+                                                                            \
+       dst[x] = (sum + ((r + l + 1) >> 1)) / (r + l + 1);                   \
+   }                                                                        \
+}
+
+FILTER_ROW_SERIAL(uint8_t, 8)
+FILTER_ROW_SERIAL(uint16_t, 16)
+
 static int filter_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_jobs)
 {
     ATADenoiseContext *s = ctx->priv;
@@ -238,9 +291,9 @@ static int config_input(AVFilterLink *inlink)
     depth = desc->comp[0].depth;
     s->filter_slice = filter_slice;
     if (depth == 8)
-        s->dsp.filter_row = filter_row8;
+        s->dsp.filter_row = s->algorithm == PARALLEL ? filter_row8 : filter_row8_serial;
     else
-        s->dsp.filter_row = filter_row16;
+        s->dsp.filter_row = s->algorithm == PARALLEL ? filter_row16 : filter_row16_serial;
 
     s->thra[0] = s->fthra[0] * (1 << depth) - 1;
     s->thra[1] = s->fthra[1] * (1 << depth) - 1;
@@ -250,7 +303,7 @@ static int config_input(AVFilterLink *inlink)
     s->thrb[2] = s->fthrb[2] * (1 << depth) - 1;
 
     if (ARCH_X86)
-        ff_atadenoise_init_x86(&s->dsp, depth);
+        ff_atadenoise_init_x86(&s->dsp, depth, s->algorithm);
 
     return 0;
 }

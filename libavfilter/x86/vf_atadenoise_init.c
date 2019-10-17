@@ -30,11 +30,11 @@ void ff_atadenoise_filter_row8_sse4(const uint8_t *src, uint8_t *dst,
                                     int w, int mid, int size,
                                     int thra, int thrb);
 
-av_cold void ff_atadenoise_init_x86(ATADenoiseDSPContext *dsp, int depth)
+av_cold void ff_atadenoise_init_x86(ATADenoiseDSPContext *dsp, int depth, int algorithm)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && depth <= 8) {
+    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && depth <= 8 && algorithm == PARALLEL) {
         dsp->filter_row = ff_atadenoise_filter_row8_sse4;
     }
 }

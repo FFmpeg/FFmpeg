@@ -6271,6 +6271,14 @@ number in range [5, 129].
 
 @item p
 Set what planes of frame filter will use for averaging. Default is all.
+
+@item a
+Set what variant of algorithm filter will use for averaging. Default is @code{p} parallel.
+Alternatively can be set to @code{s} serial.
+
+Parallel can be faster then serial, while other way around is never true.
+Parallel will abort early on first change being greater then thresholds, while serial
+will continue processing other side of frames if they are equal or bellow thresholds.
 @end table
 
 @section avgblur
