@@ -1171,8 +1171,11 @@ static int nut_write_trailer(AVFormatContext *s)
     while (nut->header_count < 3)
         write_headers(s, bc);
 
+    if (!nut->sp_count)
+        return 0;
+
     ret = avio_open_dyn_buf(&dyn_bc);
-    if (ret >= 0 && nut->sp_count) {
+    if (ret >= 0) {
         av_assert1(nut->write_index); // sp_count should be 0 if no index is going to be written
         write_index(nut, dyn_bc);
         put_packet(nut, bc, dyn_bc, 1, INDEX_STARTCODE);
