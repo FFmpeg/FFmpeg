@@ -248,6 +248,13 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    MaskFunContext *s = ctx->priv;
+
+    av_frame_free(&s->empty);
+}
+
 static const AVFilterPad maskfun_inputs[] = {
     {
         .name           = "default",
@@ -272,6 +279,7 @@ AVFilter ff_vf_maskfun = {
     .description   = NULL_IF_CONFIG_SMALL("Create Mask."),
     .priv_size     = sizeof(MaskFunContext),
     .query_formats = query_formats,
+    .uninit        = uninit,
     .inputs        = maskfun_inputs,
     .outputs       = maskfun_outputs,
     .priv_class    = &maskfun_class,
