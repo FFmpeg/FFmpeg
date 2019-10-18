@@ -926,6 +926,7 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     res = av_frame_copy_props(out, in);
     if (res < 0) {
         av_frame_free(&in);
+        av_frame_free(&out);
         return res;
     }
 
@@ -985,13 +986,18 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
             !s->dither_scratch_base[1][0] || !s->dither_scratch_base[1][1] ||
             !s->dither_scratch_base[2][0] || !s->dither_scratch_base[2][1]) {
             uninit(ctx);
+            av_frame_free(&in);
+            av_frame_free(&out);
             return AVERROR(ENOMEM);
         }
         s->rgb_sz = rgb_sz;
     }
     res = create_filtergraph(ctx, in, out);
-    if (res < 0)
+    if (res < 0) {
+        av_frame_free(&in);
+        av_frame_free(&out);
         return res;
+    }
     s->rgb_stride = rgb_stride / sizeof(int16_t);
     td.in = in;
     td.out = out;
@@ -1005,8 +1011,11 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
     td.out_ss_h = av_pix_fmt_desc_get(out->format)->log2_chroma_h;
     if (s->yuv2yuv_passthrough) {
         res = av_frame_copy(out, in);
-        if (res < 0)
+        if (res < 0) {
+            av_frame_free(&in);
+            av_frame_free(&out);
             return res;
+        }
     } else {
         ctx->internal->execute(ctx, convert, &td, NULL,
                                FFMIN((in->height + 1) >> 1, ff_filter_get_nb_threads(ctx)));
