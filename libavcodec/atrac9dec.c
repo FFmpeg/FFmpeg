@@ -187,7 +187,7 @@ static inline void calc_precision(ATRAC9Context *s, ATRAC9BlockData *b,
     for (int i = 0; i < b->q_unit_cnt; i++) {
         c->precision_fine[i] = 0;
         if (c->precision_coarse[i] > 15) {
-            c->precision_fine[i] = c->precision_coarse[i] - 15;
+            c->precision_fine[i] = FFMIN(c->precision_coarse[i], 30) - 15;
             c->precision_coarse[i] = 15;
         }
     }
