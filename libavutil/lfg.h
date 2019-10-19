@@ -36,8 +36,9 @@ void av_lfg_init(AVLFG *c, unsigned int seed);
  * it may be good enough and faster for your specific use case.
  */
 static inline unsigned int av_lfg_get(AVLFG *c){
-    c->state[c->index & 63] = c->state[(c->index-24) & 63] + c->state[(c->index-55) & 63];
-    return c->state[c->index++ & 63];
+    unsigned a = c->state[c->index & 63] = c->state[(c->index-24) & 63] + c->state[(c->index-55) & 63];
+    c->index += 1U;
+    return a;
 }
 
 /**
@@ -48,7 +49,9 @@ static inline unsigned int av_lfg_get(AVLFG *c){
 static inline unsigned int av_mlfg_get(AVLFG *c){
     unsigned int a= c->state[(c->index-55) & 63];
     unsigned int b= c->state[(c->index-24) & 63];
-    return c->state[c->index++ & 63] = 2*a*b+a+b;
+    a = c->state[c->index & 63] = 2*a*b+a+b;
+    c->index += 1U;
+    return a;
 }
 
 /**
