@@ -1258,6 +1258,8 @@ static void mpeg_mux_deinit(AVFormatContext *ctx)
 {
     for (int i = 0; i < ctx->nb_streams; i++) {
         StreamInfo *stream = ctx->streams[i]->priv_data;
+        if (!stream)
+            continue;
         av_fifo_freep(&stream->fifo);
     }
 }
