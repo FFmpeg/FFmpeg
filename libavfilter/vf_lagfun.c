@@ -137,7 +137,7 @@ static int lagfun_frame16(AVFilterContext *ctx, void *arg, int jobnr, int nb_job
         }
 
         for (int y = slice_start; y < slice_end; y++) {
-            for (int x = 0; x < s->linesize[p]; x++)
+            for (int x = 0; x < s->linesize[p] / 2; x++)
                 dst[x] = FFMAX(src[x], osrc[x] * decay);
 
             src += in->linesize[p] / 2;
