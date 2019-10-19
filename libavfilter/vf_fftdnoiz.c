@@ -156,7 +156,7 @@ static void export_row8(FFTComplex *src, uint8_t *dst, int rw, float scale, int 
     int j;
 
     for (j = 0; j < rw; j++)
-        dst[j] = av_clip_uint8(src[j].re * scale);
+        dst[j] = av_clip_uint8(src[j].re * scale + 0.5f);
 }
 
 static void import_row16(FFTComplex *dst, uint8_t *srcp, int rw)
@@ -176,7 +176,7 @@ static void export_row16(FFTComplex *src, uint8_t *dstp, int rw, float scale, in
     int j;
 
     for (j = 0; j < rw; j++)
-        dst[j] = av_clip_uintp2_c(src[j].re * scale, depth);
+        dst[j] = av_clip_uintp2_c(src[j].re * scale + 0.5f, depth);
 }
 
 static int config_input(AVFilterLink *inlink)
