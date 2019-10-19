@@ -637,8 +637,10 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc)
         if (ret < 0)
             return ret;
         ret = write_streamheader(avctx, dyn_bc, nut->avf->streams[i], i);
-        if (ret < 0)
+        if (ret < 0) {
+            ffio_free_dyn_buf(&dyn_bc);
             return ret;
+        }
         put_packet(nut, bc, dyn_bc, 1, STREAM_STARTCODE);
     }
 
@@ -653,12 +655,13 @@ static int write_headers(AVFormatContext *avctx, AVIOContext *bc)
         if (ret < 0)
             return ret;
         ret = write_streaminfo(nut, dyn_bc, i);
-        if (ret < 0)
-            return ret;
         if (ret > 0)
             put_packet(nut, bc, dyn_bc, 1, INFO_STARTCODE);
-        else
+        else {
             ffio_free_dyn_buf(&dyn_bc);
+            if (ret < 0)
+                return ret;
+        }
     }
 
     for (i = 0; i < nut->avf->nb_chapters; i++) {
