@@ -909,7 +909,7 @@ static int avi_write_trailer(AVFormatContext *s)
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
     int res = 0;
-    int i, j, n, nb_frames;
+    int i, n, nb_frames;
     int64_t file_size;
 
     for (i = 0; i < s->nb_streams; i++) {
@@ -962,10 +962,6 @@ static int avi_write_trailer(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         AVIStream *avist = s->streams[i]->priv_data;
-        for (j = 0; j < avist->indexes.ents_allocated / AVI_INDEX_CLUSTER_SIZE; j++)
-            av_freep(&avist->indexes.cluster[j]);
-        av_freep(&avist->indexes.cluster);
-        avist->indexes.ents_allocated = avist->indexes.entry = 0;
         if (pb->seekable & AVIO_SEEKABLE_NORMAL) {
             avio_seek(pb, avist->frames_hdr_strm + 4, SEEK_SET);
             avio_wl32(pb, avist->max_size);
@@ -973,6 +969,19 @@ static int avi_write_trailer(AVFormatContext *s)
     }
 
     return res;
+}
+
+static void avi_deinit(AVFormatContext *s)
+{
+    for (int i = 0; i < s->nb_streams; i++) {
+        AVIStream *avist = s->streams[i]->priv_data;
+        if (!avist)
+            continue;
+        for (int j = 0; j < avist->indexes.ents_allocated / AVI_INDEX_CLUSTER_SIZE; j++)
+            av_freep(&avist->indexes.cluster[j]);
+        av_freep(&avist->indexes.cluster);
+        avist->indexes.ents_allocated = avist->indexes.entry = 0;
+    }
 }
 
 #define OFFSET(x) offsetof(AVIContext, x)
@@ -999,6 +1008,7 @@ AVOutputFormat ff_avi_muxer = {
     .audio_codec    = CONFIG_LIBMP3LAME ? AV_CODEC_ID_MP3 : AV_CODEC_ID_AC3,
     .video_codec    = AV_CODEC_ID_MPEG4,
     .init           = avi_init,
+    .deinit         = avi_deinit,
     .write_header   = avi_write_header,
     .write_packet   = avi_write_packet,
     .write_trailer  = avi_write_trailer,
