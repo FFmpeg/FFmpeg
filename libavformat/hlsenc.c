@@ -1886,6 +1886,9 @@ static int parse_variant_stream_mapstring(AVFormatContext *s)
      * agroup: is key to specify audio group. A string can be given as value.
      */
     p = av_strdup(hls->var_stream_map);
+    if (!p)
+        return AVERROR(ENOMEM);
+
     q = p;
     while (av_strtok(q, " \t", &saveptr1)) {
         q = NULL;
@@ -2007,6 +2010,9 @@ static int parse_cc_stream_mapstring(AVFormatContext *s)
     ClosedCaptionsStream *ccs;
 
     p = av_strdup(hls->cc_stream_map);
+    if(!p)
+        return AVERROR(ENOMEM);
+
     q = p;
     while (av_strtok(q, " \t", &saveptr1)) {
         q = NULL;
