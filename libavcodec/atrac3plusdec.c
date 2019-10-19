@@ -174,7 +174,6 @@ static av_cold int atrac3p_decode_init(AVCodecContext *avctx)
     ctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
 
     if (!ctx->ch_units || !ctx->fdsp) {
-        atrac3p_decode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
@@ -393,6 +392,7 @@ AVCodec ff_atrac3p_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ATRAC3P,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
     .close          = atrac3p_decode_close,
@@ -405,6 +405,7 @@ AVCodec ff_atrac3pal_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = AV_CODEC_ID_ATRAC3PAL,
     .capabilities   = AV_CODEC_CAP_DR1,
+    .caps_internal  = FF_CODEC_CAP_INIT_CLEANUP,
     .priv_data_size = sizeof(ATRAC3PContext),
     .init           = atrac3p_decode_init,
     .close          = atrac3p_decode_close,
