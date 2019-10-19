@@ -882,7 +882,7 @@ static int config_input(AVFilterLink *inlink)
     fm->tpitchy  = FFALIGN(w,      16);
     fm->tpitchuv = FFALIGN(w >> 1, 16);
 
-    fm->tbuffer = av_malloc(h/2 * fm->tpitchy);
+    fm->tbuffer = av_calloc((h/2 + 4) * fm->tpitchy, sizeof(*fm->tbuffer));
     fm->c_array = av_malloc((((w + fm->blockx/2)/fm->blockx)+1) *
                             (((h + fm->blocky/2)/fm->blocky)+1) *
                             4 * sizeof(*fm->c_array));
