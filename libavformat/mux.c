@@ -485,6 +485,14 @@ static void flush_if_needed(AVFormatContext *s)
     }
 }
 
+static void deinit_muxer(AVFormatContext *s)
+{
+    if (s->oformat && s->oformat->deinit && s->internal->initialized)
+        s->oformat->deinit(s);
+    s->internal->initialized =
+    s->internal->streams_initialized = 0;
+}
+
 int avformat_init_output(AVFormatContext *s, AVDictionary **options)
 {
     int ret = 0;
@@ -536,8 +544,7 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
     return streams_already_initialized;
 
 fail:
-    if (s->oformat->deinit)
-        s->oformat->deinit(s);
+    deinit_muxer(s);
     return ret;
 }
 
@@ -1286,11 +1293,7 @@ fail:
         }
     }
 
-    if (s->oformat->deinit)
-        s->oformat->deinit(s);
-
-    s->internal->initialized =
-    s->internal->streams_initialized = 0;
+    deinit_muxer(s);
 
     if (s->pb)
        avio_flush(s->pb);

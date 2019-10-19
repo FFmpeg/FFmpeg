@@ -4437,6 +4437,9 @@ void avformat_free_context(AVFormatContext *s)
     if (!s)
         return;
 
+    if (s->oformat && s->oformat->deinit && s->internal->initialized)
+        s->oformat->deinit(s);
+
     av_opt_free(s);
     if (s->iformat && s->iformat->priv_class && s->priv_data)
         av_opt_free(s->priv_data);
