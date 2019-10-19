@@ -117,7 +117,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     AVFrame *out, *top, *bottom;
     char buf[1024] = { 0 };
     int64_t tf, bf;
-    char hint = '=';
+    int tfactor = 0, bfactor = 1;
+    char hint = '=', field = '=';
     int p;
 
     av_frame_free(&s->frame[0]);
@@ -137,6 +138,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->line++;
             if (buf[0] == '#' || buf[0] == ';') {
                 continue;
+            } else if (sscanf(buf, "%"PRId64",%"PRId64" %c %c", &tf, &bf, &hint, &field) == 4) {
+                ;
             } else if (sscanf(buf, "%"PRId64",%"PRId64" %c", &tf, &bf, &hint) == 3) {
                 ;
             } else if (sscanf(buf, "%"PRId64",%"PRId64"", &tf, &bf) == 2) {
@@ -185,6 +188,23 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         av_assert0(0);
     }
 
+    switch (field) {
+    case 'b':
+        tfactor = 1;
+        top = bottom;
+        break;
+    case 't':
+        bfactor = 0;
+        bottom = top;
+        break;
+    case '=':
+        break;
+    default:
+        av_log(ctx, AV_LOG_ERROR, "Invalid field: %c.\n", field);
+        av_frame_free(&out);
+        return AVERROR(EINVAL);
+    }
+
     switch (hint) {
     case '+':
         out->interlaced_frame = 1;
@@ -193,6 +213,14 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         out->interlaced_frame = 0;
         break;
     case '=':
+        break;
+    case 'b':
+        tfactor = 1;
+        top = bottom;
+        break;
+    case 't':
+        bfactor = 0;
+        bottom = top;
         break;
     default:
         av_log(ctx, AV_LOG_ERROR, "Invalid hint: %c.\n", hint);
@@ -203,13 +231,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     for (p = 0; p < s->nb_planes; p++) {
         av_image_copy_plane(out->data[p],
                             out->linesize[p] * 2,
-                            top->data[p],
+                            top->data[p] + tfactor * top->linesize[p],
                             top->linesize[p] * 2,
                             s->planewidth[p],
                             (s->planeheight[p] + 1) / 2);
         av_image_copy_plane(out->data[p] + out->linesize[p],
                             out->linesize[p] * 2,
-                            bottom->data[p] + bottom->linesize[p],
+                            bottom->data[p] + bfactor * bottom->linesize[p],
                             bottom->linesize[p] * 2,
                             s->planewidth[p],
                             (s->planeheight[p] + 1) / 2);

@@ -10121,6 +10121,8 @@ field and second number tells from which frame to pick up bottom field.
 If optionally followed by @code{+} output frame will be marked as interlaced,
 else if followed by @code{-} output frame will be marked as progressive, else
 it will be marked same as input frame.
+If optionally followed by @code{t} output frame will use only top field, or in
+case of @code{b} it will use only bottom field.
 If line starts with @code{#} or @code{;} that line is skipped.
 
 @item mode
