@@ -262,6 +262,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     TileContext *tile = ctx->priv;
 
+    av_frame_free(&tile->out_ref);
     av_frame_free(&tile->prev_out_ref);
 }
 
