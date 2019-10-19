@@ -28,6 +28,7 @@ typedef struct TremoloContext {
     double freq;
     double depth;
     double *table;
+    int table_size;
     int index;
 } TremoloContext;
 
@@ -72,7 +73,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         dst += channels;
         src += channels;
         s->index++;
-        if (s->index >= inlink->sample_rate / s->freq)
+        if (s->index >= s->table_size)
             s->index = 0;
     }
 
@@ -125,11 +126,12 @@ static int config_input(AVFilterLink *inlink)
     const double offset = 1. - s->depth / 2.;
     int i;
 
-    s->table = av_malloc_array(inlink->sample_rate / s->freq, sizeof(*s->table));
+    s->table_size = inlink->sample_rate / s->freq;
+    s->table = av_malloc_array(s->table_size, sizeof(*s->table));
     if (!s->table)
         return AVERROR(ENOMEM);
 
-    for (i = 0; i < inlink->sample_rate / s->freq; i++) {
+    for (i = 0; i < s->table_size; i++) {
         double env = s->freq * i / inlink->sample_rate;
         env = sin(2 * M_PI * fmod(env + 0.25, 1.0));
         s->table[i] = env * (1 - fabs(offset)) + offset;
