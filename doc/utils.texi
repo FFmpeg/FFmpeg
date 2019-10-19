@@ -704,6 +704,8 @@ FL+FR+FC+LFE+BL+BR+FLC+FRC
 FL+FR+FC+LFE+FLC+FRC+SL+SR
 @item octagonal
 FL+FR+FC+BL+BR+BC+SL+SR
+@item hexadecagonal
+FL+FR+FC+BL+BR+BC+SL+SR+WL+WR+TBL+TBR+TBC+TFC+TFL+TFR
 @item downmix
 DL+DR
 @end table
