@@ -217,11 +217,13 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             av_frame_free(&dm->queue[i].frame);
         } else {
             AVFrame *frame = dm->queue[i].frame;
+            dm->queue[i].frame = NULL;
             if (frame->pts != AV_NOPTS_VALUE && dm->start_pts == AV_NOPTS_VALUE)
                 dm->start_pts = frame->pts;
             if (dm->ppsrc) {
                 av_frame_free(&frame);
                 frame = dm->clean_src[i];
+                dm->clean_src[i] = NULL;
             }
             frame->pts = av_rescale_q(outlink->frame_count_in, dm->ts_unit, (AVRational){1,1}) +
                          (dm->start_pts == AV_NOPTS_VALUE ? 0 : dm->start_pts);
@@ -314,7 +316,15 @@ static av_cold void decimate_uninit(AVFilterContext *ctx)
 
     av_frame_free(&dm->last);
     av_freep(&dm->bdiffs);
+    if (dm->queue) {
+        for (i = 0; i < dm->cycle; i++)
+            av_frame_free(&dm->queue[i].frame);
+    }
     av_freep(&dm->queue);
+    if (dm->clean_src) {
+        for (i = 0; i < dm->cycle; i++)
+            av_frame_free(&dm->clean_src[i]);
+    }
     av_freep(&dm->clean_src);
     for (i = 0; i < ctx->nb_inputs; i++)
         av_freep(&ctx->input_pads[i].name);
