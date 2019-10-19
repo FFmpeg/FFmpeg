@@ -167,5 +167,5 @@ AVCodec ff_comfortnoise_decoder = {
     .close          = cng_decode_close,
     .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
                                                      AV_SAMPLE_FMT_NONE },
-    .capabilities   = AV_CODEC_CAP_DELAY | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_DR1,
 };
