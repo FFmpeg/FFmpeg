@@ -69,7 +69,7 @@ static av_cold int init(AVFilterContext *ctx)
         }
 
         if (s->map[n] < -1 || s->map[n] >= nb_items) {
-            av_log(ctx, AV_LOG_ERROR, "Index out of range.\n");
+            av_log(ctx, AV_LOG_ERROR, "Index %d out of range: [-1, %d].\n", s->map[n], nb_items - 1);
             av_free(mapping);
             return AVERROR(EINVAL);
         }
