@@ -223,7 +223,7 @@ static int raw_decode(AVCodecContext *avctx, void *data, int *got_frame,
                                                            FFALIGN(avctx->width, 16),
                                                            avctx->height, 1);
     } else {
-        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample && avctx->bits_per_coded_sample < 16;
+        context->is_lt_16bpp = av_get_bits_per_pixel(desc) == 16 && avctx->bits_per_coded_sample > 8 && avctx->bits_per_coded_sample < 16;
         context->frame_size = av_image_get_buffer_size(avctx->pix_fmt, avctx->width,
                                                        avctx->height, 1);
     }
