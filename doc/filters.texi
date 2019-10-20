@@ -12672,6 +12672,22 @@ copied from first stream.
 By default value 0xf, all planes will be processed.
 @end table
 
+@section maskedmax
+
+Merge the second and third input stream into output stream using absolute differences
+between second input stream and first input stream and absolute difference between
+third input stream and first input stream. The picked value will be from second input
+stream if second absolute difference is greater than first one or from third input stream
+otherwise.
+
+This filter accepts the following options:
+@table @option
+@item planes
+Set which planes will be processed as bitmap, unprocessed planes will be
+copied from first stream.
+By default value 0xf, all planes will be processed.
+@end table
+
 @section maskedmerge
 
 Merge the first input stream with the second input stream using per pixel
@@ -12682,6 +12698,22 @@ from first stream is returned unchanged, while maximum value (eg. 255 for
 8-bit videos) means that pixel component from second stream is returned
 unchanged. Intermediate values define the amount of merging between both
 input stream's pixel components.
+
+This filter accepts the following options:
+@table @option
+@item planes
+Set which planes will be processed as bitmap, unprocessed planes will be
+copied from first stream.
+By default value 0xf, all planes will be processed.
+@end table
+
+@section maskedmin
+
+Merge the second and third input stream into output stream using absolute differences
+between second input stream and first input stream and absolute difference between
+third input stream and first input stream. The picked value will be from second input
+stream if second absolute difference is less than first one or from third input stream
+otherwise.
 
 This filter accepts the following options:
 @table @option

@@ -17,6 +17,7 @@ version <next>:
 - anlms filter
 - arnndn filter
 - bilateral filter
+- maskedmin and maskedmax filters
 
 
 version 4.2:
