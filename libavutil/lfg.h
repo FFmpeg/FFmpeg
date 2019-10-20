@@ -24,6 +24,12 @@
 
 #include <stdint.h>
 
+/**
+ * Context structure for the Lagged Fibonacci PRNG.
+ * The exact layout, types and content of this struct may change and should
+ * not be accessed directly. Only its sizeof() is guranteed to stay the same
+ * to allow easy instanciation.
+ */
 typedef struct AVLFG {
     unsigned int state[64];
     int index;
