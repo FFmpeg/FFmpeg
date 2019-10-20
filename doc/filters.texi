@@ -6281,6 +6281,10 @@ Parallel will abort early on first change being greater then thresholds, while s
 will continue processing other side of frames if they are equal or bellow thresholds.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options except option @code{s}.
+The command accepts the same syntax of the corresponding option.
+
 @section avgblur
 
 Apply average blur filter.

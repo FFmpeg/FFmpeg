@@ -64,7 +64,8 @@ typedef struct ATADenoiseContext {
 } ATADenoiseContext;
 
 #define OFFSET(x) offsetof(ATADenoiseContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
+#define VF AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
 
 static const AVOption atadenoise_options[] = {
     { "0a", "set threshold A for 1st plane", OFFSET(fthra[0]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
@@ -73,11 +74,11 @@ static const AVOption atadenoise_options[] = {
     { "1b", "set threshold B for 2nd plane", OFFSET(fthrb[1]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
     { "2a", "set threshold A for 3rd plane", OFFSET(fthra[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.02}, 0, 0.3, FLAGS },
     { "2b", "set threshold B for 3rd plane", OFFSET(fthrb[2]), AV_OPT_TYPE_FLOAT, {.dbl=0.04}, 0, 5.0, FLAGS },
-    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, FLAGS },
+    { "s",  "set how many frames to use",    OFFSET(size),     AV_OPT_TYPE_INT,   {.i64=9},   5, SIZE, VF    },
     { "p",  "set what planes to filter",     OFFSET(planes),   AV_OPT_TYPE_FLAGS, {.i64=7},    0, 15,  FLAGS },
     { "a",  "set variant of algorithm",      OFFSET(algorithm),AV_OPT_TYPE_INT,   {.i64=PARALLEL},  0, NB_ATAA-1, FLAGS, "a" },
-    { "p",  "parallel",                      0,                AV_OPT_TYPE_CONST, {.i64=PARALLEL},  0, 0,          FLAGS, "a" },
-    { "s",  "serial",                        0,                AV_OPT_TYPE_CONST, {.i64=SERIAL},    0, 0,          FLAGS, "a" },
+    { "p",  "parallel",                      0,                AV_OPT_TYPE_CONST, {.i64=PARALLEL},  0, 0,         FLAGS, "a" },
+    { "s",  "serial",                        0,                AV_OPT_TYPE_CONST, {.i64=SERIAL},    0, 0,         FLAGS, "a" },
     { NULL }
 };
 
@@ -404,6 +405,21 @@ static av_cold void uninit(AVFilterContext *ctx)
     ff_bufqueue_discard_all(&s->q);
 }
 
+static int process_command(AVFilterContext *ctx,
+                           const char *cmd,
+                           const char *arg,
+                           char *res,
+                           int res_len,
+                           int flags)
+{
+    int ret = ff_filter_process_command(ctx, cmd, arg, res, res_len, flags);
+
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 static const AVFilterPad inputs[] = {
     {
         .name         = "default",
@@ -434,4 +450,5 @@ AVFilter ff_vf_atadenoise = {
     .inputs        = inputs,
     .outputs       = outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
