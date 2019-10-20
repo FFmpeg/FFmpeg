@@ -881,7 +881,7 @@ static av_always_inline int filter_3800(APEPredictor *p,
     p->coeffsB[filter][1] -= (((d4 >> 30) & 2) - 1) * sign;
 
     p->filterB[filter] = p->lastA[filter] + (predictionB >> shift);
-    p->filterA[filter] = p->filterB[filter] + ((int)(p->filterA[filter] * 31U) >> 5);
+    p->filterA[filter] = p->filterB[filter] + (unsigned)((int)(p->filterA[filter] * 31U) >> 5);
 
     return p->filterA[filter];
 }
