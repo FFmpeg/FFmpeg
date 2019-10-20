@@ -873,6 +873,7 @@ static av_cold int atrac9_decode_init(AVCodecContext *avctx)
     s->block_config = &at9_block_layout[block_config_idx];
 
     avctx->channel_layout = s->block_config->channel_layout;
+    avctx->channels       = av_get_channel_layout_nb_channels(avctx->channel_layout);
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLTP;
 
     if (get_bits1(&gb)) {
