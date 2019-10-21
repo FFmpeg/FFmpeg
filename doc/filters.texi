@@ -20940,6 +20940,9 @@ Set the number or the name of the test to perform. Supported tests are:
 @item ring2
 @item all
 
+@item max_frames, m
+Set the maximum number of frames generated for each test, default value is 30.
+
 @end table
 
 Default value is "all", which will cycle through the list of all tests.
