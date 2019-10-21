@@ -473,8 +473,6 @@ static int mp3_write_trailer(struct AVFormatContext *s)
     if (mp3->xing_offset)
         mp3_update_xing(s);
 
-    av_freep(&mp3->xing_frame);
-
     return 0;
 }
 
@@ -551,10 +549,10 @@ static int mp3_write_packet(AVFormatContext *s, AVPacket *pkt)
  * Write an ID3v2 header at beginning of stream
  */
 
-static int mp3_write_header(struct AVFormatContext *s)
+static int mp3_init(struct AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
-    int ret, i;
+    int i;
 
     if (mp3->id3v2_version      &&
         mp3->id3v2_version != 3 &&
@@ -593,6 +591,14 @@ static int mp3_write_header(struct AVFormatContext *s)
         return AVERROR(EINVAL);
     }
 
+    return 0;
+}
+
+static int mp3_write_header(struct AVFormatContext *s)
+{
+    MP3Context  *mp3 = s->priv_data;
+    int ret;
+
     if (mp3->id3v2_version) {
         ff_id3v2_start(&mp3->id3, s->pb, mp3->id3v2_version, ID3v2_DEFAULT_MAGIC);
         ret = ff_id3v2_write_metadata(s, &mp3->id3);
@@ -609,6 +615,14 @@ static int mp3_write_header(struct AVFormatContext *s)
     return 0;
 }
 
+static void mp3_deinit(struct AVFormatContext *s)
+{
+    MP3Context *mp3 = s->priv_data;
+
+    ff_packet_list_free(&mp3->queue, &mp3->queue_end);
+    av_freep(&mp3->xing_frame);
+}
+
 AVOutputFormat ff_mp3_muxer = {
     .name              = "mp3",
     .long_name         = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
@@ -617,9 +631,11 @@ AVOutputFormat ff_mp3_muxer = {
     .priv_data_size    = sizeof(MP3Context),
     .audio_codec       = AV_CODEC_ID_MP3,
     .video_codec       = AV_CODEC_ID_PNG,
+    .init              = mp3_init,
     .write_header      = mp3_write_header,
     .write_packet      = mp3_write_packet,
     .write_trailer     = mp3_write_trailer,
+    .deinit            = mp3_deinit,
     .query_codec       = query_codec,
     .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class        = &mp3_muxer_class,
