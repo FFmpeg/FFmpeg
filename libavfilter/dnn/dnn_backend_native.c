@@ -98,7 +98,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     char header_expected[] = "FFMPEGDNNNATIVE";
     char *buf;
     size_t size;
-    int version, header_size, major_version_expected = 0;
+    int version, header_size, major_version_expected = 1;
     ConvolutionalNetwork *network = NULL;
     AVIOContext *model_file_context;
     int file_size, dnn_size, parsed_size;

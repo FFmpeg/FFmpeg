@@ -118,7 +118,7 @@ class TFConverter:
         return knode, bnode, dnode, anode
 
 
-    def dump_conv2d_to_file(self, node, f):
+    def dump_complex_conv2d_to_file(self, node, f):
         assert(node.op == 'Conv2D')
         self.layer_number = self.layer_number + 1
         self.converted_nodes.add(node.name)
@@ -153,7 +153,8 @@ class TFConverter:
         kernel = kernel.reshape(filter_height, filter_width, in_channels, out_channels)
         kernel = np.transpose(kernel, [3, 0, 1, 2])
 
-        np.array([self.op2code[node.op], dilation, padding, self.conv_activations[activation], in_channels, out_channels, filter_height], dtype=np.uint32).tofile(f)
+        has_bias = 1
+        np.array([self.op2code[node.op], dilation, padding, self.conv_activations[activation], in_channels, out_channels, filter_height, has_bias], dtype=np.uint32).tofile(f)
         kernel.tofile(f)
 
         btensor = bnode.attr['value'].tensor
@@ -170,6 +171,41 @@ class TFConverter:
             output_operand_index = self.add_operand(anode.name, Operand.IOTYPE_OUTPUT)
         else:
             output_operand_index = self.add_operand(self.edges[bnode.name][0].name, Operand.IOTYPE_OUTPUT)
+        np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
+
+
+    def dump_simple_conv2d_to_file(self, node, f):
+        assert(node.op == 'Conv2D')
+        self.layer_number = self.layer_number + 1
+        self.converted_nodes.add(node.name)
+
+        node0 = self.name_node_dict[node.input[0]]
+        node1 = self.name_node_dict[node.input[1]]
+        if node0.op == 'Const':
+            knode = node0
+            input_name = node.input[1]
+        else:
+            knode = node1
+            input_name = node.input[0]
+
+        ktensor = knode.attr['value'].tensor
+        filter_height = ktensor.tensor_shape.dim[0].size
+        filter_width = ktensor.tensor_shape.dim[1].size
+        in_channels = ktensor.tensor_shape.dim[2].size
+        out_channels = ktensor.tensor_shape.dim[3].size
+        kernel = np.frombuffer(ktensor.tensor_content, dtype=np.float32)
+        kernel = kernel.reshape(filter_height, filter_width, in_channels, out_channels)
+        kernel = np.transpose(kernel, [3, 0, 1, 2])
+
+        has_bias = 0
+        dilation = 1
+        padding = node.attr['padding'].s.decode("utf-8")
+        np.array([self.op2code[node.op], dilation, self.conv_paddings[padding], self.conv_activations['None'],
+                  in_channels, out_channels, filter_height, has_bias], dtype=np.uint32).tofile(f)
+        kernel.tofile(f)
+
+        input_operand_index = self.add_operand(input_name, Operand.IOTYPE_INPUT)
+        output_operand_index = self.add_operand(node.name, Operand.IOTYPE_OUTPUT)
         np.array([input_operand_index, output_operand_index], dtype=np.uint32).tofile(f)
 
 
@@ -222,10 +258,12 @@ class TFConverter:
             scope_name = TFConverter.get_scope_name(node.name)
             if scope_name in self.conv2d_scope_names:
                 if node.op == 'Conv2D':
-                    self.dump_conv2d_to_file(node, f)
+                    self.dump_complex_conv2d_to_file(node, f)
                 continue
 
-            if node.op == 'DepthToSpace':
+            if node.op == 'Conv2D':
+                self.dump_simple_conv2d_to_file(node, f)
+            elif node.op == 'DepthToSpace':
                 self.dump_depth2space_to_file(node, f)
             elif node.op == 'MirrorPad':
                 self.dump_mirrorpad_to_file(node, f)
@@ -312,10 +350,16 @@ class TFConverter:
 
 
     def generate_conv2d_scope_info(self):
-        # conv2d is a sub block in graph, get the scope name
+        # mostly, conv2d is a sub block in graph, get the scope name
         for node in self.nodes:
             if node.op == 'Conv2D':
                 scope = TFConverter.get_scope_name(node.name)
+                # for the case tf.nn.conv2d is called directly
+                if scope == '':
+                    continue
+                # for the case tf.nn.conv2d is called within a scope
+                if scope + '/kernel' not in self.name_node_dict:
+                    continue
                 self.conv2d_scope_names.add(scope)
 
         # get the input name to the conv2d sub block
