@@ -43,6 +43,9 @@ typedef struct DNNData{
 typedef struct DNNModel{
     // Stores model that can be different for different backends.
     void *model;
+    // Gets model input information
+    // Just reuse struct DNNData here, actually the DNNData.data field is not needed.
+    DNNReturnType (*get_input)(void *model, DNNData *input, const char *input_name);
     // Sets model input and output.
     // Should be called at least once before model execution.
     DNNReturnType (*set_input_output)(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output);

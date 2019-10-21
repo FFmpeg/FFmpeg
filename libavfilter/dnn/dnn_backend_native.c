@@ -28,6 +28,28 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
 
+static DNNReturnType get_input_native(void *model, DNNData *input, const char *input_name)
+{
+    ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
+
+    for (int i = 0; i < network->operands_num; ++i) {
+        DnnOperand *oprd = &network->operands[i];
+        if (strcmp(oprd->name, input_name) == 0) {
+            if (oprd->type != DOT_INPUT)
+                return DNN_ERROR;
+            input->dt = oprd->data_type;
+            av_assert0(oprd->dims[0] == 1);
+            input->height = oprd->dims[1];
+            input->width = oprd->dims[2];
+            input->channels = oprd->dims[3];
+            return DNN_SUCCESS;
+        }
+    }
+
+    // do not find the input operand
+    return DNN_ERROR;
+}
+
 static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
@@ -37,7 +59,6 @@ static DNNReturnType set_input_output_native(void *model, DNNData *input, const 
         return DNN_ERROR;
 
     /* inputs */
-    av_assert0(input->dt == DNN_FLOAT);
     for (int i = 0; i < network->operands_num; ++i) {
         oprd = &network->operands[i];
         if (strcmp(oprd->name, input_name) == 0) {
@@ -234,6 +255,7 @@ DNNModel *ff_dnn_load_model_native(const char *model_filename)
     }
 
     model->set_input_output = &set_input_output_native;
+    model->get_input = &get_input_native;
 
     return model;
 }
