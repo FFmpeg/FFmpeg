@@ -28,7 +28,7 @@
 #include "dnn_backend_native_layer_conv2d.h"
 #include "dnn_backend_native_layers.h"
 
-static DNNReturnType set_input_output_native(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output)
+static DNNReturnType set_input_output_native(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output)
 {
     ConvolutionalNetwork *network = (ConvolutionalNetwork *)model;
     DnnOperand *oprd = NULL;
@@ -263,6 +263,7 @@ DNNReturnType ff_dnn_execute_model_native(const DNNModel *model, DNNData *output
         outputs[i].height = oprd->dims[1];
         outputs[i].width = oprd->dims[2];
         outputs[i].channels = oprd->dims[3];
+        outputs[i].dt = oprd->data_type;
     }
 
     return DNN_SUCCESS;

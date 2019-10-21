@@ -34,14 +34,9 @@ typedef enum {DNN_NATIVE, DNN_TF} DNNBackendType;
 
 typedef enum {DNN_FLOAT = 1, DNN_UINT8 = 4} DNNDataType;
 
-typedef struct DNNInputData{
+typedef struct DNNData{
     void *data;
     DNNDataType dt;
-    int width, height, channels;
-} DNNInputData;
-
-typedef struct DNNData{
-    float *data;
     int width, height, channels;
 } DNNData;
 
@@ -50,7 +45,7 @@ typedef struct DNNModel{
     void *model;
     // Sets model input and output.
     // Should be called at least once before model execution.
-    DNNReturnType (*set_input_output)(void *model, DNNInputData *input, const char *input_name, const char **output_names, uint32_t nb_output);
+    DNNReturnType (*set_input_output)(void *model, DNNData *input, const char *input_name, const char **output_names, uint32_t nb_output);
 } DNNModel;
 
 // Stores pointers to functions for loading, executing, freeing DNN models for one of the backends.

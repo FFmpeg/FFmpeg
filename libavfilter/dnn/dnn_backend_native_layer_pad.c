@@ -105,6 +105,7 @@ int dnn_execute_layer_pad(DnnOperand *operands, const int32_t *input_operand_ind
     output_operand->dims[1] = new_height;
     output_operand->dims[2] = new_width;
     output_operand->dims[3] = new_channel;
+    output_operand->data_type = operands[input_operand_index].data_type;
     output_operand->length = calculate_operand_data_length(output_operand);
     output_operand->data = av_realloc(output_operand->data, output_operand->length);
     if (!output_operand->data)

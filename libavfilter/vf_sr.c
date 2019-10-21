@@ -41,7 +41,7 @@ typedef struct SRContext {
     DNNBackendType backend_type;
     DNNModule *dnn_module;
     DNNModel *model;
-    DNNInputData input;
+    DNNData input;
     DNNData output;
     int scale_factor;
     struct SwsContext *sws_contexts[3];
