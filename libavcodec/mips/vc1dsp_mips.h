@@ -191,4 +191,27 @@ void ff_avg_no_rnd_vc1_chroma_mc4_mmi(uint8_t *dst /* align 8 */,
                                       uint8_t *src /* align 1 */,
                                       ptrdiff_t stride, int h, int x, int y);
 
+void ff_vc1_inv_trans_8x8_msa(int16_t block[64]);
+void ff_vc1_inv_trans_8x4_msa(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+void ff_vc1_inv_trans_4x8_msa(uint8_t *dest, ptrdiff_t linesize, int16_t *block);
+
+#define FF_PUT_VC1_MSPEL_MC_MSA(hmode, vmode)                                 \
+void ff_put_vc1_mspel_mc ## hmode ## vmode ## _msa(uint8_t *dst,              \
+                                                  const uint8_t *src,         \
+                                                  ptrdiff_t stride, int rnd); \
+void ff_put_vc1_mspel_mc ## hmode ## vmode ## _16_msa(uint8_t *dst,           \
+                                                  const uint8_t *src,         \
+                                                  ptrdiff_t stride, int rnd);
+
+FF_PUT_VC1_MSPEL_MC_MSA(1, 1);
+FF_PUT_VC1_MSPEL_MC_MSA(1, 2);
+FF_PUT_VC1_MSPEL_MC_MSA(1, 3);
+
+FF_PUT_VC1_MSPEL_MC_MSA(2, 1);
+FF_PUT_VC1_MSPEL_MC_MSA(2, 2);
+FF_PUT_VC1_MSPEL_MC_MSA(2, 3);
+
+FF_PUT_VC1_MSPEL_MC_MSA(3, 1);
+FF_PUT_VC1_MSPEL_MC_MSA(3, 2);
+FF_PUT_VC1_MSPEL_MC_MSA(3, 3);
 #endif /* AVCODEC_MIPS_VC1DSP_MIPS_H */

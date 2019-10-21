@@ -299,6 +299,7 @@
 #define LD_SB4(...) LD_V4(v16i8, __VA_ARGS__)
 #define LD_UH4(...) LD_V4(v8u16, __VA_ARGS__)
 #define LD_SH4(...) LD_V4(v8i16, __VA_ARGS__)
+#define LD_SW4(...) LD_V4(v4i32, __VA_ARGS__)
 
 #define LD_V5(RTYPE, psrc, stride, out0, out1, out2, out3, out4)  \
 {                                                                 \
@@ -337,6 +338,7 @@
 #define LD_SB8(...) LD_V8(v16i8, __VA_ARGS__)
 #define LD_UH8(...) LD_V8(v8u16, __VA_ARGS__)
 #define LD_SH8(...) LD_V8(v8i16, __VA_ARGS__)
+#define LD_SW8(...) LD_V8(v4i32, __VA_ARGS__)
 
 #define LD_V16(RTYPE, psrc, stride,                                   \
                out0, out1, out2, out3, out4, out5, out6, out7,        \
@@ -1382,6 +1384,7 @@
             out4, out5, out6, out7);                              \
 }
 #define ILVR_B8_UH(...) ILVR_B8(v8u16, __VA_ARGS__)
+#define ILVR_B8_SW(...) ILVR_B8(v4i32, __VA_ARGS__)
 
 /* Description : Interleave right half of halfword elements from vectors
    Arguments   : Inputs  - in0, in1, in2, in3, in4, in5, in6, in7
