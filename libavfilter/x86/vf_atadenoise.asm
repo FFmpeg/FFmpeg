@@ -1,5 +1,5 @@
 ;*****************************************************************************
-;* x86-optimized functions for blend filter
+;* x86-optimized functions for atadenoise filter
 ;*
 ;* Copyright (C) 2019 Paul B Mahol
 ;*
