@@ -40,14 +40,6 @@
 #include "video.h"
 #include "transpose.h"
 
-typedef struct TransVtable {
-    void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,
-                          uint8_t *dst, ptrdiff_t dst_linesize);
-    void (*transpose_block)(uint8_t *src, ptrdiff_t src_linesize,
-                            uint8_t *dst, ptrdiff_t dst_linesize,
-                            int w, int h);
-} TransVtable;
-
 typedef struct TransContext {
     const AVClass *class;
     int hsub, vsub;
@@ -240,6 +232,14 @@ static int config_props_output(AVFilterLink *outlink)
                 v->transpose_8x8   = transpose_8x8_48_c; break;
         case 8: v->transpose_block = transpose_block_64_c;
                 v->transpose_8x8   = transpose_8x8_64_c; break;
+        }
+    }
+
+    if (ARCH_X86) {
+        for (int i = 0; i < 4; i++) {
+            TransVtable *v = &s->vtables[i];
+
+            ff_transpose_init_x86(v, s->pixsteps[i]);
         }
     }
 

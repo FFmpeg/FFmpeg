@@ -34,4 +34,14 @@ enum TransposeDir {
     TRANSPOSE_VFLIP,
 };
 
+typedef struct TransVtable {
+    void (*transpose_8x8)(uint8_t *src, ptrdiff_t src_linesize,
+                          uint8_t *dst, ptrdiff_t dst_linesize);
+    void (*transpose_block)(uint8_t *src, ptrdiff_t src_linesize,
+                            uint8_t *dst, ptrdiff_t dst_linesize,
+                            int w, int h);
+} TransVtable;
+
+void ff_transpose_init_x86(TransVtable *v, int pixstep);
+
 #endif
