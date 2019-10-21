@@ -39,11 +39,11 @@ av_cold void ff_transpose_init_x86(TransVtable *v, int pixstep)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (EXTERNAL_SSE4(cpu_flags) && pixstep == 1) {
+    if (EXTERNAL_SSE2(cpu_flags) && pixstep == 1) {
         v->transpose_8x8 = ff_transpose_8x8_8_sse2;
     }
 
-    if (ARCH_X86_64 && EXTERNAL_SSE4(cpu_flags) && pixstep == 2) {
+    if (ARCH_X86_64 && EXTERNAL_SSE2(cpu_flags) && pixstep == 2) {
         v->transpose_8x8 = ff_transpose_8x8_16_sse2;
     }
 }
