@@ -144,6 +144,8 @@ static inline av_flatten int get_symbol(RangeCoder *c, uint8_t *state, int is_si
         e= 0;
         while(get_rac(c, state+1 + FFMIN(e,9))){ //1..10
             e++;
+            if (e > 31)
+                return AVERROR_INVALIDDATA;
         }
 
         a= 1;
