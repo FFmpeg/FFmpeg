@@ -56,10 +56,7 @@ cglobal transpose_8x8_8, 4,5,8, src, src_linesize, dst, dst_linesize, linesize3
     movq [dstq + linesize3q], m7
     RET
 
-%if ARCH_X86_64
-
-INIT_XMM sse2
-cglobal transpose_8x8_16, 4,5,9, src, src_linesize, dst, dst_linesize, linesize3
+cglobal transpose_8x8_16, 4,5,9, ARCH_X86_32 * 32, src, src_linesize, dst, dst_linesize, linesize3
     lea     linesize3q, [src_linesizeq * 3]
     movu    m0, [srcq + src_linesizeq * 0]
     movu    m1, [srcq + src_linesizeq * 1]
@@ -71,7 +68,11 @@ cglobal transpose_8x8_16, 4,5,9, src, src_linesize, dst, dst_linesize, linesize3
     movu    m6, [srcq + src_linesizeq * 2]
     movu    m7, [srcq + linesize3q]
 
+%if ARCH_X86_64
     TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, 8
+%else
+    TRANSPOSE8x8W 0, 1, 2, 3, 4, 5, 6, 7, [rsp], [rsp + 16]
+%endif
 
     lea                  linesize3q, [dst_linesizeq * 3]
     movu [dstq + dst_linesizeq * 0], m0
@@ -84,5 +85,3 @@ cglobal transpose_8x8_16, 4,5,9, src, src_linesize, dst, dst_linesize, linesize3
     movu [dstq + dst_linesizeq * 2], m6
     movu [dstq + linesize3q], m7
     RET
-
-%endif
