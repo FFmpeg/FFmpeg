@@ -720,7 +720,7 @@ static int vobsub_read_header(AVFormatContext *s)
     int i, ret = 0, header_parsed = 0, langidx = 0;
     MpegDemuxContext *vobsub = s->priv_data;
     size_t fname_len;
-    char *header_str;
+    char *header_str = NULL;
     AVBPrint header;
     int64_t delay = 0;
     AVStream *st = NULL;
