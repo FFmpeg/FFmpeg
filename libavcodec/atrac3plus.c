@@ -456,6 +456,10 @@ static int decode_channel_wordlen(GetBitContext *gb, Atrac3pChanUnitCtx *ctx,
     } else if (chan->fill_mode == 3) {
         pos = ch_num ? chan->num_coded_vals + chan->split_point
                      : ctx->num_quant_units - chan->split_point;
+        if (pos > FF_ARRAY_ELEMS(chan->qu_wordlen)) {
+            av_log(avctx, AV_LOG_ERROR, "Split point beyond array\n");
+            pos = FF_ARRAY_ELEMS(chan->qu_wordlen);
+        }
         for (i = chan->num_coded_vals; i < pos; i++)
             chan->qu_wordlen[i] = 1;
     }
