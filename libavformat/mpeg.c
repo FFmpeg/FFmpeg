@@ -769,7 +769,7 @@ static int vobsub_read_header(AVFormatContext *s)
         goto end;
     }
 
-    av_bprint_init(&header, 0, AV_BPRINT_SIZE_UNLIMITED);
+    av_bprint_init(&header, 0, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
     while (!avio_feof(s->pb)) {
         char line[MAX_LINE_SIZE];
         int len = ff_get_line(s->pb, line, sizeof(line));
@@ -896,14 +896,12 @@ static int vobsub_read_header(AVFormatContext *s)
     }
     av_bprint_finalize(&header, &header_str);
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *sub_st = s->streams[i];
-        sub_st->codecpar->extradata      = av_strdup(header_str);
-        if (!sub_st->codecpar->extradata) {
-            ret = AVERROR(ENOMEM);
-            sub_st->codecpar->extradata_size = 0;
+        AVCodecParameters *par = s->streams[i]->codecpar;
+        ret = ff_alloc_extradata(par, header.len);
+        if (ret < 0) {
             goto end;
         }
-        sub_st->codecpar->extradata_size = header.len;
+        memcpy(par->extradata, header_str, header.len);
     }
 end:
 
