@@ -905,9 +905,9 @@ static int vobsub_read_header(AVFormatContext *s)
         }
         sub_st->codecpar->extradata_size = header.len;
     }
-    av_free(header_str);
-
 end:
+
+    av_free(header_str);
     return ret;
 }
 
