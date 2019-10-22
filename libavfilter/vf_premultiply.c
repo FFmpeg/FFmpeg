@@ -186,7 +186,7 @@ static void premultiply16yuv(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - half) * (((asrc[x] >> 1) & 1) + asrc[x]))) >> shift) + half;
+            dst[x] = ((((msrc[x] - half) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x]))) >> shift) + half;
         }
 
         dst  += dlinesize / 2;
@@ -209,7 +209,7 @@ static void premultiply16offset(const uint8_t *mmsrc, const uint8_t *aasrc,
 
     for (y = 0; y < h; y++) {
         for (x = 0; x < w; x++) {
-            dst[x] = ((((msrc[x] - offset) * (((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift) + offset;
+            dst[x] = ((((msrc[x] - offset) * (int64_t)(((asrc[x] >> 1) & 1) + asrc[x])) + half) >> shift) + offset;
         }
 
         dst  += dlinesize / 2;
