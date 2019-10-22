@@ -56,6 +56,10 @@
 #include "libavutil/ffversion.h"
 const char av_format_ffversion[] = "FFmpeg version " FFMPEG_VERSION;
 
+#define FF_MAX_CODEC_WIDTH    32768
+#define FF_MAX_CODEC_HEIGHT   32768
+#define FF_MAX_CODEC_SAMPLERATE   96000
+
 static AVMutex avformat_mutex = AV_MUTEX_INITIALIZER;
 
 /**
@@ -5911,8 +5915,11 @@ extern int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
 
 extern int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options);
 
+extern AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpar);
 
-static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpar) {
+extern AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpar);
+
+AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpar) {
     int ret = 0;
     const AVCodec * codec;
     int is_avc=0;
@@ -5932,13 +5939,16 @@ static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * 
     
     avctx->extradata_size = codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
     avctx->extradata = av_mallocz(avctx->extradata_size);
-    if (!avctx->extradata)
+    if (!avctx->extradata) {
+        avcodec_free_context(&avctx);
         return NULL;
+    }
     memcpy(avctx->extradata, codecpar->extradata, avctx->extradata_size);
     
     //sizeof(HEVCDecoderConfigurationRecord) > sizeof(AVCDecoderConfigurationRecord) >= 7 bytes
     if (avctx->extradata_size < 7) {
         av_log(NULL, AV_LOG_ERROR, "Wrong video extradata length\n");
+        avcodec_free_context(&avctx);
         return NULL;
     }
     
@@ -5970,6 +5980,7 @@ static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * 
             avctx->sample_aspect_ratio = sps->sar;
         } else{
             ff_h264_ps_uninit(&ps);
+            avcodec_free_context(&avctx);
             return NULL;
         }
         
@@ -6006,8 +6017,10 @@ static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * 
         const HEVCVPS *vps = NULL;
         if ((ret = ff_hevc_decode_extradata(avctx->extradata, avctx->extradata_size, &ps, &sei,
                                             &is_avc, &nal_length_size,
-                                            0, 1, avctx)) < 0)
+                                            0, 1, avctx)) < 0) {
+            avcodec_free_context(&avctx);
             return NULL;
+        }
         for (i = 0; i < HEVC_MAX_PPS_COUNT; i++) {
             if (ps.pps_list[i]) {
                 pps = (const HEVCPPS*)ps.pps_list[i]->data;
@@ -6068,11 +6081,13 @@ static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * 
                 avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
         } else{
             ff_hevc_ps_uninit(&ps);
+            avcodec_free_context(&avctx);
             return NULL;
         }
         ff_hevc_ps_uninit(&ps);
     } else {
         av_log(NULL, AV_LOG_ERROR, "%s: unsupport codec id = %d\n", __func__, codecpar->codec_id);
+        avcodec_free_context(&avctx);
         return NULL;
     }
     
@@ -6088,16 +6103,17 @@ static AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * 
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->codec_type = AVMEDIA_TYPE_VIDEO;
     
-    if (avctx->width > 4096 || avctx->height > 4096 ||
+    if (avctx->width > FF_MAX_CODEC_WIDTH || avctx->height > FF_MAX_CODEC_HEIGHT ||
         avctx->width <= 0   || avctx->height <= 0) {
         av_log(NULL, AV_LOG_ERROR,  "Error resolution: %dx%d\n", avctx->width, avctx->height);
+        avcodec_free_context(&avctx);
         return NULL;
     }
     
     return avctx;
 }
 
-static AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpar)  {
+AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpar)  {
     int ret = 0;
     const AVCodec * codec = NULL;
     AVCodecContext * avctx = NULL;
@@ -6116,22 +6132,27 @@ static AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * 
     
     avctx->extradata_size = codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
     avctx->extradata = av_mallocz(avctx->extradata_size);
-    if (!avctx->extradata)
+    if (!avctx->extradata) {
+        avcodec_free_context(&avctx);
         return NULL;
+    }
     memcpy(avctx->extradata, codecpar->extradata, avctx->extradata_size);
     
     
     //sizeof(AudioSpecificConfig) >= 2
     if (avctx->extradata_size < 2) {
         av_log(NULL, AV_LOG_ERROR, "Wrong audio extradata length\n");
+        avcodec_free_context(&avctx);
         return NULL;
     }
     
     if ((ret = avpriv_mpeg4audio_get_config(&m4ac,
                                             avctx->extradata,
                                             avctx->extradata_size,
-                                            1)) < 0)
+                                            1)) < 0) {
+        avcodec_free_context(&avctx);
         return NULL;
+    }
     
     av_log(NULL, AV_LOG_DEBUG, "sample_rate = %d, channels = %d\n",m4ac.sample_rate, m4ac.channels);
     
@@ -6147,9 +6168,10 @@ static AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * 
     avctx->frame_size <<= (m4ac.sbr == 1) ? m4ac.ext_sample_rate > m4ac.sample_rate : 0;
     
     
-    if (avctx->sample_rate > 960000 ||
+    if (avctx->sample_rate > FF_MAX_CODEC_SAMPLERATE ||
         avctx->sample_rate <= 0) {
         av_log(NULL, AV_LOG_ERROR,  "Error sample rate: %d\n", avctx->sample_rate);
+        avcodec_free_context(&avctx);
         return NULL;
     }
     
