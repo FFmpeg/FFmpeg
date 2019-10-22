@@ -26,6 +26,7 @@
 #include "internal.h"
 #include "video.h"
 #include "framesync.h"
+#include "maskedclamp.h"
 
 #define OFFSET(x) offsetof(MaskedClampContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
@@ -47,9 +48,7 @@ typedef struct MaskedClampContext {
     int depth;
     FFFrameSync fs;
 
-    void (*maskedclamp)(const uint8_t *bsrc, uint8_t *dst,
-                        const uint8_t *darksrc, const uint8_t *brightsrc,
-                        int w, int undershoot, int overshoot);
+    MaskedClampDSPContext dsp;
 } MaskedClampContext;
 
 static const AVOption maskedclamp_options[] = {
@@ -117,7 +116,7 @@ static int maskedclamp_slice(AVFilterContext *ctx, void *arg, int jobnr, int nb_
         }
 
         for (y = slice_start; y < slice_end; y++) {
-            s->maskedclamp(bsrc, dst, darksrc, brightsrc, w, undershoot, overshoot);
+            s->dsp.maskedclamp(bsrc, dst, darksrc, brightsrc, w, undershoot, overshoot);
 
             dst  += dlinesize;
             bsrc += blinesize;
@@ -210,11 +209,16 @@ static int config_input(AVFilterLink *inlink)
     s->width[0]  = s->width[3]  = inlink->w;
 
     s->depth = desc->comp[0].depth;
+    s->undershoot = FFMIN(s->undershoot, (1 << s->depth) - 1);
+    s->overshoot = FFMIN(s->overshoot, (1 << s->depth) - 1);
 
-    if (desc->comp[0].depth == 8)
-        s->maskedclamp = maskedclamp8;
+    if (s->depth <= 8)
+        s->dsp.maskedclamp = maskedclamp8;
     else
-        s->maskedclamp = maskedclamp16;
+        s->dsp.maskedclamp = maskedclamp16;
+
+    if (ARCH_X86)
+        ff_maskedclamp_init_x86(&s->dsp, s->depth);
 
     return 0;
 }
