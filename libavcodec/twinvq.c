@@ -771,23 +771,26 @@ av_cold int ff_twinvq_decode_init(AVCodecContext *avctx)
 {
     int ret;
     TwinVQContext *tctx = avctx->priv_data;
+    int64_t frames_per_packet;
 
     tctx->avctx       = avctx;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
 
     if (!avctx->block_align) {
         avctx->block_align = tctx->frame_size + 7 >> 3;
-    } else if (avctx->block_align * 8 < tctx->frame_size) {
-        av_log(avctx, AV_LOG_ERROR, "Block align is %d bits, expected %d\n",
-               avctx->block_align * 8, tctx->frame_size);
+    }
+    frames_per_packet = avctx->block_align * 8LL / tctx->frame_size;
+    if (frames_per_packet <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Block align is %"PRId64" bits, expected %d\n",
+               avctx->block_align * (int64_t)8, tctx->frame_size);
         return AVERROR_INVALIDDATA;
     }
-    tctx->frames_per_packet = avctx->block_align * 8 / tctx->frame_size;
-    if (tctx->frames_per_packet > TWINVQ_MAX_FRAMES_PER_PACKET) {
-        av_log(avctx, AV_LOG_ERROR, "Too many frames per packet (%d)\n",
-               tctx->frames_per_packet);
+    if (frames_per_packet > TWINVQ_MAX_FRAMES_PER_PACKET) {
+        av_log(avctx, AV_LOG_ERROR, "Too many frames per packet (%"PRId64")\n",
+               frames_per_packet);
         return AVERROR_INVALIDDATA;
     }
+    tctx->frames_per_packet = frames_per_packet;
 
     tctx->fdsp = avpriv_float_dsp_alloc(avctx->flags & AV_CODEC_FLAG_BITEXACT);
     if (!tctx->fdsp) {
