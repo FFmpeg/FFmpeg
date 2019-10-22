@@ -927,6 +927,10 @@ static int vobsub_read_packet(AVFormatContext *s, AVPacket *pkt)
         FFDemuxSubtitlesQueue *tmpq = &vobsub->q[i];
         int64_t ts;
         av_assert0(tmpq->nb_subs);
+
+        if (tmpq->current_sub_idx >= tmpq->nb_subs)
+            continue;
+
         ts = tmpq->subs[tmpq->current_sub_idx].pts;
         if (ts < min_ts) {
             min_ts = ts;
