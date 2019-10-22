@@ -18,6 +18,9 @@
 #ifndef AVFILTER_TRANSPOSE_H
 #define AVFILTER_TRANSPOSE_H
 
+#include <stddef.h>
+#include <stdint.h>
+
 enum PassthroughType {
     TRANSPOSE_PT_TYPE_NONE,
     TRANSPOSE_PT_TYPE_LANDSCAPE,
