@@ -478,6 +478,12 @@ static void reflush_dynbuf(VariantStream *vs, int *range_length)
     avio_write(vs->out, vs->temp_buffer, *range_length);;
 }
 
+#if HAVE_DOS_PATHS
+#define SEPARATOR '\\'
+#else
+#define SEPARATOR '/'
+#endif
+
 static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
                                    VariantStream *vs)
 {
@@ -544,7 +550,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     while (segment) {
         av_log(hls, AV_LOG_DEBUG, "deleting old segment %s\n",
                segment->filename);
-        path_size =  (hls->use_localtime_mkdir ? 0 : strlen(dirname)) + strlen(segment->filename) + 1;
+        path_size =  (hls->use_localtime_mkdir ? 0 : strlen(dirname)+1) + strlen(segment->filename) + 1;
         path = av_malloc(path_size);
         if (!path) {
             ret = AVERROR(ENOMEM);
@@ -554,8 +560,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         if (hls->use_localtime_mkdir)
             av_strlcpy(path, segment->filename, path_size);
         else { // segment->filename contains basename only
-            av_strlcpy(path, dirname, path_size);
-            av_strlcat(path, segment->filename, path_size);
+            snprintf(path, path_size, "%s%c%s", dirname, SEPARATOR, segment->filename);
         }
 
         proto = avio_find_protocol_name(s->url);
@@ -575,15 +580,14 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         if ((segment->sub_filename[0] != '\0')) {
             char *vtt_dirname_r = av_strdup(vs->vtt_avf->url);
             vtt_dirname = (char*)av_dirname(vtt_dirname_r);
-            sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname);
+            sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname) + 1;
             sub_path = av_malloc(sub_path_size);
             if (!sub_path) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
 
-            av_strlcpy(sub_path, vtt_dirname, sub_path_size);
-            av_strlcat(sub_path, segment->sub_filename, sub_path_size);
+            snprintf(sub_path, sub_path_size, "%s%c%s", vtt_dirname, SEPARATOR, segment->sub_filename);
 
             av_freep(&vtt_dirname);
 
