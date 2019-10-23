@@ -143,7 +143,7 @@ typedef struct cook {
 
     /* generate tables and related variables */
     int                 gain_size_factor;
-    float               gain_table[23];
+    float               gain_table[31];
 
     /* data buffers */
 
@@ -185,8 +185,8 @@ static av_cold void init_gain_table(COOKContext *q)
 {
     int i;
     q->gain_size_factor = q->samples_per_channel / 8;
-    for (i = 0; i < 23; i++)
-        q->gain_table[i] = pow(pow2tab[i + 52],
+    for (i = 0; i < 31; i++)
+        q->gain_table[i] = pow(pow2tab[i + 48],
                                (1.0 / (double) q->gain_size_factor));
 }
 
@@ -670,7 +670,7 @@ static void interpolate_float(COOKContext *q, float *buffer,
         for (i = 0; i < q->gain_size_factor; i++)
             buffer[i] *= fc1;
     } else {                                        // smooth gain
-        fc2 = q->gain_table[11 + (gain_index_next - gain_index)];
+        fc2 = q->gain_table[15 + (gain_index_next - gain_index)];
         for (i = 0; i < q->gain_size_factor; i++) {
             buffer[i] *= fc1;
             fc1       *= fc2;
