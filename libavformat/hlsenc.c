@@ -493,8 +493,11 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     int ret = 0, path_size, sub_path_size;
     int segment_cnt = 0;
     char *dirname = NULL, *sub_path;
+    char *dirname_r = NULL;
+    char *dirname_repl = NULL;
     char *path = NULL;
     char *vtt_dirname = NULL;
+    char *vtt_dirname_r = NULL;
     AVDictionary *options = NULL;
     AVIOContext *out = NULL;
     const char *proto = NULL;
@@ -523,28 +526,27 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
     }
 
     if (segment && !hls->use_localtime_mkdir) {
-        char *dirname_r = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
+        dirname_r = hls->segment_filename ? av_strdup(hls->segment_filename): av_strdup(vs->avf->url);
         dirname = (char*)av_dirname(dirname_r);
     }
 
     /* if %v is present in the file's directory
      * all segment belongs to the same variant, so do it only once before the loop*/
     if (dirname && av_stristr(dirname, "%v")) {
-        char * r_dirname = dirname;
+        char * dirname_repl = dirname;
         if (!vs->varname) {
-            if (replace_int_data_in_filename(&r_dirname, dirname, 'v', segment->var_stream_idx) < 1) {
+            if (replace_int_data_in_filename(&dirname_repl, dirname, 'v', segment->var_stream_idx) < 1) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
         } else {
-            if (replace_str_data_in_filename(&r_dirname, dirname, 'v', vs->varname) < 1) {
+            if (replace_str_data_in_filename(&dirname_repl, dirname, 'v', vs->varname) < 1) {
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
         }
 
-        av_freep(&dirname);
-        dirname = r_dirname;
+        dirname = dirname_repl;
     }
 
     while (segment) {
@@ -578,7 +580,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
         }
 
         if ((segment->sub_filename[0] != '\0')) {
-            char *vtt_dirname_r = av_strdup(vs->vtt_avf->url);
+            vtt_dirname_r = av_strdup(vs->vtt_avf->url);
             vtt_dirname = (char*)av_dirname(vtt_dirname_r);
             sub_path_size = strlen(segment->sub_filename) + 1 + strlen(vtt_dirname) + 1;
             sub_path = av_malloc(sub_path_size);
@@ -589,7 +591,7 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
 
             snprintf(sub_path, sub_path_size, "%s%c%s", vtt_dirname, SEPARATOR, segment->sub_filename);
 
-            av_freep(&vtt_dirname);
+            av_freep(&vtt_dirname_r);
 
             if (hls->method || (proto && !av_strcasecmp(proto, "http"))) {
                 av_dict_set(&options, "method", "DELETE", 0);
@@ -614,8 +616,9 @@ static int hls_delete_old_segments(AVFormatContext *s, HLSContext *hls,
 
 fail:
     av_freep(&path);
-    av_freep(&dirname);
-    av_freep(&vtt_dirname);
+    av_freep(&dirname_r);
+    av_freep(&dirname_repl);
+    av_freep(&vtt_dirname_r);
 
     return ret;
 }
