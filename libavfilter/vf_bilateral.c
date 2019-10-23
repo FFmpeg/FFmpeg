@@ -58,17 +58,12 @@ typedef struct BilateralContext {
 
 static const AVOption bilateral_options[] = {
     { "sigmaS", "set spatial sigma",    OFFSET(sigmaS), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0,  10, FLAGS },
-    { "sigmaR", "set sigma range",      OFFSET(sigmaR), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0,   1, FLAGS },
+    { "sigmaR", "set range sigma",      OFFSET(sigmaR), AV_OPT_TYPE_FLOAT, {.dbl=0.1}, 0.0,   1, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=1},     0, 0xF, FLAGS },
     { NULL }
 };
 
 AVFILTER_DEFINE_CLASS(bilateral);
-
-typedef struct ThreadData {
-    int height;
-    int width;
-} ThreadData;
 
 static int query_formats(AVFilterContext *ctx)
 {
