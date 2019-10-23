@@ -216,9 +216,13 @@ typedef struct{
     int64_t first_audio_did_http_ok_timestamp;
 } AVAppPkgCountTracker;
 
+#define STREAM_SIZE_NOT_MATCH -1
+#define STREAM_SIZE_INVALID   -2
+
 typedef struct{
     int is_audio;
     int io_error;
+    int64_t filesize;
 } AVAppIOStatus;
 
 typedef struct AVApplicationContext AVApplicationContext;

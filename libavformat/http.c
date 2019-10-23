@@ -1158,7 +1158,7 @@ static int http_read_header(URLContext *h, int *new_location)
         if ((err = http_get_line(s, line, sizeof(line))) < 0)
             return err;
 
-        av_log(h, AV_LOG_TRACE, "header='%s'\n", line);
+        av_log(h, AV_LOG_INFO, "header='%s'\n", line);
 
         err = process_line(h, line, s->line_count, new_location);
         if (err < 0)
@@ -1308,7 +1308,7 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
              authstr ? authstr : "",
              proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
-    av_log(h, AV_LOG_DEBUG, "request: %s\n", s->buffer);
+    av_log(h, AV_LOG_INFO, "request: %s\n", s->buffer);
 
     if (strlen(headers) + 1 == sizeof(headers) ||
         ret >= sizeof(s->buffer)) {
