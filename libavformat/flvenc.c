@@ -733,7 +733,7 @@ static int flv_write_trailer(AVFormatContext *s)
     int64_t cur_pos = avio_tell(s->pb);
 
     if (build_keyframes_idx) {
-        FLVFileposition *newflv_posinfo, *p;
+        const FLVFileposition *newflv_posinfo;
 
         avio_seek(pb, flv->videosize_offset, SEEK_SET);
         put_amf_double(pb, flv->videosize);
@@ -766,19 +766,6 @@ static int flv_write_trailer(AVFormatContext *s)
         put_amf_dword_array(pb, flv->filepositions_count);
         for (newflv_posinfo = flv->head_filepositions; newflv_posinfo; newflv_posinfo = newflv_posinfo->next) {
             put_amf_double(pb, newflv_posinfo->keyframe_timestamp);
-        }
-
-        newflv_posinfo = flv->head_filepositions;
-        while (newflv_posinfo) {
-            p = newflv_posinfo->next;
-            if (p) {
-                newflv_posinfo->next = p->next;
-                av_free(p);
-                p = NULL;
-            } else {
-                av_free(newflv_posinfo);
-                newflv_posinfo = NULL;
-            }
         }
 
         put_amf_string(pb, "");
@@ -1047,6 +1034,20 @@ static int flv_check_bitstream(AVFormatContext *s, AVStream *st,
     return ret;
 }
 
+static void flv_deinit(AVFormatContext *s)
+{
+    FLVContext *flv = s->priv_data;
+    FLVFileposition *filepos = flv->head_filepositions;
+
+    while (filepos) {
+        FLVFileposition *next = filepos->next;
+        av_free(filepos);
+        filepos = next;
+    }
+    flv->filepositions = flv->head_filepositions = NULL;
+    flv->filepositions_count = 0;
+}
+
 static const AVOption options[] = {
     { "flvflags", "FLV muxer flags", offsetof(FLVContext, flags), AV_OPT_TYPE_FLAGS, {.i64 = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
     { "aac_seq_header_detect", "Put AAC sequence header based on stream data", 0, AV_OPT_TYPE_CONST, {.i64 = FLV_AAC_SEQ_HEADER_DETECT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "flvflags" },
@@ -1076,6 +1077,7 @@ const AVOutputFormat ff_flv_muxer = {
     .write_header   = flv_write_header,
     .write_packet   = flv_write_packet,
     .write_trailer  = flv_write_trailer,
+    .deinit         = flv_deinit,
     .check_bitstream= flv_check_bitstream,
     .codec_tag      = (const AVCodecTag* const []) {
                           flv_video_codec_ids, flv_audio_codec_ids, 0
