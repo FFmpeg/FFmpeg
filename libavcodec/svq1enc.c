@@ -345,7 +345,7 @@ static int svq1_encode_plane(SVQ1EncContext *s, int plane,
             s->m.first_slice_line = 0;
         }
 
-        ff_fix_long_p_mvs(&s->m);
+        ff_fix_long_p_mvs(&s->m, CANDIDATE_MB_TYPE_INTRA);
         ff_fix_long_mvs(&s->m, NULL, 0, s->m.p_mv_table, s->m.f_code,
                         CANDIDATE_MB_TYPE_INTER, 0);
     }
