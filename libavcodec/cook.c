@@ -1217,6 +1217,15 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             return AVERROR_PATCHWELCOME;
         }
     }
+
+    /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
+    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
+        q->samples_per_channel != 1024) {
+        avpriv_request_sample(avctx, "samples_per_channel = %d",
+                              q->samples_per_channel);
+        return AVERROR_PATCHWELCOME;
+    }
+
     /* Generate tables */
     init_pow2table();
     init_gain_table(q);
@@ -1250,14 +1259,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         q->imlt_window     = imlt_window_float;
         q->interpolate     = interpolate_float;
         q->saturate_output = saturate_output_float;
-    }
-
-    /* Try to catch some obviously faulty streams, otherwise it might be exploitable */
-    if (q->samples_per_channel != 256 && q->samples_per_channel != 512 &&
-        q->samples_per_channel != 1024) {
-        avpriv_request_sample(avctx, "samples_per_channel = %d",
-                              q->samples_per_channel);
-        return AVERROR_PATCHWELCOME;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
