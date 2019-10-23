@@ -122,7 +122,7 @@ static int aiff_write_header(AVFormatContext *s)
 
     /* First verify if format is ok */
     if (!par->codec_tag)
-        return -1;
+        return AVERROR(EINVAL);
     if (par->codec_tag != MKTAG('N','O','N','E'))
         aifc = 1;
 
@@ -135,7 +135,7 @@ static int aiff_write_header(AVFormatContext *s)
     if (aifc) { // compressed audio
         if (!par->block_align) {
             av_log(s, AV_LOG_ERROR, "block align not set\n");
-            return -1;
+            return AVERROR(EINVAL);
         }
         /* Version chunk */
         ffio_wfourcc(pb, "FVER");
@@ -166,7 +166,7 @@ static int aiff_write_header(AVFormatContext *s)
         par->bits_per_coded_sample = av_get_bits_per_sample(par->codec_id);
     if (!par->bits_per_coded_sample) {
         av_log(s, AV_LOG_ERROR, "could not compute bits per sample\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (!par->block_align)
         par->block_align = (par->bits_per_coded_sample * par->channels) >> 3;
