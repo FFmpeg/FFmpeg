@@ -251,7 +251,6 @@ static int apng_write_trailer(AVFormatContext *format_context)
 
     if (apng->prev_packet) {
         ret = flush_packet(format_context, NULL);
-        av_freep(&apng->prev_packet);
         if (ret < 0)
             return ret;
     }
@@ -266,10 +265,16 @@ static int apng_write_trailer(AVFormatContext *format_context)
         apng_write_chunk(io_context, MKBETAG('a', 'c', 'T', 'L'), buf, 8);
     }
 
-    av_freep(&apng->extra_data);
-    apng->extra_data = 0;
-
     return 0;
+}
+
+static void apng_deinit(AVFormatContext *s)
+{
+    APNGMuxContext *apng = s->priv_data;
+
+    av_packet_free(&apng->prev_packet);
+    av_freep(&apng->extra_data);
+    apng->extra_data_size = 0;
 }
 
 #define OFFSET(x) offsetof(APNGMuxContext, x)
@@ -300,6 +305,7 @@ AVOutputFormat ff_apng_muxer = {
     .write_header   = apng_write_header,
     .write_packet   = apng_write_packet,
     .write_trailer  = apng_write_trailer,
+    .deinit         = apng_deinit,
     .priv_class     = &apng_muxer_class,
     .flags          = AVFMT_VARIABLE_FPS,
 };
