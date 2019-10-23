@@ -130,7 +130,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             ((uint32_t *)sub->rects[0]->data[1])[i] |= 0xff000000;
     } else {
         for (i = 0; i < sub->rects[0]->nb_colors; i++)
-            ((uint32_t *)sub->rects[0]->data[1])[i] |= *buf++ << 24;
+            ((uint32_t *)sub->rects[0]->data[1])[i] |= (unsigned)*buf++ << 24;
     }
 
 #if FF_API_AVPICTURE
