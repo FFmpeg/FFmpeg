@@ -1143,6 +1143,9 @@ static void decode_long_vertical_delta(uint8_t *dst,
                         x = bytestream2_get_be32(&dgb);
                     }
 
+                    if (ofsdst + (opcode - 1LL) * dstpitch > bytestream2_size_p(&pb))
+                        return;
+
                     while (opcode) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
                         if (h && (j == (ncolumns - 1))) {
@@ -1282,6 +1285,9 @@ static void decode_long_vertical_delta2(uint8_t *dst,
                         opcode = bytestream2_get_be32(&gb);
                         x = bytestream2_get_be32(&gb);
                     }
+
+                    if (ofsdst + (opcode - 1LL) * dstpitch > bytestream2_size_p(&pb))
+                        return;
 
                     while (opcode && bytestream2_get_bytes_left_p(&pb) > 1) {
                         bytestream2_seek_p(&pb, ofsdst, SEEK_SET);
