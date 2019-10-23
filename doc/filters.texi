@@ -20033,6 +20033,86 @@ If number of inputs is even number, than result will be mean value between two m
 Set which planes to filter. Default value is @code{15}, by which all planes are processed.
 @end table
 
+@section xfade
+
+Apply cross fade from one input video stream to another input video stream.
+The cross fade is applied for specified duration.
+
+The filter accepts the following options:
+
+@table @option
+@item transition
+Set one of available transition effects:
+
+@table @samp
+@item custom
+@item fade
+@item wipeleft
+@item wiperight
+@item wipeup
+@item wipedown
+@item slideleft
+@item slideright
+@item slideup
+@item slidedown
+@item circlecrop
+@item rectcrop
+@item distance
+@item fadeblack
+@item fadewhite
+@end table
+Default transition effect is fade.
+
+@item duration
+Set cross fade duration in seconds.
+Default duration is 1 second.
+
+@item offset
+Set cross fade start relative to first input stream.
+Default offset it 0.
+
+@item expr
+Set expression for custom transition effect.
+
+The expressions can use the following variables and functions:
+
+@table @option
+@item X
+@item Y
+The coordinates of the current sample.
+
+@item W
+@item H
+The width and height of the image.
+
+@item P
+Progress of transition effect.
+
+@item PLANE
+Currently processed plane.
+
+@item A
+Return value of first input at current location and plane.
+
+@item B
+Return value of second input at current location and plane.
+
+@item a0(x, y)
+@item a1(x, y)
+@item a2(x, y)
+@item a3(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the
+first/second/third/fourth component of first input.
+
+@item b0(x, y)
+@item b1(x, y)
+@item b2(x, y)
+@item b3(x, y)
+Return the value of the pixel at location (@var{x},@var{y}) of the
+first/second/third/fourth component of second input.
+@end table
+@end table
+
 @section xstack
 Stack video inputs into custom layout.
 

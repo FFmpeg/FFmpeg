@@ -441,6 +441,7 @@ OBJS-$(CONFIG_W3FDIF_FILTER)                 += vf_w3fdif.o
 OBJS-$(CONFIG_WAVEFORM_FILTER)               += vf_waveform.o
 OBJS-$(CONFIG_WEAVE_FILTER)                  += vf_weave.o
 OBJS-$(CONFIG_XBR_FILTER)                    += vf_xbr.o
+OBJS-$(CONFIG_XFADE_FILTER)                  += vf_xfade.o
 OBJS-$(CONFIG_XMEDIAN_FILTER)                += vf_xmedian.o framesync.o
 OBJS-$(CONFIG_XSTACK_FILTER)                 += vf_stack.o framesync.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o yadif_common.o
