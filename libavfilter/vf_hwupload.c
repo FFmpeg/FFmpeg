@@ -32,10 +32,11 @@ typedef struct HWUploadContext {
     const AVClass *class;
 
     AVBufferRef       *hwdevice_ref;
-    AVHWDeviceContext *hwdevice;
 
     AVBufferRef       *hwframes_ref;
     AVHWFramesContext *hwframes;
+
+    char *device_type;
 } HWUploadContext;
 
 static int hwupload_query_formats(AVFilterContext *avctx)
@@ -46,16 +47,26 @@ static int hwupload_query_formats(AVFilterContext *avctx)
     AVFilterFormats *input_formats = NULL;
     int err, i;
 
-    if (!avctx->hw_device_ctx) {
+    if (ctx->hwdevice_ref) {
+        /* We already have a specified device. */
+    } else if (avctx->hw_device_ctx) {
+        if (ctx->device_type) {
+            err = av_hwdevice_ctx_create_derived(
+                &ctx->hwdevice_ref,
+                av_hwdevice_find_type_by_name(ctx->device_type),
+                avctx->hw_device_ctx, 0);
+            if (err < 0)
+                return err;
+        } else {
+            ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
+            if (!ctx->hwdevice_ref)
+                return AVERROR(ENOMEM);
+        }
+    } else {
         av_log(ctx, AV_LOG_ERROR, "A hardware device reference is required "
                "to upload frames to.\n");
         return AVERROR(EINVAL);
     }
-
-    ctx->hwdevice_ref = av_buffer_ref(avctx->hw_device_ctx);
-    if (!ctx->hwdevice_ref)
-        return AVERROR(ENOMEM);
-    ctx->hwdevice = (AVHWDeviceContext*)ctx->hwdevice_ref->data;
 
     constraints = av_hwdevice_get_hwframe_constraints(ctx->hwdevice_ref, NULL);
     if (!constraints) {
@@ -127,7 +138,13 @@ static int hwupload_config_output(AVFilterLink *outlink)
            av_get_pix_fmt_name(inlink->format));
 
     ctx->hwframes->format    = outlink->format;
-    ctx->hwframes->sw_format = inlink->format;
+    if (inlink->hw_frames_ctx) {
+        AVHWFramesContext *in_hwframe_ctx =
+            (AVHWFramesContext*)inlink->hw_frames_ctx->data;
+        ctx->hwframes->sw_format = in_hwframe_ctx->sw_format;
+    } else {
+        ctx->hwframes->sw_format = inlink->format;
+    }
     ctx->hwframes->width     = inlink->w;
     ctx->hwframes->height    = inlink->h;
 
@@ -200,12 +217,20 @@ static av_cold void hwupload_uninit(AVFilterContext *avctx)
     av_buffer_unref(&ctx->hwdevice_ref);
 }
 
-static const AVClass hwupload_class = {
-    .class_name = "hwupload",
-    .item_name  = av_default_item_name,
-    .option     = NULL,
-    .version    = LIBAVUTIL_VERSION_INT,
+#define OFFSET(x) offsetof(HWUploadContext, x)
+#define FLAGS (AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM)
+static const AVOption hwupload_options[] = {
+    {
+        "derive_device", "Derive a new device of this type",
+        OFFSET(device_type), AV_OPT_TYPE_STRING,
+        { .str = NULL }, 0, 0, FLAGS
+    },
+    {
+        NULL
+    }
 };
+
+AVFILTER_DEFINE_CLASS(hwupload);
 
 static const AVFilterPad hwupload_inputs[] = {
     {

@@ -11981,7 +11981,18 @@ Upload system memory frames to hardware surfaces.
 
 The device to upload to must be supplied when the filter is initialised.  If
 using ffmpeg, select the appropriate device with the @option{-filter_hw_device}
-option.
+option or with the @option{derive_device} option.  The input and output devices
+must be of different types and compatible - the exact meaning of this is
+system-dependent, but typically it means that they must refer to the same
+underlying hardware context (for example, refer to the same graphics card).
+
+The following additional parameters are accepted:
+
+@table @option
+@item derive_device @var{type}
+Rather than using the device supplied at initialisation, instead derive a new
+device of type @var{type} from the device the input frames exist on.
+@end table
 
 @anchor{hwupload_cuda}
 @section hwupload_cuda
