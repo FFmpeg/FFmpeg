@@ -1075,6 +1075,9 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         return AVERROR_INVALIDDATA;
     }
 
+    if (avctx->block_align >= INT_MAX / 8)
+        return AVERROR(EINVAL);
+
     /* Initialize RNG. */
     av_lfg_init(&q->random_state, 0);
 
@@ -1233,10 +1236,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
     if ((ret = init_cook_vlc_tables(q)))
         return ret;
-
-
-    if (avctx->block_align >= UINT_MAX / 2)
-        return AVERROR(EINVAL);
 
     /* Pad the databuffer with:
        DECODE_BYTES_PAD1 or DECODE_BYTES_PAD2 for decode_bytes(),
