@@ -14299,7 +14299,7 @@ Set detection threshold factor. Default is 1.
 Lower is stricter.
 
 @item skip
-Set how many pixels to skip when sampling frames. Defalt is 1.
+Set how many pixels to skip when sampling frames. Default is 1.
 Allowed range is from 1 to 1024.
 
 @item bypass
