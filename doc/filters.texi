@@ -14857,6 +14857,9 @@ Maximum allowed value for each channel, and average over all
 channels.
 @end table
 
+@subsection Examples
+@itemize
+@item
 For example:
 @example
 movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
@@ -14866,6 +14869,13 @@ movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
 On this example the input file being processed is compared with the
 reference file @file{ref_movie.mpg}. The PSNR of each individual frame
 is stored in @file{stats.log}.
+
+@item
+Another example with different containers:
+@example
+ffmpeg -i main.mpg -i ref.mkv -lavfi  "[0:v]settb=1/AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=1/AVTB,setpts=PTS-STARTPTS[ref];[main][ref]psnr" -f null -
+@end example
+@end itemize
 
 @anchor{pullup}
 @section pullup
@@ -16908,6 +16918,9 @@ Same as above but in dB representation.
 
 This filter also supports the @ref{framesync} options.
 
+@subsection Examples
+@itemize
+@item
 For example:
 @example
 movie=ref_movie.mpg, setpts=PTS-STARTPTS [main];
@@ -16918,10 +16931,18 @@ On this example the input file being processed is compared with the
 reference file @file{ref_movie.mpg}. The SSIM of each individual frame
 is stored in @file{stats.log}.
 
+@item
 Another example with both psnr and ssim at same time:
 @example
 ffmpeg -i main.mpg -i ref.mpg -lavfi  "ssim;[0:v][1:v]psnr" -f null -
 @end example
+
+@item
+Another example with different containers:
+@example
+ffmpeg -i main.mpg -i ref.mkv -lavfi  "[0:v]settb=1/AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=1/AVTB,setpts=PTS-STARTPTS[ref];[main][ref]ssim" -f null -
+@end example
+@end itemize
 
 @section stereo3d
 
