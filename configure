@@ -2979,6 +2979,8 @@ vp9_nvdec_hwaccel_deps="nvdec"
 vp9_nvdec_hwaccel_select="vp9_decoder"
 vp9_vaapi_hwaccel_deps="vaapi VADecPictureParameterBufferVP9_bit_depth"
 vp9_vaapi_hwaccel_select="vp9_decoder"
+vp9_vdpau_hwaccel_deps="vdpau VdpPictureInfoVP9"
+vp9_vdpau_hwaccel_select="vp9_decoder"
 wmv3_d3d11va_hwaccel_select="vc1_d3d11va_hwaccel"
 wmv3_d3d11va2_hwaccel_select="vc1_d3d11va2_hwaccel"
 wmv3_dxva2_hwaccel_select="vc1_dxva2_hwaccel"
@@ -6093,6 +6095,7 @@ check_type "windows.h d3d11.h" "ID3D11VideoContext"
 check_type "d3d9.h dxva2api.h" DXVA2_ConfigPictureDecode -D_WIN32_WINNT=0x0602
 
 check_type "vdpau/vdpau.h" "VdpPictureInfoHEVC"
+check_type "vdpau/vdpau.h" "VdpPictureInfoVP9"
 
 if [ -z "$nvccflags" ]; then
     nvccflags=$nvccflags_default

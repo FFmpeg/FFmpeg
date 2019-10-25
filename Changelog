@@ -18,6 +18,7 @@ version <next>:
 - arnndn filter
 - bilateral filter
 - maskedmin and maskedmax filters
+- VDPAU VP9 hwaccel
 
 
 version 4.2:

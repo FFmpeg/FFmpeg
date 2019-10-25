@@ -54,6 +54,9 @@ union VDPAUPictureInfo {
 #ifdef VDP_YCBCR_FORMAT_Y_U_V_444
     VdpPictureInfoHEVC444     hevc_444;
 #endif
+#ifdef VDP_DECODER_PROFILE_VP9_PROFILE_0
+    VdpPictureInfoVP9        vp9;
+#endif
 };
 
 typedef struct VDPAUHWContext {
