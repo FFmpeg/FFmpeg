@@ -22,7 +22,6 @@
 #include "libavutil/avassert.h"
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
-#include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 #include "avlanguage.h"
