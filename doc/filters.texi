@@ -12264,6 +12264,9 @@ Enables confidence interval.
 
 This filter also supports the @ref{framesync} options.
 
+@subsection Examples
+@itemize
+@item
 On the below examples the input file @file{main.mpg} being processed is
 compared with the reference file @file{ref.mpg}.
 
@@ -12271,10 +12274,18 @@ compared with the reference file @file{ref.mpg}.
 ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf -f null -
 @end example
 
+@item
 Example with options:
 @example
 ffmpeg -i main.mpg -i ref.mpg -lavfi libvmaf="psnr=1:log_fmt=json" -f null -
 @end example
+
+@item
+Example with options and different containers:
+@example
+ffmpeg -i main.mpg -i ref.mkv -lavfi "[0:v]settb=1/AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=1/AVTB,setpts=PTS-STARTPTS[ref];[main][ref]libvmaf=psnr=1:log_fmt=json" -f null -
+@end example
+@end itemize
 
 @section limiter
 
