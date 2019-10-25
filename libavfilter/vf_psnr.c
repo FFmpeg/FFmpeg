@@ -350,6 +350,14 @@ static int config_output(AVFilterLink *outlink)
     if ((ret = ff_framesync_configure(&s->fs)) < 0)
         return ret;
 
+    outlink->time_base = s->fs.time_base;
+
+    if (av_cmp_q(mainlink->time_base, outlink->time_base) &&
+        av_cmp_q(ctx->inputs[1]->time_base, outlink->time_base))
+        av_log(ctx, AV_LOG_WARNING, "not matching timebases found between first input: %d/%d and second input %d/%d, results may be incorrect!\n",
+               mainlink->time_base.num, mainlink->time_base.den,
+               ctx->inputs[1]->time_base.num, ctx->inputs[1]->time_base.den);
+
     return 0;
 }
 
