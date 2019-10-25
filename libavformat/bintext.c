@@ -149,7 +149,7 @@ static int bin_probe(const AVProbeData *p)
             return AVPROBE_SCORE_EXTENSION + 1;
 
         predict_width(&par, p->buf_size, got_width);
-        if (par.width <= 0)
+        if (par.width < 8)
             return 0;
         calculate_height(&par, p->buf_size);
         if (par.height <= 0)
@@ -195,6 +195,8 @@ static int bintext_read_header(AVFormatContext *s)
             next_tag_read(s, &bin->fsize);
         if (!bin->width) {
             predict_width(st->codecpar, bin->fsize, got_width);
+            if (st->codecpar->width < 8)
+                return AVERROR_INVALIDDATA;
             calculate_height(st->codecpar, bin->fsize);
         }
         avio_seek(pb, 0, SEEK_SET);
