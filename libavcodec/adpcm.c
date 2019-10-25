@@ -277,7 +277,7 @@ static inline short adpcm_ima_oki_expand_nibble(ADPCMChannelStatus *c, int nibbl
     c->predictor = av_clip_intp2(predictor, 11);
     c->step_index = step_index;
 
-    return c->predictor << 4;
+    return c->predictor * 16;
 }
 
 static inline short adpcm_ct_expand_nibble(ADPCMChannelStatus *c, char nibble)
