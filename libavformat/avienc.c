@@ -31,7 +31,6 @@
 #include "libavutil/avstring.h"
 #include "libavutil/avutil.h"
 #include "libavutil/internal.h"
-#include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "libavutil/avassert.h"
 #include "libavutil/timestamp.h"
