@@ -529,7 +529,7 @@ static int decode_block(InterplayACMContext *s)
 
     for (i = 1, x = -val; i <= count; i++) {
         s->midbuf[-i] = x;
-        x -= val;
+        x -= (unsigned)val;
     }
 
     ret = fill_block(s);
