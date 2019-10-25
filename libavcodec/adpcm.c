@@ -342,7 +342,7 @@ static inline int16_t adpcm_ima_oki_expand_nibble(ADPCMChannelStatus *c, int nib
     c->predictor = av_clip_intp2(predictor, 11);
     c->step_index = step_index;
 
-    return c->predictor << 4;
+    return c->predictor * 16;
 }
 
 static inline int16_t adpcm_ct_expand_nibble(ADPCMChannelStatus *c, int8_t nibble)
