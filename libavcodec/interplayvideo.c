@@ -77,9 +77,14 @@ typedef struct IpvideoContext {
 
 static int copy_from(IpvideoContext *s, AVFrame *src, AVFrame *dst, int delta_x, int delta_y)
 {
+    int width = dst->width;
     int current_offset = s->pixel_ptr - dst->data[0];
-    int motion_offset = current_offset + delta_y * dst->linesize[0]
-                       + delta_x * (1 + s->is_16bpp);
+    int x = (current_offset % dst->linesize[0]) / (1 + s->is_16bpp);
+    int y = current_offset / dst->linesize[0];
+    int dx = delta_x + x - ((delta_x + x >= width) - (delta_x + x < 0)) * width;
+    int dy = delta_y + y + (delta_x + x >= width) - (delta_x + x < 0);
+    int motion_offset = dy * src->linesize[0] + dx * (1 + s->is_16bpp);
+
     if (motion_offset < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "motion offset < 0 (%d)\n", motion_offset);
         return AVERROR_INVALIDDATA;
@@ -931,12 +936,12 @@ static void ipvideo_format_06_secondpass(IpvideoContext *s, AVFrame *frame, int1
     int off_x, off_y;
 
     if (opcode < 0) {
-        off_x = ((uint16_t)opcode - 0xC000) % frame->linesize[0];
-        off_y = ((uint16_t)opcode - 0xC000) / frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0xC000) % frame->width;
+        off_y = ((uint16_t)opcode - 0xC000) / frame->width;
         copy_from(s, s->last_frame, frame, off_x, off_y);
     } else if (opcode > 0) {
-        off_x = ((uint16_t)opcode - 0x4000) % frame->linesize[0];
-        off_y = ((uint16_t)opcode - 0x4000) / frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0x4000) % frame->width;
+        off_y = ((uint16_t)opcode - 0x4000) / frame->width;
         copy_from(s, frame, frame, off_x, off_y);
     }
 }
@@ -1001,12 +1006,12 @@ static void ipvideo_format_10_secondpass(IpvideoContext *s, AVFrame *frame, int1
     int off_x, off_y;
 
     if (opcode < 0) {
-        off_x = ((uint16_t)opcode - 0xC000) % s->cur_decode_frame->linesize[0];
-        off_y = ((uint16_t)opcode - 0xC000) / s->cur_decode_frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0xC000) % s->cur_decode_frame->width;
+        off_y = ((uint16_t)opcode - 0xC000) / s->cur_decode_frame->width;
         copy_from(s, s->prev_decode_frame, s->cur_decode_frame, off_x, off_y);
     } else if (opcode > 0) {
-        off_x = ((uint16_t)opcode - 0x4000) % s->cur_decode_frame->linesize[0];
-        off_y = ((uint16_t)opcode - 0x4000) / s->cur_decode_frame->linesize[0];
+        off_x = ((uint16_t)opcode - 0x4000) % s->cur_decode_frame->width;
+        off_y = ((uint16_t)opcode - 0x4000) / s->cur_decode_frame->width;
         copy_from(s, s->cur_decode_frame, s->cur_decode_frame, off_x, off_y);
     }
 }
