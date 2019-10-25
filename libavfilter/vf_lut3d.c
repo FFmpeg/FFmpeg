@@ -55,7 +55,7 @@ struct rgbvec {
 
 /* 3D LUT don't often go up to level 32, but it is common to have a Hald CLUT
  * of 512x512 (64x64x64) */
-#define MAX_LEVEL 128
+#define MAX_LEVEL 256
 
 typedef struct LUT3DContext {
     const AVClass *class;
