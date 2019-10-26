@@ -443,7 +443,7 @@ static inline int GET_TOK(TM2Context *ctx,int type)
     clast = ctx->clast + bx * 4;
 
 #define TM2_INIT_POINTERS_2() \
-    int *Yo, *Uo, *Vo;\
+    unsigned *Yo, *Uo, *Vo;\
     int oYstride, oUstride, oVstride;\
 \
     TM2_INIT_POINTERS();\
@@ -616,7 +616,7 @@ static inline void tm2_null_res_block(TM2Context *ctx, AVFrame *pic, int bx, int
     for (i = 0; i < 16; i++)
         deltas[i] = 0;
 
-    ct = ctx->D[0] + ctx->D[1] + ctx->D[2] + ctx->D[3];
+    ct = (unsigned)ctx->D[0] + ctx->D[1] + ctx->D[2] + ctx->D[3];
 
     if (bx > 0)
         left = last[-1] - (unsigned)ct;
@@ -687,8 +687,8 @@ static inline void tm2_update_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     /* update chroma */
     for (j = 0; j < 2; j++) {
         for (i = 0; i < 2; i++) {
-            U[i] = Uo[i] + (unsigned)GET_TOK(ctx, TM2_UPD);
-            V[i] = Vo[i] + (unsigned)GET_TOK(ctx, TM2_UPD);
+            U[i] = Uo[i] + GET_TOK(ctx, TM2_UPD);
+            V[i] = Vo[i] + GET_TOK(ctx, TM2_UPD);
         }
         U  += Ustride;
         V  += Vstride;
@@ -701,10 +701,10 @@ static inline void tm2_update_block(TM2Context *ctx, AVFrame *pic, int bx, int b
     TM2_RECALC_BLOCK(V, Vstride, (clast + 2), (ctx->CD + 2));
 
     /* update deltas */
-    ctx->D[0] = (unsigned)Yo[3] - last[3];
-    ctx->D[1] = (unsigned)Yo[3 + oYstride] - Yo[3];
-    ctx->D[2] = (unsigned)Yo[3 + oYstride * 2] - Yo[3 + oYstride];
-    ctx->D[3] = (unsigned)Yo[3 + oYstride * 3] - Yo[3 + oYstride * 2];
+    ctx->D[0] = Yo[3] - last[3];
+    ctx->D[1] = Yo[3 + oYstride] - Yo[3];
+    ctx->D[2] = Yo[3 + oYstride * 2] - Yo[3 + oYstride];
+    ctx->D[3] = Yo[3 + oYstride * 3] - Yo[3 + oYstride * 2];
 
     for (j = 0; j < 4; j++) {
         d = last[3];
