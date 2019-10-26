@@ -677,7 +677,7 @@ static int estimate_sid_gain(G723_1_ChannelContext *p)
             if (p->sid_gain < 0) t = INT32_MIN;
             else                 t = INT32_MAX;
         } else
-            t = p->sid_gain << shift;
+            t = p->sid_gain * (1 << shift);
     } else if(shift < -31) {
         t = (p->sid_gain < 0) ? -1 : 0;
     }else
