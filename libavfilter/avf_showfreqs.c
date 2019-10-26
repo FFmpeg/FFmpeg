@@ -475,6 +475,7 @@ static int activate(AVFilterContext *ctx)
         av_audio_fifo_write(s->fifo, (void **)in->extended_data, in->nb_samples);
         if (s->pts == AV_NOPTS_VALUE)
             s->pts = in->pts;
+        av_frame_free(&in);
     }
 
     if (av_audio_fifo_size(s->fifo) >= s->win_size) {
