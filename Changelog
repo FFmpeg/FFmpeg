@@ -20,6 +20,7 @@ version <next>:
 - maskedmin and maskedmax filters
 - VDPAU VP9 hwaccel
 - median filter
+- QSV-accelerated VP9 encoding
 
 
 version 4.2:

@@ -784,6 +784,7 @@ extern AVCodec ff_vp9_cuvid_decoder;
 extern AVCodec ff_vp9_mediacodec_decoder;
 extern AVCodec ff_vp9_qsv_decoder;
 extern AVCodec ff_vp9_vaapi_encoder;
+extern AVCodec ff_vp9_qsv_encoder;
 
 // The iterate API is not usable with ossfuzz due to the excessive size of binaries created
 #if CONFIG_OSSFUZZ
