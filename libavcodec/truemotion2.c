@@ -581,10 +581,10 @@ static inline void tm2_low_res_block(TM2Context *ctx, AVFrame *pic, int bx, int 
     deltas[10] = GET_TOK(ctx, TM2_L_LO);
 
     if (bx > 0)
-        last[0] = (last[-1] - ctx->D[0] - ctx->D[1] - ctx->D[2] - ctx->D[3] + last[1]) >> 1;
+        last[0] = (int)((unsigned)last[-1] - ctx->D[0] - ctx->D[1] - ctx->D[2] - ctx->D[3] + last[1]) >> 1;
     else
-        last[0] = (last[1]  - ctx->D[0] - ctx->D[1] - ctx->D[2] - ctx->D[3])>> 1;
-    last[2] = (last[1] + last[3]) >> 1;
+        last[0] = (int)((unsigned)last[1]  - ctx->D[0] - ctx->D[1] - ctx->D[2] - ctx->D[3])>> 1;
+    last[2] = (int)((unsigned)last[1] + last[3]) >> 1;
 
     t1 = ctx->D[0] + ctx->D[1];
     ctx->D[0] = t1 >> 1;
