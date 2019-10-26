@@ -280,7 +280,7 @@ AVFilter ff_vsrc_color = {
 #if CONFIG_HALDCLUTSRC_FILTER
 
 static const AVOption haldclutsrc_options[] = {
-    { "level", "set level", OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 6}, 2, 8, FLAGS },
+    { "level", "set level", OFFSET(level), AV_OPT_TYPE_INT, {.i64 = 6}, 2, 16, FLAGS },
     COMMON_OPTIONS_NOSIZE
     { NULL }
 };
