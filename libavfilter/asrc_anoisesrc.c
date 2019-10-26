@@ -30,7 +30,7 @@ typedef struct ANoiseSrcContext {
     int sample_rate;
     double amplitude;
     int64_t duration;
-    int64_t color;
+    int color;
     int64_t seed;
     int nb_samples;
 
