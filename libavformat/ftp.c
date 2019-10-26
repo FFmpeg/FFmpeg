@@ -69,6 +69,8 @@ typedef struct {
     size_t dir_buffer_size;
     size_t dir_buffer_offset;
     int utf8;
+    const char *option_user;                     /**< User to be used if none given in the URL */
+    const char *option_password;                 /**< Password to be used if none given in the URL */
 } FTPContext;
 
 #define OFFSET(x) offsetof(FTPContext, x)
@@ -78,6 +80,8 @@ static const AVOption options[] = {
     {"timeout", "set timeout of socket I/O operations", OFFSET(rw_timeout), AV_OPT_TYPE_INT, {.i64 = -1}, -1, INT_MAX, D|E },
     {"ftp-write-seekable", "control seekability of connection during encoding", OFFSET(write_seekable), AV_OPT_TYPE_BOOL, {.i64 = 0}, 0, 1, E },
     {"ftp-anonymous-password", "password for anonymous login. E-mail address should be used.", OFFSET(anonymous_password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"ftp-user", "user for FTP login. Overridden by whatever is in the URL.", OFFSET(option_user), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+    {"ftp-password", "password for FTP login. Overridden by whatever is in the URL.", OFFSET(option_password), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
     {NULL}
 };
 
@@ -652,7 +656,7 @@ static int ftp_abort(URLContext *h)
 
 static int ftp_connect(URLContext *h, const char *url)
 {
-    char proto[10], path[MAX_URL_SIZE], credencials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
+    char proto[10], path[MAX_URL_SIZE], credentials[MAX_URL_SIZE], hostname[MAX_URL_SIZE];
     const char *tok_user = NULL, *tok_pass = NULL;
     char *end = NULL, *newpath = NULL;
     int err;
@@ -665,17 +669,24 @@ static int ftp_connect(URLContext *h, const char *url)
     s->features = NULL;
 
     av_url_split(proto, sizeof(proto),
-                 credencials, sizeof(credencials),
+                 credentials, sizeof(credentials),
                  hostname, sizeof(hostname),
                  &s->server_control_port,
                  path, sizeof(path),
                  url);
 
-    tok_user = av_strtok(credencials, ":", &end);
+    tok_user = av_strtok(credentials, ":", &end);
     tok_pass = av_strtok(end, ":", &end);
     if (!tok_user) {
-        tok_user = "anonymous";
-        tok_pass = av_x_if_null(s->anonymous_password, "nopassword");
+        if (!s->option_user) {
+            tok_user = "anonymous";
+            tok_pass = av_x_if_null(s->anonymous_password, "nopassword");
+        } else {
+            tok_user = s->option_user;
+        }
+    }
+    if (!tok_pass) {
+        tok_pass = s->option_password;
     }
     s->user = av_strdup(tok_user);
     s->password = av_strdup(tok_pass);

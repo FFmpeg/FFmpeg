@@ -228,6 +228,14 @@ Set timeout in microseconds of socket I/O operations used by the underlying low 
 operation. By default it is set to -1, which means that the timeout is
 not specified.
 
+@item ftp-user
+Set a user to be used for authenticating to the FTP server. This is overridden by the
+user in the FTP URL.
+
+@item ftp-password
+Set a password to be used for authenticating to the FTP server. This is overridden by
+the password in the FTP URL, or by @option{ftp-anonymous-password} if no user is set.
+
 @item ftp-anonymous-password
 Password used when login as anonymous user. Typically an e-mail address
 should be used.
