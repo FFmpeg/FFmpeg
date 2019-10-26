@@ -1240,6 +1240,11 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
         case TIFF_RATIONAL:
             value  = ff_tget(&s->gb, TIFF_LONG, s->le);
             value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+            if (!value2) {
+                av_log(s->avctx, AV_LOG_ERROR, "Invalid denominator in rational\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             break;
         case TIFF_STRING:
             if (count <= 4) {
@@ -1413,6 +1418,10 @@ static int tiff_decode_tag(TiffContext *s, AVFrame *frame)
             if (type == TIFF_RATIONAL) {
                 value  = ff_tget(&s->gb, TIFF_LONG, s->le);
                 value2 = ff_tget(&s->gb, TIFF_LONG, s->le);
+                if (!value2) {
+                    av_log(s->avctx, AV_LOG_ERROR, "Invalid black level denominator\n");
+                    return AVERROR_INVALIDDATA;
+                }
 
                 s->black_level = value / value2;
             } else
