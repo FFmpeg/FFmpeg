@@ -1516,7 +1516,7 @@ static int ape_decode_frame(AVCodecContext *avctx, void *data,
     av_fast_malloc(&s->decoded_buffer, &s->decoded_size, decoded_buffer_size);
     if (!s->decoded_buffer)
         return AVERROR(ENOMEM);
-    memset(s->decoded_buffer, 0, s->decoded_size);
+    memset(s->decoded_buffer, 0, decoded_buffer_size);
     s->decoded[0] = s->decoded_buffer;
     s->decoded[1] = s->decoded_buffer + FFALIGN(blockstodecode, 8);
 
