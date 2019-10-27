@@ -321,39 +321,39 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 
     ret = nvenc_check_codec_support(avctx);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "Codec not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "Codec not supported\n");
         return ret;
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_YUV444_ENCODE);
     if (IS_YUV444(ctx->data_pix_fmt) && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "YUV444P not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "YUV444P not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_LOSSLESS_ENCODE);
     if (ctx->preset >= PRESET_LOSSLESS_DEFAULT && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "Lossless encoding not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "Lossless encoding not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_WIDTH_MAX);
     if (ret < avctx->width) {
-        av_log(avctx, AV_LOG_VERBOSE, "Width %d exceeds %d\n",
+        av_log(avctx, AV_LOG_WARNING, "Width %d exceeds %d\n",
                avctx->width, ret);
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_HEIGHT_MAX);
     if (ret < avctx->height) {
-        av_log(avctx, AV_LOG_VERBOSE, "Height %d exceeds %d\n",
+        av_log(avctx, AV_LOG_WARNING, "Height %d exceeds %d\n",
                avctx->height, ret);
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_NUM_MAX_BFRAMES);
     if (ret < avctx->max_b_frames) {
-        av_log(avctx, AV_LOG_VERBOSE, "Max B-frames %d exceed %d\n",
+        av_log(avctx, AV_LOG_WARNING, "Max B-frames %d exceed %d\n",
                avctx->max_b_frames, ret);
 
         return AVERROR(ENOSYS);
@@ -361,7 +361,7 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_FIELD_ENCODING);
     if (ret < 1 && avctx->flags & AV_CODEC_FLAG_INTERLACED_DCT) {
-        av_log(avctx, AV_LOG_VERBOSE,
+        av_log(avctx, AV_LOG_WARNING,
                "Interlaced encoding is not supported. Supported level: %d\n",
                ret);
         return AVERROR(ENOSYS);
@@ -369,46 +369,46 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_10BIT_ENCODE);
     if (IS_10BIT(ctx->data_pix_fmt) && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "10 bit encode not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "10 bit encode not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_LOOKAHEAD);
     if (ctx->rc_lookahead > 0 && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "RC lookahead not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "RC lookahead not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_TEMPORAL_AQ);
     if (ctx->temporal_aq > 0 && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "Temporal AQ not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "Temporal AQ not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_WEIGHTED_PREDICTION);
     if (ctx->weighted_pred > 0 && ret <= 0) {
-        av_log (avctx, AV_LOG_VERBOSE, "Weighted Prediction not supported\n");
+        av_log (avctx, AV_LOG_WARNING, "Weighted Prediction not supported\n");
         return AVERROR(ENOSYS);
     }
 
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_CABAC);
     if (ctx->coder == NV_ENC_H264_ENTROPY_CODING_MODE_CABAC && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "CABAC entropy coding not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "CABAC entropy coding not supported\n");
         return AVERROR(ENOSYS);
     }
 
 #ifdef NVENC_HAVE_BFRAME_REF_MODE
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_BFRAME_REF_MODE);
     if (ctx->b_ref_mode == NV_ENC_BFRAME_REF_MODE_EACH && ret != 1) {
-        av_log(avctx, AV_LOG_VERBOSE, "Each B frame as reference is not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "Each B frame as reference is not supported\n");
         return AVERROR(ENOSYS);
     } else if (ctx->b_ref_mode != NV_ENC_BFRAME_REF_MODE_DISABLED && ret == 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "B frames as references are not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "B frames as references are not supported\n");
         return AVERROR(ENOSYS);
     }
 #else
     if (ctx->b_ref_mode != 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "B frames as references need SDK 8.1 at build time\n");
+        av_log(avctx, AV_LOG_WARNING, "B frames as references need SDK 8.1 at build time\n");
         return AVERROR(ENOSYS);
     }
 #endif
@@ -416,12 +416,12 @@ static int nvenc_check_capabilities(AVCodecContext *avctx)
 #ifdef NVENC_HAVE_MULTIPLE_REF_FRAMES
     ret = nvenc_check_cap(avctx, NV_ENC_CAPS_SUPPORT_MULTIPLE_REF_FRAMES);
     if(avctx->refs != NV_ENC_NUM_REF_FRAMES_AUTOSELECT && ret <= 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "Multiple reference frames are not supported\n");
+        av_log(avctx, AV_LOG_WARNING, "Multiple reference frames are not supported by the device\n");
         return AVERROR(ENOSYS);
     }
 #else
     if(avctx->refs != 0) {
-        av_log(avctx, AV_LOG_VERBOSE, "Multiple reference frames need SDK 9.1 at build time\n");
+        av_log(avctx, AV_LOG_WARNING, "Multiple reference frames need SDK 9.1 at build time\n");
         return AVERROR(ENOSYS);
     }
 #endif
@@ -601,7 +601,7 @@ static av_cold int nvenc_setup_device(AVCodecContext *avctx)
             return AVERROR_EXIT;
 
         if (!dl_fn->nvenc_device_count) {
-            av_log(avctx, AV_LOG_FATAL, "No NVENC capable devices found\n");
+            av_log(avctx, AV_LOG_FATAL, "No capable devices found\n");
             return AVERROR_EXTERNAL;
         }
 
