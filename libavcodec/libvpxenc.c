@@ -1326,7 +1326,7 @@ static int vpx_encode(AVCodecContext *avctx, AVPacket *pkt,
             rawimg_alpha->planes[VPX_PLANE_U] = u_plane;
             memset(v_plane, 0x80, frame->linesize[2] * frame->height);
             rawimg_alpha->planes[VPX_PLANE_V] = v_plane;
-            rawimg_alpha->stride[VPX_PLANE_Y] = frame->linesize[0];
+            rawimg_alpha->stride[VPX_PLANE_Y] = frame->linesize[3];
             rawimg_alpha->stride[VPX_PLANE_U] = frame->linesize[1];
             rawimg_alpha->stride[VPX_PLANE_V] = frame->linesize[2];
         }
