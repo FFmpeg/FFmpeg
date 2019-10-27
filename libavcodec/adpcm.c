@@ -1723,7 +1723,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
                     else
                         sampledat = sign_extend(byte >> 4, 4);
 
-                    sampledat = (((sampledat << 12) >> (header & 0xf)) << 6) + prev;
+                    sampledat = ((sampledat * (1 << 12)) >> (header & 0xf)) * (1 << 6) + prev;
                     *samples++ = av_clip_int16(sampledat >> 6);
                     c->status[channel].sample2 = c->status[channel].sample1;
                     c->status[channel].sample1 = sampledat;
