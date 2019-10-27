@@ -88,6 +88,7 @@ extern AVFilter ff_af_bandreject;
 extern AVFilter ff_af_bass;
 extern AVFilter ff_af_biquad;
 extern AVFilter ff_af_bs2b;
+extern AVFilter ff_vf_chromaber_vulkan;
 extern AVFilter ff_af_channelmap;
 extern AVFilter ff_af_channelsplit;
 extern AVFilter ff_af_chorus;
