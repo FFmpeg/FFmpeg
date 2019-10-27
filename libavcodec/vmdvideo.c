@@ -226,7 +226,7 @@ static int vmd_decode(VmdVideoContext *s, AVFrame *frame)
         frame_y + frame_height > s->avctx->height) {
         av_log(s->avctx, AV_LOG_ERROR,
                "Invalid vertical range %d-%d\n",
-               frame_x, frame_width);
+               frame_y, frame_height);
         return AVERROR_INVALIDDATA;
     }
 
