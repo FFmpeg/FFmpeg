@@ -191,7 +191,7 @@ static int vpx_decode(AVCodecContext *avctx,
     side_data = av_packet_get_side_data(avpkt,
                                         AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         &side_data_size);
-    if (side_data_size > 1) {
+    if (side_data_size >= 8) {
         const uint64_t additional_id = AV_RB64(side_data);
         side_data += 8;
         side_data_size -= 8;
