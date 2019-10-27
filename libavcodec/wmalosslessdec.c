@@ -766,7 +766,7 @@ static void revert_cdlms ## bits (WmallDecodeCtx *s, int ch, \
     for (ilms = num_lms - 1; ilms >= 0; ilms--) { \
         for (icoef = coef_begin; icoef < coef_end; icoef++) { \
             int##bits##_t *prevvalues = (int##bits##_t *)s->cdlms[ch][ilms].lms_prevvalues; \
-            pred = 1 << (s->cdlms[ch][ilms].scaling - 1); \
+            pred = (1 << s->cdlms[ch][ilms].scaling) >> 1; \
             residue = s->channel_residues[ch][icoef]; \
             pred += s->dsp.scalarproduct_and_madd_int## bits (s->cdlms[ch][ilms].coefs, \
                                                         prevvalues + s->cdlms[ch][ilms].recent, \
@@ -987,9 +987,9 @@ static int decode_subframe(WmallDecodeCtx *s)
 
         for (j = 0; j < subframe_len; j++) {
             if (s->bits_per_sample == 16) {
-                *s->samples_16[c]++ = (int16_t) s->channel_residues[c][j] << padding_zeroes;
+                *s->samples_16[c]++ = (int16_t) s->channel_residues[c][j] * (1 << padding_zeroes);
             } else {
-                *s->samples_32[c]++ = s->channel_residues[c][j] << (padding_zeroes + 8);
+                *s->samples_32[c]++ = s->channel_residues[c][j] * (256 << padding_zeroes);
             }
         }
     }
