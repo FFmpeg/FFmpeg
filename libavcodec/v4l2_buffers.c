@@ -511,11 +511,9 @@ int ff_v4l2_buffer_initialize(V4L2Buffer* avbuf, int index)
 
     if (V4L2_TYPE_IS_MULTIPLANAR(ctx->type)) {
         avbuf->num_planes = 0;
-        for (;;) {
-            /* in MP, the V4L2 API states that buf.length means num_planes */
-            if (avbuf->num_planes >= avbuf->buf.length)
-                break;
-            if (avbuf->buf.m.planes[avbuf->num_planes].length)
+        /* in MP, the V4L2 API states that buf.length means num_planes */
+        for (i = 0; i < avbuf->buf.length; i++) {
+            if (avbuf->buf.m.planes[i].length)
                 avbuf->num_planes++;
         }
     } else
