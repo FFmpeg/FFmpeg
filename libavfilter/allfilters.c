@@ -528,7 +528,7 @@ const AVFilter *avfilter_get_by_name(const char *name)
 
     while ((f = av_filter_iterate(&opaque)))
         if (!strcmp(f->name, name))
-            return (AVFilter *)f;
+            return f;
 
     return NULL;
 }
