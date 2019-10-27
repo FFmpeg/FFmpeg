@@ -154,6 +154,7 @@ extern AVFilter ff_vf_ass;
 extern AVFilter ff_vf_atadenoise;
 extern AVFilter ff_vf_avgblur;
 extern AVFilter ff_vf_avgblur_opencl;
+extern AVFilter ff_vf_avgblur_vulkan;
 extern AVFilter ff_vf_bbox;
 extern AVFilter ff_vf_bench;
 extern AVFilter ff_vf_bilateral;
