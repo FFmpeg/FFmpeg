@@ -283,6 +283,17 @@ static int vpx_decode(AVCodecContext *avctx,
                 return ret;
         }
 
+        if (ctx->has_alpha_channel &&
+            (img->d_w != img_alpha->d_w ||
+             img->d_h != img_alpha->d_h ||
+             img->bit_depth != img_alpha->bit_depth)) {
+            av_log(avctx, AV_LOG_ERROR,
+                   "Video dimensions %dx%d@%dbpp differ from alpha dimensions %dx%d@%dbpp\n",
+                   img->d_w, img->d_h, img->bit_depth,
+                   img_alpha->d_w, img_alpha->d_h, img_alpha->bit_depth);
+            return AVERROR_INVALIDDATA;
+        }
+
         planes[0] = img->planes[VPX_PLANE_Y];
         planes[1] = img->planes[VPX_PLANE_U];
         planes[2] = img->planes[VPX_PLANE_V];
