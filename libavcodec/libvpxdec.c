@@ -25,6 +25,7 @@
 
 #define VPX_CODEC_DISABLE_COMPAT 1
 #include <vpx/vpx_decoder.h>
+#include <vpx/vpx_frame_buffer.h>
 #include <vpx/vp8dx.h>
 
 #include "libavutil/common.h"
@@ -38,8 +39,45 @@
 typedef struct VPxDecoderContext {
     struct vpx_codec_ctx decoder;
     struct vpx_codec_ctx decoder_alpha;
+    AVBufferPool *pool;
+    size_t pool_size;
     int has_alpha_channel;
 } VPxContext;
+
+
+static int get_frame_buffer(void *priv, size_t min_size, vpx_codec_frame_buffer_t *fb)
+{
+    VPxContext *ctx = priv;
+    AVBufferRef *buf;
+
+    if (min_size > ctx->pool_size) {
+        av_buffer_pool_uninit(&ctx->pool);
+        /* According to the libvpx docs the buffer must be zeroed out. */
+        ctx->pool = av_buffer_pool_init(min_size, av_buffer_allocz);
+        if (!ctx->pool) {
+            ctx->pool_size = 0;
+            return AVERROR(ENOMEM);
+        }
+        ctx->pool_size = min_size;
+    }
+
+    buf = av_buffer_pool_get(ctx->pool);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    fb->priv = buf;
+    fb->size = ctx->pool_size;
+    fb->data = buf->data;
+
+    return 0;
+}
+
+static int release_frame_buffer(void *priv, vpx_codec_frame_buffer_t *fb)
+{
+    AVBufferRef *buf = fb->priv;
+    av_buffer_unref(&buf);
+    return 0;
+}
 
 static av_cold int vpx_init(AVCodecContext *avctx,
                             struct vpx_codec_ctx* decoder,
@@ -58,6 +96,9 @@ static av_cold int vpx_init(AVCodecContext *avctx,
                error);
         return AVERROR(EINVAL);
     }
+
+    if (avctx->codec_id == AV_CODEC_ID_VP9)
+        vpx_codec_set_frame_buffer_functions(decoder, get_frame_buffer, release_frame_buffer, avctx->priv_data);
 
     return 0;
 }
@@ -241,8 +282,6 @@ static int vpx_decode(AVCodecContext *avctx,
             if (ret < 0)
                 return ret;
         }
-        if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
-            return ret;
 
         planes[0] = img->planes[VPX_PLANE_Y];
         planes[1] = img->planes[VPX_PLANE_U];
@@ -254,8 +293,31 @@ static int vpx_decode(AVCodecContext *avctx,
         linesizes[2] = img->stride[VPX_PLANE_V];
         linesizes[3] =
             ctx->has_alpha_channel ? img_alpha->stride[VPX_PLANE_Y] : 0;
-        av_image_copy(picture->data, picture->linesize, (const uint8_t**)planes,
-                      linesizes, avctx->pix_fmt, img->d_w, img->d_h);
+
+        if (img->fb_priv && (!ctx->has_alpha_channel || img_alpha->fb_priv)) {
+            ret = ff_decode_frame_props(avctx, picture);
+            if (ret < 0)
+                return ret;
+            picture->buf[0] = av_buffer_ref(img->fb_priv);
+            if (!picture->buf[0])
+                return AVERROR(ENOMEM);
+            if (ctx->has_alpha_channel) {
+                picture->buf[1] = av_buffer_ref(img_alpha->fb_priv);
+                if (!picture->buf[1]) {
+                    av_frame_unref(picture);
+                    return AVERROR(ENOMEM);
+                }
+            }
+            for (int i = 0; i < 4; i++) {
+                picture->data[i] = planes[i];
+                picture->linesize[i] = linesizes[i];
+            }
+        } else {
+            if ((ret = ff_get_buffer(avctx, picture, 0)) < 0)
+                return ret;
+            av_image_copy(picture->data, picture->linesize, (const uint8_t**)planes,
+                          linesizes, avctx->pix_fmt, img->d_w, img->d_h);
+        }
         *got_frame           = 1;
     }
     return avpkt->size;
@@ -267,6 +329,7 @@ static av_cold int vpx_free(AVCodecContext *avctx)
     vpx_codec_destroy(&ctx->decoder);
     if (ctx->has_alpha_channel)
         vpx_codec_destroy(&ctx->decoder_alpha);
+    av_buffer_pool_uninit(&ctx->pool);
     return 0;
 }
 
@@ -307,7 +370,7 @@ AVCodec ff_libvpx_vp9_decoder = {
     .init           = vp9_init,
     .close          = vpx_free,
     .decode         = vpx_decode,
-    .capabilities   = AV_CODEC_CAP_AUTO_THREADS | AV_CODEC_CAP_DR1,
+    .capabilities   = AV_CODEC_CAP_AUTO_THREADS,
     .init_static_data = ff_vp9_init_static,
     .profiles       = NULL_IF_CONFIG_SMALL(ff_vp9_profiles),
     .wrapper_name   = "libvpx",
