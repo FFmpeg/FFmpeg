@@ -476,20 +476,20 @@ static struct rendition *new_rendition(HLSContext *c, struct rendition_info *inf
         return NULL;
 
     if (type == AVMEDIA_TYPE_UNKNOWN) {
-        av_log(c, AV_LOG_WARNING, "Can't support the type: %s\n", info->type);
+        av_log(c->ctx, AV_LOG_WARNING, "Can't support the type: %s\n", info->type);
         return NULL;
     }
 
     /* URI is mandatory for subtitles as per spec */
     if (type == AVMEDIA_TYPE_SUBTITLE && !info->uri[0]) {
-        av_log(c, AV_LOG_ERROR, "The URI tag is REQUIRED for subtitle.\n");
+        av_log(c->ctx, AV_LOG_ERROR, "The URI tag is REQUIRED for subtitle.\n");
         return NULL;
     }
 
     /* TODO: handle subtitles (each segment has to parsed separately) */
     if (c->ctx->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL)
         if (type == AVMEDIA_TYPE_SUBTITLE) {
-            av_log(c, AV_LOG_WARNING, "Can't support the subtitle(uri: %s)\n", info->uri);
+            av_log(c->ctx, AV_LOG_WARNING, "Can't support the subtitle(uri: %s)\n", info->uri);
             return NULL;
         }
 
@@ -1067,7 +1067,7 @@ static void handle_id3(AVIOContext *pb, struct playlist *pls)
 
     } else {
         if (!pls->id3_changed && id3_has_changed_values(pls, metadata, apic)) {
-            avpriv_report_missing_feature(pls->ctx, "Changing ID3 metadata in HLS audio elementary stream");
+            avpriv_report_missing_feature(pls->parent, "Changing ID3 metadata in HLS audio elementary stream");
             pls->id3_changed = 1;
         }
         av_dict_free(&metadata);
@@ -1118,7 +1118,7 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
             int remaining = taglen - tag_got_bytes;
 
             if (taglen > maxsize) {
-                av_log(pls->ctx, AV_LOG_ERROR, "Too large HLS ID3 tag (%d > %"PRId64" bytes)\n",
+                av_log(pls->parent, AV_LOG_ERROR, "Too large HLS ID3 tag (%d > %"PRId64" bytes)\n",
                        taglen, maxsize);
                 break;
             }
@@ -1139,14 +1139,14 @@ static void intercept_id3(struct playlist *pls, uint8_t *buf,
             /* strip the intercepted bytes */
             *len -= tag_got_bytes;
             memmove(buf, buf + tag_got_bytes, *len);
-            av_log(pls->ctx, AV_LOG_DEBUG, "Stripped %d HLS ID3 bytes\n", tag_got_bytes);
+            av_log(pls->parent, AV_LOG_DEBUG, "Stripped %d HLS ID3 bytes\n", tag_got_bytes);
 
             if (remaining > 0) {
                 /* read the rest of the tag in */
                 if (read_from_url(pls, seg, pls->id3_buf + id3_buf_pos, remaining) != remaining)
                     break;
                 id3_buf_pos += remaining;
-                av_log(pls->ctx, AV_LOG_DEBUG, "Stripped additional %d HLS ID3 bytes\n", remaining);
+                av_log(pls->parent, AV_LOG_DEBUG, "Stripped additional %d HLS ID3 bytes\n", remaining);
             }
 
         } else {
