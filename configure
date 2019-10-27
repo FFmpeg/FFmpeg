@@ -236,6 +236,7 @@ External library support:
   --enable-libfontconfig   enable libfontconfig, useful for drawtext filter [no]
   --enable-libfreetype     enable libfreetype, needed for drawtext filter [no]
   --enable-libfribidi      enable libfribidi, improves drawtext filter [no]
+  --enable-libglslang      enable GLSL->SPIRV compilation via libglslang [no]
   --enable-libgme          enable Game Music Emu via libgme [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
@@ -1550,11 +1551,11 @@ require_cc(){
 }
 
 require_cpp(){
-    name="$1"
-    headers="$2"
-    classes="$3"
-    shift 3
-    check_lib_cpp "$headers" "$classes" "$@" || die "ERROR: $name not found"
+    log require_cpp "$@"
+    name_version="$1"
+    name="${1%% *}"
+    shift
+    check_lib_cpp "$name" "$@" || die "ERROR: $name_version not found"
 }
 
 require_headers(){
@@ -1771,6 +1772,7 @@ EXTERNAL_LIBRARY_LIST="
     libfontconfig
     libfreetype
     libfribidi
+    libglslang
     libgme
     libgsm
     libiec61883
@@ -6261,6 +6263,7 @@ enabled fontconfig        && enable libfontconfig
 enabled libfontconfig     && require_pkg_config libfontconfig fontconfig "fontconfig/fontconfig.h" FcInit
 enabled libfreetype       && require_pkg_config libfreetype freetype2 "ft2build.h FT_FREETYPE_H" FT_Init_FreeType
 enabled libfribidi        && require_pkg_config libfribidi fribidi fribidi.h fribidi_version_info
+enabled libglslang        && require_cpp libglslang glslang/SPIRV/GlslangToSpv.h "glslang::TIntermediate*" -lglslang -lOSDependent -lHLSL -lOGLCompiler -lSPVRemapper -lSPIRV -lSPIRV-Tools -lSPIRV-Tools-opt -lpthread -lstdc++
 enabled libgme            && { check_pkg_config libgme libgme gme/gme.h gme_new_emu ||
                                require libgme gme/gme.h gme_new_emu -lgme -lstdc++; }
 enabled libgsm            && { for gsm_hdr in "gsm.h" "gsm/gsm.h"; do
