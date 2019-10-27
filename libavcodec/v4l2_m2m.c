@@ -377,7 +377,7 @@ int ff_v4l2_m2m_codec_init(V4L2m2mPriv *priv)
         strncpy(s->devname, node, strlen(node) + 1);
         ret = v4l2_probe_driver(s);
         if (!ret)
-                break;
+            break;
     }
 
     closedir(dirp);
