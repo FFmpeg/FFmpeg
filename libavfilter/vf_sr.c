@@ -317,5 +317,4 @@ AVFilter ff_vf_sr = {
     .inputs        = sr_inputs,
     .outputs       = sr_outputs,
     .priv_class    = &sr_class,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
 };
