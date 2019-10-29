@@ -44,6 +44,8 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 
         if (s->delta == AV_NOPTS_VALUE) {
             s->delta = delta;
+            s->min_delta = delta;
+            s->max_delta = delta;
         }
 
         if (s->delta != delta) {
