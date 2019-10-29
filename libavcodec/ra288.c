@@ -77,7 +77,7 @@ static av_cold int ra288_decode_init(AVCodecContext *avctx)
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     avctx->sample_fmt     = AV_SAMPLE_FMT_FLT;
 
-    if (avctx->block_align <= 0) {
+    if (avctx->block_align != 38) {
         av_log(avctx, AV_LOG_ERROR, "unsupported block align\n");
         return AVERROR_PATCHWELCOME;
     }
