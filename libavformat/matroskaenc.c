@@ -361,11 +361,11 @@ static void end_ebml_master_crc32(AVIOContext *pb, AVIOContext **dyn_cp,
 /**
 * Complete ebml master without destroying the buffer, allowing for later updates
 */
-static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext **dyn_cp, MatroskaMuxContext *mkv,
+static void end_ebml_master_crc32_preliminary(AVIOContext *pb, AVIOContext *dyn_cp,
                                               uint32_t id, int64_t *pos)
 {
     uint8_t *buf;
-    int size = avio_get_dyn_buf(*dyn_cp, &buf);
+    int size = avio_get_dyn_buf(dyn_cp, &buf);
 
     *pos = avio_tell(pb);
 
@@ -1388,7 +1388,7 @@ static int mkv_write_tracks(AVFormatContext *s)
     }
 
     if ((pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-        end_ebml_master_crc32_preliminary(pb, &mkv->tracks_bc, mkv,
+        end_ebml_master_crc32_preliminary(pb, mkv->tracks_bc,
                                           MATROSKA_ID_TRACKS, &mkv->tracks_pos);
     else
         end_ebml_master_crc32(pb, &mkv->tracks_bc, mkv, MATROSKA_ID_TRACKS);
@@ -1643,7 +1643,7 @@ static int mkv_write_tags(AVFormatContext *s)
 
     if (mkv->tags_bc) {
         if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-            end_ebml_master_crc32_preliminary(s->pb, &mkv->tags_bc, mkv,
+            end_ebml_master_crc32_preliminary(s->pb, mkv->tags_bc,
                                               MATROSKA_ID_TAGS, &mkv->tags_pos);
         else
             end_ebml_master_crc32(s->pb, &mkv->tags_bc, mkv, MATROSKA_ID_TAGS);
@@ -1880,7 +1880,7 @@ static int mkv_write_header(AVFormatContext *s)
         }
     }
     if ((s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live)
-        end_ebml_master_crc32_preliminary(s->pb, &mkv->info_bc, mkv,
+        end_ebml_master_crc32_preliminary(s->pb, mkv->info_bc,
                                           MATROSKA_ID_INFO, &mkv->info_pos);
     else
         end_ebml_master_crc32(s->pb, &mkv->info_bc, mkv, MATROSKA_ID_INFO);
