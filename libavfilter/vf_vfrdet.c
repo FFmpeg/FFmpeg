@@ -29,6 +29,7 @@ typedef struct VFRDETContext {
     int64_t delta;
     int64_t min_delta;
     int64_t max_delta;
+    int64_t avg_delta;
 
     uint64_t vfr;
     uint64_t cfr;
@@ -53,6 +54,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             s->delta = delta;
             s->min_delta = FFMIN(delta, s->min_delta);
             s->max_delta = FFMAX(delta, s->max_delta);
+            s->avg_delta += delta;
         } else {
             s->cfr++;
         }
@@ -81,7 +83,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_log(ctx, AV_LOG_INFO, "VFR:%f (%"PRIu64"/%"PRIu64")", s->vfr / (float)(s->vfr + s->cfr), s->vfr, s->cfr);
     if (s->vfr)
-        av_log(ctx, AV_LOG_INFO, " min: %"PRId64" max: %"PRId64")", s->min_delta, s->max_delta);
+        av_log(ctx, AV_LOG_INFO, " min: %"PRId64" max: %"PRId64" avg: %"PRId64, s->min_delta, s->max_delta, s->avg_delta / s->vfr);
     av_log(ctx, AV_LOG_INFO, "\n");
 }
 
