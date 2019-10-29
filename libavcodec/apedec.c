@@ -1268,7 +1268,7 @@ static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
                                                      f->adaptcoeffs - order,
                                                      order, APESIGN(*data));
         res = (int)(res + (1U << (fracbits - 1))) >> fracbits;
-        res += *data;
+        res += (unsigned)*data;
         *data++ = res;
 
         /* Update the output history */
