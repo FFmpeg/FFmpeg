@@ -711,34 +711,13 @@ static int query_formats(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
-    int depth, is16bit = 0, planar = 0;
+    int depth, is16bit, planar;
     LUT3DContext *lut3d = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     depth = desc->comp[0].depth;
-
-    switch (inlink->format) {
-    case AV_PIX_FMT_RGB48:
-    case AV_PIX_FMT_BGR48:
-    case AV_PIX_FMT_RGBA64:
-    case AV_PIX_FMT_BGRA64:
-        is16bit = 1;
-        break;
-    case AV_PIX_FMT_GBRP9:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
-    case AV_PIX_FMT_GBRP14:
-    case AV_PIX_FMT_GBRP16:
-    case AV_PIX_FMT_GBRAP10:
-    case AV_PIX_FMT_GBRAP12:
-    case AV_PIX_FMT_GBRAP16:
-        is16bit = 1;
-    case AV_PIX_FMT_GBRP:
-    case AV_PIX_FMT_GBRAP:
-        planar = 1;
-        break;
-    }
-
+    is16bit = desc->comp[0].depth > 8;
+    planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
     ff_fill_rgba_map(lut3d->rgba_map, inlink->format);
     lut3d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
 
@@ -1558,34 +1537,13 @@ DEFINE_INTERP_FUNC_1D(spline,      16)
 
 static int config_input_1d(AVFilterLink *inlink)
 {
-    int depth, is16bit = 0, planar = 0;
+    int depth, is16bit, planar;
     LUT1DContext *lut1d = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
 
     depth = desc->comp[0].depth;
-
-    switch (inlink->format) {
-    case AV_PIX_FMT_RGB48:
-    case AV_PIX_FMT_BGR48:
-    case AV_PIX_FMT_RGBA64:
-    case AV_PIX_FMT_BGRA64:
-        is16bit = 1;
-        break;
-    case AV_PIX_FMT_GBRP9:
-    case AV_PIX_FMT_GBRP10:
-    case AV_PIX_FMT_GBRP12:
-    case AV_PIX_FMT_GBRP14:
-    case AV_PIX_FMT_GBRP16:
-    case AV_PIX_FMT_GBRAP10:
-    case AV_PIX_FMT_GBRAP12:
-    case AV_PIX_FMT_GBRAP16:
-        is16bit = 1;
-    case AV_PIX_FMT_GBRP:
-    case AV_PIX_FMT_GBRAP:
-        planar = 1;
-        break;
-    }
-
+    is16bit = desc->comp[0].depth > 8;
+    planar = desc->flags & AV_PIX_FMT_FLAG_PLANAR;
     ff_fill_rgba_map(lut1d->rgba_map, inlink->format);
     lut1d->step = av_get_padded_bits_per_pixel(desc) >> (3 + is16bit);
 
