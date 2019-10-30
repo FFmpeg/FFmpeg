@@ -93,7 +93,7 @@ static int flac_write_picture(struct AVFormatContext *s, AVPacket *pkt)
     AVDictionaryEntry *e;
     const char *mimetype = NULL, *desc = "";
     const AVStream *st = s->streams[pkt->stream_index];
-    int i, mimelen, desclen, type = 0;
+    int i, mimelen, desclen, type = 0, blocklen;
 
     if (!pkt->data)
         return 0;
@@ -140,8 +140,14 @@ static int flac_write_picture(struct AVFormatContext *s, AVPacket *pkt)
         desc = e->value;
     desclen = strlen(desc);
 
+    blocklen = 4 + 4 + mimelen + 4 + desclen + 4 + 4 + 4 + 4 + 4 + pkt->size;
+    if (blocklen >= 1<<24) {
+        av_log(s, AV_LOG_ERROR, "Picture block too big %d >= %d\n", blocklen, 1<<24);
+        return AVERROR(EINVAL);
+    }
+
     avio_w8(pb, 0x06);
-    avio_wb24(pb, 4 + 4 + mimelen + 4 + desclen + 4 + 4 + 4 + 4 + 4 + pkt->size);
+    avio_wb24(pb, blocklen);
 
     avio_wb32(pb, type);
 
