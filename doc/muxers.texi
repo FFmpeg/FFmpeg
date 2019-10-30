@@ -2084,7 +2084,7 @@ but supports several other algorithms.
 The output of the muxer consists of one line per stream of the form:
 @var{streamindex},@var{streamtype},@var{algo}=@var{hash}, where
 @var{streamindex} is the index of the mapped stream, @var{streamtype} is a
-single characer indicating the type of stream, @var{algo} is a short string
+single character indicating the type of stream, @var{algo} is a short string
 representing the hash function used, and @var{hash} is a hexadecimal number
 representing the computed hash.
 
