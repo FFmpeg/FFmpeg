@@ -277,8 +277,8 @@ static void bilateral_##name(BilateralContext *s, const uint8_t *ssrc, uint8_t *
             factor_++;                                                                    \
         }                                                                                 \
                                                                                           \
-        memcpy(ypy, ycy, sizeof(float) * width);                                          \
-        memcpy(ypf, ycf, sizeof(float) * width);                                          \
+        ypy = ycy;                                                                        \
+        ypf = ycf;                                                                        \
     }                                                                                     \
                                                                                           \
     for (int i = 0; i < height; i++)                                                      \
