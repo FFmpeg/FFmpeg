@@ -11202,7 +11202,8 @@ gradfun=radius=8
 
 @end itemize
 
-@section graphmonitor, agraphmonitor
+@anchor{graphmonitor}
+@section graphmonitor
 Show various filtergraph stats.
 
 With this filter one can debug complete filtergraph.
@@ -21496,6 +21497,10 @@ Specify list of colors separated by space or by '|' which will be used to
 draw channels. Unrecognized or missing colors will be replaced
 by white color.
 @end table
+
+@section agraphmonitor
+
+See @ref{graphmonitor}.
 
 @section ahistogram
 
