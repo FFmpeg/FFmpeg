@@ -454,7 +454,12 @@ static int activate(AVFilterContext *ctx)
 
     if (s->crossfade_is_over) {
         ret = ff_inlink_consume_frame(ctx->inputs[1], &in);
-        if (ret < 0) {
+        if (ret > 0) {
+            in->pts = s->pts;
+            s->pts += av_rescale_q(in->nb_samples,
+                      (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
+            return ff_filter_frame(outlink, in);
+        } else if (ret < 0) {
             return ret;
         } else if (ff_inlink_acknowledge_status(ctx->inputs[1], &status, &pts)) {
             ff_outlink_set_status(ctx->outputs[0], status, pts);
@@ -464,11 +469,6 @@ static int activate(AVFilterContext *ctx)
                 ff_inlink_request_frame(ctx->inputs[1]);
                 return 0;
             }
-        } else {
-            in->pts = s->pts;
-            s->pts += av_rescale_q(in->nb_samples,
-                      (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
-            return ff_filter_frame(outlink, in);
         }
     }
 
