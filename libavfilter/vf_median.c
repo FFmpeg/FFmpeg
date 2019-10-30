@@ -59,6 +59,7 @@
 static const AVOption median_options[] = {
     { "radius", "set median radius",    OFFSET(radius), AV_OPT_TYPE_INT,   {.i64=1},     1,  127, FLAGS },
     { "planes", "set planes to filter", OFFSET(planes), AV_OPT_TYPE_INT,   {.i64=0xF},   0,  0xF, FLAGS },
+    { "radiusV", "set median vertical radius", OFFSET(radiusV), AV_OPT_TYPE_INT, {.i64=0},0, 127, FLAGS },
     { NULL }
 };
 
@@ -119,8 +120,9 @@ static int config_input(AVFilterLink *inlink)
     s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
     s->planeheight[0] = s->planeheight[3] = inlink->h;
 
+    s->radiusV = !s->radiusV ? s->radius : s->radiusV;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->t = 2 * s->radius * s->radius + 2 * s->radius;
+    s->t = 2 * s->radius * s->radiusV + 2 * s->radius;
 
     for (int i = 0; i < s->nb_planes; i++) {
         if (!(s->planes & (1 << i)))
@@ -131,13 +133,13 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(EINVAL);
         }
 
-        if (s->planeheight[i] < s->radius * 2 + 1) {
-            av_log(inlink->dst, AV_LOG_ERROR, "The %d plane height %d must be not less than %d\n", i, s->planeheight[i], s->radius * 2 + 1);
+        if (s->planeheight[i] < s->radiusV * 2 + 1) {
+            av_log(inlink->dst, AV_LOG_ERROR, "The %d plane height %d must be not less than %d\n", i, s->planeheight[i], s->radiusV * 2 + 1);
             return AVERROR(EINVAL);
         }
     }
 
-    s->nb_threads = FFMAX(1, FFMIN(s->planeheight[1] / (s->radius + 1), ff_filter_get_nb_threads(inlink->dst)));
+    s->nb_threads = FFMAX(1, FFMIN(s->planeheight[1] / (s->radiusV + 1), ff_filter_get_nb_threads(inlink->dst)));
     s->bins   = 1 << ((s->depth + 1) / 2);
     s->fine_size = s->bins * s->bins * inlink->w;
     s->coarse_size = s->bins * inlink->w;

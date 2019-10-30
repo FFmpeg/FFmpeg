@@ -57,6 +57,7 @@ static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_
     htype *ccoarse = s->coarse[jobnr];
     htype *cfine = s->fine[jobnr];
     const int radius = s->radius;
+    const int radiusV = s->radiusV;
     const int t = s->t;
     const pixel *src = (const pixel *)ssrc;
     pixel *dst = (pixel *)ddst;
@@ -69,16 +70,16 @@ static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_
     memset(cfine, 0, s->fine_size * sizeof(*cfine));
     memset(ccoarse, 0, s->coarse_size * sizeof(*ccoarse));
 
-    srcp = src + FFMAX(0, slice_h_start - radius) * src_linesize;
+    srcp = src + FFMAX(0, slice_h_start - radiusV) * src_linesize;
     if (jobnr == 0) {
         for (int i = 0; i < width; i++) {
-            cfine[PICK_FINE_BIN(width, srcp[i], i)] += radius + 1;
-            ccoarse[PICK_COARSE_BIN(i, srcp[i])] += radius + 1;
+            cfine[PICK_FINE_BIN(width, srcp[i], i)] += radiusV + 1;
+            ccoarse[PICK_COARSE_BIN(i, srcp[i])] += radiusV + 1;
         }
     }
 
-    srcp = src + FFMAX(0, slice_h_start - radius - (jobnr != 0)) * src_linesize;
-    for (int i = 0; i < radius + (jobnr != 0) * (1 + radius); i++) {
+    srcp = src + FFMAX(0, slice_h_start - radiusV - (jobnr != 0)) * src_linesize;
+    for (int i = 0; i < radiusV + (jobnr != 0) * (1 + radiusV); i++) {
         for (int j = 0; j < width; j++) {
             cfine[PICK_FINE_BIN(width, srcp[j], j)]++;
             ccoarse[PICK_COARSE_BIN(j, srcp[j])]++;
@@ -93,13 +94,13 @@ static void fn(filter_plane)(AVFilterContext *ctx, const uint8_t *ssrc, int src_
         htype fine[BINS][BINS] = { { 0 } };
         htype luc[BINS] = { 0 };
 
-        p = srcp + src_linesize * FFMAX(0, i - radius - 1);
+        p = srcp + src_linesize * FFMAX(0, i - radiusV - 1);
         for (int j = 0; j < width; j++) {
             cfine[PICK_FINE_BIN(width, p[j], j)]--;
             ccoarse[PICK_COARSE_BIN(j, p[j])]--;
         }
 
-        p = srcp + src_linesize * FFMIN(height - 1, i + radius);
+        p = srcp + src_linesize * FFMIN(height - 1, i + radiusV);
         for (int j = 0; j < width; j++) {
             cfine[PICK_FINE_BIN(width, p[j], j)]++;
             ccoarse[PICK_COARSE_BIN(j, p[j])]++;

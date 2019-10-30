@@ -12919,11 +12919,16 @@ This filter accepts the following options:
 
 @table @option
 @item radius
-Set horizontal and vertical radius size. Default value is @code{1}.
+Set horizontal radius size. Default value is @code{1}.
 Allowed range is integer from 1 to 127.
 
 @item planes
 Set which planes to process. Default is @code{15}, which is all available planes.
+
+@item radiusV
+Set vertical radius size. Default value is @code{0}.
+Allowed range is integer from 0 to 127.
+If it is 0, value will be picked from horizontal @code{radius} option.
 @end table
 
 @section mergeplanes
