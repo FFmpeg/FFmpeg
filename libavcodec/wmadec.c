@@ -587,6 +587,9 @@ static int wma_decode_block(WMACodecContext *s)
                 s->exponents_bsize[ch] = bsize;
             }
         }
+        s->exponents_initialized = 1;
+    }else if (!s->exponents_initialized) {
+        return AVERROR_INVALIDDATA;
     }
 
     /* parse spectral coefficients : just RLE encoding */
