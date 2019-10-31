@@ -3104,6 +3104,7 @@ static int mxf_read_close(AVFormatContext *s)
     for (i = 0; i < mxf->metadata_sets_count; i++) {
         mxf_free_metadataset(mxf->metadata_sets + i, 1);
     }
+    mxf->metadata_sets_count = 0;
     av_freep(&mxf->partitions);
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
