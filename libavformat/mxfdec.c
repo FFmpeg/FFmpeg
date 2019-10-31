@@ -3169,6 +3169,7 @@ static int mxf_read_header(AVFormatContext *s)
 
     if (!mxf_read_sync(s->pb, mxf_header_partition_pack_key, 14)) {
         av_log(s, AV_LOG_ERROR, "could not find header partition pack key\n");
+        //goto fail should not be needed as no metadata sets will have been parsed yet
         return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, -14, SEEK_CUR);
@@ -3199,7 +3200,8 @@ static int mxf_read_header(AVFormatContext *s)
 
             if (!mxf->current_partition) {
                 av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
-                return AVERROR_INVALIDDATA;
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
             }
 
             if (!mxf->current_partition->first_essence_klv.offset)
