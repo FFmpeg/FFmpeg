@@ -485,7 +485,7 @@ static int activate(AVFilterContext *ctx)
             (AVRational){ 1, outlink->sample_rate }, outlink->time_base);
         return ff_filter_frame(outlink, in);
     } else if (ff_inlink_queued_samples(ctx->inputs[0]) >= s->nb_samples &&
-               ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples) {
+               ff_inlink_queued_samples(ctx->inputs[1]) >= s->nb_samples && s->cf0_eof) {
         if (s->overlap) {
             out = ff_get_audio_buffer(outlink, s->nb_samples);
             if (!out)
