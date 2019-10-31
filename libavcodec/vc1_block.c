@@ -1036,10 +1036,10 @@ static int vc1_decode_intra_block(VC1Context *v, int16_t block[64], int n,
             if (q2 && q1 != q2) {
                 if (dc_pred_dir) { // left
                     for (k = 1; k < 8; k++)
-                        block[k << v->left_blk_sh] += (ac_val[k] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k << v->left_blk_sh] += (int)(ac_val[k] * q2 * (unsigned)ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 } else { //top
                     for (k = 1; k < 8; k++)
-                        block[k << v->top_blk_sh] += (ac_val[k + 8] * q2 * ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
+                        block[k << v->top_blk_sh] += (int)(ac_val[k + 8] * q2 * (unsigned)ff_vc1_dqscale[q1 - 1] + 0x20000) >> 18;
                 }
             } else {
                 if (dc_pred_dir) { // left
