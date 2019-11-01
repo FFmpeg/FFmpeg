@@ -78,8 +78,12 @@ static av_cold int twolame_encode_init(AVCodecContext *avctx)
     twolame_set_in_samplerate(s->glopts, avctx->sample_rate);
     twolame_set_out_samplerate(s->glopts, avctx->sample_rate);
 
-    if (!avctx->bit_rate)
-        avctx->bit_rate = avctx->sample_rate < 28000 ? 160000 : 384000;
+    if (!avctx->bit_rate) {
+        if ((s->mode == TWOLAME_AUTO_MODE && avctx->channels == 1) || s->mode == TWOLAME_MONO)
+            avctx->bit_rate = avctx->sample_rate < 28000 ? 80000 : 192000;
+        else
+            avctx->bit_rate = avctx->sample_rate < 28000 ? 160000 : 384000;
+    }
 
     if (avctx->flags & AV_CODEC_FLAG_QSCALE || !avctx->bit_rate) {
         twolame_set_VBR(s->glopts, TRUE);
