@@ -3232,6 +3232,7 @@ videotoolbox_encoder_deps="videotoolbox VTCompressionSessionPrepareToEncodeFrame
 
 # demuxers / muxers
 ac3_demuxer_select="ac3_parser"
+act_demuxer_select="riffdec"
 aiff_muxer_select="iso_media"
 asf_demuxer_select="riffdec"
 asf_o_demuxer_select="riffdec"
