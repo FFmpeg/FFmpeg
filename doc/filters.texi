@@ -20508,7 +20508,7 @@ Set the x coordinate of the overlaid video on the main video.
 Default value is @code{0}.
 
 @item y
-Set the x coordinate of the overlaid video on the main video.
+Set the y coordinate of the overlaid video on the main video.
 Default value is @code{0}.
 
 @end table
