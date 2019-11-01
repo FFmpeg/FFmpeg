@@ -2650,6 +2650,9 @@ static int mkv_init(struct AVFormatContext *s)
         track->track_num_size = ebml_num_size(track->track_num);
     }
 
+    if (mkv->is_dash && nb_tracks != 1)
+        return AVERROR(EINVAL);
+
     return 0;
 }
 
