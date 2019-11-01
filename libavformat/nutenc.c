@@ -792,11 +792,12 @@ static int get_needed_flags(NUTContext *nut, StreamContext *nus, FrameCode *fc,
         flags |= FLAG_CHECKSUM;
     if (FFABS(pkt->pts - nus->last_pts) > nus->max_pts_distance)
         flags |= FLAG_CHECKSUM;
-    if (pkt->size < nut->header_len[fc->header_idx] ||
-        (pkt->size > 4096 && fc->header_idx)        ||
-        memcmp(pkt->data, nut->header[fc->header_idx],
-               nut->header_len[fc->header_idx]))
-        flags |= FLAG_HEADER_IDX;
+    if (fc->header_idx)
+        if (pkt->size < nut->header_len[fc->header_idx] ||
+            pkt->size > 4096                            ||
+            memcmp(pkt->data, nut->header    [fc->header_idx],
+                              nut->header_len[fc->header_idx]))
+            flags |= FLAG_HEADER_IDX;
 
     return flags | (fc->flags & FLAG_CODED);
 }
