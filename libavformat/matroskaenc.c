@@ -1738,12 +1738,6 @@ static int mkv_write_header(AVFormatContext *s)
     int ret, i, version = 2;
     int64_t creation_time;
 
-    if (!strcmp(s->oformat->name, "webm")) {
-        mkv->mode      = MODE_WEBM;
-        mkv->write_crc = 0;
-    } else
-        mkv->mode = MODE_MATROSKAv2;
-
     if (mkv->mode != MODE_WEBM ||
         av_dict_get(s->metadata, "stereo_mode", NULL, 0) ||
         av_dict_get(s->metadata, "alpha_mode", NULL, 0))
@@ -2618,6 +2612,12 @@ static int mkv_init(struct AVFormatContext *s)
         s->internal->avoid_negative_ts_use_pts = 1;
     }
 
+    if (!strcmp(s->oformat->name, "webm")) {
+        mkv->mode      = MODE_WEBM;
+        mkv->write_crc = 0;
+    } else
+        mkv->mode = MODE_MATROSKAv2;
+
     mkv->tracks = av_mallocz_array(s->nb_streams, sizeof(*mkv->tracks));
     if (!mkv->tracks) {
         return AVERROR(ENOMEM);
@@ -2644,8 +2644,13 @@ static int mkv_init(struct AVFormatContext *s)
         // ms precision is the de-facto standard timescale for mkv files
         avpriv_set_pts_info(s->streams[i], 64, 1, 1000);
 
-        if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
+        if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
+            if (mkv->mode == MODE_WEBM) {
+                av_log(s, AV_LOG_WARNING, "Stream %d will be ignored "
+                       "as WebM doesn't support attachments.\n", i);
+            }
             continue;
+        }
 
         nb_tracks++;
         track->track_num = mkv->is_dash ? mkv->dash_track_number : nb_tracks;
