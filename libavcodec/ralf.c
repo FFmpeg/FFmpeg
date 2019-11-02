@@ -408,7 +408,7 @@ static int decode_block(AVCodecContext *avctx, GetBitContext *gb,
     case 4:
         for (i = 0; i < len; i++) {
             t  =   ch1[i] + ctx->bias[1];
-            t2 = ((ch0[i] + ctx->bias[0]) << 1) | (t & 1);
+            t2 = ((ch0[i] + ctx->bias[0]) * 2) | (t & 1);
             dst0[i] = (t2 + t) / 2;
             dst1[i] = (t2 - t) / 2;
         }
