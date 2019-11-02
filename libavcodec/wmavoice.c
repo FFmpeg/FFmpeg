@@ -1523,7 +1523,7 @@ static int synth_frame(AVCodecContext *ctx, GetBitContext *gb, int frame_idx,
 
         /* "pitch-diff-per-sample" for calculation of pitch per sample */
         s->pitch_diff_sh16 =
-            ((cur_pitch_val - s->last_pitch_val) << 16) / MAX_FRAMESIZE;
+            (cur_pitch_val - s->last_pitch_val) * (1 << 16) / MAX_FRAMESIZE;
     }
 
     /* Global gain (if silence) and pitch-adaptive window coordinates */
