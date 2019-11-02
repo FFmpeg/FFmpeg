@@ -1935,8 +1935,8 @@ static int reopen_demux_for_component(AVFormatContext *s, struct representation 
         goto fail;
 
     pls->ctx->flags = AVFMT_FLAG_CUSTOM_IO;
-    pls->ctx->probesize = 1024 * 4;
-    pls->ctx->max_analyze_duration = 4 * AV_TIME_BASE;
+    pls->ctx->probesize = s->probesize > 0 ? s->probesize : 1024 * 4;;
+    pls->ctx->max_analyze_duration = s->max_analyze_duration > 0 ? s->max_analyze_duration : 4 * AV_TIME_BASE;
     ret = av_probe_input_buffer(&pls->pb, &in_fmt, "", NULL, 0, 0);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Error when loading first fragment, playlist %d\n", (int)pls->rep_idx);
