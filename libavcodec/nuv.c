@@ -219,6 +219,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
     case NUV_RTJPEG:
         minsize = c->width/16 * (c->height/16) * 6;
         break;
+    case NUV_BLACK:
+    case NUV_COPY_LAST:
+    case NUV_LZO:
+    case NUV_RTJPEG_IN_LZO:
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "unknown compression\n");
+        return AVERROR_INVALIDDATA;
     }
     if (buf_size < minsize / 4)
         return AVERROR_INVALIDDATA;
@@ -307,9 +315,6 @@ retry:
     case NUV_COPY_LAST:
         /* nothing more to do here */
         break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "unknown compression\n");
-        return AVERROR_INVALIDDATA;
     }
 
     if ((result = av_frame_ref(picture, c->pic)) < 0)
