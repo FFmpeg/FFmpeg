@@ -1667,17 +1667,11 @@ static int mkv_write_attachments(AVFormatContext *s)
         if (t = av_dict_get(st->metadata, "mimetype", NULL, 0))
             mimetype = t->value;
         else if (st->codecpar->codec_id != AV_CODEC_ID_NONE ) {
-            int i;
-            for (i = 0; ff_mkv_mime_tags[i].id != AV_CODEC_ID_NONE; i++)
-                if (ff_mkv_mime_tags[i].id == st->codecpar->codec_id) {
-                    mimetype = ff_mkv_mime_tags[i].str;
-                    break;
-                }
-            for (i = 0; ff_mkv_image_mime_tags[i].id != AV_CODEC_ID_NONE; i++)
-                if (ff_mkv_image_mime_tags[i].id == st->codecpar->codec_id) {
-                    mimetype = ff_mkv_image_mime_tags[i].str;
-                    break;
-                }
+            const AVCodecDescriptor *desc = avcodec_descriptor_get(st->codecpar->codec_id);
+            if (desc && desc->mime_types) {
+                mimetype = desc->mime_types[0];
+            } else if (st->codecpar->codec_id = AV_CODEC_ID_TEXT)
+                mimetype = "text/plain";
         }
         if (!mimetype) {
             av_log(s, AV_LOG_ERROR, "Attachment stream %d has no mimetype tag and "
