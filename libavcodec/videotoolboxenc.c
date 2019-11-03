@@ -894,6 +894,14 @@ static int get_cv_color_primaries(AVCodecContext *avctx,
             *primaries = NULL;
             break;
 
+        case AVCOL_PRI_BT470BG:
+            *primaries = kCVImageBufferColorPrimaries_EBU_3213;
+            break;
+
+        case AVCOL_PRI_SMPTE170M:
+            *primaries = kCVImageBufferColorPrimaries_SMPTE_C;
+            break;
+
         case AVCOL_PRI_BT709:
             *primaries = kCVImageBufferColorPrimaries_ITU_R_709_2;
             break;
