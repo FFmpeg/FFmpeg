@@ -589,6 +589,8 @@ Keep the same transfer characteristics property (default).
 @item unknown
 @item bt709
 BT 601, BT 709, BT 2020
+@item smpte2084
+SMPTE ST 2084
 @end table
 
 
