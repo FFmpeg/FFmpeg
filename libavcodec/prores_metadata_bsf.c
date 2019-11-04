@@ -145,6 +145,7 @@ static const AVOption options[] = {
     {"unknown",                        NULL,  0, AV_OPT_TYPE_CONST, {.i64=0},                                INT_MIN, INT_MAX, FLAGS, "color_trc"},
     {"bt709",                          NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_BT709},                  INT_MIN, INT_MAX, FLAGS, "color_trc"},
     {"smpte2084",                      NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_SMPTE2084},              INT_MIN, INT_MAX, FLAGS, "color_trc"},
+    {"arib-std-b67",                   NULL,  0, AV_OPT_TYPE_CONST, {.i64=AVCOL_TRC_ARIB_STD_B67},           INT_MIN, INT_MAX, FLAGS, "color_trc"},
 
     {"colorspace", "select colorspace", OFFSET(matrix_coefficients), AV_OPT_TYPE_INT, {.i64=-1}, -1,  AVCOL_SPC_BT2020_NCL, FLAGS, "colorspace"},
     {"auto", "keep the same colorspace",  0, AV_OPT_TYPE_CONST, {.i64=-1},                            INT_MIN, INT_MAX, FLAGS, "colorspace"},
