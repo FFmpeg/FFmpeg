@@ -598,7 +598,7 @@ Available values are:
 
 @table @samp
 @item auto
-Keep the same transfer characteristics property (default).
+Keep the same colorspace property (default).
 
 @item unknown
 @item bt709
