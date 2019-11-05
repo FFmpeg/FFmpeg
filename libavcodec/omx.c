@@ -44,6 +44,8 @@
 #include "h264.h"
 #include "internal.h"
 
+#define OMX_IndexParamBrcmPixelAspectRatio 0x7f00004d
+
 #ifdef OMX_SKIP64BIT
 static OMX_TICKS to_omx_ticks(int64_t value)
 {
@@ -193,7 +195,8 @@ typedef struct OMXCodecContext {
     OMXContext *omx_context;
 
     AVCodecContext *avctx;
-
+    OMX_CONFIG_POINTTYPE *pix_aspect;
+    
     char component_name[OMX_MAX_STRINGNAME_SIZE];
     OMX_VERSIONTYPE version;
     OMX_HANDLETYPE handle;
@@ -539,6 +542,16 @@ static av_cold int omx_component_init(AVCodecContext *avctx, const char *role)
         }
         err = OMX_SetParameter(s->handle, OMX_IndexParamVideoAvc, &avc);
         CHECK(err);
+        
+        s->pix_aspect = calloc(1, sizeof(OMX_CONFIG_POINTTYPE));		
+		s->pix_aspect->nSize = sizeof(OMX_CONFIG_POINTTYPE);			
+		s->pix_aspect->nVersion = s->version;
+		s->pix_aspect->nPortIndex =  s->out_port;
+		s->pix_aspect->nX = avctx->sample_aspect_ratio.num;
+		s->pix_aspect->nY = avctx->sample_aspect_ratio.den;
+		
+		err = OMX_SetParameter(s->handle, OMX_IndexParamBrcmPixelAspectRatio, s->pix_aspect);
+		CHECK(err);
     }
 
     err = OMX_SendCommand(s->handle, OMX_CommandStateSet, OMX_StateIdle, NULL);
@@ -620,6 +633,7 @@ static av_cold void cleanup(OMXCodecContext *s)
 
     omx_deinit(s->omx_context);
     s->omx_context = NULL;
+    s->pix_aspect = NULL;
     if (s->mutex_cond_inited) {
         pthread_cond_destroy(&s->state_cond);
         pthread_mutex_destroy(&s->state_mutex);
