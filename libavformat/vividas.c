@@ -311,8 +311,10 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
     num_video = avio_r8(pb);
 
     avio_seek(pb, off, SEEK_SET);
-    if (num_video != 1)
-        av_log(s, AV_LOG_WARNING, "number of video tracks %d is not 1\n", num_video);
+    if (num_video != 1) {
+        av_log(s, AV_LOG_ERROR, "number of video tracks %d is not 1\n", num_video);
+        return AVERROR_PATCHWELCOME;
+    }
 
     for (i = 0; i < num_video; i++) {
         AVStream *st = avformat_new_stream(s, NULL);
