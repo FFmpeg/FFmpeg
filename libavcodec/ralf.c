@@ -264,8 +264,8 @@ static int decode_channel(RALFContext *ctx, GetBitContext *gb, int ch,
             t = get_vlc2(gb, vlc[cmode].table, vlc[cmode].bits, 2);
             t = extend_code(gb, t, 21, add_bits);
             if (!cmode)
-                coeff -= 12 << add_bits;
-            coeff = t - coeff;
+                coeff -= 12U << add_bits;
+            coeff = (unsigned)t - coeff;
             ctx->filter[i] = coeff;
 
             cmode = coeff >> add_bits;
