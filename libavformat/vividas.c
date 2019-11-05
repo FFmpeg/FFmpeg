@@ -52,6 +52,7 @@ typedef struct VIV_AudioSubpacket {
 typedef struct VividasDemuxContext {
     int n_sb_blocks;
     VIV_SB_block *sb_blocks;
+    int num_audio;
 
     uint32_t sb_key;
     int64_t sb_offset;
@@ -280,7 +281,7 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
     int i,j;
     int64_t off;
     int val_1;
-    int num_video, num_audio;
+    int num_video;
     AVIOContext *pb;
 
     pb = avio_alloc_context(buf, size, 0, NULL, NULL, NULL, NULL);
@@ -342,13 +343,13 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
     off = avio_tell(pb);
     off += ffio_read_varlen(pb); // val_10
     avio_r8(pb); // '4'
-    num_audio = avio_r8(pb);
+    viv->num_audio = avio_r8(pb);
     avio_seek(pb, off, SEEK_SET);
 
-    if (num_audio != 1)
-        av_log(s, AV_LOG_WARNING, "number of audio tracks %d is not 1\n", num_audio);
+    if (viv->num_audio != 1)
+        av_log(s, AV_LOG_WARNING, "number of audio tracks %d is not 1\n", viv->num_audio);
 
-    for(i=0;i<num_audio;i++) {
+    for(i=0;i<viv->num_audio;i++) {
         int q;
         AVStream *st = avformat_new_stream(s, NULL);
 
@@ -677,6 +678,9 @@ static int viv_read_packet(AVFormatContext *s,
 
     if (viv->sb_entries[viv->current_sb_entry].flag == 0) {
         uint64_t v_size = ffio_read_varlen(pb);
+
+        if (!viv->num_audio)
+            return AVERROR_INVALIDDATA;
 
         ffio_read_varlen(pb);
         if (v_size > INT_MAX)
