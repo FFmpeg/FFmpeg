@@ -328,10 +328,13 @@ static int16_t g729d_voice_decision(int onset, int prev_voice_decision, const in
 
 static int32_t scalarproduct_int16_c(const int16_t * v1, const int16_t * v2, int order)
 {
-    int res = 0;
+    int64_t res = 0;
 
     while (order--)
         res += *v1++ * *v2++;
+
+    if      (res > INT32_MAX) return INT32_MAX;
+    else if (res < INT32_MIN) return INT32_MIN;
 
     return res;
 }
