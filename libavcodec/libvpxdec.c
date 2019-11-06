@@ -288,7 +288,7 @@ static int vpx_decode(AVCodecContext *avctx,
              img->d_h != img_alpha->d_h ||
              img->bit_depth != img_alpha->bit_depth)) {
             av_log(avctx, AV_LOG_ERROR,
-                   "Video dimensions %dx%d@%dbpp differ from alpha dimensions %dx%d@%dbpp\n",
+                   "Video dimensions %dx%d@%dbpc differ from alpha dimensions %dx%d@%dbpc\n",
                    img->d_w, img->d_h, img->bit_depth,
                    img_alpha->d_w, img_alpha->d_h, img_alpha->bit_depth);
             return AVERROR_INVALIDDATA;
