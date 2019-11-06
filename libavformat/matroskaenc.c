@@ -2454,8 +2454,6 @@ static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
         cluster_time = pkt->pts - mkv->cluster_pts;
     cluster_time += mkv->tracks[pkt->stream_index].ts_offset;
 
-    // start a new cluster every 5 MB or 5 sec, or 32k / 1 sec for streaming or
-    // after 4k and on a keyframe
     cluster_size = avio_tell(mkv->cluster_bc);
 
     if (mkv->is_dash && codec_type == AVMEDIA_TYPE_VIDEO) {
