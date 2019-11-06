@@ -38,10 +38,10 @@ typedef struct ExtractExtradataContext {
     int (*extract)(AVBSFContext *ctx, AVPacket *pkt,
                    uint8_t **data, int *size);
 
-    /* AV1 specifc fields */
+    /* AV1 specific fields */
     AV1Packet av1_pkt;
 
-    /* H264/HEVC specifc fields */
+    /* H264/HEVC specific fields */
     H2645Packet h2645_pkt;
 
     /* AVOptions */
