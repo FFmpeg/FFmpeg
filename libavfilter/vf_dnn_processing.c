@@ -204,7 +204,7 @@ static int config_output(AVFilterLink *outlink)
 static int copy_from_frame_to_dnn(DNNData *dnn_data, const AVFrame *in)
 {
     // extend this function to support more formats
-    av_assert0(in->format == AV_PIX_FMT_RGB24 || in->format == AV_PIX_FMT_RGB24);
+    av_assert0(in->format == AV_PIX_FMT_RGB24 || in->format == AV_PIX_FMT_BGR24);
 
     if (dnn_data->dt == DNN_FLOAT) {
         float *dnn_input = dnn_data->data;
@@ -233,7 +233,7 @@ static int copy_from_frame_to_dnn(DNNData *dnn_data, const AVFrame *in)
 static int copy_from_dnn_to_frame(AVFrame *out, const DNNData *dnn_data)
 {
     // extend this function to support more formats
-    av_assert0(out->format == AV_PIX_FMT_RGB24 || out->format == AV_PIX_FMT_RGB24);
+    av_assert0(out->format == AV_PIX_FMT_RGB24 || out->format == AV_PIX_FMT_BGR24);
 
     if (dnn_data->dt == DNN_FLOAT) {
         float *dnn_output = dnn_data->data;
