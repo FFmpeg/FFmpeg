@@ -179,6 +179,9 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx, void *data,
     /* drop incomplete chunks */
     buf_size     = audio_chunks * s->chunk_size;
 
+    if (silent_chunks + audio_chunks >= INT_MAX / avctx->block_align)
+        return AVERROR_INVALIDDATA;
+
     /* get output buffer */
     frame->nb_samples = ((silent_chunks + audio_chunks) * avctx->block_align) /
                         avctx->channels;
