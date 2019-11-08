@@ -241,7 +241,7 @@ static int copy_from_dnn_to_frame(AVFrame *out, const DNNData *dnn_data)
             for(int j = 0; j < out->width * 3; j++) {
                 int k = i * out->linesize[0] + j;
                 int t = i * out->width * 3 + j;
-                out->data[0][k] = av_clip((int)(dnn_output[t] * 255.0f), 0, 255);
+                out->data[0][k] = av_clip_uintp2((int)(dnn_output[t] * 255.0f), 8);
             }
         }
     } else {
