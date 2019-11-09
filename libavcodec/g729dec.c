@@ -434,7 +434,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         ctx->onset = 0;
         ctx->voice_decision = DECISION_VOICE;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
-    } else if (buf_size == G729D_6K4_BLOCK_SIZE * avctx->channels) {
+    } else if (buf_size == G729D_6K4_BLOCK_SIZE * avctx->channels && avctx->codec_id != AV_CODEC_ID_ACELP_KELVIN) {
         packet_type = FORMAT_G729D_6K4;
         format = &format_g729d_6k4;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729D @ 6.4kbit/s");
