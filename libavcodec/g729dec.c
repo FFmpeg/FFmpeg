@@ -461,7 +461,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
             frame_erasure |= buf[i];
         frame_erasure = !frame_erasure;
 
-        init_get_bits(&gb, buf, 8*format->block_size);
+        init_get_bits8(&gb, buf, format->block_size);
 
         ma_predictor     = get_bits(&gb, 1);
         quantizer_1st    = get_bits(&gb, VQ_1ST_BITS);
