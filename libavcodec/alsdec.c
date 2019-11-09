@@ -236,6 +236,7 @@ typedef struct ALSDecContext {
     int **raw_mantissa;             ///< decoded mantissa bits of the difference signal
     unsigned char *larray;          ///< buffer to store the output of masked lz decompression
     int *nbits;                     ///< contains the number of bits to read for masked lz decompression for all samples
+    int highest_decoded_channel;
 } ALSDecContext;
 
 
@@ -1678,6 +1679,7 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
             memmove(ctx->raw_samples[c] - sconf->max_order,
                     ctx->raw_samples[c] - sconf->max_order + sconf->frame_length,
                     sizeof(*ctx->raw_samples[c]) * sconf->max_order);
+            ctx->highest_decoded_channel = c;
         }
     } else { // multi-channel coding
         ALSBlockData   bd = { 0 };
@@ -1746,6 +1748,8 @@ static int read_frame_data(ALSDecContext *ctx, unsigned int ra_frame)
 
                 if ((ret = decode_block(ctx, &bd)) < 0)
                     return ret;
+
+                ctx->highest_decoded_channel = FFMAX(ctx->highest_decoded_channel, c);
             }
 
             memset(reverted_channels, 0, avctx->channels * sizeof(*reverted_channels));
@@ -1802,10 +1806,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
     else
         ctx->cur_frame_length = sconf->frame_length;
 
+    ctx->highest_decoded_channel = 0;
     // decode the frame data
     if ((invalid_frame = read_frame_data(ctx, ra_frame)) < 0)
         av_log(ctx->avctx, AV_LOG_WARNING,
                "Reading frame data failed. Skipping RA unit.\n");
+
+    if (ctx->highest_decoded_channel == 0)
+        return AVERROR_INVALIDDATA;
 
     ctx->frame_id++;
 
