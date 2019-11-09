@@ -452,11 +452,11 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         int is_periodic = 0;   ///< whether one of the subframes is declared as periodic or not
         out_frame = (int16_t*)frame->data[c];
 
-        for (i = 0; i < buf_size; i++)
+        for (i = 0; i < format->block_size; i++)
             frame_erasure |= buf[i];
         frame_erasure = !frame_erasure;
 
-        init_get_bits(&gb, buf, 8*buf_size);
+        init_get_bits(&gb, buf, 8*format->block_size);
 
         ma_predictor     = get_bits(&gb, 1);
         quantizer_1st    = get_bits(&gb, VQ_1ST_BITS);
