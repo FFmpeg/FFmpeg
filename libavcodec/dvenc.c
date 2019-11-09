@@ -60,10 +60,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
         ff_dv_print_profiles(avctx, AV_LOG_ERROR);
         return AVERROR(EINVAL);
     }
-    if (avctx->height > 576) {
-        av_log(avctx, AV_LOG_ERROR, "DVCPRO HD encoding is not supported.\n");
-        return AVERROR_PATCHWELCOME;
-    }
+
     ret = ff_dv_init_dynamic_tables(s, s->sys);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing work tables.\n");
@@ -90,6 +87,7 @@ static av_cold int dvvideo_encode_init(AVCodecContext *avctx)
 }
 
 /* bit budget for AC only in 5 MBs */
+static const int vs_total_ac_bits_hd = (68 * 6 + 52*2) * 5;
 static const int vs_total_ac_bits = (100 * 4 + 68 * 2) * 5;
 static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 
@@ -158,6 +156,11 @@ typedef struct EncBlockInfo {
     uint8_t  sign[64];
     uint8_t  partial_bit_count;
     uint32_t partial_bit_buffer; /* we can't use uint16_t here */
+    /* used by DV100 only: a copy of the weighted and classified but
+       not-yet-quantized AC coefficients. This is necessary for
+       re-quantizing at different steps. */
+    int16_t  save[64];
+    int      min_qlevel; /* DV100 only: minimum qlevel (for AC coefficients >255) */
 } EncBlockInfo;
 
 static av_always_inline PutBitContext *dv_encode_ac(EncBlockInfo *bi,
@@ -243,13 +246,123 @@ static const int dv_weight_248[64] = {
     170627, 170627, 153560, 153560, 165371, 165371, 144651, 144651,
 };
 
-static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
-                                              ptrdiff_t linesize,
-                                              DVVideoContext *s, int bias)
+/* setting this to 1 results in a faster codec but
+ * somewhat lower image quality */
+#define DV100_SACRIFICE_QUALITY_FOR_SPEED 1
+#define DV100_ENABLE_FINER 1
+
+/* pack combination of QNO and CNO into a single 8-bit value */
+#define DV100_MAKE_QLEVEL(qno,cno) ((qno<<2) | (cno))
+#define DV100_QLEVEL_QNO(qlevel) (qlevel>>2)
+#define DV100_QLEVEL_CNO(qlevel) (qlevel&0x3)
+
+#define DV100_NUM_QLEVELS 31
+
+/* The quantization step is determined by a combination of QNO and
+   CNO. We refer to these combinations as "qlevels" (this term is our
+   own, it's not mentioned in the spec). We use CNO, a multiplier on
+   the quantization step, to "fill in the gaps" between quantization
+   steps associated with successive values of QNO. e.g. there is no
+   QNO for a quantization step of 10, but we can use QNO=5 CNO=1 to
+   get the same result. The table below encodes combinations of QNO
+   and CNO in order of increasing quantization coarseness. */
+static const uint8_t dv100_qlevels[DV100_NUM_QLEVELS] = {
+    DV100_MAKE_QLEVEL( 1,0), //  1*1= 1
+    DV100_MAKE_QLEVEL( 1,0), //  1*1= 1
+    DV100_MAKE_QLEVEL( 2,0), //  2*1= 2
+    DV100_MAKE_QLEVEL( 3,0), //  3*1= 3
+    DV100_MAKE_QLEVEL( 4,0), //  4*1= 4
+    DV100_MAKE_QLEVEL( 5,0), //  5*1= 5
+    DV100_MAKE_QLEVEL( 6,0), //  6*1= 6
+    DV100_MAKE_QLEVEL( 7,0), //  7*1= 7
+    DV100_MAKE_QLEVEL( 8,0), //  8*1= 8
+    DV100_MAKE_QLEVEL( 5,1), //  5*2=10
+    DV100_MAKE_QLEVEL( 6,1), //  6*2=12
+    DV100_MAKE_QLEVEL( 7,1), //  7*2=14
+    DV100_MAKE_QLEVEL( 9,0), // 16*1=16
+    DV100_MAKE_QLEVEL(10,0), // 18*1=18
+    DV100_MAKE_QLEVEL(11,0), // 20*1=20
+    DV100_MAKE_QLEVEL(12,0), // 22*1=22
+    DV100_MAKE_QLEVEL(13,0), // 24*1=24
+    DV100_MAKE_QLEVEL(14,0), // 28*1=28
+    DV100_MAKE_QLEVEL( 9,1), // 16*2=32
+    DV100_MAKE_QLEVEL(10,1), // 18*2=36
+    DV100_MAKE_QLEVEL(11,1), // 20*2=40
+    DV100_MAKE_QLEVEL(12,1), // 22*2=44
+    DV100_MAKE_QLEVEL(13,1), // 24*2=48
+    DV100_MAKE_QLEVEL(15,0), // 52*1=52
+    DV100_MAKE_QLEVEL(14,1), // 28*2=56
+    DV100_MAKE_QLEVEL( 9,2), // 16*4=64
+    DV100_MAKE_QLEVEL(10,2), // 18*4=72
+    DV100_MAKE_QLEVEL(11,2), // 20*4=80
+    DV100_MAKE_QLEVEL(12,2), // 22*4=88
+    DV100_MAKE_QLEVEL(13,2), // 24*4=96
+    // ...
+    DV100_MAKE_QLEVEL(15,3), // 52*8=416
+};
+
+static const int dv100_min_bias = 0;
+static const int dv100_chroma_bias = 0;
+static const int dv100_starting_qno = 1;
+
+#if DV100_SACRIFICE_QUALITY_FOR_SPEED
+static const int dv100_qlevel_inc = 4;
+#else
+static const int dv100_qlevel_inc = 1;
+#endif
+
+// 1/qstep, shifted up by 16 bits
+static const int dv100_qstep_bits = 16;
+static const int dv100_qstep_inv[16] = {
+        65536,  65536,  32768,  21845,  16384,  13107,  10923,  9362,  8192,  4096,  3641,  3277,  2979,  2731,  2341,  1260,
+};
+
+/* DV100 weights are pre-zigzagged, inverted and multiplied by 2^(dv100_weight_shift)
+   (in DV100 the AC components are divided by the spec weights) */
+static const int dv100_weight_shift = 16;
+static const int dv_weight_1080[2][64] = {
+    { 8192, 65536, 65536, 61681, 61681, 61681, 58254, 58254,
+      58254, 58254, 58254, 58254, 55188, 58254, 58254, 55188,
+      55188, 55188, 55188, 55188, 55188, 24966, 27594, 26214,
+      26214, 26214, 27594, 24966, 23831, 24385, 25575, 25575,
+      25575, 25575, 24385, 23831, 23302, 23302, 24966, 24966,
+      24966, 23302, 23302, 21845, 22795, 24385, 24385, 22795,
+      21845, 21400, 21845, 23831, 21845, 21400, 10382, 10700,
+      10700, 10382, 10082, 9620, 10082, 9039, 9039, 8525, },
+    { 8192, 65536, 65536, 61681, 61681, 61681, 41943, 41943,
+      41943, 41943, 40330, 41943, 40330, 41943, 40330, 40330,
+      40330, 38836, 38836, 40330, 40330, 24966, 27594, 26214,
+      26214, 26214, 27594, 24966, 23831, 24385, 25575, 25575,
+      25575, 25575, 24385, 23831, 11523, 11523, 12483, 12483,
+      12483, 11523, 11523, 10923, 11275, 12193, 12193, 11275,
+      10923, 5323, 5490, 5924, 5490, 5323, 5165, 5323,
+      5323, 5165, 5017, 4788, 5017, 4520, 4520, 4263, }
+};
+
+static const int dv_weight_720[2][64] = {
+    { 8192, 65536, 65536, 61681, 61681, 61681, 58254, 58254,
+      58254, 58254, 58254, 58254, 55188, 58254, 58254, 55188,
+      55188, 55188, 55188, 55188, 55188, 24966, 27594, 26214,
+      26214, 26214, 27594, 24966, 23831, 24385, 25575, 25575,
+      25575, 25575, 24385, 23831, 15420, 15420, 16644, 16644,
+      16644, 15420, 15420, 10923, 11398, 12193, 12193, 11398,
+      10923, 10700, 10923, 11916, 10923, 10700, 5191, 5350,
+      5350, 5191, 5041, 4810, 5041, 4520, 4520, 4263, },
+    { 8192, 43691, 43691, 40330, 40330, 40330, 29127, 29127,
+      29127, 29127, 29127, 29127, 27594, 29127, 29127, 27594,
+      27594, 27594, 27594, 27594, 27594, 12483, 13797, 13107,
+      13107, 13107, 13797, 12483, 11916, 12193, 12788, 12788,
+      12788, 12788, 12193, 11916, 5761, 5761, 6242, 6242,
+      6242, 5761, 5761, 5461, 5638, 5461, 6096, 5638,
+      5461, 2661, 2745, 2962, 2745, 2661, 2583, 2661,
+      2661, 2583, 2509, 2394, 2509, 2260, 2260, 2131, }
+};
+
+static av_always_inline int dv_set_class_number_sd(DVVideoContext *s,
+                                                   int16_t *blk, EncBlockInfo *bi,
+                                                   const uint8_t *zigzag_scan,
+                                                   const int *weight, int bias)
 {
-    const int *weight;
-    const uint8_t *zigzag_scan;
-    LOCAL_ALIGNED_16(int16_t, blk, [64]);
     int i, area;
     /* We offer two different methods for class number assignment: the
      * method suggested in SMPTE 314M Table 22, and an improved
@@ -271,30 +384,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
     const unsigned deadzone = s->quant_deadzone;
     const unsigned threshold = 2 * deadzone;
 
-    av_assert2((((int) blk) & 15) == 0);
-
-    bi->area_q[0]          =
-    bi->area_q[1]          =
-    bi->area_q[2]          =
-    bi->area_q[3]          = 0;
-    bi->partial_bit_count  = 0;
-    bi->partial_bit_buffer = 0;
-    bi->cur_ac             = 0;
-    if (data) {
-        bi->dct_mode = dv_guess_dct_mode(s, data, linesize);
-        s->get_pixels(blk, data, linesize);
-        s->fdct[bi->dct_mode](blk);
-    } else {
-        /* We rely on the fact that encoding all zeros leads to an immediate
-         * EOB, which is precisely what the spec calls for in the "dummy"
-         * blocks. */
-        memset(blk, 0, 64 * sizeof(*blk));
-        bi->dct_mode = 0;
-    }
     bi->mb[0] = blk[0];
-
-    zigzag_scan = bi->dct_mode ? ff_dv_zigzag248_direct : ff_zigzag_direct;
-    weight      = bi->dct_mode ? dv_weight_248 : dv_weight_88;
 
     for (area = 0; area < 4; area++) {
         bi->prev[area]     = prev;
@@ -348,6 +438,309 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo *bi, uint8_t *data,
 
     return bi->bit_size[0] + bi->bit_size[1] +
            bi->bit_size[2] + bi->bit_size[3];
+}
+
+/* this function just copies the DCT coefficients and performs
+   the initial (non-)quantization. */
+static inline void dv_set_class_number_hd(DVVideoContext *s,
+                                          int16_t *blk, EncBlockInfo *bi,
+                                          const uint8_t *zigzag_scan,
+                                          const int *weight, int bias)
+{
+    int i, max = 0;
+
+    /* the first quantization (none at all) */
+    bi->area_q[0] = 1;
+
+    /* weigh AC components and store to save[] */
+    /* (i=0 is the DC component; we only include it to make the
+       number of loop iterations even, for future possible SIMD optimization) */
+    for (i = 0; i < 64; i += 2) {
+        int level0, level1;
+
+        /* get the AC component (in zig-zag order) */
+        level0 = blk[zigzag_scan[i+0]];
+        level1 = blk[zigzag_scan[i+1]];
+
+        /* extract sign and make it the lowest bit */
+        bi->sign[i+0] = (level0>>31)&1;
+        bi->sign[i+1] = (level1>>31)&1;
+
+        /* take absolute value of the level */
+        level0 = FFABS(level0);
+        level1 = FFABS(level1);
+
+        /* weigh it */
+        level0 = (level0*weight[i+0] + 4096 + (1<<17)) >> 18;
+        level1 = (level1*weight[i+1] + 4096 + (1<<17)) >> 18;
+
+        /* save unquantized value */
+        bi->save[i+0] = level0;
+        bi->save[i+1] = level1;
+
+         /* find max component */
+        if (bi->save[i+0] > max)
+            max = bi->save[i+0];
+        if (bi->save[i+1] > max)
+            max = bi->save[i+1];
+    }
+
+    /* copy DC component */
+    bi->mb[0] = blk[0];
+
+    /* the EOB code is 4 bits */
+    bi->bit_size[0] = 4;
+    bi->bit_size[1] = bi->bit_size[2] = bi->bit_size[3] = 0;
+
+    /* ensure that no AC coefficients are cut off */
+    bi->min_qlevel = ((max+256) >> 8);
+
+    bi->area_q[0] = 25; /* set to an "impossible" value */
+    bi->cno = 0;
+}
+
+static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, int linesize,
+                                              DVVideoContext *s, int chroma)
+{
+    LOCAL_ALIGNED_16(int16_t, blk, [64]);
+
+    bi->area_q[0] = bi->area_q[1] = bi->area_q[2] = bi->area_q[3] = 0;
+    bi->partial_bit_count = 0;
+    bi->partial_bit_buffer = 0;
+    bi->cur_ac = 0;
+
+    if (data) {
+        if (DV_PROFILE_IS_HD(s->sys)) {
+            s->get_pixels(blk, data, linesize << bi->dct_mode);
+            s->fdct[0](blk);
+        } else {
+            bi->dct_mode = dv_guess_dct_mode(s, data, linesize);
+            s->get_pixels(blk, data, linesize);
+            s->fdct[bi->dct_mode](blk);
+        }
+    } else {
+        /* We rely on the fact that encoding all zeros leads to an immediate EOB,
+           which is precisely what the spec calls for in the "dummy" blocks. */
+        memset(blk, 0, 64*sizeof(*blk));
+        bi->dct_mode = 0;
+    }
+
+    if (DV_PROFILE_IS_HD(s->sys)) {
+        const int *weights;
+        if (s->sys->height == 1080) {
+            weights = dv_weight_1080[chroma];
+        } else { /* 720p */
+            weights = dv_weight_720[chroma];
+        }
+        dv_set_class_number_hd(s, blk, bi,
+                               ff_zigzag_direct,
+                               weights,
+                               dv100_min_bias+chroma*dv100_chroma_bias);
+    } else {
+        dv_set_class_number_sd(s, blk, bi,
+                               bi->dct_mode ? ff_dv_zigzag248_direct : ff_zigzag_direct,
+                               bi->dct_mode ? dv_weight_248 : dv_weight_88,
+                               chroma);
+    }
+
+    return bi->bit_size[0] + bi->bit_size[1] + bi->bit_size[2] + bi->bit_size[3];
+}
+
+/* DV100 quantize
+   Perform quantization by divinding the AC component by the qstep.
+   As an optimization we use a fixed-point integer multiply instead
+   of a divide. */
+static av_always_inline int dv100_quantize(int level, int qsinv)
+{
+    /* this code is equivalent to */
+    /* return (level + qs/2) / qs; */
+
+    return (level * qsinv + 1024 + (1<<(dv100_qstep_bits-1))) >> dv100_qstep_bits;
+
+    /* the extra +1024 is needed to make the rounding come out right. */
+
+    /* I (DJM) have verified that the results are exactly the same as
+       division for level 0-2048 at all QNOs. */
+}
+
+static int dv100_actual_quantize(EncBlockInfo *b, int qlevel)
+{
+    int prev, k, qsinv;
+
+    int qno = DV100_QLEVEL_QNO(dv100_qlevels[qlevel]);
+    int cno = DV100_QLEVEL_CNO(dv100_qlevels[qlevel]);
+
+    if (b->area_q[0] == qno && b->cno == cno)
+        return b->bit_size[0];
+
+    qsinv = dv100_qstep_inv[qno];
+
+    /* record the new qstep */
+    b->area_q[0] = qno;
+    b->cno = cno;
+
+    /* reset encoded size (EOB = 4 bits) */
+    b->bit_size[0] = 4;
+
+    /* visit nonzero components and quantize */
+    prev = 0;
+    for (k = 1; k < 64; k++) {
+        /* quantize */
+        int ac = dv100_quantize(b->save[k], qsinv) >> cno;
+        if (ac) {
+            if (ac > 255)
+                ac = 255;
+            b->mb[k] = ac;
+            b->bit_size[0] += dv_rl2vlc_size(k - prev - 1, ac);
+            b->next[prev] = k;
+            prev = k;
+        }
+    }
+    b->next[prev] = k;
+
+    return b->bit_size[0];
+}
+
+static inline void dv_guess_qnos_hd(EncBlockInfo *blks, int *qnos)
+{
+    EncBlockInfo *b;
+    int min_qlevel[5];
+    int qlevels[5];
+    int size[5];
+    int i, j;
+    /* cache block sizes at hypothetical qlevels */
+    uint16_t size_cache[5*8][DV100_NUM_QLEVELS] = {{0}};
+
+    /* get minimum qlevels */
+    for (i = 0; i < 5; i++) {
+        min_qlevel[i] = 1;
+        for (j = 0; j < 8; j++) {
+            if (blks[8*i+j].min_qlevel > min_qlevel[i])
+                min_qlevel[i] = blks[8*i+j].min_qlevel;
+        }
+    }
+
+    /* initialize sizes */
+    for (i = 0; i < 5; i++) {
+        qlevels[i] = dv100_starting_qno;
+        if (qlevels[i] < min_qlevel[i])
+            qlevels[i] = min_qlevel[i];
+
+        qnos[i] = DV100_QLEVEL_QNO(dv100_qlevels[qlevels[i]]);
+        size[i] = 0;
+        for (j = 0; j < 8; j++) {
+            size_cache[8*i+j][qlevels[i]] = dv100_actual_quantize(&blks[8*i+j], qlevels[i]);
+            size[i] += size_cache[8*i+j][qlevels[i]];
+        }
+    }
+
+    /* must we go coarser? */
+    if (size[0]+size[1]+size[2]+size[3]+size[4] > vs_total_ac_bits_hd) {
+        int largest = size[0] % 5; /* 'random' number */
+        int qlevels_done = 0;
+
+        do {
+            /* find the macroblock with the lowest qlevel */
+            for (i = 0; i < 5; i++) {
+                if (qlevels[i] < qlevels[largest])
+                    largest = i;
+            }
+
+            i = largest;
+            /* ensure that we don't enter infinite loop */
+            largest = (largest+1) % 5;
+
+            /* quantize a little bit more */
+            qlevels[i] += dv100_qlevel_inc;
+            if (qlevels[i] > DV100_NUM_QLEVELS-1) {
+                qlevels[i] = DV100_NUM_QLEVELS-1;
+                qlevels_done++;
+            }
+
+            qnos[i] = DV100_QLEVEL_QNO(dv100_qlevels[qlevels[i]]);
+            size[i] = 0;
+
+            /* for each block */
+            b = &blks[8*i];
+            for (j = 0; j < 8; j++, b++) {
+                /* accumulate block size into macroblock */
+                if(size_cache[8*i+j][qlevels[i]] == 0) {
+                    /* it is safe to use actual_quantize() here because we only go from finer to coarser,
+                       and it saves the final actual_quantize() down below */
+                    size_cache[8*i+j][qlevels[i]] = dv100_actual_quantize(b, qlevels[i]);
+                }
+                size[i] += size_cache[8*i+j][qlevels[i]];
+            } /* for each block */
+
+        } while (vs_total_ac_bits_hd < size[0] + size[1] + size[2] + size[3] + size[4] && qlevels_done < 5);
+
+        // can we go finer?
+    } else if (DV100_ENABLE_FINER &&
+               size[0]+size[1]+size[2]+size[3]+size[4] < vs_total_ac_bits_hd) {
+        int save_qlevel;
+        int largest = size[0] % 5; /* 'random' number */
+
+        while (qlevels[0] > min_qlevel[0] ||
+               qlevels[1] > min_qlevel[1] ||
+               qlevels[2] > min_qlevel[2] ||
+               qlevels[3] > min_qlevel[3] ||
+               qlevels[4] > min_qlevel[4]) {
+
+            /* find the macroblock with the highest qlevel */
+            for (i = 0; i < 5; i++) {
+                if (qlevels[i] > min_qlevel[i] && qlevels[i] > qlevels[largest])
+                    largest = i;
+            }
+
+            i = largest;
+
+            /* ensure that we don't enter infinite loop */
+            largest = (largest+1) % 5;
+
+            if (qlevels[i] <= min_qlevel[i]) {
+                /* can't unquantize any more */
+                continue;
+            }
+            /* quantize a little bit less */
+            save_qlevel = qlevels[i];
+            qlevels[i] -= dv100_qlevel_inc;
+            if (qlevels[i] < min_qlevel[i])
+                qlevels[i] = min_qlevel[i];
+
+            qnos[i] = DV100_QLEVEL_QNO(dv100_qlevels[qlevels[i]]);
+
+            size[i] = 0;
+
+            /* for each block */
+            b = &blks[8*i];
+            for (j = 0; j < 8; j++, b++) {
+                /* accumulate block size into macroblock */
+                if(size_cache[8*i+j][qlevels[i]] == 0) {
+                    size_cache[8*i+j][qlevels[i]] = dv100_actual_quantize(b, qlevels[i]);
+                }
+                size[i] += size_cache[8*i+j][qlevels[i]];
+            } /* for each block */
+
+            /* did we bust the limit? */
+            if (vs_total_ac_bits_hd < size[0] + size[1] + size[2] + size[3] + size[4]) {
+                /* go back down and exit */
+                qlevels[i] = save_qlevel;
+                qnos[i] = DV100_QLEVEL_QNO(dv100_qlevels[qlevels[i]]);
+                break;
+            }
+        }
+    }
+
+    /* now do the actual quantization */
+    for (i = 0; i < 5; i++) {
+        /* for each block */
+        b = &blks[8*i];
+        size[i] = 0;
+        for (j = 0; j < 8; j++, b++) {
+            /* accumulate block size into macroblock */
+            size[i] += dv100_actual_quantize(b, qlevels[i]);
+        } /* for each block */
+    }
 }
 
 static inline void dv_guess_qnos(EncBlockInfo *blks, int *qnos)
@@ -422,6 +815,26 @@ static inline void dv_guess_qnos(EncBlockInfo *blks, int *qnos)
     }
 }
 
+/* update all cno values into the blocks, over-writing the old values without
+   touching anything else. (only used for DV100) */
+static inline void dv_revise_cnos(uint8_t *dif, EncBlockInfo *blk, const AVDVProfile *profile)
+{
+    uint8_t *data;
+    int mb_index, i;
+
+    for (mb_index = 0; mb_index < 5; mb_index++) {
+        data = dif + mb_index*80 + 4;
+        for (i = 0; i < profile->bpm; i++) {
+            /* zero out the class number */
+            data[1] &= 0xCF;
+            /* add the new one */
+            data[1] |= blk[profile->bpm*mb_index+i].cno << 4;
+
+            data += profile->block_sizes[i] >> 3;
+        }
+    }
+}
+
 static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
 {
     DVVideoContext *s = avctx->priv_data;
@@ -430,26 +843,38 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
     int mb_x, mb_y, c_offset;
     ptrdiff_t linesize, y_stride;
     uint8_t *y_ptr;
-    uint8_t *dif;
+    uint8_t *dif, *p;
     LOCAL_ALIGNED_8(uint8_t, scratch, [128]);
     EncBlockInfo enc_blks[5 * DV_MAX_BPM];
     PutBitContext pbs[5 * DV_MAX_BPM];
     PutBitContext *pb;
     EncBlockInfo *enc_blk;
     int vs_bit_size = 0;
-    int qnos[5] = { 15, 15, 15, 15, 15 }; /* No quantization */
+    int qnos[5];
     int *qnosp = &qnos[0];
 
-    dif     = &s->buf[work_chunk->buf_offset * 80];
+    p = dif = &s->buf[work_chunk->buf_offset * 80];
     enc_blk = &enc_blks[0];
     for (mb_index = 0; mb_index < 5; mb_index++) {
         dv_calculate_mb_xy(s, work_chunk, mb_index, &mb_x, &mb_y);
+
+        qnos[mb_index] = DV_PROFILE_IS_HD(s->sys) ? 1 : 15;
+
+        y_ptr    = s->frame->data[0] + ((mb_y * s->frame->linesize[0] + mb_x) << 3);
+        linesize = s->frame->linesize[0];
+
+        if (s->sys->height == 1080 && mb_y < 134)
+            enc_blk->dct_mode = dv_guess_dct_mode(s, y_ptr, linesize);
+        else
+            enc_blk->dct_mode = 0;
+        for (i = 1; i < 8; i++)
+            enc_blk[i].dct_mode = enc_blk->dct_mode;
 
         /* initializing luminance blocks */
         if ((s->sys->pix_fmt == AV_PIX_FMT_YUV420P)                      ||
             (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) ||
             (s->sys->height >= 720 && mb_y != 134)) {
-            y_stride = s->frame->linesize[0] << 3;
+            y_stride = s->frame->linesize[0] << (3*!enc_blk->dct_mode);
         } else {
             y_stride = 16;
         }
@@ -478,7 +903,7 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         for (j = 2; j; j--) {
             uint8_t *c_ptr = s->frame->data[j] + c_offset;
             linesize = s->frame->linesize[j];
-            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] << 3);
+            y_stride = (mb_y == 134) ? 8 : (s->frame->linesize[j] << (3*!enc_blk->dct_mode));
             if (s->sys->pix_fmt == AV_PIX_FMT_YUV411P && mb_x >= (704 / 8)) {
                 uint8_t *d;
                 uint8_t *b = scratch;
@@ -506,27 +931,31 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         }
     }
 
-    if (vs_total_ac_bits < vs_bit_size)
+    if (DV_PROFILE_IS_HD(s->sys)) {
+        /* unconditional */
+        dv_guess_qnos_hd(&enc_blks[0], qnosp);
+    } else if (vs_total_ac_bits < vs_bit_size) {
         dv_guess_qnos(&enc_blks[0], qnosp);
+    }
 
     /* DIF encoding process */
     for (j = 0; j < 5 * s->sys->bpm;) {
         int start_mb = j;
 
-        dif[3] = *qnosp++;
-        dif   += 4;
+        p[3] = *qnosp++;
+        p += 4;
 
         /* First pass over individual cells only */
         for (i = 0; i < s->sys->bpm; i++, j++) {
             int sz = s->sys->block_sizes[i] >> 3;
 
-            init_put_bits(&pbs[j], dif, sz);
+            init_put_bits(&pbs[j], p, sz);
             put_sbits(&pbs[j], 9, ((enc_blks[j].mb[0] >> 3) - 1024 + 2) >> 2);
-            put_bits(&pbs[j], 1, enc_blks[j].dct_mode);
+            put_bits(&pbs[j], 1, DV_PROFILE_IS_HD(s->sys) && i ? 1 : enc_blks[j].dct_mode);
             put_bits(&pbs[j], 2, enc_blks[j].cno);
 
             dv_encode_ac(&enc_blks[j], &pbs[j], &pbs[j + 1]);
-            dif += sz;
+            p += sz;
         }
 
         /* Second pass over each MB space */
@@ -559,6 +988,9 @@ static int dv_encode_video_segment(AVCodecContext *avctx, void *arg)
         memset(pbs[j].buf + pos, 0xff, size - pos);
     }
 
+    if (DV_PROFILE_IS_HD(s->sys))
+        dv_revise_cnos(dif, enc_blks, s->sys);
+
     return 0;
 }
 
@@ -583,12 +1015,19 @@ static inline int dv_write_pack(enum dv_pack_type pack_id, DVVideoContext *c,
      *   2. It is not at all clear what STYPE is used for 4:2:0 PAL
      *      compression scheme (if any).
      */
-    int apt = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
-    int fs  = c->frame->top_field_first ? 0x00 : 0x40;
-
     uint8_t aspect = 0;
-    if ((int) (av_q2d(c->avctx->sample_aspect_ratio) *
-               c->avctx->width / c->avctx->height * 10) >= 17) /* 16:9 */
+    int apt = (c->sys->pix_fmt == AV_PIX_FMT_YUV420P ? 0 : 1);
+    int fs;
+
+    if (c->avctx->height >= 720)
+        fs = c->avctx->height == 720 || c->frame->top_field_first ? 0x40 : 0x00;
+    else
+        fs = c->frame->top_field_first ? 0x00 : 0x40;
+
+    if (DV_PROFILE_IS_HD(c->sys) ||
+        (int)(av_q2d(c->avctx->sample_aspect_ratio) *
+              c->avctx->width / c->avctx->height * 10) >= 17)
+        /* HD formats are always 16:9 */
         aspect = 0x02;
 
     buf[0] = (uint8_t) pack_id;
@@ -643,10 +1082,14 @@ static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num,
                                   uint8_t seq_num, uint8_t dif_num,
                                   uint8_t *buf)
 {
+    int fsc = chan_num & 1;
+    int fsp = 1 - (chan_num >> 1);
+
     buf[0] = (uint8_t) t;      /* Section type */
     buf[1] = (seq_num  << 4) | /* DIF seq number 0-9 for 525/60; 0-11 for 625/50 */
-             (chan_num << 3) | /* FSC: for 50Mb/s 0 - first channel; 1 - second */
-             7;                /* reserved -- always 1 */
+             (fsc << 3) |      /* FSC: for 50 and 100Mb/s 0 - first channel; 1 - second */
+             (fsp << 2) |      /* FSP: for 100Mb/s 1 - channels 0-1; 0 - channels 2-3 */
+             3;                /* reserved -- always 1 */
     buf[2] = dif_num;          /* DIF block number Video: 0-134, Audio: 0-8 */
     return 3;
 }
@@ -674,20 +1117,22 @@ static inline int dv_write_ssyb_id(uint8_t syb_num, uint8_t fr, uint8_t *buf)
 static void dv_format_frame(DVVideoContext *c, uint8_t *buf)
 {
     int chan, i, j, k;
+    /* We work with 720p frames split in half. The odd half-frame is chan 2,3 */
+    int chan_offset = 2*(c->sys->height == 720 && c->avctx->frame_number & 1);
 
     for (chan = 0; chan < c->sys->n_difchan; chan++) {
         for (i = 0; i < c->sys->difseg_size; i++) {
             memset(buf, 0xff, 80 * 6); /* first 6 DIF blocks are for control data */
 
             /* DV header: 1DIF */
-            buf += dv_write_dif_id(dv_sect_header, chan, i, 0, buf);
+            buf += dv_write_dif_id(dv_sect_header, chan+chan_offset, i, 0, buf);
             buf += dv_write_pack((c->sys->dsf ? dv_header625 : dv_header525),
                                  c, buf);
             buf += 72; /* unused bytes */
 
             /* DV subcode: 2DIFs */
             for (j = 0; j < 2; j++) {
-                buf += dv_write_dif_id(dv_sect_subcode, chan, i, j, buf);
+                buf += dv_write_dif_id(dv_sect_subcode, chan+chan_offset, i, j, buf);
                 for (k = 0; k < 6; k++)
                     buf += dv_write_ssyb_id(k, (i < c->sys->difseg_size / 2), buf) + 5;
                 buf += 29; /* unused bytes */
@@ -695,7 +1140,7 @@ static void dv_format_frame(DVVideoContext *c, uint8_t *buf)
 
             /* DV VAUX: 3DIFS */
             for (j = 0; j < 3; j++) {
-                buf += dv_write_dif_id(dv_sect_vaux, chan, i, j, buf);
+                buf += dv_write_dif_id(dv_sect_vaux, chan+chan_offset, i, j, buf);
                 buf += dv_write_pack(dv_video_source,  c, buf);
                 buf += dv_write_pack(dv_video_control, c, buf);
                 buf += 7 * 5;
@@ -708,10 +1153,10 @@ static void dv_format_frame(DVVideoContext *c, uint8_t *buf)
             for (j = 0; j < 135; j++) {
                 if (j % 15 == 0) {
                     memset(buf, 0xff, 80);
-                    buf += dv_write_dif_id(dv_sect_audio, chan, i, j / 15, buf);
+                    buf += dv_write_dif_id(dv_sect_audio, chan+chan_offset, i, j/15, buf);
                     buf += 77; /* audio control & shuffled PCM audio */
                 }
-                buf += dv_write_dif_id(dv_sect_video, chan, i, j, buf);
+                buf += dv_write_dif_id(dv_sect_video, chan+chan_offset, i, j, buf);
                 buf += 77; /* 1 video macroblock: 1 bytes control
                             * 4 * 14 bytes Y 8x8 data
                             * 10 bytes Cr 8x8 data
@@ -738,14 +1183,14 @@ FF_DISABLE_DEPRECATION_WARNINGS
     c->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 FF_ENABLE_DEPRECATION_WARNINGS
 #endif
-
     s->buf = pkt->data;
+
+    dv_format_frame(s, pkt->data);
+
     c->execute(c, dv_encode_video_segment, s->work_chunks, NULL,
                dv_work_pool_size(s->sys), sizeof(DVwork_chunk));
 
     emms_c();
-
-    dv_format_frame(s, pkt->data);
 
     pkt->flags |= AV_PKT_FLAG_KEY;
     *got_packet = 1;

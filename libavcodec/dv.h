@@ -83,6 +83,7 @@ enum dv_pack_type {
 
 #define DV_PROFILE_IS_HD(p) ((p)->video_stype & 0x10)
 #define DV_PROFILE_IS_1080i50(p) (((p)->video_stype == 0x14) && ((p)->dsf == 1))
+#define DV_PROFILE_IS_1080i60(p) (((p)->video_stype == 0x14) && ((p)->dsf == 0))
 #define DV_PROFILE_IS_720p50(p)  (((p)->video_stype == 0x18) && ((p)->dsf == 1))
 
 /**

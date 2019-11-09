@@ -135,7 +135,7 @@ fate-vsynth%-dnxhd-hr-hq-mov:   ENCOPTS = -s 2kflat -profile:v dnxhr_hq \
 fate-vsynth%-dnxhd-hr-hq-mov:   DECOPTS = -sws_flags area+accurate_rnd+bitexact
 fate-vsynth%-dnxhd-hr-hq-mov:   FMT     = mov
 
-FATE_VCODEC-$(call ENCDEC, DVVIDEO, DV) += dv dv-411 dv-50
+FATE_VCODEC-$(call ENCDEC, DVVIDEO, DV) += dv dv-411 dv-50 dv-hd dv-fhd
 fate-vsynth%-dv:                 CODEC   = dvvideo
 fate-vsynth%-dv:                 ENCOPTS = -dct int -s pal
 fate-vsynth%-dv:                 FMT     = dv
@@ -151,6 +151,18 @@ fate-vsynth%-dv-50:              ENCOPTS = -dct int -s pal -pix_fmt yuv422p \
                                            -sws_flags neighbor
 fate-vsynth%-dv-50:              DECOPTS = -sws_flags neighbor
 fate-vsynth%-dv-50:              FMT     = dv
+
+fate-vsynth%-dv-fhd:             CODEC   = dvvideo
+fate-vsynth%-dv-fhd:             ENCOPTS = -dct int -s 1440x1080 -pix_fmt yuv422p \
+                                           -sws_flags neighbor
+fate-vsynth%-dv-fhd:             DECOPTS = -sws_flags neighbor
+fate-vsynth%-dv-fhd:             FMT     = dv
+
+fate-vsynth%-dv-hd:              CODEC   = dvvideo
+fate-vsynth%-dv-hd:              ENCOPTS = -dct int -s 960x720 -pix_fmt yuv422p \
+                                           -sws_flags neighbor
+fate-vsynth%-dv-hd:              DECOPTS = -sws_flags neighbor
+fate-vsynth%-dv-hd:              FMT     = dv
 
 FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1-v0 \
                                            ffv1-v3-yuv420p ffv1-v3-yuv422p10 ffv1-v3-yuv444p16 \

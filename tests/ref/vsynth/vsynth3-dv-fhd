@@ -1,0 +1,4 @@
+5b8b7f1dc31d7076af891e94c2e88c06 *tests/data/fate/vsynth3-dv-fhd.dv
+28800000 tests/data/fate/vsynth3-dv-fhd.dv
+a038ad7c3c09f776304ef7accdea9c74 *tests/data/fate/vsynth3-dv-fhd.out.rawvideo
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:    86700/    86700
