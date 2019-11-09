@@ -416,7 +416,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         return ret;
     out_frame = (int16_t*) frame->data[0];
 
-    if (buf_size % 10 == 0) {
+    if (buf_size && buf_size % 10 == 0) {
         packet_type = FORMAT_G729_8K;
         format = &format_g729_8k;
         //Reset voice decision
