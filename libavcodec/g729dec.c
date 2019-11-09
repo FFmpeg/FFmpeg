@@ -97,6 +97,7 @@ typedef struct {
     uint8_t gc_2nd_index_bits;  ///< gain codebook (second stage) index (size in bits)
     uint8_t fc_signs_bits;      ///< number of pulses in fixed-codebook vector
     uint8_t fc_indexes_bits;    ///< size (in bits) of fixed-codebook index entry
+    uint8_t block_size;
 } G729FormatDescription;
 
 typedef struct {
@@ -165,6 +166,7 @@ static const G729FormatDescription format_g729_8k = {
     .gc_2nd_index_bits = GC_2ND_IDX_BITS_8K,
     .fc_signs_bits     = 4,
     .fc_indexes_bits   = 13,
+    .block_size        = G729_8K_BLOCK_SIZE,
 };
 
 static const G729FormatDescription format_g729d_6k4 = {
@@ -174,6 +176,7 @@ static const G729FormatDescription format_g729d_6k4 = {
     .gc_2nd_index_bits = GC_2ND_IDX_BITS_6K4,
     .fc_signs_bits     = 2,
     .fc_indexes_bits   = 9,
+    .block_size        = G729D_6K4_BLOCK_SIZE,
 };
 
 /**
@@ -726,12 +729,12 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
         /* Save signal for use in next frame. */
         memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
-        buf += packet_type == FORMAT_G729_8K ? G729_8K_BLOCK_SIZE : G729D_6K4_BLOCK_SIZE;
+        buf += format->block_size;
         ctx++;
     }
 
     *got_frame_ptr = 1;
-    return packet_type == FORMAT_G729_8K ? G729_8K_BLOCK_SIZE * avctx->channels : G729D_6K4_BLOCK_SIZE * avctx->channels;
+    return format->block_size * avctx->channels;
 }
 
 static av_cold int decode_close(AVCodecContext *avctx)
