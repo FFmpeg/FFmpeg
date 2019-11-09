@@ -428,9 +428,15 @@ int attribute_align_arg avcodec_receive_packet(AVCodecContext *avctx, AVPacket *
         return AVERROR(EINVAL);
 
     if (avctx->codec->receive_packet) {
+        int ret;
         if (avctx->internal->draining && !(avctx->codec->capabilities & AV_CODEC_CAP_DELAY))
             return AVERROR_EOF;
-        return avctx->codec->receive_packet(avctx, avpkt);
+        ret = avctx->codec->receive_packet(avctx, avpkt);
+        if (!ret)
+            // Encoders must always return ref-counted buffers.
+            // Side-data only packets have no data and can be not ref-counted.
+            av_assert0(!avpkt->data || avpkt->buf);
+        return ret;
     }
 
     // Emulation via old API.
