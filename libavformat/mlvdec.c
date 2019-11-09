@@ -462,8 +462,7 @@ static int read_close(AVFormatContext *s)
     MlvContext *mlv = s->priv_data;
     int i;
     for (i = 0; i < 100; i++)
-        if (mlv->pb[i])
-            ff_format_io_close(s, &mlv->pb[i]);
+        ff_format_io_close(s, &mlv->pb[i]);
     return 0;
 }
 
