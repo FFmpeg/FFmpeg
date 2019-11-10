@@ -94,6 +94,10 @@ typedef struct MpegTSWrite {
     int pmt_start_pid;
     int start_pid;
     int m2ts_mode;
+    int m2ts_video_pid;
+    int m2ts_audio_pid;
+    int m2ts_pgssub_pid;
+    int m2ts_textsub_pid;
 
     int pcr_period_ms;
 #define MPEGTS_FLAG_REEMIT_PAT_PMT  0x01
@@ -860,6 +864,14 @@ static int mpegts_init(AVFormatContext *s)
         }
     }
 
+    ts->m2ts_video_pid   = M2TS_VIDEO_PID;
+    ts->m2ts_audio_pid   = M2TS_AUDIO_START_PID;
+    ts->m2ts_pgssub_pid  = M2TS_PGSSUB_START_PID;
+    ts->m2ts_textsub_pid = M2TS_TEXTSUB_PID;
+
+    if (ts->m2ts_mode)
+        ts->pmt_start_pid = M2TS_PMT_PID;
+
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = 0;
 
@@ -923,7 +935,37 @@ static int mpegts_init(AVFormatContext *s)
         /* MPEG pid values < 16 are reserved. Applications which set st->id in
          * this range are assigned a calculated pid. */
         if (st->id < 16) {
-            ts_st->pid = ts->start_pid + i;
+            if (ts->m2ts_mode) {
+                switch (st->codecpar->codec_type) {
+                case AVMEDIA_TYPE_VIDEO:
+                    ts_st->pid = ts->m2ts_video_pid++;
+                    break;
+                case AVMEDIA_TYPE_AUDIO:
+                    ts_st->pid = ts->m2ts_audio_pid++;
+                    break;
+                case AVMEDIA_TYPE_SUBTITLE:
+                    switch (st->codecpar->codec_id) {
+                    case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
+                        ts_st->pid = ts->m2ts_pgssub_pid++;
+                        break;
+                    case AV_CODEC_ID_HDMV_TEXT_SUBTITLE:
+                        ts_st->pid = ts->m2ts_textsub_pid++;
+                        break;
+                    }
+                    break;
+                }
+                if (ts->m2ts_video_pid   > M2TS_VIDEO_PID + 1          ||
+                    ts->m2ts_audio_pid   > M2TS_AUDIO_START_PID + 32   ||
+                    ts->m2ts_pgssub_pid  > M2TS_PGSSUB_START_PID + 32  ||
+                    ts->m2ts_textsub_pid > M2TS_TEXTSUB_PID + 1        ||
+                    ts_st->pid < 16) {
+                    av_log(s, AV_LOG_ERROR, "Cannot automatically assign PID for stream %d\n", st->index);
+                    ret = AVERROR(EINVAL);
+                    goto fail;
+                }
+            } else {
+                ts_st->pid = ts->start_pid + i;
+            }
         } else {
             ts_st->pid = st->id;
         }

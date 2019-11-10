@@ -65,6 +65,16 @@
  * streams and other data tables */
 #define NULL_PID        0x1FFF /* Null packet (used for fixed bandwidth padding) */
 
+/* m2ts pids */
+#define M2TS_PMT_PID                      0x0100
+#define M2TS_PCR_PID                      0x1001
+#define M2TS_VIDEO_PID                    0x1011
+#define M2TS_AUDIO_START_PID              0x1100
+#define M2TS_PGSSUB_START_PID             0x1200
+#define M2TS_TEXTSUB_PID                  0x1800
+#define M2TS_SECONDARY_AUDIO_START_PID    0x1A00
+#define M2TS_SECONDARY_VIDEO_START_PID    0x1B00
+
 /* table ids */
 #define PAT_TID         0x00 /* Program Association section */
 #define CAT_TID         0x01 /* Conditional Access section */

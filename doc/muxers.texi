@@ -1660,11 +1660,13 @@ Advanced Codec Digital HDTV service.
 
 @item mpegts_pmt_start_pid @var{integer}
 Set the first PID for PMTs. Default is @code{0x1000}, minimum is @code{0x0020},
-maximum is @code{0x1ffa}.
+maximum is @code{0x1ffa}. This option has no effect in m2ts mode where the PMT
+PID is fixed @code{0x0100}.
 
 @item mpegts_start_pid @var{integer}
 Set the first PID for elementary streams. Default is @code{0x0100}, minimum is
-@code{0x0020}, maximum is @code{0x1ffa}.
+@code{0x0020}, maximum is @code{0x1ffa}. This option has no effect in m2ts mode
+where the elementary stream PIDs are fixed.
 
 @item mpegts_m2ts_mode @var{boolean}
 Enable m2ts mode if set to @code{1}. Default value is @code{-1} which
