@@ -103,15 +103,11 @@ static int dss_read_metadata_string(AVFormatContext *s, unsigned int offset,
 
     ret = avio_read(s->pb, value, size);
     if (ret < size) {
-        ret = ret < 0 ? ret : AVERROR_EOF;
-        goto exit;
+        av_free(value);
+        return ret < 0 ? ret : AVERROR_EOF;
     }
 
-    ret = av_dict_set(&s->metadata, key, value, 0);
-
-exit:
-    av_free(value);
-    return ret;
+    return av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
 }
 
 static int dss_read_header(AVFormatContext *s)
