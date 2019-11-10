@@ -114,7 +114,7 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     // Set options
     av_dict_set(&opt_dict, "method", s->legacy_icecast ? "SOURCE" : "PUT", 0);
     av_dict_set(&opt_dict, "auth_type", "basic", 0);
-    av_dict_set(&opt_dict, "headers", headers, 0);
+    av_dict_set(&opt_dict, "headers", headers, AV_DICT_DONT_STRDUP_VAL);
     av_dict_set(&opt_dict, "chunked_post", "0", 0);
     av_dict_set(&opt_dict, "send_expect_100", s->legacy_icecast ? "-1" : "1", 0);
     if (NOT_EMPTY(s->content_type))
@@ -170,7 +170,6 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
 
 cleanup:
     av_freep(&user);
-    av_freep(&headers);
     av_dict_free(&opt_dict);
 
     return ret;
