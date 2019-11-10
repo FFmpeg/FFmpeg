@@ -2403,8 +2403,8 @@ static int matroska_parse_tracks(AVFormatContext *s)
 
         if (key_id_base64) {
             /* export encryption key id as base64 metadata tag */
-            av_dict_set(&st->metadata, "enc_key_id", key_id_base64, 0);
-            av_freep(&key_id_base64);
+            av_dict_set(&st->metadata, "enc_key_id", key_id_base64,
+                        AV_DICT_DONT_STRDUP_VAL);
         }
 
         if (!strcmp(track->codec_id, "V_MS/VFW/FOURCC") &&
@@ -4111,8 +4111,8 @@ static int webm_dash_manifest_cues(AVFormatContext *s, int64_t init_range)
         }
         end += ret;
     }
-    av_dict_set(&s->streams[0]->metadata, CUE_TIMESTAMPS, buf, 0);
-    av_free(buf);
+    av_dict_set(&s->streams[0]->metadata, CUE_TIMESTAMPS,
+                buf, AV_DICT_DONT_STRDUP_VAL);
 
     return 0;
 }
@@ -4137,8 +4137,8 @@ static int webm_dash_manifest_read_header(AVFormatContext *s)
     if (!matroska->is_live) {
         buf = av_asprintf("%g", matroska->duration);
         if (!buf) return AVERROR(ENOMEM);
-        av_dict_set(&s->streams[0]->metadata, DURATION, buf, 0);
-        av_free(buf);
+        av_dict_set(&s->streams[0]->metadata, DURATION,
+                    buf, AV_DICT_DONT_STRDUP_VAL);
 
         // initialization range
         // 5 is the offset of Cluster ID.
