@@ -1129,8 +1129,8 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return ret;
     }
     comp_brands_str[comp_brand_size] = 0;
-    av_dict_set(&c->fc->metadata, "compatible_brands", comp_brands_str, 0);
-    av_freep(&comp_brands_str);
+    av_dict_set(&c->fc->metadata, "compatible_brands",
+                comp_brands_str, AV_DICT_DONT_STRDUP_VAL);
 
     return 0;
 }
@@ -5794,8 +5794,8 @@ static int mov_read_uuid(MOVContext *c, AVIOContext *pb, MOVAtom atom)
                 return AVERROR_INVALIDDATA;
             }
             buffer[len] = '\0';
-            av_dict_set(&c->fc->metadata, "xmp", buffer, 0);
-            av_free(buffer);
+            av_dict_set(&c->fc->metadata, "xmp",
+                        buffer, AV_DICT_DONT_STRDUP_VAL);
         } else {
             // skip all uuid atom, which makes it fast for long uuid-xmp file
             ret = avio_skip(pb, len);
