@@ -1774,6 +1774,7 @@ static int mpegts_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
 
 static void mpegts_write_flush(AVFormatContext *s)
 {
+    MpegTSWrite *ts = s->priv_data;
     int i;
 
     /* flush current packets */
@@ -1787,6 +1788,12 @@ static void mpegts_write_flush(AVFormatContext *s)
             ts_st->payload_size = 0;
             ts_st->opus_queued_samples = 0;
         }
+    }
+
+    if (ts->m2ts_mode) {
+        int packets = (avio_tell(s->pb) / (TS_PACKET_SIZE + 4)) % 32;
+        while (packets++ < 32)
+            mpegts_insert_null_packet(s);
     }
 }
 
