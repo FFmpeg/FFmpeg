@@ -1263,8 +1263,6 @@ int ff_id3v2_parse_priv_dict(AVDictionary **metadata, ID3v2ExtraMeta **extra_met
             }
 
             if ((ret = av_dict_set(metadata, key, escaped, dict_flags)) < 0) {
-                av_free(key);
-                av_free(escaped);
                 return ret;
             }
         }
