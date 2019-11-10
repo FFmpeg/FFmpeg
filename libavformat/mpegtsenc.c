@@ -850,6 +850,14 @@ static int mpegts_init(AVFormatContext *s)
     int *pids;
     int ret;
 
+    if (ts->m2ts_mode == -1) {
+        if (av_match_ext(s->url, "m2ts")) {
+            ts->m2ts_mode = 1;
+        } else {
+            ts->m2ts_mode = 0;
+        }
+    }
+
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = 0;
 
@@ -1001,14 +1009,6 @@ static int mpegts_init(AVFormatContext *s)
            "sdt every %"PRId64" ms, pat/pmt every %"PRId64" ms\n",
            av_rescale(ts->sdt_period, 1000, PCR_TIME_BASE),
            av_rescale(ts->pat_period, 1000, PCR_TIME_BASE));
-
-    if (ts->m2ts_mode == -1) {
-        if (av_match_ext(s->url, "m2ts")) {
-            ts->m2ts_mode = 1;
-        } else {
-            ts->m2ts_mode = 0;
-        }
-    }
 
     return 0;
 
