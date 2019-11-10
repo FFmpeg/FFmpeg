@@ -1237,6 +1237,8 @@ static void mpegts_write_pes(AVFormatContext *s, AVStream *st,
         q    = buf;
         *q++ = 0x47;
         val  = ts_st->pid >> 8;
+        if (ts->m2ts_mode && st->codecpar->codec_id == AV_CODEC_ID_AC3)
+            val |= 0x20;
         if (is_start)
             val |= 0x40;
         *q++      = val;
