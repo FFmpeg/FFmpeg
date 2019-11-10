@@ -89,7 +89,7 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
 
     // URI part variables
     char h_url[1024], host[1024], auth[1024], path[1024];
-    char *headers = NULL, *user = NULL;
+    char *headers, *user = NULL;
     int port, ret;
     AVBPrint bp;
 
@@ -105,10 +105,11 @@ static int icecast_open(URLContext *h, const char *uri, int flags)
     cat_header(&bp, "Ice-Genre", s->genre);
     cat_header(&bp, "Ice-Public", s->public ? "1" : "0");
     if (!av_bprint_is_complete(&bp)) {
-        ret = AVERROR(ENOMEM);
-        goto cleanup;
+        av_bprint_finalize(&bp, NULL);
+        return AVERROR(ENOMEM);
     }
-    av_bprint_finalize(&bp, &headers);
+    if ((ret = av_bprint_finalize(&bp, &headers)) < 0)
+        return ret;
 
     // Set options
     av_dict_set(&opt_dict, "method", s->legacy_icecast ? "SOURCE" : "PUT", 0);
