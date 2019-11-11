@@ -58,6 +58,8 @@
 #define SIT_PID         0x001F /* Selection Information Table */
 /* PID from 0x0020 to 0x1FFA may be assigned as needed to PMT, elementary
  * streams and other data tables */
+#define FIRST_OTHER_PID 0x0020
+#define  LAST_OTHER_PID 0x1FFA
 /* PID 0x1FFB is used by DigiCipher 2/ATSC MGT metadata */
 /* PID from 0x1FFC to 0x1FFE may be assigned as needed to PMT, elementary
  * streams and other data tables */

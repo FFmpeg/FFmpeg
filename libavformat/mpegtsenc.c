@@ -914,17 +914,24 @@ static int mpegts_init(AVFormatContext *s)
          * this range are assigned a calculated pid. */
         if (st->id < 16) {
             ts_st->pid = ts->start_pid + i;
-        } else if (st->id < 0x1FFF) {
-            ts_st->pid = st->id;
         } else {
+            ts_st->pid = st->id;
+        }
+        if (ts_st->pid >= 0x1FFF) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid stream id %d, must be less than 8191\n", st->id);
             ret = AVERROR(EINVAL);
             goto fail;
         }
         for (j = 0; j < ts->nb_services; j++) {
+            if (ts->services[j]->pmt.pid > LAST_OTHER_PID) {
+                av_log(s, AV_LOG_ERROR,
+                       "Invalid PMT PID %d, must be less than %d\n", ts->services[j]->pmt.pid, LAST_OTHER_PID + 1);
+                ret = AVERROR(EINVAL);
+                goto fail;
+            }
             if (ts_st->pid == ts->services[j]->pmt.pid) {
-                av_log(s, AV_LOG_ERROR, "Duplicate stream id %d\n", ts_st->pid);
+                av_log(s, AV_LOG_ERROR, "PID %d cannot be both elementary and PMT PID\n", ts_st->pid);
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
@@ -1888,10 +1895,10 @@ static const AVOption options[] = {
       AV_OPT_FLAG_ENCODING_PARAM, "mpegts_service_type" },
     { "mpegts_pmt_start_pid", "Set the first pid of the PMT.",
       offsetof(MpegTSWrite, pmt_start_pid), AV_OPT_TYPE_INT,
-      { .i64 = 0x1000 }, 0x0010, 0x1f00, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = 0x1000 }, FIRST_OTHER_PID, LAST_OTHER_PID, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_start_pid", "Set the first pid.",
       offsetof(MpegTSWrite, start_pid), AV_OPT_TYPE_INT,
-      { .i64 = 0x0100 }, 0x0010, 0x0f00, AV_OPT_FLAG_ENCODING_PARAM },
+      { .i64 = 0x0100 }, FIRST_OTHER_PID, LAST_OTHER_PID, AV_OPT_FLAG_ENCODING_PARAM },
     { "mpegts_m2ts_mode", "Enable m2ts mode.",
       offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_BOOL,
       { .i64 = -1 }, -1, 1, AV_OPT_FLAG_ENCODING_PARAM },
