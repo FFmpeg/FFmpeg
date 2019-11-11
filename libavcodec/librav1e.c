@@ -533,7 +533,7 @@ retry:
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
-    { "qp", "use constant quantizer mode", OFFSET(quantizer), AV_OPT_TYPE_INT, { .i64 = 100 }, -1, 255, VE },
+    { "qp", "use constant quantizer mode", OFFSET(quantizer), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 255, VE },
     { "speed", "what speed preset to use", OFFSET(speed), AV_OPT_TYPE_INT, { .i64 = -1 }, -1, 10, VE },
     { "tiles", "number of tiles encode with", OFFSET(tiles), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT64_MAX, VE },
     { "tile-rows", "number of tiles rows to encode with", OFFSET(tile_rows), AV_OPT_TYPE_INT, { .i64 = 0 }, -1, INT64_MAX, VE },
