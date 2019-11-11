@@ -287,6 +287,13 @@ static int libdav1d_receive_frame(AVCodecContext *c, AVFrame *frame)
     else
         frame->reordered_opaque = AV_NOPTS_VALUE;
 
+    if (p->seq_hdr->num_units_in_tick && p->seq_hdr->time_scale) {
+        av_reduce(&c->framerate.den, &c->framerate.num,
+                  p->seq_hdr->num_units_in_tick, p->seq_hdr->time_scale, INT_MAX);
+        if (p->seq_hdr->equal_picture_interval)
+            c->ticks_per_frame = p->seq_hdr->num_ticks_per_picture;
+    }
+
     // match timestamps and packet size
     frame->pts = frame->best_effort_timestamp = p->m.timestamp;
 #if FF_API_PKT_PTS
