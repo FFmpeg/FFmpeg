@@ -768,14 +768,13 @@ static int cbs_av1_split_fragment(CodedBitstreamContext *ctx,
         if (err < 0)
             goto fail;
 
-        if (get_bits_left(&gbc) < 8) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU: fragment "
-                   "too short (%"SIZE_SPECIFIER" bytes).\n", size);
-            err = AVERROR_INVALIDDATA;
-            goto fail;
-        }
-
         if (header.obu_has_size_field) {
+            if (get_bits_left(&gbc) < 8) {
+                av_log(ctx->log_ctx, AV_LOG_ERROR, "Invalid OBU: fragment "
+                       "too short (%"SIZE_SPECIFIER" bytes).\n", size);
+                err = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             err = cbs_av1_read_leb128(ctx, &gbc, "obu_size", &obu_size);
             if (err < 0)
                 goto fail;
