@@ -77,16 +77,16 @@ static int mp3_read_probe(const AVProbeData *p)
 
     buf0 = p->buf;
     end = p->buf + p->buf_size - sizeof(uint32_t);
-    while(buf0 < end && !*buf0)
+    while (buf0 < end && !*buf0)
         buf0++;
 
     max_frames = 0;
     max_framesizes = 0;
     buf = buf0;
 
-    for(; buf < end; buf= buf2+1) {
+    for (; buf < end; buf = buf2+1) {
         buf2 = buf;
-        for(framesizes = frames = 0; buf2 < end; frames++) {
+        for (framesizes = frames = 0; buf2 < end; frames++) {
             MPADecodeHeader h;
 
             header = AV_RB32(buf2);
@@ -98,7 +98,7 @@ static int mp3_read_probe(const AVProbeData *p)
         }
         max_frames = FFMAX(max_frames, frames);
         max_framesizes = FFMAX(max_framesizes, framesizes);
-        if(buf == buf0) {
+        if (buf == buf0) {
             first_frames= frames;
             if (buf2 == end + sizeof(uint32_t))
                 whole_used = 1;
@@ -107,14 +107,14 @@ static int mp3_read_probe(const AVProbeData *p)
     // keep this in sync with ac3 probe, both need to avoid
     // issues with MPEG-files!
     if   (first_frames>=7) return AVPROBE_SCORE_EXTENSION + 1;
-    else if(max_frames>200 && p->buf_size < 2*max_framesizes)return AVPROBE_SCORE_EXTENSION;
-    else if(max_frames>=4 && p->buf_size < 2*max_framesizes) return AVPROBE_SCORE_EXTENSION / 2;
-    else if(ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
+    else if (max_frames>200 && p->buf_size < 2*max_framesizes)return AVPROBE_SCORE_EXTENSION;
+    else if (max_frames>=4 && p->buf_size < 2*max_framesizes) return AVPROBE_SCORE_EXTENSION / 2;
+    else if (ff_id3v2_match(buf0, ID3v2_DEFAULT_MAGIC) && 2*ff_id3v2_tag_len(buf0) >= p->buf_size)
                            return p->buf_size < PROBE_BUF_MAX ? AVPROBE_SCORE_EXTENSION / 4 : AVPROBE_SCORE_EXTENSION - 2;
-    else if(first_frames > 1 && whole_used) return 5;
-    else if(max_frames>=1 && p->buf_size < 10*max_framesizes) return 1;
+    else if (first_frames > 1 && whole_used) return 5;
+    else if (max_frames>=1 && p->buf_size < 10*max_framesizes) return 1;
     else                   return 0;
-//mpegps_mp3_unrecognized_format.mpg has max_frames=3
+    //mpegps_mp3_unrecognized_format.mpg has max_frames=3
 }
 
 static void read_xing_toc(AVFormatContext *s, int64_t filesize, int64_t duration)
@@ -235,8 +235,8 @@ static void mp3_parse_info_tag(AVFormatContext *s, AVStream *st,
     avio_r8(s->pb);
 
     /* Encoder delays */
-    v= avio_rb24(s->pb);
-    if(AV_RB32(version) == MKBETAG('L', 'A', 'M', 'E')
+    v = avio_rb24(s->pb);
+    if (AV_RB32(version) == MKBETAG('L', 'A', 'M', 'E')
         || AV_RB32(version) == MKBETAG('L', 'a', 'v', 'f')
         || AV_RB32(version) == MKBETAG('L', 'a', 'v', 'c')
     ) {
@@ -319,7 +319,7 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         return ret;
     else if (ret == 0)
         vbrtag_size = c.frame_size;
-    if(c.layer != 3)
+    if (c.layer != 3)
         return -1;
 
     spf = c.lsf ? 576 : 1152; /* Samples per frame, layer 3 */
@@ -374,7 +374,7 @@ static int mp3_read_header(AVFormatContext *s)
     if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
-    if(s->pb->seekable & AVIO_SEEKABLE_NORMAL)
+    if (s->pb->seekable & AVIO_SEEKABLE_NORMAL)
         mp3->filesize = avio_size(s->pb);
 
     if (mp3_parse_vbr_tags(s, st, off) < 0)
@@ -434,12 +434,12 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size;
     int64_t pos;
 
-    size= MP3_PACKET_SIZE;
+    size = MP3_PACKET_SIZE;
     pos = avio_tell(s->pb);
-    if(mp3->filesize > ID3v1_TAG_SIZE && pos < mp3->filesize)
+    if (mp3->filesize > ID3v1_TAG_SIZE && pos < mp3->filesize)
         size= FFMIN(size, mp3->filesize - pos);
 
-    ret= av_get_packet(s->pb, pkt, size);
+    ret = av_get_packet(s->pb, pkt, size);
     if (ret <= 0) {
         if(ret<0)
             return ret;
@@ -494,7 +494,7 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
 #define MIN_VALID 3
     best_pos = target_pos;
     best_score = 999;
-    for(i=0; i<SEEK_WINDOW; i++) {
+    for (i = 0; i < SEEK_WINDOW; i++) {
         int64_t pos = target_pos + (dir > 0 ? i - SEEK_WINDOW/4 : -i);
         int64_t candidate = -1;
         int score = 999;
@@ -502,9 +502,9 @@ static int64_t mp3_sync(AVFormatContext *s, int64_t target_pos, int flags)
         if (pos < 0)
             continue;
 
-        for(j=0; j<MIN_VALID; j++) {
+        for (j = 0; j < MIN_VALID; j++) {
             ret = check(s->pb, pos, NULL);
-            if(ret < 0) {
+            if (ret < 0) {
                 if (ret == CHECK_WRONG_HEADER) {
                     break;
                 } else if (ret == CHECK_SEEK_FAILED) {
