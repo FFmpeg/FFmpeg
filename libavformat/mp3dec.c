@@ -42,8 +42,6 @@
 
 #define XING_TOC_COUNT 100
 
-#define SAME_HEADER_MASK \
-   (0xffe00000 | (3 << 17) | (3 << 10) | (3 << 19))
 
 typedef struct {
     AVClass *class;
@@ -398,7 +396,7 @@ static int mp3_read_header(AVFormatContext *s)
             ffio_ensure_seekback(s->pb, i + 1024 + frame_size + 4);
             ret = check(s->pb, off + i + frame_size, &header2);
             if (ret >= 0 &&
-                (header & SAME_HEADER_MASK) == (header2 & SAME_HEADER_MASK))
+                (header & MP3_MASK) == (header2 & MP3_MASK))
             {
                 av_log(s, i > 0 ? AV_LOG_INFO : AV_LOG_VERBOSE, "Skipping %d bytes of junk at %"PRId64".\n", i, off);
                 ret = avio_seek(s->pb, off + i, SEEK_SET);
