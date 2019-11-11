@@ -508,12 +508,12 @@ retry:
         pkt->flags |= AV_PKT_FLAG_KEY;
 
     pkt->pts = pkt->dts = rpkt->input_frameno * avctx->ticks_per_frame;
+    rav1e_packet_unref(rpkt);
 
     if (avctx->flags & AV_CODEC_FLAG_GLOBAL_HEADER) {
         int ret = av_bsf_send_packet(ctx->bsf, pkt);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "extradata extraction send failed.\n");
-            rav1e_packet_unref(rpkt);
             av_packet_unref(pkt);
             return ret;
         }
@@ -521,7 +521,6 @@ retry:
         ret = av_bsf_receive_packet(ctx->bsf, pkt);
         if (ret < 0) {
             av_log(avctx, AV_LOG_ERROR, "extradata extraction receive failed.\n");
-            rav1e_packet_unref(rpkt);
             av_packet_unref(pkt);
             return ret;
         }
