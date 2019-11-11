@@ -23,6 +23,7 @@ version <next>:
 - QSV-accelerated VP9 encoding
 - AV1 encoding support via librav1e
 - AV1 frame merge bitstream filter
+- AV1 Annex B demuxer
 
 
 version 4.2:

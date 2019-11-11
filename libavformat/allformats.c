@@ -70,6 +70,7 @@ extern AVOutputFormat ff_ast_muxer;
 extern AVOutputFormat ff_asf_stream_muxer;
 extern AVInputFormat  ff_au_demuxer;
 extern AVOutputFormat ff_au_muxer;
+extern AVInputFormat  ff_av1_demuxer;
 extern AVInputFormat  ff_avi_demuxer;
 extern AVOutputFormat ff_avi_muxer;
 extern AVInputFormat  ff_avisynth_demuxer;
