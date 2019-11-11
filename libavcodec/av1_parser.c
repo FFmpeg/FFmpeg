@@ -157,6 +157,9 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         av_assert2(ctx->format != AV_PIX_FMT_NONE);
     }
 
+    if (avctx->framerate.num)
+        avctx->time_base = av_inv_q(av_mul_q(avctx->framerate, (AVRational){avctx->ticks_per_frame, 1}));
+
 end:
     ff_cbs_fragment_reset(s->cbc, td);
 
