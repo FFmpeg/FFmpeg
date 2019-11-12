@@ -717,8 +717,8 @@ int ff_v4l2_context_init(V4L2Context* ctx)
     ctx->num_buffers = req.count;
     ctx->buffers = av_mallocz(ctx->num_buffers * sizeof(V4L2Buffer));
     if (!ctx->buffers) {
-            av_log(logger(ctx), AV_LOG_ERROR, "%s malloc enomem\n", ctx->name);
-            return AVERROR(ENOMEM);
+        av_log(logger(ctx), AV_LOG_ERROR, "%s malloc enomem\n", ctx->name);
+        return AVERROR(ENOMEM);
     }
 
     for (i = 0; i < req.count; i++) {
