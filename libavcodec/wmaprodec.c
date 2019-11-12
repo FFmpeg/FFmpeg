@@ -1899,6 +1899,8 @@ static av_cold int xma_decode_init(AVCodecContext *avctx)
         s->start_channel[i] = start_channels;
         start_channels += s->xma[i].nb_channels;
     }
+    if (start_channels != avctx->channels)
+        return AVERROR_INVALIDDATA;
 
     return ret;
 }
