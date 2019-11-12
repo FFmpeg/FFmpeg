@@ -1775,6 +1775,11 @@ static int xma_decode_packet(AVCodecContext *avctx, void *data,
     ret = decode_packet(avctx, &s->xma[s->current_stream], s->frames[s->current_stream],
                         &got_stream_frame_ptr, avpkt);
 
+    if (got_stream_frame_ptr && s->offset[s->current_stream] >= 64) {
+        got_stream_frame_ptr = 0;
+        ret = AVERROR_INVALIDDATA;
+    }
+
     /* copy stream samples (1/2ch) to sample buffer (Nch) */
     if (got_stream_frame_ptr) {
         int start_ch = s->start_channel[s->current_stream];
