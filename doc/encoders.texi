@@ -1395,7 +1395,7 @@ Sets the maximum quantizer to use when using bitrate mode.
 Sets the minimum quantizer to use when using bitrate mode.
 
 @item qp
-Uses quantizer mode to encode at the given quantizer.
+Uses quantizer mode to encode at the given quantizer (0-255).
 
 @item speed
 Selects the speed preset (0-10) to encode with.
