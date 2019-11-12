@@ -1605,6 +1605,7 @@ static int decode_packet(AVCodecContext *avctx, void *data,
         if (avctx->codec_id == AV_CODEC_ID_WMAPRO && buf_size < avctx->block_align) {
             av_log(avctx, AV_LOG_ERROR, "Input packet too small (%d < %d)\n",
                    buf_size, avctx->block_align);
+            s->packet_loss = 1;
             return AVERROR_INVALIDDATA;
         }
 
