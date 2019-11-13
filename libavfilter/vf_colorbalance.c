@@ -57,7 +57,7 @@ typedef struct ColorBalanceContext {
 } ColorBalanceContext;
 
 #define OFFSET(x) offsetof(ColorBalanceContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption colorbalance_options[] = {
     { "rs", "set red shadows",      OFFSET(cyan_red.shadows),         AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS },
     { "gs", "set green shadows",    OFFSET(magenta_green.shadows),    AV_OPT_TYPE_FLOAT, {.dbl=0}, -1, 1, FLAGS },
@@ -448,4 +448,5 @@ AVFilter ff_vf_colorbalance = {
     .inputs        = colorbalance_inputs,
     .outputs       = colorbalance_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = ff_filter_process_command,
 };
