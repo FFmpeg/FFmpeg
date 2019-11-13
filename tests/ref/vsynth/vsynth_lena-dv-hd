@@ -1,0 +1,4 @@
+01a61c53943a421fa6a5e03dbc205972 *tests/data/fate/vsynth_lena-dv-hd.dv
+14400000 tests/data/fate/vsynth_lena-dv-hd.dv
+4db4175c80ea1f16b7ec303611b8873a *tests/data/fate/vsynth_lena-dv-hd.out.rawvideo
+stddev:    1.49 PSNR: 44.66 MAXDIFF:   27 bytes:  7603200/  7603200
