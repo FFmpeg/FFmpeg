@@ -2715,7 +2715,8 @@ int vp78_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
 
     s->next_framep[VP56_FRAME_CURRENT] = curframe;
 
-    ff_thread_finish_setup(avctx);
+    if (avctx->codec->update_thread_context)
+        ff_thread_finish_setup(avctx);
 
     if (avctx->hwaccel) {
         ret = avctx->hwaccel->start_frame(avctx, avpkt->data, avpkt->size);
