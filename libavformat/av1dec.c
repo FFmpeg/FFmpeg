@@ -193,7 +193,6 @@ retry:
     if (avio_feof(s->pb)) {
         if (c->temporal_unit_size || c->frame_unit_size)
             return AVERROR(EIO);
-        av_bsf_send_packet(c->bsf, NULL);
         goto end;
     }
 
@@ -222,6 +221,7 @@ retry:
     c->temporal_unit_size -= obu_unit_size + len;
     c->frame_unit_size -= obu_unit_size + len;
 
+end:
     ret = av_bsf_send_packet(c->bsf, pkt);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Failed to send packet to "
@@ -229,7 +229,6 @@ retry:
         return ret;
     }
 
-end:
     ret = av_bsf_receive_packet(c->bsf, pkt);
     if (ret < 0 && ret != AVERROR(EAGAIN) && ret != AVERROR_EOF)
         av_log(s, AV_LOG_ERROR, "av1_frame_merge filter failed to "
