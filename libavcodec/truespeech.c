@@ -255,7 +255,7 @@ static void truespeech_synth(TSContext *dec, int16_t *out, int quart)
         int sum = 0;
         for(k = 0; k < 8; k++)
             sum += ptr0[k] * (unsigned)ptr1[k];
-        sum = out[i] + ((sum + 0x800) >> 12);
+        sum = out[i] + ((int)(sum + 0x800U) >> 12);
         out[i] = av_clip(sum, -0x7FFE, 0x7FFE);
         for(k = 7; k > 0; k--)
             ptr0[k] = ptr0[k - 1];
