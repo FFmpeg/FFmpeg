@@ -1993,6 +1993,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
          dstFormat == AV_PIX_FMT_GBRP12LE || dstFormat == AV_PIX_FMT_GBRP12BE ||
          dstFormat == AV_PIX_FMT_GBRP14LE || dstFormat == AV_PIX_FMT_GBRP14BE ||
          dstFormat == AV_PIX_FMT_GBRP16LE || dstFormat == AV_PIX_FMT_GBRP16BE ||
+         dstFormat == AV_PIX_FMT_GBRAP10LE || dstFormat == AV_PIX_FMT_GBRAP10BE ||
          dstFormat == AV_PIX_FMT_GBRAP12LE || dstFormat == AV_PIX_FMT_GBRAP12BE ||
          dstFormat == AV_PIX_FMT_GBRAP16LE || dstFormat == AV_PIX_FMT_GBRAP16BE ))
         c->swscale = Rgb16ToPlanarRgb16Wrapper;
@@ -2002,6 +2003,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
          srcFormat == AV_PIX_FMT_GBRP10LE || srcFormat == AV_PIX_FMT_GBRP10BE ||
          srcFormat == AV_PIX_FMT_GBRP12LE || srcFormat == AV_PIX_FMT_GBRP12BE ||
          srcFormat == AV_PIX_FMT_GBRP14LE || srcFormat == AV_PIX_FMT_GBRP14BE ||
+         srcFormat == AV_PIX_FMT_GBRAP10LE || srcFormat == AV_PIX_FMT_GBRAP10BE ||
          srcFormat == AV_PIX_FMT_GBRAP12LE || srcFormat == AV_PIX_FMT_GBRAP12BE ||
          srcFormat == AV_PIX_FMT_GBRAP16LE || srcFormat == AV_PIX_FMT_GBRAP16BE) &&
         (dstFormat == AV_PIX_FMT_RGB48LE  || dstFormat == AV_PIX_FMT_RGB48BE  ||
