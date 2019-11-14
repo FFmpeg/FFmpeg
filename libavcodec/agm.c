@@ -827,7 +827,7 @@ static int decode_intra(AVCodecContext *avctx, GetBitContext *gb, AVFrame *frame
 static int decode_motion_vectors(AVCodecContext *avctx, GetBitContext *gb)
 {
     AGMContext *s = avctx->priv_data;
-    int nb_mvs = ((avctx->height + 15) >> 4) * ((avctx->width + 15) >> 4);
+    int nb_mvs = ((avctx->coded_height + 15) >> 4) * ((avctx->coded_width + 15) >> 4);
     int ret, skip = 0, value, map;
 
     av_fast_padded_malloc(&s->mvectors, &s->mvectors_size,
