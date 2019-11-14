@@ -81,6 +81,7 @@ extern AVFilter ff_af_astats;
 extern AVFilter ff_af_astreamselect;
 extern AVFilter ff_af_atempo;
 extern AVFilter ff_af_atrim;
+extern AVFilter ff_af_axcorrelate;
 extern AVFilter ff_af_azmq;
 extern AVFilter ff_af_bandpass;
 extern AVFilter ff_af_bandreject;

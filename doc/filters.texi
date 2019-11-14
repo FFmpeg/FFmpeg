@@ -2531,6 +2531,39 @@ ffmpeg -i INPUT -af atrim=end_sample=1000
 
 @end itemize
 
+@section axcorrelate
+Calculate normalized cross-correlation between two input audio streams.
+
+Resulted samples are always between -1 and 1 inclusive.
+If result is 1 it means two input samples are highly correlated in that selected segment.
+Result 0 means they are not correlated at all.
+If result is -1 it means two input samples are out of phase, which means they cancel each
+other.
+
+The filter accepts the following options:
+
+@table @option
+@item size
+Set size of segment over which cross-correlation is calculated.
+Default is 256. Allowed range is from 2 to 131072.
+
+@item algo
+Set algorithm for cross-correlation. Can be @code{slow} or @code{fast}.
+Default is @code{slow}. Fast algorithm assumes mean values over any given segment
+are always zero and thus need much less calculations to make.
+This is generally not true, but is valid for typical audio streams.
+@end table
+
+@subsection Examples
+
+@itemize
+@item
+Calculate correlation between channels in stereo audio stream:
+@example
+ffmpeg -i stereo.wav -af channelsplit,axcorrelate=size=1024:algo=fast correlation.wav
+@end example
+@end itemize
+
 @section bandpass
 
 Apply a two-pole Butterworth band-pass filter with central

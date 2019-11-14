@@ -24,6 +24,7 @@ version <next>:
 - AV1 encoding support via librav1e
 - AV1 frame merge bitstream filter
 - AV1 Annex B demuxer
+- axcorrelate filter
 
 
 version 4.2:

@@ -88,6 +88,7 @@ OBJS-$(CONFIG_ASTATS_FILTER)                 += af_astats.o
 OBJS-$(CONFIG_ASTREAMSELECT_FILTER)          += f_streamselect.o framesync.o
 OBJS-$(CONFIG_ATEMPO_FILTER)                 += af_atempo.o
 OBJS-$(CONFIG_ATRIM_FILTER)                  += trim.o
+OBJS-$(CONFIG_AXCORRELATE_FILTER)            += af_axcorrelate.o
 OBJS-$(CONFIG_AZMQ_FILTER)                   += f_zmq.o
 OBJS-$(CONFIG_BANDPASS_FILTER)               += af_biquads.o
 OBJS-$(CONFIG_BANDREJECT_FILTER)             += af_biquads.o
