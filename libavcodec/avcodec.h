@@ -5946,11 +5946,13 @@ int av_bsf_init(AVBSFContext *ctx);
  *
  * @param pkt the packet to filter. The bitstream filter will take ownership of
  * the packet and reset the contents of pkt. pkt is not touched if an error occurs.
- * This parameter may be NULL, which signals the end of the stream (i.e. no more
- * packets will be sent). That will cause the filter to output any packets it
- * may have buffered internally.
+ * If pkt is empty (i.e. NULL, or pkt->data is NULL and pkt->side_data_elems zero),
+ * it signals the end of the stream (i.e. no more non-empty packets will be sent;
+ * sending more empty packets does nothing) and will cause the filter to output
+ * any packets it may have buffered internally.
  *
- * @return 0 on success, a negative AVERROR on error.
+ * @return 0 on success, a negative AVERROR on error. This function never fails if
+ * pkt is empty.
  */
 int av_bsf_send_packet(AVBSFContext *ctx, AVPacket *pkt);
 
