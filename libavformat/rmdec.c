@@ -1174,7 +1174,7 @@ static int ivr_read_header(AVFormatContext *s)
     uint8_t key[256], val[256];
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int64_t pos, offset, temp;
+    int64_t pos, offset=0, temp;
 
     pos = avio_tell(pb);
     tag = avio_rl32(pb);
@@ -1191,6 +1191,8 @@ static int ivr_read_header(AVFormatContext *s)
             offset = temp;
             temp = avio_rb64(pb);
         }
+        if (offset <= 0)
+            return AVERROR_INVALIDDATA;
         avio_skip(pb, offset - avio_tell(pb));
         if (avio_r8(pb) != 1)
             return AVERROR_INVALIDDATA;
