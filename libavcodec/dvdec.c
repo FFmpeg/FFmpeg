@@ -272,11 +272,10 @@ static inline void bit_copy(PutBitContext *pb, GetBitContext *gb)
 static av_always_inline void put_block_8x4(int16_t *block, uint8_t *av_restrict p, int stride)
 {
     int i, j;
-    const uint8_t *cm = ff_crop_tab + MAX_NEG_CROP;
 
     for (i = 0; i < 4; i++) {
         for (j = 0; j < 8; j++)
-            p[j] = cm[block[j]];
+            p[j] = av_clip_uint8(block[j]);
         block += 8;
         p += stride;
     }
