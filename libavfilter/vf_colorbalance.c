@@ -111,7 +111,7 @@ static float get_component(float v, float l,
     v += m;
     v += h;
 
-    return av_clipf(v, 0, 1);
+    return av_clipf(v + 0.5f, 0, 1);
 }
 
 static float hfun(float n, float h, float s, float l)
