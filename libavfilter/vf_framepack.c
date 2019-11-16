@@ -48,8 +48,6 @@ typedef struct FramepackContext {
     enum AVStereo3DType format;         ///< frame pack type output
 
     AVFrame *input_views[2];            ///< input frames
-
-    int64_t double_pts;                 ///< new pts for frameseq mode
 } FramepackContext;
 
 static const enum AVPixelFormat formats_supported[] = {
@@ -120,8 +118,6 @@ static int config_output(AVFilterLink *outlink)
     case AV_STEREO3D_FRAMESEQUENCE:
         time_base.den  *= 2;
         frame_rate.num *= 2;
-
-        s->double_pts = AV_NOPTS_VALUE;
         break;
     case AV_STEREO3D_COLUMNS:
     case AV_STEREO3D_SIDEBYSIDE:
@@ -312,12 +308,12 @@ static int try_push_frame(AVFilterContext *ctx)
     if (!(s->input_views[0] && s->input_views[1]))
         return 0;
     if (s->format == AV_STEREO3D_FRAMESEQUENCE) {
-        if (s->double_pts == AV_NOPTS_VALUE)
-            s->double_pts = s->input_views[LEFT]->pts;
+        int64_t pts = s->input_views[0]->pts;
 
         for (i = 0; i < 2; i++) {
             // set correct timestamps
-            s->input_views[i]->pts = s->double_pts++;
+            if (pts != AV_NOPTS_VALUE)
+                s->input_views[i]->pts = i == 0 ? pts * 2 : s->input_views[1]->pts + pts;
 
             // set stereo3d side data
             stereo = av_stereo3d_create_side_data(s->input_views[i]);
