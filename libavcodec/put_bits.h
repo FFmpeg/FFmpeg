@@ -62,29 +62,29 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer,
 }
 
 /**
- * Rebase the bit writer onto a reallocated buffer.
- *
- * @param buffer the buffer where to put bits
- * @param buffer_size the size in bytes of buffer,
- *                    must be larger than the previous size
- */
-static inline void rebase_put_bits(PutBitContext *s, uint8_t *buffer,
-                                   int buffer_size)
-{
-    av_assert0(8*buffer_size > s->size_in_bits);
-
-    s->buf_end = buffer + buffer_size;
-    s->buf_ptr = buffer + (s->buf_ptr - s->buf);
-    s->buf     = buffer;
-    s->size_in_bits = 8 * buffer_size;
-}
-
-/**
  * @return the total number of bits written to the bitstream.
  */
 static inline int put_bits_count(PutBitContext *s)
 {
     return (s->buf_ptr - s->buf) * 8 + 32 - s->bit_left;
+}
+
+/**
+ * Rebase the bit writer onto a reallocated buffer.
+ *
+ * @param buffer the buffer where to put bits
+ * @param buffer_size the size in bytes of buffer,
+ *                    must be large enough to hold everything written so far
+ */
+static inline void rebase_put_bits(PutBitContext *s, uint8_t *buffer,
+                                   int buffer_size)
+{
+    av_assert0(8*buffer_size >= put_bits_count(s));
+
+    s->buf_end = buffer + buffer_size;
+    s->buf_ptr = buffer + (s->buf_ptr - s->buf);
+    s->buf     = buffer;
+    s->size_in_bits = 8 * buffer_size;
 }
 
 /**
