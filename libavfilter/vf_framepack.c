@@ -33,6 +33,7 @@
 #include "libavutil/stereo3d.h"
 
 #include "avfilter.h"
+#include "filters.h"
 #include "formats.h"
 #include "internal.h"
 #include "video.h"
@@ -265,39 +266,6 @@ static av_always_inline void spatial_frame_pack(AVFilterLink *outlink,
     }
 }
 
-static int try_push_frame(AVFilterContext *ctx);
-
-static int filter_frame_left(AVFilterLink *inlink, AVFrame *frame)
-{
-    FramepackContext *s = inlink->dst->priv;
-    s->input_views[LEFT] = frame;
-    return try_push_frame(inlink->dst);
-}
-
-static int filter_frame_right(AVFilterLink *inlink, AVFrame *frame)
-{
-    FramepackContext *s = inlink->dst->priv;
-    s->input_views[RIGHT] = frame;
-    return try_push_frame(inlink->dst);
-}
-
-static int request_frame(AVFilterLink *outlink)
-{
-    AVFilterContext *ctx = outlink->src;
-    FramepackContext *s = ctx->priv;
-    int ret, i;
-
-    /* get a frame on the either input, stop as soon as a video ends */
-    for (i = 0; i < 2; i++) {
-        if (!s->input_views[i]) {
-            ret = ff_request_frame(ctx->inputs[i]);
-            if (ret < 0)
-                return ret;
-        }
-    }
-    return 0;
-}
-
 static int try_push_frame(AVFilterContext *ctx)
 {
     FramepackContext *s = ctx->priv;
@@ -359,6 +327,49 @@ static int try_push_frame(AVFilterContext *ctx)
     }
 }
 
+static int activate(AVFilterContext *ctx)
+{
+    AVFilterLink *outlink = ctx->outputs[0];
+    FramepackContext *s = ctx->priv;
+    int ret;
+
+    FF_FILTER_FORWARD_STATUS_BACK_ALL(outlink, ctx);
+
+    if (!s->input_views[0]) {
+        ret = ff_inlink_consume_frame(ctx->inputs[0], &s->input_views[0]);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (!s->input_views[1]) {
+        ret = ff_inlink_consume_frame(ctx->inputs[1], &s->input_views[1]);
+        if (ret < 0)
+            return ret;
+    }
+
+    if (s->input_views[0] && s->input_views[1])
+        return try_push_frame(ctx);
+
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[0], outlink);
+    FF_FILTER_FORWARD_STATUS(ctx->inputs[1], outlink);
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[0]) &&
+        !s->input_views[0]) {
+        ff_inlink_request_frame(ctx->inputs[0]);
+        return 0;
+    }
+
+    if (ff_outlink_frame_wanted(ctx->outputs[0]) &&
+        !ff_outlink_get_status(ctx->inputs[1]) &&
+        !s->input_views[1]) {
+        ff_inlink_request_frame(ctx->inputs[1]);
+        return 0;
+    }
+
+    return FFERROR_NOT_READY;
+}
+
 #define OFFSET(x) offsetof(FramepackContext, x)
 #define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption framepack_options[] = {
@@ -383,14 +394,10 @@ static const AVFilterPad framepack_inputs[] = {
     {
         .name         = "left",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_left,
-        .needs_fifo   = 1,
     },
     {
         .name         = "right",
         .type         = AVMEDIA_TYPE_VIDEO,
-        .filter_frame = filter_frame_right,
-        .needs_fifo   = 1,
     },
     { NULL }
 };
@@ -400,7 +407,6 @@ static const AVFilterPad framepack_outputs[] = {
         .name          = "packed",
         .type          = AVMEDIA_TYPE_VIDEO,
         .config_props  = config_output,
-        .request_frame = request_frame,
     },
     { NULL }
 };
@@ -413,5 +419,6 @@ AVFilter ff_vf_framepack = {
     .query_formats = query_formats,
     .inputs        = framepack_inputs,
     .outputs       = framepack_outputs,
+    .activate      = activate,
     .uninit        = framepack_uninit,
 };
