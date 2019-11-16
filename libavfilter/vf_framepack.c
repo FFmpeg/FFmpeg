@@ -364,20 +364,20 @@ static int try_push_frame(AVFilterContext *ctx)
 }
 
 #define OFFSET(x) offsetof(FramepackContext, x)
-#define V AV_OPT_FLAG_VIDEO_PARAM
+#define VF AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
 static const AVOption framepack_options[] = {
     { "format", "Frame pack output format", OFFSET(format), AV_OPT_TYPE_INT,
-        { .i64 = AV_STEREO3D_SIDEBYSIDE }, 0, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_SIDEBYSIDE }, 0, INT_MAX, .flags = VF, .unit = "format" },
     { "sbs", "Views are packed next to each other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_SIDEBYSIDE }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_SIDEBYSIDE }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "tab", "Views are packed on top of each other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_TOPBOTTOM }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_TOPBOTTOM }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "frameseq", "Views are one after the other", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_FRAMESEQUENCE }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_FRAMESEQUENCE }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "lines", "Views are interleaved by lines", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_LINES }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_LINES }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { "columns", "Views are interleaved by columns", 0, AV_OPT_TYPE_CONST,
-        { .i64 = AV_STEREO3D_COLUMNS }, INT_MIN, INT_MAX, .flags = V, .unit = "format" },
+        { .i64 = AV_STEREO3D_COLUMNS }, INT_MIN, INT_MAX, .flags = VF, .unit = "format" },
     { NULL },
 };
 
