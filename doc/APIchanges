@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-11-17 - 1c23abc88f - lavu 56.36.100 - eval API
+  Add av_expr_count_vars().
+
 2019-10-14 - f3746d31f9 - lavu 56.35.101 - opt.h
   Add AV_OPT_FLAG_RUNTIME_PARAM.
 
