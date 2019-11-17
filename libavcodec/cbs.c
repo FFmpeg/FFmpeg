@@ -309,7 +309,9 @@ static int cbs_write_unit_data(CodedBitstreamContext *ctx,
     if (ret < 0) {
         if (ret == AVERROR(ENOSPC)) {
             // Overflow.
-            ctx->write_buffer_size *= 2;
+            if (ctx->write_buffer_size == INT_MAX / 8)
+                return AVERROR(ENOMEM);
+            ctx->write_buffer_size = FFMIN(2 * ctx->write_buffer_size, INT_MAX / 8);
             goto reallocate_and_try_again;
         }
         // Write failed for some other reason.
