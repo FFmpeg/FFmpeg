@@ -1260,7 +1260,7 @@ static int output_frame(AVFilterLink *inlink)
     ret = ff_filter_frame(outlink, out);
     if (ret < 0)
         goto end;
-    s->pts += s->sample_advance;
+    s->pts += av_rescale_q(s->sample_advance, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 end:
     av_frame_free(&in);
 
