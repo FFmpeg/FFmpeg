@@ -210,6 +210,13 @@ typedef struct CodedBitstreamContext {
      * From AV_LOG_*; defaults to AV_LOG_TRACE.
      */
     int trace_level;
+
+    /**
+     * Write buffer. Used as intermediate buffer when writing units.
+     * For internal use of cbs only.
+     */
+    uint8_t *write_buffer;
+    size_t   write_buffer_size;
 } CodedBitstreamContext;
 
 

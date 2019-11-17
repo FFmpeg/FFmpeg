@@ -95,10 +95,12 @@ int ff_cbs_init(CodedBitstreamContext **ctx_ptr,
     ctx->log_ctx = log_ctx;
     ctx->codec   = type;
 
-    ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
-    if (!ctx->priv_data) {
-        av_freep(&ctx);
-        return AVERROR(ENOMEM);
+    if (type->priv_data_size) {
+        ctx->priv_data = av_mallocz(ctx->codec->priv_data_size);
+        if (!ctx->priv_data) {
+            av_freep(&ctx);
+            return AVERROR(ENOMEM);
+        }
     }
 
     ctx->decompose_unit_types = NULL;
@@ -120,6 +122,7 @@ void ff_cbs_close(CodedBitstreamContext **ctx_ptr)
     if (ctx->codec && ctx->codec->close)
         ctx->codec->close(ctx);
 
+    av_freep(&ctx->write_buffer);
     av_freep(&ctx->priv_data);
     av_freep(ctx_ptr);
 }
@@ -280,6 +283,57 @@ int ff_cbs_read(CodedBitstreamContext *ctx,
     return cbs_read_fragment_content(ctx, frag);
 }
 
+static int cbs_write_unit_data(CodedBitstreamContext *ctx,
+                               CodedBitstreamUnit *unit)
+{
+    PutBitContext pbc;
+    int ret;
+
+    if (!ctx->write_buffer) {
+        // Initial write buffer size is 1MB.
+        ctx->write_buffer_size = 1024 * 1024;
+
+    reallocate_and_try_again:
+        ret = av_reallocp(&ctx->write_buffer, ctx->write_buffer_size);
+        if (ret < 0) {
+            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
+                   "sufficiently large write buffer (last attempt "
+                   "%"SIZE_SPECIFIER" bytes).\n", ctx->write_buffer_size);
+            return ret;
+        }
+    }
+
+    init_put_bits(&pbc, ctx->write_buffer, ctx->write_buffer_size);
+
+    ret = ctx->codec->write_unit(ctx, unit, &pbc);
+    if (ret < 0) {
+        if (ret == AVERROR(ENOSPC)) {
+            // Overflow.
+            ctx->write_buffer_size *= 2;
+            goto reallocate_and_try_again;
+        }
+        // Write failed for some other reason.
+        return ret;
+    }
+
+    // Overflow but we didn't notice.
+    av_assert0(put_bits_count(&pbc) <= 8 * ctx->write_buffer_size);
+
+    if (put_bits_count(&pbc) % 8)
+        unit->data_bit_padding = 8 - put_bits_count(&pbc) % 8;
+    else
+        unit->data_bit_padding = 0;
+
+    flush_put_bits(&pbc);
+
+    ret = ff_cbs_alloc_unit_data(ctx, unit, put_bits_count(&pbc) / 8);
+    if (ret < 0)
+        return ret;
+
+    memcpy(unit->data, ctx->write_buffer, unit->data_size);
+
+    return 0;
+}
 
 int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
                                CodedBitstreamFragment *frag)
@@ -295,7 +349,7 @@ int ff_cbs_write_fragment_data(CodedBitstreamContext *ctx,
         av_buffer_unref(&unit->data_ref);
         unit->data = NULL;
 
-        err = ctx->codec->write_unit(ctx, unit);
+        err = cbs_write_unit_data(ctx, unit);
         if (err < 0) {
             av_log(ctx->log_ctx, AV_LOG_ERROR, "Failed to write unit %d "
                    "(type %"PRIu32").\n", i, unit->type);
