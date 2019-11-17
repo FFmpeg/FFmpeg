@@ -207,10 +207,6 @@ typedef struct CodedBitstreamVP9Context {
     int bit_depth;
 
     VP9ReferenceFrameState ref[VP9_NUM_REF_FRAMES];
-
-    // Write buffer.
-    uint8_t *write_buffer;
-    size_t write_buffer_size;
 } CodedBitstreamVP9Context;
 
 

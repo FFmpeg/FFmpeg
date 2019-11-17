@@ -522,61 +522,27 @@ static int cbs_vp9_read_unit(CodedBitstreamContext *ctx,
 }
 
 static int cbs_vp9_write_unit(CodedBitstreamContext *ctx,
-                              CodedBitstreamUnit *unit)
+                              CodedBitstreamUnit *unit,
+                              PutBitContext *pbc)
 {
-    CodedBitstreamVP9Context *priv = ctx->priv_data;
     VP9RawFrame *frame = unit->content;
-    PutBitContext pbc;
     int err;
 
-    if (!priv->write_buffer) {
-        // Initial write buffer size is 1MB.
-        priv->write_buffer_size = 1024 * 1024;
-
-    reallocate_and_try_again:
-        err = av_reallocp(&priv->write_buffer, priv->write_buffer_size);
-        if (err < 0) {
-            av_log(ctx->log_ctx, AV_LOG_ERROR, "Unable to allocate a "
-                   "sufficiently large write buffer (last attempt "
-                   "%"SIZE_SPECIFIER" bytes).\n", priv->write_buffer_size);
-            return err;
-        }
-    }
-
-    init_put_bits(&pbc, priv->write_buffer, priv->write_buffer_size);
-
-    err = cbs_vp9_write_frame(ctx, &pbc, frame);
-    if (err == AVERROR(ENOSPC)) {
-        priv->write_buffer_size *= 2;
-        goto reallocate_and_try_again;
-    }
+    err = cbs_vp9_write_frame(ctx, pbc, frame);
     if (err < 0)
         return err;
 
     // Frame must be byte-aligned.
-    av_assert0(put_bits_count(&pbc) % 8 == 0);
-
-    unit->data_size        = put_bits_count(&pbc) / 8;
-    unit->data_bit_padding = 0;
-    flush_put_bits(&pbc);
+    av_assert0(put_bits_count(pbc) % 8 == 0);
 
     if (frame->data) {
-        if (unit->data_size + frame->data_size >
-            priv->write_buffer_size) {
-            priv->write_buffer_size *= 2;
-            goto reallocate_and_try_again;
-        }
+        if (frame->data_size > put_bits_left(pbc) / 8)
+            return AVERROR(ENOSPC);
 
-        memcpy(priv->write_buffer + unit->data_size,
-               frame->data, frame->data_size);
-        unit->data_size += frame->data_size;
+        flush_put_bits(pbc);
+        memcpy(put_bits_ptr(pbc), frame->data, frame->data_size);
+        skip_put_bytes(pbc, frame->data_size);
     }
-
-    err = ff_cbs_alloc_unit_data(ctx, unit, unit->data_size);
-    if (err < 0)
-        return err;
-
-    memcpy(unit->data, priv->write_buffer, unit->data_size);
 
     return 0;
 }
@@ -671,13 +637,6 @@ static int cbs_vp9_assemble_fragment(CodedBitstreamContext *ctx,
     return 0;
 }
 
-static void cbs_vp9_close(CodedBitstreamContext *ctx)
-{
-    CodedBitstreamVP9Context *priv = ctx->priv_data;
-
-    av_freep(&priv->write_buffer);
-}
-
 const CodedBitstreamType ff_cbs_type_vp9 = {
     .codec_id          = AV_CODEC_ID_VP9,
 
@@ -687,6 +646,4 @@ const CodedBitstreamType ff_cbs_type_vp9 = {
     .read_unit         = &cbs_vp9_read_unit,
     .write_unit        = &cbs_vp9_write_unit,
     .assemble_fragment = &cbs_vp9_assemble_fragment,
-
-    .close             = &cbs_vp9_close,
 };

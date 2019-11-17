@@ -442,10 +442,6 @@ typedef struct CodedBitstreamAV1Context {
     int tile_rows;
 
     AV1ReferenceFrameState ref[AV1_NUM_REF_FRAMES];
-
-    // Write buffer.
-    uint8_t *write_buffer;
-    size_t   write_buffer_size;
 } CodedBitstreamAV1Context;
 
 
