@@ -298,7 +298,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
             out->nb_samples = FFMIN(s->eof_left, s->offset);
             s->eof_left -= out->nb_samples;
         }
-        s->pts += s->offset;
+        s->pts += av_rescale_q(s->offset, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
         return ff_filter_frame(outlink, out);
     }
