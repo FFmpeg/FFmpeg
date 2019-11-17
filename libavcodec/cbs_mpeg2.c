@@ -301,7 +301,7 @@ static int cbs_mpeg2_write_slice(CodedBitstreamContext *ctx,
         uint8_t *pos = slice->data + slice->data_bit_start / 8;
 
         av_assert0(slice->data_bit_start >= 0 &&
-                   8 * slice->data_size > slice->data_bit_start);
+                   slice->data_size > slice->data_bit_start / 8);
 
         if (slice->data_size * 8 + 8 > put_bits_left(pbc))
             return AVERROR(ENOSPC);
