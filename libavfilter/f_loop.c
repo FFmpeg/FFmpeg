@@ -107,7 +107,7 @@ static int push_samples(AVFilterContext *ctx, int nb_samples)
         }
         out->pts = s->pts;
         out->nb_samples = ret;
-        s->pts += out->nb_samples;
+        s->pts += av_rescale_q(out->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
         i += out->nb_samples;
         s->current_sample += out->nb_samples;
 
@@ -145,7 +145,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
                 drain = FFMAX(0, s->start - s->ignored_samples);
                 s->pts = frame->pts;
                 av_audio_fifo_drain(s->fifo, drain);
-                s->pts += s->start - s->ignored_samples;
+                s->pts += av_rescale_q(s->start - s->ignored_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             }
             s->nb_samples += ret - drain;
             drain = frame->nb_samples - written;
@@ -158,7 +158,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
                 av_audio_fifo_drain(s->left, drain);
             }
             frame->nb_samples = ret;
-            s->pts += ret;
+            s->pts += av_rescale_q(ret, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             ret = ff_filter_frame(outlink, frame);
         } else {
             int nb_samples = frame->nb_samples;
@@ -169,7 +169,7 @@ static int afilter_frame(AVFilterLink *inlink, AVFrame *frame)
     } else {
         s->ignored_samples += frame->nb_samples;
         frame->pts = s->pts;
-        s->pts += frame->nb_samples;
+        s->pts += av_rescale_q(frame->nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
         ret = ff_filter_frame(outlink, frame);
     }
 
@@ -195,7 +195,7 @@ static int arequest_frame(AVFilterLink *outlink)
                 return AVERROR(ENOMEM);
             av_audio_fifo_read(s->left, (void **)out->extended_data, nb_samples);
             out->pts = s->pts;
-            s->pts += nb_samples;
+            s->pts += av_rescale_q(nb_samples, (AVRational){1, outlink->sample_rate}, outlink->time_base);
             ret = ff_filter_frame(outlink, out);
             if (ret < 0)
                 return ret;
