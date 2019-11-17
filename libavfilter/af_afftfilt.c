@@ -315,7 +315,7 @@ static int filter_frame(AVFilterLink *inlink)
     }
 
     out->pts = s->pts;
-    s->pts += s->hop_size;
+    s->pts += av_rescale_q(s->hop_size, (AVRational){1, outlink->sample_rate}, outlink->time_base);
 
     for (ch = 0; ch < inlink->channels; ch++) {
         float *dst = (float *)out->extended_data[ch];
