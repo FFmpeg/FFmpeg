@@ -479,6 +479,7 @@ OBJS-$(CONFIG_SER_DEMUXER)               += serdec.o
 OBJS-$(CONFIG_SHORTEN_DEMUXER)           += shortendec.o rawdec.o
 OBJS-$(CONFIG_SIFF_DEMUXER)              += siff.o
 OBJS-$(CONFIG_SINGLEJPEG_MUXER)          += rawenc.o
+OBJS-$(CONFIG_SLN_DEMUXER)               += pcmdec.o pcm.o
 OBJS-$(CONFIG_SMACKER_DEMUXER)           += smacker.o
 OBJS-$(CONFIG_SMJPEG_DEMUXER)            += smjpegdec.o smjpeg.o
 OBJS-$(CONFIG_SMJPEG_MUXER)              += smjpegenc.o smjpeg.o
