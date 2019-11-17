@@ -87,6 +87,16 @@ int av_expr_parse(AVExpr **expr, const char *s,
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque);
 
 /**
+ * Track the presence of variables and their number of occurrences in a parsed expression
+ *
+ * @param counter a zero-initialized array where the count of each variable will be stored
+ * @param size size of array
+ * @return 0 on success, a negative value indicates that no expression or array was passed
+ * or size was zero
+ */
+int av_expr_count_vars(AVExpr *e, unsigned *counter, int size);
+
+/**
  * Free a parsed expression previously created with av_expr_parse().
  */
 void av_expr_free(AVExpr *e);

@@ -735,6 +735,22 @@ end:
     return ret;
 }
 
+int av_expr_count_vars(AVExpr *e, unsigned *counter, int size)
+{
+    int i;
+
+    if (!e || !counter || !size)
+        return AVERROR(EINVAL);
+
+    for (i = 0; e->type != e_const && i < 3 && e->param[i]; i++)
+        av_expr_count_vars(e->param[i], counter, size);
+
+    if (e->type == e_const && e->a.const_index < size)
+        counter[e->a.const_index]++;
+
+    return 0;
+}
+
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque)
 {
     Parser p = { 0 };
