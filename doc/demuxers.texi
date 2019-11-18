@@ -331,6 +331,10 @@ segment index to start live streams at (negative values are from the end).
 Maximum number of times a insufficient list is attempted to be reloaded.
 Default value is 1000.
 
+@item m3u8_hold_counters
+Maximum number of times to load m3u8 when the m3u8 dose not refresh with new segments.
+Default value is 1000.
+
 @item http_persistent
 Use persistent HTTP connections. Applicable only for HTTP streams.
 Enabled by default.
