@@ -12380,7 +12380,7 @@ The filter has following options:
 @table @option
 @item model_path
 Set the model path which is to be used for SVM.
-Default value: @code{"vmaf_v0.6.1.pkl"}
+Default value: @code{"/usr/local/share/model/vmaf_v0.6.1.pkl"}
 
 @item log_path
 Set the file path to be used to store logs.
@@ -12396,27 +12396,35 @@ Default value: @code{false}
 @item phone_model
 Invokes the phone model which will generate VMAF scores higher than in the
 regular model, which is more suitable for laptop, TV, etc. viewing conditions.
+Default value: @code{false}
 
 @item psnr
 Enables computing psnr along with vmaf.
+Default value: @code{false}
 
 @item ssim
 Enables computing ssim along with vmaf.
+Default value: @code{false}
 
 @item ms_ssim
 Enables computing ms_ssim along with vmaf.
+Default value: @code{false}
 
 @item pool
-Set the pool method (mean, min or harmonic mean) to be used for computing vmaf.
+Set the pool method to be used for computing vmaf.
+Options are @code{min}, @code{harmonic_mean} or @code{mean} (default).
 
 @item n_threads
 Set number of threads to be used when computing vmaf.
+Default value: @code{0}, which makes use of all available logical processors.
 
 @item n_subsample
 Set interval for frame subsampling used when computing vmaf.
+Default value: @code{1}
 
 @item enable_conf_interval
 Enables confidence interval.
+Default value: @code{false}
 @end table
 
 This filter also supports the @ref{framesync} options.
