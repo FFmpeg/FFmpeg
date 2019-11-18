@@ -376,7 +376,8 @@ int ff_cbs_insert_unit_content(CodedBitstreamContext *ctx,
  * Insert a new unit into a fragment with the given data bitstream.
  *
  * If data_buf is not supplied then data must have been allocated with
- * av_malloc() and will become owned by the unit after this call.
+ * av_malloc() and will on success become owned by the unit after this
+ * call or freed on error.
  */
 int ff_cbs_insert_unit_data(CodedBitstreamContext *ctx,
                             CodedBitstreamFragment *frag,

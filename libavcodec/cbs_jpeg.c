@@ -225,11 +225,8 @@ static int cbs_jpeg_split_fragment(CodedBitstreamContext *ctx,
 
         err = ff_cbs_insert_unit_data(ctx, frag, unit, marker,
                                       data, data_size, data_ref);
-        if (err < 0) {
-            if (!data_ref)
-                av_freep(&data);
+        if (err < 0)
             return err;
-        }
 
         if (next_marker == -1)
             break;
