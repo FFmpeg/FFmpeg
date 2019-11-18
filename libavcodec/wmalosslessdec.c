@@ -675,7 +675,7 @@ static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
         for (i = 0; i < ich; i++)
             pred[ich] += s->channel_residues[i][icoef] *
                          s->mclms_coeffs_cur[i + num_channels * ich];
-        pred[ich] += 1 << s->mclms_scaling - 1;
+        pred[ich] += (1 << s->mclms_scaling) >> 1;
         pred[ich] >>= s->mclms_scaling;
         s->channel_residues[ich][icoef] += pred[ich];
     }
@@ -803,19 +803,19 @@ static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
             pred = 0;
             for (j = 0; j < order; j++) {
                 if (i <= j)
-                    pred += filter_coeffs[j] * prevvalues[j - i];
+                    pred += (uint32_t)filter_coeffs[j] * prevvalues[j - i];
                 else
-                    pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
+                    pred += (uint32_t)s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
             }
             pred >>= scaling;
-            s->channel_residues[ich][i] += pred;
+            s->channel_residues[ich][i] += (unsigned)pred;
         }
         for (i = order; i < tile_size; i++) {
             pred = 0;
             for (j = 0; j < order; j++)
                 pred += s->channel_residues[ich][i - j - 1] * filter_coeffs[j];
             pred >>= scaling;
-            s->channel_residues[ich][i] += pred;
+            s->channel_residues[ich][i] += (unsigned)pred;
         }
         for (j = 0; j < order; j++)
             prevvalues[j] = s->channel_residues[ich][tile_size - j - 1];
