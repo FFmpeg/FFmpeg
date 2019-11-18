@@ -280,10 +280,16 @@ static void cuda_device_uninit(AVHWDeviceContext *device_ctx)
 
     if (hwctx->internal) {
         CudaFunctions *cu = hwctx->internal->cuda_dl;
+
         if (hwctx->internal->is_allocated && hwctx->cuda_ctx) {
-            CHECK_CU(cu->cuCtxDestroy(hwctx->cuda_ctx));
+            if (hwctx->internal->flags & AV_CUDA_USE_PRIMARY_CONTEXT)
+                CHECK_CU(cu->cuDevicePrimaryCtxRelease(hwctx->internal->cuda_device));
+            else
+                CHECK_CU(cu->cuCtxDestroy(hwctx->cuda_ctx));
+
             hwctx->cuda_ctx = NULL;
         }
+
         cuda_free_functions(&hwctx->internal->cuda_dl);
     }
 
@@ -322,9 +328,11 @@ static int cuda_device_create(AVHWDeviceContext *device_ctx,
 {
     AVCUDADeviceContext *hwctx = device_ctx->hwctx;
     CudaFunctions *cu;
-    CUdevice cu_device;
     CUcontext dummy;
-    int ret, device_idx = 0;
+    int ret, dev_active = 0, device_idx = 0;
+    unsigned int dev_flags = 0;
+
+    const unsigned int desired_flags = CU_CTX_SCHED_BLOCKING_SYNC;
 
     if (device)
         device_idx = strtol(device, NULL, 0);
@@ -338,20 +346,41 @@ static int cuda_device_create(AVHWDeviceContext *device_ctx,
     if (ret < 0)
         goto error;
 
-    ret = CHECK_CU(cu->cuDeviceGet(&cu_device, device_idx));
+    ret = CHECK_CU(cu->cuDeviceGet(&hwctx->internal->cuda_device, device_idx));
     if (ret < 0)
         goto error;
 
-    ret = CHECK_CU(cu->cuCtxCreate(&hwctx->cuda_ctx, CU_CTX_SCHED_BLOCKING_SYNC, cu_device));
-    if (ret < 0)
-        goto error;
+    hwctx->internal->flags = flags;
+
+    if (flags & AV_CUDA_USE_PRIMARY_CONTEXT) {
+        ret = CHECK_CU(cu->cuDevicePrimaryCtxGetState(hwctx->internal->cuda_device, &dev_flags, &dev_active));
+        if (ret < 0)
+            goto error;
+
+        if (dev_active && dev_flags != desired_flags) {
+            av_log(device_ctx, AV_LOG_ERROR, "Primary context already active with incompatible flags.\n");
+            goto error;
+        } else if (dev_flags != desired_flags) {
+            ret = CHECK_CU(cu->cuDevicePrimaryCtxSetFlags(hwctx->internal->cuda_device, desired_flags));
+            if (ret < 0)
+                goto error;
+        }
+
+        ret = CHECK_CU(cu->cuDevicePrimaryCtxRetain(&hwctx->cuda_ctx, hwctx->internal->cuda_device));
+        if (ret < 0)
+            goto error;
+    } else {
+        ret = CHECK_CU(cu->cuCtxCreate(&hwctx->cuda_ctx, desired_flags, hwctx->internal->cuda_device));
+        if (ret < 0)
+            goto error;
+
+        CHECK_CU(cu->cuCtxPopCurrent(&dummy));
+    }
+
+    hwctx->internal->is_allocated = 1;
 
     // Setting stream to NULL will make functions automatically use the default CUstream
     hwctx->stream = NULL;
-
-    CHECK_CU(cu->cuCtxPopCurrent(&dummy));
-
-    hwctx->internal->is_allocated = 1;
 
     return 0;
 
