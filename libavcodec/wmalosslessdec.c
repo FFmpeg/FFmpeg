@@ -950,6 +950,8 @@ static int decode_subframe(WmallDecodeCtx *s)
             for (j = 0; j < subframe_len; j++)
                 s->channel_residues[i][j] = get_sbits_long(&s->gb, bits);
     } else {
+        if (s->bits_per_sample < padding_zeroes)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < s->num_channels; i++) {
             if (s->is_channel_coded[i]) {
                 decode_channel_residues(s, i, subframe_len);
