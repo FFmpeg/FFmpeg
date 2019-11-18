@@ -153,7 +153,7 @@ static const AVOption bm3d_options[] = {
     { "final",  "final estimate",
         0,                      AV_OPT_TYPE_CONST, {.i64=FINAL}, 0,            0, FLAGS, "mode" },
     { "ref",    "have reference stream",
-        OFFSET(ref),            AV_OPT_TYPE_INT,    {.i64=0},    0,            1, FLAGS },
+        OFFSET(ref),            AV_OPT_TYPE_BOOL,  {.i64=0},     0,            1, FLAGS },
     { "planes", "set planes to filter",
         OFFSET(planes),         AV_OPT_TYPE_INT,   {.i64=7},     0,           15, FLAGS },
     { NULL }
