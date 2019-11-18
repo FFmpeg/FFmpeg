@@ -2001,5 +2001,6 @@ AVCodec ff_wmavoice_decoder = {
     .close            = wmavoice_decode_end,
     .decode           = wmavoice_decode_packet,
     .capabilities     = AV_CODEC_CAP_SUBFRAMES | AV_CODEC_CAP_DR1 | AV_CODEC_CAP_DELAY,
+    .caps_internal    = FF_CODEC_CAP_INIT_CLEANUP,
     .flush            = wmavoice_flush,
 };
