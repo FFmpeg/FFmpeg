@@ -20,7 +20,6 @@ static int FUNC(obu_header)(CodedBitstreamContext *ctx, RWContext *rw,
                             AV1RawOBUHeader *current)
 {
     int err;
-    av_unused int zero = 0;
 
     HEADER("OBU header");
 
