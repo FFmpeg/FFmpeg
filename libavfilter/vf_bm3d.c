@@ -443,7 +443,7 @@ static void basic_block_filtering(BM3DContext *s, const uint8_t *src, int src_li
         }
     }
 
-    threshold[0] = s->hard_threshold * s->sigma;
+    threshold[0] = s->hard_threshold * s->sigma * M_SQRT2 * block_size * block_size * (1 << (s->depth - 8)) / 255.f;
     threshold[1] = threshold[0] * sqrtf(2.f);
     threshold[2] = threshold[0] * 2.f;
     threshold[3] = threshold[0] * sqrtf(8.f);
