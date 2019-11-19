@@ -15069,7 +15069,7 @@ is stored in @file{stats.log}.
 @item
 Another example with different containers:
 @example
-ffmpeg -i main.mpg -i ref.mkv -lavfi  "[0:v]settb=1/AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=1/AVTB,setpts=PTS-STARTPTS[ref];[main][ref]psnr" -f null -
+ffmpeg -i main.mpg -i ref.mkv -lavfi  "[0:v]settb=AVTB,setpts=PTS-STARTPTS[main];[1:v]settb=AVTB,setpts=PTS-STARTPTS[ref];[main][ref]psnr" -f null -
 @end example
 @end itemize
 
