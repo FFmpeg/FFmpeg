@@ -28,7 +28,6 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "framesync.h"
 #include "video.h"
 
 typedef struct ChromaShiftContext {
