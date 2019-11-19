@@ -168,6 +168,7 @@ static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
                "sequence:%u resource_id:%u minor_code:%u major_code:%u.\n",
                e->response_type, e->error_code,
                e->sequence, e->resource_id, e->minor_code, e->major_code);
+        free(e);
         return AVERROR(EACCES);
     }
 
@@ -276,6 +277,7 @@ static int xcbgrab_frame_shm(AVFormatContext *s, AVPacket *pkt)
                e->response_type, e->error_code,
                e->sequence, e->resource_id, e->minor_code, e->major_code);
 
+        free(e);
         return AVERROR(EACCES);
     }
 
@@ -537,6 +539,8 @@ static int create_stream(AVFormatContext *s)
 
     gc  = xcb_get_geometry(c->conn, c->screen->root);
     geo = xcb_get_geometry_reply(c->conn, gc, NULL);
+    if (!geo)
+        return AVERROR_EXTERNAL;
 
     if (c->x + c->width > geo->width ||
         c->y + c->height > geo->height) {
@@ -546,6 +550,7 @@ static int create_stream(AVFormatContext *s)
                c->width, c->height,
                c->x, c->y,
                geo->width, geo->height);
+        free(geo);
         return AVERROR(EINVAL);
     }
 
