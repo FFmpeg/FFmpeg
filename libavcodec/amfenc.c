@@ -451,7 +451,7 @@ static int amf_copy_buffer(AVCodecContext *avctx, AVPacket *pkt, AMFBuffer *buff
     int64_t          timestamp = AV_NOPTS_VALUE;
     int64_t          size = buffer->pVtbl->GetSize(buffer);
 
-    if ((ret = ff_alloc_packet2(avctx, pkt, size, 0)) < 0) {
+    if ((ret = av_new_packet(pkt, size)) < 0) {
         return ret;
     }
     memcpy(pkt->data, buffer->pVtbl->GetNative(buffer), size);
