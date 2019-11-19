@@ -56,9 +56,11 @@ typedef struct FadeContext {
     int start_frame, nb_frames;
     int hsub, vsub, bpp;
     unsigned int black_level, black_level_scaled;
+    uint8_t is_rgb;
     uint8_t is_packed_rgb;
     uint8_t rgba_map[4];
     int alpha;
+    int is_planar;
     uint64_t start_time, duration;
     enum {VF_FADE_WAITING=0, VF_FADE_FADING, VF_FADE_DONE} fade_state;
     uint8_t color_rgba[4];  ///< fade color
@@ -107,23 +109,27 @@ static int query_formats(AVFilterContext *ctx)
         AV_PIX_FMT_RGB24,    AV_PIX_FMT_BGR24,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRP,     AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_rgb[] = {
         AV_PIX_FMT_RGB24,    AV_PIX_FMT_BGR24,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRP,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_alpha[] = {
         AV_PIX_FMT_YUVA420P, AV_PIX_FMT_YUVA422P, AV_PIX_FMT_YUVA444P,
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     static const enum AVPixelFormat pix_fmts_rgba[] = {
         AV_PIX_FMT_ARGB,     AV_PIX_FMT_ABGR,
         AV_PIX_FMT_RGBA,     AV_PIX_FMT_BGRA,
+        AV_PIX_FMT_GBRAP,
         AV_PIX_FMT_NONE
     };
     AVFilterFormats *fmts_list;
@@ -159,11 +165,15 @@ static int config_props(AVFilterLink *inlink)
     s->hsub = pixdesc->log2_chroma_w;
     s->vsub = pixdesc->log2_chroma_h;
 
+    ff_fill_rgba_map(s->rgba_map, inlink->format);
+
     s->bpp = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR ?
              1 :
              av_get_bits_per_pixel(pixdesc) >> 3;
     s->alpha &= !!(pixdesc->flags & AV_PIX_FMT_FLAG_ALPHA);
-    s->is_packed_rgb = ff_fill_rgba_map(s->rgba_map, inlink->format) >= 0;
+    s->is_planar = pixdesc->flags & AV_PIX_FMT_FLAG_PLANAR;
+    s->is_rgb = pixdesc->flags & AV_PIX_FMT_FLAG_RGB;
+    s->is_packed_rgb = !s->is_planar && s->is_rgb;
 
     /* use CCIR601/709 black level for studio-level pixel non-alpha components */
     s->black_level =
@@ -199,6 +209,29 @@ static av_always_inline void filter_rgb(FadeContext *s, const AVFrame *frame,
     }
 }
 
+static av_always_inline void filter_rgb_planar(FadeContext *s, const AVFrame *frame,
+                                               int slice_start, int slice_end,
+                                               int do_alpha)
+{
+    int i, j;
+    const uint8_t *c = s->color_rgba;
+
+    for (i = slice_start; i < slice_end; i++) {
+        uint8_t *pg = frame->data[0] + i * frame->linesize[0];
+        uint8_t *pb = frame->data[1] + i * frame->linesize[1];
+        uint8_t *pr = frame->data[2] + i * frame->linesize[2];
+        uint8_t *pa = frame->data[3] + i * frame->linesize[3];
+        for (j = 0; j < frame->width; j++) {
+#define INTERPP(c_name, c_idx) av_clip_uint8(((c[c_idx]<<16) + ((int)c_name - (int)c[c_idx]) * s->factor + (1<<15)) >> 16)
+            pr[j] = INTERPP(pr[j], 1);
+            pg[j] = INTERPP(pg[j], 0);
+            pb[j] = INTERPP(pb[j], 2);
+            if (do_alpha)
+                pa[j] = INTERPP(pa[j], 3);
+        }
+    }
+}
+
 static int filter_slice_rgb(AVFilterContext *ctx, void *arg, int jobnr,
                             int nb_jobs)
 {
@@ -207,7 +240,11 @@ static int filter_slice_rgb(AVFilterContext *ctx, void *arg, int jobnr,
     int slice_start = (frame->height *  jobnr   ) / nb_jobs;
     int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
 
-    if      (s->alpha)    filter_rgb(s, frame, slice_start, slice_end, 1, 4);
+    if      (s->is_planar && s->alpha)
+                          filter_rgb_planar(s, frame, slice_start, slice_end, 1);
+    else if (s->is_planar)
+                          filter_rgb_planar(s, frame, slice_start, slice_end, 0);
+    else if (s->alpha)    filter_rgb(s, frame, slice_start, slice_end, 1, 4);
     else if (s->bpp == 3) filter_rgb(s, frame, slice_start, slice_end, 0, 3);
     else if (s->bpp == 4) filter_rgb(s, frame, slice_start, slice_end, 0, 4);
     else                  av_assert0(0);
@@ -224,8 +261,9 @@ static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
     int slice_end   = (frame->height * (jobnr+1)) / nb_jobs;
     int i, j;
 
+    for (int k = 0; k < 1 + 2 * (s->is_planar && s->is_rgb); k++) {
     for (i = slice_start; i < slice_end; i++) {
-        uint8_t *p = frame->data[0] + i * frame->linesize[0];
+        uint8_t *p = frame->data[k] + i * frame->linesize[k];
         for (j = 0; j < frame->width * s->bpp; j++) {
             /* s->factor is using 16 lower-order bits for decimal
              * places. 32768 = 1 << 15, it is an integer representation
@@ -233,6 +271,7 @@ static int filter_slice_luma(AVFilterContext *ctx, void *arg, int jobnr,
             *p = ((*p - s->black_level) * s->factor + s->black_level_scaled) >> 16;
             p++;
         }
+    }
     }
 
     return 0;
@@ -348,7 +387,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
         if (s->alpha) {
             ctx->internal->execute(ctx, filter_slice_alpha, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
-        } else if (s->is_packed_rgb && !s->black_fade) {
+        } else if (s->is_rgb && !s->black_fade) {
             ctx->internal->execute(ctx, filter_slice_rgb, frame, NULL,
                                    FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
         } else {
@@ -356,7 +395,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *frame)
             ctx->internal->execute(ctx, filter_slice_luma, frame, NULL,
                                 FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
 
-            if (frame->data[1] && frame->data[2]) {
+            if (frame->data[1] && frame->data[2] && !s->is_rgb) {
                 /* chroma planes */
                 ctx->internal->execute(ctx, filter_slice_chroma, frame, NULL,
                                     FFMIN(frame->height, ff_filter_get_nb_threads(ctx)));
