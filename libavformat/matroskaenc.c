@@ -562,7 +562,8 @@ static int mkv_assemble_cues(AVStream **streams, AVIOContext *dyn_cp,
     return 0;
 }
 
-static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecParameters *par)
+static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb,
+                              const AVCodecParameters *par)
 {
     const uint8_t *header_start[3];
     int header_len[3];
@@ -590,7 +591,7 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecParame
     return 0;
 }
 
-static int put_wv_codecpriv(AVIOContext *pb, AVCodecParameters *par)
+static int put_wv_codecpriv(AVIOContext *pb, const AVCodecParameters *par)
 {
     if (par->extradata && par->extradata_size == 2)
         avio_write(pb, par->extradata, 2);
@@ -600,7 +601,7 @@ static int put_wv_codecpriv(AVIOContext *pb, AVCodecParameters *par)
 }
 
 static int put_flac_codecpriv(AVFormatContext *s,
-                              AVIOContext *pb, AVCodecParameters *par)
+                              AVIOContext *pb, const AVCodecParameters *par)
 {
     int write_comment = (par->channel_layout &&
                          !(par->channel_layout & ~0x3ffffULL) &&
@@ -648,8 +649,9 @@ static int put_flac_codecpriv(AVFormatContext *s,
     return 0;
 }
 
-static int get_aac_sample_rates(AVFormatContext *s, uint8_t *extradata, int extradata_size,
-                                int *sample_rate, int *output_sample_rate)
+static int get_aac_sample_rates(AVFormatContext *s, const uint8_t *extradata,
+                                int extradata_size, int *sample_rate,
+                                int *output_sample_rate)
 {
     MPEG4AudioConfig mp4ac;
     int ret;
@@ -681,7 +683,7 @@ static int get_aac_sample_rates(AVFormatContext *s, uint8_t *extradata, int extr
 }
 
 static int mkv_write_native_codecprivate(AVFormatContext *s, AVIOContext *pb,
-                                         AVCodecParameters *par,
+                                         const AVCodecParameters *par,
                                          AVIOContext *dyn_cp)
 {
     switch (par->codec_id) {
@@ -799,7 +801,9 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
     return ret;
 }
 
-static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStream *st) {
+static int mkv_write_video_color(AVIOContext *pb, const AVCodecParameters *par,
+                                 const AVStream *st)
+{
     AVIOContext *dyn_cp;
     uint8_t *colorinfo_ptr;
     int side_data_size = 0;
@@ -890,7 +894,7 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
 }
 
 static int mkv_write_video_projection(AVFormatContext *s, AVIOContext *pb,
-                                      AVStream *st)
+                                      const AVStream *st)
 {
     ebml_master projection;
     int side_data_size = 0;
@@ -1003,7 +1007,7 @@ static int mkv_write_stereo_mode(AVFormatContext *s, AVIOContext *pb,
 {
     int i;
     int ret = 0;
-    AVDictionaryEntry *tag;
+    const AVDictionaryEntry *tag;
     MatroskaVideoStereoModeType format = MATROSKA_VIDEO_STEREOMODE_TYPE_NB;
 
     *h_width = 1;
@@ -1110,7 +1114,7 @@ static int mkv_write_track(AVFormatContext *s, MatroskaMuxContext *mkv,
     int display_width_div = 1;
     int display_height_div = 1;
     int j, ret;
-    AVDictionaryEntry *tag;
+    const AVDictionaryEntry *tag;
 
     if (par->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
         return 0;
@@ -1421,10 +1425,10 @@ static int mkv_write_chapters(AVFormatContext *s)
     }
     for (i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
-        AVChapter *c     = s->chapters[i];
+        const AVChapter *c   = s->chapters[i];
         int64_t chapterstart = av_rescale_q(c->start, c->time_base, scale);
         int64_t chapterend   = av_rescale_q(c->end,   c->time_base, scale);
-        AVDictionaryEntry *t = NULL;
+        const AVDictionaryEntry *t;
         if (chapterstart < 0 || chapterstart > chapterend || chapterend < 0) {
             av_log(s, AV_LOG_ERROR,
                    "Invalid chapter start (%"PRId64") or end (%"PRId64").\n",
@@ -1452,7 +1456,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     return 0;
 }
 
-static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
+static int mkv_write_simpletag(AVIOContext *pb, const AVDictionaryEntry *t)
 {
     uint8_t *key = av_strdup(t->key);
     uint8_t *p   = key;
@@ -1525,13 +1529,13 @@ static int mkv_check_tag_name(const char *name, uint32_t elementid)
              av_strcasecmp(name, "mimetype")));
 }
 
-static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid,
+static int mkv_write_tag(AVFormatContext *s, const AVDictionary *m, uint32_t elementid,
                          uint64_t uid, ebml_master *tag)
 {
     MatroskaMuxContext *mkv = s->priv_data;
+    const AVDictionaryEntry *t = NULL;
     ebml_master tag2;
     int ret;
-    AVDictionaryEntry *t = NULL;
 
     ret = mkv_write_tag_targets(s, elementid, uid, tag ? tag : &tag2);
     if (ret < 0)
@@ -1551,9 +1555,9 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid
     return 0;
 }
 
-static int mkv_check_tag(AVDictionary *m, uint32_t elementid)
+static int mkv_check_tag(const AVDictionary *m, uint32_t elementid)
 {
-    AVDictionaryEntry *t = NULL;
+    const AVDictionaryEntry *t = NULL;
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
         if (mkv_check_tag_name(t->key, elementid))
@@ -1577,7 +1581,7 @@ static int mkv_write_tags(AVFormatContext *s)
 
     tagp = (s->pb->seekable & AVIO_SEEKABLE_NORMAL) && !mkv->is_live ? &tag : NULL;
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
+        const AVStream *st = s->streams[i];
         mkv_track *track = &mkv->tracks[i];
 
         if (st->codecpar->codec_type == AVMEDIA_TYPE_ATTACHMENT)
@@ -1624,8 +1628,8 @@ static int mkv_write_tags(AVFormatContext *s)
 
     if (mkv->nb_attachments && mkv->mode != MODE_WEBM) {
         for (i = 0; i < s->nb_streams; i++) {
-            mkv_track *track = &mkv->tracks[i];
-            AVStream *st = s->streams[i];
+            const mkv_track *track = &mkv->tracks[i];
+            const AVStream     *st = s->streams[i];
 
             if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
                 continue;
@@ -1665,10 +1669,10 @@ static int mkv_write_attachments(AVFormatContext *s)
     if (ret < 0) return ret;
 
     for (i = 0; i < s->nb_streams; i++) {
-        AVStream *st = s->streams[i];
+        const AVStream *st = s->streams[i];
         mkv_track *track = &mkv->tracks[i];
         ebml_master attached_file;
-        AVDictionaryEntry *t;
+        const AVDictionaryEntry *t;
         const char *mimetype = NULL;
 
         if (st->codecpar->codec_type != AVMEDIA_TYPE_ATTACHMENT)
@@ -1714,7 +1718,7 @@ static int64_t get_metadata_duration(AVFormatContext *s)
     int64_t max = 0;
     int64_t us;
 
-    AVDictionaryEntry *explicitDuration = av_dict_get(s->metadata, "DURATION", NULL, 0);
+    const AVDictionaryEntry *explicitDuration = av_dict_get(s->metadata, "DURATION", NULL, 0);
     if (explicitDuration && (av_parse_time(&us, explicitDuration->value, 1) == 0) && us > 0) {
         av_log(s, AV_LOG_DEBUG, "get_metadata_duration found duration in context metadata: %" PRId64 "\n", us);
         return us;
@@ -1722,7 +1726,7 @@ static int64_t get_metadata_duration(AVFormatContext *s)
 
     for (i = 0; i < s->nb_streams; i++) {
         int64_t us;
-        AVDictionaryEntry *duration = av_dict_get(s->streams[i]->metadata, "DURATION", NULL, 0);
+        const AVDictionaryEntry *duration = av_dict_get(s->streams[i]->metadata, "DURATION", NULL, 0);
 
         if (duration && (av_parse_time(&us, duration->value, 1) == 0))
             max = FFMAX(max, us);
@@ -1737,7 +1741,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
     ebml_master ebml_header;
-    AVDictionaryEntry *tag;
+    const AVDictionaryEntry *tag;
     int ret, i, version = 2;
     int64_t creation_time;
 
@@ -1956,7 +1960,7 @@ fail:
 }
 
 static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
-                           uint32_t blockid, AVPacket *pkt, int keyframe)
+                           uint32_t blockid, const AVPacket *pkt, int keyframe)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVCodecParameters *par = s->streams[pkt->stream_index]->codecpar;
@@ -2070,7 +2074,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     return 0;
 }
 
-static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, AVPacket *pkt)
+static int mkv_write_vtt_blocks(AVFormatContext *s, AVIOContext *pb, const AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     mkv_track *track = &mkv->tracks[pkt->stream_index];
@@ -2128,7 +2132,7 @@ static void mkv_end_cluster(AVFormatContext *s)
     avio_write_marker(s->pb, AV_NOPTS_VALUE, AVIO_DATA_MARKER_FLUSH_POINT);
 }
 
-static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
+static int mkv_check_new_extra_data(AVFormatContext *s, const AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     mkv_track *track        = &mkv->tracks[pkt->stream_index];
@@ -2226,7 +2230,7 @@ static int mkv_check_new_extra_data(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-static int mkv_write_packet_internal(AVFormatContext *s, AVPacket *pkt)
+static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb;
@@ -2315,7 +2319,7 @@ FF_ENABLE_DEPRECATION_WARNINGS
     return 0;
 }
 
-static int mkv_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int mkv_write_packet(AVFormatContext *s, const AVPacket *pkt)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     int codec_type          = s->streams[pkt->stream_index]->codecpar->codec_type;
@@ -2513,8 +2517,8 @@ static int mkv_write_trailer(AVFormatContext *s)
         if (mkv->tags_bc) {
             int i;
             for (i = 0; i < s->nb_streams; ++i) {
-                AVStream *st = s->streams[i];
-                mkv_track *track = &mkv->tracks[i];
+                const AVStream     *st = s->streams[i];
+                const mkv_track *track = &mkv->tracks[i];
 
                 if (track->duration_offset > 0) {
                     double duration_sec = track->duration * av_q2d(st->time_base);
