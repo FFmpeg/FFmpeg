@@ -523,7 +523,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++)
         ff_mdct_init(&s->mdct_ctx[i], WMAPRO_BLOCK_MIN_BITS+1+i, 1,
                      1.0 / (1 << (WMAPRO_BLOCK_MIN_BITS + i - 1))
-                     / (1 << (s->bits_per_sample - 1)));
+                     / (1ll << (s->bits_per_sample - 1)));
 
     /** init MDCT windows: simple sine window */
     for (i = 0; i < WMAPRO_BLOCK_SIZES; i++) {
