@@ -12990,6 +12990,13 @@ Allowed range is integer from 0 to 127.
 If it is 0, value will be picked from horizontal @code{radius} option.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section mergeplanes
 
 Merge color channel components from several video streams.

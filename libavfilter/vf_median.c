@@ -54,7 +54,7 @@
 #include "median_template.c"
 
 #define OFFSET(x) offsetof(MedianContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption median_options[] = {
     { "radius", "set median radius",    OFFSET(radius), AV_OPT_TYPE_INT,   {.i64=1},     1,  127, FLAGS },
@@ -110,21 +110,8 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 }
 
-static int config_input(AVFilterLink *inlink)
+static int check_params(MedianContext *s, AVFilterLink *inlink)
 {
-    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    MedianContext *s = inlink->dst->priv;
-
-    s->depth = desc->comp[0].depth;
-    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
-    s->planewidth[0] = s->planewidth[3] = inlink->w;
-    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
-    s->planeheight[0] = s->planeheight[3] = inlink->h;
-
-    s->radiusV = !s->radiusV ? s->radius : s->radiusV;
-    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
-    s->t = 2 * s->radius * s->radiusV + 2 * s->radius;
-
     for (int i = 0; i < s->nb_planes; i++) {
         if (!(s->planes & (1 << i)))
             continue;
@@ -139,6 +126,30 @@ static int config_input(AVFilterLink *inlink)
             return AVERROR(EINVAL);
         }
     }
+
+    s->t = 2 * s->radius * s->radiusV + 2 * s->radius;
+
+    return 0;
+}
+
+static int config_input(AVFilterLink *inlink)
+{
+    const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
+    MedianContext *s = inlink->dst->priv;
+    int ret;
+
+    s->depth = desc->comp[0].depth;
+    s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
+    s->planewidth[0] = s->planewidth[3] = inlink->w;
+    s->planeheight[1] = s->planeheight[2] = AV_CEIL_RSHIFT(inlink->h, desc->log2_chroma_h);
+    s->planeheight[0] = s->planeheight[3] = inlink->h;
+
+    s->radiusV = !s->radiusV ? s->radius : s->radiusV;
+    s->nb_planes = av_pix_fmt_count_planes(inlink->format);
+
+    ret = check_params(s, inlink);
+    if (ret < 0)
+        return ret;
 
     s->nb_threads = FFMAX(1, FFMIN(s->planeheight[1] / (s->radiusV + 1), ff_filter_get_nb_threads(inlink->dst)));
     s->bins   = 1 << ((s->depth + 1) / 2);
@@ -243,6 +254,27 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&s->fine);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    MedianContext *s = ctx->priv;
+    int radius = s->radius, radiusV = s->radiusV, planes = s->planes;
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    ret = check_params(s, ctx->inputs[0]);
+    if (ret != 0) {
+        s->radius  = radius;
+        s->radiusV = radiusV;
+        s->planes  = planes;
+    }
+
+    return 0;
+}
+
 static const AVFilterPad median_inputs[] = {
     {
         .name         = "default",
@@ -271,4 +303,5 @@ AVFilter ff_vf_median = {
     .inputs        = median_inputs,
     .outputs       = median_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
