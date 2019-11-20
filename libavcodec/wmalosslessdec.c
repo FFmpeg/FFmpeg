@@ -628,7 +628,7 @@ static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
     int range        = 1 << (s->bits_per_sample - 1);
 
     for (ich = 0; ich < num_channels; ich++) {
-        pred_error = s->channel_residues[ich][icoef] - pred[ich];
+        pred_error = s->channel_residues[ich][icoef] - (unsigned)pred[ich];
         if (pred_error > 0) {
             for (i = 0; i < order * num_channels; i++)
                 s->mclms_coeffs[i + ich * order * num_channels] +=
@@ -680,7 +680,7 @@ static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
                          s->mclms_coeffs_cur[i + num_channels * ich];
         pred[ich] += (1 << s->mclms_scaling) >> 1;
         pred[ich] >>= s->mclms_scaling;
-        s->channel_residues[ich][icoef] += pred[ich];
+        s->channel_residues[ich][icoef] += (unsigned)pred[ich];
     }
 }
 
