@@ -1507,12 +1507,12 @@ static int dash_init(AVFormatContext *s)
             if (c->streaming)
                 // skip_sidx : Reduce bitrate overhead
                 // skip_trailer : Avoids growing memory usage with time
-                av_dict_set(&opts, "movflags", "dash+delay_moov+skip_sidx+skip_trailer", 0);
+                av_dict_set(&opts, "movflags", "+dash+delay_moov+skip_sidx+skip_trailer", AV_DICT_APPEND);
             else {
                 if (c->global_sidx)
-                    av_dict_set(&opts, "movflags", "dash+delay_moov+global_sidx+skip_trailer", 0);
+                    av_dict_set(&opts, "movflags", "+dash+delay_moov+global_sidx+skip_trailer", AV_DICT_APPEND);
                 else
-                    av_dict_set(&opts, "movflags", "dash+delay_moov+skip_trailer", 0);
+                    av_dict_set(&opts, "movflags", "+dash+delay_moov+skip_trailer", AV_DICT_APPEND);
             }
             if (os->frag_type == FRAG_TYPE_EVERY_FRAME)
                 av_dict_set(&opts, "movflags", "+frag_every_frame", AV_DICT_APPEND);
