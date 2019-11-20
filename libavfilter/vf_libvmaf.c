@@ -235,6 +235,9 @@ static av_cold int init(AVFilterContext *ctx)
 
     s->gref = av_frame_alloc();
     s->gmain = av_frame_alloc();
+    if (!s->gref || !s->gmain)
+        return AVERROR(ENOMEM);
+
     s->error = 0;
 
     s->vmaf_thread_created = 0;
