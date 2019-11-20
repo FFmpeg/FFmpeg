@@ -2009,7 +2009,7 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
     uint8_t *data = NULL, *side_data = NULL;
     int err = 0, offset = 0, size = pkt->size, side_data_size = 0;
     int64_t ts = track->write_dts ? pkt->dts : pkt->pts;
-    uint64_t additional_id = 0;
+    uint64_t additional_id;
     int64_t discard_padding = 0;
     uint8_t track_number = (mkv->is_dash ? mkv->dash_track_number : (pkt->stream_index + 1));
     ebml_master block_group, block_additions, block_more;
@@ -2065,16 +2065,16 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
                                         AV_PKT_DATA_MATROSKA_BLOCKADDITIONAL,
                                         &side_data_size);
     if (side_data) {
-        if (side_data_size < 8) {
+        // Only the Codec-specific BlockMore (id == 1) is currently supported.
+        if (side_data_size < 8 || (additional_id = AV_RB64(side_data)) != 1) {
             side_data_size = 0;
         } else {
-            additional_id   = AV_RB64(side_data);
             side_data      += 8;
             side_data_size -= 8;
         }
     }
 
-    if ((side_data_size && additional_id == 1) || discard_padding) {
+    if (side_data_size || discard_padding) {
         block_group = start_ebml_master(pb, MATROSKA_ID_BLOCKGROUP, 0);
         blockid = MATROSKA_ID_BLOCK;
     }
@@ -2098,17 +2098,18 @@ static int mkv_write_block(AVFormatContext *s, AVIOContext *pb,
         put_ebml_sint(pb, MATROSKA_ID_DISCARDPADDING, discard_padding);
     }
 
-    if (side_data_size && additional_id == 1) {
+    if (side_data_size) {
         block_additions = start_ebml_master(pb, MATROSKA_ID_BLOCKADDITIONS, 0);
         block_more = start_ebml_master(pb, MATROSKA_ID_BLOCKMORE, 0);
-        put_ebml_uint(pb, MATROSKA_ID_BLOCKADDID, 1);
-        put_ebml_id(pb, MATROSKA_ID_BLOCKADDITIONAL);
-        put_ebml_num(pb, side_data_size, 0);
-        avio_write(pb, side_data, side_data_size);
+        /* Until dbc50f8a our demuxer used a wrong default value
+         * of BlockAddID, so we write it unconditionally. */
+        put_ebml_uint  (pb, MATROSKA_ID_BLOCKADDID, additional_id);
+        put_ebml_binary(pb, MATROSKA_ID_BLOCKADDITIONAL,
+                        side_data, side_data_size);
         end_ebml_master(pb, block_more);
         end_ebml_master(pb, block_additions);
     }
-    if ((side_data_size && additional_id == 1) || discard_padding) {
+    if (side_data_size || discard_padding) {
         end_ebml_master(pb, block_group);
     }
 
