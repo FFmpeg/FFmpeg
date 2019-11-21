@@ -2,6 +2,16 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 4.0.5:
+ avcodec/iff: Move index use after check in decodeplane8()
+ avcodec/atrac3: Check for huge block aligns
+ avcodec/ralf: use multiply instead of shift to avoid undefined behavior in decode_block()
+ avcodec/wmadec: Require previous exponents for reuse
+ avcodec/vc1_block: Fix undefined behavior in ac prediction rescaling
+ avcodec/qdm2: The smallest header seems to have 2 bytes so treat 1 as invalid
+ avcodec/apedec: Fixes integer overflow of res+*data in do_apply_filter()
+ avcodec/sonic: Fix integer overflow in predictor_calc_error()
+ avformat/mp3dec: Check that the frame fits within the probe buffer
+ lavc/tableprint_vlc: Remove avpriv_request_sample() from included files.
  avcodec/wmaprodec: get frame during frame decode
  avcodec/interplayacm: Fix overflow of last unused value
  avcodec/adpcm: Fix undefined behavior with negative predictions in IMA OKI
