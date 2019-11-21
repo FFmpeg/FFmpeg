@@ -6863,6 +6863,13 @@ Literal colors like "green" or "red" don't make sense with this enabled anymore.
 This can be used to pass exact YUV values as hexadecimal numbers.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section chromakey
 YUV colorspace color/chroma keying.
 
@@ -6891,6 +6898,13 @@ Signals that the color passed is already in YUV instead of RGB.
 Literal colors like "green" or "red" don't make sense with this enabled anymore.
 This can be used to pass exact YUV values as hexadecimal numbers.
 @end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
 
 @subsection Examples
 

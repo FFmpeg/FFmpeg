@@ -353,6 +353,18 @@ static av_cold int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_output(ctx->outputs[0]);
+}
+
 static const AVFilterPad chromakey_inputs[] = {
     {
         .name           = "default",
@@ -374,7 +386,7 @@ static const AVFilterPad chromakey_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(ChromakeyContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption chromakey_options[] = {
     { "color", "set the chromakey key color", OFFSET(chromakey_rgba), AV_OPT_TYPE_COLOR, { .str = "black" }, CHAR_MIN, CHAR_MAX, FLAGS },
@@ -395,6 +407,7 @@ AVFilter ff_vf_chromakey = {
     .inputs        = chromakey_inputs,
     .outputs       = chromakey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
 
 static const AVOption chromahold_options[] = {
@@ -436,4 +449,5 @@ AVFilter ff_vf_chromahold = {
     .inputs        = chromahold_inputs,
     .outputs       = chromahold_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
