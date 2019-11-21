@@ -13810,6 +13810,13 @@ Draw some statistics. By default is enabled.
 Draw scope. By default is enabled.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @subsection Examples
 
 @itemize

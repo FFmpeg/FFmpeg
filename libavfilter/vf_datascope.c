@@ -54,6 +54,7 @@ typedef struct DatascopeContext {
 
 #define OFFSET(x) offsetof(DatascopeContext, x)
 #define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGSR AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption datascope_options[] = {
     { "size", "set output size", OFFSET(ow),   AV_OPT_TYPE_IMAGE_SIZE, {.str="hd720"}, 0, 0, FLAGS },
@@ -720,19 +721,19 @@ typedef struct OscilloscopeContext {
 #define OOFFSET(x) offsetof(OscilloscopeContext, x)
 
 static const AVOption oscilloscope_options[] = {
-    { "x",  "set scope x position",    OOFFSET(xpos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "y",  "set scope y position",    OOFFSET(ypos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "s",  "set scope size",          OOFFSET(size),       AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
-    { "t",  "set scope tilt",          OOFFSET(tilt),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "o",  "set trace opacity",       OOFFSET(o),          AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGS },
-    { "tx", "set trace x position",    OOFFSET(tx),         AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGS },
-    { "ty", "set trace y position",    OOFFSET(ty),         AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1,  FLAGS },
-    { "tw", "set trace width",         OOFFSET(twidth),     AV_OPT_TYPE_FLOAT, {.dbl=0.8},.1, 1,  FLAGS },
-    { "th", "set trace height",        OOFFSET(theight),    AV_OPT_TYPE_FLOAT, {.dbl=0.3},.1, 1,  FLAGS },
-    { "c",  "set components to trace", OOFFSET(components), AV_OPT_TYPE_INT,   {.i64=7},   0, 15, FLAGS },
-    { "g",  "draw trace grid",         OOFFSET(grid),       AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
-    { "st", "draw statistics",         OOFFSET(statistics), AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
-    { "sc", "draw scope",              OOFFSET(scope),      AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGS },
+    { "x",  "set scope x position",    OOFFSET(xpos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "y",  "set scope y position",    OOFFSET(ypos),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "s",  "set scope size",          OOFFSET(size),       AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGSR },
+    { "t",  "set scope tilt",          OOFFSET(tilt),       AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "o",  "set trace opacity",       OOFFSET(o),          AV_OPT_TYPE_FLOAT, {.dbl=0.8}, 0, 1,  FLAGSR },
+    { "tx", "set trace x position",    OOFFSET(tx),         AV_OPT_TYPE_FLOAT, {.dbl=0.5}, 0, 1,  FLAGSR },
+    { "ty", "set trace y position",    OOFFSET(ty),         AV_OPT_TYPE_FLOAT, {.dbl=0.9}, 0, 1,  FLAGSR },
+    { "tw", "set trace width",         OOFFSET(twidth),     AV_OPT_TYPE_FLOAT, {.dbl=0.8},.1, 1,  FLAGSR },
+    { "th", "set trace height",        OOFFSET(theight),    AV_OPT_TYPE_FLOAT, {.dbl=0.3},.1, 1,  FLAGSR },
+    { "c",  "set components to trace", OOFFSET(components), AV_OPT_TYPE_INT,   {.i64=7},   0, 15, FLAGSR },
+    { "g",  "draw trace grid",         OOFFSET(grid),       AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
+    { "st", "draw statistics",         OOFFSET(statistics), AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
+    { "sc", "draw scope",              OOFFSET(scope),      AV_OPT_TYPE_BOOL,  {.i64=1},   0, 1,  FLAGSR },
     { NULL }
 };
 
@@ -830,15 +831,36 @@ static void draw_trace16(OscilloscopeContext *s, AVFrame *frame)
     }
 }
 
-static int oscilloscope_config_input(AVFilterLink *inlink)
+static void update_oscilloscope(AVFilterContext *ctx)
 {
-    OscilloscopeContext *s = inlink->dst->priv;
+    OscilloscopeContext *s = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
     int cx, cy, size;
     double tilt;
 
+    ff_draw_color(&s->draw, &s->dark,    (uint8_t[]){   0,   0,   0, s->o * 255} );
+    s->height = s->theight * inlink->h;
+    s->width = s->twidth * inlink->w;
+    size = hypot(inlink->w, inlink->h);
+    size *= s->size;
+    tilt  = (s->tilt - 0.5) * M_PI;
+    cx = s->xpos * (inlink->w - 1);
+    cy = s->ypos * (inlink->h - 1);
+    s->x1 = cx - size / 2.0 * cos(tilt);
+    s->x2 = cx + size / 2.0 * cos(tilt);
+    s->y1 = cy - size / 2.0 * sin(tilt);
+    s->y2 = cy + size / 2.0 * sin(tilt);
+    s->ox = (inlink->w - s->width) * s->tx;
+    s->oy = (inlink->h - s->height) * s->ty;
+}
+
+static int oscilloscope_config_input(AVFilterLink *inlink)
+{
+    OscilloscopeContext *s = inlink->dst->priv;
+    int size;
+
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
     ff_draw_init(&s->draw, inlink->format, 0);
-    ff_draw_color(&s->draw, &s->dark,    (uint8_t[]){   0,   0,   0, s->o * 255} );
     ff_draw_color(&s->draw, &s->black,   (uint8_t[]){   0,   0,   0, 255} );
     ff_draw_color(&s->draw, &s->white,   (uint8_t[]){ 255, 255, 255, 255} );
     ff_draw_color(&s->draw, &s->green,   (uint8_t[]){   0, 255,   0, 255} );
@@ -876,24 +898,13 @@ static int oscilloscope_config_input(AVFilterLink *inlink)
     }
 
     s->max = (1 << s->draw.desc->comp[0].depth);
-    cx = s->xpos * (inlink->w - 1);
-    cy = s->ypos * (inlink->h - 1);
-    s->height = s->theight * inlink->h;
-    s->width = s->twidth * inlink->w;
     size = hypot(inlink->w, inlink->h);
 
     s->values = av_calloc(size, sizeof(*s->values));
     if (!s->values)
         return AVERROR(ENOMEM);
 
-    size *= s->size;
-    tilt  = (s->tilt - 0.5) * M_PI;
-    s->x1 = cx - size / 2.0 * cos(tilt);
-    s->x2 = cx + size / 2.0 * cos(tilt);
-    s->y1 = cy - size / 2.0 * sin(tilt);
-    s->y2 = cy + size / 2.0 * sin(tilt);
-    s->ox = (inlink->w - s->width) * s->tx;
-    s->oy = (inlink->h - s->height) * s->ty;
+    update_oscilloscope(inlink->dst);
 
     return 0;
 }
@@ -1022,6 +1033,20 @@ static int oscilloscope_filter_frame(AVFilterLink *inlink, AVFrame *frame)
     return ff_filter_frame(outlink, frame);
 }
 
+static int oscilloscope_process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                                        char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    update_oscilloscope(ctx);
+
+    return 0;
+}
+
 static const AVFilterPad oscilloscope_inputs[] = {
     {
         .name           = "default",
@@ -1051,4 +1076,5 @@ AVFilter ff_vf_oscilloscope = {
     .inputs        = oscilloscope_inputs,
     .outputs       = oscilloscope_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = oscilloscope_process_command,
 };
