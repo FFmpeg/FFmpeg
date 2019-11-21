@@ -110,33 +110,30 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, ff_make_format_list(pix_fmts));
 }
 
-static int check_params(MedianContext *s, AVFilterLink *inlink)
+static void check_params(MedianContext *s, AVFilterLink *inlink)
 {
     for (int i = 0; i < s->nb_planes; i++) {
         if (!(s->planes & (1 << i)))
             continue;
 
         if (s->planewidth[i] < s->radius * 2 + 1) {
-            av_log(inlink->dst, AV_LOG_ERROR, "The %d plane width %d must be not less than %d\n", i, s->planewidth[i], s->radius * 2 + 1);
-            return AVERROR(EINVAL);
+            av_log(inlink->dst, AV_LOG_WARNING, "The %d plane width %d must be not less than %d, clipping radius.\n", i, s->planewidth[i], s->radius * 2 + 1);
+            s->radius = (s->planewidth[i] - 1) / 2;
         }
 
         if (s->planeheight[i] < s->radiusV * 2 + 1) {
-            av_log(inlink->dst, AV_LOG_ERROR, "The %d plane height %d must be not less than %d\n", i, s->planeheight[i], s->radiusV * 2 + 1);
-            return AVERROR(EINVAL);
+            av_log(inlink->dst, AV_LOG_WARNING, "The %d plane height %d must be not less than %d, clipping radiusV.\n", i, s->planeheight[i], s->radiusV * 2 + 1);
+            s->radiusV = (s->planeheight[i] - 1) / 2;
         }
     }
 
     s->t = 2 * s->radius * s->radiusV + 2 * s->radius;
-
-    return 0;
 }
 
 static int config_input(AVFilterLink *inlink)
 {
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     MedianContext *s = inlink->dst->priv;
-    int ret;
 
     s->depth = desc->comp[0].depth;
     s->planewidth[1] = s->planewidth[2] = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
@@ -147,9 +144,7 @@ static int config_input(AVFilterLink *inlink)
     s->radiusV = !s->radiusV ? s->radius : s->radiusV;
     s->nb_planes = av_pix_fmt_count_planes(inlink->format);
 
-    ret = check_params(s, inlink);
-    if (ret < 0)
-        return ret;
+    check_params(s, inlink);
 
     s->nb_threads = FFMAX(1, FFMIN(s->planeheight[1] / (s->radiusV + 1), ff_filter_get_nb_threads(inlink->dst)));
     s->bins   = 1 << ((s->depth + 1) / 2);
@@ -258,19 +253,15 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
                            char *res, int res_len, int flags)
 {
     MedianContext *s = ctx->priv;
-    int radius = s->radius, radiusV = s->radiusV, planes = s->planes;
     int ret;
 
     ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
     if (ret < 0)
         return ret;
 
-    ret = check_params(s, ctx->inputs[0]);
-    if (ret != 0) {
-        s->radius  = radius;
-        s->radiusV = radiusV;
-        s->planes  = planes;
-    }
+    if (!s->radiusV)
+        s->radiusV = s->radius;
+    check_params(s, ctx->inputs[0]);
 
     return 0;
 }
