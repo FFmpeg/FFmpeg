@@ -12609,12 +12609,19 @@ Default value is @code{0}.
 
 @item tolerance
 Set the range of luma values to be keyed out.
-Default value is @code{0}.
+Default value is @code{0.01}.
 
 @item softness
 Set the range of softness. Default value is @code{0}.
 Use this to control gradual transition from zero to full transparency.
 @end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
 
 @section lut, lutrgb, lutyuv
 

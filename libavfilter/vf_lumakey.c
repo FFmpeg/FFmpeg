@@ -163,6 +163,18 @@ static av_cold int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, formats);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 static const AVFilterPad lumakey_inputs[] = {
     {
         .name         = "default",
@@ -182,7 +194,7 @@ static const AVFilterPad lumakey_outputs[] = {
 };
 
 #define OFFSET(x) offsetof(LumakeyContext, x)
-#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM
+#define FLAGS AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption lumakey_options[] = {
     { "threshold", "set the threshold value", OFFSET(threshold), AV_OPT_TYPE_DOUBLE, {.dbl=0},    0, 1, FLAGS },
@@ -202,4 +214,5 @@ AVFilter ff_vf_lumakey = {
     .inputs        = lumakey_inputs,
     .outputs       = lumakey_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
