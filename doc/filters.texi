@@ -10745,6 +10745,13 @@ Default is @var{smear}.
 Set color for pixels in fixed mode. Default is @var{black}.
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @section find_rect
 
 Find a rectangular object

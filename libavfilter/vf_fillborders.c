@@ -292,6 +292,20 @@ static int config_input(AVFilterLink *inlink)
     s->planewidth[1]  = s->planewidth[2]  = AV_CEIL_RSHIFT(inlink->w, desc->log2_chroma_w);
     s->planewidth[0]  = s->planewidth[3]  = inlink->w;
 
+    if (inlink->w < s->left + s->right ||
+        inlink->w <= s->left ||
+        inlink->w <= s->right ||
+        inlink->h < s->top + s->bottom ||
+        inlink->h <= s->top ||
+        inlink->h <= s->bottom ||
+        inlink->w < s->left * 2 ||
+        inlink->w < s->right * 2 ||
+        inlink->h < s->top * 2 ||
+        inlink->h < s->bottom * 2) {
+        av_log(ctx, AV_LOG_ERROR, "Borders are bigger than input frame size.\n");
+        return AVERROR(EINVAL);
+    }
+
     s->borders[0].left   = s->borders[3].left = s->left;
     s->borders[0].right  = s->borders[3].right = s->right;
     s->borders[0].top    = s->borders[3].top = s->top;
@@ -306,20 +320,6 @@ static int config_input(AVFilterLink *inlink)
     s->borders[2].right  = s->right >> desc->log2_chroma_w;
     s->borders[2].top    = s->top >> desc->log2_chroma_h;
     s->borders[2].bottom = s->bottom >> desc->log2_chroma_h;
-
-    if (inlink->w < s->left + s->right ||
-        inlink->w <= s->left ||
-        inlink->w <= s->right ||
-        inlink->h < s->top + s->bottom ||
-        inlink->h <= s->top ||
-        inlink->h <= s->bottom ||
-        inlink->w < s->left * 2 ||
-        inlink->w < s->right * 2 ||
-        inlink->h < s->top * 2 ||
-        inlink->h < s->bottom * 2) {
-        av_log(ctx, AV_LOG_ERROR, "Borders are bigger than input frame size.\n");
-        return AVERROR(EINVAL);
-    }
 
     switch (s->mode) {
     case FM_SMEAR:  s->fillborders = s->depth <= 8 ? smear_borders8  : smear_borders16;  break;
@@ -346,8 +346,20 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    return config_input(ctx->inputs[0]);
+}
+
 #define OFFSET(x) offsetof(FillBordersContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_FILTERING_PARAM|AV_OPT_FLAG_RUNTIME_PARAM
 
 static const AVOption fillborders_options[] = {
     { "left",   "set the left fill border",   OFFSET(left),   AV_OPT_TYPE_INT, {.i64=0}, 0, INT_MAX,    FLAGS },
@@ -392,4 +404,5 @@ AVFilter ff_vf_fillborders = {
     .inputs        = fillborders_inputs,
     .outputs       = fillborders_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .process_command = process_command,
 };
