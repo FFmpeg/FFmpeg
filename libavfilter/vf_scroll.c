@@ -32,6 +32,8 @@ typedef struct ScrollContext {
     float h_pos, v_pos;
     float h_ipos, v_ipos;
 
+    int pos_h[4], pos_v[4];
+
     const AVPixFmtDescriptor *desc;
     int nb_planes;
     int bytes;
@@ -70,10 +72,47 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static void scroll(ScrollContext *s, AVFrame *in, AVFrame *out)
+typedef struct ThreadData {
+    AVFrame *in, *out;
+} ThreadData;
+
+static int scroll_slice(AVFilterContext *ctx, void *arg, int jobnr,
+                        int nb_jobs)
 {
+    ScrollContext *s = ctx->priv;
+    ThreadData *td = arg;
+    AVFrame *in = td->in;
+    AVFrame *out = td->out;
+
+    for (int p = 0; p < s->nb_planes; p++) {
+        const uint8_t *src = in->data[p];
+        const int h = s->planeheight[p];
+        const int w = s->planewidth[p] * s->bytes;
+        const int slice_start = (h * jobnr) / nb_jobs;
+        const int slice_end = (h * (jobnr+1)) / nb_jobs;
+        uint8_t *dst = out->data[p] + slice_start * out->linesize[p];
+
+        for (int y = slice_start; y < slice_end; y++) {
+            int yy = (y + s->pos_v[p]) % h;
+            const uint8_t *ssrc = src + yy * in->linesize[p];
+
+            if (s->pos_h[p] < w)
+                memcpy(dst, ssrc + s->pos_h[p], w - s->pos_h[p]);
+            if (s->pos_h[p] > 0)
+                memcpy(dst + w - s->pos_h[p], ssrc, s->pos_h[p]);
+
+            dst += out->linesize[p];
+        }
+    }
+
+    return 0;
+}
+
+static void scroll(AVFilterContext *ctx, AVFrame *in, AVFrame *out)
+{
+    ScrollContext *s = ctx->priv;
+    ThreadData td;
     int h_pos, v_pos;
-    int pos_h[4], pos_v[4];
 
     s->h_pos = fmodf(s->h_pos, in->width);
     s->v_pos = fmodf(s->v_pos, in->height);
@@ -86,29 +125,14 @@ static void scroll(ScrollContext *s, AVFrame *in, AVFrame *out)
     if (v_pos < 0)
         v_pos += in->height;
 
-    pos_v[1] = pos_v[2] = AV_CEIL_RSHIFT(v_pos, s->desc->log2_chroma_h);
-    pos_v[0] = pos_v[3] = v_pos;
-    pos_h[1] = pos_h[2] = AV_CEIL_RSHIFT(h_pos, s->desc->log2_chroma_w) * s->bytes;
-    pos_h[0] = pos_h[3] = h_pos * s->bytes;
+    s->pos_v[1] = s->pos_v[2] = AV_CEIL_RSHIFT(v_pos, s->desc->log2_chroma_h);
+    s->pos_v[0] = s->pos_v[3] = v_pos;
+    s->pos_h[1] = s->pos_h[2] = AV_CEIL_RSHIFT(h_pos, s->desc->log2_chroma_w) * s->bytes;
+    s->pos_h[0] = s->pos_h[3] = h_pos * s->bytes;
 
-    for (int p = 0; p < s->nb_planes; p++) {
-        const uint8_t *src = in->data[p];
-        uint8_t *dst = out->data[p];
-        const int h = s->planeheight[p];
-        const int w = s->planewidth[p] * s->bytes;
-
-        for (int y = 0; y < h; y++) {
-            int yy = (y + pos_v[p]) % h;
-            const uint8_t *ssrc = src + yy * in->linesize[p];
-
-            if (pos_h[p] < w)
-                memcpy(dst, ssrc + pos_h[p], w - pos_h[p]);
-            if (pos_h[p] > 0)
-                memcpy(dst + w - pos_h[p], ssrc, pos_h[p]);
-
-            dst += out->linesize[p];
-        }
-    }
+    td.in = in; td.out = out;
+    ctx->internal->execute(ctx, scroll_slice, &td, NULL,
+                           FFMIN(out->height, ff_filter_get_nb_threads(ctx)));
 
     s->h_pos += s->h_speed * in->width;
     s->v_pos += s->v_speed * in->height;
@@ -117,7 +141,6 @@ static void scroll(ScrollContext *s, AVFrame *in, AVFrame *out)
 static int filter_frame(AVFilterLink *inlink, AVFrame *in)
 {
     AVFilterContext *ctx = inlink->dst;
-    ScrollContext *s = ctx->priv;
     AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
 
@@ -128,7 +151,7 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     }
     av_frame_copy_props(out, in);
 
-    scroll(s, in, out);
+    scroll(ctx, in, out);
 
     av_frame_free(&in);
     return ff_filter_frame(outlink, out);
@@ -196,6 +219,6 @@ AVFilter ff_vf_scroll = {
     .query_formats = query_formats,
     .inputs        = scroll_inputs,
     .outputs       = scroll_outputs,
-    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_GENERIC | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
