@@ -259,14 +259,21 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
         s->frames[s->nb_inputs - 1] = in;
     }
 
-    out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
-    if (!out)
-        return AVERROR(ENOMEM);
-    out->pts = s->frames[0]->pts;
+    if (!ctx->is_disabled) {
+        out = ff_get_video_buffer(outlink, outlink->w, outlink->h);
+        if (!out)
+            return AVERROR(ENOMEM);
+        av_frame_copy_props(out, s->frames[0]);
 
-    td.out = out;
-    td.in = s->frames;
-    ctx->internal->execute(ctx, amplify_frame, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+        td.out = out;
+        td.in = s->frames;
+        ctx->internal->execute(ctx, amplify_frame, &td, NULL, FFMIN(s->height[1], ff_filter_get_nb_threads(ctx)));
+    } else {
+        out = av_frame_clone(s->frames[s->radius]);
+        if (!out)
+            return AVERROR(ENOMEM);
+        out->pts = s->frames[0]->pts;
+    }
 
     return ff_filter_frame(outlink, out);
 }
@@ -316,6 +323,6 @@ AVFilter ff_vf_amplify = {
     .inputs        = inputs,
     .init          = init,
     .uninit        = uninit,
-    .flags         = AVFILTER_FLAG_SLICE_THREADS,
+    .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
     .process_command = ff_filter_process_command,
 };
