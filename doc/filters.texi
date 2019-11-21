@@ -6925,6 +6925,10 @@ Set amount to shift chroma-red vertically.
 Set edge mode, can be @var{smear}, default, or @var{warp}.
 @end table
 
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
+
 @section ciescope
 
 Display CIE color diagram with pixels overlaid onto it.
@@ -15510,6 +15514,10 @@ Set amount to shift alpha vertically.
 @item edge
 Set edge mode, can be @var{smear}, default, or @var{warp}.
 @end table
+
+@subsection Commands
+
+This filter supports the all above options as @ref{commands}.
 
 @section roberts
 Apply roberts cross operator to input video stream.
