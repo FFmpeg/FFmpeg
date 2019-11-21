@@ -26,6 +26,7 @@
 #include "libavcodec/put_bits.h"
 #include "av1.h"
 #include "avio.h"
+#include "avio_internal.h"
 
 int ff_av1_filter_obus(AVIOContext *pb, const uint8_t *buf, int size)
 {
@@ -67,8 +68,10 @@ int ff_av1_filter_obus_buf(const uint8_t *buf, uint8_t **out, int *size)
         return ret;
 
     ret = ff_av1_filter_obus(pb, buf, *size);
-    if (ret < 0)
+    if (ret < 0) {
+        ffio_free_dyn_buf(&pb);
         return ret;
+    }
 
     av_freep(out);
     *size = avio_close_dyn_buf(pb, out);
