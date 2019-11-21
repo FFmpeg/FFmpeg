@@ -139,8 +139,8 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     case AV_CODEC_ID_ADPCM_IMA_APC:
         if (avctx->extradata && avctx->extradata_size >= 8) {
-            c->status[0].predictor = AV_RL32(avctx->extradata);
-            c->status[1].predictor = AV_RL32(avctx->extradata + 4);
+            c->status[0].predictor = av_clip_intp2(AV_RL32(avctx->extradata    ), 18);
+            c->status[1].predictor = av_clip_intp2(AV_RL32(avctx->extradata + 4), 18);
         }
         break;
     case AV_CODEC_ID_ADPCM_IMA_WS:
