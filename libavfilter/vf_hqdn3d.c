@@ -172,13 +172,10 @@ static int denoise_depth(HQDN3DContext *s,
         }                                                                     \
     } while (0)
 
-static int16_t *precalc_coefs(double dist25, int depth)
+static void precalc_coefs(double dist25, int depth, int16_t *ct)
 {
     int i;
     double gamma, simil, C;
-    int16_t *ct = av_malloc((512<<LUT_BITS)*sizeof(int16_t));
-    if (!ct)
-        return NULL;
 
     gamma = log(0.25) / log(1.0 - FFMIN(dist25,252.0)/255.0 - 0.00001);
 
@@ -190,7 +187,6 @@ static int16_t *precalc_coefs(double dist25, int depth)
     }
 
     ct[0] = !!dist25;
-    return ct;
 }
 
 #define PARAM1_DEFAULT 4.0
@@ -254,17 +250,26 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
+static void calc_coefs(AVFilterContext *ctx)
+{
+    HQDN3DContext *s = ctx->priv;
+
+    for (int i = 0; i < 4; i++)
+        precalc_coefs(s->strength[i], s->depth, s->coefs[i]);
+}
+
 static int config_input(AVFilterLink *inlink)
 {
+    AVFilterContext *ctx = inlink->dst;
     HQDN3DContext *s = inlink->dst->priv;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
-    int i;
+    int i, depth;
 
     uninit(inlink->dst);
 
     s->hsub  = desc->log2_chroma_w;
     s->vsub  = desc->log2_chroma_h;
-    s->depth = desc->comp[0].depth;
+    s->depth = depth = desc->comp[0].depth;
 
     for (i = 0; i < 3; i++) {
         s->line[i] = av_malloc_array(inlink->w, sizeof(*s->line[i]));
@@ -273,10 +278,12 @@ static int config_input(AVFilterLink *inlink)
     }
 
     for (i = 0; i < 4; i++) {
-        s->coefs[i] = precalc_coefs(s->strength[i], s->depth);
+        s->coefs[i] = av_malloc((512<<LUT_BITS) * sizeof(int16_t));
         if (!s->coefs[i])
             return AVERROR(ENOMEM);
     }
+
+    calc_coefs(ctx);
 
     if (ARCH_X86)
         ff_hqdn3d_init_x86(s);
@@ -346,8 +353,22 @@ static int filter_frame(AVFilterLink *inlink, AVFrame *in)
     return ff_filter_frame(outlink, out);
 }
 
+static int process_command(AVFilterContext *ctx, const char *cmd, const char *args,
+                           char *res, int res_len, int flags)
+{
+    int ret;
+
+    ret = ff_filter_process_command(ctx, cmd, args, res, res_len, flags);
+    if (ret < 0)
+        return ret;
+
+    calc_coefs(ctx);
+
+    return 0;
+}
+
 #define OFFSET(x) offsetof(HQDN3DContext, x)
-#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM
+#define FLAGS AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_FILTERING_PARAM | AV_OPT_FLAG_RUNTIME_PARAM
 static const AVOption hqdn3d_options[] = {
     { "luma_spatial",   "spatial luma strength",    OFFSET(strength[LUMA_SPATIAL]),   AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
     { "chroma_spatial", "spatial chroma strength",  OFFSET(strength[CHROMA_SPATIAL]), AV_OPT_TYPE_DOUBLE, { .dbl = 0.0 }, 0, DBL_MAX, FLAGS },
@@ -388,4 +409,5 @@ AVFilter ff_vf_hqdn3d = {
     .inputs        = avfilter_vf_hqdn3d_inputs,
     .outputs       = avfilter_vf_hqdn3d_outputs,
     .flags         = AVFILTER_FLAG_SUPPORT_TIMELINE_INTERNAL | AVFILTER_FLAG_SLICE_THREADS,
+    .process_command = process_command,
 };
