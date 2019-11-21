@@ -514,7 +514,7 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
                 }
             }
 
-            for (i = 0; i < iir->nb_ab[1]; i++) {
+            for (i = 0; i < iir->nb_ab[0]; i++) {
                 if (isnan(iir->ab[0][2 * i]) || isnan(iir->ab[0][2 * i + 1]))
                     continue;
 
