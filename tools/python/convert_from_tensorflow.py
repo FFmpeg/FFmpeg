@@ -193,7 +193,10 @@ class TFConverter:
         filter_width = ktensor.tensor_shape.dim[1].size
         in_channels = ktensor.tensor_shape.dim[2].size
         out_channels = ktensor.tensor_shape.dim[3].size
-        kernel = np.frombuffer(ktensor.tensor_content, dtype=np.float32)
+        if filter_height * filter_width * in_channels * out_channels == 1:
+            kernel = np.float32(ktensor.float_val[0])
+        else:
+            kernel = np.frombuffer(ktensor.tensor_content, dtype=np.float32)
         kernel = kernel.reshape(filter_height, filter_width, in_channels, out_channels)
         kernel = np.transpose(kernel, [3, 0, 1, 2])
 
