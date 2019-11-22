@@ -19315,16 +19315,23 @@ vignette='PI/4+random(1)*PI/50':eval=frame
 
 @section vmafmotion
 
-Obtain the average vmaf motion score of a video.
-It is one of the component filters of VMAF.
+Obtain the average VMAF motion score of a video.
+It is one of the component metrics of VMAF.
 
 The obtained average motion score is printed through the logging system.
 
-In the below example the input file @file{ref.mpg} is being processed and score
-is computed.
+The filter accepts the following options:
 
+@table @option
+@item stats_file
+If specified, the filter will use the named file to save the motion score of
+each frame with respect to the previous frame.
+When filename equals "-" the data is sent to standard output.
+@end table
+
+Example:
 @example
-ffmpeg -i ref.mpg -lavfi vmafmotion -f null -
+ffmpeg -i ref.mpg -vf vmafmotion -f null -
 @end example
 
 @section vstack
