@@ -737,6 +737,66 @@ static void draw_line(AVFrame *out, int x0, int y0, int x1, int y1, uint32_t col
     }
 }
 
+static void get_response(int channel, int format, double w,
+                         const double *b, const double *a,
+                         int nb_b, int nb_a, double *r, double *i)
+{
+    double realz, realp;
+    double imagz, imagp;
+    double real, imag;
+    double div;
+
+    if (format == 0) {
+        realz = 0., realp = 0.;
+        imagz = 0., imagp = 0.;
+        for (int x = 0; x < nb_a; x++) {
+            realz += cos(-x * w) * a[x];
+            imagz += sin(-x * w) * a[x];
+        }
+
+        for (int x = 0; x < nb_b; x++) {
+            realp += cos(-x * w) * b[x];
+            imagp += sin(-x * w) * b[x];
+        }
+
+        div = realp * realp + imagp * imagp;
+        real = (realz * realp + imagz * imagp) / div;
+        imag = (imagz * realp - imagp * realz) / div;
+    } else {
+        real = 1;
+        imag = 0;
+        for (int x = 0; x < nb_a; x++) {
+            double ore, oim, re, im;
+
+            re = cos(w) - a[2 * x];
+            im = sin(w) - a[2 * x + 1];
+
+            ore = real;
+            oim = imag;
+
+            real = ore * re - oim * im;
+            imag = ore * im + oim * re;
+        }
+
+        for (int x = 0; x < nb_b; x++) {
+            double ore, oim, re, im;
+
+            re = cos(w) - b[2 * x];
+            im = sin(w) - b[2 * x + 1];
+
+            ore = real;
+            oim = imag;
+            div = re * re + im * im;
+
+            real = (ore * re + oim * im) / div;
+            imag = (oim * re - ore * im) / div;
+        }
+    }
+
+    *r = real;
+    *i = imag;
+}
+
 static void draw_response(AVFilterContext *ctx, AVFrame *out)
 {
     AudioIIRContext *s = ctx->priv;
@@ -744,7 +804,7 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     float min_delay = FLT_MAX, max_delay = FLT_MIN;
     int prev_ymag = -1, prev_yphase = -1, prev_ydelay = -1;
     char text[32];
-    int ch, i, x;
+    int ch, i;
 
     memset(out->data[0], 0, s->h * out->linesize[0]);
 
@@ -758,57 +818,12 @@ static void draw_response(AVFilterContext *ctx, AVFrame *out)
     for (i = 0; i < s->w; i++) {
         const double *b = s->iir[ch].ab[0];
         const double *a = s->iir[ch].ab[1];
+        const int nb_b = s->iir[ch].nb_ab[0];
+        const int nb_a = s->iir[ch].nb_ab[1];
         double w = i * M_PI / (s->w - 1);
-        double realz, realp;
-        double imagz, imagp;
-        double real, imag, div;
+        double real, imag;
 
-        if (s->format == 0) {
-            realz = 0., realp = 0.;
-            imagz = 0., imagp = 0.;
-            for (x = 0; x < s->iir[ch].nb_ab[1]; x++) {
-                realz += cos(-x * w) * a[x];
-                imagz += sin(-x * w) * a[x];
-            }
-
-            for (x = 0; x < s->iir[ch].nb_ab[0]; x++) {
-                realp += cos(-x * w) * b[x];
-                imagp += sin(-x * w) * b[x];
-            }
-
-            div = realp * realp + imagp * imagp;
-            real = (realz * realp + imagz * imagp) / div;
-            imag = (imagz * realp - imagp * realz) / div;
-        } else {
-            real = 1;
-            imag = 0;
-            for (x = 0; x < s->iir[ch].nb_ab[1]; x++) {
-                double ore, oim, re, im;
-
-                re = cos(w) - a[2 * x];
-                im = sin(w) - a[2 * x + 1];
-
-                ore = real;
-                oim = imag;
-
-                real = ore * re - oim * im;
-                imag = ore * im + oim * re;
-            }
-
-            for (x = 0; x < s->iir[ch].nb_ab[0]; x++) {
-                double ore, oim, re, im;
-
-                re = cos(w) - b[2 * x];
-                im = sin(w) - b[2 * x + 1];
-
-                ore = real;
-                oim = imag;
-                div = re * re + im * im;
-
-                real = (ore * re + oim * im) / div;
-                imag = (oim * re - ore * im) / div;
-            }
-        }
+        get_response(ch, s->format, w, b, a, nb_b, nb_a, &real, &imag);
 
         mag[i] = s->iir[ch].g * hypot(real, imag);
         phase[i] = atan2(imag, real);
