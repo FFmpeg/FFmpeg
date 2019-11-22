@@ -596,9 +596,9 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->biquads[current_biquad].a0 = 1.0;
             iir->biquads[current_biquad].a1 = a[2] / a[4];
             iir->biquads[current_biquad].a2 = a[0] / a[4];
-            iir->biquads[current_biquad].b0 = b[4] / a[4] * (current_biquad ? 1.0 : iir->g);
-            iir->biquads[current_biquad].b1 = b[2] / a[4] * (current_biquad ? 1.0 : iir->g);
-            iir->biquads[current_biquad].b2 = b[0] / a[4] * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b0 = (b[4] / a[4]) * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b1 = (b[2] / a[4]) * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b2 = (b[0] / a[4]) * (current_biquad ? 1.0 : iir->g);
 
             av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
                    iir->biquads[current_biquad].a0,
@@ -665,6 +665,25 @@ static void convert_pd2zp(AVFilterContext *ctx, int channels)
 
             iir->ab[1][2*n]   = r * cos(angle);
             iir->ab[1][2*n+1] = r * sin(angle);
+        }
+    }
+}
+
+static void check_stability(AVFilterContext *ctx, int channels)
+{
+    AudioIIRContext *s = ctx->priv;
+    int ch;
+
+    for (ch = 0; ch < channels; ch++) {
+        IIRChannel *iir = &s->iir[ch];
+
+        for (int n = 0; n < iir->nb_ab[0]; n++) {
+            double pr = hypot(iir->ab[0][2*n], iir->ab[0][2*n+1]);
+
+            if (pr >= 1.) {
+                av_log(ctx, AV_LOG_WARNING, "pole %d at channel %d is unstable\n", n, ch);
+                break;
+            }
         }
     }
 }
@@ -884,6 +903,9 @@ static int config_output(AVFilterLink *outlink)
         convert_pr2zp(ctx, inlink->channels);
     } else if (s->format == 3) {
         convert_pd2zp(ctx, inlink->channels);
+    }
+    if (s->format > 0) {
+        check_stability(ctx, inlink->channels);
     }
 
     av_frame_free(&s->video);
