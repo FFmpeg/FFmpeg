@@ -38,8 +38,8 @@ typedef struct Pair {
 } Pair;
 
 typedef struct BiquadContext {
-    double a0, a1, a2;
-    double b0, b1, b2;
+    double a[3];
+    double b[3];
     double i1, i2;
     double o1, o2;
 } BiquadContext;
@@ -193,11 +193,11 @@ static int iir_ch_serial_## name(AVFilterContext *ctx, void *arg, int ch, int nb
     int n, i;                                                           \
                                                                         \
     for (i = 0; i < nb_biquads; i++) {                                  \
-        const double a1 = -iir->biquads[i].a1;                          \
-        const double a2 = -iir->biquads[i].a2;                          \
-        const double b0 = iir->biquads[i].b0;                           \
-        const double b1 = iir->biquads[i].b1;                           \
-        const double b2 = iir->biquads[i].b2;                           \
+        const double a1 = -iir->biquads[i].a[1];                        \
+        const double a2 = -iir->biquads[i].a[2];                        \
+        const double b0 = iir->biquads[i].b[0];                         \
+        const double b1 = iir->biquads[i].b[1];                         \
+        const double b2 = iir->biquads[i].b[2];                         \
         double i1 = iir->biquads[i].i1;                                 \
         double i2 = iir->biquads[i].i2;                                 \
         double o1 = iir->biquads[i].o1;                                 \
@@ -593,20 +593,20 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->ab[1][2 * nearest_zero.a] = iir->ab[1][2 * nearest_zero.a + 1] = NAN;
             iir->ab[1][2 * nearest_zero.b] = iir->ab[1][2 * nearest_zero.b + 1] = NAN;
 
-            iir->biquads[current_biquad].a0 = 1.0;
-            iir->biquads[current_biquad].a1 = a[2] / a[4];
-            iir->biquads[current_biquad].a2 = a[0] / a[4];
-            iir->biquads[current_biquad].b0 = (b[4] / a[4]) * (current_biquad ? 1.0 : iir->g);
-            iir->biquads[current_biquad].b1 = (b[2] / a[4]) * (current_biquad ? 1.0 : iir->g);
-            iir->biquads[current_biquad].b2 = (b[0] / a[4]) * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].a[0] = 1.0;
+            iir->biquads[current_biquad].a[1] = a[2] / a[4];
+            iir->biquads[current_biquad].a[2] = a[0] / a[4];
+            iir->biquads[current_biquad].b[0] = (b[4] / a[4]) * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b[1] = (b[2] / a[4]) * (current_biquad ? 1.0 : iir->g);
+            iir->biquads[current_biquad].b[2] = (b[0] / a[4]) * (current_biquad ? 1.0 : iir->g);
 
             av_log(ctx, AV_LOG_VERBOSE, "a=%f %f %f:b=%f %f %f\n",
-                   iir->biquads[current_biquad].a0,
-                   iir->biquads[current_biquad].a1,
-                   iir->biquads[current_biquad].a2,
-                   iir->biquads[current_biquad].b0,
-                   iir->biquads[current_biquad].b1,
-                   iir->biquads[current_biquad].b2);
+                   iir->biquads[current_biquad].a[0],
+                   iir->biquads[current_biquad].a[1],
+                   iir->biquads[current_biquad].a[2],
+                   iir->biquads[current_biquad].b[0],
+                   iir->biquads[current_biquad].b[1],
+                   iir->biquads[current_biquad].b[2]);
 
             current_biquad++;
         }
