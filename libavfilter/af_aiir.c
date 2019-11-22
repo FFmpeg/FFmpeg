@@ -594,16 +594,21 @@ static int decompose_zp2biquads(AVFilterContext *ctx, int channels)
             iir->ab[1][2 * nearest_zero.a] = iir->ab[1][2 * nearest_zero.a + 1] = NAN;
             iir->ab[1][2 * nearest_zero.b] = iir->ab[1][2 * nearest_zero.b + 1] = NAN;
 
-            iir->biquads[current_biquad].a[0] = a[4];
-            iir->biquads[current_biquad].a[1] = a[2];
-            iir->biquads[current_biquad].a[2] = a[0];
-            iir->biquads[current_biquad].b[0] = b[4];
-            iir->biquads[current_biquad].b[1] = b[2];
-            iir->biquads[current_biquad].b[2] = b[0];
+            iir->biquads[current_biquad].a[0] = 1.;
+            iir->biquads[current_biquad].a[1] = a[2] / a[4];
+            iir->biquads[current_biquad].a[2] = a[0] / a[4];
+            iir->biquads[current_biquad].b[0] = b[4] / a[4];
+            iir->biquads[current_biquad].b[1] = b[2] / a[4];
+            iir->biquads[current_biquad].b[2] = b[0] / a[4];
 
             factor = (iir->biquads[current_biquad].a[0] +
                       iir->biquads[current_biquad].a[1] +
-                      iir->biquads[current_biquad].a[2]) / 4;
+                      iir->biquads[current_biquad].a[2]) /
+                     (iir->biquads[current_biquad].b[0] +
+                      iir->biquads[current_biquad].b[1] +
+                      iir->biquads[current_biquad].b[2]);
+
+            av_log(ctx, AV_LOG_VERBOSE, "factor=%f\n", factor);
 
             iir->biquads[current_biquad].b[0] *= factor;
             iir->biquads[current_biquad].b[1] *= factor;
