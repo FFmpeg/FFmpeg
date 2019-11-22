@@ -1547,6 +1547,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
@@ -2568,6 +2572,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
@@ -2627,6 +2635,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
@@ -2693,6 +2705,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
@@ -2744,6 +2760,13 @@ Syntax for the command is : "@var{value}"
 @item mix, m
 How much to use filtered signal in output. Default is 1.
 Range is between 0 and 1.
+
+@item channels, c
+Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @section bs2b
@@ -3439,6 +3462,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Examples
@@ -3908,6 +3935,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
@@ -4224,6 +4255,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Examples
@@ -5332,6 +5367,10 @@ Range is between 0 and 1.
 
 @item channels, c
 Specify which channels to filter, by default all available are filtered.
+
+@item normalize, n
+Normalize biquad coefficients, by default is disabled.
+Enabling it will normalize magnitude response at DC to 0dB.
 @end table
 
 @subsection Commands
