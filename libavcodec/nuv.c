@@ -131,10 +131,10 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height,
                      + RTJPEG_HEADER_SIZE;
         if (buf_size > INT_MAX/8)
             return -1;
-        if ((ret = av_image_check_size(height, width, 0, avctx)) < 0)
+        if ((ret = ff_set_dimensions(avctx, width, height)) < 0)
             return ret;
-        avctx->width  = c->width  = width;
-        avctx->height = c->height = height;
+        c->width  = width;
+        c->height = height;
         av_fast_malloc(&c->decomp_buf, &c->decomp_size,
                        buf_size);
         if (!c->decomp_buf) {
