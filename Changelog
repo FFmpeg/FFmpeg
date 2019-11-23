@@ -25,6 +25,7 @@ version <next>:
 - AV1 frame merge bitstream filter
 - AV1 Annex B demuxer
 - axcorrelate filter
+- mvdv decoder
 
 
 version 4.2:
