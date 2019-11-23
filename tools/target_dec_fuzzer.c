@@ -140,6 +140,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     case AV_CODEC_ID_BINKVIDEO: maxpixels /= 32; break;
     case AV_CODEC_ID_CFHD:      maxpixels /= 128; break;
     case AV_CODEC_ID_DIRAC:     maxpixels /= 8192; break;
+    case AV_CODEC_ID_DST:       maxsamples /= 8192; break;
     case AV_CODEC_ID_DXV:       maxpixels /= 32;  break;
     case AV_CODEC_ID_FFWAVESYNTH: maxsamples /= 16384; break;
     case AV_CODEC_ID_MSRLE:     maxpixels /= 16;  break;
