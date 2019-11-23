@@ -13636,6 +13636,13 @@ expensive no-op. Defaults to 1.0 (full strength).
 
 @end table
 
+@subsection Commands
+This filter supports same @ref{commands} as options, excluding @var{smoothing} option.
+The command accepts the same syntax of the corresponding option.
+
+If the specified expression is not valid, it is kept at its current
+value.
+
 @subsection Examples
 
 Stretch video contrast to use the full dynamic range, with no temporal
