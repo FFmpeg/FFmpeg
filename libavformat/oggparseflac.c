@@ -50,7 +50,7 @@ flac_header (AVFormatContext * s, int idx)
         skip_bits_long(&gb, 4*8); /* "FLAC" */
         if(get_bits(&gb, 8) != 1) /* unsupported major version */
             return -1;
-        skip_bits_long(&gb, 8 + 16); /* minor version + header count */
+        skip_bits(&gb, 8 + 16);   /* minor version + header count */
         skip_bits_long(&gb, 4*8); /* "fLaC" */
 
         /* METADATA_BLOCK_HEADER */
