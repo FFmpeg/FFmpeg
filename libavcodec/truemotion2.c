@@ -155,7 +155,7 @@ static int tm2_build_huff_table(TM2Context *ctx, TM2Codes *code)
     huff.val_bits = get_bits(&ctx->gb, 5);
     huff.max_bits = get_bits(&ctx->gb, 5);
     huff.min_bits = get_bits(&ctx->gb, 5);
-    huff.nodes    = get_bits_long(&ctx->gb, 17);
+    huff.nodes    = get_bits(&ctx->gb, 17);
     huff.num      = 0;
 
     /* check for correct codes parameters */

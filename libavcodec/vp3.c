@@ -2967,7 +2967,7 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     AVRational fps, aspect;
 
     s->theora_header = 0;
-    s->theora = get_bits_long(gb, 24);
+    s->theora = get_bits(gb, 24);
     av_log(avctx, AV_LOG_DEBUG, "Theora bitstream version %X\n", s->theora);
     if (!s->theora) {
         s->theora = 1;
@@ -2988,8 +2988,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
     s->height      = get_bits(gb, 16) << 4;
 
     if (s->theora >= 0x030200) {
-        visible_width  = get_bits_long(gb, 24);
-        visible_height = get_bits_long(gb, 24);
+        visible_width  = get_bits(gb, 24);
+        visible_height = get_bits(gb, 24);
 
         offset_x = get_bits(gb, 8); /* offset x */
         offset_y = get_bits(gb, 8); /* offset y, from bottom */
@@ -3017,8 +3017,8 @@ static int theora_decode_header(AVCodecContext *avctx, GetBitContext *gb)
                   fps.den, fps.num, 1 << 30);
     }
 
-    aspect.num = get_bits_long(gb, 24);
-    aspect.den = get_bits_long(gb, 24);
+    aspect.num = get_bits(gb, 24);
+    aspect.den = get_bits(gb, 24);
     if (aspect.num && aspect.den) {
         av_reduce(&avctx->sample_aspect_ratio.num,
                   &avctx->sample_aspect_ratio.den,

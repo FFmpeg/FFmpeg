@@ -102,7 +102,7 @@ int ff_mlp_read_major_sync(void *log, MLPHeaderInfo *mh, GetBitContext *gb)
         return AVERROR_INVALIDDATA;
     }
 
-    if (get_bits_long(gb, 24) != 0xf8726f) /* Sync words */
+    if (get_bits(gb, 24) != 0xf8726f) /* Sync words */
         return AVERROR_INVALIDDATA;
 
     mh->stream_type = get_bits(gb, 8);

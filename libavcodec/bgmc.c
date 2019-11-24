@@ -493,7 +493,7 @@ int ff_bgmc_decode_init(GetBitContext *gb, unsigned int *h,
 
     *h = TOP_VALUE;
     *l = 0;
-    *v = get_bits_long(gb, VALUE_BITS);
+    *v = get_bits(gb, VALUE_BITS);
 
     return 0;
 }

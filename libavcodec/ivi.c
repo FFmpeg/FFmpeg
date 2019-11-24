@@ -476,7 +476,7 @@ static int ivi_dec_tile_data_size(GetBitContext *gb)
     if (get_bits1(gb)) {
         len = get_bits(gb, 8);
         if (len == 255)
-            len = get_bits_long(gb, 24);
+            len = get_bits(gb, 24);
     }
 
     /* align the bitstream reader on the byte boundary */

@@ -1001,7 +1001,7 @@ int ff_mpeg4_decode_partitions(Mpeg4DecContext *ctx)
     if (s->pict_type == AV_PICTURE_TYPE_I) {
         while (show_bits(&s->gb, 9) == 1)
             skip_bits(&s->gb, 9);
-        if (get_bits_long(&s->gb, 19) != DC_MARKER) {
+        if (get_bits(&s->gb, 19) != DC_MARKER) {
             av_log(s->avctx, AV_LOG_ERROR,
                    "marker missing after first I partition at %d %d\n",
                    s->mb_x, s->mb_y);

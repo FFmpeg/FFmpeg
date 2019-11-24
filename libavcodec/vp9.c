@@ -514,7 +514,7 @@ static int decode_frame_header(AVCodecContext *avctx,
     s->s.h.use_last_frame_mvs = !s->s.h.errorres && !last_invisible;
 
     if (s->s.h.keyframe) {
-        if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
+        if (get_bits(&s->gb, 24) != VP9_SYNCCODE) { // synccode
             av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
             return AVERROR_INVALIDDATA;
         }
@@ -530,7 +530,7 @@ static int decode_frame_header(AVCodecContext *avctx,
         s->s.h.intraonly = s->s.h.invisible ? get_bits1(&s->gb) : 0;
         s->s.h.resetctx  = s->s.h.errorres ? 0 : get_bits(&s->gb, 2);
         if (s->s.h.intraonly) {
-            if (get_bits_long(&s->gb, 24) != VP9_SYNCCODE) { // synccode
+            if (get_bits(&s->gb, 24) != VP9_SYNCCODE) { // synccode
                 av_log(avctx, AV_LOG_ERROR, "Invalid sync code\n");
                 return AVERROR_INVALIDDATA;
             }

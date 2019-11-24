@@ -217,9 +217,9 @@ int ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
     }
 
     skip_bits(&gb, 24); /* skip min frame size */
-    s->max_framesize = get_bits_long(&gb, 24);
+    s->max_framesize = get_bits(&gb, 24);
 
-    s->samplerate = get_bits_long(&gb, 20);
+    s->samplerate = get_bits(&gb, 20);
     s->channels = get_bits(&gb, 3) + 1;
     s->bps = get_bits(&gb, 5) + 1;
 

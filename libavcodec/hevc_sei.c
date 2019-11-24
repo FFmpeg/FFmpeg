@@ -76,8 +76,8 @@ static int decode_nal_sei_mastering_display_info(HEVCSEIMasteringDisplay *s, Get
 static int decode_nal_sei_content_light_info(HEVCSEIContentLight *s, GetBitContext *gb)
 {
     // Max and average light levels
-    s->max_content_light_level     = get_bits_long(gb, 16);
-    s->max_pic_average_light_level = get_bits_long(gb, 16);
+    s->max_content_light_level     = get_bits(gb, 16);
+    s->max_pic_average_light_level = get_bits(gb, 16);
     // As this SEI message comes before the first frame that references it,
     // initialize the flag to 2 and decrement on IRAP access unit so it
     // persists for the coded video sequence (e.g., between two IRAPs)

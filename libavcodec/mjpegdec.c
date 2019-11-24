@@ -2049,7 +2049,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         unsigned nummarkers;
 
         id   = get_bits_long(&s->gb, 32);
-        id2  = get_bits_long(&s->gb, 24);
+        id2  = get_bits(&s->gb, 24);
         len -= 7;
         if (id != AV_RB32("PROF") || id2 != AV_RB24("ILE")) {
             av_log(s->avctx, AV_LOG_WARNING, "Invalid ICC_PROFILE header in APP2\n");

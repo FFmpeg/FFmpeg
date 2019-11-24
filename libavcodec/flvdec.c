@@ -30,7 +30,7 @@ int ff_flv_decode_picture_header(MpegEncContext *s)
     int format, width, height;
 
     /* picture header */
-    if (get_bits_long(&s->gb, 17) != 1) {
+    if (get_bits(&s->gb, 17) != 1) {
         av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return AVERROR_INVALIDDATA;
     }

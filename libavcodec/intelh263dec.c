@@ -33,7 +33,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     }
 
     /* picture header */
-    if (get_bits_long(&s->gb, 22) != 0x20) {
+    if (get_bits(&s->gb, 22) != 0x20) {
         av_log(s->avctx, AV_LOG_ERROR, "Bad picture start code\n");
         return -1;
     }
