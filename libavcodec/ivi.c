@@ -1193,7 +1193,7 @@ int ff_ivi_decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         left = get_bits_count(&ctx->gb) & 0x18;
         skip_bits_long(&ctx->gb, 64 - left);
         if (get_bits_left(&ctx->gb) > 18 &&
-            show_bits_long(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
+            show_bits(&ctx->gb, 21) == 0xBFFF8) { // syncheader + inter type
             AVPacket pkt;
             pkt.data = avpkt->data + (get_bits_count(&ctx->gb) >> 3);
             pkt.size = get_bits_left(&ctx->gb) >> 3;

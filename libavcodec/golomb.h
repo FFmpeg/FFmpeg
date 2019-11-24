@@ -313,7 +313,7 @@ static inline int get_interleaved_se_golomb(GetBitContext *gb)
     } else {
         int log;
         skip_bits(gb, 8);
-        buf |= 1 | show_bits_long(gb, 24);
+        buf |= 1 | show_bits(gb, 24);
 
         if ((buf & 0xAAAAAAAA) == 0)
             return INVALID_VLC;

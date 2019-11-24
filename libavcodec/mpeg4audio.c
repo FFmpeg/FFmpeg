@@ -118,7 +118,7 @@ int ff_mpeg4audio_get_config_gb(MPEG4AudioConfig *c, GetBitContext *gb,
 
     if (c->object_type == AOT_ALS) {
         skip_bits(gb, 5);
-        if (show_bits_long(gb, 24) != MKBETAG('\0','A','L','S'))
+        if (show_bits(gb, 24) != MKBETAG('\0','A','L','S'))
             skip_bits_long(gb, 24);
 
         specific_config_bitindex = get_bits_count(gb);
