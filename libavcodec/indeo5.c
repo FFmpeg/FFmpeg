@@ -264,7 +264,7 @@ static int decode_gop_header(IVI45DecContext *ctx, AVCodecContext *avctx)
         }
 
         if (get_bits1(&ctx->gb))
-            skip_bits_long(&ctx->gb, 24); /* skip transparency fill color */
+            skip_bits(&ctx->gb, 24); /* skip transparency fill color */
     }
 
     align_get_bits(&ctx->gb);
