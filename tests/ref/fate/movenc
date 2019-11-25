@@ -17,10 +17,10 @@ write_data len 24, time nopts, type header atom ftyp
 write_data len 1171, time nopts, type header atom -
 write_data len 728, time 0, type sync atom moof
 write_data len 828, time nopts, type unknown atom -
-write_data len 728, time 1046439, type sync atom moof
+write_data len 728, time 999999, type sync atom moof
 write_data len 812, time nopts, type unknown atom -
 write_data len 148, time nopts, type trailer atom -
-a7c93f998e88fee1159580b6ca7e3d2b 4439 ismv
+da105e0b2c19079519c6eed7d5a1151c 4439 ismv
 write_data len 36, time nopts, type header atom ftyp
 write_data len 1123, time nopts, type header atom -
 write_data len 796, time 0, type sync atom moof
@@ -147,7 +147,7 @@ write_data len 148, time nopts, type trailer atom -
 c200a345c365dd35a31e7e62a9ae6c10 3203 delay-moov-elst-neg-cts
 write_data len 36, time nopts, type header atom ftyp
 write_data len 1123, time nopts, type header atom -
-write_data len 1188, time 0, type sync atom moof
-write_data len 908, time 1033333, type sync atom moof
+write_data len 900, time 0, type sync atom moof
+write_data len 908, time 1000000, type sync atom moof
 write_data len 148, time nopts, type trailer atom -
-38a287dc98272ba9da0a0bf8feb72fef 3403 empty-moov-neg-cts
+868bb53d861d81b1c15ef4d59afc83b5 3115 empty-moov-neg-cts

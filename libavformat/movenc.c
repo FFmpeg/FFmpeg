@@ -72,6 +72,7 @@ static const AVOption options[] = {
     { "disable_chpl", "Disable Nero chapter atom", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DISABLE_CHPL}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "default_base_moof", "Set the default-base-is-moof flag in tfhd atoms", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DEFAULT_BASE_MOOF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "dash", "Write DASH compatible fragmented MP4", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DASH}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "cmaf", "Write CMAF compatible fragmented MP4", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_CMAF}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "frag_discont", "Signal that the next fragment is discontinuous from earlier ones", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_FRAG_DISCONT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "delay_moov", "Delay writing the initial moov until the first fragment is cut, or until the first fragment flush", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_DELAY_MOOV}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "global_sidx", "Write a global sidx index at the start of the file", 0, AV_OPT_TYPE_CONST, {.i64 = FF_MOV_FLAG_GLOBAL_SIDX}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
@@ -4231,6 +4232,9 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
         flags &= ~MOV_TFHD_BASE_DATA_OFFSET;
         flags |= MOV_TFHD_DEFAULT_BASE_IS_MOOF;
     }
+    /* CMAF requires all values to be explicit in tfhd atoms */
+    if (mov->flags & FF_MOV_FLAG_CMAF)
+        flags |= MOV_TFHD_STSD_ID;
 
     /* Don't set a default sample size, the silverlight player refuses
      * to play files with that set. Don't set a default sample duration,
@@ -4238,7 +4242,7 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
      * file format says it MUST NOT be set. */
     if (track->mode == MODE_ISM)
         flags &= ~(MOV_TFHD_DEFAULT_SIZE | MOV_TFHD_DEFAULT_DURATION |
-                   MOV_TFHD_BASE_DATA_OFFSET);
+                   MOV_TFHD_BASE_DATA_OFFSET | MOV_TFHD_STSD_ID);
 
     avio_wb32(pb, 0); /* size placeholder */
     ffio_wfourcc(pb, "tfhd");
@@ -4248,6 +4252,9 @@ static int mov_write_tfhd_tag(AVIOContext *pb, MOVMuxContext *mov,
     avio_wb32(pb, track->track_id); /* track-id */
     if (flags & MOV_TFHD_BASE_DATA_OFFSET)
         avio_wb64(pb, moof_offset);
+    if (flags & MOV_TFHD_STSD_ID) {
+        avio_wb32(pb, 1);
+    }
     if (flags & MOV_TFHD_DEFAULT_DURATION) {
         track->default_duration = get_cluster_duration(track, 0);
         avio_wb32(pb, track->default_duration);
@@ -4839,6 +4846,8 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         // brand, if not already the major brand. This is compatible with users that
         // don't understand tfdt.
         if (mov->mode == MODE_MP4) {
+            if (mov->flags & FF_MOV_FLAG_CMAF)
+                ffio_wfourcc(pb, "cmfc");
             if (mov->flags & FF_MOV_FLAG_FRAGMENT && !(mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS))
                 ffio_wfourcc(pb, "iso6");
         } else {
@@ -6204,6 +6213,9 @@ static int mov_init(AVFormatContext *s)
     if (mov->flags & FF_MOV_FLAG_DASH)
         mov->flags |= FF_MOV_FLAG_FRAGMENT | FF_MOV_FLAG_EMPTY_MOOV |
                       FF_MOV_FLAG_DEFAULT_BASE_MOOF;
+    if (mov->flags & FF_MOV_FLAG_CMAF)
+        mov->flags |= FF_MOV_FLAG_FRAGMENT | FF_MOV_FLAG_EMPTY_MOOV |
+                      FF_MOV_FLAG_DEFAULT_BASE_MOOF | FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS;
 
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV && s->flags & AVFMT_FLAG_AUTO_BSF) {
         av_log(s, AV_LOG_VERBOSE, "Empty MOOV enabled; disabling automatic bitstream filtering\n");
@@ -6230,12 +6242,21 @@ static int mov_init(AVFormatContext *s)
                 s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_MAKE_ZERO)
                 mov->use_editlist = 0;
         }
+        if (mov->flags & FF_MOV_FLAG_CMAF) {
+            // CMAF Track requires negative cts offsets without edit lists
+            mov->use_editlist = 0;
+        }
     }
     if (mov->flags & FF_MOV_FLAG_EMPTY_MOOV &&
         !(mov->flags & FF_MOV_FLAG_DELAY_MOOV) && mov->use_editlist)
         av_log(s, AV_LOG_WARNING, "No meaningful edit list will be written when using empty_moov without delay_moov\n");
 
-    if (!mov->use_editlist && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO)
+    if (mov->flags & FF_MOV_FLAG_CMAF && mov->use_editlist) {
+        av_log(s, AV_LOG_WARNING, "Edit list enabled; Assuming writing CMAF Track File\n");
+        mov->flags &= ~FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS;
+    }
+    if (!mov->use_editlist && s->avoid_negative_ts == AVFMT_AVOID_NEG_TS_AUTO &&
+        !(mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS))
         s->avoid_negative_ts = AVFMT_AVOID_NEG_TS_MAKE_ZERO;
 
     /* Clear the omit_tfhd_offset flag if default_base_moof is set;
