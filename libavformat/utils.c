@@ -5926,32 +5926,32 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
     int nal_length_size=0;
     int i;
     AVCodecContext * avctx = NULL;
-    
+
     if (!codecpar || !codecpar->extradata || !codecpar->extradata_size)
         return NULL;
-    
+
     //Init Video Stream
     if ((codec = avcodec_find_decoder(codecpar->codec_id)) == NULL)
         return NULL;
-    
+
     if ((avctx = avcodec_alloc_context3(codec)) == NULL)
         return NULL;
-    
-    avctx->extradata_size = codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
-    avctx->extradata = av_mallocz(avctx->extradata_size);
+
+    avctx->extradata = av_mallocz(codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
     if (!avctx->extradata) {
         avcodec_free_context(&avctx);
         return NULL;
     }
+    avctx->extradata_size = codecpar->extradata_size;
     memcpy(avctx->extradata, codecpar->extradata, avctx->extradata_size);
-    
+
     //sizeof(HEVCDecoderConfigurationRecord) > sizeof(AVCDecoderConfigurationRecord) >= 7 bytes
     if (avctx->extradata_size < 7) {
         av_log(NULL, AV_LOG_ERROR, "Wrong video extradata length\n");
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     if (codecpar->codec_id == AV_CODEC_ID_H264) {
         H264ParamSets ps;
         memset(&ps, 0, sizeof(H264ParamSets));
@@ -5967,11 +5967,11 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
                 break;
             }
         }
-        
+
         if (pps)
             if (ps.sps_list[pps->sps_id])
                 sps = (const SPS*)ps.sps_list[pps->sps_id]->data;
-        
+
         if (pps && sps) {
             avctx->width  = sps->mb_width  * 16 - (sps->crop_right + sps->crop_left);
             avctx->height = sps->mb_height * 16 - (sps->crop_top   + sps->crop_bottom);
@@ -5983,7 +5983,7 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
             avcodec_free_context(&avctx);
             return NULL;
         }
-        
+
         // if nuit_field_based_flag set denote field rate, otherwise denote frame rate
         // Note: x264 always set nuit_field_based_flag but old x264( < 44U) has double framerate bug
         // if (nuit_field_based_flag) {
@@ -5992,12 +5992,12 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
         //    framerate = time_scale / num_units_in_tick;
         // }
         // or framerate = time_scale / num_units_in_tick / ticks_per_frame
-        
+
         // avg_frame_duration = 1 / framerate
         // but frame_duration = (1 + repeat_pict) * num_units_in_tick / time_scale
         // or frame_duration = (1 + repeat_pict) / ticks_per_frame  / framerate
         // Note: h264 internal always set ticks_per_frame to 2, repeat_pict should start at 1 when progressive , >= 2 when interlace
-        
+
         if (sps->timing_info_present_flag) {
             avctx->time_base = (AVRational){1, sps->time_scale};
             avctx->ticks_per_frame = 2;
@@ -6027,16 +6027,16 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
                 break;
             }
         }
-        
+
         if (pps)
             if (ps.sps_list[pps->sps_id])
                 sps = (const HEVCSPS*)ps.sps_list[pps->sps_id]->data;
-        
+
         if (pps && sps) {
             vps = (const HEVCVPS*)ps.vps_list[sps->vps_id]->data;
             const HEVCWindow *ow = &sps->output_window;
             unsigned int num = 0, den = 0;
-            
+
             avctx->pix_fmt             = sps->pix_fmt;
             avctx->coded_width         = sps->width;
             avctx->coded_height        = sps->height;
@@ -6045,15 +6045,15 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
             avctx->has_b_frames        = sps->temporal_layer[sps->max_sub_layers - 1].num_reorder_pics;
             avctx->profile             = sps->ptl.general_ptl.profile_idc;
             avctx->level               = sps->ptl.general_ptl.level_idc;
-            
+
             avctx->sample_aspect_ratio = sps->vui.sar;
-            
+
             if (sps->vui.video_signal_type_present_flag)
                 avctx->color_range = sps->vui.video_full_range_flag ? AVCOL_RANGE_JPEG
                 : AVCOL_RANGE_MPEG;
             else
                 avctx->color_range = AVCOL_RANGE_MPEG;
-            
+
             if (sps->vui.colour_description_present_flag) {
                 avctx->color_primaries = sps->vui.colour_primaries;
                 avctx->color_trc       = sps->vui.transfer_characteristic;
@@ -6063,7 +6063,7 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
                 avctx->color_trc       = AVCOL_TRC_UNSPECIFIED;
                 avctx->colorspace      = AVCOL_SPC_UNSPECIFIED;
             }
-            
+
             if (vps->vps_timing_info_present_flag) {
                 num = vps->vps_num_units_in_tick;
                 den = vps->vps_time_scale;
@@ -6073,7 +6073,7 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
             } else {
                 av_log(NULL, AV_LOG_ERROR, "timing_info_present_flag not set , use default timing\n");
             }
-            
+
             if (num != 0 && den != 0)
                 av_reduce(&avctx->framerate.den, &avctx->framerate.num,
                           num, den, 1 << 30);
@@ -6090,11 +6090,11 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     av_log(NULL, AV_LOG_DEBUG, "width = %d, height = %d\n",
            avctx->width,
            avctx->height);
-    
+
     av_log(NULL, AV_LOG_DEBUG, "time_base= {%d,%d}, framerate = {%d,%d}\n",
            avctx->time_base.num,
            avctx->time_base.den,
@@ -6102,14 +6102,14 @@ AVCodecContext * create_video_decoder_from_codecpar (AVCodecParameters * codecpa
            avctx->framerate.den);
     avctx->pix_fmt = AV_PIX_FMT_YUV420P;
     avctx->codec_type = AVMEDIA_TYPE_VIDEO;
-    
+
     if (avctx->width > FF_MAX_CODEC_WIDTH || avctx->height > FF_MAX_CODEC_HEIGHT ||
         avctx->width <= 0   || avctx->height <= 0) {
         av_log(NULL, AV_LOG_ERROR,  "Error resolution: %dx%d\n", avctx->width, avctx->height);
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     return avctx;
 }
 
@@ -6119,17 +6119,17 @@ AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpa
     AVCodecContext * avctx = NULL;
     MPEG4AudioConfig m4ac;
     memset(&m4ac, 0, sizeof(m4ac));
-    
+
     if (!codecpar || !codecpar->extradata || !codecpar->extradata_size)
         return NULL;
-    
+
     //Init Audio Stream
     if ((codec = avcodec_find_decoder(codecpar->codec_id)) == NULL)
         return NULL;
-    
+
     if ((avctx = avcodec_alloc_context3(codec)) == NULL)
         return NULL;
-    
+
     avctx->extradata_size = codecpar->extradata_size + AV_INPUT_BUFFER_PADDING_SIZE;
     avctx->extradata = av_mallocz(avctx->extradata_size);
     if (!avctx->extradata) {
@@ -6137,15 +6137,15 @@ AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpa
         return NULL;
     }
     memcpy(avctx->extradata, codecpar->extradata, avctx->extradata_size);
-    
-    
+
+
     //sizeof(AudioSpecificConfig) >= 2
     if (avctx->extradata_size < 2) {
         av_log(NULL, AV_LOG_ERROR, "Wrong audio extradata length\n");
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     if ((ret = avpriv_mpeg4audio_get_config(&m4ac,
                                             avctx->extradata,
                                             avctx->extradata_size,
@@ -6153,9 +6153,9 @@ AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpa
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     av_log(NULL, AV_LOG_DEBUG, "sample_rate = %d, channels = %d\n",m4ac.sample_rate, m4ac.channels);
-    
+
     avctx->sample_rate = m4ac.sample_rate;
     avctx->channels = m4ac.channels;
     avctx->bits_per_coded_sample = 16;
@@ -6163,18 +6163,18 @@ AVCodecContext * create_audio_decoder_from_codecpar (AVCodecParameters * codecpa
     avctx->sample_fmt = AV_SAMPLE_FMT_FLTP;
     avctx->codec_type = AVMEDIA_TYPE_AUDIO;
     avctx->channel_layout = av_get_default_channel_layout(avctx->channels);
-    
+
     avctx->frame_size = m4ac.frame_length_short ? 960 : 1024;
     avctx->frame_size <<= (m4ac.sbr == 1) ? m4ac.ext_sample_rate > m4ac.sample_rate : 0;
-    
-    
+
+
     if (avctx->sample_rate > FF_MAX_CODEC_SAMPLERATE ||
         avctx->sample_rate <= 0) {
         av_log(NULL, AV_LOG_ERROR,  "Error sample rate: %d\n", avctx->sample_rate);
         avcodec_free_context(&avctx);
         return NULL;
     }
-    
+
     return avctx;
 }
 
@@ -6184,7 +6184,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
     int ret = 0;
     int nb_packets = 0;
     AVCodecContext * avctx[IJK_PROBE_MAX_CTX_COUNT] = {0};
-    
+
     const char * iformat_name = NULL;
     if (ic && ic->iformat && ic->iformat->name) {
         if (ic->iformat->read_header2) {
@@ -6211,21 +6211,21 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
             }
         }
     }
-    
+
     if (!iformat_name) {
         // currently only support mp4/flv
         // TODO: mpegts
         ret = IJK_STREAM_INFO_NOT_SUPPORT;
         goto fail;
     }
-    
+
     if (ic->iformat->read_header2) {
         // no need to do find stream info
         av_log(NULL, AV_LOG_INFO, "%s: skip\n", __func__);
         ret = 0;
         goto fail;
     }
-    
+
     // use missing streams for probe
     int *missing_streams = av_opt_ptr(ic->iformat->priv_class, ic->priv_data, "missing_streams");
     if (missing_streams) {
@@ -6244,7 +6244,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
                 goto fail;
             }
         }
-        
+
         now = av_gettime();
         av_log(NULL, AV_LOG_INFO, "%s: probe streams done , nb_streams = %d, read packets: %d, duration = %lld\n", __func__, ic->nb_streams,
                nb_packets, now - start_time);
@@ -6254,7 +6254,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
             goto fail;
         }
     }
-    
+
     for (int i = 0; i < ic->nb_streams; i++) {
         AVStream * st = ic->streams[i];
         if (!st->codecpar->extradata) {
@@ -6282,7 +6282,7 @@ int av_try_find_stream_info(AVFormatContext *ic, AVDictionary **options) {
             goto fail;
         }
     }
-    
+
     for (int i = 0; i < ic->nb_streams; i++) {
         AVStream * st = ic->streams[i];
         st->discard = AVDISCARD_DEFAULT;
@@ -6298,13 +6298,13 @@ fail:
         if (avctx[i])
             avcodec_free_context(&avctx[i]);
     }
-    
+
     if (ret < 0) {
         ret = avformat_find_stream_info(ic, options);
     } else {
         update_stream_timings(ic);
     }
-    
+
     FF_ENABLE_DEPRECATION_WARNINGS
     return ret;
 }
