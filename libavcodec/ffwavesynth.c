@@ -350,7 +350,8 @@ fail:
 static void wavesynth_synth_sample(struct wavesynth_context *ws, int64_t ts,
                                    int32_t *channels)
 {
-    int32_t amp, val, *cv;
+    int32_t amp, *cv;
+    unsigned val;
     struct ws_interval *in;
     int i, *last, pink;
     uint32_t c, all_ch = 0;
