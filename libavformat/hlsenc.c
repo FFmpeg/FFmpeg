@@ -776,12 +776,13 @@ static int hls_mux_init(AVFormatContext *s, VariantStream *vs)
     if (!oc->url)
         return AVERROR(ENOMEM);
 
-    oc->oformat            = vs->oformat;
-    oc->interrupt_callback = s->interrupt_callback;
-    oc->max_delay          = s->max_delay;
-    oc->opaque             = s->opaque;
-    oc->io_open            = s->io_open;
-    oc->io_close           = s->io_close;
+    oc->oformat                  = vs->oformat;
+    oc->interrupt_callback       = s->interrupt_callback;
+    oc->max_delay                = s->max_delay;
+    oc->opaque                   = s->opaque;
+    oc->io_open                  = s->io_open;
+    oc->io_close                 = s->io_close;
+    oc->strict_std_compliance    = s->strict_std_compliance;
     av_dict_copy(&oc->metadata, s->metadata, 0);
 
     if (vs->vtt_oformat) {
