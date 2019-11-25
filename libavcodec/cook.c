@@ -759,7 +759,7 @@ static int decouple_info(COOKContext *q, COOKSubpacket *p, int *decouple_tab)
         for (i = 0; i < length; i++)
             decouple_tab[start + i] = get_vlc2(&q->gb,
                                                p->channel_coupling.table,
-                                               p->channel_coupling.bits, 2);
+                                               p->channel_coupling.bits, 3);
     else
         for (i = 0; i < length; i++) {
             int v = get_bits(&q->gb, p->js_vlc_bits);
