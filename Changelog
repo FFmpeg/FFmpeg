@@ -26,6 +26,7 @@ version <next>:
 - AV1 Annex B demuxer
 - axcorrelate filter
 - mvdv decoder
+- mvha decoder
 
 
 version 4.2:
