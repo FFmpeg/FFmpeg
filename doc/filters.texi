@@ -19918,6 +19918,28 @@ Only deinterlace frames marked as interlaced.
 The default value is @code{all}.
 @end table
 
+@section yaepblur
+
+Apply blur filter while preserving edges ("yaepblur" means "yet another edge preserving blur filter").
+The algorithm is described in
+"J. S. Lee, Digital image enhancement and noise filtering by use of local statistics, IEEE Trans. Pattern Anal. Mach. Intell. PAMI-2, 1980."
+
+It accepts the following parameters:
+
+@table @option
+@item radius, r
+Set the window radius. Default value is 3.
+
+@item planes, p
+Set which planes to filter. Default is only the first plane.
+
+@item sigma, s
+Set blur strength. Default value is 128.
+@end table
+
+@subsection Commands
+This filter supports same @ref{commands} as options.
+
 @section zoompan
 
 Apply Zoom & Pan effect.
