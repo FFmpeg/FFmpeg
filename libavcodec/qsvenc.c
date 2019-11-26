@@ -824,7 +824,9 @@ static int qsv_retrieve_enc_vp9_params(AVCodecContext *avctx, QSVEncContext *q)
 #endif
 
     mfxExtBuffer *ext_buffers[] = {
+#if QSV_HAVE_EXT_VP9_PARAM
         (mfxExtBuffer*)&vp9_extend_buf,
+#endif
 #if QSV_HAVE_CO2
         (mfxExtBuffer*)&co2,
 #endif
