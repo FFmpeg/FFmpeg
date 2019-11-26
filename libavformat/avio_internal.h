@@ -172,6 +172,13 @@ int ffio_open_whitelist(AVIOContext **s, const char *url, int flags,
 int ffio_close_null_buf(AVIOContext *s);
 
 /**
+ * Reset a dynamic buffer.
+ *
+ * Resets everything, but keeps the allocated buffer for later use.
+ */
+void ffio_reset_dyn_buf(AVIOContext *s);
+
+/**
  * Free a dynamic buffer.
  *
  * @param s a pointer to an IO context opened by avio_open_dyn_buf()

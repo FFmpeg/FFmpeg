@@ -1407,6 +1407,17 @@ int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
     return d->size;
 }
 
+void ffio_reset_dyn_buf(AVIOContext *s)
+{
+    DynBuffer *d = s->opaque;
+    int max_packet_size = s->max_packet_size;
+
+    ffio_init_context(s, d->io_buffer, d->io_buffer_size, 1, d, NULL,
+                      s->write_packet, s->seek);
+    s->max_packet_size = max_packet_size;
+    d->pos = d->size = 0;
+}
+
 int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;
