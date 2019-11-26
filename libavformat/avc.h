@@ -43,6 +43,7 @@ typedef struct {
     uint8_t constraint_set_flags;
     uint8_t chroma_format_idc;
     uint8_t bit_depth_luma;
+    uint8_t bit_depth_chroma;
     uint8_t frame_mbs_only_flag;
     AVRational sar;
 } H264SequenceParameterSet;
