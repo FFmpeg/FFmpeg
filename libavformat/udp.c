@@ -797,7 +797,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
      * receiving UDP packets from other sources aimed at the same UDP
      * port. This fails on windows. This makes sending to the same address
      * using sendto() fail, so only do it if we're opened in read-only mode. */
-    if (s->is_multicast && !(h->flags & AVIO_FLAG_WRITE)) {
+    if (s->is_multicast && (h->flags & AVIO_FLAG_READ)) {
         bind_ret = bind(udp_fd,(struct sockaddr *)&s->dest_addr, len);
     }
     /* bind to the local address if not multicast or if the multicast
