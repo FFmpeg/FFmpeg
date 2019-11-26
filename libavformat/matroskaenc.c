@@ -2721,6 +2721,7 @@ static int mkv_write_packet_internal(AVFormatContext *s, const AVPacket *pkt)
         ret = start_ebml_master_crc32(&mkv->cluster_bc, mkv);
         if (ret < 0)
             return ret;
+        mkv->cluster_bc->direct = 1;
         mkv->cluster_pos = avio_tell(s->pb);
         put_ebml_uint(mkv->cluster_bc, MATROSKA_ID_CLUSTERTIMECODE, FFMAX(0, ts));
         mkv->cluster_pts = FFMAX(0, ts);
