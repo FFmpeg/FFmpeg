@@ -764,10 +764,10 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 #if QSV_HAVE_EXT_VP9_PARAM
     if (avctx->codec_id == AV_CODEC_ID_VP9) {
-       q->extvp9param.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
-       q->extvp9param.Header.BufferSz = sizeof(q->extvp9param);
-       q->extvp9param.WriteIVFHeaders = MFX_CODINGOPTION_OFF;
-       q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extvp9param;
+        q->extvp9param.Header.BufferId = MFX_EXTBUFF_VP9_PARAM;
+        q->extvp9param.Header.BufferSz = sizeof(q->extvp9param);
+        q->extvp9param.WriteIVFHeaders = MFX_CODINGOPTION_OFF;
+        q->extparam_internal[q->nb_extparam_internal++] = (mfxExtBuffer *)&q->extvp9param;
     }
 #endif
 

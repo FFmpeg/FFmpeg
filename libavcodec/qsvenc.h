@@ -125,7 +125,7 @@ typedef struct QSVEncContext {
     mfxExtMultiFrameControl extmfc;
 #endif
 #if QSV_HAVE_EXT_VP9_PARAM
-   mfxExtVP9Param  extvp9param;
+    mfxExtVP9Param  extvp9param;
 #endif
 
     mfxExtOpaqueSurfaceAlloc opaque_alloc;
