@@ -1420,7 +1420,8 @@ static int mkv_write_chapters(AVFormatContext *s)
         }
 
         chapteratom = start_ebml_master(dyn_cp, MATROSKA_ID_CHAPTERATOM, 0);
-        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID, c->id + mkv->chapter_id_offset);
+        put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERUID,
+                      (uint32_t)c->id + (uint64_t)mkv->chapter_id_offset);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMESTART, chapterstart);
         put_ebml_uint(dyn_cp, MATROSKA_ID_CHAPTERTIMEEND, chapterend);
         if (mkv->mode != MODE_WEBM) {
@@ -1477,7 +1478,7 @@ static int mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
 }
 
 static int mkv_write_tag_targets(AVFormatContext *s, uint32_t elementid,
-                                 unsigned int uid, ebml_master *tag)
+                                 uint64_t uid, ebml_master *tag)
 {
     AVIOContext *pb;
     MatroskaMuxContext *mkv = s->priv_data;
@@ -1516,7 +1517,7 @@ static int mkv_check_tag_name(const char *name, uint32_t elementid)
 }
 
 static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, uint32_t elementid,
-                         unsigned int uid)
+                         uint64_t uid)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ebml_master tag;
@@ -1610,7 +1611,8 @@ static int mkv_write_tags(AVFormatContext *s)
             if (!mkv_check_tag(ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID))
                 continue;
 
-            ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id + mkv->chapter_id_offset);
+            ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID,
+                                (uint32_t)ch->id + (uint64_t)mkv->chapter_id_offset);
             if (ret < 0)
                 return ret;
         }
@@ -1880,7 +1882,10 @@ static int mkv_write_header(AVFormatContext *s)
         return ret;
 
     for (i = 0; i < s->nb_chapters; i++)
-        mkv->chapter_id_offset = FFMAX(mkv->chapter_id_offset, 1LL - s->chapters[i]->id);
+        if (!s->chapters[i]->id) {
+            mkv->chapter_id_offset = 1;
+            break;
+        }
 
     ret = mkv_write_chapters(s);
     if (ret < 0)
