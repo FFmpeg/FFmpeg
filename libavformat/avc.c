@@ -25,6 +25,7 @@
 #include "avformat.h"
 #include "avio.h"
 #include "avc.h"
+#include "avio_internal.h"
 
 static const uint8_t *ff_avc_find_startcode_internal(const uint8_t *p, const uint8_t *end)
 {
@@ -109,7 +110,7 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 {
     AVIOContext *sps_pb = NULL, *pps_pb = NULL;
     uint8_t *buf = NULL, *end, *start = NULL;
-    uint8_t *sps = NULL, *pps = NULL;
+    uint8_t *sps, *pps;
     uint32_t sps_size = 0, pps_size = 0;
     int ret, nb_sps = 0, nb_pps = 0;
 
@@ -164,8 +165,8 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 
         buf += size;
     }
-    sps_size = avio_close_dyn_buf(sps_pb, &sps);
-    pps_size = avio_close_dyn_buf(pps_pb, &pps);
+    sps_size = avio_get_dyn_buf(sps_pb, &sps);
+    pps_size = avio_get_dyn_buf(pps_pb, &pps);
 
     if (sps_size < 6 || !pps_size) {
         ret = AVERROR_INVALIDDATA;
@@ -184,12 +185,8 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
     avio_write(pb, pps, pps_size);
 
 fail:
-    if (!sps)
-        avio_close_dyn_buf(sps_pb, &sps);
-    if (!pps)
-        avio_close_dyn_buf(pps_pb, &pps);
-    av_free(sps);
-    av_free(pps);
+    ffio_free_dyn_buf(&sps_pb);
+    ffio_free_dyn_buf(&pps_pb);
     av_free(start);
 
     return ret;
