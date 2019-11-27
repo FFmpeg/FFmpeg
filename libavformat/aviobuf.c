@@ -1443,14 +1443,19 @@ int avio_get_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 {
     DynBuffer *d;
 
-    if (!s) {
+    if (!s || s->error) {
         *pbuffer = NULL;
         return 0;
+    }
+    d = s->opaque;
+
+    if (!d->size) {
+        *pbuffer = d->io_buffer;
+        return FFMAX(s->buf_ptr, s->buf_ptr_max) - s->buffer;
     }
 
     avio_flush(s);
 
-    d = s->opaque;
     *pbuffer = d->buffer;
 
     return d->size;
@@ -1488,12 +1493,15 @@ int avio_close_dyn_buf(AVIOContext *s, uint8_t **pbuffer)
 
 void ffio_free_dyn_buf(AVIOContext **s)
 {
-    uint8_t *tmp;
+    DynBuffer *d;
+
     if (!*s)
         return;
-    avio_close_dyn_buf(*s, &tmp);
-    av_free(tmp);
-    *s = NULL;
+
+    d = (*s)->opaque;
+    av_free(d->buffer);
+    av_free(d);
+    avio_context_free(s);
 }
 
 static int null_buf_write(void *opaque, uint8_t *buf, int buf_size)
