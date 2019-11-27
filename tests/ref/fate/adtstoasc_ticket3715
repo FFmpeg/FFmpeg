@@ -1,5 +1,5 @@
-4110be924e21846d0e174fac679b062e *tests/data/fate/adtstoasc_ticket3715.mov
-33324 tests/data/fate/adtstoasc_ticket3715.mov
+cdb20dd801cd2458ef14d3bdfbb2fe14 *tests/data/fate/adtstoasc_ticket3715.mov
+33332 tests/data/fate/adtstoasc_ticket3715.mov
 #extradata 0:        2, 0x00340022
 #tb 0: 1/44100
 #media_type 0: audio

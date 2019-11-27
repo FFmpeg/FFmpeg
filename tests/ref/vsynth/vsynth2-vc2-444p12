@@ -1,4 +1,4 @@
-1b535238247c0cdca338f2927e2c8c37 *tests/data/fate/vsynth2-vc2-444p12.mov
-2145499 tests/data/fate/vsynth2-vc2-444p12.mov
+e6ab58ad559245c28daa65e69fd1ede9 *tests/data/fate/vsynth2-vc2-444p12.mov
+2145507 tests/data/fate/vsynth2-vc2-444p12.mov
 38836be5c12b951c9b280d15fe3b31ce *tests/data/fate/vsynth2-vc2-444p12.out.rawvideo
 stddev:    0.48 PSNR: 54.46 MAXDIFF:   10 bytes:  7603200/   760320
