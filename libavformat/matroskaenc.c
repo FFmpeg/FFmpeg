@@ -845,11 +845,11 @@ static int mkv_write_codecprivate(AVFormatContext *s, AVIOContext *pb,
         ff_put_wav_header(s, dyn_cp, par, FF_PUT_WAV_HEADER_FORCE_WAVEFORMATEX);
     }
 
-    codecpriv_size = avio_close_dyn_buf(dyn_cp, &codecpriv);
+    codecpriv_size = avio_get_dyn_buf(dyn_cp, &codecpriv);
     if (codecpriv_size)
         put_ebml_binary(pb, MATROSKA_ID_CODECPRIVATE, codecpriv,
                         codecpriv_size);
-    av_free(codecpriv);
+    ffio_free_dyn_buf(&dyn_cp);
     return ret;
 }
 
@@ -933,13 +933,13 @@ static int mkv_write_video_color(AVIOContext *pb, AVCodecParameters *par, AVStre
         end_ebml_master(dyn_cp, meta_element);
     }
 
-    colorinfo_size = avio_close_dyn_buf(dyn_cp, &colorinfo_ptr);
+    colorinfo_size = avio_get_dyn_buf(dyn_cp, &colorinfo_ptr);
     if (colorinfo_size) {
         ebml_master colorinfo = start_ebml_master(pb, MATROSKA_ID_VIDEOCOLOR, colorinfo_size);
         avio_write(pb, colorinfo_ptr, colorinfo_size);
         end_ebml_master(pb, colorinfo);
     }
-    av_free(colorinfo_ptr);
+    ffio_free_dyn_buf(&dyn_cp);
     return 0;
 }
 
