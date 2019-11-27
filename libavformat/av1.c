@@ -326,7 +326,7 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     AV1SequenceParameters seq_params;
     PutBitContext pbc;
     uint8_t header[4];
-    uint8_t *seq = NULL, *meta = NULL;
+    uint8_t *seq, *meta;
     int64_t obu_size;
     int start_pos, type, temporal_id, spatial_id;
     int ret, nb_seq = 0, seq_size, meta_size;
@@ -376,7 +376,7 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
         buf  += len;
     }
 
-    seq_size  = avio_close_dyn_buf(seq_pb, &seq);
+    seq_size  = avio_get_dyn_buf(seq_pb, &seq);
     if (!seq_size) {
         ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -401,17 +401,13 @@ int ff_isom_write_av1c(AVIOContext *pb, const uint8_t *buf, int size)
     avio_write(pb, header, sizeof(header));
     avio_write(pb, seq, seq_size);
 
-    meta_size = avio_close_dyn_buf(meta_pb, &meta);
+    meta_size = avio_get_dyn_buf(meta_pb, &meta);
     if (meta_size)
         avio_write(pb, meta, meta_size);
 
 fail:
-    if (!seq)
-        avio_close_dyn_buf(seq_pb, &seq);
-    if (!meta)
-        avio_close_dyn_buf(meta_pb, &meta);
-    av_free(seq);
-    av_free(meta);
+    ffio_free_dyn_buf(&seq_pb);
+    ffio_free_dyn_buf(&meta_pb);
 
     return ret;
 }
