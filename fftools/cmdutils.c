@@ -1870,6 +1870,18 @@ static void show_help_demuxer(const char *name)
         show_help_children(fmt->priv_class, AV_OPT_FLAG_DECODING_PARAM);
 }
 
+static void show_help_protocol(const char *name)
+{
+    const AVClass *proto_class = avio_protocol_get_class(name);
+
+    if (!proto_class) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown protocol '%s'.\n", name);
+        return;
+    }
+
+    show_help_children(proto_class, AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM);
+}
+
 static void show_help_muxer(const char *name)
 {
     const AVCodecDescriptor *desc;
@@ -2000,6 +2012,8 @@ int show_help(void *optctx, const char *opt, const char *arg)
         show_help_demuxer(par);
     } else if (!strcmp(topic, "muxer")) {
         show_help_muxer(par);
+    } else if (!strcmp(topic, "protocol")) {
+        show_help_protocol(par);
 #if CONFIG_AVFILTER
     } else if (!strcmp(topic, "filter")) {
         show_help_filter(par);
