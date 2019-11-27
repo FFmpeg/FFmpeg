@@ -3145,12 +3145,12 @@ static int mov_write_track_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (mov->mode & (MODE_MP4|MODE_MOV))
         mov_write_track_metadata(pb_buf, st, "name", "title");
 
-    if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
+    if ((size = avio_get_dyn_buf(pb_buf, &buf)) > 0) {
         avio_wb32(pb, size + 8);
         ffio_wfourcc(pb, "udta");
         avio_write(pb, buf, size);
     }
-    av_free(buf);
+    ffio_free_dyn_buf(&pb_buf);
 
     return 0;
 }
@@ -3820,12 +3820,12 @@ static int mov_write_udta_tag(AVIOContext *pb, MOVMuxContext *mov,
     if (s->nb_chapters && !(mov->flags & FF_MOV_FLAG_DISABLE_CHPL))
         mov_write_chpl_tag(pb_buf, s);
 
-    if ((size = avio_close_dyn_buf(pb_buf, &buf)) > 0) {
+    if ((size = avio_get_dyn_buf(pb_buf, &buf)) > 0) {
         avio_wb32(pb, size + 8);
         ffio_wfourcc(pb, "udta");
         avio_write(pb, buf, size);
     }
-    av_free(buf);
+    ffio_free_dyn_buf(&pb_buf);
 
     return 0;
 }
@@ -5033,12 +5033,11 @@ static int mov_flush_fragment_interleaving(AVFormatContext *s, MOVTrack *track)
         if ((ret = avio_open_dyn_buf(&mov->mdat_buf)) < 0)
             return ret;
     }
-    buf_size = avio_close_dyn_buf(track->mdat_buf, &buf);
-    track->mdat_buf = NULL;
+    buf_size = avio_get_dyn_buf(track->mdat_buf, &buf);
 
     offset = avio_tell(mov->mdat_buf);
     avio_write(mov->mdat_buf, buf, buf_size);
-    av_free(buf);
+    ffio_free_dyn_buf(&track->mdat_buf);
 
     for (i = track->entries_flushed; i < track->entry; i++)
         track->cluster[i].pos += offset;
@@ -5135,12 +5134,11 @@ static int mov_flush_fragment(AVFormatContext *s, int force)
             return 0;
         }
 
-        buf_size = avio_close_dyn_buf(mov->mdat_buf, &buf);
-        mov->mdat_buf = NULL;
+        buf_size = avio_get_dyn_buf(mov->mdat_buf, &buf);
         avio_wb32(s->pb, buf_size + 8);
         ffio_wfourcc(s->pb, "mdat");
         avio_write(s->pb, buf, buf_size);
-        av_free(buf);
+        ffio_free_dyn_buf(&mov->mdat_buf);
 
         if (mov->flags & FF_MOV_FLAG_GLOBAL_SIDX)
             mov->reserved_header_pos = avio_tell(s->pb);
