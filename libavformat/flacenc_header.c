@@ -26,7 +26,7 @@
 #include "avformat.h"
 #include "flacenc.h"
 
-int ff_flac_write_header(AVIOContext *pb, uint8_t *extradata,
+int ff_flac_write_header(AVIOContext *pb, const uint8_t *extradata,
                          int extradata_size, int last_block)
 {
     uint8_t header[8] = {
