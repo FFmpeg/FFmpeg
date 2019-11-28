@@ -71,6 +71,13 @@ Set amount of tile threads to use during decoding. The default value is 0 (autod
 Apply film grain to the decoded video if present in the bitstream. Defaults to the
 internal default of the library.
 
+@item oppoint
+Select an operating point of a scalable AV1 bitstream (0 - 31). Defaults to the
+internal default of the library.
+
+@item alllayers
+Output all spatial layers of a scalable AV1 bitstream. The default value is false.
+
 @end table
 
 @section libdavs2
