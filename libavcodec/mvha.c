@@ -190,7 +190,9 @@ static int decode_frame(AVCodecContext *avctx,
         GetBitContext *gb = &s->gb;
         int first_symbol, symbol;
 
-        init_get_bits8(gb, avpkt->data + 8, avpkt->size - 8);
+        ret = init_get_bits8(gb, avpkt->data + 8, avpkt->size - 8);
+        if (ret < 0)
+            return ret;
 
         skip_bits(gb, 24);
 
