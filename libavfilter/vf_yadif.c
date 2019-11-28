@@ -311,26 +311,26 @@ static int query_formats(AVFilterContext *ctx)
     return ff_set_common_formats(ctx, fmts_list);
 }
 
-static int config_props(AVFilterLink *link)
+static int config_output(AVFilterLink *outlink)
 {
-    AVFilterContext *ctx = link->src;
+    AVFilterContext *ctx = outlink->src;
     YADIFContext *s = ctx->priv;
 
-    link->time_base.num = ctx->inputs[0]->time_base.num;
-    link->time_base.den = ctx->inputs[0]->time_base.den * 2;
-    link->w             = ctx->inputs[0]->w;
-    link->h             = ctx->inputs[0]->h;
+    outlink->time_base.num = ctx->inputs[0]->time_base.num;
+    outlink->time_base.den = ctx->inputs[0]->time_base.den * 2;
+    outlink->w             = ctx->inputs[0]->w;
+    outlink->h             = ctx->inputs[0]->h;
 
     if(s->mode & 1)
-        link->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
+        outlink->frame_rate = av_mul_q(ctx->inputs[0]->frame_rate,
                                     (AVRational){2, 1});
 
-    if (link->w < 3 || link->h < 3) {
+    if (outlink->w < 3 || outlink->h < 3) {
         av_log(ctx, AV_LOG_ERROR, "Video of less than 3 columns or lines is not supported\n");
         return AVERROR(EINVAL);
     }
 
-    s->csp = av_pix_fmt_desc_get(link->format);
+    s->csp = av_pix_fmt_desc_get(outlink->format);
     s->filter = filter;
     if (s->csp->comp[0].depth > 8) {
         s->filter_line  = filter_line_c_16bit;
@@ -369,7 +369,7 @@ static const AVFilterPad avfilter_vf_yadif_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = ff_yadif_request_frame,
-        .config_props  = config_props,
+        .config_props  = config_output,
     },
     { NULL }
 };
