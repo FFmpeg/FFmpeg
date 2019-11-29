@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/avassert.h"
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/png.h"
 #include "avformat.h"
@@ -54,15 +53,14 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 
     /* picture mimetype */
     len = avio_rb32(pb);
-    if (len <= 0 || len >= 64 ||
-        avio_read(pb, mimetype, FFMIN(len, sizeof(mimetype) - 1)) != len) {
+    if (len <= 0 || len >= sizeof(mimetype) ||
+        avio_read(pb, mimetype, len) != len) {
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
                "picture.\n");
         if (s->error_recognition & AV_EF_EXPLODE)
             ret = AVERROR_INVALIDDATA;
         goto fail;
     }
-    av_assert0(len < sizeof(mimetype));
     mimetype[len] = 0;
 
     while (mime->id != AV_CODEC_ID_NONE) {
