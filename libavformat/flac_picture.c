@@ -52,7 +52,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types)) {
         av_log(s, AV_LOG_ERROR, "Invalid picture type: %d.\n", type);
         if (s->error_recognition & AV_EF_EXPLODE) {
-            RETURN_ERROR(AVERROR_INVALIDDATA);
+            return AVERROR_INVALIDDATA;
         }
         type = 0;
     }
@@ -63,8 +63,8 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
                "picture.\n");
         if (s->error_recognition & AV_EF_EXPLODE)
-            ret = AVERROR_INVALIDDATA;
-        goto fail;
+            return AVERROR_INVALIDDATA;
+        return 0;
     }
     if (len + 24 > bytestream2_get_bytes_left(&g)) {
         av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
@@ -86,8 +86,8 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
         av_log(s, AV_LOG_ERROR, "Unknown attached picture mimetype: %s.\n",
                mimetype);
         if (s->error_recognition & AV_EF_EXPLODE)
-            ret = AVERROR_INVALIDDATA;
-        goto fail;
+            return AVERROR_INVALIDDATA;
+        return 0;
     }
 
     /* picture description */
@@ -100,7 +100,7 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
     if (len > 0) {
         if (!(desc = av_malloc(len + 1))) {
-            RETURN_ERROR(AVERROR(ENOMEM));
+            return AVERROR(ENOMEM);
         }
 
         bytestream2_get_bufferu(&g, desc, len);
