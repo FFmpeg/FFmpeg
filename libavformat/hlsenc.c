@@ -2486,7 +2486,10 @@ static void hls_free_variant_streams(struct HLSContext *hls)
         if (vtt_oc) {
             av_freep(&vs->vtt_basename);
             av_freep(&vs->vtt_m3u8_name);
+            avformat_free_context(vtt_oc);
         }
+
+        avformat_free_context(vs->avf);
 
         hls_free_segments(vs->segments);
         hls_free_segments(vs->old_segments);
@@ -2619,7 +2622,6 @@ failed:
                 av_write_trailer(vtt_oc);
             vs->size = avio_tell(vs->vtt_avf->pb) - vs->start_pos;
             ff_format_io_close(s, &vtt_oc->pb);
-            avformat_free_context(vtt_oc);
         }
         ret = hls_window(s, 1, vs);
         if (ret < 0) {
@@ -2628,7 +2630,6 @@ failed:
             hls_window(s, 1, vs);
         }
         ffio_free_dyn_buf(&oc->pb);
-        avformat_free_context(oc);
 
         vs->avf = NULL;
         av_free(old_filename);
@@ -2956,31 +2957,14 @@ static int hls_init(AVFormatContext *s)
 
 fail:
     if (ret < 0) {
-        av_freep(&hls->key_basename);
-        for (i = 0; i < hls->nb_varstreams && hls->var_streams; i++) {
-            vs = &hls->var_streams[i];
-            av_freep(&vs->basename);
-            av_freep(&vs->vtt_basename);
-            av_freep(&vs->fmp4_init_filename);
-            av_freep(&vs->m3u8_name);
-            av_freep(&vs->vtt_m3u8_name);
-            av_freep(&vs->streams);
-            av_freep(&vs->language);
-            av_freep(&vs->agroup);
-            av_freep(&vs->ccgroup);
-            av_freep(&vs->baseurl);
-            av_freep(&vs->varname);
-            if (vs->avf)
-                avformat_free_context(vs->avf);
-            if (vs->vtt_avf)
-                avformat_free_context(vs->vtt_avf);
-        }
+        hls_free_variant_streams(hls);
         for (i = 0; i < hls->nb_ccstreams; i++) {
             ClosedCaptionsStream *ccs = &hls->cc_streams[i];
             av_freep(&ccs->ccgroup);
             av_freep(&ccs->instreamid);
             av_freep(&ccs->language);
         }
+        av_freep(&hls->key_basename);
         av_freep(&hls->var_streams);
         av_freep(&hls->cc_streams);
         av_freep(&hls->master_m3u8_url);
