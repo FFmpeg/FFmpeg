@@ -979,7 +979,7 @@ static int decode_subframe(WmallDecodeCtx *s)
         if (s->quant_stepsize != 1)
             for (i = 0; i < s->num_channels; i++)
                 for (j = 0; j < subframe_len; j++)
-                    s->channel_residues[i][j] *= s->quant_stepsize;
+                    s->channel_residues[i][j] *= (unsigned)s->quant_stepsize;
     }
 
     /* Write to proper output buffer depending on bit-depth */
