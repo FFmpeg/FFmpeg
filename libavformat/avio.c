@@ -346,8 +346,7 @@ int ffurl_open_whitelist(URLContext **puc, const char *filename, int flags,
     if (!ret)
         return 0;
 fail:
-    ffurl_close(*puc);
-    *puc = NULL;
+    ffurl_closep(puc);
     return ret;
 }
 
