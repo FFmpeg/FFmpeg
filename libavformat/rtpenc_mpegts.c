@@ -106,8 +106,7 @@ fail:
         av_dict_free(&mpegts_ctx->metadata);
         avformat_free_context(mpegts_ctx);
     }
-    if (rtp_ctx)
-        avformat_free_context(rtp_ctx);
+    avformat_free_context(rtp_ctx);
     rtp_mpegts_write_close(s);
     return ret;
 }
