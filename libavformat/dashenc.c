@@ -588,8 +588,7 @@ static void dash_free(AVFormatContext *s)
                 avio_close(os->ctx->pb);
         }
         ff_format_io_close(s, &os->out);
-        if (os->ctx)
-            avformat_free_context(os->ctx);
+        avformat_free_context(os->ctx);
         for (j = 0; j < os->nb_segments; j++)
             av_free(os->segments[j]);
         av_free(os->segments);
