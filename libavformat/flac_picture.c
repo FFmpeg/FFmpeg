@@ -20,12 +20,12 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavcodec/bytestream.h"
 #include "libavcodec/png.h"
 #include "avformat.h"
 #include "flac_picture.h"
 #include "id3v2.h"
 #include "internal.h"
-#include "avio_internal.h"
 
 int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
 {
@@ -33,16 +33,22 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     enum AVCodecID id = AV_CODEC_ID_NONE;
     AVBufferRef *data = NULL;
     uint8_t mimetype[64], *desc = NULL;
-    AVIOContext pb0, *pb = &pb0;
+    GetByteContext g;
     AVStream *st;
     int width, height, ret = 0;
-    int len;
-    unsigned int type;
+    unsigned int len, type;
 
-    ffio_init_context(pb, buf, buf_size, 0, NULL, NULL, NULL, NULL);
+    if (buf_size < 34) {
+        av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+        return 0;
+    }
+
+    bytestream2_init(&g, buf, buf_size);
 
     /* read the picture type */
-    type = avio_rb32(pb);
+    type = bytestream2_get_be32u(&g);
     if (type >= FF_ARRAY_ELEMS(ff_id3v2_picture_types)) {
         av_log(s, AV_LOG_ERROR, "Invalid picture type: %d.\n", type);
         if (s->error_recognition & AV_EF_EXPLODE) {
@@ -52,15 +58,21 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
 
     /* picture mimetype */
-    len = avio_rb32(pb);
-    if (len <= 0 || len >= sizeof(mimetype) ||
-        avio_read(pb, mimetype, len) != len) {
+    len = bytestream2_get_be32u(&g);
+    if (len <= 0 || len >= sizeof(mimetype)) {
         av_log(s, AV_LOG_ERROR, "Could not read mimetype from an attached "
                "picture.\n");
         if (s->error_recognition & AV_EF_EXPLODE)
             ret = AVERROR_INVALIDDATA;
         goto fail;
     }
+    if (len + 24 > bytestream2_get_bytes_left(&g)) {
+        av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+        return 0;
+    }
+    bytestream2_get_bufferu(&g, mimetype, len);
     mimetype[len] = 0;
 
     while (mime->id != AV_CODEC_ID_NONE) {
@@ -79,30 +91,31 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     }
 
     /* picture description */
-    len = avio_rb32(pb);
+    len = bytestream2_get_be32u(&g);
+    if (len > bytestream2_get_bytes_left(&g) - 20) {
+        av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
+        if (s->error_recognition & AV_EF_EXPLODE)
+            return AVERROR_INVALIDDATA;
+        return 0;
+    }
     if (len > 0) {
         if (!(desc = av_malloc(len + 1))) {
             RETURN_ERROR(AVERROR(ENOMEM));
         }
 
-        if (avio_read(pb, desc, len) != len) {
-            av_log(s, AV_LOG_ERROR, "Error reading attached picture description.\n");
-            if (s->error_recognition & AV_EF_EXPLODE)
-                ret = AVERROR(EIO);
-            goto fail;
-        }
+        bytestream2_get_bufferu(&g, desc, len);
         desc[len] = 0;
     }
 
     /* picture metadata */
-    width  = avio_rb32(pb);
-    height = avio_rb32(pb);
-    avio_skip(pb, 8);
+    width  = bytestream2_get_be32u(&g);
+    height = bytestream2_get_be32u(&g);
+    bytestream2_skipu(&g, 8);
 
     /* picture data */
-    len = avio_rb32(pb);
-    if (len <= 0) {
-        av_log(s, AV_LOG_ERROR, "Invalid attached picture size: %d.\n", len);
+    len = bytestream2_get_be32u(&g);
+    if (len <= 0 || len > bytestream2_get_bytes_left(&g)) {
+        av_log(s, AV_LOG_ERROR, "Attached picture metadata block too short\n");
         if (s->error_recognition & AV_EF_EXPLODE)
             ret = AVERROR_INVALIDDATA;
         goto fail;
@@ -110,13 +123,8 @@ int ff_flac_parse_picture(AVFormatContext *s, uint8_t *buf, int buf_size)
     if (!(data = av_buffer_alloc(len + AV_INPUT_BUFFER_PADDING_SIZE))) {
         RETURN_ERROR(AVERROR(ENOMEM));
     }
+    bytestream2_get_bufferu(&g, data->data, len);
     memset(data->data + len, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    if (avio_read(pb, data->data, len) != len) {
-        av_log(s, AV_LOG_ERROR, "Error reading attached picture data.\n");
-        if (s->error_recognition & AV_EF_EXPLODE)
-            ret = AVERROR(EIO);
-        goto fail;
-    }
 
     if (AV_RB64(data->data) == PNGSIG)
         id = AV_CODEC_ID_PNG;
