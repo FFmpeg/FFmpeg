@@ -322,6 +322,8 @@ static int extract_header(AVCodecContext *const avctx,
             av_log(avctx, AV_LOG_ERROR, "Invalid number of bitplanes: %u\n", s->bpp);
             return AVERROR_INVALIDDATA;
         }
+        if (s->video_size && s->planesize * s->bpp * avctx->height > s->video_size)
+            return AVERROR_INVALIDDATA;
 
         av_freep(&s->ham_buf);
         av_freep(&s->ham_palbuf);
