@@ -198,8 +198,10 @@ int ff_isom_write_avcc(AVIOContext *pb, const uint8_t *data, int len)
 
     if (sps[3] != 66 && sps[3] != 77 && sps[3] != 88) {
         H264SequenceParameterSet *seq = ff_avc_decode_sps(sps + 3, sps_size - 3);
-        if (!seq)
+        if (!seq) {
+            ret = AVERROR(ENOMEM);
             goto fail;
+        }
         avio_w8(pb, 0xfc | seq->chroma_format_idc); /* 6 bits reserved (111111) + chroma_format_idc */
         avio_w8(pb, 0xf8 | (seq->bit_depth_luma - 8)); /* 5 bits reserved (11111) + bit_depth_luma_minus8 */
         avio_w8(pb, 0xf8 | (seq->bit_depth_chroma - 8)); /* 5 bits reserved (11111) + bit_depth_chroma_minus8 */
