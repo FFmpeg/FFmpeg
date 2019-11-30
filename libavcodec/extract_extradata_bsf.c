@@ -85,7 +85,7 @@ static int extract_extradata_av1(AVBSFContext *ctx, AVPacket *pkt,
     }
 
     if (extradata_size && has_seq) {
-        AVBufferRef *filtered_buf;
+        AVBufferRef *filtered_buf = NULL;
         uint8_t *extradata, *filtered_data;
 
         if (s->remove) {
@@ -179,7 +179,7 @@ static int extract_extradata_h2645(AVBSFContext *ctx, AVPacket *pkt,
     if (extradata_size &&
         ((ctx->par_in->codec_id == AV_CODEC_ID_HEVC && has_sps && has_vps) ||
          (ctx->par_in->codec_id == AV_CODEC_ID_H264 && has_sps))) {
-        AVBufferRef *filtered_buf;
+        AVBufferRef *filtered_buf = NULL;
         uint8_t *extradata, *filtered_data;
 
         if (s->remove) {
