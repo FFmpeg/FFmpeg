@@ -48,6 +48,8 @@ config
 tools/target_dec_<decoder>_fuzzer
     Build fuzzer to fuzz the specified decoder.
 
+tools/target_bsf_<filter>_fuzzer
+    Build fuzzer to fuzz the specified bitstream filter.
 
 Useful standard make commands:
 make -t <target>
