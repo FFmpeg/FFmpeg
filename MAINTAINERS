@@ -369,6 +369,8 @@ Filters:
 Sources:
   vsrc_mandelbrot.c                     Michael Niedermayer
 
+dnn                                     Yejun Guo
+
 libavformat
 ===========
 
