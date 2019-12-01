@@ -218,7 +218,7 @@ static int init_filter_param(AVFilterContext *ctx, UnsharpFilterParam *fp, const
            effect, effect_type, fp->msize_x, fp->msize_y, fp->amount / 65535.0);
 
     fp->sr = av_malloc_array((MAX_MATRIX_SIZE - 1) * s->nb_threads, sizeof(uint32_t));
-    fp->sc = av_malloc_array(2 * fp->steps_y * s->nb_threads, sizeof(uint32_t **));
+    fp->sc = av_mallocz_array(2 * fp->steps_y * s->nb_threads, sizeof(uint32_t *));
     if (!fp->sr || !fp->sc)
         return AVERROR(ENOMEM);
 
@@ -258,9 +258,11 @@ static void free_filter_param(UnsharpFilterParam *fp, int nb_threads)
 {
     int z;
 
-    for (z = 0; z < 2 * fp->steps_y * nb_threads; z++)
-        av_freep(&fp->sc[z]);
-    av_freep(&fp->sc);
+    if (fp->sc) {
+        for (z = 0; z < 2 * fp->steps_y * nb_threads; z++)
+            av_freep(&fp->sc[z]);
+        av_freep(&fp->sc);
+    }
     av_freep(&fp->sr);
 }
 
