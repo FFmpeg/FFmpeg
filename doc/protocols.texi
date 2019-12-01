@@ -1426,6 +1426,12 @@ the overhead transmission (retransmitted and control packets).
 file: Set options as for non-live transmission. See @option{messageapi}
 for further explanations
 
+@item linger=@var{seconds}
+The number of seconds that the socket waits for unsent data when closing.
+Default is -1. -1 means auto (off with 0 seconds in live mode, on with 180
+seconds in file mode). The range for this option is integers in the
+0 - @code{INT_MAX}.
+
 @end table
 
 For more information see: @url{https://github.com/Haivision/srt}.

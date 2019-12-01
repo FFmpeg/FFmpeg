@@ -84,6 +84,7 @@ typedef struct SRTContext {
     char *smoother;
     int messageapi;
     SRT_TRANSTYPE transtype;
+    int linger;
 } SRTContext;
 
 #define D AV_OPT_FLAG_DECODING_PARAM
@@ -128,6 +129,7 @@ static const AVOption libsrt_options[] = {
     { "transtype",      "The transmission type for the socket",                                 OFFSET(transtype),        AV_OPT_TYPE_INT,      { .i64 = SRTT_INVALID }, SRTT_LIVE, SRTT_INVALID, .flags = D|E, "transtype" },
     { "live",           NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRTT_LIVE }, INT_MIN, INT_MAX, .flags = D|E, "transtype" },
     { "file",           NULL, 0, AV_OPT_TYPE_CONST,  { .i64 = SRTT_FILE }, INT_MIN, INT_MAX, .flags = D|E, "transtype" },
+    { "linger",         "Number of seconds that the socket waits for unsent data when closing", OFFSET(linger),           AV_OPT_TYPE_INT,      { .i64 = -1 }, -1, INT_MAX,   .flags = D|E },
     { NULL }
 };
 
@@ -339,6 +341,14 @@ static int libsrt_set_options_pre(URLContext *h, int fd)
         (s->payload_size >= 0 && libsrt_setsockopt(h, fd, SRTO_PAYLOADSIZE, "SRTO_PAYLOADSIZE", &s->payload_size, sizeof(s->payload_size)) < 0) ||
         ((h->flags & AVIO_FLAG_WRITE) && libsrt_setsockopt(h, fd, SRTO_SENDER, "SRTO_SENDER", &yes, sizeof(yes)) < 0)) {
         return AVERROR(EIO);
+    }
+
+    if (s->linger >= 0) {
+        struct linger lin;
+        lin.l_linger = s->linger;
+        lin.l_onoff  = lin.l_linger > 0 ? 1 : 0;
+        if (libsrt_setsockopt(h, fd, SRTO_LINGER, "SRTO_LINGER", &lin, sizeof(lin)) < 0)
+            return AVERROR(EIO);
     }
     return 0;
 }
@@ -591,6 +601,9 @@ static int libsrt_open(URLContext *h, const char *uri, int flags)
                 ret = AVERROR(EINVAL);
                 goto err;
             }
+        }
+        if (av_find_info_tag(buf, sizeof(buf), "linger", p)) {
+            s->linger = strtol(buf, NULL, 10);
         }
     }
     return libsrt_setup(h, uri, flags);
