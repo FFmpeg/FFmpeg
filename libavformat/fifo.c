@@ -536,7 +536,6 @@ static int fifo_write_packet(AVFormatContext *avf, AVPacket *pkt)
     int ret;
 
     if (pkt) {
-        av_init_packet(&msg.pkt);
         ret = av_packet_ref(&msg.pkt,pkt);
         if (ret < 0)
             return ret;

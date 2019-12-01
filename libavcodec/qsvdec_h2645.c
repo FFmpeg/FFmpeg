@@ -125,7 +125,7 @@ static int qsv_decode_frame(AVCodecContext *avctx, void *data,
 
     /* buffer the input packet */
     if (avpkt->size) {
-        AVPacket input_ref = { 0 };
+        AVPacket input_ref;
 
         if (av_fifo_space(s->packet_fifo) < sizeof(input_ref)) {
             ret = av_fifo_realloc2(s->packet_fifo,
