@@ -153,7 +153,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
         int aligned_width = ((avctx->width + 47) / 48) * 48;
         stride = aligned_width * 8 / 3;
     }
-    td.stride = stride;
 
     if (avpkt->size < stride * avctx->height) {
         if ((((avctx->width + 23) / 24) * 24 * 8) / 3 * avctx->height == avpkt->size) {
@@ -166,6 +165,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame,
             return AVERROR_INVALIDDATA;
         }
     }
+    td.stride = stride;
     if (   avctx->codec_tag == MKTAG('C', '2', '1', '0')
         && avpkt->size > 64
         && AV_RN32(psrc) == AV_RN32("INFO")
