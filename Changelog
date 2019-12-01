@@ -2,6 +2,22 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 version 3.4.7:
+- avcodec/g729dec: require buf_size to be non 0
+- avcodec/alac: Fix integer overflow in lpc_prediction() with sign
+- avcodec/wmaprodec: Fix buflen computation in save_bits()
+- avcodec/vc1_block: Fix integer overflow in AC rescaling in vc1_decode_i_block_adv()
+- avcodec/vmdaudio: Check chunk counts to avoid integer overflow
+- avformat/mxfdec: Clear metadata_sets_count in mxf_read_close()
+- avcodec/nuv: Use ff_set_dimensions()
+- avcodec/ffwavesynth: Fix integer overflow with pink_ts_cur/next
+- avcodec/ralf: Fix integer overflows with the filter coefficient in decode_channel()
+- avcodec/g729dec: Use 64bit and clip in scalar product
+- avcodec/mxpegdec: Check for multiple SOF
+- avcodec/nuv: Move comptype check up
+- avcodec/wmavoice: Fix integer overflow in synth_frame()
+- avcodec/rawdec: Check bits_per_coded_sample more pedantically for 16bit cases
+- avutil/lfg: Correct index increment type to avoid undefined behavior
+- avcodec/cngdec: Remove AV_CODEC_CAP_DELAY
 - avcodec/iff: Move index use after check in decodeplane8()
 - avcodec/atrac3: Check for huge block aligns
 - avcodec/ralf: use multiply instead of shift to avoid undefined behavior in decode_block()
