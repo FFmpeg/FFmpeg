@@ -4757,6 +4757,9 @@ static void mov_write_ftyp_tag_internal(AVIOContext *pb, AVFormatContext *s,
         minor =     has_h264 ? 0x20000 : 0x10000;
     } else if (mov->mode == MODE_PSP)
         ffio_wfourcc(pb, "MSNV");
+    else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_FRAGMENT &&
+                                      mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
+        ffio_wfourcc(pb, "iso6"); // Required when using signed CTS offsets in trun boxes
     else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
         ffio_wfourcc(pb, "iso5"); // Required when using default-base-is-moof
     else if (mov->mode == MODE_MP4 && mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
@@ -4807,10 +4810,14 @@ static int mov_write_ftyp_tag(AVIOContext *pb, AVFormatContext *s)
         ffio_wfourcc(pb, "piff");
     } else if (mov->mode != MODE_MOV) {
         // We add tfdt atoms when fragmenting, signal this with the iso6 compatible
-        // brand. This is compatible with users that don't understand tfdt.
-        if (mov->flags & FF_MOV_FLAG_FRAGMENT)
-            ffio_wfourcc(pb, "iso6");
-        if (mov->mode != MODE_MP4) {
+        // brand, if not already the major brand. This is compatible with users that
+        // don't understand tfdt.
+        if (mov->mode == MODE_MP4) {
+            if (mov->flags & FF_MOV_FLAG_FRAGMENT && !(mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS))
+                ffio_wfourcc(pb, "iso6");
+        } else {
+            if (mov->flags & FF_MOV_FLAG_FRAGMENT)
+                ffio_wfourcc(pb, "iso6");
             if (mov->flags & FF_MOV_FLAG_DEFAULT_BASE_MOOF)
                 ffio_wfourcc(pb, "iso5");
             else if (mov->flags & FF_MOV_FLAG_NEGATIVE_CTS_OFFSETS)
