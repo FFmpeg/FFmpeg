@@ -25,6 +25,7 @@ FATE_CBS_AV1_CONFORMANCE_SAMPLES = \
     av1-1-b10-23-film_grain-50.ivf
 
 FATE_CBS_AV1_SAMPLES =              \
+    decode_model.ivf                \
     frames_refs_short_signaling.ivf \
     non_uniform_tiling.ivf          \
     seq_hdr_op_param_info.ivf       \
