@@ -170,14 +170,9 @@
  * information will be in AVStream.time_base units, i.e. it has to be
  * multiplied by the timebase to convert them to seconds.
  *
- * If AVPacket.buf is set on the returned packet, then the packet is
- * allocated dynamically and the user may keep it indefinitely.
- * Otherwise, if AVPacket.buf is NULL, the packet data is backed by a
- * static storage somewhere inside the demuxer and the packet is only valid
- * until the next av_read_frame() call or closing the file. If the caller
- * requires a longer lifetime, av_packet_make_refcounted() will ensure that
- * the data is reference counted, copying the data if necessary.
- * In both cases, the packet must be freed with av_packet_unref() when it is no
+ * A packet returned by av_read_frame() is always reference-counted,
+ * i.e. AVPacket.buf is set and the user may keep it indefinitely.
+ * The packet must be freed with av_packet_unref() when it is no
  * longer needed.
  *
  * @section lavf_decoding_seek Seeking
@@ -2396,13 +2391,12 @@ int av_find_best_stream(AVFormatContext *ic,
  * omit invalid data between valid frames so as to give the decoder the maximum
  * information possible for decoding.
  *
- * If pkt->buf is NULL, then the packet is valid until the next
- * av_read_frame() or until avformat_close_input(). Otherwise the packet
- * is valid indefinitely. In both cases the packet must be freed with
- * av_packet_unref when it is no longer needed. For video, the packet contains
- * exactly one frame. For audio, it contains an integer number of frames if each
- * frame has a known fixed size (e.g. PCM or ADPCM data). If the audio frames
- * have a variable size (e.g. MPEG audio), then it contains one frame.
+ * On success, the returned packet is reference-counted (pkt->buf is set) and
+ * valid indefinitely. The packet must be freed with av_packet_unref() when
+ * it is no longer needed. For video, the packet contains exactly one frame.
+ * For audio, it contains an integer number of frames if each frame has
+ * a known fixed size (e.g. PCM or ADPCM data). If the audio frames have
+ * a variable size (e.g. MPEG audio), then it contains one frame.
  *
  * pkt->pts, pkt->dts and pkt->duration are always set to correct
  * values in AVStream.time_base units (and guessed if the format cannot
@@ -2410,7 +2404,11 @@ int av_find_best_stream(AVFormatContext *ic,
  * has B-frames, so it is better to rely on pkt->dts if you do not
  * decompress the payload.
  *
- * @return 0 if OK, < 0 on error or end of file
+ * @return 0 if OK, < 0 on error or end of file. On error, pkt will be blank
+ *         (as if it came from av_packet_alloc()).
+ *
+ * @note pkt will be initialized, so it may be uninitialized, but it must not
+ *       contain data that needs to be freed.
  */
 int av_read_frame(AVFormatContext *s, AVPacket *pkt);
 
