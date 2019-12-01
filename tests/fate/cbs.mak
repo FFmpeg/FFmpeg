@@ -27,7 +27,8 @@ FATE_CBS_AV1_CONFORMANCE_SAMPLES = \
 FATE_CBS_AV1_SAMPLES =              \
     frames_refs_short_signaling.ivf \
     non_uniform_tiling.ivf          \
-    seq_hdr_op_param_info.ivf
+    seq_hdr_op_param_info.ivf       \
+    switch_frame.ivf
 
 $(foreach N,$(FATE_CBS_AV1_CONFORMANCE_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1-test-vectors/$(N),ivf)))
 $(foreach N,$(FATE_CBS_AV1_SAMPLES),$(eval $(call FATE_CBS_TEST,av1,$(basename $(N)),av1/$(N),ivf)))
