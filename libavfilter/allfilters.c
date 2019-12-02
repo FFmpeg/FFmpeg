@@ -391,6 +391,7 @@ extern AVFilter ff_vf_tlut2;
 extern AVFilter ff_vf_tmix;
 extern AVFilter ff_vf_tonemap;
 extern AVFilter ff_vf_tonemap_opencl;
+extern AVFilter ff_vf_tonemap_vaapi;
 extern AVFilter ff_vf_tpad;
 extern AVFilter ff_vf_transpose;
 extern AVFilter ff_vf_transpose_npp;

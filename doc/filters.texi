@@ -21039,6 +21039,65 @@ Apply a strong blur of both luma and chroma parameters:
 
 @c man end OPENCL VIDEO FILTERS
 
+@chapter VAAPI Video Filters
+@c man begin VAAPI VIDEO FILTERS
+
+VAAPI Video filters are usually used with VAAPI decoder and VAAPI encoder. Below is a description of VAAPI video filters.
+
+To enable compilation of these filters you need to configure FFmpeg with
+@code{--enable-vaapi}.
+
+To use vaapi filters, you need to setup the vaapi device correctly. For more information, please read @url{https://trac.ffmpeg.org/wiki/Hardware/VAAPI}
+
+@section tonemap_vappi
+
+Perform HDR(High Dynamic Range) to SDR(Standard Dynamic Range) conversion with tone-mapping.
+It maps the dynamic range of HDR10 content to the SDR content.
+It currently only accepts HDR10 as input.
+
+It accepts the following parameters:
+
+@table @option
+@item format
+Specify the output pixel format.
+
+Currently supported formats are:
+@table @var
+@item p010
+@item nv12
+@end table
+
+Default is nv12.
+
+@item primaries, p
+Set the output color primaries.
+
+Default is same as input.
+
+@item transfer, t
+Set the output transfer characteristics.
+
+Default is bt709.
+
+@item matrix, m
+Set the output colorspace matrix.
+
+Default is same as input.
+
+@end table
+
+@subsection Example
+
+@itemize
+@item
+Convert HDR(HDR10) video to bt2020-transfer-characteristic p010 format
+@example
+tonemap_vaapi=format=p010:t=bt2020-10
+@end example
+@end itemize
+
+@c man end VAAPI VIDEO FILTERS
+
 @chapter Video Sources
 @c man begin VIDEO SOURCES
 
