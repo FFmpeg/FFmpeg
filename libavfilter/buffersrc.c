@@ -455,19 +455,11 @@ static int request_frame(AVFilterLink *link)
     return ret;
 }
 
-static int poll_frame(AVFilterLink *link)
-{
-    BufferSourceContext *c = link->src->priv;
-    av_assert0(c->queued_frame == NULL);
-    return c->eof ? AVERROR_EOF : 0;
-}
-
 static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
     {
         .name          = "default",
         .type          = AVMEDIA_TYPE_VIDEO,
         .request_frame = request_frame,
-        .poll_frame    = poll_frame,
         .config_props  = config_props,
     },
     { NULL }
@@ -492,7 +484,6 @@ static const AVFilterPad avfilter_asrc_abuffer_outputs[] = {
         .name          = "default",
         .type          = AVMEDIA_TYPE_AUDIO,
         .request_frame = request_frame,
-        .poll_frame    = poll_frame,
         .config_props  = config_props,
     },
     { NULL }
