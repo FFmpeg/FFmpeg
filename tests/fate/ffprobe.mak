@@ -1,5 +1,5 @@
 FFPROBE_TEST_FILE=tests/data/ffprobe-test.nut
-FFPROBE_COMMAND=ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packets -show_format -show_frames -bitexact $(FFPROBE_TEST_FILE)
+FFPROBE_COMMAND=ffprobe$(PROGSSUF)$(EXESUF) -show_streams -show_packets -show_format -show_frames -bitexact $(TARGET_PATH)/$(FFPROBE_TEST_FILE) -print_filename $(FFPROBE_TEST_FILE)
 
 FATE_FFPROBE-$(CONFIG_AVDEVICE) += fate-ffprobe_compact
 fate-ffprobe_compact: $(FFPROBE_TEST_FILE)
