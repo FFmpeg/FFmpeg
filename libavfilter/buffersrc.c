@@ -43,7 +43,6 @@
 
 typedef struct BufferSourceContext {
     const AVClass    *class;
-    AVFrame          *queued_frame;
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        frame_rate;    ///< frame_rate to set in the output link
     unsigned          nb_failed_requests;
@@ -241,11 +240,11 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         }
     }
 
-    av_assert0(s->queued_frame == NULL);
-    s->queued_frame = copy;
-    if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
+    ret = ff_filter_frame(ctx->outputs[0], copy);
+    if (ret < 0) {
+        av_frame_free(&copy);
         return ret;
-    av_assert0(s->queued_frame == NULL);
+    }
 
     if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
         ret = push_frame(ctx->graph);
@@ -369,7 +368,6 @@ static av_cold int init_audio(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
-    av_assert0(s->queued_frame == NULL);
     av_buffer_unref(&s->hw_frames_ctx);
 }
 
@@ -443,16 +441,10 @@ static int request_frame(AVFilterLink *link)
     AVFrame *frame;
     int ret;
 
-    if (!c->queued_frame) {
-        if (c->eof)
-            return AVERROR_EOF;
-        c->nb_failed_requests++;
-        return AVERROR(EAGAIN);
-    }
-    frame = c->queued_frame;
-    c->queued_frame = NULL;
-    ret = ff_filter_frame(link, frame);
-    return ret;
+    if (c->eof)
+        return AVERROR_EOF;
+    c->nb_failed_requests++;
+    return AVERROR(EAGAIN);
 }
 
 static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
