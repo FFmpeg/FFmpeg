@@ -3776,18 +3776,18 @@ FF_ENABLE_DEPRECATION_WARNINGS
         }
         analyzed_all_streams = 0;
         if (!missing_streams || !*missing_streams)
-        if (i == ic->nb_streams) {
-            analyzed_all_streams = 1;
-            /* NOTE: If the format has no header, then we need to read some
-             * packets to get most of the streams, so we cannot stop here. */
-            if (!(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
-                /* If we found the info for all the codecs, we can stop. */
-                ret = count;
-                av_log(ic, AV_LOG_DEBUG, "All info found\n");
-                flush_codecs = 0;
-                break;
+            if (i == ic->nb_streams) {
+                analyzed_all_streams = 1;
+                /* NOTE: If the format has no header, then we need to read some
+                 * packets to get most of the streams, so we cannot stop here. */
+                if (!(ic->ctx_flags & AVFMTCTX_NOHEADER)) {
+                    /* If we found the info for all the codecs, we can stop. */
+                    ret = count;
+                    av_log(ic, AV_LOG_DEBUG, "All info found\n");
+                    flush_codecs = 0;
+                    break;
+                }
             }
-        }
         /* We did not get all the codec info, but we read too much data. */
         if (read_size >= probesize) {
             ret = count;
