@@ -3617,11 +3617,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     for (n = 0; n < laces; n++) {
         int64_t lace_duration = block_duration*(n+1) / laces - block_duration*n / laces;
 
-        if ((st->codecpar->codec_id == AV_CODEC_ID_RA_288 ||
-             st->codecpar->codec_id == AV_CODEC_ID_COOK   ||
-             st->codecpar->codec_id == AV_CODEC_ID_SIPR   ||
-             st->codecpar->codec_id == AV_CODEC_ID_ATRAC3) &&
-            st->codecpar->block_align && track->audio.sub_packet_size) {
+        if (track->audio.buf) {
             res = matroska_parse_rm_audio(matroska, track, st, data,
                                           lace_size[n],
                                           timecode, pos);
