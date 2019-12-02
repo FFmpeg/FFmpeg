@@ -25,9 +25,9 @@
 
 #include <float.h>
 
+#include "libavutil/avassert.h"
 #include "libavutil/channel_layout.h"
 #include "libavutil/common.h"
-#include "libavutil/fifo.h"
 #include "libavutil/frame.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/internal.h"
@@ -43,7 +43,7 @@
 
 typedef struct BufferSourceContext {
     const AVClass    *class;
-    AVFifoBuffer     *fifo;
+    AVFrame          *queued_frame;
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        frame_rate;    ///< frame_rate to set in the output link
     unsigned          nb_failed_requests;
@@ -228,11 +228,6 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
 
     }
 
-    if (!av_fifo_space(s->fifo) &&
-        (ret = av_fifo_realloc2(s->fifo, av_fifo_size(s->fifo) +
-                                         sizeof(copy))) < 0)
-        return ret;
-
     if (!(copy = av_frame_alloc()))
         return AVERROR(ENOMEM);
 
@@ -246,15 +241,11 @@ static int av_buffersrc_add_frame_internal(AVFilterContext *ctx,
         }
     }
 
-    if ((ret = av_fifo_generic_write(s->fifo, &copy, sizeof(copy), NULL)) < 0) {
-        if (refcounted)
-            av_frame_move_ref(frame, copy);
-        av_frame_free(&copy);
-        return ret;
-    }
-
+    av_assert0(s->queued_frame == NULL);
+    s->queued_frame = copy;
     if ((ret = ctx->output_pads[0].request_frame(ctx->outputs[0])) < 0)
         return ret;
+    av_assert0(s->queued_frame == NULL);
 
     if ((flags & AV_BUFFERSRC_FLAG_PUSH)) {
         ret = push_frame(ctx->graph);
@@ -283,9 +274,6 @@ static av_cold int init_video(AVFilterContext *ctx)
         av_log(ctx, AV_LOG_ERROR, "Invalid parameters provided.\n");
         return AVERROR(EINVAL);
     }
-
-    if (!(c->fifo = av_fifo_alloc(sizeof(AVFrame*))))
-        return AVERROR(ENOMEM);
 
     av_log(ctx, AV_LOG_VERBOSE, "w:%d h:%d pixfmt:%s tb:%d/%d fr:%d/%d sar:%d/%d sws_param:%s\n",
            c->w, c->h, av_get_pix_fmt_name(c->pix_fmt),
@@ -367,9 +355,6 @@ static av_cold int init_audio(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if (!(s->fifo = av_fifo_alloc(sizeof(AVFrame*))))
-        return AVERROR(ENOMEM);
-
     if (!s->time_base.num)
         s->time_base = (AVRational){1, s->sample_rate};
 
@@ -384,13 +369,8 @@ static av_cold int init_audio(AVFilterContext *ctx)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     BufferSourceContext *s = ctx->priv;
-    while (s->fifo && av_fifo_size(s->fifo)) {
-        AVFrame *frame;
-        av_fifo_generic_read(s->fifo, &frame, sizeof(frame), NULL);
-        av_frame_free(&frame);
-    }
+    av_assert0(s->queued_frame == NULL);
     av_buffer_unref(&s->hw_frames_ctx);
-    av_fifo_freep(&s->fifo);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -463,26 +443,23 @@ static int request_frame(AVFilterLink *link)
     AVFrame *frame;
     int ret;
 
-    if (!av_fifo_size(c->fifo)) {
+    if (!c->queued_frame) {
         if (c->eof)
             return AVERROR_EOF;
         c->nb_failed_requests++;
         return AVERROR(EAGAIN);
     }
-    av_fifo_generic_read(c->fifo, &frame, sizeof(frame), NULL);
-
+    frame = c->queued_frame;
+    c->queued_frame = NULL;
     ret = ff_filter_frame(link, frame);
-
     return ret;
 }
 
 static int poll_frame(AVFilterLink *link)
 {
     BufferSourceContext *c = link->src->priv;
-    int size = av_fifo_size(c->fifo);
-    if (!size && c->eof)
-        return AVERROR_EOF;
-    return size/sizeof(AVFrame*);
+    av_assert0(c->queued_frame == NULL);
+    return c->eof ? AVERROR_EOF : 0;
 }
 
 static const AVFilterPad avfilter_vsrc_buffer_outputs[] = {
