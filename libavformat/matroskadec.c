@@ -2606,28 +2606,30 @@ static int matroska_parse_tracks(AVFormatContext *s)
             track->audio.sub_packet_h    = avio_rb16(&b);
             track->audio.frame_size      = avio_rb16(&b);
             track->audio.sub_packet_size = avio_rb16(&b);
-            if (flavor                        < 0 ||
-                track->audio.coded_framesize <= 0 ||
+            if (track->audio.coded_framesize <= 0 ||
                 track->audio.sub_packet_h    <= 0 ||
                 track->audio.frame_size      <= 0 ||
                 track->audio.sub_packet_size <= 0 && codec_id != AV_CODEC_ID_SIPR)
                 return AVERROR_INVALIDDATA;
-            track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
-                                               track->audio.frame_size);
-            if (!track->audio.buf)
-                return AVERROR(ENOMEM);
+
             if (codec_id == AV_CODEC_ID_RA_288) {
                 st->codecpar->block_align = track->audio.coded_framesize;
                 track->codec_priv.size = 0;
             } else {
-                if (codec_id == AV_CODEC_ID_SIPR && flavor < 4) {
+                if (codec_id == AV_CODEC_ID_SIPR) {
                     static const int sipr_bit_rate[4] = { 6504, 8496, 5000, 16000 };
+                    if (flavor > 3)
+                        return AVERROR_INVALIDDATA;
                     track->audio.sub_packet_size = ff_sipr_subpk_size[flavor];
                     st->codecpar->bit_rate          = sipr_bit_rate[flavor];
                 }
                 st->codecpar->block_align = track->audio.sub_packet_size;
                 extradata_offset       = 78;
             }
+            track->audio.buf = av_malloc_array(track->audio.sub_packet_h,
+                                               track->audio.frame_size);
+            if (!track->audio.buf)
+                return AVERROR(ENOMEM);
         } else if (codec_id == AV_CODEC_ID_FLAC && track->codec_priv.size) {
             ret = matroska_parse_flac(s, track, &extradata_offset);
             if (ret < 0)
