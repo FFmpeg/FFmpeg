@@ -21,6 +21,9 @@ FATE_CBS_AV1_CONFORMANCE_SAMPLES = \
     av1-1-b8-04-cdfupdate.ivf      \
     av1-1-b8-05-mv.ivf             \
     av1-1-b8-06-mfmv.ivf           \
+    av1-1-b8-22-svc-L1T2.ivf       \
+    av1-1-b8-22-svc-L2T1.ivf       \
+    av1-1-b8-22-svc-L2T2.ivf       \
     av1-1-b8-23-film_grain-50.ivf  \
     av1-1-b10-23-film_grain-50.ivf
 
