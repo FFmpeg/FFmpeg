@@ -101,6 +101,9 @@ static int av1_parser_parse(AVCodecParserContext *ctx,
         else
             continue;
 
+        if (obu->header.spatial_id > 0)
+            continue;
+
         if (frame->show_existing_frame) {
             AV1ReferenceFrameState *ref = &av1->ref[frame->frame_to_show_map_idx];
 
