@@ -47,7 +47,6 @@ typedef struct BufferSourceContext {
     AVRational        time_base;     ///< time_base to set in the output link
     AVRational        frame_rate;    ///< frame_rate to set in the output link
     unsigned          nb_failed_requests;
-    unsigned          warning_limit;
 
     /* video only */
     int               w, h;
@@ -292,7 +291,6 @@ static av_cold int init_video(AVFilterContext *ctx)
            c->w, c->h, av_get_pix_fmt_name(c->pix_fmt),
            c->time_base.num, c->time_base.den, c->frame_rate.num, c->frame_rate.den,
            c->pixel_aspect.num, c->pixel_aspect.den, (char *)av_x_if_null(c->sws_param, ""));
-    c->warning_limit = 100;
     return 0;
 }
 
@@ -379,7 +377,6 @@ static av_cold int init_audio(AVFilterContext *ctx)
            "tb:%d/%d samplefmt:%s samplerate:%d chlayout:%s\n",
            s->time_base.num, s->time_base.den, av_get_sample_fmt_name(s->sample_fmt),
            s->sample_rate, s->channel_layout_str);
-    s->warning_limit = 100;
 
     return ret;
 }
