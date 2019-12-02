@@ -482,6 +482,7 @@ Developer options (useful when working on FFmpeg itself):
   --ignore-tests=TESTS     comma-separated list (without "fate-" prefix
                            in the name) of tests whose result is ignored
   --enable-linux-perf      enable Linux Performance Monitor API
+  --disable-large-tests    disable tests that use a large amount of memory
 
 NOTE: Object files are built at the place where configure is launched.
 EOF
@@ -1931,6 +1932,7 @@ CONFIG_LIST="
     $SUBSYSTEM_LIST
     autodetect
     fontconfig
+    large_tests
     linux_perf
     memory_poisoning
     neon_clobber_test
@@ -3727,6 +3729,7 @@ enable asm
 enable debug
 enable doc
 enable faan faandct faanidct
+enable large_tests
 enable optimizations
 enable runtime_cpudetect
 enable safe_bitstream_reader

@@ -64,7 +64,6 @@ FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, ASV1,          AVI)     += asv1
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, ASV2,          AVI)     += asv2
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd-720p
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd-720p-rd
-FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DNXHD,         DNXHD)   += dnxhd-4k-hr-lb
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DNXHD,         MOV)     += dnxhd-1080i
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DVVIDEO,       DV)      += dv
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, DVVIDEO,       DV)      += dv-411
@@ -79,6 +78,8 @@ FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, HUFFYUV,       AVI)     += huffyuv
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, JPEGLS,        AVI)     += jpegls
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, LJPEG MJPEG,   AVI)     += ljpeg
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MJPEG,         AVI)     += mjpeg
+
+FATE_SEEK_VSYNTH_LENA-$(call ALLYES, DNXHD_ENCODER DNXHD_DECODER LARGE_TESTS) += dnxhd-4k-hr-lb
 
 FATE_SEEK_VSYNTH_LENA-$(call ENCDEC, MPEG1VIDEO, MPEG1VIDEO MPEGVIDEO) +=    \
                                                     mpeg1                    \

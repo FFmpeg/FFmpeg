@@ -29,12 +29,13 @@ FATE_VCODEC-$(call ENCDEC, DNXHD, DNXHD) += dnxhd-720p                  \
                                             dnxhd-720p-rd               \
                                             dnxhd-720p-10bit            \
                                             dnxhd-720p-hr-lb            \
-                                            dnxhd-4k-hr-lb              \
                                             dnxhd-uhd-hr-sq             \
-                                            dnxhd-2k-hr-hq              \
                                             dnxhd-edge1-hr              \
                                             dnxhd-edge2-hr              \
                                             dnxhd-edge3-hr
+
+FATE_VCODEC-$(call ALLYES, DNXHD_ENCODER DNXHD_DECODER LARGE_TESTS) += dnxhd-4k-hr-lb \
+                                                                       dnxhd-2k-hr-hq
 
 FATE_VCODEC-$(call ENCDEC, VC2 DIRAC, MOV) += vc2-420p vc2-420p10 vc2-420p12 \
                                               vc2-422p vc2-422p10 vc2-422p12 \

@@ -85,6 +85,16 @@ FILTERDEMDECENCMUX = $(call ALLYES, $(1:%=%_FILTER) $(2)_DEMUXER $(3)_DECODER $(
 
 PARSERDEMDEC       = $(call ALLYES, $(1)_PARSER $(2)_DEMUXER $(3)_DECODER)
 
+# Allow overriding CONFIG_LARGE_TESTS via LARGE_TESTS, if set on the
+# make command line.
+ifeq ($(LARGE_TESTS), yes)
+CONFIG_LARGE_TESTS:=yes
+!CONFIG_LARGE_TESTS:=
+else ifeq ($(LARGE_TESTS), no)
+CONFIG_LARGE_TESTS:=
+!CONFIG_LARGE_TESTS:=yes
+endif
+
 include $(SRC_PATH)/$(APITESTSDIR)/Makefile
 include $(SRC_PATH)/$(DNNTESTSDIR)/Makefile
 
