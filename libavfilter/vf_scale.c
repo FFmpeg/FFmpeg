@@ -237,31 +237,9 @@ static int config_props(AVFilterLink *outlink)
                                         &w, &h)) < 0)
         goto fail;
 
-    /* Note that force_original_aspect_ratio may overwrite the previous set
-     * dimensions so that it is not divisible by the set factors anymore
-     * unless force_divisible_by is defined as well */
-    if (scale->force_original_aspect_ratio) {
-        int tmp_w = av_rescale(h, inlink->w, inlink->h);
-        int tmp_h = av_rescale(w, inlink->h, inlink->w);
-
-        if (scale->force_original_aspect_ratio == 1) {
-             w = FFMIN(tmp_w, w);
-             h = FFMIN(tmp_h, h);
-             if (scale->force_divisible_by > 1) {
-                 // round down
-                 w = w / scale->force_divisible_by * scale->force_divisible_by;
-                 h = h / scale->force_divisible_by * scale->force_divisible_by;
-             }
-        } else {
-             w = FFMAX(tmp_w, w);
-             h = FFMAX(tmp_h, h);
-             if (scale->force_divisible_by > 1) {
-                 // round up
-                 w = (w + scale->force_divisible_by - 1) / scale->force_divisible_by * scale->force_divisible_by;
-                 h = (h + scale->force_divisible_by - 1) / scale->force_divisible_by * scale->force_divisible_by;
-             }
-        }
-    }
+    ff_scale_adjust_dimensions(inlink, &w, &h,
+                               scale->force_original_aspect_ratio,
+                               scale->force_divisible_by);
 
     if (w > INT_MAX || h > INT_MAX ||
         (h * inlink->w) > INT_MAX  ||

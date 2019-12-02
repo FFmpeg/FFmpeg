@@ -21,8 +21,28 @@
 
 #include "avfilter.h"
 
+/**
+ * Parse and evaluate string expressions for width and height. Upon success,
+ * ff_scale_adjust_dimensions must be called with evaluated width and height
+ * to obtain actual target dimensions.
+ *
+ * Returns 0 upon success, negative value if one of the expressions could
+ * not be parsed or if NaN was the result of their evaluation.
+ */
 int ff_scale_eval_dimensions(void *ctx,
     const char *w_expr, const char *h_expr,
     AVFilterLink *inlink, AVFilterLink *outlink,
     int *ret_w, int *ret_h);
+
+/**
+ * Transform evaluated width and height obtained from ff_scale_eval_dimensions
+ * into actual target width and height for scaling. Adjustment can occur if one
+ * or both of the evaluated values are of the form '-n' or if
+ * force_original_aspect_ratio is set.
+ *
+ * Returns 0.
+ */
+int ff_scale_adjust_dimensions(AVFilterLink *inlink,
+    int *ret_w, int *ret_h,
+    int force_original_aspect_ratio, int force_divisible_by);
 #endif

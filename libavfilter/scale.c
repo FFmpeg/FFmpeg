@@ -111,8 +111,6 @@ int ff_scale_eval_dimensions(void *log_ctx,
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(inlink->format);
     const AVPixFmtDescriptor *out_desc = av_pix_fmt_desc_get(outlink->format);
     const char *expr;
-    int w, h;
-    int factor_w, factor_h;
     int eval_w, eval_h;
     int ret;
     const char scale2ref = outlink->src->nb_inputs == 2 && outlink->src->inputs[1] == inlink;
@@ -172,10 +170,30 @@ int ff_scale_eval_dimensions(void *log_ctx,
         goto fail;
     eval_w = (int) res == 0 ? inlink->w : (int) res;
 
-    w = eval_w;
-    h = eval_h;
+    *ret_w = eval_w;
+    *ret_h = eval_h;
 
-    /* Check if it is requested that the result has to be divisible by a some
+    return 0;
+
+fail:
+    av_log(log_ctx, AV_LOG_ERROR,
+           "Error when evaluating the expression '%s'.\n"
+           "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
+           expr, w_expr, h_expr);
+    return ret;
+}
+
+int ff_scale_adjust_dimensions(AVFilterLink *inlink,
+    int *ret_w, int *ret_h,
+    int force_original_aspect_ratio, int force_divisible_by)
+{
+    int w, h;
+    int factor_w, factor_h;
+
+    w = *ret_w;
+    h = *ret_h;
+
+    /* Check if it is requested that the result has to be divisible by some
      * factor (w or h = -n with n being the factor). */
     factor_w = 1;
     factor_h = 1;
@@ -192,22 +210,41 @@ int ff_scale_eval_dimensions(void *log_ctx,
     }
 
     /* Make sure that the result is divisible by the factor we determined
-     * earlier. If no factor was set, it is nothing will happen as the default
+     * earlier. If no factor was set, nothing will happen as the default
      * factor is 1 */
     if (w < 0)
         w = av_rescale(h, inlink->w, inlink->h * factor_w) * factor_w;
     if (h < 0)
         h = av_rescale(w, inlink->h, inlink->w * factor_h) * factor_h;
 
+    /* Note that force_original_aspect_ratio may overwrite the previous set
+     * dimensions so that it is not divisible by the set factors anymore
+     * unless force_divisible_by is defined as well */
+    if (force_original_aspect_ratio) {
+        int tmp_w = av_rescale(h, inlink->w, inlink->h);
+        int tmp_h = av_rescale(w, inlink->h, inlink->w);
+
+        if (force_original_aspect_ratio == 1) {
+             w = FFMIN(tmp_w, w);
+             h = FFMIN(tmp_h, h);
+             if (force_divisible_by > 1) {
+                 // round down
+                 w = w / force_divisible_by * force_divisible_by;
+                 h = h / force_divisible_by * force_divisible_by;
+             }
+        } else {
+             w = FFMAX(tmp_w, w);
+             h = FFMAX(tmp_h, h);
+             if (force_divisible_by > 1) {
+                 // round up
+                 w = (w + force_divisible_by - 1) / force_divisible_by * force_divisible_by;
+                 h = (h + force_divisible_by - 1) / force_divisible_by * force_divisible_by;
+             }
+        }
+    }
+
     *ret_w = w;
     *ret_h = h;
 
     return 0;
-
-fail:
-    av_log(log_ctx, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'.\n"
-           "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
-           expr, w_expr, h_expr);
-    return ret;
 }
