@@ -2989,10 +2989,10 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 }
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
-                                int *buf_size, int type,
+                                int size, int type,
                                 uint32_t lace_size[256], int *laces)
 {
-    int n, size = *buf_size;
+    int n;
     uint8_t *data = *buf;
 
     if (!type) {
@@ -3079,7 +3079,6 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     }
 
     *buf      = data;
-    *buf_size = size;
 
     return 0;
 }
@@ -3574,7 +3573,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         }
     }
 
-    res = matroska_parse_laces(matroska, &data, &size, (flags & 0x06) >> 1,
+    res = matroska_parse_laces(matroska, &data, size, (flags & 0x06) >> 1,
                                lace_size, &laces);
     if (res < 0)
         return res;
@@ -3596,11 +3595,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 
     for (n = 0; n < laces; n++) {
         int64_t lace_duration = block_duration*(n+1) / laces - block_duration*n / laces;
-
-        if (lace_size[n] > size) {
-            av_log(matroska->ctx, AV_LOG_ERROR, "Invalid packet size\n");
-            break;
-        }
 
         if ((st->codecpar->codec_id == AV_CODEC_ID_RA_288 ||
              st->codecpar->codec_id == AV_CODEC_ID_COOK   ||
@@ -3633,7 +3627,6 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         if (timecode != AV_NOPTS_VALUE)
             timecode = lace_duration ? timecode + lace_duration : AV_NOPTS_VALUE;
         data += lace_size[n];
-        size -= lace_size[n];
     }
 
     return 0;
