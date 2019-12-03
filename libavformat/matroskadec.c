@@ -2990,19 +2990,14 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
                                 int *buf_size, int type,
-                                uint32_t **lace_buf, int *laces)
+                                uint32_t lace_size[256], int *laces)
 {
     int res = 0, n, size = *buf_size;
     uint8_t *data = *buf;
-    uint32_t *lace_size;
 
     if (!type) {
         *laces    = 1;
-        *lace_buf = av_malloc(sizeof(**lace_buf));
-        if (!*lace_buf)
-            return AVERROR(ENOMEM);
-
-        *lace_buf[0] = size;
+        lace_size[0] = size;
         return 0;
     }
 
@@ -3010,9 +3005,6 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     *laces    = *data + 1;
     data     += 1;
     size     -= 1;
-    lace_size = av_malloc_array(*laces, sizeof(*lace_size));
-    if (!lace_size)
-        return AVERROR(ENOMEM);
 
     switch (type) {
     case 0x1: /* Xiph lacing */
@@ -3093,7 +3085,6 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     }
 
     *buf      = data;
-    *lace_buf = lace_size;
     *buf_size = size;
 
     return res;
@@ -3531,7 +3522,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     int res = 0;
     AVStream *st;
     int16_t block_time;
-    uint32_t *lace_size = NULL;
+    uint32_t lace_size[256];
     int n, flags, laces = 0;
     uint64_t num;
     int trust_default_duration = 1;
@@ -3590,10 +3581,9 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     }
 
     res = matroska_parse_laces(matroska, &data, &size, (flags & 0x06) >> 1,
-                               &lace_size, &laces);
-
-    if (res)
-        goto end;
+                               lace_size, &laces);
+    if (res < 0)
+        return res;
 
     if (track->audio.samplerate == 8000) {
         // If this is needed for more codecs, then add them here
@@ -3627,7 +3617,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
                                           lace_size[n],
                                           timecode, pos);
             if (res)
-                goto end;
+                return res;
 
         } else if (st->codecpar->codec_id == AV_CODEC_ID_WEBVTT) {
             res = matroska_parse_webvtt(matroska, track, st,
@@ -3635,7 +3625,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
                                         timecode, lace_duration,
                                         pos);
             if (res)
-                goto end;
+                return res;
         } else {
             res = matroska_parse_frame(matroska, track, st, buf, data, lace_size[n],
                                        timecode, lace_duration, pos,
@@ -3643,7 +3633,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
                                        additional, additional_id, additional_size,
                                        discard_padding);
             if (res)
-                goto end;
+                return res;
         }
 
         if (timecode != AV_NOPTS_VALUE)
@@ -3652,9 +3642,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
         size -= lace_size[n];
     }
 
-end:
-    av_free(lace_size);
-    return res;
+    return 0;
 }
 
 static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
