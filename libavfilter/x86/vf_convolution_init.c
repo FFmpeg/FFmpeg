@@ -27,7 +27,7 @@
 void ff_filter_3x3_sse4(uint8_t *dst, int width,
                         float rdiv, float bias, const int *const matrix,
                         const uint8_t *c[], int peak, int radius,
-                        int dstride, int stride);
+                        int dstride, int stride, int size);
 
 av_cold void ff_convolution_init_x86(ConvolutionContext *s)
 {

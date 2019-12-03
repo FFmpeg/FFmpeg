@@ -57,7 +57,7 @@ typedef struct ConvolutionContext {
     void (*filter[4])(uint8_t *dst, int width,
                       float rdiv, float bias, const int *const matrix,
                       const uint8_t *c[], int peak, int radius,
-                      int dstride, int stride);
+                      int dstride, int stride, int size);
 } ConvolutionContext;
 
 void ff_convolution_init_x86(ConvolutionContext *s);
