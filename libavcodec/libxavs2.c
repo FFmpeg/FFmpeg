@@ -67,13 +67,13 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     /* get API handler */
     cae->api = xavs2_api_get(bit_depth);
     if (!cae->api) {
-        av_log(avctx, AV_LOG_ERROR, "api get failed\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to get xavs2 api context\n");
         return AVERROR_EXTERNAL;
     }
 
     cae->param = cae->api->opt_alloc();
     if (!cae->param) {
-        av_log(avctx, AV_LOG_ERROR, "param alloc failed\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to alloc xavs2 parameters\n");
         return AVERROR(ENOMEM);
     }
 
@@ -121,7 +121,7 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
     cae->encoder = cae->api->encoder_create(cae->param);
 
     if (!cae->encoder) {
-        av_log(avctx, AV_LOG_ERROR, "Can not create encoder. Null pointer returned\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to create xavs2 encoder instance.\n");
         return AVERROR(EINVAL);
     }
 
@@ -180,7 +180,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* create the XAVS2 video encoder */
     /* read frame data and send to the XAVS2 video encoder */
     if (cae->api->encoder_get_buffer(cae->encoder, &pic) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "failed to get frame buffer\n");
+        av_log(avctx, AV_LOG_ERROR, "Failed to get xavs2 frame buffer\n");
         return AVERROR_EXTERNAL;
     }
     if (frame) {
@@ -211,7 +211,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         ret = cae->api->encoder_encode(cae->encoder, &pic, &cae->packet);
 
         if (ret) {
-            av_log(avctx, AV_LOG_ERROR, "encode failed\n");
+            av_log(avctx, AV_LOG_ERROR, "Encoding error occured.\n");
             return AVERROR_EXTERNAL;
         }
 
@@ -221,7 +221,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
 
     if ((cae->packet.len) && (cae->packet.state != XAVS2_STATE_FLUSH_END)) {
         if (av_new_packet(pkt, cae->packet.len) < 0) {
-            av_log(avctx, AV_LOG_ERROR, "packet alloc failed\n");
+            av_log(avctx, AV_LOG_ERROR, "Failed to alloc xavs2 packet.\n");
             cae->api->encoder_packet_unref(cae->encoder, &cae->packet);
             return AVERROR(ENOMEM);
         }
