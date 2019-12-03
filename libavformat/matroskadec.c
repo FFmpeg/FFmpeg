@@ -2545,6 +2545,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             memcpy(&extradata[12], track->codec_priv.data,
                    track->codec_priv.size);
         } else if (codec_id == AV_CODEC_ID_TTA) {
+            uint8_t *ptr;
             if (track->audio.channels > UINT16_MAX ||
                 track->audio.bitdepth > UINT16_MAX) {
                 av_log(matroska->ctx, AV_LOG_WARNING,
@@ -2562,16 +2563,15 @@ static int matroska_parse_tracks(AVFormatContext *s)
             extradata      = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!extradata)
                 return AVERROR(ENOMEM);
-            ffio_init_context(&b, extradata, extradata_size, 1,
-                              NULL, NULL, NULL, NULL);
-            avio_write(&b, "TTA1", 4);
-            avio_wl16(&b, 1);
-            avio_wl16(&b, track->audio.channels);
-            avio_wl16(&b, track->audio.bitdepth);
-            avio_wl32(&b, track->audio.out_samplerate);
-            avio_wl32(&b, av_rescale((matroska->duration * matroska->time_scale),
-                                     track->audio.out_samplerate,
-                                     AV_TIME_BASE * 1000));
+            ptr = extradata;
+            bytestream_put_be32(&ptr, AV_RB32("TTA1"));
+            bytestream_put_le16(&ptr, 1);
+            bytestream_put_le16(&ptr, track->audio.channels);
+            bytestream_put_le16(&ptr, track->audio.bitdepth);
+            bytestream_put_le32(&ptr, track->audio.out_samplerate);
+            bytestream_put_le32(&ptr, av_rescale(matroska->duration * matroska->time_scale,
+                                                 track->audio.out_samplerate,
+                                                 AV_TIME_BASE * 1000));
         } else if (codec_id == AV_CODEC_ID_RV10 ||
                    codec_id == AV_CODEC_ID_RV20 ||
                    codec_id == AV_CODEC_ID_RV30 ||
