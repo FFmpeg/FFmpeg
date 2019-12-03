@@ -700,15 +700,14 @@ static int draw_legend(AVFilterContext *ctx, int samples)
 
     drawtext(s->outpicref, 2, outlink->h - 10, "CREATED BY LIBAVFILTER", 0);
     drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, outlink->h - 10, text, 0);
+    av_freep(&text);
     if (s->stop) {
-        char *text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
+        text = av_asprintf("Zoom: %d Hz - %d Hz", s->start, s->stop);
         if (!text)
             return AVERROR(ENOMEM);
         drawtext(s->outpicref, outlink->w - 2 - strlen(text) * 10, 3, text, 0);
         av_freep(&text);
     }
-
-    av_freep(&text);
 
     dst = s->outpicref->data[0] + (s->start_y - 1) * s->outpicref->linesize[0] + s->start_x - 1;
     for (x = 0; x < s->w + 1; x++)
