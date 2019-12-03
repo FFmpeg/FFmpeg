@@ -1024,28 +1024,17 @@ static int ebml_read_master(MatroskaDemuxContext *matroska,
 }
 
 /*
- * Read signed/unsigned "EBML" numbers.
+ * Read a signed "EBML number"
  * Return: number of bytes processed, < 0 on error
  */
-static int matroska_ebmlnum_uint(MatroskaDemuxContext *matroska,
-                                 uint8_t *data, uint32_t size, uint64_t *num)
-{
-    AVIOContext pb;
-    ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
-    return ebml_read_num(matroska, &pb, FFMIN(size, 8), num, 1);
-}
-
-/*
- * Same as above, but signed.
- */
 static int matroska_ebmlnum_sint(MatroskaDemuxContext *matroska,
-                                 uint8_t *data, uint32_t size, int64_t *num)
+                                 AVIOContext *pb, int64_t *num)
 {
     uint64_t unum;
     int res;
 
     /* read as unsigned number first */
-    if ((res = matroska_ebmlnum_uint(matroska, data, size, &unum)) < 0)
+    if ((res = ebml_read_num(matroska, pb, 8, &unum, 1)) < 0)
         return res;
 
     /* make signed (weird way) */
@@ -2989,7 +2978,7 @@ static void matroska_clear_queue(MatroskaDemuxContext *matroska)
 }
 
 static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
-                                int size, int type,
+                                int size, int type, AVIOContext *pb,
                                 uint32_t lace_size[256], int *laces)
 {
     int n;
@@ -3047,27 +3036,33 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
     {
         uint64_t num;
         uint64_t total;
-        n = matroska_ebmlnum_uint(matroska, data, size, &num);
+        int offset;
+
+        avio_skip(pb, 4);
+
+        n = ebml_read_num(matroska, pb, 8, &num, 1);
         if (n < 0)
             return n;
         if (num > INT_MAX)
             return AVERROR_INVALIDDATA;
-        data += n;
-        size -= n;
+
         total = lace_size[0] = num;
+        offset = n;
         for (n = 1; n < *laces - 1; n++) {
             int64_t snum;
             int r;
-            r = matroska_ebmlnum_sint(matroska, data, size, &snum);
+            r = matroska_ebmlnum_sint(matroska, pb, &snum);
             if (r < 0)
                 return r;
             if (lace_size[n - 1] + snum > (uint64_t)INT_MAX)
                 return AVERROR_INVALIDDATA;
-            data        += r;
-            size        -= r;
+
             lace_size[n] = lace_size[n - 1] + snum;
             total       += lace_size[n];
+            offset      += r;
         }
+        data += offset;
+        size -= offset;
         if (size <= total) {
             return AVERROR_INVALIDDATA;
         }
@@ -3510,6 +3505,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 {
     uint64_t timecode = AV_NOPTS_VALUE;
     MatroskaTrack *track;
+    AVIOContext pb;
     int res = 0;
     AVStream *st;
     int16_t block_time;
@@ -3518,9 +3514,10 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     uint64_t num;
     int trust_default_duration = 1;
 
-    if ((n = matroska_ebmlnum_uint(matroska, data, size, &num)) < 0) {
+    ffio_init_context(&pb, data, size, 0, NULL, NULL, NULL, NULL);
+
+    if ((n = ebml_read_num(matroska, &pb, 8, &num, 1)) < 0)
         return n;
-    }
     data += n;
     size -= n;
 
@@ -3572,7 +3569,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
     }
 
     res = matroska_parse_laces(matroska, &data, size, (flags & 0x06) >> 1,
-                               lace_size, &laces);
+                               &pb, lace_size, &laces);
     if (res < 0) {
         av_log(matroska->ctx, AV_LOG_ERROR, "Error parsing frame sizes.\n");
         return res;
