@@ -2201,9 +2201,8 @@ static int hls_read_packet(AVFormatContext *s, AVPacket *pkt)
         ist = pls->ctx->streams[pls->pkt.stream_index];
         st = pls->main_streams[pls->pkt.stream_index];
 
-        *pkt = pls->pkt;
+        av_packet_move_ref(pkt, &pls->pkt);
         pkt->stream_index = st->index;
-        reset_packet(&c->playlists[minplaylist]->pkt);
 
         if (pkt->dts != AV_NOPTS_VALUE)
             c->cur_timestamp = av_rescale_q(pkt->dts,
