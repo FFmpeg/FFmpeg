@@ -132,28 +132,42 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
 static void xavs2_copy_frame_with_shift(xavs2_picture_t *pic, const AVFrame *frame, const int shift_in)
 {
-    int plane, hIdx, wIdx;
+    uint16_t *p_plane;
+    uint8_t *p_buffer;
+    int plane;
+    int hIdx;
+    int wIdx;
+
     for (plane = 0; plane < 3; plane++) {
-        int i_stride = pic->img.i_stride[plane];
+        p_plane = (uint16_t *)pic->img.img_planes[plane];
+        p_buffer = frame->data[plane];
         for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
-            uint16_t *p_plane = (uint16_t *)&pic->img.img_planes[plane][hIdx * i_stride];
-            uint8_t *p_buffer = frame->data[plane] + frame->linesize[plane] * hIdx;
-            memset(p_plane, 0, i_stride);
+            memset(p_plane, 0, pic->img.i_stride[plane]);
             for (wIdx = 0; wIdx < pic->img.i_width[plane]; wIdx++) {
                 p_plane[wIdx] = p_buffer[wIdx] << shift_in;
             }
+            p_plane += pic->img.i_stride[plane];
+            p_buffer += frame->linesize[plane];
         }
     }
 }
 
 static void xavs2_copy_frame(xavs2_picture_t *pic, const AVFrame *frame)
 {
-    int plane, hIdx;
+    uint8_t *p_plane;
+    uint8_t *p_buffer;
+    int plane;
+    int hIdx;
+    int stride;
+
     for (plane = 0; plane < 3; plane++) {
+        p_plane = pic->img.img_planes[plane];
+        p_buffer = frame->data[plane];
+        stride = pic->img.i_width[plane] * pic->img.in_sample_size;
         for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
-            memcpy( pic->img.img_planes[plane] + pic->img.i_stride[plane] * hIdx,
-                    frame->data[plane]+frame->linesize[plane] * hIdx,
-                    pic->img.i_width[plane] * pic->img.in_sample_size);
+            memcpy(p_plane, p_buffer, stride);
+            p_plane += pic->img.i_stride[plane];
+            p_buffer += frame->linesize[plane];
         }
     }
 }
