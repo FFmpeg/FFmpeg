@@ -2558,7 +2558,7 @@ static int matroska_parse_tracks(AVFormatContext *s)
             }
             if (track->audio.out_samplerate < 0 || track->audio.out_samplerate > INT_MAX)
                 return AVERROR_INVALIDDATA;
-            extradata_size = 30;
+            extradata_size = 22;
             extradata      = av_mallocz(extradata_size + AV_INPUT_BUFFER_PADDING_SIZE);
             if (!extradata)
                 return AVERROR(ENOMEM);

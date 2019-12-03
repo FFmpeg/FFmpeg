@@ -129,7 +129,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
 
     s->avctx = avctx;
 
-    // 30bytes includes TTA1 header
+    // 22 bytes for a TTA1 header
     if (avctx->extradata_size < 22)
         return AVERROR_INVALIDDATA;
 
