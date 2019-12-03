@@ -59,7 +59,7 @@ typedef struct XAVS2EContext {
 
 static av_cold int xavs2_init(AVCodecContext *avctx)
 {
-    XAVS2EContext *cae= avctx->priv_data;
+    XAVS2EContext *cae = avctx->priv_data;
     int bit_depth, code;
 
     bit_depth = avctx->pix_fmt == AV_PIX_FMT_YUV420P ? 8 : 10;
@@ -115,15 +115,13 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
         xavs2_opt_set2("InitialQP",     "%d", cae->qp);
     }
 
-
     ff_mpeg12_find_best_frame_rate(avctx->framerate, &code, NULL, NULL, 0);
-
     xavs2_opt_set2("FrameRate",   "%d", code);
 
     cae->encoder = cae->api->encoder_create(cae->param);
 
     if (!cae->encoder) {
-        av_log(avctx,AV_LOG_ERROR, "Can not create encoder. Null pointer returned\n");
+        av_log(avctx, AV_LOG_ERROR, "Can not create encoder. Null pointer returned\n");
         return AVERROR(EINVAL);
     }
 
@@ -182,7 +180,7 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     /* create the XAVS2 video encoder */
     /* read frame data and send to the XAVS2 video encoder */
     if (cae->api->encoder_get_buffer(cae->encoder, &pic) < 0) {
-        av_log(avctx,AV_LOG_ERROR, "failed to get frame buffer\n");
+        av_log(avctx, AV_LOG_ERROR, "failed to get frame buffer\n");
         return AVERROR_EXTERNAL;
     }
     if (frame) {
@@ -221,9 +219,8 @@ static int xavs2_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
         cae->api->encoder_encode(cae->encoder, NULL, &cae->packet);
     }
 
-    if ((cae->packet.len) && (cae->packet.state != XAVS2_STATE_FLUSH_END)){
-
-        if (av_new_packet(pkt, cae->packet.len) < 0){
+    if ((cae->packet.len) && (cae->packet.state != XAVS2_STATE_FLUSH_END)) {
+        if (av_new_packet(pkt, cae->packet.len) < 0) {
             av_log(avctx, AV_LOG_ERROR, "packet alloc failed\n");
             cae->api->encoder_packet_unref(cae->encoder, &cae->packet);
             return AVERROR(ENOMEM);
