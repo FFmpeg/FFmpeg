@@ -132,16 +132,15 @@ static av_cold int xavs2_init(AVCodecContext *avctx)
 
 static void xavs2_copy_frame_with_shift(xavs2_picture_t *pic, const AVFrame *frame, const int shift_in)
 {
-    int j, k;
-    for (k = 0; k < 3; k++) {
-        int i_stride = pic->img.i_stride[k];
-        for (j = 0; j < pic->img.i_lines[k]; j++) {
-            uint16_t *p_plane = (uint16_t *)&pic->img.img_planes[k][j * i_stride];
-            int i;
-            uint8_t *p_buffer = frame->data[k] + frame->linesize[k] * j;
+    int plane, hIdx, wIdx;
+    for (plane = 0; plane < 3; plane++) {
+        int i_stride = pic->img.i_stride[plane];
+        for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
+            uint16_t *p_plane = (uint16_t *)&pic->img.img_planes[plane][hIdx * i_stride];
+            uint8_t *p_buffer = frame->data[plane] + frame->linesize[plane] * hIdx;
             memset(p_plane, 0, i_stride);
-            for (i = 0; i < pic->img.i_width[k]; i++) {
-                p_plane[i] = p_buffer[i] << shift_in;
+            for (wIdx = 0; wIdx < pic->img.i_width[plane]; wIdx++) {
+                p_plane[wIdx] = p_buffer[wIdx] << shift_in;
             }
         }
     }
@@ -149,12 +148,12 @@ static void xavs2_copy_frame_with_shift(xavs2_picture_t *pic, const AVFrame *fra
 
 static void xavs2_copy_frame(xavs2_picture_t *pic, const AVFrame *frame)
 {
-    int j, k;
-    for (k = 0; k < 3; k++) {
-        for (j = 0; j < pic->img.i_lines[k]; j++) {
-            memcpy( pic->img.img_planes[k] + pic->img.i_stride[k] * j,
-                    frame->data[k]+frame->linesize[k] * j,
-                    pic->img.i_width[k] * pic->img.in_sample_size);
+    int plane, hIdx;
+    for (plane = 0; plane < 3; plane++) {
+        for (hIdx = 0; hIdx < pic->img.i_lines[plane]; hIdx++) {
+            memcpy( pic->img.img_planes[plane] + pic->img.i_stride[plane] * hIdx,
+                    frame->data[plane]+frame->linesize[plane] * hIdx,
+                    pic->img.i_width[plane] * pic->img.in_sample_size);
         }
     }
 }
