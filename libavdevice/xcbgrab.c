@@ -146,6 +146,11 @@ static int xcbgrab_reposition(AVFormatContext *s,
     return 0;
 }
 
+static void xcbgrab_image_reply_free(void *opaque, uint8_t *data)
+{
+    free(opaque);
+}
+
 static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
 {
     XCBGrabContext *c = s->priv_data;
@@ -154,7 +159,7 @@ static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
     xcb_drawable_t drawable = c->screen->root;
     xcb_generic_error_t *e = NULL;
     uint8_t *data;
-    int length, ret;
+    int length;
 
     iq  = xcb_get_image(c->conn, XCB_IMAGE_FORMAT_Z_PIXMAP, drawable,
                         c->x, c->y, c->width, c->height, ~0);
@@ -178,14 +183,18 @@ static int xcbgrab_frame(AVFormatContext *s, AVPacket *pkt)
     data   = xcb_get_image_data(img);
     length = xcb_get_image_data_length(img);
 
-    ret = av_new_packet(pkt, length);
+    av_init_packet(pkt);
 
-    if (!ret)
-        memcpy(pkt->data, data, length);
+    pkt->buf = av_buffer_create(data, length, xcbgrab_image_reply_free, img, 0);
+    if (!pkt->buf) {
+        free(img);
+        return AVERROR(ENOMEM);
+    }
 
-    free(img);
+    pkt->data = data;
+    pkt->size = length;
 
-    return ret;
+    return 0;
 }
 
 static void wait_frame(AVFormatContext *s, AVPacket *pkt)
