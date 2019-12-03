@@ -3048,11 +3048,10 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
         uint64_t num;
         uint64_t total;
         n = matroska_ebmlnum_uint(matroska, data, size, &num);
-        if (n < 0 || num > INT_MAX) {
-            av_log(matroska->ctx, AV_LOG_INFO,
-                   "EBML block data error\n");
-            return n < 0 ? n : AVERROR_INVALIDDATA;
-        }
+        if (n < 0)
+            return n;
+        if (num > INT_MAX)
+            return AVERROR_INVALIDDATA;
         data += n;
         size -= n;
         total = lace_size[0] = num;
@@ -3060,11 +3059,10 @@ static int matroska_parse_laces(MatroskaDemuxContext *matroska, uint8_t **buf,
             int64_t snum;
             int r;
             r = matroska_ebmlnum_sint(matroska, data, size, &snum);
-            if (r < 0 || lace_size[n - 1] + snum > (uint64_t)INT_MAX) {
-                av_log(matroska->ctx, AV_LOG_INFO,
-                       "EBML block data error\n");
-                return r < 0 ? r : AVERROR_INVALIDDATA;
-            }
+            if (r < 0)
+                return r;
+            if (lace_size[n - 1] + snum > (uint64_t)INT_MAX)
+                return AVERROR_INVALIDDATA;
             data        += r;
             size        -= r;
             lace_size[n] = lace_size[n - 1] + snum;
@@ -3575,8 +3573,10 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 
     res = matroska_parse_laces(matroska, &data, size, (flags & 0x06) >> 1,
                                lace_size, &laces);
-    if (res < 0)
+    if (res < 0) {
+        av_log(matroska->ctx, AV_LOG_ERROR, "Error parsing frame sizes.\n");
         return res;
+    }
 
     if (track->audio.samplerate == 8000) {
         // If this is needed for more codecs, then add them here
