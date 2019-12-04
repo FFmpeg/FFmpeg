@@ -159,6 +159,10 @@ static av_cold int libx265_encode_init(AVCodecContext *avctx)
         // x265 validates the parameters internally
         ctx->params->vui.colorPrimaries          = avctx->color_primaries;
         ctx->params->vui.transferCharacteristics = avctx->color_trc;
+#if X265_BUILD >= 159
+        if (avctx->color_trc == AVCOL_TRC_ARIB_STD_B67)
+            ctx->params->preferredTransferCharacteristics = ctx->params->vui.transferCharacteristics;
+#endif
         ctx->params->vui.matrixCoeffs            = avctx->colorspace;
     }
 
