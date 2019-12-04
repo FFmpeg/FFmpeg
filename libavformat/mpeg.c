@@ -713,6 +713,18 @@ static int vobsub_probe(const AVProbeData *p)
     return 0;
 }
 
+static int vobsub_read_close(AVFormatContext *s)
+{
+    VobSubDemuxContext *vobsub = s->priv_data;
+    int i;
+
+    for (i = 0; i < s->nb_streams; i++)
+        ff_subtitles_queue_clean(&vobsub->q[i]);
+    if (vobsub->sub_ctx)
+        avformat_close_input(&vobsub->sub_ctx);
+    return 0;
+}
+
 static int vobsub_read_header(AVFormatContext *s)
 {
     int i, ret = 0, header_parsed = 0, langidx = 0;
@@ -896,7 +908,8 @@ static int vobsub_read_header(AVFormatContext *s)
         memcpy(par->extradata, header.str, header.len);
     }
 end:
-
+    if (ret < 0)
+        vobsub_read_close(s);
     av_bprint_finalize(&header, NULL);
     return ret;
 }
@@ -1019,18 +1032,6 @@ static int vobsub_read_seek(AVFormatContext *s, int stream_index,
         stream_index = 0;
     return ff_subtitles_queue_seek(&vobsub->q[stream_index], s, stream_index,
                                    min_ts, ts, max_ts, flags);
-}
-
-static int vobsub_read_close(AVFormatContext *s)
-{
-    VobSubDemuxContext *vobsub = s->priv_data;
-    int i;
-
-    for (i = 0; i < s->nb_streams; i++)
-        ff_subtitles_queue_clean(&vobsub->q[i]);
-    if (vobsub->sub_ctx)
-        avformat_close_input(&vobsub->sub_ctx);
-    return 0;
 }
 
 static const AVOption options[] = {
