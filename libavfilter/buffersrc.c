@@ -62,7 +62,6 @@ typedef struct BufferSourceContext {
     uint64_t channel_layout;
     char    *channel_layout_str;
 
-    int got_format_from_params;
     int eof;
 } BufferSourceContext;
 
@@ -104,7 +103,6 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
     switch (ctx->filter->outputs[0].type) {
     case AVMEDIA_TYPE_VIDEO:
         if (param->format != AV_PIX_FMT_NONE) {
-            s->got_format_from_params = 1;
             s->pix_fmt = param->format;
         }
         if (param->width > 0)
@@ -124,7 +122,6 @@ int av_buffersrc_parameters_set(AVFilterContext *ctx, AVBufferSrcParameters *par
         break;
     case AVMEDIA_TYPE_AUDIO:
         if (param->format != AV_SAMPLE_FMT_NONE) {
-            s->got_format_from_params = 1;
             s->sample_fmt = param->format;
         }
         if (param->sample_rate > 0)
@@ -268,7 +265,7 @@ static av_cold int init_video(AVFilterContext *ctx)
 {
     BufferSourceContext *c = ctx->priv;
 
-    if (!(c->pix_fmt != AV_PIX_FMT_NONE || c->got_format_from_params) || !c->w || !c->h ||
+    if (c->pix_fmt == AV_PIX_FMT_NONE || !c->w || !c->h ||
         av_q2d(c->time_base) <= 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid parameters provided.\n");
         return AVERROR(EINVAL);
@@ -321,7 +318,7 @@ static av_cold int init_audio(AVFilterContext *ctx)
     BufferSourceContext *s = ctx->priv;
     int ret = 0;
 
-    if (!(s->sample_fmt != AV_SAMPLE_FMT_NONE || s->got_format_from_params)) {
+    if (s->sample_fmt == AV_SAMPLE_FMT_NONE) {
         av_log(ctx, AV_LOG_ERROR, "Sample format was not set or was invalid\n");
         return AVERROR(EINVAL);
     }
