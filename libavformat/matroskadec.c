@@ -249,6 +249,7 @@ typedef struct MatroskaTrack {
     AVStream *stream;
     int64_t end_timecode;
     int ms_compat;
+    int needs_decoding;
     uint64_t max_block_additional_id;
 
     uint32_t palette[AVPALETTE_COUNT];
@@ -2405,6 +2406,11 @@ static int matroska_parse_tracks(AVFormatContext *s)
                 }
             }
         }
+        track->needs_decoding = encodings && !encodings[0].type &&
+                                encodings[0].scope & 1          &&
+                                (encodings[0].compression.algo !=
+                                   MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP ||
+                                 encodings[0].compression.settings.size);
 
         for (j = 0; ff_mkv_codec_tags[j].id != AV_CODEC_ID_NONE; j++) {
             if (!strncmp(ff_mkv_codec_tags[j].str, track->codec_id,
@@ -3413,12 +3419,11 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
                                 int64_t discard_padding)
 {
-    MatroskaTrackEncoding *encodings = track->encodings.elem;
     uint8_t *pkt_data = data;
     int res = 0;
     AVPacket pktl, *pkt = &pktl;
 
-    if (encodings && !encodings->type && encodings->scope & 1) {
+    if (track->needs_decoding) {
         res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
         if (res < 0)
             return res;
