@@ -718,7 +718,6 @@ static int vobsub_read_header(AVFormatContext *s)
     int i, ret = 0, header_parsed = 0, langidx = 0;
     VobSubDemuxContext *vobsub = s->priv_data;
     size_t fname_len;
-    char *header_str = NULL;
     AVBPrint header;
     int64_t delay = 0;
     AVStream *st = NULL;
@@ -731,8 +730,7 @@ static int vobsub_read_header(AVFormatContext *s)
         char *ext;
         vobsub->sub_name = av_strdup(s->url);
         if (!vobsub->sub_name) {
-            ret = AVERROR(ENOMEM);
-            goto end;
+            return AVERROR(ENOMEM);
         }
 
         fname_len = strlen(vobsub->sub_name);
@@ -740,23 +738,22 @@ static int vobsub_read_header(AVFormatContext *s)
         if (fname_len < 4 || *(ext - 1) != '.') {
             av_log(s, AV_LOG_ERROR, "The input index filename is too short "
                    "to guess the associated .SUB file\n");
-            ret = AVERROR_INVALIDDATA;
-            goto end;
+            return AVERROR_INVALIDDATA;
         }
         memcpy(ext, !strncmp(ext, "IDX", 3) ? "SUB" : "sub", 3);
         av_log(s, AV_LOG_VERBOSE, "IDX/SUB: %s -> %s\n", s->url, vobsub->sub_name);
     }
 
     if (!(iformat = av_find_input_format("mpeg"))) {
-        ret = AVERROR_DEMUXER_NOT_FOUND;
-        goto end;
+        return AVERROR_DEMUXER_NOT_FOUND;
     }
 
     vobsub->sub_ctx = avformat_alloc_context();
     if (!vobsub->sub_ctx) {
-        ret = AVERROR(ENOMEM);
-        goto end;
+        return AVERROR(ENOMEM);
     }
+
+    av_bprint_init(&header, 0, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
 
     if ((ret = ff_copy_whiteblacklists(vobsub->sub_ctx, s)) < 0)
         goto end;
@@ -767,7 +764,6 @@ static int vobsub_read_header(AVFormatContext *s)
         goto end;
     }
 
-    av_bprint_init(&header, 0, INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE);
     while (!avio_feof(s->pb)) {
         char line[MAX_LINE_SIZE];
         int len = ff_get_line(s->pb, line, sizeof(line));
@@ -888,22 +884,20 @@ static int vobsub_read_header(AVFormatContext *s)
     }
 
     if (!av_bprint_is_complete(&header)) {
-        av_bprint_finalize(&header, NULL);
         ret = AVERROR(ENOMEM);
         goto end;
     }
-    av_bprint_finalize(&header, &header_str);
     for (i = 0; i < s->nb_streams; i++) {
         AVCodecParameters *par = s->streams[i]->codecpar;
         ret = ff_alloc_extradata(par, header.len);
         if (ret < 0) {
             goto end;
         }
-        memcpy(par->extradata, header_str, header.len);
+        memcpy(par->extradata, header.str, header.len);
     }
 end:
 
-    av_free(header_str);
+    av_bprint_finalize(&header, NULL);
     return ret;
 }
 
