@@ -17,6 +17,7 @@
  */
 
 #include "libavcodec/aacpsdsp.h"
+#include "libavutil/intfloat.h"
 
 #include "checkasm.h"
 
@@ -33,6 +34,16 @@
 } while (0)
 
 #define EPS 0.005
+
+static void clear_less_significant_bits(INTFLOAT *buf, int len, int bits)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        union av_intfloat32 u = { .f = buf[i] };
+        u.i &= (0xffffffff << bits);
+        buf[i] = u.f;
+    }
+}
 
 static void test_add_squares(void)
 {
@@ -198,6 +209,13 @@ static void test_stereo_interpolate(PSDSPContext *psdsp)
 
             randomize((INTFLOAT *)h, 2 * 4);
             randomize((INTFLOAT *)h_step, 2 * 4);
+            // Clear the least significant 14 bits of h_step, to avoid
+            // divergence when accumulating h_step BUF_SIZE times into
+            // a float variable which may or may not have extra intermediate
+            // precision. Therefore clear roughly log2(BUF_SIZE) less
+            // significant bits, to get the same result regardless of any
+            // extra precision in the accumulator.
+            clear_less_significant_bits((INTFLOAT *)h_step, 2 * 4, 14);
 
             call_ref(l0, r0, h, h_step, BUF_SIZE);
             call_new(l1, r1, h, h_step, BUF_SIZE);
