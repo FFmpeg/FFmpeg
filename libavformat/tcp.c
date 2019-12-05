@@ -61,6 +61,7 @@ typedef struct TCPContext {
     int fastopen_success;
     int dash_audio_tcp;
     int dash_video_tcp;
+    int enable_ipv6;
 } TCPContext;
 
 #define FAST_OPEN_FLAG 0x20000000
@@ -85,6 +86,7 @@ static const AVOption options[] = {
     { "fastopen", "enable fastopen",          OFFSET(fastopen), AV_OPT_TYPE_INT, { .i64 = 0},       0, INT_MAX, .flags = D|E },
     { "dash_audio_tcp", "dash audio tcp", OFFSET(dash_audio_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
     { "dash_video_tcp", "dash video tcp", OFFSET(dash_video_tcp), AV_OPT_TYPE_INT, { .i64 = 0},       0, 1, .flags = D|E },
+    { "enable_ipv6", "priority of use ipv6", OFFSET(enable_ipv6), AV_OPT_TYPE_INT, { .i64 = 1},       0, 1, .flags = D|E },
     { NULL }
 };
 
@@ -347,6 +349,8 @@ int ijk_tcp_getaddrinfo_nonblock(const char *hostname, const char *servname,
 static int tcp_open(URLContext *h, const char *uri, int flags)
 {
     struct addrinfo hints = { 0 }, *ai, *cur_ai;
+    struct addrinfo *cur_v4_ai = NULL;
+    struct addrinfo *cur_v6_ai = NULL;
     int port, fd = -1;
     TCPContext *s = h->priv_data;
     const char *p;
@@ -454,6 +458,31 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     }
     dns_time = (av_gettime() - dns_time) / 1000;
 
+    while (cur_ai->ai_next && cur_ai->ai_next->ai_addr) {
+        if (cur_ai->ai_family == AF_INET && cur_v4_ai == NULL) {
+            ipaddr = (struct sockaddr_in *)cur_ai->ai_addr;
+            c_ipaddr = (char *)inet_ntop(AF_INET, &ipaddr->sin_addr, ipbuf, MAX_IP_LEN);
+            if (!strcmp(c_ipaddr, "0.0.0.0")) {
+                cur_ai = cur_ai->ai_next;
+                continue;
+            }
+            cur_v4_ai = cur_ai;
+        } else if (cur_ai->ai_family == AF_INET6 && cur_v6_ai == NULL) {
+            cur_v6_ai = cur_ai;
+        }
+        if ((s->enable_ipv6 && cur_v6_ai != NULL) || cur_v4_ai != NULL) {
+            break;
+        }
+        cur_ai = cur_ai->ai_next;
+    }
+
+    if ((s->enable_ipv6 || cur_v4_ai == NULL) && cur_v6_ai != NULL) {
+        cur_ai = cur_v6_ai;
+    } else if (cur_v4_ai != NULL) {
+        cur_ai = cur_v4_ai;
+    }
+
+
  restart:
 #if HAVE_STRUCT_SOCKADDR_IN6
     // workaround for IOS9 getaddrinfo in IPv6 only network use hardcode IPv4 address can not resolve port number.
@@ -462,12 +491,14 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         if (!sockaddr_v6->sin6_port){
             sockaddr_v6->sin6_port = htons(port);
         }
-        c_ipaddr = (char *)inet_ntop(AF_INET, &sockaddr_v6->sin6_addr, ipbuf, MAX_IP_LEN);
+        c_ipaddr = (char *)inet_ntop(AF_INET6, &sockaddr_v6->sin6_addr, ipbuf, MAX_IP_LEN);
+        av_log(NULL, AV_LOG_INFO, "cur ipv6 c_ipaddr = %s\n", c_ipaddr);
     }
 #endif
     if (cur_ai->ai_family != AF_INET6 && cur_ai && cur_ai->ai_addr) {
         ipaddr = (struct sockaddr_in *)cur_ai->ai_addr;
         c_ipaddr = (char *)inet_ntop(AF_INET, &ipaddr->sin_addr, ipbuf, MAX_IP_LEN);
+        av_log(NULL, AV_LOG_INFO, "cur ipv4 c_ipaddr = %s\n", c_ipaddr);
     }
     if (dns_entry) {
         av_application_on_dns_did_open(s->app_ctx, hostname, c_ipaddr, DNS_TYPE_DNS_CACHE, dns_time, s->dash_audio_tcp, 0);
@@ -542,7 +573,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
                 av_log(NULL, AV_LOG_WARNING, "terminated by application in AVAPP_CTRL_DID_TCP_OPEN");
                 goto fail1;
             } else if (!dns_entry && !strstr(uri, control.ip) && s->dns_cache_timeout > 0) {
-                add_dns_cache_entry(uri, cur_ai, s->dns_cache_timeout);
+                add_dns_cache_entry(uri, ai, s->dns_cache_timeout);
                 av_log(NULL, AV_LOG_INFO, "add dns cache uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
             }
             av_log(NULL, AV_LOG_INFO, "tcp did open uri = %s, ip = %s port = %d\n", uri , control.ip, control.port);
