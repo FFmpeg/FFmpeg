@@ -203,6 +203,9 @@ static int decode_frame(AVCodecContext *avctx,
         for (int i = 0; i < s->nb_symbols; symbol++) {
             int prob;
 
+            if (get_bits_left(gb) < 4)
+                return AVERROR_INVALIDDATA;
+
             if (get_bits1(gb)) {
                 prob = get_bits(gb, 12);
             } else {
