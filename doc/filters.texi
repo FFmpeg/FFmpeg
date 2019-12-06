@@ -18122,10 +18122,12 @@ Enable complex vertical low-pass filtering.
 This will slightly less reduce interlace 'twitter' and Moire
 patterning but better retain detail and subjective sharpness impression.
 
+@item bypass_il
+Bypass already interlaced frames, only adjust the frame rate.
 @end table
 
-Vertical low-pass filtering can only be enabled for @option{mode}
-@var{interleave_top} and @var{interleave_bottom}.
+Vertical low-pass filtering and bypassing already interlaced frames can only be
+enabled for @option{mode} @var{interleave_top} and @var{interleave_bottom}.
 
 @end table
 
