@@ -57,6 +57,9 @@ typedef struct GEQContext {
     int interpolation;
     int is_rgb;
     int bps;
+
+    double *pixel_sums[NB_PLANES];
+    int needs_sum[NB_PLANES];
 } GEQContext;
 
 enum { Y = 0, U, V, A, G, B, R };
@@ -135,12 +138,87 @@ static inline double getpix(void *priv, double x, double y, int plane)
     }
 }
 
+static int calculate_sums(GEQContext *geq, int plane, int w, int h)
+{
+    int xi, yi;
+    AVFrame *picref = geq->picref;
+    const uint8_t *src = picref->data[plane];
+    int linesize = picref->linesize[plane];
+
+    if (!geq->pixel_sums[plane])
+        geq->pixel_sums[plane] = av_malloc_array(w, h * sizeof (*geq->pixel_sums[plane]));
+    if (!geq->pixel_sums[plane])
+        return AVERROR(ENOMEM);
+    if (geq->bps > 8)
+        linesize /= 2;
+    for (yi = 0; yi < h; yi ++) {
+        if (geq->bps > 8) {
+            const uint16_t *src16 = (const uint16_t*)src;
+            double linesum = 0;
+
+            for (xi = 0; xi < w; xi ++) {
+                linesum += src16[xi + yi * linesize];
+                geq->pixel_sums[plane][xi + yi * w] = linesum;
+            }
+        } else {
+            double linesum = 0;
+
+            for (xi = 0; xi < w; xi ++) {
+                linesum += src[xi + yi * linesize];
+                geq->pixel_sums[plane][xi + yi * w] = linesum;
+            }
+        }
+        if (yi)
+            for (xi = 0; xi < w; xi ++) {
+                geq->pixel_sums[plane][xi + yi * w] += geq->pixel_sums[plane][xi + yi * w - w];
+            }
+    }
+    return 0;
+}
+
+static inline double getpix_integrate_internal(GEQContext *geq, int x, int y, int plane, int w, int h)
+{
+    if (x > w - 1) {
+        double boundary =   getpix_integrate_internal(geq, w - 1, y, plane, w, h);
+        return 2*boundary - getpix_integrate_internal(geq, 2*(w - 1) - x, y, plane, w, h);
+    } else if (y > h - 1) {
+        double boundary =   getpix_integrate_internal(geq, x, h - 1, plane, w, h);
+        return 2*boundary - getpix_integrate_internal(geq, x, 2*(h - 1) - y, plane, w, h);
+    } else if (x < 0) {
+        if (x == -1) return 0;
+        return - getpix_integrate_internal(geq, -x-2, y, plane, w, h);
+    } else if (y < 0) {
+        if (y == -1) return 0;
+        return - getpix_integrate_internal(geq, x, -y-2, plane, w, h);
+    }
+
+    return geq->pixel_sums[plane][x + y * w];
+}
+
+static inline double getpix_integrate(void *priv, double x, double y, int plane) {
+    GEQContext *geq = priv;
+    AVFrame *picref = geq->picref;
+    const uint8_t *src = picref->data[plane];
+    const int w = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->width,  geq->hsub) : picref->width;
+    const int h = (plane == 1 || plane == 2) ? AV_CEIL_RSHIFT(picref->height, geq->vsub) : picref->height;
+
+    if (!src)
+        return 0;
+
+    return getpix_integrate_internal(geq, lrint(av_clipd(x, -w, 2*w)), lrint(av_clipd(y, -h, 2*h)), plane, w, h);
+}
+
 //TODO: cubic interpolate
 //TODO: keep the last few frames
 static double lum(void *priv, double x, double y) { return getpix(priv, x, y, 0); }
 static double  cb(void *priv, double x, double y) { return getpix(priv, x, y, 1); }
 static double  cr(void *priv, double x, double y) { return getpix(priv, x, y, 2); }
 static double alpha(void *priv, double x, double y) { return getpix(priv, x, y, 3); }
+
+static double   lumsum(void *priv, double x, double y) { return getpix_integrate(priv, x, y, 0); }
+static double    cbsum(void *priv, double x, double y) { return getpix_integrate(priv, x, y, 1); }
+static double    crsub(void *priv, double x, double y) { return getpix_integrate(priv, x, y, 2); }
+static double alphasum(void *priv, double x, double y) { return getpix_integrate(priv, x, y, 3); }
 
 static av_cold int geq_init(AVFilterContext *ctx)
 {
@@ -191,16 +269,32 @@ static av_cold int geq_init(AVFilterContext *ctx)
     }
 
     for (plane = 0; plane < NB_PLANES; plane++) {
-        static double (*p[])(void *, double, double) = { lum, cb, cr, alpha };
-        static const char *const func2_yuv_names[]    = { "lum", "cb", "cr", "alpha", "p", NULL };
-        static const char *const func2_rgb_names[]    = { "g", "b", "r", "alpha", "p", NULL };
+        static double (*p[])(void *, double, double) = {
+            lum   , cb   , cr   , alpha   ,
+            lumsum, cbsum, crsub, alphasum,
+        };
+        static const char *const func2_yuv_names[]    = {
+            "lum"   , "cb"   , "cr"   , "alpha"   , "p",
+            "lumsum", "cbsum", "crsum", "alphasum", "psum",
+            NULL };
+        static const char *const func2_rgb_names[]    = {
+            "g"   , "b"   , "r"   , "alpha"   , "p",
+            "gsum", "bsum", "rsum", "alphasum", "psum",
+            NULL };
         const char *const *func2_names       = geq->is_rgb ? func2_rgb_names : func2_yuv_names;
-        double (*func2[])(void *, double, double) = { lum, cb, cr, alpha, p[plane], NULL };
+        double (*func2[])(void *, double, double) = {
+            lum   , cb   , cr   , alpha   , p[plane],
+            lumsum, cbsum, crsub, alphasum, p[plane + 4],
+            NULL };
+        int counter[10] = {0};
 
         ret = av_expr_parse(&geq->e[plane], geq->expr_str[plane < 3 && geq->is_rgb ? plane+4 : plane], var_names,
                             NULL, NULL, func2_names, func2, 0, ctx);
         if (ret < 0)
             break;
+
+        av_expr_count_func(geq->e[plane], counter, FF_ARRAY_ELEMS(counter), 2);
+        geq->needs_sum[plane] = counter[5] + counter[6] + counter[7] + counter[8] + counter[9];
     }
 
 end:
@@ -357,6 +451,9 @@ static int geq_filter_frame(AVFilterLink *inlink, AVFrame *in)
         td.plane = plane;
         td.linesize = linesize;
 
+        if (geq->needs_sum[plane])
+            calculate_sums(geq, plane, width, height);
+
         ctx->internal->execute(ctx, slice_geq_filter, &td, NULL, FFMIN(height, nb_threads));
     }
 
@@ -371,6 +468,8 @@ static av_cold void geq_uninit(AVFilterContext *ctx)
 
     for (i = 0; i < FF_ARRAY_ELEMS(geq->e); i++)
         av_expr_free(geq->e[i]);
+    for (i = 0; i < NB_PLANES; i++)
+        av_freep(&geq->pixel_sums);
 }
 
 static const AVFilterPad geq_inputs[] = {
