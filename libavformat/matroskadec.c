@@ -3192,10 +3192,11 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
 }
 
 /* reconstruct full wavpack blocks from mangled matroska ones */
-static int matroska_parse_wavpack(MatroskaTrack *track, uint8_t *src,
-                                  uint8_t **pdst, int *size)
+static int matroska_parse_wavpack(MatroskaTrack *track,
+                                  uint8_t **data, int *size)
 {
     uint8_t *dst = NULL;
+    uint8_t *src = *data;
     int dstlen   = 0;
     int srclen   = *size;
     uint32_t samples;
@@ -3265,7 +3266,7 @@ static int matroska_parse_wavpack(MatroskaTrack *track, uint8_t *src,
 
     memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    *pdst = dst;
+    *data = dst;
     *size = dstlen;
 
     return 0;
@@ -3275,8 +3276,8 @@ fail:
     return ret;
 }
 
-static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
-                                 uint8_t **pdst, int *size)
+static int matroska_parse_prores(MatroskaTrack *track,
+                                 uint8_t **data, int *size)
 {
     uint8_t *dst;
     int dstlen = *size + 8;
@@ -3287,10 +3288,10 @@ static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
 
         AV_WB32(dst, dstlen);
         AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
-        memcpy(dst + 8, src, dstlen - 8);
+        memcpy(dst + 8, *data, dstlen - 8);
         memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
-    *pdst = dst;
+    *data = dst;
     *size = dstlen;
 
     return 0;
@@ -3413,54 +3414,46 @@ static int matroska_parse_webvtt(MatroskaDemuxContext *matroska,
 
 static int matroska_parse_frame(MatroskaDemuxContext *matroska,
                                 MatroskaTrack *track, AVStream *st,
-                                AVBufferRef *buf, uint8_t *data, int pkt_size,
+                                AVBufferRef *buf, uint8_t **data, int pkt_size,
                                 uint64_t timecode, uint64_t lace_duration,
                                 int64_t pos, int is_keyframe,
                                 uint8_t *additional, uint64_t additional_id, int additional_size,
                                 int64_t discard_padding)
 {
-    uint8_t *pkt_data = data;
+    uint8_t *pkt_data = *data;
     int res = 0;
     AVPacket pktl, *pkt = &pktl;
 
-    if (track->needs_decoding) {
-        res = matroska_decode_buffer(&pkt_data, &pkt_size, track);
-        if (res < 0)
-            return res;
-    }
-
     if (st->codecpar->codec_id == AV_CODEC_ID_WAVPACK) {
-        uint8_t *wv_data;
-        res = matroska_parse_wavpack(track, pkt_data, &wv_data, &pkt_size);
+        res = matroska_parse_wavpack(track, &pkt_data, &pkt_size);
         if (res < 0) {
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Error parsing a wavpack block.\n");
             goto fail;
         }
-        if (pkt_data != data)
-            av_freep(&pkt_data);
-        pkt_data = wv_data;
+        if (!buf)
+            av_freep(data);
+        buf = NULL;
     }
 
     if (st->codecpar->codec_id == AV_CODEC_ID_PRORES &&
         AV_RB32(pkt_data + 4)  != MKBETAG('i', 'c', 'p', 'f')) {
-        uint8_t *pr_data;
-        res = matroska_parse_prores(track, pkt_data, &pr_data, &pkt_size);
+        res = matroska_parse_prores(track, &pkt_data, &pkt_size);
         if (res < 0) {
             av_log(matroska->ctx, AV_LOG_ERROR,
                    "Error parsing a prores block.\n");
             goto fail;
         }
-        if (pkt_data != data)
-            av_freep(&pkt_data);
-        pkt_data = pr_data;
+        if (!buf)
+            av_freep(data);
+        buf = NULL;
     }
 
     if (!pkt_size && !additional_size)
         goto no_output;
 
     av_init_packet(pkt);
-    if (pkt_data != data)
+    if (!buf)
         pkt->buf = av_buffer_create(pkt_data, pkt_size + AV_INPUT_BUFFER_PADDING_SIZE,
                                     NULL, NULL, 0);
     else
@@ -3531,8 +3524,8 @@ FF_ENABLE_DEPRECATION_WARNINGS
 
 no_output:
 fail:
-    if (pkt_data != data)
-        av_freep(&pkt_data);
+    if (!buf)
+        av_freep(data);
     return res;
 }
 
@@ -3634,25 +3627,41 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, AVBufferRef *buf
 
     for (n = 0; n < laces; n++) {
         int64_t lace_duration = block_duration*(n+1) / laces - block_duration*n / laces;
+        uint8_t *out_data = data;
+        int      out_size = lace_size[n];
+
+        if (track->needs_decoding) {
+            res = matroska_decode_buffer(&out_data, &out_size, track);
+            if (res < 0)
+                return res;
+            /* Given that we are here means that out_data is no longer
+             * owned by buf, so set it to NULL. This depends upon
+             * zero-length header removal compression being ignored. */
+            av_assert1(out_data != data);
+            buf = NULL;
+        }
 
         if (track->audio.buf) {
-            res = matroska_parse_rm_audio(matroska, track, st, data,
-                                          lace_size[n],
+            res = matroska_parse_rm_audio(matroska, track, st,
+                                          out_data, out_size,
                                           timecode, pos);
+            if (!buf)
+                av_free(out_data);
             if (res)
                 return res;
-
         } else if (st->codecpar->codec_id == AV_CODEC_ID_WEBVTT) {
             res = matroska_parse_webvtt(matroska, track, st,
-                                        data, lace_size[n],
+                                        out_data, out_size,
                                         timecode, lace_duration,
                                         pos);
+            if (!buf)
+                av_free(out_data);
             if (res)
                 return res;
         } else {
-            res = matroska_parse_frame(matroska, track, st, buf, data, lace_size[n],
-                                       timecode, lace_duration, pos,
-                                       !n ? is_keyframe : 0,
+            res = matroska_parse_frame(matroska, track, st, buf, &out_data,
+                                       out_size, timecode, lace_duration,
+                                       pos, !n ? is_keyframe : 0,
                                        additional, additional_id, additional_size,
                                        discard_padding);
             if (res)
