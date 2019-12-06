@@ -1233,7 +1233,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         }
         for (i=0; i<=st; i++) {
             c->status[i].predictor  = bytestream2_get_le32u(&gb);
-            if (FFABS(c->status[i].predictor) > (1<<16))
+            if (FFABS((int64_t)c->status[i].predictor) > (1<<16))
                 return AVERROR_INVALIDDATA;
         }
 
