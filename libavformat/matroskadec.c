@@ -3119,12 +3119,12 @@ static int matroska_parse_rm_audio(MatroskaDemuxContext *matroska,
                                    uint8_t *data, int size, uint64_t timecode,
                                    int64_t pos)
 {
-    int a = st->codecpar->block_align;
-    int sps = track->audio.sub_packet_size;
-    int cfs = track->audio.coded_framesize;
-    int h   = track->audio.sub_packet_h;
+    const int a   = st->codecpar->block_align;
+    const int sps = track->audio.sub_packet_size;
+    const int cfs = track->audio.coded_framesize;
+    const int h   = track->audio.sub_packet_h;
+    const int w   = track->audio.frame_size;
     int y   = track->audio.sub_packet_cnt;
-    int w   = track->audio.frame_size;
     int x;
 
     if (!track->audio.pkt_cnt) {
@@ -3282,14 +3282,14 @@ static int matroska_parse_prores(MatroskaTrack *track,
     uint8_t *dst;
     int dstlen = *size + 8;
 
-        dst = av_malloc(dstlen + AV_INPUT_BUFFER_PADDING_SIZE);
-        if (!dst)
-            return AVERROR(ENOMEM);
+    dst = av_malloc(dstlen + AV_INPUT_BUFFER_PADDING_SIZE);
+    if (!dst)
+        return AVERROR(ENOMEM);
 
-        AV_WB32(dst, dstlen);
-        AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
-        memcpy(dst + 8, *data, dstlen - 8);
-        memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
+    AV_WB32(dst, dstlen);
+    AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
+    memcpy(dst + 8, *data, dstlen - 8);
+    memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
 
     *data = dst;
     *size = dstlen;
