@@ -3077,7 +3077,7 @@ static int decode_nal_units(HEVCContext *s, const uint8_t *buf, int length)
 
         if (s->avctx->skip_frame >= AVDISCARD_ALL ||
             (s->avctx->skip_frame >= AVDISCARD_NONREF
-            && ff_hevc_nal_is_nonref(nal->type)))
+            && ff_hevc_nal_is_nonref(nal->type)) || nal->nuh_layer_id > 0)
             continue;
 
         ret = decode_nal_unit(s, nal);

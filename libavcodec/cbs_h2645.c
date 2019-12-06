@@ -565,6 +565,9 @@ static int cbs_h2645_fragment_add_nals(CodedBitstreamContext *ctx,
         AVBufferRef *ref;
         size_t size = nal->size;
 
+        if (nal->nuh_layer_id > 0)
+            continue;
+
         // Remove trailing zeroes.
         while (size > 0 && nal->data[size - 1] == 0)
             --size;

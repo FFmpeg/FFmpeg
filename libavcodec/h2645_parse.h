@@ -56,6 +56,11 @@ typedef struct H2645NAL {
      */
     int temporal_id;
 
+    /*
+     * HEVC only, identifier of layer to which nal unit belongs
+     */
+    int nuh_layer_id;
+
     int skipped_bytes;
     int skipped_bytes_pos_size;
     int *skipped_bytes_pos;
