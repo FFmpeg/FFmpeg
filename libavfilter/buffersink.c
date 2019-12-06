@@ -125,6 +125,7 @@ int attribute_align_arg av_buffersink_get_samples(AVFilterContext *ctx,
     return get_frame_internal(ctx, frame, 0, nb_samples);
 }
 
+#if FF_API_NEXT
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
     static const int pixel_fmts[] = { AV_PIX_FMT_NONE };
@@ -144,6 +145,7 @@ AVABufferSinkParams *av_abuffersink_params_alloc(void)
         return NULL;
     return params;
 }
+#endif
 
 static av_cold int common_init(AVFilterContext *ctx)
 {
