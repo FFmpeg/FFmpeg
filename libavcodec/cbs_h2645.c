@@ -1395,7 +1395,7 @@ static int cbs_h2645_assemble_fragment(CodedBitstreamContext *ctx,
     max_size = 0;
     for (i = 0; i < frag->nb_units; i++) {
         // Start code + content with worst-case emulation prevention.
-        max_size += 3 + frag->units[i].data_size * 3 / 2;
+        max_size += 4 + frag->units[i].data_size * 3 / 2;
     }
 
     data = av_realloc(NULL, max_size + AV_INPUT_BUFFER_PADDING_SIZE);
