@@ -61,8 +61,6 @@ typedef struct BufferSinkContext {
 } BufferSinkContext;
 
 #define NB_ITEMS(list) (list ## _size / sizeof(*list))
-#define FIFO_INIT_SIZE 8
-#define FIFO_INIT_ELEMENT_SIZE sizeof(void *)
 
 int attribute_align_arg av_buffersink_get_frame(AVFilterContext *ctx, AVFrame *frame)
 {
