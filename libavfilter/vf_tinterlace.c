@@ -529,6 +529,7 @@ static int init_interlace(AVFilterContext *ctx)
     if (tinterlace->mode <= MODE_BFF)
         tinterlace->mode += MODE_INTERLEAVE_TOP;
 
+    tinterlace->flags |= TINTERLACE_FLAG_BYPASS_IL;
     if (tinterlace->lowpass == VLPF_LIN)
         tinterlace->flags |= TINTERLACE_FLAG_VLPF;
     if (tinterlace->lowpass == VLPF_CMP)
