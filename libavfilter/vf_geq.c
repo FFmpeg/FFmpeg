@@ -33,6 +33,8 @@
 #include "libavutil/pixdesc.h"
 #include "internal.h"
 
+#define NB_PLANES 4
+
 enum InterpolationMethods {
     INTERP_NEAREST,
     INTERP_BILINEAR,
@@ -44,7 +46,7 @@ enum                                   { VAR_X, VAR_Y, VAR_W, VAR_H, VAR_N, VAR_
 
 typedef struct GEQContext {
     const AVClass *class;
-    AVExpr *e[4];               ///< expressions for each plane
+    AVExpr *e[NB_PLANES];       ///< expressions for each plane
     char *expr_str[4+3];        ///< expression strings for each plane
     AVFrame *picref;            ///< current input buffer
     uint8_t *dst;               ///< reference pointer to the 8bits output
@@ -188,7 +190,7 @@ static av_cold int geq_init(AVFilterContext *ctx)
         goto end;
     }
 
-    for (plane = 0; plane < 4; plane++) {
+    for (plane = 0; plane < NB_PLANES; plane++) {
         static double (*p[])(void *, double, double) = { lum, cb, cr, alpha };
         static const char *const func2_yuv_names[]    = { "lum", "cb", "cr", "alpha", "p", NULL };
         static const char *const func2_rgb_names[]    = { "g", "b", "r", "alpha", "p", NULL };
