@@ -3239,11 +3239,8 @@ fail:
 static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
                                  uint8_t **pdst, int *size)
 {
-    uint8_t *dst = src;
-    int dstlen = *size;
-
-    if (AV_RB32(&src[4]) != MKBETAG('i', 'c', 'p', 'f')) {
-        dstlen += 8;
+    uint8_t *dst;
+    int dstlen = *size + 8;
 
         dst = av_malloc(dstlen + AV_INPUT_BUFFER_PADDING_SIZE);
         if (!dst)
@@ -3253,7 +3250,6 @@ static int matroska_parse_prores(MatroskaTrack *track, uint8_t *src,
         AV_WB32(dst + 4, MKBETAG('i', 'c', 'p', 'f'));
         memcpy(dst + 8, src, dstlen - 8);
         memset(dst + dstlen, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-    }
 
     *pdst = dst;
     *size = dstlen;
@@ -3408,7 +3404,8 @@ static int matroska_parse_frame(MatroskaDemuxContext *matroska,
         pkt_data = wv_data;
     }
 
-    if (st->codecpar->codec_id == AV_CODEC_ID_PRORES) {
+    if (st->codecpar->codec_id == AV_CODEC_ID_PRORES &&
+        AV_RB32(pkt_data + 4)  != MKBETAG('i', 'c', 'p', 'f')) {
         uint8_t *pr_data;
         res = matroska_parse_prores(track, pkt_data, &pr_data, &pkt_size);
         if (res < 0) {
