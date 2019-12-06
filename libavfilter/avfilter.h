@@ -947,7 +947,7 @@ AVFilterContext *avfilter_graph_get_filter(AVFilterGraph *graph, const char *nam
 /**
  * Create and add a filter instance into an existing graph.
  * The filter instance is created from the filter filt and inited
- * with the parameters args and opaque.
+ * with the parameter args. opaque is currently ignored.
  *
  * In case of success put in *filt_ctx the pointer to the created
  * filter instance, otherwise set *filt_ctx to NULL.
