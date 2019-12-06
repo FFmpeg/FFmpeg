@@ -15,6 +15,9 @@ libavutil:     2017-10-21
 
 API changes, most recent first:
 
+2019-12-27 - xxxxxxxxxx - lavu 56.38.100 - eval.h
+  Add av_expr_count_func().
+
 2019-12-xx - xxxxxxxxxx - lavu 56.37.100 - buffer.h
   Add av_buffer_pool_buffer_get_opaque().
 
