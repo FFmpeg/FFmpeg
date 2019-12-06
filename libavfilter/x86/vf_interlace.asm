@@ -49,7 +49,7 @@ SECTION .text
     pxor m2, m6, [srcq+hq]
     pavg%1 m0, m2
     pxor m0, m6
-    mova [dstq+hq], m0
+    movu [dstq+hq], m0
     add hq, mmsize
     jge .end
 
@@ -66,8 +66,8 @@ SECTION .text
     pavg%1 m1, m3
     pxor m0, m6
     pxor m1, m6
-    mova [dstq+hq], m0
-    mova [dstq+hq+mmsize], m1
+    movu [dstq+hq], m0
+    movu [dstq+hq+mmsize], m1
 
     add hq, 2*mmsize
     jl .loop
@@ -140,7 +140,7 @@ cglobal lowpass_line_complex, 5, 5, 8, dst, h, src, mref, pref
     pand m0, m6
     pandn m6, m1
     por m0, m6
-    mova [dstq], m0
+    movu [dstq], m0
 
     add dstq, mmsize
     add srcq, mmsize
@@ -201,8 +201,8 @@ cglobal lowpass_line_complex_12, 5, 5, 8, 16, dst, h, src, mref, pref, clip_max
     pandn m7, m3
     por m0, m6
     por m1, m7
-    mova [dstq], m0
-    mova [dstq+mmsize], m1
+    movu [dstq], m0
+    movu [dstq+mmsize], m1
 
     add dstq, 2*mmsize
     add srcq, 2*mmsize
