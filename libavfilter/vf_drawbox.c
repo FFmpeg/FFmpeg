@@ -292,7 +292,7 @@ static int process_command(AVFilterContext *ctx, const char *cmd, const char *ar
     ret = init(ctx);
     if (ret < 0)
         goto end;
-    ret = config_input(inlink);;
+    ret = config_input(inlink);
 end:
     if (ret < 0) {
         s->x = old_x;

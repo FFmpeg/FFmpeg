@@ -154,7 +154,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
             break;
         }
     }
- the_end: ;
+ the_end:
     if (set_dim_ret < 0)
         av_log(avctx, AV_LOG_ERROR, "Failed to set dimensions\n");
 

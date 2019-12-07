@@ -238,11 +238,11 @@ static int activate(AVFilterContext *ctx)
 
         ret = av_audio_fifo_peek(s->fifo[0], (void **)s->cache[0]->extended_data, available);
         if (ret < 0)
-            return ret;;
+            return ret;
 
         ret = av_audio_fifo_peek(s->fifo[1], (void **)s->cache[1]->extended_data, available);
         if (ret < 0)
-            return ret;;
+            return ret;
 
         out = ff_get_audio_buffer(ctx->outputs[0], out_samples);
         if (!out)

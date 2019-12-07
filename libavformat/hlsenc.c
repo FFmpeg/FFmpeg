@@ -475,7 +475,7 @@ static int flush_dynbuf(VariantStream *vs, int *range_length)
 static void reflush_dynbuf(VariantStream *vs, int *range_length)
 {
     // re-open buffer
-    avio_write(vs->out, vs->temp_buffer, *range_length);;
+    avio_write(vs->out, vs->temp_buffer, *range_length);
 }
 
 #if HAVE_DOS_PATHS
