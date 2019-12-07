@@ -610,7 +610,7 @@ static void decode_array_0000(APEContext *ctx, GetBitContext *gb,
     ksummin = rice->k ? (1 << rice->k + 6) : 0;
     for (; i < blockstodecode; i++) {
         out[i] = get_rice_ook(&ctx->gb, rice->k);
-        rice->ksum += out[i] - out[i - 64];
+        rice->ksum += out[i] - (unsigned)out[i - 64];
         while (rice->ksum < ksummin) {
             rice->k--;
             ksummin = rice->k ? ksummin >> 1 : 0;
