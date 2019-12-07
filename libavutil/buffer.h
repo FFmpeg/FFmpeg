@@ -285,6 +285,19 @@ void av_buffer_pool_uninit(AVBufferPool **pool);
 AVBufferRef *av_buffer_pool_get(AVBufferPool *pool);
 
 /**
+ * Query the original opaque parameter of an allocated buffer in the pool.
+ *
+ * @param ref a buffer reference to a buffer returned by av_buffer_pool_get.
+ * @return the opaque parameter set by the buffer allocator function of the
+ *         buffer pool.
+ *
+ * @note the opaque parameter of ref is used by the buffer pool implementation,
+ * therefore you have to use this function to access the original opaque
+ * parameter of an allocated buffer.
+ */
+void *av_buffer_pool_buffer_get_opaque(AVBufferRef *ref);
+
+/**
  * @}
  */
 

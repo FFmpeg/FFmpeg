@@ -20,6 +20,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "avassert.h"
 #include "buffer_internal.h"
 #include "common.h"
 #include "mem.h"
@@ -354,4 +355,11 @@ AVBufferRef *av_buffer_pool_get(AVBufferPool *pool)
         atomic_fetch_add_explicit(&pool->refcount, 1, memory_order_relaxed);
 
     return ret;
+}
+
+void *av_buffer_pool_buffer_get_opaque(AVBufferRef *ref)
+{
+    BufferPoolEntry *buf = ref->buffer->opaque;
+    av_assert0(buf);
+    return buf->opaque;
 }
