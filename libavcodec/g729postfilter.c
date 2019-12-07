@@ -486,14 +486,14 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
 
     if (refl_coeff > 0) {
         gt = (refl_coeff * G729_TILT_FACTOR_PLUS + 0x4000) >> 15;
-        fact = 0x4000; // 0.5 in (0.15)
-        sh_fact = 15;
+        fact = 0x2000; // 0.5 in (0.15)
+        sh_fact = 14;
     } else {
         gt = (refl_coeff * G729_TILT_FACTOR_MINUS + 0x4000) >> 15;
-        fact = 0x800; // 0.5 in (3.12)
-        sh_fact = 12;
+        fact = 0x400; // 0.5 in (3.12)
+        sh_fact = 11;
     }
-    ga = (fact << 15) / av_clip_int16(32768 - FFABS(gt));
+    ga = (fact << 16) / av_clip_int16(32768 - FFABS(gt));
     gt >>= 1;
 
     /* Apply tilt compensation filter to signal. */
@@ -503,12 +503,12 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
         tmp2 = (gt * res_pst[i-1]) * 2 + 0x4000;
         tmp2 = res_pst[i] + (tmp2 >> 15);
 
-        tmp2 = (tmp2 * ga * 2 + fact) >> sh_fact;
+        tmp2 = (tmp2 * ga + fact) >> sh_fact;
         out[i] = tmp2;
     }
     tmp2 = (gt * ht_prev_data) * 2 + 0x4000;
     tmp2 = res_pst[0] + (tmp2 >> 15);
-    tmp2 = (tmp2 * ga * 2 + fact) >> sh_fact;
+    tmp2 = (tmp2 * ga + fact) >> sh_fact;
     out[0] = tmp2;
 
     return tmp;
