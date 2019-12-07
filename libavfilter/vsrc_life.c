@@ -260,7 +260,7 @@ static av_cold int init(AVFilterContext *ctx)
     }
 
     av_log(ctx, AV_LOG_VERBOSE,
-           "s:%dx%d r:%d/%d rule:%s stay_rule:%d born_rule:%d stitch:%d seed:%"PRIu32"\n",
+           "s:%dx%d r:%d/%d rule:%s stay_rule:%d born_rule:%d stitch:%d seed:%"PRId64"\n",
            life->w, life->h, life->frame_rate.num, life->frame_rate.den,
            life->rule_str, life->stay_rule, life->born_rule, life->stitch,
            life->random_seed);
