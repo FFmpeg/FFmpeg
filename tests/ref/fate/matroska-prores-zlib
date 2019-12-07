@@ -1,0 +1,8 @@
+#extradata 0:        4, 0x040801a2
+#tb 0: 1/1000
+#media_type 0: video
+#codec_id 0: prores
+#dimensions 0: 1920x1080
+#sar 0: 1/1
+0,          0,          0,       33,    82240, 0x5271abe6
+0,         33,         33,       33,    82240, 0x5271abe6
