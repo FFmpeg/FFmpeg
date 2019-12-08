@@ -26,7 +26,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "scale.h"
+#include "scale_eval.h"
 #include "video.h"
 #include "vaapi_vpp.h"
 

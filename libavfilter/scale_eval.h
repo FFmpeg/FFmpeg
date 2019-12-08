@@ -16,8 +16,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFILTER_SCALE_H
-#define AVFILTER_SCALE_H
+#ifndef AVFILTER_SCALE_EVAL_H
+#define AVFILTER_SCALE_EVAL_H
 
 #include "avfilter.h"
 

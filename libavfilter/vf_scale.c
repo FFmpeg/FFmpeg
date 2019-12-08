@@ -29,7 +29,7 @@
 #include "avfilter.h"
 #include "formats.h"
 #include "internal.h"
-#include "scale.h"
+#include "scale_eval.h"
 #include "video.h"
 #include "libavutil/avstring.h"
 #include "libavutil/internal.h"
