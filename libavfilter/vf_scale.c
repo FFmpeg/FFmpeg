@@ -398,15 +398,19 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     char buf[32];
     int in_range;
+    int frame_changed;
 
     *frame_out = NULL;
     if (in->colorspace == AVCOL_SPC_YCGCO)
         av_log(link->dst, AV_LOG_WARNING, "Detected unsupported YCgCo colorspace.\n");
 
-    if (  in->width  != link->w
-       || in->height != link->h
-       || in->format != link->format
-       || in->sample_aspect_ratio.den != link->sample_aspect_ratio.den || in->sample_aspect_ratio.num != link->sample_aspect_ratio.num) {
+    frame_changed = in->width  != link->w ||
+                    in->height != link->h ||
+                    in->format != link->format ||
+                    in->sample_aspect_ratio.den != link->sample_aspect_ratio.den ||
+                    in->sample_aspect_ratio.num != link->sample_aspect_ratio.num;
+
+    if (frame_changed) {
         int ret;
 
         if (scale->eval_mode == EVAL_MODE_INIT) {
