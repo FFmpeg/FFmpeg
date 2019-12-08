@@ -1,5 +1,5 @@
-e4e0e27eb8ed99eedc2458d92401c5e4 *tests/data/fate/ffmpeg-loopback-decoding.nut
-7435259 tests/data/fate/ffmpeg-loopback-decoding.nut
+aa7b6ff7c731fc5bfc331db8b234a6ce *tests/data/fate/ffmpeg-loopback-decoding.nut
+7182759 tests/data/fate/ffmpeg-loopback-decoding.nut
 #tb 0: 1/25
 #media_type 0: video
 #codec_id 0: rawvideo

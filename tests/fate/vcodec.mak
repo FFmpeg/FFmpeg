@@ -161,7 +161,7 @@ FATE_VCODEC-$(call ENCDEC, FFV1, AVI)   += ffv1 ffv1-v0 ffv1-v2 \
 FATE_VCODEC_SCALE-$(call ENCDEC, FFV1, AVI) += ffv1-v3-yuv422p10 ffv1-v3-yuv444p16 \
                                                ffv1-v3-bgr0 ffv1-v3-rgb48 ffv1-2pass10
 fate-vsynth%-ffv1:               ENCOPTS = -slices 4
-fate-vsynth%-ffv1-v0:            CODEC   = ffv1
+fate-vsynth%-ffv1-v0:            ENCOPTS = -level 0
 fate-vsynth%-ffv1-v2:            ENCOPTS = -level 2 -strict experimental
 fate-vsynth%-ffv1-v3-yuv420p:    ENCOPTS = -level 3 -pix_fmt yuv420p
 fate-vsynth%-ffv1-v3-yuv422p10:  ENCOPTS = -level 3 -pix_fmt yuv422p10 \

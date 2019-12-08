@@ -623,7 +623,8 @@ av_cold int ff_ffv1_encode_init(AVCodecContext *avctx)
             return AVERROR(EINVAL);
         }
         s->version = avctx->level;
-    }
+    } else if (s->version < 3)
+        s->version = 3;
 
     if (s->ec < 0) {
         if (s->version >= 4) {
