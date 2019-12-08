@@ -392,8 +392,9 @@ static int scale_slice(AVFilterLink *link, AVFrame *out_buf, AVFrame *cur_pic, s
 
 static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
 {
-    ScaleContext *scale = link->dst->priv;
-    AVFilterLink *outlink = link->dst->outputs[0];
+    AVFilterContext *ctx = link->dst;
+    ScaleContext *scale = ctx->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
     AVFrame *out;
     const AVPixFmtDescriptor *desc = av_pix_fmt_desc_get(link->format);
     char buf[32];
@@ -410,7 +411,9 @@ static int scale_frame(AVFilterLink *link, AVFrame *in, AVFrame **frame_out)
                     in->sample_aspect_ratio.den != link->sample_aspect_ratio.den ||
                     in->sample_aspect_ratio.num != link->sample_aspect_ratio.num;
 
-    if (frame_changed) {
+    if (frame_changed ||
+        (scale->eval_mode == EVAL_MODE_FRAME &&
+         ctx->filter == &ff_vf_scale2ref) ) {
         int ret;
 
         if (scale->eval_mode == EVAL_MODE_INIT) {
@@ -538,6 +541,23 @@ static int filter_frame(AVFilterLink *link, AVFrame *in)
 static int filter_frame_ref(AVFilterLink *link, AVFrame *in)
 {
     AVFilterLink *outlink = link->dst->outputs[1];
+    int frame_changed;
+
+    frame_changed = in->width  != link->w ||
+                    in->height != link->h ||
+                    in->format != link->format ||
+                    in->sample_aspect_ratio.den != link->sample_aspect_ratio.den ||
+                    in->sample_aspect_ratio.num != link->sample_aspect_ratio.num;
+
+    if (frame_changed) {
+        link->format = in->format;
+        link->w = in->width;
+        link->h = in->height;
+        link->sample_aspect_ratio.num = in->sample_aspect_ratio.num;
+        link->sample_aspect_ratio.den = in->sample_aspect_ratio.den;
+
+        config_props_ref(outlink);
+    }
 
     return ff_filter_frame(outlink, in);
 }
