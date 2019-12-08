@@ -412,8 +412,6 @@ static int decode_wmv9(AVCodecContext *avctx, const uint8_t *buf, int buf_size,
 
     ff_mpeg_er_frame_start(s);
 
-    v->bits = buf_size * 8;
-
     v->end_mb_x = (w + 15) >> 4;
     s->end_mb_y = (h + 15) >> 4;
     if (v->respic & 1)
