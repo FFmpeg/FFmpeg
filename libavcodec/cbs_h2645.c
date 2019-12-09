@@ -839,6 +839,9 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
             if (err < 0)
                 return err;
 
+            if (!cbs_h2645_read_more_rbsp_data(&gbc))
+                return AVERROR_INVALIDDATA;
+
             pos = get_bits_count(&gbc);
             len = unit->data_size;
 
@@ -1013,6 +1016,9 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
             err = cbs_h265_read_slice_segment_header(ctx, &gbc, &slice->header);
             if (err < 0)
                 return err;
+
+            if (!cbs_h2645_read_more_rbsp_data(&gbc))
+                return AVERROR_INVALIDDATA;
 
             pos = get_bits_count(&gbc);
             len = unit->data_size;
