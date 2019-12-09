@@ -245,6 +245,9 @@ static int cbs_mpeg2_read_unit(CodedBitstreamContext *ctx,
         if (err < 0)
             return err;
 
+        if (!get_bits_left(&gbc))
+            return AVERROR_INVALIDDATA;
+
         pos = get_bits_count(&gbc);
         len = unit->data_size;
 
