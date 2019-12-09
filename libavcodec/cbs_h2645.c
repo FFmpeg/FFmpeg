@@ -863,13 +863,6 @@ static int cbs_h264_read_nal_unit(CodedBitstreamContext *ctx,
 
             pos = get_bits_count(&gbc);
             len = unit->data_size;
-            if (!unit->data[len - 1]) {
-                int z;
-                for (z = 0; z < len && !unit->data[len - z - 1]; z++);
-                av_log(ctx->log_ctx, AV_LOG_DEBUG, "Deleted %d trailing zeroes "
-                       "from slice data.\n", z);
-                len -= z;
-            }
 
             slice->data_size = len - pos / 8;
             slice->data_ref  = av_buffer_ref(unit->data_ref);
@@ -1045,13 +1038,6 @@ static int cbs_h265_read_nal_unit(CodedBitstreamContext *ctx,
 
             pos = get_bits_count(&gbc);
             len = unit->data_size;
-            if (!unit->data[len - 1]) {
-                int z;
-                for (z = 0; z < len && !unit->data[len - z - 1]; z++);
-                av_log(ctx->log_ctx, AV_LOG_DEBUG, "Deleted %d trailing zeroes "
-                       "from slice data.\n", z);
-                len -= z;
-            }
 
             slice->data_size = len - pos / 8;
             slice->data_ref  = av_buffer_ref(unit->data_ref);
