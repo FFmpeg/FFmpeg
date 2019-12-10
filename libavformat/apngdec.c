@@ -241,10 +241,6 @@ static int apng_read_header(AVFormatContext *s)
     }
 
 fail:
-    if (st->codecpar->extradata_size) {
-        av_freep(&st->codecpar->extradata);
-        st->codecpar->extradata_size = 0;
-    }
     return ret;
 }
 
