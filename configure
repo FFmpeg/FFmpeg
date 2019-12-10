@@ -6403,6 +6403,7 @@ enabled omx_rpi           && { test_code cc OMX_Core.h OMX_IndexConfigBrcmVideoR
 enabled omx               && require_headers OMX_Core.h
 enabled openssl           && { check_pkg_config openssl openssl openssl/ssl.h OPENSSL_init_ssl ||
                                check_pkg_config openssl openssl openssl/ssl.h SSL_library_init ||
+                               check_lib openssl openssl/ssl.h OPENSSL_init_ssl -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
                                check_lib openssl openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
