@@ -70,8 +70,15 @@ int ff_openssl_init(void)
 {
     ff_lock_avformat();
     if (!openssl_init) {
+        /* OpenSSL 1.0.2 or below, then you would use SSL_library_init. If you are
+         * using OpenSSL 1.1.0 or above, then the library will initialize
+         * itself automatically.
+         * https://wiki.openssl.org/index.php/Library_Initialization
+         */
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
         SSL_library_init();
         SSL_load_error_strings();
+#endif
 #if HAVE_THREADS
         if (!CRYPTO_get_locking_callback()) {
             int i;
