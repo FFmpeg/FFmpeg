@@ -89,7 +89,7 @@ static int flic_read_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     unsigned char header[FLIC_HEADER_SIZE];
     AVStream *st, *ast;
-    int speed;
+    int speed, ret;
     int magic_number;
     unsigned char preamble[FLIC_PREAMBLE_SIZE];
 
@@ -125,8 +125,8 @@ static int flic_read_header(AVFormatContext *s)
     }
 
     /* send over the whole 128-byte FLIC header */
-    if (ff_alloc_extradata(st->codecpar, FLIC_HEADER_SIZE))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, FLIC_HEADER_SIZE)) < 0)
+        return ret;
     memcpy(st->codecpar->extradata, header, FLIC_HEADER_SIZE);
 
     /* peek at the preamble to detect TFTD videos - they seem to always start with an audio chunk */
@@ -176,8 +176,8 @@ static int flic_read_header(AVFormatContext *s)
 
         /* send over abbreviated FLIC header chunk */
         av_freep(&st->codecpar->extradata);
-        if (ff_alloc_extradata(st->codecpar, 12))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(st->codecpar, 12)) < 0)
+            return ret;
         memcpy(st->codecpar->extradata, header, 12);
 
     } else if (magic_number == FLIC_FILE_MAGIC_1) {

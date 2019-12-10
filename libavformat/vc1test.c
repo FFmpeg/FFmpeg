@@ -51,7 +51,7 @@ static int vc1t_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int frames;
+    int frames, ret;
     uint32_t fps;
     uint32_t size;
 
@@ -67,8 +67,8 @@ static int vc1t_read_header(AVFormatContext *s)
     st->codecpar->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codecpar->codec_id = AV_CODEC_ID_WMV3;
 
-    if (ff_get_extradata(s, st->codecpar, pb, VC1_EXTRADATA_SIZE) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, st->codecpar, pb, VC1_EXTRADATA_SIZE)) < 0)
+        return ret;
 
     avio_skip(pb, size - 4);
     st->codecpar->height = avio_rl32(pb);

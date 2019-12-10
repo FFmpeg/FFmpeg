@@ -127,8 +127,8 @@ static int vmd_read_header(AVFormatContext *s)
             vst->codecpar->width >>= 1;
             vst->codecpar->height >>= 1;
         }
-        if (ff_alloc_extradata(vst->codecpar, VMD_HEADER_SIZE))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(vst->codecpar, VMD_HEADER_SIZE)) < 0)
+            return ret;
         memcpy(vst->codecpar->extradata, vmd->vmd_header, VMD_HEADER_SIZE);
     }
 
@@ -283,8 +283,9 @@ static int vmd_read_packet(AVFormatContext *s,
 
     if(ffio_limit(pb, frame->frame_size) != frame->frame_size)
         return AVERROR(EIO);
-    if (av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD))
-        return AVERROR(ENOMEM);
+    ret = av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD);
+    if (ret < 0)
+        return ret;
     pkt->pos= avio_tell(pb);
     memcpy(pkt->data, frame->frame_record, BYTES_PER_FRAME_RECORD);
     if(vmd->is_indeo3 && frame->frame_record[0] == 0x02)

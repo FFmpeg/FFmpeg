@@ -357,12 +357,12 @@ static int asf_write_markers(AVFormatContext *s)
         int64_t pres_time = av_rescale_q(c->start, c->time_base, scale);
         uint64_t offset;
         int32_t send_time = get_send_time(asf, pres_time, &offset);
-        int len = 0;
+        int len = 0, ret;
         uint8_t *buf;
         AVIOContext *dyn_buf;
         if (t) {
-            if (avio_open_dyn_buf(&dyn_buf) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+                return ret;
             avio_put_str16le(dyn_buf, t->value);
             len = avio_close_dyn_buf(dyn_buf, &buf);
         }
@@ -579,12 +579,12 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
 
     /* title and other info */
     if (has_title) {
-        int len;
+        int len, ret;
         uint8_t *buf;
         AVIOContext *dyn_buf;
 
-        if (avio_open_dyn_buf(&dyn_buf) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+            return ret;
 
         hpos = put_header(pb, &ff_asf_comment_header);
 
@@ -714,10 +714,10 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size,
         if (desc) {
             AVIOContext *dyn_buf;
             uint8_t *buf;
-            int len;
+            int len, ret;
 
-            if (avio_open_dyn_buf(&dyn_buf) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+                return ret;
 
             avio_put_str16le(dyn_buf, desc);
             len = avio_close_dyn_buf(dyn_buf, &buf);

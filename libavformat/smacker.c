@@ -233,13 +233,13 @@ static int smacker_read_header(AVFormatContext *s)
 
 
     /* load trees to extradata, they will be unpacked by decoder */
-    if(ff_alloc_extradata(st->codecpar, smk->treesize + 16)){
+    if ((ret = ff_alloc_extradata(st->codecpar, smk->treesize + 16)) < 0) {
         av_log(s, AV_LOG_ERROR,
                "Cannot allocate %"PRIu32" bytes of extradata\n",
                smk->treesize + 16);
         av_freep(&smk->frm_size);
         av_freep(&smk->frm_flags);
-        return AVERROR(ENOMEM);
+        return ret;
     }
     ret = avio_read(pb, st->codecpar->extradata + 16, st->codecpar->extradata_size - 16);
     if(ret != st->codecpar->extradata_size - 16){
@@ -353,8 +353,8 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
         }
         if (frame_size < 0 || frame_size >= INT_MAX/2)
             return AVERROR_INVALIDDATA;
-        if (av_new_packet(pkt, frame_size + 769))
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, frame_size + 769)) < 0)
+            return ret;
         if(smk->frm_size[smk->cur_frame] & 1)
             palchange |= 2;
         pkt->data[0] = palchange;
@@ -370,8 +370,8 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
     } else {
         if (smk->stream_id[smk->curstream] < 0 || !smk->bufs[smk->curstream])
             return AVERROR_INVALIDDATA;
-        if (av_new_packet(pkt, smk->buf_sizes[smk->curstream]))
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, smk->buf_sizes[smk->curstream])) < 0)
+            return ret;
         memcpy(pkt->data, smk->bufs[smk->curstream], smk->buf_sizes[smk->curstream]);
         pkt->size = smk->buf_sizes[smk->curstream];
         pkt->stream_index = smk->stream_id[smk->curstream];

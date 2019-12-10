@@ -142,6 +142,7 @@ static int read_packet(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     unsigned char preamble[MM_PREAMBLE_SIZE];
     unsigned int type, length;
+    int ret;
 
     while(1) {
 
@@ -161,8 +162,8 @@ static int read_packet(AVFormatContext *s,
         case MM_TYPE_INTRA_HHV :
         case MM_TYPE_INTER_HHV :
             /* output preamble + data */
-            if (av_new_packet(pkt, length + MM_PREAMBLE_SIZE))
-                return AVERROR(ENOMEM);
+            if ((ret = av_new_packet(pkt, length + MM_PREAMBLE_SIZE)) < 0)
+                return ret;
             memcpy(pkt->data, preamble, MM_PREAMBLE_SIZE);
             if (avio_read(pb, pkt->data + MM_PREAMBLE_SIZE, length) != length)
                 return AVERROR(EIO);
@@ -174,8 +175,8 @@ static int read_packet(AVFormatContext *s,
             return 0;
 
         case MM_TYPE_AUDIO :
-            if (av_get_packet(s->pb, pkt, length)<0)
-                return AVERROR(ENOMEM);
+            if ((ret = av_get_packet(s->pb, pkt, length)) < 0)
+                return ret;
             pkt->stream_index = 1;
             pkt->pts = mm->audio_pts++;
             return 0;

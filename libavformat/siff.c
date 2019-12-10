@@ -192,6 +192,7 @@ static int siff_read_header(AVFormatContext *s)
 static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     SIFFContext *c = s->priv_data;
+    int ret;
 
     if (c->has_video) {
         unsigned int size;
@@ -213,8 +214,8 @@ static int siff_read_packet(AVFormatContext *s, AVPacket *pkt)
 
             size = c->pktsize - c->sndsize - c->gmcsize - 2;
             size = ffio_limit(s->pb, size);
-            if (av_new_packet(pkt, size + c->gmcsize + 2) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = av_new_packet(pkt, size + c->gmcsize + 2)) < 0)
+                return ret;
             AV_WL16(pkt->data, c->flags);
             if (c->gmcsize)
                 memcpy(pkt->data + 2, c->gmc, c->gmcsize);

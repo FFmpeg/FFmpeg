@@ -97,9 +97,8 @@ static int rsd_read_header(AVFormatContext *s)
     switch (par->codec_id) {
     case AV_CODEC_ID_XMA2:
         par->block_align = 2048;
-        ff_alloc_extradata(par, 34);
-        if (!par->extradata)
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(par, 34)) < 0)
+            return ret;
         memset(par->extradata, 0, 34);
         break;
     case AV_CODEC_ID_ADPCM_PSX:

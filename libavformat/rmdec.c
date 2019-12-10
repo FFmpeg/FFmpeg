@@ -87,9 +87,7 @@ static int rm_read_extradata(AVFormatContext *s, AVIOContext *pb, AVCodecParamet
         av_log(s, AV_LOG_ERROR, "extradata size %u too large\n", size);
         return -1;
     }
-    if (ff_get_extradata(s, par, pb, size) < 0)
-        return AVERROR(ENOMEM);
-    return 0;
+    return ff_get_extradata(s, par, pb, size);
 }
 
 static void rm_read_metadata(AVFormatContext *s, AVIOContext *pb, int wide)

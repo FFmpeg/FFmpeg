@@ -403,8 +403,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
             (32 + 4 + size) > (INT_MAX / par->channels) ||
             (32 + 4 + size) * par->channels > INT_MAX - 8)
             return AVERROR_INVALIDDATA;
-        if (av_new_packet(pkt, 8 + (32 + 4 + size) * par->channels) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, 8 + (32 + 4 + size) * par->channels)) < 0)
+            return ret;
         dst = pkt->data;
         if (par->codec_id == AV_CODEC_ID_ADPCM_THP_LE) {
             bytestream_put_le32(&dst, size * par->channels);

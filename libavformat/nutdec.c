@@ -427,8 +427,10 @@ static int decode_stream_header(NUTContext *nut)
 
     GET_V(st->codecpar->extradata_size, tmp < (1 << 30));
     if (st->codecpar->extradata_size) {
-        if (ff_get_extradata(s, st->codecpar, bc, st->codecpar->extradata_size) < 0)
-            return AVERROR(ENOMEM);
+        ret = ff_get_extradata(s, st->codecpar, bc,
+                               st->codecpar->extradata_size);
+        if (ret < 0)
+            return ret;
     }
 
     if (st->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {

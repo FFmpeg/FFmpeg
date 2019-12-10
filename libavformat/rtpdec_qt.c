@@ -48,13 +48,13 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
     GetBitContext gb;
     int packing_scheme, has_payload_desc, has_packet_info, alen,
         has_marker_bit = flags & RTP_FLAG_MARKER,
-        keyframe;
+        keyframe, ret;
 
     if (qt->remaining) {
         int num = qt->pkt.size / qt->bytes_per_frame;
 
-        if (av_new_packet(pkt, qt->bytes_per_frame))
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, qt->bytes_per_frame)) < 0)
+            return ret;
         pkt->stream_index = st->index;
         pkt->flags        = qt->pkt.flags;
         memcpy(pkt->data,
@@ -208,8 +208,8 @@ static int qt_rtp_parse_packet(AVFormatContext *s, PayloadContext *qt,
             alen % qt->bytes_per_frame != 0)
             return AVERROR_INVALIDDATA; /* wrongly padded */
         qt->remaining = (alen / qt->bytes_per_frame) - 1;
-        if (av_new_packet(pkt, qt->bytes_per_frame))
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, qt->bytes_per_frame)) < 0)
+            return ret;
         memcpy(pkt->data, buf + avio_tell(&pb), qt->bytes_per_frame);
         pkt->flags = keyframe ? AV_PKT_FLAG_KEY : 0;
         pkt->stream_index = st->index;

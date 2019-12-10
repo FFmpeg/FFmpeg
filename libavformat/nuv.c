@@ -74,7 +74,7 @@ static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
     if (!vst && !myth)
         return 1; // no codec data needed
     while (!avio_feof(pb)) {
-        int size, subtype;
+        int size, subtype, ret;
 
         frametype = avio_r8(pb);
         switch (frametype) {
@@ -87,8 +87,8 @@ static int get_codec_data(AVFormatContext *s, AVIOContext *pb, AVStream *vst,
                     av_freep(&vst->codecpar->extradata);
                     vst->codecpar->extradata_size = 0;
                 }
-                if (ff_get_extradata(NULL, vst->codecpar, pb, size) < 0)
-                    return AVERROR(ENOMEM);
+                if ((ret = ff_get_extradata(NULL, vst->codecpar, pb, size)) < 0)
+                    return ret;
                 size = 0;
                 if (!myth)
                     return 0;

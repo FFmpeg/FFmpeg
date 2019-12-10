@@ -65,11 +65,11 @@ static void id3v2_encode_string(AVIOContext *pb, const uint8_t *str,
 static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *str1, const char *str2,
                           uint32_t tag, enum ID3v2Encoding enc)
 {
-    int len;
+    int len, ret;
     uint8_t *pb;
     AVIOContext *dyn_buf;
-    if (avio_open_dyn_buf(&dyn_buf) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+        return ret;
 
     /* check if the strings are ASCII-only and use UTF16 only if
      * they're not */
@@ -103,7 +103,7 @@ static int id3v2_put_ttag(ID3v2EncContext *id3, AVIOContext *avioc, const char *
  */
 static int id3v2_put_priv(ID3v2EncContext *id3, AVIOContext *avioc, const char *key, const char *data)
 {
-    int len;
+    int len, ret;
     uint8_t *pb;
     AVIOContext *dyn_buf;
 
@@ -111,8 +111,8 @@ static int id3v2_put_priv(ID3v2EncContext *id3, AVIOContext *avioc, const char *
         return 0;
     }
 
-    if (avio_open_dyn_buf(&dyn_buf) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+        return ret;
 
     // owner + null byte.
     avio_write(dyn_buf, key, strlen(key) + 1);
@@ -359,7 +359,7 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
     const char  *mimetype = NULL, *desc = "";
     int enc = id3->version == 3 ? ID3v2_ENCODING_UTF16BOM :
                                   ID3v2_ENCODING_UTF8;
-    int i, len, type = 0;
+    int i, len, type = 0, ret;
 
     /* get the mimetype*/
     while (mime->id != AV_CODEC_ID_NONE) {
@@ -393,8 +393,8 @@ int ff_id3v2_write_apic(AVFormatContext *s, ID3v2EncContext *id3, AVPacket *pkt)
         enc = ID3v2_ENCODING_ISO8859;
 
     /* start writing */
-    if (avio_open_dyn_buf(&dyn_buf) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = avio_open_dyn_buf(&dyn_buf)) < 0)
+        return ret;
 
     avio_w8(dyn_buf, enc);
     avio_put_str(dyn_buf, mimetype);

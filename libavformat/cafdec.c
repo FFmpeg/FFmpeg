@@ -100,6 +100,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     AVStream *st      = s->streams[0];
+    int ret;
 
     if (size < 0 || size > INT_MAX - AV_INPUT_BUFFER_PADDING_SIZE)
         return -1;
@@ -135,8 +136,8 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         }
 
         av_freep(&st->codecpar->extradata);
-        if (ff_alloc_extradata(st->codecpar, ALAC_HEADER))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(st->codecpar, ALAC_HEADER)) < 0)
+            return ret;
 
         /* For the old style cookie, we skip 12 bytes, then read 36 bytes.
          * The new style cookie only contains the last 24 bytes of what was
@@ -176,8 +177,8 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
         avio_skip(pb, size);
     } else {
         av_freep(&st->codecpar->extradata);
-        if (ff_get_extradata(s, st->codecpar, pb, size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = ff_get_extradata(s, st->codecpar, pb, size)) < 0)
+            return ret;
     }
 
     return 0;

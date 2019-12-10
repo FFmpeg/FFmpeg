@@ -163,7 +163,7 @@ static int ape_read_header(AVFormatContext * s)
     APEContext *ape = s->priv_data;
     AVStream *st;
     uint32_t tag;
-    int i;
+    int i, ret;
     int total_blocks, final_size = 0;
     int64_t pts, file_size;
 
@@ -358,8 +358,8 @@ static int ape_read_header(AVFormatContext * s)
     st->duration  = total_blocks;
     avpriv_set_pts_info(st, 64, 1, ape->samplerate);
 
-    if (ff_alloc_extradata(st->codecpar, APE_EXTRADATA_SIZE))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, APE_EXTRADATA_SIZE)) < 0)
+        return ret;
     AV_WL16(st->codecpar->extradata + 0, ape->fileversion);
     AV_WL16(st->codecpar->extradata + 2, ape->compressiontype);
     AV_WL16(st->codecpar->extradata + 4, ape->formatflags);
@@ -386,14 +386,16 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
     int nblocks;
     APEContext *ape = s->priv_data;
     uint32_t extra_size = 8;
+    int64_t ret64;
 
     if (avio_feof(s->pb))
         return AVERROR_EOF;
     if (ape->currentframe >= ape->totalframes)
         return AVERROR_EOF;
 
-    if (avio_seek(s->pb, ape->frames[ape->currentframe].pos, SEEK_SET) < 0)
-        return AVERROR(EIO);
+    ret64 = avio_seek(s->pb, ape->frames[ape->currentframe].pos, SEEK_SET);
+    if (ret64 < 0)
+        return ret64;
 
     /* Calculate how many blocks there are in this frame */
     if (ape->currentframe == (ape->totalframes - 1))
@@ -409,8 +411,9 @@ static int ape_read_packet(AVFormatContext * s, AVPacket * pkt)
         return AVERROR(EIO);
     }
 
-    if (av_new_packet(pkt,  ape->frames[ape->currentframe].size + extra_size) < 0)
-        return AVERROR(ENOMEM);
+    ret = av_new_packet(pkt, ape->frames[ape->currentframe].size + extra_size);
+    if (ret < 0)
+        return ret;
 
     AV_WL32(pkt->data    , nblocks);
     AV_WL32(pkt->data + 4, ape->frames[ape->currentframe].skip);
@@ -447,12 +450,13 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     AVStream *st = s->streams[stream_index];
     APEContext *ape = s->priv_data;
     int index = av_index_search_timestamp(st, timestamp, flags);
+    int64_t ret;
 
     if (index < 0)
         return -1;
 
-    if (avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET) < 0)
-        return -1;
+    if ((ret = avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET)) < 0)
+        return ret;
     ape->currentframe = index;
     return 0;
 }

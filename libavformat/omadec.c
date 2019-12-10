@@ -459,8 +459,8 @@ static int oma_read_header(AVFormatContext *s)
 
         /* fake the ATRAC3 extradata
          * (wav format, makes stream copy to wav work) */
-        if (ff_alloc_extradata(st->codecpar, 14))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(st->codecpar, 14)) < 0)
+            return ret;
 
         edata = st->codecpar->extradata;
         AV_WL16(&edata[0],  1);             // always 1

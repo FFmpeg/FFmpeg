@@ -6673,6 +6673,7 @@ static int cenc_filter(MOVContext *mov, AVStream* st, MOVStreamContext *sc, AVPa
 static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     const int OPUS_SEEK_PREROLL_MS = 80;
+    int ret;
     AVStream *st;
     size_t size;
     uint16_t pre_skip;
@@ -6693,8 +6694,8 @@ static int mov_read_dops(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     /* OpusSpecificBox size plus magic for Ogg OpusHead header. */
     size = atom.size + 8;
 
-    if (ff_alloc_extradata(st->codecpar, size))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
+        return ret;
 
     AV_WL32(st->codecpar->extradata, MKTAG('O','p','u','s'));
     AV_WL32(st->codecpar->extradata + 4, MKTAG('H','e','a','d'));

@@ -116,8 +116,8 @@ static int parse_fmtp_config(AVStream *st, const char *value)
         goto end;
     }
     av_freep(&st->codecpar->extradata);
-    if (ff_alloc_extradata(st->codecpar, (get_bits_left(&gb) + 7)/8)) {
-        ret = AVERROR(ENOMEM);
+    ret = ff_alloc_extradata(st->codecpar, (get_bits_left(&gb) + 7)/8);
+    if (ret < 0) {
         goto end;
     }
     for (i = 0; i < st->codecpar->extradata_size; i++)

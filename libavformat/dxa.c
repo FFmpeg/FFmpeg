@@ -179,8 +179,8 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
         tag = AV_RL32(buf);
         switch (tag) {
         case MKTAG('N', 'U', 'L', 'L'):
-            if(av_new_packet(pkt, 4 + pal_size) < 0)
-                return AVERROR(ENOMEM);
+            if ((ret = av_new_packet(pkt, 4 + pal_size)) < 0)
+                return ret;
             pkt->stream_index = 0;
             if(pal_size) memcpy(pkt->data, pal, pal_size);
             memcpy(pkt->data + pal_size, buf, 4);
@@ -204,8 +204,9 @@ static int dxa_read_packet(AVFormatContext *s, AVPacket *pkt)
                        size);
                 return AVERROR_INVALIDDATA;
             }
-            if(av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size) < 0)
-                return AVERROR(ENOMEM);
+            ret = av_new_packet(pkt, size + DXA_EXTRA_SIZE + pal_size);
+            if (ret < 0)
+                return ret;
             memcpy(pkt->data + pal_size, buf, DXA_EXTRA_SIZE);
             ret = avio_read(s->pb, pkt->data + DXA_EXTRA_SIZE + pal_size, size);
             if(ret != size){

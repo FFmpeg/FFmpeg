@@ -1327,7 +1327,7 @@ static int generate_intervals(void *log, struct sbg_script *s, int sample_rate,
 static int encode_intervals(struct sbg_script *s, AVCodecParameters *par,
                             struct ws_intervals *inter)
 {
-    int i, edata_size = 4;
+    int i, edata_size = 4, ret;
     uint8_t *edata;
 
     for (i = 0; i < inter->nb_inter; i++) {
@@ -1336,8 +1336,8 @@ static int encode_intervals(struct sbg_script *s, AVCodecParameters *par,
         if (edata_size < 0)
             return AVERROR(ENOMEM);
     }
-    if (ff_alloc_extradata(par, edata_size))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(par, edata_size)) < 0)
+        return ret;
     edata = par->extradata;
 
 #define ADD_EDATA32(v) do { AV_WL32(edata, (v)); edata += 4; } while(0)
@@ -1446,6 +1446,7 @@ fail:
 static int sbg_read_packet(AVFormatContext *avf, AVPacket *packet)
 {
     int64_t ts, end_ts;
+    int ret;
 
     ts = avf->streams[0]->cur_dts;
     end_ts = ts + avf->streams[0]->codecpar->frame_size;
@@ -1454,8 +1455,8 @@ static int sbg_read_packet(AVFormatContext *avf, AVPacket *packet)
                        end_ts);
     if (end_ts <= ts)
         return AVERROR_EOF;
-    if (av_new_packet(packet, 12) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(packet, 12)) < 0)
+        return ret;
     packet->dts = packet->pts = ts;
     packet->duration = end_ts - ts;
     AV_WL64(packet->data + 0, ts);

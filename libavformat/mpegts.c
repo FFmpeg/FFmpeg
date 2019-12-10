@@ -1845,7 +1845,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     case 0x56: /* DVB teletext descriptor */
         {
             uint8_t *extradata = NULL;
-            int language_count = desc_len / 5;
+            int language_count = desc_len / 5, ret;
 
             if (desc_len > 0 && desc_len % 5 != 0)
                 return AVERROR_INVALIDDATA;
@@ -1855,9 +1855,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 av_assert0(language_count <= sizeof(language) / 4);
 
                 if (st->codecpar->extradata == NULL) {
-                    if (ff_alloc_extradata(st->codecpar, language_count * 2)) {
-                        return AVERROR(ENOMEM);
-                    }
+                    ret = ff_alloc_extradata(st->codecpar, language_count * 2);
+                    if (ret < 0)
+                        return ret;
                 }
 
                 if (st->codecpar->extradata_size < language_count * 2)
@@ -1890,7 +1890,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
              * subtitling_type (1 byte),
              * composition_page_id (2 bytes),
              * ancillary_page_id (2 bytes) */
-            int language_count = desc_len / 8;
+            int language_count = desc_len / 8, ret;
 
             if (desc_len > 0 && desc_len % 8 != 0)
                 return AVERROR_INVALIDDATA;
@@ -1906,9 +1906,9 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                 av_assert0(language_count <= sizeof(language) / 4);
 
                 if (st->codecpar->extradata == NULL) {
-                    if (ff_alloc_extradata(st->codecpar, language_count * 5)) {
-                        return AVERROR(ENOMEM);
-                    }
+                    ret = ff_alloc_extradata(st->codecpar, language_count * 5);
+                    if (ret < 0)
+                        return ret;
                 }
 
                 if (st->codecpar->extradata_size < language_count * 5)
@@ -3128,8 +3128,8 @@ static int mpegts_raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     uint8_t pcr_buf[12];
     const uint8_t *data;
 
-    if (av_new_packet(pkt, TS_PACKET_SIZE) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, TS_PACKET_SIZE)) < 0)
+        return ret;
     ret = read_packet(s, pkt->data, ts->raw_packet_size, &data);
     pkt->pos = avio_tell(s->pb);
     if (ret < 0) {

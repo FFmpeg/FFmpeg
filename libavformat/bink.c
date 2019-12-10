@@ -150,8 +150,8 @@ static int read_header(AVFormatContext *s)
         vst->codecpar->codec_id = AV_CODEC_ID_NONE;
     }
 
-    if (ff_get_extradata(s, vst->codecpar, pb, 4) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = ff_get_extradata(s, vst->codecpar, pb, 4)) < 0)
+        return ret;
 
     bink->num_audio_tracks = avio_rl32(pb);
 
@@ -190,8 +190,8 @@ static int read_header(AVFormatContext *s)
                 ast->codecpar->channels       = 1;
                 ast->codecpar->channel_layout = AV_CH_LAYOUT_MONO;
             }
-            if (ff_alloc_extradata(ast->codecpar, 4))
-                return AVERROR(ENOMEM);
+            if ((ret = ff_alloc_extradata(ast->codecpar, 4)) < 0)
+                return ret;
             AV_WL32(ast->codecpar->extradata, vst->codecpar->codec_tag);
         }
 
@@ -302,13 +302,15 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 {
     BinkDemuxContext *bink = s->priv_data;
     AVStream *vst = s->streams[0];
+    int64_t ret;
 
     if (!(s->pb->seekable & AVIO_SEEKABLE_NORMAL))
         return -1;
 
     /* seek to the first frame */
-    if (avio_seek(s->pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET) < 0)
-        return -1;
+    ret = avio_seek(s->pb, vst->index_entries[0].pos + bink->smush_size, SEEK_SET);
+    if (ret < 0)
+        return ret;
 
     bink->video_pts = 0;
     memset(bink->audio_pts, 0, sizeof(bink->audio_pts));

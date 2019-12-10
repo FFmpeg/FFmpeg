@@ -194,7 +194,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     PAFDemuxContext *p  = s->priv_data;
     AVIOContext     *pb = s->pb;
     uint32_t        count, offset;
-    int             size, i;
+    int             size, i, ret;
 
     if (p->current_frame >= p->nb_frames)
         return AVERROR_EOF;
@@ -203,8 +203,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR_EOF;
 
     if (p->got_audio) {
-        if (av_new_packet(pkt, p->audio_size) < 0)
-            return AVERROR(ENOMEM);
+        if ((ret = av_new_packet(pkt, p->audio_size)) < 0)
+            return ret;
 
         memcpy(pkt->data, p->temp_audio_frame, p->audio_size);
         pkt->duration     = PAF_SOUND_SAMPLES * (p->audio_size / PAF_SOUND_FRAME_SIZE);
@@ -244,8 +244,8 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = p->video_size - p->frames_offset_table[p->current_frame];
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, size)) < 0)
+        return ret;
 
     pkt->stream_index = 0;
     pkt->duration     = 1;

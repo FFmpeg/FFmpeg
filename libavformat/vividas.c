@@ -278,7 +278,7 @@ static uint8_t *read_sb_block(AVIOContext *src, unsigned *size,
 
 static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *buf, int size)
 {
-    int i,j;
+    int i, j, ret;
     int64_t off;
     int val_1;
     int num_video;
@@ -391,10 +391,9 @@ static int track_header(VividasDemuxContext *viv, AVFormatContext *s,  uint8_t *
                 xd_size += len;
             }
 
-            st->codecpar->extradata_size = 64 + xd_size + xd_size / 255;
-            if (ff_alloc_extradata(st->codecpar, st->codecpar->extradata_size)) {
-                return AVERROR(ENOMEM);
-            }
+            ret = ff_alloc_extradata(st->codecpar, 64 + xd_size + xd_size / 255);
+            if (ret < 0)
+                return ret;
 
             p = st->codecpar->extradata;
             p[0] = 2;

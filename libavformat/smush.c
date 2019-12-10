@@ -51,6 +51,7 @@ static int smush_read_header(AVFormatContext *ctx)
     uint32_t magic, nframes, size, subversion, i;
     uint32_t width = 0, height = 0, got_audio = 0, read = 0;
     uint32_t sample_rate, channels, palette[256];
+    int ret;
 
     magic = avio_rb32(pb);
     avio_skip(pb, 4); // skip movie size
@@ -157,8 +158,8 @@ static int smush_read_header(AVFormatContext *ctx)
     vst->codecpar->height     = height;
 
     if (!smush->version) {
-        if (ff_alloc_extradata(vst->codecpar, 1024 + 2))
-            return AVERROR(ENOMEM);
+        if ((ret = ff_alloc_extradata(vst->codecpar, 1024 + 2)) < 0)
+            return ret;
 
         AV_WL16(vst->codecpar->extradata, subversion);
         for (i = 0; i < 256; i++)

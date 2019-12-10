@@ -5451,7 +5451,7 @@ int ff_generate_avci_extradata(AVStream *st)
     };
 
     const uint8_t *data = NULL;
-    int size            = 0;
+    int ret, size       = 0;
 
     if (st->codecpar->width == 1920) {
         if (st->codecpar->field_order == AV_FIELD_PROGRESSIVE) {
@@ -5481,8 +5481,8 @@ int ff_generate_avci_extradata(AVStream *st)
         return 0;
 
     av_freep(&st->codecpar->extradata);
-    if (ff_alloc_extradata(st->codecpar, size))
-        return AVERROR(ENOMEM);
+    if ((ret = ff_alloc_extradata(st->codecpar, size)) < 0)
+        return ret;
     memcpy(st->codecpar->extradata, data, size);
 
     return 0;

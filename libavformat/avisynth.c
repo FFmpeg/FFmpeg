@@ -640,7 +640,7 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     AVS_VideoFrame *frame;
     unsigned char *dst_p;
     const unsigned char *src_p;
-    int n, i, plane, rowsize, planeheight, pitch, bits;
+    int n, i, plane, rowsize, planeheight, pitch, bits, ret;
     const char *error;
     int avsplus av_unused;
 
@@ -676,8 +676,8 @@ static int avisynth_read_packet_video(AVFormatContext *s, AVPacket *pkt,
     if (!pkt->size)
         return AVERROR_UNKNOWN;
 
-    if (av_new_packet(pkt, pkt->size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, pkt->size)) < 0)
+        return ret;
 
     pkt->pts      = n;
     pkt->dts      = n;
@@ -739,7 +739,7 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
 {
     AviSynthContext *avs = s->priv_data;
     AVRational fps, samplerate;
-    int samples;
+    int samples, ret;
     int64_t n;
     const char *error;
 
@@ -782,8 +782,8 @@ static int avisynth_read_packet_audio(AVFormatContext *s, AVPacket *pkt,
     if (!pkt->size)
         return AVERROR_UNKNOWN;
 
-    if (av_new_packet(pkt, pkt->size) < 0)
-        return AVERROR(ENOMEM);
+    if ((ret = av_new_packet(pkt, pkt->size)) < 0)
+        return ret;
 
     pkt->pts      = n;
     pkt->dts      = n;
