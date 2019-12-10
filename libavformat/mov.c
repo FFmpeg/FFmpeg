@@ -2255,7 +2255,7 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
 {
     char buf[256] = {0};
     uint8_t *src = st->codecpar->extradata;
-    int i;
+    int i, ret;
 
     if (st->codecpar->extradata_size != 64)
         return 0;
@@ -2275,12 +2275,9 @@ static int mov_rewrite_dvd_sub_extradata(AVStream *st)
     if (av_strlcat(buf, "\n", sizeof(buf)) >= sizeof(buf))
         return 0;
 
-    av_freep(&st->codecpar->extradata);
-    st->codecpar->extradata_size = 0;
-    st->codecpar->extradata = av_mallocz(strlen(buf) + AV_INPUT_BUFFER_PADDING_SIZE);
-    if (!st->codecpar->extradata)
-        return AVERROR(ENOMEM);
-    st->codecpar->extradata_size = strlen(buf);
+    ret = ff_alloc_extradata(st->codecpar, strlen(buf));
+    if (ret < 0)
+        return ret;
     memcpy(st->codecpar->extradata, buf, st->codecpar->extradata_size);
 
     return 0;
