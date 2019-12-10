@@ -525,10 +525,10 @@ static int iff_read_header(AVFormatContext *s)
                         data_size);
                  return AVERROR_INVALIDDATA;
             }
-            st->codecpar->extradata_size = data_size + IFF_EXTRA_VIDEO_SIZE;
-            st->codecpar->extradata      = av_malloc(data_size + IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codecpar->extradata)
-                return AVERROR(ENOMEM);
+            res = ff_alloc_extradata(st->codecpar,
+                                     data_size + IFF_EXTRA_VIDEO_SIZE);
+            if (res < 0)
+                return res;
             if (avio_read(pb, st->codecpar->extradata + IFF_EXTRA_VIDEO_SIZE, data_size) < 0) {
                 av_freep(&st->codecpar->extradata);
                 st->codecpar->extradata_size = 0;
@@ -771,10 +771,9 @@ static int iff_read_header(AVFormatContext *s)
         iff->transparency = transparency;
 
         if (!st->codecpar->extradata) {
-            st->codecpar->extradata_size = IFF_EXTRA_VIDEO_SIZE;
-            st->codecpar->extradata      = av_malloc(IFF_EXTRA_VIDEO_SIZE + AV_INPUT_BUFFER_PADDING_SIZE);
-            if (!st->codecpar->extradata)
-                return AVERROR(ENOMEM);
+            int ret = ff_alloc_extradata(st->codecpar, IFF_EXTRA_VIDEO_SIZE);
+            if (ret < 0)
+                return ret;
         }
         av_assert0(st->codecpar->extradata_size >= IFF_EXTRA_VIDEO_SIZE);
         buf = st->codecpar->extradata;
