@@ -869,8 +869,13 @@ static int mpegts_init(AVFormatContext *s)
     ts->m2ts_pgssub_pid  = M2TS_PGSSUB_START_PID;
     ts->m2ts_textsub_pid = M2TS_TEXTSUB_PID;
 
-    if (ts->m2ts_mode)
+    if (ts->m2ts_mode) {
         ts->pmt_start_pid = M2TS_PMT_PID;
+        if (s->nb_programs > 1) {
+            av_log(s, AV_LOG_ERROR, "Only one program is allowed in m2ts mode!\n");
+            return AVERROR(EINVAL);
+        }
+    }
 
     if (s->max_delay < 0) /* Not set by the caller */
         s->max_delay = 0;
