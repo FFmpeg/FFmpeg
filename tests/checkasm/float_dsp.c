@@ -51,7 +51,8 @@ static void test_vector_fmul(const float *src0, const float *src1)
     call_ref(cdst, src0, src1, LEN);
     call_new(odst, src0, src1, LEN);
     for (i = 0; i < LEN; i++) {
-        if (!float_near_abs_eps(cdst[i], odst[i], FLT_EPSILON)) {
+        double t = fabs(src0[i]) + fabs(src1[i]) + fabs(src0[i] * src1[i]) + 1.0;
+        if (!float_near_abs_eps(cdst[i], odst[i], t * 2 * FLT_EPSILON)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                     i, cdst[i], odst[i], cdst[i] - odst[i]);
             fail();
@@ -73,7 +74,8 @@ static void test_vector_dmul(const double *src0, const double *src1)
     call_ref(cdst, src0, src1, LEN);
     call_new(odst, src0, src1, LEN);
     for (i = 0; i < LEN; i++) {
-        if (!double_near_abs_eps(cdst[i], odst[i], DBL_EPSILON)) {
+        double t = fabs(src0[i]) + fabs(src1[i]) + fabs(src0[i] * src1[i]) + 1.0;
+        if (!double_near_abs_eps(cdst[i], odst[i], t * 2 * DBL_EPSILON)) {
             fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                     i, cdst[i], odst[i], cdst[i] - odst[i]);
             fail();
@@ -117,7 +119,8 @@ static void test_vector_fmul_scalar(const float *src0, const float *src1)
     call_ref(cdst, src0, src1[0], LEN);
     call_new(odst, src0, src1[0], LEN);
         for (i = 0; i < LEN; i++) {
-            if (!float_near_abs_eps(cdst[i], odst[i], FLT_EPSILON)) {
+            double t = fabs(src0[i]) + fabs(src1[0]) + fabs(src0[i] * src1[0]) + 1.0;
+            if (!float_near_abs_eps(cdst[i], odst[i], t * 2 * FLT_EPSILON)) {
                 fprintf(stderr, "%d: %- .12f - %- .12f = % .12g\n",
                         i, cdst[i], odst[i], cdst[i] - odst[i]);
                 fail();
