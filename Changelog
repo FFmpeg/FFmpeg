@@ -61,6 +61,7 @@ version <next>:
 - WebP parser
 - tmedian filter
 - maskedthreshold filter
+- Support for muxing pcm and pgs in m2ts
 
 
 version 4.2:

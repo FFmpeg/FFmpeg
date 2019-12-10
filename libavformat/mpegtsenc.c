@@ -359,6 +359,54 @@ static int get_dvb_stream_type(AVFormatContext *s, AVStream *st)
     return stream_type;
 }
 
+static int get_m2ts_stream_type(AVFormatContext *s, AVStream *st)
+{
+    int stream_type;
+
+    switch (st->codecpar->codec_id) {
+    case AV_CODEC_ID_MPEG2VIDEO:
+        stream_type = STREAM_TYPE_VIDEO_MPEG2;
+        break;
+    case AV_CODEC_ID_H264:
+        stream_type = STREAM_TYPE_VIDEO_H264;
+        break;
+    case AV_CODEC_ID_VC1:
+        stream_type = STREAM_TYPE_VIDEO_VC1;
+        break;
+    case AV_CODEC_ID_HEVC:
+        stream_type = STREAM_TYPE_VIDEO_HEVC;
+        break;
+    case AV_CODEC_ID_PCM_BLURAY:
+        stream_type = 0x80;
+        break;
+    case AV_CODEC_ID_AC3:
+        stream_type = 0x81;
+        break;
+    case AV_CODEC_ID_DTS:
+        stream_type = (st->codecpar->channels > 6) ? 0x85 : 0x82;
+        break;
+    case AV_CODEC_ID_TRUEHD:
+        stream_type = 0x83;
+        break;
+    case AV_CODEC_ID_EAC3:
+        stream_type = 0x84;
+        break;
+    case AV_CODEC_ID_HDMV_PGS_SUBTITLE:
+        stream_type = 0x90;
+        break;
+    case AV_CODEC_ID_HDMV_TEXT_SUBTITLE:
+        stream_type = 0x92;
+        break;
+    default:
+        av_log(s, AV_LOG_WARNING, "Stream %d, codec %s, is muxed as a private data stream "
+               "and may not be recognized upon reading.\n", st->index, avcodec_get_name(st->codecpar->codec_id));
+        stream_type = STREAM_TYPE_PRIVATE_DATA;
+        break;
+    }
+
+    return stream_type;
+}
+
 static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
 {
     MpegTSWrite *ts = s->priv_data;
@@ -372,6 +420,14 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     q += 2; /* patched after */
 
     /* put program info here */
+    if (ts->m2ts_mode) {
+        put_registration_descriptor(&q, MKTAG('H', 'D', 'M', 'V'));
+        *q++ = 0x88;        // descriptor_tag - hdmv_copy_control_descriptor
+        *q++ = 0x04;        // descriptor_length
+        put16(&q, 0x0fff);  // CA_System_ID
+        *q++ = 0xfc;        // private_data_byte
+        *q++ = 0xfc;        // private_data_byte
+    }
 
     val = 0xf000 | (q - program_info_length_ptr - 2);
     program_info_length_ptr[0] = val >> 8;
@@ -401,7 +457,7 @@ static int mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
             break;
         }
 
-        stream_type = get_dvb_stream_type(s, st);
+        stream_type = ts->m2ts_mode ? get_m2ts_stream_type(s, st) : get_dvb_stream_type(s, st);
 
         *q++ = stream_type;
         put16(&q, 0xe000 | ts_st->pid);
