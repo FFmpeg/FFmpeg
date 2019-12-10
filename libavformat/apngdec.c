@@ -138,7 +138,7 @@ static int append_extradata(AVCodecParameters *par, AVIOContext *pb, int len)
     par->extradata = new_extradata;
     par->extradata_size = new_size;
 
-    if ((ret = avio_read(pb, par->extradata + previous_size, len)) < 0)
+    if ((ret = ffio_read_size(pb, par->extradata + previous_size, len)) < 0)
         return ret;
 
     return previous_size;
@@ -185,10 +185,10 @@ static int apng_read_header(AVFormatContext *s)
     AV_WL32(st->codecpar->extradata+4,  tag);
     AV_WB32(st->codecpar->extradata+8,  st->codecpar->width);
     AV_WB32(st->codecpar->extradata+12, st->codecpar->height);
-    if ((ret = avio_read(pb, st->codecpar->extradata+16, 9)) < 0)
-        goto fail;
+    if ((ret = ffio_read_size(pb, st->codecpar->extradata + 16, 9)) < 0)
+        return ret;
 
-    while (!avio_feof(pb)) {
+    while (1) {
         if (acTL_found && ctx->num_play != 1) {
             int64_t size   = avio_size(pb);
             int64_t offset = avio_tell(pb);
