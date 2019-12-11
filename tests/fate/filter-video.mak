@@ -1,6 +1,6 @@
 FATE_FILTER_SAMPLES-$(call ALLYES, SMJPEG_DEMUXER MJPEG_DECODER PERMS_FILTER OWDENOISE_FILTER) += fate-filter-owdenoise-sample
 fate-filter-owdenoise-sample: CMD = ffmpeg -idct simple -i $(TARGET_SAMPLES)/smjpeg/scenwin.mjpg -vf "trim=duration=0.5,perms=random,owdenoise=10:20:20:enable=not(between(t\,0.2\,1.2))" -an -f rawvideo -
-fate-filter-owdenoise-sample: REF = $(TARGET_SAMPLES)/filter-reference/owdenoise-scenwin.raw
+fate-filter-owdenoise-sample: REF = $(SAMPLES)/filter-reference/owdenoise-scenwin.raw
 fate-filter-owdenoise-sample: CMP_TARGET = 1
 fate-filter-owdenoise-sample: FUZZ = 3539
 fate-filter-owdenoise-sample: CMP = oneoff
@@ -484,7 +484,7 @@ fate-filter-scale2ref_keep_aspect: CMD = framemd5 -frames:v 5 -filter_complex_sc
 
 FATE_FILTER_VSYNTH-$(CONFIG_SCALE_FILTER) += fate-filter-scalechroma
 fate-filter-scalechroma: tests/data/vsynth1.yuv
-fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_v_chr_pos=33:out_h_chr_pos=151
+fate-filter-scalechroma: CMD = framecrc -flags bitexact -s 352x288 -pix_fmt yuv444p -i $(TARGET_PATH)/tests/data/vsynth1.yuv -pix_fmt yuv420p -sws_flags +bitexact -vf scale=out_v_chr_pos=33:out_h_chr_pos=151
 
 FATE_FILTER_VSYNTH-$(CONFIG_VFLIP_FILTER) += fate-filter-vflip
 fate-filter-vflip: CMD = video_filter "vflip"

@@ -154,7 +154,7 @@ md5pipe(){
 md5(){
     encfile="${outdir}/${test}.out"
     cleanfiles="$cleanfiles $encfile"
-    ffmpeg "$@" $encfile
+    ffmpeg "$@" $(target_path $encfile)
     do_md5sum $encfile | awk '{print $1}'
 }
 
@@ -223,7 +223,7 @@ transcode(){
         -f $enc_fmt -y $tencfile || return
     do_md5sum $encfile
     echo $(wc -c $encfile)
-    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+    ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
 }
 
@@ -239,7 +239,7 @@ stream_remux(){
     tencfile=$(target_path $encfile)
     ffmpeg -f $src_fmt -i $tsrcfile $stream_maps -codec copy $FLAGS \
         -f $enc_fmt -y $tencfile || return
-    ffmpeg $DEC_OPTS -i $encfile $ENC_OPTS $FLAGS $final_decode \
+    ffmpeg $DEC_OPTS -i $tencfile $ENC_OPTS $FLAGS $final_decode \
         -f framecrc - || return
 }
 
@@ -420,16 +420,16 @@ gapless(){
     cleanfiles="$cleanfiles $decfile1 $decfile2 $decfile3"
 
     # test packet data
-    ffmpeg $extra_args -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile1
+    ffmpeg $extra_args -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile1)
     do_md5sum $decfile1
     # test decoded (and cut) data
     ffmpeg $extra_args -i "$sample" -bitexact -f wav md5:
     # the same as above again, with seeking to the start
-    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile2
+    ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile2)
     do_md5sum $decfile2
     ffmpeg $extra_args -ss 0 -seek_timestamp 1 -i "$sample" -bitexact -f wav md5:
     # test packet data, with seeking to a specific position
-    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $decfile3
+    ffmpeg $extra_args -ss 5 -seek_timestamp 1 -i "$sample" -bitexact -c:a copy -f framecrc -y $(target_path $decfile3)
     do_md5sum $decfile3
 }
 
@@ -442,19 +442,19 @@ gaplessenc(){
     cleanfiles="$cleanfiles $file1"
 
     # test data after reencoding
-    ffmpeg -i "$sample" -bitexact -map 0:a -c:a $codec -f $format -y "$file1"
-    probegaplessinfo "$file1"
+    ffmpeg -i "$sample" -bitexact -map 0:a -c:a $codec -f $format -y "$(target_path "$file1")"
+    probegaplessinfo "$(target_path "$file1")"
 }
 
 audio_match(){
     sample=$(target_path $1)
-    trefile=$(target_path $2)
+    trefile=$2
     extra_args=$3
 
     decfile="${outdir}/${test}.wav"
     cleanfiles="$cleanfiles $decfile"
 
-    ffmpeg -i "$sample" -bitexact $extra_args -y $decfile
+    ffmpeg -i "$sample" -bitexact $extra_args -y $(target_path $decfile)
     tests/audiomatch${HOSTEXECSUF} $decfile $trefile
 }
 
@@ -471,10 +471,10 @@ concat(){
     awk "{gsub(/%SRCFILE%/, \"$sample\"); print}" $template > $concatfile
 
     if [ "$mode" = "md5" ]; then
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $concatfile | tr -d '\r' > $packetfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -fflags keepside -safe 0 $extra_args $(target_path $concatfile) | tr -d '\r' > $packetfile
         do_md5sum $packetfile
     else
-        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $concatfile
+        run ffprobe${PROGSUF}${EXECSUF} -bitexact -show_streams -show_packets -v 0 -of compact=p=0:nk=1 -fflags keepside -safe 0 $extra_args $(target_path $concatfile)
     fi
 }
 
